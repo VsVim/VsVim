@@ -13,6 +13,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Moq.Language.Flow;
 using Vim.Extensions;
+using Vim.Modes;
 using VsVim;
 
 namespace Vim.UnitTest.Mock
@@ -97,7 +98,7 @@ namespace Vim.UnitTest.Mock
             var mock = factory.Create<IVsWindowFrame>();
             adapter
                 .Setup(x => x.GetContainingWindowFrame(textBuffer))
-                .Returns(Result.CreateSuccess(mock.Object));
+                .Returns(VsVim.Result.CreateSuccess(mock.Object));
             return mock;
         }
 
@@ -346,6 +347,14 @@ namespace Vim.UnitTest.Mock
                     .Verifiable();
             }
 
+        }
+
+        public static void SetupPut(this Mock<ICommonOperations> operations, ITextBuffer textBuffer, params string[] newText)
+        {
+            operations
+                .Setup(x => x.Put(It.IsAny<SnapshotPoint>(), It.IsAny<StringData>(), It.IsAny<OperationKind>()))
+                .Callback(() => textBuffer.SetText(newText))
+                .Verifiable();
         }
     }
 }

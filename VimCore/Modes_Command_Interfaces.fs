@@ -12,11 +12,11 @@ type IOperations =
     /// Show the open file dialog
     abstract ShowOpenFileDialog : unit -> unit
 
-    /// Put the text into the file 
-    abstract Put : text : string -> ITextSnapshotLine -> isAfter : bool -> unit
-
     /// For a toggle setting, switch it.  For all others display it
     abstract OperateSetting: settingName:string -> unit
+
+    /// Put the register at the specified line
+    abstract PutLine : Register -> ITextSnapshotLine -> putBefore : bool -> unit
 
     /// Update a setting value to the provided value
     abstract SetSettingValue : settingName:string -> value:string -> unit

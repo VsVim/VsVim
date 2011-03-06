@@ -431,5 +431,10 @@ namespace Vim.UnitTest
             bindData = bindData ?? CreateBindData<T>();
             return BindDataStorage<T>.NewSimple(bindData);
         }
+
+        internal static StringData CreateStringDataBlock(params string[] values)
+        {
+            return StringData.NewBlock(NonEmptyCollectionUtil.OfSeq(values).Value);
+        }
     }
 }

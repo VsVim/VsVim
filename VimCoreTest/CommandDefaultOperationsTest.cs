@@ -101,24 +101,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Put_Before()
-        {
-            Create("dog", "cat");
-            _operations.Put("pig", _textView.GetLine(0), false);
-            Assert.AreEqual("pig", _textView.GetLine(0).GetText());
-            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
-        }
-
-        [Test]
-        public void Put_After()
-        {
-            Create("dog", "cat");
-            _operations.Put("pig", _textView.GetLine(0), true);
-            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
-            Assert.AreEqual("pig", _textView.GetLine(1).GetText());
-        }
-
-        [Test]
         public void OperateSetting1()
         {
             Create("foO");

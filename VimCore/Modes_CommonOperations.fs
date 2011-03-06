@@ -27,6 +27,8 @@ type internal CommonOperations ( _data : OperationsData ) =
     let _regexFactory = VimRegexFactory(_data.LocalSettings.GlobalSettings)
     let _globalSettings = _settings.GlobalSettings
 
+    member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
+
     /// Whether or not to use spaces over tabs where applicable
     member x.UseSpaces = 
         if _settings.GlobalSettings.UseEditorTabSettings then 
@@ -327,42 +329,33 @@ type internal CommonOperations ( _data : OperationsData ) =
                     | Some(span) -> foundSpan span
                     | None -> _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
 
-    member x.PutAt point stringData opKind =
-        x.PutAtWithReturn point stringData opKind |> ignore
-
-    member x.PutAtWithReturn point stringData opKind =
-        let edit = _textBuffer.CreateEdit()
-
-        // Delete any selections in the buffer
-        _textView.Selection.SelectedSpans
-        |> Seq.iter (fun span -> edit.Delete(span.Span) |> ignore)
+    // Puts the provided StringData at the given point in the ITextBuffer.  Does not attempt
+    // to move the caret as a result of this operation
+    member x.Put point stringData opKind =
 
         match stringData with
-        | StringData.Simple(str) -> 
+        | StringData.Simple str -> 
 
-            // Simple strings can go directly in at the position 
+            // Simple strings can go directly in at the position.  Need to adjust the text if 
+            // we are inserting at the end of the buffer
             let text = 
-                let getLineWiseText() = 
-                    let snapshot = SnapshotPointUtil.GetSnapshot point
-                    let line = SnapshotUtil.GetLastLine snapshot
-                    if point = line.End then
+                match opKind with
+                | OperationKind.LineWise -> 
+                    if point = SnapshotUtil.GetEndPoint x.CurrentSnapshot then
                         // At the end of the file we need to insert an additional
                         // newline prefix
                         System.Environment.NewLine + str
                     else
                         str
+                | OperationKind.CharacterWise ->
+                    // Simplest insert.  No changes needed
+                    str
 
-                match opKind with
-                | OperationKind.LineWise -> getLineWiseText()
-                | OperationKind.CharacterWise -> str
-
-            let position = point.Position
-            edit.Insert(position, text) |> ignore 
-            let snapshot = edit.Apply()
-            let startPoint = SnapshotPoint(snapshot, position)
-            SnapshotSpanUtil.CreateWithLength startPoint text.Length
+            _textBuffer.Insert(point.Position, text) |> ignore
 
         | StringData.Block col -> 
+
+            use edit = _textBuffer.CreateEdit()
 
             // Collection strings are inserted at the original character
             // position down the set of lines creating whitespace as needed
@@ -394,69 +387,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                 let endPoint = SnapshotUtil.GetEndPoint originalSnapshot
                 edit.Insert(endPoint.Position, text) |> ignore
 
-            let newSnapshot = edit.Apply()
-            let line = newSnapshot.GetLineFromLineNumber lineNumber
-            let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount line col.Count
-            range.ExtentIncludingLineBreak
-
-    member x.PutAtCaret stringData opKind putKind moveCaretAfterText = 
-
-        // Get the point at which the insertion will occur 
-        let caretPoint = TextViewUtil.GetCaretPoint _textView
-        let editPoint = 
-            match (putKind, opKind) with
-            | PutKind.After, OperationKind.CharacterWise -> 
-                SnapshotPointUtil.AddOneOrCurrent caretPoint
-            | PutKind.After, OperationKind.LineWise -> 
-                caretPoint |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetEndIncludingLineBreak
-            | PutKind.Before, OperationKind.CharacterWise -> 
-                caretPoint
-            | PutKind.Before, OperationKind.LineWise -> 
-                caretPoint |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetStart
-
-        _undoRedoOperations.EditWithUndoTransaction "Paste" (fun () -> 
-            x.PutAt editPoint stringData opKind 
-            let position = 
-                match opKind with 
-                | OperationKind.CharacterWise -> 
-
-                    // Characterwise will just move the cursor to the end of the text on the first line 
-                    // of the put.  Unless we moving the caret after the text in which case it will go
-                    // one further to the right. 
-                    let length = 
-                        match stringData with 
-                        | StringData.Simple str -> str.Length - 1
-                        | StringData.Block col -> col.Head.Length - 1
-                    let length = max 0 length
-                    let length = if moveCaretAfterText then length + 1 else length
-
-                    // The PutAt operation can delete text to the left of the caret which changes it's 
-                    // original position.  Use an ITrackingPoint to account for this.  
-                    match TrackingPointUtil.GetPointInSnapshot editPoint PointTrackingMode.Negative _textBuffer.CurrentSnapshot with
-                    | Some(point) -> point.Position + length
-                    | None -> editPoint.Position + length   // guess if it can't be found 
-
-                | OperationKind.LineWise ->
-
-                    if moveCaretAfterText then 
-
-                        // Move it past the last insert 
-                        let lastChange = caretPoint.Snapshot.Version.Changes |> Seq.filter (fun c -> c.Delta > 0) |> SeqUtil.last
-                        lastChange.NewPosition + 1
-
-                    else
-
-                        // Linewise puts it on the first character of the inserted line 
-                        let line = 
-                            let number = caretPoint |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetLineNumber 
-                            match putKind with
-                            | PutKind.After -> SnapshotUtil.GetLineOrLast _textBuffer.CurrentSnapshot (number + 1)
-                            | PutKind.Before -> SnapshotUtil.GetLineOrFirst _textBuffer.CurrentSnapshot number
-                        line |> SnapshotLineUtil.GetIndent |> SnapshotPointUtil.GetPosition
-
-            let position = min _textBuffer.CurrentSnapshot.Length position
-            let point = SnapshotPoint(_textBuffer.CurrentSnapshot, position)
-            TextViewUtil.MoveCaretToPoint _textView point)
+            edit.Apply() |> ignore
 
     member x.Beep() = if not _settings.GlobalSettings.VisualBell then _host.Beep()
 
@@ -919,11 +850,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             | HostResult.Success -> ()
             | HostResult.Error(_) -> _statusUtil.OnError (Resources.NormalMode_CantFindFile text)
 
-        member x.PutAt point stringData opKind = x.PutAt point stringData opKind
-
-        member x.PutAtCaret stringData opKind putKind moveCaretAfterText = x.PutAtCaret stringData opKind putKind moveCaretAfterText
-
-        member x.PutAtWithReturn point stringData opKind = x.PutAtWithReturn point stringData opKind
+        member x.Put point stringData opKind = x.Put point stringData opKind
 
 
 

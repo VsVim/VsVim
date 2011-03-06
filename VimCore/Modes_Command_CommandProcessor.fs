@@ -302,13 +302,13 @@ type internal CommandProcessor
 
     /// Parse the Put command
     member x.ProcessPut (rest:char list) (range: SnapshotLineRange option) bang =
-        let reg,rest = 
+        let reg, rest = 
             rest
             |> CommandParseUtil.SkipWhitespace
             |> CommandParseUtil.SkipRegister _buffer.RegisterMap
         
         let range = RangeUtil.RangeOrCurrentLine _buffer.TextView range
-        _operations.Put reg.StringValue range.EndLine (not bang)
+        _operations.PutLine reg range.EndLine (not bang)
 
     /// Parse the < command
     member x.ProcessShiftLeft (rest:char list) (range: SnapshotLineRange option) _ =

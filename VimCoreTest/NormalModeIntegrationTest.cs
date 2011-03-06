@@ -16,6 +16,11 @@ namespace VimCore.UnitTest
         private ITextBuffer _textBuffer;
         private bool _assertOnErrorMessage = true;
 
+        internal Register UnnamedRegister
+        {
+            get { return _buffer.GetRegister(RegisterName.Unnamed); }
+        }
+
         public void Create(params string[] lines)
         {
             var tuple = EditorUtil.CreateViewAndOperations(lines);
@@ -792,8 +797,11 @@ namespace VimCore.UnitTest
             Assert.AreEqual(_textView.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
         }
 
+        /// <summary>
+        /// Caret should be positioned at the start of the inserted line
+        /// </summary>
         [Test]
-        public void Handle_p_LineWiseSimpleString()
+        public void PutAfter_LineWiseSimpleString()
         {
             Create("dog", "cat", "bear", "tree");
             _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig\n", OperationKind.LineWise);
@@ -803,88 +811,159 @@ namespace VimCore.UnitTest
             Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(1).Start);
         }
 
+        /// <summary>
+        /// Caret should be positioned at the start of the indent even when autoindent is off
+        /// </summary>
         [Test]
-        public void Handle_p_LineWiseSimpleStringThatHasIndent()
+        public void PutAfter_LineWiseWithIndent()
         {
             Create("dog", "cat", "bear", "tree");
-            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("  pig\n", OperationKind.LineWise);
+            UnnamedRegister.UpdateValue("  pig\n", OperationKind.LineWise);
+            _buffer.Settings.AutoIndent = false;
             _buffer.Process("p");
             Assert.AreEqual("dog", _textView.GetLine(0).GetText());
             Assert.AreEqual("  pig", _textView.GetLine(1).GetText());
             Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(1).Start.Add(2));
         }
 
+        /// <summary>
+        /// Caret should be positioned on the last character of the inserted text
+        /// </summary>
         [Test]
-        public void Handle_p_CharacterWiseSimpleString()
+        public void PutAfter_CharacterWiseSimpleString()
         {
             Create("dog", "cat", "bear", "tree");
             _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig", OperationKind.CharacterWise);
             _buffer.Process("p");
             Assert.AreEqual("dpigog", _textView.GetLine(0).GetText());
-            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(0).Start.Add(3));
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
         }
 
+        /// <summary>
+        /// Caret should be positioned after the last character of the inserted text
+        /// </summary>
         [Test]
-        public void Handle_p_CharacterWiseBlockStringOnExistingLines()
+        public void PutAfter_CharacterWiseSimpleString_WithCaretMove()
         {
             Create("dog", "cat", "bear", "tree");
-            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateBlockValues("a", "b", "c");
-            _buffer.Process("p");
-            Assert.AreEqual("daog", _textView.GetLine(0).GetText());
-            Assert.AreEqual("cbat", _textView.GetLine(1).GetText());
-            Assert.AreEqual("bcear", _textView.GetLine(2).GetText());
-            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(0).Start.Add(1));
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig", OperationKind.CharacterWise);
+            _buffer.Process("gp");
+            Assert.AreEqual("dpigog", _textView.GetLine(0).GetText());
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
         }
 
+        /// <summary>
+        /// The caret should be positioned at the last character of the first block string
+        /// inserted text
+        /// </summary>
         [Test]
-        public void Handle_p_CharacterWiseBlockStringOnNewLines()
+        public void PutAfter_BlockOverExisting()
+        {
+            Create("dog", "cat", "bear", "tree");
+            UnnamedRegister.UpdateBlockValues("aa", "bb");
+            _buffer.Process("p");
+            Assert.AreEqual("daaog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cbbat", _textView.GetLine(1).GetText());
+            Assert.AreEqual("bear", _textView.GetLine(2).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// The new text should be on new lines at the same indetn and the caret posion should
+        /// be the same as puting over existing lines
+        /// </summary>
+        [Test]
+        public void PutAfter_BlockOnNewLines()
         {
             Create("dog");
             _textView.MoveCaretTo(1);
-            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateBlockValues("a", "b", "c");
+            UnnamedRegister.UpdateBlockValues("aa", "bb");
             _buffer.Process("p");
-            Assert.AreEqual("doag", _textView.GetLine(0).GetText());
-            Assert.AreEqual("  b", _textView.GetLine(1).GetText());
-            Assert.AreEqual("  c", _textView.GetLine(2).GetText());
-            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(0).Start.Add(2));
+            Assert.AreEqual("doaag", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  bb", _textView.GetLine(1).GetText());
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
         }
 
+        /// <summary>
+        /// This should cause the cursor to be put on the first line after the inserted 
+        /// lines
+        /// </summary>
         [Test]
-        public void Handle_P_LineWiseSimpleStringStartOfBuffer()
+        public void PutAfter_LineWise_WithCaretMove()
         {
-            Create("dog", "cat", "bear", "tree");
-            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig\n", OperationKind.LineWise);
+            Create("dog", "cat");
+            UnnamedRegister.UpdateValue("pig\ntree\n", OperationKind.LineWise);
+            _buffer.Process("gp");
+            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("pig", _textView.GetLine(1).GetText());
+            Assert.AreEqual("tree", _textView.GetLine(2).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(3).GetText());
+            Assert.AreEqual(_textView.GetLine(3).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Caret should be at the start of the inserted text
+        /// </summary>
+        [Test]
+        public void PutBefore_LineWiseStartOfBuffer()
+        {
+            Create("dog");
+            UnnamedRegister.UpdateValue("pig\n", OperationKind.LineWise);
             _buffer.Process("P");
             Assert.AreEqual("pig", _textView.GetLine(0).GetText());
             Assert.AreEqual("dog", _textView.GetLine(1).GetText());
-            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(0).Start);
+            Assert.AreEqual(0, _textView.GetCaretPoint());
         }
 
+        /// <summary>
+        /// Caret should be positioned at the start of the indented text
+        /// </summary>
         [Test]
-        public void Handle_P_LineWiseSimpleStringThatHasIndentStartOfBuffer()
+        public void PutBefore_LineWiseStartOfBufferWithIndent()
         {
-            Create("dog", "cat", "bear", "tree");
-            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("  pig\n", OperationKind.LineWise);
+            Create("dog");
+            UnnamedRegister.UpdateValue("  pig\n", OperationKind.LineWise);
             _buffer.Process("P");
             Assert.AreEqual("  pig", _textView.GetLine(0).GetText());
             Assert.AreEqual("dog", _textView.GetLine(1).GetText());
-            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(0).Start.Add(2));
+            Assert.AreEqual(2, _textView.GetCaretPoint());
         }
 
+        /// <summary>
+        /// Character should be on the first line of the newly inserted lines
+        /// </summary>
         [Test]
-        public void Handle_P_LineWiseInMiddleOfBuffer()
+        public void PutBefore_LineWiseMiddleOfBuffer()
         {
-            Create("dog", "cat", "bear", "tree");
-            _textView.MoveCaretToLine(2);
-            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("  pig\n", OperationKind.LineWise);
+            Create("dog", "cat");
+            _textView.MoveCaretToLine(1);
+            UnnamedRegister.UpdateValue("fish\ntree\n", OperationKind.LineWise);
             _buffer.Process("P");
-            Assert.AreEqual("  pig", _textView.GetLine(2).GetText());
-            Assert.AreEqual("bear", _textView.GetLine(3).GetText());
-            Assert.AreEqual(_textView.GetLine(2).Start.Add(2), _textView.GetCaretPoint());
+            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("fish", _textView.GetLine(1).GetText());
+            Assert.AreEqual("tree", _textView.GetLine(2).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(3).GetText());
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Character should be on the first line after the inserted lines
+        /// </summary>
+        [Test]
+        public void PutBefore_LineWise_WithCaretMove()
+        {
+            Create("dog", "cat");
+            UnnamedRegister.UpdateValue("pig\ntree\n", OperationKind.LineWise);
+            _buffer.Process("gP");
+            Assert.AreEqual("pig", _textView.GetLine(0).GetText());
+            Assert.AreEqual("tree", _textView.GetLine(1).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(2).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(3).GetText());
+            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
         }
 
         [Test]
-        public void Handle_P_CharacterWiseBlockStringOnExistingLines()
+        public void PutBefore_CharacterWiseBlockStringOnExistingLines()
         {
             Create("dog", "cat", "bear", "tree");
             _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateBlockValues("a", "b", "c");

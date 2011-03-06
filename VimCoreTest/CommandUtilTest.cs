@@ -884,12 +884,13 @@ namespace VimCore.UnitTest
         /// Replace the text and put the caret at the end of the selection
         /// </summary>
         [Test]
-        public void PutOverSelection_Character()
+        public void PutAfterSelection_Character()
         {
             Create("hello world");
             var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 0, 5));
             UnnamedRegister.UpdateValue("dog");
-            _commandUtil.PutOverSelection(UnnamedRegister, 1, visualSpan, moveCaretAfterText: false);
+            _operations.SetupPut(_textBuffer, "dog world");
+            _commandUtil.PutAfterSelection(UnnamedRegister, 1, moveCaretAfterText: false, visualSpan : visualSpan);
             Assert.AreEqual("dog world", _textView.GetLine(0).GetText());
             Assert.AreEqual(2, _textView.GetCaretPoint().Position);
         }
@@ -898,12 +899,13 @@ namespace VimCore.UnitTest
         /// Replace the text and put the caret after the selection span
         /// </summary>
         [Test]
-        public void PutOverSelection_Character_WithCaretMove()
+        public void PutAfterSelection_Character_WithCaretMove()
         {
             Create("hello world");
             var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 0, 5));
             UnnamedRegister.UpdateValue("dog");
-            _commandUtil.PutOverSelection(UnnamedRegister, 1, visualSpan, moveCaretAfterText: true);
+            _operations.SetupPut(_textBuffer, "dog world");
+            _commandUtil.PutAfterSelection(UnnamedRegister, 1, moveCaretAfterText: true, visualSpan : visualSpan);
             Assert.AreEqual("dog world", _textView.GetLine(0).GetText());
             Assert.AreEqual(3, _textView.GetCaretPoint().Position);
         }
@@ -913,12 +915,13 @@ namespace VimCore.UnitTest
         /// of the line range span.  Should position the caret at the start as well
         /// </summary>
         [Test]
-        public void PutOverSelection_Line()
+        public void PutAfterSelection_Line()
         {
             Create("the cat", "chased", "the dog");
             var visualSpan = VisualSpan.NewLine(_textView.GetLineRange(0, 1));
             UnnamedRegister.UpdateValue("dog");
-            _commandUtil.PutOverSelection(UnnamedRegister, 1, visualSpan, moveCaretAfterText: false);
+            _operations.SetupPut(_textBuffer, "dog", "the dog");
+            _commandUtil.PutAfterSelection(UnnamedRegister, 1, moveCaretAfterText: false, visualSpan : visualSpan);
             Assert.AreEqual("dog", _textView.GetLine(0).GetText());
             Assert.AreEqual("the dog", _textView.GetLine(1).GetText());
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
@@ -929,26 +932,30 @@ namespace VimCore.UnitTest
         /// option is specified
         /// </summary>
         [Test]
-        public void PutOverSelection_Line_WithCaretMove()
+        public void PutAfterSelection_Line_WithCaretMove()
         {
             Create("the cat", "chased", "the dog");
             var visualSpan = VisualSpan.NewLine(_textView.GetLineRange(0, 1));
             UnnamedRegister.UpdateValue("dog");
-            _commandUtil.PutOverSelection(UnnamedRegister, 1, visualSpan, moveCaretAfterText: true);
+            _operations.SetupPut(_textBuffer, "dog", "the dog");
+            _commandUtil.PutAfterSelection(UnnamedRegister, 1, moveCaretAfterText: true, visualSpan : visualSpan);
             Assert.AreEqual("dog", _textView.GetLine(0).GetText());
             Assert.AreEqual("the dog", _textView.GetLine(1).GetText());
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
+        /// <summary>
+        /// Make sure caret is positioned on the last inserted character on the first
+        /// inserted line
+        /// </summary>
         [Test]
-        public void PutOverSelection_Block()
+        public void PutAfterSelection_Block()
         {
-            Create("cat", "dog", "bear", "fish");
+            Create("cat", "dog");
             var visualSpan = VisualSpan.NewBlock(_textView.GetBlock(1, 1, 0, 2));
             UnnamedRegister.UpdateValue("z");
-            _commandUtil.PutOverSelection(UnnamedRegister, 1, visualSpan, moveCaretAfterText: false);
-            Assert.AreEqual("czt", _textView.GetLine(0).GetText());
-            Assert.AreEqual("dg", _textView.GetLine(1).GetText());
+            _operations.SetupPut(_textBuffer, "czt", "dg");
+            _commandUtil.PutAfterSelection(UnnamedRegister, 1, moveCaretAfterText: false, visualSpan : visualSpan);
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
 
@@ -1298,5 +1305,10 @@ namespace VimCore.UnitTest
             Assert.AreEqual("", _textView.GetLine(1).GetText());
             Assert.AreEqual(2, _textView.Caret.Position.VirtualBufferPosition.VirtualSpaces);
         }
+
+        /*
+        Test
+         - visual put p nad P with linewise paste
+         - visual put should put deleted text in register */
     }
 }

@@ -176,14 +176,8 @@ type ICommonOperations =
     /// Open all folds which inersect with the given SnapshotSpan
     abstract OpenAllFolds : SnapshotSpan -> unit
 
-    /// Put the specified StringData at the given point 
-    abstract PutAt : SnapshotPoint -> StringData -> OperationKind -> unit
-
-    /// Put the specified StringData at the caret 
-    abstract PutAtCaret : StringData -> OperationKind -> PutKind -> moveCaretAfterText:bool-> unit
-
-    /// Put the specified StringData at the given point 
-    abstract PutAtWithReturn : SnapshotPoint -> StringData -> OperationKind -> SnapshotSpan
+    /// Put the specified StringData at the given point.
+    abstract Put : SnapshotPoint -> StringData -> OperationKind -> unit
 
     /// Redo the buffer changes "count" times
     abstract Redo : count:int -> unit

@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Linq;
+using System.Threading;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
@@ -13,6 +14,11 @@ namespace VimCore.UnitTest
         private IVimBuffer _buffer;
         private IWpfTextView _textView;
         private TestableSynchronizationContext _context;
+
+        internal Register UnnamedRegister
+        {
+            get { return _buffer.RegisterMap.GetRegister(RegisterName.Unnamed); }
+        }
 
         public void Create(params string[] lines)
         {
@@ -40,12 +46,12 @@ namespace VimCore.UnitTest
             _buffer.SwitchMode(kind, ModeArgument.None);
         }
 
-        private void EnterBlock(params SnapshotSpan[] spans)
+        private void EnterBlock(NonEmptyCollection<SnapshotSpan> spans)
         {
             _textView.Selection.Mode = TextSelectionMode.Box;
             _textView.Selection.Select(
-                new VirtualSnapshotPoint(spans[0].Start),
-                new VirtualSnapshotPoint(spans[spans.Length - 1].End));
+                new VirtualSnapshotPoint(spans.Head.Start),
+                new VirtualSnapshotPoint(spans.Last().End));
             Assert.IsFalse(_context.IsEmpty);
             _context.RunAll();
             Assert.IsTrue(_context.IsEmpty);
@@ -225,28 +231,305 @@ namespace VimCore.UnitTest
         public void Handle_D_BlockMode()
         {
             Create("dog", "cat", "tree");
-            EnterBlock(
-                new SnapshotSpan(_textView.GetLine(0).Start.Add(1), 1),
-                new SnapshotSpan(_textView.GetLine(1).Start.Add(1), 1));
+            EnterBlock(_textView.GetBlock(1, 1, 0, 2));
             _buffer.Process("D");
             Assert.AreEqual("d", _textView.GetLine(0).GetText());
             Assert.AreEqual("c", _textView.GetLine(1).GetText());
         }
 
+        /// <summary>
+        /// Character should be positioned at the end of the inserted text
+        /// </summary>
         [Test]
-        public void Handle_p_SimpleReplacesCharSpan()
+        public void PutAfter_CharacterWise_WithSingleCharacterWise()
         {
-            Create("dog", "cat", "bear", "tree");
-            EnterMode(ModeKind.VisualCharacter, _textView.GetLineRange(0).Extent);
-            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig");
+            Create("dog");
+            EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
+            UnnamedRegister.UpdateValue("cat", OperationKind.CharacterWise);
             _buffer.Process("p");
-            Assert.AreEqual("pig", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dcatg", _textView.GetLine(0).GetText());
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("o", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Character should be positioned after the end of the inserted text
+        /// </summary>
+        [Test]
+        public void PutAfter_CharacterWise_WithSingleCharacterWiseAndCaretMove()
+        {
+            Create("dog");
+            EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
+            UnnamedRegister.UpdateValue("cat", OperationKind.CharacterWise);
+            _buffer.Process("gp");
+            Assert.AreEqual("dcatg", _textView.GetLine(0).GetText());
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("o", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Character should be positioned at the start of the inserted line
+        /// </summary>
+        [Test]
+        public void PutAfter_CharacterWise_WithLineWise()
+        {
+            Create("dog");
+            EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
+            UnnamedRegister.UpdateValue("cat\n", OperationKind.LineWise);
+            _buffer.Process("p");
+            Assert.AreEqual("d", _textView.GetLine(0).GetText());
             Assert.AreEqual("cat", _textView.GetLine(1).GetText());
-            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("g", _textView.GetLine(2).GetText());
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Character should be positioned at the first line after the inserted
+        /// lines
+        /// </summary>
+        [Test]
+        public void PutAfter_CharacterWise_WithLineWiseAndCaretMove()
+        {
+            Create("dog");
+            EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
+            UnnamedRegister.UpdateValue("cat\n", OperationKind.LineWise);
+            _buffer.Process("p");
+            Assert.AreEqual("d", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
+            Assert.AreEqual("g", _textView.GetLine(2).GetText());
+            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Character should be positioned at the start of the first line in the
+        /// block 
+        /// </summary>
+        [Test]
+        public void PutAfter_CharacterWise_WithBlock()
+        {
+            Create("dog", "cat");
+            EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
+            UnnamedRegister.UpdateBlockValues("aa", "bb");
+            _buffer.Process("p");
+            Assert.AreEqual("daag", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cbbat", _textView.GetLine(1).GetText());
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Caret should be positioned after the line character in the last 
+        /// line of the inserted block
+        /// </summary>
+        [Test]
+        public void PutAfter_CharacterWise_WithBlockAndCaretMove()
+        {
+            Create("dog", "cat");
+            EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
+            UnnamedRegister.UpdateBlockValues("aa", "bb");
+            _buffer.Process("gp");
+            Assert.AreEqual("daag", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cbbat", _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetLine(1).Start.Add(3), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Character should be positioned at the end of the inserted text
+        /// </summary>
+        [Test]
+        public void PutAfter_LineWise_WithCharcterWise()
+        {
+            Create("dog", "cat");
+            EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
+            UnnamedRegister.UpdateValue("fish", OperationKind.CharacterWise);
+            _buffer.Process("p");
+            Assert.AreEqual("fish", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("dog\n", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Character should be positioned after the end of the inserted text
+        /// </summary>
+        [Test]
+        public void PutAfter_LineWise_WithCharacterWiseAndCaretMove()
+        {
+            Create("dog", "cat");
+            EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
+            UnnamedRegister.UpdateValue("fish", OperationKind.CharacterWise);
+            _buffer.Process("p");
+            Assert.AreEqual("fish", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            Assert.AreEqual("dog\n", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Character should be positioned at the end of the inserted text
+        /// </summary>
+        [Test]
+        public void PutAfter_LineWise_WithLineWise()
+        {
+            Create("dog", "cat");
+            EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
+            UnnamedRegister.UpdateValue("fish\n", OperationKind.LineWise);
+            _buffer.Process("p");
+            Assert.AreEqual("fish", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("dog\n", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Character should be positioned after the end of the inserted text
+        /// </summary>
+        [Test]
+        public void PutAfter_LineWise_WithLineWiseAndCaretMove()
+        {
+            Create("dog", "cat");
+            EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
+            UnnamedRegister.UpdateValue("fish\n", OperationKind.LineWise);
+            _buffer.Process("p");
+            Assert.AreEqual("fish", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            Assert.AreEqual("dog\n", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Character should be positioned at the start of the first inserted value
+        /// </summary>
+        [Test]
+        public void PutAfter_LineWise_WithBlock()
+        {
+            Create("dog", "cat");
+            EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
+            UnnamedRegister.UpdateBlockValues("aa", "bb");
+            _buffer.Process("p");
+            Assert.AreEqual("aa", _textView.GetLine(0).GetText());
+            Assert.AreEqual("bb", _textView.GetLine(1).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(2).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("dog\n", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Character should be positioned at the first character after the inserted
+        /// text
+        /// </summary>
+        [Test]
+        public void PutAfter_LineWise_WithBlockAndCaretMove()
+        {
+            Create("dog", "cat");
+            EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
+            UnnamedRegister.UpdateBlockValues("aa", "bb");
+            _buffer.Process("gp");
+            Assert.AreEqual("aa", _textView.GetLine(0).GetText());
+            Assert.AreEqual("bb", _textView.GetLine(1).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(2).GetText());
+            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+            Assert.AreEqual("dog\n", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Character should be positioned at the start of the first inserted value
+        /// </summary>
+        [Test]
+        public void PutAfter_Block_WithCharacterWise()
+        {
+            Create("dog", "cat");
+            EnterBlock(_textView.GetBlock(1, 1, 0, 2));
+            UnnamedRegister.UpdateValue("fish", OperationKind.CharacterWise);
+            _buffer.Process("p");
+            Assert.AreEqual("dfishg", _textView.GetLine(0).GetText());
+            Assert.AreEqual("ct", _textView.GetLine(1).GetText());
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Character should be positioned after the last character after the inserted
+        /// text
+        /// </summary>
+        [Test]
+        public void PutAfter_Block_WithCharacterWiseAndCaretMove()
+        {
+            Create("dog", "cat");
+            EnterBlock(_textView.GetBlock(1, 1, 0, 2));
+            UnnamedRegister.UpdateValue("fish", OperationKind.CharacterWise);
+            _buffer.Process("gp");
+            Assert.AreEqual("dfishg", _textView.GetLine(0).GetText());
+            Assert.AreEqual("ct", _textView.GetLine(1).GetText());
+            Assert.AreEqual(5, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Character should be positioned at the start of the inserted line
+        /// </summary>
+        [Test]
+        public void PutAfter_Block_WithLineWise()
+        {
+            Create("dog", "cat");
+            EnterBlock(_textView.GetBlock(1, 1, 0, 2));
+            UnnamedRegister.UpdateValue("fish\n", OperationKind.LineWise);
+            _buffer.Process("p");
+            Assert.AreEqual("dg", _textView.GetLine(0).GetText());
+            Assert.AreEqual("ct", _textView.GetLine(1).GetText());
+            Assert.AreEqual("fish", _textView.GetLine(2).GetText());
+            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Caret should be positioned at the start of the line which follows the
+        /// inserted lines
+        /// </summary>
+        [Test]
+        public void PutAfter_Block_WithLineWiseAndCaretMove()
+        {
+            Create("dog", "cat");
+            EnterBlock(_textView.GetBlock(1, 1, 0, 2));
+            UnnamedRegister.UpdateValue("fish\n", OperationKind.LineWise);
+            _buffer.Process("p");
+            Assert.AreEqual("dg", _textView.GetLine(0).GetText());
+            Assert.AreEqual("ct", _textView.GetLine(1).GetText());
+            Assert.AreEqual("fish", _textView.GetLine(2).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(3).GetText());
+            Assert.AreEqual(_textView.GetLine(3).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Character should be positioned at the start of the first inserted string
+        /// from the block
+        /// </summary>
+        [Test]
+        public void PutAfter_Block_WithBlock()
+        {
+            Create("dog", "cat");
+            EnterBlock(_textView.GetBlock(1, 1, 0, 2));
+            UnnamedRegister.UpdateBlockValues("aa", "bb");
+            _buffer.Process("p");
+            Assert.AreEqual("daag", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cbbt", _textView.GetLine(1).GetText());
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Caret should be positioned at the first character after the last inserted
+        /// charecter of the last string in the block
+        /// </summary>
+        [Test]
+        public void PutAfter_Block_WithBlockAndCaretMove()
+        {
+            Create("dog", "cat");
+            EnterBlock(_textView.GetBlock(1, 1, 0, 2));
+            UnnamedRegister.UpdateBlockValues("aa", "bb");
+            _buffer.Process("gp");
+            Assert.AreEqual("daag", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cbbt", _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetLine(1).Start.Add(3), _textView.GetCaretPoint());
         }
 
         [Test]
-        public void Handle_p_SimpleReplacesCharSpanNotFullLine()
+        public void PutAfter_Legacy1()
         {
             Create("dog", "cat", "bear", "tree");
             EnterMode(ModeKind.VisualCharacter, new SnapshotSpan(_textView.TextSnapshot, 0, 2));
@@ -258,7 +541,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Handle_p_SimpleReplacesCharSpanMultiline()
+        public void PutAfter_Legacy2()
         {
             Create("dog", "cat", "bear", "tree");
             var span = new SnapshotSpan(
@@ -273,7 +556,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Handle_P_SimpleReplacesCharSpan()
+        public void PutBefore_Legacy1()
         {
             Create("dog", "cat", "bear", "tree");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineRange(0).Extent);

@@ -304,105 +304,94 @@ namespace VimCore.UnitTest
             Assert.AreEqual(Resources.Common_MarkNotSet, res.AsFailed().Item);
         }
 
+        /// <summary>
+        /// Simple insertion of a single item into the ITextBuffer
+        /// </summary>
         [Test]
-        public void PutAt_LineWiseSingleWord()
+        public void Put_Single()
         {
-            Create("foo", "bar");
-            _operations.PutAt(_textView.GetPoint(0), StringData.NewSimple("yay\n"), OperationKind.LineWise);
-            Assert.AreEqual("yay", _textView.GetLine(0).GetText());
-            Assert.AreEqual("foo", _textView.GetLine(1).GetText());
+            Create("dog", "cat");
+            _operations.Put(_textView.GetLine(0).Start.Add(1), StringData.NewSimple("fish"), OperationKind.CharacterWise);
+            Assert.AreEqual("dfishog", _textView.GetLine(0).GetText());
         }
 
+        /// <summary>
+        /// Put a block StringData value into the ITextBuffer over existing text
+        /// </summary>
         [Test]
-        public void PutAt_CharacterWiseSingleWord()
+        public void Put_BlockOverExisting()
         {
-            Create("foo", "bar");
-            _operations.PutAt(_textView.GetPoint(0), StringData.NewSimple("yay"), OperationKind.CharacterWise);
-            Assert.AreEqual("yayfoo", _textView.GetLine(0).GetText());
+            Create("dog", "cat");
+            _operations.Put(_textView.GetLine(0).Start, VimUtil.CreateStringDataBlock("a", "b"), OperationKind.CharacterWise);
+            Assert.AreEqual("adog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("bcat", _textView.GetLine(1).GetText());
         }
 
+        /// <summary>
+        /// Put a block StringData value into the ITextBuffer where the length of the values
+        /// exceeds the number of lines in the ITextBuffer.  This will force the insert to create
+        /// new lines to account for it
+        /// </summary>
         [Test]
-        public void PutAt_ChararterWiseNotEndOfLine()
+        public void Put_BlockLongerThanBuffer()
         {
-            Create("foo", "bar");
-            _operations.PutAt(_textView.GetLine(0).End, StringData.NewSimple("yay"), OperationKind.CharacterWise);
-            Assert.AreEqual("fooyay", _textView.GetLine(0).GetText());
+            Create("dog");
+            _operations.Put(_textView.GetLine(0).Start.Add(1), VimUtil.CreateStringDataBlock("a", "b"), OperationKind.CharacterWise);
+            Assert.AreEqual("daog", _textView.GetLine(0).GetText());
+            Assert.AreEqual(" b", _textView.GetLine(1).GetText());
         }
 
+        /// <summary>
+        /// A linewise insertion for Block should just insert each value onto a new line
+        /// </summary>
         [Test]
-        public void PutAtCaret_SimpleString()
+        public void Put_BlockLineWise()
         {
-            Create("foo bar");
-            _operations.PutAtCaret(StringData.NewSimple("hey"), OperationKind.CharacterWise, PutKind.After, false);
-            Assert.AreEqual("fheyoo bar", _textView.GetLine(0).GetText());
-            Assert.AreEqual(3, _textView.GetCaretPoint());
+            Create("dog", "cat");
+            _operations.Put(_textView.GetLine(1).Start, VimUtil.CreateStringDataBlock("a", "b"), OperationKind.LineWise);
+            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("a", _textView.GetLine(1).GetText());
+            Assert.AreEqual("b", _textView.GetLine(2).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(3).GetText());
         }
 
+        /// <summary>
+        /// Put a single StringData instance linewise into the ITextBuffer. 
+        /// </summary>
         [Test]
-        public void PutAtCaret_EndOfBufferShouldntCrash()
+        public void Put_LineWiseSingleWord()
         {
-            Create("foo", "bar");
-            _textView.Caret.MoveTo(_textView.GetEndPoint());
-            _operations.PutAtCaret(StringData.NewSimple("hello"), OperationKind.CharacterWise, PutKind.After, false);
-            Assert.AreEqual("barhello", _textView.GetLine(1).GetText());
+            Create("cat");
+            _operations.Put(_textView.GetLine(0).Start, StringData.NewSimple("fish\n"), OperationKind.LineWise);
+            Assert.AreEqual("fish", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
         }
 
+        /// <summary>
+        /// Do a put at the end of the ITextBuffer which is of a single StringData and is characterwise
+        /// </summary>
         [Test]
-        public void PutAtCaret_LineWiseAndAfterShouldPutLineOnNextLine()
+        public void Put_EndOfBufferSingleCharacterwise()
         {
-            Create("foo", "bar");
-            _operations.PutAtCaret(StringData.NewSimple("baz\n"), OperationKind.LineWise, PutKind.After, false);
-            Assert.AreEqual("foo", _textView.GetLine(0).GetText());
-            Assert.AreEqual("baz", _textView.GetLine(1).GetText());
-            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            Create("cat");
+            _operations.Put(_textView.GetEndPoint(), StringData.NewSimple("dog"), OperationKind.CharacterWise);
+            Assert.AreEqual("catdog", _textView.GetLine(0).GetText());
         }
 
+        /// <summary>
+        /// Do a put at the end of the ITextBuffer linewise.  This is a corner case because the code has
+        /// to move the final line break from the end of the StringData to the front.  Ensure that we don't
+        /// keep the final \n in the inserted string because that will mess up the line count in the
+        /// ITextBuffer
+        /// </summary>
         [Test]
-        public void PutAtCaret_LineWiseAndAfterShouldPutLineOnNextLineAfterWhitespace()
+        public void Put_EndOfBufferLinewise()
         {
-            Create("foo", "bar");
-            _operations.PutAtCaret(StringData.NewSimple("  baz\n"), OperationKind.LineWise, PutKind.After, false);
-            Assert.AreEqual("foo", _textView.GetLine(0).GetText());
-            Assert.AreEqual("  baz", _textView.GetLine(1).GetText());
-            Assert.AreEqual(_textView.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
-        }
-
-        [Test]
-        public void PutAtCaret_LineWiseAndEndOfBufferShouldAddLine()
-        {
-            Create("foo", "bar");
-            _textView.MoveCaretTo(_textView.GetEndPoint());
-            _operations.PutAtCaret(StringData.NewSimple("hey"), OperationKind.LineWise, PutKind.After, false);
-            Assert.AreEqual("hey", _textView.GetLineRange(2).GetText());
-            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLineRange(2).Start);
-        }
-
-        [Test]
-        public void PutAtCaret_CharacterWiseAndBefore()
-        {
-            Create("foo");
-            _operations.PutAtCaret(StringData.NewSimple("hey"), OperationKind.CharacterWise, PutKind.Before, false);
-            Assert.AreEqual("heyfoo", _textView.GetLine(0).GetText());
-            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
-        }
-
-        [Test]
-        public void PutAtCaret_CharacterWiseAndBeforeAndMoveCaretAfter()
-        {
-            Create("foo");
-            _operations.PutAtCaret(StringData.NewSimple("hey"), OperationKind.CharacterWise, PutKind.Before, true);
-            Assert.AreEqual("heyfoo", _textView.GetLine(0).GetText());
-            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
-        }
-
-        [Test]
-        public void PutAtCaret_LineWiseWithIdent()
-        {
-            Create("foo", "bar");
-            _textView.Caret.MoveTo(_textView.GetLine(0).End);
-            _operations.PutAtCaret(StringData.NewSimple("  hey\n"), OperationKind.LineWise, PutKind.Before, false);
-            Assert.AreEqual("  hey", _textView.GetLine(0).GetText());
-            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+            Create("cat");
+            _operations.Put(_textView.GetEndPoint(), StringData.NewSimple("dog\n"), OperationKind.LineWise);
+            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual(2, _textView.TextSnapshot.LineCount);
         }
 
         [Test]

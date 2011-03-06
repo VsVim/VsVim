@@ -14,6 +14,12 @@ type StringData =
         | Simple str -> StringUtil.repeat count str |> Simple
         | Block col -> col |> NonEmptyCollectionUtil.Map (StringUtil.repeat count) |> Block
 
+    /// Returns the first String in the StringData instance. 
+    member x.FirstString = 
+        match x with
+        | Simple str -> str
+        | Block col -> col.Head
+
     // TODO: Delete this and force the use of individual values
     member x.String =
         match x with 

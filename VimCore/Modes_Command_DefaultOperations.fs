@@ -35,30 +35,36 @@ type internal DefaultOperations ( _data : OperationsData ) =
         | (SettingKind.NumberKind, SettingValue.NumberValue(n)) -> sprintf "%s=%d" setting.Name n
         | _ -> "Invalid value"
 
+    member x.CurrentSnapshot = _textView.TextSnapshot
+
     member private x.CommonImpl = x :> ICommonOperations
 
     interface IOperations with
         member x.ShowOpenFileDialog () = _host.ShowOpenFileDialog()
 
-        /// Implement the :pu[t] command
-        member x.Put (text:string) (line:ITextSnapshotLine) isAfter =
+        /// Put the contents of the specified register at the specified line
+        member x.PutLine (register : Register) (line : ITextSnapshotLine) putBefore = 
 
-            // Force a newline at the end to be consistent with the implemented 
-            // behavior in various VIM implementations.  This isn't called out in 
-            // the documentation though
-            let text = 
-                if text.EndsWith(System.Environment.NewLine) then text
-                else text + System.Environment.NewLine
+            // Get the point to start the Put operation at 
+            let point = 
+                if putBefore then line.Start
+                else line.EndIncludingLineBreak
 
-            _undoRedoOperations.EditWithUndoTransaction "Paste" (fun () -> 
-                let span =
-                    let point = if isAfter then line.EndIncludingLineBreak else line.Start
-                    x.PutAtWithReturn point (StringData.Simple text) OperationKind.LineWise
-                match SnapshotSpanUtil.GetLastIncludedLine span with
-                | None -> ()
-                | Some(line) ->
-                    let point = SnapshotLineUtil.GetIndent line
-                    TextViewUtil.MoveCaretToPoint _textView point)
+            // Need to get the cursor position correct for undo / redo so start an undo 
+            // transaction 
+            x.CommonImpl.UndoRedoOperations.EditWithUndoTransaction "PutLine" (fun () ->
+
+                x.CommonImpl.Put point register.StringData OperationKind.LineWise
+
+                // Need to put the caret on the first non-blank of the last line of the 
+                // inserted text
+                let lineCount = x.CurrentSnapshot.LineCount - point.Snapshot.LineCount
+                let line = 
+                    let number = point |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetLineNumber
+                    let number = number + (lineCount - 1)
+                    SnapshotUtil.GetLine x.CurrentSnapshot number
+                let point = TssUtil.FindFirstNonWhiteSpaceCharacter line
+                TextViewUtil.MoveCaretToPoint _textView point)
 
         member x.PrintMarks (markMap:IMarkMap) =    
             let printMark (ident:char) (point:VirtualSnapshotPoint) =

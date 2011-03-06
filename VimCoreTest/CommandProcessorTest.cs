@@ -237,24 +237,38 @@ namespace VimCore.UnitTest
             _operations.Verify();
         }
 
+        /// <summary>
+        /// Ensure the Put command is linewise even if the register is marked as characterwise
+        /// </summary>
         [Test]
-        public void Put1()
+        public void Put_ShouldBeLinewise()
         {
             Create("foo", "bar");
-            _operations.Setup(x => x.Put("hey", It.IsAny<ITextSnapshotLine>(), true)).Verifiable();
-            _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
+            _operations
+                .Setup(x => x.Put(_textView.GetLine(1).Start, StringData.NewSimple("hey\n"), OperationKind.LineWise))
+                .Callback(() => _textView.SetText("foo", "hey", "bar"))
+                .Verifiable();
+            _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey", OperationKind.CharacterWise);
             RunCommand("put");
             _operations.Verify();
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
+        /// <summary>
+        /// Ensure that when the ! is present that the text is inserted before the line
+        /// </summary>
         [Test]
-        public void Put2()
+        public void Put_BangShouldPutTextBefore()
         {
             Create("foo", "bar");
-            _operations.Setup(x => x.Put("hey", It.IsAny<ITextSnapshotLine>(), false)).Verifiable();
-            _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
-            RunCommand("2put!");
+            _operations
+                .Setup(x => x.Put(_textView.GetLine(0).Start, StringData.NewSimple("hey\n"), OperationKind.LineWise))
+                .Callback(() => _textView.SetText("foo", "hey", "bar"))
+                .Verifiable();
+            _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey", OperationKind.CharacterWise);
+            RunCommand("put!");
             _operations.Verify();
+            Assert.AreEqual(_textView.GetLine(0).Start, _textView.GetCaretPoint());
         }
 
         [Test]

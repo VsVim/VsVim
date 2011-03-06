@@ -932,9 +932,13 @@ type VisualCommand =
     /// Join the selected lines
     | JoinSelection of JoinKind
 
-    /// Put the contents of the register into the buffer after the selection.  The bool is 
-    /// whether or not the caret should be placed after the inserted text
-    | PutOverSelection of bool
+    /// Put the contents af the register after the selection.  The bool is for whether or not the
+    // caret should be placed after the inserted text
+    | PutAfterSelection of bool
+
+    /// Put the contents af the register before the selection.  The bool is for whether or not the
+    // caret should be placed after the inserted text
+    | PutBeforeSelection of bool
 
     /// Replace the visual span with the provided character
     | ReplaceSelection of KeyInput

@@ -363,8 +363,7 @@ namespace Vim.UnitTest
 
         public static void SetText(this ITextView textView, params string[] lines)
         {
-            var text = lines.Aggregate((x, y) => x + Environment.NewLine + y);
-            SetText(textView.TextBuffer, text);
+            SetText(textView.TextBuffer, lines);
         }
 
         public static void SetText(this ITextView textView, string text, int? caret = null)
@@ -437,8 +436,9 @@ namespace Vim.UnitTest
             return buffer.CurrentSnapshot.GetSpan(start, length);
         }
 
-        public static void SetText(this ITextBuffer buffer, string text)
+        public static void SetText(this ITextBuffer buffer, params string[] lines)
         {
+            var text = lines.Aggregate((x, y) => x + Environment.NewLine + y);
             var edit = buffer.CreateEdit(EditOptions.DefaultMinimalChange, 0, null);
             edit.Replace(new Span(0, buffer.CurrentSnapshot.Length), text);
             edit.Apply();
