@@ -14,6 +14,7 @@ namespace VimCore.UnitTest
 {
     [TestFixture]
     public sealed class CommandUtilTest
+
     {
         private MockRepository _factory;
         private Mock<IVimHost> _vimHost;
@@ -73,6 +74,16 @@ namespace VimCore.UnitTest
             var data = VimUtil.CreateCommandData(count, name);
             var storedCommand = StoredCommand.NewNormalCommand(command, data, CommandFlags.None);
             _vimData.LastCommand = FSharpOption.Create(storedCommand);
+        }
+
+        private void AssertInsertWithTransaction(CommandResult result)
+        {
+            Assert.IsTrue(result.IsCompleted);
+            var modeSwitch = result.AsCompleted().Item;
+            Assert.IsTrue(modeSwitch.IsSwitchModeWithArgument);
+            var data = modeSwitch.AsSwitchModeWithArgument();
+            Assert.AreEqual(ModeKind.Insert, data.Item1);
+            Assert.IsTrue(data.Item2.IsInsertWithTransaction);
         }
 
         [Test]
@@ -1192,6 +1203,49 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Delete the text on the line and start insert mode.  Needs to pass a transaction onto
+        /// insert mode to get the proper undo behavior
+        /// </summary>
+        [Test]
+        public void ChangeLines_OneLine()
+        {
+            Create("cat", "dog");
+            var result = _commandUtil.ChangeLines(1, UnnamedRegister);
+            AssertInsertWithTransaction(result);
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Make sure we use a transaction here to ensure the undo behavior is correct
+        /// </summary>
+        [Test]
+        public void ChangeTillEndOfLine_MiddleOfLine()
+        {
+            Create("cat");
+            _textView.MoveCaretTo(1);
+            var result = _commandUtil.ChangeTillEndOfLine(1, UnnamedRegister);
+            AssertInsertWithTransaction(result);
+            Assert.AreEqual("c", _textView.GetLine(0).GetText());
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Make sure we create a linked change for ChangeSelection
+        /// </summary>
+        [Test]
+        public void ChangeSelection_Character()
+        {
+            Create("the dog chased the ball");
+            var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 1, 2));
+            var result = _commandUtil.ChangeSelection(UnnamedRegister, visualSpan);
+            AssertInsertWithTransaction(result);
+            Assert.AreEqual("t dog chased the ball", _textView.GetLine(0).GetText());
+            Assert.AreEqual("he", UnnamedRegister.StringValue);
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
         /// Make sure the character deletion positions the caret at the start of the span and
         /// updates the register
         /// </summary>
@@ -1200,7 +1254,7 @@ namespace VimCore.UnitTest
         {
             Create("the dog chased the ball");
             var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 1, 2));
-            _commandUtil.DeleteSelection(UnnamedRegister, visualSpan, ModeSwitch.NoSwitch);
+            _commandUtil.DeleteSelection(UnnamedRegister, visualSpan);
             Assert.AreEqual("t dog chased the ball", _textView.GetLine(0).GetText());
             Assert.AreEqual("he", UnnamedRegister.StringValue);
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);

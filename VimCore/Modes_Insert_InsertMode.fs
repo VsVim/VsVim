@@ -9,9 +9,19 @@ open System
 
 type CommandFunction = unit -> ProcessResult
 
+type InsertModeData = {
+
+    /// The transaction which is bracketing this Insert Mode operation
+    Transaction : IUndoTransaction
+
+    /// If this Insert is a repeat operation this holds the count and 
+    /// wether or not a newline should be inserted after the text
+    RepeatData : (int * bool) option
+}
+
 type internal InsertMode
     ( 
-        _data : IVimBuffer, 
+        _buffer : IVimBuffer, 
         _operations : Modes.ICommonOperations,
         _broker : IDisplayWindowBroker, 
         _editorOptions : IEditorOptions,
@@ -19,13 +29,9 @@ type internal InsertMode
         _textChangeTracker : ITextChangeTracker,
         _isReplace : bool ) as this =
 
-    let _textView = _data.TextView
+    let _textView = _buffer.TextView
     let mutable _commandMap : Map<KeyInput,CommandFunction> = Map.empty
-
-    /// Holds the information about insert repeat.  The second two items in the
-    /// tuple are the count of the repeat and whether or not a newline should be
-    /// used
-    let mutable _transaction : (IUndoTransaction * int * bool) option = None
+    let mutable _data : InsertModeData option = None
 
     do
         let commands : (string * CommandFunction) list = 
@@ -62,49 +68,53 @@ type internal InsertMode
     /// Apply the repeated edits the the ITextBuffer
     member this.MaybeApplyRepeatedEdits () = 
         // Need to close out the edit transaction if there is any
-        match _transaction with
+        match _data with
         | None ->
             // nothing to do
             ()
-        | Some (transaction, count, addNewLines) ->
+        | Some data ->
 
             // Start by None'ing out the _transaction variable.  Don't need it anymore
-            _transaction <- None
+            _data <- None
             try
-                match _textChangeTracker.CurrentChange with
-                | Some change ->
-                    match change with
-                    | TextChange.Insert text -> 
-                        // Insert the same text 'count - 1' times at the cursor
-                        let text = 
-                            if addNewLines then
-                                let text = Environment.NewLine + text
-                                StringUtil.repeat (count - 1) text
-                            else 
-                                StringUtil.repeat (count - 1) text
-
-                        let caretPoint = TextViewUtil.GetCaretPoint _textView
-                        let span = SnapshotSpan(caretPoint, 0)
-                        let snapshot = _textView.TextBuffer.Replace(span.Span, text) |> ignore
-
-                        // Now make sure to position the caret at the end of the inserted
-                        // text
-                        TextViewUtil.MoveCaretToPosition _textView (caretPoint.Position + text.Length)
-                    | TextChange.Delete deleteCount -> 
-                        // Delete '(count - 1) * deleteCount' more characters
-                        let caretPoint = TextViewUtil.GetCaretPoint _textView
-                        let count = deleteCount * (count - 1)
-                        let count = min (_textView.TextSnapshot.Length - caretPoint.Position) count
-                        _textView.TextBuffer.Delete((Span(caretPoint.Position, count))) |> ignore
-
-                        // Now make sure the caret is still at the same position
-                        TextViewUtil.MoveCaretToPosition _textView caretPoint.Position
+                match data.RepeatData with 
                 | None -> 
-                    // Nothing to do if there is no change
                     ()
+                | Some (count, addNewLines) ->
+                    match _textChangeTracker.CurrentChange with
+                    | Some change ->
+                        match change with
+                        | TextChange.Insert text -> 
+                            // Insert the same text 'count - 1' times at the cursor
+                            let text = 
+                                if addNewLines then
+                                    let text = Environment.NewLine + text
+                                    StringUtil.repeat (count - 1) text
+                                else 
+                                    StringUtil.repeat (count - 1) text
+    
+                            let caretPoint = TextViewUtil.GetCaretPoint _textView
+                            let span = SnapshotSpan(caretPoint, 0)
+                            let snapshot = _textView.TextBuffer.Replace(span.Span, text) |> ignore
+    
+                            // Now make sure to position the caret at the end of the inserted
+                            // text
+                            TextViewUtil.MoveCaretToPosition _textView (caretPoint.Position + text.Length)
+                        | TextChange.Delete deleteCount -> 
+                            // Delete '(count - 1) * deleteCount' more characters
+                            let caretPoint = TextViewUtil.GetCaretPoint _textView
+                            let count = deleteCount * (count - 1)
+                            let count = min (_textView.TextSnapshot.Length - caretPoint.Position) count
+                            _textView.TextBuffer.Delete((Span(caretPoint.Position, count))) |> ignore
+    
+                            // Now make sure the caret is still at the same position
+                            TextViewUtil.MoveCaretToPosition _textView caretPoint.Position
+                    | None -> 
+                        // Nothing to do if there is no change
+                        ()
 
             finally
-                transaction.Complete()
+                data.Transaction.Complete()
 
     member this.ProcessEscape () =
 
@@ -126,7 +136,7 @@ type internal InsertMode
             ProcessResult.SwitchMode ModeKind.Normal
 
     interface IMode with 
-        member x.VimBuffer = _data
+        member x.VimBuffer = _buffer
         member x.CommandNames =  _commandMap |> Seq.map (fun p -> p.Key) |> Seq.map OneKeyInput
         member x.ModeKind = if _isReplace then ModeKind.Replace else ModeKind.Insert
         member x.CanProcess ki = Map.containsKey ki _commandMap 
@@ -138,20 +148,22 @@ type internal InsertMode
 
             // On enter we need to check the 'count' and possibly set up a transaction to 
             // lump edits and their repeats together
-            _transaction <-
+            _data <-
                 match arg with
                 | ModeArgument.InsertWithCount count ->
                     if count > 1 then
                         let transaction = _undoRedoOperations.CreateUndoTransaction "Insert"
-                        Some (transaction, count, false)
+                        Some { Transaction = transaction; RepeatData = Some (count, false) }
                     else
                         None
                 | ModeArgument.InsertWithCountAndNewLine count ->
                     if count > 1 then
                         let transaction = _undoRedoOperations.CreateUndoTransaction "Insert"
-                        Some (transaction, count, true)
+                        Some { Transaction = transaction; RepeatData = Some (count, true) }
                     else
                         None
+                | ModeArgument.InsertWithTransaction transaction ->
+                    Some { Transaction = transaction; RepeatData = None }
                 | _ -> 
                     None
 
@@ -165,11 +177,11 @@ type internal InsertMode
             // transaction if we leave Insert mode via an API call or possibly if an exception
             // happens during processing of the transaction
             try
-                match _transaction with
+                match _data with
                 | None -> ()
-                | Some (transaction, _, _) -> transaction.Complete()
+                | Some data -> data.Transaction.Complete()
             finally
-                _transaction <- None
+                _data <- None
 
             // If this is replace mode then go ahead and undo overwrite
             if _isReplace then

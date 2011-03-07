@@ -617,6 +617,10 @@ type ModeArgument =
     /// should be on a new line
     | InsertWithCountAndNewLine of int
 
+    /// Begins insert mode with an existing UndoTransaction.  This is used to link 
+    /// change commands with text changes.  For example C, c, etc ...
+    | InsertWithTransaction of IUndoTransaction
+
 type ModeSwitch =
     | NoSwitch
     | SwitchMode of ModeKind

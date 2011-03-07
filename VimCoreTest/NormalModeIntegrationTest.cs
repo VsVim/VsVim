@@ -572,6 +572,38 @@ namespace VimCore.UnitTest
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
 
+        /// <summary>
+        /// Make sure the caret movement occurs as part of the repeat
+        /// </summary>
+        [Test]
+        public void RepeatCommand_AppendShouldRepeat()
+        {
+            Create("{", "}");
+            _textView.MoveCaretToLine(0);
+            _buffer.Process('a');
+            _textBuffer.Insert(_textView.GetCaretPoint().Position, ";");
+            _buffer.Process(VimKey.Escape);
+            _textView.MoveCaretToLine(1);
+            _buffer.Process('.');
+            Assert.AreEqual("};", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// Make sure the caret movement occurs as part of the repeat
+        /// </summary>
+        [Test]
+        public void RepeatCommand_AppendEndOfLineShouldRepeat()
+        {
+            Create("{", "}");
+            _textView.MoveCaretToLine(0);
+            _buffer.Process('A');
+            _textBuffer.Insert(_textView.GetCaretPoint().Position, ";");
+            _buffer.Process(VimKey.Escape);
+            _textView.MoveCaretToLine(1);
+            _buffer.Process('.');
+            Assert.AreEqual("};", _textView.GetLine(1).GetText());
+        }
+
         [Test]
         public void Repeat_DeleteWithIncrementalSearch()
         {

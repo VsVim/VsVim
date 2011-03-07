@@ -103,8 +103,8 @@ type internal NormalMode
     member x.CreateCommandBindings() =
         let normalSeq = 
             seq {
-                yield ("a", CommandFlags.None, NormalCommand.InsertAfterCaret)
-                yield ("A", CommandFlags.None, NormalCommand.InsertAtEndOfLine)
+                yield ("a", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.InsertAfterCaret)
+                yield ("A", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.InsertAtEndOfLine)
                 yield ("C", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeTillEndOfLine)
                 yield ("cc", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeLines)
                 yield ("dd", CommandFlags.Repeatable, NormalCommand.DeleteLines)
@@ -526,6 +526,7 @@ type internal NormalMode
             | ModeArgument.OneTimeCommand(modeKind) -> _data <- { _data with OneTimeMode = Some modeKind }
             | ModeArgument.InsertWithCount _ -> ()
             | ModeArgument.InsertWithCountAndNewLine _ -> ()
+            | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
 
         member this.OnLeave () = ()
         member this.OnClose() = _eventHandlers.DisposeAll()

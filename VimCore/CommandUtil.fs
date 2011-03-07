@@ -221,15 +221,16 @@ type internal CommandUtil
         // of the span being deleted before and after the undo / redo so move it before and 
         // after the delete occurs
         TextViewUtil.MoveCaretToPoint _textView span.Start
-        x.EditWithUndoTransaciton "Change" (fun () ->
-            _textBuffer.Delete(span.Span) |> ignore
-            TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
+        let commandResult = 
+            x.EditWithLinkedChange "Change" (fun () ->
+                _textBuffer.Delete(span.Span) |> ignore
+                TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
 
         // Now that the delete is complete update the register
         let value = { Value = StringData.OfSpan span; OperationKind = result.OperationKind }
         _registerMap.SetRegisterValue register RegisterOperation.Delete value
 
-        CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Insert)
+        commandResult
 
     /// Delete 'count' lines and begin insert mode.  The documentation of this command 
     /// and behavior are a bit off.  It's documented like it behaves lke 'dd + insert mode' 
@@ -253,19 +254,19 @@ type internal CommandUtil
 
         // Start an edit transaction to get the appropriate undo / redo behavior for the 
         // caret movement after the edit.
-        x.EditWithUndoTransaciton "ChangeLines" (fun () -> 
+        x.EditWithLinkedChange "ChangeLines" (fun () -> 
+
+            // Actually delete the text and position the caret
             let snapshot = _textBuffer.Delete(range.Extent.Span)
             let line = SnapshotUtil.GetLine snapshot lineNumber
-            x.MoveCaretToDeletedLineStart range.StartLine)
-
-        // Update the register now that the operation is complete.  Register value is odd here
-        // because we really didn't delete linewise but it's required to be a linewise 
-        // operation.  
-        let value = range.Extent.GetText() + System.Environment.NewLine
-        let value = { Value = StringData.Simple value; OperationKind = OperationKind.LineWise }
-        _registerMap.SetRegisterValue register RegisterOperation.Delete value
-
-        CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Insert)
+            x.MoveCaretToDeletedLineStart range.StartLine
+    
+            // Update the register now that the operation is complete.  Register value is odd here
+            // because we really didn't delete linewise but it's required to be a linewise 
+            // operation.  
+            let value = range.Extent.GetText() + System.Environment.NewLine
+            let value = { Value = StringData.Simple value; OperationKind = OperationKind.LineWise }
+            _registerMap.SetRegisterValue register RegisterOperation.Delete value)
 
     /// Delete the selected lines and begin insert mode (implements the 'S', 'C' and 'R' visual
     /// mode commands.  This is very similar to DeleteLineSelection except that block deletion
@@ -286,11 +287,11 @@ type internal CommandUtil
                     next.Start
             TextViewUtil.MoveCaretToPoint _textView point
 
-            x.EditWithUndoTransaciton "ChangeLines" (fun () -> 
+            let commandResult = x.EditWithLinkedChange "ChangeLines" (fun () -> 
                 _textBuffer.Delete(range.Extent.Span) |> ignore
                 x.MoveCaretToDeletedLineStart range.StartLine)
 
-            EditSpan.Single range.Extent
+            (EditSpan.Single range.Extent, commandResult)
 
         // The special casing of block deletion is handled here
         let deleteBlock (col : NonEmptyCollection<SnapshotSpan>) = 
@@ -304,17 +305,17 @@ type internal CommandUtil
             // Caret should be positioned at the start of the span for undo
             TextViewUtil.MoveCaretToPoint _textView col.Head.Start
 
-            x.EditWithUndoTransaciton "ChangeLines" (fun () -> 
+            let commandResult = x.EditWithLinkedChange "ChangeLines" (fun () ->
                 let edit = _textBuffer.CreateEdit()
                 col |> Seq.iter (fun span -> edit.Delete(span.Span) |> ignore)
                 edit.Apply() |> ignore
 
                 TextViewUtil.MoveCaretToPosition _textView col.Head.Start.Position)
 
-            EditSpan.Block col
+            (EditSpan.Block col, commandResult)
 
         // Dispatch to the appropriate type of edit
-        let editSpan = 
+        let editSpan, commandResult = 
             match visualSpan with 
             | VisualSpan.Character span -> 
                 span |> SnapshotLineRangeUtil.CreateForSpan |> deleteRange
@@ -327,16 +328,28 @@ type internal CommandUtil
         let value = { Value = StringData.OfEditSpan editSpan; OperationKind = OperationKind.LineWise }
         _registerMap.SetRegisterValue register RegisterOperation.Delete value
 
-        CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Insert)
+        commandResult
 
     /// Delete till the end of the line and start insert mode
     member x.ChangeTillEndOfLine count register =
 
         // Exact same operation as DeleteTillEndOfLine except we end by switching to 
-        // insert mode
-        x.DeleteTillEndOfLine count register |> ignore
+        // insert mode.  Use a transaction so we can pass it to insert mode and get
+        // the appropriate undo / redo behavior
+        x.EditWithLinkedChange "ChangeTillEndOfLine" (fun () ->
 
-        CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Insert)
+            x.DeleteTillEndOfLine count register |> ignore)
+
+    /// Delete the selected text in Visual Mode and begin insert mode with a linked
+    /// transaction. 
+    member x.ChangeSelection register (visualSpan : VisualSpan) = 
+
+        // Caret needs to be positioned at the front of the span in undo so move it
+        // before we create the transaction
+        TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
+        x.EditWithLinkedChange "ChangeSelection" (fun() -> 
+
+            x.DeleteSelection register visualSpan |> ignore)
 
     /// Delete 'count' characters after the cursor on the current line.  Caret should 
     /// remain at it's original position 
@@ -444,7 +457,7 @@ type internal CommandUtil
     /// Delete the highlighted text from the buffer and put it into the specified 
     /// register.  The caret should be positioned at the begining of the text for
     /// undo / redo
-    member x.DeleteSelection register (visualSpan : VisualSpan) modeSwitch = 
+    member x.DeleteSelection register (visualSpan : VisualSpan) = 
         let startPoint = visualSpan.Start
 
         // Use a transaction to guarantee caret position.  Caret should be at the start
@@ -474,7 +487,7 @@ type internal CommandUtil
         let value = { Value = StringData.OfEditSpan visualSpan.EditSpan; OperationKind = operationKind }
         _registerMap.SetRegisterValue register RegisterOperation.Delete value
 
-        CommandResult.Completed modeSwitch
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Delete count lines from the cursor.  The caret should be positioned at the start
     /// of the first line for both undo / redo
@@ -573,6 +586,16 @@ type internal CommandUtil
     /// an edit command manipulates the caret
     member x.EditWithUndoTransaciton<'T> (name : string) (action : unit -> 'T) : 'T = 
         _undoRedoOperations.EditWithUndoTransaction name action
+
+    /// Used for the several commands which make an edit here and need the edit to be linked
+    /// with the next insert mode change.  
+    member x.EditWithLinkedChange name action =
+        let transaction = _undoRedoOperations.CreateUndoTransaction(name)
+        transaction.AddBeforeTextBufferChangePrimitive()
+        action()
+
+        let arg = ModeArgument.InsertWithTransaction transaction
+        CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
 
     /// Create a fold for the given MotionResult
     member x.FoldMotion (result : MotionResult) =
@@ -1254,9 +1277,9 @@ type internal CommandUtil
         let count = data.CountOrDefault
         match command with
         | VisualCommand.ChangeCase kind -> x.ChangeCaseVisual kind visualSpan
-        | VisualCommand.ChangeSelection -> x.DeleteSelection register visualSpan (ModeSwitch.SwitchMode ModeKind.Insert)
+        | VisualCommand.ChangeSelection -> x.ChangeSelection register visualSpan
         | VisualCommand.ChangeLineSelection specialCaseBlock -> x.ChangeLineSelection register visualSpan specialCaseBlock
-        | VisualCommand.DeleteSelection -> x.DeleteSelection register visualSpan ModeSwitch.SwitchPreviousMode
+        | VisualCommand.DeleteSelection -> x.DeleteSelection register visualSpan
         | VisualCommand.DeleteLineSelection -> x.DeleteLineSelection register visualSpan
         | VisualCommand.FormatLines -> x.FormatLinesVisual visualSpan
         | VisualCommand.FoldSelection -> x.FoldSelection visualSpan
@@ -1418,26 +1441,25 @@ type internal CommandUtil
     /// should be after the span for Substitute even if 've='.  
     member x.SubstituteCharacterAtCaret count register =
 
-        if x.CaretPoint.Position >= x.CaretLine.End.Position then
-            // When we are past the end of the line just move the caret
-            // to the end of the line and complete the command.  Nothing should be deleted
-            TextViewUtil.MoveCaretToPoint _textView x.CaretLine.End
-        else
-            let endPoint = SnapshotLineUtil.GetOffsetOrEnd x.CaretLine (x.CaretColumn + count)
-            let span = SnapshotSpan(x.CaretPoint, endPoint)
-
-            // Use a transaction so we can guarantee the caret is in the correct
-            // position on undo / redo
-            x.EditWithUndoTransaciton "DeleteChar" (fun () -> 
-                let position = x.CaretPoint.Position
-                let snapshot = _textBuffer.Delete(span.Span)
-                TextViewUtil.MoveCaretToPoint _textView (SnapshotPoint(snapshot, position)))
-
-            // Put the deleted text into the specified register
-            let value = { Value = StringData.OfSpan span; OperationKind = OperationKind.CharacterWise }
-            _registerMap.SetRegisterValue register RegisterOperation.Delete value
-
-        CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Insert)
+        x.EditWithLinkedChange "Substitute" (fun () ->
+            if x.CaretPoint.Position >= x.CaretLine.End.Position then
+                // When we are past the end of the line just move the caret
+                // to the end of the line and complete the command.  Nothing should be deleted
+                TextViewUtil.MoveCaretToPoint _textView x.CaretLine.End
+            else
+                let endPoint = SnapshotLineUtil.GetOffsetOrEnd x.CaretLine (x.CaretColumn + count)
+                let span = SnapshotSpan(x.CaretPoint, endPoint)
+    
+                // Use a transaction so we can guarantee the caret is in the correct
+                // position on undo / redo
+                x.EditWithUndoTransaciton "DeleteChar" (fun () -> 
+                    let position = x.CaretPoint.Position
+                    let snapshot = _textBuffer.Delete(span.Span)
+                    TextViewUtil.MoveCaretToPoint _textView (SnapshotPoint(snapshot, position)))
+    
+                // Put the deleted text into the specified register
+                let value = { Value = StringData.OfSpan span; OperationKind = OperationKind.CharacterWise }
+                _registerMap.SetRegisterValue register RegisterOperation.Delete value)
 
     /// Yank the contents of the motion into the specified register
     member x.YankMotion register (result: MotionResult) = 

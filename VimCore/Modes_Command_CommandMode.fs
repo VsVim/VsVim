@@ -79,6 +79,7 @@ type internal CommandMode
                 | ModeArgument.Subsitute(_) -> StringUtil.empty
                 | ModeArgument.InsertWithCount _ -> StringUtil.empty
                 | ModeArgument.InsertWithCountAndNewLine _ -> StringUtil.empty
+                | ModeArgument.InsertWithTransaction transaction -> transaction.Complete(); StringUtil.empty
             _input <- _command |> Seq.map KeyInputUtil.CharToKeyInput |> List.ofSeq |> List.rev
         member x.OnLeave () = ()
         member x.OnClose() = ()

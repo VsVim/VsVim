@@ -14,6 +14,26 @@ namespace Vim.UnitTest
 {
     public static class Extensions
     {
+        #region CommandResult
+
+        public static CommandResult.Completed AsCompleted(this CommandResult result)
+        {
+            Assert.IsTrue(result.IsCompleted);
+            return (CommandResult.Completed) result;
+        }
+
+        #endregion
+
+        #region ModeSwitch 
+
+        public static ModeSwitch.SwitchModeWithArgument AsSwitchModeWithArgument(this ModeSwitch mode)
+        {
+            Assert.IsTrue(mode.IsSwitchModeWithArgument);
+            return (ModeSwitch.SwitchModeWithArgument) mode;
+        }
+
+        #endregion
+
         #region CountResult
 
         internal static CountResult.NeedMore AsNeedMore(this CountResult res)
