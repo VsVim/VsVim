@@ -308,7 +308,7 @@ type internal CommandProcessor
             |> CommandParseUtil.SkipRegister _buffer.RegisterMap
         
         let range = RangeUtil.RangeOrCurrentLine _buffer.TextView range
-        _operations.PutLine reg range.EndLine (not bang)
+        _operations.PutLine reg range.EndLine bang
 
     /// Parse the < command
     member x.ProcessShiftLeft (rest:char list) (range: SnapshotLineRange option) _ =

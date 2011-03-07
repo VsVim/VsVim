@@ -45,14 +45,14 @@ type internal DefaultOperations ( _data : OperationsData ) =
         /// Put the contents of the specified register at the specified line
         member x.PutLine (register : Register) (line : ITextSnapshotLine) putBefore = 
 
-            // Get the point to start the Put operation at 
-            let point = 
-                if putBefore then line.Start
-                else line.EndIncludingLineBreak
-
             // Need to get the cursor position correct for undo / redo so start an undo 
             // transaction 
             x.CommonImpl.UndoRedoOperations.EditWithUndoTransaction "PutLine" (fun () ->
+
+                // Get the point to start the Put operation at 
+                let point = 
+                    if putBefore then line.Start
+                    else line.EndIncludingLineBreak
 
                 x.CommonImpl.Put point register.StringData OperationKind.LineWise
 
@@ -60,7 +60,7 @@ type internal DefaultOperations ( _data : OperationsData ) =
                 // inserted text
                 let lineCount = x.CurrentSnapshot.LineCount - point.Snapshot.LineCount
                 let line = 
-                    let number = point |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetLineNumber
+                    let number = if putBefore then line.LineNumber else line.LineNumber + 1
                     let number = number + (lineCount - 1)
                     SnapshotUtil.GetLine x.CurrentSnapshot number
                 let point = TssUtil.FindFirstNonWhiteSpaceCharacter line

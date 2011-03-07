@@ -245,30 +245,28 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar");
             _operations
-                .Setup(x => x.Put(_textView.GetLine(1).Start, StringData.NewSimple("hey\n"), OperationKind.LineWise))
-                .Callback(() => _textView.SetText("foo", "hey", "bar"))
+                .Setup(x => x.PutLine(_map.GetRegister(RegisterName.Unnamed), It.IsAny<ITextSnapshotLine>(), false))
+                .Callback<Register, ITextSnapshotLine, bool>((register, line, putBefore) => Assert.IsTrue(line.LineNumber == 0))
                 .Verifiable();
             _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey", OperationKind.CharacterWise);
             RunCommand("put");
             _operations.Verify();
-            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
         /// <summary>
-        /// Ensure that when the ! is present that the text is inserted before the line
+        /// Ensure that when the ! is present that the appropriate option is passed along
         /// </summary>
         [Test]
         public void Put_BangShouldPutTextBefore()
         {
             Create("foo", "bar");
             _operations
-                .Setup(x => x.Put(_textView.GetLine(0).Start, StringData.NewSimple("hey\n"), OperationKind.LineWise))
-                .Callback(() => _textView.SetText("foo", "hey", "bar"))
+                .Setup(x => x.PutLine(_map.GetRegister(RegisterName.Unnamed), It.IsAny<ITextSnapshotLine>(), true))
+                .Callback<Register, ITextSnapshotLine, bool>((register, line, putBefore) => Assert.IsTrue(line.LineNumber == 0))
                 .Verifiable();
             _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey", OperationKind.CharacterWise);
             RunCommand("put!");
             _operations.Verify();
-            Assert.AreEqual(_textView.GetLine(0).Start, _textView.GetCaretPoint());
         }
 
         [Test]

@@ -341,10 +341,24 @@ type internal CommonOperations ( _data : OperationsData ) =
             let text = 
                 match opKind with
                 | OperationKind.LineWise -> 
-                    if point = SnapshotUtil.GetEndPoint x.CurrentSnapshot then
-                        // At the end of the file we need to insert an additional
-                        // newline prefix
-                        System.Environment.NewLine + str
+                    if SnapshotPointUtil.IsEndPoint point then
+                        // At the end of the file so we need to manipulate the new line character
+                        // a bit.  It's typically at the end of the line but at the end of the 
+                        // ITextBuffer we need it to be at the begining since there is no newline 
+                        // to append after at the end of the buffer.  
+                        let str = EditUtil.RemoveEndingNewLine str
+                        EditUtil.NewLine + str
+                    elif not (SnapshotPointUtil.IsStartOfLine point) then
+                        // Edit in the middle of the line.  Need to prefix the string with a newline
+                        // in order to correctly insert here.  
+                        //
+                        // This type of put will occur when a linewise regsiter value is inserted 
+                        // from a visual mode character selection
+                        EditUtil.NewLine + str
+                    elif not (EditUtil.EndsWithNewLine str) then
+                        // All other linewise operation should have a trailing newline to ensure a
+                        // new line is actually inserted
+                        str + EditUtil.NewLine
                     else
                         str
                 | OperationKind.CharacterWise ->
@@ -357,35 +371,46 @@ type internal CommonOperations ( _data : OperationsData ) =
 
             use edit = _textBuffer.CreateEdit()
 
-            // Collection strings are inserted at the original character
-            // position down the set of lines creating whitespace as needed
-            // to match the indent
-            let lineNumber, column = SnapshotPointUtil.GetLineColumn point
+            match opKind with
+            | OperationKind.CharacterWise ->
 
-            // First break the strings into the collection to edit against
-            // existing lines and those which need to create new lines at
-            // the end of the buffer
-            let originalSnapshot = point.Snapshot
-            let insertCol, appendCol = 
-                let lastLineNumber = SnapshotUtil.GetLastLineNumber originalSnapshot
-                let insertCount = min ((lastLineNumber - lineNumber) + 1) col.Count
-                (Seq.take insertCount col, Seq.skip insertCount col)
+                // Collection strings are inserted at the original character
+                // position down the set of lines creating whitespace as needed
+                // to match the indent
+                let lineNumber, column = SnapshotPointUtil.GetLineColumn point
+    
+                // First break the strings into the collection to edit against
+                // existing lines and those which need to create new lines at
+                // the end of the buffer
+                let originalSnapshot = point.Snapshot
+                let insertCol, appendCol = 
+                    let lastLineNumber = SnapshotUtil.GetLastLineNumber originalSnapshot
+                    let insertCount = min ((lastLineNumber - lineNumber) + 1) col.Count
+                    (Seq.take insertCount col, Seq.skip insertCount col)
+    
+                // Insert the text at existing lines
+                insertCol |> Seq.iteri (fun offset str -> 
+                    let line = originalSnapshot.GetLineFromLineNumber (offset+lineNumber)
+                    if line.Length < column then
+                        let prefix = String.replicate (column - line.Length) " "
+                        edit.Insert(line.Start.Position, prefix + str) |> ignore
+                    else
+                        edit.Insert(line.Start.Position + column, str) |> ignore)
+    
+                // Add the text to the end of the buffer.
+                if not (Seq.isEmpty appendCol) then
+                    let prefix = EditUtil.NewLine + (String.replicate column " ")
+                    let text = Seq.fold (fun text str -> text + prefix + str) "" appendCol
+                    let endPoint = SnapshotUtil.GetEndPoint originalSnapshot
+                    edit.Insert(endPoint.Position, text) |> ignore
 
-            // Insert the text at existing lines
-            insertCol |> Seq.iteri (fun offset str -> 
-                let line = originalSnapshot.GetLineFromLineNumber (offset+lineNumber)
-                if line.Length < column then
-                    let prefix = String.replicate (column - line.Length) " "
-                    edit.Insert(line.Start.Position, prefix + str) |> ignore
-                else
-                    edit.Insert(line.Start.Position + column, str) |> ignore)
+            | OperationKind.LineWise ->
 
-            // Add the text to the end of the buffer.
-            if not (Seq.isEmpty appendCol) then
-                let prefix = System.Environment.NewLine + (String.replicate column " ")
-                let text = Seq.fold (fun text str -> text + prefix + str) "" appendCol
-                let endPoint = SnapshotUtil.GetEndPoint originalSnapshot
-                edit.Insert(endPoint.Position, text) |> ignore
+                // Strings are inserted line wise into the ITextBuffer.  Build up an
+                // aggregate string and insert it here
+                let text = col |> Seq.fold (fun state elem -> state + elem + EditUtil.NewLine) StringUtil.empty
+
+                edit.Insert(point.Position, text) |> ignore
 
             edit.Apply() |> ignore
 

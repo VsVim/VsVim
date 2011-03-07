@@ -865,7 +865,7 @@ namespace VimCore.UnitTest
             Assert.AreEqual("daaog", _textView.GetLine(0).GetText());
             Assert.AreEqual("cbbat", _textView.GetLine(1).GetText());
             Assert.AreEqual("bear", _textView.GetLine(2).GetText());
-            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
 
         /// <summary>
@@ -881,7 +881,7 @@ namespace VimCore.UnitTest
             _buffer.Process("p");
             Assert.AreEqual("doaag", _textView.GetLine(0).GetText());
             Assert.AreEqual("  bb", _textView.GetLine(1).GetText());
-            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
         }
 
         /// <summary>

@@ -1048,7 +1048,6 @@ module TrackingPointUtil =
         let trackingPoint = oldSnapshot.CreateTrackingPoint(point.Position, mode)
         GetPoint newSnapshot trackingPoint
 
-
 module TrackingSpanUtil =
 
     let GetSpan (snapshot:ITextSnapshot) (span:ITrackingSpan) =
@@ -1090,5 +1089,38 @@ type EditSpan =
     /// Provide an implicit conversion from NormalizedSnapshotSpan.  Useful from C# code
     static member op_Implicit block = EditSpan.Block block
 
+module EditUtil = 
 
+    /// NewLine to use for the ITextBuffer
+    /// TODO: Should consult IEditorOptions NewLine option
+    let NewLine = System.Environment.NewLine
 
+    /// Set of valid new line strings.  
+    /// TODO:  Need to find all valid ones and update this list
+    let ValidNewLines = [System.Environment.NewLine; "\n" ]
+
+    /// Get the newline begining for the string
+    let GetNewLineBegining (value : string) = ValidNewLines |>  Seq.tryFind (fun newLine -> value.StartsWith(newLine))
+
+    /// Get the newline ending for the string
+    let GetNewLineEnding (value : string) = ValidNewLines |>  Seq.tryFind (fun newLine -> value.EndsWith(newLine))
+
+    /// Does the specified string begin with a valid newline string
+    let BeginsWithNewLine value = GetNewLineBegining value |> Option.isSome
+
+    /// Does the specified string end with a valid newline string 
+    let EndsWithNewLine value = GetNewLineEnding value |> Option.isSome
+
+    /// Remove the NewLine at the begining of the string.  Returns the original input
+    /// if no newline is found
+    let RemoveBeginingNewLine value = 
+        match GetNewLineBegining value with
+        | None -> value
+        | Some found -> value.Substring(found.Length)
+
+    /// Remove the NewLine at the end of the string.  Returns the original input
+    /// if no newline is found
+    let RemoveEndingNewLine value = 
+        match GetNewLineEnding value with
+        | None -> value
+        | Some found -> value.Substring(0, value.Length - found.Length)

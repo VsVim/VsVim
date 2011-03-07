@@ -364,7 +364,7 @@ namespace VimCore.UnitTest
             Create("cat");
             _operations.Put(_textView.GetLine(0).Start, StringData.NewSimple("fish\n"), OperationKind.LineWise);
             Assert.AreEqual("fish", _textView.GetLine(0).GetText());
-            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
         }
 
         /// <summary>

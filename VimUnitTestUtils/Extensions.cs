@@ -353,7 +353,8 @@ namespace Vim.UnitTest
         {
             textView.Selection.Mode = mode;
             textView.Selection.Select(span, false);
-            MoveCaretTo(textView, span.End.Position);
+            var point = span.Length > 0 ? span.End.Subtract(1) : span.Start;
+            MoveCaretTo(textView, point);
         }
 
         public static ITextSnapshotLine GetCaretLine(this ITextView textView)

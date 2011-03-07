@@ -2,6 +2,7 @@
 
 namespace Vim
 open Microsoft.VisualStudio.Text
+open System.Diagnostics
 
 [<RequireQualifiedAccess>]
 type StringData = 
@@ -395,6 +396,7 @@ module RegisterNameUtil =
 
     let CharToRegister c = Map.tryFind c RegisterMap 
 
+[<DebuggerDisplay("{ToString(),nq}")>]
 [<RequireQualifiedAccess>]
 type RegisterOperation = 
     | Delete

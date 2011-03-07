@@ -48,6 +48,7 @@ namespace VimCore.UnitTest
 
         private void EnterBlock(NonEmptyCollection<SnapshotSpan> spans)
         {
+            _textView.MoveCaretTo(spans.Last().End.Subtract(1));
             _textView.Selection.Mode = TextSelectionMode.Box;
             _textView.Selection.Select(
                 new VirtualSnapshotPoint(spans.Head.Start),
@@ -153,10 +154,9 @@ namespace VimCore.UnitTest
             Create("  hello", "  world");
             EnterMode(_textView.GetLine(0).Extent);
             Assert.AreEqual(ModeKind.VisualCharacter, _buffer.ModeKind);
-            _textView.SelectAndUpdateCaret(new SnapshotSpan(_textView.GetLine(1).Start, 2));
+            _textView.SelectAndUpdateCaret(new SnapshotSpan(_textView.GetLine(1).Start, 3));
             _context.RunAll();
-            _buffer.Process(KeyInputUtil.CharToKeyInput('l'));
-            _buffer.Process(KeyInputUtil.CharToKeyInput('y'));
+            _buffer.Process("ly");
             Assert.AreEqual("  wo", _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
         }
 
@@ -241,7 +241,7 @@ namespace VimCore.UnitTest
         /// Character should be positioned at the end of the inserted text
         /// </summary>
         [Test]
-        public void PutAfter_CharacterWise_WithSingleCharacterWise()
+        public void PutOver_CharacterWise_WithSingleCharacterWise()
         {
             Create("dog");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
@@ -256,7 +256,7 @@ namespace VimCore.UnitTest
         /// Character should be positioned after the end of the inserted text
         /// </summary>
         [Test]
-        public void PutAfter_CharacterWise_WithSingleCharacterWiseAndCaretMove()
+        public void PutOver_CharacterWise_WithSingleCharacterWiseAndCaretMove()
         {
             Create("dog");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
@@ -271,7 +271,7 @@ namespace VimCore.UnitTest
         /// Character should be positioned at the start of the inserted line
         /// </summary>
         [Test]
-        public void PutAfter_CharacterWise_WithLineWise()
+        public void PutOver_CharacterWise_WithLineWise()
         {
             Create("dog");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
@@ -288,12 +288,12 @@ namespace VimCore.UnitTest
         /// lines
         /// </summary>
         [Test]
-        public void PutAfter_CharacterWise_WithLineWiseAndCaretMove()
+        public void PutOver_CharacterWise_WithLineWiseAndCaretMove()
         {
             Create("dog");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
             UnnamedRegister.UpdateValue("cat\n", OperationKind.LineWise);
-            _buffer.Process("p");
+            _buffer.Process("gp");
             Assert.AreEqual("d", _textView.GetLine(0).GetText());
             Assert.AreEqual("cat", _textView.GetLine(1).GetText());
             Assert.AreEqual("g", _textView.GetLine(2).GetText());
@@ -305,7 +305,7 @@ namespace VimCore.UnitTest
         /// block 
         /// </summary>
         [Test]
-        public void PutAfter_CharacterWise_WithBlock()
+        public void PutOver_CharacterWise_WithBlock()
         {
             Create("dog", "cat");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
@@ -321,7 +321,7 @@ namespace VimCore.UnitTest
         /// line of the inserted block
         /// </summary>
         [Test]
-        public void PutAfter_CharacterWise_WithBlockAndCaretMove()
+        public void PutOver_CharacterWise_WithBlockAndCaretMove()
         {
             Create("dog", "cat");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
@@ -336,7 +336,7 @@ namespace VimCore.UnitTest
         /// Character should be positioned at the end of the inserted text
         /// </summary>
         [Test]
-        public void PutAfter_LineWise_WithCharcterWise()
+        public void PutOver_LineWise_WithCharcterWise()
         {
             Create("dog", "cat");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
@@ -345,30 +345,30 @@ namespace VimCore.UnitTest
             Assert.AreEqual("fish", _textView.GetLine(0).GetText());
             Assert.AreEqual("cat", _textView.GetLine(1).GetText());
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-            Assert.AreEqual("dog\n", UnnamedRegister.StringValue);
+            Assert.AreEqual("dog\r\n", UnnamedRegister.StringValue);
         }
 
         /// <summary>
         /// Character should be positioned after the end of the inserted text
         /// </summary>
         [Test]
-        public void PutAfter_LineWise_WithCharacterWiseAndCaretMove()
+        public void PutOver_LineWise_WithCharacterWiseAndCaretMove()
         {
             Create("dog", "cat");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
             UnnamedRegister.UpdateValue("fish", OperationKind.CharacterWise);
-            _buffer.Process("p");
+            _buffer.Process("gp");
             Assert.AreEqual("fish", _textView.GetLine(0).GetText());
             Assert.AreEqual("cat", _textView.GetLine(1).GetText());
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            Assert.AreEqual("dog\n", UnnamedRegister.StringValue);
+            Assert.AreEqual("dog\r\n", UnnamedRegister.StringValue);
         }
 
         /// <summary>
         /// Character should be positioned at the end of the inserted text
         /// </summary>
         [Test]
-        public void PutAfter_LineWise_WithLineWise()
+        public void PutOver_LineWise_WithLineWise()
         {
             Create("dog", "cat");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
@@ -377,30 +377,30 @@ namespace VimCore.UnitTest
             Assert.AreEqual("fish", _textView.GetLine(0).GetText());
             Assert.AreEqual("cat", _textView.GetLine(1).GetText());
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-            Assert.AreEqual("dog\n", UnnamedRegister.StringValue);
+            Assert.AreEqual("dog\r\n", UnnamedRegister.StringValue);
         }
 
         /// <summary>
         /// Character should be positioned after the end of the inserted text
         /// </summary>
         [Test]
-        public void PutAfter_LineWise_WithLineWiseAndCaretMove()
+        public void PutOver_LineWise_WithLineWiseAndCaretMove()
         {
             Create("dog", "cat");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
             UnnamedRegister.UpdateValue("fish\n", OperationKind.LineWise);
-            _buffer.Process("p");
+            _buffer.Process("gp");
             Assert.AreEqual("fish", _textView.GetLine(0).GetText());
             Assert.AreEqual("cat", _textView.GetLine(1).GetText());
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            Assert.AreEqual("dog\n", UnnamedRegister.StringValue);
+            Assert.AreEqual("dog\r\n", UnnamedRegister.StringValue);
         }
 
         /// <summary>
         /// Character should be positioned at the start of the first inserted value
         /// </summary>
         [Test]
-        public void PutAfter_LineWise_WithBlock()
+        public void PutOver_LineWise_WithBlock()
         {
             Create("dog", "cat");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
@@ -410,7 +410,7 @@ namespace VimCore.UnitTest
             Assert.AreEqual("bb", _textView.GetLine(1).GetText());
             Assert.AreEqual("cat", _textView.GetLine(2).GetText());
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-            Assert.AreEqual("dog\n", UnnamedRegister.StringValue);
+            Assert.AreEqual("dog\r\n", UnnamedRegister.StringValue);
         }
 
         /// <summary>
@@ -418,7 +418,7 @@ namespace VimCore.UnitTest
         /// text
         /// </summary>
         [Test]
-        public void PutAfter_LineWise_WithBlockAndCaretMove()
+        public void PutOver_LineWise_WithBlockAndCaretMove()
         {
             Create("dog", "cat");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
@@ -428,14 +428,14 @@ namespace VimCore.UnitTest
             Assert.AreEqual("bb", _textView.GetLine(1).GetText());
             Assert.AreEqual("cat", _textView.GetLine(2).GetText());
             Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
-            Assert.AreEqual("dog\n", UnnamedRegister.StringValue);
+            Assert.AreEqual("dog\r\n", UnnamedRegister.StringValue);
         }
 
         /// <summary>
         /// Character should be positioned at the start of the first inserted value
         /// </summary>
         [Test]
-        public void PutAfter_Block_WithCharacterWise()
+        public void PutOver_Block_WithCharacterWise()
         {
             Create("dog", "cat");
             EnterBlock(_textView.GetBlock(1, 1, 0, 2));
@@ -451,7 +451,7 @@ namespace VimCore.UnitTest
         /// text
         /// </summary>
         [Test]
-        public void PutAfter_Block_WithCharacterWiseAndCaretMove()
+        public void PutOver_Block_WithCharacterWiseAndCaretMove()
         {
             Create("dog", "cat");
             EnterBlock(_textView.GetBlock(1, 1, 0, 2));
@@ -466,7 +466,7 @@ namespace VimCore.UnitTest
         /// Character should be positioned at the start of the inserted line
         /// </summary>
         [Test]
-        public void PutAfter_Block_WithLineWise()
+        public void PutOver_Block_WithLineWise()
         {
             Create("dog", "cat");
             EnterBlock(_textView.GetBlock(1, 1, 0, 2));
@@ -483,16 +483,15 @@ namespace VimCore.UnitTest
         /// inserted lines
         /// </summary>
         [Test]
-        public void PutAfter_Block_WithLineWiseAndCaretMove()
+        public void PutOver_Block_WithLineWiseAndCaretMove()
         {
-            Create("dog", "cat");
+            Create("dog", "cat", "bear");
             EnterBlock(_textView.GetBlock(1, 1, 0, 2));
             UnnamedRegister.UpdateValue("fish\n", OperationKind.LineWise);
-            _buffer.Process("p");
+            _buffer.Process("gp");
             Assert.AreEqual("dg", _textView.GetLine(0).GetText());
             Assert.AreEqual("ct", _textView.GetLine(1).GetText());
             Assert.AreEqual("fish", _textView.GetLine(2).GetText());
-            Assert.AreEqual("cat", _textView.GetLine(3).GetText());
             Assert.AreEqual(_textView.GetLine(3).Start, _textView.GetCaretPoint());
         }
 
@@ -501,7 +500,7 @@ namespace VimCore.UnitTest
         /// from the block
         /// </summary>
         [Test]
-        public void PutAfter_Block_WithBlock()
+        public void PutOver_Block_WithBlock()
         {
             Create("dog", "cat");
             EnterBlock(_textView.GetBlock(1, 1, 0, 2));
@@ -517,7 +516,7 @@ namespace VimCore.UnitTest
         /// charecter of the last string in the block
         /// </summary>
         [Test]
-        public void PutAfter_Block_WithBlockAndCaretMove()
+        public void PutOver_Block_WithBlockAndCaretMove()
         {
             Create("dog", "cat");
             EnterBlock(_textView.GetBlock(1, 1, 0, 2));
@@ -529,7 +528,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void PutAfter_Legacy1()
+        public void PutOver_Legacy1()
         {
             Create("dog", "cat", "bear", "tree");
             EnterMode(ModeKind.VisualCharacter, new SnapshotSpan(_textView.TextSnapshot, 0, 2));
@@ -541,7 +540,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void PutAfter_Legacy2()
+        public void PutOver_Legacy2()
         {
             Create("dog", "cat", "bear", "tree");
             var span = new SnapshotSpan(
