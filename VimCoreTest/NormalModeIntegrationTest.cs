@@ -830,6 +830,34 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// A putafter at the end of the line should still put the text after the caret
+        /// </summary>
+        [Test]
+        public void PutAfter_EndOfLine()
+        {
+            Create("dog");
+            _textView.MoveCaretTo(2);
+            Assert.AreEqual('g', _textView.GetCaretPoint().GetChar());
+            UnnamedRegister.UpdateValue("cat", OperationKind.CharacterWise);
+            _buffer.Process('p');
+            Assert.AreEqual("dogcat", _textView.GetLine(0).GetText());
+            Assert.AreEqual(5, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// A putafter on an empty line is the only thing that shouldn't move the caret
+        /// </summary>
+        [Test]
+        public void PutAfter_EmptyLine()
+        {
+            Create("");
+            UnnamedRegister.UpdateValue("cat", OperationKind.CharacterWise);
+            _buffer.Process('p');
+            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
         /// Caret should be positioned at the start of the inserted line
         /// </summary>
         [Test]

@@ -8,7 +8,7 @@ open System.ComponentModel.Composition
 type internal FileSystem() =
 
     /// The environment variables considered when loading a .vimrc
-    let _environmentVariables = ["HOME";"VIM";"USERPROFILE"]
+    let _environmentVariables = ["HOME"; "VIM"; "USERPROFILE"]
 
     let _fileNames = [".vsvimrc"; "_vsvimrc"; ".vimrc"; "_vimrc" ]
 

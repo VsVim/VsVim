@@ -878,8 +878,13 @@ type internal CommandUtil
         let stringData = register.StringData.ApplyCount count
         let point = 
             match register.OperationKind with
-            | OperationKind.CharacterWise -> SnapshotPointUtil.GetNextPointOnLine x.CaretPoint 1
-            | OperationKind.LineWise -> x.CaretLine.EndIncludingLineBreak
+            | OperationKind.CharacterWise -> 
+                if x.CaretLine.Length = 0 then 
+                    x.CaretLine.Start
+                else
+                    SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
+            | OperationKind.LineWise -> 
+                x.CaretLine.EndIncludingLineBreak
 
         x.PutCore point stringData register.OperationKind moveCaretAfterText
 
