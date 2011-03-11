@@ -86,7 +86,7 @@ namespace VsVim.UnitTest
             var guid = data.Item1;
             var cmds = new OLECMD[1];
             cmds[0] = new OLECMD { cmdID = data.Item2 };
-            return 
+            return
                 ErrorHandler.Succeeded(_target.QueryStatus(ref guid, 1, cmds, data.Item3)) &&
                 cmds[0].cmdf == (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
         }
@@ -237,5 +237,21 @@ namespace VsVim.UnitTest
             RunExec(KeyInputUtil.EscapeKey);
             Assert.AreEqual(1, count);
         }
+
+        /// <summary>
+        /// Make sure that KeyInput is simulated for any KeyInput which is intercepted
+        /// </summary>
+        [Test]
+        public void Exec_SimulateInterceptedInput()
+        {
+            var count = 0;
+            _buffer.KeyInputProcessed += delegate { count++; };
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _nextTarget.SetupExec().Verifiable();
+            RunExec(KeyInputUtil.EnterKey);
+            Assert.AreEqual(1, count);
+            _factory.Verify();
+        }
     }
 }
+

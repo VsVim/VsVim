@@ -314,5 +314,11 @@ namespace Vim.UnitTest.Mock
         {
             get { throw new NotImplementedException(); }
         }
+
+
+        public void SimulateProcessed(KeyInput value)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

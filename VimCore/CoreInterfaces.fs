@@ -1902,6 +1902,7 @@ and IVimBuffer =
     /// IMode instance for external edits
     abstract ExternalEditMode : IMode
 
+    /// Get the register of the given name
     abstract GetRegister : RegisterName -> Register
 
     /// Get the specified Mode
@@ -1919,6 +1920,11 @@ and IVimBuffer =
 
     /// Switch the buffer back to the previous mode which is returned
     abstract SwitchPreviousMode : unit -> IMode
+
+    /// Add a processed KeyInput value.  This is a way for a host which is intercepting 
+    /// KeyInput and custom processing it to still participate in items like Macro 
+    /// recording.  The provided value will not go through any remapping
+    abstract SimulateProcessed : KeyInput -> unit
 
     /// Called when the view is closed and the IVimBuffer should uninstall itself
     /// and it's modes

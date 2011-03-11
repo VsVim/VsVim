@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
@@ -12,6 +13,14 @@ namespace VsVim
     /// </summary>
     internal sealed class VsCommandTarget : IOleCommandTarget
     {
+        struct CommandData
+        {
+            internal uint CommandId;
+            internal uint CommandExecOpt;
+            internal IntPtr VariantIn;
+            internal IntPtr VariantOut;
+        }
+
         private readonly IVimBuffer _buffer;
         private readonly IVsAdapter _adapter;
         private readonly IDisplayWindowBroker _broker;
@@ -36,8 +45,15 @@ namespace VsVim
         /// Try and map a KeyInput to a single KeyInput value.  This will only suceed for KeyInput 
         /// values which have no mapping or map to a single KeyInput value
         /// </summary>
-        internal bool TryGetSimpleMappedKeyInput(KeyRemapMode mode, KeyInput original, out KeyInput mapped)
+        private bool TryGetSingleMapping(KeyRemapMode mode, KeyInput original, out KeyInput mapped)
         {
+            // If we're currently in the middle of a key mapping sequence we won't provide a KeyInput
+            if (!_buffer.BufferedRemapKeyInputs.IsEmpty)
+            {
+                mapped = null;
+                return false;
+            }
+
             var result = _buffer.Vim.KeyMap.GetKeyMapping(
                 KeyInputSet.NewOneKeyInput(original),
                 mode);
@@ -50,7 +66,7 @@ namespace VsVim
             }
             else if (result.IsMapped)
             {
-                var set = ((KeyMappingResult.Mapped) result).Item;
+                var set = ((KeyMappingResult.Mapped)result).Item;
                 if (!set.IsOneKeyInput)
                 {
                     return false;
@@ -68,53 +84,10 @@ namespace VsVim
         }
 
         /// <summary>
-        /// Determine if we should process the KeyInput value.  In an ideal world this would be as simple as 
-        /// calling IVimBuffer.CanProcess but Visual Studio is not a simple world.  In many cases we need to 
-        /// force the command to go through IOleCommandTarget instead of going through IVimBuffer
-        /// </summary>
-        internal bool CanProcess(KeyInput keyInput)
-        {
-            // If IVimBuffer can't handle the KeyInput then definitely don't handle it 
-            if (!_buffer.CanProcess(keyInput))
-            {
-                return false;
-            }
-
-            // If we're currently in the middle of a key mapping sequence don't filter.  Let the mapping
-            // get processed
-            if (!_buffer.BufferedRemapKeyInputs.IsEmpty)
-            {
-                return true;
-            }
-
-            if (_buffer.ModeKind == ModeKind.Insert && !CanProcess(_buffer.InsertMode, keyInput))
-            {
-                return false;
-            }
-
-            if (_buffer.ModeKind == ModeKind.Replace && !CanProcess(_buffer.ReplaceMode, keyInput))
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
         /// Determine if the IInsertMode value should process the given KeyInput
         /// </summary>
-        internal bool CanProcess(IInsertMode mode, KeyInput originalKeyInput)
+        private bool CanProcessDirectly(IInsertMode mode, KeyInput keyInput)
         {
-            // The next item we need to consider here are Key mappings.  The CanProcess and Process APIs 
-            // will automatically map the KeyInput under the hood.  When considering what to filter
-            // out here we want to consider the final KeyInput value not the original KeyInput. 
-            KeyInput keyInput;
-            if (!TryGetSimpleMappedKeyInput(KeyRemapMode.Insert, originalKeyInput, out keyInput))
-            {
-                // Not a simple mapping.  Don't get in the way.  Let Vim handle it.
-                return true;
-            }
-
             // Don't let the mode directly process anything it considers text input.  We need this to go
             // through IOleCommandTarget in order to get intellisense values.  
             if (mode.IsTextInput(keyInput))
@@ -146,14 +119,77 @@ namespace VsVim
             return true;
         }
 
-        internal bool TryProcess(KeyInput keyInput)
+        /// <summary>
+        /// Try and process the KeyInput from the Exec method
+        /// </summary>
+        private bool TryExec(ref Guid commandGroup, ref CommandData commandData, KeyInput keyInput)
         {
-            return CanProcess(keyInput) && _buffer.Process(keyInput);
+            if (!_buffer.CanProcess(keyInput))
+            {
+                // If the IVimBuffer can't process it then it doesn't matter
+                return false;
+            }
+
+            // Next we need to determine if we can process this directy or not.  The only mode 
+            // we actively intercept KeyInput for is InsertMode because we need to route it
+            // through IOleCommandTarget to get intellisense and many other features.
+            var mode = _buffer.ModeKind == ModeKind.Insert
+                ? _buffer.InsertMode
+                : _buffer.ModeKind == ModeKind.Replace ? _buffer.ReplaceMode : null;
+            if (mode == null)
+            {
+                return _buffer.Process(keyInput);
+            }
+
+            // Next we need to consider here are Key mappings.  The CanProcess and Process APIs 
+            // will automatically map the KeyInput under the hood at the IVimBuffer level but
+            // not at the individual IMode.  Have to manually map here and test against the 
+            // mapped KeyInput
+            KeyInput mapped;
+            if (!TryGetSingleMapping(KeyRemapMode.Insert, keyInput, out mapped) || CanProcessDirectly(mode, mapped))
+            {
+                return _buffer.Process(keyInput);
+            }
+
+            // At this point we've determined that we need to intercept this 
+            var result = TryExecIntercepted(ref commandGroup, ref commandData, keyInput, mapped);
+            if (result)
+            {
+                // We processed the input and bypassed the IVimBuffer instance.  We need to tell IVimBuffer this
+                // KeyInput was processed so it can track it for macro purposes.  Make sure to track the mapped
+                // KeyInput value.  The SimulateProcessed method does not mapping
+                _buffer.SimulateProcessed(mapped);
+            }
+
+            return result;
         }
 
-        internal bool TryConvert(Guid commandGroup, uint commandId, IntPtr pvaIn, out KeyInput kiOutput)
+        /// <summary>
+        /// Try and exec this KeyInput in an intercepted fashion
+        /// </summary>
+        private bool TryExecIntercepted(ref Guid commandGroup, ref CommandData commandData, KeyInput originalKeyInput, KeyInput mappedKeyInput)
         {
-            kiOutput = null;
+            if (originalKeyInput == mappedKeyInput)
+            {
+                // No changes so just use the original CommandData
+                return VSConstants.S_OK == _nextTarget.Exec(
+                    ref commandGroup,
+                    commandData.CommandId,
+                    commandData.CommandExecOpt,
+                    commandData.VariantIn,
+                    commandData.VariantOut);
+            }
+
+            // TODO: Handle mapped inputs
+            return false;
+        }
+
+        /// <summary>
+        /// Try and convert the Visual Studio command to it's equivalent KeyInput
+        /// </summary>
+        internal bool TryConvert(Guid commandGroup, uint commandId, IntPtr pvaIn, out KeyInput keyInput)
+        {
+            keyInput = null;
 
             // Don't ever process a command when we are in an automation function.  Doing so will cause VsVim to 
             // intercept items like running Macros and certain wizard functionality
@@ -174,16 +210,16 @@ namespace VsVim
                 return false;
             }
 
-            kiOutput = command.KeyInput;
+            keyInput = command.KeyInput;
             return true;
         }
 
-        int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint nCmdexecopt, IntPtr pvaIn, IntPtr pvaOut)
+        int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
         {
             try
             {
                 KeyInput ki;
-                if (TryConvert(commandGroup, commandId, pvaIn, out ki))
+                if (TryConvert(commandGroup, commandId, variantIn, out ki))
                 {
                     // Swallow the input if it's been flagged by a previous QueryStatus
                     if (SwallowIfNextExecMatches.IsSome && SwallowIfNextExecMatches.Value == ki)
@@ -191,7 +227,14 @@ namespace VsVim
                         return NativeMethods.S_OK;
                     }
 
-                    if (TryProcess(ki))
+                    var commandData = new CommandData
+                    {
+                        CommandId = commandId,
+                        CommandExecOpt = commandExecOpt,
+                        VariantIn = variantIn,
+                        VariantOut = variantOut
+                    };
+                    if (TryExec(ref commandGroup, ref commandData, ki))
                     {
                         return NativeMethods.S_OK;
                     }
@@ -202,13 +245,13 @@ namespace VsVim
                 SwallowIfNextExecMatches = Option.None;
             }
 
-            return _nextTarget.Exec(commandGroup, commandId, nCmdexecopt, pvaIn, pvaOut);
+            return _nextTarget.Exec(commandGroup, commandId, commandExecOpt, variantIn, variantOut);
         }
 
         int IOleCommandTarget.QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
         {
             KeyInput ki;
-            if (1 == cCmds && TryConvert(pguidCmdGroup, prgCmds[0].cmdID, pCmdText, out ki) && CanProcess(ki))
+            if (1 == cCmds && TryConvert(pguidCmdGroup, prgCmds[0].cmdID, pCmdText, out ki) && _buffer.CanProcess(ki))
             {
                 if (_externalEditManager.IsResharperLoaded)
                 {

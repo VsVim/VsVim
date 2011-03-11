@@ -109,7 +109,7 @@ type internal VimBuffer
     /// Switch to the desired mode
     member x.SwitchMode kind arg = _modeMap.SwitchMode kind arg
 
-    // Actuall process the input key.  Raise the change event on an actual change
+    /// Actuall process the input key.  Raise the change event on an actual change
     member x.Process (i:KeyInput) : bool = 
 
         // Actually process the given piece of input
@@ -195,6 +195,12 @@ type internal VimBuffer
                 | RecursiveMapping(_) -> ki
         x.Mode.CanProcess ki || ki = _vim.Settings.DisableCommand
 
+    /// Simulate the KeyInput being processed.  Should not go through remapping
+    member x.SimulateProcessed keyInput = 
+        _keyInputStartEvent.Trigger keyInput
+        _keyInputProcessedEvent.Trigger (keyInput, ProcessResult.Handled ModeSwitch.NoSwitch)
+        _keyInputEndEvent.Trigger keyInput
+
     member x.RaiseErrorMessage msg = _errorMessageEvent.Trigger msg
     member x.RaiseStatusMessage msg = _statusMessageEvent.Trigger msg
     member x.RaiseStatusMessageLong msgSeq = _statusMessageLongEvent.Trigger msgSeq
@@ -251,7 +257,6 @@ type internal VimBuffer
         [<CLIEvent>]
         member x.Closed = _closedEvent.Publish
 
-        member x.Process ki = x.Process ki
         member x.CanProcess ki = x.CanProcess ki
         member x.Close () = 
             if _isClosed then invalidOp Resources.VimBuffer_AlreadyClosed
@@ -263,6 +268,8 @@ type internal VimBuffer
                     _closedEvent.Trigger System.EventArgs.Empty
                 finally 
                     _isClosed <- true
+        member x.Process ki = x.Process ki
+        member x.SimulateProcessed ki = x.SimulateProcessed ki
 
     interface IPropertyOwner with
         member x.Properties = _properties
