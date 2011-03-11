@@ -35,5 +35,8 @@ namespace VsVim
                 }
             }
         }
+
+        [DllImport("Oleaut32.dll", PreserveSig = false)]
+        internal static extern void VariantClear(IntPtr variant);
     }
 }

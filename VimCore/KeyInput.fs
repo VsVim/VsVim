@@ -144,7 +144,7 @@ module KeyInputUtil =
     /// Mapping of all VimKey instances with their associated char if one exists
     let VimKeyRawData = [
         (VimKey.Back, Some '\b')
-        (VimKey.FormFeed, None)
+        (VimKey.FormFeed, Some '\f')
         (VimKey.Enter, Some '\n')
         (VimKey.Escape, None)
         (VimKey.Left, None)

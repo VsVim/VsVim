@@ -3,6 +3,7 @@ using System.Windows.Input;
 using Microsoft.VisualStudio;
 using NUnit.Framework;
 using Vim;
+using Vim.UnitTest;
 using VsVim.UnitTest.Utils;
 
 namespace VsVim.UnitTest
@@ -132,6 +133,46 @@ namespace VsVim.UnitTest
             VerifyConvert(VSConstants.VSStd2KCmdID.BACKSPACE, VimKey.Back, EditCommandKind.Backspace);
         }
 
+        /// <summary>
+        /// Ensure we can map back and forth every KeyInput value which is considered t obe
+        /// text input.  This is important for intercepting commands
+        /// </summary>
+        [Test]
+        public void TryConvert_TextInputToOleCommandData()
+        {
+            var textView = EditorUtil.CreateView("");
+            var buffer = EditorUtil.FactoryService.Vim.CreateBuffer(textView);
+            buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            foreach (var cur in KeyInputUtil.VimKeyInputList)
+            {
+                if (!buffer.InsertMode.IsTextInput(cur))
+                {
+                    continue;
+                }
+
+                Guid commandGroup;
+                OleCommandData oleCommandData = new OleCommandData();
+                KeyInput converted;
+                try
+                {
+                    Assert.IsTrue(OleCommandUtil.TryConvert(cur, out commandGroup, out oleCommandData));
+
+                    // We lose fidelity on these keys because they both get written out as numbers
+                    // at this point
+                    if (VimKeyUtil.IsKeypadKey(cur.Key))
+                    {
+                        continue;
+                    }
+                    Assert.IsTrue(OleCommandUtil.TryConvert(commandGroup, oleCommandData, out converted));
+                    Assert.AreEqual(converted, cur);
+                }
+                finally
+                {
+                    OleCommandData.Release(ref oleCommandData);
+                }
+            }
+
+        }
 
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.TextManager.Interop;
@@ -6,6 +7,70 @@ using Vim;
 
 namespace VsVim
 {
+    internal struct OleCommandData
+    {
+        readonly internal uint CommandId;
+        readonly internal uint CommandExecOpt;
+        readonly internal IntPtr VariantIn;
+        readonly internal IntPtr VariantOut;
+
+        internal OleCommandData(VSConstants.VSStd2KCmdID id)
+            : this((uint)id)
+        {
+
+        }
+
+        internal OleCommandData(
+            uint commandId,
+            uint commandExecOpt = 0u)
+        {
+            CommandId = commandId;
+            CommandExecOpt = commandExecOpt;
+            VariantIn = IntPtr.Zero;
+            VariantOut = IntPtr.Zero;
+        }
+
+        internal OleCommandData(
+            uint commandId,
+            uint commandExecOpt,
+            IntPtr variantIn,
+            IntPtr variantOut)
+        {
+            CommandId = commandId;
+            CommandExecOpt = commandExecOpt;
+            VariantIn = variantIn;
+            VariantOut = variantOut;
+        }
+
+        public static OleCommandData Allocate(char c)
+        {
+            var variantIn = Marshal.AllocCoTaskMem(32); // sizeof(VARIANT), 16 may be enough
+            Marshal.GetNativeVariantForObject(c, variantIn);
+            return new OleCommandData(
+                (uint)VSConstants.VSStd2KCmdID.TYPECHAR,
+                0,
+                variantIn,
+                IntPtr.Zero);
+        }
+
+        public static void Release(ref OleCommandData oleCommandData)
+        {
+            if (oleCommandData.VariantIn != IntPtr.Zero)
+            {
+                NativeMethods.VariantClear(oleCommandData.VariantIn);
+                Marshal.FreeCoTaskMem(oleCommandData.VariantIn);
+            }
+
+            if (oleCommandData.VariantOut != IntPtr.Zero)
+            {
+                NativeMethods.VariantClear(oleCommandData.VariantOut);
+                Marshal.FreeCoTaskMem(oleCommandData.VariantOut);
+            }
+
+            oleCommandData = new OleCommandData();
+        }
+    }
+
     /// <summary>
     /// This class needs to intercept commands which the core VIM engine wants to process and call into the VIM engine 
     /// directly.  It needs to be very careful to not double use commands that will be processed by the KeyProcessor.  In 
@@ -13,14 +78,6 @@ namespace VsVim
     /// </summary>
     internal sealed class VsCommandTarget : IOleCommandTarget
     {
-        struct CommandData
-        {
-            internal uint CommandId;
-            internal uint CommandExecOpt;
-            internal IntPtr VariantIn;
-            internal IntPtr VariantOut;
-        }
-
         private readonly IVimBuffer _buffer;
         private readonly IVsAdapter _adapter;
         private readonly IDisplayWindowBroker _broker;
@@ -122,7 +179,7 @@ namespace VsVim
         /// <summary>
         /// Try and process the KeyInput from the Exec method
         /// </summary>
-        private bool TryExec(ref Guid commandGroup, ref CommandData commandData, KeyInput keyInput)
+        private bool TryExec(ref Guid commandGroup, ref OleCommandData oleCommandData, KeyInput keyInput)
         {
             if (!_buffer.CanProcess(keyInput))
             {
@@ -152,36 +209,57 @@ namespace VsVim
             }
 
             // At this point we've determined that we need to intercept this 
-            var result = TryExecIntercepted(ref commandGroup, ref commandData, keyInput, mapped);
-            if (result)
-            {
-                // We processed the input and bypassed the IVimBuffer instance.  We need to tell IVimBuffer this
-                // KeyInput was processed so it can track it for macro purposes.  Make sure to track the mapped
-                // KeyInput value.  The SimulateProcessed method does not mapping
-                _buffer.SimulateProcessed(mapped);
-            }
-
-            return result;
+            return TryExecIntercepted(ref commandGroup, ref oleCommandData, keyInput, mapped);
         }
 
         /// <summary>
         /// Try and exec this KeyInput in an intercepted fashion
         /// </summary>
-        private bool TryExecIntercepted(ref Guid commandGroup, ref CommandData commandData, KeyInput originalKeyInput, KeyInput mappedKeyInput)
+        private bool TryExecIntercepted(ref Guid commandGroup, ref OleCommandData oleCommandData, KeyInput originalKeyInput, KeyInput mappedKeyInput)
         {
+            bool intercepted;
+            bool result;
+            Guid mappedCommandGroup;
+            OleCommandData mappedOleCommandData;
             if (originalKeyInput == mappedKeyInput)
             {
-                // No changes so just use the original CommandData
-                return VSConstants.S_OK == _nextTarget.Exec(
+                // No changes so just use the original OleCommandData
+                result = VSConstants.S_OK == _nextTarget.Exec(
                     ref commandGroup,
-                    commandData.CommandId,
-                    commandData.CommandExecOpt,
-                    commandData.VariantIn,
-                    commandData.VariantOut);
+                    oleCommandData.CommandId,
+                    oleCommandData.CommandExecOpt,
+                    oleCommandData.VariantIn,
+                    oleCommandData.VariantOut);
+                intercepted = true;
+            }
+            else if (OleCommandUtil.TryConvert(mappedKeyInput, out mappedCommandGroup, out mappedOleCommandData))
+            {
+                result = VSConstants.S_OK == _nextTarget.Exec(
+                    ref mappedCommandGroup,
+                    mappedOleCommandData.CommandId,
+                    mappedOleCommandData.CommandExecOpt,
+                    mappedOleCommandData.VariantIn,
+                    mappedOleCommandData.VariantOut);
+                intercepted = true;
+                OleCommandData.Release(ref mappedOleCommandData);
+            }
+            else
+            {
+                // If we couldn't process it using intercepting mechanims then just go straight to the IVimBuffer
+                // for processing.
+                result = _buffer.Process(originalKeyInput);
+                intercepted = false;
             }
 
-            // TODO: Handle mapped inputs
-            return false;
+            if (intercepted)
+            {
+                // We processed the input and bypassed the IVimBuffer instance.  We need to tell IVimBuffer this
+                // KeyInput was processed so it can track it for macro purposes.  Make sure to track the mapped
+                // KeyInput value.  The SimulateProcessed method does not mapping
+                _buffer.SimulateProcessed(mappedKeyInput);
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -227,13 +305,7 @@ namespace VsVim
                         return NativeMethods.S_OK;
                     }
 
-                    var commandData = new CommandData
-                    {
-                        CommandId = commandId,
-                        CommandExecOpt = commandExecOpt,
-                        VariantIn = variantIn,
-                        VariantOut = variantOut
-                    };
+                    var commandData = new OleCommandData(commandId, commandExecOpt, variantIn, variantOut);
                     if (TryExec(ref commandGroup, ref commandData, ki))
                     {
                         return NativeMethods.S_OK;

@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using Microsoft.VisualStudio;
 using Vim;
+using Vim.Extensions;
 
 namespace VsVim
 {
@@ -89,6 +90,12 @@ namespace VsVim
 
             command = new EditCommand(ki, kind, commandGroup, commandId);
             return true;
+        }
+
+        internal static bool TryConvert(Guid commandGroup, OleCommandData oleCommandData, out KeyInput keyInput)
+        {
+            EditCommandKind editCommandKind;
+            return TryConvert(commandGroup, oleCommandData.CommandId, oleCommandData.VariantIn, out keyInput, out editCommandKind);
         }
 
         internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr pVariableIn, out KeyInput ki, out EditCommandKind kind)
@@ -216,6 +223,64 @@ namespace VsVim
             }
 
             return ki != null;
+        }
+
+        /// <summary>
+        /// Try and convert the KeyInput value into an OleCommandData instance
+        /// </summary>
+        internal static bool TryConvert(KeyInput keyInput, out Guid commandGroup, out OleCommandData oleCommandData)
+        {
+            var success = true;
+            commandGroup = VSConstants.VSStd2K;
+            switch (keyInput.Key)
+            {
+                case VimKey.Enter:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.RETURN);
+                    break;
+                case VimKey.Escape:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.CANCEL);
+                    break;
+                case VimKey.Delete:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.DELETE);
+                    break;
+                case VimKey.Back:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.BACKSPACE);
+                    break;
+                case VimKey.Up:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.UP);
+                    break;
+                case VimKey.Down:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.DOWN);
+                    break;
+                case VimKey.Left:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.LEFT);
+                    break;
+                case VimKey.Right:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.RIGHT);
+                    break;
+                case VimKey.Tab:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.TAB);
+                    break;
+                case VimKey.PageUp:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.PAGEUP);
+                    break;
+                case VimKey.PageDown:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.PAGEDN);
+                    break;
+                default:
+                    if (keyInput.RawChar.IsSome())
+                    {
+                        oleCommandData = OleCommandData.Allocate(keyInput.Char);
+                    }
+                    else
+                    {
+                        oleCommandData = new OleCommandData();
+                        success = false;
+                    }
+                    break;
+            }
+
+            return success;
         }
     }
 }
