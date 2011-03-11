@@ -6,5 +6,5 @@ open Microsoft.VisualStudio.Text.Operations
 open Vim
 
 type internal InsertMode =
-    interface IMode
+    interface IInsertMode
     new : IVimBuffer * Modes.ICommonOperations * IDisplayWindowBroker * IEditorOptions * IUndoRedoOperations * ITextChangeTracker * bool -> InsertMode

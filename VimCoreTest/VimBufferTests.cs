@@ -117,7 +117,7 @@ namespace VimCore.UnitTest
         {
             DisableKeyRemap();
             var ki = KeyInputUtil.CharToKeyInput('f');
-            _normalMode.Setup(x => x.Process(ki)).Returns(ProcessResult.Processed);
+            _normalMode.Setup(x => x.Process(ki)).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
             var ran = false;
             _buffer.KeyInputProcessed += (s, i) => { ran = true; };
             _buffer.Process(ki);
@@ -129,7 +129,7 @@ namespace VimCore.UnitTest
         {
             DisableKeyRemap();
             var ki = KeyInputUtil.CharToKeyInput('c');
-            _normalMode.Setup(x => x.Process(ki)).Returns(ProcessResult.Processed);
+            _normalMode.Setup(x => x.Process(ki)).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
             var count = 1;
             _buffer.KeyInputStart += (_, args) =>
             {
@@ -204,7 +204,7 @@ namespace VimCore.UnitTest
         {
             DisableKeyRemap();
             var ki = KeyInputUtil.CharToKeyInput('f');
-            _normalMode.Setup(x => x.Process(ki)).Returns(ProcessResult.Processed);
+            _normalMode.Setup(x => x.Process(ki)).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
             var ran = false;
             _buffer.KeyInputBuffered += (s, i) => { ran = true; };
             _buffer.Process(ki);
@@ -265,7 +265,7 @@ namespace VimCore.UnitTest
             _insertMode.Setup(x => x.OnEnter(ModeArgument.None));
             _insertMode.Setup(x => x.OnLeave()).Verifiable();
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-            _insertMode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.SwitchPreviousMode).Verifiable();
+            _insertMode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.SwitchPreviousMode)).Verifiable();
             Assert.IsTrue(_buffer.Process('c'));
             _insertMode.Verify();
             Assert.AreEqual(prev, _buffer.ModeKind);
@@ -279,7 +279,7 @@ namespace VimCore.UnitTest
             _insertMode.Setup(x => x.OnEnter(ModeArgument.None)).Verifiable();
             _insertMode.Setup(x => x.OnLeave()).Verifiable();
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-            _insertMode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.SwitchPreviousMode).Verifiable();
+            _insertMode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.SwitchPreviousMode)).Verifiable();
             var raised = false;
             _buffer.SwitchedMode += (e, args) => { raised = true; };
             Assert.IsTrue(_buffer.Process('c'));
@@ -294,7 +294,7 @@ namespace VimCore.UnitTest
             _keyMap
                 .Setup(x => x.GetKeyMapping(KeyInputSetUtil.OfChar('b'), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.NewMapped(KeyInputSet.NewOneKeyInput(newKi)));
-            _normalMode.Setup(x => x.Process(newKi)).Returns(ProcessResult._unique_Processed).Verifiable();
+            _normalMode.Setup(x => x.Process(newKi)).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
             Assert.IsTrue(_buffer.Process('b'));
             _keyMap.Verify();
             _normalMode.Verify();
@@ -309,8 +309,8 @@ namespace VimCore.UnitTest
             _keyMap
                 .Setup(x => x.GetKeyMapping(KeyInputSetUtil.OfChar('b'), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.NewMapped(KeyInputSet.NewManyKeyInputs(list.ToFSharpList())));
-            _normalMode.Setup(x => x.Process(list[0])).Returns(ProcessResult.Processed).Verifiable();
-            _normalMode.Setup(x => x.Process(list[1])).Returns(ProcessResult.Processed).Verifiable();
+            _normalMode.Setup(x => x.Process(list[0])).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
+            _normalMode.Setup(x => x.Process(list[1])).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
             Assert.IsTrue(_buffer.Process('b'));
             _normalMode.Verify();
         }
@@ -327,7 +327,7 @@ namespace VimCore.UnitTest
             _keyMap
                 .Setup(x => x.GetKeyMapping(KeyInputSetUtil.OfChar('b'), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.NoMapping);
-            _normalMode.Setup(x => x.Process(KeyInputUtil.CharToKeyInput('b'))).Returns(ProcessResult.Processed).Verifiable();
+            _normalMode.Setup(x => x.Process(KeyInputUtil.CharToKeyInput('b'))).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
             Assert.IsTrue(_buffer.Process('b'));
             _normalMode.Verify();
         }
@@ -344,7 +344,7 @@ namespace VimCore.UnitTest
                 .Setup(x => x.GetKeyMapping(KeyInputSet.NewOneKeyInput(oldKi), KeyRemapMode.OperatorPending))
                 .Returns(KeyMappingResult.NewMapped(KeyInputSet.NewOneKeyInput(oldKi)));
             _normalMode.SetupGet(x => x.KeyRemapMode).Returns(KeyRemapMode.OperatorPending);
-            _normalMode.Setup(x => x.Process(oldKi)).Returns(ProcessResult.Processed).Verifiable();
+            _normalMode.Setup(x => x.Process(oldKi)).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
             Assert.IsTrue(_buffer.Process(oldKi));
             _normalMode.Verify();
         }
@@ -358,7 +358,7 @@ namespace VimCore.UnitTest
                 .Setup(x => x.GetKeyMapping(KeyInputSet.NewOneKeyInput(oldKi), KeyRemapMode.Language))
                 .Returns(KeyMappingResult.NewMapped(KeyInputSet.NewOneKeyInput(newKi)));
             _normalMode.SetupGet(x => x.KeyRemapMode).Returns(KeyRemapMode.Language);
-            _normalMode.Setup(x => x.Process(newKi)).Returns(ProcessResult.Processed).Verifiable();
+            _normalMode.Setup(x => x.Process(newKi)).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
             Assert.IsTrue(_buffer.Process(oldKi));
             _normalMode.Verify();
         }
@@ -403,7 +403,7 @@ namespace VimCore.UnitTest
                 .Setup(x => x.GetKeyMapping(It.IsAny<KeyInputSet>(), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.NewMapped(KeyInputSet.NewOneKeyInput(toProcess)))
                 .Verifiable();
-            _normalMode.Setup(x => x.Process(toProcess)).Returns(ProcessResult.Processed).Verifiable();
+            _normalMode.Setup(x => x.Process(toProcess)).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
             _buffer.Process('b');
             _keyMap.Verify();
             _normalMode.Verify();
@@ -455,7 +455,7 @@ namespace VimCore.UnitTest
             _keyMap
                 .Setup(x => x.GetKeyMapping(It.IsAny<KeyInputSet>(), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.NewMapped(KeyInputSet.NewOneKeyInput(KeyInputUtil.CharToKeyInput('b'))));
-            _normalMode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.Processed);
+            _normalMode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
             _buffer.Process('b');
             Assert.AreEqual(0, _buffer.BufferedRemapKeyInputs.Count());
         }

@@ -17,12 +17,26 @@ namespace VsVim
     /// </summary>
     internal sealed class VsKeyProcessor : KeyProcessor
     {
-        private static readonly HashSet<char> _coreCharacterSet = new HashSet<char>(KeyInputUtil.VimKeyCharList);
+        private static readonly HashSet<char> CoreCharacterSet = new HashSet<char>(KeyInputUtil.VimKeyCharList);
         private readonly IVsAdapter _adapter;
 
+        /// <summary>
+        /// There are several cases where we need to ignore text input and instead let the input 
+        /// forward to the base.  
+        ///   - During a visual studio incremental search operation we want them to get the input
+        ///   - In insert mode we don't want text input going directly to VsVim.  Text input must
+        ///     be routed through Visual Studio and IOleCommandTarget in order to get intellisense
+        ///     properly hooked up
+        /// </summary>
         protected override bool IgnoreTextInput
         {
-            get { return _adapter.IsIncrementalSearchActive(TextView); }
+            get
+            {
+                return
+                    _adapter.IsIncrementalSearchActive(TextView) ||
+                    VimBuffer.ModeKind == ModeKind.Insert ||
+                    VimBuffer.ModeKind == ModeKind.Replace;
+            }
         }
 
         internal VsKeyProcessor(IVsAdapter adapter, IVimBuffer buffer)
@@ -70,7 +84,7 @@ namespace VsVim
             {
                 // We only want to process input characters here.  All other input will eventually 
                 // be routed along a more reliable route for us to convert back to Vim KeyInput
-                if (ki.KeyModifiers == KeyModifiers.None &&  KeyUtil.IsMappedByChar(ki.Key) &&  _coreCharacterSet.Contains(ki.Char))
+                if (ki.KeyModifiers == KeyModifiers.None &&  KeyUtil.IsMappedByChar(ki.Key) &&  CoreCharacterSet.Contains(ki.Char))
                 {
                     handled = VimBuffer.CanProcess(ki) && VimBuffer.Process(ki);
                 }

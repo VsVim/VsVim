@@ -1,8 +1,3 @@
-Make sure that ; and , work as motions (repeat last char search)
-Rename IMotionCapture -> IMotionBinder
-Figure out the action when there is no matching command in normal mode for a key input (Beep, error message, etc ...)
-Need to make sure key remapping in operators and such continues to work.  Data doesn't apepar to be leaving ICommandRunner::Run
-	- Fixed it so the KeyRemapMode is used.  Still verify
-Need to handle put + block registers
-Repeat of a LinkedChange should use a Transaction.  Otherwise undo of the repeat is incorrect
-Visual Mode X is not updating a register
+
+- Need to see how readonly buffers and insert mode now play togehter.  Start debugging, insert mode and type.  Should get routed
+  through the special code in VsKeyProcess and hit Insert Mode head on

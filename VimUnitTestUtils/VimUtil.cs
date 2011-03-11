@@ -301,7 +301,7 @@ namespace Vim.UnitTest
         }
 
         internal static KeyInput CreateKeyInput(
-            VimKey key = VimKey.NotWellKnown,
+            VimKey key = VimKey.None,
             KeyModifiers mod = KeyModifiers.None,
             char? c = null)
         {

@@ -3,16 +3,21 @@ using System.Media;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
+using Microsoft.VisualStudio.Text.Operations;
 
 namespace Vim.UI.Wpf
 {
     public abstract class VimHost : IVimHost
     {
         private readonly ITextDocumentFactoryService _textDocumentFactoryService;
+        private readonly IEditorOperationsFactoryService _editorOperationsFactoryService;
 
-        protected VimHost(ITextDocumentFactoryService textDocumentFactoryService)
+        protected VimHost(
+            ITextDocumentFactoryService textDocumentFactoryService,
+            IEditorOperationsFactoryService editorOperationsFactoryService)
         {
             _textDocumentFactoryService = textDocumentFactoryService;
+            _editorOperationsFactoryService = editorOperationsFactoryService;
         }
 
         public virtual void Beep()
@@ -29,6 +34,9 @@ namespace Vim.UI.Wpf
 
         public abstract void CloseAllFiles(bool checkDirty);
 
+        /// <summary>
+        /// Ensure the given SnapshotPoint is visible on the screen
+        /// </summary>
         public void EnsureVisible(ITextView textView, SnapshotPoint point)
         {
             const double roundOff = 0.01;

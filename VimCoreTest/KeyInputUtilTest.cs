@@ -133,7 +133,7 @@ namespace VimCore.UnitTest
         [ExpectedException(typeof(ArgumentException))]
         public void VimKeyToKeyInput1()
         {
-            KeyInputUtil.VimKeyToKeyInput(VimKey.NotWellKnown);
+            KeyInputUtil.VimKeyToKeyInput(VimKey.None);
         }
 
         [Test]
@@ -141,7 +141,7 @@ namespace VimCore.UnitTest
         {
             foreach (var cur in Enum.GetValues(typeof(VimKey)).Cast<VimKey>())
             {
-                if (cur == VimKey.NotWellKnown)
+                if (cur == VimKey.None || cur == VimKey.RawCharacter)
                 {
                     continue;
                 }
@@ -156,7 +156,7 @@ namespace VimCore.UnitTest
         {
             foreach (var cur in Enum.GetValues(typeof(VimKey)).Cast<VimKey>())
             {
-                if (cur == VimKey.NotWellKnown)
+                if (cur == VimKey.None || cur == VimKey.RawCharacter)
                 {
                     continue;
                 }

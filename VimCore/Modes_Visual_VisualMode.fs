@@ -253,7 +253,7 @@ type internal VisualMode
 
             let result = 
                 if ki = KeyInputUtil.EscapeKey && x.ShouldHandleEscape then
-                    ProcessResult.SwitchPreviousMode
+                    ProcessResult.Handled ModeSwitch.SwitchPreviousMode
                 else
                     let original = _buffer.TextSnapshot.Version.VersionNumber
                     match _runner.Run ki with
@@ -261,7 +261,7 @@ type internal VisualMode
                         // Commands like incremental search can move the caret and be incomplete.  Need to 
                         // update the selection while waiting for the next key
                         _selectionTracker.UpdateSelection()
-                        ProcessResult.Processed
+                        ProcessResult.Handled ModeSwitch.NoSwitch
                     | BindResult.Complete commandRanData ->
 
                         if Util.IsFlagSet commandRanData.CommandBinding.CommandFlags CommandFlags.ResetCaret then
@@ -272,23 +272,26 @@ type internal VisualMode
                         | ModeSwitch.SwitchMode(_) -> ()
                         | ModeSwitch.SwitchModeWithArgument(_,_) -> ()
                         | ModeSwitch.SwitchPreviousMode -> ()
-                        ProcessResult.OfModeSwitch commandRanData.ModeSwitch
+                        ProcessResult.Handled commandRanData.ModeSwitch
                     | BindResult.Error ->
                         _operations.Beep()
-                        ProcessResult.Processed
+                        ProcessResult.Handled ModeSwitch.NoSwitch
                     | BindResult.Cancelled -> 
-                        ProcessResult.Processed
+                        ProcessResult.Handled ModeSwitch.NoSwitch
 
             // If we are switching out Visual Mode then reset the selection
             if result.IsAnySwitch then
                 // Is this a switch to command mode? 
                 let toCommandMode = 
-                    match result with 
-                    | ProcessResult.Processed -> false
-                    | ProcessResult.ProcessNotHandled -> false
-                    | ProcessResult.SwitchMode(kind) -> kind = ModeKind.Command
-                    | ProcessResult.SwitchModeWithArgument(kind,_) -> kind = ModeKind.Command
-                    | ProcessResult.SwitchPreviousMode -> false
+                    match result with
+                    | ProcessResult.NotHandled -> 
+                        false
+                    | ProcessResult.Handled switch ->
+                        match switch with 
+                        | ModeSwitch.NoSwitch -> false
+                        | ModeSwitch.SwitchMode kind -> kind = ModeKind.Command
+                        | ModeSwitch.SwitchModeWithArgument (kind, _) -> kind = ModeKind.Command
+                        | ModeSwitch.SwitchPreviousMode -> false
 
                 // On teardown we will get calls to Stop when the view is closed.  It's invalid to access 
                 // the selection at that point

@@ -141,8 +141,6 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-
-
         void IVimHost.MoveViewLeft(ITextView value)
         {
             throw new NotImplementedException();
@@ -157,7 +155,6 @@ namespace Vim.UnitTest.Mock
         {
             throw new NotImplementedException();
         }
-
 
         HostResult IVimHost.LoadFileIntoNewWindow(string filePath)
         {

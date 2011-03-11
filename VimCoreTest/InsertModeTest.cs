@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using NUnit.Framework;
 using Vim;
@@ -19,7 +20,7 @@ namespace VimCore.UnitTest
         private MockRepository _factory;
         private Mock<IVimBuffer> _data;
         private Vim.Modes.Insert.InsertMode _modeRaw;
-        private IMode _mode;
+        private IInsertMode _mode;
         private ITextView _textView;
         private Mock<ICommonOperations> _operations;
         private Mock<IDisplayWindowBroker> _broker;
@@ -54,6 +55,7 @@ namespace VimCore.UnitTest
                 vim: _vim.Object,
                 factory: _factory);
             _operations = _factory.Create<ICommonOperations>();
+            _operations.SetupGet(x => x.EditorOperations).Returns(_factory.Create<IEditorOperations>().Object);
             _broker = _factory.Create<IDisplayWindowBroker>();
             _broker.SetupGet(x => x.IsCompletionActive).Returns(false);
             _broker.SetupGet(x => x.IsQuickInfoActive).Returns(false);
@@ -69,17 +71,32 @@ namespace VimCore.UnitTest
             _mode = _modeRaw;
         }
 
-        [Test, Description("Must process escape")]
-        public void CanProcess1()
+        /// <summary>
+        /// Make sure we can process escape
+        /// </summary>
+        [Test]
+        public void CanProcess_Escape()
         {
             Assert.IsTrue(_mode.CanProcess(KeyInputUtil.EscapeKey));
         }
 
-        [Test, Description("Do not processing anything other than Escape")]
-        public void CanProcess2()
+        /// <summary>
+        /// Ensure we can process a variety of TextInput but that it's explicitly listed as such
+        /// </summary>
+        [Test]
+        public void CanProcess_TextInput()
         {
-            Assert.IsFalse(_mode.CanProcess(KeyInputUtil.EnterKey));
-            Assert.IsFalse(_mode.CanProcess(KeyInputUtil.CharToKeyInput('c')));
+            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.EnterKey));
+            Assert.IsTrue(_mode.IsTextInput(KeyInputUtil.EnterKey));
+            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.AlternateEnterKey));
+            Assert.IsTrue(_mode.IsTextInput(KeyInputUtil.AlternateEnterKey));
+
+            foreach (var cur in KeyInputUtilTest.CharsAll)
+            {
+                var input = KeyInputUtil.CharToKeyInput(cur);
+                Assert.IsTrue(_mode.CanProcess(input));
+                Assert.IsTrue(_mode.IsTextInput(input));
+            }
         }
 
         /// <summary>
@@ -93,7 +110,7 @@ namespace VimCore.UnitTest
             _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(false).Verifiable();
             _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
             var res = _mode.Process(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(res.IsSwitchMode);
+            Assert.IsTrue(res.IsSwitchMode(ModeKind.Normal));
             _factory.Verify();
         }
 
@@ -115,8 +132,7 @@ namespace VimCore.UnitTest
                 .Verifiable();
             _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
             var res = _mode.Process(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Normal, res.AsSwitchMode().Item);
+            Assert.IsTrue(res.IsSwitchMode(ModeKind.Normal));
             _factory.Verify();
         }
 
@@ -164,8 +180,7 @@ namespace VimCore.UnitTest
             _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
             var ki = KeyInputUtil.CharWithControlToKeyInput('[');
             var res = _mode.Process(ki);
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Normal, res.AsSwitchMode().Item);
+            Assert.IsTrue(res.IsSwitchMode(ModeKind.Normal));
             _factory.Verify();
         }
 
@@ -177,7 +192,7 @@ namespace VimCore.UnitTest
                 .Setup(x => x.ShiftLineRangeLeft(_textView.GetLineRange(0, 0), 1))
                 .Verifiable(); ;
             var res = _mode.Process(KeyInputUtil.CharWithControlToKeyInput('d'));
-            Assert.IsTrue(res.IsProcessed);
+            Assert.IsTrue(res.IsHandledNoSwitch());
             _factory.Verify();
         }
 
@@ -192,9 +207,7 @@ namespace VimCore.UnitTest
         public void NormalModeOneTimeCommand1()
         {
             var res = _mode.Process(KeyNotationUtil.StringToKeyInput("<C-o>"));
-            Assert.IsTrue(res.IsSwitchModeWithArgument);
-            Assert.AreEqual(ModeKind.Normal, res.AsSwitchModeWithArgument().Item1);
-            Assert.IsTrue(res.AsSwitchModeWithArgument().Item2.IsOneTimeCommand);
+            Assert.IsTrue(res.IsSwitchModeWithArgument(ModeKind.Normal, ModeArgument.NewOneTimeCommand(ModeKind.Insert)));
         }
 
         [Test]

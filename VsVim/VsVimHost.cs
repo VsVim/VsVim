@@ -44,8 +44,9 @@ namespace VsVim
             IVsEditorAdaptersFactoryService editorAdaptersFactoryService,
             ITextManager textManager,
             ITextDocumentFactoryService textDocumentFactoryService,
+            IEditorOperationsFactoryService editorOperationsFactoryService,
             SVsServiceProvider serviceProvider)
-            : base(textDocumentFactoryService)
+            : base(textDocumentFactoryService, editorOperationsFactoryService)
         {
             _adapter = adapter;
             _editorAdaptersFactoryService = editorAdaptersFactoryService;

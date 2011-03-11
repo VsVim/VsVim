@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using NUnit.Framework;
 using Vim;
+using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
 namespace VsVim.UnitTest
@@ -14,18 +15,20 @@ namespace VsVim.UnitTest
     public class VsCommandTargetTest
     {
         private MockRepository _factory;
-        private Mock<IVimBuffer> _buffer;
+        private IVimBuffer _buffer;
         private Mock<IVsAdapter> _adapter;
         private Mock<IExternalEditorManager> _externalEditorManager;
         private Mock<IOleCommandTarget> _nextTarget;
+        private Mock<IDisplayWindowBroker> _broker;
         private VsCommandTarget _targetRaw;
         private IOleCommandTarget _target;
 
         [SetUp]
         public void SetUp()
         {
+            var textView = EditorUtil.CreateView("");
+            _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(textView);
             _factory = new MockRepository(MockBehavior.Strict);
-            _buffer = _factory.Create<IVimBuffer>(MockBehavior.Loose);
 
             // By default resharper isn't loaded
             _externalEditorManager = _factory.Create<IExternalEditorManager>();
@@ -37,13 +40,16 @@ namespace VsVim.UnitTest
             _adapter.Setup(x => x.InDebugMode).Returns(false);
             _adapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(false);
 
+            _broker = _factory.Create<IDisplayWindowBroker>(MockBehavior.Loose);
+
             var oldCommandFilter = _nextTarget.Object;
             var vsTextView = _factory.Create<IVsTextView>(MockBehavior.Loose);
             vsTextView.Setup(x => x.AddCommandFilter(It.IsAny<IOleCommandTarget>(), out oldCommandFilter)).Returns(0);
             var result = VsCommandTarget.Create(
-                _buffer.Object,
+                _buffer,
                 vsTextView.Object,
                 _adapter.Object,
+                _broker.Object,
                 _externalEditorManager.Object);
             Assert.IsTrue(result.IsSuccess);
             _targetRaw = result.Value;
@@ -74,13 +80,15 @@ namespace VsVim.UnitTest
             _target.Exec(ref guid, data.Item2, 0, data.Item3, IntPtr.Zero);
         }
 
-        private void RunQueryStatus(KeyInput keyInput)
+        private bool RunQueryStatus(KeyInput keyInput)
         {
             var data = ToVsInforamtion(keyInput);
             var guid = data.Item1;
             var cmds = new OLECMD[1];
             cmds[0] = new OLECMD { cmdID = data.Item2 };
-            _target.QueryStatus(ref guid, 1, cmds, data.Item3);
+            return 
+                ErrorHandler.Succeeded(_target.QueryStatus(ref guid, 1, cmds, data.Item3)) &&
+                cmds[0].cmdf == (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
         }
 
         private void AssertCannotConvert2K(VSConstants.VSStd2KCmdID id)
@@ -97,9 +105,8 @@ namespace VsVim.UnitTest
         }
 
         [Test]
-        public void TryConvert1()
+        public void TryConvert_Tab()
         {
-            _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true);
             AssertCanConvert2K(VSConstants.VSStd2KCmdID.TAB, KeyInputUtil.TabKey);
         }
 
@@ -107,7 +114,6 @@ namespace VsVim.UnitTest
         public void TryConvert_InAutomationShouldFail()
         {
             _adapter.Setup(x => x.InAutomationFunction).Returns(true);
-            _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true);
             AssertCannotConvert2K(VSConstants.VSStd2KCmdID.TAB);
         }
 
@@ -121,7 +127,8 @@ namespace VsVim.UnitTest
         [Test]
         public void QueryStatus_IgnoreEscapeIfCantProcess()
         {
-            _buffer.Setup(x => x.CanProcess(KeyInputUtil.EscapeKey)).Returns(false);
+            _buffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
+            Assert.IsFalse(_buffer.CanProcess(KeyInputUtil.EscapeKey));
             _nextTarget.SetupQueryStatus().Verifiable();
             RunQueryStatus(KeyInputUtil.EscapeKey);
             _factory.Verify();
@@ -130,75 +137,85 @@ namespace VsVim.UnitTest
         [Test]
         public void QueryStatus_EnableEscapeButDontHandleNormally()
         {
-            _buffer.Setup(x => x.CanProcess(KeyInputUtil.EscapeKey)).Returns(true);
-            RunQueryStatus(KeyInputUtil.EscapeKey);
-            _factory.Verify();
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            Assert.IsTrue(_buffer.CanProcess(VimKey.Escape));
+            Assert.IsTrue(RunQueryStatus(KeyInputUtil.EscapeKey));
         }
 
+        /// <summary>
+        /// Don't actually run the Escape in the QueryStatus command if we're in visual mode
+        /// </summary>
         [Test]
-        public void QueryStatus_EnableEscapeAndDontHandleNormally()
+        public void QueryStatus_EnableEscapeAndDontHandleInResharperPlusVisualMode()
         {
-            _buffer.Setup(x => x.CanProcess(KeyInputUtil.EscapeKey)).Returns(true);
-            RunQueryStatus(KeyInputUtil.EscapeKey);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void QueryStatus_EnableEscapeAndDontHandleInResharperPlusNormalMode()
-        {
-            _buffer.Setup(x => x.CanProcess(KeyInputUtil.EscapeKey)).Returns(true);
-            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
+            var count = 0;
+            _buffer.KeyInputProcessed += delegate { count++; };
+            _buffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
             _externalEditorManager.SetupGet(x => x.IsResharperLoaded).Returns(true).Verifiable();
             RunQueryStatus(KeyInputUtil.EscapeKey);
+            Assert.AreEqual(0, count);
             _factory.Verify();
         }
 
+        /// <summary>
+        /// Make sure we process Escape during QueryStatus if we're in insert mode.  R# will
+        /// intercept escape and never give it to us and we'll think we're still in insert
+        /// </summary>
         [Test]
         public void QueryStatus_EnableAndHandleEscapeInResharperPlusInsert()
         {
-            var ki = KeyInputUtil.EscapeKey;
-            _buffer.Setup(x => x.CanProcess(ki)).Returns(true).Verifiable();
-            _buffer.Setup(x => x.Process(ki)).Returns(true).Verifiable();
-            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert).Verifiable();
+            var count = 0;
+            _buffer.KeyInputProcessed += delegate { count++; };
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _externalEditorManager.SetupGet(x => x.IsResharperLoaded).Returns(true).Verifiable();
-            RunQueryStatus(KeyInputUtil.EscapeKey);
+            Assert.IsTrue(RunQueryStatus(KeyInputUtil.EscapeKey));
             Assert.IsTrue(_targetRaw.SwallowIfNextExecMatches.IsSome);
             Assert.AreEqual(KeyInputUtil.EscapeKey, _targetRaw.SwallowIfNextExecMatches.Value);
+            Assert.AreEqual(1, count);
             _factory.Verify();
         }
 
+        /// <summary>
+        /// Make sure we process Escape during QueryStatus if we're in insert mode.  R# will
+        /// intercept escape and never give it to us and we'll think we're still in insert
+        /// </summary>
         [Test]
         public void QueryStatus_EnableAndHandleEscapeInResharperPlusExternalEdit()
         {
-            var ki = KeyInputUtil.EscapeKey;
-            _buffer.Setup(x => x.CanProcess(ki)).Returns(true).Verifiable();
-            _buffer.Setup(x => x.Process(ki)).Returns(true).Verifiable();
-            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.ExternalEdit).Verifiable();
+            var count = 0;
+            _buffer.KeyInputProcessed += delegate { count++; };
+            _buffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
             _externalEditorManager.SetupGet(x => x.IsResharperLoaded).Returns(true).Verifiable();
-            RunQueryStatus(KeyInputUtil.EscapeKey);
+            Assert.IsTrue(RunQueryStatus(KeyInputUtil.EscapeKey));
             Assert.IsTrue(_targetRaw.SwallowIfNextExecMatches.IsSome);
             Assert.AreEqual(KeyInputUtil.EscapeKey, _targetRaw.SwallowIfNextExecMatches.Value);
+            Assert.AreEqual(1, count);
             _factory.Verify();
+
         }
 
+        /// <summary>
+        /// The Enter key isn't special so don't special case it in R#
+        /// </summary>
         [Test]
         public void QueryStatus_HandleEnterNormallyInResharperMode()
         {
-            var ki = KeyInputUtil.EnterKey;
-            _buffer.Setup(x => x.CanProcess(ki)).Returns(true).Verifiable();
+            var count = 0;
+            _buffer.KeyInputProcessed += delegate { count++; };
+            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             _externalEditorManager.SetupGet(x => x.IsResharperLoaded).Returns(true).Verifiable();
-            RunQueryStatus(ki);
-            Assert.IsTrue(_targetRaw.SwallowIfNextExecMatches.IsNone);
+            Assert.IsTrue(RunQueryStatus(KeyInputUtil.EnterKey));
+            Assert.AreEqual(0, count);
             _factory.Verify();
         }
 
         [Test]
         public void Exec_PassOnIfCantHandle()
         {
-            var ki = KeyInputUtil.EscapeKey;
-            _buffer.Setup(x => x.CanProcess(ki)).Returns(false).Verifiable();
+            _buffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
+            Assert.IsFalse(_buffer.CanProcess(VimKey.Enter));
             _nextTarget.SetupExec().Verifiable();
-            RunExec(KeyInputUtil.EscapeKey);
+            RunExec(KeyInputUtil.EnterKey);
             _factory.Verify();
         }
 
@@ -214,11 +231,11 @@ namespace VsVim.UnitTest
         [Test]
         public void Exec_HandleEscapeNormally()
         {
-            var ki = KeyInputUtil.EscapeKey;
-            _buffer.Setup(x => x.CanProcess(ki)).Returns(true).Verifiable();
-            _buffer.Setup(x => x.Process(ki)).Returns(true).Verifiable();
+            var count = 0;
+            _buffer.KeyInputProcessed += delegate { count++; };
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             RunExec(KeyInputUtil.EscapeKey);
-            _factory.Verify();
+            Assert.AreEqual(1, count);
         }
     }
 }

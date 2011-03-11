@@ -176,13 +176,14 @@ type internal SubstituteConfirmMode
 
             // Guard against the case where confirm mode is incorrectly entered
             match _confirmData with
-            | None -> ProcessResult.SwitchMode ModeKind.Normal
+            | None -> 
+                ProcessResult.OfModeKind ModeKind.Normal
             | Some(data) -> 
 
                 // It's valid so process the input
                 match Map.tryFind ki _commandMap with
-                | None -> ProcessResult.Processed
-                | Some(func) -> func data |> ProcessResult.OfModeSwitch
+                | None -> ProcessResult.Handled ModeSwitch.NoSwitch
+                | Some(func) -> func data |> ProcessResult.Handled
 
         member x.OnClose() = ()
         member x.OnEnter arg =

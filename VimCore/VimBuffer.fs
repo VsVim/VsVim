@@ -88,8 +88,8 @@ type internal VimBuffer
     member x.VisualCharacterMode = _modeMap.GetMode ModeKind.VisualCharacter :?> IVisualMode
     member x.VisualBlockMode = _modeMap.GetMode ModeKind.VisualBlock :?> IVisualMode
     member x.CommandMode = _modeMap.GetMode ModeKind.Command :?> ICommandMode
-    member x.InsertMode = _modeMap.GetMode ModeKind.Insert 
-    member x.ReplaceMode = _modeMap.GetMode ModeKind.Replace
+    member x.InsertMode = _modeMap.GetMode ModeKind.Insert  :?> IInsertMode
+    member x.ReplaceMode = _modeMap.GetMode ModeKind.Replace :?> IInsertMode
     member x.SubstituteConfirmMode = _modeMap.GetMode ModeKind.SubstituteConfirm :?> ISubstituteConfirmMode
     member x.DisabledMode = _modeMap.GetMode ModeKind.Disabled :?> IDisabledMode
     member x.ExternalEditMode = _modeMap.GetMode ModeKind.ExternalEdit 
@@ -114,31 +114,29 @@ type internal VimBuffer
 
         // Actually process the given piece of input
         let doProcess i = 
-            let ret,res = 
+            let ret, res =
                 _isProcessingInput <- true 
                 try
                     if i = _vim.Settings.DisableCommand && x.Mode.ModeKind <> ModeKind.Disabled then
                         x.SwitchMode ModeKind.Disabled ModeArgument.None |> ignore
-                        true,SwitchMode(ModeKind.Disabled)
+                        true, ProcessResult.OfModeKind ModeKind.Disabled
                     else
                         let res = x.Mode.Process i
                         let ret = 
                             match res with
-                            | SwitchMode (kind) -> 
-                                x.SwitchMode kind ModeArgument.None |> ignore
+                            | ProcessResult.Handled modeSwitch ->
+                                match modeSwitch with
+                                | ModeSwitch.NoSwitch -> ()
+                                | ModeSwitch.SwitchMode kind -> x.SwitchMode kind ModeArgument.None |> ignore
+                                | ModeSwitch.SwitchModeWithArgument (kind, argument) -> x.SwitchMode kind argument |> ignore
+                                | ModeSwitch.SwitchPreviousMode -> _modeMap.SwitchPreviousMode() |> ignore
                                 true
-                            | SwitchModeWithArgument (kind,arg) ->
-                                x.SwitchMode kind arg |> ignore
-                                true
-                            | SwitchPreviousMode -> 
-                                _modeMap.SwitchPreviousMode() |> ignore
-                                true
-                            | Processed -> true
-                            | ProcessNotHandled -> false
-                        ret,res
+                            | ProcessResult.NotHandled -> 
+                                false
+                        ret, res
                 finally
                     _isProcessingInput <- false
-            _keyInputProcessedEvent.Trigger(i,res)
+            _keyInputProcessedEvent.Trigger(i, res)
             ret
 
         // Calculate the current remapMode

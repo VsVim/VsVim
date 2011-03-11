@@ -25,8 +25,8 @@ namespace Vim.UnitTest.Mock
         public IDisabledMode DisabledModeImpl;
         public ISubstituteConfirmMode SubstituteConfirmModeImpl;
         public IIncrementalSearch IncrementalSearchImpl;
-        public IMode InsertModeImpl;
-        public IMode ReplaceModeImpl;
+        public IInsertMode InsertModeImpl;
+        public IInsertMode ReplaceModeImpl;
         public IMode ExternalEditModeImpl;
         public bool IsProcessingInputImpl;
         public PropertyCollection PropertiesImpl;
@@ -107,12 +107,12 @@ namespace Vim.UnitTest.Mock
             get { throw new NotImplementedException(); }
         }
 
-        public IMode InsertMode
+        public IInsertMode InsertMode
         {
             get { return InsertModeImpl; }
         }
 
-        public IMode ReplaceMode
+        public IInsertMode ReplaceMode
         {
             get { return ReplaceModeImpl; }
         }

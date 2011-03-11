@@ -49,26 +49,29 @@ type internal CommandMode
                 _command <- System.String.Empty
                 maybeClearSelection false
                 match result with
-                | RunResult.Completed -> SwitchMode ModeKind.Normal
-                | RunResult.SubstituteConfirm (span, range, data) -> SwitchModeWithArgument (ModeKind.SubstituteConfirm, ModeArgument.Subsitute (span, range, data))
+                | RunResult.Completed -> 
+                    ProcessResult.OfModeKind ModeKind.Normal
+                | RunResult.SubstituteConfirm (span, range, data) -> 
+                    let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.SubstituteConfirm, ModeArgument.Subsitute (span, range, data))
+                    ProcessResult.Handled switch
             elif ki = KeyInputUtil.EscapeKey then
                 _input <- List.empty
                 _command <- System.String.Empty
                 maybeClearSelection true
-                SwitchMode ModeKind.Normal
+                ProcessResult.OfModeKind ModeKind.Normal
             elif ki.Key = VimKey.Back then
                 if not (List.isEmpty _input) then 
                     _input <- List.tail _input
                     _command <- _command.Substring(0, (_command.Length - 1))
-                    Processed
+                    ProcessResult.Handled ModeSwitch.NoSwitch
                 else
                     maybeClearSelection true
-                    SwitchMode ModeKind.Normal
+                    ProcessResult.OfModeKind ModeKind.Normal
             else 
                 let c = ki.Char
                 _command <-_command + (c.ToString())
                 _input <- ki :: _input
-                Processed
+                ProcessResult.Handled ModeSwitch.NoSwitch
 
         member x.OnEnter arg =
             _command <- 

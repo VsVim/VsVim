@@ -19,17 +19,17 @@ namespace Vim.UnitTest
         public static CommandResult.Completed AsCompleted(this CommandResult result)
         {
             Assert.IsTrue(result.IsCompleted);
-            return (CommandResult.Completed) result;
+            return (CommandResult.Completed)result;
         }
 
         #endregion
 
-        #region ModeSwitch 
+        #region ModeSwitch
 
         public static ModeSwitch.SwitchModeWithArgument AsSwitchModeWithArgument(this ModeSwitch mode)
         {
             Assert.IsTrue(mode.IsSwitchModeWithArgument);
-            return (ModeSwitch.SwitchModeWithArgument) mode;
+            return (ModeSwitch.SwitchModeWithArgument)mode;
         }
 
         #endregion
@@ -45,14 +45,49 @@ namespace Vim.UnitTest
 
         #region ProcessResult
 
-        public static ProcessResult.SwitchMode AsSwitchMode(this ProcessResult res)
+        public static ProcessResult.Handled AsHandled(this ProcessResult res)
         {
-            return (ProcessResult.SwitchMode)res;
+            return (ProcessResult.Handled)res;
         }
 
-        public static ProcessResult.SwitchModeWithArgument AsSwitchModeWithArgument(this ProcessResult res)
+        public static bool IsSwitchMode(this ProcessResult result, ModeKind kind)
         {
-            return (ProcessResult.SwitchModeWithArgument)res;
+            return result.IsHandled && result.AsHandled().Item.IsSwitchMode(kind);
+        }
+
+        public static bool IsSwitchModeWithArgument(this ProcessResult result, ModeKind kind, ModeArgument argument)
+        {
+            return result.IsHandled && result.AsHandled().Item.IsSwitchModeWithArgument(kind, argument);
+        }
+
+        public static bool IsSwitchPreviousMode(this ProcessResult result)
+        {
+            return result.IsHandled && result.AsHandled().Item.IsSwitchPreviousMode;
+        }
+
+        public static bool IsHandledNoSwitch(this ProcessResult result)
+        {
+            return result.IsHandled && result.AsHandled().Item.IsNoSwitch;
+        }
+
+        #endregion
+
+        #region ModeSwitch
+
+        public static bool IsSwitchMode(this ModeSwitch mode, ModeKind kind)
+        {
+            return mode.IsSwitchMode && ((ModeSwitch.SwitchMode) mode).Item == kind;
+        }
+
+        public static bool IsSwitchModeWithArgument(this ModeSwitch mode, ModeKind kind, ModeArgument argument)
+        {
+            if (!mode.IsSwitchModeWithArgument)
+            {
+                return false;
+            }
+
+            var value = (ModeSwitch.SwitchModeWithArgument) mode;
+            return value.Item1 == kind && value.Item2.Equals(argument);
         }
 
         #endregion
@@ -284,6 +319,12 @@ namespace Vim.UnitTest
         #endregion
 
         #region IVimBuffer
+
+        public static bool CanProcess(this IVimBuffer buffer, VimKey key)
+        {
+            var keyInput = KeyInputUtil.VimKeyToKeyInput(key);
+            return buffer.CanProcess(keyInput);
+        }
 
         public static bool Process(this IVimBuffer buf, VimKey key)
         {

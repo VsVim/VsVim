@@ -466,7 +466,7 @@ type internal NormalMode
 
         match _runner.Run ki with
         | BindResult.NeedMoreInput _ -> 
-            ProcessResult.Processed
+            ProcessResult.Handled ModeSwitch.NoSwitch
         | BindResult.Complete commandData -> 
 
             // If we are in the one time mode then switch back to the previous
@@ -477,13 +477,13 @@ type internal NormalMode
                 | Some(modeKind) -> ModeSwitch.SwitchMode modeKind
 
             this.Reset()
-            ProcessResult.OfModeSwitch modeSwitch
+            ProcessResult.Handled modeSwitch
         | BindResult.Error -> 
             this.Reset()
-            ProcessResult.Processed
+            ProcessResult.Handled ModeSwitch.NoSwitch
         | BindResult.Cancelled -> 
             this.Reset()
-            ProcessResult.Processed
+            ProcessResult.Handled ModeSwitch.NoSwitch
 
     interface INormalMode with 
         member this.KeyRemapMode = this.KeyRemapMode

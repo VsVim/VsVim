@@ -73,7 +73,7 @@ namespace VimCore.UnitTest
         {
             Create("the fox chased the bird");
             _buffer.Process("cw");
-            _buffer.TextBuffer.Insert(0, "hey ");
+            _buffer.Process("hey ");
             _buffer.Process(KeyInputUtil.EscapeKey);
             _textView.MoveCaretTo(4);
             _buffer.Process(KeyInputUtil.CharToKeyInput('.'));
@@ -85,7 +85,7 @@ namespace VimCore.UnitTest
         {
             Create("the fox chased the bird");
             _buffer.Process("cw");
-            _buffer.TextBuffer.Insert(0, "hey");
+            _buffer.Process("hey");
             _buffer.Process(KeyInputUtil.EscapeKey);
             _textView.MoveCaretTo(4);
             _buffer.Process(KeyInputUtil.CharToKeyInput('.'));
@@ -97,7 +97,7 @@ namespace VimCore.UnitTest
         {
             Create("the fox chased the bird");
             _buffer.Process("cw");
-            _buffer.TextBuffer.Insert(0, "hey");
+            _buffer.Process("hey");
             _buffer.Process(KeyInputUtil.EscapeKey);
             _textView.MoveCaretTo(4);
             _buffer.Process(KeyInputUtil.CharToKeyInput('.'));
@@ -423,7 +423,7 @@ namespace VimCore.UnitTest
         {
             Create("bear", "dog", "cat", "zebra", "fox", "jazz");
             _buffer.Process("cl");
-            _buffer.TextBuffer.Delete(new Span(_textView.GetCaretPoint(), 1));
+            _buffer.Process(VimKey.Delete);
             _buffer.Process(KeyInputUtil.EscapeKey);
             _buffer.Process(VimKey.Down);
             _buffer.Process(".");
@@ -436,7 +436,7 @@ namespace VimCore.UnitTest
         {
             Create("bear", "dog", "cat", "zebra", "fox", "jazz");
             _buffer.Process("cl");
-            _buffer.TextBuffer.Insert(0, "u");
+            _buffer.Process("u");
             _buffer.Process(KeyInputUtil.EscapeKey);
             _buffer.Process(VimKey.Down);
             _buffer.Process(".");
@@ -449,7 +449,7 @@ namespace VimCore.UnitTest
         {
             Create("bear", "dog", "cat", "zebra", "fox", "jazz");
             _buffer.Process("s");
-            _buffer.TextBuffer.Insert(0, "u");
+            _buffer.Process("u");
             _buffer.Process(KeyInputUtil.EscapeKey);
             _buffer.Process(VimKey.Down);
             _buffer.Process(".");
@@ -462,7 +462,7 @@ namespace VimCore.UnitTest
         {
             Create("bear", "dog", "cat", "zebra", "fox", "jazz");
             _buffer.Process("s");
-            _buffer.TextBuffer.Insert(0, "u");
+            _buffer.Process("u");
             _buffer.Process(KeyInputUtil.EscapeKey);
             _buffer.Process(VimKey.Down);
             _buffer.Process("2.");
@@ -475,7 +475,7 @@ namespace VimCore.UnitTest
         {
             Create("bear", "dog", "cat", "zebra", "fox", "jazz");
             _buffer.Process("i");
-            _buffer.TextBuffer.Insert(0, "abc");
+            _buffer.Process("abc");
             _buffer.Process(KeyInputUtil.EscapeKey);
             Assert.AreEqual(2, _textView.GetCaretPoint().Position);
             _buffer.Process(".");
@@ -487,7 +487,7 @@ namespace VimCore.UnitTest
         {
             Create("bear", "dog", "cat", "zebra", "fox", "jazz");
             _buffer.Process("i");
-            _buffer.TextBuffer.Insert(0, "abc");
+            _buffer.Process("abc");
             _buffer.Process(KeyInputUtil.EscapeKey);
             _textView.MoveCaretTo(0);
             _buffer.Process(".");
@@ -500,7 +500,7 @@ namespace VimCore.UnitTest
         {
             Create("bear", "dog", "cat", "zebra", "fox", "jazz");
             _buffer.Process("i");
-            _buffer.TextBuffer.Insert(0, "abc");
+            _buffer.Process("abc");
             _buffer.Process(KeyInputUtil.EscapeKey);
             _textView.MoveCaretTo(0);
             _buffer.Process(".");
@@ -514,7 +514,7 @@ namespace VimCore.UnitTest
         {
             Create("bear", "dog", "cat", "zebra", "fox", "jazz");
             _buffer.Process("I");
-            _buffer.TextBuffer.Insert(0, "abc");
+            _buffer.Process("abc");
             _buffer.Process(KeyInputUtil.EscapeKey);
             _textView.MoveCaretTo(_textView.GetLine(1).Start.Add(2));
             _buffer.Process(".");
@@ -528,7 +528,7 @@ namespace VimCore.UnitTest
         {
             Create("bear", "  dog", "cat", "zebra", "fox", "jazz");
             _buffer.Process("I");
-            _buffer.TextBuffer.Insert(0, "abc");
+            _buffer.Process("abc");
             _buffer.Process(KeyInputUtil.EscapeKey);
             _textView.MoveCaretTo(_textView.GetLine(1).Start.Add(2));
             _buffer.Process(".");
@@ -581,7 +581,7 @@ namespace VimCore.UnitTest
             Create("{", "}");
             _textView.MoveCaretToLine(0);
             _buffer.Process('a');
-            _textBuffer.Insert(_textView.GetCaretPoint().Position, ";");
+            _buffer.Process(';');
             _buffer.Process(VimKey.Escape);
             _textView.MoveCaretToLine(1);
             _buffer.Process('.');
@@ -597,7 +597,7 @@ namespace VimCore.UnitTest
             Create("{", "}");
             _textView.MoveCaretToLine(0);
             _buffer.Process('A');
-            _textBuffer.Insert(_textView.GetCaretPoint().Position, ";");
+            _buffer.Process(';');
             _buffer.Process(VimKey.Escape);
             _textView.MoveCaretToLine(1);
             _buffer.Process('.');
@@ -699,7 +699,7 @@ namespace VimCore.UnitTest
         {
             Create("  dog", "  cat", "  tree");
             _buffer.Settings.AutoIndent = true;
-            _buffer.Process("cc", enter: true);
+            _buffer.Process("cc");
             Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
             Assert.AreEqual(2, _textView.GetCaretVirtualPoint().VirtualSpaces);
             Assert.AreEqual("", _textView.GetLine(0).GetText());
@@ -710,7 +710,7 @@ namespace VimCore.UnitTest
         {
             Create("  dog", "  cat");
             _buffer.Settings.AutoIndent = false;
-            _buffer.Process("cc", enter: true);
+            _buffer.Process("cc");
             Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
             Assert.AreEqual("", _textView.GetLine(0).GetText());
@@ -724,7 +724,7 @@ namespace VimCore.UnitTest
         {
             Create("  dog", "  cat", "  tree");
             _buffer.Settings.AutoIndent = true;
-            _buffer.Process("2cc", enter: true);
+            _buffer.Process("2cc");
             Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
             Assert.AreEqual(2, _textView.GetCaretVirtualPoint().VirtualSpaces);
             Assert.AreEqual("", _textView.GetLine(0).GetText());
@@ -739,7 +739,7 @@ namespace VimCore.UnitTest
         {
             Create("    dog", "  cat", "  tree");
             _buffer.Settings.AutoIndent = true;
-            _buffer.Process("2cc", enter: true);
+            _buffer.Process("2cc");
             Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
             Assert.AreEqual(4, _textView.GetCaretVirtualPoint().VirtualSpaces);
             Assert.AreEqual("", _textView.GetLine(0).GetText());
@@ -751,7 +751,7 @@ namespace VimCore.UnitTest
         {
             Create("  dog", "  cat", "  tree");
             _buffer.Settings.AutoIndent = false;
-            _buffer.Process("2cc", enter: true);
+            _buffer.Process("2cc");
             Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
             Assert.AreEqual("", _textView.GetLine(0).GetText());
@@ -1182,7 +1182,7 @@ namespace VimCore.UnitTest
         {
             Create("dog", "bear");
             _buffer.Process("2o");
-            _textBuffer.Insert(_textBuffer.GetLine(1).Start.Position, "cat");
+            _buffer.Process("cat");
             _buffer.Process(VimKey.Escape);
             Assert.AreEqual("dog", _textView.GetLine(0).GetText());
             Assert.AreEqual("cat", _textView.GetLine(1).GetText());
@@ -1199,7 +1199,7 @@ namespace VimCore.UnitTest
         {
             Create("dog", "bear");
             _buffer.Process("3A");
-            _textBuffer.Insert(_textView.GetLine(0).End.Position, "b");
+            _buffer.Process('b');
             _buffer.Process(VimKey.Escape);
             Assert.AreEqual("dogbbb", _textView.GetLine(0).GetText());
         }

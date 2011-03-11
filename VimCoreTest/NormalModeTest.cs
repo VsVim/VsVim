@@ -1124,9 +1124,9 @@ namespace VimCore.UnitTest
             Create("foo");
             _operations.Setup(x => x.MoveCaretDown(1)).Verifiable();
             var res = _mode.Process('j');
-            Assert.IsTrue(res.IsProcessed);
+            Assert.IsTrue(res.IsHandledNoSwitch());
             res = _mode.Process('j');
-            Assert.IsTrue(res.IsProcessed);
+            Assert.IsTrue(res.IsHandledNoSwitch());
             _operations.Verify();
         }
 
@@ -1717,7 +1717,7 @@ namespace VimCore.UnitTest
         {
             Create(string.Empty);
             var res = _mode.Process(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(res.IsProcessed);
+            Assert.IsTrue(res.IsHandled);
         }
 
         [Test]
@@ -1727,8 +1727,7 @@ namespace VimCore.UnitTest
             _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
             _mode.OnEnter(ModeArgument.NewOneTimeCommand(ModeKind.Insert));
             var res = _mode.Process("h");
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+            Assert.IsTrue(res.IsSwitchMode(ModeKind.Insert));
         }
 
         [Test]
@@ -1738,8 +1737,7 @@ namespace VimCore.UnitTest
             _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
             _mode.OnEnter(ModeArgument.NewOneTimeCommand(ModeKind.Command));
             var res = _mode.Process("h");
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Command, res.AsSwitchMode().Item);
+            Assert.IsTrue(res.IsSwitchMode(ModeKind.Command));
         }
 
         [Test]
@@ -1747,8 +1745,7 @@ namespace VimCore.UnitTest
         {
             Create(string.Empty);
             var res = _mode.Process("R");
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Replace, res.AsSwitchMode().Item);
+            Assert.IsTrue(res.IsSwitchMode(ModeKind.Replace));
         }
 
         [Test]
@@ -1797,8 +1794,7 @@ namespace VimCore.UnitTest
         {
             Create(DefaultLines);
             var res = _mode.Process('v');
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.VisualCharacter, res.AsSwitchMode().Item);
+            Assert.IsTrue(res.IsSwitchMode(ModeKind.VisualCharacter));
         }
 
         [Test]
@@ -1806,8 +1802,7 @@ namespace VimCore.UnitTest
         {
             Create(DefaultLines);
             var res = _mode.Process('V');
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.VisualLine, res.AsSwitchMode().Item);
+            Assert.IsTrue(res.IsSwitchMode(ModeKind.VisualLine));
         }
 
         [Test]
@@ -1815,8 +1810,7 @@ namespace VimCore.UnitTest
         {
             Create(DefaultLines);
             var res = _mode.Process(KeyInputUtil.CharWithControlToKeyInput('q'));
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.VisualBlock, res.AsSwitchMode().Item);
+            Assert.IsTrue(res.IsSwitchMode(ModeKind.VisualBlock));
         }
 
         [Test]

@@ -117,7 +117,7 @@ type KeyInput
 
     override x.ToString() = System.String.Format("{0}:{1}:{2}", x.Char, x.Key, x.KeyModifiers);
 
-    static member DefaultValue = KeyInput(VimKey.NotWellKnown, KeyModifiers.None, None)
+    static member DefaultValue = KeyInput(VimKey.None, KeyModifiers.None, None)
     static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<KeyInput>.Default.Equals(this,other)
     static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<KeyInput>.Default.Equals(this,other))
 
@@ -313,7 +313,7 @@ module KeyInputUtil =
 
     let CharToKeyInput c = 
         match Map.tryFind c CharToKeyInputMap with
-        | None -> KeyInput(VimKey.NotWellKnown, KeyModifiers.None, Some c)
+        | None -> KeyInput(VimKey.RawCharacter, KeyModifiers.None, Some c)
         | Some(ki) -> ki
 
     /// Map of the VimKey to KeyInput values.  

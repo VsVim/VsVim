@@ -11,9 +11,9 @@ type internal ExternalEditMode( _data : IVimBuffer ) =
         member x.CanProcess ki = ki = KeyInputUtil.EscapeKey
         member x.Process ki = 
             if ki = KeyInputUtil.EscapeKey then
-                ProcessResult.SwitchMode ModeKind.Insert
+                ProcessResult.OfModeKind ModeKind.Normal
             else
-                ProcessResult.ProcessNotHandled
+                ProcessResult.NotHandled
         member x.OnEnter _  = ()
         member x.OnLeave() = ()
         member x.OnClose() = ()

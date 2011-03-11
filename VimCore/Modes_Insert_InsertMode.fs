@@ -30,13 +30,19 @@ type internal InsertMode
         _isReplace : bool ) as this =
 
     let _textView = _buffer.TextView
+    let _editorOperations = _operations.EditorOperations
     let mutable _commandMap : Map<KeyInput,CommandFunction> = Map.empty
     let mutable _data : InsertModeData option = None
+    let mutable _processTextInputCount = 0
 
     do
         let commands : (string * CommandFunction) list = 
             [
                 ("<Esc>", this.ProcessEscape);
+                ("<Up>", this.ProcessUp);
+                ("<Down>", this.ProcessDown);
+                ("<Left>", this.ProcessLeft);
+                ("<Right>", this.ProcessRight);
                 ("<C-[>", this.ProcessEscape);
                 ("<C-d>", this.ProcessShiftLeft)
                 ("<C-t>", this.ProcessShiftRight)
@@ -49,24 +55,79 @@ type internal InsertMode
             |> Seq.map (fun (str,func) -> (KeyNotationUtil.StringToKeyInput str),func)
             |> Map.ofSeq
 
+    member x.IsProcessingTextInput = _processTextInputCount > 0
+
+    /// Is this KeyInput a raw text input item.  Really anything is text input except 
+    /// for a few specific items
+    member x.IsTextInput (ki : KeyInput) = 
+        match ki.Key with
+        | VimKey.Enter -> true
+        | VimKey.Back -> true
+        | VimKey.Delete -> true
+        | _ -> Option.isSome ki.RawChar
+
+    /// Process the TextInput value
+    member x.ProcessTextInput (ki : KeyInput) = 
+        _processTextInputCount <- _processTextInputCount + 1
+        try
+            let value = 
+                match ki.Key with
+                | VimKey.Enter -> 
+                    _editorOperations.InsertNewLine()
+                | VimKey.Back ->
+                    _editorOperations.Backspace()
+                | VimKey.Delete ->
+                    _editorOperations.Delete()
+                | _ ->
+                    let text = ki.Char.ToString()
+                    _editorOperations.InsertText(text)
+    
+            if value then
+                ProcessResult.Handled ModeSwitch.NoSwitch
+            else
+                ProcessResult.NotHandled
+         finally 
+            _processTextInputCount <- _processTextInputCount - 1
+
+    /// Process the up command
+    member x.ProcessUp () =
+        _operations.MoveCaretUp 1
+        ProcessResult.Handled ModeSwitch.NoSwitch
+
+    /// Process the down command
+    member x.ProcessDown () =
+        _operations.MoveCaretDown 1
+        ProcessResult.Handled ModeSwitch.NoSwitch
+
+    /// Process the left command
+    member x.ProcessLeft () =
+        _operations.MoveCaretLeft 1
+        ProcessResult.Handled ModeSwitch.NoSwitch
+
+    /// Process the right command
+    member x.ProcessRight () =
+        _operations.MoveCaretRight 1
+        ProcessResult.Handled ModeSwitch.NoSwitch
+
     /// Enter normal mode for a single command
-    member this.ProcessNormalModeOneCommand() =
-        ProcessResult.SwitchModeWithArgument (ModeKind.Normal, ModeArgument.OneTimeCommand ModeKind.Insert)
+    member x.ProcessNormalModeOneCommand() =
+        let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Normal, ModeArgument.OneTimeCommand ModeKind.Insert)
+        ProcessResult.Handled switch
 
     /// Process the CTRL-D combination and do a shift left
-    member this.ProcessShiftLeft() = 
+    member x.ProcessShiftLeft() = 
         let range = TextViewUtil.GetCaretLineRange _textView 1
         _operations.ShiftLineRangeLeft range 1
-        ProcessResult.Processed
+        ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Process the CTRL-T combination and do a shift right
-    member this.ProcessShiftRight() = 
+    member x.ProcessShiftRight() = 
         let range = TextViewUtil.GetCaretLineRange _textView 1
         _operations.ShiftLineRangeRight range 1
-        ProcessResult.Processed
+        ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Apply the repeated edits the the ITextBuffer
-    member this.MaybeApplyRepeatedEdits () = 
+    member x.MaybeApplyRepeatedEdits () = 
         // Need to close out the edit transaction if there is any
         match _data with
         | None ->
@@ -116,14 +177,14 @@ type internal InsertMode
             finally
                 data.Transaction.Complete()
 
-    member this.ProcessEscape () =
+    member x.ProcessEscape () =
 
         this.MaybeApplyRepeatedEdits()
 
         if _broker.IsCompletionActive || _broker.IsSignatureHelpActive || _broker.IsQuickInfoActive then
             _broker.DismissDisplayWindows()
             _operations.MoveCaretLeft 1 
-            ProcessResult.SwitchMode ModeKind.Normal
+            ProcessResult.OfModeKind ModeKind.Normal
 
         else
             // Need to adjust the caret on exit.  Typically it's just a move left by 1 but if we're
@@ -133,17 +194,34 @@ type internal InsertMode
                 _operations.MoveCaretToPoint virtualPoint.Position
             else
                 _operations.MoveCaretLeft 1 
-            ProcessResult.SwitchMode ModeKind.Normal
+            ProcessResult.OfModeKind ModeKind.Normal
 
-    interface IMode with 
+    /// Can Insert mode handle this particular KeyInput value 
+    member x.CanProcess ki = 
+        if Map.containsKey ki _commandMap then
+            true
+        else
+            x.IsTextInput ki
+
+    /// Process the KeyInput
+    member x.Process ki = 
+        match Map.tryFind ki _commandMap with
+        | Some(func) -> 
+            func()
+        | None -> 
+            if x.IsTextInput ki then
+                x.ProcessTextInput ki
+            else
+                ProcessResult.NotHandled
+
+    interface IInsertMode with 
         member x.VimBuffer = _buffer
         member x.CommandNames =  _commandMap |> Seq.map (fun p -> p.Key) |> Seq.map OneKeyInput
         member x.ModeKind = if _isReplace then ModeKind.Replace else ModeKind.Insert
-        member x.CanProcess ki = Map.containsKey ki _commandMap 
-        member x.Process (ki : KeyInput) = 
-            match Map.tryFind ki _commandMap with
-            | Some(func) -> func()
-            | None -> Processed
+        member x.IsProcessingTextInput = x.IsProcessingTextInput
+        member x.CanProcess ki = x.CanProcess ki
+        member x.IsTextInput ki = x.IsTextInput ki
+        member x.Process ki = x.Process ki
         member x.OnEnter arg = 
 
             // On enter we need to check the 'count' and possibly set up a transaction to 

@@ -4,7 +4,7 @@ namespace Vim
 
 /// Provides values for the well known key values used by Vim 
 type VimKey =
-    | NotWellKnown = 0
+    | None = 0
     | Back = 1
     | FormFeed = 2
     | Enter = 3
@@ -145,6 +145,9 @@ type VimKey =
     | Dollar = 138          // $
     | Tab = 139
     | LineFeed = 140
+
+    // The character is real it's simply an unknown quantity to Vim
+    | RawCharacter = 141
 
 module VimKeyUtil =
 

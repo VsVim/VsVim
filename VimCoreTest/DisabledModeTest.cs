@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Linq;
+using Moq;
 using NUnit.Framework;
 using Vim;
-using Moq;
 using Vim.UnitTest;
-using GlobalSettings = Vim.GlobalSettings;
 using Vim.UnitTest.Mock;
+using GlobalSettings = Vim.GlobalSettings;
 
 namespace VimCore.UnitTest
 {
@@ -45,8 +42,7 @@ namespace VimCore.UnitTest
         public void Process1()
         {
             var res = _mode.Process(GlobalSettings.DisableCommand);
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Normal, res.AsSwitchMode().item);
+            Assert.IsTrue(res.IsSwitchMode(ModeKind.Normal));
         }
     }
 }

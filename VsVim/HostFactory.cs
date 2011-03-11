@@ -10,7 +10,6 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
-using IServiceProvider = System.IServiceProvider;
 
 namespace VsVim
 {
@@ -26,7 +25,7 @@ namespace VsVim
         private readonly ITextEditorFactoryService _editorFactoryService;
         private readonly IEditorOptionsFactoryService _editorOptionsFactoryService;
         private readonly IExternalEditorManager _externalEditorManager;
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IDisplayWindowBrokerFactoryService  _displayWindowBrokerFactoryServcie;
         private readonly IVim _vim;
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
         private readonly Dictionary<IVimBuffer, VsCommandTarget> _filterMap = new Dictionary<IVimBuffer, VsCommandTarget>();
@@ -43,6 +42,7 @@ namespace VsVim
             SVsServiceProvider serviceProvider,
             IVsEditorAdaptersFactoryService adaptersFactory,
             IExternalEditorManager externalEditorManager,
+            IDisplayWindowBrokerFactoryService displayWindowBrokerFactoryService,
             IFileSystem fileSystem,
             IVsAdapter adapter)
         {
@@ -52,7 +52,7 @@ namespace VsVim
             _editorFactoryService = editorFactoryService;
             _editorOptionsFactoryService = editorOptionsFactoryService;
             _externalEditorManager = externalEditorManager;
-            _serviceProvider = serviceProvider;
+            _displayWindowBrokerFactoryServcie = displayWindowBrokerFactoryService;
             _adaptersFactory = adaptersFactory;
             _fileSystem = fileSystem;
             _adapter = adapter;
@@ -131,7 +131,8 @@ namespace VsVim
             }
 
             var buffer = opt.Value;
-            var result = VsCommandTarget.Create(buffer, vsView, _adapter, _externalEditorManager);
+            var broker = _displayWindowBrokerFactoryServcie.CreateDisplayWindowBroker(view);
+            var result = VsCommandTarget.Create(buffer, vsView, _adapter, broker, _externalEditorManager);
             if (result.IsSuccess)
             {
                 _filterMap.Add(buffer, result.Value);

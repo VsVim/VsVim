@@ -29,10 +29,14 @@ type internal TextChangeTracker
         // 
         // We also cannot process a text change while we are processing input.  Otherwise text
         // changes which are made as part of a command will be processed as user input.  This 
-        // breaks the "." operator
+        // breaks the "." operator.  The one exception is the processing of text input which
+        // signifies a user change
+        //
+        // TODO: Maybe the above would be better served by just checking to see if we're in a
+        // repeat and logging based on that
         _buffer.TextBuffer.Changed 
         |> Observable.filter (fun _ -> _buffer.TextView.HasAggregateFocus || _buffer.ModeKind = ModeKind.Insert)
-        |> Observable.filter (fun _ -> not _buffer.IsProcessingInput)
+        |> Observable.filter (fun _ -> (not _buffer.IsProcessingInput) || _buffer.InsertMode.IsProcessingTextInput || _buffer.ReplaceMode.IsProcessingTextInput)
         |> Observable.subscribe (fun args -> this.OnTextChanged args)
         |> _bag.Add
 

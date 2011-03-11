@@ -20,9 +20,9 @@ type internal DisabledMode( _data : IVimBuffer ) =
             ki = _data.Settings.GlobalSettings.DisableCommand
         member x.Process ki = 
             if ki = _data.Settings.GlobalSettings.DisableCommand then
-                ProcessResult.SwitchMode ModeKind.Normal
+                ProcessResult.OfModeKind ModeKind.Normal
             else
-                ProcessResult.ProcessNotHandled
+                ProcessResult.NotHandled
         member x.OnEnter _  = ()
         member x.OnLeave() = ()
         member x.OnClose() = ()

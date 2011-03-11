@@ -127,7 +127,7 @@ namespace VimCore.UnitTest
         {
             Create("foo");
             var res = _mode.Process(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(res.IsSwitchPreviousMode);
+            Assert.IsTrue(res.IsSwitchPreviousMode());
         }
 
         [Test, Description("Escape should always escape even if we're processing an inner key sequence")]
@@ -136,7 +136,7 @@ namespace VimCore.UnitTest
             Create("foo");
             _mode.Process('g');
             var res = _mode.Process(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(res.IsSwitchPreviousMode);
+            Assert.IsTrue(res.IsSwitchPreviousMode());
         }
 
         [Test]
@@ -156,7 +156,7 @@ namespace VimCore.UnitTest
             Assert.IsFalse(_mode.CommandNames.Any(x => x.KeyInputs.First().Char == input.Char));
             Assert.IsTrue(_mode.CanProcess(input));
             var ret = _mode.Process(input);
-            Assert.IsTrue(ret.IsProcessed);
+            Assert.IsTrue(ret.IsHandledNoSwitch());
             _operations.Verify();
         }
 
@@ -186,7 +186,7 @@ namespace VimCore.UnitTest
             Create("foo", "bar");
             var span = _textBuffer.GetLineRange(0).Extent;
             _selection.Select(span);
-            Assert.IsTrue(_mode.Process('y').IsSwitchPreviousMode);
+            Assert.IsTrue(_mode.Process('y').IsSwitchPreviousMode());
             Assert.AreEqual("foo", _map.GetRegister(RegisterName.Unnamed).StringValue);
         }
 
@@ -197,7 +197,7 @@ namespace VimCore.UnitTest
             var span = _textBuffer.GetLineRange(0).Extent;
             _selection.Select(span);
             var res = _mode.Process('y');
-            Assert.IsTrue(res.IsSwitchPreviousMode);
+            Assert.IsTrue(res.IsSwitchPreviousMode());
             Assert.AreEqual("foo", _map.GetRegister(RegisterName.Unnamed).StringValue);
         }
 
@@ -219,7 +219,7 @@ namespace VimCore.UnitTest
             var span = _textBuffer.GetLineRange(0).Extent;
             _tracker.Setup(x => x.ResetCaret()).Verifiable();
             _selection.Select(span);
-            Assert.IsTrue(_mode.Process('y').IsSwitchPreviousMode);
+            Assert.IsTrue(_mode.Process('y').IsSwitchPreviousMode());
             Assert.AreEqual("foo", _map.GetRegister(RegisterName.Unnamed).StringValue);
             _tracker.Verify();
         }
@@ -231,7 +231,7 @@ namespace VimCore.UnitTest
             Create("foo", "bar");
             var span = _textBuffer.GetSpan(0, 1);
             _selection.Select(span);
-            Assert.IsTrue(_mode.Process('Y').IsSwitchPreviousMode);
+            Assert.IsTrue(_mode.Process('Y').IsSwitchPreviousMode());
             Assert.AreEqual(_textBuffer.GetLineRange(0).GetTextIncludingLineBreak(), _map.GetRegister(RegisterName.Unnamed).StringValue);
         }
 
@@ -252,7 +252,7 @@ namespace VimCore.UnitTest
             Create("foo", "bar");
             var span = _textBuffer.GetSpan(0, 1);
             _selection.Select(span);
-            Assert.IsTrue(_mode.Process('Y').IsSwitchPreviousMode);
+            Assert.IsTrue(_mode.Process('Y').IsSwitchPreviousMode());
             Assert.AreEqual(_textBuffer.GetLineRange(0).GetTextIncludingLineBreak(), _map.GetRegister(RegisterName.Unnamed).StringValue);
             Assert.AreEqual(OperationKind.LineWise, _map.GetRegister(RegisterName.Unnamed).Value.OperationKind);
         }
@@ -523,9 +523,7 @@ namespace VimCore.UnitTest
         {
             Create("foo bar");
             var ret = _mode.Process(":");
-            Assert.IsTrue(ret.IsSwitchModeWithArgument);
-            Assert.AreEqual(ModeKind.Command, ret.AsSwitchModeWithArgument().Item1);
-            Assert.AreEqual(ModeArgument.FromVisual, ret.AsSwitchModeWithArgument().Item2);
+            Assert.IsTrue(ret.IsSwitchModeWithArgument(ModeKind.Command, ModeArgument.FromVisual));
         }
 
         [Test]

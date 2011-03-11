@@ -53,7 +53,8 @@ namespace VimCore.UnitTest
         {
             Create("the cat");
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.NewInsertWithCount(2));
-            _textBuffer.Insert(0, "hi");
+            _buffer.Process("hi");
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
             _buffer.Process(VimKey.Escape);
             Assert.AreEqual("hihithe cat", _textView.GetLine(0).GetText());
             Assert.AreEqual(3, _textView.GetCaretPoint().Position);
@@ -69,10 +70,23 @@ namespace VimCore.UnitTest
             Create("doggie");
             _textView.MoveCaretTo(1);
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.NewInsertWithCount(2));
-            _textBuffer.Delete(new Span(1, 1));
+            _buffer.Process(VimKey.Delete);
             _buffer.Process(VimKey.Escape);
             Assert.AreEqual("dgie", _textView.GetLine(0).GetText());
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Ensure we can use a double keystroke to escape
+        /// </summary>
+        [Test]
+        public void KeyRemap_TwoKeysToEscape()
+        {
+            Create("hello");
+            _buffer.Vim.KeyMap.MapWithNoRemap("jj", "<Esc>", KeyRemapMode.Insert);
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.NewInsertWithCount(2));
+            _buffer.Process("jj");
+            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
         }
 
     }

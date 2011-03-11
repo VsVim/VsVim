@@ -501,7 +501,8 @@ type KeyInputSet =
     override x.ToString() =
         x.KeyInputs
         |> Seq.map (fun ki ->
-            if ki.Key = VimKey.NotWellKnown then ki.Char.ToString()
+            if ki.Key = VimKey.RawCharacter then ki.Char.ToString()
+            elif ki.Key = VimKey.None then "<None>"
             else System.String.Format("<{0}>", ki.Key)  )
         |> StringUtil.ofStringSeq
 
@@ -1502,28 +1503,30 @@ type IIncrementalSearch =
     [<CLIEvent>]
     abstract CurrentSearchCancelled : IEvent<SearchData>
 
+[<RequireQualifiedAccess>]
 type ProcessResult = 
-    | Processed
-    | ProcessNotHandled
-    | SwitchMode of ModeKind
-    | SwitchModeWithArgument of ModeKind * ModeArgument
-    | SwitchPreviousMode
-    with
-    static member OfModeSwitch mode =
-        match mode with
-        | ModeSwitch.NoSwitch -> ProcessResult.Processed
-        | ModeSwitch.SwitchMode(kind) -> ProcessResult.SwitchMode kind
-        | ModeSwitch.SwitchModeWithArgument(kind,arg) -> ProcessResult.SwitchModeWithArgument (kind,arg)
-        | ModeSwitch.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
+
+    /// The input was processed and provided the given ModeSwitch
+    | Handled of ModeSwitch
+
+    /// The operation did not handle the input
+    | NotHandled
 
     // Is this any type of mode switch
     member x.IsAnySwitch =
         match x with
-        | Processed -> false
-        | ProcessNotHandled -> false
-        | SwitchMode(_) -> true
-        | SwitchModeWithArgument(_,_) -> true
-        | SwitchPreviousMode -> true
+        | Handled modeSwitch ->
+            match modeSwitch with
+            | ModeSwitch.NoSwitch -> false
+            | ModeSwitch.SwitchMode _ -> true
+            | ModeSwitch.SwitchModeWithArgument _ -> true
+            | ModeSwitch.SwitchPreviousMode -> true
+        | NotHandled -> 
+            false
+
+    static member OfModeKind kind = 
+        let switch = ModeSwitch.SwitchMode kind
+        Handled switch
 
 type SettingKind =
     | NumberKind
@@ -1826,7 +1829,7 @@ and IVimBuffer =
     /// IIncrementalSearch instance associated with this IVimBuffer
     abstract IncrementalSearch : IIncrementalSearch
 
-    /// Whether or not the IVimBuffer is currently processing input
+    /// Whether or not the IVimBuffer is currently processing a KeyInput value
     abstract IsProcessingInput : bool
 
     /// Jump list
@@ -1869,18 +1872,35 @@ and IVimBuffer =
     /// Associated IVimData instance
     abstract VimData : IVimData
 
-    // Mode accessors
+    /// INormalMode instance for normal mode
     abstract NormalMode : INormalMode
-    abstract CommandMode : ICommandMode 
-    abstract DisabledMode : IDisabledMode
-    abstract VisualLineMode : IVisualMode
-    abstract VisualBlockMode : IVisualMode
-    abstract VisualCharacterMode : IVisualMode
-    abstract InsertMode : IMode
-    abstract ReplaceMode : IMode
-    abstract SubstituteConfirmMode : ISubstituteConfirmMode
-    abstract ExternalEditMode : IMode
 
+    /// ICommandMode instance for command mode
+    abstract CommandMode : ICommandMode 
+
+    /// IDisabledMode instance for disabled mode
+    abstract DisabledMode : IDisabledMode
+
+    /// IVisualMode for visual line mode
+    abstract VisualLineMode : IVisualMode
+
+    /// IVisualMode for visual block mode
+    abstract VisualBlockMode : IVisualMode
+
+    /// IVisualMode for visual character mode
+    abstract VisualCharacterMode : IVisualMode
+
+    /// IInsertMode instance for insert mode
+    abstract InsertMode : IInsertMode
+
+    /// IInsertMode instance for replace mode
+    abstract ReplaceMode : IInsertMode
+
+    /// ISubstituteConfirmDoe instance for substitute confirm mode
+    abstract SubstituteConfirmMode : ISubstituteConfirmMode
+
+    /// IMode instance for external edits
+    abstract ExternalEditMode : IMode
 
     abstract GetRegister : RegisterName -> Register
 
@@ -1994,6 +2014,16 @@ and INormalMode =
 
     /// If we are a one-time normal mode, the mode kind we will return to
     abstract OneTimeMode : ModeKind option
+
+    inherit IMode
+
+and IInsertMode =
+
+    /// Is InsertMode currently processing a Text Input value
+    abstract IsProcessingTextInput : bool
+
+    /// Does Insert Mode consider this to be simple text input 
+    abstract IsTextInput : KeyInput -> bool
 
     inherit IMode
 

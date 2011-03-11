@@ -102,7 +102,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "cat", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird", range: _textBuffer.GetLineRange(0)));
-            Assert.IsTrue(_mode.Process('y').IsSwitchMode);
+            Assert.IsTrue(_mode.Process('y').IsSwitchMode(ModeKind.Normal));
             Assert.AreEqual("bird", _textBuffer.GetLine(0).GetText());
             Assert.AreEqual("cat", _textBuffer.GetLine(1).GetText());
         }
@@ -112,7 +112,7 @@ namespace VimCore.UnitTest
         {
             Create("cat cat", "dog", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetSpan(0, 3), "cat", "bird", range: _textBuffer.GetLineRange(0)));
-            Assert.IsTrue(_mode.Process('y').IsSwitchMode);
+            Assert.IsTrue(_mode.Process('y').IsSwitchMode(ModeKind.Normal));
             Assert.AreEqual("bird cat", _textBuffer.GetLine(0).GetText());
         }
 
@@ -123,7 +123,7 @@ namespace VimCore.UnitTest
             Create("cat cat", "dog", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetSpan(0, 3), "cat", "bird", SubstituteFlags.ReplaceAll, range: _textBuffer.GetLineRange(0)));
             _operations.Setup(x => x.MoveCaretToPoint(_textBuffer.GetPoint(5))).Verifiable();
-            Assert.IsTrue(_mode.Process('y').IsProcessed);
+            Assert.IsTrue(_mode.Process('y').IsHandledNoSwitch());
             Assert.AreEqual("bird cat", _textBuffer.GetLine(0).GetText());
             Assert.AreEqual(_textBuffer.GetSpan(5, 3), _mode.CurrentMatch.Value);
             _factory.Verify();
@@ -135,7 +135,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "cat", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird", SubstituteFlags.ReplaceAll, range: _textBuffer.GetLineRange(0, 1)));
-            Assert.IsTrue(_mode.Process('y').IsProcessed);
+            Assert.IsTrue(_mode.Process('y').IsHandledNoSwitch());
             Assert.AreEqual("bird", _textBuffer.GetLine(0).GetText());
             Assert.AreEqual(_textBuffer.GetLine(1).Extent, _mode.CurrentMatch.Value);
         }
@@ -145,7 +145,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
-            Assert.AreEqual(ModeKind.Normal, _mode.Process(KeyInputUtil.EscapeKey).AsSwitchMode().Item);
+            Assert.IsTrue(_mode.Process(KeyInputUtil.EscapeKey).IsSwitchMode(ModeKind.Normal));
         }
 
         [Test]
@@ -153,7 +153,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
-            Assert.AreEqual(ModeKind.Normal, _mode.Process('q').AsSwitchMode().Item);
+            Assert.IsTrue(_mode.Process('q').IsSwitchMode(ModeKind.Normal));
         }
 
         [Test]
@@ -161,7 +161,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
-            Assert.AreEqual(ModeKind.Normal, _mode.Process('l').AsSwitchMode().Item);
+            Assert.IsTrue(_mode.Process('l').IsSwitchMode(ModeKind.Normal));
             Assert.AreEqual("bird", _textBuffer.GetLine(0).GetText());
         }
 
@@ -170,7 +170,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "cat", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
-            Assert.AreEqual(ModeKind.Normal, _mode.Process('l').AsSwitchMode().Item);
+            Assert.IsTrue(_mode.Process('l').IsSwitchMode(ModeKind.Normal));
             Assert.AreEqual("bird", _textBuffer.GetLine(0).GetText());
             Assert.AreEqual("cat", _textBuffer.GetLine(1).GetText());
         }
@@ -180,7 +180,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
-            Assert.AreEqual(ModeKind.Normal, _mode.Process('n').AsSwitchMode().Item);
+            Assert.IsTrue(_mode.Process('n').IsSwitchMode(ModeKind.Normal));
             Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
             Assert.AreEqual("dog", _textBuffer.GetLine(1).GetText());
         }
@@ -190,7 +190,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "cat", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
-            Assert.IsTrue(_mode.Process('n').IsProcessed);
+            Assert.IsTrue(_mode.Process('n').IsHandledNoSwitch());
             Assert.AreEqual(_textBuffer.GetLine(1).Extent, _mode.CurrentMatch.Value);
             Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
             Assert.AreEqual("cat", _textBuffer.GetLine(1).GetText());
@@ -201,7 +201,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
-            Assert.AreEqual(ModeKind.Normal, _mode.Process('a').AsSwitchMode().Item);
+            Assert.IsTrue(_mode.Process('a').IsSwitchMode(ModeKind.Normal));
             Assert.AreEqual("bird", _textBuffer.GetLine(0).GetText());
             Assert.AreEqual("dog", _textBuffer.GetLine(1).GetText());
         }
@@ -211,7 +211,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "cat", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
-            Assert.AreEqual(ModeKind.Normal, _mode.Process('a').AsSwitchMode().Item);
+            Assert.IsTrue(_mode.Process('a').IsSwitchMode(ModeKind.Normal));
             Assert.AreEqual("bird", _textBuffer.GetLine(0).GetText());
             Assert.AreEqual("bird", _textBuffer.GetLine(1).GetText());
         }
