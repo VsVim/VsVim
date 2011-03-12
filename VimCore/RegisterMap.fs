@@ -5,21 +5,21 @@ namespace Vim
 /// IRegisterValueBacking implementation for the clipboard 
 type ClipboardRegisterValueBacking ( _device : IClipboardDevice ) =
     interface IRegisterValueBacking with
-        member x.Value 
-            with get () = RegisterValue.CreateFromText _device.Text
-            and set value = _device.Text <- value.Value.String
+        member x.RegisterValue 
+            with get () = RegisterValue.OfString _device.Text OperationKind.LineWise
+            and set value = _device.Text <- value.StringValue
 
 type internal RegisterMap (_map: Map<RegisterName,Register> ) =
     new( clipboard : IClipboardDevice, currentFileNameFunc : unit -> string option ) = 
         let clipboardBacking = ClipboardRegisterValueBacking(clipboard) :> IRegisterValueBacking
         let fileNameBacking = { new IRegisterValueBacking with
-            member x.Value
+            member x.RegisterValue
                 with get() = 
                     let text = 
                         match currentFileNameFunc() with
                         | None -> StringUtil.empty
                         | Some(str) -> str
-                    { Value=StringData.Simple text; OperationKind=OperationKind.CharacterWise }
+                    RegisterValue.OfString text OperationKind.CharacterWise
                 and set _ = () }
 
         let getBacking name = 
@@ -39,15 +39,15 @@ type internal RegisterMap (_map: Map<RegisterName,Register> ) =
     /// Updates the given register with the specified value.  This will also update 
     /// other registers based on the type of update that is being performed.  See 
     /// :help registers for the full details
-    member x.SetRegisterValue (reg:Register) regOperation value = 
+    member x.SetRegisterValue (reg : Register) regOperation value = 
         if reg.Name <> RegisterName.Blackhole then
-            reg.Value <- value
+            reg.RegisterValue <- value
 
             // If this is not the unnamed register then the unnamed register needs to 
             // be updated 
             if reg.Name <> RegisterName.Unnamed then
                 let unnamedReg = x.GetRegister RegisterName.Unnamed
-                unnamedReg.Value <- value
+                unnamedReg.RegisterValue <- value
 
             // Update the numbered registers with the new values.  First shift the existing
             // values up the stack
@@ -61,18 +61,18 @@ type internal RegisterMap (_map: Map<RegisterName,Register> ) =
             for i in [9;8;7;6;5;4;3;2;1] do
                 let cur = intToName i |> x.GetRegister
                 let prev = intToName (i-1) |> x.GetRegister
-                cur.Value <- prev.Value
+                cur.RegisterValue <- prev.RegisterValue
             let regZero = x.GetRegister (RegisterName.Numbered NumberedRegister.Register_0)
-            regZero.Value <- value
+            regZero.RegisterValue <- value
     
             // Possibily update the small delete register
             if reg.Name <> RegisterName.Unnamed && regOperation = RegisterOperation.Delete then
-                match value.Value with
+                match value.StringData with
                 | StringData.Block(_) -> ()
                 | StringData.Simple(str) -> 
                     if not (StringUtil.containsChar str '\n') then
                         let regSmallDelete = x.GetRegister RegisterName.SmallDelete
-                        regSmallDelete.Value <- value
+                        regSmallDelete.RegisterValue <- value
 
     interface IRegisterMap with
         member x.RegisterNames = _map |> Seq.map (fun pair -> pair.Key)

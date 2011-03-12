@@ -770,18 +770,24 @@ namespace Vim.UnitTest
             UpdateValue(reg, value, OperationKind.CharacterWise);
         }
 
+        public static void UpdateValue(this Register reg, string value, params VimKey[] keys)
+        {
+            var left = value.Select(KeyInputUtil.CharToKeyInput);
+            var right = keys.Select(KeyInputUtil.VimKeyToKeyInput);
+            var all = left.Concat(right).ToFSharpList();
+            reg.RegisterValue = RegisterValue.NewKeyInput(all, OperationKind.CharacterWise);
+        }
+
         public static void UpdateValue(this Register reg, string value, OperationKind kind)
         {
-            var data = StringData.NewSimple(value);
-            var regValue = new RegisterValue(data, kind);
-            reg.Value = regValue;
+            reg.RegisterValue = RegisterValue.OfString(value, kind);
         }
 
         public static void UpdateBlockValues(this Register reg, params string[] value)
         {
             var col = NonEmptyCollectionUtil.OfSeq(value).Value;
             var data = StringData.NewBlock(col);
-            reg.Value = new RegisterValue(data, OperationKind.CharacterWise);
+            reg.RegisterValue = RegisterValue.NewString(data, OperationKind.CharacterWise);
         }
 
         public static SnapshotPoint GetCaretPoint(this ITextView view)

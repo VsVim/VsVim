@@ -45,7 +45,7 @@ type internal CommandRunner
     let mutable _runBindData : BindData<Command * CommandBinding> option = None
 
     /// True during the running of a particular KeyInput 
-    let mutable _inRun = false
+    let mutable _inBind = false
 
     /// Try and get the VisualSpan for the provided kind
     member x.TryGetVisualSpan kind = 
@@ -290,35 +290,37 @@ type internal CommandRunner
         if ki = KeyInputUtil.EscapeKey && x.ShouldEscapeCancelCurrentCommand() then 
             x.ResetState()
             BindResult.Cancelled
-        elif _inRun then 
+        elif _inBind then 
+            // If we're in the middle of binding the previous value then error.  We don't
+            // support re-entrancy while binding
             BindResult.Error
         else
             _data <- {_data with Inputs = ki :: _data.Inputs }
-            _inRun <- true
-            try
-                let result = 
+            let result = 
+                _inBind <- true
+                try
                     match _runBindData with
                     | Some bindData -> bindData.BindFunction ki
                     | None -> x.BindCountAndRegister ki
-                match result with
-                | BindResult.Complete (command, commandBinding) -> 
-                    x.ResetState()
-                    let result = _commandUtil.RunCommand command
-                    let data = { Command = command; CommandBinding = commandBinding; CommandResult = result }
-                    _commandRanEvent.Trigger data
-                    BindResult.Complete data
-                | BindResult.Cancelled ->
-                    x.ResetState()
-                    BindResult.Error
-                | BindResult.Error ->
-                    x.ResetState()
-                    BindResult.Error
-                | BindResult.NeedMoreInput bindData ->
-                    _runBindData <- Some bindData
-                    BindResult.NeedMoreInput { KeyRemapMode = bindData.KeyRemapMode; BindFunction = x.Run }
+                finally 
+                    _inBind <-  false
 
-            finally
-                _inRun <-false
+            match result with
+            | BindResult.Complete (command, commandBinding) -> 
+                x.ResetState()
+                let result = _commandUtil.RunCommand command
+                let data = { Command = command; CommandBinding = commandBinding; CommandResult = result }
+                _commandRanEvent.Trigger data
+                BindResult.Complete data
+            | BindResult.Cancelled ->
+                x.ResetState()
+                BindResult.Error
+            | BindResult.Error ->
+                x.ResetState()
+                BindResult.Error
+            | BindResult.NeedMoreInput bindData ->
+                _runBindData <- Some bindData
+                BindResult.NeedMoreInput { KeyRemapMode = bindData.KeyRemapMode; BindFunction = x.Run }
             
     member x.Add (command : CommandBinding) = 
         if Map.containsKey command.KeyInputSet _commandMap then 

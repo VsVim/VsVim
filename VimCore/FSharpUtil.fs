@@ -248,6 +248,15 @@ module internal CharUtil =
         let right  = func right
         left = right
 
+    /// Get the Char value for the given ASCII code
+    let OfAsciiValue (value : byte) =
+        let asciiArray = [| value |]
+        let charArray = System.Text.Encoding.ASCII.GetChars(asciiArray)
+        if charArray.Length > 0 then
+            charArray.[0]
+        else
+            MinValue
+
     let (|WhiteSpace|NonWhiteSpace|) char =
         if IsWhiteSpace char then
             WhiteSpace

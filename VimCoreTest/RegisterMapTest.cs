@@ -40,7 +40,7 @@ namespace VimCore.UnitTest
         public void PlusRegister2()
         {
             _clipboard.SetupSet(x => x.Text = "bar").Verifiable();
-            _map.GetRegister('+').Value = RegisterValue.CreateFromText("bar");
+            _map.GetRegister('+').RegisterValue = RegisterValue.OfString("bar", OperationKind.CharacterWise);
             _factory.Verify();
         }
 
@@ -58,7 +58,7 @@ namespace VimCore.UnitTest
         public void StarRegister2()
         {
             _clipboard.SetupSet(x => x.Text = "bar").Verifiable();
-            _map.GetRegister('*').Value = RegisterValue.CreateFromText("bar");
+            _map.GetRegister('*').RegisterValue = RegisterValue.OfString("bar", OperationKind.CharacterWise);
             _factory.Verify();
         }
 
@@ -74,7 +74,7 @@ namespace VimCore.UnitTest
         public void FileNameRegister1()
         {
             Assert.AreEqual("", _map.GetRegister('%').StringValue);
-            Assert.AreEqual(OperationKind.CharacterWise, _map.GetRegister('%').Value.OperationKind);
+            Assert.AreEqual(OperationKind.CharacterWise, _map.GetRegister('%').RegisterValue.OperationKind);
         }
 
         [Test]

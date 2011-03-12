@@ -4,6 +4,7 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open System.Diagnostics
 
+/// Representation of StringData stored in a Register
 [<RequireQualifiedAccess>]
 type StringData = 
     | Simple of string
@@ -91,6 +92,9 @@ type NumberedRegister =
         |> Seq.map Option.get
 
 /// The 52 named registers
+///
+/// TODO: This is wrong.  There are only 26 regsiters.  When the upper registers are
+/// used it's for append.  Need to fix this
 [<RequireQualifiedAccess>]
 type NamedRegister = 
     | Register_a
@@ -402,26 +406,85 @@ type RegisterOperation =
     | Delete
     | Yank
 
-/// Value stored in the register.  Contains contextual information on how the data
-/// was yanked from the buffer
-type RegisterValue = {
-    Value : StringData;
-    OperationKind : OperationKind;
-}
+/// Represents the data stored in a Register.  Registers need to store both string values 
+/// for cut and paste operations and KeyInput sequences for Macro recording.  There is not 
+/// 100% fidelity between these formats and hence we have to have this intermediate state
+/// to deal with.
+///
+/// Quick Example:  There is no way to store <Left> or any arrow key as a char value (they
+/// simple don't have one associated and you can check ':help key-notation' for verifacion
+/// of this).  Trying to store '<Left>' in the register causes playback to be interperetd 
+/// not as the <Left> key but as the key sequence <, L, e, f, t, >.  
+///
+/// Unfortunately we are required to convert back and forth in different circumstances.  There
+/// will be fidelity loss in some
+[<RequireQualifiedAccess>]
+type RegisterValue =
+    /// Backing is a String type.  This is the type of lower fidelity.  Prefer KeyInput over String
+    | String of StringData * OperationKind
+
+    /// Backing is a KeyInput list.  This is the type of highest fidelity.  Prefer this over String
+    | KeyInput of KeyInput list * OperationKind
+
     with
 
-    static member CreateLineWise d = { Value = d; OperationKind=OperationKind.LineWise }
+    /// Get the RegisterData as a StringData instance
+    member x.StringData =
+        match x with 
+        | String (stringData, _) -> stringData
+        | KeyInput (list, _) -> list |> Seq.map (fun ki -> ki.Char) |> StringUtil.ofCharSeq |> StringData.Simple
 
-    static member CreateFromText text = {Value=StringData.Simple text; OperationKind=OperationKind.LineWise }
+    /// Get the RegisterData as a KeyInput list instance
+    member x.KeyInputList =
+        match x with
+        | String (stringData, _) ->
+            match stringData with
+            | StringData.Simple str -> 
+                // Just map every character to a KeyInput
+                str |> Seq.map KeyInputUtil.CharToKeyInput |> List.ofSeq
+
+            | StringData.Block col -> 
+                // Map every character in every string into a KeyInput and add a <Enter> at the
+                // end of every String
+                col
+                |> Seq.map (fun s -> s |> Seq.map KeyInputUtil.CharToKeyInput |> List.ofSeq)
+                |> Seq.map (fun list -> list @ [ KeyInputUtil.EnterKey ])
+                |> List.concat
+        | KeyInput (list, _) -> 
+            // Identity mapping 
+            list
+
+    /// Get the string which represents this RegisterValue.  This is an inherently lossy 
+    /// operation (information is loss on converting a StringData.Block into a raw string
+    /// value).  This function should be avoided for operations other than diplay purposes
+    member x.StringValue = 
+        match x with
+        | String (stringData, _) -> stringData.String
+        | KeyInput (list, _) -> list |> Seq.map (fun keyInput -> keyInput.Char) |> StringUtil.ofCharSeq
+
+    /// The OperationKind which produced this value
+    member x.OperationKind = 
+        match x with 
+        | String (_, kind) -> kind
+        | KeyInput (_, kind) -> kind
+
+    /// Create a RegisterValue from a simple string
+    static member OfString str kind = 
+        let stringData = StringData.Simple str
+        String (stringData, kind)
 
 /// Backing of a register value
 type internal IRegisterValueBacking = 
-    abstract Value : RegisterValue with get,set
 
+    /// The RegisterValue to use
+    abstract RegisterValue : RegisterValue with get, set
+
+/// Default implementation of IRegisterValueBacking.  Just holds the RegisterValue
+/// in a mutable field
 type internal DefaultRegisterValueBacking() = 
-    let mutable _value = { Value=StringData.Simple StringUtil.empty; OperationKind=OperationKind.LineWise }
+    let mutable _value = RegisterValue.OfString StringUtil.empty OperationKind.CharacterWise
     interface IRegisterValueBacking with
-        member x.Value 
+        member x.RegisterValue
             with get() = _value
             and set value = _value <- value
 
@@ -439,10 +502,10 @@ type Register
     new (name) = Register(name, DefaultRegisterValueBacking() :> IRegisterValueBacking )
 
     member x.Name = _name
-    member x.OperationKind = _valueBacking.Value.OperationKind
-    member x.StringValue = _valueBacking.Value.Value.String
-    member x.StringData = _valueBacking.Value.Value
-    member x.Value 
-        with get () =  _valueBacking.Value
-        and set value = _valueBacking.Value <- value
+    member x.OperationKind = _valueBacking.RegisterValue.OperationKind
+    member x.StringValue = _valueBacking.RegisterValue.StringValue
+    member x.StringData = _valueBacking.RegisterValue.StringData
+    member x.RegisterValue 
+        with get () =  _valueBacking.RegisterValue
+        and set value = _valueBacking.RegisterValue <- value
 

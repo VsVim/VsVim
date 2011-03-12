@@ -110,19 +110,23 @@ namespace Vim.UnitTest
             smartIndentationService = smartIndentationService ?? CreateSmartIndentationService();
             foldManager = foldManager ?? CreateFoldManager(textView.TextBuffer);
             vimHost = vimHost ?? new MockVimHost();
+            var vim = MockObjectFactory.CreateVim(
+                registerMap: registerMap,
+                map: markMap,
+                host: vimHost,
+                vimData: vimData);
+            var buffer = MockObjectFactory.CreateVimBuffer(
+                textView: textView,
+                settings: localSettings,
+                motionUtil: motionUtil,
+                vim: vim.Object);
             return new CommandUtil(
-                textView,
+                buffer.Object,
                 operations,
-                motionUtil,
                 statusUtil,
-                registerMap,
-                markMap,
-                vimData,
-                localSettings,
                 undoRedOperations,
                 smartIndentationService,
-                foldManager,
-                vimHost);
+                foldManager);
         }
 
         internal static ISmartIndentationService CreateSmartIndentationService()

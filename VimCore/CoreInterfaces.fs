@@ -692,19 +692,25 @@ type VisualSpan =
 [<System.Flags>]
 type CommandFlags =
     | None = 0x0
+
     /// Relates to the movement of the cursor.  A movement command does not alter the 
     /// last command
     | Movement = 0x1
+
     /// A Command which can be repeated
     | Repeatable = 0x2
+
     /// A Command which should not be considered when looking at last changes
     | Special = 0x4
+
     /// Can handle the escape key if provided as part of a Motion or Long command extra
     /// input
     | HandlesEscape = 0x8
+
     /// For the purposes of change repeating the command is linked with the following
     /// text change
     | LinkedWithNextTextChange = 0x10
+
     /// For Visual Mode commands which should reset the cursor to the original point
     /// after completing
     | ResetCaret = 0x20
@@ -881,6 +887,8 @@ type NormalCommand =
     /// Replace the char under the cursor with the given char
     | ReplaceChar of KeyInput
 
+    /// Run the macro contained in the register specified by the char value
+    | RunMacro of char
     /// Set the specified mark to the current value of the caret
     | SetMarkToCaret of char
 

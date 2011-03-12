@@ -542,34 +542,50 @@ namespace VimCore.UnitTest
             Assert.AreEqual("ood", seen);
         }
 
+        /// <summary>
+        /// Disallow Run calls during a bind operation
+        /// </summary>
         [Test]
-        public void NestedRun1()
+        public void NestedRun_DontAllowRunDuringBind()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateLegacyBinding("a", (x, y) =>
+            _runner.Add(VimUtil.CreateNormalBinding("b"));
+            _runner.Add(VimUtil.CreateComplexNormalBinding(
+                "a",
+                _ =>
                 {
-                    var res = _runner.Run(KeyInputUtil.CharToKeyInput('a'));
+                    var res = _runner.Run(KeyInputUtil.CharToKeyInput('b'));
                     Assert.IsTrue(res.IsError);
-                    return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
                 }));
 
-            var res2 = _runner.Run(KeyInputUtil.CharToKeyInput('a'));
+            var res2 = _runner.Run("ab");
             Assert.IsTrue(res2.IsComplete);
         }
 
+        /// <summary>
+        /// It's OK for a Command to call back into the ICommandRunner::Run which ran it
+        /// so long as the binding is complete.  This is necessary for Macros
+        /// </summary>
         [Test]
-        public void NestedRun2()
+        public void NestedRun_AllowMultipleRuns()
         {
-            Create("hello world");
-            _runner.Add(VimUtil.CreateLegacyBinding("a", (x, y) =>
+            Create("");
+            var ran1 = false;
+            var ran2 = false;
+            _runner.Add(VimUtil.CreateNormalBinding("a", command: VimUtil.CreatePing(
+                _ =>
                 {
-                    var res = _runner.Run(KeyInputUtil.CharToKeyInput('a'));
-                    Assert.IsTrue(res.IsError);
-                    return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
-                }));
-
-            var res2 = _runner.Run(KeyInputUtil.CharToKeyInput('a'));
-            Assert.IsTrue(res2.IsComplete);
+                    ran1 = true;
+                    Assert.IsTrue(_runner.Run('b').IsComplete);
+                })));
+            _runner.Add(VimUtil.CreateNormalBinding("b", command: VimUtil.CreatePing(
+                _ =>
+                {
+                    ran2 = true;
+                })));
+            Assert.IsTrue(_runner.Run('a').IsComplete);
+            Assert.IsTrue(ran1);
+            Assert.IsTrue(ran2);
         }
 
         [Test]

@@ -175,9 +175,10 @@ type internal NormalMode
         let complexSeq = 
             seq {
                 yield ("r", CommandFlags.Repeatable, x.BindReplaceChar ())
-                yield ("'", CommandFlags.Movement, BindData<_>.CreateForSingleChar None (fun c -> NormalCommand.JumpToMark c))
-                yield ("`", CommandFlags.Movement, BindData<_>.CreateForSingleChar None (fun c -> NormalCommand.JumpToMark c))
-                yield ("m", CommandFlags.Movement, BindData<_>.CreateForSingleChar None (fun c -> NormalCommand.SetMarkToCaret c))
+                yield ("'", CommandFlags.Movement, BindData<_>.CreateForSingleChar None NormalCommand.JumpToMark)
+                yield ("`", CommandFlags.Movement, BindData<_>.CreateForSingleChar None NormalCommand.JumpToMark)
+                yield ("m", CommandFlags.Special, BindData<_>.CreateForSingleChar None NormalCommand.SetMarkToCaret)
+                yield ("@", CommandFlags.Special, BindData<_>.CreateForSingleChar None NormalCommand.RunMacro)
             } |> Seq.map (fun (str, flags, bindCommand) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 let storage = BindDataStorage.Simple bindCommand

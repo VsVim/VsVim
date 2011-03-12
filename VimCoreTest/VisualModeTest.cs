@@ -243,7 +243,7 @@ namespace VimCore.UnitTest
             _selection.Select(span);
             _mode.Process('y');
             Assert.AreEqual("foo" + Environment.NewLine, _map.GetRegister(RegisterName.Unnamed).StringValue);
-            Assert.AreEqual(OperationKind.LineWise, _map.GetRegister(RegisterName.Unnamed).Value.OperationKind);
+            Assert.AreEqual(OperationKind.LineWise, _map.GetRegister(RegisterName.Unnamed).RegisterValue.OperationKind);
         }
 
         [Test]
@@ -254,7 +254,7 @@ namespace VimCore.UnitTest
             _selection.Select(span);
             Assert.IsTrue(_mode.Process('Y').IsSwitchPreviousMode());
             Assert.AreEqual(_textBuffer.GetLineRange(0).GetTextIncludingLineBreak(), _map.GetRegister(RegisterName.Unnamed).StringValue);
-            Assert.AreEqual(OperationKind.LineWise, _map.GetRegister(RegisterName.Unnamed).Value.OperationKind);
+            Assert.AreEqual(OperationKind.LineWise, _map.GetRegister(RegisterName.Unnamed).RegisterValue.OperationKind);
         }
 
         [Test]

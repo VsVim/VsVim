@@ -146,12 +146,12 @@ module KeyInputUtil =
         (VimKey.Back, Some '\b')
         (VimKey.FormFeed, Some '\f')
         (VimKey.Enter, Some '\n')
-        (VimKey.Escape, None)
+        (VimKey.Escape, 27uy |> CharUtil.OfAsciiValue |> Some)
         (VimKey.Left, None)
         (VimKey.Up, None)
         (VimKey.Right, None)
         (VimKey.Down, None)
-        (VimKey.Delete, None)
+        (VimKey.Delete, 127uy |> CharUtil.OfAsciiValue |> Some)
         (VimKey.Help, None)
         (VimKey.End, None)
         (VimKey.PageUp, None)
@@ -284,7 +284,6 @@ module KeyInputUtil =
         (VimKey.Tab, Some '\t')
         (VimKey.LineFeed, None) ]
 
-
     let VimKeyInputList  = 
         VimKeyRawData 
         |> Seq.map (fun (key,charOpt) -> KeyInput(key, KeyModifiers.None, charOpt )) 
@@ -301,6 +300,7 @@ module KeyInputUtil =
     /// may map to the same character their should be a primary KeyInput for every 
     /// char.  This map holds that mapping
     let CharToKeyInputMap = 
+
         let inputs = 
             VimKeyInputList
             |> Seq.map (fun ki -> OptionUtil.combine ki.RawChar ki )

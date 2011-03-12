@@ -60,7 +60,7 @@ namespace Vim.UnitTest.Mock
 
         public static Mock<IVim> CreateVim(
             IRegisterMap registerMap = null,
-            MarkMap map = null,
+            IMarkMap map = null,
             IVimGlobalSettings settings = null,
             IVimHost host = null,
             IKeyMap keyMap = null,

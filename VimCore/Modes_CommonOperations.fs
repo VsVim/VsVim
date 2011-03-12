@@ -843,15 +843,15 @@ type internal CommonOperations ( _data : OperationsData ) =
 
 
         member x.UpdateRegister reg regOp editSpan opKind = 
-            let value = { Value = StringData.OfEditSpan editSpan; OperationKind = opKind }
+            let value = RegisterValue.String (StringData.OfEditSpan editSpan, opKind)
             x.UpdateRegister reg regOp value
         member x.UpdateRegisterForValue reg regOp value = 
             x.UpdateRegister reg regOp value
         member x.UpdateRegisterForSpan reg regOp span opKind = 
-            let value = { Value=StringData.OfSpan span; OperationKind=opKind }
+            let value = RegisterValue.String (StringData.OfSpan span, opKind)
             x.UpdateRegister reg regOp value
         member x.UpdateRegisterForCollection reg regOp col opKind = 
-            let value = { Value=StringData.OfNormalizedSnasphotSpanCollection col; OperationKind=opKind }
+            let value = RegisterValue.String (StringData.OfNormalizedSnasphotSpanCollection col, opKind)
             x.UpdateRegister reg regOp value
 
         member x.GoToLocalDeclaration() = 

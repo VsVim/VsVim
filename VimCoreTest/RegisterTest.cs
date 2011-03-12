@@ -12,17 +12,8 @@ namespace VimCore.UnitTest
         {
             var backing = new MockRegisterValueBacking();
             var reg = new Register(RegisterName.Unnamed, backing);
-            reg.Value = new RegisterValue(StringData.NewSimple("foo"), OperationKind.CharacterWise);
-            Assert.AreEqual("foo", backing.Value.Value.String);
-        }
-
-        [Test]
-        public void ValueBackingTest2()
-        {
-            var backing = new MockRegisterValueBacking();
-            var reg = new Register(RegisterName.Unnamed, backing);
-            backing.Value = new RegisterValue(StringData.NewSimple("foo"), OperationKind.CharacterWise);
-            Assert.AreEqual("foo", reg.StringValue);
+            reg.RegisterValue = RegisterValue.OfString("foo", OperationKind.CharacterWise);
+            Assert.AreEqual("foo", backing.RegisterValue.StringValue);
         }
     }
 }

@@ -389,7 +389,7 @@ type internal CommandProcessor
         let span = range.ExtentIncludingLineBreak
         _textBuffer.Delete(span.Span) |> ignore
 
-        let value = { Value = StringData.OfSpan span; OperationKind = OperationKind.LineWise }
+        let value = RegisterValue.String (StringData.OfSpan span, OperationKind.LineWise)
         _registerMap.SetRegisterValue reg RegisterOperation.Delete value
 
     member x.ProcessUndo rest _ _ =

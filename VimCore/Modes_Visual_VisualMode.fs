@@ -150,17 +150,17 @@ type internal VisualMode
                     None,
                     (fun _ (reg:Register) span -> 
                         let data = StringData.OfSpan span
-                        reg.Value <- { Value = data; OperationKind = _operationKind } ),
+                        reg.RegisterValue <- RegisterValue.String (data, _operationKind)),
                     (fun _ (reg:Register) col -> 
                         let data = StringData.OfNormalizedSnasphotSpanCollection col
-                        reg.Value <- { Value = data; OperationKind = _operationKind } ))
+                        reg.RegisterValue <- RegisterValue.String (data, _operationKind)))
                 yield (
                     ["Y"],
                     CommandFlags.ResetCaret,
                     None,
                     (fun _ (reg:Register) span -> 
                         let data = span |> SnapshotSpanUtil.ExtendToFullLineIncludingLineBreak |> StringData.OfSpan 
-                        reg.Value <- { Value = data; OperationKind = OperationKind.LineWise } ),
+                        reg.RegisterValue <- RegisterValue.String (data, OperationKind.LineWise)),
                     (fun _ (reg:Register) col -> 
                         let data = 
                             let normal() = col |> Seq.map SnapshotSpanUtil.ExtendToFullLine |> StringData.OfSeq 
@@ -168,7 +168,7 @@ type internal VisualMode
                             | VisualKind.Character -> normal()
                             | VisualKind.Line -> normal()
                             | VisualKind.Block -> StringData.OfNormalizedSnasphotSpanCollection col
-                        reg.Value <- { Value = data; OperationKind = OperationKind.LineWise} ))
+                        reg.RegisterValue <- RegisterValue.String (data, OperationKind.LineWise)))
             }
             |> Seq.map (fun (strList,flags,mode,funcNormal,funcBlock) ->
                 strList 

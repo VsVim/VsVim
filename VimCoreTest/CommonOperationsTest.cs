@@ -111,7 +111,7 @@ namespace VimCore.UnitTest
         void AssertRegister(Register reg, string value, OperationKind kind)
         {
             Assert.AreEqual(value, reg.StringValue);
-            Assert.AreEqual(kind, reg.Value.OperationKind);
+            Assert.AreEqual(kind, reg.RegisterValue.OperationKind);
         }
 
         void AssertRegister(RegisterName name, string value, OperationKind kind)

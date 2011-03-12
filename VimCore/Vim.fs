@@ -121,8 +121,6 @@ type internal VimBufferFactory
                 vim.VimData) :> IIncrementalSearch
         let capture = MotionCapture(vim.VimHost, view, incrementalSearch, localSettings) :> IMotionCapture
 
-        let commandUtil = CommandUtil(view, commonOperations,  motionUtil, statusUtil, vim.RegisterMap, vim.MarkMap, vim.VimData, localSettings, undoRedoOperations, _smartIndentationService, foldManager, _host) :> ICommandUtil
-
         let bufferRaw = 
             VimBuffer( 
                 vim,
@@ -132,6 +130,9 @@ type internal VimBufferFactory
                 incrementalSearch,
                 motionUtil)
         let buffer = bufferRaw :> IVimBuffer
+
+        let commandUtil = CommandUtil(buffer, commonOperations, statusUtil, undoRedoOperations, _smartIndentationService, foldManager) :> ICommandUtil
+
 
         /// Create the selection change tracker so that it will begin to monitor
         /// selection events.  

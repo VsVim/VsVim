@@ -1,3 +1,5 @@
 
-- Need to see how readonly buffers and insert mode now play togehter.  Start debugging, insert mode and type.  Should get routed
+X Need to see how readonly buffers and insert mode now play togehter.  Start debugging, insert mode and type.  Should get routed
   through the special code in VsKeyProcess and hit Insert Mode head on
+- Need a way a host (Visual Studio) can specify that Vim should pretend a KeyInput was processed.  This will be important for 
+  recording edits in macros.

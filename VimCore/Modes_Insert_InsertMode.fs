@@ -43,7 +43,6 @@ type internal InsertMode
                 ("<Down>", this.ProcessDown);
                 ("<Left>", this.ProcessLeft);
                 ("<Right>", this.ProcessRight);
-                ("<C-[>", this.ProcessEscape);
                 ("<C-d>", this.ProcessShiftLeft)
                 ("<C-t>", this.ProcessShiftRight)
                 ("<C-o>", this.ProcessNormalModeOneCommand)
@@ -60,11 +59,15 @@ type internal InsertMode
     /// Is this KeyInput a raw text input item.  Really anything is text input except 
     /// for a few specific items
     member x.IsTextInput (ki : KeyInput) = 
-        match ki.Key with
-        | VimKey.Enter -> true
-        | VimKey.Back -> true
-        | VimKey.Delete -> true
-        | _ -> Option.isSome ki.RawChar
+        if Map.tryFind ki _commandMap |> Option.isSome then
+            // Known commands are not text input
+            false
+        else
+            match ki.Key with
+            | VimKey.Enter -> true
+            | VimKey.Back -> true
+            | VimKey.Delete -> true
+            | _ -> Option.isSome ki.RawChar
 
     /// Process the TextInput value
     member x.ProcessTextInput (ki : KeyInput) = 
