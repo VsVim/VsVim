@@ -922,6 +922,9 @@ type internal TextViewMotionUtil
             Column = None}
 
     member x.CharSearch c count charSearch direction = 
+        // Save the last search value
+        _vimData.LastCharSearch <- Some (charSearch, direction, c)
+
         match charSearch, direction with
         | CharSearchKind.ToChar, Path.Forward -> x.ForwardCharMotionCore c count TssUtil.FindNextOccurranceOfCharOnLine
         | CharSearchKind.TillChar, Path.Forward -> x.ForwardCharMotionCore c count TssUtil.FindTillNextOccurranceOfCharOnLine
