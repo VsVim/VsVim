@@ -291,3 +291,5 @@ type internal ChangeTracker
 
     interface IVimBufferCreationListener with
         member x.VimBufferCreated buffer = x.OnVimBufferCreated buffer
+
+

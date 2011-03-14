@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Vim.Extensions;
 
 namespace Vim.UnitTest.Mock
 {
@@ -15,6 +16,7 @@ namespace Vim.UnitTest.Mock
         public VirtualSnapshotPoint NavigateToData { get; set; }
         public bool NavigateToReturn { get; set; }
         public int ShowOpenFileDialogCount { get; set; }
+        public ITextView FocusedTextView { get; set; }
 
         public MockVimHost()
         {
@@ -159,6 +161,11 @@ namespace Vim.UnitTest.Mock
         HostResult IVimHost.LoadFileIntoNewWindow(string filePath)
         {
             throw new NotImplementedException();
+        }
+
+        public Microsoft.FSharp.Core.FSharpOption<ITextView> GetFocusedTextView()
+        {
+            return FSharpOption.CreateForReference(FocusedTextView);
         }
     }
 }

@@ -25,6 +25,7 @@ namespace Vim.UI.Wpf.Test
             _search = _factory.Create<IIncrementalSearch>();
             _buffer = new MockVimBuffer();
             _buffer.IncrementalSearchImpl = _search.Object;
+            _buffer.VimImpl = MockObjectFactory.CreateVim(factory: _factory).Object;
             _marginControl = new CommandMarginControl();
             _marginControl.StatusLine = String.Empty;
             _controller = new CommandMarginController(

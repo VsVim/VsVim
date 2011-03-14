@@ -18,6 +18,9 @@ type IVimHost =
     /// Format the provided lines
     abstract FormatLines : ITextView -> SnapshotLineRange -> unit
 
+    /// Get the ITextView which currently has keyboard focus
+    abstract GetFocusedTextView : unit -> ITextView option
+
     /// Go to the definition of the value under the cursor
     abstract GoToDefinition : unit -> bool
 

@@ -1449,11 +1449,14 @@ namespace VimCore.UnitTest
             AssertRegister(RegisterName.SmallDelete, "foo bar", OperationKind.CharacterWise);
         }
 
+        /// <summary>
+        /// A yank operation shouldn't update the SmallDelete register
+        /// </summary>
         [Test]
-        [Description("Yank of several lines")]
-        public void UpdateRegisterForSpan2()
+        public void UpdateRegisterForSpan_Yank()
         {
             Create("foo bar");
+            _registerMap.GetRegister(RegisterName.SmallDelete).UpdateValue("", OperationKind.LineWise);
             var span = _textView.GetLineRange(0).Extent;
             var reg = _registerMap.GetRegister('c');
             _operations.UpdateRegisterForSpan(
@@ -1494,22 +1497,28 @@ namespace VimCore.UnitTest
             AssertRegister(RegisterName.SmallDelete, "foo", OperationKind.CharacterWise);
         }
 
+        /// <summary>
+        /// The SmallDelete register shouldn't update for a delete of multiple lines
+        /// </summary>
         [Test]
-        [Description("Small delete register doesn't update for multiple lines")]
-        public void UpdateRegisterForSpan5()
+        public void UpdateRegisterForSpan_DeleteOfMultipleLines()
         {
             Create("foo", "bar");
+            _registerMap.GetRegister(RegisterName.SmallDelete).UpdateValue("", OperationKind.LineWise);
             var span = _textView.GetLineRange(0, 1).Extent;
             var reg = _registerMap.GetRegister('c');
             _operations.UpdateRegisterForSpan(reg, RegisterOperation.Delete, span, OperationKind.CharacterWise);
             AssertRegister(RegisterName.SmallDelete, "", OperationKind.LineWise);
         }
 
+        /// <summary>
+        /// Deleting to the black hole register shouldn't affect unnamed or others
+        /// </summary>
         [Test]
-        [Description("Deleting to black hole register should not affect unnamed or others")]
-        public void UpdateRegisterForSpan6()
+        public void UpdateRegisterForSpan_DeleteToBlackHole()
         {
             Create("foo bar");
+            _registerMap.GetRegister(RegisterName.Blackhole).UpdateValue("", OperationKind.LineWise);
             var span = _textView.GetLineRange(0).Extent;
             var namedReg = _registerMap.GetRegister('c');
             _operations.UpdateRegisterForSpan(

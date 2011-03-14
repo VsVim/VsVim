@@ -369,6 +369,7 @@ type RegisterName =
                         | '_' -> Some Blackhole
                         | '/' -> Some LastSearchPattern
                         | '-' -> Some SmallDelete
+                        | '"' -> Some Unnamed
                         | _ -> None
 
     static member All = 
@@ -405,6 +406,13 @@ module RegisterNameUtil =
 type RegisterOperation = 
     | Delete
     | Yank
+
+    with
+
+    override x.ToString() =
+        match x with
+        | Delete -> "Delete"
+        | Yank -> "Yank"
 
 /// Represents the data stored in a Register.  Registers need to store both string values 
 /// for cut and paste operations and KeyInput sequences for Macro recording.  There is not 

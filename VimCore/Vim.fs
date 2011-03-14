@@ -32,6 +32,7 @@ type internal VimData() =
     let mutable _lastSubstituteData : SubstituteData option = None
     let mutable _lastSearchData = { Text = SearchText.Pattern(StringUtil.empty); Kind = SearchKind.ForwardWithWrap; Options = SearchOptions.None }
     let mutable _lastCharSearch : (CharSearchKind * Path * char) option = None
+    let mutable _lastMacroRun : char option = None
     let mutable _lastCommand : StoredCommand option = None
     let _lastSearchChanged = Event<SearchData>()
 
@@ -50,6 +51,9 @@ type internal VimData() =
         member x.LastCharSearch 
             with get () = _lastCharSearch
             and set value = _lastCharSearch <- value
+        member x.LastMacroRun 
+            with get () = _lastMacroRun
+            and set value = _lastMacroRun <- value
         [<CLIEvent>]
         member x.LastSearchDataChanged = _lastSearchChanged.Publish
 
@@ -132,7 +136,6 @@ type internal VimBufferFactory
         let buffer = bufferRaw :> IVimBuffer
 
         let commandUtil = CommandUtil(buffer, commonOperations, statusUtil, undoRedoOperations, _smartIndentationService, foldManager) :> ICommandUtil
-
 
         /// Create the selection change tracker so that it will begin to monitor
         /// selection events.  
@@ -223,6 +226,13 @@ type internal Vim
                 Some name
         RegisterMap(_clipboardDevice, currentFileNameFunc) :> IRegisterMap
 
+    let _recorder = MacroRecorder(_registerMap)
+
+    /// Add the IMacroRecorder to the list of IVimBufferCreationListeners.  
+    let _bufferCreationListeners =
+        let item = Lazy<IVimBufferCreationListener>(fun () -> _recorder :> IVimBufferCreationListener)
+        item :: _bufferCreationListeners
+
     [<ImportingConstructor>]
     new(
         host : IVimHost,
@@ -251,6 +261,15 @@ type internal Vim
             vimData)
 
     member x.ActiveBuffer = ListUtil.tryHeadOnly _activeBufferStack
+
+    member x.FocusedBuffer = 
+        match _host.GetFocusedTextView() with
+        | None -> 
+            None
+        | Some textView -> 
+            let found, (buffer, _) = _bufferMap.TryGetValue(textView)
+            if found then Some buffer
+            else None
 
     member x.GetSettingsForNewBuffer () =
         match x.ActiveBuffer with
@@ -289,7 +308,7 @@ type internal Vim
         buffer
 
     member x.RemoveBufferCore view = 
-        let found,tuple= _bufferMap.TryGetValue(view)
+        let found, tuple = _bufferMap.TryGetValue(view)
         if found then 
             let _,bag = tuple
             bag.DisposeAll()
@@ -327,11 +346,13 @@ type internal Vim
 
     interface IVim with
         member x.ActiveBuffer = x.ActiveBuffer
+        member x.FocusedBuffer = x.FocusedBuffer
         member x.VimData = _vimData
         member x.VimHost = _host
         member x.VimRcLocalSettings 
             with get() = _vimrcLocalSettings
             and set value = _vimrcLocalSettings <- LocalSettings.Copy value
+        member x.MacroRecorder = _recorder :> IMacroRecorder
         member x.MarkMap = _markMap
         member x.KeyMap = _keyMap
         member x.SearchService = _search

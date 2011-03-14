@@ -4,13 +4,16 @@ using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using EnvDTE;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Editor;
+using Microsoft.VisualStudio.Platform.WindowManagement;
 using Microsoft.VisualStudio.PlatformUI.Shell;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.TextManager.Interop;
+using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
@@ -23,6 +26,9 @@ namespace VsVim
     /// the relationship with the IVimBuffer, merely implementing the host functionality
     /// </summary>
     [Export(typeof(IVimHost))]
+    [Export(typeof(IWpfTextViewCreationListener))]
+    [ContentType(Vim.Constants.ContentType)]
+    [TextViewRole(PredefinedTextViewRoles.Document)]
     internal sealed class VsVimHost : VimHost
     {
         internal const string CommandNameGoToDefinition = "Edit.GoToDefinition";
@@ -301,6 +307,41 @@ namespace VsVim
         public override void BuildSolution()
         {
             SafeExecuteCommand("Build.BuildSolution");
+        }
+
+        /// <summary>
+        /// Returns the ITextView which should have keyboard focus.  This method is used during macro
+        /// running and hence must account for view changes which occur during a macro run.  Say by the
+        /// macro containing the 'gt' command.  Unfortunately these don't fully process through Visual
+        /// Studio until the next UI thread pump so we instead have to go straight to the view controller
+        /// </summary>
+        public override FSharpOption<ITextView> GetFocusedTextView()
+        {
+            var activeView = ViewManager.Instance.ActiveView;
+
+            // Now find the ITextBuffer which has the matching View instance
+            foreach (var textBuffer in _textManager.TextBuffers)
+            {
+                var result = _adapter.GetContainingWindowFrame(textBuffer);
+                if (result.IsError)
+                {
+                    continue;
+                }
+
+                var frame = result.Value as WindowFrame;
+                if (frame != null && frame.FrameView == activeView)
+                {
+                    // TODO: Should try and pick the ITextView which is actually focussed as 
+                    // there could be several in a split screen
+                    var textView = _textManager.GetTextViews(textBuffer).FirstOrDefault();
+                    if (textView != null)
+                    {
+                        return FSharpOption.Create(textView);
+                    }
+                }
+            }
+
+            return FSharpOption<ITextView>.None;
         }
 
         /// <summary>

@@ -369,7 +369,6 @@ module NonEmptyCollectionUtil =
 
 type Contract = 
 
-    [<System.Diagnostics.ConditionalAttribute("DEBUG")>]
     static member Requires test = 
         if not test then
             raise (System.Exception("Contract failed"))

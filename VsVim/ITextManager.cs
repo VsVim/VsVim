@@ -22,6 +22,11 @@ namespace VsVim
         ITextView ActiveTextView { get; }
 
         /// <summary>
+        /// Get the ITextView instances which are attachked to this ITextBuffer
+        /// </summary>
+        IEnumerable<ITextView> GetTextViews(ITextBuffer textBuffer);
+
+        /// <summary>
         /// Navigate Visual Studio to the given point
         /// </summary>
         bool NavigateTo(VirtualSnapshotPoint point);

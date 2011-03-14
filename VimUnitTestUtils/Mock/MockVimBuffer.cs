@@ -31,6 +31,7 @@ namespace Vim.UnitTest.Mock
         public bool IsProcessingInputImpl;
         public PropertyCollection PropertiesImpl;
         public IVimData VimDataImpl;
+        public IVim VimImpl;
 
         public PropertyCollection Properties
         {
@@ -266,7 +267,7 @@ namespace Vim.UnitTest.Mock
 
         public IVim Vim
         {
-            get { throw new NotImplementedException(); }
+            get { return VimImpl; }
         }
 
         public IVimHost VimHost

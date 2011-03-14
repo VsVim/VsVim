@@ -46,6 +46,11 @@ type internal NormalMode
         let settings = _bufferData.Settings.GlobalSettings :> IVimSettings
         settings.SettingChanged.Subscribe this.OnGlobalSettingsChanged |> _eventHandlers.Add
 
+        // Need to listen to macro recording start / stop in order to insert the appropriate
+        // command
+        _bufferData.Vim.MacroRecorder.RecordingStarted.Subscribe this.OnMacroRecordingChanged |> _eventHandlers.Add
+        _bufferData.Vim.MacroRecorder.RecordingStopped.Subscribe this.OnMacroRecordingChanged |> _eventHandlers.Add
+
     member this.TextView = _bufferData.TextView
     member this.TextBuffer = _bufferData.TextBuffer
     member this.CaretPoint = _bufferData.TextView.Caret.Position.BufferPosition
@@ -60,36 +65,49 @@ type internal NormalMode
         this.EnsureCommands()
         _runner.Commands
 
-    member private this.EnsureCommands() = 
-        if not this.IsCommandRunnerPopulated then
+    member x.EnsureCommands() = 
+        if not x.IsCommandRunnerPopulated then
             let factory = Vim.Modes.CommandFactory(_operations, _capture, _bufferData.TextViewMotionUtil, _bufferData.JumpList, _bufferData.Settings)
 
-            this.CreateSimpleCommands()
-            |> Seq.append (this.CreateCommandBindings())
+            x.CreateSimpleCommands()
+            |> Seq.append (x.CreateCommandBindings())
             |> Seq.append (factory.CreateMovementCommands())
             |> Seq.iter _runner.Add
 
             // Add in the special ~ command
-            let _,command = this.GetTildeCommand()
+            let _, command = x.GetTildeCommand()
             _runner.Add command
 
+            // Add in the macro command
+            _runner.Add (x.GetMacroCommand())
+
     /// Raised when a global setting is changed
-    member private this.OnGlobalSettingsChanged (setting:Setting) = 
+    member x.OnGlobalSettingsChanged (setting:Setting) = 
         
         // If the tildeop setting changes we need to update how we handle it
-        if StringUtil.isEqual setting.Name GlobalSettingNames.TildeOpName && this.IsCommandRunnerPopulated then
-            let name, command = this.GetTildeCommand()
+        if StringUtil.isEqual setting.Name GlobalSettingNames.TildeOpName && x.IsCommandRunnerPopulated then
+            let name, command = x.GetTildeCommand()
             _runner.Remove name
             _runner.Add command
 
+    /// Raised when a macro recording starts or stops 
+    member x.OnMacroRecordingChanged () =
+        if x.IsCommandRunnerPopulated then
+            let command = x.GetMacroCommand()
+            _runner.Remove command.KeyInputSet
+            _runner.Add command
+
+    /// Bind the character in a replace character command: 'r'.  
     member x.BindReplaceChar () =
-        _data <- { _data with IsInReplace = true }
-        BindData<_>.CreateForSingle (Some KeyRemapMode.Language) (fun ki -> 
-            _data <- { _data with IsInReplace = false }
-            NormalCommand.ReplaceChar ki)
+        let func () = 
+            _data <- { _data with IsInReplace = true }
+            BindData<_>.CreateForSingle (Some KeyRemapMode.Language) (fun ki -> 
+                _data <- { _data with IsInReplace = false }
+                NormalCommand.ReplaceChar ki)
+        BindDataStorage.Complex func
 
     /// Get the informatoin on how to handle the tilde command based on the current setting for tildeop
-    member x.GetTildeCommand count =
+    member x.GetTildeCommand () =
         let name = KeyInputUtil.CharToKeyInput '~' |> OneKeyInput
         let flags = CommandFlags.Repeatable
         let command = 
@@ -98,6 +116,15 @@ type internal NormalMode
             else
                 CommandBinding.NormalBinding (name, flags, NormalCommand.ChangeCaseCaretPoint ChangeCharacterKind.ToggleCase)
         name, command
+
+    /// Check current IMacroRecorder state and return the proper command based on it
+    member x.GetMacroCommand () =
+        let recorder = _bufferData.Vim.MacroRecorder
+        let name = KeyNotationUtil.StringToKeyInputSet "q"
+        if recorder.IsRecording then
+            CommandBinding.NormalBinding (name, CommandFlags.Special, NormalCommand.RecordMacroStop)
+        else
+            CommandBinding.ComplexNormalBinding (name, CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar None NormalCommand.RecordMacroStart)
 
     /// Create the CommandBinding instances for the supported NormalCommand values
     member x.CreateCommandBindings() =
@@ -175,13 +202,12 @@ type internal NormalMode
         let complexSeq = 
             seq {
                 yield ("r", CommandFlags.Repeatable, x.BindReplaceChar ())
-                yield ("'", CommandFlags.Movement, BindData<_>.CreateForSingleChar None NormalCommand.JumpToMark)
-                yield ("`", CommandFlags.Movement, BindData<_>.CreateForSingleChar None NormalCommand.JumpToMark)
-                yield ("m", CommandFlags.Special, BindData<_>.CreateForSingleChar None NormalCommand.SetMarkToCaret)
-                yield ("@", CommandFlags.Special, BindData<_>.CreateForSingleChar None NormalCommand.RunMacro)
-            } |> Seq.map (fun (str, flags, bindCommand) -> 
+                yield ("'", CommandFlags.Movement, BindDataStorage<_>.CreateForSingleChar None NormalCommand.JumpToMark)
+                yield ("`", CommandFlags.Movement, BindDataStorage<_>.CreateForSingleChar None NormalCommand.JumpToMark)
+                yield ("m", CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar None NormalCommand.SetMarkToCaret)
+                yield ("@", CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar None NormalCommand.RunMacro)
+            } |> Seq.map (fun (str, flags, storage) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
-                let storage = BindDataStorage.Simple bindCommand
                 CommandBinding.ComplexNormalBinding (keyInputSet, flags, storage))
         Seq.append normalSeq motionSeq |> Seq.append complexSeq
 

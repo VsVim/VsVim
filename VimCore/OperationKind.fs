@@ -7,3 +7,10 @@ open System.Diagnostics
 type OperationKind = 
     | CharacterWise 
     | LineWise 
+
+    with
+
+    override x.ToString() =
+        match x with 
+        | CharacterWise -> "CharacterWise"
+        | LineWise -> "LineWise"

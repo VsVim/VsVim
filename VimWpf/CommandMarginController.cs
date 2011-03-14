@@ -29,7 +29,10 @@ namespace Vim.UI.Wpf
             _buffer.StatusMessage += OnStatusMessage;
             _buffer.StatusMessageLong += OnStatusMessageLong;
             _buffer.ErrorMessage += OnErrorMessage;
+            _buffer.Vim.MacroRecorder.RecordingStarted += delegate { UpdateForRecordingChanged(); };
+            _buffer.Vim.MacroRecorder.RecordingStopped += delegate { UpdateForRecordingChanged(); };
             _margin.OptionsClicked += OnOptionsClicked;
+            UpdateForRecordingChanged();
         }
 
         private void KeyInputEventComplete()
@@ -142,6 +145,13 @@ namespace Vim.UI.Wpf
                     _margin.StatusLine = _buffer.DisabledMode.HelpMessage;
                     break;
             }
+        }
+
+        private void UpdateForRecordingChanged()
+        {
+            _margin.IsRecording = _buffer.Vim.MacroRecorder.IsRecording
+                ? Visibility.Visible
+                : Visibility.Collapsed;
         }
 
         private void UpdateSubstituteConfirmMode()

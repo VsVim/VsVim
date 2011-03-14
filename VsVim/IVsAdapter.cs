@@ -35,7 +35,9 @@ namespace VsVim
         IVsEditorAdaptersFactoryService EditorAdapter { get; }
 
         /// <summary>
-        /// Get the IVsTextLines associated with the ITextBuffer.  May not have
+        /// Get the 
+        /// IVsTextLines associated with the ITextBuffer.  May not have
+        /// 
         /// one if this is not a shim'd ITextBuffer
         /// </summary>
         Result<IVsTextLines> GetTextLines(ITextBuffer textBuffer);

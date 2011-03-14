@@ -22,19 +22,29 @@
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
-        <TextBox 
+        <TextBox
             Grid.Row="0"
             Grid.Column="0"
+            Text="recording"
+            IsReadOnly="True"
+            FontWeight="Bold"
+            Visibility="{Binding Path=IsRecording}"
+            />
+
+        <TextBox 
+            Grid.Row="0"
+            Grid.Column="1"
             Text="{Binding Path=StatusLine}" 
             IsReadOnly="True" />
 
         <Button
             Grid.Row="0"
-            Grid.Column="1"
+            Grid.Column="2"
             Content="Options"
             Command="Properties"
             />

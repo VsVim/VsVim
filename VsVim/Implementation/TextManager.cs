@@ -207,7 +207,7 @@ namespace VsVim.Implementation
             return false;
         }
 
-        private IEnumerable<IWpfTextView> GetTextViews(ITextBuffer textBuffer)
+        public IEnumerable<ITextView> GetTextViews(ITextBuffer textBuffer)
         {
             return _adapter.GetTextViews(textBuffer)
                 .Select(x => _adapter.EditorAdapter.GetWpfTextView(x))

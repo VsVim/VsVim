@@ -1,16 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace Vim.UI.Wpf
 {
@@ -24,6 +15,11 @@ namespace Vim.UI.Wpf
             typeof(string),
             typeof(CommandMarginControl));
 
+        public static readonly DependencyProperty IsRecordingProperty = DependencyProperty.Register(
+            "IsRecording", 
+            typeof(Visibility),
+            typeof(CommandMarginControl));
+
         /// <summary>
         /// The primary status line for Vim
         /// </summary>
@@ -31,6 +27,12 @@ namespace Vim.UI.Wpf
         {
             get { return (string)GetValue(StatusLineProperty); }
             set { SetValue(StatusLineProperty, value); }
+        }
+
+        public Visibility IsRecording
+        {
+            get { return (Visibility) GetValue(IsRecordingProperty); }
+            set { SetValue(IsRecordingProperty, value); }
         }
 
         public event EventHandler OptionsClicked;

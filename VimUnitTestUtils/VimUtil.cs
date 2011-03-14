@@ -97,7 +97,8 @@ namespace Vim.UnitTest
             IUndoRedoOperations undoRedOperations = null,
             ISmartIndentationService smartIndentationService = null,
             IFoldManager foldManager = null,
-            IVimHost vimHost = null)
+            IVimHost vimHost = null,
+            IMacroRecorder recorder = null)
         {
             statusUtil = statusUtil ?? new StatusUtil();
             undoRedOperations = undoRedOperations ?? VimUtil.CreateUndoRedoOperations(statusUtil);
@@ -114,7 +115,8 @@ namespace Vim.UnitTest
                 registerMap: registerMap,
                 map: markMap,
                 host: vimHost,
-                vimData: vimData);
+                vimData: vimData,
+                recorder: recorder);
             var buffer = MockObjectFactory.CreateVimBuffer(
                 textView: textView,
                 settings: localSettings,

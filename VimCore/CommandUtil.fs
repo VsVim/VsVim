@@ -25,7 +25,8 @@ type internal CommandUtil
     let _vimData = _buffer.VimData
     let _localSettings = _buffer.Settings
     let _globalSettings = _localSettings.GlobalSettings
-    let _vimHost = _buffer.Vim.VimHost
+    let _vim = _buffer.Vim
+    let _vimHost = _vim.VimHost
 
     let mutable _inRepeatLastChange = false
 
@@ -1069,6 +1070,40 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
+    /// Start a macro recording
+    member x.RecordMacroStart c = 
+        let isAppend, c = 
+            if CharUtil.IsUpper c && CharUtil.IsLetter c then
+                true, CharUtil.ToLower c
+            else
+                false, c
+
+        // Restrict the register to the valid ones for macros
+        let name = 
+            if CharUtil.IsLetter c then
+                NamedRegister.OfChar c |> Option.map RegisterName.Named
+            elif CharUtil.IsDigit c then
+                NumberedRegister.OfChar c |> Option.map RegisterName.Numbered
+            elif c = '"' then
+                RegisterName.Unnamed |> Some
+            else 
+                None
+
+        match name with 
+        | None ->
+            // Beep on an invalid macro register
+            _operations.Beep()
+        | Some name ->
+            let register = _registerMap.GetRegister name
+            _buffer.Vim.MacroRecorder.StartRecording register isAppend
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Stop a macro recording
+    member x.RecordMacroStop () =
+        _buffer.Vim.MacroRecorder.StopRecording()
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Repeat the last executed command against the current buffer
     member x.RepeatLastCommand (repeatData : CommandData) = 
 
@@ -1226,6 +1261,12 @@ type internal CommandUtil
 
     /// Run the Macro which is present in the specified char
     member x.RunMacro registerName = 
+
+        // If the '@' is used then we are doing a run last macro run
+        let registerName = 
+            if registerName = '@' then _vimData.LastMacroRun |> OptionUtil.getOrDefault registerName
+            else registerName
+
         let name = 
             // TODO:  Need to handle, = and .
             if CharUtil.IsDigit registerName then
@@ -1242,14 +1283,37 @@ type internal CommandUtil
         | Some name ->
             let register = _registerMap.GetRegister name
 
-            // The macro should be executed as a single action.  Use an undo transactino to 
-            // give the proper undo behavior
-            x.EditWithUndoTransaciton "RunMacro" (fun () ->
+            // The macro should be executed as a single action and the macro can execute in
+            // several ITextBuffer instances (consider if the macros executes a 'gt' and keeps
+            // editing).  We need to have proper transactions for every ITextBuffer this macro
+            // runs in
+            //
+            // Using .Net dictionary because we have to map by ITextBuffer which doesn't have
+            // the comparison constraint
+            let map = System.Collections.Generic.Dictionary<ITextBuffer, IUndoTransaction>();
 
-                // Replay the key strokes one at a time
-                let list = register.RegisterValue.KeyInputList
-                for keyInput in list do
-                    _buffer.Process keyInput |> ignore)
+            // Replay the key strokes one at a time
+            let list = register.RegisterValue.KeyInputList
+            for keyInput in list do
+
+                match _vim.FocusedBuffer with
+                | None -> 
+                    // Nothing to do if we don't have an ITextBuffer with focus
+                    () 
+                | Some buffer -> 
+                    // Make sure we have an IUndoTransaction open in the ITextBuffer
+                    if not (map.ContainsKey(buffer.TextBuffer)) then
+                        let transaction = _undoRedoOperations.CreateUndoTransaction "Macro Run"
+                        transaction.AddBeforeTextBufferChangePrimitive()
+
+                    buffer.Process keyInput |> ignore
+
+            // Close out all of the transactions
+            for transaction in map.Values do
+                transaction.AddAfterTextBufferChangePrimitive()
+                transaction.Complete()
+
+            _vimData.LastMacroRun <- Some registerName
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1295,6 +1359,8 @@ type internal CommandUtil
         | NormalCommand.ShiftMotionLinesRight motion -> x.RunWithMotion motion x.ShiftMotionLinesRight
         | NormalCommand.SplitViewHorizontally -> x.SplitViewHorizontally()
         | NormalCommand.SplitViewVertically -> x.SplitViewVertically()
+        | NormalCommand.RecordMacroStart c -> x.RecordMacroStart c
+        | NormalCommand.RecordMacroStop -> x.RecordMacroStop ()
         | NormalCommand.RepeatLastCommand -> x.RepeatLastCommand data
         | NormalCommand.ReplaceChar keyInput -> x.ReplaceChar keyInput data.CountOrDefault
         | NormalCommand.RunMacro registerName -> x.RunMacro registerName

@@ -1,7 +1,9 @@
 ﻿using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Vim.UnitTest;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.UnitTest
 {
@@ -26,6 +28,7 @@ namespace VimCore.UnitTest
             _textView = EditorUtil.CreateView(lines);
             _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            ((MockVimHost) _buffer.Vim.VimHost).FocusedTextView = _textView;
         }
 
         /// <summary>
@@ -64,6 +67,7 @@ namespace VimCore.UnitTest
             TestRegister.UpdateValue(".");
             _buffer.Process("dw@c");
             Assert.AreEqual("again", _textView.GetLine(0).GetText());
+            Assert.IsTrue(_buffer.VimData.LastMacroRun.IsSome('c'));
         }
 
         /// <summary>
@@ -85,6 +89,27 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// When using an upper case register notation make sure the information is appended to
+        /// the existing value.  This can and will cause different behavior to occur
+        /// </summary>
+        [Test]
+        public void Record_AppendValues()
+        {
+            Create("");
+            TestRegister.UpdateValue("iw");
+            _buffer.Process("qCin");
+            _buffer.Process(VimKey.Escape);
+            _buffer.Process("q");
+            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
+            _textView.SetText("");
+            _textView.MoveCaretTo(0);
+            _buffer.Process("@c");
+            Assert.AreEqual("win", _textView.GetLine(0).GetText());
+            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
         /// Running a macro which consists of several commands should cause only the last
         /// command to be the last command for the purpose of a 'repeat' operation
         /// </summary>
@@ -100,5 +125,18 @@ namespace VimCore.UnitTest
             Assert.AreEqual("aick tree", _textView.GetLine(1).GetText());
         }
 
+        /// <summary>
+        /// The @@ command should just read the char on the LastMacroRun value and replay 
+        /// that macro
+        /// </summary>
+        [Test]
+        public void RunLastMacro_ReadTheRegister()
+        {
+            Create("");
+            TestRegister.UpdateValue("iwin");
+            _buffer.VimData.LastMacroRun = FSharpOption.Create('c');
+            _buffer.Process("@@");
+            Assert.AreEqual("win", _textView.GetLine(0).GetText());
+        }
     }
 }

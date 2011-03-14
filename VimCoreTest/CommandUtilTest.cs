@@ -18,6 +18,7 @@ namespace VimCore.UnitTest
     {
         private MockRepository _factory;
         private Mock<IVimHost> _vimHost;
+        private Mock<IMacroRecorder> _recorder;
         private Mock<IStatusUtil> _statusUtil;
         private Mock<ICommonOperations> _operations;
         private Mock<ISmartIndentationService> _smartIdentationService;
@@ -37,6 +38,7 @@ namespace VimCore.UnitTest
             _vimHost = _factory.Create<IVimHost>();
             _statusUtil = _factory.Create<IStatusUtil>();
             _operations = _factory.Create<ICommonOperations>();
+            _recorder = _factory.Create<IMacroRecorder>(MockBehavior.Loose);
             _smartIdentationService = _factory.Create<ISmartIndentationService>();
 
             _textView = EditorUtil.CreateView(lines);
@@ -57,11 +59,12 @@ namespace VimCore.UnitTest
                 _operations.Object,
                 _motionUtil,
                 statusUtil: _statusUtil.Object,
-                localSettings : _localSettings,
+                localSettings: _localSettings,
                 registerMap: _registerMap,
                 markMap: _markMap,
                 vimData: _vimData,
-                smartIndentationService: _smartIdentationService.Object);
+                smartIndentationService: _smartIdentationService.Object,
+                recorder: _recorder.Object);
         }
 
         private Register UnnamedRegister
@@ -1459,9 +1462,55 @@ namespace VimCore.UnitTest
             Assert.AreEqual(2, _textView.Caret.Position.VirtualBufferPosition.VirtualSpaces);
         }
 
-        /*
-        Test
-         - visual put p nad P with linewise paste
-         - visual put should put deleted text in register */
+        /// <summary>
+        /// Make sure it beeps on a bad register name
+        /// </summary>
+        [Test]
+        public void RecordMacroStart_BadRegisterName()
+        {
+            Create("");
+            _recorder.SetupGet(x => x.IsRecording).Returns(false);
+            _operations.Setup(x => x.Beep()).Verifiable();
+            _commandUtil.RecordMacroStart('!');
+            _factory.Verify();
+        }
+
+        /// <summary>
+        /// Upper case registers should cause an append to occur
+        /// </summary>
+        [Test]
+        public void RecordMacroStart_AppendRegisters()
+        {
+            Create("");
+            _recorder.SetupGet(x => x.IsRecording).Returns(false);
+            _recorder.Setup(x => x.StartRecording(_registerMap.GetRegister('a'), true)).Verifiable();
+            _commandUtil.RecordMacroStart('A');
+            _factory.Verify();
+        }
+
+        /// <summary>
+        /// Standard case where no append is needed
+        /// </summary>
+        [Test]
+        public void RecordMacroStart_NormalRegister()
+        {
+            Create("");
+            _recorder.SetupGet(x => x.IsRecording).Returns(false);
+            _recorder.Setup(x => x.StartRecording(_registerMap.GetRegister('a'), false)).Verifiable();
+            _commandUtil.RecordMacroStart('a');
+            _factory.Verify();
+        }
+
+        /// <summary>
+        /// Make sure it beeps on a bad register name
+        /// </summary>
+        [Test]
+        public void RunMacro_BadRegisterName()
+        {
+            Create("");
+            _operations.Setup(x => x.Beep()).Verifiable();
+            _commandUtil.RunMacro('!');
+            _operations.Verify();
+        }
     }
 }

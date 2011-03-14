@@ -881,6 +881,12 @@ type NormalCommand =
     /// whether or not the caret should be placed after the inserted text
     | PutBeforeCaret of bool
 
+    /// Start the recording of a macro to the specified Register
+    | RecordMacroStart of char
+
+    /// Stop the recording of a macro to the specified Register
+    | RecordMacroStop
+
     /// Repeat the last command
     | RepeatLastCommand
 
@@ -889,6 +895,7 @@ type NormalCommand =
 
     /// Run the macro contained in the register specified by the char value
     | RunMacro of char
+
     /// Set the specified mark to the current value of the caret
     | SetMarkToCaret of char
 
@@ -1092,6 +1099,12 @@ type BindDataStorage<'T> =
         match x with
         | Simple bindData -> Simple (bindData.Convert mapFunc)
         | Complex func -> Complex (fun () -> func().Convert mapFunc)
+
+    /// Many bindings are simply to get a single char.  Centralize that logic 
+    /// here so it doesn't need to be repeated
+    static member CreateForSingleChar keyRemapModeOpt completeFunc = 
+        let data = BindData<_>.CreateForSingle keyRemapModeOpt (fun keyInput -> completeFunc keyInput.Char)
+        BindDataStorage<_>.Simple data
 
 /// Representation of binding of Command's to KeyInputSet values and flags which correspond
 /// to the execution of the command
@@ -1511,6 +1524,28 @@ type IIncrementalSearch =
     [<CLIEvent>]
     abstract CurrentSearchCancelled : IEvent<SearchData>
 
+/// Used to record macros in a Vim 
+type IMacroRecorder =
+
+    /// Is a macro currently recording
+    abstract IsRecording : bool
+
+    /// Start recording a macro into the specified Register.  Will fail if the recorder
+    /// is already recording
+    abstract StartRecording : Register -> isAppend : bool -> unit
+
+    /// Stop recording a macro.  Will fail if it's not actually recording
+    abstract StopRecording : unit -> unit
+
+    /// Raised when a macro recording is started.  Passes the Register where the recording
+    /// will take place
+    [<CLIEvent>]
+    abstract RecordingStarted : IEvent<unit>
+
+    /// Raised when a macro recording is copmleted.
+    [<CLIEvent>]
+    abstract RecordingStopped : IEvent<unit>
+
 [<RequireQualifiedAccess>]
 type ProcessResult = 
 
@@ -1618,12 +1653,6 @@ module LocalSettingNames =
 /// Holds mutable data available to all buffers
 type IVimData = 
 
-    /// Data for the last substitute command performed
-    abstract LastSubstituteData : SubstituteData option with get, set
-
-    /// Last pattern searched for in any buffer
-    abstract LastSearchData : SearchData with get, set
-
     /// Motion function used with the last f, F, t or T motion.  The 
     /// first item in the tuple is the forward version and the second item
     /// is the backwards version
@@ -1631,6 +1660,15 @@ type IVimData =
 
     /// The last command which was ran 
     abstract LastCommand : StoredCommand option with get, set
+
+    /// The last macro register which was run
+    abstract LastMacroRun : char option with get, set
+
+    /// Last pattern searched for in any buffer
+    abstract LastSearchData : SearchData with get, set
+
+    /// Data for the last substitute command performed
+    abstract LastSubstituteData : SubstituteData option with get, set
 
     /// Raised when the LastSearch value changes
     [<CLIEvent>]
@@ -1766,14 +1804,22 @@ and IVim =
     /// which has focus 
     abstract ActiveBuffer : IVimBuffer option
 
+    /// Get the IVimBuffer which currently has KeyBoard focus
+    abstract FocusedBuffer : IVimBuffer option
+
     /// Is the VimRc loaded
     abstract IsVimRcLoaded : bool
 
     /// IKeyMap for this IVim instance
     abstract KeyMap : IKeyMap
 
+    /// IMacroRecorder for the IVim instance
+    abstract MacroRecorder : IMacroRecorder
+
+    /// IMarkMap for the IVim instance
     abstract MarkMap : IMarkMap
 
+    /// IRegisterMap for the IVim instance
     abstract RegisterMap : IRegisterMap
 
     /// ISearchService for this IVim instance

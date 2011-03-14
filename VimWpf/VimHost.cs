@@ -1,16 +1,21 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Media;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 using Microsoft.VisualStudio.Text.Operations;
+using Vim.Extensions;
 
 namespace Vim.UI.Wpf
 {
-    public abstract class VimHost : IVimHost
+    public abstract class VimHost : IVimHost, IWpfTextViewCreationListener
     {
         private readonly ITextDocumentFactoryService _textDocumentFactoryService;
         private readonly IEditorOperationsFactoryService _editorOperationsFactoryService;
+        private readonly List<ITextView> _textViewList = new List<ITextView>();
 
         protected VimHost(
             ITextDocumentFactoryService textDocumentFactoryService,
@@ -109,6 +114,12 @@ namespace Vim.UI.Wpf
 
         public abstract string GetName(ITextBuffer value);
 
+        public virtual FSharpOption<ITextView> GetFocusedTextView()
+        {
+            var textView = _textViewList.FirstOrDefault(x => x.HasAggregateFocus);
+            return FSharpOption.CreateForReference(textView);
+        }
+
         public abstract bool GoToDefinition();
 
         public abstract bool GoToGlobalDeclaration(ITextView textView, string name);
@@ -177,5 +188,14 @@ namespace Vim.UI.Wpf
         public abstract HostResult SplitViewHorizontally(ITextView value);
 
         public abstract HostResult SplitViewVertically(ITextView value);
+
+        /// <summary>
+        /// Need to track the open ITextView values
+        /// </summary>
+        void IWpfTextViewCreationListener.TextViewCreated(IWpfTextView textView)
+        {
+            _textViewList.Add(textView);
+            textView.Closed += delegate { _textViewList.Remove(textView); };
+        }
     }
 }

@@ -58,6 +58,14 @@ namespace Vim.UnitTest.Mock
             return mock;
         }
 
+        public static Mock<IMacroRecorder> CreateMacroRecorder(MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var recorder = factory.Create<IMacroRecorder>(MockBehavior.Loose);
+            recorder.SetupGet(x => x.IsRecording).Returns(false);
+            return recorder;
+        }
+
         public static Mock<IVim> CreateVim(
             IRegisterMap registerMap = null,
             IMarkMap map = null,
@@ -67,6 +75,7 @@ namespace Vim.UnitTest.Mock
             IKeyboardDevice keyboardDevice = null,
             IMouseDevice mouseDevice = null,
             IVimData vimData = null,
+            IMacroRecorder recorder = null,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
@@ -75,6 +84,7 @@ namespace Vim.UnitTest.Mock
             settings = settings ?? new GlobalSettings();
             host = host ?? new MockVimHost();
             keyMap = keyMap ?? (new KeyMap());
+            recorder = recorder ?? CreateMacroRecorder(factory: factory).Object;
             keyboardDevice = keyboardDevice ?? (factory.Create<IKeyboardDevice>(MockBehavior.Loose)).Object;
             mouseDevice = mouseDevice ?? (factory.Create<IMouseDevice>(MockBehavior.Loose)).Object;
             vimData = vimData ?? new VimData();
@@ -85,6 +95,7 @@ namespace Vim.UnitTest.Mock
             mock.SetupGet(x => x.VimHost).Returns(host);
             mock.SetupGet(x => x.KeyMap).Returns(keyMap);
             mock.SetupGet(x => x.VimData).Returns(vimData);
+            mock.SetupGet(x => x.MacroRecorder).Returns(recorder);
             return mock;
         }
 
