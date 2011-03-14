@@ -1203,5 +1203,62 @@ namespace VimCore.UnitTest
             _buffer.Process(VimKey.Escape);
             Assert.AreEqual("dogbbb", _textView.GetLine(0).GetText());
         }
+
+        /// <summary>
+        /// Make sure the matching token behavior fits all of the issues described in 
+        /// issue 468
+        /// </summary>
+        [Test]
+        public void MatchingTokens_Issue468()
+        {
+            Create("(wchar_t*) realloc(pwcsSelFile, (nSelFileLen+1)*sizeof(wchar_t))");
+            
+            // First open paren to the next closing one
+            _buffer.Process("%");
+            Assert.AreEqual(9, _textView.GetCaretPoint().Position);
+
+            // From the first closing paren back to the start
+            _buffer.Process("%");
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+
+            // From the second opening paren to the last one
+            var lastPoint = _textView.TextSnapshot.GetEndPoint().Subtract(1);
+            Assert.AreEqual(')', lastPoint.GetChar());
+            _textView.MoveCaretTo(18);
+            Assert.AreEqual('(', _textView.GetCaretPoint().GetChar());
+            _buffer.Process("%");
+            Assert.AreEqual(lastPoint, _textView.GetCaretPoint());
+
+            // And back to the start one
+            _buffer.Process("%");
+            Assert.AreEqual(18, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Make sure we jump correctly between matching token values of different types
+        /// </summary>
+        [Test]
+        public void MatchingTokens_DifferentTypes()
+        {
+            Create("{ { (( } /* a /*) b */ })");
+            Action<int, int> del = (start, end) =>
+                {
+                    _textView.MoveCaretTo(start);
+                    _buffer.Process("%");
+                    Assert.AreEqual(end, _textView.GetCaretPoint().Position);
+
+                    if (start != end)
+                    {
+                        _textView.MoveCaretTo(end);
+                        _buffer.Process("%");
+                        Assert.AreEqual(start, _textView.GetCaretPoint().Position);
+                    }
+                };
+            del(0, 23);
+            del(2, 7);
+            del(4, 24);
+            del(5, 16);
+            del(9, 20);
+        }
     }
 }
