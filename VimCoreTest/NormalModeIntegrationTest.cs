@@ -1260,5 +1260,18 @@ namespace VimCore.UnitTest
             del(5, 16);
             del(9, 20);
         }
+
+        /// <summary>
+        /// Make sure repeat last char search is functioning
+        /// </summary>
+        [Test]
+        public void RepeatLastCharSearch_Forward()
+        {
+            Create("hello", "world");
+            _buffer.Process("fr");
+            _textView.MoveCaretToLine(1);
+            _buffer.Process(";");
+            Assert.AreEqual(_textView.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+        }
     }
 }
