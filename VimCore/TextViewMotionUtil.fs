@@ -77,37 +77,50 @@ module internal MotionUtil =
             let isPrefixMatch current = 
                 StandardMatchTokenMap |> Seq.exists (fun pair -> pair.Key.StartsWith current)
 
-            let inToken = ref false
             while e.MoveNext() do
                 let currentPoint = e.Current
                 let current = currentPoint.GetChar()
-                if inToken.Value then
-                    // Append the next value and check to see if we've completed the 
-                    // match or need to continue looking
-                    builder.Append(current) |> ignore
-                    let current = builder.ToString()
-                    match Map.tryFind current StandardMatchTokenMap with
-                    | Some flags -> 
 
-                        // Found a match.  Yield the Token
-                        yield (SnapshotSpan(builderStart.Value, builder.Length), flags)
-                        inToken := false
-
-                    | None -> 
-
-                        // If we don't still have a prefix match then reset the search
-                        if not (isPrefixMatch current) then 
-                            inToken := false
-                else 
-                    match Map.tryFind (current.ToString()) StandardMatchTokenMap with
-                    | Some flags -> 
-                        yield (SnapshotSpan(currentPoint, 1), flags)
-                    | None ->
-                        if Set.contains current startSet then
-                            builderStart := currentPoint 
-                            inToken := true
+                let toYield = 
+                    if builder.Length > 0 then
+                        // Append the next value and check to see if we've completed the 
+                        // match or need to continue looking
+                        builder.Append(current) |> ignore
+                        let current = builder.ToString()
+                        match Map.tryFind current StandardMatchTokenMap with
+                        | Some flags -> 
+    
+                            // Found a match.  Yield the Token
+                            let token = SnapshotSpan(builderStart.Value, builder.Length), flags
                             builder.Length <- 0
-                            builder.Append(current) |> ignore
+                            Some token
+                        | None -> 
+    
+                            if not (isPrefixMatch current) then 
+                                // Token is not complete and we no longer have a prefix match 
+                                // against a full token.  Reset our state and interpret the current
+                                // point as the start of a new token
+                                builder.Length <- 0
+                            None
+                    else
+                        None
+
+                match toYield with
+                | Some token -> 
+                    // Produced a token from the builder.  Yield it now
+                    yield token
+                | None ->
+                    // No token was produced from the builder.  If the length is 0 now that means we
+                    // are in a clean contetx and should interpret 'current' in that clean context
+                    if builder.Length = 0 then
+                        match Map.tryFind (current.ToString()) StandardMatchTokenMap with
+                        | Some flags -> 
+                            // It's a single char complete token so just return it
+                            yield (SnapshotSpan(currentPoint, 1), flags)
+                        | None ->
+                            if Set.contains current startSet then
+                                builderStart := currentPoint 
+                                builder.Append(current) |> ignore
 
         } |> Seq.filter (fun (span, flags) -> 
 
@@ -139,9 +152,11 @@ module internal MotionUtil =
                 // A start token, match the end tokens
                 true, (endTokens |> Seq.ofList)
 
+        // Is the text in the given Span a match for the original token?
         let isMatch span = 
             let text = SnapshotSpanUtil.GetText span
             Seq.exists (fun t -> t = text) possibleMatches
+
         if isStart then
             // Starting from this token.  Start the next line if that is one of the options
             // for this token 
@@ -170,27 +185,42 @@ module internal MotionUtil =
                     None
             inner 1 
         else
-            // Go from the start of the buffer to the start of the token
+            // Go from the start of the buffer to the start of the token.  We will keep a stack
+            // of open start tokens as we descend down the list of tokens.  As we hit close tokens
+            // we will pop off the top of the list.  When we hit the original token the top
+            // of the list is the matching token
             let searchSpan = SnapshotSpan(SnapshotUtil.GetStartPoint span.Snapshot, span.Start)
             use e = (GetMatchTokens searchSpan).GetEnumerator()
-            let rec inner startToken depth = 
+            let rec inner startTokenList = 
                 if e.MoveNext() then
                     let current, _ = e.Current 
+
                     if isMatch current then 
-                        match startToken with
-                        | None -> 
-                            inner (Some current) 0
-                        | Some _ ->
-                            if startTokenNests then inner startToken (depth + 1)
-                            else inner startToken 0
+                        match startTokenList with
+                        | [] ->
+                            inner [current]
+                        | _ -> 
+                            // If we have start tokens which nest (like parens) then put the new
+                            // start token at the top of the list.  Else don't even record the 
+                            // token
+                            if startTokenNests then inner (current :: startTokenList)
+                            else inner startTokenList
                     elif current.GetText() = text then 
-                        if depth > 0 then inner startToken (depth - 1)
-                        else inner None 0 
+                        // Found another end token.  Pop off the top of the stack if there is
+                        // any
+                        let startTokenList = 
+                            match startTokenList with
+                            | [] -> List.empty
+                            | _::t -> t
+                        inner startTokenList
                     else 
-                        inner startToken depth
+                        // Token is uninteresting.  Just recurse
+                        inner startTokenList
                 else
-                    startToken
-            inner None 0
+                    // Can't move the enumerator anymore so we are at the end token.  The top 
+                    // of the list is our matching token
+                    ListUtil.tryHeadOnly startTokenList
+            inner List.empty
 
     /// Does this point represent a section boundary.  This occurs after a form feed 
     /// in the first column in a line.  

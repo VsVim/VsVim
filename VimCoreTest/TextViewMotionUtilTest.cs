@@ -5,9 +5,9 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using NUnit.Framework;
 using Vim;
-using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
+using Vim.Extensions;
 
 namespace VimCore.UnitTest
 {
@@ -1470,6 +1470,45 @@ namespace VimCore.UnitTest
             _textView.MoveCaretTo(4);
             var data = _motionUtil.MatchingToken().Value;
             Assert.AreEqual("( ", data.Span.GetText());
+            Assert.IsFalse(data.IsForward);
+        }
+
+        /// <summary>
+        /// Make sure we function properly with nested parens.
+        /// </summary>
+        [Test]
+        public void MatchingToken_ParensNestedFromEnd()
+        {
+            Create("(((a)))");
+            _textView.MoveCaretTo(5);
+            var data = _motionUtil.MatchingToken().Value;
+            Assert.AreEqual("((a))", data.Span.GetText());
+            Assert.IsFalse(data.IsForward);
+        }
+
+        /// <summary>
+        /// Make sure we function properly with consequitive sets of parens
+        /// </summary>
+        [Test]
+        public void MatchingToken_ParensConsecutiveSetsFromEnd()
+        {
+            Create("((a)) /* ((b))");
+            _textView.MoveCaretTo(12);
+            var data = _motionUtil.MatchingToken().Value;
+            Assert.AreEqual("(b)", data.Span.GetText());
+            Assert.IsFalse(data.IsForward);
+        }
+
+        /// <summary>
+        /// Make sure we function properly with consequitive sets of parens
+        /// </summary>
+        [Test]
+        public void MatchingToken_ParensConsecutiveSetsFromEnd2()
+        {
+            Create("((a)) /* ((b))");
+            _textView.MoveCaretTo(13);
+            var data = _motionUtil.MatchingToken().Value;
+            Assert.AreEqual("((b))", data.Span.GetText());
             Assert.IsFalse(data.IsForward);
         }
 
