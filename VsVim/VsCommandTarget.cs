@@ -146,7 +146,7 @@ namespace VsVim
         private bool CanProcessDirectly(IInsertMode mode, KeyInput keyInput)
         {
             // Don't let the mode directly process anything it considers text input.  We need this to go
-            // through IOleCommandTarget in order to get intellisense values.  
+            // through IOleCommandTarget in order to get InsertMode values.  
             if (mode.IsTextInput(keyInput))
             {
                 return false;
@@ -160,14 +160,14 @@ namespace VsVim
 
             // If this is any of the arrow keys and one of the help windows is active then don't 
             // let insert mode process the input.  We want the KeyInput to be routed to the windows
-            // like intellisense so navigation can occur
+            // like Intellisense so navigation can occur
             if (isAnyArrow && (_broker.IsCompletionActive || _broker.IsQuickInfoActive || _broker.IsSignatureHelpActive || _broker.IsSmartTagSessionActive))
             {
                 return false;
             }
 
             // Unfortunately there is no way to detect if the R# completion windows are active.  We have
-            // to take the pesimistic view that they are not and just not handle the input
+            // to take the pessimistic view that they are not and just not handle the input
             if (isAnyArrow && _externalEditManager.IsResharperLoaded)
             {
                 return false;
@@ -187,12 +187,12 @@ namespace VsVim
                 return false;
             }
 
-            // Next we need to determine if we can process this directy or not.  The only mode 
+            // Next we need to determine if we can process this directly or not.  The only mode 
             // we actively intercept KeyInput for is InsertMode because we need to route it
-            // through IOleCommandTarget to get intellisense and many other features.
+            // through IOleCommandTarget to get Intellisense and many other features.
             var mode = _buffer.ModeKind == ModeKind.Insert
                 ? _buffer.InsertMode
-                : _buffer.ModeKind == ModeKind.Replace ? _buffer.ReplaceMode : null;
+                : null;
             if (mode == null)
             {
                 return _buffer.Process(keyInput);

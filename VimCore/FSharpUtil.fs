@@ -278,7 +278,13 @@ module internal NullableUtil =
             None
 
 module internal OptionUtil =
-    
+
+    /// Collapse an option of an option to just an option
+    let collapse<'a> (opt : 'a option option) =
+        match opt with
+        | None -> None
+        | Some opt -> opt
+
     /// Combine an option with another value.  If the option has no value then the result
     /// is None.  If the option has a value the result is an Option of a tuple of the original
     /// value and the passed in one
@@ -287,7 +293,7 @@ module internal OptionUtil =
         | Some(optValue) -> Some (optValue,value)
         | None -> None
 
-    /// Combine an option with another value.  Same as combine but takes a tuple'd argument
+    /// Combine an option with another value.  Same as combine but takes a tupled argument
     let combine2 (opt,value) = combine opt value
 
     /// Combine an option with another value.  If the option has no value then the result

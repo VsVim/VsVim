@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
@@ -48,6 +49,7 @@ namespace VimCore.UnitTest
             _localSettings = _factory.Create<IVimLocalSettings>();
             _localSettings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
             _textChangeTracker = _factory.Create<ITextChangeTracker>();
+            _textChangeTracker.SetupGet(x => x.CurrentChange).Returns(FSharpOption<TextChange>.None);
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
             _data = MockObjectFactory.CreateVimBuffer(
                 _textView,

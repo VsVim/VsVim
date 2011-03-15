@@ -119,7 +119,7 @@ type internal CommandUtil
             edit.Replace(p.Position, 1, change) |> ignore)
         edit.Apply() |> ignore
 
-    /// Change the caret line via the specied ChangeCharacterKind.
+    /// Change the caret line via the specified ChangeCharacterKind.
     member x.ChangeCaseCaretLine kind =
 
         // The caret should be positioned on the first non-blank space in 
@@ -1183,6 +1183,11 @@ type internal CommandUtil
             finally
                 _inRepeatLastChange <- false
 
+    /// Replace the text at the caret via replace mode
+    member x.ReplaceAtCaret count =
+        let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Replace, ModeArgument.InsertWithCount count)
+        CommandResult.Completed switch
+
     /// Replace the char under the cursor with the specified character
     member x.ReplaceChar keyInput count = 
 
@@ -1362,6 +1367,7 @@ type internal CommandUtil
         | NormalCommand.RecordMacroStart c -> x.RecordMacroStart c
         | NormalCommand.RecordMacroStop -> x.RecordMacroStop ()
         | NormalCommand.RepeatLastCommand -> x.RepeatLastCommand data
+        | NormalCommand.ReplaceAtCaret -> x.ReplaceAtCaret count
         | NormalCommand.ReplaceChar keyInput -> x.ReplaceChar keyInput data.CountOrDefault
         | NormalCommand.RunMacro registerName -> x.RunMacro registerName
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion register)

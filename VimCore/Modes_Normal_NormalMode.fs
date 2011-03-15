@@ -156,6 +156,7 @@ type internal NormalMode
                 yield ("O", CommandFlags.Repeatable, NormalCommand.InsertLineAbove)
                 yield ("p", CommandFlags.Repeatable, NormalCommand.PutAfterCaret false)
                 yield ("P", CommandFlags.Repeatable, NormalCommand.PutBeforeCaret false)
+                yield ("R", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange, NormalCommand.ReplaceAtCaret)
                 yield ("s", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.SubstituteCharacterAtCaret)
                 yield ("S", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeLines)
                 yield ("x", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
@@ -434,11 +435,6 @@ type internal NormalMode
                     "<C-q>", 
                     CommandFlags.Special,
                     ModeSwitch.SwitchMode ModeKind.VisualBlock, 
-                    doNothing)
-                yield (
-                    "R", 
-                    CommandFlags.Special,
-                    ModeSwitch.SwitchMode ModeKind.Replace, 
                     doNothing)
             } |> Seq.map (fun (str, kind, switch, func) -> (str, kind, func, CommandResult.Completed switch))
 

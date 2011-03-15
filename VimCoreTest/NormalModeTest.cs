@@ -1741,11 +1741,12 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void ReplaceMode1()
+        public void Bind_ReplaceAtCaret()
         {
             Create(string.Empty);
-            var res = _mode.Process("R");
-            Assert.IsTrue(res.IsSwitchMode(ModeKind.Replace));
+            _commandUtil.SetupCommandNormal(NormalCommand.ReplaceAtCaret);
+            _mode.Process("R");
+            _commandUtil.Verify();
         }
 
         [Test]

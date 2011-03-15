@@ -833,7 +833,7 @@ type NormalCommand =
     | FormatMotion of MotionData
 
     /// GoTo the file under the cursor.  The bool represents whether or not this should occur in
-    /// a different widnow
+    /// a different window
     | GoToFileUnderCaret of bool
 
     /// GoTo the ITextView in the specified direction
@@ -889,6 +889,9 @@ type NormalCommand =
 
     /// Repeat the last command
     | RepeatLastCommand
+
+    /// Replace the text starting at the text by starting insert mode
+    | ReplaceAtCaret
 
     /// Replace the char under the cursor with the given char
     | ReplaceChar of KeyInput
@@ -1269,8 +1272,7 @@ type StoredCommand =
     /// The stored information about a VisualCommand
     | VisualCommand of VisualCommand * CommandData * StoredVisualSpan * CommandFlags
 
-
-    /// A Text Change which ocurred 
+    /// A Text Change which occurred
     | TextChangeCommand of TextChange
 
     /// A Linked Command links together 2 other StoredCommand objects so they

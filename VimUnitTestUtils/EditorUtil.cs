@@ -4,6 +4,7 @@ using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
 using System.Linq;
+using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
@@ -54,6 +55,9 @@ namespace Vim.UnitTest
 
             [Import] 
             public ISmartIndentationService SmartIndentationService;
+
+            [Import]
+            public ICompletionBroker CompletionBroker;
         }
 
         #endregion

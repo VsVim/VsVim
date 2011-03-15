@@ -35,7 +35,7 @@ type internal TextChangeTracker
         // TODO: Maybe the above would be better served by just checking to see if we're in a
         // repeat and logging based on that
         _buffer.TextBuffer.Changed 
-        |> Observable.filter (fun _ -> _buffer.TextView.HasAggregateFocus || _buffer.ModeKind = ModeKind.Insert)
+        |> Observable.filter (fun _ -> _buffer.TextView.HasAggregateFocus || _buffer.ModeKind = ModeKind.Insert || _buffer.ModeKind = ModeKind.Replace)
         |> Observable.filter (fun _ -> (not _buffer.IsProcessingInput) || _buffer.InsertMode.IsProcessingTextInput || _buffer.ReplaceMode.IsProcessingTextInput)
         |> Observable.subscribe (fun args -> this.OnTextChanged args)
         |> _bag.Add
@@ -72,9 +72,15 @@ type internal TextChangeTracker
         if args.Changes.Count = 1 then
             let change = args.Changes.Item(0)
             let opt = 
-                if change.Delta > 0 then Some (TextChange.Insert change.NewText)
-                elif change.Delta < 0 then Some (TextChange.Delete change.OldLength)
-                else None
+                if change.Delta > 0 then 
+                    Some (TextChange.Insert change.NewText)
+                elif change.Delta < 0 then 
+                    Some (TextChange.Delete change.OldLength)
+                else 
+                    // Really this is a replace but for the purpose of change we model it
+                    // as Insert.  Could as easily be modeled as Replace (and possibly 
+                    // should but don't need the flexibility right now)
+                    Some (TextChange.Insert change.NewText)
             match opt with 
             | None -> ()
             | Some(textChange) ->
@@ -87,7 +93,7 @@ type internal TextChangeTracker
     member private x.MergeChange oldTextChange (oldChange:ITextChange) newTextChange (newChange:ITextChange) =
 
         // Right now we only support merging Insert with insert and delete with delete
-        match oldTextChange,newTextChange with
+        match oldTextChange, newTextChange with
         | TextChange.Insert(t1), TextChange.Insert(t2) -> 
             if oldChange.NewEnd = newChange.OldPosition then 
                 _currentTextChange <- Some ((TextChange.Insert (t1 + t2)), newChange)
