@@ -536,6 +536,7 @@ module KeyInputSetUtil =
 
 /// Modes for a key remapping
 [<RequireQualifiedAccess>]
+[<DebuggerDisplay("{ToString(),nq}")>]
 type KeyRemapMode =
     | Normal 
     | Visual 
@@ -544,6 +545,18 @@ type KeyRemapMode =
     | Insert 
     | Command 
     | Language 
+
+    with 
+
+    override x.ToString() =
+        match x with 
+        | Normal -> "Normal"
+        | Visual -> "Visual"
+        | Select -> "Select"
+        | OperatorPending -> "OperatorPending"
+        | Insert -> "Insert"
+        | Command -> "Command"
+        | Language -> "Language"
 
 type KeyMappingResult =
 

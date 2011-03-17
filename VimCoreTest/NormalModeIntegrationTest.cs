@@ -14,6 +14,7 @@ namespace VimCore.UnitTest
         private IVimBuffer _buffer;
         private IWpfTextView _textView;
         private ITextBuffer _textBuffer;
+        private IKeyMap _keyMap;
         private bool _assertOnErrorMessage = true;
 
         internal Register UnnamedRegister
@@ -36,7 +37,7 @@ namespace VimCore.UnitTest
                         Assert.Fail("Error Message: " + message);
                     }
                 };
-
+            _keyMap = _buffer.Vim.KeyMap;
         }
 
         [TearDown]
@@ -1272,6 +1273,38 @@ namespace VimCore.UnitTest
             _textView.MoveCaretToLine(1);
             _buffer.Process(";");
             Assert.AreEqual(_textView.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Enter should not go through normal mode mapping during an incremental search
+        /// </summary>
+        [Test]
+        public void Remap_EnterShouldNotMapDuringSearch()
+        {
+            Create("cat dog");
+            _keyMap.MapWithNoRemap("<Enter>", "o<Esc>", KeyRemapMode.Normal);
+            _buffer.Process("/dog");
+            _buffer.Process(VimKey.Enter);
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("cat dog", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// Ensure the commands map properly
+        /// </summary>
+        [Test]
+        public void Remap_Issue474()
+        {
+            Create("cat", "dog", "bear", "pig", "tree", "fish");
+            _buffer.Process(":nnoremap gj J");
+            _buffer.Process(VimKey.Enter);
+            _buffer.Process(":map J 4j");
+            _buffer.Process(VimKey.Enter);
+            _buffer.Process("J");
+            Assert.AreEqual(4, _textView.GetCaretLine().LineNumber);
+            _textView.MoveCaretTo(0);
+            _buffer.Process("gj");
+            Assert.AreEqual("cat dog", _textView.GetLine(0).GetText());
         }
     }
 }

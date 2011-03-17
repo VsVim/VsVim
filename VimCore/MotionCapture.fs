@@ -33,7 +33,7 @@ type internal MotionCapture
                 | Path.Forward, false -> SearchKind.Forward
                 | Path.Backward, true -> SearchKind.BackwardWithWrap
                 | Path.Backward, false -> SearchKind.Backward
-    
+
             // Store the caret point before the search begins
             let before = TextViewUtil.GetCaretPoint _textView
 

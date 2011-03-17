@@ -29,7 +29,7 @@ type internal ModeMap() =
 
             // When switching between different visual modes we don't want to lose
             // the previous non-visual mode value.  Commands executing in Visual mode
-            // which return a SwitchPrevious mode value expecte to actually leave 
+            // which return a SwitchPrevious mode value expected to actually leave 
             // Visual Mode 
             match _previousMode with
             | None -> 
@@ -45,8 +45,10 @@ type internal ModeMap() =
         let prev = Option.get _previousMode
         x.SwitchMode prev.ModeKind ModeArgument.None
     member x.GetMode kind = Map.find kind _modeMap
-    member x.AddMode (mode:IMode) = 
+    member x.AddMode (mode : IMode) = 
         _modeMap <- Map.add (mode.ModeKind) mode _modeMap
+    member x.RemoveMode (mode : IMode) = 
+        _modeMap <- Map.remove mode.ModeKind _modeMap
 
 type internal VimBuffer 
     (
@@ -109,19 +111,19 @@ type internal VimBuffer
     /// Switch to the desired mode
     member x.SwitchMode kind arg = _modeMap.SwitchMode kind arg
 
-    /// Actuall process the input key.  Raise the change event on an actual change
-    member x.Process (i:KeyInput) : bool = 
+    /// Actually process the input key.  Raise the change event on an actual change
+    member x.Process (keyInput : KeyInput) : bool = 
 
-        // Actually process the given piece of input
-        let doProcess i = 
+        // Actually process the given KeyInput value
+        let doProcess keyInput = 
             let ret, res =
                 _isProcessingInput <- true 
                 try
-                    if i = _vim.Settings.DisableCommand && x.Mode.ModeKind <> ModeKind.Disabled then
+                    if keyInput = _vim.Settings.DisableCommand && x.Mode.ModeKind <> ModeKind.Disabled then
                         x.SwitchMode ModeKind.Disabled ModeArgument.None |> ignore
                         true, ProcessResult.OfModeKind ModeKind.Disabled
                     else
-                        let res = x.Mode.Process i
+                        let res = x.Mode.Process keyInput
                         let ret = 
                             match res with
                             | ProcessResult.Handled modeSwitch ->
@@ -136,64 +138,70 @@ type internal VimBuffer
                         ret, res
                 finally
                     _isProcessingInput <- false
-            _keyInputProcessedEvent.Trigger(i, res)
+            _keyInputProcessedEvent.Trigger (keyInput, res)
             ret
 
         // Calculate the current remapMode
         let remapMode = x.KeyRemapMode
 
-        // Raise the event that we recieved the key
-        _keyInputStartEvent.Trigger i
+        // Raise the event that we received the key
+        _keyInputStartEvent.Trigger keyInput
 
         try
-            let remapResult,keyInputSet = 
-                match _remapInput,remapMode with
-                | Some(buffered),Some(remapMode) -> 
-                    let keyInputSet = buffered.Add(i)
-                    (_vim.KeyMap.GetKeyMapping keyInputSet remapMode),keyInputSet
-                | Some(buffered),None -> 
-                    let keyInputSet = buffered.Add(i)
-                    (Mapped keyInputSet),keyInputSet
-                | None,Some(remapMode) -> 
-                    let keyInputSet = OneKeyInput i
-                    (_vim.KeyMap.GetKeyMapping keyInputSet remapMode,keyInputSet)
-                | None,None -> 
-                    let keyInputSet = OneKeyInput i
-                    (Mapped keyInputSet),keyInputSet
-    
+            let remapResult, keyInputSet = 
+                match _remapInput, remapMode with
+                | Some buffered, Some remapMode -> 
+                    let keyInputSet = buffered.Add keyInput
+                    (_vim.KeyMap.GetKeyMapping keyInputSet remapMode), keyInputSet
+                | Some buffered, None -> 
+                    let keyInputSet = buffered.Add keyInput
+                    (Mapped keyInputSet), keyInputSet
+                | None, Some remapMode -> 
+                    let keyInputSet = OneKeyInput keyInput
+                    _vim.KeyMap.GetKeyMapping keyInputSet remapMode, keyInputSet
+                | None, None -> 
+                    let keyInputSet = OneKeyInput keyInput
+                    (Mapped keyInputSet), keyInputSet
+
             // Clear out the _remapInput at this point.  It will be reset if the mapping needs more 
             // data
             _remapInput <- None
-    
+
             match remapResult with
-            | NoMapping -> doProcess i 
+            | NoMapping -> 
+                // No mapping so just process the KeyInput values.  Don't forget previously
+                // buffered values which are now known to not be a part of a mapping
+                keyInputSet.KeyInputs |> Seq.map doProcess |> SeqUtil.last
             | MappingNeedsMoreInput -> 
                 _remapInput <- Some keyInputSet
-                _keyInputBufferedEvent.Trigger i
+                _keyInputBufferedEvent.Trigger keyInput
                 true
-            | RecursiveMapping(_) -> 
+            | RecursiveMapping _ -> 
                 x.RaiseErrorMessage Resources.Vim_RecursiveMapping
                 true
-            | Mapped(keyInputSet) -> keyInputSet.KeyInputs |> Seq.map doProcess |> SeqUtil.last
+            | Mapped keyInputSet -> 
+                keyInputSet.KeyInputs |> Seq.map doProcess |> SeqUtil.last
         finally 
-            _keyInputEndEvent.Trigger i
+            _keyInputEndEvent.Trigger keyInput
     
+    /// Add an IMode into the IVimBuffer instance
     member x.AddMode mode = _modeMap.AddMode mode
-            
-    member x.CanProcess ki =  
-        let ki = 
+
+    /// Remove an IMode from the IVimBuffer instance
+    member x.RemoveMode mode = _modeMap.RemoveMode mode
+
+    member x.CanProcess keyInput =  
+        let keyInput = 
             match x.KeyRemapMode with 
-            | None -> ki
+            | None -> 
+                keyInput
             | Some(remapMode) ->
-                match _vim.KeyMap.GetKeyMapping (OneKeyInput ki) remapMode with
-                | Mapped(keyInputSet) -> 
-                    match keyInputSet.FirstKeyInput with
-                    | Some(mapped) -> mapped
-                    | None -> ki
-                | NoMapping -> ki
-                | MappingNeedsMoreInput -> ki
-                | RecursiveMapping(_) -> ki
-        x.Mode.CanProcess ki || ki = _vim.Settings.DisableCommand
+                match _vim.KeyMap.GetKeyMapping (OneKeyInput keyInput) remapMode with
+                | Mapped keyInputSet -> keyInputSet.FirstKeyInput |> OptionUtil.getOrDefault keyInput
+                | NoMapping -> keyInput
+                | MappingNeedsMoreInput -> keyInput
+                | RecursiveMapping _ -> keyInput
+        x.Mode.CanProcess keyInput || keyInput = _vim.Settings.DisableCommand
 
     /// Simulate the KeyInput being processed.  Should not go through remapping
     member x.SimulateProcessed keyInput = 

@@ -45,14 +45,19 @@ type internal IncrementalSearch
         // Raise the event
         _currentSearchUpdated.Trigger data.SearchResult
 
+        // There is a discrepancy between the documentation and implementation of key mapping
+        // for searching.  If you look under "help language-mapping" it lists searching as one
+        // of the items to which it should apply.  However in practice this isn't true.  Instead
+        // command mode dictates the mappings for search
         { KeyRemapMode = Some KeyRemapMode.Command; BindFunction = x.Process }
 
     /// Process the next key stroke in the incremental search
     member x.Process (ki:KeyInput) = 
 
+        let remapMode = Some KeyRemapMode.Command
         match _data with 
         | None -> 
-            BindResult<_>.CreateNeedMoreInput None x.Process
+            BindResult<_>.CreateNeedMoreInput remapMode x.Process
         | Some (data) -> 
 
             let resetView () = _operations.EnsureCaretOnScreenAndTextExpanded()
@@ -115,12 +120,12 @@ type internal IncrementalSearch
                 | _ -> 
                     let pattern = pattern.Substring(0, pattern.Length - 1)
                     doSearchWithNewPattern pattern
-                    BindResult<_>.CreateNeedMoreInput None x.Process
+                    BindResult<_>.CreateNeedMoreInput remapMode x.Process
             else
                 let c = ki.Char
                 let pattern = data.SearchData.Text.RawText + (c.ToString())
                 doSearchWithNewPattern pattern
-                BindResult<_>.CreateNeedMoreInput None x.Process
+                BindResult<_>.CreateNeedMoreInput remapMode x.Process
 
     interface IIncrementalSearch with
         member x.InSearch = Option.isSome _data

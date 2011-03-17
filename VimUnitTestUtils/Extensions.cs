@@ -320,6 +320,12 @@ namespace Vim.UnitTest
 
         #region IVimBuffer
 
+        public static bool CanProcess(this IVimBuffer buffer, char c)
+        {
+            var keyInput = KeyInputUtil.CharToKeyInput(c);
+            return buffer.CanProcess(keyInput);
+        }
+
         public static bool CanProcess(this IVimBuffer buffer, VimKey key)
         {
             var keyInput = KeyInputUtil.VimKeyToKeyInput(key);

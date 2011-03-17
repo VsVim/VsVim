@@ -356,5 +356,28 @@ namespace Vim.UnitTest.Mock
                 .Callback(() => textBuffer.SetText(newText))
                 .Verifiable();
         }
+
+        public static void SetupProcess(this Mock<INormalMode> mode, string input)
+        {
+            var count = 0;
+            for (var i = 0; i < input.Length; i++)
+            {
+                var local = i;
+                var keyInput = KeyInputUtil.CharToKeyInput(input[i]);
+                mode
+                    .Setup(x => x.Process(keyInput))
+                    .Callback(
+                        () =>
+                        {
+                            if (count != local)
+                            {
+                                throw new Exception("Wrong order");
+                            }
+                            count++;
+                        })
+                    .Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
+            }
+
+        }
     }
 }

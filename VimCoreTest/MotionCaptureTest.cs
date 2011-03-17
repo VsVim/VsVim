@@ -386,6 +386,33 @@ namespace VimCore.UnitTest
             Assert.IsTrue(didRun);
         }
 
+        /// <summary>
+        /// Incremental search input should be mapped via the command mapping.  Documentation
+        /// specifies language mapping but implementation dictates command mapping
+        /// </summary>
+        [Test]
+        public void IncrementalSearch_ShouldUseCommandMapping()
+        {
+            _textView.SetText("cat dog");
+            var result = _capture.GetOperatorMotion(KeyInputUtil.CharToKeyInput('/'));
+            Assert.IsTrue(result.IsNeedMoreInput);
+            Assert.IsTrue(result.AsNeedMoreInput().Item.KeyRemapMode.IsSome(KeyRemapMode.Command));
+        }
+
+        /// <summary>
+        /// Incremental search input should be mapped via the command mapping.  Documentation
+        /// specifies language mapping but implementation dictates command mapping
+        /// </summary>
+        [Test]
+        public void IncrementalSearch_ShouldUseCommandMappingForAll()
+        {
+            _textView.SetText("cat dog");
+            var result = _capture.GetOperatorMotion(KeyInputUtil.CharToKeyInput('/'));
+            result = result.AsNeedMoreInput().Item.BindFunction.Invoke(KeyInputUtil.CharToKeyInput('a'));
+            Assert.IsTrue(result.IsNeedMoreInput);
+            Assert.IsTrue(result.AsNeedMoreInput().Item.KeyRemapMode.IsSome(KeyRemapMode.Command));
+        }
+
         [Test]
         public void LineDownToFirstNonWhitespace_ShouldAcceptBothEnters()
         {

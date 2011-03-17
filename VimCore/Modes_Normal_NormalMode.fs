@@ -58,7 +58,7 @@ type internal NormalMode
     member this.IsCommandRunnerPopulated = _runner.Commands |> SeqUtil.isNotEmpty
     member this.KeyRemapMode = 
         match _runner.KeyRemapMode with
-        | Some(remapMode) -> remapMode
+        | Some remapMode -> remapMode
         | None -> KeyRemapMode.Normal
     member this.Command = _data.Command
     member this.Commands = 
