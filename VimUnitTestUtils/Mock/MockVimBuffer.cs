@@ -327,5 +327,9 @@ namespace Vim.UnitTest.Mock
         {
             get { throw new NotImplementedException(); }
         }
+
+#pragma warning disable 67
+        public event Microsoft.FSharp.Control.FSharpHandler<string> WarningMessage;
+#pragma warning restore 67
     }
 }

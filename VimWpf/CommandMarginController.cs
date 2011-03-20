@@ -29,6 +29,7 @@ namespace Vim.UI.Wpf
             _buffer.StatusMessage += OnStatusMessage;
             _buffer.StatusMessageLong += OnStatusMessageLong;
             _buffer.ErrorMessage += OnErrorMessage;
+            _buffer.WarningMessage += OnWarningMessage;
             _buffer.Vim.MacroRecorder.RecordingStarted += delegate { UpdateForRecordingChanged(); };
             _buffer.Vim.MacroRecorder.RecordingStopped += delegate { UpdateForRecordingChanged(); };
             _margin.OptionsClicked += OnOptionsClicked;
@@ -196,6 +197,11 @@ namespace Vim.UI.Wpf
         }
 
         private void OnErrorMessage(object sender, string message)
+        {
+            MessageEvent(message);
+        }
+
+        private void OnWarningMessage(object sender, string message)
         {
             MessageEvent(message);
         }

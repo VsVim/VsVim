@@ -58,8 +58,8 @@ type SearchKind =
         | SearchKind.Backward -> SearchKind.Backward
         | SearchKind.BackwardWithWrap -> SearchKind.Backward
 
-    static member OfDirection dir = 
-        match dir with 
+    static member OfPath path = 
+        match path with 
         | Path.Forward -> SearchKind.Forward
         | Path.Backward -> SearchKind.Backward
 

@@ -1,6 +1,1 @@
-- Word under cursor should move forward past blanks to the next word.  Needs to be an empty line
-- Verify the above for backwards searches
-- Backwards MoveCaretToLastSearch may not work if the string starts on the match
-- MoveCaretToLastSearch probably doesn't update LastSearch properly
-- MoveCaretToLastSearch probably doesn't raise error messages properly
 - MoveCaretToLastSearch doesn't take wrapscan into account

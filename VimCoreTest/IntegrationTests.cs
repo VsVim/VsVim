@@ -357,19 +357,6 @@ namespace VimCore.UnitTest
             Assert.AreEqual(0, _textView.Selection.GetSpan().Length);
         }
 
-        /// <summary>
-        /// Move to a non-word
-        /// </summary>
-        [Test]
-        public void NextWordUnderCursor2()
-        {
-            CreateBuffer(s_lines2);
-            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 7));
-            _buffer.Process("*");
-            Assert.AreEqual(7, _textView.Caret.Position.BufferPosition.Position);
-        }
-
-
         #endregion
     }
 }

@@ -830,42 +830,21 @@ type internal CommandUtil
             _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
         else
 
-            let searchStart = x.CaretPoint
-
-            let foundSpan (span : SnapshotSpan) = 
-                TextViewUtil.MoveCaretToPoint _textView span.Start
-                _operations.EnsureCaretOnScreenAndTextExpanded()
-
-                // If this was a wrapping search then raise an error if the command crossed 
-                // the bounds of the buffer
-                let path = last.Kind.Path
-                if _globalSettings.WrapScan then
-                    if path = Path.Forward && span.Start.Position <= searchStart.Position then
-                        _statusUtil.OnStatus Resources.Common_SearchForwardWrapped
-                    elif path = Path.Backward && span.Start.Position > searchStart.Position then
-                        _statusUtil.OnStatus Resources.Common_SearchBackwardWrapped 
-
-            let findMore (span:SnapshotSpan) count = 
-                if count = 1 then foundSpan span
+            // Find the place to search.  When going forward we should start after
+            // the caret and before should start before. This prevents the text 
+            // under the caret from being the first match
+            let searchStart =
+                let snapshot = _textBuffer.CurrentSnapshot
+                if last.Kind.IsAnyForward then
+                    x.CaretPoint 
+                    |> SnapshotPointUtil.TryAddOne 
+                    |> OptionUtil.getOrDefault (SnapshotUtil.GetEndPoint snapshot)
                 else 
-                    let count = count - 1 
-                    match _searchService.FindNextMultiple last span.End _wordNavigator count with
-                    | Some(span) -> foundSpan span
-                    | None -> _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
+                    x.CaretPoint 
+                    |> SnapshotPointUtil.TrySubtractOne
+                    |> OptionUtil.getOrDefault (SnapshotUtil.GetStartPoint snapshot)
 
-            match _searchService.FindNext last searchStart _wordNavigator with
-            | None -> 
-                _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
-            | Some span ->
-                // Make sure that we don't count the first match if it occurred on the
-                // actual caret position
-                let count = if span.Start = searchStart then count else count - 1 
-                if count = 0 then 
-                    foundSpan span
-                else 
-                    match _searchService.FindNextMultiple last span.End _wordNavigator count with
-                    | Some(span) -> foundSpan span
-                    | None -> _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
+            x.MoveCaretToNextSearch searchStart last.Text last.Kind.Path last.Options count
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -881,17 +860,25 @@ type internal CommandUtil
 
     /// Move the caret to the next occurrence of the word under the cursor.  
     member x.MoveCaretToNextWordCore path count isWholeWord = 
-        match TssUtil.FindCurrentFullWordSpan x.CaretPoint WordKind.NormalWord with
+
+        // Move forward along the line to find the first non-blank
+        let point =
+            x.CaretPoint
+            |> SnapshotPointUtil.GetPointsOnContainingLineFrom
+            |> Seq.filter (fun p -> not (SnapshotPointUtil.IsWhiteSpace p))
+            |> SeqUtil.tryHeadOnly
+            |> OptionUtil.getOrDefault x.CaretPoint
+
+        match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
         | None -> 
             // Nothing to do if no word under the cursor
             _statusUtil.OnError Resources.NormalMode_NoWordUnderCursor
         | Some(span) ->
 
             // Build up the SearchData structure
-            let kind = SearchKind.OfPathAndWrap path _globalSettings.WrapScan
             let word = span.GetText()
             let text = if isWholeWord then SearchText.WholeWord word else SearchText.StraightText word
-            let data = { Text = text; Kind = kind; Options = SearchOptions.ConsiderIgnoreCase }
+            let options = SearchOptions.ConsiderIgnoreCase
 
             // Pick the appropriate place to start the search.  
             let searchStart = 
@@ -907,30 +894,55 @@ type internal CommandUtil
                     // when searching backward
                     span.Start
 
-            match _searchService.FindNextMultiple data searchStart _wordNavigator count with
-            | Some span ->
+            x.MoveCaretToNextSearch searchStart text path options count
+
+            // Update the last search value
+            let data = { Text = text; Kind = SearchKind.OfPath path; Options = options }
+            _vimData.LastSearchData <- data
+
+    /// Move the caret to the 'count' next occurrence of the specified SearchData value
+    member x.MoveCaretToNextSearch searchStart searchText path options count =
+
+        let searchData = { Text = searchText; Kind = SearchKind.OfPathAndWrap path true; Options = options }
+        match _searchService.FindNextMultiple searchData searchStart _wordNavigator count with
+        | Some span ->
+
+            // Move the caret to the specified span
+            let moveCaretToSpan () = 
                 TextViewUtil.MoveCaretToPoint _textView span.Start
                 _operations.EnsureCaretOnScreenAndTextExpanded()
 
-                // If this was a wrapping search then raise an error if the command crossed 
-                // the bounds of the buffer
+            // Even though we found something we need to make sure it's valid.  It can't be a wrapped
+            // item if 'wrapscan' is disabled.  The wrapping is relative to the caret point not the
+            // search start.  The search start is artificially adjusted to prevent matches at the caret
+            // point
+            let didWrap = 
+                match path with 
+                | Path.Forward -> span.Start.Position <= x.CaretPoint.Position
+                | Path.Backward -> span.Start.Position > x.CaretPoint.Position
+
+            if didWrap then
                 if _globalSettings.WrapScan then
-                    if path = Path.Forward && span.Start.Position <= searchStart.Position then
-                        _statusUtil.OnStatus Resources.Common_SearchForwardWrapped
-                    elif path = Path.Backward && span.Start.Position > searchStart.Position then
-                        _statusUtil.OnStatus Resources.Common_SearchBackwardWrapped 
-
-            | None ->
-
-                // Raise the appropriate error for the missing value.  Really should only happen
-                // if 'wrapscan' is false.  Else we'd eventually hit the original declaration
-                let format = 
+                    // Issue the warning about wrapping across the ITextBuffer boundaries
                     match path with
-                    | Path.Forward -> Resources.Common_SearchHitBottomWithout
-                    | Path.Backward -> Resources.Common_SearchHitTopWithout
-                _statusUtil.OnError (format data.Text.DisplayText)
+                    | Path.Forward -> _statusUtil.OnWarning Resources.Common_SearchForwardWrapped
+                    | Path.Backward -> _statusUtil.OnWarning Resources.Common_SearchBackwardWrapped 
 
-            _vimData.LastSearchData <- data
+                    moveCaretToSpan()
+                else
+                    // Wrapping is not allowed.  Issue an error message and don't move the caret
+                    let text = searchText.DisplayText
+                    match path with
+                    | Path.Forward -> _statusUtil.OnError (Resources.Common_SearchHitBottomWithout text)
+                    | Path.Backward -> _statusUtil.OnError (Resources.Common_SearchHitTopWithout text)
+            else
+                // Didn't wrap so it's fine
+                moveCaretToSpan()
+
+        | None ->
+
+            // Pattern just doesn't exist in the buffer
+            _statusUtil.OnError (Resources.Common_PatternNotFound (searchText.DisplayText))
 
     /// Move the caret to start of a line which is deleted.  Needs to preserve the original 
     /// indent if 'autoindent' is set.

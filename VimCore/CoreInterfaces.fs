@@ -50,6 +50,9 @@ type IStatusUtil =
     /// Raised when there is an error message that needs to be reported
     abstract OnError : string -> unit 
 
+    /// Raised when there is a warning message that needs to be reported
+    abstract OnWarning : string -> unit 
+
 /// Abstracts away VsVim's interaction with the file system to facilitate testing
 type IFileSystem =
 
@@ -1706,7 +1709,9 @@ type IVimData =
     /// The last macro register which was run
     abstract LastMacroRun : char option with get, set
 
-    /// Last pattern searched for in any buffer
+    /// Last pattern searched for in any buffer.
+    /// TODO: Should be storing a tuple of Path and SearchText as this is the only
+    /// used pieces of data
     abstract LastSearchData : SearchData with get, set
 
     /// Data for the last substitute command performed
@@ -2056,6 +2061,10 @@ and IVimBuffer =
     /// if the KeyInput is buffered or processed
     [<CLIEvent>]
     abstract KeyInputEnd : IEvent<KeyInput>
+
+    /// Raised when a warning is encountered
+    [<CLIEvent>]
+    abstract WarningMessage : IEvent<string>
 
     /// Raised when an error is encountered
     [<CLIEvent>]

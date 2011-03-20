@@ -75,6 +75,7 @@ type internal VimBuffer
     let _keyInputEndEvent = new Event<_>()
     let _keyInputBufferedEvent = new Event<_>()
     let _errorMessageEvent = new Event<_>()
+    let _warningMessageEvent = new Event<_>()
     let _statusMessageEvent = new Event<_>()
     let _statusMessageLongEvent = new Event<_>()
     let _closedEvent = new Event<_>()
@@ -211,6 +212,7 @@ type internal VimBuffer
         _keyInputEndEvent.Trigger keyInput
 
     member x.RaiseErrorMessage msg = _errorMessageEvent.Trigger msg
+    member x.RaiseWarningMessage msg = _warningMessageEvent.Trigger msg
     member x.RaiseStatusMessage msg = _statusMessageEvent.Trigger msg
     member x.RaiseStatusMessageLong msgSeq = _statusMessageLongEvent.Trigger msgSeq
                  
@@ -260,6 +262,8 @@ type internal VimBuffer
         member x.KeyInputBuffered = _keyInputBufferedEvent.Publish
         [<CLIEvent>]
         member x.ErrorMessage = _errorMessageEvent.Publish
+        [<CLIEvent>]
+        member x.WarningMessage = _warningMessageEvent.Publish
         [<CLIEvent>]
         member x.StatusMessage = _statusMessageEvent.Publish
         [<CLIEvent>]

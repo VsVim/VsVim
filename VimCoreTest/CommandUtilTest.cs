@@ -1530,6 +1530,18 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// If the caret starts on a blank move to the first non-blank to find the 
+        /// word
+        /// </summary>
+        [Test]
+        public void MoveCaretToNextWord_GoPastBlanks()
+        {
+            Create("  cat", "cat");
+            _commandUtil.MoveCaretToNextWord(Path.Forward, 1);
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
         /// Simple match should move caret and update LastSearchData 
         /// </summary>
         [Test]
@@ -1550,7 +1562,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToNextWord_NoOtherMatch()
         {
             Create("dog cat", "tree fish");
-            _statusUtil.Setup(x => x.OnStatus(Resources.Common_SearchForwardWrapped)).Verifiable();
+            _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchForwardWrapped)).Verifiable();
             _commandUtil.MoveCaretToNextWord(Path.Forward, 1);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
             _statusUtil.Verify();
@@ -1588,6 +1600,19 @@ namespace VimCore.UnitTest
             _textView.MoveCaretToLine(1);
             _commandUtil.MoveCaretToNextWord(Path.Backward, 1);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// If the caret starts on a blank move to the first non-blank to find the 
+        /// word.  The caret should go forward even if we are going backward
+        /// </summary>
+        [Test]
+        public void MoveCaretToNextWord_BackwardGoPastBlanks()
+        {
+            Create("dog   cat", "cat");
+            _textView.MoveCaretTo(4);
+            _commandUtil.MoveCaretToNextWord(Path.Backward, 1);
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
         /// <summary>
@@ -1659,7 +1684,7 @@ namespace VimCore.UnitTest
         /// count that word as an occurrence
         /// </summary>
         [Test]
-        public void MoveCaretToNextWord__BackwardFromMiddleOfWard()
+        public void MoveCaretToNextWord_BackwardFromMiddleOfWard()
         {
             Create("cat cat cat");
             _textView.MoveCaretTo(5);
@@ -1705,7 +1730,7 @@ namespace VimCore.UnitTest
             Create("foo bar", "foo");
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             _vimData.LastSearchData = data;
-            _statusUtil.Setup(x => x.OnStatus(Resources.Common_SearchForwardWrapped)).Verifiable();
+            _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchForwardWrapped)).Verifiable();
             _commandUtil.MoveCaretToLastSearch(false, 2);
             Assert.AreEqual(0, _textView.GetCaretPoint());
             _statusUtil.Verify();
@@ -1720,9 +1745,66 @@ namespace VimCore.UnitTest
             Create("foo bar", "foo");
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.BackwardWithWrap, SearchOptions.None);
             _vimData.LastSearchData = data;
-            _statusUtil.Setup(x => x.OnStatus(Resources.Common_SearchBackwardWrapped)).Verifiable();
+            _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchBackwardWrapped)).Verifiable();
             _commandUtil.MoveCaretToLastSearch(false, 1);
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            _statusUtil.Verify();
+        }
+
+        /// <summary>
+        /// Make sure we are able to get off of the start match when going backwards
+        /// </summary>
+        [Test]
+        public void MoveCaretToLastSearch_BackwardFromMatch()
+        {
+            Create("dog cat", "dog", "dog");
+            var data = new SearchData(SearchText.NewPattern("dog"), SearchKind.BackwardWithWrap, SearchOptions.None);
+            _vimData.LastSearchData = data;
+            _textView.MoveCaretToLine(1);
+            _commandUtil.MoveCaretToLastSearch(false, 1);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Make sure that this doesn't update the LastSearh field.  Only way to check this is 
+        /// when we reverse the polarity of the search
+        /// </summary>
+        [Test]
+        public void MoveCaretToLastSearch_DontUpdateLastSearch()
+        {
+            Create("dog cat", "dog", "dog");
+            var data = new SearchData(SearchText.NewPattern("dog"), SearchKind.Forward, SearchOptions.None);
+            _vimData.LastSearchData = data;
+            _commandUtil.MoveCaretToLastSearch(true, 1);
+            Assert.AreEqual(data, _vimData.LastSearchData);
+        }
+
+        /// <summary>
+        /// Make sure that this takes into account the 'wrapscan' option going forward
+        /// </summary>
+        [Test]
+        public void MoveCaretToLastSearch_ConsiderWrapScan()
+        {
+            Create("dog", "cat");
+            _globalSettings.WrapScan = false;
+            _textView.MoveCaretToLine(1);
+            _vimData.LastSearchData = new SearchData(SearchText.NewPattern("dog"), SearchKind.Forward, SearchOptions.None);
+            _statusUtil.Setup(x => x.OnError(Resources.Common_SearchHitBottomWithout("dog"))).Verifiable();
+            _commandUtil.MoveCaretToLastSearch(false, 1);
+            _statusUtil.Verify();
+        }
+
+        /// <summary>
+        /// Make sure that this takes into account the 'wrapscan' option going backward
+        /// </summary>
+        [Test]
+        public void MoveCaretToLastSearch_BackwardConsiderWrapScan()
+        {
+            Create("dog", "cat");
+            _globalSettings.WrapScan = false;
+            _vimData.LastSearchData = new SearchData(SearchText.NewPattern("cat"), SearchKind.Backward, SearchOptions.None);
+            _statusUtil.Setup(x => x.OnError(Resources.Common_SearchHitTopWithout("cat"))).Verifiable();
+            _commandUtil.MoveCaretToLastSearch(false, 1);
             _statusUtil.Verify();
         }
     }
