@@ -16,45 +16,40 @@ type internal CommandFactory
 
     let _textView = _operations.TextView
 
-    member x.CreateStandardMovementCommandsCore () = 
+    /// Create the movement command bindings which are common to both Normal and 
+    /// Visual mode
+    member x.CreateStandardMovementBindings () = 
         let moveLeft = fun count -> _operations.MoveCaretLeft(count)
         let moveRight = fun count -> _operations.MoveCaretRight(count)
         let moveUp = fun count -> _operations.MoveCaretUp(count)
         let moveDown = fun count -> _operations.MoveCaretDown(count)
 
         seq {
-            yield ("h", moveLeft)
-            yield ("<Left>", moveLeft)
-            yield ("<Bs>", moveLeft)
-            yield ("<C-h>", moveLeft)
-            yield ("l", moveRight)
-            yield ("<Right>", moveRight)
-            yield ("<Space>", moveRight)
-            yield ("k", moveUp)
-            yield ("<Up>", moveUp)
-            yield ("<C-p>", moveUp)
-            yield ("j", moveDown)
-            yield ("<Down>", moveDown)
-            yield ("<C-n>", moveDown)
-            yield ("<C-j>", moveDown)
-            yield ("n", fun count -> _operations.MoveToNextOccuranceOfLastSearch count false)
-            yield ("N", fun count -> _operations.MoveToNextOccuranceOfLastSearch count true)
-            yield ("*", fun count -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.ForwardWithWrap count)
-            yield ("#", fun count -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.BackwardWithWrap count)
-            yield ("g*", fun count -> _operations.MoveToNextOccuranceOfPartialWordAtCursor SearchKind.ForwardWithWrap count)
-            yield ("g#", fun count -> _operations.MoveToNextOccuranceOfPartialWordAtCursor SearchKind.BackwardWithWrap count)
-            yield ("gd", fun _ -> _operations.GoToLocalDeclaration())
-            yield ("gD", fun  _ -> _operations.GoToGlobalDeclaration())
-        }
-
-    member x.CreateStandardMovementCommands() =
-        x.CreateStandardMovementCommandsCore()
-        |> Seq.map (fun (notation,func) ->
-            let kiSet = KeyNotationUtil.StringToKeyInputSet notation
-            let funcWithReg opt reg = 
-                func (CommandUtil2.CountOrDefault opt)
-                CommandResult.Completed NoSwitch
-            CommandBinding.LegacyBinding (kiSet,CommandFlags.Movement, funcWithReg))
+            yield ("h", NormalCommand.MoveCaretTo Direction.Left)
+            yield ("<Left>", NormalCommand.MoveCaretTo Direction.Left)
+            yield ("<Bs>", NormalCommand.MoveCaretTo Direction.Left)
+            yield ("<C-h>", NormalCommand.MoveCaretTo Direction.Left)
+            yield ("l", NormalCommand.MoveCaretTo Direction.Right)
+            yield ("<Right>", NormalCommand.MoveCaretTo Direction.Right)
+            yield ("<Space>", NormalCommand.MoveCaretTo Direction.Right)
+            yield ("k", NormalCommand.MoveCaretTo Direction.Up)
+            yield ("<Up>", NormalCommand.MoveCaretTo Direction.Up)
+            yield ("<C-p>", NormalCommand.MoveCaretTo Direction.Up)
+            yield ("j", NormalCommand.MoveCaretTo Direction.Down)
+            yield ("<Down>", NormalCommand.MoveCaretTo Direction.Down)
+            yield ("<C-n>", NormalCommand.MoveCaretTo Direction.Down)
+            yield ("<C-j>", NormalCommand.MoveCaretTo Direction.Down)
+            yield ("n", NormalCommand.MoveCaretToLastSearch false)
+            yield ("N", NormalCommand.MoveCaretToLastSearch true)
+            yield ("*", NormalCommand.MoveCaretToNextWord Path.Forward)
+            yield ("#", NormalCommand.MoveCaretToNextWord Path.Backward)
+            yield ("g*", NormalCommand.MoveCaretToNextPartialWord Path.Forward)
+            yield ("g#", NormalCommand.MoveCaretToNextPartialWord Path.Backward)
+            yield ("gd", NormalCommand.GoToLocalDeclaration)
+            yield ("gD", NormalCommand.GoToGlobalDeclaration)
+        } |> Seq.map (fun (name, command) -> 
+            let keyInputSet = KeyNotationUtil.StringToKeyInputSet name
+            CommandBinding.NormalBinding (keyInputSet, CommandFlags.Movement, command))
 
     /// Build up a set of LegacyMotionCommand values from applicable Motion values.  These will 
     /// move the cursor to the result of the motion
@@ -87,7 +82,7 @@ type internal CommandFactory
         |> Seq.map processMotionBinding
 
     member x.CreateMovementCommands() = 
-        let standard = x.CreateStandardMovementCommands()
+        let standard = x.CreateStandardMovementBindings()
         let taken = standard |> Seq.map (fun command -> command.KeyInputSet) |> Set.ofSeq
         let motion = 
             x.CreateMovementsFromMotions()

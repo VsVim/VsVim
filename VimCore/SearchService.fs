@@ -24,14 +24,15 @@ type internal SearchService
         | SearchText.WholeWord(text) -> Some text
         | SearchText.StraightText(text) -> Some text
 
-    member x.CreateFindOptions (text:SearchText) kind searchOptions =
+    member x.CreateFindOptions (text:SearchText) (kind : SearchKind) searchOptions =
         let caseOptions = 
             if Util.IsFlagSet searchOptions SearchOptions.ConsiderIgnoreCase && _settings.IgnoreCase then
                 let hasUpper () = text.RawText |> Seq.filter CharUtil.IsLetter |> Seq.filter CharUtil.IsUpper |> SeqUtil.isNotEmpty
                 if Util.IsFlagSet searchOptions SearchOptions.ConsiderSmartCase && _settings.SmartCase && hasUpper() then FindOptions.MatchCase
                 else FindOptions.None
-            else FindOptions.MatchCase
-        let revOptions = if SearchKindUtil.IsBackward kind then FindOptions.SearchReverse else FindOptions.None
+            else 
+                FindOptions.MatchCase
+        let revOptions = if kind.IsAnyBackward then FindOptions.SearchReverse else FindOptions.None
 
         let searchKindOptions = 
             match text with
@@ -43,19 +44,19 @@ type internal SearchService
 
     member x.FindNextMultiple (searchData : SearchData) point nav count =
         let tss = SnapshotPointUtil.GetSnapshot point
-        let isWrap = SearchKindUtil.IsWrap searchData.Kind
+        let isWrap = searchData.Kind.IsWrap
         let opts = x.CreateFindOptions searchData.Text searchData.Kind searchData.Options
         match x.ConvertSearchToFindText searchData.Text with
         | None -> None
-        | Some(text) -> 
+        | Some text -> 
 
             // Create a function which will give us the next search position
             let getNextPoint = 
-                if SearchKindUtil.IsForward searchData.Kind then
-                    (fun (span:SnapshotSpan) -> span.End |> Some)
+                if searchData.Kind.IsAnyForward then
+                    (fun (span : SnapshotSpan) -> span.End |> Some)
                 else 
-                    let isWrap = SearchKindUtil.IsWrap searchData.Kind
-                    (fun (span:SnapshotSpan) -> 
+                    let isWrap = searchData.Kind.IsWrap
+                    (fun (span : SnapshotSpan) -> 
                         if span.Start.Position = 0 && isWrap then SnapshotUtil.GetEndPoint tss |> Some
                         elif span.Start.Position = 0 then None
                         else span.Start.Subtract(1) |> Some )

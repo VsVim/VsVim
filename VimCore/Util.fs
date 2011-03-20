@@ -28,8 +28,8 @@ module internal Util =
     /// Get the point from which an incremental search should begin given
     /// a context point.  They don't begin at the point but rather before
     /// or after the point depending on the direction
-    let GetSearchPoint kind point = 
-        if SearchKindUtil.IsForward kind then 
+    let GetSearchPoint (kind : SearchKind) point = 
+        if kind.IsAnyForward then 
             match SnapshotPointUtil.TryAddOne point with 
             | Some(point) -> point
             | None -> SnapshotPoint(point.Snapshot, 0)

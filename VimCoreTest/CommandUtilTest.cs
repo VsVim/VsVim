@@ -38,6 +38,7 @@ namespace VimCore.UnitTest
             _vimHost = _factory.Create<IVimHost>();
             _statusUtil = _factory.Create<IStatusUtil>();
             _operations = _factory.Create<ICommonOperations>();
+            _operations.Setup(x => x.EnsureCaretOnScreenAndTextExpanded());
             _recorder = _factory.Create<IMacroRecorder>(MockBehavior.Loose);
             _smartIdentationService = _factory.Create<ISmartIndentationService>();
 
@@ -1511,6 +1512,218 @@ namespace VimCore.UnitTest
             _operations.Setup(x => x.Beep()).Verifiable();
             _commandUtil.RunMacro('!');
             _operations.Verify();
+        }
+
+        /// <summary>
+        /// Make sure we raise an error if there is no word under the caret and that it 
+        /// doesn't update LastSearchText
+        /// </summary>
+        [Test]
+        public void MoveCaretToNextWord_NoWordUnderCaret()
+        {
+            Create("  ", "foo bar baz");
+            _vimData.LastSearchData = VimUtil.CreateSearchData("cat");
+            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
+            _commandUtil.MoveCaretToNextWord(Path.Forward, 1);
+            _statusUtil.Verify();
+            Assert.AreEqual("cat", _vimData.LastSearchData.Text.RawText);
+        }
+
+        /// <summary>
+        /// Simple match should move caret and update LastSearchData 
+        /// </summary>
+        [Test]
+        public void MoveCaretToNextWord_Simple()
+        {
+            Create("hello world", "hello");
+            _commandUtil.MoveCaretToNextWord(Path.Forward, 1);
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            Assert.AreEqual("hello", _vimData.LastSearchData.Text.RawText);
+            Assert.AreEqual(@"\<hello\>", _vimData.LastSearchData.Text.DisplayText);
+        }
+
+        /// <summary>
+        /// If there is no match and we wrap a status message should be displayed and the 
+        /// caret should remain in place
+        /// </summary>
+        [Test]
+        public void MoveCaretToNextWord_NoOtherMatch()
+        {
+            Create("dog cat", "tree fish");
+            _statusUtil.Setup(x => x.OnStatus(Resources.Common_SearchForwardWrapped)).Verifiable();
+            _commandUtil.MoveCaretToNextWord(Path.Forward, 1);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            _statusUtil.Verify();
+        }
+
+        /// <summary>
+        /// Make sure the count is taken into consideration
+        /// </summary>
+        [Test]
+        public void MoveCaretToNextWord_WithCount()
+        {
+            Create("cat dog cat", "cat");
+            _commandUtil.MoveCaretToNextWord(Path.Forward, 2);
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Don't make a partial match
+        /// </summary>
+        [Test]
+        public void MoveCaretToNextWord_DontMatchPartial()
+        {
+            Create("dog doggy dog");
+            _commandUtil.MoveCaretToNextWord(Path.Forward, 1);
+            Assert.AreEqual(10, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Do a backward search
+        /// </summary>
+        [Test]
+        public void MoveCaretToNextWord_Backward()
+        {
+            Create("cat dog", "cat");
+            _textView.MoveCaretToLine(1);
+            _commandUtil.MoveCaretToNextWord(Path.Backward, 1);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Do a backward search
+        /// </summary>
+        [Test]
+        public void MoveCaretToNextWord_BackwardWithCount()
+        {
+            Create(" cat dog", "dog cat", "cat");
+            _textView.MoveCaretToLine(2);
+            _commandUtil.MoveCaretToNextWord(Path.Backward, 2);
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Don't make partial matches when searching backward
+        /// </summary>
+        [Test]
+        public void MoveCaretToNextWord_BackwardNoPartial()
+        {
+            Create("foo", "foobar", "foo");
+            _textView.MoveCaretToLine(2);
+            _commandUtil.MoveCaretToNextWord(Path.Backward, 1);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Make sure backward updates the LastSearch property correctly
+        /// </summary>
+        [Test]
+        public void MoveCaretToNextWord_UpdateLastSearch()
+        {
+            Create("foo bar", "again foo", "foo");
+            _textView.MoveCaretToLine(2);
+            _commandUtil.MoveCaretToNextWord(Path.Backward, 2);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.AreEqual(SearchText.NewWholeWord("foo"), _vimData.LastSearchData.Text);
+        }
+
+        /// <summary>
+        /// Regression test for issue 398.  When starting on something other
+        /// than the first character make sure we don't jump over an extra 
+        /// word
+        /// </summary>
+        [Test]
+        public void MoveCaretToNextWord_StartOnSecondChar()
+        {
+            Create("cat cat cat");
+            _textView.MoveCaretTo(1);
+            _commandUtil.MoveCaretToNextWord(Path.Forward, 1);
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Make sure that searching backward from the first char in a word doesn't
+        /// count that word as an occurrence
+        /// </summary>
+        [Test]
+        public void MoveCaretToNextWord_BackwardFromFirstChar()
+        {
+            Create("cat cat cat");
+            _textView.MoveCaretTo(4);
+            _commandUtil.MoveCaretToNextWord(Path.Backward, 1);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Make sure that searching backward from the middle of a word 
+        /// count that word as an occurrence
+        /// </summary>
+        [Test]
+        public void MoveCaretToNextWord__BackwardFromMiddleOfWard()
+        {
+            Create("cat cat cat");
+            _textView.MoveCaretTo(5);
+            _commandUtil.MoveCaretToNextWord(Path.Backward, 1);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Raise an error when the pattern is not found
+        /// </summary>
+        [Test]
+        public void MoveCaretToLastSearch_NotFound()
+        {
+            Create("foo bar baz");
+            var data = new SearchData(SearchText.NewPattern("beat"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            _vimData.LastSearchData = data;
+            _statusUtil.Setup(x => x.OnError(Resources.Common_PatternNotFound("beat"))).Verifiable();
+            _commandUtil.MoveCaretToLastSearch(false, 1);
+            _statusUtil.Verify();
+        }
+
+        /// <summary>
+        /// Don't start the search on the current word start.  It should start afterwards
+        /// so we don't match the current word
+        /// </summary>
+        [Test]
+        public void MoveCaretToLastSearch_DontStartOnCurrentWord()
+        {
+            Create("foo bar", "foo");
+            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            _vimData.LastSearchData = data;
+            _commandUtil.MoveCaretToLastSearch(false, 1);
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Make sure it wraps around to the start to find the word and that the wrap raises
+        /// a warning
+        /// </summary>
+        [Test]
+        public void MoveCaretToLastSearch_WrapToSame()
+        {
+            Create("foo bar", "foo");
+            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            _vimData.LastSearchData = data;
+            _statusUtil.Setup(x => x.OnStatus(Resources.Common_SearchForwardWrapped)).Verifiable();
+            _commandUtil.MoveCaretToLastSearch(false, 2);
+            Assert.AreEqual(0, _textView.GetCaretPoint());
+            _statusUtil.Verify();
+        }
+
+        /// <summary>
+        /// Do a backward search that needs to wrap
+        /// </summary>
+        [Test]
+        public void MoveCaretToLastSearch_BackwardAndWrap()
+        {
+            Create("foo bar", "foo");
+            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.BackwardWithWrap, SearchOptions.None);
+            _vimData.LastSearchData = data;
+            _statusUtil.Setup(x => x.OnStatus(Resources.Common_SearchBackwardWrapped)).Verifiable();
+            _commandUtil.MoveCaretToLastSearch(false, 1);
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            _statusUtil.Verify();
         }
     }
 }

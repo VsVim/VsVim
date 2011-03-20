@@ -14,6 +14,7 @@ using IOPath = System.IO.Path;
 
 namespace Vim.UnitTest
 {
+    // TODO: Need to change this so that creating an IVimBuffer doesn't read my _vsvimrc file
     public static class EditorUtil
     {
         #region Factory

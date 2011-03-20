@@ -147,7 +147,6 @@ module SnapshotUtil =
         | SearchKind.ForwardWithWrap -> GetLinesForwardCore tss startLine true
         | SearchKind.Backward -> GetLinesBackwardCore tss startLine false
         | SearchKind.BackwardWithWrap -> GetLinesBackwardCore tss startLine true
-        | _ -> failwith "Invalid enum value"
 
     /// Get the lines in the specified range
     let GetLineRange snapshot startLineNumber endLineNumber = 
@@ -669,14 +668,13 @@ module SnapshotPointUtil =
             | SearchKind.ForwardWithWrap -> getForward true
             | SearchKind.Backward -> getBackward false
             | SearchKind.BackwardWithWrap -> getBackward true
-            | _ -> failwith "Invalid enum value"
 
     /// Start searching the snapshot at the given point and return the buffer as a 
     /// sequence of SnapshotPoints.  The first point returned will be the point passed
     /// in
-    let GetPoints point kind =
+    let GetPoints point (kind : SearchKind) =
         let mapFunc = 
-            if SearchKindUtil.IsForward kind then SnapshotSpanUtil.GetPoints
+            if kind.IsAnyForward then SnapshotSpanUtil.GetPoints
             else SnapshotSpanUtil.GetPointsBackward 
         GetSpans point kind 
         |> Seq.map mapFunc
@@ -693,7 +691,6 @@ module SnapshotPointUtil =
         | SearchKind.ForwardWithWrap -> [below; above] 
         | SearchKind.Backward -> [above] 
         | SearchKind.BackwardWithWrap -> [above; below] 
-        | _ -> failwith ""
 
     /// Get the character associated with the current point.  Returns None for the last character
     /// in the buffer which has no representable value

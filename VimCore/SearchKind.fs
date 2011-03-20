@@ -13,44 +13,58 @@ type Path =
     | Backward
 
 type SearchKind = 
-     | Forward = 1
-     | ForwardWithWrap = 2
-     | Backward = 3
-     | BackwardWithWrap = 4 
+     | Forward
+     | ForwardWithWrap
+     | Backward
+     | BackwardWithWrap
 
-module SearchKindUtil =
-    let IsForward x =
+    with
+
+    member x.IsAnyForward =
         match x with 
             | SearchKind.Forward -> true
             | SearchKind.ForwardWithWrap -> true
             | _ -> false
-    let IsBackward x = not (IsForward x)
-    let IsWrap x = 
+
+    member x.IsAnyBackward = not (x.IsAnyForward)
+
+    member x.IsWrap =
         match x with 
         | SearchKind.BackwardWithWrap -> true
         | SearchKind.ForwardWithWrap -> true
         | _ -> false
 
+    /// Get the Path value for this SearchKind
+    member x.Path = 
+        match x with 
+        | SearchKind.Forward -> Path.Forward
+        | SearchKind.ForwardWithWrap -> Path.Forward
+        | SearchKind.Backward -> Path.Backward
+        | SearchKind.BackwardWithWrap -> Path.Backward
+
     /// Reverse the direction of the given SearchKind
-    let Reverse x =
+    static member Reverse x =
         match x with
         | SearchKind.Forward -> SearchKind.Backward
         | SearchKind.ForwardWithWrap -> SearchKind.BackwardWithWrap
         | SearchKind.Backward -> SearchKind.Forward
         | SearchKind.BackwardWithWrap -> SearchKind.ForwardWithWrap
-        | _ -> failwith "Invalid enum value"
 
     /// Remove any wrap which map be associated with this
-    let RemoveWrap x =
+    static member RemoveWrap x =
         match x with
         | SearchKind.Forward -> SearchKind.Forward
         | SearchKind.ForwardWithWrap -> SearchKind.Forward
         | SearchKind.Backward -> SearchKind.Backward
         | SearchKind.BackwardWithWrap -> SearchKind.Backward
-        | _ -> failwith "Invalid enum value"
 
-    let OfDirection dir = 
+    static member OfDirection dir = 
         match dir with 
         | Path.Forward -> SearchKind.Forward
         | Path.Backward -> SearchKind.Backward
+
+    static member OfPathAndWrap path wrap =
+        match path with
+        | Path.Forward -> if wrap then SearchKind.ForwardWithWrap else SearchKind.Forward
+        | Path.Backward -> if wrap then SearchKind.BackwardWithWrap else SearchKind.Backward
 

@@ -129,7 +129,7 @@ namespace Vim.UI.Wpf
                         if (search.InSearch && search.CurrentSearch.IsSome())
                         {
                             var data = search.CurrentSearch.Value;
-                            var prefix = SearchKindUtil.IsForward(data.Kind) ? "/" : "?";
+                            var prefix = data.Kind.IsAnyForward ? "/" : "?";
                             _margin.StatusLine = prefix + data.Text.RawText;
                         }
                         else

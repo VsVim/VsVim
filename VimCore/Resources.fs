@@ -26,6 +26,8 @@ module internal Resources =
     let Common_SelectionInvalid = "An invalid selection was detected"
     let Common_SearchForwardWrapped = "search hit BOTTOM, continuing at TOP"
     let Common_SearchBackwardWrapped = "search hit TOP, continuing at BOTTOM"
+    let Common_SearchHitBottomWithout name = sprintf "search hit BOTTOM without match for: %s" name
+    let Common_SearchHitTopWithout name = sprintf "search hit TOP without match for: %s" name
 
     let NormalMode_NoPreviousSearch = "No previous search"
     let NormalMode_NoWordUnderCursor = "No word under cursor"

@@ -84,7 +84,7 @@ type internal NormalMode
     /// Raised when a global setting is changed
     member x.OnGlobalSettingsChanged (setting:Setting) = 
         
-        // If the tildeop setting changes we need to update how we handle it
+        // If the 'tildeop' setting changes we need to update how we handle it
         if StringUtil.isEqual setting.Name GlobalSettingNames.TildeOpName && x.IsCommandRunnerPopulated then
             let name, command = x.GetTildeCommand()
             _runner.Remove name
@@ -106,7 +106,7 @@ type internal NormalMode
                 NormalCommand.ReplaceChar ki)
         BindDataStorage.Complex func
 
-    /// Get the informatoin on how to handle the tilde command based on the current setting for tildeop
+    /// Get the information on how to handle the tilde command based on the current setting for 'tildeop'
     member x.GetTildeCommand () =
         let name = KeyInputUtil.CharToKeyInput '~' |> OneKeyInput
         let flags = CommandFlags.Repeatable

@@ -98,7 +98,9 @@ namespace Vim.UnitTest
             ISmartIndentationService smartIndentationService = null,
             IFoldManager foldManager = null,
             IVimHost vimHost = null,
-            IMacroRecorder recorder = null)
+            IMacroRecorder recorder = null,
+            ISearchService searchService = null,
+            ITextStructureNavigator wordNavigator = null)
         {
             statusUtil = statusUtil ?? new StatusUtil();
             undoRedOperations = undoRedOperations ?? VimUtil.CreateUndoRedoOperations(statusUtil);
@@ -110,18 +112,22 @@ namespace Vim.UnitTest
             operations = operations ?? CreateCommonOperations(textView, localSettings, vimData: vimData, statusUtil: statusUtil);
             smartIndentationService = smartIndentationService ?? CreateSmartIndentationService();
             foldManager = foldManager ?? CreateFoldManager(textView.TextBuffer);
+            searchService = searchService ?? CreateSearchService(localSettings.GlobalSettings);
+            wordNavigator = wordNavigator ?? CreateTextStructureNavigator(textView.TextBuffer, WordKind.NormalWord);
             vimHost = vimHost ?? new MockVimHost();
             var vim = MockObjectFactory.CreateVim(
                 registerMap: registerMap,
                 map: markMap,
                 host: vimHost,
                 vimData: vimData,
-                recorder: recorder);
+                recorder: recorder,
+                searchService : searchService);
             var buffer = MockObjectFactory.CreateVimBuffer(
                 textView: textView,
                 settings: localSettings,
                 motionUtil: motionUtil,
-                vim: vim.Object);
+                vim: vim.Object,
+                wordNavigator: wordNavigator);
             return new CommandUtil(
                 buffer.Object,
                 operations,
@@ -189,6 +195,12 @@ namespace Vim.UnitTest
         internal static ITextStructureNavigator CreateTextStructureNavigator(ITextBuffer textBuffer)
         {
             return EditorUtil.FactoryService.TextStructureNavigatorSelectorService.GetTextStructureNavigator(textBuffer);
+        }
+
+        internal static ITextStructureNavigator CreateTextStructureNavigator(ITextBuffer textBuffer, WordKind kind)
+        {
+            var navigator = CreateTextStructureNavigator(textBuffer);
+            return TssUtil.CreateTextStructureNavigator(kind, navigator);
         }
 
         internal static CommandRunData CreateCommandRunData(
@@ -319,17 +331,19 @@ namespace Vim.UnitTest
 
         internal static SearchData CreateSearchData(
             string pattern,
-            SearchKind kind = SearchKind.Forward,
+            SearchKind kind = null,
             SearchOptions options = SearchOptions.None)
         {
+            kind = kind ?? SearchKind.Forward;
             return new SearchData(SearchText.NewPattern(pattern), kind, options);
         }
 
         internal static SearchData CreateSearchData(
             SearchText text,
-            SearchKind kind = SearchKind.Forward,
+            SearchKind kind = null,
             SearchOptions options = SearchOptions.None)
         {
+            kind = kind ?? SearchKind.Forward;
             return new SearchData(text, kind, options);
         }
 

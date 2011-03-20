@@ -40,10 +40,10 @@ module TssUtil =
         
     let FindCurrentWordSpan point kind = (WrapTextSearch TextUtil.FindCurrentWordSpan) kind point
     let FindCurrentFullWordSpan point kind = (WrapTextSearch TextUtil.FindFullWordSpan) kind point
-    
-    let FindAnyWordSpan (span:SnapshotSpan) wordKind searchKind = 
+
+    let FindAnyWordSpan (span:SnapshotSpan) wordKind (searchKind : SearchKind)= 
         let opt = 
-            if SearchKindUtil.IsForward searchKind then
+            if searchKind.IsAnyForward then 
                 match FindCurrentWordSpan span.Start wordKind with
                 | Some s -> Some s
                 | None -> 
@@ -125,7 +125,7 @@ module TssUtil =
         elif diff < 0 then new SnapshotSpan(line.Start, point)
         else new SnapshotSpan(point.Subtract(count), point)
 
-    let GetWordSpans point wordKind searchKind = 
+    let GetWordSpans point wordKind (searchKind : SearchKind) = 
         let getForSpanForward span = 
             span
             |> Seq.unfold (fun cur -> 
@@ -140,7 +140,7 @@ module TssUtil =
                 | None -> None )
 
         let getForSpan span = 
-            if SearchKindUtil.IsForward searchKind then getForSpanForward span
+            if searchKind.IsAnyForward then getForSpanForward span
             else getForSpanBackwards span
 
         SnapshotPointUtil.GetSpans point searchKind 

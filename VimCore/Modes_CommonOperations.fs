@@ -262,73 +262,6 @@ type internal CommonOperations ( _data : OperationsData ) =
     member x.UpdateRegister (reg:Register) regOperation value = 
         _registerMap.SetRegisterValue reg regOperation value
 
-    member x.MoveToNextWordCore kind count isWholeWord = 
-        let point = TextViewUtil.GetCaretPoint _textView
-        match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
-        | None -> _statusUtil.OnError Resources.NormalMode_NoWordUnderCursor
-        | Some(span) ->
-
-            // Build up the SearchData structure
-            let word = span.GetText()
-            let text = if isWholeWord then SearchText.WholeWord(word) else SearchText.StraightText(word)
-            let data = { Text=text; Kind = kind; Options = SearchOptions.ConsiderIgnoreCase }
-
-            // Pick the appropriate place to start the search.  
-            let searchStart = 
-                if SearchKindUtil.IsForward kind then 
-                    // Make sure to start the search from the end of the current word.  Otherwise
-                    // dependning on the caret position this could start from the begining of 
-                    // the current word and have it count as the "first" match.  Start at the end
-                    // of the word so the count works out correctly
-                    span.End
-                else
-                    // Begin from the start of the word.  The search will not include this character
-                    // when searching backward
-                    span.Start
-
-            match _search.FindNextMultiple data searchStart _normalWordNav count with
-            | Some(span) -> 
-                TextViewUtil.MoveCaretToPoint _textView span.Start
-                TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
-            | None -> ()
-
-            _vimData.LastSearchData <- data
-
-    member x.MoveToNextOccuranceOfLastSearchCore count isReverse = 
-        let last = _vimData.LastSearchData
-        let last = 
-            if isReverse then { last with Kind = SearchKindUtil.Reverse last.Kind }
-            else last
-
-        if StringUtil.isNullOrEmpty last.Text.RawText then
-            _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
-        else
-
-            let foundSpan (span:SnapshotSpan) = 
-                TextViewUtil.MoveCaretToPoint _textView span.Start
-                TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
-
-            let findMore (span:SnapshotSpan) count = 
-                if count = 1 then foundSpan span
-                else 
-                    let count = count - 1 
-                    match _search.FindNextMultiple last span.End _normalWordNav count with
-                    | Some(span) -> foundSpan span
-                    | None -> _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
-
-            // Make sure we don't count the current word if the cursor is positioned
-            // directly on top of the current word 
-            let caretPoint = TextViewUtil.GetCaretPoint _textView
-            match _search.FindNext last caretPoint _normalWordNav with
-            | None -> _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
-            | Some(span) ->
-                let count = if span.Start = caretPoint then count else count - 1 
-                if count = 0 then foundSpan span
-                else 
-                    match _search.FindNextMultiple last span.End _normalWordNav count with
-                    | Some(span) -> foundSpan span
-                    | None -> _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
-
     // Puts the provided StringData at the given point in the ITextBuffer.  Does not attempt
     // to move the caret as a result of this operation
     member x.Put point stringData opKind =
@@ -743,10 +676,6 @@ type internal CommonOperations ( _data : OperationsData ) =
                 while deleteAtCaret() do
                     // Keep on deleteing 
                     ()
-
-        member x.MoveToNextOccuranceOfWordAtCursor kind count =  x.MoveToNextWordCore kind count true
-        member x.MoveToNextOccuranceOfPartialWordAtCursor kind count = x.MoveToNextWordCore kind count false
-        member x.MoveToNextOccuranceOfLastSearch count isReverse = x.MoveToNextOccuranceOfLastSearchCore count isReverse
 
         member x.Substitute pattern replace (range:SnapshotLineRange) flags = 
 

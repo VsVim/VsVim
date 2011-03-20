@@ -735,8 +735,9 @@ namespace Vim.UnitTest
 
         #region IIncrementalSearch
 
-        public static BindResult<SearchResult> DoSearch(this IIncrementalSearch search, string text, SearchKind searchKind = SearchKind.ForwardWithWrap)
+        public static BindResult<SearchResult> DoSearch(this IIncrementalSearch search, string text, SearchKind searchKind = null)
         {
+            searchKind = searchKind ?? SearchKind.ForwardWithWrap;
             return search.Begin(searchKind).Run(text).Run(VimKey.Enter);
         }
 

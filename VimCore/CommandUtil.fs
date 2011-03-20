@@ -27,6 +27,8 @@ type internal CommandUtil
     let _globalSettings = _localSettings.GlobalSettings
     let _vim = _buffer.Vim
     let _vimHost = _vim.VimHost
+    let _searchService = _vim.SearchService
+    let _wordNavigator = _buffer.WordNavigator
 
     let mutable _inRepeatLastChange = false
 
@@ -54,13 +56,13 @@ type internal CommandUtil
 
         match stored with
         | StoredVisualSpan.Line count -> 
-            // Repeating a Linewise operation just creates a span with the same 
+            // Repeating a LineWise operation just creates a span with the same 
             // number of lines as the original operation
             let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
             VisualSpan.Line range
 
         | StoredVisualSpan.Character (endLineOffset, endOffset) -> 
-            // Repeating a characterise span starts from the caret position.  There
+            // Repeating a CharecterWise span starts from the caret position.  There
             // are 2 cases to consider
             //
             //  1. Single Line: endOffset is the offset from the caret
@@ -640,6 +642,16 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Go to the global declaration of the word under the caret
+    member x.GoToGlobalDeclaration () =
+        _operations.GoToGlobalDeclaration()
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Go to the local declaration of the word under the caret
+    member x.GoToLocalDeclaration () =
+        _operations.GoToLocalDeclaration()
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// GoTo the ITextView in the specified direction
     member x.GoToView direction = 
         match direction with
@@ -701,15 +713,6 @@ type internal CommandUtil
                 x.MoveCaretFollowingJoin range)
 
             CommandResult.Completed ModeSwitch.SwitchPreviousMode
-
-    /// Jump to the specified mark
-    member x.JumpToMark c =
-        match _operations.JumpToMark c _markMap with
-        | Modes.Result.Failed msg ->
-            _statusUtil.OnError msg
-            CommandResult.Error
-        | Modes.Result.Succeeded ->
-            CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Switch to insert mode after the caret 
     member x.InsertAfterCaret count = 
@@ -796,6 +799,138 @@ type internal CommandUtil
 
         let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCountAndNewLine count)
         CommandResult.Completed switch
+
+    /// Jump to the specified mark
+    member x.JumpToMark c =
+        match _operations.JumpToMark c _markMap with
+        | Modes.Result.Failed msg ->
+            _statusUtil.OnError msg
+            CommandResult.Error
+        | Modes.Result.Succeeded ->
+            CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Move the caret in the specified direction
+    member x.MoveCaretTo direction count =
+
+        match direction with
+        | Direction.Left -> _operations.MoveCaretLeft count
+        | Direction.Right -> _operations.MoveCaretRight count
+        | Direction.Up -> _operations.MoveCaretUp count
+        | Direction.Down -> _operations.MoveCaretDown count
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Move the caret to the next occurrence of the last search
+    member x.MoveCaretToLastSearch isReverse count =
+        let last = _vimData.LastSearchData
+        let last = 
+            if isReverse then { last with Kind = SearchKind.Reverse last.Kind }
+            else last
+
+        if StringUtil.isNullOrEmpty last.Text.RawText then
+            _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
+        else
+
+            let searchStart = x.CaretPoint
+
+            let foundSpan (span : SnapshotSpan) = 
+                TextViewUtil.MoveCaretToPoint _textView span.Start
+                _operations.EnsureCaretOnScreenAndTextExpanded()
+
+                // If this was a wrapping search then raise an error if the command crossed 
+                // the bounds of the buffer
+                let path = last.Kind.Path
+                if _globalSettings.WrapScan then
+                    if path = Path.Forward && span.Start.Position <= searchStart.Position then
+                        _statusUtil.OnStatus Resources.Common_SearchForwardWrapped
+                    elif path = Path.Backward && span.Start.Position > searchStart.Position then
+                        _statusUtil.OnStatus Resources.Common_SearchBackwardWrapped 
+
+            let findMore (span:SnapshotSpan) count = 
+                if count = 1 then foundSpan span
+                else 
+                    let count = count - 1 
+                    match _searchService.FindNextMultiple last span.End _wordNavigator count with
+                    | Some(span) -> foundSpan span
+                    | None -> _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
+
+            match _searchService.FindNext last searchStart _wordNavigator with
+            | None -> 
+                _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
+            | Some span ->
+                // Make sure that we don't count the first match if it occurred on the
+                // actual caret position
+                let count = if span.Start = searchStart then count else count - 1 
+                if count = 0 then 
+                    foundSpan span
+                else 
+                    match _searchService.FindNextMultiple last span.End _wordNavigator count with
+                    | Some(span) -> foundSpan span
+                    | None -> _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Move the caret to the next occurrence of the partial word under the caret
+    member x.MoveCaretToNextPartialWord path count =
+        x.MoveCaretToNextWordCore path count false
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Move the caret to the next occurrence of the word under the caret
+    member x.MoveCaretToNextWord path count =
+        x.MoveCaretToNextWordCore path count true
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Move the caret to the next occurrence of the word under the cursor.  
+    member x.MoveCaretToNextWordCore path count isWholeWord = 
+        match TssUtil.FindCurrentFullWordSpan x.CaretPoint WordKind.NormalWord with
+        | None -> 
+            // Nothing to do if no word under the cursor
+            _statusUtil.OnError Resources.NormalMode_NoWordUnderCursor
+        | Some(span) ->
+
+            // Build up the SearchData structure
+            let kind = SearchKind.OfPathAndWrap path _globalSettings.WrapScan
+            let word = span.GetText()
+            let text = if isWholeWord then SearchText.WholeWord word else SearchText.StraightText word
+            let data = { Text = text; Kind = kind; Options = SearchOptions.ConsiderIgnoreCase }
+
+            // Pick the appropriate place to start the search.  
+            let searchStart = 
+                match path with
+                | Path.Forward ->
+                    // Make sure to start the search from the end of the current word.  Otherwise
+                    // depending on the caret position this could start from the beginning of 
+                    // the current word and have it count as the "first" match.  Start at the end
+                    // of the word so the count works out correctly
+                    span.End
+                | Path.Backward ->
+                    // Begin from the start of the word.  The search will not include this character
+                    // when searching backward
+                    span.Start
+
+            match _searchService.FindNextMultiple data searchStart _wordNavigator count with
+            | Some span ->
+                TextViewUtil.MoveCaretToPoint _textView span.Start
+                _operations.EnsureCaretOnScreenAndTextExpanded()
+
+                // If this was a wrapping search then raise an error if the command crossed 
+                // the bounds of the buffer
+                if _globalSettings.WrapScan then
+                    if path = Path.Forward && span.Start.Position <= searchStart.Position then
+                        _statusUtil.OnStatus Resources.Common_SearchForwardWrapped
+                    elif path = Path.Backward && span.Start.Position > searchStart.Position then
+                        _statusUtil.OnStatus Resources.Common_SearchBackwardWrapped 
+
+            | None ->
+
+                // Raise the appropriate error for the missing value.  Really should only happen
+                // if 'wrapscan' is false.  Else we'd eventually hit the original declaration
+                let format = 
+                    match path with
+                    | Path.Forward -> Resources.Common_SearchHitBottomWithout
+                    | Path.Backward -> Resources.Common_SearchHitTopWithout
+                _statusUtil.OnError (format data.Text.DisplayText)
+
+            _vimData.LastSearchData <- data
 
     /// Move the caret to start of a line which is deleted.  Needs to preserve the original 
     /// indent if 'autoindent' is set.
@@ -1342,6 +1477,8 @@ type internal CommandUtil
         | NormalCommand.FormatLines -> x.FormatLines count
         | NormalCommand.FormatMotion motion -> x.RunWithMotion motion x.FormatMotion 
         | NormalCommand.GoToFileUnderCaret useNewWindow -> x.GoToFileUnderCaret useNewWindow
+        | NormalCommand.GoToGlobalDeclaration -> x.GoToGlobalDeclaration ()
+        | NormalCommand.GoToLocalDeclaration -> x.GoToLocalDeclaration ()
         | NormalCommand.GoToView direction -> x.GoToView direction
         | NormalCommand.InsertAfterCaret -> x.InsertAfterCaret count
         | NormalCommand.InsertBeforeCaret -> x.InsertBeforeCaret count
@@ -1352,6 +1489,10 @@ type internal CommandUtil
         | NormalCommand.InsertLineBelow -> x.InsertLineBelow count
         | NormalCommand.JoinLines kind -> x.JoinLines kind count
         | NormalCommand.JumpToMark c -> x.JumpToMark c
+        | NormalCommand.MoveCaretTo direction -> x.MoveCaretTo direction count
+        | NormalCommand.MoveCaretToLastSearch isReverse-> x.MoveCaretToLastSearch isReverse count
+        | NormalCommand.MoveCaretToNextPartialWord path -> x.MoveCaretToNextPartialWord path count
+        | NormalCommand.MoveCaretToNextWord path -> x.MoveCaretToNextWord path count
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
         | NormalCommand.Ping pingData -> x.Ping pingData data
         | NormalCommand.PutAfterCaret moveCaretAfterText -> x.PutAfterCaret register count moveCaretAfterText

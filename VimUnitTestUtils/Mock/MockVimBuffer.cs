@@ -321,5 +321,11 @@ namespace Vim.UnitTest.Mock
         {
             throw new NotImplementedException();
         }
+
+
+        public Microsoft.VisualStudio.Text.Operations.ITextStructureNavigator WordNavigator
+        {
+            get { throw new NotImplementedException(); }
+        }
     }
 }

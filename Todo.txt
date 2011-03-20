@@ -1,5 +1,6 @@
-
-X Need to see how readonly buffers and insert mode now play togehter.  Start debugging, insert mode and type.  Should get routed
-  through the special code in VsKeyProcess and hit Insert Mode head on
-- Need a way a host (Visual Studio) can specify that Vim should pretend a KeyInput was processed.  This will be important for 
-  recording edits in macros.
+- Word under cursor should move forward past blanks to the next word.  Needs to be an empty line
+- Verify the above for backwards searches
+- Backwards MoveCaretToLastSearch may not work if the string starts on the match
+- MoveCaretToLastSearch probably doesn't update LastSearch properly
+- MoveCaretToLastSearch probably doesn't raise error messages properly
+- MoveCaretToLastSearch doesn't take wrapscan into account

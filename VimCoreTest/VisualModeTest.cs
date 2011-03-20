@@ -556,35 +556,21 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Handle_N_NoCount()
+        public void Bind_MoveCaretToLastSearch()
         {
-            Create("foo", "bar");
-            _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(1, true)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToLastSearch(true));
             _mode.Process("N");
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Handle_N_WithCount()
+        public void Bind_MoveCaretToLastSearch_Reverse()
         {
-            Create("foo", "bar");
-            _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(2, true)).Verifiable();
-            _mode.Process("2N");
-        }
-
-        [Test]
-        public void Handle_n_NoCount()
-        {
-            Create("foo", "bar");
-            _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(1, false)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToLastSearch(false));
             _mode.Process("n");
-        }
-
-        [Test]
-        public void Handle_n_WithCount()
-        {
-            Create("foo", "bar");
-            _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(2, false)).Verifiable();
-            _mode.Process("2n");
+            _commandUtil.Verify();
         }
     }
 }

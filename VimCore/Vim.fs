@@ -132,7 +132,8 @@ type internal VimBufferFactory
                 jumpList,
                 localSettings,
                 incrementalSearch,
-                motionUtil)
+                motionUtil,
+                wordNav)
         let buffer = bufferRaw :> IVimBuffer
 
         let commandUtil = CommandUtil(buffer, commonOperations, statusUtil, undoRedoOperations, _smartIndentationService, foldManager) :> ICommandUtil

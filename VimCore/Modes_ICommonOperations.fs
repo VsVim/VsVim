@@ -151,15 +151,6 @@ type ICommonOperations =
     /// Move the caret the number of lines in the given direction and scroll the view
     abstract MoveCaretAndScrollLines : ScrollDirection -> count:int -> unit
 
-    /// Move to the next "count" occurrence of the last search
-    abstract MoveToNextOccuranceOfLastSearch : count:int -> isReverse:bool -> unit
-
-    /// Move to the next occurrence of the word under the cursor
-    abstract MoveToNextOccuranceOfWordAtCursor : SearchKind -> count:int -> unit
-
-    /// Move to the next occurrence of the word under the cursor
-    abstract MoveToNextOccuranceOfPartialWordAtCursor : SearchKind -> count:int -> unit
-
     /// Move the cursor backward count WordKind's
     abstract MoveWordBackward : WordKind -> count : int -> unit
 

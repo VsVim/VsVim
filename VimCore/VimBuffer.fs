@@ -57,7 +57,9 @@ type internal VimBuffer
         _jumpList : IJumpList,
         _settings : IVimLocalSettings,
         _incrementalSearch : IIncrementalSearch,
-        _motionUtil : ITextViewMotionUtil ) =
+        _motionUtil : ITextViewMotionUtil,
+        _wordNavigator : ITextStructureNavigator
+    ) =
 
     let _properties = PropertyCollection()
     let mutable _modeMap = ModeMap()
@@ -67,7 +69,6 @@ type internal VimBuffer
     /// This is the buffered input when a remap request needs more than one 
     /// element
     let mutable _remapInput : KeyInputSet option = None
-
 
     let _keyInputProcessedEvent = new Event<_>()
     let _keyInputStartEvent = new Event<_>()
@@ -216,6 +217,7 @@ type internal VimBuffer
     interface IVimBuffer with
         member x.Vim = _vim
         member x.VimData = _vim.VimData
+        member x.WordNavigator = _wordNavigator
         member x.TextView = _textView
         member x.TextViewMotionUtil = _motionUtil
         member x.TextBuffer = _textView.TextBuffer

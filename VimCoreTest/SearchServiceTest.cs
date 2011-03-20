@@ -39,7 +39,7 @@ namespace VimCore.UnitTest
             string searchText,
             FindOptions options)
         {
-            var isWrap = SearchKindUtil.IsWrap(data.Kind);
+            var isWrap = data.Kind.IsWrap;
             var snapshot = MockObjectFactory.CreateTextSnapshot(10);
             var nav = _factory.Create<ITextStructureNavigator>();
             var findData = new FindData(searchText, snapshot.Object, options, nav.Object);

@@ -128,18 +128,27 @@ type SearchText =
     | StraightText of string
     with 
 
+    /// Raw text associated with this search pattern
     member x.RawText =
         match x with
-        | Pattern(p) -> p
-        | WholeWord(p) -> p
-        | StraightText(p) -> p
+        | Pattern p -> p
+        | WholeWord p -> p
+        | StraightText p -> p
+
+    /// The text which should be displayed to the user for this search
+    /// text
+    member x.DisplayText =
+        match x with
+        | Pattern p -> p
+        | WholeWord p -> "\<" + p + "\>"
+        | StraightText p -> p
 
     /// Is this a pattern
     member x.IsPatternText = 
         match x with
-        | Pattern(_) -> true
-        | WholeWord(_) -> false
-        | StraightText(_) -> false
+        | Pattern _ -> true
+        | WholeWord _ -> false
+        | StraightText _ -> false
 
 type SearchData = {
     Text : SearchText;
@@ -169,7 +178,6 @@ type ISearchService =
 
     /// Find the next Nth occurrence of the pattern
     abstract FindNextMultiple : SearchData -> SnapshotPoint -> ITextStructureNavigator -> count:int -> SnapshotSpan option
-
 
 /// Context on how the motion is being used.  Several motions (]] for example)
 /// change behavior based on how they are being used
@@ -845,6 +853,12 @@ type NormalCommand =
     /// Format the specified motion
     | FormatMotion of MotionData
 
+    /// Go to the global declaration of the word under the caret
+    | GoToGlobalDeclaration
+
+    /// Go to the local declaration of the word under the caret
+    | GoToLocalDeclaration
+
     /// GoTo the file under the cursor.  The bool represents whether or not this should occur in
     /// a different window
     | GoToFileUnderCaret of bool
@@ -879,8 +893,21 @@ type NormalCommand =
     /// Jump to the specified mark 
     | JumpToMark of char
 
+    /// Move the caret in the specified direction
+    | MoveCaretTo of Direction
+
     /// Move the caret to the result of the given Motion
     | MoveCaretToMotion of Motion
+
+    /// Move to the next occurrence of the last search.  The bool parameter is true if the search
+    /// should be in the opposite direction
+    | MoveCaretToLastSearch of bool
+
+    /// Move to the next occurrence of the word under the caret
+    | MoveCaretToNextWord of Path
+
+    /// Move to the next occurrence of the partial word under the caret
+    | MoveCaretToNextPartialWord  of Path
 
     /// Not actually a Vim Command.  This is a simple ping command which makes 
     /// testing items like complex repeats significantly easier
@@ -1937,6 +1964,9 @@ and IVimBuffer =
 
     /// Owning IVim instance
     abstract Vim : IVim
+
+    /// The ITextStructureNavigator for word values in the buffer
+    abstract WordNavigator : ITextStructureNavigator
 
     /// Associated IVimData instance
     abstract VimData : IVimData

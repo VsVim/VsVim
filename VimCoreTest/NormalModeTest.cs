@@ -241,188 +241,120 @@ namespace VimCore.UnitTest
         #region Movement
 
         [Test]
-        public void Move_l()
+        public void Bind_MoveCaretTo_l()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretRight(1)).Verifiable();
-            _mode.Process("l");
-            _operations.Verify();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Right));
+            _mode.Process('l');
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Move_l2()
+        public void Bind_MoveCaretTo_h()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretRight(2)).Verifiable();
-            _mode.Process("2l");
-            _operations.Verify();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Left));
+            _mode.Process('h');
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Move_h()
+        public void Bind_MoveCaretTo_Backspace()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
-            _mode.Process("h");
-            _operations.Verify();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Left));
+            _mode.Process(VimKey.Back);
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Move_h2()
+        public void Bind_MoveCaretTo_k()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretLeft(2)).Verifiable();
-            _mode.Process("2h");
-            _operations.Verify();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Up));
+            _mode.Process('k');
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Move_Backspace1()
+        public void Bind_MoveCaretTo_j()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Back));
-            _operations.Verify();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Down));
+            _mode.Process('j');
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Move_Backspace2()
+        public void Bind_MoveCaretTo_Left()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretLeft(2)).Verifiable();
-            _mode.Process('2');
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Back));
-            _operations.Verify();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Left));
+            _mode.Process(VimKey.Left);
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Move_k()
+        public void Bind_MoveCaretTo_Right()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretUp(1)).Verifiable();
-            _mode.Process("k");
-            _operations.Verify();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Right));
+            _mode.Process(VimKey.Right);
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Move_j()
+        public void Bind_MoveCaretTo_Up()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretDown(1)).Verifiable();
-            _mode.Process("j");
-            _operations.Verify();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Up));
+            _mode.Process(VimKey.Up);
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Move_LeftArrow1()
+        public void Bind_MoveCaretTo_Down()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Left));
-            _operations.Verify();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Down));
+            _mode.Process(VimKey.Down);
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Move_LeftArrow2()
+        public void Bind_MoveCaretTo_CtrlP()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretLeft(2)).Verifiable();
-            _mode.Process('2');
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Left));
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Move_RightArrow1()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretRight(1)).Verifiable();
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Right));
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Move_RightArrow2()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretRight(2)).Verifiable();
-            _mode.Process('2');
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Right));
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Move_UpArrow1()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretUp(1)).Verifiable();
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Up));
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Move_UpArrow2()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretUp(2)).Verifiable();
-            _mode.Process('2');
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Up));
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Move_DownArrow1()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretDown(1)).Verifiable();
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Down));
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Move_DownArrow2()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretDown(2)).Verifiable();
-            _mode.Process('2');
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Down));
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Move_CtrlP1()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretUp(1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Up));
             _mode.Process(KeyInputUtil.CharWithControlToKeyInput('p'));
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Move_CtrlN1()
+        public void Bind_MoveCaretTo_CtrlN()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretDown(1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Down));
             _mode.Process(KeyInputUtil.CharWithControlToKeyInput('n'));
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Move_CtrlH1()
+        public void Bind_MoveCaretTo_CtrlH()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Left));
             _mode.Process(KeyInputUtil.CharWithControlToKeyInput('h'));
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Move_SpaceBar1()
+        public void Bind_MoveCaretTo_SpaceBar()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretRight(1)).Verifiable();
-            _mode.Process(KeyInputUtil.CharToKeyInput(' '));
-            _operations.Verify();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Right));
+            _mode.Process(' ');
+            _commandUtil.Verify();
         }
 
         [Test]
@@ -700,32 +632,21 @@ namespace VimCore.UnitTest
         #region Motion
 
         [Test]
-        public void Motion_l()
+        public void Motion_MoveCaretRight()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretRight(1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Right));
             _mode.Process("l");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Motion_2l()
+        public void Motion_MoveCaretRight_WithCount()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretRight(2)).Verifiable();
-            _mode.Process("2l");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Motion_50l()
-        {
-            Create(DefaultLines);
-            var line = _textView.TextSnapshot.Lines.Last();
-            _textView.Caret.MoveTo(line.Start);
-            _operations.Setup(x => x.MoveCaretRight(50)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Right), count: 50);
             _mode.Process("50l");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         /// <summary>
@@ -1116,22 +1037,6 @@ namespace VimCore.UnitTest
 
         #endregion
 
-        #region Regressions
-
-        [Test, Description("j past the end of the buffer")]
-        public void Regression_DownPastBufferEnd()
-        {
-            Create("foo");
-            _operations.Setup(x => x.MoveCaretDown(1)).Verifiable();
-            var res = _mode.Process('j');
-            Assert.IsTrue(res.IsHandledNoSwitch());
-            res = _mode.Process('j');
-            Assert.IsTrue(res.IsHandledNoSwitch());
-            _operations.Verify();
-        }
-
-        #endregion
-
         #region Incremental Search
 
         /// <summary>
@@ -1186,100 +1091,60 @@ namespace VimCore.UnitTest
         #region Next / Previous Word
 
         [Test]
-        public void NextWord1()
+        public void Bind_MoveCaretToNextWord_Forward()
         {
-            Create("foo bar");
-            _operations.Setup(x => x.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToNextWord(Path.Forward));
             _mode.Process("*");
-            _operations.Verify();
-        }
-
-        [Test, Description("No matches should have no effect")]
-        public void NextWord2()
-        {
-            Create("foo bar");
-            _operations.Setup(x => x.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 4)).Verifiable();
-            _mode.Process("4*");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void PreviousWord1()
+        public void Bind_MoveCaretToNextWord_Backward()
         {
-            Create("foo bar");
-            _operations.Setup(x => x.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToNextWord(Path.Backward));
             _mode.Process("#");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void PreviousWord2()
+        public void Bind_MoveCaretToNextPartialWord_Forward()
         {
-            Create("foo bar");
-            _operations.Setup(x => x.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 4)).Verifiable();
-            _mode.Process("4#");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void NextPartialWord1()
-        {
-            Create("foo bar");
-            _operations.Setup(x => x.MoveToNextOccuranceOfPartialWordAtCursor(SearchKind.ForwardWithWrap, 1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToNextPartialWord(Path.Forward));
             _mode.Process("g*");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void PreviousPartialWord1()
+        public void Bind_MoveCaretToNextPartialWord_Backward()
         {
-            Create("foo bar");
-            _operations.Setup(x => x.MoveToNextOccuranceOfPartialWordAtCursor(SearchKind.BackwardWithWrap, 1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToNextPartialWord(Path.Backward));
             _mode.Process("g#");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         #endregion
 
-        #region Search
-
         [Test]
-        public void Search_n_1()
+        public void Bind_MoveCaretToLastSearch_Forward()
         {
-            Create("foo");
-            _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(1, false)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToLastSearch(false));
             _mode.Process("n");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Search_n_2()
+        public void Bind_MoveCaretToLastSearch_Backward()
         {
-            Create("foo");
-            _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(2, false)).Verifiable();
-            _mode.Process("2n");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Search_N_1()
-        {
-            Create("foo");
-            _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(1, true)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToLastSearch(true));
             _mode.Process("N");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
-
-        [Test]
-        public void Search_N_2()
-        {
-            Create("foo");
-            _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(2, true)).Verifiable();
-            _mode.Process("2N");
-            _operations.Verify();
-        }
-
-        #endregion
 
         #region Shift
 
@@ -1395,30 +1260,21 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void GoTo_gd1()
+        public void Bind_GoToLocalDeclaration()
         {
-            Create("foo bar");
-            _operations.Setup(x => x.GoToLocalDeclaration()).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.GoToLocalDeclaration);
             _mode.Process("gd");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void GoTo_gd2()
+        public void Bind_GoToGlobalDeclaration()
         {
-            Create("foo bar");
-            _operations.Setup(x => x.GoToLocalDeclaration()).Verifiable();
-            _mode.Process("gd");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void GoTo_gD1()
-        {
-            Create("foo bar");
-            _operations.Setup(x => x.GoToGlobalDeclaration()).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.GoToGlobalDeclaration);
             _mode.Process("gD");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
@@ -1624,15 +1480,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Command3()
-        {
-            Create("again");
-            _operations.Setup(x => x.MoveCaretUp(1));
-            _mode.Process('k');
-            Assert.AreEqual(string.Empty, _mode.Command);
-        }
-
-        [Test]
         public void Command4()
         {
             Create(DefaultLines);
@@ -1724,7 +1571,7 @@ namespace VimCore.UnitTest
         public void OneTimeCommand1()
         {
             Create(string.Empty);
-            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Left));
             _mode.OnEnter(ModeArgument.NewOneTimeCommand(ModeKind.Insert));
             var res = _mode.Process("h");
             Assert.IsTrue(res.IsSwitchMode(ModeKind.Insert));
@@ -1734,7 +1581,7 @@ namespace VimCore.UnitTest
         public void OneTimeCommand2()
         {
             Create(string.Empty);
-            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Left));
             _mode.OnEnter(ModeArgument.NewOneTimeCommand(ModeKind.Command));
             var res = _mode.Process("h");
             Assert.IsTrue(res.IsSwitchMode(ModeKind.Command));
