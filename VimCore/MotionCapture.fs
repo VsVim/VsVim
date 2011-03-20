@@ -41,8 +41,8 @@ type internal MotionCapture
 
             result.Convert (fun searchResult ->
                 match searchResult with
-                | SearchResult.SearchFound (searchData, _) -> Motion.Search searchData
-                | SearchResult.SearchNotFound searchData -> Motion.Search searchData)
+                | SearchResult.Found (searchData, _, _) -> Motion.Search searchData
+                | SearchResult.NotFound searchData -> Motion.Search searchData)
 
         BindDataStorage.Complex activateFunc
 

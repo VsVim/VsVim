@@ -163,8 +163,9 @@ namespace Vim.UnitTest
             return new RegisterMap(device, func2.ToFSharpFunc());
         }
 
-        internal static ISearchService CreateSearchService(IVimGlobalSettings settings)
+        internal static ISearchService CreateSearchService(IVimGlobalSettings settings = null)
         {
+            settings = settings ?? new GlobalSettings();
             return new SearchService(EditorUtil.FactoryService.TextSearchService, settings);
         }
 

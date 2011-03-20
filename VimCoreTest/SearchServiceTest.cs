@@ -4,7 +4,6 @@ using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using NUnit.Framework;
 using Vim;
-using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
@@ -192,8 +191,8 @@ namespace VimCore.UnitTest
                 .Verifiable();
             var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 1);
-            Assert.IsTrue(ret.IsSome());
-            Assert.AreEqual(new SnapshotSpan(tss, 11, 3), ret.Value);
+            Assert.IsTrue(ret.IsFound);
+            Assert.AreEqual(new SnapshotSpan(tss, 11, 3), ret.AsFound().Item2);
             _factory.Verify();
         }
 
@@ -213,7 +212,7 @@ namespace VimCore.UnitTest
                 .Verifiable();
             var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 2);
-            Assert.IsFalse(ret.IsSome());
+            Assert.IsFalse(ret.IsFound);
             _factory.Verify();
         }
 
@@ -229,7 +228,7 @@ namespace VimCore.UnitTest
                 .Verifiable();
             var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.Backward, SearchOptions.None);
             var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 2);
-            Assert.IsFalse(ret.IsSome());
+            Assert.IsFalse(ret.IsFound);
             _factory.Verify();
         }
 
@@ -249,8 +248,8 @@ namespace VimCore.UnitTest
                 .Verifiable();
             var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.BackwardWithWrap, SearchOptions.None);
             var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 2);
-            Assert.IsTrue(ret.IsSome());
-            Assert.AreEqual(new SnapshotSpan(tss, 10, 3), ret.Value);
+            Assert.IsTrue(ret.IsFound);
+            Assert.AreEqual(new SnapshotSpan(tss, 10, 3), ret.AsFound().Item2);
             _factory.Verify();
         }
 
@@ -270,8 +269,8 @@ namespace VimCore.UnitTest
                 .Verifiable();
             var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 2);
-            Assert.IsTrue(ret.IsSome());
-            Assert.AreEqual(new SnapshotSpan(tss, 10, 3), ret.Value);
+            Assert.IsTrue(ret.IsFound);
+            Assert.AreEqual(new SnapshotSpan(tss, 10, 3), ret.AsFound().Item2);
             _factory.Verify();
         }
 
@@ -286,7 +285,7 @@ namespace VimCore.UnitTest
                 .Verifiable();
             var searchData = new SearchData(SearchText.NewPattern("f("), SearchKind.ForwardWithWrap, SearchOptions.None);
             var ret = _search.FindNext(searchData, new SnapshotPoint(tss, 0), nav.Object);
-            Assert.IsTrue(ret.IsNone());
+            Assert.IsTrue(ret.IsNotFound);
             _factory.Verify();
         }
 
@@ -302,7 +301,7 @@ namespace VimCore.UnitTest
                 .Verifiable();
             var searchData = new SearchData(SearchText.NewPattern("f("), SearchKind.ForwardWithWrap, SearchOptions.None);
             var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 0), nav.Object, 2);
-            Assert.IsTrue(ret.IsNone());
+            Assert.IsTrue(ret.IsNotFound);
             _factory.Verify();
         }
 
@@ -313,7 +312,7 @@ namespace VimCore.UnitTest
             var nav = _factory.Create<ITextStructureNavigator>();
             var searchData = new SearchData(SearchText.NewPattern(@"\V"), SearchKind.ForwardWithWrap, SearchOptions.None);
             var ret = _search.FindNext(searchData, snapshot.GetPoint(0), nav.Object);
-            Assert.IsTrue(ret.IsNone());
+            Assert.IsTrue(ret.IsNotFound);
         }
     }
 

@@ -15,7 +15,7 @@ namespace VimCore.UnitTest
     {
         private static SearchOptions s_options = SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase;
         private MockRepository _factory;
-        private Mock<IVimData> _vimData;
+        private IVimData _vimData;
         private ISearchService _searchService;
         private ITextStructureNavigator _nav;
         private IVimGlobalSettings _globalSettings;
@@ -34,7 +34,7 @@ namespace VimCore.UnitTest
             _searchService = VimUtil.CreateSearchService(_globalSettings);
             _nav = VimUtil.CreateTextStructureNavigator(_textView.TextBuffer);
             _factory = new MockRepository(MockBehavior.Strict);
-            _vimData = _factory.Create<IVimData>();
+            _vimData = new VimData();
             _statusUtil = _factory.Create<IStatusUtil>();
             _statusUtil.Setup(x => x.OnStatus(Resources.Common_SearchBackwardWrapped));
             _statusUtil.Setup(x => x.OnStatus(Resources.Common_SearchForwardWrapped));
@@ -48,7 +48,7 @@ namespace VimCore.UnitTest
                 _nav,
                 _searchService,
                 _statusUtil.Object,
-                _vimData.Object);
+                _vimData);
             _search = _searchRaw;
         }
 
@@ -76,9 +76,9 @@ namespace VimCore.UnitTest
         public void RunSearch_EnterShouldComplete()
         {
             Create("foo bar");
-            _vimData.SetupSet(x => x.LastSearchData = new SearchData(SearchText.NewPattern(""), SearchKind.ForwardWithWrap, s_options)).Verifiable();
             Assert.IsTrue(_search.Begin(SearchKind.ForwardWithWrap).Run(VimKey.Enter).IsComplete);
             _factory.Verify();
+            Assert.AreEqual(_vimData.LastSearchData, new SearchData(SearchText.NewPattern(""), SearchKind.ForwardWithWrap, s_options));
         }
 
         /// <summary>
@@ -97,24 +97,25 @@ namespace VimCore.UnitTest
         [Test]
         public void LastSearch1()
         {
-            Create("foo bar");
+            Create(" foo bar");
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, s_options);
-            _vimData.SetupSet(x => x.LastSearchData = data).Verifiable();
             ProcessWithEnter("foo");
+            Assert.AreEqual(data, _vimData.LastSearchData);
             _factory.Verify();
         }
 
         [Test]
         public void LastSearch2()
         {
-            Create("foo bar");
+            Create(" foo bar");
 
-            _vimData.SetupSet(x => x.LastSearchData = new SearchData(SearchText.NewPattern("foo bar"), SearchKind.ForwardWithWrap, s_options)).Verifiable();
             ProcessWithEnter("foo bar");
+            Assert.AreEqual(new SearchData(SearchText.NewPattern("foo bar"), SearchKind.ForwardWithWrap, s_options), _vimData.LastSearchData);
             _factory.Verify();
 
-            _vimData.SetupSet(x => x.LastSearchData = new SearchData(SearchText.NewPattern("bar"), SearchKind.ForwardWithWrap, s_options)).Verifiable();
+            _textView.MoveCaretTo(0);
             ProcessWithEnter("bar");
+            Assert.AreEqual(new SearchData(SearchText.NewPattern("bar"), SearchKind.ForwardWithWrap, s_options), _vimData.LastSearchData);
             _factory.Verify();
         }
 
@@ -126,7 +127,7 @@ namespace VimCore.UnitTest
             _search.CurrentSearchUpdated += (unused, result) =>
                 {
                     didRun = true;
-                    Assert.IsTrue(result.IsSearchNotFound);
+                    Assert.IsTrue(result.IsNotFound);
                 };
             _search.Begin(SearchKind.ForwardWithWrap);
             Assert.IsTrue(didRun);
@@ -146,7 +147,7 @@ namespace VimCore.UnitTest
                 (unused, result) =>
                 {
                     Assert.AreEqual("z", result.SearchData.Text.RawText);
-                    Assert.IsTrue(result.IsSearchNotFound);
+                    Assert.IsTrue(result.IsNotFound);
                     didRun = true;
                 };
             bind.Run("z");
@@ -156,19 +157,19 @@ namespace VimCore.UnitTest
         [Test]
         public void CurrentSearchComplete_FireWhenDone()
         {
-            Create("foo bar");
-            _vimData.SetupSet(x => x.LastSearchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, s_options)).Verifiable();
+            Create("cat foo bar");
             var didRun = false;
             _search.CurrentSearchCompleted +=
                 (unused, result) =>
                 {
                     Assert.AreEqual("foo", result.SearchData.Text.RawText);
-                    Assert.IsTrue(result.IsSearchFound);
+                    Assert.IsTrue(result.IsFound);
                     didRun = true;
                 };
 
             ProcessWithEnter("foo");
             Assert.IsTrue(didRun);
+            Assert.AreEqual(new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, s_options), _vimData.LastSearchData);
         }
 
         [Test]
@@ -199,10 +200,10 @@ namespace VimCore.UnitTest
         public void InSearch2()
         {
             Create("foo bar");
-            _vimData.SetupSet(x => x.LastSearchData = new SearchData(SearchText.NewPattern(""), SearchKind.Forward, SearchOptions.ConsiderSmartCase | SearchOptions.ConsiderIgnoreCase));
             _search.Begin(SearchKind.Forward).Run(VimKey.Enter);
             Assert.IsFalse(_search.InSearch);
             Assert.IsFalse(_search.CurrentSearch.IsSome());
+            Assert.AreEqual(new SearchData(SearchText.NewPattern(""), SearchKind.Forward, SearchOptions.ConsiderSmartCase | SearchOptions.ConsiderIgnoreCase), _vimData.LastSearchData);
         }
 
         /// <summary>
@@ -234,7 +235,6 @@ namespace VimCore.UnitTest
         public void Backspace2()
         {
             Create("foo bar");
-            _vimData.SetupSet(x => x.LastSearchData = new SearchData(SearchText.NewPattern(""), SearchKind.Forward, SearchOptions.None));
             var result = _search.Begin(SearchKind.Forward).Run("b").Run(VimKey.Back);
             Assert.IsTrue(result.IsNeedMoreInput);
         }
@@ -247,9 +247,8 @@ namespace VimCore.UnitTest
         public void SearchShouldStartAfterCaretWhenForward()
         {
             Create("foo bar");
-            _vimData.SetupSet(x => x.LastSearchData = It.IsAny<SearchData>());
             var result = _search.Begin(SearchKind.Forward).Run("f").Run(VimKey.Enter).AsComplete().Item;
-            Assert.IsTrue(result.IsSearchNotFound);
+            Assert.IsTrue(result.IsNotFound);
         }
 
         /// <summary>
@@ -261,9 +260,8 @@ namespace VimCore.UnitTest
         {
             Create("cat bar");
             _textView.MoveCaretTo(2);
-            _vimData.SetupSet(x => x.LastSearchData = It.IsAny<SearchData>());
             var result = _search.Begin(SearchKind.Backward).Run("t").Run(VimKey.Enter).AsComplete().Item;
-            Assert.IsTrue(result.IsSearchNotFound);
+            Assert.IsTrue(result.IsNotFound);
         }
 
         [Test]
@@ -271,8 +269,7 @@ namespace VimCore.UnitTest
         {
             Create("dog cat bear");
             _textView.MoveCaretTo(4);
-            _vimData.SetupSet(x => x.LastSearchData = It.IsAny<SearchData>());
-            _statusUtil.Setup(x => x.OnStatus(Resources.Common_SearchForwardWrapped)).Verifiable();
+            _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchForwardWrapped)).Verifiable();
             _search.DoSearch("d");
             _statusUtil.Verify();
         }
@@ -282,8 +279,7 @@ namespace VimCore.UnitTest
         {
             Create("dog cat bear");
             _textView.MoveCaretTo(4);
-            _vimData.SetupSet(x => x.LastSearchData = It.IsAny<SearchData>());
-            _statusUtil.Setup(x => x.OnStatus(Resources.Common_SearchBackwardWrapped)).Verifiable();
+            _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchBackwardWrapped)).Verifiable();
             _search.DoSearch("b", SearchKind.BackwardWithWrap);
             _statusUtil.Verify();
         }

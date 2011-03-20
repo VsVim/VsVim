@@ -86,8 +86,8 @@ type internal SelectionTracker
                 match _lastIncrementalSearchResult with
                 | Some(result) ->
                     match result with
-                    | SearchResult.SearchFound (_, span) -> VirtualSnapshotPoint(span.Start)
-                    | SearchResult.SearchNotFound _ -> caretPoint
+                    | SearchResult.Found (_, span, _) -> VirtualSnapshotPoint(span.Start)
+                    | SearchResult.NotFound _ -> caretPoint
                 | None -> 
                     caretPoint
             else

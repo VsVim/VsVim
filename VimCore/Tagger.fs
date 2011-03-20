@@ -28,8 +28,8 @@ type IncrementalSearchTagger(_buffer : IVimBuffer) as this =
         let updateCurrentWithResult result = 
             _currentSearchSpan <- 
                 match result with
-                | SearchResult.SearchFound (_, span) -> span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeExclusive) |> Some
-                | SearchResult.SearchNotFound _ -> None
+                | SearchResult.Found (_, span, _) -> span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeExclusive) |> Some
+                | SearchResult.NotFound _ -> None
 
         let handleCurrentSearchUpdated result = 
 
@@ -142,8 +142,9 @@ type HighlightIncrementalSearchTagger
                 if point.Position >= span.Length then None
                 else
                     match _search.FindNext searchData point _wordNav with
-                    | None -> None
-                    | Some(foundSpan) -> 
+                    | SearchResult.NotFound _ -> 
+                        None
+                    | SearchResult.Found (_, foundSpan, _) ->
                         if foundSpan.Start.Position <= span.End.Position then Some(foundSpan, foundSpan.End)
                         else None )
                     

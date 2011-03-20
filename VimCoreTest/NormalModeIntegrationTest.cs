@@ -1306,5 +1306,46 @@ namespace VimCore.UnitTest
             _buffer.Process("gj");
             Assert.AreEqual("cat dog", _textView.GetLine(0).GetText());
         }
+
+        /// <summary>
+        /// Incremental search should re-use the last search if the entered search string is
+        /// empty.  It should ignore the direction though and base it's search off the '/' or
+        /// '?' it was created with
+        /// </summary>
+        [Test]
+        public void LastSearch_IncrementalReuse()
+        {
+            Create("dog cat dog");
+            _textView.MoveCaretTo(1);
+            _buffer.Settings.GlobalSettings.WrapScan = false;
+            _buffer.VimData.LastSearchData = new SearchData(SearchText.NewStraightText("dog"), SearchKind.Backward, SearchOptions.ConsiderIgnoreCase);
+            _buffer.Process('/');
+            _buffer.Process(VimKey.Enter);
+            Assert.AreEqual(8, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Substitute command should set the LastSearch value
+        /// </summary>
+        [Test]
+        public void LastSearch_SetBySubstitute()
+        {
+            Create("dog cat dog");
+            _buffer.Process(":s/dog/cat", enter: true);
+            Assert.AreEqual("dog", _buffer.VimData.LastSearchData.Text.RawText);
+        }
+
+        /// <summary>
+        /// Substitute command should re-use the LastSearch value if there is no specific 
+        /// search value set
+        /// </summary>
+        [Test]
+        public void LastSearch_UsedBySubstitute()
+        {
+            Create("dog cat dog");
+            _buffer.VimData.LastSearchData = VimUtil.CreateSearchData("dog");
+            _buffer.Process(":s//cat", enter: true);
+            Assert.AreEqual("cat cat dog", _textView.GetLine(0).GetText());
+        }
     }
 }

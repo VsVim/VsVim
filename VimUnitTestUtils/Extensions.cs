@@ -574,6 +574,12 @@ namespace Vim.UnitTest
             return new SnapshotSpan(snapshot, 0, snapshot.Length);
         }
 
+        public static NormalizedSnapshotSpanCollection GetTaggerExtent(this ITextSnapshot snapshot)
+        {
+            var span = GetExtent(snapshot);
+            return new NormalizedSnapshotSpanCollection(span);
+        }
+
         #endregion
 
         #region SnapshotPoint
@@ -724,14 +730,13 @@ namespace Vim.UnitTest
 
         #region SearchResult
 
-        public static SearchResult.SearchFound AsSearchFound(this SearchResult result)
+        public static SearchResult.Found AsFound(this SearchResult result)
         {
-            Assert.IsTrue(result.IsSearchFound);
-            return (SearchResult.SearchFound)result;
+            Assert.IsTrue(result.IsFound);
+            return (SearchResult.Found)result;
         }
 
         #endregion
-
 
         #region IIncrementalSearch
 

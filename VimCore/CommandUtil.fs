@@ -905,7 +905,7 @@ type internal CommandUtil
 
         let searchData = { Text = searchText; Kind = SearchKind.OfPathAndWrap path true; Options = options }
         match _searchService.FindNextMultiple searchData searchStart _wordNavigator count with
-        | Some span ->
+        | SearchResult.Found (_, span, _) ->
 
             // Move the caret to the specified span
             let moveCaretToSpan () = 
@@ -915,7 +915,10 @@ type internal CommandUtil
             // Even though we found something we need to make sure it's valid.  It can't be a wrapped
             // item if 'wrapscan' is disabled.  The wrapping is relative to the caret point not the
             // search start.  The search start is artificially adjusted to prevent matches at the caret
-            // point
+            // point.
+            //
+            // We specifically ignore the 'didWrap' part of SearchResult.Found because of this 
+            // artifical change of location. It causes this value to be wrong in edge cases
             let didWrap = 
                 match path with 
                 | Path.Forward -> span.Start.Position <= x.CaretPoint.Position
@@ -939,7 +942,7 @@ type internal CommandUtil
                 // Didn't wrap so it's fine
                 moveCaretToSpan()
 
-        | None ->
+        | SearchResult.NotFound _ ->
 
             // Pattern just doesn't exist in the buffer
             _statusUtil.OnError (Resources.Common_PatternNotFound (searchText.DisplayText))

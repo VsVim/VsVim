@@ -1376,9 +1376,9 @@ type internal TextViewMotionUtil
         let caretPoint = TextViewUtil.GetCaretPoint _textView
         let searchPoint = Util.GetSearchPoint searchData.Kind caretPoint
         match _search.FindNext searchData searchPoint _navigator with
-        | None -> 
+        | SearchResult.NotFound _ ->
             None
-        | Some span ->
+        | SearchResult.Found (_, span, _) ->
             // Create the MotionResult for the provided MotionArgument and the 
             // start and end points of the search.  Need to be careful because
             // the start and end point can be forward or reverse

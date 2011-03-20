@@ -162,25 +162,31 @@ type SearchData = {
 /// Result of an individual search
 [<RequireQualifiedAccess>]
 type SearchResult =
-    | SearchFound of SearchData * SnapshotSpan
-    | SearchNotFound of SearchData
 
-    with 
+    /// The search was found.  The bool at the end of the tuple represents whether not
+    /// a wrap occurred while searching for the value
+    | Found of SearchData * SnapshotSpan * bool
 
+    /// The search was not found
+    | NotFound of SearchData
+
+    with
+
+    /// Returns the SearchData which was searched for
     member x.SearchData = 
         match x with 
-        | SearchResult.SearchFound (searchData, _) -> searchData
-        | SearchResult.SearchNotFound searchData -> searchData
+        | SearchResult.Found (searchData, _, _) -> searchData
+        | SearchResult.NotFound searchData -> searchData
 
 /// Global information about searches within Vim
 type ISearchService = 
 
     /// Find the next occurrence of the pattern in the buffer starting at the 
     /// given SnapshotPoint
-    abstract FindNext : SearchData -> SnapshotPoint -> ITextStructureNavigator -> SnapshotSpan option
+    abstract FindNext : SearchData -> SnapshotPoint -> ITextStructureNavigator -> SearchResult
 
     /// Find the next Nth occurrence of the pattern
-    abstract FindNextMultiple : SearchData -> SnapshotPoint -> ITextStructureNavigator -> count:int -> SnapshotSpan option
+    abstract FindNextMultiple : SearchData -> SnapshotPoint -> ITextStructureNavigator -> count:int -> SearchResult
 
 /// Context on how the motion is being used.  Several motions (]] for example)
 /// change behavior based on how they are being used
@@ -1544,7 +1550,7 @@ type IJumpList =
 
 type IIncrementalSearch = 
 
-    /// True when a search is occuring
+    /// True when a search is occurring
     abstract InSearch : bool
 
     /// When in the middle of a search this will return the SearchData for 

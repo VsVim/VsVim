@@ -42,12 +42,13 @@ type internal SearchService
 
         caseOptions ||| revOptions ||| searchKindOptions
 
-    member x.FindNextMultiple (searchData : SearchData) point nav count =
-        let tss = SnapshotPointUtil.GetSnapshot point
-        let isWrap = searchData.Kind.IsWrap
+    member x.FindNextMultiple (searchData : SearchData) startPoint nav count =
+        let tss = SnapshotPointUtil.GetSnapshot startPoint
         let opts = x.CreateFindOptions searchData.Text searchData.Kind searchData.Options
+
         match x.ConvertSearchToFindText searchData.Text with
-        | None -> None
+        | None -> 
+            SearchResult.NotFound searchData
         | Some text -> 
 
             // Create a function which will give us the next search position
@@ -60,26 +61,44 @@ type internal SearchService
                         if span.Start.Position = 0 && isWrap then SnapshotUtil.GetEndPoint tss |> Some
                         elif span.Start.Position = 0 then None
                         else span.Start.Subtract(1) |> Some )
-                        
+
             // Recursive loop to perform the search "count" times
-            let rec doFind findData count position = 
+            let rec doFind findData count position didWrap = 
 
                 let result = 
                     try
-                        _search.FindNext(position, isWrap, findData) |> NullableUtil.toOption
+                        _search.FindNext(position, searchData.Kind.IsWrap, findData) |> NullableUtil.toOption
                     with 
                     | :? System.InvalidOperationException ->
                         // If the regular expression has invalid data then don't throw but return a failed match
                         if searchData.Text.IsPatternText then None
                         else reraise()
 
-                match result,count > 1 with
-                | Some(span),false -> Some(span)
-                | Some(span),true -> 
+                // Calculate whether this search is wrapping or not
+                let didWrap = 
+                    match result with 
+                    | Some span ->
+                        if didWrap then
+                            // Once wrapped, always wrapped
+                            true
+                        elif searchData.Kind.IsAnyForward && span.Start.Position < startPoint.Position then
+                            true
+                        elif searchData.Kind.IsAnyBackward && span.Start.Position > startPoint.Position then 
+                            true
+                        else
+                            false
+                    | None -> 
+                        didWrap
+
+                match result, count > 1 with
+                | Some span, false ->
+                    SearchResult.Found (searchData, span, didWrap)
+                | Some span, true -> 
                     match getNextPoint span with
-                    | Some(point) -> doFind findData (count-1) point.Position
-                    | None -> None
-                | _ -> None
+                    | Some point -> doFind findData (count-1) point.Position didWrap
+                    | None -> SearchResult.NotFound searchData
+                | _ -> 
+                    SearchResult.NotFound searchData
 
             let findData = 
                 try
@@ -90,11 +109,12 @@ type internal SearchService
                 | :? System.ArgumentException -> None
 
             match findData with 
-            | None -> None
-            | Some(findData) -> 
+            | None ->
+                SearchResult.NotFound searchData
+            | Some findData ->
                 let count = max 1 count
-                let pos = SnapshotPointUtil.GetPosition point
-                doFind findData count pos
+                let pos = SnapshotPointUtil.GetPosition startPoint
+                doFind findData count pos false
 
     member x.FindNext searchData point nav = x.FindNextMultiple searchData point nav 1
 

@@ -25,6 +25,7 @@ type internal IncrementalSearch
         _statusUtil : IStatusUtil,
         _vimData : IVimData) =
 
+    let _globalSettings = _settings.GlobalSettings
     let _textView = _operations.TextView
     let mutable _data : IncrementalSearchData option = None
     let _searchOptions = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderSmartCase
@@ -38,7 +39,7 @@ type internal IncrementalSearch
         let searchData = {Text = SearchText.Pattern(StringUtil.empty); Kind = kind; Options = _searchOptions}
         let data = {
             StartPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
-            SearchResult = SearchResult.SearchNotFound searchData
+            SearchResult = SearchResult.NotFound searchData
         }
         _data <- Some data
 
@@ -62,31 +63,34 @@ type internal IncrementalSearch
 
             let resetView () = _operations.EnsureCaretOnScreenAndTextExpanded()
 
-            let doSearch pattern = 
-                let searchData = {data.SearchData with Text=SearchText.Pattern(pattern)}
-                let ret =
-                    if StringUtil.isNullOrEmpty pattern then None
+            // Do the search for the specified text and update the state of IncrementalSearch
+            let doSearch text = 
+                let searchData = { data.SearchData with Text = text }
+
+                // Get the SearchResult value for the new text
+                let searchResult =
+                    if StringUtil.isNullOrEmpty text.RawText then 
+                        SearchResult.NotFound searchData
                     else
                         match TrackingPointUtil.GetPoint _textView.TextSnapshot data.StartPoint with
-                        | None -> None
-                        | Some(point) ->
+                        | None ->
+                            SearchResult.NotFound searchData
+                        | Some point ->
                             let options = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderIgnoreCase
                             _search.FindNext searchData point _navigator 
 
-                match ret with
-                | Some(span) ->
-                    let result = SearchResult.SearchFound(searchData, span)
-                    _operations.EnsurePointOnScreenAndTextExpanded span.Start
-                    _currentSearchUpdated.Trigger result
-                    _data <- Some { data with SearchResult = result }
-                | None ->
-                    resetView()
-                    let result = SearchResult.SearchNotFound searchData
-                    _currentSearchUpdated.Trigger result
-                    _data <- Some { data with SearchResult = result }
+                // Update our state based on the SearchResult
+                match searchResult with
+                | SearchResult.Found (_, span, _) -> _operations.EnsurePointOnScreenAndTextExpanded span.Start
+                | SearchResult.NotFound _ -> resetView()
+
+                _currentSearchUpdated.Trigger searchResult
+                _data <- Some { data with SearchResult = searchResult }
 
             let oldSearchData = data.SearchData
-            let doSearchWithNewPattern newPattern =  doSearch newPattern
+            let doSearchWithNewPattern newPattern =
+                let text = SearchText.Pattern newPattern
+                doSearch text
 
             let cancelSearch () = 
                 _data <- None
@@ -95,14 +99,27 @@ type internal IncrementalSearch
 
             if ki = KeyInputUtil.EnterKey then
 
+                let data =
+                    if StringUtil.isNullOrEmpty data.SearchData.Text.RawText then
+                        // When the user simply hits Enter on an empty incremental search then
+                        // we should be re-using the 'LastSearch' value.
+                        doSearch _vimData.LastSearchData.Text
+
+                        match _data with 
+                        | Some data -> data
+                        | None -> data
+                    else 
+                        data
+
                 // Need to update the status if the search wrapped around
-                match data.SearchResult, TrackingPointUtil.GetPoint _textView.TextSnapshot data.StartPoint with
-                | SearchResult.SearchFound(_, span), Some point ->
-                    if data.SearchData.Kind = SearchKind.ForwardWithWrap && span.Start.Position < point.Position then
-                        _statusUtil.OnStatus Resources.Common_SearchForwardWrapped
-                    elif data.SearchData.Kind = SearchKind.BackwardWithWrap && span.Start.Position > point.Position then
-                        _statusUtil.OnStatus Resources.Common_SearchBackwardWrapped 
-                | _ -> 
+                match data.SearchResult with
+                | SearchResult.Found (_, _, didWrap) ->
+                    if didWrap then
+                        let message = 
+                            if data.SearchData.Kind.IsAnyForward then Resources.Common_SearchForwardWrapped
+                            else Resources.Common_SearchBackwardWrapped
+                        _statusUtil.OnWarning message
+                | SearchResult.NotFound _ ->
                     ()
 
                 _data <- None
