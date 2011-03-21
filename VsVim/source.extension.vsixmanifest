@@ -6,6 +6,7 @@
     <Version>0.9.5.1</Version>
     <Description xml:space="preserve">VIM emulation layer for Visual Studio</Description>
     <Locale>1033</Locale>
+    <License>License.rtf</License>
     <MoreInfoUrl>http://blogs.msdn.com/b/jaredpar</MoreInfoUrl>
     <GettingStartedGuide>http://wiki.github.com/jaredpar/VsVim/faq</GettingStartedGuide>
     <SupportedProducts>
