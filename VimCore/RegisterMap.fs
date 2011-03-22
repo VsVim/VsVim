@@ -49,23 +49,33 @@ type internal RegisterMap (_map: Map<RegisterName,Register> ) =
                 let unnamedReg = x.GetRegister RegisterName.Unnamed
                 unnamedReg.RegisterValue <- value
 
-            // Update the numbered registers with the new values.  First shift the existing
-            // values up the stack
-            let intToName num = 
-                let c = char (num + (int '0'))
-                let name = NumberedRegister.OfChar c |> Option.get
-                RegisterName.Numbered name
+            // Update the numbered register based on the type of the operation
+            match regOperation with
+            | RegisterOperation.Delete ->
+                // Update the numbered registers with the new values.  First shift the existing
+                // values up the stack
+                let intToName num = 
+                    let c = char (num + (int '0'))
+                    let name = NumberedRegister.OfChar c |> Option.get
+                    RegisterName.Numbered name
+        
+                // Next is insert the new value into the numbered register list.  New value goes
+                // into 1 and the rest shift up
+                for i in [9;8;7;6;5;4;3;2] do
+                    let cur = intToName i |> x.GetRegister
+                    let prev = intToName (i-1) |> x.GetRegister
+                    cur.RegisterValue <- prev.RegisterValue
+                let regOne = x.GetRegister (RegisterName.Numbered NumberedRegister.Register_1)
+                regOne.RegisterValue <- value
+            | RegisterOperation.Yank ->
+
+                // If the yank occurs to the unnamed register then update register 0 with the 
+                // value
+                if reg.Name = RegisterName.Unnamed then
+                    let regZero = x.GetRegister (RegisterName.Numbered NumberedRegister.Register_0)
+                    regZero.RegisterValue <- value
     
-            // Next is insert the new value into the numbered register list.  New value goes
-            // into 0 and the rest shift up
-            for i in [9;8;7;6;5;4;3;2;1] do
-                let cur = intToName i |> x.GetRegister
-                let prev = intToName (i-1) |> x.GetRegister
-                cur.RegisterValue <- prev.RegisterValue
-            let regZero = x.GetRegister (RegisterName.Numbered NumberedRegister.Register_0)
-            regZero.RegisterValue <- value
-    
-            // Possibily update the small delete register
+            // Possibly update the small delete register
             if reg.Name <> RegisterName.Unnamed && regOperation = RegisterOperation.Delete then
                 match value.StringData with
                 | StringData.Block(_) -> ()

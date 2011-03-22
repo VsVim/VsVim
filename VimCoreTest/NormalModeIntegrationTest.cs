@@ -1347,5 +1347,22 @@ namespace VimCore.UnitTest
             _buffer.Process(":s//cat", enter: true);
             Assert.AreEqual("cat cat dog", _textView.GetLine(0).GetText());
         }
+
+        /// <summary>
+        /// Make sure we properly update register 0 during a yank
+        /// </summary>
+        [Test]
+        public void Yank_Register0()
+        {
+            Create("dog", "cat", "fish");
+            _buffer.Process("yaw");
+            _textView.MoveCaretToLine(1);
+            _buffer.Process("\"cyaw");
+            _textView.MoveCaretToLine(2);
+            _buffer.Process("dw");
+            _buffer.Process("\"0p");
+            Assert.AreEqual("dog", _textView.GetLine(2).GetText());
+        }
+
     }
 }

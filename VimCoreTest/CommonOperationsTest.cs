@@ -1445,7 +1445,7 @@ namespace VimCore.UnitTest
                 OperationKind.CharacterWise);
             AssertRegister(reg, "foo bar", OperationKind.CharacterWise);
             AssertRegister(RegisterName.Unnamed, "foo bar", OperationKind.CharacterWise);
-            AssertRegister(RegisterName.NewNumbered(NumberedRegister.Register_0), "foo bar", OperationKind.CharacterWise);
+            AssertRegister(RegisterName.NewNumbered(NumberedRegister.Register_1), "foo bar", OperationKind.CharacterWise);
             AssertRegister(RegisterName.SmallDelete, "foo bar", OperationKind.CharacterWise);
         }
 
@@ -1466,7 +1466,6 @@ namespace VimCore.UnitTest
                 OperationKind.CharacterWise);
             AssertRegister(reg, "foo bar", OperationKind.CharacterWise);
             AssertRegister(RegisterName.Unnamed, "foo bar", OperationKind.CharacterWise);
-            AssertRegister(RegisterName.NewNumbered(NumberedRegister.Register_0), "foo bar", OperationKind.CharacterWise);
             AssertRegister(RegisterName.SmallDelete, "", OperationKind.LineWise);
         }
 
@@ -1478,12 +1477,12 @@ namespace VimCore.UnitTest
             var span1 = _textView.TextBuffer.GetSpan(0, 1);
             var span2 = _textView.TextBuffer.GetSpan(1, 1);
             var reg = _registerMap.GetRegister('c');
-            _operations.UpdateRegisterForSpan(reg, RegisterOperation.Yank, span1, OperationKind.CharacterWise);
-            _operations.UpdateRegisterForSpan(reg, RegisterOperation.Yank, span2, OperationKind.CharacterWise);
+            _operations.UpdateRegisterForSpan(reg, RegisterOperation.Delete, span1, OperationKind.CharacterWise);
+            _operations.UpdateRegisterForSpan(reg, RegisterOperation.Delete, span2, OperationKind.CharacterWise);
             AssertRegister(reg, "o", OperationKind.CharacterWise);
             AssertRegister(RegisterName.Unnamed, "o", OperationKind.CharacterWise);
-            AssertRegister(RegisterName.NewNumbered(NumberedRegister.Register_0), "o", OperationKind.CharacterWise);
-            AssertRegister(RegisterName.NewNumbered(NumberedRegister.Register_1), "f", OperationKind.CharacterWise);
+            AssertRegister(RegisterName.NewNumbered(NumberedRegister.Register_1), "o", OperationKind.CharacterWise);
+            AssertRegister(RegisterName.NewNumbered(NumberedRegister.Register_2), "f", OperationKind.CharacterWise);
         }
 
         [Test]
@@ -1519,6 +1518,7 @@ namespace VimCore.UnitTest
         {
             Create("foo bar");
             _registerMap.GetRegister(RegisterName.Blackhole).UpdateValue("", OperationKind.LineWise);
+            _registerMap.GetRegister(RegisterName.NewNumbered(NumberedRegister.Register_1)).UpdateValue("hey", OperationKind.CharacterWise);
             var span = _textView.GetLineRange(0).Extent;
             var namedReg = _registerMap.GetRegister('c');
             _operations.UpdateRegisterForSpan(
@@ -1533,7 +1533,7 @@ namespace VimCore.UnitTest
                 OperationKind.CharacterWise);
             AssertRegister(namedReg, "foo bar", OperationKind.CharacterWise);
             AssertRegister(RegisterName.Unnamed, "foo bar", OperationKind.CharacterWise);
-            AssertRegister(RegisterName.NewNumbered(NumberedRegister.Register_0), "foo bar", OperationKind.CharacterWise);
+            AssertRegister(RegisterName.NewNumbered(NumberedRegister.Register_1), "hey", OperationKind.CharacterWise);
             AssertRegister(RegisterName.Blackhole, "", OperationKind.LineWise);
         }
 
