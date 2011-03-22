@@ -115,6 +115,7 @@ type internal GlobalSettings() =
         [|
             (CaretOpacityName, CaretOpacityName, NumberKind, NumberValue(65))
             (HighlightSearchName, "hls", ToggleKind, ToggleValue(false))
+            (IncrementalSearchName, "is", ToggleKind, ToggleValue(false))
             (IgnoreCaseName,"ic", ToggleKind, ToggleValue(false))
             (MagicName, MagicName, ToggleKind, ToggleValue(true))
             (ShiftWidthName, "sw", NumberKind, NumberValue(4))
@@ -155,6 +156,9 @@ type internal GlobalSettings() =
         member x.IgnoreCase
             with get()  = _map.GetBoolValue IgnoreCaseName
             and set value = _map.TrySetValue IgnoreCaseName (ToggleValue(value)) |> ignore
+        member x.IncrementalSearch
+            with get() = _map.GetBoolValue IncrementalSearchName
+            and set value = _map.TrySetValue IncrementalSearchName (ToggleValue value) |> ignore
         member x.IsSelectionInclusive = 
             match _map.GetStringValue SelectionName with
             | "inclusive" -> true

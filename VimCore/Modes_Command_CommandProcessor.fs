@@ -93,6 +93,7 @@ type internal CommandProcessor
     let _host = _buffer.Vim.VimHost
     let _regexFactory = VimRegexFactory(_buffer.Settings.GlobalSettings)
     let _registerMap = _buffer.RegisterMap
+    let _vimData = _buffer.VimData
 
     let mutable _command : System.String = System.String.Empty
 
@@ -120,6 +121,7 @@ type internal CommandProcessor
             yield ("join", "j", this.ProcessJoin |> wrap)
             yield ("make", "mak", this.ProcessMake |> wrap)
             yield ("marks", "", this.ProcessMarks |> wrap)
+            yield ("nohlsearch", "noh", this.ProcessNoHighlightSearch |> wrap)
             yield ("put", "pu", this.ProcessPut |> wrap)
             yield ("quit", "q", this.ProcessQuit |> wrap)
             yield ("qall", "qa", this.ProcessQuitAll |> wrap)
@@ -299,6 +301,10 @@ type internal CommandProcessor
             | None -> range
 
         _operations.UpdateRegisterForSpan reg RegisterOperation.Yank (range.ExtentIncludingLineBreak) OperationKind.LineWise
+
+    /// Process the :nohlsearch command
+    member x.ProcessNoHighlightSearch _ _ _ =
+        _vimData.RaiseHighlightSearchOneTimeDisable()
 
     /// Parse the Put command
     member x.ProcessPut (rest:char list) (range: SnapshotLineRange option) bang =

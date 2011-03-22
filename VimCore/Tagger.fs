@@ -9,78 +9,93 @@ open Microsoft.VisualStudio.Utilities
 open System.ComponentModel.Composition
 
 /// Tagger for incremental searches
-type IncrementalSearchTagger(_buffer : IVimBuffer) as this =
+type IncrementalSearchTagger (_buffer : IVimBuffer) as this =
 
     let _search = _buffer.IncrementalSearch
     let _textBuffer = _buffer.TextBuffer
+    let _globalSettings = _buffer.Settings.GlobalSettings
+    let _eventHandlers = DisposableBag()
     let _tagsChanged = new Event<System.EventHandler<SnapshotSpanEventArgs>, SnapshotSpanEventArgs>()
-    let mutable _previousSearchSpan : ITrackingSpan option = None
-    let mutable _currentSearchSpan : ITrackingSpan option = None
+    let mutable _searchSpan : ITrackingSpan option = None
 
     do 
         let raiseAllChanged () = 
             // Don't bother calculating the range of changed spans.  Simply raise the event for the entire 
             // buffer.  The editor will only call back for visible spans
             let snapshot = _textBuffer.CurrentSnapshot
-            let allSpan = SnapshotSpan(snapshot, 0, snapshot.Length)
-            _tagsChanged.Trigger (this,SnapshotSpanEventArgs(allSpan))
+            let extent = SnapshotUtil.GetExtent snapshot
+            _tagsChanged.Trigger (this, SnapshotSpanEventArgs(extent))
 
         let updateCurrentWithResult result = 
-            _currentSearchSpan <- 
+            _searchSpan <-
                 match result with
                 | SearchResult.Found (_, span, _) -> span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeExclusive) |> Some
                 | SearchResult.NotFound _ -> None
 
-        let handleCurrentSearchUpdated result = 
+        // When the search is updated we need to update the result.  Make sure to do so before raising 
+        // the event.  The editor can and will call back into us synchronously and access a stale value
+        // if we don't
+        _search.CurrentSearchUpdated 
+        |> Observable.subscribe (fun result ->
 
-            // Make sure to reset the stored spans before raising the event.  The editor can and will call back
-            // into us synchronously and access a stale value if we don't
             updateCurrentWithResult result
-            raiseAllChanged()
+            raiseAllChanged())
+        |> _eventHandlers.Add
 
-        let handleCurrentSearchCompleted result = 
-            updateCurrentWithResult result
-            _previousSearchSpan <- _currentSearchSpan
-            _currentSearchSpan <- None
-            raiseAllChanged()
+        // When the search is completed there is nothing left for us to tag.
+        _search.CurrentSearchCompleted 
+        |> Observable.subscribe (fun result ->
+            _searchSpan <- None
+            raiseAllChanged())
+        |> _eventHandlers.Add
 
-        let handleCurrentSearchCancelled () = 
-            _currentSearchSpan <- None
-            raiseAllChanged()
+        // When the search is cancelled there is nothing left for us to tag.
+        _search.CurrentSearchCancelled
+        |> Observable.subscribe (fun result ->
+            _searchSpan <- None
+            raiseAllChanged())
+        |> _eventHandlers.Add
 
-        _search.CurrentSearchUpdated |> Event.add handleCurrentSearchUpdated 
-        _search.CurrentSearchCompleted |> Event.add handleCurrentSearchCompleted
-        _search.CurrentSearchCancelled |> Event.add (fun _ -> handleCurrentSearchCancelled())
-        _buffer.SwitchedMode |> Event.add (fun _ -> raiseAllChanged())
+        // We need to pay attention to the current IVimBuffer mode.  If it's any visual mode then we don't want
+        // to highlight any spans.
+        _buffer.SwitchedMode
+        |> Observable.subscribe (fun _ -> raiseAllChanged())
+        |> _eventHandlers.Add
 
-    member x.GetTags (col:NormalizedSnapshotSpanCollection) =
+        // When the 'incsearch' setting is changed it impacts our tag display
+        //
+        // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
+        // a derived type
+        (_globalSettings :> IVimSettings).SettingChanged 
+        |> Observable.filter (fun args -> StringUtil.isEqual args.Name GlobalSettingNames.IncrementalSearchName)
+        |> Observable.subscribe (fun _ -> raiseAllChanged())
+        |> _eventHandlers.Add
 
-        let inner snapshot searchSpan = 
-            let span = 
-                match searchSpan with 
-                | None -> None
-                | (Some(trackingSpan)) -> TrackingSpanUtil.GetSpan snapshot trackingSpan
-            match span with
-            | None -> None
-            | Some(span) ->
+    member x.GetTags (col : NormalizedSnapshotSpanCollection) =
+
+        if col.Count = 0 || VisualKind.IsAnyVisual _buffer.ModeKind || not _globalSettings.IncrementalSearch then 
+            // If any of these are true then we shouldn't be displaying any tags
+            Seq.empty
+        else
+            let snapshot = col.[0].Snapshot
+            match _searchSpan |> Option.map (TrackingSpanUtil.GetSpan snapshot) |> OptionUtil.collapse with
+            | None -> 
+                // No search span or the search span doesn't map into the current ITextSnapshot so there
+                // is nothing to return
+                Seq.empty
+            | Some span -> 
+                // We have a span so return the tag
                 let tag = TextMarkerTag(Constants.IncrementalSearchTagName)
                 let tagSpan = TagSpan(span, tag) :> ITagSpan<TextMarkerTag>
-                Some tagSpan
-
-        if col.Count = 0 || VisualKind.IsAnyVisual _buffer.ModeKind then 
-            Seq.empty
-        else 
-            let snapshot = col.Item(0).Snapshot
-            [
-                inner snapshot _currentSearchSpan
-                inner snapshot _previousSearchSpan
-            ]
-            |> SeqUtil.filterToSome
+                [ tagSpan ] |> Seq.ofList
 
     interface ITagger<TextMarkerTag> with
         member x.GetTags col = x.GetTags col
         [<CLIEvent>]
         member x.TagsChanged = _tagsChanged.Publish
+
+    interface System.IDisposable with
+        member x.Dispose() = _eventHandlers.DisposeAll()
 
 [<Export(typeof<ITaggerProvider>)>]
 [<ContentType(Constants.ContentType)>]
@@ -95,7 +110,7 @@ type internal IncrementalSearchTaggerProvider
             match _vim.GetBufferForBuffer textBuffer with
             | None -> null
             | Some(buffer) ->
-                let tagger = IncrementalSearchTagger(buffer)
+                let tagger = new IncrementalSearchTagger(buffer)
                 tagger :> obj :?> ITagger<'T>
 
 /// Tagger for completed incremental searches
@@ -105,11 +120,16 @@ type HighlightIncrementalSearchTagger
         _settings : IVimGlobalSettings,
         _wordNav : ITextStructureNavigator,
         _search : ISearchService,
-        _vimData : IVimData) as this =
+        _vimData : IVimData
+    ) as this =
 
     let _tagsChanged = new Event<System.EventHandler<SnapshotSpanEventArgs>, SnapshotSpanEventArgs>()
-    let mutable _lastSearchData : SearchData option = None
     let _eventHandlers = DisposableBag()
+    let mutable _lastSearchData : SearchData option = None
+
+    /// Users can temporarily disable highlight search with the ':noh' command.  This is true while 
+    /// we are in that mode
+    let mutable _oneTimeDisabled = false
 
     do 
         let raiseAllChanged () = 
@@ -117,29 +137,44 @@ type HighlightIncrementalSearchTagger
             // buffer.  The editor will only call back for visible spans
             let snapshot = _textBuffer.CurrentSnapshot
             let allSpan = SnapshotSpan(snapshot, 0, snapshot.Length)
-            _tagsChanged.Trigger (this,SnapshotSpanEventArgs(allSpan))
+            _tagsChanged.Trigger (this, SnapshotSpanEventArgs(allSpan))
 
+        let resetDisabledAndRaiseAllChanged () =
+            _oneTimeDisabled <- false
+            raiseAllChanged()
+
+        // When the 'LastSearchData' property changes we want to reset the 'oneTimeDisabled' flag and 
+        // begin highlighting again
         _vimData.LastSearchDataChanged 
         |> Observable.subscribe (fun data -> 
             _lastSearchData <- Some data
-            raiseAllChanged() )
+            resetDisabledAndRaiseAllChanged() )
         |> _eventHandlers.Add
 
+        // Make sure we respond to the HighlightSearchOneTimeDisabled event
+        _vimData.HighlightSearchOneTimeDisabled
+        |> Observable.subscribe (fun _ ->
+            _oneTimeDisabled <- true
+            raiseAllChanged())
+        |> _eventHandlers.Add
+
+        // When the setting is changed it also resets the one time disabled flag
         // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
         // a derived type
         (_settings :> IVimSettings).SettingChanged 
         |> Observable.filter (fun args -> StringUtil.isEqual args.Name GlobalSettingNames.HighlightSearchName)
-        |> Observable.subscribe (fun _ -> raiseAllChanged())
+        |> Observable.subscribe (fun _ -> resetDisabledAndRaiseAllChanged())
         |> _eventHandlers.Add
         
-    member private x.GetTagsCore (col:NormalizedSnapshotSpanCollection) = 
+    member private x.GetTagsCore (col : NormalizedSnapshotSpanCollection) = 
         // Build up the search information
         let searchData = { _vimData.LastSearchData with Kind = SearchKind.Forward }
             
-        let withSpan (span:SnapshotSpan) =  
+        let withSpan (span : SnapshotSpan) =  
             span.Start
             |> Seq.unfold (fun point -> 
-                if point.Position >= span.Length then None
+                if point.Position >= span.Length then 
+                    None
                 else
                     match _search.FindNext searchData point _wordNav with
                     | SearchResult.NotFound _ -> 
@@ -147,8 +182,9 @@ type HighlightIncrementalSearchTagger
                     | SearchResult.Found (_, foundSpan, _) ->
                         if foundSpan.Start.Position <= span.End.Position then Some(foundSpan, foundSpan.End)
                         else None )
-                    
-        if StringUtil.isNullOrEmpty searchData.Text.RawText then Seq.empty
+
+        if StringUtil.isNullOrEmpty searchData.Text.RawText then 
+            Seq.empty
         else 
             let tag = TextMarkerTag(Constants.HighlightIncrementalSearchTagName)
             col 
@@ -156,10 +192,11 @@ type HighlightIncrementalSearchTagger
             |> Seq.concat
             |> Seq.map (fun span -> TagSpan(span,tag) :> ITagSpan<TextMarkerTag> )
 
-
     member private x.GetTags (col:NormalizedSnapshotSpanCollection) = 
-        if _settings.HighlightSearch then x.GetTagsCore col
-        else Seq.empty
+        if _settings.HighlightSearch && not _oneTimeDisabled then 
+            x.GetTagsCore col
+        else 
+            Seq.empty
 
     interface ITagger<TextMarkerTag> with
         member x.GetTags col = x.GetTags col
@@ -181,7 +218,7 @@ type HighlightIncrementalSearchTaggerProvider
         member x.CreateTagger<'T when 'T :> ITag> (textBuffer) = 
             match _vim.GetBufferForBuffer textBuffer with
             | None -> null
-            | Some(buffer) ->
+            | Some buffer ->
                 let nav = buffer.IncrementalSearch.WordNavigator
                 let tagger = new HighlightIncrementalSearchTagger(textBuffer, buffer.Settings.GlobalSettings, nav, _vim.SearchService, _vim.VimData)
                 tagger :> obj :?> ITagger<'T>

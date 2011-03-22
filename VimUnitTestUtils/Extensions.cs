@@ -76,7 +76,7 @@ namespace Vim.UnitTest
 
         public static bool IsSwitchMode(this ModeSwitch mode, ModeKind kind)
         {
-            return mode.IsSwitchMode && ((ModeSwitch.SwitchMode) mode).Item == kind;
+            return mode.IsSwitchMode && ((ModeSwitch.SwitchMode)mode).Item == kind;
         }
 
         public static bool IsSwitchModeWithArgument(this ModeSwitch mode, ModeKind kind, ModeArgument argument)
@@ -86,7 +86,7 @@ namespace Vim.UnitTest
                 return false;
             }
 
-            var value = (ModeSwitch.SwitchModeWithArgument) mode;
+            var value = (ModeSwitch.SwitchModeWithArgument)mode;
             return value.Item1 == kind && value.Item2.Equals(argument);
         }
 
@@ -740,10 +740,13 @@ namespace Vim.UnitTest
 
         #region IIncrementalSearch
 
-        public static BindResult<SearchResult> DoSearch(this IIncrementalSearch search, string text, SearchKind searchKind = null)
+        public static BindResult<SearchResult> DoSearch(this IIncrementalSearch search, string text, SearchKind searchKind = null, bool enter = true)
         {
             searchKind = searchKind ?? SearchKind.ForwardWithWrap;
-            return search.Begin(searchKind).Run(text).Run(VimKey.Enter);
+            var result = search.Begin(searchKind).Run(text);
+            return enter
+                ? result.Run(VimKey.Enter)
+                : result;
         }
 
         #endregion

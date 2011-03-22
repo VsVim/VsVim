@@ -36,6 +36,7 @@ type internal VimData() =
     let mutable _lastMacroRun : char option = None
     let mutable _lastCommand : StoredCommand option = None
     let _lastSearchChanged = Event<SearchData>()
+    let _highlightSearchOneTimeDisabled = Event<unit>()
 
     interface IVimData with 
         member x.LastSubstituteData 
@@ -55,8 +56,11 @@ type internal VimData() =
         member x.LastMacroRun 
             with get () = _lastMacroRun
             and set value = _lastMacroRun <- value
+        member x.RaiseHighlightSearchOneTimeDisable () = _highlightSearchOneTimeDisabled.Trigger ()
         [<CLIEvent>]
         member x.LastSearchDataChanged = _lastSearchChanged.Publish
+        [<CLIEvent>]
+        member x.HighlightSearchOneTimeDisabled = _highlightSearchOneTimeDisabled.Publish
 
 /// Default implementation of IVim 
 [<Export(typeof<IVimBufferFactory>)>]

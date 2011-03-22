@@ -61,7 +61,12 @@ type internal IncrementalSearch
             BindResult<_>.CreateNeedMoreInput remapMode x.Process
         | Some (data) -> 
 
-            let resetView () = _operations.EnsureCaretOnScreenAndTextExpanded()
+            // Reset the view to it's original state.  We should only be doing this if the
+            // 'incsearch' option is set.  Otherwise the view shouldn't change during an 
+            // incremental search
+            let resetView () =
+                if _globalSettings.IncrementalSearch then
+                     _operations.EnsureCaretOnScreenAndTextExpanded()
 
             // Do the search for the specified text and update the state of IncrementalSearch
             let doSearch text = 
@@ -79,10 +84,12 @@ type internal IncrementalSearch
                             let options = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderIgnoreCase
                             _search.FindNext searchData point _navigator 
 
-                // Update our state based on the SearchResult
-                match searchResult with
-                | SearchResult.Found (_, span, _) -> _operations.EnsurePointOnScreenAndTextExpanded span.Start
-                | SearchResult.NotFound _ -> resetView()
+                // Update our state based on the SearchResult.  Only update the view if the 'incsearch'
+                // option is set
+                if _globalSettings.IncrementalSearch then
+                    match searchResult with
+                    | SearchResult.Found (_, span, _) -> _operations.EnsurePointOnScreenAndTextExpanded span.Start
+                    | SearchResult.NotFound _ -> resetView()
 
                 _currentSearchUpdated.Trigger searchResult
                 _data <- Some { data with SearchResult = searchResult }

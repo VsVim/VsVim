@@ -85,10 +85,10 @@ module SnapshotUtil =
     let GetStartPoint (tss:ITextSnapshot) = SnapshotPoint(tss, 0)
 
     /// Get the full span of the buffer 
-    let GetFullSpan tss = 
-        let startPoint = GetStartPoint tss
-        let endPoint = GetEndPoint tss
-        SnapshotSpan(startPoint,endPoint)
+    let GetExtent snapshot = 
+        let startPoint = GetStartPoint snapshot
+        let endPoint = GetEndPoint snapshot
+        SnapshotSpan(startPoint, endPoint)
 
     /// Get the text of the ITextSnapshot
     let GetText (snapshot:ITextSnapshot) = snapshot.GetText()

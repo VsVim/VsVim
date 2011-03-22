@@ -79,7 +79,7 @@ namespace VsVim.ExternalEdit
         /// </summary>
         private void SaveCurrentEditorMarkersForIgnore()
         {
-            var span = SnapshotUtil.GetFullSpan(_buffer.TextSnapshot);
+            var span = SnapshotUtil.GetExtent(_buffer.TextSnapshot);
             _ignoredMarkers.Clear();
             GetExternalEditSpans(span, _ignoredMarkers);
         }

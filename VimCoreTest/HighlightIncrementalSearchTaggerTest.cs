@@ -86,6 +86,18 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Make sure nothing is returned when we are in one time disabled mode
+        /// </summary>
+        [Test]
+        public void GetTags_OneTimeDisabled()
+        {
+            Create("foo is the bar");
+            _taggerRaw._oneTimeDisabled = true;
+            var ret = _taggerRaw.GetTags(_textBuffer.CurrentSnapshot.GetTaggerExtent());
+            Assert.AreEqual(0, ret.Count());
+        }
+
+        /// <summary>
         /// Don't return tags outside the requested span
         /// </summary>
         [Test]
@@ -100,14 +112,54 @@ namespace VimCore.UnitTest
         /// <summary>
         /// Spans which start in the request and end outside it should be returned
         /// </summary>
-        [Test, Description("Spans which start in the request but end outside it should be returned")]
-        public void GetTags5()
+        [Test]
+        public void GetTags_SpansOnStartOfMatch()
         {
             Create("foo is the bar");
             _vimData.LastSearchData = VimUtil.CreateSearchData("foo");
             var ret = _taggerRaw.GetTags(new NormalizedSnapshotSpanCollection(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 2)));
             Assert.AreEqual(1, ret.Count());
             Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3), ret.Single().Span);
+        }
+
+        /// <summary>
+        /// The one time disabled event should cause a TagsChaged event and the one time disabled
+        /// flag to be set
+        /// </summary>
+        [Test]
+        public void Handle_OneTimeDisabledEvent()
+        {
+            Create("");
+            Assert.IsFalse(_taggerRaw._oneTimeDisabled);
+            var raised = false;
+            _tagger.TagsChanged += delegate { raised = true; };
+            _vimData.RaiseHighlightSearchOneTimeDisable();
+            Assert.IsTrue(raised);
+            Assert.IsTrue(_taggerRaw._oneTimeDisabled);
+        }
+
+        /// <summary>
+        /// The setting of the 'hlsearch' option should reset the one time disabled flag
+        /// </summary>
+        [Test]
+        public void SettingSet()
+        {
+            Create("");
+            _taggerRaw._oneTimeDisabled = true;
+            _globalSettings.HighlightSearch = true;
+            Assert.IsFalse(_taggerRaw._oneTimeDisabled);
+        }
+
+        /// <summary>
+        /// The setting of the LastSearchData property should reset the _oneTimeDisabled flag
+        /// </summary>
+        [Test]
+        public void LastSearchDataSet()
+        {
+            Create("");
+            _taggerRaw._oneTimeDisabled = true;
+            _vimData.LastSearchData = VimUtil.CreateSearchData("dog");
+            Assert.IsFalse(_taggerRaw._oneTimeDisabled);
         }
     }
 }

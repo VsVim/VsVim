@@ -69,7 +69,7 @@ type internal FoldTagger
     let _tagsChanged = new Event<System.EventHandler<SnapshotSpanEventArgs>, SnapshotSpanEventArgs>()
 
     do 
-        let handle _ = _tagsChanged.Trigger(this, new SnapshotSpanEventArgs(SnapshotUtil.GetFullSpan _textBuffer.CurrentSnapshot))
+        let handle _ = _tagsChanged.Trigger(this, new SnapshotSpanEventArgs(SnapshotUtil.GetExtent _textBuffer.CurrentSnapshot))
         _foldManager.FoldsUpdated |> Event.add handle
 
     member x.GetTags (col:NormalizedSnapshotSpanCollection) =

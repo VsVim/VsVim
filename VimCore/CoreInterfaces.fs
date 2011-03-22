@@ -1675,6 +1675,7 @@ module GlobalSettingNames =
     let CaretOpacityName = "vsvimcaret"
     let HighlightSearchName = "hlsearch"
     let IgnoreCaseName = "ignorecase"
+    let IncrementalSearchName = "incsearch"
     let MagicName = "magic"
     let ScrollOffsetName = "scrolloff"
     let SelectionName = "selection"
@@ -1701,7 +1702,7 @@ module LocalSettingNames =
     let TabStopName = "tabstop"
     let QuoteEscapeName = "quoteescape"
 
-/// Holds mutable data available to all buffers
+/// Represents shared state which is avaliable to all IVimBuffer instances.
 type IVimData = 
 
     /// Motion function used with the last f, F, t or T motion.  The 
@@ -1723,9 +1724,16 @@ type IVimData =
     /// Data for the last substitute command performed
     abstract LastSubstituteData : SubstituteData option with get, set
 
+    /// Raise the highlight search one time disabled event
+    abstract RaiseHighlightSearchOneTimeDisable : unit -> unit
+
     /// Raised when the LastSearch value changes
     [<CLIEvent>]
     abstract LastSearchDataChanged : IEvent<SearchData>
+
+    /// Raised when highlight search is disabled one time via the :noh command
+    [<CLIEvent>]
+    abstract HighlightSearchOneTimeDisabled : IEvent<unit>
 
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property
@@ -1754,7 +1762,6 @@ type IVimSettings =
 
 and IVimGlobalSettings = 
 
-    abstract IgnoreCase : bool with get, set
     abstract ShiftWidth : int with get, set
     abstract StartOfLine : bool with get, set
 
@@ -1767,6 +1774,13 @@ and IVimGlobalSettings =
 
     /// Whether or not the magic option is set
     abstract Magic : bool with get,set
+
+    /// Whether or not we should be ignoring case in the ITextBuffer
+    abstract IgnoreCase : bool with get, set
+
+    /// Whether or not incremental searches should be highlighted and focused 
+    /// in the ITextBuffer
+    abstract IncrementalSearch : bool with get, set
 
     /// Is the onemore option inside of VirtualEdit set
     abstract IsVirtualEditOneMore : bool with get

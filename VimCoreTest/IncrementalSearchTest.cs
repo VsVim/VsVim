@@ -30,6 +30,7 @@ namespace VimCore.UnitTest
         {
             _textView = EditorUtil.CreateView(lines);
             _globalSettings = new Vim.GlobalSettings();
+            _globalSettings.IncrementalSearch = true;
             _localSettings = new LocalSettings(_globalSettings, _textView);
             _searchService = VimUtil.CreateSearchService(_globalSettings);
             _nav = VimUtil.CreateTextStructureNavigator(_textView.TextBuffer);

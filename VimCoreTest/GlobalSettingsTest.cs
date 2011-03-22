@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using NUnit.Framework;
 using Vim;
 using GlobalSettings = Vim.GlobalSettings;
-using Vim.UnitTest;
 
 namespace VimCore.UnitTest
 {
@@ -71,6 +68,21 @@ namespace VimCore.UnitTest
             var global = CreateGlobal();
             global.VirtualEdit = "onemore,blah";
             Assert.IsTrue(global.IsVirtualEditOneMore);
+        }
+
+        /// <summary>
+        /// Setting a setting should raise the event even if the values are the same.  This is 
+        /// depended on by the :noh feature
+        /// </summary>
+        [Test]
+        public void SetShouldRaise()
+        {
+            var global = CreateGlobal();
+            var seen = false;
+            global.HighlightSearch = true;
+            global.SettingChanged += delegate { seen = true; };
+            global.HighlightSearch = true;
+            Assert.IsTrue(seen);
         }
 
     }
