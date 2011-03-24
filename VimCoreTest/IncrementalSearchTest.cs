@@ -284,5 +284,133 @@ namespace VimCore.UnitTest
             _search.DoSearch("b", SearchKind.BackwardWithWrap);
             _statusUtil.Verify();
         }
+
+        /// <summary>
+        /// Make sure we update the search history on every search found or not
+        /// </summary>
+        [Test]
+        public void History_UpdateOnComplete()
+        {
+            Create("");
+            _search.DoSearch("a");
+            _search.DoSearch("b");
+            CollectionAssert.AreEquivalent(
+                new[] { "b", "a" },
+                _vimData.IncrementalSearchHistory);
+        }
+
+        /// <summary>
+        /// Cancelled searches should go into the history list oddly enough
+        /// </summary>
+        [Test]
+        public void History_UpdateOnCancel()
+        {
+            Create("");
+            _search.DoSearch("a");
+            _search.DoSearch("b", enter: false).Run(VimKey.Escape);
+            CollectionAssert.AreEquivalent(
+                new[] { "b", "a" },
+                _vimData.IncrementalSearchHistory);
+        }
+
+        /// <summary>
+        /// A completed search should not create a duplicate entry in the history list. 
+        /// </summary>
+        [Test]
+        public void History_UpdateShouldNotDuplicate()
+        {
+            Create("");
+            _search.DoSearch("a");
+            _search.DoSearch("b");
+            _search.DoSearch("a");
+            CollectionAssert.AreEquivalent(
+                new[] { "a", "b" },
+                _vimData.IncrementalSearchHistory);
+        }
+
+        /// <summary>
+        /// The up key should scroll the history list
+        /// </summary>
+        [Test]
+        public void History_UpShouldScroll()
+        {
+            Create("dog cat");
+            _vimData.IncrementalSearchHistory = (new[] { "a", "b" }).ToFSharpList();
+            _search.Begin(SearchKind.Forward).Run(VimKey.Up);
+            Assert.AreEqual("a", _search.CurrentSearch.Value.Text.RawText);
+        }
+
+        /// <summary>
+        /// The up key should scroll the history list repeatedly
+        /// </summary>
+        [Test]
+        public void History_UpShouldScrollAgain()
+        {
+            Create("dog cat");
+            _vimData.IncrementalSearchHistory = (new[] { "a", "b" }).ToFSharpList();
+            _search.Begin(SearchKind.Forward).Run(VimKey.Up).Run(VimKey.Up);
+            Assert.AreEqual("b", _search.CurrentSearch.Value.Text.RawText);
+        }
+
+        /// <summary>
+        /// The down key should scroll the history list in the opposite order
+        /// </summary>
+        [Test]
+        public void History_DownShouldScrollBack()
+        {
+            Create("dog cat");
+            _vimData.IncrementalSearchHistory = (new[] { "a", "b" }).ToFSharpList();
+            _search.Begin(SearchKind.Forward).Run(VimKey.Up).Run(VimKey.Down);
+            Assert.AreEqual("", _search.CurrentSearch.Value.Text.RawText);
+        }
+
+        /// <summary>
+        /// The down key should scroll the history list in the opposite order
+        /// </summary>
+        [Test]
+        public void History_DownShouldScrollBackAfterUp()
+        {
+            Create("dog cat");
+            _vimData.IncrementalSearchHistory = (new[] { "a", "b" }).ToFSharpList();
+            _search.Begin(SearchKind.Forward).Run(VimKey.Up).Run(VimKey.Up).Run(VimKey.Down);
+            Assert.AreEqual("a", _search.CurrentSearch.Value.Text.RawText);
+        }
+
+        /// <summary>
+        /// Beep if the down key goes off the end of the list
+        /// </summary>
+        [Test]
+        public void History_DownOffEndOfList()
+        {
+            Create("dog cat");
+            _vimData.IncrementalSearchHistory = (new[] { "a", "b" }).ToFSharpList();
+            _operations.Setup(x => x.Beep()).Verifiable();
+            _search.Begin(SearchKind.Forward).Run(VimKey.Down);
+            _operations.Verify();
+        }
+
+        /// <summary>
+        /// Search through the history for a single item
+        /// </summary>
+        [Test]
+        public void HistorySearch_OneMatch()
+        {
+            Create("");
+            _vimData.IncrementalSearchHistory = (new[] { "dog", "cat" }).ToFSharpList();
+            _search.DoSearch("d", enter: false).Run(VimKey.Up);
+            Assert.AreEqual("dog", _search.CurrentSearch.Value.Text.RawText);
+        }
+
+        /// <summary>
+        /// Search through the history for an item which has several matches
+        /// </summary>
+        [Test]
+        public void HistorySearch_TwoMatches()
+        {
+            Create("");
+            _vimData.IncrementalSearchHistory = (new[] { "dog", "cat", "dip" }).ToFSharpList();
+            _search.DoSearch("d", enter: false).Run(VimKey.Up).Run(VimKey.Up);
+            Assert.AreEqual("dip", _search.CurrentSearch.Value.Text.RawText);
+        }
     }
 }

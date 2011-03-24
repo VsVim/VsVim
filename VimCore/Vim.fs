@@ -30,6 +30,7 @@ type internal StatusUtil() =
 
 type internal VimData() =
 
+    let mutable _incrementalSearchHistory : string list = List.empty
     let mutable _lastSubstituteData : SubstituteData option = None
     let mutable _lastSearchData = { Text = SearchText.Pattern(StringUtil.empty); Kind = SearchKind.ForwardWithWrap; Options = SearchOptions.None }
     let mutable _lastCharSearch : (CharSearchKind * Path * char) option = None
@@ -39,6 +40,9 @@ type internal VimData() =
     let _highlightSearchOneTimeDisabled = Event<unit>()
 
     interface IVimData with 
+        member x.IncrementalSearchHistory 
+            with get () = _incrementalSearchHistory
+            and set value = _incrementalSearchHistory <- value
         member x.LastSubstituteData 
             with get () = _lastSubstituteData
             and set value = _lastSubstituteData <- value

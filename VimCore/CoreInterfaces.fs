@@ -1702,10 +1702,13 @@ module LocalSettingNames =
     let TabStopName = "tabstop"
     let QuoteEscapeName = "quoteescape"
 
-/// Represents shared state which is avaliable to all IVimBuffer instances.
+/// Represents shared state which is available to all IVimBuffer instances.
 type IVimData = 
 
     /// Motion function used with the last f, F, t or T motion.  The 
+    /// The ordered list of incremental search fields
+    abstract IncrementalSearchHistory : string list with get, set
+
     /// first item in the tuple is the forward version and the second item
     /// is the backwards version
     abstract LastCharSearch : (CharSearchKind * Path * char) option with get, set
@@ -1717,8 +1720,6 @@ type IVimData =
     abstract LastMacroRun : char option with get, set
 
     /// Last pattern searched for in any buffer.
-    /// TODO: Should be storing a tuple of Path and SearchText as this is the only
-    /// used pieces of data
     abstract LastSearchData : SearchData with get, set
 
     /// Data for the last substitute command performed

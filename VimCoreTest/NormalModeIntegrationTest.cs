@@ -1363,6 +1363,5 @@ namespace VimCore.UnitTest
             _buffer.Process("\"0p");
             Assert.AreEqual("dog", _textView.GetLine(2).GetText());
         }
-
     }
 }
