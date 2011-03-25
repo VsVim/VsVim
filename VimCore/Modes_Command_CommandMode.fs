@@ -103,7 +103,7 @@ type internal CommandMode
                 | ModeArgument.None -> StringUtil.empty
                 | ModeArgument.OneTimeCommand(_) -> StringUtil.empty
                 | ModeArgument.FromVisual -> FromVisualModeString
-                | ModeArgument.Subsitute(_) -> StringUtil.empty
+                | ModeArgument.Substitute(_) -> StringUtil.empty
                 | ModeArgument.InsertWithCount _ -> StringUtil.empty
                 | ModeArgument.InsertWithCountAndNewLine _ -> StringUtil.empty
                 | ModeArgument.InsertWithTransaction transaction -> transaction.Complete(); StringUtil.empty
