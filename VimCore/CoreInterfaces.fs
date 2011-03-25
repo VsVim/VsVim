@@ -1593,7 +1593,7 @@ type IMacroRecorder =
     [<CLIEvent>]
     abstract RecordingStarted : IEvent<unit>
 
-    /// Raised when a macro recording is copmleted.
+    /// Raised when a macro recording is completed.
     [<CLIEvent>]
     abstract RecordingStopped : IEvent<unit>
 
@@ -1674,6 +1674,7 @@ module GlobalSettingNames =
 
     let CaretOpacityName = "vsvimcaret"
     let HighlightSearchName = "hlsearch"
+    let HistoryName = "history"
     let IgnoreCaseName = "ignorecase"
     let IncrementalSearchName = "incsearch"
     let MagicName = "magic"
@@ -1701,40 +1702,6 @@ module LocalSettingNames =
     let ScrollName = "scroll"
     let TabStopName = "tabstop"
     let QuoteEscapeName = "quoteescape"
-
-/// Represents shared state which is available to all IVimBuffer instances.
-type IVimData = 
-
-    /// Motion function used with the last f, F, t or T motion.  The 
-    /// The ordered list of incremental search fields
-    abstract IncrementalSearchHistory : string list with get, set
-
-    /// first item in the tuple is the forward version and the second item
-    /// is the backwards version
-    abstract LastCharSearch : (CharSearchKind * Path * char) option with get, set
-
-    /// The last command which was ran 
-    abstract LastCommand : StoredCommand option with get, set
-
-    /// The last macro register which was run
-    abstract LastMacroRun : char option with get, set
-
-    /// Last pattern searched for in any buffer.
-    abstract LastSearchData : SearchData with get, set
-
-    /// Data for the last substitute command performed
-    abstract LastSubstituteData : SubstituteData option with get, set
-
-    /// Raise the highlight search one time disabled event
-    abstract RaiseHighlightSearchOneTimeDisable : unit -> unit
-
-    /// Raised when the LastSearch value changes
-    [<CLIEvent>]
-    abstract LastSearchDataChanged : IEvent<SearchData>
-
-    /// Raised when highlight search is disabled one time via the :noh command
-    [<CLIEvent>]
-    abstract HighlightSearchOneTimeDisabled : IEvent<unit>
 
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property
@@ -1773,6 +1740,9 @@ and IVimGlobalSettings =
     /// Whether or not to highlight previous search patterns matching cases
     abstract HighlightSearch : bool with get,set
 
+    /// The number of items to keep in the history lists
+    abstract History : int with get, set
+
     /// Whether or not the magic option is set
     abstract Magic : bool with get,set
 
@@ -1783,7 +1753,7 @@ and IVimGlobalSettings =
     /// in the ITextBuffer
     abstract IncrementalSearch : bool with get, set
 
-    /// Is the onemore option inside of VirtualEdit set
+    /// Is the 'onemore' option inside of VirtualEdit set
     abstract IsVirtualEditOneMore : bool with get
 
     /// Is the Selection setting set to a value which calls for inclusive 
@@ -1864,6 +1834,108 @@ and IVimLocalSettings =
     abstract QuoteEscape : string with get, set
 
     inherit IVimSettings
+
+/// Implements a list for storing history items.  This is used for the 5 types
+/// of history lists in Vim (:help history).  
+type HistoryList () = 
+
+    let mutable _list : string list = List.empty
+    let mutable _limit = Constants.DefaultHistoryLength
+
+    /// Limit of the items stored in the list
+    member x.Limit 
+        with get () = 
+            _limit
+        and set value = 
+            _limit <- value
+            x.MaybeTruncateList()
+
+    member x.Items = _list
+
+    /// Adds an item to the top of the history list
+    member x.Add value = 
+        if not (StringUtil.isNullOrEmpty value) then
+            let list =
+                _list
+                |> Seq.filter (fun x -> not (StringUtil.isEqual x value))
+                |> Seq.truncate (_limit - 1)
+                |> List.ofSeq
+            _list <- value :: list
+
+    member private x.MaybeTruncateList () = 
+        if _list.Length > _limit then
+            _list <-
+                _list
+                |> Seq.truncate _limit
+                |> List.ofSeq
+
+    interface System.Collections.IEnumerable with
+        member x.GetEnumerator () = 
+            let seq = _list :> string seq
+            seq.GetEnumerator() :> System.Collections.IEnumerator
+
+    interface System.Collections.Generic.IEnumerable<string> with
+        member x.GetEnumerator () = 
+            let seq = _list :> string seq
+            seq.GetEnumerator()
+
+/// Used for helping history editing 
+type internal IHistoryClient<'TData, 'TResult> =
+
+    /// History list used by this client
+    abstract HistoryList : HistoryList
+
+    /// What remapping mode if any should be used for key input
+    abstract RemapMode : KeyRemapMode option
+
+    /// Beep
+    abstract Beep : unit -> unit
+
+    /// Process the new string
+    abstract ProcessCommand : 'TData -> string -> 'TData
+
+    /// Called when the command is completed
+    abstract Completed : 'TData -> string -> 'TResult
+
+    /// Called when the command is cancelled
+    abstract Cancelled : 'TData -> unit
+
+/// Represents shared state which is available to all IVimBuffer instances.
+type IVimData = 
+
+    /// The history of the : command list
+    abstract CommandHistory : HistoryList with get, set
+
+    /// The ordered list of incremental search values
+    abstract IncrementalSearchHistory : HistoryList with get, set
+
+    /// Motion function used with the last f, F, t or T motion.  The 
+    /// first item in the tuple is the forward version and the second item
+    /// is the backwards version
+    abstract LastCharSearch : (CharSearchKind * Path * char) option with get, set
+
+    /// The last command which was ran 
+    abstract LastCommand : StoredCommand option with get, set
+
+    /// The last macro register which was run
+    abstract LastMacroRun : char option with get, set
+
+    /// Last pattern searched for in any buffer.
+    abstract LastSearchData : SearchData with get, set
+
+    /// Data for the last substitute command performed
+    abstract LastSubstituteData : SubstituteData option with get, set
+
+    /// Raise the highlight search one time disabled event
+    abstract RaiseHighlightSearchOneTimeDisable : unit -> unit
+
+    /// Raised when the LastSearch value changes
+    [<CLIEvent>]
+    abstract LastSearchDataChanged : IEvent<SearchData>
+
+    /// Raised when highlight search is disabled one time via the :noh command
+    [<CLIEvent>]
+    abstract HighlightSearchOneTimeDisabled : IEvent<unit>
 
 /// Vim instance.  Global for a group of buffers
 and IVim =
@@ -2131,7 +2203,6 @@ and IMode =
     /// Called when the owning IVimBuffer is closed so that the mode can free up 
     /// any resources including event handlers
     abstract OnClose : unit -> unit
-
 
 and INormalMode =
 

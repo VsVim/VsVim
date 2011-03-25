@@ -115,6 +115,7 @@ type internal GlobalSettings() =
         [|
             (CaretOpacityName, CaretOpacityName, NumberKind, NumberValue(65))
             (HighlightSearchName, "hls", ToggleKind, ToggleValue(false))
+            (HistoryName, "hi", NumberKind, NumberValue(Constants.DefaultHistoryLength))
             (IncrementalSearchName, "is", ToggleKind, ToggleValue(false))
             (IgnoreCaseName,"ic", ToggleKind, ToggleValue(false))
             (MagicName, MagicName, ToggleKind, ToggleValue(true))
@@ -153,6 +154,9 @@ type internal GlobalSettings() =
         member x.HighlightSearch
             with get() = _map.GetBoolValue HighlightSearchName
             and set value = _map.TrySetValue HighlightSearchName (ToggleValue(value)) |> ignore
+        member x.History
+            with get () = _map.GetNumberValue HistoryName
+            and set value = _map.TrySetValue HistoryName (NumberValue value) |> ignore
         member x.IgnoreCase
             with get()  = _map.GetBoolValue IgnoreCaseName
             and set value = _map.TrySetValue IgnoreCaseName (ToggleValue(value)) |> ignore

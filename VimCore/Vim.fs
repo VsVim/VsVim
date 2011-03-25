@@ -30,7 +30,8 @@ type internal StatusUtil() =
 
 type internal VimData() =
 
-    let mutable _incrementalSearchHistory : string list = List.empty
+    let mutable _commandHistory = HistoryList()
+    let mutable _incrementalSearchHistory = HistoryList()
     let mutable _lastSubstituteData : SubstituteData option = None
     let mutable _lastSearchData = { Text = SearchText.Pattern(StringUtil.empty); Kind = SearchKind.ForwardWithWrap; Options = SearchOptions.None }
     let mutable _lastCharSearch : (CharSearchKind * Path * char) option = None
@@ -40,6 +41,9 @@ type internal VimData() =
     let _highlightSearchOneTimeDisabled = Event<unit>()
 
     interface IVimData with 
+        member x.CommandHistory
+            with get () = _commandHistory
+            and set value = _commandHistory <- value
         member x.IncrementalSearchHistory 
             with get () = _incrementalSearchHistory
             and set value = _incrementalSearchHistory <- value
@@ -182,7 +186,7 @@ type internal VimBufferFactory
         let modeList = 
             [
                 ((Modes.Normal.NormalMode(buffer, normalOpts, statusUtil,broker, createCommandRunner VisualKind.Character, capture)) :> IMode)
-                ((Modes.Command.CommandMode(buffer, commandProcessor)) :> IMode)
+                ((Modes.Command.CommandMode(buffer, commandProcessor, commonOperations)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, tracker, false)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, tracker, true)) :> IMode)
                 ((Modes.SubstituteConfirm.SubstituteConfirmMode(buffer, commonOperations) :> IMode))
@@ -208,7 +212,7 @@ type internal Vim
         _host : IVimHost,
         _bufferFactoryService : IVimBufferFactory,
         _bufferCreationListeners : Lazy<IVimBufferCreationListener> list,
-        _settings : IVimGlobalSettings,
+        _globalSettings : IVimGlobalSettings,
         _markMap : IMarkMap,
         _keyMap : IKeyMap,
         _clipboardDevice : IClipboardDevice,
@@ -224,7 +228,7 @@ type internal Vim
 
     /// Holds the local setting information which was stored when loading the VimRc file.  This 
     /// is applied to IVimBuffer instances which are created when there is no active IVimBuffer
-    let mutable _vimrcLocalSettings = LocalSettings(_settings) :> IVimLocalSettings
+    let mutable _vimrcLocalSettings = LocalSettings(_globalSettings) :> IVimLocalSettings
 
     let _registerMap =
         let currentFileNameFunc() = 
@@ -242,6 +246,19 @@ type internal Vim
     let _bufferCreationListeners =
         let item = Lazy<IVimBufferCreationListener>(fun () -> _recorder :> IVimBufferCreationListener)
         item :: _bufferCreationListeners
+
+    do
+        // When the 'history' setting is changed it impacts our history limits.  Keep track of 
+        // them here
+        //
+        // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
+        // a derived type
+
+        (_globalSettings :> IVimSettings).SettingChanged 
+        |> Event.filter (fun args -> StringUtil.isEqual args.Name GlobalSettingNames.HistoryName)
+        |> Event.add (fun _ -> 
+            _vimData.IncrementalSearchHistory.Limit <- _globalSettings.History
+            _vimData.CommandHistory.Limit <- _globalSettings.History)
 
     [<ImportingConstructor>]
     new(
@@ -339,13 +356,13 @@ type internal Vim
             x.CreateBuffer view (Some settings)
 
     member x.LoadVimRc (fileSystem:IFileSystem) (createViewFunc : (unit -> ITextView)) =
-        _settings.VimRc <- System.String.Empty
-        _settings.VimRcPaths <- fileSystem.GetVimRcDirectories() |> String.concat ";"
+        _globalSettings.VimRc <- System.String.Empty
+        _globalSettings.VimRcPaths <- fileSystem.GetVimRcDirectories() |> String.concat ";"
 
         match fileSystem.LoadVimRc() with
         | None -> false
         | Some(path,lines) ->
-            _settings.VimRc <- path
+            _globalSettings.VimRc <- path
             let view = createViewFunc()
             let buffer = x.CreateBuffer view None
             let mode = buffer.CommandMode
@@ -366,9 +383,9 @@ type internal Vim
         member x.MarkMap = _markMap
         member x.KeyMap = _keyMap
         member x.SearchService = _search
-        member x.IsVimRcLoaded = not (System.String.IsNullOrEmpty(_settings.VimRc))
+        member x.IsVimRcLoaded = not (System.String.IsNullOrEmpty(_globalSettings.VimRc))
         member x.RegisterMap = _registerMap 
-        member x.Settings = _settings
+        member x.Settings = _globalSettings
         member x.CreateBuffer view = x.CreateBuffer view (Some (x.GetSettingsForNewBuffer()))
         member x.GetOrCreateBuffer view = x.GetOrCreateBuffer view
         member x.RemoveBuffer view = x.RemoveBufferCore view

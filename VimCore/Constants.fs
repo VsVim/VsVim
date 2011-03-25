@@ -9,6 +9,9 @@ module Constants =
     let ContentType = "text"
 
     [<Literal>]
+    let DefaultHistoryLength = 20
+
+    [<Literal>]
     let IncrementalSearchTagName = "vsvim_incrementalsearch"
 
     [<Literal>]

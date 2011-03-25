@@ -41,7 +41,7 @@ type internal CommandRunner
     /// Contains all of the state data for a Command operation
     let mutable _data = _emptyData
 
-    /// The latest BindData we are waiting to recieve KeyInput to complete
+    /// The latest BindData we are waiting to receive KeyInput to complete
     let mutable _runBindData : BindData<Command * CommandBinding> option = None
 
     /// True during the running of a particular KeyInput 

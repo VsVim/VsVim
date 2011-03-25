@@ -8,6 +8,7 @@ using Vim;
 using Vim.Modes.Command;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
+using Vim.Modes;
 
 namespace VimCore.UnitTest
 {
@@ -20,6 +21,7 @@ namespace VimCore.UnitTest
         private Mock<ITextSelection> _selection;
         private Mock<IVimBuffer> _bufferData;
         private Mock<ICommandProcessor> _processor;
+        private Mock<ICommonOperations> _operations;
         private ITextBuffer _buffer;
         private CommandMode _modeRaw;
         private ICommandMode _mode;
@@ -30,6 +32,7 @@ namespace VimCore.UnitTest
             _factory = new MockRepository(MockBehavior.Strict);
             _selection = _factory.Create<ITextSelection>();
             _selection.Setup(x => x.IsEmpty).Returns(true);
+            _operations = _factory.Create<ICommonOperations>();
             _buffer = EditorUtil.CreateBuffer();
             _caret = MockObjectFactory.CreateCaret(factory: _factory);
             _caret.SetupProperty(x => x.IsHidden);
@@ -41,7 +44,7 @@ namespace VimCore.UnitTest
 
             _bufferData = MockObjectFactory.CreateVimBuffer(textView: _textView.Object, factory: _factory);
             _processor = _factory.Create<ICommandProcessor>();
-            _modeRaw = new CommandMode(_bufferData.Object, _processor.Object);
+            _modeRaw = new CommandMode(_bufferData.Object, _processor.Object, _operations.Object);
             _mode = _modeRaw;
         }
 

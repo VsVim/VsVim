@@ -2,8 +2,9 @@
 
 namespace Vim.Modes.Command
 open Vim
+open Vim.Modes
 
 type internal CommandMode =
     interface ICommandMode
-    new : IVimBuffer * ICommandProcessor -> CommandMode
+    new : IVimBuffer * ICommandProcessor * ICommonOperations -> CommandMode
     
