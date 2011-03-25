@@ -522,7 +522,7 @@ type internal NormalMode
             match arg with 
             | ModeArgument.None -> ()
             | ModeArgument.FromVisual -> ()
-            | ModeArgument.Subsitute(_) -> ()
+            | ModeArgument.Substitute(_) -> ()
             | ModeArgument.OneTimeCommand(modeKind) -> _data <- { _data with OneTimeMode = Some modeKind }
             | ModeArgument.InsertWithCount _ -> ()
             | ModeArgument.InsertWithCountAndNewLine _ -> ()

@@ -334,7 +334,7 @@ namespace Vim.UnitTest
         {
             range = range ?? SnapshotLineRangeUtil.CreateForSnapshot(span.Snapshot);
             data = data ?? new SubstituteData("a", "b", SubstituteFlags.None);
-            return ModeArgument.NewSubsitute(span, range, data);
+            return ModeArgument.NewSubstitute(span, range, data);
         }
 
         internal static ModeArgument CreateSubstituteArgument(
@@ -346,7 +346,7 @@ namespace Vim.UnitTest
         {
             range = range ?? SnapshotLineRangeUtil.CreateForSnapshot(span.Snapshot);
             var data = new SubstituteData(search, replace, flags ?? SubstituteFlags.None);
-            return ModeArgument.NewSubsitute(span, range, data);
+            return ModeArgument.NewSubstitute(span, range, data);
         }
 
         internal static IIncrementalSearch CreateIncrementalSearch(

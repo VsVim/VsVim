@@ -591,10 +591,20 @@ type internal CommandUtil
     /// with the next insert mode change.  
     member x.EditWithLinkedChange name action =
         let transaction = _undoRedoOperations.CreateUndoTransaction(name)
-        transaction.AddBeforeTextBufferChangePrimitive()
-        action()
+        let arg = 
+            try
+                transaction.AddBeforeTextBufferChangePrimitive()
+                action()
+    
+                ModeArgument.InsertWithTransaction transaction
+            with
+                | _ ->
+                    // If the above throws we can't leave the transaction open else it will
+                    // completely break undo / redo in the ITextBuffer.  Close it here and
+                    // re-raise the exception
+                    transaction.Dispose()
+                    reraise()
 
-        let arg = ModeArgument.InsertWithTransaction transaction
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
 
     /// Create a fold for the given MotionResult
@@ -1117,13 +1127,32 @@ type internal CommandUtil
                 repeatTextChange change
             | StoredCommand.LinkedCommand (command1, command2) -> 
 
+                // Running linked commands will throw away the ModeSwitch value.  This can contain
+                // an open IUndoTransaction.  This must be completed here or it will break undo in the 
+                // ITextBuffer
+                let maybeCloseTransaction modeSwitch = 
+                    match modeSwitch with
+                    | ModeSwitch.SwitchModeWithArgument (_, argument) ->
+                        match argument with
+                        | ModeArgument.None -> ()
+                        | ModeArgument.FromVisual -> ()
+                        | ModeArgument.InsertWithCount _ -> ()
+                        | ModeArgument.InsertWithCountAndNewLine _ -> ()
+                        | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
+                        | ModeArgument.OneTimeCommand _ -> ()
+                        | ModeArgument.Substitute _ -> ()
+                    | _ -> ()
+
                 // Run the commands in sequence.  Only continue onto the second if the first 
                 // command succeeds.  We do want any actions performed in the linked commands
                 // to remain linked so do this inside of an edit transaction
                 x.EditWithUndoTransaciton "LinkedCommand" (fun () ->
                     match repeat command1 repeatData with
-                    | CommandResult.Error -> CommandResult.Error
-                    | CommandResult.Completed _ -> repeat command2 None)
+                    | CommandResult.Error -> 
+                        CommandResult.Error
+                    | CommandResult.Completed modeSwitch ->
+                        maybeCloseTransaction modeSwitch
+                        repeat command2 None)
 
             | StoredCommand.LegacyCommand (keyInputSet, _) -> 
 

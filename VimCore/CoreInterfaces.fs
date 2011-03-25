@@ -604,9 +604,9 @@ type ModeArgument =
     /// to be switched to upon completion of the command
     | OneTimeCommand of ModeKind
 
-    /// Passeing the substitute to confirm to Confirm mode.  The SnapshotSpan is the first
+    /// Passing the substitute to confirm to Confirm mode.  The SnapshotSpan is the first
     /// match to process and the range is the full range to consider for a replace
-    | Subsitute of SnapshotSpan * SnapshotLineRange * SubstituteData
+    | Substitute of SnapshotSpan * SnapshotLineRange * SubstituteData
 
     /// Begins insert mode with a specified count.  This means the text inserted should
     /// be repeated a total of 'count - 1' times when insert mode exits
@@ -636,6 +636,7 @@ type CommandResult =
 
     /// An error was encountered and the command was unable to run
     | Error
+
 
 [<RequireQualifiedAccess>]
 type RunResult = 
