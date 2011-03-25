@@ -28,12 +28,13 @@ module internal Util =
     /// Get the point from which an incremental search should begin given
     /// a context point.  They don't begin at the point but rather before
     /// or after the point depending on the direction
-    let GetSearchPoint (kind : SearchKind) point = 
-        if kind.IsAnyForward then 
+    let GetSearchPoint path point = 
+        match path with
+        | Path.Forward ->
             match SnapshotPointUtil.TryAddOne point with 
             | Some(point) -> point
             | None -> SnapshotPoint(point.Snapshot, 0)
-        else 
+        | Path.Backward ->
             match SnapshotPointUtil.TrySubtractOne point with
             | Some(point) -> point
             | None -> SnapshotUtil.GetEndPoint point.Snapshot

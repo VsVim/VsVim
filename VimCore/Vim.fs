@@ -33,7 +33,7 @@ type internal VimData() =
     let mutable _commandHistory = HistoryList()
     let mutable _incrementalSearchHistory = HistoryList()
     let mutable _lastSubstituteData : SubstituteData option = None
-    let mutable _lastSearchData = { Text = SearchText.Pattern(StringUtil.empty); Kind = SearchKind.ForwardWithWrap; Options = SearchOptions.None }
+    let mutable _lastSearchData = { Pattern = StringUtil.empty; Kind = SearchKind.ForwardWithWrap; Options = SearchOptions.None }
     let mutable _lastCharSearch : (CharSearchKind * Path * char) option = None
     let mutable _lastMacroRun : char option = None
     let mutable _lastCommand : StoredCommand option = None

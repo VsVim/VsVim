@@ -1526,7 +1526,7 @@ namespace VimCore.UnitTest
             _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
             _commandUtil.MoveCaretToNextWord(Path.Forward, 1);
             _statusUtil.Verify();
-            Assert.AreEqual("cat", _vimData.LastSearchData.Text.RawText);
+            Assert.AreEqual("cat", _vimData.LastSearchData.Pattern);
         }
 
         /// <summary>
@@ -1550,8 +1550,7 @@ namespace VimCore.UnitTest
             Create("hello world", "hello");
             _commandUtil.MoveCaretToNextWord(Path.Forward, 1);
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            Assert.AreEqual("hello", _vimData.LastSearchData.Text.RawText);
-            Assert.AreEqual(@"\<hello\>", _vimData.LastSearchData.Text.DisplayText);
+            Assert.AreEqual(@"\<hello\>", _vimData.LastSearchData.Pattern);
         }
 
         /// <summary>
@@ -1649,7 +1648,7 @@ namespace VimCore.UnitTest
             _textView.MoveCaretToLine(2);
             _commandUtil.MoveCaretToNextWord(Path.Backward, 2);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-            Assert.AreEqual(SearchText.NewWholeWord("foo"), _vimData.LastSearchData.Text);
+            Assert.AreEqual(@"\<foo\>", _vimData.LastSearchData.Pattern);
         }
 
         /// <summary>
@@ -1699,7 +1698,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToLastSearch_NotFound()
         {
             Create("foo bar baz");
-            var data = new SearchData(SearchText.NewPattern("beat"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            var data = new SearchData("beat", SearchKind.ForwardWithWrap, SearchOptions.None);
             _vimData.LastSearchData = data;
             _statusUtil.Setup(x => x.OnError(Resources.Common_PatternNotFound("beat"))).Verifiable();
             _commandUtil.MoveCaretToLastSearch(false, 1);
@@ -1714,7 +1713,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToLastSearch_DontStartOnCurrentWord()
         {
             Create("foo bar", "foo");
-            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            var data = new SearchData("foo", SearchKind.ForwardWithWrap, SearchOptions.None);
             _vimData.LastSearchData = data;
             _commandUtil.MoveCaretToLastSearch(false, 1);
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
@@ -1728,7 +1727,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToLastSearch_WrapToSame()
         {
             Create("foo bar", "foo");
-            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            var data = new SearchData("foo", SearchKind.ForwardWithWrap, SearchOptions.None);
             _vimData.LastSearchData = data;
             _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchForwardWrapped)).Verifiable();
             _commandUtil.MoveCaretToLastSearch(false, 2);
@@ -1743,7 +1742,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToLastSearch_BackwardAndWrap()
         {
             Create("foo bar", "foo");
-            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.BackwardWithWrap, SearchOptions.None);
+            var data = new SearchData("foo", SearchKind.BackwardWithWrap, SearchOptions.None);
             _vimData.LastSearchData = data;
             _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchBackwardWrapped)).Verifiable();
             _commandUtil.MoveCaretToLastSearch(false, 1);
@@ -1758,7 +1757,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToLastSearch_BackwardFromMatch()
         {
             Create("dog cat", "dog", "dog");
-            var data = new SearchData(SearchText.NewPattern("dog"), SearchKind.BackwardWithWrap, SearchOptions.None);
+            var data = new SearchData("dog", SearchKind.BackwardWithWrap, SearchOptions.None);
             _vimData.LastSearchData = data;
             _textView.MoveCaretToLine(1);
             _commandUtil.MoveCaretToLastSearch(false, 1);
@@ -1773,7 +1772,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToLastSearch_DontUpdateLastSearch()
         {
             Create("dog cat", "dog", "dog");
-            var data = new SearchData(SearchText.NewPattern("dog"), SearchKind.Forward, SearchOptions.None);
+            var data = new SearchData("dog", SearchKind.Forward, SearchOptions.None);
             _vimData.LastSearchData = data;
             _commandUtil.MoveCaretToLastSearch(true, 1);
             Assert.AreEqual(data, _vimData.LastSearchData);
@@ -1788,7 +1787,7 @@ namespace VimCore.UnitTest
             Create("dog", "cat");
             _globalSettings.WrapScan = false;
             _textView.MoveCaretToLine(1);
-            _vimData.LastSearchData = new SearchData(SearchText.NewPattern("dog"), SearchKind.Forward, SearchOptions.None);
+            _vimData.LastSearchData = new SearchData("dog", SearchKind.Forward, SearchOptions.None);
             _statusUtil.Setup(x => x.OnError(Resources.Common_SearchHitBottomWithout("dog"))).Verifiable();
             _commandUtil.MoveCaretToLastSearch(false, 1);
             _statusUtil.Verify();
@@ -1802,7 +1801,7 @@ namespace VimCore.UnitTest
         {
             Create("dog", "cat");
             _globalSettings.WrapScan = false;
-            _vimData.LastSearchData = new SearchData(SearchText.NewPattern("cat"), SearchKind.Backward, SearchOptions.None);
+            _vimData.LastSearchData = new SearchData("cat", SearchKind.Backward, SearchOptions.None);
             _statusUtil.Setup(x => x.OnError(Resources.Common_SearchHitTopWithout("cat"))).Verifiable();
             _commandUtil.MoveCaretToLastSearch(false, 1);
             _statusUtil.Verify();

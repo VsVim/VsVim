@@ -336,16 +336,7 @@ namespace Vim.UnitTest
             SearchOptions options = SearchOptions.None)
         {
             kind = kind ?? SearchKind.Forward;
-            return new SearchData(SearchText.NewPattern(pattern), kind, options);
-        }
-
-        internal static SearchData CreateSearchData(
-            SearchText text,
-            SearchKind kind = null,
-            SearchOptions options = SearchOptions.None)
-        {
-            kind = kind ?? SearchKind.Forward;
-            return new SearchData(text, kind, options);
+            return new SearchData(pattern, kind, options);
         }
 
         internal static ModeArgument CreateSubstituteArgument(

@@ -595,10 +595,18 @@ type internal CommandUtil
     /// with the next insert mode change.  
     member x.EditWithLinkedChange name action =
         let transaction = _undoRedoOperations.CreateUndoTransaction(name)
-        transaction.AddBeforeTextBufferChangePrimitive()
-        action()
-
-        let arg = ModeArgument.InsertWithTransaction transaction
+        let arg = 
+            try
+                transaction.AddBeforeTextBufferChangePrimitive()
+                action()
+                ModeArgument.InsertWithTransaction transaction
+            with
+                | _ -> 
+                    // If either of the above throws we need to be careful to abandon the 
+                    // transaction.  Else it will remain open and will cause undo / redo
+                    // behavior to be broken
+                    transaction.Dispose()
+                    reraise()
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
 
     /// Create a fold for the given MotionResult
@@ -826,7 +834,7 @@ type internal CommandUtil
             if isReverse then { last with Kind = SearchKind.Reverse last.Kind }
             else last
 
-        if StringUtil.isNullOrEmpty last.Text.RawText then
+        if StringUtil.isNullOrEmpty last.Pattern then
             _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
         else
 
@@ -844,7 +852,7 @@ type internal CommandUtil
                     |> SnapshotPointUtil.TrySubtractOne
                     |> OptionUtil.getOrDefault (SnapshotUtil.GetStartPoint snapshot)
 
-            x.MoveCaretToNextSearch searchStart last.Text last.Kind.Path last.Options count
+            x.MoveCaretToNextSearch searchStart last.Pattern last.Kind.Path last.Options count
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -877,8 +885,8 @@ type internal CommandUtil
 
             // Build up the SearchData structure
             let word = span.GetText()
-            let text = if isWholeWord then SearchText.WholeWord word else SearchText.StraightText word
-            let options = SearchOptions.ConsiderIgnoreCase
+            let pattern = if isWholeWord then PatternUtil.CreateWholeWord word else word
+            let options = PatternUtil.DefaultSearchOptions
 
             // Pick the appropriate place to start the search.  
             let searchStart = 
@@ -894,16 +902,16 @@ type internal CommandUtil
                     // when searching backward
                     span.Start
 
-            x.MoveCaretToNextSearch searchStart text path options count
+            x.MoveCaretToNextSearch searchStart pattern path options count
 
             // Update the last search value
-            let data = { Text = text; Kind = SearchKind.OfPath path; Options = options }
+            let data = { Pattern = pattern; Kind = SearchKind.OfPath path; Options = options }
             _vimData.LastSearchData <- data
 
-    /// Move the caret to the 'count' next occurrence of the specified SearchData value
-    member x.MoveCaretToNextSearch searchStart searchText path options count =
+    /// Move the caret to the 'count' next occurrence of the specified pattern
+    member x.MoveCaretToNextSearch searchStart pattern path options count =
 
-        let searchData = { Text = searchText; Kind = SearchKind.OfPathAndWrap path true; Options = options }
+        let searchData = { Pattern = pattern; Kind = SearchKind.OfPathAndWrap path true; Options = options }
         match _searchService.FindNextMultiple searchData searchStart _wordNavigator count with
         | SearchResult.Found (_, span, _) ->
 
@@ -918,7 +926,7 @@ type internal CommandUtil
             // point.
             //
             // We specifically ignore the 'didWrap' part of SearchResult.Found because of this 
-            // artifical change of location. It causes this value to be wrong in edge cases
+            // artificial change of location. It causes this value to be wrong in edge cases
             let didWrap = 
                 match path with 
                 | Path.Forward -> span.Start.Position <= x.CaretPoint.Position
@@ -934,10 +942,9 @@ type internal CommandUtil
                     moveCaretToSpan()
                 else
                     // Wrapping is not allowed.  Issue an error message and don't move the caret
-                    let text = searchText.DisplayText
                     match path with
-                    | Path.Forward -> _statusUtil.OnError (Resources.Common_SearchHitBottomWithout text)
-                    | Path.Backward -> _statusUtil.OnError (Resources.Common_SearchHitTopWithout text)
+                    | Path.Forward -> _statusUtil.OnError (Resources.Common_SearchHitBottomWithout pattern)
+                    | Path.Backward -> _statusUtil.OnError (Resources.Common_SearchHitTopWithout pattern)
             else
                 // Didn't wrap so it's fine
                 moveCaretToSpan()
@@ -945,7 +952,7 @@ type internal CommandUtil
         | SearchResult.NotFound _ ->
 
             // Pattern just doesn't exist in the buffer
-            _statusUtil.OnError (Resources.Common_PatternNotFound (searchText.DisplayText))
+            _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
 
     /// Move the caret to start of a line which is deleted.  Needs to preserve the original 
     /// indent if 'autoindent' is set.
@@ -1384,7 +1391,7 @@ type internal CommandUtil
         // the selection (both before and after).
         //
         // The caret can be anywhere at the start of the operation so move it to the
-        // first point before even begining the edit transaction
+        // first point before even beginning the edit transaction
         _textView.Selection.Clear()
         let points = 
             visualSpan.Spans

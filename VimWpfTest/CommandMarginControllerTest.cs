@@ -319,7 +319,7 @@ namespace Vim.UI.Wpf.Test
             var mode = _factory.Create<INormalMode>();
             _buffer.NormalModeImpl = mode.Object;
             _buffer.ModeKindImpl = ModeKind.Normal;
-            var data = new SearchData(SearchText.NewStraightText("cat"), SearchKind.Forward, SearchOptions.None);
+            var data = new SearchData("cat", SearchKind.Forward, SearchOptions.None);
             _search.SetupGet(x => x.InSearch).Returns(true).Verifiable();
             _search.SetupGet(x => x.CurrentSearch).Returns(FSharpOption.Create(data)).Verifiable();
             SimulatKeystroke();
@@ -333,7 +333,7 @@ namespace Vim.UI.Wpf.Test
             var mode = _factory.Create<INormalMode>();
             _buffer.NormalModeImpl = mode.Object;
             _buffer.ModeKindImpl = ModeKind.Normal;
-            var data = new SearchData(SearchText.NewStraightText("cat"), SearchKind.Backward, SearchOptions.None);
+            var data = new SearchData("cat", SearchKind.Backward, SearchOptions.None);
             _search.SetupGet(x => x.InSearch).Returns(true).Verifiable();
             _search.SetupGet(x => x.CurrentSearch).Returns(FSharpOption.Create(data)).Verifiable();
             SimulatKeystroke();

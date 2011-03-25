@@ -576,7 +576,7 @@ type internal CommandProcessor
                         let range, rest = parseAndApplyCount originalRange (rest |> Seq.skipWhile CharUtil.IsWhiteSpace)
     
                         // Check for the UsePrevious flag and update the flags as appropriate.  Make sure
-                        // to bitor them against the new flags
+                        // to bitwise or them against the new flags
                         let flags = 
                             if Util.IsFlagSet flags SubstituteFlags.UsePreviousFlags then 
                                 match _buffer.VimData.LastSubstituteData with
@@ -587,15 +587,15 @@ type internal CommandProcessor
                         // Check for the previous search pattern flag
                         let search, errorMsg  = 
                             if Util.IsFlagSet flags SubstituteFlags.UsePreviousSearchPattern then
-                                match _regexFactory.CreateForSearchText _buffer.VimData.LastSearchData.Text with
+                                match _regexFactory.Create _buffer.VimData.LastSearchData.Pattern with
                                 | None -> (StringUtil.empty, Some Resources.CommandMode_NoPreviousSubstitute)
-                                | Some(regex) -> (regex.VimPattern, None)
+                                | Some regex -> (regex.VimPattern, None)
                             else
                                 (search,None)
 
                         // If the search string is empty then use the previous search text
                         let search = 
-                            if StringUtil.isNullOrEmpty search then _buffer.VimData.LastSearchData.Text.RawText
+                            if StringUtil.isNullOrEmpty search then _buffer.VimData.LastSearchData.Pattern
                             else search
 
                         if Option.isSome errorMsg then
@@ -638,7 +638,7 @@ type internal CommandProcessor
                     let flags, pattern, errorMsg = 
                         if Util.IsFlagSet flags SubstituteFlags.UsePreviousSearchPattern then 
                             let flags = Util.UnsetFlag flags SubstituteFlags.UsePreviousSearchPattern
-                            match _regexFactory.CreateForSearchText _buffer.VimData.LastSearchData.Text with
+                            match _regexFactory.Create _buffer.VimData.LastSearchData.Pattern with
                             | None -> (flags, StringUtil.empty, Some Resources.CommandMode_InvalidCommand)
                             | Some(regex) -> (flags, regex.VimPattern, None)
                         else 

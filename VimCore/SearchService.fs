@@ -13,66 +13,71 @@ type internal SearchService
 
     let _factory = VimRegexFactory(_settings)
 
-    /// Convert the given search text into the appropriate text for the
-    /// FindData structure.  
-    member x.ConvertSearchToFindText (text:SearchText) =
-        match text with
-        | SearchText.Pattern(p) ->
-            match _factory.Create p with
-            | None -> None
-            | Some(regex) -> Some regex.RegexPattern
-        | SearchText.WholeWord(text) -> Some text
-        | SearchText.StraightText(text) -> Some text
+    /// Convert the Vim SearchData to the editor FindData structure
+    member x.ConvertToFindData (searchData : SearchData) snapshot wordNavigator =
 
-    member x.CreateFindOptions (text:SearchText) (kind : SearchKind) searchOptions =
+        // First get the text and possible text based options for the pattern.  We special
+        // case a search of whole words that is not a regex for efficiency reasons
+        let pattern = searchData.Pattern
+        let text, textOptions = 
+            let useRegex () =
+                let text = _factory.Create pattern |> Option.map (fun p -> p.RegexPattern)
+                text, FindOptions.UseRegularExpressions
+            match PatternUtil.GetUnderlyingWholeWord pattern with
+            | None -> 
+                useRegex ()
+            | Some word ->
+                // If it's just letters and numbers then it's a straight text search. 
+                let any = Seq.exists (fun c -> not (CharUtil.IsLetterOrDigit c || CharUtil.IsWhiteSpace c)) word
+                if any then 
+                    useRegex()
+                else
+                    Some word, FindOptions.WholeWord
+
+        // Get the options related to case
         let caseOptions = 
+            let searchOptions = searchData.Options
             if Util.IsFlagSet searchOptions SearchOptions.ConsiderIgnoreCase && _settings.IgnoreCase then
-                let hasUpper () = text.RawText |> Seq.filter CharUtil.IsLetter |> Seq.filter CharUtil.IsUpper |> SeqUtil.isNotEmpty
+                let hasUpper () = pattern |> Seq.filter CharUtil.IsLetter |> Seq.filter CharUtil.IsUpper |> SeqUtil.isNotEmpty
                 if Util.IsFlagSet searchOptions SearchOptions.ConsiderSmartCase && _settings.SmartCase && hasUpper() then FindOptions.MatchCase
                 else FindOptions.None
             else 
                 FindOptions.MatchCase
-        let revOptions = if kind.IsAnyBackward then FindOptions.SearchReverse else FindOptions.None
+        let revOptions = if searchData.Kind.IsAnyBackward then FindOptions.SearchReverse else FindOptions.None
 
-        let searchKindOptions = 
-            match text with
-            | SearchText.Pattern(_) -> FindOptions.UseRegularExpressions
-            | SearchText.WholeWord(_) -> FindOptions.WholeWord
-            | SearchText.StraightText(_) -> FindOptions.None
+        let options = textOptions ||| caseOptions ||| revOptions
 
-        caseOptions ||| revOptions ||| searchKindOptions
+        try
+            match text with 
+            | None ->
+                // Happens with a bad regular expression
+                None
+            | Some text ->
+                // Can throw in cases like having an invalidly formed regex.  Occurs
+                // a lot via incremental searching while the user is typing
+                FindData(text, snapshot, options, wordNavigator) |> Some
+        with 
+        | :? System.ArgumentException -> None
 
     member x.FindNextMultiple (searchData : SearchData) startPoint nav count =
-        let tss = SnapshotPointUtil.GetSnapshot startPoint
-        let opts = x.CreateFindOptions searchData.Text searchData.Kind searchData.Options
 
-        match x.ConvertSearchToFindText searchData.Text with
-        | None -> 
-            SearchResult.NotFound searchData
-        | Some text -> 
-
-            // Create a function which will give us the next search position
-            let getNextPoint = 
-                if searchData.Kind.IsAnyForward then
-                    (fun (span : SnapshotSpan) -> span.End |> Some)
-                else 
-                    let isWrap = searchData.Kind.IsWrap
-                    (fun (span : SnapshotSpan) -> 
-                        if span.Start.Position = 0 && isWrap then SnapshotUtil.GetEndPoint tss |> Some
-                        elif span.Start.Position = 0 then None
-                        else span.Start.Subtract(1) |> Some )
+        let snapshot = SnapshotPointUtil.GetSnapshot startPoint 
+        match x.ConvertToFindData searchData snapshot nav with
+        | None ->
+            // Can't convert to a FindData so no way to search
+            SearchResult.NotFound (searchData, false)
+        | Some findData -> 
 
             // Recursive loop to perform the search "count" times
             let rec doFind findData count position didWrap = 
 
                 let result = 
                     try
-                        _search.FindNext(position, searchData.Kind.IsWrap, findData) |> NullableUtil.toOption
+                        _search.FindNext(position, true, findData) |> NullableUtil.toOption
                     with 
                     | :? System.InvalidOperationException ->
-                        // If the regular expression has invalid data then don't throw but return a failed match
-                        if searchData.Text.IsPatternText then None
-                        else reraise()
+                        // Happens when we provide an invalid regular expression.  Just return None
+                        None
 
                 // Calculate whether this search is wrapping or not
                 let didWrap = 
@@ -90,31 +95,31 @@ type internal SearchService
                     | None -> 
                         didWrap
 
-                match result, count > 1 with
-                | Some span, false ->
-                    SearchResult.Found (searchData, span, didWrap)
-                | Some span, true -> 
-                    match getNextPoint span with
-                    | Some point -> doFind findData (count-1) point.Position didWrap
-                    | None -> SearchResult.NotFound searchData
-                | _ -> 
-                    SearchResult.NotFound searchData
+                if didWrap && not searchData.Kind.IsWrap then
+                    // If the search was started without wrapping and a wrap occurred then we are done.  Just
+                    // return the bad data
+                    SearchResult.NotFound (searchData, true)
+                else
+                    match result, count > 1 with
+                    | Some span, false ->
+                        SearchResult.Found (searchData, span, didWrap)
+                    | Some span, true -> 
+                        // Need to keep searching.  Get the next point to search for.  We always wrap 
+                        // when searching so that we can give back accurate NotFound data.  
+                        let point = 
+                            if searchData.Kind.IsAnyForward then
+                                span.End
+                            elif span.Start.Position = 0 then 
+                                SnapshotUtil.GetEndPoint snapshot
+                            else
+                                span.Start.Subtract 1
+                        doFind findData (count-1) point.Position didWrap
+                    | _ -> 
+                        SearchResult.NotFound (searchData, false)
 
-            let findData = 
-                try
-                    // Can throw in cases like having an invalidly formed regex.  Occurs
-                    // a lot via incremental searching while the user is typing
-                    FindData(text, tss, opts, nav) |> Some
-                with 
-                | :? System.ArgumentException -> None
-
-            match findData with 
-            | None ->
-                SearchResult.NotFound searchData
-            | Some findData ->
-                let count = max 1 count
-                let pos = SnapshotPointUtil.GetPosition startPoint
-                doFind findData count pos false
+            let count = max 1 count
+            let pos = startPoint.Position
+            doFind findData count pos false
 
     member x.FindNext searchData point nav = x.FindNextMultiple searchData point nav 1
 

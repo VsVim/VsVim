@@ -949,7 +949,7 @@ namespace VimCore.UnitTest
             _operations
                 .Setup(x => x.Substitute("cat", "lab", _textView.GetLineRange(0, 0), SubstituteFlags.None))
                 .Verifiable();
-            _vimData.LastSearchData = new SearchData(SearchText.NewPattern("cat"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            _vimData.LastSearchData = new SearchData("cat", SearchKind.ForwardWithWrap, SearchOptions.None);
             RunCommand("s//lab/");
         }
 

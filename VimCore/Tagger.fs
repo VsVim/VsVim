@@ -183,7 +183,7 @@ type HighlightIncrementalSearchTagger
                         if foundSpan.Start.Position <= span.End.Position then Some(foundSpan, foundSpan.End)
                         else None )
 
-        if StringUtil.isNullOrEmpty searchData.Text.RawText then 
+        if StringUtil.isNullOrEmpty searchData.Pattern then
             Seq.empty
         else 
             let tag = TextMarkerTag(Constants.HighlightIncrementalSearchTagName)

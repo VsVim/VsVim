@@ -131,7 +131,7 @@ namespace Vim.UI.Wpf
                         {
                             var data = search.CurrentSearch.Value;
                             var prefix = data.Kind.IsAnyForward ? "/" : "?";
-                            _margin.StatusLine = prefix + data.Text.RawText;
+                            _margin.StatusLine = prefix + data.Pattern;
                         }
                         else
                         {

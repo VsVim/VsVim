@@ -124,38 +124,31 @@ type SearchOptions =
     /// Consider the "smartcase" option when doing the search
     | ConsiderSmartCase = 0x2
 
-[<RequireQualifiedAccess>]
-type SearchText =
-    | Pattern of string
-    | WholeWord of string
-    | StraightText of string
-    with 
+module PatternUtil =
 
-    /// Raw text associated with this search pattern
-    member x.RawText =
-        match x with
-        | Pattern p -> p
-        | WholeWord p -> p
-        | StraightText p -> p
+    /// The default search options when looking at a specific pattern
+    let DefaultSearchOptions = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderSmartCase
 
-    /// The text which should be displayed to the user for this search
-    /// text
-    member x.DisplayText =
-        match x with
-        | Pattern p -> p
-        | WholeWord p -> "\<" + p + "\>"
-        | StraightText p -> p
+    /// Is this a whole word pattern?
+    let IsWholeWord pattern = StringUtil.startsWith "\<" pattern && StringUtil.endsWith "\>" pattern
 
-    /// Is this a pattern
-    member x.IsPatternText = 
-        match x with
-        | Pattern _ -> true
-        | WholeWord _ -> false
-        | StraightText _ -> false
+    /// Will return the whole word being wrapped if this is a whole word pattern
+    let GetUnderlyingWholeWord pattern = 
+        if IsWholeWord pattern then
+            Some (pattern.Substring(2, pattern.Length - 4))
+        else
+            None
+
+    /// Create a whole word pattern
+    let CreateWholeWord pattern = "\<" + pattern + "\>"
 
 type SearchData = {
-    Text : SearchText;
+
+    /// The pattern being searched for in the buffer
+    Pattern : string
+
     Kind : SearchKind;
+
     Options : SearchOptions
 }
 
@@ -163,12 +156,13 @@ type SearchData = {
 [<RequireQualifiedAccess>]
 type SearchResult =
 
-    /// The search was found.  The bool at the end of the tuple represents whether not
+    /// The pattern was found.  The bool at the end of the tuple represents whether not
     /// a wrap occurred while searching for the value
     | Found of SearchData * SnapshotSpan * bool
 
-    /// The search was not found
-    | NotFound of SearchData
+    /// The pattern was not found.  The bool is true if the word was present in the ITextBuffer
+    /// but wasn't found do to the lack of a wrap in the SearchData value
+    | NotFound of SearchData * bool
 
     with
 
@@ -176,7 +170,7 @@ type SearchResult =
     member x.SearchData = 
         match x with 
         | SearchResult.Found (searchData, _, _) -> searchData
-        | SearchResult.NotFound searchData -> searchData
+        | SearchResult.NotFound (searchData, _) -> searchData
 
 /// Global information about searches within Vim
 type ISearchService = 
@@ -1564,7 +1558,7 @@ type IIncrementalSearch =
     abstract WordNavigator : ITextStructureNavigator
 
     /// Begin an incremental search in the ITextBuffer
-    abstract Begin : SearchKind -> BindData<SearchResult>
+    abstract Begin : Path -> BindData<SearchResult>
 
     [<CLIEvent>]
     abstract CurrentSearchUpdated : IEvent<SearchResult>

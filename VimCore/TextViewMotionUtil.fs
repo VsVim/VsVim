@@ -1374,7 +1374,7 @@ type internal TextViewMotionUtil
         _vimData.LastSearchData <- searchData
 
         let caretPoint = TextViewUtil.GetCaretPoint _textView
-        let searchPoint = Util.GetSearchPoint searchData.Kind caretPoint
+        let searchPoint = Util.GetSearchPoint searchData.Kind.Path caretPoint
         match _search.FindNext searchData searchPoint _navigator with
         | SearchResult.NotFound _ ->
             None

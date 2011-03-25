@@ -183,7 +183,7 @@ namespace VimCore.UnitTest
         {
             Create(DefaultLines);
             _incrementalSearch
-                .Setup(x => x.Begin(SearchKind.ForwardWithWrap))
+                .Setup(x => x.Begin(Path.Forward))
                 .Returns(VimUtil.CreateBindData<SearchResult>());
             _mode.Process(KeyInputUtil.CharToKeyInput('/'));
             Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput('U')));
@@ -1047,7 +1047,7 @@ namespace VimCore.UnitTest
         {
             Create("foo bar");
             _incrementalSearch
-                .Setup(x => x.Begin(SearchKind.ForwardWithWrap))
+                .Setup(x => x.Begin(Path.Forward))
                 .Returns(VimUtil.CreateBindData<SearchResult>())
                 .Verifiable();
             _mode.Process('/');
@@ -1062,7 +1062,7 @@ namespace VimCore.UnitTest
         {
             Create("foo bar");
             _incrementalSearch
-                .Setup(x => x.Begin(SearchKind.BackwardWithWrap))
+                .Setup(x => x.Begin(Path.Backward))
                 .Returns(VimUtil.CreateBindData<SearchResult>())
                 .Verifiable();
             _mode.Process('?');
@@ -1077,7 +1077,7 @@ namespace VimCore.UnitTest
         {
             Create("foo bar");
             _incrementalSearch
-                .Setup(x => x.Begin(SearchKind.ForwardWithWrap))
+                .Setup(x => x.Begin(Path.Forward))
                 .Returns(VimUtil.CreateBindData<SearchResult>())
                 .Verifiable();
             _mode.Process('/');
@@ -1407,7 +1407,7 @@ namespace VimCore.UnitTest
         {
             Create("foobar");
             _incrementalSearch
-                .Setup(x => x.Begin(SearchKind.ForwardWithWrap))
+                .Setup(x => x.Begin(Path.Forward))
                 .Returns(VimUtil.CreateBindData<SearchResult>(remapMode: KeyRemapMode.Command));
             _mode.Process('/');
             Assert.AreEqual(KeyRemapMode.Command, _mode.KeyRemapMode);
@@ -1449,7 +1449,7 @@ namespace VimCore.UnitTest
         {
             Create("foobar");
             _incrementalSearch
-                .Setup(x => x.Begin(SearchKind.ForwardWithWrap))
+                .Setup(x => x.Begin(Path.Forward))
                 .Returns(VimUtil.CreateBindData<SearchResult>());
             _mode.Process('/');
             Assert.IsTrue(_mode.CommandRunner.IsWaitingForMoreInput);

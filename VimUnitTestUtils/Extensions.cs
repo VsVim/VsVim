@@ -228,28 +228,6 @@ namespace Vim.UnitTest
 
         #endregion
 
-        #region SearchText
-
-        public static SearchText.Pattern AsPattern(this SearchText text)
-        {
-            Assert.IsTrue(text.IsPattern);
-            return (SearchText.Pattern)text;
-        }
-
-        public static SearchText.StraightText AsStraightText(this SearchText text)
-        {
-            Assert.IsTrue(text.IsStraightText);
-            return (SearchText.StraightText)text;
-        }
-
-        public static SearchText.WholeWord AsWholeWord(this SearchText text)
-        {
-            Assert.IsTrue(text.IsWholeWord);
-            return (SearchText.WholeWord)text;
-        }
-
-        #endregion
-
         #region SettingValue
 
         public static SettingValue.StringValue AsStringValue(this SettingValue value)
@@ -736,14 +714,20 @@ namespace Vim.UnitTest
             return (SearchResult.Found)result;
         }
 
+        public static SearchResult.NotFound AsNoFound(this SearchResult result)
+        {
+            Assert.IsTrue(result.IsNotFound);
+            return (SearchResult.NotFound)result;
+        }
+
         #endregion
 
         #region IIncrementalSearch
 
-        public static BindResult<SearchResult> DoSearch(this IIncrementalSearch search, string text, SearchKind searchKind = null, bool enter = true)
+        public static BindResult<SearchResult> DoSearch(this IIncrementalSearch search, string text, Path path = null, bool enter = true)
         {
-            searchKind = searchKind ?? SearchKind.ForwardWithWrap;
-            var result = search.Begin(searchKind).Run(text);
+            path = path ?? Path.Forward;
+            var result = search.Begin(path).Run(text);
             return enter
                 ? result.Run(VimKey.Enter)
                 : result;

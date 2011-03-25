@@ -20,29 +20,20 @@ type internal MotionCapture
 
     /// Handles incremental searches (/ and ?).  Retrieve the BindData storage for
     /// the activation
-    let IncrementalSearch direction =
+    let IncrementalSearch path =
 
         // This is the function which will activate once the / or ? is bound in 
         // the IMotionCapture interface
         let activateFunc () = 
 
-            // Calculate the kind here so it will change as the user changes options
-            let kind = 
-                match direction, _settings.GlobalSettings.WrapScan with
-                | Path.Forward, true -> SearchKind.ForwardWithWrap
-                | Path.Forward, false -> SearchKind.Forward
-                | Path.Backward, true -> SearchKind.BackwardWithWrap
-                | Path.Backward, false -> SearchKind.Backward
-
             // Store the caret point before the search begins
             let before = TextViewUtil.GetCaretPoint _textView
-
-            let result = _incrementalSearch.Begin kind
+            let result = _incrementalSearch.Begin path
 
             result.Convert (fun searchResult ->
                 match searchResult with
                 | SearchResult.Found (searchData, _, _) -> Motion.Search searchData
-                | SearchResult.NotFound searchData -> Motion.Search searchData)
+                | SearchResult.NotFound (searchData, _) -> Motion.Search searchData)
 
         BindDataStorage.Complex activateFunc
 

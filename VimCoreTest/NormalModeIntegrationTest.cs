@@ -1318,7 +1318,7 @@ namespace VimCore.UnitTest
             Create("dog cat dog");
             _textView.MoveCaretTo(1);
             _buffer.Settings.GlobalSettings.WrapScan = false;
-            _buffer.VimData.LastSearchData = new SearchData(SearchText.NewStraightText("dog"), SearchKind.Backward, SearchOptions.ConsiderIgnoreCase);
+            _buffer.VimData.LastSearchData = new SearchData("dog", SearchKind.Backward, SearchOptions.ConsiderIgnoreCase);
             _buffer.Process('/');
             _buffer.Process(VimKey.Enter);
             Assert.AreEqual(8, _textView.GetCaretPoint());
@@ -1332,7 +1332,7 @@ namespace VimCore.UnitTest
         {
             Create("dog cat dog");
             _buffer.Process(":s/dog/cat", enter: true);
-            Assert.AreEqual("dog", _buffer.VimData.LastSearchData.Text.RawText);
+            Assert.AreEqual("dog", _buffer.VimData.LastSearchData.Pattern);
         }
 
         /// <summary>

@@ -100,6 +100,9 @@ module internal StringUtil =
         let index = (length value) - 1
         value.[index]
 
+    [<CompiledName("EndsWith")>]
+    let endsWith suffix (value:string) = value.EndsWith(suffix, System.StringComparison.Ordinal)
+
     [<CompiledName("StartsWith")>]
     let startsWith prefix (value:string) = value.StartsWith(prefix, System.StringComparison.Ordinal)
 

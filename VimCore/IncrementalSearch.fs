@@ -30,7 +30,6 @@ type internal IncrementalSearch
     let _globalSettings = _settings.GlobalSettings
     let _textView = _operations.TextView
     let mutable _data : IncrementalSearchData option = None
-    let _searchOptions = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderSmartCase
     let _currentSearchUpdated = Event<SearchResult>()
     let _currentSearchCompleted = Event<SearchResult>()
     let _currentSearchCancelled = Event<SearchData>()
@@ -44,18 +43,15 @@ type internal IncrementalSearch
     /// TODO: actually implement the 'imsearch' option and fix this
     member x.RemapMode = KeyRemapMode.Command
 
-    /// Add the pattern to the incremental search history
-    member x.AddToHistory (searchData : SearchData) = 
-        let pattern = searchData.Text.RawText
-        _vimData.IncrementalSearchHistory.Add pattern
-
-    member x.Begin kind = 
+    /// Begin the incremental search along the specified path
+    member x.Begin path = 
         let caret = TextViewUtil.GetCaretPoint _textView
-        let start = Util.GetSearchPoint kind caret
-        let searchData = {Text = SearchText.Pattern(StringUtil.empty); Kind = kind; Options = _searchOptions}
+        let start = Util.GetSearchPoint path caret
+        let kind = SearchKind.OfPathAndWrap path _globalSettings.WrapScan
+        let searchData = { Pattern = StringUtil.empty; Kind = kind; Options = PatternUtil.DefaultSearchOptions }
         let data = {
             StartPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
-            SearchResult = SearchResult.NotFound searchData
+            SearchResult = SearchResult.NotFound (searchData, false)
         }
 
         _data <- Some data
@@ -86,16 +82,16 @@ type internal IncrementalSearch
     /// Run the search for the specified text.  Returns the new IncrementalSearchData resulting
     /// from the search
     member x.RunSearch (data : IncrementalSearchData) pattern =
-        let searchData = { data.SearchData with Text = SearchText.Pattern pattern }
+        let searchData = { data.SearchData with Pattern = pattern }
 
         // Get the SearchResult value for the new text
         let searchResult =
             if StringUtil.isNullOrEmpty pattern then
-                SearchResult.NotFound searchData
+                SearchResult.NotFound (searchData, false)
             else
                 match TrackingPointUtil.GetPoint _textView.TextSnapshot data.StartPoint with
                 | None ->
-                    SearchResult.NotFound searchData
+                    SearchResult.NotFound (searchData, false)
                 | Some point ->
                     let options = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderIgnoreCase
                     _search.FindNext searchData point _navigator 
@@ -116,10 +112,10 @@ type internal IncrementalSearch
     /// the final SearchResult
     member x.Completed (data : IncrementalSearchData) =
         let data =
-            if StringUtil.isNullOrEmpty data.SearchData.Text.RawText then
+            if StringUtil.isNullOrEmpty data.SearchData.Pattern then
                 // When the user simply hits Enter on an empty incremental search then
                 // we should be re-using the 'LastSearch' value.
-                x.RunSearch data _vimData.LastSearchData.Text.RawText
+                x.RunSearch data _vimData.LastSearchData.Pattern
             else 
                 data
 
@@ -131,8 +127,16 @@ type internal IncrementalSearch
                     if data.SearchData.Kind.IsAnyForward then Resources.Common_SearchForwardWrapped
                     else Resources.Common_SearchBackwardWrapped
                 _statusUtil.OnWarning message
-        | SearchResult.NotFound _ ->
-            ()
+        | SearchResult.NotFound (_, isOutsidePath) ->
+            let format = 
+                if isOutsidePath then
+                    match data.SearchData.Kind.Path with
+                    | Path.Forward -> Resources.Common_SearchHitBottomWithout
+                    | Path.Backward -> Resources.Common_SearchHitTopWithout 
+                else
+                    Resources.Common_PatternNotFound
+
+            _statusUtil.OnError (format data.SearchData.Pattern)
 
         _vimData.LastSearchData <- data.SearchData
         _currentSearchCompleted.Trigger data.SearchResult

@@ -59,13 +59,11 @@ type VimRegexFactory =
 
     new : IVimGlobalSettings -> VimRegexFactory
 
-    member Create : pattern:string -> VimRegex option
+    member Create : pattern : string -> VimRegex option
 
-    member CreateForSearchText : text:SearchText -> VimRegex option
+    member CreateForSubstituteFlags : pattern : string -> SubstituteFlags -> VimRegex option
 
-    member CreateForSubstituteFlags : pattern:string -> SubstituteFlags -> VimRegex option
-
-    member CreateWithOptions : pattern:string -> options:VimRegexOptions -> VimRegex option
+    member CreateWithOptions : pattern : string -> options : VimRegexOptions -> VimRegex option
 
 
 

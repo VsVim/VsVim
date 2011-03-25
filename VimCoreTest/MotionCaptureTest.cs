@@ -315,7 +315,7 @@ namespace VimCore.UnitTest
             _textView.TextBuffer.SetText("hello world");
             _textView.MoveCaretTo(_textView.GetEndPoint().Position);
             var data = Process("?world", enter: true).AsComplete().Item;
-            var searchData = new SearchData(SearchText.NewPattern("world"), SearchKind.BackwardWithWrap, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
+            var searchData = new SearchData("world", SearchKind.BackwardWithWrap, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
             Assert.AreEqual(Motion.NewSearch(searchData), data);
         }
 
@@ -324,7 +324,7 @@ namespace VimCore.UnitTest
         {
             _textView.SetText("hello world", caret: 0);
             var data = Process("/world", enter: true).AsComplete().Item;
-            var searchData = new SearchData(SearchText.NewPattern("world"), SearchKind.ForwardWithWrap, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
+            var searchData = new SearchData("world", SearchKind.ForwardWithWrap, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
             Assert.AreEqual(Motion.NewSearch(searchData), data);
         }
 
