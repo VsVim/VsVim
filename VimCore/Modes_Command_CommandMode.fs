@@ -80,7 +80,7 @@ type internal CommandMode
             | RunResult.Completed -> 
                 ProcessResult.OfModeKind ModeKind.Normal
             | RunResult.SubstituteConfirm (span, range, data) -> 
-                let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.SubstituteConfirm, ModeArgument.Subsitute (span, range, data))
+                let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.SubstituteConfirm, ModeArgument.Substitute (span, range, data))
                 ProcessResult.Handled switch
         | BindResult.Cancelled ->
             ProcessResult.OfModeKind ModeKind.Normal
