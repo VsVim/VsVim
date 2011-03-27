@@ -714,10 +714,15 @@ namespace Vim.UnitTest
             return (SearchResult.Found)result;
         }
 
-        public static SearchResult.NotFound AsNoFound(this SearchResult result)
+        public static SearchResult.NotFound AsNotFound(this SearchResult result)
         {
             Assert.IsTrue(result.IsNotFound);
             return (SearchResult.NotFound)result;
+        }
+
+        public static bool IsFound(this SearchResult result, int startPosition)
+        {
+            return result.IsFound && result.AsFound().Item2.Start == startPosition;
         }
 
         #endregion

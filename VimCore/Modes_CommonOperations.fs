@@ -21,7 +21,7 @@ type internal CommonOperations ( _data : OperationsData ) =
     let _options = _data.EditorOptions
     let _undoRedoOperations = _data.UndoRedoOperations
     let _statusUtil = _data.StatusUtil
-    let _normalWordNav =  _data.Navigator
+    let _wordNavigator =  _data.Navigator
     let _registerMap = _data.RegisterMap
     let _search = _data.SearchService
     let _regexFactory = VimRegexFactory(_data.LocalSettings.GlobalSettings)
@@ -120,6 +120,62 @@ type internal CommonOperations ( _data : OperationsData ) =
             let prefix = StringUtil.repeatChar tabCount '\t'
             let suffix = StringUtil.repeatChar spacesCount ' '
             prefix + suffix
+
+    /// Raise the messages for the given SearchResult
+    member x.RaiseSearchResultMessages searchResult = 
+
+        match searchResult with 
+        | SearchResult.Found (searchData, _, didWrap) ->
+            if didWrap then
+                let message = 
+                    if searchData.Kind.IsAnyForward then Resources.Common_SearchForwardWrapped
+                    else Resources.Common_SearchBackwardWrapped
+                _statusUtil.OnWarning message
+        | SearchResult.NotFound (searchData, isOutsidePath) ->
+            let format = 
+                if isOutsidePath then
+                    match searchData.Kind.Path with
+                    | Path.Forward -> Resources.Common_SearchHitBottomWithout
+                    | Path.Backward -> Resources.Common_SearchHitTopWithout 
+                else
+                    Resources.Common_PatternNotFound
+
+            _statusUtil.OnError (format searchData.Pattern)
+
+    /// Search for the given pattern from the specified point 
+    member x.SearchForPattern pattern path startPoint count = 
+
+        // Find the real place to search.  When going forward we should start after
+        // the caret and before should start before. This prevents the text 
+        // under the caret from being the first match
+        let snapshot = SnapshotPointUtil.GetSnapshot startPoint
+        let startPoint, didStartWrap = Util.GetSearchPointAndWrap path startPoint
+
+        // Go ahead and run the search
+        let kind = SearchKind.OfPathAndWrap path _globalSettings.WrapScan
+        let searchData = { Pattern = pattern; Kind = kind; Options = PatternUtil.DefaultSearchOptions }
+        let result = _search.FindNextMultiple searchData startPoint _wordNavigator count
+
+        // Need to fudge the SearchResult here to account for the possible wrap the 
+        // search start incurred when calculating the actual 'startPoint' value.  If it 
+        // wrapped we need to get the SearchResult to account for that so we can 
+        // process the messages properly and give back the appropriate value
+        if didStartWrap then 
+            match result with
+            | SearchResult.Found (searchData, span, didWrap) ->
+                if _globalSettings.WrapScan then
+                    // If wrapping is enabled then we just need to update the 'didWrap' state
+                    SearchResult.Found (searchData, span, true)
+                else
+                    // Wrapping is not enabled so change the result but it would've been present
+                    // if wrapping was enabled
+                    SearchResult.NotFound (searchData, true)
+            | SearchResult.NotFound _ ->
+                // No change
+                result
+        else
+            // Nothing to fudge if the start didn't wrap 
+            result
 
     /// Shifts a block of lines to the left
     member x.ShiftLineBlockLeft (col: SnapshotSpan seq) multiplier =
@@ -397,6 +453,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.EditorOperations = _operations
         member x.FoldManager = _data.FoldManager
         member x.UndoRedoOperations = _data.UndoRedoOperations
+
         member x.Join range kind = x.Join range kind
         member x.GoToDefinition () = 
             let before = TextViewUtil.GetCaretPoint _textView
@@ -410,6 +467,8 @@ type internal CommonOperations ( _data : OperationsData ) =
                     Failed(msg)
                 | None ->  Failed(Resources.Common_GotoDefNoWordUnderCursor) 
 
+        member x.RaiseSearchResultMessages searchResult = x.RaiseSearchResultMessages searchResult
+        member x.SearchForPattern pattern path point count = x.SearchForPattern pattern path point count
         member x.SetMark point c (markMap : IMarkMap) = 
             if System.Char.IsLetter(c) || c = '\'' || c = '`' then
                 markMap.SetMark point c

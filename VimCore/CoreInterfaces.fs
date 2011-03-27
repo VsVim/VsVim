@@ -124,24 +124,6 @@ type SearchOptions =
     /// Consider the "smartcase" option when doing the search
     | ConsiderSmartCase = 0x2
 
-module PatternUtil =
-
-    /// The default search options when looking at a specific pattern
-    let DefaultSearchOptions = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderSmartCase
-
-    /// Is this a whole word pattern?
-    let IsWholeWord pattern = StringUtil.startsWith "\<" pattern && StringUtil.endsWith "\>" pattern
-
-    /// Will return the whole word being wrapped if this is a whole word pattern
-    let GetUnderlyingWholeWord pattern = 
-        if IsWholeWord pattern then
-            Some (pattern.Substring(2, pattern.Length - 4))
-        else
-            None
-
-    /// Create a whole word pattern
-    let CreateWholeWord pattern = "\<" + pattern + "\>"
-
 type SearchData = {
 
     /// The pattern being searched for in the buffer
@@ -1551,9 +1533,6 @@ type IIncrementalSearch =
     /// When in the middle of a search this will return the SearchData for 
     /// the search
     abstract CurrentSearch : SearchData option
-
-    /// ISearchInformation instance this incremental search is associated with
-    abstract SearchService : ISearchService
 
     /// The ITextStructureNavigator used for finding 'word' values in the ITextBuffer
     abstract WordNavigator : ITextStructureNavigator

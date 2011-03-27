@@ -19,14 +19,10 @@ namespace Vim.UnitTest.Mock
     public static class MockObjectFactory
     {
         public static Mock<IIncrementalSearch> CreateIncrementalSearch(
-            ISearchService search = null,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
-            search = search ?? CreateSearchService(factory: factory).Object;
-            var mock = factory.Create<IIncrementalSearch>();
-            mock.SetupGet(x => x.SearchService).Returns(search);
-            return mock;
+            return factory.Create<IIncrementalSearch>();
         }
 
         public static Mock<ISearchService> CreateSearchService(MockRepository factory = null)

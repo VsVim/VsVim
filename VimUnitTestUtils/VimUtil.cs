@@ -121,7 +121,7 @@ namespace Vim.UnitTest
                 host: vimHost,
                 vimData: vimData,
                 recorder: recorder,
-                searchService : searchService);
+                searchService: searchService);
             var buffer = MockObjectFactory.CreateVimBuffer(
                 textView: textView,
                 settings: localSettings,
@@ -377,12 +377,12 @@ namespace Vim.UnitTest
                 textView: textView,
                 localSettings: settings,
                 outlining: outliningManager,
-                vimData: vimData);
+                vimData: vimData,
+                searchService: search);
             return new IncrementalSearch(
                 operations,
                 settings,
                 nav,
-                search,
                 statusUtil,
                 vimData);
         }

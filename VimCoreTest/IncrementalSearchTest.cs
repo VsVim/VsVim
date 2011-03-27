@@ -1,5 +1,4 @@
-﻿using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Text.Editor;
+﻿using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using NUnit.Framework;
@@ -16,12 +15,12 @@ namespace VimCore.UnitTest
         private static SearchOptions s_options = SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase;
         private MockRepository _factory;
         private IVimData _vimData;
-        private ISearchService _searchService;
         private ITextStructureNavigator _nav;
         private IVimGlobalSettings _globalSettings;
         private IVimLocalSettings _localSettings;
-        private Mock<ICommonOperations> _operations;
+        private ICommonOperations _operations;
         private Mock<IStatusUtil> _statusUtil;
+        private Mock<IVimHost> _vimHost;
         private ITextView _textView;
         private IncrementalSearch _searchRaw;
         private IIncrementalSearch _search;
@@ -33,22 +32,21 @@ namespace VimCore.UnitTest
             _globalSettings.IncrementalSearch = true;
             _globalSettings.WrapScan = true;
             _localSettings = new LocalSettings(_globalSettings, _textView);
-            _searchService = VimUtil.CreateSearchService(_globalSettings);
             _nav = VimUtil.CreateTextStructureNavigator(_textView.TextBuffer);
             _factory = new MockRepository(MockBehavior.Strict);
-            _vimData = new VimData();
+            _vimHost = _factory.Create<IVimHost>();
             _statusUtil = _factory.Create<IStatusUtil>();
             _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchBackwardWrapped));
             _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchForwardWrapped));
-            _operations = _factory.Create<ICommonOperations>();
-            _operations.SetupGet(x => x.TextView).Returns(_textView);
-            _operations.Setup(x => x.EnsureCaretOnScreenAndTextExpanded());
-            _operations.Setup(x => x.EnsurePointOnScreenAndTextExpanded(It.IsAny<SnapshotPoint>()));
+            _vimData = new VimData();
+            _operations = VimUtil.CreateCommonOperations(
+                textView: _textView,
+                localSettings: _localSettings,
+                vimHost: _vimHost.Object);
             _searchRaw = new IncrementalSearch(
-                _operations.Object,
+                _operations,
                 _localSettings,
                 _nav,
-                _searchService,
                 _statusUtil.Object,
                 _vimData);
             _search = _searchRaw;
@@ -253,7 +251,7 @@ namespace VimCore.UnitTest
             _statusUtil.Setup(x => x.OnError(Resources.Common_SearchHitBottomWithout("f"))).Verifiable();
             var result = _search.Begin(Path.Forward).Run("f").Run(VimKey.Enter).AsComplete().Item;
             Assert.IsTrue(result.IsNotFound);
-            Assert.IsTrue(result.AsNoFound().Item2);
+            Assert.IsTrue(result.AsNotFound().Item2);
             _statusUtil.Verify();
         }
 
@@ -392,9 +390,9 @@ namespace VimCore.UnitTest
         {
             Create("dog cat");
             _vimData.IncrementalSearchHistory = (new[] { "a", "b" }).ToHistoryList();
-            _operations.Setup(x => x.Beep()).Verifiable();
+            _vimHost.Setup(x => x.Beep()).Verifiable();
             _search.Begin(Path.Forward).Run(VimKey.Down);
-            _operations.Verify();
+            _vimHost.Verify();
         }
 
         /// <summary>

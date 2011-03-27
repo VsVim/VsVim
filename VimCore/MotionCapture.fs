@@ -11,8 +11,6 @@ type internal MotionCapture
         _incrementalSearch : IIncrementalSearch,
         _settings : IVimLocalSettings) = 
 
-    let _search = _incrementalSearch.SearchService
-
     /// Get a char and use the provided 'func' to create a Motion value.
     let GetChar func = 
         let data = BindData<_>.CreateForSingleChar (Some KeyRemapMode.Language) func

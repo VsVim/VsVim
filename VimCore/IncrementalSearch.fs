@@ -17,12 +17,15 @@ type IncrementalSearchData = {
 
     member x.SearchData = x.SearchResult.SearchData
 
+    member x.Pattern = x.SearchData.Pattern 
+
+    member x.Path = x.SearchData.Kind.Path
+
 type internal IncrementalSearch
     (
         _operations : Modes.ICommonOperations,
         _settings : IVimLocalSettings,
         _navigator : ITextStructureNavigator,
-        _search : ISearchService,
         _statusUtil : IStatusUtil,
         _vimData : IVimData
     ) =
@@ -45,8 +48,7 @@ type internal IncrementalSearch
 
     /// Begin the incremental search along the specified path
     member x.Begin path = 
-        let caret = TextViewUtil.GetCaretPoint _textView
-        let start = Util.GetSearchPoint path caret
+        let start = TextViewUtil.GetCaretPoint _textView
         let kind = SearchKind.OfPathAndWrap path _globalSettings.WrapScan
         let searchData = { Pattern = StringUtil.empty; Kind = kind; Options = PatternUtil.DefaultSearchOptions }
         let data = {
@@ -82,19 +84,15 @@ type internal IncrementalSearch
     /// Run the search for the specified text.  Returns the new IncrementalSearchData resulting
     /// from the search
     member x.RunSearch (data : IncrementalSearchData) pattern =
-        let searchData = { data.SearchData with Pattern = pattern }
 
         // Get the SearchResult value for the new text
         let searchResult =
             if StringUtil.isNullOrEmpty pattern then
-                SearchResult.NotFound (searchData, false)
+                SearchResult.NotFound (data.SearchData, false)
             else
                 match TrackingPointUtil.GetPoint _textView.TextSnapshot data.StartPoint with
-                | None ->
-                    SearchResult.NotFound (searchData, false)
-                | Some point ->
-                    let options = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderIgnoreCase
-                    _search.FindNext searchData point _navigator 
+                | None -> SearchResult.NotFound (data.SearchData, false)
+                | Some point -> _operations.SearchForPattern data.Pattern data.Path point 1
 
         // Update our state based on the SearchResult.  Only update the view if the 'incsearch'
         // option is set
@@ -119,25 +117,7 @@ type internal IncrementalSearch
             else 
                 data
 
-        // Need to update the status if the search wrapped around
-        match data.SearchResult with
-        | SearchResult.Found (_, _, didWrap) ->
-            if didWrap then
-                let message = 
-                    if data.SearchData.Kind.IsAnyForward then Resources.Common_SearchForwardWrapped
-                    else Resources.Common_SearchBackwardWrapped
-                _statusUtil.OnWarning message
-        | SearchResult.NotFound (_, isOutsidePath) ->
-            let format = 
-                if isOutsidePath then
-                    match data.SearchData.Kind.Path with
-                    | Path.Forward -> Resources.Common_SearchHitBottomWithout
-                    | Path.Backward -> Resources.Common_SearchHitTopWithout 
-                else
-                    Resources.Common_PatternNotFound
-
-            _statusUtil.OnError (format data.SearchData.Pattern)
-
+        _operations.RaiseSearchResultMessages data.SearchResult
         _vimData.LastSearchData <- data.SearchData
         _currentSearchCompleted.Trigger data.SearchResult
         _data <- None
@@ -151,7 +131,6 @@ type internal IncrementalSearch
 
     interface IIncrementalSearch with
         member x.InSearch = Option.isSome _data
-        member x.SearchService = _search
         member x.WordNavigator = _navigator
         member x.CurrentSearch = 
             match _data with 

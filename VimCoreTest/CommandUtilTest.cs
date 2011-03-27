@@ -14,7 +14,6 @@ namespace VimCore.UnitTest
 {
     [TestFixture]
     public sealed class CommandUtilTest
-
     {
         private MockRepository _factory;
         private Mock<IVimHost> _vimHost;
@@ -39,6 +38,7 @@ namespace VimCore.UnitTest
             _statusUtil = _factory.Create<IStatusUtil>();
             _operations = _factory.Create<ICommonOperations>();
             _operations.Setup(x => x.EnsureCaretOnScreenAndTextExpanded());
+            _operations.Setup(x => x.RaiseSearchResultMessages(It.IsAny<SearchResult>()));
             _recorder = _factory.Create<IMacroRecorder>(MockBehavior.Loose);
             _smartIdentationService = _factory.Create<ISmartIndentationService>();
 
@@ -88,6 +88,26 @@ namespace VimCore.UnitTest
             var data = modeSwitch.AsSwitchModeWithArgument();
             Assert.AreEqual(ModeKind.Insert, data.Item1);
             Assert.IsTrue(data.Item2.IsInsertWithTransaction);
+        }
+
+        private void SetupSearchForPattern(string pattern, Path path, SnapshotSpan? found, SnapshotPoint? startPoint = null)
+        {
+            startPoint = startPoint ?? _textView.GetCaretPoint();
+            var data = new SearchData(pattern, SearchKind.OfPath(path), PatternUtil.DefaultSearchOptions);
+            if (found.HasValue)
+            {
+                _operations
+                    .Setup(x => x.SearchForPattern(pattern, path, startPoint.Value, 1))
+                    .Returns(SearchResult.NewFound(data, found.Value, false))
+                    .Verifiable();
+            }
+            else
+            {
+                _operations
+                    .Setup(x => x.SearchForPattern(pattern, path, startPoint.Value, 1))
+                    .Returns(SearchResult.NewNotFound(data, false))
+                    .Verifiable();
+            }
         }
 
         [Test]
@@ -972,7 +992,7 @@ namespace VimCore.UnitTest
             var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 0, 5));
             UnnamedRegister.UpdateValue("dog");
             _operations.SetupPut(_textBuffer, "dog world");
-            _commandUtil.PutOverSelection(UnnamedRegister, 1, moveCaretAfterText: false, visualSpan : visualSpan);
+            _commandUtil.PutOverSelection(UnnamedRegister, 1, moveCaretAfterText: false, visualSpan: visualSpan);
             Assert.AreEqual("dog world", _textView.GetLine(0).GetText());
             Assert.AreEqual(2, _textView.GetCaretPoint().Position);
         }
@@ -987,7 +1007,7 @@ namespace VimCore.UnitTest
             var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 0, 5));
             UnnamedRegister.UpdateValue("dog");
             _operations.SetupPut(_textBuffer, "dog world");
-            _commandUtil.PutOverSelection(UnnamedRegister, 1, moveCaretAfterText: true, visualSpan : visualSpan);
+            _commandUtil.PutOverSelection(UnnamedRegister, 1, moveCaretAfterText: true, visualSpan: visualSpan);
             Assert.AreEqual("dog world", _textView.GetLine(0).GetText());
             Assert.AreEqual(3, _textView.GetCaretPoint().Position);
         }
@@ -1019,7 +1039,7 @@ namespace VimCore.UnitTest
             var visualSpan = VisualSpan.NewLine(_textView.GetLineRange(0, 1));
             UnnamedRegister.UpdateValue("dog");
             _operations.SetupPut(_textBuffer, "dog", "the dog");
-            _commandUtil.PutOverSelection(UnnamedRegister, 1, moveCaretAfterText: false, visualSpan : visualSpan);
+            _commandUtil.PutOverSelection(UnnamedRegister, 1, moveCaretAfterText: false, visualSpan: visualSpan);
             Assert.AreEqual("dog", _textView.GetLine(0).GetText());
             Assert.AreEqual("the dog", _textView.GetLine(1).GetText());
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
@@ -1036,7 +1056,7 @@ namespace VimCore.UnitTest
             var visualSpan = VisualSpan.NewLine(_textView.GetLineRange(0, 1));
             UnnamedRegister.UpdateValue("dog");
             _operations.SetupPut(_textBuffer, "dog", "the dog");
-            _commandUtil.PutOverSelection(UnnamedRegister, 1, moveCaretAfterText: true, visualSpan : visualSpan);
+            _commandUtil.PutOverSelection(UnnamedRegister, 1, moveCaretAfterText: true, visualSpan: visualSpan);
             Assert.AreEqual("dog", _textView.GetLine(0).GetText());
             Assert.AreEqual("the dog", _textView.GetLine(1).GetText());
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
@@ -1053,7 +1073,7 @@ namespace VimCore.UnitTest
             var visualSpan = VisualSpan.NewLine(_textView.GetLineRange(0));
             UnnamedRegister.UpdateValue("pig");
             _operations.SetupPut(_textBuffer, "pig", "cat");
-            _commandUtil.PutOverSelection(UnnamedRegister, 1, moveCaretAfterText: false, visualSpan : visualSpan);
+            _commandUtil.PutOverSelection(UnnamedRegister, 1, moveCaretAfterText: false, visualSpan: visualSpan);
             Assert.AreEqual("dog" + Environment.NewLine, UnnamedRegister.StringValue);
             Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
         }
@@ -1069,7 +1089,7 @@ namespace VimCore.UnitTest
             var visualSpan = VisualSpan.NewBlock(_textView.GetBlock(1, 1, 0, 2));
             UnnamedRegister.UpdateValue("z");
             _operations.SetupPut(_textBuffer, "czt", "dg");
-            _commandUtil.PutOverSelection(UnnamedRegister, 1, moveCaretAfterText: false, visualSpan : visualSpan);
+            _commandUtil.PutOverSelection(UnnamedRegister, 1, moveCaretAfterText: false, visualSpan: visualSpan);
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
 
@@ -1530,75 +1550,16 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
-        /// If the caret starts on a blank move to the first non-blank to find the 
-        /// word
-        /// </summary>
-        [Test]
-        public void MoveCaretToNextWord_GoPastBlanks()
-        {
-            Create("  cat", "cat");
-            _commandUtil.MoveCaretToNextWord(Path.Forward, 1);
-            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-        }
-
-        /// <summary>
         /// Simple match should move caret and update LastSearchData 
         /// </summary>
         [Test]
         public void MoveCaretToNextWord_Simple()
         {
             Create("hello world", "hello");
+            SetupSearchForPattern(@"\<hello\>", Path.Forward, _textView.GetLine(1).Extent);
             _commandUtil.MoveCaretToNextWord(Path.Forward, 1);
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
             Assert.AreEqual(@"\<hello\>", _vimData.LastSearchData.Pattern);
-        }
-
-        /// <summary>
-        /// If there is no match and we wrap a status message should be displayed and the 
-        /// caret should remain in place
-        /// </summary>
-        [Test]
-        public void MoveCaretToNextWord_NoOtherMatch()
-        {
-            Create("dog cat", "tree fish");
-            _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchForwardWrapped)).Verifiable();
-            _commandUtil.MoveCaretToNextWord(Path.Forward, 1);
-            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-            _statusUtil.Verify();
-        }
-
-        /// <summary>
-        /// Make sure the count is taken into consideration
-        /// </summary>
-        [Test]
-        public void MoveCaretToNextWord_WithCount()
-        {
-            Create("cat dog cat", "cat");
-            _commandUtil.MoveCaretToNextWord(Path.Forward, 2);
-            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-        }
-
-        /// <summary>
-        /// Don't make a partial match
-        /// </summary>
-        [Test]
-        public void MoveCaretToNextWord_DontMatchPartial()
-        {
-            Create("dog doggy dog");
-            _commandUtil.MoveCaretToNextWord(Path.Forward, 1);
-            Assert.AreEqual(10, _textView.GetCaretPoint().Position);
-        }
-
-        /// <summary>
-        /// Do a backward search
-        /// </summary>
-        [Test]
-        public void MoveCaretToNextWord_Backward()
-        {
-            Create("cat dog", "cat");
-            _textView.MoveCaretToLine(1);
-            _commandUtil.MoveCaretToNextWord(Path.Backward, 1);
-            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
 
         /// <summary>
@@ -1610,158 +1571,38 @@ namespace VimCore.UnitTest
         {
             Create("dog   cat", "cat");
             _textView.MoveCaretTo(4);
+            SetupSearchForPattern(@"\<cat\>", Path.Backward, _textView.GetLine(1).Extent, _textView.GetPoint(6));
             _commandUtil.MoveCaretToNextWord(Path.Backward, 1);
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
         /// <summary>
-        /// Do a backward search
+        /// Make sure that searching backward from the middle of a word starts at the 
+        /// begining of the word
         /// </summary>
         [Test]
-        public void MoveCaretToNextWord_BackwardWithCount()
-        {
-            Create(" cat dog", "dog cat", "cat");
-            _textView.MoveCaretToLine(2);
-            _commandUtil.MoveCaretToNextWord(Path.Backward, 2);
-            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
-        }
-
-        /// <summary>
-        /// Don't make partial matches when searching backward
-        /// </summary>
-        [Test]
-        public void MoveCaretToNextWord_BackwardNoPartial()
-        {
-            Create("foo", "foobar", "foo");
-            _textView.MoveCaretToLine(2);
-            _commandUtil.MoveCaretToNextWord(Path.Backward, 1);
-            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-        }
-
-        /// <summary>
-        /// Make sure backward updates the LastSearch property correctly
-        /// </summary>
-        [Test]
-        public void MoveCaretToNextWord_UpdateLastSearch()
-        {
-            Create("foo bar", "again foo", "foo");
-            _textView.MoveCaretToLine(2);
-            _commandUtil.MoveCaretToNextWord(Path.Backward, 2);
-            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-            Assert.AreEqual(@"\<foo\>", _vimData.LastSearchData.Pattern);
-        }
-
-        /// <summary>
-        /// Regression test for issue 398.  When starting on something other
-        /// than the first character make sure we don't jump over an extra 
-        /// word
-        /// </summary>
-        [Test]
-        public void MoveCaretToNextWord_StartOnSecondChar()
-        {
-            Create("cat cat cat");
-            _textView.MoveCaretTo(1);
-            _commandUtil.MoveCaretToNextWord(Path.Forward, 1);
-            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
-        }
-
-        /// <summary>
-        /// Make sure that searching backward from the first char in a word doesn't
-        /// count that word as an occurrence
-        /// </summary>
-        [Test]
-        public void MoveCaretToNextWord_BackwardFromFirstChar()
-        {
-            Create("cat cat cat");
-            _textView.MoveCaretTo(4);
-            _commandUtil.MoveCaretToNextWord(Path.Backward, 1);
-            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-        }
-
-        /// <summary>
-        /// Make sure that searching backward from the middle of a word 
-        /// count that word as an occurrence
-        /// </summary>
-        [Test]
-        public void MoveCaretToNextWord_BackwardFromMiddleOfWard()
+        public void MoveCaretToNextWord_BackwardFromMiddleOfWord()
         {
             Create("cat cat cat");
             _textView.MoveCaretTo(5);
+            SetupSearchForPattern(@"\<cat\>", Path.Backward, _textView.GetLineSpan(0, 3), _textView.GetPoint(4));
             _commandUtil.MoveCaretToNextWord(Path.Backward, 1);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
 
         /// <summary>
-        /// Raise an error when the pattern is not found
+        /// Make sure we pass the LastSearch value to the method and move the caret
+        /// for the provided SearchResult
         /// </summary>
         [Test]
-        public void MoveCaretToLastSearch_NotFound()
-        {
-            Create("foo bar baz");
-            var data = new SearchData("beat", SearchKind.ForwardWithWrap, SearchOptions.None);
-            _vimData.LastSearchData = data;
-            _statusUtil.Setup(x => x.OnError(Resources.Common_PatternNotFound("beat"))).Verifiable();
-            _commandUtil.MoveCaretToLastSearch(false, 1);
-            _statusUtil.Verify();
-        }
-
-        /// <summary>
-        /// Don't start the search on the current word start.  It should start afterwards
-        /// so we don't match the current word
-        /// </summary>
-        [Test]
-        public void MoveCaretToLastSearch_DontStartOnCurrentWord()
+        public void MoveCaretToLastSearch_UsePattern()
         {
             Create("foo bar", "foo");
             var data = new SearchData("foo", SearchKind.ForwardWithWrap, SearchOptions.None);
             _vimData.LastSearchData = data;
+            SetupSearchForPattern("foo", Path.Forward, _textView.GetLine(1).Extent);
             _commandUtil.MoveCaretToLastSearch(false, 1);
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-        }
-
-        /// <summary>
-        /// Make sure it wraps around to the start to find the word and that the wrap raises
-        /// a warning
-        /// </summary>
-        [Test]
-        public void MoveCaretToLastSearch_WrapToSame()
-        {
-            Create("foo bar", "foo");
-            var data = new SearchData("foo", SearchKind.ForwardWithWrap, SearchOptions.None);
-            _vimData.LastSearchData = data;
-            _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchForwardWrapped)).Verifiable();
-            _commandUtil.MoveCaretToLastSearch(false, 2);
-            Assert.AreEqual(0, _textView.GetCaretPoint());
-            _statusUtil.Verify();
-        }
-
-        /// <summary>
-        /// Do a backward search that needs to wrap
-        /// </summary>
-        [Test]
-        public void MoveCaretToLastSearch_BackwardAndWrap()
-        {
-            Create("foo bar", "foo");
-            var data = new SearchData("foo", SearchKind.BackwardWithWrap, SearchOptions.None);
-            _vimData.LastSearchData = data;
-            _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchBackwardWrapped)).Verifiable();
-            _commandUtil.MoveCaretToLastSearch(false, 1);
-            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            _statusUtil.Verify();
-        }
-
-        /// <summary>
-        /// Make sure we are able to get off of the start match when going backwards
-        /// </summary>
-        [Test]
-        public void MoveCaretToLastSearch_BackwardFromMatch()
-        {
-            Create("dog cat", "dog", "dog");
-            var data = new SearchData("dog", SearchKind.BackwardWithWrap, SearchOptions.None);
-            _vimData.LastSearchData = data;
-            _textView.MoveCaretToLine(1);
-            _commandUtil.MoveCaretToLastSearch(false, 1);
-            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
 
         /// <summary>
@@ -1772,39 +1613,11 @@ namespace VimCore.UnitTest
         public void MoveCaretToLastSearch_DontUpdateLastSearch()
         {
             Create("dog cat", "dog", "dog");
+            SetupSearchForPattern("dog", Path.Backward, _textView.GetLine(1).Extent);
             var data = new SearchData("dog", SearchKind.Forward, SearchOptions.None);
             _vimData.LastSearchData = data;
             _commandUtil.MoveCaretToLastSearch(true, 1);
             Assert.AreEqual(data, _vimData.LastSearchData);
-        }
-
-        /// <summary>
-        /// Make sure that this takes into account the 'wrapscan' option going forward
-        /// </summary>
-        [Test]
-        public void MoveCaretToLastSearch_ConsiderWrapScan()
-        {
-            Create("dog", "cat");
-            _globalSettings.WrapScan = false;
-            _textView.MoveCaretToLine(1);
-            _vimData.LastSearchData = new SearchData("dog", SearchKind.Forward, SearchOptions.None);
-            _statusUtil.Setup(x => x.OnError(Resources.Common_SearchHitBottomWithout("dog"))).Verifiable();
-            _commandUtil.MoveCaretToLastSearch(false, 1);
-            _statusUtil.Verify();
-        }
-
-        /// <summary>
-        /// Make sure that this takes into account the 'wrapscan' option going backward
-        /// </summary>
-        [Test]
-        public void MoveCaretToLastSearch_BackwardConsiderWrapScan()
-        {
-            Create("dog", "cat");
-            _globalSettings.WrapScan = false;
-            _vimData.LastSearchData = new SearchData("cat", SearchKind.Backward, SearchOptions.None);
-            _statusUtil.Setup(x => x.OnError(Resources.Common_SearchHitTopWithout("cat"))).Verifiable();
-            _commandUtil.MoveCaretToLastSearch(false, 1);
-            _statusUtil.Verify();
         }
     }
 }

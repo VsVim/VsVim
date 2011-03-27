@@ -111,8 +111,6 @@ type internal CommandProcessor
                 RunResult.Completed
 
         let normalSeq = seq {
-            yield ("<", "", this.ProcessShiftLeft |> wrap)
-            yield (">", "", this.ProcessShiftRight |> wrap)
             yield ("close", "clo", this.ProcessClose |> wrap)
             yield ("delete","d", this.ProcessDelete |> wrap)
             yield ("edit", "e", this.ProcessEdit |> wrap)
@@ -144,6 +142,10 @@ type internal CommandProcessor
             yield ("wall", "wa", this.ProcessWriteAll |> wrap)
             yield ("xit", "x", this.ProcessWriteQuit |> wrap)
             yield ("yank", "y", this.ProcessYank |> wrap)
+            yield ("/", "", this.ProcessSearchPattern Path.Forward |> wrap)
+            yield ("?", "", this.ProcessSearchPattern Path.Backward |> wrap)
+            yield ("<", "", this.ProcessShiftLeft |> wrap)
+            yield (">", "", this.ProcessShiftRight |> wrap)
             yield ("$", "", this.ProcessEndOfDocument |> wrap)
             yield ("&", "&", this.ProcessSubstitute)
             yield ("~", "~", this.ProcessSubstituteWithSearchPattern)
@@ -315,6 +317,33 @@ type internal CommandProcessor
         
         let range = RangeUtil.RangeOrCurrentLine _buffer.TextView range
         _operations.PutLine reg range.EndLine bang
+
+    /// Process the search pattern command
+    member x.ProcessSearchPattern path (rest : char list) range _ =
+        let pattern = StringUtil.ofCharList rest
+        let pattern = 
+            if StringUtil.isNullOrEmpty pattern then _vimData.LastSearchData.Pattern
+            else pattern
+
+        // The search should begin after the last line in the specified range
+        let startPoint = 
+            let range = RangeUtil.RangeOrCurrentLine _textView range
+            range.EndLine.End
+
+        let result = _operations.SearchForPattern pattern path startPoint 1
+        _operations.RaiseSearchResultMessages(result)
+
+        match result with
+        | SearchResult.Found (_, span, _) ->
+            // Move it to the start of the line containing the match 
+            let point = 
+                span.Start 
+                |> SnapshotPointUtil.GetContainingLine 
+                |> SnapshotLineUtil.GetStart
+            TextViewUtil.MoveCaretToPoint _textView point
+            _operations.EnsureCaretOnScreenAndTextExpanded()
+        | SearchResult.NotFound _ ->
+            ()
 
     /// Parse the < command
     member x.ProcessShiftLeft (rest:char list) (range: SnapshotLineRange option) _ =

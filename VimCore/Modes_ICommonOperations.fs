@@ -170,6 +170,9 @@ type ICommonOperations =
     /// Put the specified StringData at the given point.
     abstract Put : SnapshotPoint -> StringData -> OperationKind -> unit
 
+    /// Raise the error / warning messages for the given SearchResult
+    abstract RaiseSearchResultMessages : SearchResult -> unit
+
     /// Redo the buffer changes "count" times
     abstract Redo : count:int -> unit
 
@@ -181,6 +184,10 @@ type ICommonOperations =
 
     /// Save all files
     abstract SaveAll : unit -> bool
+
+    /// Search for the given pattern in the specified direction.  This search will not actually begin
+    /// at the given SnapshotPoint though to match the behavior of pattern based searches in Vim
+    abstract SearchForPattern : string -> Path -> SnapshotPoint -> count : int -> SearchResult
 
     /// Sets a mark at the specified point.  If this operation fails an error message will be generated
     abstract SetMark : SnapshotPoint -> char -> IMarkMap -> Result

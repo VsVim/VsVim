@@ -1739,5 +1739,162 @@ namespace VimCore.UnitTest
             _host.Verify();
         }
 
+        /// <summary>
+        /// If there is no match anywhere in the ITextBuffer raise the appropriate message
+        /// </summary>
+        [Test]
+        public void RaiseSearchResultMessages_NoMatch()
+        {
+            Create("");
+            _statusUtil.Setup(x => x.OnError(Resources.Common_PatternNotFound("dog"))).Verifiable();
+            _operations.RaiseSearchResultMessages(SearchResult.NewNotFound(
+                VimUtil.CreateSearchData("dog"),
+                false));
+            _statusUtil.Verify();
+        }
+
+        /// <summary>
+        /// If the match is not found but would be found if we enabled wrapping then raise
+        /// a different message
+        /// </summary>
+        [Test]
+        public void RaiseSearchResultMessages_NoMatchInPathForward()
+        {
+            Create("");
+            _statusUtil.Setup(x => x.OnError(Resources.Common_SearchHitBottomWithout("dog"))).Verifiable();
+            _operations.RaiseSearchResultMessages(SearchResult.NewNotFound(
+                VimUtil.CreateSearchData("dog", SearchKind.Forward),
+                false));
+            _statusUtil.Verify();
+        }
+
+        /// <summary>
+        /// If the match is not found but would be found if we enabled wrapping then raise
+        /// a different message
+        /// </summary>
+        [Test]
+        public void RaiseSearchResultMessages_NoMatchInPathBackward()
+        {
+            Create("");
+            _statusUtil.Setup(x => x.OnError(Resources.Common_SearchHitTopWithout("dog"))).Verifiable();
+            _operations.RaiseSearchResultMessages(SearchResult.NewNotFound(
+                VimUtil.CreateSearchData("dog", SearchKind.Backward),
+                false));
+            _statusUtil.Verify();
+        }
+
+        /// <summary>
+        /// Make sure the count is taken into consideration
+        /// </summary>
+        [Test]
+        public void SearchForPattern_WithCount()
+        {
+            Create("cat dog cat", "cat");
+            var result = _operations.SearchForPattern("cat", Path.Forward, _textView.GetCaretPoint(), 2);
+            Assert.IsTrue(result.IsFound);
+            Assert.AreEqual(_textView.GetLine(1).Extent, result.AsFound().Item2);
+            Assert.IsFalse(result.AsFound().item3);
+        }
+
+        /// <summary>
+        /// Don't make a partial match when using a whole word pattern
+        /// </summary>
+        [Test]
+        public void SearchForPattern_DontMatchPartialForWholeWord()
+        {
+            Create("dog doggy dog");
+            var result = _operations.SearchForPattern(@"\<dog\>", Path.Forward, _textView.GetCaretPoint(), 1);
+            Assert.IsTrue(result.IsFound(10));
+        }
+
+        /// <summary>
+        /// Do a backward search with 'wrapscan' enabled should go backwards
+        /// </summary>
+        [Test]
+        public void SearchForPattern_Backward()
+        {
+            Create("cat dog", "cat");
+            _globalSettings.SetupGet(x => x.WrapScan).Returns(true);
+            _textView.MoveCaretToLine(1);
+            var result = _operations.SearchForPattern(@"\<cat\>", Path.Backward, _textView.GetCaretPoint(), 1);
+            Assert.IsTrue(result.IsFound(0));
+        }
+
+        /// <summary>
+        /// Regression test for issue 398.  When starting on something other
+        /// than the first character make sure we don't jump over an extra 
+        /// word when searching for a whole word
+        /// </summary>
+        [Test]
+        public void SearchForPattern_StartOnSecondChar()
+        {
+            Create("cat cat cat");
+            _textView.MoveCaretTo(1);
+            var result = _operations.SearchForPattern(@"\<cat\>", Path.Forward, _textView.GetCaretPoint(), 1);
+            Assert.IsTrue(result.IsFound(4));
+        }
+
+        /// <summary>
+        /// Make sure that searching backward from the first char in a word doesn't
+        /// count that word as an occurrence
+        /// </summary>
+        [Test]
+        public void SearchForPattern_BackwardFromFirstChar()
+        {
+            Create("cat cat cat");
+            _textView.MoveCaretTo(4);
+            var result = _operations.SearchForPattern(@"cat", Path.Forward, _textView.GetCaretPoint(), 1);
+            Assert.IsTrue(result.IsFound(0));
+        }
+
+        /// <summary>
+        /// Don't start the search on the current word start.  It should start afterwards
+        /// so we don't match the current word
+        /// </summary>
+        [Test]
+        public void SearchForPattern_DontStartOnPointForward()
+        {
+            Create("foo bar", "foo");
+            var result = _operations.SearchForPattern("foo", Path.Forward, _textView.GetPoint(0), 1);
+            Assert.AreEqual(_textView.GetLine(1).Start, result.AsFound().Item2.Start);
+        }
+
+        /// <summary>
+        /// Don't start the search on the current word start.  It should before the character
+        /// when doing a backward search so we don't match the current word
+        /// </summary>
+        [Test]
+        public void SearchForPattern_DontStartOnPointBackward()
+        {
+            Create("foo bar", "foo");
+            var result = _operations.SearchForPattern("foo", Path.Backward, _textView.GetLine(1).Start, 1);
+            Assert.AreEqual(_textView.GetPoint(0), result.AsFound().Item2.Start);
+        }
+
+        /// <summary>
+        /// Make sure that this takes into account the 'wrapscan' option going forward
+        /// </summary>
+        [Test]
+        public void SearchForPattern_ConsiderWrapScanForward()
+        {
+            Create("dog", "cat");
+            _globalSettings.SetupGet(x => x.WrapScan).Returns(false);
+            var result = _operations.SearchForPattern("dog", Path.Forward, _textView.GetPoint(0), 1);
+            Assert.IsTrue(result.IsNotFound);
+            Assert.IsTrue(result.AsNotFound().Item2);
+        }
+
+        /// <summary>
+        /// Make sure that this takes into account the 'wrapscan' option going forward
+        /// </summary>
+        [Test]
+        public void SearchForPattern_ConsiderWrapScanBackward()
+        {
+            Create("dog", "cat");
+            _globalSettings.SetupGet(x => x.WrapScan).Returns(false);
+            var result = _operations.SearchForPattern("dog", Path.Backward, _textView.GetPoint(0), 1);
+            Assert.IsTrue(result.IsNotFound);
+            Assert.IsTrue(result.AsNotFound().Item2);
+        }
     }
 }

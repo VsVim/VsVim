@@ -839,22 +839,7 @@ type internal CommandUtil
         if StringUtil.isNullOrEmpty last.Pattern then
             _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
         else
-
-            // Find the place to search.  When going forward we should start after
-            // the caret and before should start before. This prevents the text 
-            // under the caret from being the first match
-            let searchStart =
-                let snapshot = _textBuffer.CurrentSnapshot
-                if last.Kind.IsAnyForward then
-                    x.CaretPoint 
-                    |> SnapshotPointUtil.TryAddOne 
-                    |> OptionUtil.getOrDefault (SnapshotUtil.GetEndPoint snapshot)
-                else 
-                    x.CaretPoint 
-                    |> SnapshotPointUtil.TrySubtractOne
-                    |> OptionUtil.getOrDefault (SnapshotUtil.GetStartPoint snapshot)
-
-            x.MoveCaretToNextSearch searchStart last.Pattern last.Kind.Path last.Options count
+            x.MoveCaretToNextPattern x.CaretPoint last.Pattern last.Kind.Path count
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -883,78 +868,37 @@ type internal CommandUtil
         | None -> 
             // Nothing to do if no word under the cursor
             _statusUtil.OnError Resources.NormalMode_NoWordUnderCursor
-        | Some(span) ->
+        | Some span ->
 
             // Build up the SearchData structure
             let word = span.GetText()
             let pattern = if isWholeWord then PatternUtil.CreateWholeWord word else word
-            let options = PatternUtil.DefaultSearchOptions
 
-            // Pick the appropriate place to start the search.  
-            let searchStart = 
-                match path with
-                | Path.Forward ->
-                    // Make sure to start the search from the end of the current word.  Otherwise
-                    // depending on the caret position this could start from the beginning of 
-                    // the current word and have it count as the "first" match.  Start at the end
-                    // of the word so the count works out correctly
-                    span.End
-                | Path.Backward ->
-                    // Begin from the start of the word.  The search will not include this character
-                    // when searching backward
-                    span.Start
-
-            x.MoveCaretToNextSearch searchStart pattern path options count
+            // A word search always starts at the begining of the word.  The pattern
+            // based search will ensure that we don't match this word again because it
+            // won't make an initial match at the provided point
+            x.MoveCaretToNextPattern span.Start pattern path count
 
             // Update the last search value
-            let data = { Pattern = pattern; Kind = SearchKind.OfPath path; Options = options }
+            let data = { Pattern = pattern; Kind = SearchKind.OfPath path; Options = PatternUtil.DefaultSearchOptions }
             _vimData.LastSearchData <- data
 
     /// Move the caret to the 'count' next occurrence of the specified pattern
-    member x.MoveCaretToNextSearch searchStart pattern path options count =
+    member x.MoveCaretToNextPattern searchStart pattern path count =
 
-        let searchData = { Pattern = pattern; Kind = SearchKind.OfPathAndWrap path true; Options = options }
-        match _searchService.FindNextMultiple searchData searchStart _wordNavigator count with
+        // Do the search and raise the appropriate error messages
+        let result = _operations.SearchForPattern pattern path searchStart count
+        _operations.RaiseSearchResultMessages(result)
+
+        match result with
         | SearchResult.Found (_, span, _) ->
-
-            // Move the caret to the specified span
-            let moveCaretToSpan () = 
-                TextViewUtil.MoveCaretToPoint _textView span.Start
-                _operations.EnsureCaretOnScreenAndTextExpanded()
-
-            // Even though we found something we need to make sure it's valid.  It can't be a wrapped
-            // item if 'wrapscan' is disabled.  The wrapping is relative to the caret point not the
-            // search start.  The search start is artificially adjusted to prevent matches at the caret
-            // point.
-            //
-            // We specifically ignore the 'didWrap' part of SearchResult.Found because of this 
-            // artificial change of location. It causes this value to be wrong in edge cases
-            let didWrap = 
-                match path with 
-                | Path.Forward -> span.Start.Position <= x.CaretPoint.Position
-                | Path.Backward -> span.Start.Position > x.CaretPoint.Position
-
-            if didWrap then
-                if _globalSettings.WrapScan then
-                    // Issue the warning about wrapping across the ITextBuffer boundaries
-                    match path with
-                    | Path.Forward -> _statusUtil.OnWarning Resources.Common_SearchForwardWrapped
-                    | Path.Backward -> _statusUtil.OnWarning Resources.Common_SearchBackwardWrapped 
-
-                    moveCaretToSpan()
-                else
-                    // Wrapping is not allowed.  Issue an error message and don't move the caret
-                    match path with
-                    | Path.Forward -> _statusUtil.OnError (Resources.Common_SearchHitBottomWithout pattern)
-                    | Path.Backward -> _statusUtil.OnError (Resources.Common_SearchHitTopWithout pattern)
-            else
-                // Didn't wrap so it's fine
-                moveCaretToSpan()
+            // Found the span so update the cursor to that position
+            TextViewUtil.MoveCaretToPoint _textView span.Start
+            _operations.EnsureCaretOnScreenAndTextExpanded()
 
         | SearchResult.NotFound _ ->
-
-            // Pattern just doesn't exist in the buffer
-            _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
+            // Did not find the pattern given the parameters.  Take no action.  
+            ()
 
     /// Move the caret to start of a line which is deleted.  Needs to preserve the original 
     /// indent if 'autoindent' is set.

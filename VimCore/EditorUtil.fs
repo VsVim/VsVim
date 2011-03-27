@@ -547,6 +547,9 @@ module SnapshotPointUtil =
         let line = GetContainingLine point
         line.Start.Position = point.Position
 
+    /// Is this the start of th eSnapshot
+    let IsStartPoint point = 0 = GetPosition point
+
     /// Is this the end of the Snapshot
     let IsEndPoint point = 
         let snapshot = GetSnapshot point
