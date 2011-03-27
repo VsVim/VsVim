@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Text.Editor;
+﻿using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using NUnit.Framework;
@@ -35,6 +36,7 @@ namespace VimCore.UnitTest
             _nav = VimUtil.CreateTextStructureNavigator(_textView.TextBuffer);
             _factory = new MockRepository(MockBehavior.Strict);
             _vimHost = _factory.Create<IVimHost>();
+            _vimHost.Setup(x => x.EnsureVisible(_textView, It.IsAny<SnapshotPoint>()));
             _statusUtil = _factory.Create<IStatusUtil>();
             _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchBackwardWrapped));
             _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchForwardWrapped));
@@ -42,7 +44,8 @@ namespace VimCore.UnitTest
             _operations = VimUtil.CreateCommonOperations(
                 textView: _textView,
                 localSettings: _localSettings,
-                vimHost: _vimHost.Object);
+                vimHost: _vimHost.Object,
+                statusUtil: _statusUtil.Object);
             _searchRaw = new IncrementalSearch(
                 _operations,
                 _localSettings,
@@ -138,7 +141,7 @@ namespace VimCore.UnitTest
         /// not found
         /// </summary>
         [Test]
-        public void CurrenSearchUpdated_FireOnSearhCharNotFound()
+        public void CurrentSearchUpdated_FireOnSearhCharNotFound()
         {
             Create("foo bar");
             var didRun = false;
@@ -221,7 +224,7 @@ namespace VimCore.UnitTest
         /// Backspace on a blank search should cancel
         /// </summary>
         [Test]
-        public void Backspace1()
+        public void Backspace_NoText()
         {
             Create("foo bar");
             var result = _search.Begin(Path.Forward).Run(VimKey.Back);
@@ -232,7 +235,7 @@ namespace VimCore.UnitTest
         /// Don't crash when backspacing with a textual value
         /// </summary>
         [Test]
-        public void Backspace2()
+        public void Backspace_WithText()
         {
             Create("foo bar");
             var result = _search.Begin(Path.Forward).Run("b").Run(VimKey.Back);
@@ -359,7 +362,8 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
-        /// The down key should scroll the history list in the opposite order
+        /// The down key should scroll the history list in the opposite order.  When it 
+        /// reaches the end it should go back to a blank
         /// </summary>
         [Test]
         public void History_DownShouldScrollBack()
@@ -378,7 +382,7 @@ namespace VimCore.UnitTest
         {
             Create("dog cat");
             _vimData.IncrementalSearchHistory = (new[] { "a", "b" }).ToHistoryList();
-            _search.Begin(Path.Forward).Run(VimKey.Up).Run(VimKey.Up).Run(VimKey.Down);
+            _search.Begin(Path.Forward).Run(VimKey.Up, VimKey.Up, VimKey.Down);
             Assert.AreEqual("a", _search.CurrentSearch.Value.Pattern);
         }
 

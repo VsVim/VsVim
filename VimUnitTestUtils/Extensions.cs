@@ -682,10 +682,15 @@ namespace Vim.UnitTest
             return result;
         }
 
-        public static BindResult<T> Run<T>(this BindResult<T> result, VimKey vimKey)
+        public static BindResult<T> Run<T>(this BindResult<T> result, params VimKey[] keys)
         {
-            Assert.IsTrue(result.IsNeedMoreInput);
-            return result.AsNeedMoreInput().Item.Run(vimKey);
+            foreach (var cur in keys)
+            {
+                var keyInput = KeyInputUtil.VimKeyToKeyInput(cur);
+                Assert.IsTrue(result.IsNeedMoreInput);
+                result = result.AsNeedMoreInput().Item.BindFunction.Invoke(keyInput);
+            }
+            return result;
         }
 
         #endregion
@@ -698,10 +703,10 @@ namespace Vim.UnitTest
             return data.BindFunction.Invoke(keyInput).Run(text.Substring(1));
         }
 
-        public static BindResult<T> Run<T>(this BindData<T> data, VimKey vimKey)
+        public static BindResult<T> Run<T>(this BindData<T> data, params VimKey[] keys)
         {
-            var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
-            return data.BindFunction.Invoke(keyInput);
+            var result = data.BindFunction.Invoke(KeyInputUtil.VimKeyToKeyInput(keys[0]));
+            return result.Run(keys.Skip(1).ToArray());
         }
 
         #endregion

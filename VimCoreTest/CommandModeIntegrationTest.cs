@@ -179,5 +179,55 @@ namespace VimCore.UnitTest
             RunCommand("s/a/b/l");
             Assert.AreEqual("cbt bat$", message);
         }
+
+        /// <summary>
+        /// Using the search forward feature which hits a match.  Search should start after the range
+        /// so the first match will be after it 
+        /// </summary>
+        [Test]
+        public void Search_ForwardWithMatch()
+        {
+            Create("cat", "dog", "cat", "fish");
+            RunCommand("1,2/cat");
+            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Using the search forward feature which doesn't hit a match in the specified path.  Should 
+        /// raise a warning
+        /// </summary>
+        [Test]
+        public void Search_ForwardWithNoMatchInPath()
+        {
+            Create("cat", "dog", "cat", "fish");
+            var didHit = false;
+            _buffer.Settings.GlobalSettings.WrapScan = false;
+            _buffer.ErrorMessage +=
+                (sender, message) =>
+                {
+                    Assert.AreEqual(Resources.Common_SearchHitBottomWithout("cat"), message);
+                    didHit = true;
+                };
+            RunCommand("1,3/cat");
+            Assert.IsTrue(didHit);
+        }
+
+        /// <summary>
+        /// No match in the buffer should raise a different message
+        /// </summary>
+        [Test]
+        public void Search_ForwardWithNoMatchInBuffer()
+        {
+            Create("cat", "dog", "cat", "fish");
+            var didHit = false;
+            _buffer.ErrorMessage +=
+                (sender, message) =>
+                {
+                    Assert.AreEqual(Resources.Common_PatternNotFound("pig"), message);
+                    didHit = true;
+                };
+            RunCommand("1,2/pig");
+            Assert.IsTrue(didHit);
+        }
     }
 }

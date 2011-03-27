@@ -57,6 +57,7 @@ namespace VimCore.UnitTest
             _globalSettings.SetupGet(x => x.IgnoreCase).Returns(true);
             _globalSettings.SetupGet(x => x.UseEditorIndent).Returns(false);
             _globalSettings.SetupGet(x => x.UseEditorTabSettings).Returns(false);
+            _globalSettings.SetupGet(x => x.WrapScan).Returns(true);
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object, _factory);
             _settings.SetupGet(x => x.AutoIndent).Returns(false);
             _settings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
@@ -1764,7 +1765,7 @@ namespace VimCore.UnitTest
             _statusUtil.Setup(x => x.OnError(Resources.Common_SearchHitBottomWithout("dog"))).Verifiable();
             _operations.RaiseSearchResultMessages(SearchResult.NewNotFound(
                 VimUtil.CreateSearchData("dog", SearchKind.Forward),
-                false));
+                true));
             _statusUtil.Verify();
         }
 
@@ -1779,7 +1780,7 @@ namespace VimCore.UnitTest
             _statusUtil.Setup(x => x.OnError(Resources.Common_SearchHitTopWithout("dog"))).Verifiable();
             _operations.RaiseSearchResultMessages(SearchResult.NewNotFound(
                 VimUtil.CreateSearchData("dog", SearchKind.Backward),
-                false));
+                true));
             _statusUtil.Verify();
         }
 
@@ -1843,7 +1844,7 @@ namespace VimCore.UnitTest
         {
             Create("cat cat cat");
             _textView.MoveCaretTo(4);
-            var result = _operations.SearchForPattern(@"cat", Path.Forward, _textView.GetCaretPoint(), 1);
+            var result = _operations.SearchForPattern(@"cat", Path.Backward, _textView.GetCaretPoint(), 1);
             Assert.IsTrue(result.IsFound(0));
         }
 

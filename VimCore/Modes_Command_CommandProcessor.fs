@@ -710,12 +710,14 @@ type internal CommandProcessor
             && c <> '!'
             && c <> '/'
 
-        // Get the name of the command.  Need to special case ~ and & here as they
+        // Get the name of the command.  Need to special case a few items as they
         // don't quite play by normal rules
         let commandName = 
             match SeqUtil.tryHeadOnly rest with
-            | Some('~') -> "~"
-            | Some('&') -> "&"
+            | Some '~' -> "~"
+            | Some '&' -> "&"
+            | Some '/' -> "/"
+            | Some '?' -> "?"
             | _ ->  rest |> Seq.takeWhile isCommandNameChar |> StringUtil.ofCharSeq
 
         // Look for commands with that name
