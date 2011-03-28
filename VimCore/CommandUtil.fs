@@ -594,21 +594,19 @@ type internal CommandUtil
     /// Used for the several commands which make an edit here and need the edit to be linked
     /// with the next insert mode change.  
     member x.EditWithLinkedChange name action =
-        let transaction = _undoRedoOperations.CreateUndoTransaction(name)
-        let arg = 
-            try
-                transaction.AddBeforeTextBufferChangePrimitive()
-                action()
+        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
 
-                ModeArgument.InsertWithTransaction transaction
-            with
-                | _ ->
-                    // If the above throws we can't leave the transaction open else it will
-                    // completely break undo / redo in the ITextBuffer.  Close it here and
-                    // re-raise the exception
-                    transaction.Dispose()
-                    reraise()
+        try
+            x.EditWithUndoTransaciton name action
+        with
+            | _ ->
+                // If the above throws we can't leave the transaction open else it will
+                // break undo / redo in the ITextBuffer.  Close it here and
+                // re-raise the exception
+                transaction.Dispose()
+                reraise()
 
+        let arg = ModeArgument.InsertWithTransaction transaction
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
 
     /// Create a fold for the given MotionResult
@@ -831,15 +829,15 @@ type internal CommandUtil
 
     /// Move the caret to the next occurrence of the last search
     member x.MoveCaretToLastSearch isReverse count =
-        let last = _vimData.LastSearchData
+        let last = _vimData.LastPatternData
         let last = 
-            if isReverse then { last with Kind = SearchKind.Reverse last.Kind }
+            if isReverse then { last with Path = Path.Reverse last.Path }
             else last
 
         if StringUtil.isNullOrEmpty last.Pattern then
             _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
         else
-            x.MoveCaretToNextPattern x.CaretPoint last.Pattern last.Kind.Path count
+            x.MoveCaretToNextPattern x.CaretPoint last.Pattern last.Path count
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -879,9 +877,8 @@ type internal CommandUtil
             // won't make an initial match at the provided point
             x.MoveCaretToNextPattern span.Start pattern path count
 
-            // Update the last search value
-            let data = { Pattern = pattern; Kind = SearchKind.OfPath path; Options = PatternUtil.DefaultSearchOptions }
-            _vimData.LastSearchData <- data
+            // Update the last pattern value
+            _vimData.LastPatternData <- { Pattern = pattern; Path = path }
 
     /// Move the caret to the 'count' next occurrence of the specified pattern
     member x.MoveCaretToNextPattern searchStart pattern path count =

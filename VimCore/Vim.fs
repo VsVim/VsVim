@@ -33,11 +33,11 @@ type internal VimData() =
     let mutable _commandHistory = HistoryList()
     let mutable _incrementalSearchHistory = HistoryList()
     let mutable _lastSubstituteData : SubstituteData option = None
-    let mutable _lastSearchData = { Pattern = StringUtil.empty; Kind = SearchKind.ForwardWithWrap; Options = SearchOptions.None }
+    let mutable _lastPatternData = { Pattern = StringUtil.empty; Path = Path.Forward }
     let mutable _lastCharSearch : (CharSearchKind * Path * char) option = None
     let mutable _lastMacroRun : char option = None
     let mutable _lastCommand : StoredCommand option = None
-    let _lastSearchChanged = Event<SearchData>()
+    let _lastPatternDataChanged = Event<PatternData>()
     let _highlightSearchOneTimeDisabled = Event<unit>()
 
     interface IVimData with 
@@ -53,11 +53,11 @@ type internal VimData() =
         member x.LastCommand 
             with get () = _lastCommand
             and set value = _lastCommand <- value
-        member x.LastSearchData
-            with get () = _lastSearchData
+        member x.LastPatternData 
+            with get () = _lastPatternData
             and set value = 
-                _lastSearchData <- value
-                _lastSearchChanged.Trigger value
+                _lastPatternData <- value
+                _lastPatternDataChanged.Trigger value
         member x.LastCharSearch 
             with get () = _lastCharSearch
             and set value = _lastCharSearch <- value
@@ -66,7 +66,7 @@ type internal VimData() =
             and set value = _lastMacroRun <- value
         member x.RaiseHighlightSearchOneTimeDisable () = _highlightSearchOneTimeDisabled.Trigger ()
         [<CLIEvent>]
-        member x.LastSearchDataChanged = _lastSearchChanged.Publish
+        member x.LastPatternDataChanged = _lastPatternDataChanged.Publish
         [<CLIEvent>]
         member x.HighlightSearchOneTimeDisabled = _highlightSearchOneTimeDisabled.Publish
 
@@ -145,7 +145,8 @@ type internal VimBufferFactory
                 localSettings,
                 incrementalSearch,
                 motionUtil,
-                wordNav)
+                wordNav,
+                undoRedoOperations)
         let buffer = bufferRaw :> IVimBuffer
 
         let commandUtil = CommandUtil(buffer, commonOperations, statusUtil, undoRedoOperations, _smartIndentationService, foldManager) :> ICommandUtil

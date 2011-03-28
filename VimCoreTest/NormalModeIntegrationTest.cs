@@ -14,6 +14,7 @@ namespace VimCore.UnitTest
         private IVimBuffer _buffer;
         private IWpfTextView _textView;
         private ITextBuffer _textBuffer;
+        private IVimGlobalSettings _globalSettings;
         private IKeyMap _keyMap;
         private bool _assertOnErrorMessage = true;
 
@@ -38,6 +39,7 @@ namespace VimCore.UnitTest
                     }
                 };
             _keyMap = _buffer.Vim.KeyMap;
+            _globalSettings = _buffer.Settings.GlobalSettings;
         }
 
         [TearDown]
@@ -1318,7 +1320,7 @@ namespace VimCore.UnitTest
             Create("dog cat dog");
             _textView.MoveCaretTo(1);
             _buffer.Settings.GlobalSettings.WrapScan = false;
-            _buffer.VimData.LastSearchData = new SearchData("dog", SearchKind.Backward, SearchOptions.ConsiderIgnoreCase);
+            _buffer.VimData.LastPatternData = VimUtil.CreatePatternData("dog", Path.Backward);
             _buffer.Process('/');
             _buffer.Process(VimKey.Enter);
             Assert.AreEqual(8, _textView.GetCaretPoint());
@@ -1332,7 +1334,7 @@ namespace VimCore.UnitTest
         {
             Create("dog cat dog");
             _buffer.Process(":s/dog/cat", enter: true);
-            Assert.AreEqual("dog", _buffer.VimData.LastSearchData.Pattern);
+            Assert.AreEqual("dog", _buffer.VimData.LastPatternData.Pattern);
         }
 
         /// <summary>
@@ -1343,9 +1345,35 @@ namespace VimCore.UnitTest
         public void LastSearch_UsedBySubstitute()
         {
             Create("dog cat dog");
-            _buffer.VimData.LastSearchData = VimUtil.CreateSearchData("dog");
+            _buffer.VimData.LastPatternData = VimUtil.CreatePatternData("dog");
             _buffer.Process(":s//cat", enter: true);
             Assert.AreEqual("cat cat dog", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// The search options used by a :s command should not be stored.  For example the 
+        /// 'i' flag is used only for the :s command and not for repeats of the search 
+        /// later on.
+        /// </summary>
+        [Test]
+        public void LastSearch_DontStoreSearchOptions()
+        {
+            Create("cat", "dog", "cat");
+            _assertOnErrorMessage = false;
+            _globalSettings.IgnoreCase = false;
+            _globalSettings.WrapScan = true;
+            _textView.MoveCaretToLine(2);
+            _buffer.Process(":s/CAT/fish/i", enter: true);
+            Assert.AreEqual("fish", _textView.GetLine(2).GetText());
+            var didHit = false;
+            _buffer.ErrorMessage +=
+                (sender, message) =>
+                {
+                    Assert.AreEqual(Resources.Common_PatternNotFound("CAT"), message);
+                    didHit = true;
+                };
+            _buffer.Process("n");
+            Assert.IsTrue(didHit);
         }
 
         /// <summary>

@@ -44,7 +44,7 @@ namespace VsVim
 
         public static OleCommandData Allocate(char c)
         {
-            var variantIn = Marshal.AllocCoTaskMem(32); // sizeof(VARIANT), 16 may be enough
+            var variantIn = Marshal.AllocCoTaskMem(32); // size of(VARIANT), 16 may be enough
             Marshal.GetNativeVariantForObject(c, variantIn);
             return new OleCommandData(
                 (uint)VSConstants.VSStd2KCmdID.TYPECHAR,
@@ -99,7 +99,7 @@ namespace VsVim
         }
 
         /// <summary>
-        /// Try and map a KeyInput to a single KeyInput value.  This will only suceed for KeyInput 
+        /// Try and map a KeyInput to a single KeyInput value.  This will only succeed for KeyInput 
         /// values which have no mapping or map to a single KeyInput value
         /// </summary>
         private bool TryGetSingleMapping(KeyRemapMode mode, KeyInput original, out KeyInput mapped)
@@ -245,7 +245,7 @@ namespace VsVim
             }
             else
             {
-                // If we couldn't process it using intercepting mechanims then just go straight to the IVimBuffer
+                // If we couldn't process it using intercepting mechanism then just go straight to the IVimBuffer
                 // for processing.
                 result = _buffer.Process(originalKeyInput);
                 intercepted = false;
@@ -269,6 +269,28 @@ namespace VsVim
         {
             keyInput = null;
 
+            EditCommand editCommand;
+            if (!TryConvert(commandGroup, commandId, pvaIn, out editCommand))
+            {
+                return false;
+            }
+
+            if (!editCommand.HasKeyInput)
+            {
+                return false;
+            }
+
+            keyInput = editCommand.KeyInput;
+            return true;
+        }
+
+        /// <summary>
+        /// Try and convert the Visual Studio command to it's equivalent KeyInput
+        /// </summary>
+        internal bool TryConvert(Guid commandGroup, uint commandId, IntPtr pvaIn, out EditCommand editCommand)
+        {
+            editCommand = null;
+
             // Don't ever process a command when we are in an automation function.  Doing so will cause VsVim to 
             // intercept items like running Macros and certain wizard functionality
             if (_adapter.InAutomationFunction)
@@ -282,33 +304,41 @@ namespace VsVim
                 return false;
             }
 
-            EditCommand command;
-            if (!OleCommandUtil.TryConvert(commandGroup, commandId, pvaIn, out command))
-            {
-                return false;
-            }
-
-            keyInput = command.KeyInput;
-            return true;
+            return OleCommandUtil.TryConvert(commandGroup, commandId, pvaIn, out editCommand);
         }
 
         int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
         {
             try
             {
-                KeyInput ki;
-                if (TryConvert(commandGroup, commandId, variantIn, out ki))
+                EditCommand editCommand;
+                if (TryConvert(commandGroup, commandId, variantIn, out editCommand))
                 {
-                    // Swallow the input if it's been flagged by a previous QueryStatus
-                    if (SwallowIfNextExecMatches.IsSome && SwallowIfNextExecMatches.Value == ki)
+                    if (editCommand.IsUndo)
                     {
+                        _buffer.UndoRedoOperations.Undo(1);
                         return NativeMethods.S_OK;
                     }
-
-                    var commandData = new OleCommandData(commandId, commandExecOpt, variantIn, variantOut);
-                    if (TryExec(ref commandGroup, ref commandData, ki))
+                    else if (editCommand.IsRedo)
                     {
+                        _buffer.UndoRedoOperations.Redo(1);
                         return NativeMethods.S_OK;
+                    }
+                    else if (editCommand.HasKeyInput)
+                    {
+                        var keyInput = editCommand.KeyInput;
+
+                        // Swallow the input if it's been flagged by a previous QueryStatus
+                        if (SwallowIfNextExecMatches.IsSome && SwallowIfNextExecMatches.Value == keyInput)
+                        {
+                            return NativeMethods.S_OK;
+                        }
+
+                        var commandData = new OleCommandData(commandId, commandExecOpt, variantIn, variantOut);
+                        if (TryExec(ref commandGroup, ref commandData, keyInput))
+                        {
+                            return NativeMethods.S_OK;
+                        }
                     }
                 }
             }
@@ -322,16 +352,28 @@ namespace VsVim
 
         int IOleCommandTarget.QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
         {
-            KeyInput ki;
-            if (1 == cCmds && TryConvert(pguidCmdGroup, prgCmds[0].cmdID, pCmdText, out ki) && _buffer.CanProcess(ki))
+            EditCommand editCommand;
+            if (1 == cCmds && TryConvert(pguidCmdGroup, prgCmds[0].cmdID, pCmdText, out editCommand))
             {
-                if (_externalEditManager.IsResharperLoaded)
+                var canHandle = false;
+                if (editCommand.IsUndo || editCommand.IsRedo)
                 {
-                    QueryStatusInResharper(ki);
+                    canHandle = true;
+                }
+                else if (editCommand.HasKeyInput && _buffer.CanProcess(editCommand.KeyInput))
+                {
+                    canHandle = true;
+                    if (_externalEditManager.IsResharperLoaded)
+                    {
+                        QueryStatusInResharper(editCommand.KeyInput);
+                    }
                 }
 
-                prgCmds[0].cmdf = (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
-                return NativeMethods.S_OK;
+                if (canHandle)
+                {
+                    prgCmds[0].cmdf = (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
+                    return NativeMethods.S_OK;
+                }
             }
 
             return _nextTarget.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText);
@@ -343,10 +385,10 @@ namespace VsVim
         /// will swallow the event and not propagate it to us.  So handle, return and account 
         /// for the double stroke in exec
         /// </summary>
-        private void QueryStatusInResharper(KeyInput ki)
+        private void QueryStatusInResharper(KeyInput keyInput)
         {
             var shouldHandle = false;
-            if (_buffer.ModeKind == ModeKind.Insert && ki == KeyInputUtil.EscapeKey)
+            if (_buffer.ModeKind == ModeKind.Insert && keyInput == KeyInputUtil.EscapeKey)
             {
                 // Have to special case Escape here for insert mode.  R# is typically ahead of us on the IOleCommandTarget
                 // chain.  If a completion window is open and we wait for Exec to run R# will be ahead of us and run
@@ -354,21 +396,21 @@ namespace VsVim
                 // our exec leaving us in insert mode.
                 shouldHandle = true;
             }
-            else if (_buffer.ModeKind == ModeKind.ExternalEdit && ki == KeyInputUtil.EscapeKey)
+            else if (_buffer.ModeKind == ModeKind.ExternalEdit && keyInput == KeyInputUtil.EscapeKey)
             {
                 // Have to special case Escape here for external edit mode because we want escape to get us back to 
                 // normal mode
                 shouldHandle = true;
             }
-            else if (_adapter.InDebugMode && (ki == KeyInputUtil.EnterKey || ki.Key == VimKey.Back))
+            else if (_adapter.InDebugMode && (keyInput == KeyInputUtil.EnterKey || keyInput.Key == VimKey.Back))
             {
                 // In debug mode R# will intercept Enter and Back 
                 shouldHandle = true;
             }
 
-            if (shouldHandle && _buffer.Process(ki))
+            if (shouldHandle && _buffer.Process(keyInput))
             {
-                SwallowIfNextExecMatches = ki;
+                SwallowIfNextExecMatches = keyInput;
             }
         }
 

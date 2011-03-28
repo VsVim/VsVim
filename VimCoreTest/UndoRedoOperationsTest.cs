@@ -5,6 +5,7 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
+using Vim.UnitTest;
 
 namespace VimCore.UnitTest
 {
@@ -41,8 +42,11 @@ namespace VimCore.UnitTest
             _operations = _operationsRaw;
         }
 
+        /// <summary>
+        /// Undo without history should raise an error message saying it's not supported
+        /// </summary>
         [Test]
-        public void Undo1()
+        public void Undo_WithoutHistory()
         {
             Create(haveHistory: false);
             _statusUtil.Setup(x => x.OnError(Resources.UndoRedo_NotSupported)).Verifiable();
@@ -50,38 +54,71 @@ namespace VimCore.UnitTest
             _factory.Verify();
         }
 
+        /// <summary>
+        /// Very possible for undo to throw.  Make sure we handle it 
+        /// </summary>
         [Test]
-        public void Undo2()
-        {
-            Create();
-            _history.SetupGet(x => x.CanUndo).Returns(false).Verifiable();
-            _operationsRaw.Undo(42);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Undo3()
+        public void Undo_Throws()
         {
             Create();
             _statusUtil.Setup(x => x.OnError(Resources.UndoRedo_CannotUndo)).Verifiable();
-            _history.SetupGet(x => x.CanUndo).Returns(true).Verifiable();
             _history.Setup(x => x.Undo(1)).Throws(new NotSupportedException()).Verifiable();
             _operationsRaw.Undo(1);
             _factory.Verify();
         }
 
+        /// <summary>
+        /// If there is no undo stack then just pass on the undo's to the 
+        /// ITextUndoHistory value
+        /// </summary>
         [Test]
-        public void Undo4()
+        public void Undo_NoStack()
         {
             Create();
-            _history.SetupGet(x => x.CanUndo).Returns(true).Verifiable();
-            _history.Setup(x => x.Undo(2)).Verifiable();
+            _history.Setup(x => x.Undo(1)).Verifiable();
             _operationsRaw.Undo(2);
             _factory.Verify();
         }
 
+        /// <summary>
+        /// If there is a Linked item on the top of the undo stack make sure that 
+        /// the appropriate number is passed to the ITextUndoHistory instance
+        /// </summary>
         [Test]
-        public void Redo1()
+        public void Undo_StackWithLinked()
+        {
+            Create();
+            _operationsRaw._undoStack = (new[] {UndoRedoData.NewLinked(10)}).ToFSharpList();
+            _history.Setup(x => x.Undo(10)).Verifiable();
+            _operationsRaw.Undo(1);
+            _factory.Verify();
+            Assert.AreEqual(0, _operationsRaw._undoStack.Length);
+        }
+
+        /// <summary>
+        /// If there is a Normal item on the top of the undo stack make sure that 
+        /// just a single item is passed to undo.  It's a simple undo
+        /// </summary>
+        [Test]
+        public void Undo_StackWithNormal()
+        {
+            Create();
+            _operationsRaw._undoStack = (new[] {UndoRedoData.NewNormal(10)}).ToFSharpList();
+            _history.Setup(x => x.Undo(1)).Verifiable();
+            _operationsRaw.Undo(1);
+            _factory.Verify();
+            Assert.AreEqual(1, _operationsRaw._undoStack.Length);
+            Assert.AreEqual(9, _operationsRaw._undoStack.Head.AsNormal().Item);
+            Assert.AreEqual(1, _operationsRaw._redoStack.Length);
+            Assert.AreEqual(1, _operationsRaw._redoStack.Head.AsNormal().Item);
+        }
+
+        /// <summary>
+        /// If there is no ITextUndoHistory associated with the operations then raise the
+        /// appropriate error message
+        /// </summary>
+        [Test]
+        public void Redo_NoHistory()
         {
             Create(haveHistory: false);
             _statusUtil.Setup(x => x.OnError(Resources.UndoRedo_NotSupported)).Verifiable();
@@ -89,34 +126,62 @@ namespace VimCore.UnitTest
             _factory.Verify();
         }
 
+        /// <summary>
+        /// Make sure that redo can also handle a throws
+        /// </summary>
         [Test]
-        public void Redo2()
-        {
-            Create();
-            _history.SetupGet(x => x.CanRedo).Returns(false).Verifiable();
-            _operationsRaw.Redo(42);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Redo3()
+        public void Redo_Throws()
         {
             Create();
             _statusUtil.Setup(x => x.OnError(Resources.UndoRedo_CannotRedo)).Verifiable();
-            _history.SetupGet(x => x.CanRedo).Returns(true).Verifiable();
             _history.Setup(x => x.Redo(1)).Throws(new NotSupportedException()).Verifiable();
             _operationsRaw.Redo(1);
             _factory.Verify();
         }
 
+        /// <summary>
+        /// With no stack the undo's should just go straight to the ITextUndoHistory one at 
+        /// a time
+        /// </summary>
         [Test]
-        public void Redo4()
+        public void Redo_NoStack()
         {
             Create();
-            _history.SetupGet(x => x.CanRedo).Returns(true).Verifiable();
-            _history.Setup(x => x.Redo(2)).Verifiable();
+            _history.Setup(x => x.Redo(1)).Verifiable();
             _operationsRaw.Redo(2);
             _factory.Verify();
+        }
+
+        /// <summary>
+        /// If there is a Linked item on the top of the redo stack make sure that 
+        /// the appropriate number is passed to the ITextUndoHistory instance
+        /// </summary>
+        [Test]
+        public void Redo_StackWithLinked()
+        {
+            Create();
+            _operationsRaw._redoStack = (new[] {UndoRedoData.NewLinked(10)}).ToFSharpList();
+            _history.Setup(x => x.Redo(10)).Verifiable();
+            _operationsRaw.Redo(1);
+            _factory.Verify();
+            Assert.AreEqual(0, _operationsRaw._redoStack.Length);
+            Assert.AreEqual(1, _operationsRaw._undoStack.Length);
+        }
+
+        /// <summary>
+        /// If there is a Normal item on the top of the undo stack make sure that 
+        /// just a single item is passed to undo.  It's a simple undo
+        /// </summary>
+        [Test]
+        public void Redo_StackWithNormal()
+        {
+            Create();
+            _operationsRaw._redoStack = (new[] {UndoRedoData.NewNormal(10)}).ToFSharpList();
+            _history.Setup(x => x.Redo(1)).Verifiable();
+            _operationsRaw.Redo(1);
+            _factory.Verify();
+            Assert.AreEqual(1, _operationsRaw._redoStack.Length);
+            Assert.AreEqual(9, _operationsRaw._redoStack.Head.AsNormal().Item);
         }
 
         [Test]
@@ -139,5 +204,16 @@ namespace VimCore.UnitTest
             _factory.Verify();
         }
 
+        /// <summary>
+        /// An undo transaction completing should empty the redo stack.
+        /// </summary>
+        [Test]
+        public void UndoTransactionCompleted_EmptyRedo()
+        {
+            Create();
+            _operationsRaw._redoStack = (new[] {UndoRedoData.NewLinked(10)}).ToFSharpList();
+            _history.Raise(x => x.UndoTransactionCompleted += null, new TextUndoTransactionCompletedEventArgs(null, TextUndoTransactionCompletionResult.TransactionAdded));
+            Assert.AreEqual(0, _operationsRaw._redoStack.Length);
+        }
     }
 }

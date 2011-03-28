@@ -94,6 +94,15 @@ type IUndoTransaction =
 
     inherit System.IDisposable
 
+/// Wraps a set of IUndoTransaction items such that they undo and redo as a single
+/// entity.
+type ILinkedUndoTransaction =
+
+    /// Complete the linked operation
+    abstract Complete : unit -> unit
+
+    inherit System.IDisposable
+
 /// Wraps all of the undo and redo operations
 type IUndoRedoOperations = 
 
@@ -109,10 +118,14 @@ type IUndoRedoOperations =
     /// Creates an Undo Transaction
     abstract CreateUndoTransaction : name:string -> IUndoTransaction
 
+    /// Creates a linked undo transaction
+    abstract CreateLinkedUndoTransaction : unit -> ILinkedUndoTransaction
+
     /// Wrap the passed in "action" inside an undo transaction.  This is needed
     /// when making edits such as paste so that the cursor will move properly 
     /// during an undo operation
     abstract EditWithUndoTransaction<'T> : name : string -> action : (unit -> 'T) -> 'T
+
 
 [<System.Flags>]
 type SearchOptions = 
@@ -124,6 +137,20 @@ type SearchOptions =
     /// Consider the "smartcase" option when doing the search
     | ConsiderSmartCase = 0x2
 
+/// Information about a search of a pattern
+type PatternData = {
+
+    /// The Pattern to search for
+    Pattern : string
+
+    /// The direction in which the pattern was searched for
+    Path : Path
+}
+    with 
+
+    /// The default search options when looking at a specific pattern
+    static member DefaultSearchOptions = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderSmartCase
+
 type SearchData = {
 
     /// The pattern being searched for in the buffer
@@ -132,7 +159,16 @@ type SearchData = {
     Kind : SearchKind;
 
     Options : SearchOptions
-}
+} with
+
+    member x.PatternData = { Pattern = x.Pattern; Path = x.Kind.Path }
+
+    static member OfPatternData (patternData : PatternData) wrap = 
+        {
+            Pattern = patternData.Pattern
+            Kind = SearchKind.OfPathAndWrap patternData.Path wrap
+            Options = PatternData.DefaultSearchOptions
+        }
 
 /// Result of an individual search
 [<RequireQualifiedAccess>]
@@ -171,7 +207,7 @@ type MotionContext =
     | Movement
     | AfterOperator
 
-/// Arguments necessary to buliding a Motion
+/// Arguments necessary to building a Motion
 type MotionArgument = {
 
     /// Context of the Motion
@@ -306,7 +342,7 @@ type Motion =
     /// the % motion
     | MatchingToken 
 
-    /// Count pargraphs backwards
+    /// Count paragraphs backwards
     | ParagraphBackward
 
     /// Count paragraphs forward
@@ -325,7 +361,7 @@ type Motion =
     | RepeatLastCharSearchOpposite
 
     /// A search for the specified pattern
-    | Search of SearchData
+    | Search of PatternData
 
     /// Backward a section in the editor or to a close brace
     | SectionBackwardOrCloseBrace
@@ -626,7 +662,7 @@ type ModeArgument =
 
     /// Begins insert mode with an existing UndoTransaction.  This is used to link 
     /// change commands with text changes.  For example C, c, etc ...
-    | InsertWithTransaction of IUndoTransaction
+    | InsertWithTransaction of ILinkedUndoTransaction
 
 type ModeSwitch =
     | NoSwitch
@@ -1895,7 +1931,7 @@ type IVimData =
     abstract LastMacroRun : char option with get, set
 
     /// Last pattern searched for in any buffer.
-    abstract LastSearchData : SearchData with get, set
+    abstract LastPatternData : PatternData with get, set
 
     /// Data for the last substitute command performed
     abstract LastSubstituteData : SubstituteData option with get, set
@@ -1903,9 +1939,9 @@ type IVimData =
     /// Raise the highlight search one time disabled event
     abstract RaiseHighlightSearchOneTimeDisable : unit -> unit
 
-    /// Raised when the LastSearch value changes
+    /// Raised when the 'LastPatternData' value changes
     [<CLIEvent>]
-    abstract LastSearchDataChanged : IEvent<SearchData>
+    abstract LastPatternDataChanged : IEvent<PatternData>
 
     /// Raised when highlight search is disabled one time via the :noh command
     [<CLIEvent>]
@@ -2022,7 +2058,7 @@ and IVimBuffer =
     /// for convenience
     abstract RegisterMap : IRegisterMap
 
-    /// Underyling ITextBuffer Vim is operating under
+    /// Underlying ITextBuffer Vim is operating under
     abstract TextBuffer : ITextBuffer
 
     /// Current ITextSnapshot of the ITextBuffer
@@ -2033,6 +2069,9 @@ and IVimBuffer =
 
     /// The ITextViewMotionUtil associated with this IVimBuffer instance
     abstract TextViewMotionUtil : ITextViewMotionUtil
+
+    /// The IUndoRedoOperations associated with this IVimBuffer instance
+    abstract UndoRedoOperations : IUndoRedoOperations
 
     /// Owning IVim instance
     abstract Vim : IVim

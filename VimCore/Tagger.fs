@@ -125,7 +125,6 @@ type HighlightIncrementalSearchTagger
 
     let _tagsChanged = new Event<System.EventHandler<SnapshotSpanEventArgs>, SnapshotSpanEventArgs>()
     let _eventHandlers = DisposableBag()
-    let mutable _lastSearchData : SearchData option = None
 
     /// Users can temporarily disable highlight search with the ':noh' command.  This is true while 
     /// we are in that mode
@@ -145,10 +144,8 @@ type HighlightIncrementalSearchTagger
 
         // When the 'LastSearchData' property changes we want to reset the 'oneTimeDisabled' flag and 
         // begin highlighting again
-        _vimData.LastSearchDataChanged 
-        |> Observable.subscribe (fun data -> 
-            _lastSearchData <- Some data
-            resetDisabledAndRaiseAllChanged() )
+        _vimData.LastPatternDataChanged
+        |> Observable.subscribe (fun _ -> resetDisabledAndRaiseAllChanged() )
         |> _eventHandlers.Add
 
         // Make sure we respond to the HighlightSearchOneTimeDisabled event
@@ -167,9 +164,11 @@ type HighlightIncrementalSearchTagger
         |> _eventHandlers.Add
         
     member private x.GetTagsCore (col : NormalizedSnapshotSpanCollection) = 
-        // Build up the search information
-        let searchData = { _vimData.LastSearchData with Kind = SearchKind.Forward }
-            
+        // Build up the search information.  Don't need to wrap here as we just want
+        // to consider the SnapshotSpan going forward
+        let searchData = SearchData.OfPatternData _vimData.LastPatternData false
+        let searchData = { searchData with Kind = SearchKind.Forward }
+
         let withSpan (span : SnapshotSpan) =  
             span.Start
             |> Seq.unfold (fun point -> 

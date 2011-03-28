@@ -54,7 +54,7 @@ namespace VimCore.UnitTest
         public void GetTags_HighlightDisabled()
         {
             Create("dog cat");
-            _vimData.LastSearchData = VimUtil.CreateSearchData("dog");
+            _vimData.LastPatternData = VimUtil.CreatePatternData("dog");
             _globalSettings.HighlightSearch = false;
             var ret = _taggerRaw.GetTags(_textBuffer.CurrentSnapshot.GetTaggerExtent());
             Assert.AreEqual(0, ret.Count());
@@ -67,7 +67,7 @@ namespace VimCore.UnitTest
         public void GetTags_PatternEmpty()
         {
             Create("dog cat");
-            _vimData.LastSearchData = VimUtil.CreateSearchData("");
+            _vimData.LastPatternData = VimUtil.CreatePatternData("");
             var ret = _taggerRaw.GetTags(_textBuffer.CurrentSnapshot.GetTaggerExtent());
             Assert.AreEqual(0, ret.Count());
         }
@@ -79,7 +79,7 @@ namespace VimCore.UnitTest
         public void GetTags_WithMatch()
         {
             Create("foo is the bar");
-            _vimData.LastSearchData = VimUtil.CreateSearchData("foo");
+            _vimData.LastPatternData = VimUtil.CreatePatternData("foo");
             var ret = _taggerRaw.GetTags(_textBuffer.CurrentSnapshot.GetTaggerExtent());
             Assert.AreEqual(1, ret.Count());
             Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3), ret.Single().Span);
@@ -104,7 +104,7 @@ namespace VimCore.UnitTest
         public void GetTags_OutSideSpan()
         {
             Create("foo is the bar");
-            _vimData.LastSearchData = VimUtil.CreateSearchData("foo");
+            _vimData.LastPatternData = VimUtil.CreatePatternData("foo");
             var ret = _taggerRaw.GetTags(new NormalizedSnapshotSpanCollection(new SnapshotSpan(_textBuffer.CurrentSnapshot, 4, 3)));
             Assert.AreEqual(0, ret.Count());
         }
@@ -116,7 +116,7 @@ namespace VimCore.UnitTest
         public void GetTags_SpansOnStartOfMatch()
         {
             Create("foo is the bar");
-            _vimData.LastSearchData = VimUtil.CreateSearchData("foo");
+            _vimData.LastPatternData = VimUtil.CreatePatternData("foo");
             var ret = _taggerRaw.GetTags(new NormalizedSnapshotSpanCollection(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 2)));
             Assert.AreEqual(1, ret.Count());
             Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3), ret.Single().Span);
@@ -158,7 +158,7 @@ namespace VimCore.UnitTest
         {
             Create("");
             _taggerRaw._oneTimeDisabled = true;
-            _vimData.LastSearchData = VimUtil.CreateSearchData("dog");
+            _vimData.LastPatternData = VimUtil.CreatePatternData("dog");
             Assert.IsFalse(_taggerRaw._oneTimeDisabled);
         }
     }

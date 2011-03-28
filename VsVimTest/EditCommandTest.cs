@@ -35,19 +35,10 @@ namespace VsVim.UnitTest
         [Test]
         public void IsInput1()
         {
-            Assert.IsTrue(Create('a', EditCommandKind.TypeChar).IsInput);
-            Assert.IsTrue(Create('a', EditCommandKind.Backspace).IsInput);
-            Assert.IsTrue(Create('a', EditCommandKind.Delete).IsInput);
-            Assert.IsTrue(Create('a', EditCommandKind.Return).IsInput);
+            Assert.IsTrue(Create('a', EditCommandKind.TypeChar).HasKeyInput);
+            Assert.IsTrue(Create('a', EditCommandKind.Backspace).HasKeyInput);
+            Assert.IsTrue(Create('a', EditCommandKind.Delete).HasKeyInput);
+            Assert.IsTrue(Create('a', EditCommandKind.Return).HasKeyInput);
         }
-
-        [Test]
-        public void IsInput2()
-        {
-            Assert.IsFalse(Create('a', EditCommandKind.Cancel).IsInput);
-            Assert.IsFalse(Create('a', EditCommandKind.Unknown).IsInput);
-            Assert.IsFalse(Create('a', EditCommandKind.CursorMovement).IsInput);
-        }
-
     }
 }

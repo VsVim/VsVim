@@ -93,7 +93,7 @@ namespace VimCore.UnitTest
         private void SetupSearchForPattern(string pattern, Path path, SnapshotSpan? found, SnapshotPoint? startPoint = null)
         {
             startPoint = startPoint ?? _textView.GetCaretPoint();
-            var data = new SearchData(pattern, SearchKind.OfPath(path), PatternUtil.DefaultSearchOptions);
+            var data = new SearchData(pattern, SearchKind.OfPath(path), PatternData.DefaultSearchOptions);
             if (found.HasValue)
             {
                 _operations
@@ -1542,11 +1542,11 @@ namespace VimCore.UnitTest
         public void MoveCaretToNextWord_NoWordUnderCaret()
         {
             Create("  ", "foo bar baz");
-            _vimData.LastSearchData = VimUtil.CreateSearchData("cat");
+            _vimData.LastPatternData = VimUtil.CreatePatternData("cat");
             _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
             _commandUtil.MoveCaretToNextWord(Path.Forward, 1);
             _statusUtil.Verify();
-            Assert.AreEqual("cat", _vimData.LastSearchData.Pattern);
+            Assert.AreEqual("cat", _vimData.LastPatternData.Pattern);
         }
 
         /// <summary>
@@ -1559,7 +1559,7 @@ namespace VimCore.UnitTest
             SetupSearchForPattern(@"\<hello\>", Path.Forward, _textView.GetLine(1).Extent);
             _commandUtil.MoveCaretToNextWord(Path.Forward, 1);
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            Assert.AreEqual(@"\<hello\>", _vimData.LastSearchData.Pattern);
+            Assert.AreEqual(@"\<hello\>", _vimData.LastPatternData.Pattern);
         }
 
         /// <summary>
@@ -1598,8 +1598,8 @@ namespace VimCore.UnitTest
         public void MoveCaretToLastSearch_UsePattern()
         {
             Create("foo bar", "foo");
-            var data = new SearchData("foo", SearchKind.ForwardWithWrap, SearchOptions.None);
-            _vimData.LastSearchData = data;
+            var data = VimUtil.CreatePatternData("foo", Path.Forward);
+            _vimData.LastPatternData = data;
             SetupSearchForPattern("foo", Path.Forward, _textView.GetLine(1).Extent);
             _commandUtil.MoveCaretToLastSearch(false, 1);
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
@@ -1614,10 +1614,10 @@ namespace VimCore.UnitTest
         {
             Create("dog cat", "dog", "dog");
             SetupSearchForPattern("dog", Path.Backward, _textView.GetLine(1).Extent);
-            var data = new SearchData("dog", SearchKind.Forward, SearchOptions.None);
-            _vimData.LastSearchData = data;
+            var data = VimUtil.CreatePatternData("dog", Path.Forward);
+            _vimData.LastPatternData = data;
             _commandUtil.MoveCaretToLastSearch(true, 1);
-            Assert.AreEqual(data, _vimData.LastSearchData);
+            Assert.AreEqual(data, _vimData.LastPatternData);
         }
     }
 }

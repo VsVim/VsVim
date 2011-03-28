@@ -12,6 +12,13 @@ type Path =
     | Forward
     | Backward
 
+    with
+
+    static member Reverse path = 
+        match path with
+        | Path.Forward -> Path.Backward
+        | Path.Backward -> Path.Forward
+
 type SearchKind = 
      | Forward
      | ForwardWithWrap

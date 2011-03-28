@@ -7,12 +7,14 @@ namespace VsVim
     /// </summary>
     internal enum EditCommandKind
     {
+        Unknown,
         TypeChar,
         Return,
         Cancel,
         Delete,
         Backspace,
         CursorMovement,
-        Unknown
+        Undo,
+        Redo
     }
 }

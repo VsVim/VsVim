@@ -114,6 +114,20 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region UndoRedoData
+
+        internal static UndoRedoData.Normal AsNormal(this UndoRedoData data)
+        {
+            return (UndoRedoData.Normal) data;
+        }
+
+        internal static UndoRedoData.Linked AsLinked(this UndoRedoData data)
+        {
+            return (UndoRedoData.Linked) data;
+        }
+
+        #endregion
+
         #region Command
 
         public static Command.LegacyCommand AsLegacyCommand(this Command command)

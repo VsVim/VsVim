@@ -10,7 +10,7 @@ namespace VsVim
     {
         /// <summary>
         /// Is this a command we should immediately filter out in debug mode so that I can see what is actually 
-        /// new and interesteing
+        /// new and interesting
         /// </summary>
         internal static bool IsDebugIgnore(Guid commandGroup, uint commandId)
         {
@@ -116,20 +116,20 @@ namespace VsVim
             }
         }
 
-        internal static bool TryConvert(VSConstants.VSStd2KCmdID cmdId, IntPtr pVariantIn, out KeyInput ki, out EditCommandKind kind)
+        internal static bool TryConvert(VSConstants.VSStd2KCmdID cmdId, IntPtr variantIn, out KeyInput ki, out EditCommandKind kind)
         {
             kind = EditCommandKind.Unknown;
             ki = null;
             switch (cmdId)
             {
                 case VSConstants.VSStd2KCmdID.TYPECHAR:
-                    if (pVariantIn == IntPtr.Zero)
+                    if (variantIn == IntPtr.Zero)
                     {
                         ki = KeyInputUtil.CharToKeyInput(Char.MinValue);
                     }
                     else
                     {
-                        var obj = Marshal.GetObjectForNativeVariant(pVariantIn);
+                        var obj = Marshal.GetObjectForNativeVariant(variantIn);
                         var c = (char)(ushort)obj;
                         ki = KeyInputUtil.CharToKeyInput(c);
                     }
@@ -189,6 +189,16 @@ namespace VsVim
                     ki = KeyInputUtil.VimKeyToKeyInput(VimKey.PageUp);
                     kind = EditCommandKind.CursorMovement;
                     break;
+                case VSConstants.VSStd2KCmdID.UNDO:
+                case VSConstants.VSStd2KCmdID.UNDONOMOVE:
+                    ki = KeyInput.DefaultValue;
+                    kind = EditCommandKind.Undo;
+                    break;
+                case VSConstants.VSStd2KCmdID.REDO:
+                case VSConstants.VSStd2KCmdID.REDONOMOVE:
+                    ki = KeyInput.DefaultValue;
+                    kind = EditCommandKind.Redo;
+                    break;
                 default:
                     break;
             }
@@ -196,14 +206,14 @@ namespace VsVim
             return ki != null;
         }
 
-        internal static bool TryConvert(VSConstants.VSStd97CmdID cmdId, IntPtr pVariantIn, out KeyInput ki, out EditCommandKind kind)
+        internal static bool TryConvert(VSConstants.VSStd97CmdID cmdId, IntPtr variantIn, out KeyInput ki, out EditCommandKind kind)
         {
             ki = null;
             kind = EditCommandKind.Unknown;
             switch (cmdId)
             {
                 case VSConstants.VSStd97CmdID.SingleChar:
-                    var obj = Marshal.GetObjectForNativeVariant(pVariantIn);
+                    var obj = Marshal.GetObjectForNativeVariant(variantIn);
                     var c = (char)(ushort)obj;
                     ki = KeyInputUtil.CharToKeyInput(c);
                     kind = EditCommandKind.TypeChar;
@@ -219,6 +229,34 @@ namespace VsVim
                 case VSConstants.VSStd97CmdID.F1Help:
                     ki = KeyInputUtil.VimKeyToKeyInput(VimKey.F1);
                     kind = EditCommandKind.Unknown;
+                    break;
+                case VSConstants.VSStd97CmdID.Undo:
+                    ki = KeyInput.DefaultValue;
+                    kind = EditCommandKind.Undo;
+                    break;
+                case VSConstants.VSStd97CmdID.Redo:
+                    ki = KeyInput.DefaultValue;
+                    kind = EditCommandKind.Redo;
+                    break;
+                case VSConstants.VSStd97CmdID.MultiLevelUndo:
+                    // This occurs when the undo button is pressed.  If it's just simply pressed we get 
+                    // a IntPtr.Zero 'variantIn' value and can proceed with Vim undo.  Else user selected
+                    // a very specific undo point and we shouldn't mess with it
+                    if (variantIn == IntPtr.Zero)
+                    {
+                        ki = KeyInput.DefaultValue;
+                        kind = EditCommandKind.Undo;
+                    }
+                    break;
+                case VSConstants.VSStd97CmdID.MultiLevelRedo:
+                    // This occurs when the redo button is pressed.  If it's just simply pressed we get 
+                    // a IntPtr.Zero 'variantIn' value and can proceed with Vim redo .  Else user selected
+                    // a very specific redo point and we shouldn't mess with it
+                    if (variantIn == IntPtr.Zero)
+                    {
+                        ki = KeyInput.DefaultValue;
+                        kind = EditCommandKind.Redo;
+                    }
                     break;
             }
 

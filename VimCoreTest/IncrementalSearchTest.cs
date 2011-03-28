@@ -81,7 +81,7 @@ namespace VimCore.UnitTest
             Create("foo bar");
             Assert.IsTrue(_search.Begin(Path.Forward).Run("f").Run(VimKey.Enter).IsComplete);
             _factory.Verify();
-            Assert.AreEqual("f", _vimData.LastSearchData.Pattern);
+            Assert.AreEqual("f", _vimData.LastPatternData.Pattern);
         }
 
         /// <summary>
@@ -101,9 +101,9 @@ namespace VimCore.UnitTest
         public void LastSearch1()
         {
             Create(" foo bar");
-            var data = new SearchData("foo", SearchKind.ForwardWithWrap, s_options);
+            var data = VimUtil.CreatePatternData("foo", Path.Forward);
             ProcessWithEnter("foo");
-            Assert.AreEqual(data, _vimData.LastSearchData);
+            Assert.AreEqual(data, _vimData.LastPatternData);
             _factory.Verify();
         }
 
@@ -113,12 +113,12 @@ namespace VimCore.UnitTest
             Create(" foo bar");
 
             ProcessWithEnter("foo bar");
-            Assert.AreEqual(new SearchData("foo bar", SearchKind.ForwardWithWrap, s_options), _vimData.LastSearchData);
+            Assert.AreEqual(VimUtil.CreatePatternData("foo bar", Path.Forward), _vimData.LastPatternData);
             _factory.Verify();
 
             _textView.MoveCaretTo(0);
             ProcessWithEnter("bar");
-            Assert.AreEqual(new SearchData("bar", SearchKind.ForwardWithWrap, s_options), _vimData.LastSearchData);
+            Assert.AreEqual(VimUtil.CreatePatternData("bar", Path.Forward), _vimData.LastPatternData);
             _factory.Verify();
         }
 
@@ -172,7 +172,7 @@ namespace VimCore.UnitTest
 
             ProcessWithEnter("foo");
             Assert.IsTrue(didRun);
-            Assert.AreEqual(new SearchData("foo", SearchKind.ForwardWithWrap, s_options), _vimData.LastSearchData);
+            Assert.AreEqual(VimUtil.CreatePatternData("foo", Path.Forward), _vimData.LastPatternData);
         }
 
         [Test]
@@ -206,7 +206,7 @@ namespace VimCore.UnitTest
             _search.DoSearch("foo");
             Assert.IsFalse(_search.InSearch);
             Assert.IsFalse(_search.CurrentSearch.IsSome());
-            Assert.AreEqual("foo", _vimData.LastSearchData.Pattern);
+            Assert.AreEqual("foo", _vimData.LastPatternData.Pattern);
         }
 
         /// <summary>

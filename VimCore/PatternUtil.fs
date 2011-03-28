@@ -3,9 +3,6 @@ namespace Vim
 
 module PatternUtil =
 
-    /// The default search options when looking at a specific pattern
-    let DefaultSearchOptions = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderSmartCase
-
     /// Is this a whole word pattern?
     let IsWholeWord pattern = StringUtil.startsWith "\<" pattern && StringUtil.endsWith "\>" pattern
 

@@ -71,7 +71,7 @@ namespace VsVim
         {
             EditCommand command;
             return OleCommandUtil.TryConvert(commandGroup, commandId, out command)
-                && command.IsInput;
+                && command.HasKeyInput;
         }
 
         /// <summary>

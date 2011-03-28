@@ -33,7 +33,7 @@ type TextEdit =
 type InsertSessionData = {
 
     /// The transaction which is bracketing this Insert mode session
-    Transaction : IUndoTransaction option
+    Transaction : ILinkedUndoTransaction option
 
     /// If this Insert is a repeat operation this holds the count and 
     /// whether or not a newline should be inserted after the text
@@ -326,13 +326,13 @@ type internal InsertMode
             match arg with
             | ModeArgument.InsertWithCount count ->
                 if count > 1 then
-                    let transaction = _undoRedoOperations.CreateUndoTransaction "Insert"
+                    let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
                     Some transaction, Some (count, false)
                 else
                     None, None
             | ModeArgument.InsertWithCountAndNewLine count ->
                 if count > 1 then
-                    let transaction = _undoRedoOperations.CreateUndoTransaction "Insert"
+                    let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
                     Some transaction, Some (count, true)
                 else
                     None, None
@@ -341,7 +341,7 @@ type internal InsertMode
             | _ -> 
                 if _isReplace then
                     // Replace mode occurs under a transaction even if we are not repeating
-                    let transaction = _undoRedoOperations.CreateUndoTransaction "Repeat Mode"
+                    let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
                     Some transaction, None
                 else
                     None, None

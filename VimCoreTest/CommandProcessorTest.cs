@@ -748,7 +748,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.None));
-            _vimData.LastSearchData = VimUtil.CreateSearchData("a");
+            _vimData.LastPatternData = VimUtil.CreatePatternData("a");
             _operations
                 .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None))
                 .Verifiable();
@@ -763,7 +763,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
-            _vimData.LastSearchData = VimUtil.CreateSearchData("a");
+            _vimData.LastPatternData = VimUtil.CreatePatternData("a");
             _operations
                 .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None))
                 .Verifiable();
@@ -778,7 +778,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
-            _vimData.LastSearchData = VimUtil.CreateSearchData("a");
+            _vimData.LastPatternData = VimUtil.CreatePatternData("a");
             _operations
                 .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.ReplaceAll))
                 .Verifiable();
@@ -802,7 +802,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
-            _vimData.LastSearchData = VimUtil.CreateSearchData("a");
+            _vimData.LastPatternData = VimUtil.CreatePatternData("a");
             _operations
                 .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 2), SubstituteFlags.ReplaceAll))
                 .Verifiable();
@@ -829,7 +829,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
-            _vimData.LastSearchData = VimUtil.CreateSearchData("a");
+            _vimData.LastPatternData = VimUtil.CreatePatternData("a");
             _operations
                 .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None))
                 .Verifiable();
@@ -843,7 +843,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
-            _vimData.LastSearchData = VimUtil.CreateSearchData("a");
+            _vimData.LastPatternData = VimUtil.CreatePatternData("a");
             _operations
                 .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None))
                 .Verifiable();
@@ -949,7 +949,7 @@ namespace VimCore.UnitTest
             _operations
                 .Setup(x => x.Substitute("cat", "lab", _textView.GetLineRange(0, 0), SubstituteFlags.None))
                 .Verifiable();
-            _vimData.LastSearchData = new SearchData("cat", SearchKind.ForwardWithWrap, SearchOptions.None);
+            _vimData.LastPatternData = VimUtil.CreatePatternData("cat", Path.Forward);
             RunCommand("s//lab/");
         }
 

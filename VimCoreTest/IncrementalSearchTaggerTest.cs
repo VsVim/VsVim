@@ -25,6 +25,7 @@ namespace VimCore.UnitTest
             _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
             _globalSettings = _buffer.Settings.GlobalSettings;
             _globalSettings.IncrementalSearch = true;
+            _globalSettings.WrapScan = true;
             _search = _buffer.IncrementalSearch;
             _taggerRaw = new IncrementalSearchTagger(_buffer);
             _tagger = _taggerRaw;

@@ -330,6 +330,14 @@ namespace Vim.UnitTest
                 c.HasValue ? FSharpOption<char>.Some(c.Value) : FSharpOption<char>.None);
         }
 
+        internal static PatternData CreatePatternData(
+            string pattern,
+            Path path = null)
+        {
+            path = path ?? Path.Forward;
+            return new PatternData(pattern, path);
+        }
+
         internal static SearchData CreateSearchData(
             string pattern,
             SearchKind kind = null,

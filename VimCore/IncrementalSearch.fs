@@ -49,8 +49,8 @@ type internal IncrementalSearch
     /// Begin the incremental search along the specified path
     member x.Begin path = 
         let start = TextViewUtil.GetCaretPoint _textView
-        let kind = SearchKind.OfPathAndWrap path _globalSettings.WrapScan
-        let searchData = { Pattern = StringUtil.empty; Kind = kind; Options = PatternUtil.DefaultSearchOptions }
+        let patternData = { Pattern = StringUtil.empty; Path = path }
+        let searchData = SearchData.OfPatternData patternData _globalSettings.WrapScan
         let data = {
             StartPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
             SearchResult = SearchResult.NotFound (searchData, false)
@@ -114,12 +114,12 @@ type internal IncrementalSearch
             if StringUtil.isNullOrEmpty data.SearchData.Pattern then
                 // When the user simply hits Enter on an empty incremental search then
                 // we should be re-using the 'LastSearch' value.
-                x.RunSearch data _vimData.LastSearchData.Pattern
+                x.RunSearch data _vimData.LastPatternData.Pattern
             else 
                 data
 
         _operations.RaiseSearchResultMessages data.SearchResult
-        _vimData.LastSearchData <- data.SearchData
+        _vimData.LastPatternData <- data.SearchData.PatternData
         _currentSearchCompleted.Trigger data.SearchResult
         _data <- None
         data.SearchResult

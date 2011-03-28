@@ -152,8 +152,8 @@ type internal CommonOperations ( _data : OperationsData ) =
         let startPoint, didStartWrap = Util.GetSearchPointAndWrap path startPoint
 
         // Go ahead and run the search
-        let kind = SearchKind.OfPathAndWrap path _globalSettings.WrapScan
-        let searchData = { Pattern = pattern; Kind = kind; Options = PatternUtil.DefaultSearchOptions }
+        let patternData = { Pattern = pattern; Path = path }
+        let searchData = SearchData.OfPatternData patternData _globalSettings.WrapScan
         let result = _search.FindNextMultiple searchData startPoint _wordNavigator count
 
         // Need to fudge the SearchResult here to account for the possible wrap the 
@@ -824,10 +824,20 @@ type internal CommonOperations ( _data : OperationsData ) =
                     _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
 
             match _regexFactory.CreateForSubstituteFlags pattern flags with
-            | None -> _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
+            | None -> 
+                _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
             | Some (regex) -> 
                 doReplace regex
-                _vimData.LastSubstituteData <- Some {SearchPattern=pattern; Substitute=replace; Flags=flags}
+
+                // Make sure to update the saved state.  Note that there are 2 patterns stored 
+                // across buffers.
+                //
+                // 1. Last substituted pattern
+                // 2. Last searched for pattern.
+                //
+                // A substitute command should update both of them 
+                _vimData.LastSubstituteData <- Some { SearchPattern=pattern; Substitute=replace; Flags=flags}
+                _vimData.LastPatternData <- { Pattern = pattern; Path = Path.Forward }
 
 
         member x.UpdateRegister reg regOp editSpan opKind = 

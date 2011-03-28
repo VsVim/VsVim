@@ -8,28 +8,42 @@ namespace VsVim
     /// </summary>
     internal sealed class EditCommand
     {
-        internal readonly KeyInput KeyInput;
+        private readonly KeyInput _keyInput;
         internal readonly EditCommandKind EditCommandKind;
         internal readonly Guid Group;
         internal readonly uint Id;
 
         /// <summary>
-        /// Does this command represent input by the user?
+        /// Does this EditCommand have a corresponding KeyInput value which should
+        /// be used for the EditCommand. Anything returned here should participate in
+        /// key mapping.  
+        ///
+        /// Undo / Redo interception intentionally does not participate in this because 
+        /// we don't want to let key mapping interfere with undo / redo when the user
+        /// is just clicking on the undo / redo button
         /// </summary>
-        internal bool IsInput
+        internal bool HasKeyInput
+        {
+            get { return _keyInput != KeyInput.DefaultValue; }
+        }
+
+        internal KeyInput KeyInput
         {
             get
             {
-                switch (EditCommandKind)
-                {
-                    case EditCommandKind.Backspace:
-                    case EditCommandKind.TypeChar:
-                    case EditCommandKind.Delete:
-                    case EditCommandKind.Return:
-                        return true;
-                }
-                return false;
+                Contract.Requires(HasKeyInput);
+                return _keyInput;
             }
+        }
+
+        internal bool IsUndo
+        {
+            get { return EditCommandKind == EditCommandKind.Undo; }
+        }
+
+        internal bool IsRedo
+        {
+            get { return EditCommandKind == EditCommandKind.Redo; }
         }
 
         internal EditCommand(
@@ -38,7 +52,7 @@ namespace VsVim
             Guid group,
             uint id)
         {
-            KeyInput = input;
+            _keyInput = input;
             EditCommandKind = kind;
             Group = group;
             Id = id;
@@ -46,7 +60,7 @@ namespace VsVim
 
         public override string ToString()
         {
-            return String.Format("{0} Key.{1}: {2} {3}", EditCommandKind, KeyInput.Key, Group, Id);
+            return String.Format("{0} Key.{1}: {2} {3}", EditCommandKind, _keyInput.Key, Group, Id);
         }
     }
 }

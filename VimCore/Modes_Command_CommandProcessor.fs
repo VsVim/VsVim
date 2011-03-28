@@ -322,7 +322,7 @@ type internal CommandProcessor
     member x.ProcessSearchPattern path (rest : char list) range _ =
         let pattern = StringUtil.ofCharList rest
         let pattern = 
-            if StringUtil.isNullOrEmpty pattern then _vimData.LastSearchData.Pattern
+            if StringUtil.isNullOrEmpty pattern then _vimData.LastPatternData.Pattern
             else pattern
 
         // The search should begin after the last line in the specified range
@@ -616,7 +616,7 @@ type internal CommandProcessor
                         // Check for the previous search pattern flag
                         let search, errorMsg  = 
                             if Util.IsFlagSet flags SubstituteFlags.UsePreviousSearchPattern then
-                                match _regexFactory.Create _buffer.VimData.LastSearchData.Pattern with
+                                match _regexFactory.Create _buffer.VimData.LastPatternData.Pattern with
                                 | None -> (StringUtil.empty, Some Resources.CommandMode_NoPreviousSubstitute)
                                 | Some regex -> (regex.VimPattern, None)
                             else
@@ -624,7 +624,7 @@ type internal CommandProcessor
 
                         // If the search string is empty then use the previous search text
                         let search = 
-                            if StringUtil.isNullOrEmpty search then _buffer.VimData.LastSearchData.Pattern
+                            if StringUtil.isNullOrEmpty search then _buffer.VimData.LastPatternData.Pattern
                             else search
 
                         if Option.isSome errorMsg then
@@ -667,7 +667,7 @@ type internal CommandProcessor
                     let flags, pattern, errorMsg = 
                         if Util.IsFlagSet flags SubstituteFlags.UsePreviousSearchPattern then 
                             let flags = Util.UnsetFlag flags SubstituteFlags.UsePreviousSearchPattern
-                            match _regexFactory.Create _buffer.VimData.LastSearchData.Pattern with
+                            match _regexFactory.Create _buffer.VimData.LastPatternData.Pattern with
                             | None -> (flags, StringUtil.empty, Some Resources.CommandMode_InvalidCommand)
                             | Some(regex) -> (flags, regex.VimPattern, None)
                         else 

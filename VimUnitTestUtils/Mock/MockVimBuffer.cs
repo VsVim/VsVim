@@ -331,5 +331,11 @@ namespace Vim.UnitTest.Mock
 #pragma warning disable 67
         public event Microsoft.FSharp.Control.FSharpHandler<string> WarningMessage;
 #pragma warning restore 67
+
+
+        public IUndoRedoOperations UndoRedoOperations
+        {
+            get { throw new NotImplementedException(); }
+        }
     }
 }

@@ -58,7 +58,8 @@ type internal VimBuffer
         _settings : IVimLocalSettings,
         _incrementalSearch : IIncrementalSearch,
         _motionUtil : ITextViewMotionUtil,
-        _wordNavigator : ITextStructureNavigator
+        _wordNavigator : ITextStructureNavigator,
+        _undoRedoOperations : IUndoRedoOperations
     ) =
 
     let _properties = PropertyCollection()
@@ -224,6 +225,7 @@ type internal VimBuffer
         member x.TextViewMotionUtil = _motionUtil
         member x.TextBuffer = _textView.TextBuffer
         member x.TextSnapshot = _textView.TextSnapshot
+        member x.UndoRedoOperations = _undoRedoOperations
         member x.BufferedRemapKeyInputs = x.BufferedRemapKeyInputs 
         member x.IncrementalSearch = _incrementalSearch
         member x.IsProcessingInput = _isProcessingInput

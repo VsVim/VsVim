@@ -535,7 +535,7 @@ type internal TextViewMotionUtil
         _vimData : IVimData ) = 
 
     let _textBuffer = _textView.TextBuffer
-    let _settings = _localSettings.GlobalSettings
+    let _globalSettings = _localSettings.GlobalSettings
 
     /// Caret point in the view
     member x.StartPoint = TextViewUtil.GetCaretPoint _textView
@@ -546,7 +546,7 @@ type internal TextViewMotionUtil
 
     /// Apply the startofline option to the given MotionResult
     member x.ApplyStartOfLineOption (motionData:MotionResult) =
-        if not _settings.StartOfLine then motionData 
+        if not _globalSettings.StartOfLine then motionData 
         else
             let endLine = 
                 if motionData.IsForward then SnapshotSpanUtil.GetEndLine motionData.Span
@@ -590,7 +590,7 @@ type internal TextViewMotionUtil
 
         // Get the column based on the 'startofline' option
         let column = 
-            if _settings.StartOfLine then 
+            if _globalSettings.StartOfLine then 
                 endLine |> TssUtil.FindFirstNonWhiteSpaceCharacter |> SnapshotPointUtil.GetColumn
             else
                 _textView |> TextViewUtil.GetCaretPoint |> SnapshotPointUtil.GetColumn
@@ -1367,14 +1367,15 @@ type internal TextViewMotionUtil
                 Column = None} |> Some
 
     /// Get the motion for a search command.  Used to implement the '/' and '?' motions
-    member x.Search (searchData : SearchData) =
+    member x.Search (patternData : PatternData) =
 
-        // Searching as part of a motion should update the last search information
+        // Searching as part of a motion should update the last pattern information
         // irrespective of whether or not the search completes
-        _vimData.LastSearchData <- searchData
+        _vimData.LastPatternData <- patternData
 
         let caretPoint = TextViewUtil.GetCaretPoint _textView
-        let searchPoint = Util.GetSearchPoint searchData.Kind.Path caretPoint
+        let searchPoint = Util.GetSearchPoint patternData.Path caretPoint
+        let searchData = SearchData.OfPatternData patternData _globalSettings.WrapScan
         match _search.FindNext searchData searchPoint _navigator with
         | SearchResult.NotFound _ ->
             None
