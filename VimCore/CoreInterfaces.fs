@@ -109,11 +109,8 @@ type IUndoRedoOperations =
     /// StatusUtil instance that is used to report errors
     abstract StatusUtil : IStatusUtil
 
-    /// Undo the last "count" operations
-    abstract Undo : count:int -> unit
-
-    /// Redo the last "count" operations
-    abstract Redo : count:int -> unit
+    /// Close the IUndoRedoOperations and remove any attached event handlers
+    abstract Close : unit -> unit
 
     /// Creates an Undo Transaction
     abstract CreateUndoTransaction : name:string -> IUndoTransaction
@@ -126,6 +123,11 @@ type IUndoRedoOperations =
     /// during an undo operation
     abstract EditWithUndoTransaction<'T> : name : string -> action : (unit -> 'T) -> 'T
 
+    /// Redo the last "count" operations
+    abstract Redo : count:int -> unit
+
+    /// Undo the last "count" operations
+    abstract Undo : count:int -> unit
 
 [<System.Flags>]
 type SearchOptions = 

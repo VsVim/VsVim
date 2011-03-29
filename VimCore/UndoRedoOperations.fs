@@ -78,6 +78,7 @@ and UndoRedoOperations
     let mutable _inUndoRedo = false
     let mutable _undoStack : UndoRedoData list = List.empty
     let mutable _redoStack : UndoRedoData list = List.empty
+    let _bag = DisposableBag()
 
     do
         match _history with 
@@ -85,7 +86,7 @@ and UndoRedoOperations
             ()
         | Some history -> 
             history.UndoTransactionCompleted
-            |> Event.filter (fun args ->
+            |> Observable.filter (fun args ->
                 
                 // We are only concerned with added transactions as they affect the actual undo
                 // stack.  Merged transactions don't affect the stack
@@ -97,10 +98,18 @@ and UndoRedoOperations
                 | TextUndoTransactionCompletionResult.TransactionAdded -> true
                 | TextUndoTransactionCompletionResult.TransactionMerged -> false
                 | _ -> false)
-            |> Event.add (fun _ -> this.OnUndoTransactionCompleted())
+            |> Observable.subscribe (fun _ -> this.OnUndoTransactionCompleted())
+            |> _bag.Add
 
             history.UndoRedoHappened
-            |> Event.add (fun _ -> this.OnUndoRedoHappened())
+            |> Observable.subscribe (fun _ -> this.OnUndoRedoHappened())
+            |> _bag.Add
+
+    /// Closing simply means we need to detach from our event handlers so memory can
+    /// be reclaimed.  IVimBuffer operates at an ITextView level but here we are 
+    /// handling events at an ITextBuffer level.  This easily creates a leak if we 
+    /// remain attached and only the ITextView is closed.  
+    member x.Close () = _bag.DisposeAll()
 
     member x.UndoStack = _undoStack
     member x.RedoStack = _redoStack
@@ -260,6 +269,7 @@ and UndoRedoOperations
 
     interface IUndoRedoOperations with
         member x.StatusUtil = _statusUtil
+        member x.Close() = x.Close()
         member x.CreateUndoTransaction name = x.CreateUndoTransaction name
         member x.CreateLinkedUndoTransaction () = x.CreateLinkedUndoTransaction()
         member x.Redo count = x.Redo count

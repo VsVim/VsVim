@@ -281,6 +281,7 @@ type internal VimBuffer
                     x.Mode.OnLeave()
                     _modeMap.Modes |> Seq.iter (fun x -> x.OnClose())
                     _vim.RemoveBuffer _textView |> ignore
+                    _undoRedoOperations.Close()
                     _closedEvent.Trigger System.EventArgs.Empty
                 finally 
                     _isClosed <- true
