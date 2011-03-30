@@ -613,26 +613,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        [Description("Don't allow spaces between the flags")]
-        public void Substitute21()
-        {
-            Create("cat", "dog");
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_TrailingCharacters)).Verifiable();
-            RunCommand("&& g");
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("Space between last slash and flags is not legal")]
-        public void Substitute22()
-        {
-            Create("cat", "dog");
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_TrailingCharacters)).Verifiable();
-            RunCommand("s/a/b/ g");
-            _factory.Verify();
-        }
-
-        [Test]
         [Description("Space in middle of flags is also not legal")]
         public void Substitute23()
         {
@@ -787,16 +767,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        [Description("Repeat using ~& does not allow flags after a space")]
-        public void Substitute35()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_TrailingCharacters)).Verifiable();
-            RunCommand("~& g");
-            _factory.Verify();
-        }
-
-        [Test]
         [Description("Repeat using ~ allows for a count")]
         public void Substitute36()
         {
@@ -820,20 +790,6 @@ namespace VimCore.UnitTest
                 .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.OrdinalCase))
                 .Verifiable();
             RunCommand("&&");
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("Repeat via s plus r uses last search")]
-        public void Substitute38()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
-            _vimData.LastPatternData = VimUtil.CreatePatternData("a");
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None))
-                .Verifiable();
-            RunCommand("s r");
             _factory.Verify();
         }
 
@@ -951,6 +907,103 @@ namespace VimCore.UnitTest
                 .Verifiable();
             _vimData.LastPatternData = VimUtil.CreatePatternData("cat", Path.Forward);
             RunCommand("s//lab/");
+            _operations.Verify();
+        }
+
+        /// <summary>
+        /// Support escaping of the backslash character in the strings
+        /// </summary>
+        [Test]
+        public void Substitute_BackslashEscape()
+        {
+            Create("and");
+            _operations
+                .Setup(x => x.Substitute(@"and", @"and/or", _textView.GetLineRange(0, 0), SubstituteFlags.None))
+                .Verifiable();
+            RunCommand(@"s/and/and\/or/");
+            _operations.Verify();
+        }
+
+        /// <summary>
+        /// Don't allow spaces between the flags
+        /// </summary>
+        [Test]
+        public void Substitute_SpacesBetweenFlags()
+        {
+            Create("cat", "dog");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("cat", "dog", SubstituteFlags.None));
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_TrailingCharacters)).Verifiable();
+            RunCommand("&& g");
+            _factory.Verify();
+        }
+
+        /// <summary>
+        /// Space between the final delimiter and flags is not allowed
+        /// </summary>
+        [Test]
+        public void Substitute_SpaceBetweenFinalDelimiterAndFlags()
+        {
+            Create("cat", "dog");
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_TrailingCharacters)).Verifiable();
+            RunCommand("s/a/b/ g");
+            _factory.Verify();
+        }
+
+        /// <summary>
+        /// Spaces are not allowed in between flags.  They must come in a group
+        /// </summary>
+        [Test]
+        public void Substitute_TildeWithSpacesInFlags()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("cat", "dog", SubstituteFlags.None));
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_TrailingCharacters)).Verifiable();
+            RunCommand("~& g");
+            _statusUtil.Verify();
+        }
+
+        /// <summary>
+        /// No argument substitute + r should use the last pattern as the pattern
+        /// </summary>
+        [Test]
+        public void Substitute_NoArgumentWithUseLastPatternFlag()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
+            _vimData.LastPatternData = VimUtil.CreatePatternData("a");
+            _operations
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None))
+                .Verifiable();
+            RunCommand("s r");
+            _factory.Verify();
+        }
+
+        /// <summary>
+        /// Make sure we handle comma as a delimiter
+        /// </summary>
+        [Test]
+        public void Substitute_CommaDelimiter()
+        {
+            Create("");
+            _operations
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None))
+                .Verifiable();
+            RunCommand("s,a,b,");
+            _operations.Verify();
+        }
+
+        /// <summary>
+        /// Make sure we handle ampersand as a delimiter
+        /// </summary>
+        [Test]
+        public void Substitute_AmpersandDelimiter()
+        {
+            Create("");
+            _operations
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.ReplaceAll))
+                .Verifiable();
+            RunCommand("s&a&b&g");
+            _operations.Verify();
         }
 
         [Test]

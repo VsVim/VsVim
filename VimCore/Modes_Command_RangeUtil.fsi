@@ -19,6 +19,10 @@ module internal RangeUtil =
     /// if the Range Option is empty
     val RangeOrCurrentLine : ITextView -> SnapshotLineRange option -> SnapshotLineRange
 
+    /// Retrieve the passed in range if valid or the range for the current line
+    /// if the Range Option is empty.  It will then try to apply the specified count
+    val RangeOrCurrentLineWithCount : ITextView -> SnapshotLineRange option -> int option -> SnapshotLineRange
+
     /// Apply the count to the given range
     val ApplyCount : int -> SnapshotLineRange -> SnapshotLineRange
 

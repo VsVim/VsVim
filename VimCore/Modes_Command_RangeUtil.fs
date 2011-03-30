@@ -37,13 +37,6 @@ module internal RangeUtil =
 
     let private _parser = RangeParser()
 
-    let RangeForCurrentLine view = view |> TextViewUtil.GetCaretLine |> SnapshotLineRangeUtil.CreateForLine
-
-    let RangeOrCurrentLine view rangeOpt =
-        match rangeOpt with
-        | Some(range) -> range
-        | None -> RangeForCurrentLine view
-
     let ApplyCount count (range:SnapshotLineRange) =
         let count = if count <= 1 then 1 else count
         SnapshotLineRangeUtil.CreateForLineAndMaxCount range.EndLine count
@@ -52,6 +45,20 @@ module internal RangeUtil =
         match count with 
         | None -> range
         | Some(count) -> ApplyCount count range
+
+    let RangeForCurrentLine view = view |> TextViewUtil.GetCaretLine |> SnapshotLineRangeUtil.CreateForLine
+
+    let RangeOrCurrentLine view rangeOpt =
+        match rangeOpt with
+        | Some(range) -> range
+        | None -> RangeForCurrentLine view
+
+    let RangeOrCurrentLineWithCount view rangeOpt countOpt =
+        let range = 
+            match rangeOpt with
+            | Some range -> range
+            | None -> RangeForCurrentLine view
+        TryApplyCount countOpt range
 
     /// Combine the two ranges
     let CombineRanges (left:SnapshotLineRange) (right:SnapshotLineRange) = 

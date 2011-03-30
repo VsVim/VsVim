@@ -101,7 +101,12 @@ module internal ListUtil =
             else contains value t
         | [] -> false
 
-        
+    /// Is the head of the list the specified value
+    let isHead value list = 
+        match list with
+        | [] -> false
+        | head :: _ -> head = value
+
 module internal SeqUtil =
     
     /// Try and get the head of the Sequence.  Will return the head of list and tail 
