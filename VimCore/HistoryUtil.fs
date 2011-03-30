@@ -61,6 +61,13 @@ type internal HistoryUtil ()  =
             HistoryUtil.ProcessUp data command
         elif keyInput.Key = VimKey.Down then
             HistoryUtil.ProcessDown data command
+        elif keyInput.Key = VimKey.Left || keyInput.Key = VimKey.Right then
+            // TODO: We will be implementing command line editing at some point.  In the mean
+            // time though don't process these keys as they don't have real character 
+            // representations and will show up as squares.  Just beep to let the user 
+            // know we don't support it
+            historyClient.Beep()
+            BindResult<_>.CreateNeedMoreInput historyClient.RemapMode (HistoryUtil.Process data command)
         else
             let command = command + (keyInput.Char.ToString())
             processCommand command
