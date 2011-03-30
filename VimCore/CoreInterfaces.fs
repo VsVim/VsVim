@@ -292,7 +292,11 @@ type Motion =
     | EndOfLine
 
     /// Find the first non-whitespace character as the start of the span.  This is an exclusive
-    /// motion so be careful we don't go to far forward
+    /// motion so be careful we don't go to far forward.  Providing a count to this motion has
+    /// no affect
+    | FirstNonWhiteSpaceOnCurrentLine
+
+    /// Find the first non-whitespace character on the (count - 1) line below this line
     | FirstNonWhiteSpaceOnLine
 
     /// Find the last non-whitespace character on the line.  Count causes it to go "count" lines

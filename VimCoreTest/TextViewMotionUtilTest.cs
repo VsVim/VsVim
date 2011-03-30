@@ -5,9 +5,9 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
-using Vim.Extensions;
 
 namespace VimCore.UnitTest
 {
@@ -236,64 +236,91 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void FirstNonWhiteSpaceOnLine1()
+        public void FirstNonWhiteSpaceOnCurrentLine1()
         {
             Create("foo");
             _textView.MoveCaretTo(_buffer.GetLineFromLineNumber(0).End);
-            var tuple = _motionUtil.FirstNonWhiteSpaceOnLine();
+            var tuple = _motionUtil.FirstNonWhiteSpaceOnCurrentLine();
             Assert.AreEqual("foo", tuple.Span.GetText());
             Assert.AreEqual(MotionKind.Exclusive, tuple.MotionKind);
             Assert.AreEqual(OperationKind.CharacterWise, tuple.OperationKind);
         }
 
         [Test, Description("Make sure it goes to the first non-whitespace character")]
-        public void FirstNonWhiteSpaceOnLine2()
+        public void FirstNonWhiteSpaceOnCurrentLine2()
         {
             Create("  foo");
             _textView.MoveCaretTo(_buffer.GetLineFromLineNumber(0).End);
-            var tuple = _motionUtil.FirstNonWhiteSpaceOnLine();
+            var tuple = _motionUtil.FirstNonWhiteSpaceOnCurrentLine();
             Assert.AreEqual("foo", tuple.Span.GetText());
             Assert.AreEqual(MotionKind.Exclusive, tuple.MotionKind);
             Assert.AreEqual(OperationKind.CharacterWise, tuple.OperationKind);
         }
 
         [Test, Description("Make sure to ignore tabs")]
-        public void FirstNonWhiteSpaceOnLine3()
+        public void FirstNonWhiteSpaceOnCurrentLine3()
         {
             var text = "\tfoo";
             Create(text);
             _textView.MoveCaretTo(_buffer.GetLineFromLineNumber(0).End);
-            var tuple = _motionUtil.FirstNonWhiteSpaceOnLine();
+            var tuple = _motionUtil.FirstNonWhiteSpaceOnCurrentLine();
             Assert.AreEqual(text.IndexOf('f'), tuple.Span.Start);
             Assert.IsFalse(tuple.IsForward);
         }
 
         [Test]
         [Description("Make sure to move forward to the first non-whitespace")]
-        public void FirstNonWhiteSpaceOnLine4()
+        public void FirstNonWhiteSpaceOnCurrentLine4()
         {
             Create(0, "   bar");
-            var data = _motionUtil.FirstNonWhiteSpaceOnLine();
+            var data = _motionUtil.FirstNonWhiteSpaceOnCurrentLine();
             Assert.AreEqual(_buffer.GetSpan(0, 3), data.Span);
         }
 
         [Test]
         [Description("Empty line case")]
-        public void FirstNonWhiteSpaceOnLine5()
+        public void FirstNonWhiteSpaceOnCurrentLine5()
         {
             Create(0, "");
-            var data = _motionUtil.FirstNonWhiteSpaceOnLine();
+            var data = _motionUtil.FirstNonWhiteSpaceOnCurrentLine();
             Assert.AreEqual(_buffer.GetSpan(0, 0), data.Span);
         }
 
         [Test]
         [Description("Backwards case")]
-        public void FirstNonWhiteSpaceOnLine6()
+        public void FirstNonWhiteSpaceOnCurrentLine6()
         {
             Create(3, "bar");
-            var data = _motionUtil.FirstNonWhiteSpaceOnLine();
+            var data = _motionUtil.FirstNonWhiteSpaceOnCurrentLine();
             Assert.AreEqual(_buffer.GetSpan(0, 3), data.Span);
             Assert.IsFalse(data.IsForward);
+        }
+
+        /// <summary>
+        /// A count of 1 should return a single line 
+        /// </summary>
+        [Test]
+        public void FirstNonWhiteSpaceOnLine_Single()
+        {
+            Create(0, "cat", "dog");
+            var data = _motionUtil.FirstNonWhiteSpaceOnLine(1);
+            Assert.AreEqual("cat", data.LineRange.Extent.GetText());
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+            Assert.IsTrue(data.IsForward);
+            Assert.IsTrue(data.Column.IsSome(0));
+        }
+
+        /// <summary>
+        /// A count of 2 should return 2 lines and the column should be on the last
+        /// line
+        /// </summary>
+        [Test]
+        public void FirstNonWhiteSpaceOnLine_Double()
+        {
+            Create(0, "cat", " dog");
+            var data = _motionUtil.FirstNonWhiteSpaceOnLine(2);
+            Assert.AreEqual(_textView.GetLineRange(0, 1), data.LineRange);
+            Assert.IsTrue(data.Column.IsSome(1));
         }
 
         [Test]

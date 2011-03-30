@@ -388,7 +388,7 @@ namespace VimCore.UnitTest
         public void Bind_Motion_Hat()
         {
             Create("   foo bar");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.FirstNonWhiteSpaceOnLine));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.FirstNonWhiteSpaceOnCurrentLine));
             _mode.Process('^');
             _commandUtil.Verify();
         }

@@ -161,6 +161,7 @@ type internal NormalMode
                 yield ("S", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeLines)
                 yield ("x", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
                 yield ("X", CommandFlags.Repeatable, NormalCommand.DeleteCharacterBeforeCaret)
+                yield ("<Insert>", CommandFlags.None, NormalCommand.InsertBeforeCaret)
                 yield ("<C-w><C-j>", CommandFlags.None, NormalCommand.GoToView Direction.Down)
                 yield ("<C-w>j", CommandFlags.None, NormalCommand.GoToView Direction.Down)
                 yield ("<C-w><C-k>", CommandFlags.None, NormalCommand.GoToView Direction.Up)

@@ -1391,5 +1391,17 @@ namespace VimCore.UnitTest
             _buffer.Process("\"0p");
             Assert.AreEqual("dog", _textView.GetLine(2).GetText());
         }
+
+        /// <summary>
+        /// Make sure we move to the column on the current line when there is no count
+        /// </summary>
+        [Test]
+        public void Motion_FirstNonWhiteSpaceOnLine()
+        {
+            Create(" cat", "  dog", "   fish");
+            _textView.MoveCaretToLine(1);
+            _buffer.Process("_");
+            Assert.AreEqual(_textView.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+        }
     }
 }

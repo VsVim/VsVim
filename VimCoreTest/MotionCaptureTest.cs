@@ -124,7 +124,7 @@ namespace VimCore.UnitTest
         [Test]
         public void FirstNonWhitespaceOnLine()
         {
-            AssertMotion("^", Motion.FirstNonWhiteSpaceOnLine);
+            AssertMotion("^", Motion.FirstNonWhiteSpaceOnCurrentLine);
         }
 
         [Test]
@@ -227,9 +227,9 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void LineDownToFirstNonWhiteSpace()
+        public void FirstNonWhiteSpaceOnLine()
         {
-            AssertMotion("_", Motion.LineDownToFirstNonWhiteSpace);
+            AssertMotion("_", Motion.FirstNonWhiteSpaceOnLine);
         }
 
         [Test]

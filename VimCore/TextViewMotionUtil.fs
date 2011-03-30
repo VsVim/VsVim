@@ -537,8 +537,14 @@ type internal TextViewMotionUtil
     let _textBuffer = _textView.TextBuffer
     let _globalSettings = _localSettings.GlobalSettings
 
-    /// Caret point in the view
-    member x.StartPoint = TextViewUtil.GetCaretPoint _textView
+    /// Caret point in the ITextView
+    member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
+
+    /// Caret line in the ITextView
+    member x.CaretLine = SnapshotPointUtil.GetContainingLine x.CaretPoint
+
+    /// Current ITextSnapshot for the ITextBuffer
+    member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
     member x.SpanAndForwardFromLines (line1:ITextSnapshotLine) (line2:ITextSnapshotLine) = 
         if line1.LineNumber <= line2.LineNumber then SnapshotSpan(line1.Start, line2.End),true
@@ -556,7 +562,7 @@ type internal TextViewMotionUtil
             { motionData with Column=Some column }
 
     member x.ForwardCharMotionCore c count func = 
-        let start = x.StartPoint
+        let start = x.CaretPoint
         match func start c count with
         | None -> None 
         | Some(point:SnapshotPoint) -> 
@@ -570,7 +576,7 @@ type internal TextViewMotionUtil
                 Column = None} |> Some
 
     member x.BackwardCharMotionCore c count func = 
-        let start = x.StartPoint
+        let start = x.CaretPoint
         match func start c count with
         | None -> None
         | Some(point:SnapshotPoint) ->
@@ -895,7 +901,7 @@ type internal TextViewMotionUtil
 
     /// Implements the 'aw' motion. 
     member x.GetAllWord kind count = 
-        let start = x.StartPoint
+        let start = x.CaretPoint
         let start = match TssUtil.FindCurrentFullWordSpan start kind with 
                         | Some (s) -> s.Start
                         | None -> start
@@ -910,7 +916,7 @@ type internal TextViewMotionUtil
             Column = None }
 
     member x.BeginingOfLine() = 
-        let start = x.StartPoint
+        let start = x.CaretPoint
         let line = SnapshotPointUtil.GetContainingLine start
         let span = SnapshotSpan(line.Start, start)
         {
@@ -949,7 +955,7 @@ type internal TextViewMotionUtil
             x.CharSearch c 1 kind direction
 
     member x.WordForward kind count =
-        let start = x.StartPoint
+        let start = x.CaretPoint
         let endPoint = TssUtil.FindNextWordStart start count kind  
         let span = SnapshotSpan(start,endPoint)
         {
@@ -960,7 +966,7 @@ type internal TextViewMotionUtil
             OperationKind = OperationKind.CharacterWise 
             Column = None}
     member x.WordBackward kind count =
-        let start = x.StartPoint
+        let start = x.CaretPoint
         let startPoint = TssUtil.FindPreviousWordStart start count kind
         let span = SnapshotSpan(startPoint,start)
         {
@@ -984,12 +990,12 @@ type internal TextViewMotionUtil
 
         // Move forward until we find the first non-blank and hence a word character 
         let point =
-            SnapshotPointUtil.GetPoints x.StartPoint SearchKind.Forward
+            SnapshotPointUtil.GetPoints x.CaretPoint SearchKind.Forward
             |> Seq.skipWhile (fun point -> point.GetChar() |> CharUtil.IsWhiteSpace)
             |> SeqUtil.tryHeadOnly
         match point with 
         | None -> 
-            SnapshotSpanUtil.CreateFromBounds x.StartPoint (SnapshotUtil.GetEndPoint _textView.TextSnapshot) |> withSpan
+            SnapshotSpanUtil.CreateFromBounds x.CaretPoint (SnapshotUtil.GetEndPoint _textView.TextSnapshot) |> withSpan
         | Some(point) -> 
 
             // Have a point and we are on a word.  There is a special case to consider where
@@ -999,12 +1005,12 @@ type internal TextViewMotionUtil
                 match TssUtil.FindCurrentWordSpan point kind with 
                 | None -> point, count
                 | Some(span) -> 
-                    if SnapshotSpanUtil.IsLastIncludedPoint span x.StartPoint then (span.End, count)
+                    if SnapshotSpanUtil.IsLastIncludedPoint span x.CaretPoint then (span.End, count)
                     else (span.End, count - 1)
 
             if count = 0 then 
                 // Getting the search point moved the 1 word count we had.  Done
-                SnapshotSpanUtil.CreateFromBounds x.StartPoint searchPoint |> withSpan
+                SnapshotSpanUtil.CreateFromBounds x.CaretPoint searchPoint |> withSpan
             else 
                 // Need to skip (count - 1) remaining words to get to the one we're looking for
                 let wordSpan = 
@@ -1014,13 +1020,13 @@ type internal TextViewMotionUtil
 
                 match wordSpan with
                 | Some(span) -> 
-                    SnapshotSpanUtil.Create x.StartPoint span.End |> withSpan
+                    SnapshotSpanUtil.Create x.CaretPoint span.End |> withSpan
                 | None -> 
                     let endPoint = SnapshotUtil.GetEndPoint _textView.TextSnapshot
-                    SnapshotSpanUtil.Create x.StartPoint endPoint |> withSpan
+                    SnapshotSpanUtil.Create x.CaretPoint endPoint |> withSpan
 
     member x.EndOfLine count = 
-        let start = x.StartPoint
+        let start = x.CaretPoint
         let span = SnapshotPointUtil.GetLineRangeSpan start count
         {
             Span = span 
@@ -1029,8 +1035,10 @@ type internal TextViewMotionUtil
             MotionKind = MotionKind.Inclusive 
             OperationKind = OperationKind.CharacterWise 
             Column = None}
-    member x.FirstNonWhiteSpaceOnLine () =
-        let start = x.StartPoint
+
+    /// Find the first non-whitespace character on the current line.  
+    member x.FirstNonWhiteSpaceOnCurrentLine () =
+        let start = x.CaretPoint
         let line = start.GetContainingLine()
         let target = 
             SnapshotLineUtil.GetPoints line
@@ -1046,10 +1054,27 @@ type internal TextViewMotionUtil
             IsAnyWordMotion = false
             MotionKind = MotionKind.Exclusive 
             OperationKind = OperationKind.CharacterWise 
-            Column = None} 
+            Column = None } 
+
+    /// Create a line wise motion from the current line to (count - 1) lines
+    /// downward 
+    member x.FirstNonWhiteSpaceOnLine count = 
+        let startLine = x.CaretLine
+        let endLine = 
+            let number = startLine.LineNumber + (count - 1)
+            SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
+        let column = TssUtil.FindFirstNonWhiteSpaceCharacter endLine |> SnapshotPointUtil.GetColumn |> Some
+        let range = SnapshotLineRangeUtil.CreateForLineRange startLine endLine
+        {
+            Span = range.ExtentIncludingLineBreak
+            IsForward = true
+            IsAnyWordMotion = false
+            MotionKind = MotionKind.Inclusive
+            OperationKind = OperationKind.LineWise
+            Column = column }
 
     member x.LineDownToFirstNonWhiteSpace count =
-        let line = x.StartPoint |> SnapshotPointUtil.GetContainingLine
+        let line = x.CaretPoint |> SnapshotPointUtil.GetContainingLine
         let number = line.LineNumber + count
         let endLine = SnapshotUtil.GetLineOrLast line.Snapshot number
         let column = TssUtil.FindFirstNonWhiteSpaceCharacter endLine |> SnapshotPointUtil.GetColumn |> Some
@@ -1063,7 +1088,7 @@ type internal TextViewMotionUtil
             Column = column}
 
     member x.LineUpToFirstNonWhiteSpace count =
-        let point = x.StartPoint
+        let point = x.CaretPoint
         let endLine = SnapshotPointUtil.GetContainingLine point
         let startLine = SnapshotUtil.GetLineOrFirst endLine.Snapshot (endLine.LineNumber - count)
         let span = SnapshotSpan(startLine.Start, endLine.End)
@@ -1080,7 +1105,7 @@ type internal TextViewMotionUtil
             Column = Some column}
 
     member x.CharLeft count = 
-        let start = x.StartPoint
+        let start = x.CaretPoint
         let prev = SnapshotPointUtil.GetPreviousPointOnLine start count 
         if prev = start then None
         else {
@@ -1092,7 +1117,7 @@ type internal TextViewMotionUtil
             Column = None} |> Some
 
     member x.CharRight count =
-        let start = x.StartPoint
+        let start = x.CaretPoint
         let next = SnapshotPointUtil.GetNextPointOnLine start count 
         if next = start then None
         else {
@@ -1104,7 +1129,7 @@ type internal TextViewMotionUtil
             Column = None } |> Some
 
     member x.LineUp count =     
-        let point = x.StartPoint
+        let point = x.CaretPoint
         let endLine = SnapshotPointUtil.GetContainingLine point
         let startLineNumber = max 0 (endLine.LineNumber - count)
         let startLine = SnapshotUtil.GetLine endLine.Snapshot startLineNumber
@@ -1118,7 +1143,7 @@ type internal TextViewMotionUtil
             Column = None } 
 
     member x.LineDown count = 
-        let point = x.StartPoint
+        let point = x.CaretPoint
         let startLine = SnapshotPointUtil.GetContainingLine point
         let endLineNumber = startLine.LineNumber + count
         let endLine = SnapshotUtil.GetLineOrLast startLine.Snapshot endLineNumber
@@ -1132,7 +1157,7 @@ type internal TextViewMotionUtil
             Column = None } 
 
     member x.LineOrFirstToFirstNonWhiteSpace numberOpt = 
-        let point = x.StartPoint
+        let point = x.CaretPoint
         let originLine = SnapshotPointUtil.GetContainingLine point
         let tss= originLine.Snapshot
         let endLine = 
@@ -1142,7 +1167,7 @@ type internal TextViewMotionUtil
         x.LineToLineFirstNonWhiteSpaceMotion originLine endLine
 
     member x.LineOrLastToFirstNonWhiteSpace numberOpt = 
-        let point = x.StartPoint
+        let point = x.CaretPoint
         let originLine = SnapshotPointUtil.GetContainingLine point
         let tss= originLine.Snapshot
         let endLine = 
@@ -1152,7 +1177,7 @@ type internal TextViewMotionUtil
         x.LineToLineFirstNonWhiteSpaceMotion originLine endLine
 
     member x.LastNonWhiteSpaceOnLine count = 
-        let start = x.StartPoint
+        let start = x.CaretPoint
         let startLine = SnapshotPointUtil.GetContainingLine start
         let snapshot = startLine.Snapshot
         let number = startLine.LineNumber + (count-1)
@@ -1415,7 +1440,8 @@ type internal TextViewMotionUtil
         | Motion.CharSearch (kind, direction, c) -> x.CharSearch c motionArgument.Count kind direction
         | Motion.EndOfLine -> x.EndOfLine motionArgument.Count |> Some
         | Motion.EndOfWord wordKind -> x.EndOfWord wordKind motionArgument.Count |> Some
-        | Motion.FirstNonWhiteSpaceOnLine -> x.FirstNonWhiteSpaceOnLine() |> Some
+        | Motion.FirstNonWhiteSpaceOnCurrentLine -> x.FirstNonWhiteSpaceOnCurrentLine() |> Some
+        | Motion.FirstNonWhiteSpaceOnLine -> x.FirstNonWhiteSpaceOnLine motionArgument.Count |> Some
         | Motion.LastNonWhiteSpaceOnLine -> x.LastNonWhiteSpaceOnLine motionArgument.Count |> Some
         | Motion.LineDown -> x.LineDown motionArgument.Count |> Some
         | Motion.LineDownToFirstNonWhiteSpace -> x.LineDownToFirstNonWhiteSpace motionArgument.Count |> Some

@@ -81,7 +81,7 @@ type internal MotionCapture
                 yield (
                     "^", 
                     MotionFlags.CursorMovement,
-                    Motion.FirstNonWhiteSpaceOnLine)
+                    Motion.FirstNonWhiteSpaceOnCurrentLine)
                 yield (
                     "0", 
                     MotionFlags.CursorMovement,
@@ -157,7 +157,7 @@ type internal MotionCapture
                 yield (
                     "_", 
                     MotionFlags.CursorMovement,
-                    Motion.LineDownToFirstNonWhiteSpace)
+                    Motion.FirstNonWhiteSpaceOnLine)
                 yield (
                     "<C-m>", 
                     MotionFlags.CursorMovement,

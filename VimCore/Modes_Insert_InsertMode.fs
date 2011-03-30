@@ -71,11 +71,12 @@ type internal InsertMode
     do
         let commands : (string * CommandFunction) list = 
             [
-                ("<Esc>", this.ProcessEscape);
-                ("<Up>", this.ProcessUp);
-                ("<Down>", this.ProcessDown);
-                ("<Left>", this.ProcessLeft);
-                ("<Right>", this.ProcessRight);
+                ("<Down>", this.ProcessDown)
+                ("<Esc>", this.ProcessEscape)
+                ("<Insert>", this.ProcessInsert)
+                ("<Left>", this.ProcessLeft)
+                ("<Right>", this.ProcessRight)
+                ("<Up>", this.ProcessUp)
                 ("<C-d>", this.ProcessShiftLeft)
                 ("<C-t>", this.ProcessShiftRight)
                 ("<C-o>", this.ProcessNormalModeOneCommand)
@@ -209,6 +210,12 @@ type internal InsertMode
     member x.ProcessRight () =
         _operations.MoveCaretRight 1
         ProcessResult.Handled ModeSwitch.NoSwitch
+
+    /// Process the <Insert> command.  This toggles between insert an replace mode
+    member x.ProcessInsert () = 
+
+        let mode = if _isReplace then ModeKind.Insert else ModeKind.Replace
+        ProcessResult.Handled (ModeSwitch.SwitchMode mode)
 
     /// Enter normal mode for a single command.  
     member x.ProcessNormalModeOneCommand () =
