@@ -162,6 +162,8 @@ type internal NormalMode
                 yield ("x", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
                 yield ("X", CommandFlags.Repeatable, NormalCommand.DeleteCharacterBeforeCaret)
                 yield ("<Insert>", CommandFlags.None, NormalCommand.InsertBeforeCaret)
+                yield ("<C-i>", CommandFlags.Movement, NormalCommand.JumpToNextTag)
+                yield ("<C-o>", CommandFlags.Movement, NormalCommand.JumpToPreviousTag)
                 yield ("<C-w><C-j>", CommandFlags.None, NormalCommand.GoToView Direction.Down)
                 yield ("<C-w>j", CommandFlags.None, NormalCommand.GoToView Direction.Down)
                 yield ("<C-w><C-k>", CommandFlags.None, NormalCommand.GoToView Direction.Up)
@@ -400,16 +402,6 @@ type internal NormalMode
                             |> SnapshotLineUtil.GetStart
                         let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
                         _operations.UpdateRegisterForSpan reg RegisterOperation.Yank span OperationKind.LineWise)
-                yield (
-                    "<C-i>", 
-                    CommandFlags.Movement, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> _operations.JumpNext count)
-                yield (
-                    "<C-o>", 
-                    CommandFlags.Movement, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> _operations.JumpPrevious count)
                 yield (
                     "z<Enter>", 
                     CommandFlags.Movement, 

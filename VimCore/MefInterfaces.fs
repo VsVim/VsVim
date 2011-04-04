@@ -31,17 +31,31 @@ type IDisplayWindowBrokerFactoryService  =
 
     abstract CreateDisplayWindowBroker : ITextView -> IDisplayWindowBroker
 
+
+/// What type of tracking are we doing
+type LineColumnTrackingMode = 
+
+    /// By default a 1TrackingLineColumn will be deleted if the line it 
+    /// tracks is deleted
+    | Default 
+
+    /// ITrackingLineColumn should survive the deletion of it's line
+    /// and just treat it as a delta adjustment
+    | SurviveDeletes 
+
+/// Tracks a line number and column across edits to the ITextBuffer.  This auto tracks
+/// and will return information against the current ITextSnapshot for the 
+/// ITextBuffer
 type ITrackingLineColumn =
+
+    /// ITextBuffer this ITrackingLineColumn is tracking against
     abstract TextBuffer : ITextBuffer
 
-    /// Get the point as it relates to current Snapshot.  Returns None
-    /// in the case that the line and column cannot be matched
-    abstract Point : SnapshotPoint option 
+    /// Returns the LineColumnTrackingMode for this instance
+    abstract TrackingMode : LineColumnTrackingMode
 
-    /// Get the point as it relates the current Snapshot.  If the current
-    /// length of the line is not long enough to support the column, it will be 
-    /// truncated to the last non-linebreak character of the line
-    abstract PointTruncating: SnapshotPoint option
+    /// Get the point as it relates to current Snapshot.
+    abstract Point : SnapshotPoint option 
 
     /// Get the point as a VirtualSnapshot point on the current ITextSnapshot
     abstract VirtualPoint : VirtualSnapshotPoint option
@@ -52,18 +66,7 @@ type ITrackingLineColumn =
 type ITrackingLineColumnService = 
 
     /// Create an ITrackingLineColumn at the given position in the buffer.  
-    abstract Create : ITextBuffer -> line:int -> column: int -> ITrackingLineColumn
-
-    /// Creates a disconnected ITrackingLineColumn instance.  ITrackingLineColumn 
-    /// instances can only be created against the current snapshot of an ITextBuffer.  This
-    /// method is useful when a valid one can't be supplied so instead we provide 
-    /// a ITrackingLineColumn which satisifies the interface but produces no values
-    abstract CreateDisconnected : ITextBuffer -> ITrackingLineColumn
-
-    /// Creates an ITrackingLineColumn for the given SnapshotPoint.  If the point does
-    /// not point to the current snapshot of ITextBuffer, a disconnected ITrackingLineColumn
-    /// will be created
-    abstract CreateForPoint : SnapshotPoint -> ITrackingLineColumn
+    abstract Create : ITextBuffer -> line:int -> column: int -> LineColumnTrackingMode -> ITrackingLineColumn
 
     /// Close all of the outstanding ITrackingLineColumn instances
     abstract CloseAll : unit -> unit

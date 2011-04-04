@@ -2,8 +2,9 @@
 
 namespace Vim
 open Microsoft.VisualStudio.Text
-open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
+open Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
+open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 
 /// Represents a range of lines in an ITextSnapshot.  Different from a SnapshotSpan
@@ -629,7 +630,12 @@ module SnapshotPointUtil =
     let GetColumn point = 
         let _,column = GetLineColumn point 
         column
-    
+
+    /// Get the line number
+    let GetLineNumber point =
+        let line = GetContainingLine point
+        line.LineNumber
+
     /// Get the lines of the containing ITextSnapshot as a seq 
     let GetLines point kind =
         let tss = GetSnapshot point
@@ -1092,35 +1098,60 @@ type EditSpan =
 module EditUtil = 
 
     /// NewLine to use for the ITextBuffer
-    /// TODO: Should consult IEditorOptions NewLine option
-    let NewLine = System.Environment.NewLine
+    let NewLine (options : IEditorOptions) = DefaultOptionExtensions.GetNewLineCharacter options
 
-    /// Set of valid new line strings.  
-    /// TODO:  Need to find all valid ones and update this list
-    let ValidNewLines = [System.Environment.NewLine; "\n" ]
+    /// Get the length of the line break at the given index 
+    let GetLineBreakLength (str : string) index =
+        match str.Chars(index) with
+        | '\r' ->
+            if index + 1 < str.Length && '\n' = str.Chars(index + 1) then
+                2
+            else
+                1
+        | '\n' ->
+            1
+        | '\u2028' ->
+            1
+        | '\u2029' ->
+            1
+        | c ->
+            if c = char 0x85 then 1
+            else 0
 
-    /// Get the newline begining for the string
-    let GetNewLineBegining (value : string) = ValidNewLines |>  Seq.tryFind (fun newLine -> value.StartsWith(newLine))
-
-    /// Get the newline ending for the string
-    let GetNewLineEnding (value : string) = ValidNewLines |>  Seq.tryFind (fun newLine -> value.EndsWith(newLine))
-
-    /// Does the specified string begin with a valid newline string
-    let BeginsWithNewLine value = GetNewLineBegining value |> Option.isSome
+    /// Get the length of the line break at the end of the string
+    let GetLineBreakLengthAtEnd (str : string) =
+        if System.String.IsNullOrEmpty str then 
+            0
+        else
+            let index = str.Length - 1
+            if str.Length > 1 && str.Chars(index - 1) = '\r' && str.Chars(index) = '\n' then
+                2
+            else
+                GetLineBreakLength str index
 
     /// Does the specified string end with a valid newline string 
-    let EndsWithNewLine value = GetNewLineEnding value |> Option.isSome
+    let EndsWithNewLine value = 0 <> GetLineBreakLengthAtEnd value
 
-    /// Remove the NewLine at the begining of the string.  Returns the original input
+    /// Remove the NewLine at the beginning of the string.  Returns the original input
     /// if no newline is found
     let RemoveBeginingNewLine value = 
-        match GetNewLineBegining value with
-        | None -> value
-        | Some found -> value.Substring(found.Length)
+        if System.String.IsNullOrEmpty value then
+            value
+        else
+            let length = GetLineBreakLength value 0
+            if 0 = length then
+                value
+            else
+                value.Substring(length)
 
     /// Remove the NewLine at the end of the string.  Returns the original input
     /// if no newline is found
     let RemoveEndingNewLine value = 
-        match GetNewLineEnding value with
-        | None -> value
-        | Some found -> value.Substring(0, value.Length - found.Length)
+        if System.String.IsNullOrEmpty value then
+            value
+        else
+            let length = GetLineBreakLengthAtEnd value
+            if 0 = length then
+                value
+            else
+                value.Substring(0, value.Length - length)

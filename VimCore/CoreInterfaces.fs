@@ -199,8 +199,93 @@ type ISearchService =
     /// given SnapshotPoint
     abstract FindNext : SearchData -> SnapshotPoint -> ITextStructureNavigator -> SearchResult
 
-    /// Find the next Nth occurrence of the pattern
+    /// Find the next Nth occurrence of the search data
     abstract FindNextMultiple : SearchData -> SnapshotPoint -> ITextStructureNavigator -> count:int -> SearchResult
+
+    /// Find the next 'count' occurrence of the specified pattern.  Note: The first occurrence won't
+    /// match anything at the provided start point.  That will be adjusted appropriately
+    abstract FindNextPattern : PatternData -> SnapshotPoint -> ITextStructureNavigator -> count : int -> SearchResult
+
+/// Information about the type of the motion this was.
+[<RequireQualifiedAccess>]
+type MotionKind =
+
+    /// Any of the word motions
+    | AnyWord 
+
+    /// Any of the search motions
+    | AnySearch of SearchResult
+
+    /// An exclusive motion
+    | Exclusive
+
+    /// An inclusive motion
+    | Inclusive
+
+/// Column information about the caret in relation to this Motion Result
+[<RequireQualifiedAccess>]
+type CaretColumn = 
+
+    /// Caret should be placed in the specified column on the last line in 
+    /// the MotionResult
+    | InLastLine of int
+
+    /// Caret should be placed at the start of the line after the last line
+    /// in the motion
+    | AfterLastLine
+
+/// Data about a complete motion operation. 
+type MotionResult = {
+
+    /// Span of the motion.
+    Span : SnapshotSpan
+
+    /// Was the motion forwards towards the end of the buffer
+    IsForward : bool 
+
+    /// Kind of the motion
+    MotionKind : MotionKind
+
+    /// OperationKind for the motion
+    OperationKind : OperationKind 
+
+    /// In addition to recording the Span certain line wise operations like j and k also
+    /// record data about the desired column within the span.  This value may or may not
+    /// be a valid point within the line
+    Column : CaretColumn option
+} with
+
+    /// The Span as an EditSpan value
+    member x.EditSpan = EditSpan.Single x.Span
+
+    /// Is this a word motion 
+    member x.IsAnyWordMotion = 
+        match x.MotionKind with
+        | MotionKind.AnyWord -> true
+        | _ -> false
+
+    /// Is this an exclusive motion
+    member x.IsExclusive =
+        match x.MotionKind with
+        | MotionKind.AnySearch _ -> true
+        | MotionKind.AnyWord -> true
+        | MotionKind.Exclusive -> true
+        | MotionKind.Inclusive -> false
+
+    /// Is this an inclusive motion
+    member x.IsInclusive = not x.IsExclusive
+
+    /// The Span as a SnapshotLineRange value 
+    member x.LineRange = SnapshotLineRangeUtil.CreateForSpan x.Span
+
+    static member CreateEmptyFromPoint point motionKind operationKind = 
+        let span = SnapshotSpanUtil.CreateWithLength point 0  
+        {
+            Span = span 
+            IsForward = true 
+            MotionKind = motionKind 
+            OperationKind = operationKind 
+            Column = None }
 
 /// Context on how the motion is being used.  Several motions (]] for example)
 /// change behavior based on how they are being used
@@ -303,6 +388,10 @@ type Motion =
     /// down and perform the search
     | LastNonWhiteSpaceOnLine
 
+    /// Find the next occurrence of the last search.  The bool parameter is true if the search
+    /// should be in the opposite direction
+    | LastSearch of bool
+
     /// Handle the lines down to first non-whitespace motion.  This is one of the motions which 
     /// can accept a count of 0.
     | LineDownToFirstNonWhiteSpace
@@ -347,6 +436,12 @@ type Motion =
     /// Get the matching token from the next token on the line.  This is used to implement
     /// the % motion
     | MatchingToken 
+
+    /// Search for the next occurrence of the word under the caret
+    | NextWord of Path
+
+    /// Search for the next partial occurrence of the word under the caret
+    | NextPartialWord of Path
 
     /// Count paragraphs backwards
     | ParagraphBackward
@@ -921,21 +1016,17 @@ type NormalCommand =
     /// Jump to the specified mark 
     | JumpToMark of char
 
+    /// Jump to the next item in the tag list
+    | JumpToNextTag 
+
+    /// Jump to the previous item in the tag list
+    | JumpToPreviousTag
+
     /// Move the caret in the specified direction
     | MoveCaretTo of Direction
 
-    /// Move the caret to the result of the given Motion
+    /// Move the caret to the result of the given Motion.
     | MoveCaretToMotion of Motion
-
-    /// Move to the next occurrence of the last search.  The bool parameter is true if the search
-    /// should be in the opposite direction
-    | MoveCaretToLastSearch of bool
-
-    /// Move to the next occurrence of the word under the caret
-    | MoveCaretToNextWord of Path
-
-    /// Move to the next occurrence of the partial word under the caret
-    | MoveCaretToNextPartialWord  of Path
 
     /// Not actually a Vim Command.  This is a simple ping command which makes 
     /// testing items like complex repeats significantly easier
@@ -1552,17 +1643,21 @@ type IMarkMap =
 /// Jump list information
 type IJumpList = 
 
-    /// Current jump
+    /// Current value in the jump list.  Will be none when there are no values in the 
+    /// jump list
     abstract Current : SnapshotPoint option
 
+    /// Current index into the jump list
+    abstract CurrentIndex : int option
+
     /// Get all of the jumps in the jump list.  Returns in order of most recent to oldest
-    abstract AllJumps : (SnapshotPoint option) seq 
+    abstract Jumps : VirtualSnapshotPoint list
 
     /// Move to the previous point in the jump list
-    abstract MovePrevious: unit -> bool
+    abstract MovePrevious: int -> bool
 
     /// Move to the next point in the jump list
-    abstract MoveNext : unit -> bool
+    abstract MoveNext : int -> bool
 
     /// Add a given SnapshotPoint to the jump list
     abstract Add : SnapshotPoint -> unit

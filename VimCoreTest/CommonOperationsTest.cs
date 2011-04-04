@@ -21,7 +21,6 @@ namespace VimCore.UnitTest
         private IWpfTextView _textView;
         private ITextBuffer _textBuffer;
         private MockRepository _factory;
-        private Mock<IEditorOptions> _editorOptions;
         private Mock<IEditorOperations> _editorOperations;
         private Mock<IVimHost> _host;
         private Mock<IJumpList> _jumpList;
@@ -29,6 +28,7 @@ namespace VimCore.UnitTest
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IOutliningManager> _outlining;
         private Mock<IStatusUtil> _statusUtil;
+        private IEditorOptions _editorOptions;
         private IUndoRedoOperations _undoRedoOperations;
         private ISearchService _searchService;
         private IRegisterMap _registerMap;
@@ -40,14 +40,13 @@ namespace VimCore.UnitTest
         {
             _textView = EditorUtil.CreateView(lines);
             _vimData = new VimData();
+            _editorOptions = EditorUtil.FactoryService.EditorOptionsFactory.GetOptions(_textView);
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
             _textBuffer = _textView.TextBuffer;
             _factory = new MockRepository(MockBehavior.Strict);
             _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             _host = _factory.Create<IVimHost>();
             _jumpList = _factory.Create<IJumpList>();
-            _editorOptions = _factory.Create<IEditorOptions>();
-            _editorOptions.Setup(x => x.GetOptionValue(DefaultOptions.ConvertTabsToSpacesOptionId)).Returns(true);
             _editorOperations = _factory.Create<IEditorOperations>();
             _editorOperations.Setup(x => x.AddAfterTextBufferChangePrimitive());
             _editorOperations.Setup(x => x.AddBeforeTextBufferChangePrimitive());
@@ -64,6 +63,9 @@ namespace VimCore.UnitTest
             _settings.SetupGet(x => x.ExpandTab).Returns(true);
             _settings.SetupGet(x => x.TabStop).Returns(4);
             _outlining = _factory.Create<IOutliningManager>();
+            _outlining
+                .Setup(x => x.ExpandAll(It.IsAny<SnapshotSpan>(), It.IsAny<Predicate<ICollapsed>>()))
+                .Returns<IEnumerable<ICollapsible>>(null);
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
             _statusUtil = _factory.Create<IStatusUtil>();
             _searchService = VimUtil.CreateSearchService(_globalSettings.Object);
@@ -79,7 +81,7 @@ namespace VimCore.UnitTest
                 localSettings: _settings.Object,
                 undoRedoOperations: _undoRedoOperations,
                 registerMap: _registerMap,
-                editorOptions: _editorOptions.Object,
+                editorOptions: _editorOptions,
                 keyMap: null,
                 navigator: null,
                 statusUtil: _statusUtil.Object,
@@ -97,19 +99,7 @@ namespace VimCore.UnitTest
             _operationsRaw = null;
         }
 
-        private void AllowOutlineExpansion(bool verify = false)
-        {
-            var res =
-                _outlining
-                    .Setup(x => x.ExpandAll(It.IsAny<SnapshotSpan>(), It.IsAny<Predicate<ICollapsed>>()))
-                    .Returns<IEnumerable<ICollapsible>>(null);
-            if (verify)
-            {
-                res.Verifiable();
-            }
-        }
-
-        void AssertRegister(Register reg, string value, OperationKind kind)
+        static void AssertRegister(Register reg, string value, OperationKind kind)
         {
             Assert.AreEqual(value, reg.StringValue);
             Assert.AreEqual(kind, reg.RegisterValue.OperationKind);
@@ -1032,8 +1022,8 @@ namespace VimCore.UnitTest
             Create("cat", "dog");
             _globalSettings.SetupGet(x => x.UseEditorTabSettings).Returns(true);
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(4);
-            _editorOptions.Setup(x => x.GetOptionValue(DefaultOptions.ConvertTabsToSpacesOptionId)).Returns(false);
-            _editorOptions.Setup(x => x.GetOptionValue(DefaultOptions.TabSizeOptionId)).Returns(4);
+            _editorOptions.SetOptionValue(DefaultOptions.ConvertTabsToSpacesOptionId, false);
+            _editorOptions.SetOptionValue(DefaultOptions.TabSizeOptionId, 4);
             _operations.ShiftLineRangeRight(1);
             Assert.AreEqual("\tcat", _textView.GetLine(0).GetText());
         }
@@ -1351,22 +1341,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        [Description("Exclusive spans going forward ending on a endline having a 0 column should position caret in the below line")]
-        public void MoveCaretToMotionResult13()
-        {
-            Create("dog", "cat", "bear");
-            _editorOperations.Setup(x => x.ResetSelection());
-            var data = VimUtil.CreateMotionResult(
-                _textBuffer.GetLineRange(0).ExtentIncludingLineBreak,
-                true,
-                MotionKind.Exclusive,
-                OperationKind.CharacterWise,
-                0);
-            _operations.MoveCaretToMotionResult(data);
-            Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
-        }
-
-        [Test]
         [Description("Exclusive spans going backward should go through normal movements")]
         public void MoveCaretToMotionResult14()
         {
@@ -1411,6 +1385,25 @@ namespace VimCore.UnitTest
                 column: 1);
             _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Spans going forward which have the AfterLastLine value should have the caret after the 
+        /// last line
+        /// </summary>
+        [Test]
+        public void MoveCaretToMotionResult_CaretAfterLastLine()
+        {
+            Create("dog", "cat", "bear");
+            _editorOperations.Setup(x => x.ResetSelection());
+            var data = new MotionResult(
+                _textBuffer.GetLineRange(0).ExtentIncludingLineBreak,
+                true,
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                FSharpOption.Create(CaretColumn.AfterLastLine));
+            _operations.MoveCaretToMotionResult(data);
+            Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
         [Test]
@@ -1784,118 +1777,5 @@ namespace VimCore.UnitTest
             _statusUtil.Verify();
         }
 
-        /// <summary>
-        /// Make sure the count is taken into consideration
-        /// </summary>
-        [Test]
-        public void SearchForPattern_WithCount()
-        {
-            Create("cat dog cat", "cat");
-            var result = _operations.SearchForPattern("cat", Path.Forward, _textView.GetCaretPoint(), 2);
-            Assert.IsTrue(result.IsFound);
-            Assert.AreEqual(_textView.GetLine(1).Extent, result.AsFound().Item2);
-            Assert.IsFalse(result.AsFound().item3);
-        }
-
-        /// <summary>
-        /// Don't make a partial match when using a whole word pattern
-        /// </summary>
-        [Test]
-        public void SearchForPattern_DontMatchPartialForWholeWord()
-        {
-            Create("dog doggy dog");
-            var result = _operations.SearchForPattern(@"\<dog\>", Path.Forward, _textView.GetCaretPoint(), 1);
-            Assert.IsTrue(result.IsFound(10));
-        }
-
-        /// <summary>
-        /// Do a backward search with 'wrapscan' enabled should go backwards
-        /// </summary>
-        [Test]
-        public void SearchForPattern_Backward()
-        {
-            Create("cat dog", "cat");
-            _globalSettings.SetupGet(x => x.WrapScan).Returns(true);
-            _textView.MoveCaretToLine(1);
-            var result = _operations.SearchForPattern(@"\<cat\>", Path.Backward, _textView.GetCaretPoint(), 1);
-            Assert.IsTrue(result.IsFound(0));
-        }
-
-        /// <summary>
-        /// Regression test for issue 398.  When starting on something other
-        /// than the first character make sure we don't jump over an extra 
-        /// word when searching for a whole word
-        /// </summary>
-        [Test]
-        public void SearchForPattern_StartOnSecondChar()
-        {
-            Create("cat cat cat");
-            _textView.MoveCaretTo(1);
-            var result = _operations.SearchForPattern(@"\<cat\>", Path.Forward, _textView.GetCaretPoint(), 1);
-            Assert.IsTrue(result.IsFound(4));
-        }
-
-        /// <summary>
-        /// Make sure that searching backward from the first char in a word doesn't
-        /// count that word as an occurrence
-        /// </summary>
-        [Test]
-        public void SearchForPattern_BackwardFromFirstChar()
-        {
-            Create("cat cat cat");
-            _textView.MoveCaretTo(4);
-            var result = _operations.SearchForPattern(@"cat", Path.Backward, _textView.GetCaretPoint(), 1);
-            Assert.IsTrue(result.IsFound(0));
-        }
-
-        /// <summary>
-        /// Don't start the search on the current word start.  It should start afterwards
-        /// so we don't match the current word
-        /// </summary>
-        [Test]
-        public void SearchForPattern_DontStartOnPointForward()
-        {
-            Create("foo bar", "foo");
-            var result = _operations.SearchForPattern("foo", Path.Forward, _textView.GetPoint(0), 1);
-            Assert.AreEqual(_textView.GetLine(1).Start, result.AsFound().Item2.Start);
-        }
-
-        /// <summary>
-        /// Don't start the search on the current word start.  It should before the character
-        /// when doing a backward search so we don't match the current word
-        /// </summary>
-        [Test]
-        public void SearchForPattern_DontStartOnPointBackward()
-        {
-            Create("foo bar", "foo");
-            var result = _operations.SearchForPattern("foo", Path.Backward, _textView.GetLine(1).Start, 1);
-            Assert.AreEqual(_textView.GetPoint(0), result.AsFound().Item2.Start);
-        }
-
-        /// <summary>
-        /// Make sure that this takes into account the 'wrapscan' option going forward
-        /// </summary>
-        [Test]
-        public void SearchForPattern_ConsiderWrapScanForward()
-        {
-            Create("dog", "cat");
-            _globalSettings.SetupGet(x => x.WrapScan).Returns(false);
-            var result = _operations.SearchForPattern("dog", Path.Forward, _textView.GetPoint(0), 1);
-            Assert.IsTrue(result.IsNotFound);
-            Assert.IsTrue(result.AsNotFound().Item2);
-        }
-
-        /// <summary>
-        /// Make sure that this takes into account the 'wrapscan' option going forward
-        /// </summary>
-        [Test]
-        public void SearchForPattern_ConsiderWrapScanBackward()
-        {
-            Create("dog", "cat");
-            _globalSettings.SetupGet(x => x.WrapScan).Returns(false);
-            var result = _operations.SearchForPattern("dog", Path.Backward, _textView.GetPoint(0), 1);
-            Assert.IsTrue(result.IsNotFound);
-            Assert.IsTrue(result.AsNotFound().Item2);
-        }
     }
 }

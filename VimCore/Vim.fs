@@ -94,16 +94,16 @@ type internal VimBufferFactory
         let editOptions = _editorOptionsFactoryService.GetOptions(view)
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let localSettings = LocalSettings(vim.Settings, Some view) :> IVimLocalSettings
-        let motionUtil = TextViewMotionUtil(view, vim.MarkMap, localSettings, vim.SearchService, wordNav, vim.VimData) :> ITextViewMotionUtil
+        let jumpList = JumpList(_tlcService) :> IJumpList
+        let statusUtil = StatusUtil()
+        let motionUtil = TextViewMotionUtil(view, vim.MarkMap, localSettings, vim.SearchService, wordNav, jumpList, statusUtil, vim.VimData) :> ITextViewMotionUtil
         let outlining = 
             // This will return null in ITextBuffer instances where there is no IOutliningManager such
             // as TFS annotated buffers.
             let ret = _outliningManagerService.GetOutliningManager(view)
             if ret = null then None else Some ret
-        let jumpList = JumpList(_tlcService) :> IJumpList
         let foldManager = _foldManagerFactory.GetFoldManager(view.TextBuffer)
 
-        let statusUtil = StatusUtil()
         let undoRedoOperations = 
             let history = 
                 let manager = _undoManagerProvider.GetTextBufferUndoManager(view.TextBuffer)

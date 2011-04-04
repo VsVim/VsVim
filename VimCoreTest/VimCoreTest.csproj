@@ -169,7 +169,6 @@
     <Compile Include="FoldManagerTest.cs" />
     <Compile Include="InsertModeIntegrationTest.cs" />
     <Compile Include="FileSystemTest.cs" />
-    <Compile Include="MotionDataTest.cs" />
     <Compile Include="TextViewMotionUtilTest.cs" />
     <Compile Include="NormalModeIntegrationTest.cs" />
     <Compile Include="SearchServiceTest.cs" />
@@ -192,7 +191,7 @@
     <Compile Include="CountCaptureTest.cs" />
     <Compile Include="KeyInputUtilTest.cs" />
     <Compile Include="InsertModeTest.cs" />
-    <Compile Include="IntegrationTests.cs" />
+    <Compile Include="IntegrationTest.cs" />
     <Compile Include="KeyInputTest.cs" />
     <Compile Include="MarkMapTest.cs" />
     <Compile Include="MotionCaptureTest.cs" />

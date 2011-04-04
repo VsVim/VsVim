@@ -251,11 +251,9 @@ namespace VimCore.UnitTest
         {
             Create("foo bar");
             _globalSettings.WrapScan = false;
-            _statusUtil.Setup(x => x.OnError(Resources.Common_SearchHitBottomWithout("f"))).Verifiable();
             var result = _search.Begin(Path.Forward).Run("f").Run(VimKey.Enter).AsComplete().Item;
             Assert.IsTrue(result.IsNotFound);
             Assert.IsTrue(result.AsNotFound().Item2);
-            _statusUtil.Verify();
         }
 
         /// <summary>
@@ -268,30 +266,8 @@ namespace VimCore.UnitTest
             Create("cat bar");
             _globalSettings.WrapScan = false;
             _textView.MoveCaretTo(2);
-            _statusUtil.Setup(x => x.OnError(Resources.Common_SearchHitTopWithout("t"))).Verifiable();
             var result = _search.Begin(Path.Backward).Run("t").Run(VimKey.Enter).AsComplete().Item;
             Assert.IsTrue(result.IsNotFound);
-            _statusUtil.Verify();
-        }
-
-        [Test]
-        public void Search_ForwardThatWrapsShouldUpdateStatus()
-        {
-            Create("dog cat bear");
-            _textView.MoveCaretTo(4);
-            _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchForwardWrapped)).Verifiable();
-            _search.DoSearch("d");
-            _statusUtil.Verify();
-        }
-
-        [Test]
-        public void Search_BackwardThatWrapsShouldUpdateStatus()
-        {
-            Create("dog cat bear");
-            _textView.MoveCaretTo(4);
-            _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchBackwardWrapped)).Verifiable();
-            _search.DoSearch("b", Path.Backward);
-            _statusUtil.Verify();
         }
 
         /// <summary>

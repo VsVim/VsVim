@@ -19,7 +19,7 @@ namespace VimCore.UnitTest
 
         private ITrackingLineColumn Create(ITextBuffer buffer, int line, int column)
         {
-            return _service.Create(buffer, line, column);
+            return _service.Create(buffer, line, column, LineColumnTrackingMode.Default);
         }
 
         private static void AssertPoint(ITrackingLineColumn tlc, int lineNumber, int column)
@@ -29,13 +29,6 @@ namespace VimCore.UnitTest
             AssertLineColumn(point.Value, lineNumber, column);
         }
 
-        private static void AssertTruncatedPoint(ITrackingLineColumn tlc, int lineNumber, int column)
-        {
-            Assert.IsTrue(tlc.Point.IsNone());
-            var point = tlc.PointTruncating;
-            Assert.IsTrue(point.IsSome());
-            AssertLineColumn(point.Value, lineNumber, column);
-        }
 
         private static void AssertLineColumn(SnapshotPoint point, int lineNumber, int column)
         {
@@ -80,19 +73,24 @@ namespace VimCore.UnitTest
             AssertPoint(tlc, 0, 1);
         }
 
+        /// <summary>
+        /// Deleting the line containing the tracking item should cause it to be deleted
+        /// </summary>
         [Test]
-        public void DeleteLine1()
+        public void Edit_DeleteLine()
         {
             var buffer = EditorUtil.CreateBuffer("foo", "bar");
             var tlc = Create(buffer, 0, 0);
             buffer.Delete(buffer.GetLineFromLineNumber(0).ExtentIncludingLineBreak.Span);
             Assert.IsTrue(tlc.Point.IsNone());
-            Assert.IsTrue(tlc.PointTruncating.IsNone());
             Assert.IsTrue(tlc.VirtualPoint.IsNone());
         }
 
-        [Test, Description("Deleting a line below shouldn't affect it")]
-        public void DeleteLine2()
+        /// <summary>
+        /// Deleting the line below shouldn't affect it
+        /// </summary>
+        [Test]
+        public void Edit_DeleteLineBelow()
         {
             var buffer = EditorUtil.CreateBuffer("foo", "bar");
             var tlc = Create(buffer, 0, 2);
@@ -100,8 +98,11 @@ namespace VimCore.UnitTest
             AssertPoint(tlc, 0, 2);
         }
 
-        [Test, Description("Deleting a line above should just shift the line")]
-        public void DeleteLine3()
+        /// <summary>
+        /// Deleting the line above should just adjust it
+        /// </summary>
+        [Test]
+        public void Edit_DeleteLineAbove()
         {
             var buffer = EditorUtil.CreateBuffer("foo", "bar", "baz");
             var tlc = Create(buffer, 1, 2);
@@ -114,8 +115,8 @@ namespace VimCore.UnitTest
         {
             var buffer = EditorUtil.CreateBuffer("foo bar baz");
             var tlc = Create(buffer, 0, 5);
-            buffer.Replace(buffer.GetLineFromLineNumber(0).ExtentIncludingLineBreak, "yes");
-            AssertTruncatedPoint(tlc, 0, 3);
+            buffer.Replace(buffer.GetLine(0).ExtentIncludingLineBreak, "yes");
+            AssertPoint(tlc, 0, 3);
         }
 
         [Test, Description("Make it 0 width")]
@@ -124,18 +125,7 @@ namespace VimCore.UnitTest
             var buffer = EditorUtil.CreateBuffer("foo bar baz");
             var tlc = Create(buffer, 0, 5);
             buffer.Replace(buffer.GetLineFromLineNumber(0).ExtentIncludingLineBreak, "");
-            AssertTruncatedPoint(tlc, 0, 0);
+            AssertPoint(tlc, 0, 0);
         }
-
-        [Test, Description("Shouldn't truncate when it comes back")]
-        public void TruncatingEdit3()
-        {
-            var buffer = EditorUtil.CreateBuffer("foo bar baz");
-            var tlc = Create(buffer, 0, 5);
-            buffer.Replace(buffer.GetLineFromLineNumber(0).ExtentIncludingLineBreak, "yes");
-            buffer.Replace(new Span(0, 0), "hello world");
-            AssertPoint(tlc, 0, 5);
-        }
-
     }
 }

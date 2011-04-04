@@ -1,12 +1,9 @@
-﻿using System;
-using Microsoft.VisualStudio.Text;
+﻿using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Operations;
-using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
-using Vim.UnitTest.Mock;
 
 namespace VimCore.UnitTest
 {
@@ -16,43 +13,22 @@ namespace VimCore.UnitTest
         private ITextBuffer _textBuffer;
         private ITextStructureNavigator _navigator;
         private IVimGlobalSettings _globalSettings;
-        private MockRepository _factory;
-        private Mock<ITextSearchService> _textSearch;
-        private IVimData _vimData;
+        private ITextSearchService _textSearch;
         private SearchService _searchRaw;
         private ISearchService _search;
 
-        [SetUp]
-        public void SetUp()
+        public void Create(params string[] lines)
         {
-            _textBuffer = EditorUtil.CreateBuffer("");
+            _textBuffer = EditorUtil.CreateBuffer(lines);
             _navigator = VimUtil.CreateTextStructureNavigator(_textBuffer);
-            _vimData = new VimData();
             _globalSettings = new Vim.GlobalSettings();
             _globalSettings.Magic = true;
             _globalSettings.IgnoreCase = true;
             _globalSettings.SmartCase = false;
 
-            _factory = new MockRepository(MockBehavior.Strict);
-            _textSearch = _factory.Create<ITextSearchService>();
-            _searchRaw = new SearchService(_textSearch.Object, _globalSettings);
+            _textSearch = EditorUtil.FactoryService.TextSearchService;
+            _searchRaw = new SearchService(_textSearch, _globalSettings);
             _search = _searchRaw;
-        }
-
-        private void AssertFindNext(
-            SearchData data,
-            string searchText,
-            FindOptions options)
-        {
-            var snapshot = MockObjectFactory.CreateTextSnapshot(10);
-            var nav = _factory.Create<ITextStructureNavigator>();
-            var findData = new FindData(searchText, snapshot.Object, options, nav.Object);
-            _textSearch
-                .Setup(x => x.FindNext(2, true, findData))
-                .Returns<SnapshotSpan?>(null)
-                .Verifiable();
-            _search.FindNext(data, new SnapshotPoint(snapshot.Object, 2), nav.Object);
-            _factory.Verify();
         }
 
         private FindOptions CreateFindOptions(string pattern, SearchKind kind, SearchOptions options)
@@ -63,9 +39,16 @@ namespace VimCore.UnitTest
             return findData.Value.FindOptions;
         }
 
+        private SearchResult FindNextPattern(string pattern, Path path, SnapshotPoint point, int count)
+        {
+            var patternData = new PatternData(pattern, path);
+            return _search.FindNextPattern(patternData, point, _navigator, count);
+        }
+
         [Test]
         public void CreateFindOptions1()
         {
+            Create("");
             var options = CreateFindOptions("sample", SearchKind.Forward, SearchOptions.None);
             Assert.AreEqual(FindOptions.UseRegularExpressions | FindOptions.MatchCase, options);
         }
@@ -73,6 +56,7 @@ namespace VimCore.UnitTest
         [Test]
         public void CreateFindOptions2()
         {
+            Create("");
             var options = CreateFindOptions("sample", SearchKind.Forward, SearchOptions.None);
             Assert.AreEqual(FindOptions.UseRegularExpressions | FindOptions.MatchCase, options);
         }
@@ -80,6 +64,7 @@ namespace VimCore.UnitTest
         [Test]
         public void CreateFindOptions3()
         {
+            Create("");
             var options = CreateFindOptions(@"\<sample\>", SearchKind.Forward, SearchOptions.None);
             Assert.AreEqual(FindOptions.WholeWord | FindOptions.MatchCase, options);
         }
@@ -87,229 +72,253 @@ namespace VimCore.UnitTest
         [Test]
         public void CreateFindOptions4()
         {
+            Create("");
             _globalSettings.IgnoreCase = false;
             var options = CreateFindOptions("sample", SearchKind.Forward, SearchOptions.ConsiderIgnoreCase);
             Assert.AreEqual(FindOptions.UseRegularExpressions | FindOptions.MatchCase, options);
-            _factory.Verify();
         }
 
         [Test]
         public void CreateFindOptions5()
         {
+            Create("");
             _globalSettings.IgnoreCase = true;
             var options = CreateFindOptions("sample", SearchKind.Forward, SearchOptions.ConsiderIgnoreCase);
             Assert.AreEqual(FindOptions.UseRegularExpressions, options);
-            _factory.Verify();
         }
 
         [Test]
         public void CreateFindOptions6()
         {
+            Create("");
             _globalSettings.IgnoreCase = true;
             _globalSettings.SmartCase = false;
             var options = CreateFindOptions("sample", SearchKind.Forward, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
             Assert.AreEqual(FindOptions.UseRegularExpressions, options);
-            _factory.Verify();
         }
 
         [Test]
         public void CreateFindOptions7()
         {
+            Create("");
             _globalSettings.IgnoreCase = true;
             _globalSettings.SmartCase = true;
             var options = CreateFindOptions("sample", SearchKind.Forward, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
             Assert.AreEqual(FindOptions.UseRegularExpressions, options);
-            _factory.Verify();
         }
 
         [Test]
         public void CreateFindOptions8()
         {
+            Create("");
             _globalSettings.IgnoreCase = true;
             _globalSettings.SmartCase = true;
             var options = CreateFindOptions("foo", SearchKind.Forward, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
             Assert.AreEqual(FindOptions.UseRegularExpressions, options);
-            _factory.Verify();
         }
 
         [Test]
         public void CreateFindOptions9()
         {
+            Create("");
             _globalSettings.IgnoreCase = true;
             _globalSettings.SmartCase = true;
             var options = CreateFindOptions("fOo", SearchKind.Forward, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
             Assert.AreEqual(FindOptions.UseRegularExpressions | FindOptions.MatchCase, options);
-            _factory.Verify();
         }
 
         [Test]
         public void CreateFindOptions10()
         {
+            Create("");
             var options = CreateFindOptions(PatternUtil.CreateWholeWord("sample"), SearchKind.Backward, SearchOptions.None);
             Assert.AreEqual(FindOptions.WholeWord | FindOptions.MatchCase | FindOptions.SearchReverse, options);
         }
 
+        /// <summary>
+        /// Needs to respect the 'ignorecase' option if 'ConsiderIgnoreCase' is specified
+        /// </summary>
         [Test]
-        [Description("Needs to respect the ignorecase option if ConsiderIgnoreCase is specified")]
-        public void FindNext1()
+        public void FindNext_ConsiderIgnoreCase()
         {
+            Create("cat dog FISH");
             _globalSettings.IgnoreCase = true;
-            var data = VimUtil.CreateSearchData("foo", options: SearchOptions.ConsiderIgnoreCase);
-            AssertFindNext(data, "foo", FindOptions.UseRegularExpressions);
+            var data = VimUtil.CreateSearchData("fish", options: SearchOptions.ConsiderIgnoreCase);
+            var result = _search.FindNext(data, _textBuffer.GetPoint(0), _navigator);
+            Assert.IsTrue(result.IsFound);
         }
 
+        /// <summary>
+        /// Respect the 'noignorecase' when 'ConsiderIgnoreCase' is specified
+        /// </summary>
         [Test]
-        [Description("Needs to respect the noignorecase option if ConsiderIgnoreCase is specified")]
-        public void FindNext2()
+        public void FindNext_IgnoreCaseConflictiong()
         {
+            Create("cat dog FISH");
             _globalSettings.IgnoreCase = false;
-            var data = new SearchData("foo", SearchKind.Forward, SearchOptions.ConsiderIgnoreCase);
-            AssertFindNext(data, "foo", FindOptions.MatchCase | FindOptions.UseRegularExpressions);
+            var data = VimUtil.CreateSearchData("fish", options: SearchOptions.ConsiderIgnoreCase);
+            var result = _search.FindNext(data, _textBuffer.GetPoint(0), _navigator);
+            Assert.IsTrue(result.IsNotFound);
         }
 
+        /// <summary>
+        /// Verify it's actually doing a regular expression search when appropriate
+        /// </summary>
         [Test]
-        [Description("Match case if not considering smart or ignore case")]
-        public void FindNext3()
+        public void FindNext_UseRegularExpression()
         {
-            _globalSettings.IgnoreCase = true;
-            var data = new SearchData("foo", SearchKind.Forward, SearchOptions.None);
-            AssertFindNext(data, "foo", FindOptions.MatchCase | FindOptions.UseRegularExpressions);
-        }
-
-        [Test]
-        [Description("Verify it's using the regex and not the text")]
-        public void FindNext4()
-        {
+            Create(@"cat bthe thedog");
             var data = VimUtil.CreateSearchData(@"\<the");
-            AssertFindNext(data, @"\bthe", FindOptions.MatchCase | FindOptions.UseRegularExpressions);
+            var result = _search.FindNext(data, _textBuffer.GetPoint(0), _navigator);
+            Assert.AreEqual(9, result.AsFound().Item2.Start.Position);
         }
 
+        /// <summary>
+        /// Bad regular expressions can cause the FindNext API call to throw internally.  Make
+        /// sure we wrap it and return a NotFound
+        /// </summary>
         [Test]
-        [Description("Verify it's using the regex and not the text")]
-        public void FindNext5()
+        public void FindNext_BadRegex()
         {
-            var data = VimUtil.CreateSearchData(@"(the");
-            AssertFindNext(data, @"\(the", FindOptions.MatchCase | FindOptions.UseRegularExpressions);
+            Create("");
+            var data = VimUtil.CreateSearchData("f(");
+            var result = _search.FindNext(data, _textBuffer.GetPoint(0), _navigator);
+            Assert.IsTrue(result.IsNotFound);
         }
 
-        [Test]
-        public void FindNextMulitple1()
-        {
-            var tss = MockObjectFactory.CreateTextSnapshot(42).Object;
-            var nav = _factory.Create<ITextStructureNavigator>();
-            var data = new FindData("foo", tss, FindOptions.UseRegularExpressions | FindOptions.MatchCase, nav.Object);
-            _textSearch
-                .Setup(x => x.FindNext(10, true, data))
-                .Returns(new SnapshotSpan(tss, 11, 3))
-                .Verifiable();
-            var searchData = new SearchData("foo", SearchKind.ForwardWithWrap, SearchOptions.None);
-            var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 1);
-            Assert.IsTrue(ret.IsFound);
-            Assert.AreEqual(new SnapshotSpan(tss, 11, 3), ret.AsFound().Item2);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void FindNextMulitple2()
-        {
-            var tss = MockObjectFactory.CreateTextSnapshot(42).Object;
-            var nav = _factory.Create<ITextStructureNavigator>();
-            var data = new FindData("foo", tss, FindOptions.UseRegularExpressions | FindOptions.MatchCase, nav.Object);
-            _textSearch
-                .Setup(x => x.FindNext(10, true, data))
-                .Returns(new SnapshotSpan(tss, 11, 3))
-                .Verifiable();
-            _textSearch
-                .Setup(x => x.FindNext(14, true, data))
-                .Returns((SnapshotSpan?)null)
-                .Verifiable();
-            var searchData = new SearchData("foo", SearchKind.ForwardWithWrap, SearchOptions.None);
-            var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 2);
-            Assert.IsFalse(ret.IsFound);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void FindNextMulitple3()
-        {
-            var tss = MockObjectFactory.CreateTextSnapshot(42).Object;
-            var nav = _factory.Create<ITextStructureNavigator>();
-            var data = new FindData("foo", tss, FindOptions.UseRegularExpressions | FindOptions.MatchCase | FindOptions.SearchReverse, nav.Object);
-            _textSearch
-                .Setup(x => x.FindNext(10, true, data))
-                .Returns(new SnapshotSpan(tss, 0, 3))
-                .Verifiable();
-            _textSearch
-                .Setup(x => x.FindNext(42, true, data))
-                .Returns(new SnapshotSpan(tss, 10, 3))
-                .Verifiable();
-            var searchData = new SearchData("foo", SearchKind.BackwardWithWrap, SearchOptions.None);
-            var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 2);
-            Assert.IsTrue(ret.IsFound);
-            Assert.AreEqual(new SnapshotSpan(tss, 10, 3), ret.AsFound().Item2);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void FindNextMulitple4()
-        {
-            var tss = MockObjectFactory.CreateTextSnapshot(42).Object;
-            var nav = _factory.Create<ITextStructureNavigator>();
-            var data = new FindData("foo", tss, FindOptions.UseRegularExpressions | FindOptions.MatchCase, nav.Object);
-            _textSearch
-                .Setup(x => x.FindNext(10, true, data))
-                .Returns(new SnapshotSpan(tss, 0, 3))
-                .Verifiable();
-            _textSearch
-                .Setup(x => x.FindNext(3, true, data))
-                .Returns(new SnapshotSpan(tss, 10, 3))
-                .Verifiable();
-            var searchData = new SearchData("foo", SearchKind.ForwardWithWrap, SearchOptions.None);
-            var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 2);
-            Assert.IsTrue(ret.IsFound);
-            Assert.AreEqual(new SnapshotSpan(tss, 10, 3), ret.AsFound().Item2);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void BadRegex1()
-        {
-            var tss = MockObjectFactory.CreateTextSnapshot(42).Object;
-            var nav = _factory.Create<ITextStructureNavigator>();
-            _textSearch
-                .Setup(x => x.FindNext(0, true, It.IsAny<FindData>()))
-                .Throws(new InvalidOperationException())
-                .Verifiable();
-            var searchData = new SearchData("f(", SearchKind.ForwardWithWrap, SearchOptions.None);
-            var ret = _search.FindNext(searchData, new SnapshotPoint(tss, 0), nav.Object);
-            Assert.IsTrue(ret.IsNotFound);
-            _factory.Verify();
-        }
-
-
-        [Test]
-        public void BadRegex2()
-        {
-            var tss = MockObjectFactory.CreateTextSnapshot(42).Object;
-            var nav = _factory.Create<ITextStructureNavigator>();
-            _textSearch
-                .Setup(x => x.FindNext(0, true, It.IsAny<FindData>()))
-                .Throws(new InvalidOperationException())
-                .Verifiable();
-            var searchData = new SearchData("f(", SearchKind.ForwardWithWrap, SearchOptions.None);
-            var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 0), nav.Object, 2);
-            Assert.IsTrue(ret.IsNotFound);
-            _factory.Verify();
-        }
-
+        /// <summary>
+        /// Make sure we handle the 'nomagic' modifier
+        /// </summary>
         [Test]
         public void BadRegex_NoMagicSpecifierShouldBeHandled()
         {
-            var snapshot = EditorUtil.CreateBuffer("hello world");
-            var nav = _factory.Create<ITextStructureNavigator>();
+            Create("");
             var searchData = new SearchData(@"\V", SearchKind.ForwardWithWrap, SearchOptions.None);
-            var ret = _search.FindNext(searchData, snapshot.GetPoint(0), nav.Object);
-            Assert.IsTrue(ret.IsNotFound);
+            var result = _search.FindNext(searchData, _textBuffer.GetPoint(0), _navigator);
+            Assert.IsTrue(result.IsNotFound);
+        }
+
+        /// <summary>
+        /// Make sure we find the count occurrence of the item
+        /// </summary>
+        [Test]
+        public void FindNextMulitple_Count()
+        {
+            Create(" cat dog cat");
+            var data = VimUtil.CreateSearchData("cat");
+            var result = _search.FindNextMultiple(data, _textBuffer.GetPoint(0), _navigator, 2);
+            Assert.AreEqual(9, result.AsFound().Item2.Start.Position);
+        }
+
+        /// <summary>
+        /// Make sure the count is taken into consideration
+        /// </summary>
+        [Test]
+        public void FindNextPattern_WithCount()
+        {
+            Create("cat dog cat", "cat");
+            var result = FindNextPattern("cat", Path.Forward, _textBuffer.GetPoint(0), 2);
+            Assert.IsTrue(result.IsFound);
+            Assert.AreEqual(_textBuffer.GetLine(1).Extent, result.AsFound().Item2);
+            Assert.IsFalse(result.AsFound().item3);
+        }
+
+        /// <summary>
+        /// Don't make a partial match when using a whole word pattern
+        /// </summary>
+        [Test]
+        public void FindNextPattern_DontMatchPartialForWholeWord()
+        {
+            Create("dog doggy dog");
+            var result = FindNextPattern(@"\<dog\>", Path.Forward, _textBuffer.GetPoint(0), 1);
+            Assert.IsTrue(result.IsFound(10));
+        }
+
+        /// <summary>
+        /// Do a backward search with 'wrapscan' enabled should go backwards
+        /// </summary>
+        [Test]
+        public void FindNextPattern_Backward()
+        {
+            Create("cat dog", "cat");
+            _globalSettings.WrapScan = true;
+            var result = FindNextPattern(@"\<cat\>", Path.Backward, _textBuffer.GetLine(1).Start, 1);
+            Assert.IsTrue(result.IsFound(0));
+        }
+
+        /// <summary>
+        /// Regression test for issue 398.  When starting on something other
+        /// than the first character make sure we don't jump over an extra 
+        /// word when searching for a whole word
+        /// </summary>
+        [Test]
+        public void FindNextPattern_StartOnSecondChar()
+        {
+            Create("cat cat cat");
+            var result = FindNextPattern(@"\<cat\>", Path.Forward, _textBuffer.GetPoint(1), 1);
+            Assert.IsTrue(result.IsFound(4));
+        }
+
+        /// <summary>
+        /// Make sure that searching backward from the first char in a word doesn't
+        /// count that word as an occurrence
+        /// </summary>
+        [Test]
+        public void FindNextPattern_BackwardFromFirstChar()
+        {
+            Create("cat cat cat");
+            var result = FindNextPattern(@"cat", Path.Backward, _textBuffer.GetPoint(4), 1);
+            Assert.IsTrue(result.IsFound(0));
+        }
+
+        /// <summary>
+        /// Don't start the search on the current word start.  It should start afterwards
+        /// so we don't match the current word
+        /// </summary>
+        [Test]
+        public void FindNextPattern_DontStartOnPointForward()
+        {
+            Create("foo bar", "foo");
+            var result = FindNextPattern("foo", Path.Forward, _textBuffer.GetPoint(0), 1);
+            Assert.AreEqual(_textBuffer.GetLine(1).Start, result.AsFound().Item2.Start);
+        }
+
+        /// <summary>
+        /// Don't start the search on the current word start.  It should before the character
+        /// when doing a backward search so we don't match the current word
+        /// </summary>
+        [Test]
+        public void FindNextPattern_DontStartOnPointBackward()
+        {
+            Create("foo bar", "foo");
+            var result = FindNextPattern("foo", Path.Backward, _textBuffer.GetLine(1).Start, 1);
+            Assert.AreEqual(_textBuffer.GetPoint(0), result.AsFound().Item2.Start);
+        }
+
+        /// <summary>
+        /// Make sure that this takes into account the 'wrapscan' option going forward
+        /// </summary>
+        [Test]
+        public void FindNextPattern_ConsiderWrapScanForward()
+        {
+            Create("dog", "cat");
+            _globalSettings.WrapScan = false;
+            var result = FindNextPattern("dog", Path.Forward, _textBuffer.GetPoint(0), 1);
+            Assert.IsTrue(result.IsNotFound);
+            Assert.IsTrue(result.AsNotFound().Item2);
+        }
+
+        /// <summary>
+        /// Make sure that this takes into account the 'wrapscan' option going forward
+        /// </summary>
+        [Test]
+        public void FindNextPattern_ConsiderWrapScanBackward()
+        {
+            Create("dog", "cat");
+            _globalSettings.WrapScan = false;
+            var result = FindNextPattern("dog", Path.Backward, _textBuffer.GetPoint(0), 1);
+            Assert.IsTrue(result.IsNotFound);
+            Assert.IsTrue(result.AsNotFound().Item2);
         }
     }
 

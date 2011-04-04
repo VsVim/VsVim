@@ -15,8 +15,10 @@ namespace VimCore.UnitTest
         private IWpfTextView _textView;
         private ITextBuffer _textBuffer;
         private IVimGlobalSettings _globalSettings;
+        private IJumpList _jumpList;
         private IKeyMap _keyMap;
         private bool _assertOnErrorMessage = true;
+        private bool _assertOnWarningMessage = true;
 
         internal Register UnnamedRegister
         {
@@ -38,8 +40,17 @@ namespace VimCore.UnitTest
                         Assert.Fail("Error Message: " + message);
                     }
                 };
+            _buffer.WarningMessage +=
+                (_, message) =>
+                {
+                    if (_assertOnWarningMessage)
+                    {
+                        Assert.Fail("Warning Message: " + message);
+                    }
+                };
             _keyMap = _buffer.Vim.KeyMap;
             _globalSettings = _buffer.Settings.GlobalSettings;
+            _jumpList = _buffer.JumpList;
         }
 
         [TearDown]
@@ -151,7 +162,7 @@ namespace VimCore.UnitTest
 
         [Test]
         [Description("[[ motion should put the caret on the target character")]
-        public void SectionMotion1()
+        public void Motion_Section1()
         {
             Create("hello", "{world");
             _buffer.Process("]]");
@@ -160,7 +171,7 @@ namespace VimCore.UnitTest
 
         [Test]
         [Description("[[ motion should put the caret on the target character")]
-        public void SectionMotion2()
+        public void Motion_Section2()
         {
             Create("hello", "\fworld");
             _buffer.Process("]]");
@@ -168,7 +179,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void SectionMotion3()
+        public void Motion_Section3()
         {
             Create("foo", "{", "bar");
             _textView.MoveCaretTo(_textView.GetLine(2).End);
@@ -177,7 +188,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void SectionMotion4()
+        public void Motion_Section4()
         {
             Create("foo", "{", "bar", "baz");
             _textView.MoveCaretTo(_textView.GetLine(3).End);
@@ -186,7 +197,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void SectionMotion5()
+        public void Motion_Section5()
         {
             Create("foo", "{", "bar", "baz", "jazz");
             _textView.MoveCaretTo(_textView.GetLine(4).Start);
@@ -195,11 +206,37 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void ParagraphMotion1()
+        public void Motion_Paragraph()
         {
             Create("foo", "{", "bar", "baz", "jazz");
             _textView.MoveCaretTo(_textView.TextSnapshot.GetEndPoint());
             _buffer.Process("{{");
+        }
+
+        /// <summary>
+        /// Make sure we move to the column on the current line when there is no count
+        /// </summary>
+        [Test]
+        public void Motion_FirstNonWhiteSpaceOnLine()
+        {
+            Create(" cat", "  dog", "   fish");
+            _textView.MoveCaretToLine(1);
+            _buffer.Process("_");
+            Assert.AreEqual(_textView.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Simple word motion.  Make sure the caret gets put on the start of the next
+        /// word
+        /// </summary>
+        [Test]
+        public void Motion_Word()
+        {
+            Create("cat dog bear");
+            _buffer.Process("w");
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+            _buffer.Process("w");
+            Assert.AreEqual(8, _textView.GetCaretPoint().Position);
         }
 
         [Test]
@@ -232,6 +269,29 @@ namespace VimCore.UnitTest
             _textView.MoveCaretTo(_textView.GetLine(2).Start);
             _buffer.Process('N');
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// A change word operation shouldn't delete the whitespace trailing the word
+        /// </summary>
+        [Test]
+        public void Change_Word()
+        {
+            Create("dog cat bear");
+            _buffer.Process("cw");
+            Assert.AreEqual(" cat bear", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// A change all word operation should delete the whitespace trailing the word.  Really
+        /// odd when considering 'cw' doesn't.
+        /// </summary>
+        [Test]
+        public void Change_AllWord()
+        {
+            Create("dog cat bear");
+            _buffer.Process("caw");
+            Assert.AreEqual("cat bear", _textView.GetLine(0).GetText());
         }
 
         [Test]
@@ -1068,6 +1128,19 @@ namespace VimCore.UnitTest
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
 
+        /// <summary>
+        /// Make sure the caret goes to column 0 on the next line even if one of the 
+        /// motion adjustment applies (:help exclusive-linewise)
+        /// </summary>
+        [Test]
+        public void IncrementalSearch_CaretOnColumnZero()
+        {
+            Create("hello", "world");
+            _textView.MoveCaretTo(2);
+            _buffer.Process("/world", enter: true);
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
         [Test]
         public void IncrementalSearch_CaseSensitive()
         {
@@ -1393,15 +1466,77 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
-        /// Make sure we move to the column on the current line when there is no count
+        /// A yank of a search which needs no wrap but doesn't wrap should raise an 
+        /// error message
         /// </summary>
         [Test]
-        public void Motion_FirstNonWhiteSpaceOnLine()
+        public void Yank_WrappingSearch()
         {
-            Create(" cat", "  dog", "   fish");
-            _textView.MoveCaretToLine(1);
-            _buffer.Process("_");
-            Assert.AreEqual(_textView.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+            Create("dog", "cat", "dog", "fish");
+            _globalSettings.WrapScan = false;
+            _textView.MoveCaretToLine(2);
+            _assertOnErrorMessage = false;
+
+            var didSee = false;
+            _buffer.ErrorMessage +=
+                (sender, message) =>
+                {
+                    Assert.AreEqual(Resources.Common_SearchHitBottomWithout(@"\<dog\>"), message);
+                    didSee = true;
+                };
+            _buffer.Process("y*");
+            Assert.IsTrue(didSee);
+        }
+
+        /// <summary>
+        /// A yank which wraps around the buffer should just be a backwards motion and 
+        /// shouldn't cause an error or warning message to be displayed
+        /// </summary>
+        [Test]
+        public void Yank_WrappingSearchSucceeds()
+        {
+            Create("dog", "cat", "dog", "fish");
+            _globalSettings.WrapScan = true;
+            _textView.MoveCaretToLine(2);
+            _assertOnErrorMessage = false;
+
+            _buffer.Process("y/dog", enter: true);
+            Assert.AreEqual("dog" + Environment.NewLine + "cat" + Environment.NewLine, UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// A yank of a search which has no match should raise an error 
+        /// </summary>
+        [Test]
+        public void Yank_SearchMotionWithNoResult()
+        {
+            Create("dog", "cat", "dog", "fish");
+            _globalSettings.WrapScan = false;
+            _textView.MoveCaretToLine(2);
+            _assertOnErrorMessage = false;
+
+            var didSee = false;
+            _buffer.ErrorMessage +=
+                (sender, message) =>
+                {
+                    Assert.AreEqual(Resources.Common_PatternNotFound("bug"), message);
+                    didSee = true;
+                };
+            _buffer.Process("y/bug", enter: true);
+            Assert.IsTrue(didSee);
+        }
+
+        /// <summary>
+        /// A yank of a jump motion should update the jump list
+        /// </summary>
+        [Test]
+        public void JumpList_YankMotionShouldUpdate()
+        {
+            Create("cat", "dog", "cat");
+            _buffer.Process("y*");
+            Assert.IsTrue(_jumpList.Current.IsSome(_textView.GetPoint(0)));
+            Assert.AreEqual("cat" + Environment.NewLine + "dog" + Environment.NewLine, UnnamedRegister.StringValue);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
     }
 }

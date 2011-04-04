@@ -60,6 +60,65 @@ type internal CommonOperations ( _data : OperationsData ) =
             if point.Position >= line.End.Position && line.Length > 0 then 
                 TextViewUtil.MoveCaretToPoint _textView (line.End.Subtract(1))
 
+    /// Move the caret to the specified point and ensure it's visible and the surrounding 
+    /// text is expanded
+    member x.MoveCaretToPointAndEnsureVisible point = 
+        TextViewUtil.MoveCaretToPoint _textView point
+        x.EnsureCaretOnScreenAndTextExpanded()
+
+    /// Move the caret to the position dictated by the given MotionResult value
+    member x.MoveCaretToMotionResult (result : MotionResult) =
+
+        // Go ahead and raise any messages associated with a search
+        // based motion
+        match result.MotionKind with
+        | MotionKind.AnySearch searchResult -> x.RaiseSearchResultMessages searchResult
+        | MotionKind.AnyWord -> ()
+        | MotionKind.Inclusive -> ()
+        | MotionKind.Exclusive -> ()
+
+        // Reduce the Span to the line we care about 
+        let line = 
+            if result.IsForward then SnapshotSpanUtil.GetEndLine result.Span
+            else SnapshotSpanUtil.GetStartLine result.Span
+
+        // Get the point which is the last or first point valid on the 
+        // particular line / span 
+        let getPointFromSpan () = 
+            match result.OperationKind with
+            | OperationKind.LineWise ->
+                if result.IsForward then SnapshotLineUtil.GetEnd line
+                else SnapshotLineUtil.GetStart line
+            | OperationKind.CharacterWise ->
+                if result.IsForward then
+                    if result.IsExclusive then result.Span.End
+                    else SnapshotPointUtil.GetPreviousPointOnLine result.Span.End 1
+                else result.Span.Start
+
+        let point = 
+            match result.Column with
+            | None -> 
+                // No column so just get the information from the span
+                getPointFromSpan()
+            | Some (CaretColumn.InLastLine col) ->
+                let endCol = line |> SnapshotLineUtil.GetEnd |> SnapshotPointUtil.GetColumn
+                if col < endCol then 
+                    line.Start.Add(col)
+                else 
+                    getPointFromSpan()
+            | Some CaretColumn.AfterLastLine ->
+                if result.IsForward then
+                    match SnapshotUtil.TryGetLine x.CurrentSnapshot (line.LineNumber + 1) with
+                    | None -> 
+                        getPointFromSpan()
+                    | Some line ->
+                        line.Start
+                else
+                    getPointFromSpan()
+
+        x.MoveCaretToPointAndEnsureVisible point
+        _operations.ResetSelection()
+
     member x.WordUnderCursorOrEmpty =
         let point =  TextViewUtil.GetCaretPoint _textView
         TssUtil.FindCurrentFullWordSpan point WordKind.BigWord
@@ -141,41 +200,6 @@ type internal CommonOperations ( _data : OperationsData ) =
                     Resources.Common_PatternNotFound
 
             _statusUtil.OnError (format searchData.Pattern)
-
-    /// Search for the given pattern from the specified point 
-    member x.SearchForPattern pattern path startPoint count = 
-
-        // Find the real place to search.  When going forward we should start after
-        // the caret and before should start before. This prevents the text 
-        // under the caret from being the first match
-        let snapshot = SnapshotPointUtil.GetSnapshot startPoint
-        let startPoint, didStartWrap = Util.GetSearchPointAndWrap path startPoint
-
-        // Go ahead and run the search
-        let patternData = { Pattern = pattern; Path = path }
-        let searchData = SearchData.OfPatternData patternData _globalSettings.WrapScan
-        let result = _search.FindNextMultiple searchData startPoint _wordNavigator count
-
-        // Need to fudge the SearchResult here to account for the possible wrap the 
-        // search start incurred when calculating the actual 'startPoint' value.  If it 
-        // wrapped we need to get the SearchResult to account for that so we can 
-        // process the messages properly and give back the appropriate value
-        if didStartWrap then 
-            match result with
-            | SearchResult.Found (searchData, span, didWrap) ->
-                if _globalSettings.WrapScan then
-                    // If wrapping is enabled then we just need to update the 'didWrap' state
-                    SearchResult.Found (searchData, span, true)
-                else
-                    // Wrapping is not enabled so change the result but it would've been present
-                    // if wrapping was enabled
-                    SearchResult.NotFound (searchData, true)
-            | SearchResult.NotFound _ ->
-                // No change
-                result
-        else
-            // Nothing to fudge if the start didn't wrap 
-            result
 
     /// Shifts a block of lines to the left
     member x.ShiftLineBlockLeft (col: SnapshotSpan seq) multiplier =
@@ -328,26 +352,27 @@ type internal CommonOperations ( _data : OperationsData ) =
             // Simple strings can go directly in at the position.  Need to adjust the text if 
             // we are inserting at the end of the buffer
             let text = 
+                let newLine = EditUtil.NewLine _options
                 match opKind with
                 | OperationKind.LineWise -> 
                     if SnapshotPointUtil.IsEndPoint point then
                         // At the end of the file so we need to manipulate the new line character
                         // a bit.  It's typically at the end of the line but at the end of the 
-                        // ITextBuffer we need it to be at the begining since there is no newline 
+                        // ITextBuffer we need it to be at the beginning since there is no newline 
                         // to append after at the end of the buffer.  
                         let str = EditUtil.RemoveEndingNewLine str
-                        EditUtil.NewLine + str
+                        newLine + str
                     elif not (SnapshotPointUtil.IsStartOfLine point) then
                         // Edit in the middle of the line.  Need to prefix the string with a newline
                         // in order to correctly insert here.  
                         //
-                        // This type of put will occur when a linewise regsiter value is inserted 
+                        // This type of put will occur when a linewise register value is inserted 
                         // from a visual mode character selection
-                        EditUtil.NewLine + str
+                        newLine + str
                     elif not (EditUtil.EndsWithNewLine str) then
                         // All other linewise operation should have a trailing newline to ensure a
                         // new line is actually inserted
-                        str + EditUtil.NewLine
+                        str + newLine
                     else
                         str
                 | OperationKind.CharacterWise ->
@@ -388,7 +413,7 @@ type internal CommonOperations ( _data : OperationsData ) =
     
                 // Add the text to the end of the buffer.
                 if not (Seq.isEmpty appendCol) then
-                    let prefix = EditUtil.NewLine + (String.replicate column " ")
+                    let prefix = (EditUtil.NewLine _options) + (String.replicate column " ")
                     let text = Seq.fold (fun text str -> text + prefix + str) "" appendCol
                     let endPoint = SnapshotUtil.GetEndPoint originalSnapshot
                     edit.Insert(endPoint.Position, text) |> ignore
@@ -397,7 +422,7 @@ type internal CommonOperations ( _data : OperationsData ) =
 
                 // Strings are inserted line wise into the ITextBuffer.  Build up an
                 // aggregate string and insert it here
-                let text = col |> Seq.fold (fun state elem -> state + elem + EditUtil.NewLine) StringUtil.empty
+                let text = col |> Seq.fold (fun state elem -> state + elem + (EditUtil.NewLine _options)) StringUtil.empty
 
                 edit.Insert(point.Position, text) |> ignore
 
@@ -451,7 +476,9 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.TabSize = x.TabSize
         member x.UseSpaces = x.UseSpaces
         member x.EditorOperations = _operations
+        member x.EditorOptions = _options
         member x.FoldManager = _data.FoldManager
+        member x.SearchService = _data.SearchService
         member x.UndoRedoOperations = _data.UndoRedoOperations
 
         member x.Join range kind = x.Join range kind
@@ -468,7 +495,6 @@ type internal CommonOperations ( _data : OperationsData ) =
                 | None ->  Failed(Resources.Common_GotoDefNoWordUnderCursor) 
 
         member x.RaiseSearchResultMessages searchResult = x.RaiseSearchResultMessages searchResult
-        member x.SearchForPattern pattern path point count = x.SearchForPattern pattern path point count
         member x.SetMark point c (markMap : IMarkMap) = 
             if System.Char.IsLetter(c) || c = '\'' || c = '`' then
                 markMap.SetMark point c
@@ -634,49 +660,8 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.EnsureCaretOnScreenAndTextExpanded () = x.EnsureCaretOnScreenAndTextExpanded()
         member x.EnsurePointOnScreenAndTextExpanded point = x.EnsurePointOnScreenAndTextExpanded point
         member x.MoveCaretToPoint point =  TextViewUtil.MoveCaretToPoint _textView point 
-        member x.MoveCaretToMotionResult (data:MotionResult) =
-
-            // Reduce the Span to the line we care about 
-            let line = 
-                if data.IsForward then SnapshotSpanUtil.GetEndLine data.Span
-                else SnapshotSpanUtil.GetStartLine data.Span
-
-            // Get the point which is the last or first point valid on the 
-            // particular line / span 
-            let getPointFromSpan () = 
-                if data.OperationKind = OperationKind.LineWise then 
-                    if data.IsForward then SnapshotLineUtil.GetEnd line
-                    else SnapshotLineUtil.GetStart line
-                else
-                    if data.IsForward then
-                        if data.MotionKind = MotionKind.Exclusive then data.Span.End
-                        else SnapshotPointUtil.GetPreviousPointOnLine data.Span.End 1
-                    else data.Span.Start
-
-            let point = 
-                match data.Column with
-                | Some(col) -> 
-                    let colLine = 
-
-                        // For exclusive forward motions which have a span that ends at the
-                        // end of a line and has an explicit column 0, we want to use the 
-                        // start of the line following the span instead of the line containing
-                        // the span
-                        if col = 0 && 
-                            data.IsForward && 
-                            data.MotionKind = MotionKind.Exclusive &&
-                            SnapshotPointUtil.IsStartOfLine data.Span.End then
-
-                            SnapshotPointUtil.GetContainingLine data.Span.End
-                        else line
-                    let _,endCol = colLine |> SnapshotLineUtil.GetEnd |> SnapshotPointUtil.GetLineColumn
-                    if col < endCol then colLine.Start.Add(col)
-                    else getPointFromSpan()
-                | None -> getPointFromSpan()
-
-            TextViewUtil.MoveCaretToPoint _textView point
-            _operations.ResetSelection()
-
+        member x.MoveCaretToPointAndEnsureVisible point = x.MoveCaretToPointAndEnsureVisible point
+        member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
         member x.Beep () = x.Beep()
 
         member x.OpenFold span count = 

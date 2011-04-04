@@ -39,12 +39,6 @@ type internal CommandFactory
             yield ("<Down>", NormalCommand.MoveCaretTo Direction.Down)
             yield ("<C-n>", NormalCommand.MoveCaretTo Direction.Down)
             yield ("<C-j>", NormalCommand.MoveCaretTo Direction.Down)
-            yield ("n", NormalCommand.MoveCaretToLastSearch false)
-            yield ("N", NormalCommand.MoveCaretToLastSearch true)
-            yield ("*", NormalCommand.MoveCaretToNextWord Path.Forward)
-            yield ("#", NormalCommand.MoveCaretToNextWord Path.Backward)
-            yield ("g*", NormalCommand.MoveCaretToNextPartialWord Path.Forward)
-            yield ("g#", NormalCommand.MoveCaretToNextPartialWord Path.Backward)
             yield ("gd", NormalCommand.GoToLocalDeclaration)
             yield ("gD", NormalCommand.GoToGlobalDeclaration)
         } |> Seq.map (fun (name, command) -> 
@@ -54,7 +48,8 @@ type internal CommandFactory
     /// Build up a set of LegacyMotionCommand values from applicable Motion values.  These will 
     /// move the cursor to the result of the motion
     member x.CreateMovementsFromMotions() =
-        let processMotionBinding binding =
+        let processMotionBinding (binding : MotionBinding) =
+
             match binding with
             | MotionBinding.Simple (name, _, motion) -> 
 

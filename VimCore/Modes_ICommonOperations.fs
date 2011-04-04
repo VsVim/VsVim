@@ -53,8 +53,14 @@ type ICommonOperations =
     /// Associated IEditorOperations
     abstract EditorOperations : IEditorOperations
 
+    /// Associated IEditorOptions
+    abstract EditorOptions : IEditorOptions
+
     /// Associated IFoldManager
     abstract FoldManager : IFoldManager
+
+    /// Associated ISearchService instance
+    abstract SearchService : ISearchService
 
     /// Associated IUndoRedoOperations
     abstract UndoRedoOperations : IUndoRedoOperations
@@ -68,7 +74,7 @@ type ICommonOperations =
     /// Close all open files
     abstract CloseAll : checkDirty : bool -> unit
 
-    /// Close count foldse in the given SnapshotSpan
+    /// Close count folds in the given SnapshotSpan
     abstract CloseFold : SnapshotSpan -> count:int -> unit
 
     /// Close all folds which intersect with the given SnapshotSpan
@@ -130,6 +136,10 @@ type ICommonOperations =
     /// Move the caret to a given point on the screen
     abstract MoveCaretToPoint : SnapshotPoint -> unit
 
+    /// Move the caret to a given point on the screen and ensure it's visible and the surrounding
+    /// text is expanded
+    abstract MoveCaretToPointAndEnsureVisible : SnapshotPoint -> unit
+
     /// Move the caret to the MotionResult value
     abstract MoveCaretToMotionResult : MotionResult -> unit
 
@@ -164,7 +174,7 @@ type ICommonOperations =
     /// Open count folds in the given SnapshotSpan 
     abstract OpenFold : SnapshotSpan -> count:int -> unit
 
-    /// Open all folds which inersect with the given SnapshotSpan
+    /// Open all folds which intersect with the given SnapshotSpan
     abstract OpenAllFolds : SnapshotSpan -> unit
 
     /// Put the specified StringData at the given point.
@@ -184,10 +194,6 @@ type ICommonOperations =
 
     /// Save all files
     abstract SaveAll : unit -> bool
-
-    /// Search for the given pattern in the specified direction.  This search will not actually begin
-    /// at the given SnapshotPoint though to match the behavior of pattern based searches in Vim
-    abstract SearchForPattern : string -> Path -> SnapshotPoint -> count : int -> SearchResult
 
     /// Sets a mark at the specified point.  If this operation fails an error message will be generated
     abstract SetMark : SnapshotPoint -> char -> IMarkMap -> Result

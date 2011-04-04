@@ -9,7 +9,8 @@ type internal MotionCapture
         _host : IVimHost,
         _textView : ITextView,
         _incrementalSearch : IIncrementalSearch,
-        _settings : IVimLocalSettings) = 
+        _settings : IVimLocalSettings
+    ) = 
 
     /// Get a char and use the provided 'func' to create a Motion value.
     let GetChar func = 
@@ -274,6 +275,30 @@ type internal MotionCapture
                     "gg", 
                     MotionFlags.CursorMovement,
                     Motion.LineOrFirstToFirstNonWhiteSpace)
+                yield (
+                    "n",
+                    MotionFlags.CursorMovement,
+                    Motion.LastSearch false)
+                yield (
+                    "N",
+                    MotionFlags.CursorMovement,
+                    Motion.LastSearch true)
+                yield (
+                    "*",
+                    MotionFlags.CursorMovement,
+                    Motion.NextWord Path.Forward)
+                yield (
+                    "#",
+                    MotionFlags.CursorMovement,
+                    Motion.NextWord Path.Backward)
+                yield (
+                    "g*",
+                    MotionFlags.CursorMovement,
+                    Motion.NextPartialWord Path.Forward)
+                yield (
+                    "g#",
+                    MotionFlags.CursorMovement,
+                    Motion.NextPartialWord Path.Backward)
             } 
             
         motionSeq 

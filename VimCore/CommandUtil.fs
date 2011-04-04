@@ -29,6 +29,8 @@ type internal CommandUtil
     let _vimHost = _vim.VimHost
     let _searchService = _vim.SearchService
     let _wordNavigator = _buffer.WordNavigator
+    let _jumpList = _buffer.JumpList
+    let _options = _operations.EditorOptions
 
     let mutable _inRepeatLastChange = false
 
@@ -207,7 +209,7 @@ type internal CommandUtil
         let span = 
             if result.IsAnyWordMotion && result.IsForward then
                 let point = 
-                    result.OperationSpan
+                    result.Span
                     |> SnapshotSpanUtil.GetPointsBackward 
                     |> Seq.tryFind (fun x -> x.GetChar() |> CharUtil.IsWhiteSpace |> not)
                 match point with 
@@ -216,10 +218,10 @@ type internal CommandUtil
                         p
                         |> SnapshotPointUtil.TryAddOne 
                         |> OptionUtil.getOrDefault (SnapshotUtil.GetEndPoint (p.Snapshot))
-                    SnapshotSpan(result.OperationSpan.Start, endPoint)
-                | None -> result.OperationSpan 
+                    SnapshotSpan(result.Span.Start, endPoint)
+                | None -> result.Span
             else
-                result.OperationSpan
+                result.Span
 
         // Use an undo transaction to preserve the caret position.  It should be at the start
         // of the span being deleted before and after the undo / redo so move it before and 
@@ -548,7 +550,7 @@ type internal CommandUtil
 
         // Caret should be placed at the start of the motion for both undo / redo so place it 
         // before starting the transaction
-        let span = result.OperationSpan
+        let span = result.Span
         TextViewUtil.MoveCaretToPoint _textView span.Start
         x.EditWithUndoTransaciton "Delete" (fun () ->
             _textBuffer.Delete(span.Span) |> ignore
@@ -808,6 +810,22 @@ type internal CommandUtil
         let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCountAndNewLine count)
         CommandResult.Completed switch
 
+    /// Jump to the next tag in the tag list
+    member x.JumpToNextTag count = 
+        if not (_jumpList.MoveNext count) then
+            _operations.Beep()
+        else
+            x.JumpToTagCore ()
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Jump to the previous tag in the tag list
+    member x.JumpToPreviousTag count = 
+        if not (_jumpList.MovePrevious count) then
+            _operations.Beep()
+        else
+            x.JumpToTagCore ()
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Jump to the specified mark
     member x.JumpToMark c =
         match _operations.JumpToMark c _markMap with
@@ -816,6 +834,15 @@ type internal CommandUtil
             CommandResult.Error
         | Modes.Result.Succeeded ->
             CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Jumps to the specified 
+    member x.JumpToTagCore () =
+        match _jumpList.Current with
+        | None ->
+            _operations.Beep()
+        | Some point ->
+            TextViewUtil.MoveCaretToPoint _textView point
+            _operations.EnsureCaretOnScreenAndTextExpanded()
 
     /// Move the caret in the specified direction
     member x.MoveCaretTo direction count =
@@ -826,76 +853,6 @@ type internal CommandUtil
         | Direction.Up -> _operations.MoveCaretUp count
         | Direction.Down -> _operations.MoveCaretDown count
         CommandResult.Completed ModeSwitch.NoSwitch
-
-    /// Move the caret to the next occurrence of the last search
-    member x.MoveCaretToLastSearch isReverse count =
-        let last = _vimData.LastPatternData
-        let last = 
-            if isReverse then { last with Path = Path.Reverse last.Path }
-            else last
-
-        if StringUtil.isNullOrEmpty last.Pattern then
-            _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
-        else
-            x.MoveCaretToNextPattern x.CaretPoint last.Pattern last.Path count
-
-        CommandResult.Completed ModeSwitch.NoSwitch
-
-    /// Move the caret to the next occurrence of the partial word under the caret
-    member x.MoveCaretToNextPartialWord path count =
-        x.MoveCaretToNextWordCore path count false
-        CommandResult.Completed ModeSwitch.NoSwitch
-
-    /// Move the caret to the next occurrence of the word under the caret
-    member x.MoveCaretToNextWord path count =
-        x.MoveCaretToNextWordCore path count true
-        CommandResult.Completed ModeSwitch.NoSwitch
-
-    /// Move the caret to the next occurrence of the word under the cursor.  
-    member x.MoveCaretToNextWordCore path count isWholeWord = 
-
-        // Move forward along the line to find the first non-blank
-        let point =
-            x.CaretPoint
-            |> SnapshotPointUtil.GetPointsOnContainingLineFrom
-            |> Seq.filter (fun p -> not (SnapshotPointUtil.IsWhiteSpace p))
-            |> SeqUtil.tryHeadOnly
-            |> OptionUtil.getOrDefault x.CaretPoint
-
-        match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
-        | None -> 
-            // Nothing to do if no word under the cursor
-            _statusUtil.OnError Resources.NormalMode_NoWordUnderCursor
-        | Some span ->
-
-            // Build up the SearchData structure
-            let word = span.GetText()
-            let pattern = if isWholeWord then PatternUtil.CreateWholeWord word else word
-
-            // A word search always starts at the begining of the word.  The pattern
-            // based search will ensure that we don't match this word again because it
-            // won't make an initial match at the provided point
-            x.MoveCaretToNextPattern span.Start pattern path count
-
-            // Update the last pattern value
-            _vimData.LastPatternData <- { Pattern = pattern; Path = path }
-
-    /// Move the caret to the 'count' next occurrence of the specified pattern
-    member x.MoveCaretToNextPattern searchStart pattern path count =
-
-        // Do the search and raise the appropriate error messages
-        let result = _operations.SearchForPattern pattern path searchStart count
-        _operations.RaiseSearchResultMessages(result)
-
-        match result with
-        | SearchResult.Found (_, span, _) ->
-            // Found the span so update the cursor to that position
-            TextViewUtil.MoveCaretToPoint _textView span.Start
-            _operations.EnsureCaretOnScreenAndTextExpanded()
-
-        | SearchResult.NotFound _ ->
-            // Did not find the pattern given the parameters.  Take no action.  
-            ()
 
     /// Move the caret to start of a line which is deleted.  Needs to preserve the original 
     /// indent if 'autoindent' is set.
@@ -968,6 +925,11 @@ type internal CommandUtil
         | None -> _operations.Beep()
         | Some result -> _operations.MoveCaretToMotionResult result
         CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Move the caret to the specified point as a jump operation
+    member x.MoveCaretToPointAsJump point =
+        _jumpList.Add point
+        _operations.MoveCaretToPointAndEnsureVisible point
 
     /// Run the Ping command
     member x.Ping (pingData : PingData) data = 
@@ -1118,7 +1080,7 @@ type internal CommandUtil
                     let stringData = 
                         match stringData with
                         | StringData.Simple str ->
-                            let str = if EditUtil.EndsWithNewLine str then str else str + EditUtil.NewLine
+                            let str = if EditUtil.EndsWithNewLine str then str else str + (EditUtil.NewLine _options)
                             StringData.Simple str
                         | StringData.Block _ -> 
                             stringData
@@ -1323,7 +1285,7 @@ type internal CommandUtil
                 x.EditWithUndoTransaciton "ReplaceChar" (fun () -> 
 
                     let replaceText = 
-                        if keyInput = KeyInputUtil.EnterKey then EditUtil.NewLine
+                        if keyInput = KeyInputUtil.EnterKey then EditUtil.NewLine _options
                         else new System.String(keyInput.Char, count)
                     let span = new Span(point.Position, count)
                     let snapshot = _textView.TextBuffer.Replace(span, replaceText) 
@@ -1345,7 +1307,7 @@ type internal CommandUtil
     member x.ReplaceSelection keyInput (visualSpan : VisualSpan) = 
 
         let replaceText = 
-            if keyInput = KeyInputUtil.EnterKey then EditUtil.NewLine
+            if keyInput = KeyInputUtil.EnterKey then EditUtil.NewLine _options
             else System.String(keyInput.Char, 1)
 
         // First step is we want to update the selection.  A replace char operation
@@ -1473,10 +1435,9 @@ type internal CommandUtil
         | NormalCommand.InsertLineBelow -> x.InsertLineBelow count
         | NormalCommand.JoinLines kind -> x.JoinLines kind count
         | NormalCommand.JumpToMark c -> x.JumpToMark c
+        | NormalCommand.JumpToNextTag -> x.JumpToNextTag count
+        | NormalCommand.JumpToPreviousTag -> x.JumpToPreviousTag count
         | NormalCommand.MoveCaretTo direction -> x.MoveCaretTo direction count
-        | NormalCommand.MoveCaretToLastSearch isReverse-> x.MoveCaretToLastSearch isReverse count
-        | NormalCommand.MoveCaretToNextPartialWord path -> x.MoveCaretToNextPartialWord path count
-        | NormalCommand.MoveCaretToNextWord path -> x.MoveCaretToNextWord path count
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
         | NormalCommand.Ping pingData -> x.Ping pingData data
         | NormalCommand.PutAfterCaret moveCaretAfterText -> x.PutAfterCaret register count moveCaretAfterText
@@ -1526,11 +1487,8 @@ type internal CommandUtil
     /// if found to the provided function
     member x.RunWithMotion (motion : MotionData) func = 
         match _motionUtil.GetMotion motion.Motion motion.MotionArgument with
-        | None ->  
-            _statusUtil.OnError Resources.MotionCapture_InvalidMotion
-            CommandResult.Error
-        | Some data -> 
-            func data
+        | None -> CommandResult.Error
+        | Some data -> func data
 
     /// Process the m[a-z] command
     member x.SetMarkToCaret c = 
@@ -1644,12 +1602,12 @@ type internal CommandUtil
 
     /// Shift 'motion' lines to the left
     member x.ShiftMotionLinesLeft (result : MotionResult) = 
-        x.ShiftLinesLeftCore result.OperationLineRange 1
+        x.ShiftLinesLeftCore result.LineRange 1
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Shift 'motion' lines to the right
     member x.ShiftMotionLinesRight (result : MotionResult) = 
-        x.ShiftLinesRightCore result.OperationLineRange 1
+        x.ShiftLinesRightCore result.LineRange 1
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Split the view horizontally
@@ -1696,7 +1654,7 @@ type internal CommandUtil
 
     /// Yank the contents of the motion into the specified register
     member x.YankMotion register (result: MotionResult) = 
-        let value = RegisterValue.String (StringData.OfSpan result.OperationSpan, result.OperationKind)
+        let value = RegisterValue.String (StringData.OfSpan result.Span, result.OperationKind)
         _registerMap.SetRegisterValue register RegisterOperation.Yank value
         CommandResult.Completed ModeSwitch.NoSwitch
 

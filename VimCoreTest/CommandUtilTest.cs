@@ -33,17 +33,19 @@ namespace VimCore.UnitTest
 
         private void Create(params string[] lines)
         {
+            _textView = EditorUtil.CreateView(lines);
+            _textBuffer = _textView.TextBuffer;
+
             _factory = new MockRepository(MockBehavior.Loose);
             _vimHost = _factory.Create<IVimHost>();
             _statusUtil = _factory.Create<IStatusUtil>();
             _operations = _factory.Create<ICommonOperations>();
             _operations.Setup(x => x.EnsureCaretOnScreenAndTextExpanded());
             _operations.Setup(x => x.RaiseSearchResultMessages(It.IsAny<SearchResult>()));
+            _operations.Setup(x => x.EditorOptions).Returns(EditorUtil.FactoryService.EditorOptionsFactory.GetOptions(_textView));
             _recorder = _factory.Create<IMacroRecorder>(MockBehavior.Loose);
             _smartIdentationService = _factory.Create<ISmartIndentationService>();
 
-            _textView = EditorUtil.CreateView(lines);
-            _textBuffer = _textView.TextBuffer;
             _vimData = new VimData();
             _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice().Object);
             _markMap = new MarkMap(new TrackingLineColumnService());
@@ -88,26 +90,6 @@ namespace VimCore.UnitTest
             var data = modeSwitch.AsSwitchModeWithArgument();
             Assert.AreEqual(ModeKind.Insert, data.Item1);
             Assert.IsTrue(data.Item2.IsInsertWithTransaction);
-        }
-
-        private void SetupSearchForPattern(string pattern, Path path, SnapshotSpan? found, SnapshotPoint? startPoint = null)
-        {
-            startPoint = startPoint ?? _textView.GetCaretPoint();
-            var data = new SearchData(pattern, SearchKind.OfPath(path), PatternData.DefaultSearchOptions);
-            if (found.HasValue)
-            {
-                _operations
-                    .Setup(x => x.SearchForPattern(pattern, path, startPoint.Value, 1))
-                    .Returns(SearchResult.NewFound(data, found.Value, false))
-                    .Verifiable();
-            }
-            else
-            {
-                _operations
-                    .Setup(x => x.SearchForPattern(pattern, path, startPoint.Value, 1))
-                    .Returns(SearchResult.NewNotFound(data, false))
-                    .Verifiable();
-            }
         }
 
         [Test]
@@ -689,8 +671,7 @@ namespace VimCore.UnitTest
                 VimUtil.CreateMotionResult(
                     _textBuffer.GetSpan(0, 3),
                     isForward: true,
-                    isAnyWord: true,
-                    motionKind: MotionKind.Inclusive,
+                    motionKind: MotionKind.AnyWord,
                     operationKind: OperationKind.CharacterWise));
             Assert.AreEqual("  bar", _textBuffer.GetLineRange(0).GetText());
             Assert.AreEqual("foo", UnnamedRegister.StringValue);
@@ -708,8 +689,7 @@ namespace VimCore.UnitTest
                 VimUtil.CreateMotionResult(
                     _textBuffer.GetSpan(0, 5),
                     isForward: true,
-                    isAnyWord: true,
-                    motionKind: MotionKind.Inclusive,
+                    motionKind: MotionKind.AnyWord,
                     operationKind: OperationKind.LineWise));
             Assert.AreEqual("  bar", _textBuffer.GetLineRange(0).GetText());
             Assert.AreEqual("foo", UnnamedRegister.StringValue);
@@ -728,7 +708,6 @@ namespace VimCore.UnitTest
                 VimUtil.CreateMotionResult(
                     _textBuffer.GetSpan(0, 5),
                     isForward: true,
-                    isAnyWord: false,
                     motionKind: MotionKind.Inclusive,
                     operationKind: OperationKind.LineWise));
             Assert.AreEqual("bar", _textBuffer.GetLineRange(0).GetText());
@@ -896,7 +875,7 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
-        /// An invalid motion should produce an error and not call the pased in function
+        /// An invalid motion should produce an error and not call the passed in function
         /// </summary>
         [Test]
         public void RunWithMotion_InvalidMotionShouldError()
@@ -909,10 +888,8 @@ namespace VimCore.UnitTest
                     Assert.Fail("Should not run");
                     return null;
                 };
-            _statusUtil.Setup(x => x.OnError(Resources.MotionCapture_InvalidMotion)).Verifiable();
             var result = _commandUtil.RunWithMotion(data, func.ToFSharpFunc());
             Assert.IsTrue(result.IsError);
-            _factory.Verify();
         }
 
         /// <summary>
@@ -1534,90 +1511,5 @@ namespace VimCore.UnitTest
             _operations.Verify();
         }
 
-        /// <summary>
-        /// Make sure we raise an error if there is no word under the caret and that it 
-        /// doesn't update LastSearchText
-        /// </summary>
-        [Test]
-        public void MoveCaretToNextWord_NoWordUnderCaret()
-        {
-            Create("  ", "foo bar baz");
-            _vimData.LastPatternData = VimUtil.CreatePatternData("cat");
-            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
-            _commandUtil.MoveCaretToNextWord(Path.Forward, 1);
-            _statusUtil.Verify();
-            Assert.AreEqual("cat", _vimData.LastPatternData.Pattern);
-        }
-
-        /// <summary>
-        /// Simple match should move caret and update LastSearchData 
-        /// </summary>
-        [Test]
-        public void MoveCaretToNextWord_Simple()
-        {
-            Create("hello world", "hello");
-            SetupSearchForPattern(@"\<hello\>", Path.Forward, _textView.GetLine(1).Extent);
-            _commandUtil.MoveCaretToNextWord(Path.Forward, 1);
-            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            Assert.AreEqual(@"\<hello\>", _vimData.LastPatternData.Pattern);
-        }
-
-        /// <summary>
-        /// If the caret starts on a blank move to the first non-blank to find the 
-        /// word.  The caret should go forward even if we are going backward
-        /// </summary>
-        [Test]
-        public void MoveCaretToNextWord_BackwardGoPastBlanks()
-        {
-            Create("dog   cat", "cat");
-            _textView.MoveCaretTo(4);
-            SetupSearchForPattern(@"\<cat\>", Path.Backward, _textView.GetLine(1).Extent, _textView.GetPoint(6));
-            _commandUtil.MoveCaretToNextWord(Path.Backward, 1);
-            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-        }
-
-        /// <summary>
-        /// Make sure that searching backward from the middle of a word starts at the 
-        /// begining of the word
-        /// </summary>
-        [Test]
-        public void MoveCaretToNextWord_BackwardFromMiddleOfWord()
-        {
-            Create("cat cat cat");
-            _textView.MoveCaretTo(5);
-            SetupSearchForPattern(@"\<cat\>", Path.Backward, _textView.GetLineSpan(0, 3), _textView.GetPoint(4));
-            _commandUtil.MoveCaretToNextWord(Path.Backward, 1);
-            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-        }
-
-        /// <summary>
-        /// Make sure we pass the LastSearch value to the method and move the caret
-        /// for the provided SearchResult
-        /// </summary>
-        [Test]
-        public void MoveCaretToLastSearch_UsePattern()
-        {
-            Create("foo bar", "foo");
-            var data = VimUtil.CreatePatternData("foo", Path.Forward);
-            _vimData.LastPatternData = data;
-            SetupSearchForPattern("foo", Path.Forward, _textView.GetLine(1).Extent);
-            _commandUtil.MoveCaretToLastSearch(false, 1);
-            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-        }
-
-        /// <summary>
-        /// Make sure that this doesn't update the LastSearh field.  Only way to check this is 
-        /// when we reverse the polarity of the search
-        /// </summary>
-        [Test]
-        public void MoveCaretToLastSearch_DontUpdateLastSearch()
-        {
-            Create("dog cat", "dog", "dog");
-            SetupSearchForPattern("dog", Path.Backward, _textView.GetLine(1).Extent);
-            var data = VimUtil.CreatePatternData("dog", Path.Forward);
-            _vimData.LastPatternData = data;
-            _commandUtil.MoveCaretToLastSearch(true, 1);
-            Assert.AreEqual(data, _vimData.LastPatternData);
-        }
     }
 }

@@ -556,19 +556,19 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Bind_MoveCaretToLastSearch()
+        public void Bind_Motion_LastSearch()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToLastSearch(true));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewLastSearch(true)));
             _mode.Process("N");
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_MoveCaretToLastSearch_Reverse()
+        public void Bind_Motion_LastSearchReverse()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToLastSearch(false));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewLastSearch(false)));
             _mode.Process("n");
             _commandUtil.Verify();
         }

@@ -746,6 +746,15 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region CaretColumn
+
+        public static CaretColumn.InLastLine AsInLastLine(this CaretColumn column)
+        {
+            return (CaretColumn.InLastLine) column;
+        }
+
+        #endregion
+
         #region IIncrementalSearch
 
         public static BindResult<SearchResult> DoSearch(this IIncrementalSearch search, string text, Path path = null, bool enter = true)

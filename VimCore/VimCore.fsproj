@@ -53,7 +53,6 @@
     <Compile Include="TssUtil.fs" />
     <Compile Include="CountCapture.fs" />
     <Compile Include="OperationKind.fs" />
-    <Compile Include="MotionData.fs" />
     <Compile Include="Register.fs" />
     <Compile Include="CoreInterfaces.fs" />
     <Compile Include="MefInterfaces.fs" />

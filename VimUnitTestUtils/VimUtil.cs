@@ -64,12 +64,16 @@ namespace Vim.UnitTest
             IVimLocalSettings settings = null,
             ISearchService search = null,
             ITextStructureNavigator navigator = null,
+            IJumpList jumpList = null,
+            IStatusUtil statusUtil = null,
             IVimData vimData = null)
         {
             markMap = markMap ?? new MarkMap(new TrackingLineColumnService());
             settings = settings ?? new LocalSettings(new GlobalSettings(), textView);
             search = search ?? CreateSearchService(settings.GlobalSettings);
             navigator = navigator ?? CreateTextStructureNavigator(textView.TextBuffer);
+            jumpList = jumpList ?? CreateJumpList();
+            statusUtil = statusUtil ?? new StatusUtil();
             vimData = vimData ?? new VimData();
             return new TextViewMotionUtil(
                 textView,
@@ -77,7 +81,15 @@ namespace Vim.UnitTest
                 settings,
                 search,
                 navigator,
+                jumpList,
+                statusUtil,
                 vimData);
+        }
+
+        internal static IJumpList CreateJumpList(ITrackingLineColumnService trackingLineColumnService = null )
+        {
+            trackingLineColumnService = trackingLineColumnService ?? new TrackingLineColumnService();
+            return new JumpList(trackingLineColumnService);
         }
 
         internal static RegisterMap CreateRegisterMap(IClipboardDevice device)
@@ -397,32 +409,15 @@ namespace Vim.UnitTest
 
         internal static MotionResult CreateMotionResult(
             SnapshotSpan span,
-            bool isForward,
-            MotionKind motionKind,
-            OperationKind operationKind,
-            int? column = null)
-        {
-            return CreateMotionResult(
-                span: span,
-                isForward: isForward,
-                isAnyWord: false,
-                motionKind: motionKind,
-                operationKind: operationKind,
-                column: column);
-        }
-
-        internal static MotionResult CreateMotionResult(
-            SnapshotSpan span,
             bool isForward = true,
-            bool isAnyWord = false,
             MotionKind motionKind = null,
             OperationKind operationKind = null,
             int? column = null)
         {
             motionKind = motionKind ?? MotionKind.Inclusive;
             operationKind = operationKind ?? OperationKind.CharacterWise;
-            var col = column.HasValue ? FSharpOption.Create(column.Value) : FSharpOption<int>.None;
-            return new MotionResult(span, isForward, isAnyWord, motionKind, operationKind, col);
+            var col = column.HasValue ? FSharpOption.Create(CaretColumn.NewInLastLine(column.Value)) : FSharpOption<CaretColumn>.None;
+            return new MotionResult(span, isForward, motionKind, operationKind, col);
         }
 
         internal static CommandData CreateCommandData(

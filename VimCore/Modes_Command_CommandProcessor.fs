@@ -131,13 +131,15 @@ type internal CommandProcessor
         _buffer : IVimBuffer, 
         _operations : IOperations,
         _statusUtil : IStatusUtil,
-        _fileSystem : IFileSystem ) as this = 
+        _fileSystem : IFileSystem
+    ) as this = 
 
     let _textView = _buffer.TextView
     let _textBuffer = _textView.TextBuffer
     let _host = _buffer.Vim.VimHost
     let _regexFactory = VimRegexFactory(_buffer.Settings.GlobalSettings)
     let _registerMap = _buffer.RegisterMap
+    let _searchService = _buffer.Vim.SearchService
     let _vimData = _buffer.VimData
 
     let mutable _command : System.String = System.String.Empty
@@ -381,7 +383,8 @@ type internal CommandProcessor
             let range = RangeUtil.RangeOrCurrentLine _textView range
             range.EndLine.End
 
-        let result = _operations.SearchForPattern pattern path startPoint 1
+        let patternData = { Pattern = pattern; Path = path }
+        let result = _searchService.FindNextPattern patternData startPoint _buffer.WordNavigator 1
         _operations.RaiseSearchResultMessages(result)
 
         match result with

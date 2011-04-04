@@ -17,11 +17,5 @@ type IOperations =
     /// GoTo the specified line number or the last line if no value is specified
     abstract GoToLineOrLast : int option -> unit
 
-    /// Jump to the next item in the jump list
-    abstract JumpNext : count:int -> unit
-
-    /// Jump to the previous item in the jump list
-    abstract JumpPrevious : count:int -> unit
-
     inherit Modes.ICommonOperations
 

@@ -89,9 +89,10 @@ type MarkMap( _tlcService : ITrackingLineColumnService ) =
 
     member x.SetLocalMark point (ident:char) = 
         if not (MarkMap.IsLocalMark ident) then failwith "Invalid"
-        let tlc = _tlcService.CreateForPoint point
-        let buffer = tlc.TextBuffer
-        let data = x.GetOrCreateBufferMarkData buffer
+        let line, column = SnapshotPointUtil.GetLineColumn point
+        let textBuffer = point.Snapshot.TextBuffer
+        let trackingLineColumn = _tlcService.Create textBuffer line column LineColumnTrackingMode.Default
+        let data = x.GetOrCreateBufferMarkData textBuffer
         let list = data.Marks
 
         let prev = list |> List.tryFind (fun (c,_) -> c = ident)
@@ -103,15 +104,17 @@ type MarkMap( _tlcService : ITrackingLineColumnService ) =
                 oldTlc.Close()
                 list |> Seq.ofList |> Seq.filter (fun (c,_) -> c <> ident) |> List.ofSeq
             | None -> list
-        let list = [(ident,tlc)] @ list
-        _localMap.Item(buffer) <- { data with Marks = list }
+        let list = [ (ident, trackingLineColumn)] @ list
+        _localMap.Item(textBuffer) <- { data with Marks = list }
 
-    /// Set the mark for the <param name="point"/> inside the corresponding buffer.  
-    member x.SetMark (point:SnapshotPoint) (ident:char) = 
-        let buffer = point.Snapshot.TextBuffer
-        if MarkMap.IsLocalMark ident then x.SetLocalMark point ident
-        else    
-            let tlc = _tlcService.CreateForPoint point
+    /// Set the mark for the 'point' inside the corresponding buffer.  
+    member x.SetMark point (ident:char) = 
+        let textBuffer = SnapshotPointUtil.GetBuffer point
+        if MarkMap.IsLocalMark ident then 
+            x.SetLocalMark point ident
+        else
+            let line, column = SnapshotPointUtil.GetLineColumn point
+            let tlc = _tlcService.Create textBuffer line column LineColumnTrackingMode.Default
 
             // Close out the old one
             _globalList 

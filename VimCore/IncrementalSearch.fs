@@ -32,6 +32,7 @@ type internal IncrementalSearch
 
     let _globalSettings = _settings.GlobalSettings
     let _textView = _operations.TextView
+    let _searchService = _operations.SearchService
     let mutable _data : IncrementalSearchData option = None
     let _currentSearchUpdated = Event<SearchResult>()
     let _currentSearchCompleted = Event<SearchResult>()
@@ -89,11 +90,11 @@ type internal IncrementalSearch
         let searchData = { data.SearchData with Pattern = pattern }
         let searchResult =
             if StringUtil.isNullOrEmpty pattern then
-                SearchResult.NotFound (searchData, false)
+                SearchResult.NotFound (  searchData, false)
             else
                 match TrackingPointUtil.GetPoint _textView.TextSnapshot data.StartPoint with
                 | None -> SearchResult.NotFound (searchData, false)
-                | Some point -> _operations.SearchForPattern pattern data.Path point 1
+                | Some point -> _searchService.FindNextPattern searchData.PatternData point _navigator 1
 
         // Update our state based on the SearchResult.  Only update the view if the 'incsearch'
         // option is set
@@ -118,7 +119,6 @@ type internal IncrementalSearch
             else 
                 data
 
-        _operations.RaiseSearchResultMessages data.SearchResult
         _vimData.LastPatternData <- data.SearchData.PatternData
         _currentSearchCompleted.Trigger data.SearchResult
         _data <- None

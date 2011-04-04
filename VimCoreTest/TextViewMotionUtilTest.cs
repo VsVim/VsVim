@@ -3,6 +3,7 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
+using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
@@ -24,6 +25,8 @@ namespace VimCore.UnitTest
         private ITextStructureNavigator _navigator;
         private IVimData _vimData;
         private IMarkMap _markMap;
+        private IJumpList _jumpList;
+        private Mock<IStatusUtil> _statusUtil;
 
         [TearDown]
         public void TearDown()
@@ -53,6 +56,8 @@ namespace VimCore.UnitTest
             _markMap = new MarkMap(new TrackingLineColumnService());
             _vimData = new VimData();
             _search = VimUtil.CreateSearchService(_settings);
+            _jumpList = VimUtil.CreateJumpList();
+            _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _navigator = VimUtil.CreateTextStructureNavigator(_textView.TextBuffer);
             _motionUtil = new TextViewMotionUtil(
                 _textView,
@@ -60,6 +65,8 @@ namespace VimCore.UnitTest
                 _localSettings,
                 _search,
                 _navigator,
+                _jumpList,
+                _statusUtil.Object,
                 _vimData);
         }
 
@@ -92,7 +99,7 @@ namespace VimCore.UnitTest
             var span = res.Span;
             Assert.AreEqual(4, span.Length);
             Assert.AreEqual("foo ", span.GetText());
-            Assert.AreEqual(MotionKind.Exclusive, res.MotionKind);
+            Assert.AreEqual(MotionKind.AnyWord, res.MotionKind);
             Assert.AreEqual(OperationKind.CharacterWise, res.OperationKind);
             Assert.IsTrue(res.IsAnyWordMotion);
         }
@@ -204,7 +211,7 @@ namespace VimCore.UnitTest
             Create("foo");
             _textView.MoveCaretTo(1);
             var data = _motionUtil.BeginingOfLine();
-            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 1), data.OperationSpan);
+            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 1), data.Span);
             Assert.AreEqual(MotionKind.Exclusive, data.MotionKind);
             Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
             Assert.IsFalse(data.IsForward);
@@ -216,7 +223,7 @@ namespace VimCore.UnitTest
             Create("foo");
             _textView.MoveCaretTo(2);
             var data = _motionUtil.BeginingOfLine();
-            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 2), data.OperationSpan);
+            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 2), data.Span);
             Assert.AreEqual(MotionKind.Exclusive, data.MotionKind);
             Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
             Assert.IsFalse(data.IsForward);
@@ -229,7 +236,7 @@ namespace VimCore.UnitTest
             Create("  foo");
             _textView.MoveCaretTo(4);
             var data = _motionUtil.BeginingOfLine();
-            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 4), data.OperationSpan);
+            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 4), data.Span);
             Assert.AreEqual(MotionKind.Exclusive, data.MotionKind);
             Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
             Assert.IsFalse(data.IsForward);
@@ -307,7 +314,7 @@ namespace VimCore.UnitTest
             Assert.AreEqual("cat", data.LineRange.Extent.GetText());
             Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
             Assert.IsTrue(data.IsForward);
-            Assert.IsTrue(data.Column.IsSome(0));
+            Assert.IsTrue(data.Column.IsSome());
         }
 
         /// <summary>
@@ -320,7 +327,7 @@ namespace VimCore.UnitTest
             Create(0, "cat", " dog");
             var data = _motionUtil.FirstNonWhiteSpaceOnLine(2);
             Assert.AreEqual(_textView.GetLineRange(0, 1), data.LineRange);
-            Assert.IsTrue(data.Column.IsSome(1));
+            Assert.AreEqual(1, data.Column.Value.AsInLastLine().Item);
         }
 
         [Test]
@@ -466,7 +473,7 @@ namespace VimCore.UnitTest
             Create("A. the ball");
             _textView.MoveCaretTo(1);
             var data = _motionUtil.EndOfWord(WordKind.NormalWord, 1);
-            Assert.AreEqual(". the", data.OperationSpan.GetText());
+            Assert.AreEqual(". the", data.Span.GetText());
         }
 
         [Test]
@@ -475,7 +482,7 @@ namespace VimCore.UnitTest
             Create("A.. the ball");
             _textView.MoveCaretTo(1);
             var data = _motionUtil.EndOfWord(WordKind.NormalWord, 1);
-            Assert.AreEqual("..", data.OperationSpan.GetText());
+            Assert.AreEqual("..", data.Span.GetText());
         }
 
         [Test]
@@ -484,7 +491,7 @@ namespace VimCore.UnitTest
             Create("A.. the ball");
             _textView.MoveCaretTo(1);
             var data = _motionUtil.EndOfWord(WordKind.NormalWord, 2);
-            Assert.AreEqual(".. the", data.OperationSpan.GetText());
+            Assert.AreEqual(".. the", data.Span.GetText());
         }
 
         [Test]
@@ -493,7 +500,7 @@ namespace VimCore.UnitTest
             Create("A.. the ball");
             _textView.MoveCaretTo(0);
             var data = _motionUtil.EndOfWord(WordKind.NormalWord, 1);
-            Assert.AreEqual("A..", data.OperationSpan.GetText());
+            Assert.AreEqual("A..", data.Span.GetText());
         }
 
         [Test]
@@ -502,7 +509,7 @@ namespace VimCore.UnitTest
             Create("A. ", "the ball");
             _textView.MoveCaretTo(1);
             var data = _motionUtil.EndOfWord(WordKind.NormalWord, 1);
-            Assert.AreEqual(". " + Environment.NewLine + "the", data.OperationSpan.GetText());
+            Assert.AreEqual(". " + Environment.NewLine + "the", data.Span.GetText());
         }
 
         [Test]
@@ -624,7 +631,7 @@ namespace VimCore.UnitTest
             Assert.IsFalse(data.IsForward);
             Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
             Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
-            Assert.AreEqual(0, data.Column.Value);
+            Assert.AreEqual(0, data.Column.Value.AsInLastLine().Item);
         }
 
         [Test]
@@ -636,7 +643,7 @@ namespace VimCore.UnitTest
             Assert.IsTrue(data.IsForward);
             Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
             Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
-            Assert.AreEqual(0, data.Column.Value);
+            Assert.AreEqual(0, data.Column.Value.AsInLastLine().Item);
         }
 
         [Test]
@@ -648,7 +655,7 @@ namespace VimCore.UnitTest
             Assert.IsTrue(data.IsForward);
             Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
             Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
-            Assert.AreEqual(2, data.Column.Value);
+            Assert.AreEqual(2, data.Column.Value.AsInLastLine().Item);
         }
 
         [Test]
@@ -660,7 +667,7 @@ namespace VimCore.UnitTest
             Assert.IsTrue(data.IsForward);
             Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
             Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
-            Assert.AreEqual(0, data.Column.Value);
+            Assert.AreEqual(0, data.Column.Value.AsInLastLine().Item);
         }
 
         [Test]
@@ -670,7 +677,7 @@ namespace VimCore.UnitTest
             _textView.MoveCaretTo(_textView.GetLine(1).Start);
             var data = _motionUtil.LineOrFirstToFirstNonWhiteSpace(FSharpOption<int>.None);
             Assert.AreEqual(0, data.Span.Start.Position);
-            Assert.AreEqual(2, data.Column.Value);
+            Assert.AreEqual(2, data.Column.Value.AsInLastLine().Item);
             Assert.IsFalse(data.IsForward);
         }
 
@@ -683,7 +690,7 @@ namespace VimCore.UnitTest
             Assert.IsTrue(data.IsForward);
             Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
             Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
-            Assert.AreEqual(0, data.Column.Value);
+            Assert.AreEqual(0, data.Column.Value.AsInLastLine().Item);
         }
 
         [Test]
@@ -696,7 +703,7 @@ namespace VimCore.UnitTest
             Assert.IsFalse(data.IsForward);
             Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
             Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
-            Assert.AreEqual(0, data.Column.Value);
+            Assert.AreEqual(0, data.Column.Value.AsInLastLine().Item);
         }
 
         [Test]
@@ -709,7 +716,7 @@ namespace VimCore.UnitTest
             Assert.IsTrue(data.IsForward);
             Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
             Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
-            Assert.AreEqual(0, data.Column.Value);
+            Assert.AreEqual(0, data.Column.Value.AsInLastLine().Item);
         }
 
         [Test]
@@ -722,7 +729,7 @@ namespace VimCore.UnitTest
             Assert.IsTrue(data.IsForward);
             Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
             Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
-            Assert.AreEqual(0, data.Column.Value);
+            Assert.AreEqual(0, data.Column.Value.AsInLastLine().Item);
         }
 
         [Test]
@@ -805,7 +812,7 @@ namespace VimCore.UnitTest
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 1, caretPosition: buffer.GetLine(1).End);
             Create(tuple.Item1.Object);
             var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None);
-            Assert.AreEqual(2, data.Column.Value);
+            Assert.AreEqual(2, data.Column.Value.AsInLastLine().Item);
         }
 
         [Test]
@@ -862,7 +869,7 @@ namespace VimCore.UnitTest
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
             Create(tuple.Item1.Object);
             var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None);
-            Assert.AreEqual(2, data.Column.Value);
+            Assert.AreEqual(2, data.Column.Value.AsInLastLine().Item);
         }
 
         [Test]
@@ -939,7 +946,7 @@ namespace VimCore.UnitTest
             _textView.MoveCaretTo(1);
             var data = _motionUtil.LineDownToFirstNonWhiteSpace(1);
             Assert.IsTrue(data.Column.IsSome());
-            Assert.AreEqual(2, data.Column.Value);
+            Assert.AreEqual(2, data.Column.Value.AsInLastLine().Item);
         }
 
         [Test]
@@ -949,7 +956,7 @@ namespace VimCore.UnitTest
             _textView.MoveCaretTo(1);
             var data = _motionUtil.LineDownToFirstNonWhiteSpace(1);
             Assert.IsTrue(data.Column.IsSome());
-            Assert.AreEqual(2, data.Column.Value);
+            Assert.AreEqual(2, data.Column.Value.AsInLastLine().Item);
         }
 
         [Test]
@@ -959,7 +966,7 @@ namespace VimCore.UnitTest
             _textView.MoveCaretTo(1);
             var data = _motionUtil.LineDownToFirstNonWhiteSpace(2);
             Assert.IsTrue(data.Column.IsSome());
-            Assert.AreEqual(1, data.Column.Value);
+            Assert.AreEqual(1, data.Column.Value.AsInLastLine().Item);
         }
 
         [Test]
@@ -1028,7 +1035,7 @@ namespace VimCore.UnitTest
             Create(0, "dog", "\fpig", "{fox");
             var data = _motionUtil.SectionForward(MotionContext.Movement, 1);
             Assert.AreEqual(_textView.GetLineRange(0).ExtentIncludingLineBreak, data.Span);
-            Assert.AreEqual(0, data.Column.Value);
+            Assert.AreEqual(0, data.Column.Value.AsInLastLine().Item);
         }
 
         [Test]
@@ -1037,7 +1044,7 @@ namespace VimCore.UnitTest
             Create(0, "dog", "\fpig", "fox");
             var data = _motionUtil.SectionForward(MotionContext.Movement, 2);
             Assert.AreEqual(new SnapshotSpan(_snapshot, 0, _snapshot.Length), data.Span);
-            Assert.AreEqual(0, data.Column.Value);
+            Assert.AreEqual(0, data.Column.Value.AsInLastLine().Item);
         }
 
         [Test]
@@ -1046,7 +1053,7 @@ namespace VimCore.UnitTest
             Create(0, "dog", "{pig", "fox");
             var data = _motionUtil.SectionForward(MotionContext.Movement, 2);
             Assert.AreEqual(new SnapshotSpan(_snapshot, 0, _snapshot.Length), data.Span);
-            Assert.AreEqual(0, data.Column.Value);
+            Assert.AreEqual(0, data.Column.Value.AsInLastLine().Item);
         }
 
         [Test]
@@ -1055,7 +1062,7 @@ namespace VimCore.UnitTest
             Create(0, "dog", "{pig", "{fox");
             var data = _motionUtil.SectionForward(MotionContext.Movement, 1);
             Assert.AreEqual(_textView.GetLineRange(0).ExtentIncludingLineBreak, data.Span);
-            Assert.AreEqual(0, data.Column.Value);
+            Assert.AreEqual(0, data.Column.Value.AsInLastLine().Item);
         }
 
         [Test]
@@ -1064,7 +1071,7 @@ namespace VimCore.UnitTest
             Create(0, "dog", "}pig", "fox");
             var data = _motionUtil.SectionForward(MotionContext.AfterOperator, 1);
             Assert.AreEqual(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
-            Assert.AreEqual(0, data.Column.Value);
+            Assert.AreEqual(0, data.Column.Value.AsInLastLine().item);
         }
 
         [Test]
@@ -1074,7 +1081,7 @@ namespace VimCore.UnitTest
             Create(0, "dog", "}pig", "fox");
             var data = _motionUtil.SectionForward(MotionContext.Movement, 1);
             Assert.AreEqual(new SnapshotSpan(_snapshot, 0, _snapshot.Length), data.Span);
-            Assert.AreEqual(0, data.Column.Value);
+            Assert.AreEqual(0, data.Column.Value.AsInLastLine().Item);
         }
 
         [Test]
@@ -1436,7 +1443,7 @@ namespace VimCore.UnitTest
             Create("the", "  dog", "cat");
             _textView.MoveCaretToLine(2);
             var data = _motionUtil.LineUpToFirstNonWhiteSpace(1);
-            Assert.AreEqual(2, data.Column.Value);
+            Assert.AreEqual(2, data.Column.Value.AsInLastLine().Item);
             Assert.IsFalse(data.IsForward);
             Assert.AreEqual(_textView.GetLineRange(1, 2).ExtentIncludingLineBreak, data.Span);
         }
@@ -1555,7 +1562,7 @@ namespace VimCore.UnitTest
             var data = _motionUtil.MatchingToken().Value;
             var span = new SnapshotSpan(_textView.GetPoint(0), _textView.GetLine(2).Start.Add(6));
             Assert.AreEqual(span, data.Span);
-            Assert.IsTrue(data.Column.IsSome(0));
+            Assert.AreEqual(0, data.Column.Value.AsInLastLine().Item);
         }
 
         /// <summary>
@@ -1604,6 +1611,146 @@ namespace VimCore.UnitTest
             _textView.MoveCaretToLine(3);
             var span = _motionUtil.GetAllParagraph(1).Span;
             Assert.AreEqual(_snapshot.GetLineRange(3, 4).ExtentIncludingLineBreak, span);
+        }
+
+        /// <summary>
+        /// Make sure we raise an error if there is no word under the caret and that it 
+        /// doesn't update LastSearchText
+        /// </summary>
+        [Test]
+        public void NextWord_NoWordUnderCaret()
+        {
+            Create("  ", "foo bar baz");
+            _vimData.LastPatternData = VimUtil.CreatePatternData("cat");
+            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
+            _motionUtil.NextWord(Path.Forward, 1);
+            _statusUtil.Verify();
+            Assert.AreEqual("cat", _vimData.LastPatternData.Pattern);
+        }
+
+        /// <summary>
+        /// Simple match should update LastSearchData and return the appropriate span
+        /// </summary>
+        [Test]
+        public void NextWord_Simple()
+        {
+            Create("hello world", "hello");
+            var result = _motionUtil.NextWord(Path.Forward, 1).Value;
+            Assert.AreEqual(_textView.GetLine(0).ExtentIncludingLineBreak, result.Span);
+            Assert.IsTrue(result.MotionKind.IsAnySearch);
+            Assert.AreEqual(@"\<hello\>", _vimData.LastPatternData.Pattern);
+        }
+
+        /// <summary>
+        /// If the caret starts on a blank move to the first non-blank to find the 
+        /// word.  This is true if we are searching forward or backward.  The original
+        /// point though should be included in the search
+        /// </summary>
+        [Test]
+        public void NextWord_BackwardGoPastBlanks()
+        {
+            Create("dog   cat", "cat");
+            _textView.MoveCaretTo(4);
+            var result = _motionUtil.NextWord(Path.Backward, 1).Value;
+            Assert.AreEqual("  cat" + Environment.NewLine, result.Span.GetText());
+        }
+
+        /// <summary>
+        /// Make sure that searching backward from the middle of a word starts at the 
+        /// beginning of the word
+        /// </summary>
+        [Test]
+        public void NextWord_BackwardFromMiddleOfWord()
+        {
+            Create("cat cat cat");
+            _textView.MoveCaretTo(5);
+            var result = _motionUtil.NextWord(Path.Backward, 1).Value;
+            Assert.AreEqual("cat c", result.Span.GetText());
+        }
+
+        /// <summary>
+        /// Make sure we pass the LastSearch value to the method and move the caret
+        /// for the provided SearchResult
+        /// </summary>
+        [Test]
+        public void LastSearch_UsePattern()
+        {
+            Create("foo bar", "foo");
+            var data = VimUtil.CreatePatternData("foo", Path.Forward);
+            _vimData.LastPatternData = data;
+            var result = _motionUtil.LastSearch(false, 1).Value;
+            Assert.AreEqual("foo bar" + Environment.NewLine, result.Span.GetText());
+        }
+
+        /// <summary>
+        /// Make sure that this doesn't update the LastSearh field.  Only way to check this is 
+        /// when we reverse the polarity of the search
+        /// </summary>
+        [Test]
+        public void LastSearch_DontUpdateLastSearch()
+        {
+            Create("dog cat", "dog", "dog");
+            var data = VimUtil.CreatePatternData("dog", Path.Forward);
+            _vimData.LastPatternData = data;
+            _motionUtil.LastSearch(true, 1);
+            Assert.AreEqual(data, _vimData.LastPatternData);
+        }
+
+        /// <summary>
+        /// Inclusive motion values shouldn't be adjusted
+        /// </summary>
+        [Test]
+        public void AdjustMotionResult_Inclusive()
+        {
+            Create("cat", "dog");
+            var result1 = VimUtil.CreateMotionResult(_textView.GetLine(0).ExtentIncludingLineBreak, motionKind: MotionKind.Inclusive);
+            var result2 = _motionUtil.AdjustMotionResult(Motion.CharLeft, result1);
+            Assert.AreEqual(result1, result2);
+        }
+
+        /// <summary>
+        /// Make sure adjusted ones become line wise if it meets the criteria
+        /// </summary>
+        [Test]
+        public void AdjustMotionResult_FullLine()
+        {
+            Create("  cat", "dog");
+            var span = new SnapshotSpan(_textView.GetPoint(2), _textView.GetLine(1).Start);
+            var result1 = VimUtil.CreateMotionResult(span, motionKind: MotionKind.Exclusive, operationKind: OperationKind.CharacterWise);
+            var result2 = _motionUtil.AdjustMotionResult(Motion.CharLeft, result1);
+            Assert.AreEqual(OperationKind.LineWise, result2.OperationKind);
+            Assert.AreEqual(_textView.GetLine(0).ExtentIncludingLineBreak, result2.Span);
+            Assert.IsTrue(result2.MotionKind.IsInclusive);
+        }
+
+        /// <summary>
+        /// Don't make it full line if it doesn't start before the first real character
+        /// </summary>
+        [Test]
+        public void AdjustMotionResult_NotFullLine()
+        {
+            Create("  cat", "dog");
+            var span = new SnapshotSpan(_textView.GetPoint(3), _textView.GetLine(1).Start);
+            var result1 = VimUtil.CreateMotionResult(span, motionKind: MotionKind.Exclusive, operationKind: OperationKind.CharacterWise);
+            var result2 = _motionUtil.AdjustMotionResult(Motion.CharLeft, result1);
+            Assert.AreEqual(OperationKind.CharacterWise, result2.OperationKind);
+            Assert.AreEqual("at", result2.Span.GetText());
+            Assert.IsTrue(result2.MotionKind.IsInclusive);
+        }
+        /// <summary>
+        /// Make sure special motions don't get adjusted to 'exclusive-linewise'.  These are
+        /// not documented anywhere but the exception appears to be word motions
+        /// </summary>
+        [Test]
+        public void AdjustMotionResult_FullLineExceptions()
+        {
+            Create("  cat", "dog");
+            var span = new SnapshotSpan(_textView.GetPoint(2), _textView.GetLine(1).Start);
+            var result1 = VimUtil.CreateMotionResult(span, motionKind: MotionKind.Exclusive, operationKind: OperationKind.CharacterWise);
+            var result2 = _motionUtil.AdjustMotionResult(Motion.NewAllWord(WordKind.NormalWord), result1);
+            Assert.AreEqual(OperationKind.CharacterWise, result2.OperationKind);
+            Assert.AreEqual("cat", result2.Span.GetText());
+            Assert.IsTrue(result2.MotionKind.IsInclusive);
         }
     }
 

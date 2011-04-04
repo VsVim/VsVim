@@ -8,10 +8,10 @@ open Microsoft.VisualStudio.Text.Editor
 type internal SearchService 
     (
         _search : ITextSearchService,
-        _settings : IVimGlobalSettings
+        _globalSettings : IVimGlobalSettings
     ) = 
 
-    let _factory = VimRegexFactory(_settings)
+    let _factory = VimRegexFactory(_globalSettings)
 
     /// Convert the Vim SearchData to the editor FindData structure
     member x.ConvertToFindData (searchData : SearchData) snapshot wordNavigator =
@@ -37,9 +37,9 @@ type internal SearchService
         // Get the options related to case
         let caseOptions = 
             let searchOptions = searchData.Options
-            if Util.IsFlagSet searchOptions SearchOptions.ConsiderIgnoreCase && _settings.IgnoreCase then
+            if Util.IsFlagSet searchOptions SearchOptions.ConsiderIgnoreCase && _globalSettings.IgnoreCase then
                 let hasUpper () = pattern |> Seq.filter CharUtil.IsLetter |> Seq.filter CharUtil.IsUpper |> SeqUtil.isNotEmpty
-                if Util.IsFlagSet searchOptions SearchOptions.ConsiderSmartCase && _settings.SmartCase && hasUpper() then FindOptions.MatchCase
+                if Util.IsFlagSet searchOptions SearchOptions.ConsiderSmartCase && _globalSettings.SmartCase && hasUpper() then FindOptions.MatchCase
                 else FindOptions.None
             else 
                 FindOptions.MatchCase
@@ -123,8 +123,43 @@ type internal SearchService
 
     member x.FindNext searchData point nav = x.FindNextMultiple searchData point nav 1
 
+    /// Search for the given pattern from the specified point. 
+    member x.FindNextPattern (patternData : PatternData) startPoint wordNavigator count = 
+
+        // Find the real place to search.  When going forward we should start after
+        // the caret and before should start before. This prevents the text 
+        // under the caret from being the first match
+        let snapshot = SnapshotPointUtil.GetSnapshot startPoint
+        let startPoint, didStartWrap = Util.GetSearchPointAndWrap patternData.Path startPoint
+
+        // Go ahead and run the search
+        let searchData = SearchData.OfPatternData patternData _globalSettings.WrapScan
+        let result = x.FindNextMultiple searchData startPoint wordNavigator count
+
+        // Need to fudge the SearchResult here to account for the possible wrap the 
+        // search start incurred when calculating the actual 'startPoint' value.  If it 
+        // wrapped we need to get the SearchResult to account for that so we can 
+        // process the messages properly and give back the appropriate value
+        if didStartWrap then 
+            match result with
+            | SearchResult.Found (searchData, span, didWrap) ->
+                if _globalSettings.WrapScan then
+                    // If wrapping is enabled then we just need to update the 'didWrap' state
+                    SearchResult.Found (searchData, span, true)
+                else
+                    // Wrapping is not enabled so change the result but it would've been present
+                    // if wrapping was enabled
+                    SearchResult.NotFound (searchData, true)
+            | SearchResult.NotFound _ ->
+                // No change
+                result
+        else
+            // Nothing to fudge if the start didn't wrap 
+            result
+
     interface ISearchService with
         member x.FindNext searchData point nav = x.FindNext searchData point nav
         member x.FindNextMultiple searchData point nav count = x.FindNextMultiple searchData point nav count
+        member x.FindNextPattern patternData point nav count = x.FindNextPattern patternData point nav count
 
 

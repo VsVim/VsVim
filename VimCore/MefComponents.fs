@@ -51,11 +51,25 @@ type internal DisplayWindowBrokerFactoryService
             let broker = DisplayWindowBroker(textView, _completionBroker, _signatureBroker, _smartTagBroker, _quickInfoBroker)
             broker :> IDisplayWindowBroker
 
-
+/// This is the type responsible for tracking a line + column across edits to the
+/// underlying ITextBuffer.  In a perfect world this would be implemented as an 
+/// ITrackingSpan so we didn't have to update the locations on every single 
+/// change to the ITextBuffer.  
+///
+/// Unfortunately the limitations of the ITrackingSpaninterface prevent us from doing 
+/// that. One strategy you might employ is to say you'll track the Span which represents
+/// the extent of the line you care about.  This works great right until you consider
+/// the case where the line break before your Span is deleted.  Because you can't access 
+/// the full text of that ITextVersion you can't "find" the new front of the line
+/// you are tracking (same happens with the end).
+///
+/// So for now we're stuck with updating these on every edit to the ITextBuffer.  Not
+/// ideal but will have to do for now.  
 type internal TrackingLineColumn 
     ( 
         _textBuffer : ITextBuffer,
         _column : int,
+        _mode : LineColumnTrackingMode,
         _onClose : TrackingLineColumn -> unit ) =
 
     /// This is the SnapshotSpan of the line that we are tracking.  It is None in the
@@ -75,36 +89,63 @@ type internal TrackingLineColumn
 
     member x.Column = _column
 
+    member x.SurviveDeletes = 
+        match _mode with
+        | LineColumnTrackingMode.Default -> false
+        | LineColumnTrackingMode.SurviveDeletes -> true
+
     member private x.VirtualSnapshotPoint = 
         match _line with
         | None -> None
-        | Some(line) -> Some (VirtualSnapshotPoint(line, _column))
+        | Some line -> Some (VirtualSnapshotPoint(line, _column))
 
     /// Update the internal tracking information based on the new ITextSnapshot
-    member x.UpdateForChange (e:TextContentChangedEventArgs) =
+    member x.UpdateForChange (e : TextContentChangedEventArgs) =
         let newSnapshot = e.After
         let changes = e.Changes
 
-        // Before this change this was tracking an active line.  Make the appropriate
-        // update here
-        let updateValidLine (oldLine:ITextSnapshotLine) = 
-            let span = oldLine.ExtentIncludingLineBreak.Span
+        // We have a valid line.  Need to update against this set of changes
+        let withValidLine (oldLine : ITextSnapshotLine) =
+
+            // For whatever reason this is now invalid.  Store the last good information so we can
+            // recover during an undo operation
             let makeInvalid () = 
                 _line <- None
                 _lastValidVersion <- Some (oldLine.Snapshot.Version.VersionNumber, oldLine.LineNumber)
 
-            let deleted =  changes |> Seq.filter (fun c -> c.LineCountDelta <> 0 && c.OldSpan.Contains(span)) 
-            if not (deleted |> Seq.isEmpty) then makeInvalid()
+            // Is this change a delete of the entire line 
+            let isLineDelete (change : ITextChange) = 
+                change.LineCountDelta < 0 &&
+                change.OldSpan.Contains(oldLine.ExtentIncludingLineBreak.Span)
+
+            if (not x.SurviveDeletes) && Seq.exists isLineDelete e.Changes then
+                // If this shouldn't survive a full line deletion and there is a deletion
+                // then we are invalid
+                makeInvalid()
             else
-                // The line wasn't deleted so go calculate the diff and update our state
-                let lineDiff = 
-                    changes 
-                    |> Seq.filter (fun c -> c.OldPosition <= oldLine.Start.Position)
-                    |> Seq.map (fun c -> c.LineCountDelta) 
+
+                // Calculate the line number delta for this given change. All we care about here
+                // is the line number.  So changes line shortening the line don't matter for 
+                // us.
+                let getLineNumberDelta (change : ITextChange) =
+                    if change.LineCountDelta = 0 || change.OldPosition >= oldLine.Start.Position then
+                        // If there is no line change or this change occurred after the start 
+                        // of our line then there is nothing to process
+                        0
+                    else 
+                        // The change occurred before our line and there is a delta.  This is the 
+                        // delta we need to apply to our line number
+                        change.LineCountDelta
+
+                // Calculate the line delta
+                let delta = 
+                    e.Changes
+                    |> Seq.map getLineNumberDelta
                     |> Seq.sum
-                let lineNumber = oldLine.LineNumber + lineDiff
-                if lineNumber >= newSnapshot.LineCount then makeInvalid()
-                else  _line <- Some (newSnapshot.GetLineFromLineNumber(lineNumber))
+                let number = oldLine.LineNumber + delta
+                match SnapshotUtil.TryGetLine newSnapshot number with
+                | None -> makeInvalid()
+                | Some line -> _line <- Some line
 
         // This line was deleted at some point in the past and hence we're invalid.  If the 
         // current change is an Undo back to the last version where we were valid then we
@@ -115,9 +156,9 @@ type internal TrackingLineColumn
                 _line <- Some (newSnapshot.GetLineFromLineNumber(lastLineNumber))
                 _lastValidVersion <- None
 
-        match _line,_lastValidVersion with
-        | Some(line),_ -> updateValidLine line
-        | None,Some(version,lineNumber) -> checkUndo version lineNumber
+        match _line, _lastValidVersion with
+        | Some line, _ -> withValidLine line
+        | None, Some (version,lineNumber) -> checkUndo version lineNumber
         | _ -> ()
 
     override x.ToString() =
@@ -129,17 +170,12 @@ type internal TrackingLineColumn
 
     interface ITrackingLineColumn with
         member x.TextBuffer = _textBuffer
+        member x.TrackingMode = _mode
         member x.VirtualPoint = x.VirtualSnapshotPoint
         member x.Point = 
             match x.VirtualSnapshotPoint with
             | None -> None
-            | Some(point) -> 
-                if point.IsInVirtualSpace then None
-                else Some point.Position
-        member x.PointTruncating =
-            match x.VirtualSnapshotPoint with
-            | None -> None
-            | Some(point) -> Some point.Position
+            | Some point -> Some point.Position
         member x.Close () =
             _onClose x
             _line <- None
@@ -204,33 +240,16 @@ type internal TrackingLineColumnService() =
             items |> Seq.iter (fun tlc -> tlc.UpdateForChange e)
         x.GetData e.Before.TextBuffer found (fun () -> ())
 
-    member x.Create (textBuffer:ITextBuffer) lineNumber column = 
-        let tlc = TrackingLineColumn(textBuffer, column, x.Remove)
+    member x.Create (textBuffer:ITextBuffer) lineNumber column mode = 
+        let tlc = TrackingLineColumn(textBuffer, column, mode, x.Remove)
         let tss = textBuffer.CurrentSnapshot
         let line = tss.GetLineFromLineNumber(lineNumber)
         tlc.Line <-  Some line
         x.Add tlc
         tlc
 
-    member x.CreateDisconnected textBuffer = 
-        { new ITrackingLineColumn with 
-            member x.TextBuffer = textBuffer
-            member x.Point = None
-            member x.PointTruncating = None
-            member x.VirtualPoint = None
-            member x.Close() = () }
-
     interface ITrackingLineColumnService with
-        member x.Create textBuffer lineNumber column = x.Create textBuffer lineNumber column :> ITrackingLineColumn
-        member x.CreateForPoint (point:SnapshotPoint) =
-            let buffer = point.Snapshot.TextBuffer
-            if point.Snapshot <> buffer.CurrentSnapshot then 
-                x.CreateDisconnected buffer
-            else
-                let line,column = SnapshotPointUtil.GetLineColumn point
-                (x.Create buffer line column) :> ITrackingLineColumn
-        member x.CreateDisconnected textBuffer = x.CreateDisconnected textBuffer
-            
+        member x.Create textBuffer lineNumber column mode = x.Create textBuffer lineNumber column mode :> ITrackingLineColumn
         member x.CloseAll() =
             let values = _map.Values |> List.ofSeq
             values 

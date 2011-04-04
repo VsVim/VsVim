@@ -1091,37 +1091,37 @@ namespace VimCore.UnitTest
         #region Next / Previous Word
 
         [Test]
-        public void Bind_MoveCaretToNextWord_Forward()
+        public void Bind_Motion_NextWord_Forward()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToNextWord(Path.Forward));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewNextWord(Path.Forward)));
             _mode.Process("*");
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_MoveCaretToNextWord_Backward()
+        public void Bind_Motion_NextWord_Backward()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToNextWord(Path.Backward));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewNextWord(Path.Backward)));
             _mode.Process("#");
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_MoveCaretToNextPartialWord_Forward()
+        public void Bind_Motion_NextPartialWord_Forward()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToNextPartialWord(Path.Forward));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewNextPartialWord(Path.Forward)));
             _mode.Process("g*");
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_MoveCaretToNextPartialWord_Backward()
+        public void Bind_Motion_NextPartialWord_Backward()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToNextPartialWord(Path.Backward));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewNextPartialWord(Path.Backward)));
             _mode.Process("g#");
             _commandUtil.Verify();
         }
@@ -1129,19 +1129,19 @@ namespace VimCore.UnitTest
         #endregion
 
         [Test]
-        public void Bind_MoveCaretToLastSearch_Forward()
+        public void Bind_Motion_LastSearch_Forward()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToLastSearch(false));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewLastSearch(false)));
             _mode.Process("n");
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_MoveCaretToLastSearch_Backward()
+        public void Bind_Motion_LastSearch_Backward()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToLastSearch(true));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewLastSearch(true)));
             _mode.Process("N");
             _commandUtil.Verify();
         }
@@ -1306,7 +1306,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void SetMark_Simple()
+        public void Bind_SetMark()
         {
             Create("");
             _commandUtil.SetupCommandNormal(NormalCommand.NewSetMarkToCaret('a'));
@@ -1315,7 +1315,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void JumpToMark_SingleQuote()
+        public void Bind_JumpToMark()
         {
             Create("");
             _commandUtil.SetupCommandNormal(NormalCommand.NewJumpToMark('a'));
@@ -1323,7 +1323,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void JumpToMark_BackTick()
+        public void Bind_JumpToMark_BackTick()
         {
             Create("");
             _commandUtil.SetupCommandNormal(NormalCommand.NewJumpToMark('a'));
@@ -1331,50 +1331,21 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void JumpNext1()
+        public void Bind_JumpNext()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.JumpNext(1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.JumpToNextTag);
             _mode.Process(KeyInputUtil.CharWithControlToKeyInput('i'));
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void JumpNext2()
+        public void Bind_JumpPrevious()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.JumpNext(2)).Verifiable();
-            _mode.Process('2');
-            _mode.Process(KeyInputUtil.CharWithControlToKeyInput('i'));
-            _operations.Verify();
-        }
-
-        [Test]
-        public void JumpNext3()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.JumpNext(1)).Verifiable();
-            _mode.Process(KeyInputUtil.TabKey);
-            _operations.Verify();
-        }
-
-        [Test]
-        public void JumpPrevious1()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.JumpPrevious(1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.JumpToPreviousTag);
             _mode.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
-            _operations.Verify();
-        }
-
-        [Test]
-        public void JumpPrevious2()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.JumpPrevious(2)).Verifiable();
-            _mode.Process('2');
-            _mode.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
