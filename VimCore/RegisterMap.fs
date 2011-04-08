@@ -9,6 +9,16 @@ type ClipboardRegisterValueBacking ( _device : IClipboardDevice ) =
             with get () = RegisterValue.OfString _device.Text OperationKind.LineWise
             and set value = _device.Text <- value.StringValue
 
+/// IRegisterValueBacking implementation for append registers.  All of the lower
+/// case letter registers can be accessed via an upper case version.  The only
+/// difference is when accessed via upper case sets of the value should be 
+/// append operations
+type AppendRegisterValueBacking (_register : Register) =
+    interface IRegisterValueBacking with
+        member x.RegisterValue 
+            with get () = _register.RegisterValue
+            and set value = _register.RegisterValue <- _register.RegisterValue.Append value
+
 type internal RegisterMap (_map: Map<RegisterName,Register> ) =
     new( clipboard : IClipboardDevice, currentFileNameFunc : unit -> string option ) = 
         let clipboardBacking = ClipboardRegisterValueBacking(clipboard) :> IRegisterValueBacking
@@ -22,16 +32,45 @@ type internal RegisterMap (_map: Map<RegisterName,Register> ) =
                     RegisterValue.OfString text OperationKind.CharacterWise
                 and set _ = () }
 
+        // Is this an append register 
+        let isAppendRegister name = 
+            match name with 
+            | RegisterName.Named theName -> CharUtil.IsUpper theName.Char
+            | _ -> false
+
         let getBacking name = 
             match name with 
             | RegisterName.SelectionAndDrop(SelectionAndDropRegister.Register_Plus) -> clipboardBacking
             | RegisterName.SelectionAndDrop(SelectionAndDropRegister.Register_Star) -> clipboardBacking
             | RegisterName.ReadOnly(ReadOnlyRegister.Register_Percent) -> fileNameBacking
             | _ -> DefaultRegisterValueBacking() :> IRegisterValueBacking
+
+        // Create the map without the append registers
         let map = 
             RegisterNameUtil.RegisterNames
-            |> Seq.map (fun n -> n,Register(n, getBacking n))
+            |> Seq.filter (fun name -> not (isAppendRegister name))
+            |> Seq.map (fun n -> n, Register(n, getBacking n))
             |> Map.ofSeq
+
+        // Now that the map has all of the append registers backing add the actual append
+        // registers
+        let map = 
+            let originalMap = map
+            let names =  RegisterNameUtil.RegisterNames |> Seq.filter isAppendRegister
+            let foldFunc map (name : RegisterName) =
+                let backingName = 
+                    name.Char 
+                    |> Option.get 
+                    |> CharUtil.ToLower 
+                    |> NamedRegister.OfChar
+                    |> Option.get
+                    |> RegisterName.Named
+                let backingRegister = Map.find backingName originalMap
+                let value = AppendRegisterValueBacking(backingRegister)
+                let register = Register(name, value)
+                Map.add name register map
+            Seq.fold foldFunc originalMap names 
+
         RegisterMap(map)
 
     member x.GetRegister name = Map.find name _map

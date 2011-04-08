@@ -28,6 +28,16 @@ type StringData =
         | Simple(str) -> str
         | Block(l) -> l |> StringUtil.combineWith System.Environment.NewLine
 
+    /// Append the specified string data to this StringData instance and return a 
+    /// combined value.  This is used when append operations are done wit the yank 
+    /// and delete register operations
+    member x.Append other =
+        match x, other with
+        | Simple left, Simple right -> Simple (left + right)
+        | Simple left, Block right -> Block (NonEmptyCollection(left + right.Head, right.Rest))
+        | Block left, Simple right -> Block (NonEmptyCollectionUtil.Append [ right ] left)
+        | Block left, Block right -> Block (NonEmptyCollectionUtil.Append (right.All |> List.ofSeq) left)
+
     static member OfNormalizedSnasphotSpanCollection (col : NormalizedSnapshotSpanCollection) = 
         if col.Count = 0 then
             StringData.Simple StringUtil.empty
@@ -93,7 +103,7 @@ type NumberedRegister =
 
 /// The 52 named registers
 ///
-/// TODO: This is wrong.  There are only 26 regsiters.  When the upper registers are
+/// TODO: This is wrong.  There are only 26 registers.  When the upper registers are
 /// used it's for append.  Need to fix this
 [<RequireQualifiedAccess>]
 type NamedRegister = 
@@ -331,7 +341,7 @@ type RegisterName =
     | SmallDelete
     /// The A-Z and a-z registers
     | Named of NamedRegister
-    /// The 4 readonly registers :, ., % and #
+    /// The 4 read only registers :, ., % and #
     | ReadOnly of ReadOnlyRegister
     | Expression 
     | SelectionAndDrop of SelectionAndDropRegister
@@ -420,8 +430,8 @@ type RegisterOperation =
 /// to deal with.
 ///
 /// Quick Example:  There is no way to store <Left> or any arrow key as a char value (they
-/// simple don't have one associated and you can check ':help key-notation' for verifacion
-/// of this).  Trying to store '<Left>' in the register causes playback to be interperetd 
+/// simple don't have one associated and you can check ':help key-notation' for verification
+/// of this).  Trying to store '<Left>' in the register causes playback to be interpreted 
 /// not as the <Left> key but as the key sequence <, L, e, f, t, >.  
 ///
 /// Unfortunately we are required to convert back and forth in different circumstances.  There
@@ -464,7 +474,7 @@ type RegisterValue =
 
     /// Get the string which represents this RegisterValue.  This is an inherently lossy 
     /// operation (information is loss on converting a StringData.Block into a raw string
-    /// value).  This function should be avoided for operations other than diplay purposes
+    /// value).  This function should be avoided for operations other than display purposes
     member x.StringValue = 
         match x with
         | String (stringData, _) -> stringData.String
@@ -475,6 +485,15 @@ type RegisterValue =
         match x with 
         | String (_, kind) -> kind
         | KeyInput (_, kind) -> kind
+
+    /// Append the provided RegisterValue to this one.  Used for append register operations (yank, 
+    /// delete, etc ... with an upper case register)
+    member x.Append value =
+        match x, value with
+        | String (leftData, _), String (rightData, _) -> String (leftData.Append rightData, x.OperationKind)
+        | String (leftData, _), KeyInput _ -> String (leftData.Append value.StringData, x.OperationKind)
+        | KeyInput (list, _), String (rightData, _) -> KeyInput (list @ (rightData.String |> Seq.map KeyInputUtil.CharToKeyInput |> List.ofSeq), x.OperationKind)
+        | KeyInput (left, _), KeyInput (right, _) -> KeyInput (left @ right, x.OperationKind)
 
     /// Create a RegisterValue from a simple string
     static member OfString str kind = 

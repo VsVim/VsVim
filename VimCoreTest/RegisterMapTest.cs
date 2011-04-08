@@ -83,5 +83,27 @@ namespace VimCore.UnitTest
             _fileName = "foo";
             Assert.AreEqual("foo", _map.GetRegister('%').StringValue);
         }
+
+        /// <summary>
+        /// Append registers should just use the backing register when asked for a value
+        /// </summary>
+        [Test]
+        public void Append_UseBackingValue()
+        {
+            _map.GetRegister('c').UpdateValue("dog");
+            Assert.AreEqual("dog", _map.GetRegister('C').StringValue);
+        }
+
+        /// <summary>
+        /// Updating an append register should concat the backing value
+        /// </summary>
+        [Test]
+        public void Append_UpdateValue()
+        {
+            _map.GetRegister('c').UpdateValue("dog");
+            _map.GetRegister('C').UpdateValue("cat");
+            Assert.AreEqual("dogcat", _map.GetRegister('C').StringValue);
+            Assert.AreEqual("dogcat", _map.GetRegister('c').StringValue);
+        }
     }
 }

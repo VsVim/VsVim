@@ -1450,6 +1450,22 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Delete with an append register should concatenate the values
+        /// </summary>
+        [Test]
+        public void Delete_Append()
+        {
+            Create("dog", "cat", "fish");
+            _buffer.Process("\"cyaw");
+            _buffer.Process("j");
+            _buffer.Process("\"Cdw");
+            Assert.AreEqual("dogcat", _buffer.RegisterMap.GetRegister('c').StringValue);
+            Assert.AreEqual("dogcat", _buffer.RegisterMap.GetRegister('C').StringValue);
+            _buffer.Process("\"cp");
+            Assert.AreEqual("dogcat", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
         /// Make sure we properly update register 0 during a yank
         /// </summary>
         [Test]
@@ -1463,6 +1479,20 @@ namespace VimCore.UnitTest
             _buffer.Process("dw");
             _buffer.Process("\"0p");
             Assert.AreEqual("dog", _textView.GetLine(2).GetText());
+        }
+
+        /// <summary>
+        /// Yanking with an append register should concatenate the values
+        /// </summary>
+        [Test]
+        public void Yank_Append()
+        {
+            Create("dog", "cat", "fish");
+            _buffer.Process("\"cyaw");
+            _buffer.Process("j");
+            _buffer.Process("\"Cyaw");
+            Assert.AreEqual("dogcat", _buffer.RegisterMap.GetRegister('c').StringValue);
+            Assert.AreEqual("dogcat", _buffer.RegisterMap.GetRegister('C').StringValue);
         }
 
         /// <summary>

@@ -366,6 +366,11 @@ type NonEmptyCollection<'T>
 
 module NonEmptyCollectionUtil =
 
+    /// Appends a list to the NonEmptyCollection
+    let Append values (col : NonEmptyCollection<'T>) =
+        let rest = col.Rest @ values
+        NonEmptyCollection(col.Head, rest)
+
     /// Attempts to create a NonEmptyCollection from a raw sequence
     let OfSeq seq = 
         match SeqUtil.tryHead seq with
