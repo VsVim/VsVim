@@ -926,11 +926,6 @@ type internal CommandUtil
         | Some result -> _operations.MoveCaretToMotionResult result
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Move the caret to the specified point as a jump operation
-    member x.MoveCaretToPointAsJump point =
-        _jumpList.Add point
-        _operations.MoveCaretToPointAndEnsureVisible point
-
     /// Run the Ping command
     member x.Ping (pingData : PingData) data = 
         pingData.Function data

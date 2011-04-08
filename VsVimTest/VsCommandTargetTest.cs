@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
@@ -169,7 +170,7 @@ namespace VsVim.UnitTest
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _externalEditorManager.SetupGet(x => x.IsResharperLoaded).Returns(true).Verifiable();
             Assert.IsTrue(RunQueryStatus(KeyInputUtil.EscapeKey));
-            Assert.IsTrue(_targetRaw.SwallowIfNextExecMatches.IsSome);
+            Assert.IsTrue(_targetRaw.SwallowIfNextExecMatches.IsSome());
             Assert.AreEqual(KeyInputUtil.EscapeKey, _targetRaw.SwallowIfNextExecMatches.Value);
             Assert.AreEqual(1, count);
             _factory.Verify();
@@ -187,7 +188,7 @@ namespace VsVim.UnitTest
             _buffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
             _externalEditorManager.SetupGet(x => x.IsResharperLoaded).Returns(true).Verifiable();
             Assert.IsTrue(RunQueryStatus(KeyInputUtil.EscapeKey));
-            Assert.IsTrue(_targetRaw.SwallowIfNextExecMatches.IsSome);
+            Assert.IsTrue(_targetRaw.SwallowIfNextExecMatches.IsSome());
             Assert.AreEqual(KeyInputUtil.EscapeKey, _targetRaw.SwallowIfNextExecMatches.Value);
             Assert.AreEqual(1, count);
             _factory.Verify();
@@ -222,9 +223,9 @@ namespace VsVim.UnitTest
         [Test]
         public void Exec_SwallowShouldNotPassOnTheCommandIfMatches()
         {
-            _targetRaw.SwallowIfNextExecMatches = Option.CreateValue(KeyInputUtil.EscapeKey);
+            _targetRaw.SwallowIfNextExecMatches = FSharpOption.Create(KeyInputUtil.EscapeKey);
             RunExec(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(_targetRaw.SwallowIfNextExecMatches.IsNone);
+            Assert.IsTrue(_targetRaw.SwallowIfNextExecMatches.IsNone());
             _factory.Verify();
         }
 

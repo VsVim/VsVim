@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
+using Vim.Extensions;
 
 namespace VsVim
 {
@@ -78,13 +80,21 @@ namespace VsVim
     /// </summary>
     internal sealed class VsCommandTarget : IOleCommandTarget
     {
+
+        private enum CommandAction
+        {
+            Enable,
+            Disable,
+            PassOn
+        }
+
         private readonly IVimBuffer _buffer;
         private readonly IVsAdapter _adapter;
         private readonly IDisplayWindowBroker _broker;
         private readonly IExternalEditorManager _externalEditManager;
         private IOleCommandTarget _nextTarget;
 
-        internal Option<KeyInput> SwallowIfNextExecMatches { get; set; }
+        internal FSharpOption<KeyInput> SwallowIfNextExecMatches { get; set; }
 
         private VsCommandTarget(
             IVimBuffer buffer,
@@ -329,7 +339,7 @@ namespace VsVim
                         var keyInput = editCommand.KeyInput;
 
                         // Swallow the input if it's been flagged by a previous QueryStatus
-                        if (SwallowIfNextExecMatches.IsSome && SwallowIfNextExecMatches.Value == keyInput)
+                        if (SwallowIfNextExecMatches.IsSome() && SwallowIfNextExecMatches.Value == keyInput)
                         {
                             return NativeMethods.S_OK;
                         }
@@ -344,7 +354,7 @@ namespace VsVim
             }
             finally
             {
-                SwallowIfNextExecMatches = Option.None;
+                SwallowIfNextExecMatches = FSharpOption<KeyInput>.None;
             }
 
             return _nextTarget.Exec(commandGroup, commandId, commandExecOpt, variantIn, variantOut);
@@ -355,24 +365,30 @@ namespace VsVim
             EditCommand editCommand;
             if (1 == cCmds && TryConvert(pguidCmdGroup, prgCmds[0].cmdID, pCmdText, out editCommand))
             {
-                var canHandle = false;
+                var action = CommandAction.PassOn;
                 if (editCommand.IsUndo || editCommand.IsRedo)
                 {
-                    canHandle = true;
+                    action = CommandAction.Enable;
                 }
                 else if (editCommand.HasKeyInput && _buffer.CanProcess(editCommand.KeyInput))
                 {
-                    canHandle = true;
+                    action = CommandAction.Enable;
                     if (_externalEditManager.IsResharperLoaded)
                     {
-                        QueryStatusInResharper(editCommand.KeyInput);
+                        action = QueryStatusInResharper(editCommand.KeyInput) ?? CommandAction.Enable;
                     }
                 }
 
-                if (canHandle)
+                switch (action)
                 {
-                    prgCmds[0].cmdf = (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
-                    return NativeMethods.S_OK;
+                    case CommandAction.Enable:
+                        prgCmds[0].cmdf = (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
+                        return NativeMethods.S_OK;
+                    case CommandAction.Disable:
+                        prgCmds[0].cmdf = 0;
+                        return NativeMethods.S_OK;
+                    case CommandAction.PassOn:
+                        return _nextTarget.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText);
                 }
             }
 
@@ -385,33 +401,42 @@ namespace VsVim
         /// will swallow the event and not propagate it to us.  So handle, return and account 
         /// for the double stroke in exec
         /// </summary>
-        private void QueryStatusInResharper(KeyInput keyInput)
+        private CommandAction? QueryStatusInResharper(KeyInput keyInput)
         {
-            var shouldHandle = false;
+            CommandAction? action = null;
             if (_buffer.ModeKind == ModeKind.Insert && keyInput == KeyInputUtil.EscapeKey)
             {
                 // Have to special case Escape here for insert mode.  R# is typically ahead of us on the IOleCommandTarget
                 // chain.  If a completion window is open and we wait for Exec to run R# will be ahead of us and run
                 // their Exec call.  This will lead to them closing the completion window and not calling back into
                 // our exec leaving us in insert mode.
-                shouldHandle = true;
+                action = CommandAction.Enable;
             }
             else if (_buffer.ModeKind == ModeKind.ExternalEdit && keyInput == KeyInputUtil.EscapeKey)
             {
                 // Have to special case Escape here for external edit mode because we want escape to get us back to 
                 // normal mode
-                shouldHandle = true;
+                action = CommandAction.Enable;
             }
             else if (_adapter.InDebugMode && (keyInput == KeyInputUtil.EnterKey || keyInput.Key == VimKey.Back))
             {
                 // In debug mode R# will intercept Enter and Back 
-                shouldHandle = true;
+                action = CommandAction.Enable;
+            }
+            else if (keyInput == KeyInputUtil.EnterKey && _buffer.ModeKind != ModeKind.Insert && _buffer.ModeKind != ModeKind.Replace)
+            {
+                // R# will intercept the Enter key when we are in the middle of an XML doc comment presumable
+                // to do some custom formatting.  If we're not insert mode we need to handle that here and 
+                // suppress the command to keep them from running it
+                action = CommandAction.Disable;
             }
 
-            if (shouldHandle && _buffer.Process(keyInput))
+            if (action.HasValue && _buffer.Process(keyInput))
             {
-                SwallowIfNextExecMatches = keyInput;
+                SwallowIfNextExecMatches = FSharpOption.Create(keyInput);
             }
+
+            return action;
         }
 
         internal static Result<VsCommandTarget> Create(
