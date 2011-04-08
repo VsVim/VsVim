@@ -112,7 +112,8 @@ namespace Vim.UnitTest
             IVimHost vimHost = null,
             IMacroRecorder recorder = null,
             ISearchService searchService = null,
-            ITextStructureNavigator wordNavigator = null)
+            ITextStructureNavigator wordNavigator = null,
+            IJumpList jumpList = null)
         {
             statusUtil = statusUtil ?? new StatusUtil();
             undoRedOperations = undoRedOperations ?? VimUtil.CreateUndoRedoOperations(statusUtil);
@@ -126,6 +127,7 @@ namespace Vim.UnitTest
             foldManager = foldManager ?? CreateFoldManager(textView.TextBuffer);
             searchService = searchService ?? CreateSearchService(localSettings.GlobalSettings);
             wordNavigator = wordNavigator ?? CreateTextStructureNavigator(textView.TextBuffer, WordKind.NormalWord);
+            jumpList = jumpList ?? CreateJumpList();
             vimHost = vimHost ?? new MockVimHost();
             var vim = MockObjectFactory.CreateVim(
                 registerMap: registerMap,
@@ -139,7 +141,8 @@ namespace Vim.UnitTest
                 settings: localSettings,
                 motionUtil: motionUtil,
                 vim: vim.Object,
-                wordNavigator: wordNavigator);
+                wordNavigator: wordNavigator,
+                jumpList: jumpList);
             return new CommandUtil(
                 buffer.Object,
                 operations,

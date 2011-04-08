@@ -1016,11 +1016,11 @@ type NormalCommand =
     /// Jump to the specified mark 
     | JumpToMark of char
 
-    /// Jump to the next item in the tag list
-    | JumpToNextTag 
+    /// Jump to the next older item in the tag list
+    | JumpToOlderPosition
 
-    /// Jump to the previous item in the tag list
-    | JumpToPreviousTag
+    /// Jump to the next new item in the tag list
+    | JumpToNewerPosition
 
     /// Move the caret in the specified direction
     | MoveCaretTo of Direction
@@ -1654,10 +1654,10 @@ type IJumpList =
     abstract Jumps : VirtualSnapshotPoint list
 
     /// Move to the previous point in the jump list
-    abstract MovePrevious: int -> bool
+    abstract MoveOlder : int -> bool
 
     /// Move to the next point in the jump list
-    abstract MoveNext : int -> bool
+    abstract MoveNewer : int -> bool
 
     /// Add a given SnapshotPoint to the jump list
     abstract Add : SnapshotPoint -> unit

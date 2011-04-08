@@ -33,10 +33,10 @@ namespace VimCore.UnitTest
         /// Move next should fail if there is nothing in the jump list
         /// </summary>
         [Test]
-        public void MoveNext_Empty()
+        public void MoveOlder_Empty()
         {
             Create("");
-            Assert.IsFalse(_jumpList.MoveNext(1));
+            Assert.IsFalse(_jumpList.MoveOlder(1));
         }
 
         /// <summary>
@@ -44,12 +44,12 @@ namespace VimCore.UnitTest
         /// the position in the list
         /// </summary>
         [Test]
-        public void MoveNext_CountTooBig()
+        public void MoveOlder_CountTooBig()
         {
             Create("cat", "dog");
             _jumpList.Add(_textBuffer.GetPoint(0));
             _jumpList.Add(_textBuffer.GetLine(1).Start);
-            Assert.IsFalse(_jumpList.MoveNext(10));
+            Assert.IsFalse(_jumpList.MoveOlder(10));
             Assert.IsTrue(_jumpList.CurrentIndex.IsSome(0));
         }
 
@@ -57,12 +57,12 @@ namespace VimCore.UnitTest
         /// Simple move next with a valid count
         /// </summary>
         [Test]
-        public void MoveNext_Valid()
+        public void MoveOlder_Valid()
         {
             Create("cat", "dog");
             _jumpList.Add(_textBuffer.GetPoint(0));
             _jumpList.Add(_textBuffer.GetLine(1).Start);
-            Assert.IsTrue(_jumpList.MoveNext(1));
+            Assert.IsTrue(_jumpList.MoveOlder(1));
             Assert.IsTrue(_jumpList.Current.IsSome(_textBuffer.GetLine(0).Start));
             Assert.IsTrue(_jumpList.CurrentIndex.IsSome(1));
         }
@@ -71,23 +71,23 @@ namespace VimCore.UnitTest
         /// Move previous on an empty list should fail
         /// </summary>
         [Test]
-        public void MovePrevious_Empty()
+        public void MoveNewer_Empty()
         {
             Create("");
-            Assert.IsFalse(_jumpList.MovePrevious(1));
+            Assert.IsFalse(_jumpList.MoveNewer(1));
         }
 
         /// <summary>
         /// Move previous when the count is too big should fail
         /// </summary>
         [Test]
-        public void MovePrevious_CountTooBig()
+        public void MoveNewer_CountTooBig()
         {
             Create("cat", "dog");
             _jumpList.Add(_textBuffer.GetLine(0).Start);
             _jumpList.Add(_textBuffer.GetLine(1).Start);
-            _jumpList.MoveNext(1);
-            Assert.IsFalse(_jumpList.MovePrevious(2));
+            _jumpList.MoveOlder(1);
+            Assert.IsFalse(_jumpList.MoveNewer(2));
             Assert.IsTrue(_jumpList.CurrentIndex.IsSome(1));
         }
 
@@ -95,13 +95,13 @@ namespace VimCore.UnitTest
         /// Move previous when the count is too big should fail
         /// </summary>
         [Test]
-        public void MovePrevious_CountValid()
+        public void MoveNewer_CountValid()
         {
             Create("cat", "dog");
             _jumpList.Add(_textBuffer.GetLine(0).Start);
             _jumpList.Add(_textBuffer.GetLine(1).Start);
-            _jumpList.MoveNext(1);
-            Assert.IsTrue(_jumpList.MovePrevious(1));
+            _jumpList.MoveOlder(1);
+            Assert.IsTrue(_jumpList.MoveNewer(1));
             Assert.IsTrue(_jumpList.CurrentIndex.IsSome(0));
         }
 

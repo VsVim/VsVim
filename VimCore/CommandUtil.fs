@@ -811,16 +811,22 @@ type internal CommandUtil
         CommandResult.Completed switch
 
     /// Jump to the next tag in the tag list
-    member x.JumpToNextTag count = 
-        if not (_jumpList.MoveNext count) then
+    member x.JumpToNewerPosition count = 
+        if not (_jumpList.MoveNewer count) then
             _operations.Beep()
         else
             x.JumpToTagCore ()
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Jump to the previous tag in the tag list
-    member x.JumpToPreviousTag count = 
-        if not (_jumpList.MovePrevious count) then
+    member x.JumpToOlderPosition count = 
+        // If this is the first jump which starts a traversal then we should reset the head
+        // to this point and begin the traversal
+        let atStart = (_jumpList.CurrentIndex |> OptionUtil.getOrDefault 0) = 0
+        if atStart then
+            _jumpList.Add x.CaretPoint
+
+        if not (_jumpList.MoveOlder count) then
             _operations.Beep()
         else
             x.JumpToTagCore ()
@@ -1430,8 +1436,8 @@ type internal CommandUtil
         | NormalCommand.InsertLineBelow -> x.InsertLineBelow count
         | NormalCommand.JoinLines kind -> x.JoinLines kind count
         | NormalCommand.JumpToMark c -> x.JumpToMark c
-        | NormalCommand.JumpToNextTag -> x.JumpToNextTag count
-        | NormalCommand.JumpToPreviousTag -> x.JumpToPreviousTag count
+        | NormalCommand.JumpToOlderPosition -> x.JumpToOlderPosition count
+        | NormalCommand.JumpToNewerPosition -> x.JumpToNewerPosition count
         | NormalCommand.MoveCaretTo direction -> x.MoveCaretTo direction count
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
         | NormalCommand.Ping pingData -> x.Ping pingData data

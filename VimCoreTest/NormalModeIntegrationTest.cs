@@ -1538,5 +1538,39 @@ namespace VimCore.UnitTest
             Assert.AreEqual("cat" + Environment.NewLine + "dog" + Environment.NewLine, UnnamedRegister.StringValue);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
+
+        /// <summary>
+        /// Doing a * on a word that doesn't even match should still update the jump list
+        /// </summary>
+        [Test]
+        public void JumpList_NextWordUnderCursorWithNoMatch()
+        {
+            Create("cat", "dog", "fish");
+            _assertOnErrorMessage = false;
+            _buffer.Process("*");
+            _textView.MoveCaretToLine(2);
+            _buffer.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
+            Assert.AreEqual(_textView.GetPoint(0), _textView.GetCaretPoint());
+            _buffer.Process(KeyInputUtil.CharWithControlToKeyInput('i'));
+            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// If a jump to previous occurs on a location which is not in the list and we
+        /// are not already traversing the jump list then the location is added
+        /// </summary>
+        [Test]
+        public void JumpList_FromLocationNotInList()
+        {
+            Create("cat", "dog", "fish");
+            _jumpList.Add(_textView.GetPoint(0));
+            _textView.MoveCaretToLine(1);
+            _buffer.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
+            Assert.AreEqual(_textView.GetLine(0).Start, _textView.GetCaretPoint());
+            Assert.AreEqual(1, _jumpList.CurrentIndex.Value);
+            Assert.AreEqual(2, _jumpList.Jumps.Length);
+            _buffer.Process(KeyInputUtil.CharWithControlToKeyInput('i'));
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
     }
 }

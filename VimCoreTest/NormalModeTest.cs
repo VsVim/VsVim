@@ -1331,19 +1331,19 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Bind_JumpNext()
+        public void Bind_JumpToNewerPosition()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.JumpToNextTag);
+            _commandUtil.SetupCommandNormal(NormalCommand.JumpToNewerPosition);
             _mode.Process(KeyInputUtil.CharWithControlToKeyInput('i'));
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_JumpPrevious()
+        public void Bind_JumpToOlderPosition()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.JumpToPreviousTag);
+            _commandUtil.SetupCommandNormal(NormalCommand.JumpToOlderPosition);
             _mode.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
             _commandUtil.Verify();
         }

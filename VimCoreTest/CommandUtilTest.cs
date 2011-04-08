@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
@@ -29,6 +30,7 @@ namespace VimCore.UnitTest
         private IMarkMap _markMap;
         private ITextView _textView;
         private ITextBuffer _textBuffer;
+        private IJumpList _jumpList;
         private CommandUtil _commandUtil;
 
         private void Create(params string[] lines)
@@ -68,6 +70,7 @@ namespace VimCore.UnitTest
                 vimData: _vimData,
                 smartIndentationService: _smartIdentationService.Object,
                 recorder: _recorder.Object);
+            _jumpList = _commandUtil._jumpList;
         }
 
         private Register UnnamedRegister
@@ -1509,6 +1512,88 @@ namespace VimCore.UnitTest
             _operations.Setup(x => x.Beep()).Verifiable();
             _commandUtil.RunMacro('!');
             _operations.Verify();
+        }
+
+        /// <summary>
+        /// When jumping from a location not in the jump list and we're not in the middle 
+        /// of a traversal the location should be added to the list
+        /// </summary>
+        [Test]
+        public void JumpToOlderPosition_FromLocationNotInList()
+        {
+            Create("cat", "dog", "fish");
+            _jumpList.Add(_textView.GetLine(1).Start);
+            _commandUtil.JumpToOlderPosition(1);
+            Assert.AreEqual(2, _jumpList.Jumps.Length);
+            Assert.AreEqual(_textView.GetPoint(0), _jumpList.Jumps.Head.Position);
+            Assert.AreEqual(1, _jumpList.CurrentIndex.Value);
+        }
+
+        /// <summary>
+        /// When jumping from a location in the jump list and it's the start of the traversal
+        /// then move the location back to the head of the class
+        /// </summary>
+        [Test]
+        public void JumpToOlderPosition_FromLocationInList()
+        {
+            Create("cat", "dog", "fish");
+            _jumpList.Add(_textView.GetLine(2).Start);
+            _jumpList.Add(_textView.GetLine(1).Start);
+            _jumpList.Add(_textView.GetLine(0).Start);
+            _textView.MoveCaretToLine(1);
+            _commandUtil.JumpToOlderPosition(1);
+            Assert.AreEqual(3, _jumpList.Jumps.Length);
+            CollectionAssert.AreEquivalent(
+                _jumpList.Jumps.Select(x => x.Position),
+                new[]
+                {
+                    _textView.GetLine(1).Start,
+                    _textView.GetLine(0).Start,
+                    _textView.GetLine(2).Start
+                });
+            Assert.AreEqual(1, _jumpList.CurrentIndex.Value);
+        }
+
+        /// <summary>
+        /// When jumping from a location not in the jump list and we in the middle of a 
+        /// traversal don't add the location to the list
+        /// </summary>
+        [Test]
+        public void JumpToOlderPosition_FromLocationNotInListDuringTraversal()
+        {
+            Create("cat", "dog", "fish");
+            _jumpList.Add(_textView.GetLine(1).Start);
+            _jumpList.Add(_textView.GetLine(0).Start);
+            Assert.IsTrue(_jumpList.MoveOlder(1));
+            _textView.MoveCaretToLine(2);
+            _commandUtil.JumpToOlderPosition(1);
+            Assert.AreEqual(2, _jumpList.Jumps.Length);
+            Assert.AreEqual(_textView.GetPoint(0), _jumpList.Jumps.Head.Position);
+            Assert.AreEqual(1, _jumpList.CurrentIndex.Value);
+        }
+
+        /// <summary>
+        /// Jump to the next position should not add the current position 
+        /// </summary>
+        [Test]
+        public void JumpToNextPosition_FromMiddle()
+        {
+            Create("cat", "dog", "fish");
+            _jumpList.Add(_textView.GetLine(2).Start);
+            _jumpList.Add(_textView.GetLine(1).Start);
+            _jumpList.Add(_textView.GetLine(0).Start);
+            _jumpList.MoveOlder(1);
+            _commandUtil.JumpToNewerPosition(1);
+            Assert.AreEqual(3, _jumpList.Jumps.Length);
+            CollectionAssert.AreEquivalent(
+                _jumpList.Jumps.Select(x => x.Position),
+                new[]
+                {
+                    _textView.GetLine(0).Start,
+                    _textView.GetLine(1).Start,
+                    _textView.GetLine(2).Start
+                });
+            Assert.AreEqual(0, _jumpList.CurrentIndex.Value);
         }
 
     }

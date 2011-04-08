@@ -87,8 +87,8 @@ type internal JumpList
             _list.Last.Value.Close()
             _list.RemoveLast()
 
-    /// Move to the previous node in the jump list.  
-    member x.MovePrevious count = 
+    /// Move to the newer node in the jump list.  
+    member x.MoveNewer count = 
         match _current with
         | None ->
             false
@@ -103,8 +103,8 @@ type internal JumpList
                 _current <- Some (current, index - count)
             success
 
-    /// Move to the next node in the jump list
-    member x.MoveNext count =
+    /// Move to the older node in the jump list
+    member x.MoveOlder count =
         match _current with
         | None ->
             false
@@ -122,7 +122,7 @@ type internal JumpList
         member x.Current = x.Current
         member x.CurrentIndex = x.CurrentIndex
         member x.Jumps = x.Jumps
-        member x.MovePrevious count = x.MovePrevious count
-        member x.MoveNext count = x.MoveNext count
+        member x.MoveNewer count = x.MoveNewer count
+        member x.MoveOlder count = x.MoveOlder count
         member x.Add point = x.Add point
 

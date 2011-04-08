@@ -1479,6 +1479,9 @@ type internal TextViewMotionUtil
     /// Motion for word under the caret to the next occurrence of the word
     member x.NextWordCore path count isWholeWord = 
 
+        // Next word motions should update the jump list
+        _jumpList.Add x.CaretPoint
+
         // Move forward along the line to find the first non-blank
         let point =
             x.CaretPoint
