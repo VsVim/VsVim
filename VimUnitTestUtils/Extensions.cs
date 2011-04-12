@@ -118,12 +118,12 @@ namespace Vim.UnitTest
 
         internal static UndoRedoData.Normal AsNormal(this UndoRedoData data)
         {
-            return (UndoRedoData.Normal) data;
+            return (UndoRedoData.Normal)data;
         }
 
         internal static UndoRedoData.Linked AsLinked(this UndoRedoData data)
         {
-            return (UndoRedoData.Linked) data;
+            return (UndoRedoData.Linked)data;
         }
 
         #endregion
@@ -750,7 +750,7 @@ namespace Vim.UnitTest
 
         public static CaretColumn.InLastLine AsInLastLine(this CaretColumn column)
         {
-            return (CaretColumn.InLastLine) column;
+            return (CaretColumn.InLastLine)column;
         }
 
         #endregion
@@ -811,11 +811,23 @@ namespace Vim.UnitTest
             UpdateValue(reg, value, OperationKind.CharacterWise);
         }
 
+        /// <summary>
+        /// Update the value with the string followed by the specified VimKey values
+        /// </summary>
         public static void UpdateValue(this Register reg, string value, params VimKey[] keys)
         {
             var left = value.Select(KeyInputUtil.CharToKeyInput);
             var right = keys.Select(KeyInputUtil.VimKeyToKeyInput);
             var all = left.Concat(right).ToFSharpList();
+            reg.RegisterValue = RegisterValue.NewKeyInput(all, OperationKind.CharacterWise);
+        }
+
+        /// <summary>
+        /// Update the value with the spcefied set of VimKey values
+        /// </summary>
+        public static void UpdateValue(this Register reg, params VimKey[] keys)
+        {
+            var all = keys.Select(KeyInputUtil.VimKeyToKeyInput).ToFSharpList();
             reg.RegisterValue = RegisterValue.NewKeyInput(all, OperationKind.CharacterWise);
         }
 

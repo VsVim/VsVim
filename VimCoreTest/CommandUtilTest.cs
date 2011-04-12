@@ -1510,7 +1510,7 @@ namespace VimCore.UnitTest
         {
             Create("");
             _operations.Setup(x => x.Beep()).Verifiable();
-            _commandUtil.RunMacro('!');
+            _commandUtil.RunMacro('!', 1);
             _operations.Verify();
         }
 

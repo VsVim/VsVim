@@ -1347,7 +1347,7 @@ type internal CommandUtil
         | Command.LegacyCommand data -> data.Function()
 
     /// Run the Macro which is present in the specified char
-    member x.RunMacro registerName = 
+    member x.RunMacro registerName count = 
 
         // If the '@' is used then we are doing a run last macro run
         let registerName = 
@@ -1369,6 +1369,7 @@ type internal CommandUtil
             _operations.Beep()
         | Some name ->
             let register = _registerMap.GetRegister name
+            let list = register.RegisterValue.KeyInputList
 
             // The macro should be executed as a single action and the macro can execute in
             // several ITextBuffer instances (consider if the macros executes a 'gt' and keeps
@@ -1379,26 +1380,37 @@ type internal CommandUtil
             // the comparison constraint
             let map = System.Collections.Generic.Dictionary<ITextBuffer, IUndoTransaction>();
 
-            // Replay the key strokes one at a time
-            let list = register.RegisterValue.KeyInputList
-            for keyInput in list do
+            try 
 
-                match _vim.FocusedBuffer with
-                | None -> 
-                    // Nothing to do if we don't have an ITextBuffer with focus
-                    () 
-                | Some buffer -> 
-                    // Make sure we have an IUndoTransaction open in the ITextBuffer
-                    if not (map.ContainsKey(buffer.TextBuffer)) then
-                        let transaction = _undoRedoOperations.CreateUndoTransaction "Macro Run"
-                        transaction.AddBeforeTextBufferChangePrimitive()
+                // Actually run the macro by replaying the key strokes one at a time
+                let runMacro () =
+                    for keyInput in list do
+        
+                        match _vim.FocusedBuffer with
+                        | None -> 
+                            // Nothing to do if we don't have an ITextBuffer with focus
+                            () 
+                        | Some buffer -> 
+                            // Make sure we have an IUndoTransaction open in the ITextBuffer
+                            if not (map.ContainsKey(buffer.TextBuffer)) then
+                                let transaction = _undoRedoOperations.CreateUndoTransaction "Macro Run"
+                                transaction.AddBeforeTextBufferChangePrimitive()
+        
+                            buffer.Process keyInput |> ignore
 
-                    buffer.Process keyInput |> ignore
+                // Run the macro count times
+                for i = 1 to count do
+                    runMacro()
 
-            // Close out all of the transactions
-            for transaction in map.Values do
-                transaction.AddAfterTextBufferChangePrimitive()
-                transaction.Complete()
+                // Close out all of the transactions
+                for transaction in map.Values do
+                    transaction.AddAfterTextBufferChangePrimitive()
+                    transaction.Complete()
+
+            finally
+                // Make sure to dispose the transactions in a finally block.  Leaving them open
+                // completely breaks undo in the ITextBuffer
+                map.Values |> Seq.iter (fun transaction -> transaction.Dispose())
 
             _vimData.LastMacroRun <- Some registerName
 
@@ -1456,7 +1468,7 @@ type internal CommandUtil
         | NormalCommand.RepeatLastCommand -> x.RepeatLastCommand data
         | NormalCommand.ReplaceAtCaret -> x.ReplaceAtCaret count
         | NormalCommand.ReplaceChar keyInput -> x.ReplaceChar keyInput data.CountOrDefault
-        | NormalCommand.RunMacro registerName -> x.RunMacro registerName
+        | NormalCommand.RunMacro registerName -> x.RunMacro registerName data.CountOrDefault
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion register)
 
     /// Run a VisualCommand against the buffer

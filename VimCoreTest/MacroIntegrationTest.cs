@@ -20,7 +20,7 @@ namespace VimCore.UnitTest
 
         internal Register TestRegister
         {
-            get { return _buffer.RegisterMap.GetRegister(TestRegisterChar);  }
+            get { return _buffer.RegisterMap.GetRegister(TestRegisterChar); }
         }
 
         private void Create(params string[] lines)
@@ -28,7 +28,7 @@ namespace VimCore.UnitTest
             _textView = EditorUtil.CreateView(lines);
             _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            ((MockVimHost) _buffer.Vim.VimHost).FocusedTextView = _textView;
+            ((MockVimHost)_buffer.Vim.VimHost).FocusedTextView = _textView;
         }
 
         /// <summary>
@@ -68,6 +68,19 @@ namespace VimCore.UnitTest
             _buffer.Process("dw@c");
             Assert.AreEqual("again", _textView.GetLine(0).GetText());
             Assert.IsTrue(_buffer.VimData.LastMacroRun.IsSome('c'));
+        }
+
+        /// <summary>
+        /// When running the last macro with a count it should do the macro 'count' times
+        /// </summary>
+        [Test]
+        public void RunMacro_WithCount()
+        {
+            Create("cat", "dog", "bear");
+            TestRegister.UpdateValue("~", VimKey.Left, VimKey.Down);
+            _buffer.Process("2@c");
+            Assert.AreEqual("Cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual("Dog", _textView.GetLine(1).GetText());
         }
 
         /// <summary>
