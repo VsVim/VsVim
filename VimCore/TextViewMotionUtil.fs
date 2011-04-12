@@ -521,7 +521,9 @@ module internal MotionUtil =
         |> Seq.concat
 
     let GetSentenceFull point = 
-        GetSentences point Path.Backward
+        let snapshot = SnapshotPointUtil.GetSnapshot point
+        let startPoint = SnapshotUtil.GetStartPoint snapshot
+        GetSentences startPoint Path.Forward
         |> Seq.tryFind (fun x -> x.Contains(point))
         |> OptionUtil.getOrDefault (SnapshotSpanUtil.CreateFromStartToProvidedEnd point)
 
@@ -915,14 +917,148 @@ type internal TextViewMotionUtil
             OperationKind = OperationKind.LineWise
             Column = None }
 
+    /// Common function for getting the 'all' version of text object motion values
+    member x.AllTextObjectNonBlock getObjectSpan stopWhiteSpaceOnLine areEmptyLinesObjects count = 
+
+        // Is this point the first point on a blank line
+        let isEmptyLine point = 
+            if SnapshotPointUtil.IsStartOfLine point then
+                let line = SnapshotPointUtil.GetContainingLine point
+                line.Length = 0
+            else
+                false
+
+        // Is this an empty line which matters
+        let isSignificantEmptyLine point = areEmptyLinesObjects && isEmptyLine point
+
+        // Is this ignorable white space
+        let isWhiteSpace point =
+            if isSignificantEmptyLine point then
+                false
+            else
+                SnapshotPointUtil.IsWhiteSpace point || SnapshotPointUtil.IsInsideLineBreak point
+
+        // Get a single text object.  Will recursively run until the count is expired
+        let rec inner point count = 
+
+            // Move to an actual non-whitespace point
+            let point = 
+                SnapshotPointUtil.GetPointsIncludingLineBreak Path.Forward point
+                |> Seq.skipWhile isWhiteSpace
+                |> SeqUtil.tryHeadOnly
+
+            match point with 
+            | None -> 
+                // Done searching at the end 
+                SnapshotUtil.GetEndPoint x.CurrentSnapshot
+            | Some point ->
+                let endPoint = 
+                    if areEmptyLinesObjects && isEmptyLine point then
+                        // If this is an empty line and we actually care about them then 
+                        // return the object span.  A bit surprisingly this is actually the
+                        // 'point' because it's the start of the line break
+                        point
+                    else
+                        // It's a normal object, get the end of it's span
+                        let span = getObjectSpan point
+                        SnapshotSpanUtil.GetEndPoint span
+
+                if count = 1 then 
+                    endPoint
+                else
+                    inner endPoint (count - 1)
+
+        // Get the point to start the search from
+        let searchPoint = 
+            if isWhiteSpace x.CaretPoint then
+                x.CaretPoint
+            elif areEmptyLinesObjects && isEmptyLine x.CaretPoint then
+                x.CaretPoint
+            else
+                let span = getObjectSpan x.CaretPoint
+                span.Start
+        let endPoint = inner searchPoint count
+
+        // Get the white space in front of the object
+        let getPrecedingWhiteSpace () =
+            match SnapshotPointUtil.TrySubtractOne searchPoint with
+            | None ->
+                SnapshotUtil.GetStartPoint x.CurrentSnapshot
+            | Some point ->
+                let next = 
+                    point
+                    |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Backward
+                    |> Seq.skipWhile isWhiteSpace
+                    |> SeqUtil.tryHeadOnly
+                match next with 
+                | Some next -> 
+                    if isSignificantEmptyLine next then
+                        // If we hit an empty line then the white space starts at the 
+                        // end of that line
+                        let line = SnapshotPointUtil.GetContainingLine next
+                        line.EndIncludingLineBreak
+                    else
+                        // We stopped an a non-white space item so move one forward
+                        // to get back to the white space
+                        SnapshotPointUtil.AddOne next
+                | None -> 
+                    SnapshotUtil.GetStartPoint x.CurrentSnapshot
+
+        // Now we need to do the standard adjustments listed at the bottom of 
+        // ':help text-objects'.  
+        if isWhiteSpace x.CaretPoint then
+
+            // If the caret starts in white space then we include the preceding
+            // white space in the span
+            SnapshotSpan(getPrecedingWhiteSpace() , endPoint)
+        elif isWhiteSpace endPoint then 
+
+            // If the caret ends in white space then include the white space up
+            // until the start of the next item.  
+            let endPoint = 
+                if stopWhiteSpaceOnLine && SnapshotPointUtil.IsInsideLineBreak endPoint then
+                    endPoint
+                elif stopWhiteSpaceOnLine then
+                    let line = SnapshotPointUtil.GetContainingLine endPoint 
+                    SnapshotSpan(endPoint, line.End)
+                    |> SnapshotSpanUtil.GetPoints
+                    |> Seq.skipWhile isWhiteSpace
+                    |> SeqUtil.tryHeadOnly
+                    |> OptionUtil.getOrDefault line.End
+                else
+                    endPoint
+                    |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Forward
+                    |> Seq.skipWhile isWhiteSpace
+                    |> SeqUtil.tryHeadOnly
+                    |> OptionUtil.getOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
+            SnapshotSpan(searchPoint, endPoint)
+        else
+            let startPoint = getPrecedingWhiteSpace()
+            let startLine = SnapshotPointUtil.GetContainingLine startPoint
+            let searchLine = SnapshotPointUtil.GetContainingLine searchPoint
+            if stopWhiteSpaceOnLine && (startLine.LineNumber <> searchLine.LineNumber || startPoint.Position = 0) then
+                SnapshotSpan(searchPoint, endPoint)
+            else
+                SnapshotSpan(startPoint, endPoint)
+
+    /// Implements the 'as' motion
+    member x.AllSentence count =
+        let func point = MotionUtil.GetSentenceFull point
+        let span = x.AllTextObjectNonBlock func false true count
+        {
+            Span = span 
+            IsForward = true 
+            MotionKind = MotionKind.Exclusive 
+            OperationKind = OperationKind.CharacterWise 
+            Column = None }
+
     /// Implements the 'aw' motion. 
-    member x.GetAllWord kind count = 
-        let start = x.CaretPoint
-        let start = match TssUtil.FindCurrentFullWordSpan start kind with 
-                        | Some (s) -> s.Start
-                        | None -> start
-        let endPoint = TssUtil.FindNextWordStart start count kind  
-        let span = SnapshotSpan(start,endPoint)
+    member x.AllWord kind count = 
+        let func point = 
+            match TssUtil.FindCurrentFullWordSpan point kind with
+            | None -> SnapshotSpan(point, 0)
+            | Some span -> span
+        let span = x.AllTextObjectNonBlock func true false count
         {
             Span = span 
             IsForward = true 
@@ -988,7 +1124,6 @@ type internal TextViewMotionUtil
             MotionKind = MotionKind.AnyWord
             OperationKind = OperationKind.CharacterWise 
             Column = None}
-    member x.AllWord kind count = x.GetAllWord kind count
     member x.EndOfWord kind count = 
 
         // Create the appropriate MotionResult structure with the provided SnapshotSpan
@@ -1001,7 +1136,7 @@ type internal TextViewMotionUtil
 
         // Move forward until we find the first non-blank and hence a word character 
         let point =
-            SnapshotPointUtil.GetPoints x.CaretPoint SearchKind.Forward
+            SnapshotPointUtil.GetPoints SearchKind.Forward x.CaretPoint
             |> Seq.skipWhile (fun point -> point.GetChar() |> CharUtil.IsWhiteSpace)
             |> SeqUtil.tryHeadOnly
         match point with 
@@ -1291,27 +1426,6 @@ type internal TextViewMotionUtil
             OperationKind = OperationKind.CharacterWise 
             Column = None}
 
-    member x.GetAllSentence count =
-        let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine _textView
-        let span = 
-            if SnapshotLineUtil.GetLength caretLine = 0 then 
-                // This behavior is not specified in the standard but if the caret line has
-                // 0 length then only it is included in the span 
-                SnapshotLineUtil.GetExtentIncludingLineBreak caretLine
-            else 
-                let startPoint = 
-                    MotionUtil.GetSentenceFull caretPoint
-                    |> SnapshotSpanUtil.GetStartPoint
-                MotionUtil.GetSentences startPoint Path.Forward 
-                |> Seq.truncate count
-                |> SnapshotSpanUtil.CreateCombinedOrEmpty caretPoint.Snapshot
-        {
-            Span = span 
-            IsForward = true 
-            MotionKind = MotionKind.Exclusive 
-            OperationKind = OperationKind.CharacterWise 
-            Column = None }
-
     member x.ParagraphForward count = 
         let startPoint = TextViewUtil.GetCaretPoint _textView
         let endPoint = 
@@ -1582,8 +1696,8 @@ type internal TextViewMotionUtil
         let motionResult = 
             match motion with 
             | Motion.AllParagraph -> x.GetAllParagraph motionArgument.Count |> Some
-            | Motion.AllWord wordKind -> x.GetAllWord wordKind motionArgument.Count |> Some
-            | Motion.AllSentence -> x.GetAllSentence motionArgument.Count |> Some
+            | Motion.AllWord wordKind -> x.AllWord wordKind motionArgument.Count |> Some
+            | Motion.AllSentence -> x.AllSentence motionArgument.Count |> Some
             | Motion.BeginingOfLine -> x.BeginingOfLine() |> Some
             | Motion.CharLeft -> x.CharLeft motionArgument.Count
             | Motion.CharRight -> x.CharRight motionArgument.Count

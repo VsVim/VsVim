@@ -768,6 +768,15 @@ namespace Vim.UnitTest
 
         #endregion
 
+        /// <summary>
+        /// Run the specified motion with default arguments
+        /// </summary>
+        public static FSharpOption<MotionResult> GetMotion(this ITextViewMotionUtil motionUtil, Motion motion)
+        {
+            var arg = new MotionArgument(MotionContext.AfterOperator, FSharpOption<int>.None, FSharpOption<int>.None);
+            return motionUtil.GetMotion(motion, arg);
+        }
+
         public static SnapshotSpan GetSpan(this ITextSelection selection)
         {
             var span = new SnapshotSpan(selection.Start.Position, selection.End.Position);

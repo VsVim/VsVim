@@ -18,19 +18,19 @@ namespace VimCore.UnitTest
                 "running out of things to make up"
             };
 
-        ITextBuffer _buffer = null;
+        ITextBuffer _textBuffer = null;
         ITextSnapshot _snapshot = null;
 
         public void Create(params string[] lines)
         {
-            _buffer = EditorUtil.CreateBuffer(lines);
-            _snapshot = _buffer.CurrentSnapshot;
+            _textBuffer = EditorUtil.CreateBuffer(lines);
+            _snapshot = _textBuffer.CurrentSnapshot;
         }
 
         [TearDown]
         public void TearDown()
         {
-            _buffer = null;
+            _textBuffer = null;
             _snapshot = null;
         }
 
@@ -69,7 +69,7 @@ namespace VimCore.UnitTest
         public void GetCharacterSpan1()
         {
             Create("foo");
-            var span = SnapshotPointUtil.GetCharacterSpan(new SnapshotPoint(_buffer.CurrentSnapshot, 0));
+            var span = SnapshotPointUtil.GetCharacterSpan(new SnapshotPoint(_textBuffer.CurrentSnapshot, 0));
             Assert.AreEqual(0, span.Start.Position);
             Assert.AreEqual(1, span.Length);
         }
@@ -78,7 +78,7 @@ namespace VimCore.UnitTest
         public void GetCharacterSpan2()
         {
             Create("foo", String.Empty, "baz");
-            var line = _buffer.CurrentSnapshot.GetLineFromLineNumber(1);
+            var line = _textBuffer.CurrentSnapshot.GetLineFromLineNumber(1);
             var span = SnapshotPointUtil.GetCharacterSpan(line.Start);
             Assert.AreEqual(span, line.ExtentIncludingLineBreak);
         }
@@ -87,7 +87,7 @@ namespace VimCore.UnitTest
         public void GetCharacterSpan3()
         {
             Create("foo", "bar");
-            var line = _buffer.CurrentSnapshot.GetLineFromLineNumber(0);
+            var line = _textBuffer.CurrentSnapshot.GetLineFromLineNumber(0);
             var span = SnapshotPointUtil.GetCharacterSpan(line.End);
             Assert.AreEqual(span, new SnapshotSpan(line.End, line.EndIncludingLineBreak));
         }
@@ -96,7 +96,7 @@ namespace VimCore.UnitTest
         public void GetNextPointWithWrap1()
         {
             Create("foo", "baz");
-            var line = _buffer.CurrentSnapshot.GetLineFromLineNumber(0);
+            var line = _textBuffer.CurrentSnapshot.GetLineFromLineNumber(0);
             var next = SnapshotPointUtil.GetNextPointWithWrap(line.Start);
             Assert.AreEqual(1, next.Position);
         }
@@ -105,9 +105,9 @@ namespace VimCore.UnitTest
         public void GetNextPointWithWrap2()
         {
             Create("foo", "bar");
-            var line = _buffer.CurrentSnapshot.GetLineFromLineNumber(0);
+            var line = _textBuffer.CurrentSnapshot.GetLineFromLineNumber(0);
             var next = SnapshotPointUtil.GetNextPointWithWrap(line.End);
-            line = _buffer.CurrentSnapshot.GetLineFromLineNumber(1);
+            line = _textBuffer.CurrentSnapshot.GetLineFromLineNumber(1);
             Assert.AreEqual(line.Start, next);
         }
 
@@ -115,32 +115,32 @@ namespace VimCore.UnitTest
         public void GetNextPointWithWrap3()
         {
             Create("foo", "bar");
-            var next = SnapshotPointUtil.GetNextPointWithWrap(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).End);
-            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, next);
+            var next = SnapshotPointUtil.GetNextPointWithWrap(_textBuffer.CurrentSnapshot.GetLineFromLineNumber(1).End);
+            Assert.AreEqual(_textBuffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, next);
         }
 
         [Test]
         public void GetPreviousPointWithWrap1()
         {
             Create("foo", "bar");
-            var prev = SnapshotPointUtil.GetPreviousPointWithWrap(new SnapshotPoint(_buffer.CurrentSnapshot, 1));
-            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, prev);
+            var prev = SnapshotPointUtil.GetPreviousPointWithWrap(new SnapshotPoint(_textBuffer.CurrentSnapshot, 1));
+            Assert.AreEqual(_textBuffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, prev);
         }
 
         [Test]
         public void GetPreviousPointWithWrap2()
         {
             Create("foo", "bar");
-            var prev = SnapshotPointUtil.GetPreviousPointWithWrap(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).Start);
-            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).End, prev);
+            var prev = SnapshotPointUtil.GetPreviousPointWithWrap(_textBuffer.CurrentSnapshot.GetLineFromLineNumber(1).Start);
+            Assert.AreEqual(_textBuffer.CurrentSnapshot.GetLineFromLineNumber(0).End, prev);
         }
 
         [Test]
         public void GetPreviousPointWithWrap3()
         {
             Create("foo", "bar");
-            var prev = SnapshotPointUtil.GetPreviousPointWithWrap(new SnapshotPoint(_buffer.CurrentSnapshot, 0));
-            Assert.AreEqual(SnapshotUtil.GetEndPoint(_buffer.CurrentSnapshot), prev);
+            var prev = SnapshotPointUtil.GetPreviousPointWithWrap(new SnapshotPoint(_textBuffer.CurrentSnapshot, 0));
+            Assert.AreEqual(SnapshotUtil.GetEndPoint(_textBuffer.CurrentSnapshot), prev);
         }
 
         [Test]
@@ -301,7 +301,7 @@ namespace VimCore.UnitTest
         public void GetSpans10()
         {
             Create("foo", "bar");
-            var spans = SnapshotPointUtil.GetSpans(SnapshotUtil.GetStartPoint(_buffer.CurrentSnapshot), SearchKind.ForwardWithWrap);
+            var spans = SnapshotPointUtil.GetSpans(SnapshotUtil.GetStartPoint(_textBuffer.CurrentSnapshot), SearchKind.ForwardWithWrap);
             var data = spans
                 .Select(x => x.GetText())
                 .ToList();
@@ -312,7 +312,7 @@ namespace VimCore.UnitTest
         public void GetSpans11()
         {
             Create("foo", "bar");
-            var spans = SnapshotPointUtil.GetSpans(SnapshotUtil.GetStartPoint(_buffer.CurrentSnapshot), SearchKind.BackwardWithWrap);
+            var spans = SnapshotPointUtil.GetSpans(SnapshotUtil.GetStartPoint(_textBuffer.CurrentSnapshot), SearchKind.BackwardWithWrap);
             var data = spans
                 .Select(x => x.GetText())
                 .ToList();
@@ -332,7 +332,7 @@ namespace VimCore.UnitTest
         public void GetCharOrDefault1()
         {
             Create("foo", "bar");
-            var point = _buffer.GetLine(0).Start;
+            var point = _textBuffer.GetLine(0).Start;
             Assert.AreEqual('f', SnapshotPointUtil.GetCharOrDefault(point, 'g'));
         }
 
@@ -340,7 +340,7 @@ namespace VimCore.UnitTest
         public void GetCharOrDefault2()
         {
             Create("foo", "bar");
-            var endPoint = new SnapshotPoint(_buffer.CurrentSnapshot, _buffer.CurrentSnapshot.Length);
+            var endPoint = new SnapshotPoint(_textBuffer.CurrentSnapshot, _textBuffer.CurrentSnapshot.Length);
             var didSee = false;
             try
             {
@@ -358,8 +358,8 @@ namespace VimCore.UnitTest
         public void GetPoints1()
         {
             Create("foo", "bar");
-            var start = SnapshotUtil.GetStartPoint(_buffer.CurrentSnapshot);
-            foreach (var cur in SnapshotPointUtil.GetPoints(start, SearchKind.ForwardWithWrap))
+            var start = SnapshotUtil.GetStartPoint(_textBuffer.CurrentSnapshot);
+            foreach (var cur in SnapshotPointUtil.GetPoints(SearchKind.ForwardWithWrap, start))
             {
                 var notUsed = cur.GetChar();
             }
@@ -369,8 +369,8 @@ namespace VimCore.UnitTest
         public void GetPoints2()
         {
             Create("foo bar");
-            var start = SnapshotUtil.GetStartPoint(_buffer.CurrentSnapshot).Add(1);
-            var first = SnapshotPointUtil.GetPoints(start, SearchKind.ForwardWithWrap).First();
+            var start = SnapshotUtil.GetStartPoint(_textBuffer.CurrentSnapshot).Add(1);
+            var first = SnapshotPointUtil.GetPoints(SearchKind.ForwardWithWrap, start).First();
             Assert.AreEqual('o', first.GetChar());
         }
 
@@ -378,8 +378,8 @@ namespace VimCore.UnitTest
         public void GetPoints3()
         {
             Create("foo bar");
-            var start = SnapshotUtil.GetStartPoint(_buffer.CurrentSnapshot);
-            var points = SnapshotPointUtil.GetPoints(start, SearchKind.ForwardWithWrap);
+            var start = SnapshotUtil.GetStartPoint(_textBuffer.CurrentSnapshot);
+            var points = SnapshotPointUtil.GetPoints(SearchKind.ForwardWithWrap, start);
             var str = points.Select(x => x.GetChar().ToString()).Aggregate((x, y) => x + y);
             Assert.AreEqual("foo bar", str);
         }
@@ -388,8 +388,8 @@ namespace VimCore.UnitTest
         public void GetPoints4()
         {
             Create("foo", "bar");
-            var start = SnapshotUtil.GetStartPoint(_buffer.CurrentSnapshot);
-            foreach (var cur in SnapshotPointUtil.GetPoints(start, SearchKind.BackwardWithWrap))
+            var start = SnapshotUtil.GetStartPoint(_textBuffer.CurrentSnapshot);
+            foreach (var cur in SnapshotPointUtil.GetPoints(SearchKind.BackwardWithWrap, start))
             {
                 var notUsed = cur.GetChar();
             }
@@ -399,8 +399,8 @@ namespace VimCore.UnitTest
         public void GetPoints5()
         {
             Create("foo bar");
-            var start = SnapshotUtil.GetStartPoint(_buffer.CurrentSnapshot).Add(1);
-            var first = SnapshotPointUtil.GetPoints(start, SearchKind.BackwardWithWrap).First();
+            var start = SnapshotUtil.GetStartPoint(_textBuffer.CurrentSnapshot).Add(1);
+            var first = SnapshotPointUtil.GetPoints(SearchKind.BackwardWithWrap, start).First();
             Assert.AreEqual('o', first.GetChar());
         }
 
@@ -408,8 +408,8 @@ namespace VimCore.UnitTest
         public void GetPoints6()
         {
             Create("foo bar");
-            var start = SnapshotUtil.GetStartPoint(_buffer.CurrentSnapshot);
-            var points = SnapshotPointUtil.GetPoints(start, SearchKind.BackwardWithWrap);
+            var start = SnapshotUtil.GetStartPoint(_textBuffer.CurrentSnapshot);
+            var points = SnapshotPointUtil.GetPoints(SearchKind.BackwardWithWrap, start);
             var str = points.Select(x => x.GetChar().ToString()).Aggregate((x, y) => x + y);
             Assert.AreEqual("frab oo", str);
         }
@@ -418,8 +418,8 @@ namespace VimCore.UnitTest
         public void GetPoints7()
         {
             Create("foo bar");
-            var start = _buffer.CurrentSnapshot.GetLineRange(0).End;
-            var points = SnapshotPointUtil.GetPoints(start, SearchKind.BackwardWithWrap);
+            var start = _textBuffer.CurrentSnapshot.GetLineRange(0).End;
+            var points = SnapshotPointUtil.GetPoints(SearchKind.BackwardWithWrap, start);
             var str = points.Select(x => x.GetChar().ToString()).Aggregate((x, y) => x + y);
             Assert.AreEqual("rab oof", str);
         }
@@ -428,7 +428,7 @@ namespace VimCore.UnitTest
         public void TryGetNextPointOnLine1()
         {
             Create("foo", "bar");
-            var point = _buffer.GetLine(0).Start;
+            var point = _textBuffer.GetLine(0).Start;
             var res = SnapshotPointUtil.TryGetNextPointOnLine(point);
             Assert.IsTrue(res.IsSome());
             Assert.AreEqual(point.Add(1), res.Value);
@@ -438,7 +438,7 @@ namespace VimCore.UnitTest
         public void TryGetNextPointOnLine2()
         {
             Create("foo", "bar");
-            var point = _buffer.GetLine(0).End;
+            var point = _textBuffer.GetLine(0).End;
             var res = SnapshotPointUtil.TryGetNextPointOnLine(point);
             Assert.IsFalse(res.IsSome());
         }
@@ -447,7 +447,7 @@ namespace VimCore.UnitTest
         public void TryGetNextPointOnLine3()
         {
             Create("foo", "bar");
-            var point = _buffer.GetLine(0).Start.Add(1);
+            var point = _textBuffer.GetLine(0).Start.Add(1);
             var res = SnapshotPointUtil.TryGetNextPointOnLine(point);
             Assert.IsTrue(res.IsSome());
             Assert.AreEqual(point.Add(1), res.Value);
@@ -457,7 +457,7 @@ namespace VimCore.UnitTest
         public void TryGetPreviousPointOnLine1()
         {
             Create("foo", "bar");
-            var point = _buffer.GetLine(0).End.Subtract(1);
+            var point = _textBuffer.GetLine(0).End.Subtract(1);
             var res = SnapshotPointUtil.TryGetPreviousPointOnLine(point);
             Assert.IsTrue(res.IsSome());
             Assert.AreEqual(point.Subtract(1), res.Value);
@@ -467,17 +467,17 @@ namespace VimCore.UnitTest
         public void TryGetPreviousPointOnLine2()
         {
             Create("foo", "bar");
-            var point = _buffer.GetLine(0).Start.Add(1);
+            var point = _textBuffer.GetLine(0).Start.Add(1);
             var res = SnapshotPointUtil.TryGetPreviousPointOnLine(point);
             Assert.IsTrue(res.IsSome());
-            Assert.AreEqual(_buffer.GetLine(0).Start, res.Value);
+            Assert.AreEqual(_textBuffer.GetLine(0).Start, res.Value);
         }
 
         [Test]
         public void TryGetPreviousPointOnLine3()
         {
             Create("foo", "bar");
-            var point = _buffer.GetLine(0).Start;
+            var point = _textBuffer.GetLine(0).Start;
             var res = SnapshotPointUtil.TryGetPreviousPointOnLine(point);
             Assert.IsFalse(res.IsSome());
         }
@@ -486,7 +486,7 @@ namespace VimCore.UnitTest
         public void GetNextPointOnLine1()
         {
             Create("foo", "bar");
-            var point = _buffer.GetLine(0).Start;
+            var point = _textBuffer.GetLine(0).Start;
             var nextPoint = SnapshotPointUtil.GetNextPointOnLine(point, 2);
             Assert.AreEqual(point.Add(2), nextPoint);
         }
@@ -495,7 +495,7 @@ namespace VimCore.UnitTest
         public void GetNextPointOnLine2()
         {
             Create("foo", "bar");
-            var point = _buffer.GetLine(0).Start;
+            var point = _textBuffer.GetLine(0).Start;
             var nextPoint = SnapshotPointUtil.GetNextPointOnLine(point, 400);
             Assert.AreEqual(point.Add(2), nextPoint);
         }
@@ -504,7 +504,7 @@ namespace VimCore.UnitTest
         public void GetNextPointOnLine3()
         {
             Create("foo", "bar", "baz", "", "again");
-            foreach (var point in SnapshotPointUtil.GetPoints(_buffer.GetLine(0).Start, SearchKind.ForwardWithWrap))
+            foreach (var point in SnapshotPointUtil.GetPoints(SearchKind.ForwardWithWrap, _textBuffer.GetLine(0).Start))
             {
                 SnapshotPointUtil.GetNextPointOnLine(point, 1);
                 SnapshotPointUtil.GetNextPointOnLine(point, 100);
@@ -515,7 +515,7 @@ namespace VimCore.UnitTest
         public void GetNextPointOnLine4()
         {
             Create("foo", "bar", "baz", "", "again");
-            foreach (var point in SnapshotPointUtil.GetPoints(_buffer.GetLine(0).Start, SearchKind.ForwardWithWrap))
+            foreach (var point in SnapshotPointUtil.GetPoints(SearchKind.ForwardWithWrap, _textBuffer.GetLine(0).Start))
             {
                 var next = SnapshotPointUtil.GetNextPointOnLine(point, 0);
                 Assert.AreEqual(point, next);
@@ -527,9 +527,9 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar", "baz", "", "again");
             var span = SnapshotPointUtil.GetNextPointOnLineSpan(
-                _buffer.GetLine(0).Start,
+                _textBuffer.GetLine(0).Start,
                 2);
-            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 2), span);
+            Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 2), span);
         }
 
         [Test]
@@ -537,9 +537,9 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar", "baz", "", "again");
             var span = SnapshotPointUtil.GetNextPointOnLineSpan(
-                _buffer.GetLine(0).Start,
+                _textBuffer.GetLine(0).Start,
                 0);
-            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 0), span);
+            Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 0), span);
         }
 
         [Test]
@@ -547,16 +547,16 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar", "baz", "", "again");
             var span = SnapshotPointUtil.GetNextPointOnLineSpan(
-                _buffer.GetLine(0).Start.Add(1),
+                _textBuffer.GetLine(0).Start.Add(1),
                 400);
-            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 1, 2), span);
+            Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 1, 2), span);
         }
 
         [Test, Description("Don't throw for any point in the buffer")]
         public void GetPreviousPointOnLine1()
         {
             Create("foo", "bar", "baz", "", "again");
-            foreach (var point in SnapshotPointUtil.GetPoints(_buffer.GetLine(0).Start, SearchKind.ForwardWithWrap))
+            foreach (var point in SnapshotPointUtil.GetPoints(SearchKind.ForwardWithWrap, _textBuffer.GetLine(0).Start))
             {
                 SnapshotPointUtil.GetPreviousPointOnLine(point, 1);
                 SnapshotPointUtil.GetPreviousPointOnLine(point, 100);
@@ -567,7 +567,7 @@ namespace VimCore.UnitTest
         public void GetPreviousPointOnLine2()
         {
             Create("foo", "bar", "baz", "", "again");
-            foreach (var point in SnapshotPointUtil.GetPoints(_buffer.GetLine(0).Start, SearchKind.ForwardWithWrap))
+            foreach (var point in SnapshotPointUtil.GetPoints(SearchKind.ForwardWithWrap, _textBuffer.GetLine(0).Start))
             {
                 var previous = SnapshotPointUtil.GetPreviousPointOnLine(point, 0);
                 Assert.AreEqual(point, previous);
@@ -578,7 +578,7 @@ namespace VimCore.UnitTest
         public void GetPreviousPointOnLine3()
         {
             Create("foo", "bar", "baz", "", "again");
-            var point = _buffer.GetLine(0).Start;
+            var point = _textBuffer.GetLine(0).Start;
             var previousPoint = SnapshotPointUtil.GetPreviousPointOnLine(point, 1);
             Assert.AreEqual(point, previousPoint);
         }
@@ -587,7 +587,7 @@ namespace VimCore.UnitTest
         public void GetPreviousPointOnLine4()
         {
             Create("foo", "bar", "baz", "", "again");
-            var point = _buffer.GetLine(0).Start.Add(1);
+            var point = _textBuffer.GetLine(0).Start.Add(1);
             var previousPoint = SnapshotPointUtil.GetPreviousPointOnLine(point, 1);
             Assert.AreEqual(point.Subtract(1), previousPoint);
         }
@@ -596,7 +596,7 @@ namespace VimCore.UnitTest
         public void GetPreviousPointOnLine5()
         {
             Create("foo", "bar", "baz", "", "again");
-            var point = _buffer.GetLine(0).Start.Add(2);
+            var point = _textBuffer.GetLine(0).Start.Add(2);
             var previousPoint = SnapshotPointUtil.GetPreviousPointOnLine(point, 2);
             Assert.AreEqual(point.Subtract(2), previousPoint);
         }
@@ -606,9 +606,9 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar", "baz", "", "again");
             var span = SnapshotPointUtil.GetPreviousPointOnLineSpan(
-                _buffer.GetLine(0).Start,
+                _textBuffer.GetLine(0).Start,
                 0);
-            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 0), span);
+            Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 0), span);
         }
 
         [Test]
@@ -616,9 +616,9 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar", "baz", "", "again");
             var span = SnapshotPointUtil.GetPreviousPointOnLineSpan(
-                _buffer.GetLine(0).Start.Add(1),
+                _textBuffer.GetLine(0).Start.Add(1),
                 1);
-            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 1), span);
+            Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 1), span);
         }
 
         [Test]
@@ -626,9 +626,9 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar", "baz", "", "again");
             var span = SnapshotPointUtil.GetPreviousPointOnLineSpan(
-                _buffer.GetLine(0).Start.Add(2),
+                _textBuffer.GetLine(0).Start.Add(2),
                 1);
-            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 1, 1), span);
+            Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 1, 1), span);
         }
 
         [Test]
@@ -636,16 +636,16 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar", "baz", "", "again");
             var span = SnapshotPointUtil.GetPreviousPointOnLineSpan(
-                _buffer.GetLine(0).Start.Add(2),
+                _textBuffer.GetLine(0).Start.Add(2),
                 400);
-            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 2), span);
+            Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 2), span);
         }
 
         [Test]
         public void GetPointsOnContainingLineFrom1()
         {
             Create("foo", "bar", "baz");
-            var points = SnapshotPointUtil.GetPointsOnContainingLineFrom(_buffer.GetLine(0).Start).Select(x => x.GetChar());
+            var points = SnapshotPointUtil.GetPointsOnContainingLineFrom(_textBuffer.GetLine(0).Start).Select(x => x.GetChar());
             CollectionAssert.AreEqual("foo", points);
         }
 
@@ -653,7 +653,7 @@ namespace VimCore.UnitTest
         public void GetPointsOnContainingLineFrom2()
         {
             Create("foo", "bar", "baz");
-            var points = SnapshotPointUtil.GetPointsOnContainingLineFrom(_buffer.GetLine(0).Start.Add(1)).Select(x => x.GetChar());
+            var points = SnapshotPointUtil.GetPointsOnContainingLineFrom(_textBuffer.GetLine(0).Start.Add(1)).Select(x => x.GetChar());
             CollectionAssert.AreEqual("oo", points);
         }
 
@@ -661,7 +661,7 @@ namespace VimCore.UnitTest
         public void GetPointsOnContainingLineBackwardsFrom1()
         {
             Create("foo", "bar", "baz");
-            var points = SnapshotPointUtil.GetPointsOnContainingLineBackwardsFrom(_buffer.GetLine(0).End).Select(x => x.GetChar());
+            var points = SnapshotPointUtil.GetPointsOnContainingLineBackwardsFrom(_textBuffer.GetLine(0).End).Select(x => x.GetChar());
             CollectionAssert.AreEqual("oof", points);
         }
 
@@ -669,7 +669,7 @@ namespace VimCore.UnitTest
         public void GetPointsOnContainingLineBackwardsFrom2()
         {
             Create("foo", "bar", "baz");
-            var points = SnapshotPointUtil.GetPointsOnContainingLineBackwardsFrom(_buffer.GetLine(1).End).Select(x => x.GetChar());
+            var points = SnapshotPointUtil.GetPointsOnContainingLineBackwardsFrom(_textBuffer.GetLine(1).End).Select(x => x.GetChar());
             CollectionAssert.AreEqual("rab", points);
         }
 
@@ -677,7 +677,7 @@ namespace VimCore.UnitTest
         public void GetPointsOnContainingLineBackwardsFrom3()
         {
             Create("foo", "bar", "baz");
-            var points = SnapshotPointUtil.GetPointsOnContainingLineBackwardsFrom(_buffer.GetLine(1).End.Subtract(2)).Select(x => x.GetChar());
+            var points = SnapshotPointUtil.GetPointsOnContainingLineBackwardsFrom(_textBuffer.GetLine(1).End.Subtract(2)).Select(x => x.GetChar());
             CollectionAssert.AreEqual("ab", points);
         }
     }

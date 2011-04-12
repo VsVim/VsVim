@@ -538,11 +538,6 @@ module SnapshotPointUtil =
     /// Get the ITextBuffer containing the SnapshotPoint
     let GetBuffer (point:SnapshotPoint) = point.Snapshot.TextBuffer
 
-    /// Is the passed in SnapshotPoint inside the line break portion of the line
-    let IsInsideLineBreak point = 
-        let line = GetContainingLine point
-        point.Position >= line.End.Position
-
     /// Is this the start of the containing line?
     let IsStartOfLine point =
         let line = GetContainingLine point
@@ -555,6 +550,11 @@ module SnapshotPointUtil =
     let IsEndPoint point = 
         let snapshot = GetSnapshot point
         point = SnapshotUtil.GetEndPoint snapshot
+
+    /// Is the passed in SnapshotPoint inside the line break portion of the line
+    let IsInsideLineBreak point = 
+        let line = GetContainingLine point
+        point.Position >= line.End.Position && not (IsEndPoint point)
 
     /// Is this point whitespace?
     let IsWhiteSpace point =
@@ -653,7 +653,8 @@ module SnapshotPointUtil =
         let middle = GetLines point kind |> Seq.skip 1 |> Seq.map SnapshotLineUtil.GetExtent
 
         let getForward wrap = seq {
-            if point.Position < startLine.End.Position then yield SnapshotSpan(point, startLine.End)
+            if point.Position <= startLine.End.Position then 
+                yield SnapshotSpan(point, startLine.End)
             yield! middle
             if wrap && point.Position <> startLine.Start.Position  then 
                 let endPoint = if inLineBreak then startLine.End else point
@@ -670,7 +671,7 @@ module SnapshotPointUtil =
             if point.Position + 1 < startLine.End.Position then
                 let lastSpan = SnapshotSpan(point.Add(1), startLine.End)
                 if wrap && lastSpan.Length > 0 then yield lastSpan
-        } 
+        }
         
         match kind with
             | SearchKind.Forward -> getForward false
@@ -680,14 +681,30 @@ module SnapshotPointUtil =
 
     /// Start searching the snapshot at the given point and return the buffer as a 
     /// sequence of SnapshotPoints.  The first point returned will be the point passed
-    /// in
-    let GetPoints point (kind : SearchKind) =
+    /// in.
+    ///
+    /// Note: This will not return SnapshotPoint values for points in the line break
+    let GetPoints (kind : SearchKind) point =
         let mapFunc = 
             if kind.IsAnyForward then SnapshotSpanUtil.GetPoints
             else SnapshotSpanUtil.GetPointsBackward 
         GetSpans point kind 
         |> Seq.map mapFunc
         |> Seq.concat
+
+    /// Get all of the SnapshotPoint values on the given path.  The first value returned
+    /// will be the passed in SnapshotPoint 
+    let GetPointsIncludingLineBreak path point =
+        let position = GetPosition point
+        let positions =
+            match path with
+            | Path.Forward ->
+                let endPosition = SnapshotUtil.GetEndPoint point.Snapshot |> GetPosition
+                let endPosition = endPosition - 1
+                [ position .. endPosition ]
+            | Path.Backward ->
+                [ 0 .. position ] |> List.rev
+        positions |> Seq.map (fun p -> SnapshotUtil.GetPoint point.Snapshot p)
 
     /// Divide the ITextSnapshot into at most 2 SnapshotSpan instances at the provided
     /// SnapshotPoint.  If there is an above span it will be exclusive to the provided

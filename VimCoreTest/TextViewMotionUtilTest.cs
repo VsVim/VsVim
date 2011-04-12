@@ -330,16 +330,110 @@ namespace VimCore.UnitTest
             Assert.AreEqual(1, data.Column.Value.AsInLastLine().Item);
         }
 
+        /// <summary>
+        /// Should take the trailing white space
+        /// </summary>
         [Test]
-        public void AllWord1()
+        public void AllSentence_Simple()
+        {
+            Create("dog. cat. bear.");
+            var data = _motionUtil.AllSentence(1);
+            Assert.AreEqual("dog. ", data.Span.GetText());
+        }
+
+        /// <summary>
+        /// Take the leading white space when there is a preceding sentence and no trailing 
+        /// white space
+        /// </summary>
+        [Test]
+        public void AllSentence_NoTrailingWhiteSpace()
+        {
+            Create("dog. cat.");
+            _textView.MoveCaretTo(5);
+            var data = _motionUtil.AllSentence(1);
+            Assert.AreEqual(" cat.", data.Span.GetText());
+        }
+
+        /// <summary>
+        /// When starting in the white space include it in the motion instead of the trailing
+        /// white space
+        /// </summary>
+        [Test]
+        public void AllSentence_FromWhiteSpace()
+        {
+            Create("dog. cat. bear.");
+            _textView.MoveCaretTo(4);
+            var data = _motionUtil.AllSentence(1);
+            Assert.AreEqual(" cat.", data.Span.GetText());
+        }
+
+        /// <summary>
+        /// When the trailing white space goes across new lines then we should still be including
+        /// that 
+        /// </summary>
+        [Test]
+        public void AllSentence_WhiteSpaceAcrossNewLine()
+        {
+            Create("dog.  ", "  cat");
+            var data = _motionUtil.AllSentence(1);
+            Assert.AreEqual("dog.  " + Environment.NewLine + "  ", data.Span.GetText());
+        }
+
+        /// <summary>
+        /// This is intended to make sure that 'as' goes through the standard exclusive adjustment
+        /// operation.  Even though it technically extends into the next line ':help exclusive-linewise'
+        /// dictates it should be changed into a line wise motion
+        /// </summary>
+        [Test]
+        public void AllSentence_OneSentencePerLine()
+        {
+            Create("dog.", "cat.");
+            var data = _motionUtil.GetMotion(Motion.AllSentence).Value;
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+            Assert.AreEqual("dog." + Environment.NewLine, data.Span.GetText());
+        }
+
+        /// <summary>
+        /// For the purpose of the 'a' version of the motion, blank line constitute a sentence so 
+        /// don't jump over them when it comes to white space
+        /// </summary>
+        [Test]
+        public void AllSentence_DontJumpBlankLinesAsWhiteSpace()
+        {
+            Create("dog.", "", "cat.");
+            var data = _motionUtil.GetMotion(Motion.AllSentence).Value;
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+            Assert.AreEqual("dog." + Environment.NewLine, data.Span.GetText());
+        }
+
+        /// <summary>
+        /// Blank lines are sentences so treat them as such
+        /// </summary>
+        [Test]
+        public void AllSentence_BlankLinesAreSentences()
+        {
+            Create("dog.  ", "", "cat.");
+            _textView.MoveCaretToLine(1);
+            var data = _motionUtil.AllSentence(1);
+            Assert.AreEqual("  " + Environment.NewLine, data.Span.GetText());
+        }
+
+        /// <summary>
+        /// Make sure to include the trailing white space
+        /// </summary>
+        [Test]
+        public void AllWord_Simple()
         {
             Create("foo bar");
             var data = _motionUtil.AllWord(WordKind.NormalWord, 1);
             Assert.AreEqual("foo ", data.Span.GetText());
         }
 
+        /// <summary>
+        /// Grab the entire word even if starting in the middle
+        /// </summary>
         [Test]
-        public void AllWord2()
+        public void AllWord_FromMiddle()
         {
             Create("foo bar");
             _textView.MoveCaretTo(1);
@@ -347,13 +441,81 @@ namespace VimCore.UnitTest
             Assert.AreEqual("foo ", data.Span.GetText());
         }
 
+        /// <summary>
+        /// All word with a count motion
+        /// </summary>
         [Test]
-        public void AllWord3()
+        public void AllWord_WithCount()
         {
             Create("foo bar baz");
             _textView.MoveCaretTo(1);
             var data = _motionUtil.AllWord(WordKind.NormalWord, 2);
             Assert.AreEqual("foo bar ", data.Span.GetText());
+        }
+
+        /// <summary>
+        /// When starting in white space the space before the word should be included instead
+        /// of the white space after it
+        /// </summary>
+        [Test]
+        public void AllWord_StartInWhiteSpace()
+        {
+            Create("dog cat tree");
+            _textView.MoveCaretTo(3);
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 1);
+            Assert.AreEqual(" cat", data.Span.GetText());
+        }
+
+        /// <summary>
+        /// When there is no trailing white space and a preceding word then the preceding white
+        /// space should be included
+        /// </summary>
+        [Test]
+        public void AllWord_NoTrailingWhiteSpace()
+        {
+            Create("dog cat");
+            _textView.MoveCaretTo(5);
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 1);
+            Assert.AreEqual(" cat", data.Span.GetText());
+        }
+
+        /// <summary>
+        /// If there is no trailing white space nor is their a preceding word on the same line
+        /// then it shouldn't include the preceding white space
+        /// </summary>
+        [Test]
+        public void AllWord_NoTrailingWhiteSpaceOrPrecedingWordOnSameLine()
+        {
+            Create("dog", "  cat");
+            _textView.MoveCaretTo(_textView.GetLine(1).Start.Add(2));
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 1);
+            Assert.AreEqual("cat", data.Span.GetText());
+        }
+
+        /// <summary>
+        /// If there is no trailing white space nor is their a preceding word on the same line
+        /// but it is the start of the buffer then do include the white space
+        /// </summary>
+        [Test]
+        public void AllWord_NoTrailingWhiteSpaceOrPrecedingWordAtStartOfBuffer()
+        {
+            Create("  cat");
+            _textView.MoveCaretTo(3);
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 1);
+            Assert.AreEqual("cat", data.Span.GetText());
+        }
+
+        /// <summary>
+        /// Make sure we include the full preceding white space if the motion starts in any 
+        /// part of it
+        /// </summary>
+        [Test]
+        public void AllWord_FromMiddleOfPrecedingWhiteSpace()
+        {
+            Create("cat   dog");
+            _textView.MoveCaretTo(4);
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 1);
+            Assert.AreEqual("   dog", data.Span.GetText());
         }
 
         [Test]

@@ -239,6 +239,33 @@ namespace VimCore.UnitTest
             Assert.AreEqual(8, _textView.GetCaretPoint().Position);
         }
 
+        /// <summary>
+        /// When there is no white space following a word and there is white space before 
+        /// and a word on the same line then we grab the white space before the word
+        /// </summary>
+        [Test]
+        public void Motion_AllWord_WhiteSpaceOnlyBefore()
+        {
+            Create("hello", "cat dog", "  bat");
+            _textView.MoveCaretTo(_textView.GetLine(1).Start.Add(4));
+            Assert.AreEqual('d', _textView.GetCaretPoint().GetChar());
+            _buffer.Process("yaw");
+            Assert.AreEqual(" dog", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// When starting in the white space it should be included and not the white space
+        /// after
+        /// </summary>
+        [Test]
+        public void Motion_AllWord_InWhiteSpaceBeforeWord()
+        {
+            Create("dog cat tree");
+            _textView.MoveCaretTo(3);
+            _buffer.Process("yaw");
+            Assert.AreEqual(" cat", UnnamedRegister.StringValue);
+        }
+
         [Test]
         public void RepeatLastSearch1()
         {
