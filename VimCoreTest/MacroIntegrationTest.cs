@@ -32,6 +32,17 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Make sure that on tear down we don't have a current transaction.  Having one indicates
+        /// we didn't close it and hence are killing undo in the ITextBuffer
+        /// </summary>
+        [TearDown]
+        public void TearDown()
+        {
+            var history = EditorUtil.GetUndoHistory(_textView.TextBuffer);
+            Assert.IsNull(history.CurrentTransaction);
+        }
+
+        /// <summary>
         /// RunMacro a text insert back from a particular register
         /// </summary>
         [Test]
@@ -150,6 +161,21 @@ namespace VimCore.UnitTest
             _buffer.VimData.LastMacroRun = FSharpOption.Create('c');
             _buffer.Process("@@");
             Assert.AreEqual("win", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// A macro run with a count should execute as a single action.  This includes undo behavior
+        /// </summary>
+        [Test]
+        public void Undo_MacroWithCount()
+        {
+            Create("cat", "dog", "bear");
+            TestRegister.UpdateValue("~", VimKey.Left, VimKey.Down);
+            _buffer.Process("2@c");
+            _buffer.Process("u");
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
         }
     }
 }

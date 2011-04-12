@@ -6,39 +6,13 @@ namespace Vim.UnitTest.Exports
 {
     internal sealed class TextUndoTransaction : ITextUndoTransaction
     {
-        private sealed class Policy : IMergeTextUndoTransactionPolicy
-        {
-            public bool CanMerge(ITextUndoTransaction newerTransaction, ITextUndoTransaction olderTransaction)
-            {
-                return false;
-            }
-
-            public void PerformTransactionMerge(ITextUndoTransaction existingTransaction, ITextUndoTransaction newTransaction)
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool TestCompatiblePolicy(IMergeTextUndoTransactionPolicy other)
-            {
-                return false;
-            }
-        }
-
-        private readonly ITextUndoTransaction _parent;
         private readonly TextUndoHistory _textUndoHistory;
         private readonly List<ITextUndoPrimitive> _primitiveList = new List<ITextUndoPrimitive>();
-        private UndoTransactionState _state;
 
-        public TextUndoTransaction(TextUndoHistory textUndoHistory) : this(textUndoHistory, null)
-        {
-        }
-
-        public TextUndoTransaction(TextUndoHistory textUndoHistory, ITextUndoTransaction parent)
+        public TextUndoTransaction(TextUndoHistory textUndoHistory, string description)
         {
             _textUndoHistory = textUndoHistory;
-            _state = UndoTransactionState.Open;
-            _parent = parent;
-            MergePolicy = new Policy();
+            Description = description;
         }
 
         public void AddUndo(ITextUndoPrimitive undo)
@@ -46,37 +20,20 @@ namespace Vim.UnitTest.Exports
             _primitiveList.Add(undo);
         }
 
+        /// <summary>
+        /// Visual Studio implementation throw so duplicate here
+        /// </summary>
         public bool CanRedo
         {
-            get { return false; }
+            get { throw new NotSupportedException(); }
         }
 
+        /// <summary>
+        /// Visual Studio implementation throw so duplicate here
+        /// </summary>
         public bool CanUndo
         {
-            get { return false; }
-        }
-
-        public void Cancel()
-        {
-            _state = UndoTransactionState.Canceled;
-            MaybeClearCurrent();
-        }
-
-        public void Complete()
-        {
-            _state = UndoTransactionState.Completed;
-            MaybeClearCurrent();
-        }
-
-        public string Description
-        {
-            get;
-            set;
-        }
-
-        public void Do()
-        {
-            throw new NotImplementedException();
+            get { throw new NotSupportedException(); }
         }
 
         public ITextUndoHistory History
@@ -92,17 +49,7 @@ namespace Vim.UnitTest.Exports
 
         public ITextUndoTransaction Parent
         {
-            get { return _parent; }
-        }
-
-        public UndoTransactionState State
-        {
-            get { return _state; }
-        }
-
-        public void Undo()
-        {
-            throw new NotImplementedException();
+            get { throw new NotSupportedException(); }
         }
 
         public IList<ITextUndoPrimitive> UndoPrimitives
@@ -110,17 +57,42 @@ namespace Vim.UnitTest.Exports
             get { return _primitiveList; }
         }
 
-        public void Dispose()
+        public UndoTransactionState State
         {
-            MaybeClearCurrent();
+            get { throw new NotSupportedException(); }
         }
 
-        private void MaybeClearCurrent()
+        public string Description { get; set; }
+
+        public void Cancel()
         {
-            if (_textUndoHistory.CurrentTransaction == this)
+            _textUndoHistory.OnTransactionClosed(this, didComplete: false);
+        }
+
+        public void Complete()
+        {
+            _textUndoHistory.OnTransactionClosed(this, didComplete: true);
+        }
+
+        public void Do()
+        {
+            for (var i = 0; i < _primitiveList.Count; i++)
             {
-                _textUndoHistory.CurrentTransaction = null;
+                _primitiveList[i].Do();
             }
+        }
+
+        public void Undo()
+        {
+            for (var i = _primitiveList.Count - 1; i >= 0; i--)
+            {
+                _primitiveList[i].Undo();
+            }
+        }
+
+        public void Dispose()
+        {
+            _textUndoHistory.OnTransactionClosed(this, didComplete: false);
         }
     }
 }

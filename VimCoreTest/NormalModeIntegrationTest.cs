@@ -58,6 +58,11 @@ namespace VimCore.UnitTest
         {
             EditorUtil.FactoryService.Vim.KeyMap.ClearAll();
             _buffer.Close();
+
+            // Make sure that on tear down we don't have a current transaction.  Having one indicates
+            // we didn't close it and hence are killing undo in the ITextBuffer
+            var history = EditorUtil.GetUndoHistory(_textView.TextBuffer);
+            Assert.IsNull(history.CurrentTransaction);
         }
 
         [Test]
@@ -1315,7 +1320,7 @@ namespace VimCore.UnitTest
         public void MatchingTokens_Issue468()
         {
             Create("(wchar_t*) realloc(pwcsSelFile, (nSelFileLen+1)*sizeof(wchar_t))");
-            
+
             // First open paren to the next closing one
             _buffer.Process("%");
             Assert.AreEqual(9, _textView.GetCaretPoint().Position);
@@ -1628,6 +1633,19 @@ namespace VimCore.UnitTest
             Assert.AreEqual(2, _jumpList.Jumps.Length);
             _buffer.Process(KeyInputUtil.CharWithControlToKeyInput('i'));
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Make sure the caret is positioned properly during undo
+        /// </summary>
+        [Test]
+        public void Undo_DeleteAllWord()
+        {
+            Create("cat", "dog");
+            _textView.MoveCaretTo(1);
+            _buffer.Process("daw");
+            _buffer.Process("u");
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
     }
 }

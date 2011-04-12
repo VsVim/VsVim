@@ -547,7 +547,6 @@ type internal CommandUtil
         // the requirements.  Choosing to ignore this exception for now until I can find
         // a better example
 
-
         // Caret should be placed at the start of the motion for both undo / redo so place it 
         // before starting the transaction
         let span = result.Span
@@ -1394,6 +1393,7 @@ type internal CommandUtil
                             // Make sure we have an IUndoTransaction open in the ITextBuffer
                             if not (map.ContainsKey(buffer.TextBuffer)) then
                                 let transaction = _undoRedoOperations.CreateUndoTransaction "Macro Run"
+                                map.Add(buffer.TextBuffer, transaction)
                                 transaction.AddBeforeTextBufferChangePrimitive()
         
                             buffer.Process keyInput |> ignore

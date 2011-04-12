@@ -1015,23 +1015,23 @@ type internal TextViewMotionUtil
 
             // If the caret ends in white space then include the white space up
             // until the start of the next item.  
-            let endPoint = 
+            let startPoint, endPoint = 
                 if stopWhiteSpaceOnLine && SnapshotPointUtil.IsInsideLineBreak endPoint then
-                    endPoint
+                    getPrecedingWhiteSpace(), endPoint
                 elif stopWhiteSpaceOnLine then
                     let line = SnapshotPointUtil.GetContainingLine endPoint 
-                    SnapshotSpan(endPoint, line.End)
+                    searchPoint, SnapshotSpan(endPoint, line.End)
                     |> SnapshotSpanUtil.GetPoints
                     |> Seq.skipWhile isWhiteSpace
                     |> SeqUtil.tryHeadOnly
                     |> OptionUtil.getOrDefault line.End
                 else
-                    endPoint
+                    searchPoint, endPoint
                     |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Forward
                     |> Seq.skipWhile isWhiteSpace
                     |> SeqUtil.tryHeadOnly
                     |> OptionUtil.getOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
-            SnapshotSpan(searchPoint, endPoint)
+            SnapshotSpan(startPoint, endPoint)
         else
             let startPoint = getPrecedingWhiteSpace()
             let startLine = SnapshotPointUtil.GetContainingLine startPoint
