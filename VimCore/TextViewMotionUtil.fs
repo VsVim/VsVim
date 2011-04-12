@@ -527,6 +527,11 @@ module internal MotionUtil =
         |> Seq.tryFind (fun x -> x.Contains(point))
         |> OptionUtil.getOrDefault (SnapshotSpanUtil.CreateFromStartToProvidedEnd point)
 
+[<RequireQualifiedAccess>]
+type TextObjectNonBlockKind =
+    | EmptyLinesAreObjects
+    | StopOnLineBreak
+
 type internal TextViewMotionUtil 
     ( 
         _textView : ITextView,
@@ -918,7 +923,7 @@ type internal TextViewMotionUtil
             Column = None }
 
     /// Common function for getting the 'all' version of text object motion values
-    member x.AllTextObjectNonBlock getObjectSpan stopWhiteSpaceOnLine areEmptyLinesObjects count = 
+    member x.AllTextObjectNonBlock getObjectSpan count kind = 
 
         // Is this point the first point on a blank line
         let isEmptyLine point = 
@@ -929,7 +934,10 @@ type internal TextViewMotionUtil
                 false
 
         // Is this an empty line which matters
-        let isSignificantEmptyLine point = areEmptyLinesObjects && isEmptyLine point
+        let isSignificantEmptyLine point = 
+            match kind with 
+            | TextObjectNonBlockKind.EmptyLinesAreObjects -> isEmptyLine point
+            | TextObjectNonBlockKind.StopOnLineBreak -> false
 
         // Is this ignorable white space
         let isWhiteSpace point =
@@ -953,7 +961,7 @@ type internal TextViewMotionUtil
                 SnapshotUtil.GetEndPoint x.CurrentSnapshot
             | Some point ->
                 let endPoint = 
-                    if areEmptyLinesObjects && isEmptyLine point then
+                    if isSignificantEmptyLine point then
                         // If this is an empty line and we actually care about them then 
                         // return the object span.  A bit surprisingly this is actually the
                         // 'point' because it's the start of the line break
@@ -972,7 +980,7 @@ type internal TextViewMotionUtil
         let searchPoint = 
             if isWhiteSpace x.CaretPoint then
                 x.CaretPoint
-            elif areEmptyLinesObjects && isEmptyLine x.CaretPoint then
+            elif isSignificantEmptyLine x.CaretPoint then
                 x.CaretPoint
             else
                 let span = getObjectSpan x.CaretPoint
@@ -981,28 +989,47 @@ type internal TextViewMotionUtil
 
         // Get the white space in front of the object
         let getPrecedingWhiteSpace () =
-            match SnapshotPointUtil.TrySubtractOne searchPoint with
-            | None ->
-                SnapshotUtil.GetStartPoint x.CurrentSnapshot
-            | Some point ->
-                let next = 
-                    point
-                    |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Backward
+            match kind with
+            | TextObjectNonBlockKind.StopOnLineBreak ->
+                // Search back no further than the start of the line for the search 
+                // point
+                let line = SnapshotPointUtil.GetContainingLine searchPoint
+                let point =
+                    SnapshotSpan(line.Start, searchPoint)
+                    |> SnapshotSpanUtil.GetPointsBackward
                     |> Seq.skipWhile isWhiteSpace
                     |> SeqUtil.tryHeadOnly
-                match next with 
-                | Some next -> 
-                    if isSignificantEmptyLine next then
-                        // If we hit an empty line then the white space starts at the 
-                        // end of that line
-                        let line = SnapshotPointUtil.GetContainingLine next
-                        line.EndIncludingLineBreak
-                    else
-                        // We stopped an a non-white space item so move one forward
-                        // to get back to the white space
-                        SnapshotPointUtil.AddOne next
-                | None -> 
+
+                // Now we either found a non-white space item and need to increment to get
+                // back to white space or we found only white space preceding the word on
+                // the line in which case it shouldn't be included
+                match point with 
+                | None -> searchPoint
+                | Some point -> SnapshotPointUtil.AddOne point
+
+            | TextObjectNonBlockKind.EmptyLinesAreObjects ->
+                match SnapshotPointUtil.TrySubtractOne searchPoint with
+                | None ->
                     SnapshotUtil.GetStartPoint x.CurrentSnapshot
+                | Some point ->
+                    let next = 
+                        point
+                        |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Backward
+                        |> Seq.skipWhile isWhiteSpace
+                        |> SeqUtil.tryHeadOnly
+                    match next with 
+                    | Some next -> 
+                        if isSignificantEmptyLine next then
+                            // If we hit an empty line then the white space starts at the 
+                            // end of that line
+                            let line = SnapshotPointUtil.GetContainingLine next
+                            line.EndIncludingLineBreak
+                        else
+                            // We stopped an a non-white space item so move one forward
+                            // to get back to the white space
+                            SnapshotPointUtil.AddOne next
+                    | None -> 
+                        SnapshotUtil.GetStartPoint x.CurrentSnapshot
 
         // Now we need to do the standard adjustments listed at the bottom of 
         // ':help text-objects'.  
@@ -1016,16 +1043,20 @@ type internal TextViewMotionUtil
             // If the caret ends in white space then include the white space up
             // until the start of the next item.  
             let startPoint, endPoint = 
-                if stopWhiteSpaceOnLine && SnapshotPointUtil.IsInsideLineBreak endPoint then
-                    getPrecedingWhiteSpace(), endPoint
-                elif stopWhiteSpaceOnLine then
-                    let line = SnapshotPointUtil.GetContainingLine endPoint 
-                    searchPoint, SnapshotSpan(endPoint, line.End)
-                    |> SnapshotSpanUtil.GetPoints
-                    |> Seq.skipWhile isWhiteSpace
-                    |> SeqUtil.tryHeadOnly
-                    |> OptionUtil.getOrDefault line.End
-                else
+                match kind with
+                | TextObjectNonBlockKind.StopOnLineBreak ->
+                    // Get the white space after the item and don't go past the end 
+                    // of this line 
+                    if SnapshotPointUtil.IsInsideLineBreak endPoint then
+                        getPrecedingWhiteSpace(), endPoint
+                    else
+                        let line = SnapshotPointUtil.GetContainingLine endPoint
+                        searchPoint, SnapshotSpan(endPoint, line.End)
+                        |> SnapshotSpanUtil.GetPoints
+                        |> Seq.skipWhile isWhiteSpace
+                        |> SeqUtil.tryHeadOnly
+                        |> OptionUtil.getOrDefault line.End
+                | TextObjectNonBlockKind.EmptyLinesAreObjects ->
                     searchPoint, endPoint
                     |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Forward
                     |> Seq.skipWhile isWhiteSpace
@@ -1036,15 +1067,19 @@ type internal TextViewMotionUtil
             let startPoint = getPrecedingWhiteSpace()
             let startLine = SnapshotPointUtil.GetContainingLine startPoint
             let searchLine = SnapshotPointUtil.GetContainingLine searchPoint
-            if stopWhiteSpaceOnLine && (startLine.LineNumber <> searchLine.LineNumber || startPoint.Position = 0) then
-                SnapshotSpan(searchPoint, endPoint)
-            else
+            match kind with
+            | TextObjectNonBlockKind.StopOnLineBreak ->
+                if (startLine.LineNumber <> searchLine.LineNumber || startPoint.Position = 0) then
+                    SnapshotSpan(searchPoint, endPoint)
+                else
+                    SnapshotSpan(startPoint, endPoint)
+            | TextObjectNonBlockKind.EmptyLinesAreObjects ->
                 SnapshotSpan(startPoint, endPoint)
 
     /// Implements the 'as' motion
     member x.AllSentence count =
         let func point = MotionUtil.GetSentenceFull point
-        let span = x.AllTextObjectNonBlock func false true count
+        let span = x.AllTextObjectNonBlock func count TextObjectNonBlockKind.EmptyLinesAreObjects
         {
             Span = span 
             IsForward = true 
@@ -1058,7 +1093,7 @@ type internal TextViewMotionUtil
             match TssUtil.FindCurrentFullWordSpan point kind with
             | None -> SnapshotSpan(point, 0)
             | Some span -> span
-        let span = x.AllTextObjectNonBlock func true false count
+        let span = x.AllTextObjectNonBlock func count TextObjectNonBlockKind.StopOnLineBreak
         {
             Span = span 
             IsForward = true 

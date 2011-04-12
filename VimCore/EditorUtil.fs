@@ -197,7 +197,8 @@ module SnapshotSpanUtil =
     let GetPoints (span:SnapshotSpan) = 
         let tss = span.Snapshot 
         let startPos = span.Start.Position
-        if span.Length = 0 then Seq.empty 
+        if span.Length = 0 then 
+            Seq.empty 
         else 
             let max = span.Length-1
             seq { for i in 0 .. max do yield SnapshotPoint(tss, startPos+i) }
@@ -653,7 +654,7 @@ module SnapshotPointUtil =
         let middle = GetLines point kind |> Seq.skip 1 |> Seq.map SnapshotLineUtil.GetExtent
 
         let getForward wrap = seq {
-            if point.Position <= startLine.End.Position then 
+            if point.Position <= startLine.End.Position && point.Position <> tss.Length then 
                 yield SnapshotSpan(point, startLine.End)
             yield! middle
             if wrap && point.Position <> startLine.Start.Position  then 

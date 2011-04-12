@@ -518,6 +518,19 @@ namespace VimCore.UnitTest
             Assert.AreEqual("   dog", data.Span.GetText());
         }
 
+        /// <summary>
+        /// On a one word line don't go into the previous line break looking for preceding
+        /// white space
+        /// </summary>
+        [Test]
+        public void AllWord_DontGoIntoPreviousLineBreak()
+        {
+            Create("dog", "cat", "fish");
+            _textView.MoveCaretToLine(1);
+            var data = _motionUtil.GetMotion(Motion.NewAllWord(WordKind.NormalWord)).Value;
+            Assert.AreEqual("cat", data.Span.GetText());
+        }
+
         [Test]
         public void CharLeft1()
         {
