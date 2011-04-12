@@ -311,7 +311,7 @@ namespace Vim.UnitTest.Mock
         }
 
 
-        public ITextViewMotionUtil TextViewMotionUtil
+        public IMotionUtil MotionUtil
         {
             get { throw new NotImplementedException(); }
         }

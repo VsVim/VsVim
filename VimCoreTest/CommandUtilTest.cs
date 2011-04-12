@@ -24,7 +24,7 @@ namespace VimCore.UnitTest
         private Mock<ISmartIndentationService> _smartIdentationService;
         private IVimGlobalSettings _globalSettings;
         private IVimLocalSettings _localSettings;
-        private ITextViewMotionUtil _motionUtil;
+        private IMotionUtil _motionUtil;
         private IRegisterMap _registerMap;
         private IVimData _vimData;
         private IMarkMap _markMap;

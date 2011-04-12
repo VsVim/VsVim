@@ -489,7 +489,7 @@ type Motion =
     | WordForward of WordKind 
 
 /// Interface for running Motion instances against an ITextView
-and ITextViewMotionUtil =
+and IMotionUtil =
 
     /// The associated ITextView instance
     abstract TextView : ITextView
@@ -2168,8 +2168,8 @@ and IVimBuffer =
     /// View of the file
     abstract TextView : ITextView
 
-    /// The ITextViewMotionUtil associated with this IVimBuffer instance
-    abstract TextViewMotionUtil : ITextViewMotionUtil
+    /// The IMotionUtil associated with this IVimBuffer instance
+    abstract MotionUtil : IMotionUtil
 
     /// The IUndoRedoOperations associated with this IVimBuffer instance
     abstract UndoRedoOperations : IUndoRedoOperations

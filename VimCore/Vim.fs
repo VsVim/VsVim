@@ -96,7 +96,7 @@ type internal VimBufferFactory
         let localSettings = LocalSettings(vim.Settings, Some view) :> IVimLocalSettings
         let jumpList = JumpList(_tlcService) :> IJumpList
         let statusUtil = StatusUtil()
-        let motionUtil = TextViewMotionUtil(view, vim.MarkMap, localSettings, vim.SearchService, wordNav, jumpList, statusUtil, vim.VimData) :> ITextViewMotionUtil
+        let motionUtil = MotionUtil(view, vim.MarkMap, localSettings, vim.SearchService, wordNav, jumpList, statusUtil, vim.VimData) :> IMotionUtil
         let outlining = 
             // This will return null in ITextBuffer instances where there is no IOutliningManager such
             // as TFS annotated buffers.

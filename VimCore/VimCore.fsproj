@@ -99,8 +99,8 @@
     <Compile Include="SelectionChangeTracker.fs" />
     <Compile Include="FoldManager.fs" />
     <Compile Include="VimBuffer.fs" />
-    <Compile Include="TextViewMotionUtil.fsi" />
-    <Compile Include="TextViewMotionUtil.fs" />
+    <Compile Include="MotionUtil.fsi" />
+    <Compile Include="MotionUtil.fs" />
     <Compile Include="SearchService.fsi" />
     <Compile Include="SearchService.fs" />
     <Compile Include="RegisterMap.fsi" />

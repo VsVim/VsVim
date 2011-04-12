@@ -34,7 +34,7 @@ type internal VisualMode
     /// Build the set of CommandBinding which will be used to move the caret.  Typically
     /// these are just MotionBinding instances which are converted to movement commands
     member x.BuildMoveSequence() = 
-        let factory = Vim.Modes.CommandFactory(_operations, _capture, _buffer.TextViewMotionUtil, _buffer.JumpList, _buffer.Settings)
+        let factory = Vim.Modes.CommandFactory(_operations, _capture, _buffer.MotionUtil, _buffer.JumpList, _buffer.Settings)
         factory.CreateMovementCommands()
 
     member x.BuildOperationsSequence() =

@@ -10,7 +10,7 @@ type internal CommandFactory
     ( 
         _operations : ICommonOperations, 
         _capture : IMotionCapture,
-        _motionUtil : ITextViewMotionUtil, 
+        _motionUtil : IMotionUtil, 
         _jumpList : IJumpList,
         _settings : IVimLocalSettings ) =
 

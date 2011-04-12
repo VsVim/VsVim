@@ -19,7 +19,7 @@ type internal CommandUtil
 
     let _textView = _buffer.TextView
     let _textBuffer = _textView.TextBuffer
-    let _motionUtil = _buffer.TextViewMotionUtil
+    let _motionUtil = _buffer.MotionUtil
     let _registerMap = _buffer.RegisterMap
     let _markMap = _buffer.MarkMap
     let _vimData = _buffer.VimData

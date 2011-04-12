@@ -67,7 +67,7 @@ type internal NormalMode
 
     member x.EnsureCommands() = 
         if not x.IsCommandRunnerPopulated then
-            let factory = Vim.Modes.CommandFactory(_operations, _capture, _bufferData.TextViewMotionUtil, _bufferData.JumpList, _bufferData.Settings)
+            let factory = Vim.Modes.CommandFactory(_operations, _capture, _bufferData.MotionUtil, _bufferData.JumpList, _bufferData.Settings)
 
             x.CreateSimpleCommands()
             |> Seq.append (x.CreateCommandBindings())

@@ -151,7 +151,7 @@ namespace Vim.UnitTest.Mock
             IJumpList jumpList = null,
             IVimLocalSettings settings = null,
             IIncrementalSearch incrementalSearch = null,
-            ITextViewMotionUtil motionUtil = null,
+            IMotionUtil motionUtil = null,
             ITextStructureNavigator wordNavigator = null,
             MockRepository factory = null)
         {
@@ -159,12 +159,12 @@ namespace Vim.UnitTest.Mock
             name = name ?? "test";
             vim = vim ?? CreateVim().Object;
             jumpList = jumpList ?? (factory.Create<IJumpList>().Object);
-            motionUtil = motionUtil ?? factory.Create<ITextViewMotionUtil>().Object;
+            motionUtil = motionUtil ?? factory.Create<IMotionUtil>().Object;
             wordNavigator = wordNavigator ?? factory.Create<ITextStructureNavigator>().Object;
             settings = settings ?? new LocalSettings(vim.Settings, FSharpOption.Create(textView));
             var mock = factory.Create<IVimBuffer>();
             mock.SetupGet(x => x.TextView).Returns(textView);
-            mock.SetupGet(x => x.TextViewMotionUtil).Returns(motionUtil);
+            mock.SetupGet(x => x.MotionUtil).Returns(motionUtil);
             mock.SetupGet(x => x.TextBuffer).Returns(() => textView.TextBuffer);
             mock.SetupGet(x => x.TextSnapshot).Returns(() => textView.TextSnapshot);
             mock.SetupGet(x => x.Name).Returns(name);

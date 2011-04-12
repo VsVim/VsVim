@@ -57,7 +57,7 @@ type internal VimBuffer
         _jumpList : IJumpList,
         _settings : IVimLocalSettings,
         _incrementalSearch : IIncrementalSearch,
-        _motionUtil : ITextViewMotionUtil,
+        _motionUtil : IMotionUtil,
         _wordNavigator : ITextStructureNavigator,
         _undoRedoOperations : IUndoRedoOperations
     ) =
@@ -222,7 +222,7 @@ type internal VimBuffer
         member x.VimData = _vim.VimData
         member x.WordNavigator = _wordNavigator
         member x.TextView = _textView
-        member x.TextViewMotionUtil = _motionUtil
+        member x.MotionUtil = _motionUtil
         member x.TextBuffer = _textView.TextBuffer
         member x.TextSnapshot = _textView.TextSnapshot
         member x.UndoRedoOperations = _undoRedoOperations

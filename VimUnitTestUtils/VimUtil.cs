@@ -58,7 +58,7 @@ namespace Vim.UnitTest
             return new CommonOperations(operationsData);
         }
 
-        internal static ITextViewMotionUtil CreateTextViewMotionUtil(
+        internal static IMotionUtil CreateTextViewMotionUtil(
             ITextView textView,
             IMarkMap markMap = null,
             IVimLocalSettings settings = null,
@@ -75,7 +75,7 @@ namespace Vim.UnitTest
             jumpList = jumpList ?? CreateJumpList();
             statusUtil = statusUtil ?? new StatusUtil();
             vimData = vimData ?? new VimData();
-            return new TextViewMotionUtil(
+            return new MotionUtil(
                 textView,
                 markMap,
                 settings,
@@ -100,7 +100,7 @@ namespace Vim.UnitTest
         internal static CommandUtil CreateCommandUtil(
             ITextView textView,
             ICommonOperations operations = null,
-            ITextViewMotionUtil motionUtil = null,
+            IMotionUtil motionUtil = null,
             IStatusUtil statusUtil = null,
             IRegisterMap registerMap = null,
             IMarkMap markMap = null,

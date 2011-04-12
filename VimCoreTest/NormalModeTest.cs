@@ -50,12 +50,12 @@ namespace VimCore.UnitTest
             CreateCore(null, lines);
         }
 
-        public void Create(ITextViewMotionUtil motionUtil, params string[] lines)
+        public void Create(IMotionUtil motionUtil, params string[] lines)
         {
             CreateCore(motionUtil, lines);
         }
 
-        public void CreateCore(ITextViewMotionUtil motionUtil, params string[] lines)
+        public void CreateCore(IMotionUtil motionUtil, params string[] lines)
         {
             _textView = EditorUtil.CreateView(lines);
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
@@ -655,7 +655,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Motion_G()
         {
-            var util = new Mock<ITextViewMotionUtil>(MockBehavior.Strict);
+            var util = new Mock<IMotionUtil>(MockBehavior.Strict);
             Create(util.Object, "hello world");
             var span = _textView.GetLine(0).Extent;
             var arg = new MotionArgument(MotionContext.AfterOperator, FSharpOption<int>.None, FSharpOption<int>.None);

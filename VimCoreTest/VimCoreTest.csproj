@@ -162,14 +162,14 @@
     <Compile Include="SubstituteConfirmTaggerTest.cs" />
     <Compile Include="VimRegexTest.cs" />
     <Compile Include="VirtualSnapshotPointUtilTest.cs" />
-    <Compile Include="MotionUtilTest.cs" />
+    <Compile Include="MotionUtilLegacyTest.cs" />
     <Compile Include="SelectionChangeTrackerTest.cs" />
     <Compile Include="SeqUtilTest.cs" />
     <Compile Include="VisualModeIntegrationTest.cs" />
     <Compile Include="FoldManagerTest.cs" />
     <Compile Include="InsertModeIntegrationTest.cs" />
     <Compile Include="FileSystemTest.cs" />
-    <Compile Include="TextViewMotionUtilTest.cs" />
+    <Compile Include="MotionUtilTest.cs" />
     <Compile Include="NormalModeIntegrationTest.cs" />
     <Compile Include="SearchServiceTest.cs" />
     <Compile Include="TextChangeTrackerTest.cs" />
