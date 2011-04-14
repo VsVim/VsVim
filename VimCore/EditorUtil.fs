@@ -562,6 +562,11 @@ module SnapshotPointUtil =
         if IsEndPoint point then false
         else CharUtil.IsWhiteSpace (point.GetChar())
 
+    /// Is the SnapshotPoint the provided char
+    let IsChar c point =
+        if IsEndPoint point then false
+        else (point.GetChar()) = c
+
     /// Get the line range passed in.  If the count of lines exceeds the amount of lines remaining
     /// in the buffer, the span will be truncated to the final line
     let GetLineSpan point =

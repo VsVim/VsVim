@@ -122,6 +122,12 @@ module internal SeqUtil =
         if Seq.isEmpty l then None
         else Some (Seq.head l)
 
+    /// Get the head of the sequence or the default value if the sequence is empty
+    let headOrDefault defaultValue l =
+        match tryHeadOnly l with
+        | Some h -> h
+        | None -> defaultValue
+
     /// Get the last element in the sequence.  Throws an ArgumentException if 
     /// the sequence is empty
     let last (s:'a seq) = 
@@ -138,6 +144,13 @@ module internal SeqUtil =
 
     /// Returns if any of the elements in the sequence match the provided filter
     let any filter s = s |> Seq.filter filter |> isNotEmpty
+
+    /// Returns if there exits an element in the collection which matches the specified 
+    /// filter.  Identical to exists except it passes an index
+    let existsi filter s = 
+        s
+        |> Seq.mapi (fun i e -> (i, e))
+        |> Seq.exists (fun (i, e) -> filter i e)
 
     /// Maps a seq of options to an option of list where None indicates at least one 
     /// entry was None and Some indicates all entries had values

@@ -222,315 +222,18 @@ module internal MotionUtilLegacy =
                     ListUtil.tryHeadOnly startTokenList
             inner List.empty
 
-    /// Does this point represent a section boundary.  This occurs after a form feed 
-    /// in the first column in a line.  
-    ///
-    /// It should also occur on a section macro boundary but at this time those are
-    /// not supported
-    let IsSectionBoundary point = 
-        let line = SnapshotPointUtil.GetContainingLine point
-        line.Start = point && line.Length > 0 && point.GetChar() = '\f'
-
-    /// Is the provided point a Paragraph only boundary?  A paragraph boundary will occur 
-    /// on an empty line.  Note: Empty means empty, not a blank line.
-    ///
-    /// It should also occur on a paragraph macro boundary but at this time those are
-    /// not supported
-    let IsParagraphBoundaryOnly point = 
-        let line = SnapshotPointUtil.GetContainingLine point
-        line.Start = point && line.Length = 0 
-
-    /// Is this a functional paragraph boundary.  That is a section or paragraph boundary
-    let IsParagraphBoundary point = IsParagraphBoundaryOnly point || IsSectionBoundary point
-
-    let GetParagraphs point direction = 
-
-        let snapshot = SnapshotPointUtil.GetSnapshot point
-
-        // Get the paragraphs from the given point to the end of the buffer in a forward
-        // motion 
-        let forSpanForward () = 
-            seq {
-
-                // This is the start of the next span returned from this sequence
-                let startPoint = ref point
-
-                // Does this search begin on a paragraph only boundary
-                let searchStartOnParagraphOnlyBoundary = ref (IsParagraphBoundaryOnly point)
-
-                // Current line number being examined
-                let lineNumber = 
-                    let line = SnapshotPointUtil.GetContainingLine point
-                    if line.Start = point then ref line.LineNumber
-                    else ref (line.LineNumber + 1)
-
-                while SnapshotUtil.IsLineNumberValid snapshot lineNumber.Value do
-
-                    // Skip the lines until the specified func returns true
-                    let rec skip func number = 
-                        match SnapshotUtil.TryGetLine snapshot number with
-                        | None ->
-                            number + 1
-                        | Some(line) -> 
-                            if func line.Start then
-                                skip func (number + 1)
-                            else
-                                number
-
-                    // When a span starts on a paragraph only boundary we will skip until we are 
-                    // past all of the consequetive paragraph only boundaries.
-                    lineNumber := 
-                        if searchStartOnParagraphOnlyBoundary.Value then
-                            skip IsParagraphBoundary lineNumber.Value
-                        else 
-                            lineNumber.Value
-
-                    // Now skip until we hit a paragraph boundary
-                    lineNumber := skip (fun point -> not (IsParagraphBoundary point)) lineNumber.Value
-
-                    match SnapshotUtil.TryGetLine snapshot lineNumber.Value with
-                    | None ->
-                        // Do nothing here.  We'll fall out of the loop and yield at the
-                        // catch all at the bottom
-                        ()
-                    | Some (line) -> 
-                        yield SnapshotSpan(startPoint.Value, line.Start)
-                        lineNumber := line.LineNumber + 1
-                        startPoint := line.Start
-                        searchStartOnParagraphOnlyBoundary := IsParagraphBoundaryOnly line.Start
-
-                // Catch the remaining values in the final paragraph 
-                yield SnapshotSpan(startPoint.Value, SnapshotUtil.GetEndPoint snapshot)
-            }
-
-        // Get the paragraph from the given point to the start of the buffer in a 
-        // backward motion.
-        let forSpanBackward() =
-            seq { 
-
-                // This is the end of the next span which is returned
-                let endPoint = ref point
-
-                // The line number we are currently processing 
-                let lineNumber =
-                    let line = SnapshotPointUtil.GetContainingLine point
-                    ref line.LineNumber
-
-                while SnapshotUtil.IsLineNumberValid snapshot lineNumber.Value do 
-
-                    // Skip the lines until the specified func returns true
-                    let rec skip func number = 
-                        match SnapshotUtil.TryGetLine snapshot number with
-                        | None ->
-                            number - 1
-                        | Some(line) -> 
-                            if func line.Start then
-                                skip func (number - 1)
-                            else
-                                number
-
-                    // When a span starts on a paragraph only boundary we will skip until we are 
-                    // past all of the consequetive paragraph only boundaries.  Then skip while 
-                    // it's not any paragraph boundary
-                    lineNumber := 
-                        lineNumber.Value
-                        |> skip IsParagraphBoundaryOnly
-                        |> skip (fun point -> not (IsParagraphBoundary point))
-
-                    match SnapshotUtil.TryGetLine snapshot lineNumber.Value with
-                    | None ->
-                        // Do nothing here.  We'll fall out of the loop and yield at the
-                        // catch all at the bottom
-                        ()
-                    | Some (line) -> 
-                        yield SnapshotSpan(line.Start, endPoint.Value)
-                        lineNumber := line.LineNumber - 1
-                        endPoint := line.Start
-
-                yield SnapshotSpan(SnapshotUtil.GetStartPoint snapshot, endPoint.Value)
-            }
-
-        match direction with 
-        | Path.Forward -> forSpanForward()
-        | Path.Backward -> forSpanBackward()
-
-    /// Set of characters which represent the end of a sentence. 
-    let SentenceEndChars = ['.'; '!'; '?']
-
-    /// Set of characters which can validly follow a sentence 
-    let SentenceTrailingChars = [')';']'; '"'; '\'']
-
-    let GetSentences point direction = 
-
-        let snapshot = SnapshotPointUtil.GetSnapshot point
-
-        // Is the char for the provided point in the given list.  Make sure to 
-        // account for the snapshot end point here as it makes the remaining 
-        // logic easier 
-        let isCharInList list point = 
-            match SnapshotPointUtil.TryGetChar point with
-            | None -> 
-                false
-            | Some c ->
-                let c = SnapshotPointUtil.GetChar point
-                ListUtil.contains c list 
-
-        // Functions for moving the point forward or backward while the provided 
-        // lambda returns true for the current point
-        // Skip forward while the provided func is returning true for the point
-        let moveForwardWhile, moveBackwardWhile =
-            let func movePointFunc testPointFunc point = 
-                let rec inner point = 
-                    if testPointFunc point then
-                        match movePointFunc point with
-                        | None -> point
-                        | Some point -> inner point
-                    else
-                        point
-                inner point
-            (func SnapshotPointUtil.TryAddOne), (func SnapshotPointUtil.TrySubtractOne)
-
-        // Is this a sentence boundary.  Only checks for actual sentence boundaries
-        // and not paragraph or section boundaries.
-        let isSentenceBoundaryOnly point = 
-            if isCharInList SentenceEndChars point then
-
-                // Need to verify the end point is followed by a valid terminating
-                // character: whitespace or end of line
-                let line = SnapshotPointUtil.GetContainingLine point
-
-                // Move past the possible legal trailing chars which can occur
-                // between the end and terminating char
-                let point = 
-                    let point = SnapshotPointUtil.AddOne point
-                    moveForwardWhile (isCharInList SentenceTrailingChars) point
-
-                SnapshotPointUtil.IsWhiteSpace point ||
-                SnapshotPointUtil.IsEndPoint point ||
-                line.End = point 
-
-            else
-                false
-
-        // Get the end of the boundary provided a SnapshotPoint which points to 
-        // a sentence boundary end character
-        let getBoundaryEnd boundaryPoint = 
-
-            if SnapshotPointUtil.IsEndPoint boundaryPoint then
-                boundaryPoint
-            else
-                let point = SnapshotPointUtil.AddOne boundaryPoint
-
-                if isCharInList SentenceTrailingChars point then
-                    // Definitely at the end of a sentence.  First step is to skip
-                    // all of the after end chars
-                    let point = 
-                        let point = SnapshotPointUtil.AddOne point 
-                        moveForwardWhile (isCharInList SentenceTrailingChars) point
-
-                    // Now we can skip as many white spaces and tabs as we'd like
-                    let point = 
-                        let isWhiteSpace point = 
-                            match SnapshotPointUtil.TryGetChar point with
-                            | None -> false
-                            | Some c -> CharUtil.IsWhiteSpace c 
-                        moveForwardWhile isWhiteSpace point
-
-                    // Skip again if we're at the end of a line 
-                    let line = SnapshotPointUtil.GetContainingLine point
-                    let span = SnapshotLineUtil.GetLineBreakSpan line
-                    if span.Contains point then line.EndIncludingLineBreak
-                    else point
-    
-                else
-                    // No trailing characters so the end point is one after
-                    // the actual end character 
-                    point
-
-        // Get the sentences for the given span in a forward fashion
-        let forSpanForward span = 
-            seq {
-
-                // This is the start point of the next SnapshotSpan we will
-                // be yielding
-                let startPoint = ref (SnapshotSpanUtil.GetStartPoint span)
-
-                let currentPoint = ref (SnapshotSpanUtil.GetStartPoint span)
-
-                while currentPoint.Value.Position < span.End.Position do
-
-                    // Move forward until we have a sentence boundary
-                    let point = moveForwardWhile (fun point -> not (isSentenceBoundaryOnly point)) currentPoint.Value
-                    let point = getBoundaryEnd point
-
-                    if span.Contains(point) then
-                        // End is within the span so create the span
-                        yield SnapshotSpan(startPoint.Value, point)
-                        startPoint := point
-                        currentPoint := point
-                    else
-                        // Set currentPoint to be the end of the span so we break out
-                        // of the loop
-                        currentPoint := span.End
-
-                if startPoint.Value <> span.End then
-                    yield SnapshotSpan(startPoint.Value, span.End)
-            }
-
-        // Get the sentences for the given span in a backward fashion
-        let forSpanBackward span = 
-            seq {
-
-                // Represents the end point of the next SnapshotSpan value yielded
-                // from this sequence
-                let endPoint = ref (SnapshotSpanUtil.GetEndPoint span)
-
-                // Current point which is used to iterate through the buffer 
-                let currentPoint = ref (SnapshotPointUtil.SubtractOneOrCurrent span.End)
-
-                while currentPoint.Value.Position > span.Start.Position do
-
-                    // Move the point backwards until we hit an actual sentence break
-                    let point = moveBackwardWhile (fun point -> not (isSentenceBoundaryOnly point)) currentPoint.Value
-                    if point.Position <= span.Start.Position then
-                        // Break out of the loop 
-                        currentPoint := span.Start
-                    else
-                        // Get the end of the current boundary as that will be the start of the next
-                        // SnapshotSpan
-                        let startPoint = getBoundaryEnd point
-
-                        // Watch out for the case where we start at the end of the buffer and the 
-                        // last character is a sentenc boundary.  Don't return the empty span
-                        if startPoint <> endPoint.Value then
-                            yield SnapshotSpan(startPoint, endPoint.Value)
-
-                        endPoint := startPoint
-                        currentPoint := SnapshotPointUtil.SubtractOneOrCurrent point
-
-                yield SnapshotSpan(span.Start, endPoint.Value)
-            }
-
-        let func = 
-            match direction with
-            | Path.Forward -> forSpanForward
-            | Path.Backward -> forSpanBackward
-
-        GetParagraphs point direction
-        |> Seq.map func
-        |> Seq.concat
-
-    let GetSentenceFull point = 
-        let snapshot = SnapshotPointUtil.GetSnapshot point
-        let startPoint = SnapshotUtil.GetStartPoint snapshot
-        GetSentences startPoint Path.Forward
-        |> Seq.tryFind (fun x -> x.Contains(point))
-        |> OptionUtil.getOrDefault (SnapshotSpanUtil.CreateFromStartToProvidedEnd point)
-
 [<RequireQualifiedAccess>]
-type TextObjectNonBlockKind =
-    | EmptyLinesAreObjects
-    | StopOnLineBreak
+type SentenceKind = 
+
+    /// Default behavior of a sentence as defined by ':help sentence'
+    | Default
+
+    /// There is one definition of a sentence in Vim but the implementation indicates there
+    /// are actually 2.  In some cases the trailing characters are not considered a part of 
+    /// a sentence.
+    ///
+    /// http://groups.google.com/group/vim_use/browse_thread/thread/d3f28cf801dc2030
+    | NoTrailingCharacters
 
 type internal MotionUtil 
     ( 
@@ -546,6 +249,12 @@ type internal MotionUtil
 
     let _textBuffer = _textView.TextBuffer
     let _globalSettings = _localSettings.GlobalSettings
+
+    /// Set of characters which represent the end of a sentence. 
+    static let SentenceEndChars = ['.'; '!'; '?']
+
+    /// Set of characters which can validly follow a sentence 
+    static let SentenceTrailingChars = [')';']'; '"'; '\'']
 
     /// Caret point in the ITextView
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
@@ -623,25 +332,332 @@ type internal MotionUtil
             MotionKind = MotionKind.Inclusive 
             Column = Some (CaretColumn.InLastLine column) }
 
-    member x.GetParagraphs direction count = 
-        _jumpList.Add x.CaretPoint
+    /// Get the SnapshotSpan values for the paragraph object starting from the given SnapshotPoint
+    /// in the specified direction.  
+    member x.GetParagraphs path point = 
 
-        let point = TextViewUtil.GetCaretPoint _textView
-        let span = 
-            MotionUtilLegacy.GetParagraphs point direction
-            |> Seq.truncate count
-            |> SnapshotSpanUtil.CreateCombined
-        let span = 
-            match span with 
-            | Some(span) -> span
-            | None -> SnapshotSpan(point, 0)
-        let isForward = Path.Forward = direction
-        {
-            Span = span 
-            IsForward = isForward 
-            MotionKind = MotionKind.Inclusive
-            OperationKind = OperationKind.CharacterWise
-            Column = None }
+        // Get the full span of a paragraph given a start point
+        let getFullSpanFromStartPoint point =
+            Contract.Requires (x.IsParagraphStart point)
+            let snapshot = SnapshotPointUtil.GetSnapshot point
+            let endPoint =
+                point 
+                |> SnapshotPointUtil.AddOne
+                |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Forward
+                |> Seq.skipWhile (fun p -> not (x.IsParagraphStart p))
+                |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint snapshot)
+            SnapshotSpan(point, endPoint)
+
+        x.GetTextObjectsCore point path x.IsParagraphStart getFullSpanFromStartPoint
+
+    /// Get the SnapshotSpan values for the section values starting from the given SnapshotPoint 
+    /// in the specified direction.  Note: The full span of the section will be returned if the 
+    /// provided SnapshotPoint is in the middle of it
+    member x.GetSections point path = 
+
+        // Get the full span of a section given the start point of a section
+        let getFullSpanFromStartPoint point = 
+            Contract.Requires (x.IsSectionStart point)
+            let snapshot = SnapshotPointUtil.GetSnapshot point
+            let endPoint =
+                point
+                |> SnapshotPointUtil.AddOne
+                |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Forward
+                |> Seq.skipWhile (fun p -> not (x.IsSectionStart p))
+                |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint snapshot)
+            SnapshotSpan (point, endPoint)
+
+        x.GetTextObjectsCore point path x.IsSectionStart getFullSpanFromStartPoint
+
+    /// Get the SnapshotSpan values for the sentence values starting from the given SnapshotPoint 
+    /// in the specified direction.  Note: The full span of the section will be returned if the 
+    /// provided SnapshotPoint is in the middle of it
+    member x.GetSentences sentenceKind path point = 
+
+        // Get the full span of a sentence given the particular start point
+        let getFullSpanFromStartPoint point = 
+            Contract.Requires (x.IsSentenceStart point)
+
+            let snapshot = SnapshotPointUtil.GetSnapshot point
+
+            // Move forward until we hit the end point and then move one past it so the end
+            // point is included in the span
+            let endPoint = 
+                point
+                |> SnapshotPointUtil.AddOne
+                |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Forward
+                |> Seq.skipWhile (fun p -> not (x.IsSentenceEnd p sentenceKind))
+                |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint snapshot)
+                |> SnapshotPointUtil.AddOneOrCurrent
+            SnapshotSpan(point, endPoint)
+
+        x.GetTextObjectsCore point path x.IsSentenceStart getFullSpanFromStartPoint
+
+    /// Get the text objects core from the given point in the given direction
+    member x.GetTextObjectsCore point path isStartPoint getSpanFromStartPoint = 
+
+        let snapshot = SnapshotPointUtil.GetSnapshot point
+        let isNotStartPoint point = not (isStartPoint point)
+
+        // Wrap the get full span method to deal with <end>.  
+        let getSpanFromStartPoint point = 
+            if SnapshotPointUtil.IsEndPoint point then
+                SnapshotSpan(point, 0)
+            else
+                getSpanFromStartPoint point
+
+        // Get the section start going backwards from the given point.
+        let getStartBackward point = 
+            point 
+            |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Backward
+            |> Seq.skipWhile isNotStartPoint
+            |> SeqUtil.headOrDefault (SnapshotPoint(snapshot, 0))
+
+        // Get the section start going forward from the given point 
+        let getStartForward point = 
+            point
+            |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Forward
+            |> Seq.skipWhile isNotStartPoint
+            |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint snapshot)
+
+        // Search includes the section which contains the start point so go ahead and get it
+        match path, SnapshotPointUtil.IsStartPoint point with 
+        | Path.Forward, _ ->
+
+            // Get the next object.  The provided point should either be <end> or point 
+            // to the start of a section
+            let getNext point =
+                if SnapshotPointUtil.IsEndPoint point then
+                    None
+                else
+                    let endPoint = point |> SnapshotPointUtil.AddOne |> getStartForward
+                    let span = SnapshotSpan(point, endPoint)
+                    Some (span, endPoint)
+
+            // Get the point to start the sequence from.  Need to be very careful though 
+            // because it's possible for the first SnapshotSpan being completely before the 
+            // provided SnapshotPoint.  This can happen for text objects which have white 
+            // space chunks and the provided point 
+            let startPoint = 
+                let startPoint = getStartBackward point
+                let span = getSpanFromStartPoint startPoint
+                if point.Position >= span.End.Position then
+                    getStartForward span.End
+                else
+                    startPoint
+            Seq.unfold getNext startPoint
+        | Path.Backward, true ->
+            // Handle the special case here
+            Seq.empty
+        | Path.Backward, false ->
+
+            // Get the previous section.  The provided point should either be 0 or point
+            // to the start of a section
+            let getPrevious point = 
+                if SnapshotPointUtil.IsStartPoint point then
+                    None
+                else
+                    let startPoint = point |> SnapshotPointUtil.SubtractOne |> getStartBackward
+                    let span = getSpanFromStartPoint startPoint
+                    Some (span, startPoint)
+
+            Seq.unfold getPrevious point
+
+    /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
+    /// in the middle of a word the span of the entire word will be returned
+    member x.GetWords kind path point = 
+
+        // TODO: Should probably re-implement this method
+        TssUtil.GetWordSpans kind path point
+
+    /// Is this point the start of a paragraph.  Considers both paragraph and section 
+    /// start points
+    member x.IsParagraphStart point =
+        x.IsParagraphStartOnly point || x.IsSectionStart point
+
+    /// Is this point the start of a paragraph.  This does not consider section starts but
+    /// specifically items related to paragraphs
+    member x.IsParagraphStartOnly point = 
+
+        // Is this the start of a blank line? 
+        let isStartOfBlankLine point = 
+            let line = SnapshotPointUtil.GetContainingLine point
+            line.Length = 0 && line.Start.Position = point.Position
+
+        if SnapshotPointUtil.IsStartPoint point then
+            true
+        elif isStartOfBlankLine point then
+            // Consecutive blank lines don't represent separate paragraphs
+            let line = SnapshotPointUtil.GetContainingLine point
+            match SnapshotUtil.TryGetLine x.CurrentSnapshot (line.LineNumber - 1) with
+            | None -> true
+            | Some line -> line.Length <> 0 
+        elif SnapshotPointUtil.IsStartOfLine point then
+            x.IsTextMacroMatch point _globalSettings.Paragraphs
+        else
+            false
+
+    /// Is this point the start of a section.  Section boundaries can only occur at the 
+    /// start of lines
+    member x.IsSectionStart point = 
+        if SnapshotPointUtil.IsStartOfLine point then
+            if SnapshotPointUtil.IsChar '\f' point then
+                true
+            else
+                x.IsTextMacroMatch point _globalSettings.Sections
+        else
+            false
+
+    /// Is this the end point of a sentence.  Considers sentence, section and paragraph contexts
+    member x.IsSentenceEnd point sentenceKind =
+        x.IsSentenceEndOnly point sentenceKind || x.IsSectionStart point || x.IsParagraphStartOnly point
+
+    /// Is this the end point of an actual sentence.  Only considers actual sentence semantics and *not*
+    /// items like paragraph and section
+    member x.IsSentenceEndOnly point sentenceKind = 
+
+        // Is the char for the provided point in the given list.  Make sure to 
+        // account for the snapshot end point here as it makes the remaining 
+        // logic easier 
+        let isCharInList list point = 
+            match SnapshotPointUtil.TryGetChar point with
+            | None -> 
+                false
+            | Some c ->
+                let c = SnapshotPointUtil.GetChar point
+                ListUtil.contains c list 
+
+        // Is this a valid white space item to end the sentence
+        let isWhiteSpaceEnd point = 
+            SnapshotPointUtil.IsWhiteSpace point || 
+            SnapshotPointUtil.IsInsideLineBreak point ||
+            SnapshotPointUtil.IsEndPoint point
+
+        // Is it SnapshotPoint pointing to an end char which actually ends
+        // the sentence
+        let isEndNoTrailing () = 
+            if isCharInList SentenceEndChars point then
+                point |> SnapshotPointUtil.AddOne |> isWhiteSpaceEnd
+            else
+                false
+
+        // Is it a trailing character which properly ends a sentence
+        let isTrailing () = 
+            if isCharInList SentenceEndChars point then
+
+                // Need to see if we are preceded by an end character first
+                let isPrecededByEnd = 
+                    if SnapshotPointUtil.IsStartPoint point then 
+                        false
+                    else
+                        point 
+                        |> SnapshotPointUtil.SubtractOne
+                        |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Backward
+                        |> Seq.skipWhile (isCharInList SentenceTrailingChars)
+                        |> SeqUtil.tryHeadOnly
+                        |> Option.map (isCharInList SentenceEndChars)
+                        |> OptionUtil.getOrDefault false
+
+                if isPrecededByEnd then
+                    point |> SnapshotPointUtil.AddOne |> isWhiteSpaceEnd
+                else
+                    false
+            else
+                false
+
+        match sentenceKind with
+        | SentenceKind.Default -> isEndNoTrailing() || isTrailing()
+        | SentenceKind.NoTrailingCharacters -> isEndNoTrailing()
+
+    /// Is this point the star of a sentence.  Considers sentences, paragraphs and section
+    /// boundaries
+    member x.IsSentenceStart point = 
+        x.IsSentenceStartOnly point || x.IsParagraphStartOnly point || x.IsSectionStart point
+
+    /// Is the start of a sentence.  This doesn't consider section or paragraph boundaries
+    /// but specifically items related to the start of a sentence
+    member x.IsSentenceStartOnly point = 
+
+        let snapshot = SnapshotPointUtil.GetSnapshot point
+
+        // Is the char for the provided point in the given list.  Make sure to 
+        // account for the snapshot end point here as it makes the remaining 
+        // logic easier 
+        let isCharInList list point = 
+            match SnapshotPointUtil.TryGetChar point with
+            | None -> 
+                false
+            | Some c ->
+                let c = SnapshotPointUtil.GetChar point
+                ListUtil.contains c list 
+
+        // Is this the end point of an actual sentence.  If it is then it will return a
+        // Some value which represents the start of the next sentence
+        let isSentenceEndPoint point = 
+            if isCharInList SentenceEndChars point then
+                let nextPoint = SnapshotPointUtil.AddOne point
+                let nextPoint = 
+                        if isCharInList SentenceTrailingChars nextPoint then
+                            SnapshotPointUtil.AddOne nextPoint
+                        else
+                            nextPoint
+                let isWhiteSpace point = SnapshotPointUtil.IsWhiteSpace point || SnapshotPointUtil.IsInsideLineBreak point
+
+                if isWhiteSpace nextPoint then
+                    nextPoint 
+                    |> SnapshotPointUtil.AddOne
+                    |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Forward
+                    |> Seq.skipWhile isWhiteSpace
+                    |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint snapshot)
+                    |> Some
+                else
+                    None
+
+            elif SnapshotPointUtil.IsEndPoint point then
+                 // It's still the end point if we are at the end of the buffer
+                Some point
+            else
+                None
+
+        // Get the first end point
+        let firstStartPoint = 
+            point
+            |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Backward
+            |> Seq.map isSentenceEndPoint
+            |> SeqUtil.filterToSome
+            |> SeqUtil.tryHeadOnly
+
+        match firstStartPoint with 
+        | None -> SnapshotPointUtil.IsStartPoint point 
+        | Some firstStartPoint -> firstStartPoint.Position = point.Position
+
+    /// This function is used to match nroff macros for both section and paragraph sections.  It 
+    /// determines if the line starts.
+    member x.IsTextMacroMatch point macroString =
+        let line = SnapshotPointUtil.GetContainingLine point
+        let isLengthCorrect = 0 = (String.length macroString) % 2
+        if not (SnapshotPointUtil.IsStartOfLine point) || not isLengthCorrect then 
+            // Match can only occur at the start of the line and with a valid macro string
+            false
+        elif line.Length = 0 || line.Start.GetChar() <> '.' then
+            // Line must start with a '.' 
+            false
+        elif line.Length = 2 then
+            // Line is in the form '.H' so can only match pairs which have a blank 
+            let c = line.Start |> SnapshotPointUtil.AddOne |> SnapshotPointUtil.GetChar
+            { 0 .. ((String.length macroString) - 1)}
+            |> Seq.filter (fun i -> i % 2 = 0)
+            |> Seq.exists (fun i -> macroString.[i] = c && macroString.[i + 1] = ' ')
+        elif line.Length = 3 then
+            // Line is in the form '.HH' so match both items
+            let c1 = line.Start |> SnapshotPointUtil.AddOne |> SnapshotPointUtil.GetChar
+            let c2 = line.Start |> SnapshotPointUtil.Add 2 |> SnapshotPointUtil.GetChar
+            { 0 .. ((String.length macroString) - 1)}
+            |> Seq.filter (fun i -> i % 2 = 0)
+            |> Seq.exists (fun i -> macroString.[i] = c1 && macroString.[i + 1] = c2)
+        else
+            // Line can't match
+            false
 
     member x.SectionBackwardOrOther count otherChar = 
 
@@ -858,228 +874,70 @@ type internal MotionUtil
                     OperationKind = OperationKind.CharacterWise
                     Column = column } |> Some
 
-    /// This method mainly used as an implementation of the 'ap' motion.  In many 
-    /// ways this is the odd-ball out 'a' motion inside of the "Text Object Selection"
-    /// (:help object-select) set of motions.  The documentation for 'a' motions states
-    /// if there is no trailing whitespace or the caret started in whitespace then
-    /// the leading whitespace will be included.  The 'p' motion is the only one
-    /// which appears to go backwards line wise
-    member x.GetAllParagraph count = 
-
-        let caretPoint = TextViewUtil.GetCaretPoint _textView 
-        let span = 
-            let startPoint = SnapshotUtil.GetStartPoint caretPoint.Snapshot
-            MotionUtilLegacy.GetParagraphs startPoint Path.Forward 
-            |> Seq.skipWhile (fun span -> not (span.Contains caretPoint))
-            |> Seq.truncate count
-            |> SnapshotSpanUtil.CreateCombined
-            |> OptionUtil.getOrDefault (SnapshotSpan(caretPoint, 0))
-
-        let span = 
-
-            // Does the span end in whitespace
-            let doesSpanEndInWhiteSpace = 
-                let line = SnapshotPointUtil.GetContainingLine span.End
-                SnapshotLineUtil.IsWhiteSpace line
-
-            if SnapshotPointUtil.IsWhiteSpace caretPoint || not (SnapshotPointUtil.IsEndPoint span.End || doesSpanEndInWhiteSpace) then
-                // Need to include the whitespace in front of the motion 
-                let startLine = 
-                    let snapshot = caretPoint.Snapshot
-                    let rec inner (line : ITextSnapshotLine) =
-                        let prevNumber = line.LineNumber - 1
-                        match SnapshotUtil.TryGetLine snapshot prevNumber with
-                        | None ->
-                            line 
-                        | Some(prevLine) ->
-                            if SnapshotLineUtil.IsWhiteSpace prevLine then
-                                inner prevLine
-                            else
-                                line
-                    span.Start |> SnapshotPointUtil.GetContainingLine |> inner
-                SnapshotSpan(startLine.Start, span.End)
-            elif doesSpanEndInWhiteSpace then
-                // Include the trailing whitespace
-                let endLine = 
-                    let snapshot = caretPoint.Snapshot
-                    let rec inner (line : ITextSnapshotLine) = 
-                        let nextNumber = line.LineNumber + 1
-                        match SnapshotUtil.TryGetLine snapshot nextNumber with
-                        | None ->
-                            line
-                        | Some nextLine ->
-                            if SnapshotLineUtil.IsWhiteSpace nextLine then inner nextLine
-                            else line
-                    span.End |> SnapshotPointUtil.GetContainingLine |> inner
-                SnapshotSpan(span.Start, endLine.EndIncludingLineBreak)
-            else
-                span
-
+    /// Implementation of the 'ap' motion
+    member x.AllParagraph count = 
+        let span = x.AllTextObjectCommon x.GetParagraphs count
         {
-            Span = span
+            Span = span 
             IsForward = true 
-            MotionKind = MotionKind.Inclusive
-            OperationKind = OperationKind.LineWise
+            MotionKind = MotionKind.Exclusive 
+            OperationKind = OperationKind.CharacterWise 
             Column = None }
 
-    /// Common function for getting the 'all' version of text object motion values
-    member x.AllTextObjectNonBlock getObjectSpan count kind = 
+    /// Common function for getting the 'all' version of text object motion values.  Used for
+    /// sentences, paragraphs and sections.  Not used for word motions because they have too many
+    /// corner cases to consider due to the line based nature
+    member x.AllTextObjectCommon getObjects count = 
 
-        // Is this point the first point on a blank line
-        let isEmptyLine point = 
-            if SnapshotPointUtil.IsStartOfLine point then
-                let line = SnapshotPointUtil.GetContainingLine point
-                line.Length = 0
-            else
-                false
+        let all = getObjects Path.Forward x.CaretPoint
+        let firstSpan = all |> SeqUtil.tryHeadOnly
+        match firstSpan with
+        | None ->
+            // Corner case where there are simply no objects going forward.  Return
+            // an empty span
+            SnapshotSpan(x.CaretPoint, 0)
+        | Some firstSpan ->
 
-        // Is this an empty line which matters
-        let isSignificantEmptyLine point = 
-            match kind with 
-            | TextObjectNonBlockKind.EmptyLinesAreObjects -> isEmptyLine point
-            | TextObjectNonBlockKind.StopOnLineBreak -> false
+            // Get the end point of the span
+            let endPoint = 
+                all 
+                |> SeqUtil.skipMax count
+                |> Seq.map SnapshotSpanUtil.GetStartPoint
+                |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
 
-        // Is this ignorable white space
-        let isWhiteSpace point =
-            if isSignificantEmptyLine point then
-                false
-            else
-                SnapshotPointUtil.IsWhiteSpace point || SnapshotPointUtil.IsInsideLineBreak point
+            let isCaretInWhiteSpace = x.CaretPoint.Position < firstSpan.Start.Position
+            let isWhiteSpaceAfter = SnapshotPointUtil.IsWhiteSpace endPoint
 
-        // Get a single text object.  Will recursively run until the count is expired
-        let rec inner point count = 
+            // Now we need to do the standard adjustments listed at the bottom of 
+            // ':help text-objects'.  
+            if isCaretInWhiteSpace || not isWhiteSpaceAfter then
 
-            // Move to an actual non-whitespace point
-            let point = 
-                SnapshotPointUtil.GetPointsIncludingLineBreak Path.Forward point
-                |> Seq.skipWhile isWhiteSpace
-                |> SeqUtil.tryHeadOnly
-
-            match point with 
-            | None -> 
-                // Done searching at the end 
-                SnapshotUtil.GetEndPoint x.CurrentSnapshot
-            | Some point ->
-                let endPoint = 
-                    if isSignificantEmptyLine point then
-                        // If this is an empty line and we actually care about them then 
-                        // return the object span.  A bit surprisingly this is actually the
-                        // 'point' because it's the start of the line break
-                        point
+                // Include the leading white space in the span.  Start by looking backward
+                // and using the end of the previous span as the start point
+                let startPoint = 
+                    if SnapshotPointUtil.IsStartPoint firstSpan.Start then
+                        firstSpan.Start
                     else
-                        // It's a normal object, get the end of it's span
-                        let span = getObjectSpan point
-                        SnapshotSpanUtil.GetEndPoint span
+                        let point = firstSpan.Start |> SnapshotPointUtil.SubtractOne
+                        getObjects Path.Backward point
+                        |> Seq.map SnapshotSpanUtil.GetEndPoint
+                        |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
 
-                if count = 1 then 
-                    endPoint
-                else
-                    inner endPoint (count - 1)
-
-        // Get the point to start the search from
-        let searchPoint = 
-            if isWhiteSpace x.CaretPoint then
-                x.CaretPoint
-            elif isSignificantEmptyLine x.CaretPoint then
-                x.CaretPoint
-            else
-                let span = getObjectSpan x.CaretPoint
-                span.Start
-        let endPoint = inner searchPoint count
-
-        // Get the white space in front of the object
-        let getPrecedingWhiteSpace () =
-            match kind with
-            | TextObjectNonBlockKind.StopOnLineBreak ->
-                // Search back no further than the start of the line for the search 
-                // point
-                let line = SnapshotPointUtil.GetContainingLine searchPoint
-                let point =
-                    SnapshotSpan(line.Start, searchPoint)
-                    |> SnapshotSpanUtil.GetPointsBackward
-                    |> Seq.skipWhile isWhiteSpace
-                    |> SeqUtil.tryHeadOnly
-
-                // Now we either found a non-white space item and need to increment to get
-                // back to white space or we found only white space preceding the word on
-                // the line in which case it shouldn't be included
-                match point with 
-                | None -> searchPoint
-                | Some point -> SnapshotPointUtil.AddOne point
-
-            | TextObjectNonBlockKind.EmptyLinesAreObjects ->
-                match SnapshotPointUtil.TrySubtractOne searchPoint with
-                | None ->
-                    SnapshotUtil.GetStartPoint x.CurrentSnapshot
-                | Some point ->
-                    let next = 
-                        point
-                        |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Backward
-                        |> Seq.skipWhile isWhiteSpace
-                        |> SeqUtil.tryHeadOnly
-                    match next with 
-                    | Some next -> 
-                        if isSignificantEmptyLine next then
-                            // If we hit an empty line then the white space starts at the 
-                            // end of that line
-                            let line = SnapshotPointUtil.GetContainingLine next
-                            line.EndIncludingLineBreak
-                        else
-                            // We stopped an a non-white space item so move one forward
-                            // to get back to the white space
-                            SnapshotPointUtil.AddOne next
-                    | None -> 
-                        SnapshotUtil.GetStartPoint x.CurrentSnapshot
-
-        // Now we need to do the standard adjustments listed at the bottom of 
-        // ':help text-objects'.  
-        if isWhiteSpace x.CaretPoint then
-
-            // If the caret starts in white space then we include the preceding
-            // white space in the span
-            SnapshotSpan(getPrecedingWhiteSpace() , endPoint)
-        elif isWhiteSpace endPoint then 
-
-            // If the caret ends in white space then include the white space up
-            // until the start of the next item.  
-            let startPoint, endPoint = 
-                match kind with
-                | TextObjectNonBlockKind.StopOnLineBreak ->
-                    // Get the white space after the item and don't go past the end 
-                    // of this line 
-                    if SnapshotPointUtil.IsInsideLineBreak endPoint then
-                        getPrecedingWhiteSpace(), endPoint
-                    else
-                        let line = SnapshotPointUtil.GetContainingLine endPoint
-                        searchPoint, SnapshotSpan(endPoint, line.End)
-                        |> SnapshotSpanUtil.GetPoints
-                        |> Seq.skipWhile isWhiteSpace
-                        |> SeqUtil.tryHeadOnly
-                        |> OptionUtil.getOrDefault line.End
-                | TextObjectNonBlockKind.EmptyLinesAreObjects ->
-                    searchPoint, endPoint
-                    |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Forward
-                    |> Seq.skipWhile isWhiteSpace
-                    |> SeqUtil.tryHeadOnly
-                    |> OptionUtil.getOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
-            SnapshotSpan(startPoint, endPoint)
-        else
-            let startPoint = getPrecedingWhiteSpace()
-            let startLine = SnapshotPointUtil.GetContainingLine startPoint
-            let searchLine = SnapshotPointUtil.GetContainingLine searchPoint
-            match kind with
-            | TextObjectNonBlockKind.StopOnLineBreak ->
-                if (startLine.LineNumber <> searchLine.LineNumber || startPoint.Position = 0) then
-                    SnapshotSpan(searchPoint, endPoint)
-                else
-                    SnapshotSpan(startPoint, endPoint)
-            | TextObjectNonBlockKind.EmptyLinesAreObjects ->
                 SnapshotSpan(startPoint, endPoint)
+            else
+                // Include the white space after the object
+                let endPoint = 
+                    match all |> SeqUtil.skipMax (count + 1) |> SeqUtil.tryHeadOnly with
+                    | None -> SnapshotUtil.GetEndPoint x.CurrentSnapshot
+                    | Some span -> span.Start
+                SnapshotSpan(firstSpan.Start, endPoint)
 
-    /// Implements the 'as' motion
+    /// Implements the 'as' motion.  Make sure to use the no trailing characters option here to 
+    /// maintain parity with the gVim implementation.  Not sure if this is a bug or not and haven't
+    /// heard back from the community
+    ///   - http://groups.google.com/group/vim_use/t/d3f28cf801dc2030 
     member x.AllSentence count =
-        let func point = MotionUtilLegacy.GetSentenceFull point
-        let span = x.AllTextObjectNonBlock func count TextObjectNonBlockKind.EmptyLinesAreObjects
+        let span = x.AllTextObjectCommon (x.GetSentences SentenceKind.NoTrailingCharacters) count
         {
             Span = span 
             IsForward = true 
@@ -1087,19 +945,70 @@ type internal MotionUtil
             OperationKind = OperationKind.CharacterWise 
             Column = None }
 
-    /// Implements the 'aw' motion. 
+    /// Implements the 'aw' motion.  The 'aw' motion is limited to the current line and won't ever
+    /// extend above or below it.
     member x.AllWord kind count = 
-        let func point = 
-            match TssUtil.FindCurrentFullWordSpan point kind with
-            | None -> SnapshotSpan(point, 0)
-            | Some span -> span
-        let span = x.AllTextObjectNonBlock func count TextObjectNonBlockKind.StopOnLineBreak
-        {
-            Span = span 
-            IsForward = true 
-            MotionKind = MotionKind.Exclusive 
-            OperationKind = OperationKind.CharacterWise 
-            Column = None }
+
+        // Is this word span on the same line as the caret?
+        let isOnSameLine span =
+            let line = span |> SnapshotSpanUtil.GetStartPoint |> SnapshotPointUtil.GetContainingLine
+            line.LineNumber = x.CaretLine.LineNumber
+
+        // Get all of the words on this line going forward
+        let all = 
+            let line = SnapshotPointUtil.GetContainingLine x.CaretPoint
+            x.GetWords kind Path.Forward x.CaretPoint
+            |> Seq.takeWhile isOnSameLine
+            |> List.ofSeq
+
+        match all with 
+        | [] ->
+            // No words going forward is an invalid span
+            None
+
+        | firstSpan :: _ -> 
+
+            // Get the end point of the last word reached by "count"
+            let endPoint = 
+                match all |> SeqUtil.skipMax count |> SeqUtil.tryHeadOnly with
+                | None -> all |> SeqUtil.last |> SnapshotSpanUtil.GetEndPoint
+                | Some lastSpan -> lastSpan.End
+
+            let isCaretInWhiteSpace = SnapshotPointUtil.IsWhiteSpace x.CaretPoint
+            let isEndInWhiteSpace = 
+                if SnapshotPointUtil.IsEndPoint endPoint || SnapshotPointUtil.IsInsideLineBreak endPoint then 
+                    false
+                else 
+                    SnapshotPointUtil.IsWhiteSpace endPoint
+
+            let span = 
+                if isCaretInWhiteSpace || isEndInWhiteSpace then
+                    // Get the space before the item.
+                    let before = 
+                        match SnapshotPointUtil.TrySubtractOne firstSpan.Start with 
+                        | None -> 
+                            firstSpan.Start
+                        | Some point -> 
+                            x.GetWords kind Path.Backward point 
+                            |> Seq.filter isOnSameLine
+                            |> Seq.map SnapshotSpanUtil.GetEndPoint
+                            |> SeqUtil.headOrDefault firstSpan.Start
+    
+                    SnapshotSpan(before, endPoint)
+                else
+                    // Get the white space after the item
+                    let after = 
+                        x.GetWords kind Path.Forward endPoint 
+                        |> Seq.filter isOnSameLine
+                        |> Seq.map SnapshotSpanUtil.GetStartPoint
+                        |> SeqUtil.headOrDefault endPoint
+                    SnapshotSpan(firstSpan.Start, after)
+            {
+                Span = span 
+                IsForward = true 
+                MotionKind = MotionKind.Exclusive 
+                OperationKind = OperationKind.CharacterWise 
+                Column = None } |> Some
 
     member x.BeginingOfLine() = 
         let start = x.CaretPoint
@@ -1195,7 +1104,7 @@ type internal MotionUtil
             else 
                 // Need to skip (count - 1) remaining words to get to the one we're looking for
                 let wordSpan = 
-                    TssUtil.GetWordSpans searchPoint kind SearchKind.Forward
+                    TssUtil.GetWordSpans kind Path.Forward searchPoint
                     |> SeqUtil.skipMax (count - 1)
                     |> SeqUtil.tryHeadOnly
 
@@ -1430,30 +1339,27 @@ type internal MotionUtil
 
     member x.SentenceForward count = 
         _jumpList.Add x.CaretPoint
-        match TextViewUtil.GetCaretPointKind _textView with 
-        | PointKind.Normal (point) -> 
-            let span = 
-                MotionUtilLegacy.GetSentences point Path.Forward
-                |> Seq.truncate count
-                |> SnapshotSpanUtil.CreateCombined 
-                |> Option.get   // GetSentences must return at least one
-            {
-                Span = span 
-                IsForward = true 
-                MotionKind = MotionKind.Exclusive 
-                OperationKind = OperationKind.CharacterWise 
-                Column = None}
-        | PointKind.EndPoint(_,point) -> MotionResult.CreateEmptyFromPoint point MotionKind.Inclusive OperationKind.CharacterWise
-        | PointKind.ZeroLength(point) -> MotionResult.CreateEmptyFromPoint point MotionKind.Inclusive OperationKind.CharacterWise
+        let endPoint =
+            x.GetSentences SentenceKind.Default Path.Forward x.CaretPoint
+            |> SeqUtil.skipMax count
+            |> Seq.map SnapshotSpanUtil.GetStartPoint
+            |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
+        let span = SnapshotSpan(x.CaretPoint, endPoint)
+        {
+            Span = span 
+            IsForward = true 
+            MotionKind = MotionKind.Exclusive 
+            OperationKind = OperationKind.CharacterWise 
+            Column = None}
 
     member x.SentenceBackward count = 
         _jumpList.Add x.CaretPoint
-        let caretPoint = TextViewUtil.GetCaretPoint _textView
-        let span = 
-            MotionUtilLegacy.GetSentences caretPoint Path.Backward
-            |> Seq.truncate count
-            |> SnapshotSpanUtil.CreateCombined 
-            |> Option.get   // GetSentences must return at least one
+        let startPoint = 
+            x.GetSentences SentenceKind.Default Path.Backward x.CaretPoint
+            |> SeqUtil.skipMax (count - 1)
+            |> Seq.map SnapshotSpanUtil.GetStartPoint
+            |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
+        let span = SnapshotSpan(startPoint, x.CaretPoint)
         {
             Span = span 
             IsForward = false 
@@ -1461,17 +1367,36 @@ type internal MotionUtil
             OperationKind = OperationKind.CharacterWise 
             Column = None}
 
+    /// Implements the '}' motion
     member x.ParagraphForward count = 
-        let startPoint = TextViewUtil.GetCaretPoint _textView
+        _jumpList.Add x.CaretPoint
+
         let endPoint = 
-            let next = MotionUtilLegacy.GetParagraphs startPoint Path.Forward |> Seq.skip count
-            match SeqUtil.tryHeadOnly next with
-            | None -> SnapshotUtil.GetEndPoint startPoint.Snapshot
-            | Some span -> span.Start
-        let span = SnapshotSpan(startPoint, endPoint)
+            x.GetParagraphs Path.Forward x.CaretPoint
+            |> SeqUtil.skipMax count
+            |> Seq.map SnapshotSpanUtil.GetStartPoint
+            |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
+        let span = SnapshotSpan(x.CaretPoint, endPoint)
         {
-            Span = span
+            Span = span 
             IsForward = true
+            MotionKind = MotionKind.Exclusive
+            OperationKind = OperationKind.CharacterWise
+            Column = None }
+
+    /// Implements the '{' motion
+    member x.ParagraphBackward count = 
+        _jumpList.Add x.CaretPoint
+
+        let startPoint = 
+            x.GetParagraphs Path.Backward x.CaretPoint
+            |> SeqUtil.skipMax count
+            |> Seq.map SnapshotSpanUtil.GetStartPoint
+            |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
+        let span = SnapshotSpan(startPoint, x.CaretPoint)
+        {
+            Span = span 
+            IsForward = false
             MotionKind = MotionKind.Exclusive
             OperationKind = OperationKind.CharacterWise
             Column = None }
@@ -1730,8 +1655,8 @@ type internal MotionUtil
 
         let motionResult = 
             match motion with 
-            | Motion.AllParagraph -> x.GetAllParagraph motionArgument.Count |> Some
-            | Motion.AllWord wordKind -> x.AllWord wordKind motionArgument.Count |> Some
+            | Motion.AllParagraph -> x.AllParagraph motionArgument.Count |> Some
+            | Motion.AllWord wordKind -> x.AllWord wordKind motionArgument.Count
             | Motion.AllSentence -> x.AllSentence motionArgument.Count |> Some
             | Motion.BeginingOfLine -> x.BeginingOfLine() |> Some
             | Motion.CharLeft -> x.CharLeft motionArgument.Count
@@ -1757,8 +1682,8 @@ type internal MotionUtil
             | Motion.MatchingToken -> x.MatchingToken()
             | Motion.NextPartialWord path -> x.NextPartialWord path motionArgument.Count
             | Motion.NextWord path -> x.NextWord path motionArgument.Count
-            | Motion.ParagraphBackward -> x.GetParagraphs Path.Backward motionArgument.Count |> Some
-            | Motion.ParagraphForward -> x.GetParagraphs Path.Forward motionArgument.Count |> Some
+            | Motion.ParagraphBackward -> x.ParagraphBackward motionArgument.Count |> Some
+            | Motion.ParagraphForward -> x.ParagraphForward motionArgument.Count |> Some
             | Motion.QuotedString -> x.QuotedString()
             | Motion.QuotedStringContents -> x.QuotedStringContents()
             | Motion.RepeatLastCharSearch -> x.RepeatLastCharSearch()

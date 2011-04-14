@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -16,10 +17,11 @@ namespace VimCore.UnitTest
     public class MotionUtilTest
     {
         private ITextBuffer _buffer;
+        private ITextBuffer _textBuffer;
         private ITextView _textView;
         private ITextSnapshot _snapshot;
         private IVimLocalSettings _localSettings;
-        private IVimGlobalSettings _settings;
+        private IVimGlobalSettings _globalSettings;
         private MotionUtil _motionUtil;
         private ISearchService _search;
         private ITextStructureNavigator _navigator;
@@ -48,14 +50,15 @@ namespace VimCore.UnitTest
         private void Create(ITextView textView)
         {
             _textView = textView;
+            _textBuffer = textView.TextBuffer;
             _buffer = _textView.TextBuffer;
             _snapshot = _buffer.CurrentSnapshot;
             _buffer.Changed += delegate { _snapshot = _buffer.CurrentSnapshot; };
-            _settings = new Vim.GlobalSettings();
-            _localSettings = new LocalSettings(_settings, _textView);
+            _globalSettings = new Vim.GlobalSettings();
+            _localSettings = new LocalSettings(_globalSettings, _textView);
             _markMap = new MarkMap(new TrackingLineColumnService());
             _vimData = new VimData();
-            _search = VimUtil.CreateSearchService(_settings);
+            _search = VimUtil.CreateSearchService(_globalSettings);
             _jumpList = VimUtil.CreateJumpList();
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _navigator = VimUtil.CreateTextStructureNavigator(_textView.TextBuffer);
@@ -425,7 +428,7 @@ namespace VimCore.UnitTest
         public void AllWord_Simple()
         {
             Create("foo bar");
-            var data = _motionUtil.AllWord(WordKind.NormalWord, 1);
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 1).Value;
             Assert.AreEqual("foo ", data.Span.GetText());
         }
 
@@ -437,7 +440,7 @@ namespace VimCore.UnitTest
         {
             Create("foo bar");
             _textView.MoveCaretTo(1);
-            var data = _motionUtil.AllWord(WordKind.NormalWord, 1);
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 1).Value;
             Assert.AreEqual("foo ", data.Span.GetText());
         }
 
@@ -449,7 +452,7 @@ namespace VimCore.UnitTest
         {
             Create("foo bar baz");
             _textView.MoveCaretTo(1);
-            var data = _motionUtil.AllWord(WordKind.NormalWord, 2);
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 2).Value;
             Assert.AreEqual("foo bar ", data.Span.GetText());
         }
 
@@ -462,7 +465,7 @@ namespace VimCore.UnitTest
         {
             Create("dog cat tree");
             _textView.MoveCaretTo(3);
-            var data = _motionUtil.AllWord(WordKind.NormalWord, 1);
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 1).Value;
             Assert.AreEqual(" cat", data.Span.GetText());
         }
 
@@ -475,7 +478,7 @@ namespace VimCore.UnitTest
         {
             Create("dog cat");
             _textView.MoveCaretTo(5);
-            var data = _motionUtil.AllWord(WordKind.NormalWord, 1);
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 1).Value;
             Assert.AreEqual(" cat", data.Span.GetText());
         }
 
@@ -488,7 +491,7 @@ namespace VimCore.UnitTest
         {
             Create("dog", "  cat");
             _textView.MoveCaretTo(_textView.GetLine(1).Start.Add(2));
-            var data = _motionUtil.AllWord(WordKind.NormalWord, 1);
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 1).Value;
             Assert.AreEqual("cat", data.Span.GetText());
         }
 
@@ -501,7 +504,7 @@ namespace VimCore.UnitTest
         {
             Create("  cat");
             _textView.MoveCaretTo(3);
-            var data = _motionUtil.AllWord(WordKind.NormalWord, 1);
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 1).Value;
             Assert.AreEqual("cat", data.Span.GetText());
         }
 
@@ -514,7 +517,7 @@ namespace VimCore.UnitTest
         {
             Create("cat   dog");
             _textView.MoveCaretTo(4);
-            var data = _motionUtil.AllWord(WordKind.NormalWord, 1);
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 1).Value;
             Assert.AreEqual("   dog", data.Span.GetText());
         }
 
@@ -996,7 +999,7 @@ namespace VimCore.UnitTest
             var buffer = EditorUtil.CreateBuffer("  foo", "bar");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 1, caretPosition: buffer.GetLine(1).End);
             Create(tuple.Item1.Object);
-            _settings.StartOfLine = false;
+            _globalSettings.StartOfLine = false;
             var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None);
             Assert.IsTrue(data.Column.IsNone());
         }
@@ -1053,7 +1056,7 @@ namespace VimCore.UnitTest
             var buffer = EditorUtil.CreateBuffer("a", "b", "  c", "d");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
             Create(tuple.Item1.Object);
-            _settings.StartOfLine = false;
+            _globalSettings.StartOfLine = false;
             var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None);
             Assert.IsTrue(data.Column.IsNone());
         }
@@ -1746,19 +1749,19 @@ namespace VimCore.UnitTest
         /// one
         /// </summary>
         [Test]
-        public void GetAllParagraph_FromMiddle()
+        public void AllParagraph_FromMiddle()
         {
             Create("a", "b", "", "c");
             _textView.MoveCaretToLine(1);
-            var span = _motionUtil.GetAllParagraph(1).Span;
+            var span = _motionUtil.AllParagraph(1).Span;
             Assert.AreEqual(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
         }
 
         [Test]
-        public void GetAllParagraph_FromStart()
+        public void AllParagraph_FromStart()
         {
             Create("a", "b", "", "c");
-            var span = _motionUtil.GetAllParagraph(1).Span;
+            var span = _motionUtil.AllParagraph(1).Span;
             Assert.AreEqual(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
         }
 
@@ -1767,11 +1770,11 @@ namespace VimCore.UnitTest
         /// an actual portion of the paragraph
         /// </summary>
         [Test]
-        public void GetAllParagraph_FromStartWithPreceedingBlank()
+        public void AllParagraph_FromStartWithPreceedingBlank()
         {
             Create("a", "b", "", "c");
             _textView.MoveCaretToLine(2);
-            var span = _motionUtil.GetAllParagraph(1).Span;
+            var span = _motionUtil.AllParagraph(1).Span;
             Assert.AreEqual(_snapshot.GetLineRange(2, 3).ExtentIncludingLineBreak, span);
         }
 
@@ -1780,11 +1783,11 @@ namespace VimCore.UnitTest
         /// line but not the trailing ones
         /// </summary>
         [Test]
-        public void GetAllParagraph_FromBlankLine()
+        public void AllParagraph_FromBlankLine()
         {
             Create("", "dog", "cat", "", "pig");
             _textView.MoveCaretToLine(3);
-            var span = _motionUtil.GetAllParagraph(1).Span;
+            var span = _motionUtil.AllParagraph(1).Span;
             Assert.AreEqual(_snapshot.GetLineRange(3, 4).ExtentIncludingLineBreak, span);
         }
 
@@ -1926,6 +1929,256 @@ namespace VimCore.UnitTest
             Assert.AreEqual(OperationKind.CharacterWise, result2.OperationKind);
             Assert.AreEqual("cat", result2.Span.GetText());
             Assert.IsTrue(result2.MotionKind.IsInclusive);
+        }
+
+        [Test]
+        public void GetSentences1()
+        {
+            Create("a. b.");
+            var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Forward, _snapshot.GetPoint(0));
+            CollectionAssert.AreEquivalent(
+                new string[] { "a.", " b." },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        [Test]
+        public void GetSentences2()
+        {
+            Create("a! b.");
+            var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Forward, _snapshot.GetPoint(0));
+            CollectionAssert.AreEquivalent(
+                new string[] { "a!", " b." },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        [Test]
+        public void GetSentences3()
+        {
+            Create("a? b.");
+            var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Forward, _snapshot.GetPoint(0));
+            CollectionAssert.AreEquivalent(
+                new string[] { "a?", " b." },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        [Test]
+        public void GetSentences4()
+        {
+            Create("a? b.");
+            var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Forward, _snapshot.GetEndPoint());
+            CollectionAssert.AreEquivalent(
+                new string[] { },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        /// <summary>
+        /// Make sure the return doesn't include an empty span for the end point
+        /// </summary>
+        [Test]
+        public void GetSentences_BackwardFromEndOfBuffer()
+        {
+            Create("a? b.");
+            var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Backward, _snapshot.GetEndPoint());
+            CollectionAssert.AreEquivalent(
+                new[] { " b.", "a?" },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        /// <summary>
+        /// Sentences are an exclusive motion and hence backward from a single whitespace 
+        /// to a sentence boundary should not include the whitespace
+        /// </summary>
+        [Test]
+        public void GetSentences_BackwardFromSingleWhitespace()
+        {
+            Create("a? b.");
+            var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Backward, _snapshot.GetPoint(2));
+            CollectionAssert.AreEquivalent(
+                new[] { "a?" },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        /// <summary>
+        /// Make sure we include many legal trailing characters
+        /// </summary>
+        [Test]
+        public void GetSentences_ManyTrailingChars()
+        {
+            Create("a?)]' b.");
+            var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Forward, _snapshot.GetPoint(0));
+            CollectionAssert.AreEquivalent(
+                new[] { "a?)]' ", "b." },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        /// <summary>
+        /// The character should go on the previous sentence
+        /// </summary>
+        [Test]
+        public void GetSentences_BackwardWithCharBetween()
+        {
+            Create("a?) b.");
+            var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Backward, _snapshot.GetEndPoint());
+            CollectionAssert.AreEquivalent(
+                new[] { "b.", "a?) " },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        [Test]
+        [Description("Only a sentence end if followed by certain items")]
+        public void GetSentence9()
+        {
+            Create("a!b. c");
+            var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Forward, _snapshot.GetPoint(0));
+            CollectionAssert.AreEquivalent(
+                new string[] { "a!b.", " c" },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        /// <summary>
+        /// Only a valid boundary if the end character is followed by one of the 
+        /// legal follow up characters (spaces, tabs, end of line after trailing chars)
+        /// </summary>
+        [Test]
+        public void GetSentence_IncompleteBoundary()
+        {
+            Create("a!b. c");
+            var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Backward, _snapshot.GetEndPoint());
+            CollectionAssert.AreEquivalent(
+                new[] { "c", "a!b." },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        /// <summary>
+        /// Make sure blank lines are included as sentence boundaries
+        /// </summary>
+        [Test]
+        public void GetSentence_ForwardBlankLinesAreBoundaries()
+        {
+            Create("a", "", "", "b");
+            var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Forward, _snapshot.GetPoint(0));
+            CollectionAssert.AreEquivalent(
+                new[]
+                {
+                    _textBuffer.GetLineRange(0, 0).ExtentIncludingLineBreak,
+                    _textBuffer.GetLineRange(1, 3).ExtentIncludingLineBreak
+                },
+                ret.ToList());
+        }
+
+        [Test]
+        public void GetSentence13()
+        {
+            Create("dog", "cat", "bear");
+            var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Forward, _snapshot.GetEndPoint().Subtract(1));
+            CollectionAssert.AreEquivalent(
+                new [] { "r" },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        [Test]
+        public void GetParagraphs_SingleBreak()
+        {
+            Create("a", "b", "", "c");
+            var ret = _motionUtil.GetParagraphs(Path.Forward, _snapshot.GetPoint(0));
+            CollectionAssert.AreEquivalent(
+                new[]
+                {
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    _textBuffer.GetLineRange(2, 3).ExtentIncludingLineBreak
+                },
+                ret.ToList());
+        }
+
+        /// <summary>
+        /// Consecutive breaks should not produce separate paragraphs.  They are treated as 
+        /// part of the same paragraph
+        /// </summary>
+        [Test]
+        public void GetParagraphs_ConsequtiveBreaks()
+        {
+            Create("a", "b", "", "", "c");
+            var ret = _motionUtil.GetParagraphs(Path.Forward, _snapshot.GetPoint(0));
+            CollectionAssert.AreEquivalent(
+                new[]
+                {
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    _textBuffer.GetLineRange(2, 4).ExtentIncludingLineBreak
+                },
+                ret.ToList());
+        }
+
+        /// <summary>
+        /// Form feed is a section and hence a paragraph boundary
+        /// </summary>
+        [Test]
+        public void GetParagraphs_FormFeedShouldBeBoundary()
+        {
+            Create("a", "b", "\f", "", "c");
+            var ret = _motionUtil.GetParagraphs(Path.Forward, _snapshot.GetPoint(0));
+            CollectionAssert.AreEquivalent(
+                new[]
+                {
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    _textBuffer.GetLineRange(2, 2).ExtentIncludingLineBreak,
+                    _textBuffer.GetLineRange(3, 4).ExtentIncludingLineBreak
+                },
+                ret.ToList());
+        }
+
+        /// <summary>
+        /// A form feed is a section boundary and should not count as a consecutive paragraph
+        /// boundary
+        /// </summary>
+        [Test]
+        public void GetParagraphs_FormFeedIsNotConsequtive()
+        {
+            Create("a", "b", "\f", "", "c");
+            var ret = _motionUtil.GetParagraphs(Path.Forward, _snapshot.GetPoint(0));
+            CollectionAssert.AreEquivalent(
+                new[]
+                {
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    _textBuffer.GetLineRange(2, 2).ExtentIncludingLineBreak,
+                    _textBuffer.GetLineRange(3, 4).ExtentIncludingLineBreak
+                },
+                ret.ToList());
+        }
+
+        /// <summary>
+        /// Make sure we respect macro breaks
+        /// </summary>
+        [Test]
+        public void GetParagraphs_MacroBreak()
+        {
+            Create("a", ".hh", "bear");
+            _globalSettings.Paragraphs = "hh";
+            var ret = _motionUtil.GetParagraphs(Path.Forward, _snapshot.GetPoint(0));
+            CollectionAssert.AreEquivalent(
+                new []
+                {
+                    _textBuffer.GetLineRange(0, 0).ExtentIncludingLineBreak,
+                    _textBuffer.GetLineRange(1,2).ExtentIncludingLineBreak
+                },
+                ret.ToList());
+        }
+
+        /// <summary>
+        /// Make sure we respect macro breaks of length 1
+        /// </summary>
+        [Test]
+        public void GetParagraphs_MacroBreakLengthOne()
+        {
+            Create("a", ".j", "bear");
+            _globalSettings.Paragraphs = "hhj ";
+            var ret = _motionUtil.GetParagraphs(Path.Forward, _snapshot.GetPoint(0));
+            CollectionAssert.AreEquivalent(
+                new []
+                {
+                    _textBuffer.GetLineRange(0, 0).ExtentIncludingLineBreak,
+                    _textBuffer.GetLineRange(1,2).ExtentIncludingLineBreak
+                },
+                ret.ToList());
         }
     }
 

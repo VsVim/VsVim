@@ -7,8 +7,9 @@ open Microsoft.VisualStudio.Text.Operations
 module TssUtil =
 
     /// Get the spans of all Words starting at the given point and searching the 
-    /// spans with the specified Kind
-    val GetWordSpans : SnapshotPoint -> WordKind -> SearchKind -> seq<SnapshotSpan>
+    /// spans with the specified Kind.  If the provided point is a part of a Word 
+    /// span the span for the entire Word will be returned
+    val GetWordSpans : WordKind -> Path-> SnapshotPoint -> seq<SnapshotSpan>
 
     /// Vim is fairly odd in that it considers the top line of the file to be both line numbers
     /// 1 and 0.  The next line is 2.  The editor is a zero based index though so we need
@@ -33,7 +34,7 @@ module TssUtil =
 
     /// Find any word span in the specified range.  If a span is returned, it will be a subset
     /// of the original span. 
-    val FindAnyWordSpan : SnapshotSpan -> WordKind -> SearchKind -> option<SnapshotSpan>
+    val FindAnyWordSpan : SnapshotSpan -> WordKind -> Path -> option<SnapshotSpan>
 
     /// Find the start of the next word from the specified point.  If the cursor is currently
     /// on a word then this word will not be considered.  If there are no more words GetEndPoint

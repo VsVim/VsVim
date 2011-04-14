@@ -2,6 +2,7 @@
 
 namespace Vim
 
+[<RequireQualifiedAccess>]
 type WordKind = 
-    | NormalWord = 1
-    | BigWord = 2
+    | NormalWord
+    | BigWord

@@ -21,7 +21,7 @@ namespace VimCore.UnitTest
                 "running out of things to make up"
             };
 
-        ITextBuffer _buffer = null;
+        ITextBuffer _textBuffer = null;
         ITextSnapshot _snapshot = null;
 
         [SetUp]
@@ -32,8 +32,8 @@ namespace VimCore.UnitTest
 
         public void Create(params string[] lines)
         {
-            _buffer = EditorUtil.CreateBuffer(lines);
-            _snapshot = _buffer.CurrentSnapshot;
+            _textBuffer = EditorUtil.CreateBuffer(lines);
+            _snapshot = _textBuffer.CurrentSnapshot;
         }
 
         [Test]
@@ -221,7 +221,7 @@ namespace VimCore.UnitTest
         public void GetReverseCharacterSpan1()
         {
             Create("foo");
-            var line = _buffer.CurrentSnapshot.GetLineFromLineNumber(0);
+            var line = _textBuffer.CurrentSnapshot.GetLineFromLineNumber(0);
             var span = TssUtil.GetReverseCharacterSpan(line.Start.Add(1), 1);
             Assert.AreEqual("f", span.GetText());
         }
@@ -230,7 +230,7 @@ namespace VimCore.UnitTest
         public void GetReverseCharacterSpan2()
         {
             Create("foo");
-            var line = _buffer.CurrentSnapshot.GetLineFromLineNumber(0);
+            var line = _textBuffer.CurrentSnapshot.GetLineFromLineNumber(0);
             var span = TssUtil.GetReverseCharacterSpan(line.Start.Add(2), 2);
             Assert.AreEqual("fo", span.GetText());
         }
@@ -239,7 +239,7 @@ namespace VimCore.UnitTest
         public void GetReverseCharacterSpan3()
         {
             Create("foo");
-            var line = _buffer.CurrentSnapshot.GetLineFromLineNumber(0);
+            var line = _textBuffer.CurrentSnapshot.GetLineFromLineNumber(0);
             var span = TssUtil.GetReverseCharacterSpan(line.Start.Add(2), 200);
             Assert.AreEqual("fo", span.GetText());
         }
@@ -250,7 +250,7 @@ namespace VimCore.UnitTest
         public void FindCurrentWordSpan1()
         {
             Create("foo bar");
-            var line = _buffer.CurrentSnapshot.GetLineFromLineNumber(0);
+            var line = _textBuffer.CurrentSnapshot.GetLineFromLineNumber(0);
             var opt = TssUtil.FindCurrentWordSpan(line.End, WordKind.NormalWord);
             Assert.IsTrue(opt.IsNone());
         }
@@ -260,7 +260,7 @@ namespace VimCore.UnitTest
         {
             Create("foo bar baz");
             var words = TssUtil
-                .GetWordSpans(new SnapshotPoint(_buffer.CurrentSnapshot, 0), WordKind.NormalWord, SearchKind.Forward)
+                .GetWordSpans(WordKind.NormalWord, Path.Forward, _textBuffer.GetPoint(0))
                 .Select(x => x.GetText())
                 .ToList();
             Assert.AreEqual(3, words.Count);
@@ -274,7 +274,7 @@ namespace VimCore.UnitTest
         {
             Create("foo bar baz");
             var words = TssUtil
-                .GetWordSpans(new SnapshotPoint(_buffer.CurrentSnapshot, 1), WordKind.NormalWord, SearchKind.Forward)
+                .GetWordSpans(WordKind.NormalWord, Path.Forward, _textBuffer.GetPoint(1))
                 .Select(x => x.GetText())
                 .ToList();
             Assert.AreEqual(3, words.Count);
@@ -283,27 +283,15 @@ namespace VimCore.UnitTest
             Assert.AreEqual("baz", words[2]);
         }
 
-        [Test, Description("End of the buffer with wrap")]
-        public void GetWordSpans3()
+        /// <summary>
+        /// From the end of the buffer should return an empty sequence
+        /// </summary>
+        [Test]
+        public void GetWordSpans_EndOfBuffer()
         {
             Create("foo bar baz");
             var words = TssUtil
-                .GetWordSpans(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).End, WordKind.NormalWord, SearchKind.ForwardWithWrap)
-                .Select(x => x.GetText())
-                .ToList();
-            Assert.AreEqual(3, words.Count);
-            Assert.AreEqual("foo", words[0]);
-            Assert.AreEqual("bar", words[1]);
-            Assert.AreEqual("baz", words[2]);
-        }
-
-        [Test, Description("End of the line without wrap shouldn't return anything")]
-        public void GetWordSpans4()
-        {
-            Create("foo bar baz");
-            var words = TssUtil
-                .GetWordSpans(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).End, WordKind.NormalWord, SearchKind.Forward)
-                .Select(x => x.GetText())
+                .GetWordSpans(WordKind.NormalWord, Path.Forward, _textBuffer.CurrentSnapshot.GetEndPoint())
                 .ToList();
             Assert.AreEqual(0, words.Count);
         }
@@ -313,7 +301,7 @@ namespace VimCore.UnitTest
         {
             Create("foo bar baz");
             var words = TssUtil
-                .GetWordSpans(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).End, WordKind.NormalWord, SearchKind.BackwardWithWrap)
+                .GetWordSpans(WordKind.NormalWord, Path.Backward, _textBuffer.GetEndPoint())
                 .Select(x => x.GetText())
                 .ToList();
             Assert.AreEqual(3, words.Count);
@@ -322,22 +310,39 @@ namespace VimCore.UnitTest
             Assert.AreEqual("foo", words[2]);
         }
 
-        [Test, Description("Backwards in the middle of a word")]
-        public void GetWordSpans6()
+        /// <summary>
+        /// Make sure to include the full word when going backward from the middle of a word
+        /// </summary>
+        [Test]
+        public void GetWordSpans_BackwardFromMiddleOfWord()
         {
             Create("foo bar baz");
             var words = TssUtil
-                .GetWordSpans(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).End.Subtract(1), WordKind.NormalWord, SearchKind.Backward)
+                .GetWordSpans(WordKind.NormalWord, Path.Backward, _textBuffer.GetLine(0).End.Subtract(1))
                 .Select(x => x.GetText())
                 .ToList();
             CollectionAssert.AreEqual(new string[] { "baz", "bar", "foo" }, words);
+        }
+
+        /// <summary>
+        /// When going backward from the start of a word the word shouldn't be included.
+        /// </summary>
+        [Test]
+        public void GetWordSpans_BackwardFromStartOfWord()
+        {
+            Create("cat dog");
+            var word = TssUtil
+                .GetWordSpans(WordKind.NormalWord, Path.Backward, _textBuffer.GetPoint(4))
+                .Select(x => x.GetText())
+                .Single();
+            Assert.AreEqual("cat", word);
         }
 
         [Test]
         public void FindAnyWordSpan1()
         {
             Create("foo bar baz");
-            var span = TssUtil.FindAnyWordSpan(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent, WordKind.BigWord, SearchKind.Forward);
+            var span = TssUtil.FindAnyWordSpan(_textBuffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent, WordKind.BigWord, Path.Forward);
             Assert.IsTrue(span.IsSome());
             Assert.AreEqual("foo", span.Value.GetText());
         }
@@ -346,7 +351,7 @@ namespace VimCore.UnitTest
         public void FindAnyWordSpan2()
         {
             Create("foo bar baz");
-            var span = TssUtil.FindAnyWordSpan(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 2), WordKind.BigWord, SearchKind.Forward);
+            var span = TssUtil.FindAnyWordSpan(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 2), WordKind.BigWord, Path.Forward);
             Assert.IsTrue(span.IsSome());
             Assert.AreEqual("fo", span.Value.GetText());
         }
@@ -355,7 +360,7 @@ namespace VimCore.UnitTest
         public void FindAnyWordSpan3()
         {
             Create("foo bar baz");
-            var span = TssUtil.FindAnyWordSpan(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent, WordKind.NormalWord, SearchKind.Backward);
+            var span = TssUtil.FindAnyWordSpan(_textBuffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent, WordKind.NormalWord, Path.Backward);
             Assert.IsTrue(span.IsSome());
             Assert.AreEqual("baz", span.Value.GetText());
         }
@@ -365,9 +370,9 @@ namespace VimCore.UnitTest
         {
             Create("foo bar baz");
             var span = TssUtil.FindAnyWordSpan(
-                new SnapshotSpan(_buffer.CurrentSnapshot, 0, _buffer.CurrentSnapshot.GetLineFromLineNumber(0).End.Subtract(1).Position),
+                new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, _textBuffer.CurrentSnapshot.GetLineFromLineNumber(0).End.Subtract(1).Position),
                 WordKind.NormalWord,
-                SearchKind.BackwardWithWrap);
+                Path.Backward);
             Assert.IsTrue(span.IsSome());
             Assert.AreEqual("ba", span.Value.GetText());
         }
@@ -376,39 +381,39 @@ namespace VimCore.UnitTest
         public void FindFirstNoneWhiteSpaceCharacter1()
         {
             Create("foo");
-            var point = TssUtil.FindFirstNonWhiteSpaceCharacter(_buffer.GetLine(0));
-            Assert.AreEqual(_buffer.GetLine(0).Start, point);
+            var point = TssUtil.FindFirstNonWhiteSpaceCharacter(_textBuffer.GetLine(0));
+            Assert.AreEqual(_textBuffer.GetLine(0).Start, point);
         }
 
         [Test]
         public void FindFirstNoneWhiteSpaceCharacter2()
         {
             Create(" foo");
-            var point = TssUtil.FindFirstNonWhiteSpaceCharacter(_buffer.GetLine(0));
-            Assert.AreEqual(_buffer.GetLine(0).Start.Add(1), point);
+            var point = TssUtil.FindFirstNonWhiteSpaceCharacter(_textBuffer.GetLine(0));
+            Assert.AreEqual(_textBuffer.GetLine(0).Start.Add(1), point);
         }
 
         [Test]
         public void FindFirstNoneWhiteSpaceCharacter3()
         {
             Create("");
-            var point = TssUtil.FindFirstNonWhiteSpaceCharacter(_buffer.GetLine(0));
-            Assert.AreEqual(_buffer.GetLine(0).Start, point);
+            var point = TssUtil.FindFirstNonWhiteSpaceCharacter(_textBuffer.GetLine(0));
+            Assert.AreEqual(_textBuffer.GetLine(0).Start, point);
         }
 
         [Test]
         public void FindFirstNoneWhiteSpaceCharacter4()
         {
             Create("  bar");
-            var point = TssUtil.FindFirstNonWhiteSpaceCharacter(_buffer.GetLine(0));
-            Assert.AreEqual(_buffer.GetLine(0).Start.Add(2), point);
+            var point = TssUtil.FindFirstNonWhiteSpaceCharacter(_textBuffer.GetLine(0));
+            Assert.AreEqual(_textBuffer.GetLine(0).Start.Add(2), point);
         }
 
         [Test]
         public void FindNextOccurranceOfCharOnLine1()
         {
             Create("foo bar jaz");
-            var next = TssUtil.FindNextOccurranceOfCharOnLine(_buffer.GetLine(0).Start, 'o', 1);
+            var next = TssUtil.FindNextOccurranceOfCharOnLine(_textBuffer.GetLine(0).Start, 'o', 1);
             Assert.IsTrue(next.IsSome());
             Assert.AreEqual(1, next.Value.Position);
         }
@@ -417,7 +422,7 @@ namespace VimCore.UnitTest
         public void FindNextOccurranceOfCharOnLine2()
         {
             Create("foo bar jaz");
-            var next = TssUtil.FindNextOccurranceOfCharOnLine(_buffer.GetLine(0).Start, 'q', 1);
+            var next = TssUtil.FindNextOccurranceOfCharOnLine(_textBuffer.GetLine(0).Start, 'q', 1);
             Assert.IsFalse(next.IsSome());
         }
 
@@ -425,7 +430,7 @@ namespace VimCore.UnitTest
         public void FindNextOccurranceOfCharOnLine3()
         {
             Create("foo bar jaz");
-            var next = TssUtil.FindNextOccurranceOfCharOnLine(_buffer.GetLine(0).Start, 'f', 1);
+            var next = TssUtil.FindNextOccurranceOfCharOnLine(_textBuffer.GetLine(0).Start, 'f', 1);
             Assert.IsFalse(next.IsSome());
         }
 
@@ -433,7 +438,7 @@ namespace VimCore.UnitTest
         public void FindNextOccurranceOfCharOnLine4()
         {
             Create("foo bar jaz");
-            var next = TssUtil.FindNextOccurranceOfCharOnLine(_buffer.GetLine(0).Start, 'a', 2);
+            var next = TssUtil.FindNextOccurranceOfCharOnLine(_textBuffer.GetLine(0).Start, 'a', 2);
             Assert.IsTrue(next.IsSome());
             Assert.AreEqual(9, next.Value.Position);
         }
@@ -442,7 +447,7 @@ namespace VimCore.UnitTest
         public void FindTillNextOccuranceOfCharOnLine1()
         {
             Create("foo bar jaz");
-            var next = TssUtil.FindTillNextOccurranceOfCharOnLine(_buffer.GetLine(0).Start, 'o', 1);
+            var next = TssUtil.FindTillNextOccurranceOfCharOnLine(_textBuffer.GetLine(0).Start, 'o', 1);
             Assert.IsTrue(next.IsSome());
             Assert.AreEqual(0, next.Value.Position);
         }
@@ -451,7 +456,7 @@ namespace VimCore.UnitTest
         public void FindTillNextOccuranceOfCharOnLine2()
         {
             Create("foo bar baz");
-            var next = TssUtil.FindTillNextOccurranceOfCharOnLine(_buffer.GetPoint(0), 'o', 1);
+            var next = TssUtil.FindTillNextOccurranceOfCharOnLine(_textBuffer.GetPoint(0), 'o', 1);
             Assert.IsTrue(next.IsSome());
             Assert.AreEqual(0, next.Value.Position);
         }
@@ -460,7 +465,7 @@ namespace VimCore.UnitTest
         public void FindPreviousOccuranceOfCharOnLine1()
         {
             Create("foo bar baz");
-            var prev = TssUtil.FindPreviousOccurranceOfCharOnLine(_buffer.GetPoint(0), 'f', 1);
+            var prev = TssUtil.FindPreviousOccurranceOfCharOnLine(_textBuffer.GetPoint(0), 'f', 1);
             Assert.IsFalse(prev.IsSome());
         }
 
@@ -468,7 +473,7 @@ namespace VimCore.UnitTest
         public void FindPreviousOccuranceOfCharOnLine2()
         {
             Create("foo bar baz");
-            var prev = TssUtil.FindPreviousOccurranceOfCharOnLine(_buffer.GetPoint(5), 'f', 1);
+            var prev = TssUtil.FindPreviousOccurranceOfCharOnLine(_textBuffer.GetPoint(5), 'f', 1);
             Assert.IsTrue(prev.IsSome());
             Assert.AreEqual(0, prev.Value.Position);
         }
@@ -477,7 +482,7 @@ namespace VimCore.UnitTest
         public void FindPreviousOccuranceOfCharOnLine3()
         {
             Create("foo bar baz");
-            var prev = TssUtil.FindPreviousOccurranceOfCharOnLine(_buffer.GetPoint(5), 'o', 2);
+            var prev = TssUtil.FindPreviousOccurranceOfCharOnLine(_textBuffer.GetPoint(5), 'o', 2);
             Assert.IsTrue(prev.IsSome());
             Assert.AreEqual(1, prev.Value.Position);
         }
@@ -486,7 +491,7 @@ namespace VimCore.UnitTest
         public void FindTillPreviousOccuranceOfCharOnLine1()
         {
             Create("foo", "bar", "baz");
-            var prev = TssUtil.FindTillPreviousOccurranceOfCharOnLine(_buffer.GetLine(2).Start, 'r', 1);
+            var prev = TssUtil.FindTillPreviousOccurranceOfCharOnLine(_textBuffer.GetLine(2).Start, 'r', 1);
             Assert.IsFalse(prev.IsSome());
         }
 
@@ -494,7 +499,7 @@ namespace VimCore.UnitTest
         public void FindTillPreviousOccuranceOfCharOnLine2()
         {
             Create("foo", "bar", "baz");
-            var prev = TssUtil.FindTillPreviousOccurranceOfCharOnLine(_buffer.GetLine(1).End, 'r', 1);
+            var prev = TssUtil.FindTillPreviousOccurranceOfCharOnLine(_textBuffer.GetLine(1).End, 'r', 1);
             Assert.IsFalse(prev.IsSome());
         }
 
@@ -502,9 +507,9 @@ namespace VimCore.UnitTest
         public void FindTillPreviousOccuranceOfCharOnLine3()
         {
             Create("foo", "bar", "baz");
-            var prev = TssUtil.FindTillPreviousOccurranceOfCharOnLine(_buffer.GetLine(1).End, 'b', 1);
+            var prev = TssUtil.FindTillPreviousOccurranceOfCharOnLine(_textBuffer.GetLine(1).End, 'b', 1);
             Assert.IsTrue(prev.IsSome());
-            Assert.AreEqual(_buffer.GetLine(1).Start.Add(1), prev.Value);
+            Assert.AreEqual(_textBuffer.GetLine(1).Start.Add(1), prev.Value);
         }
 
     }

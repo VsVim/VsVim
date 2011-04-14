@@ -119,7 +119,9 @@ type internal GlobalSettings() =
             (IncrementalSearchName, "is", ToggleKind, ToggleValue(false))
             (IgnoreCaseName,"ic", ToggleKind, ToggleValue(false))
             (MagicName, MagicName, ToggleKind, ToggleValue(true))
+            (ParagraphsName, "para", StringKind, StringValue("IPLPPPQPP TPHPLIPpLpItpplpipbp"))
             (ShiftWidthName, "sw", NumberKind, NumberValue(4))
+            (SectionsName, "sect", StringKind, StringValue "SHNHH HUnhsh")
             (SelectionName, "sel", StringKind, StringValue("inclusive"))
             (ScrollOffsetName, "so", NumberKind, NumberValue(0))
             (SmartCaseName, "scs", ToggleKind, ToggleValue(false))
@@ -176,9 +178,15 @@ type internal GlobalSettings() =
         member x.Magic
             with get() = _map.GetBoolValue MagicName
             and set value = _map.TrySetValue MagicName (ToggleValue(value)) |> ignore
+        member x.Paragraphs
+            with get() = _map.GetStringValue ParagraphsName
+            and set value = _map.TrySetValue ParagraphsName (StringValue(value)) |> ignore
         member x.ScrollOffset
             with get() = _map.GetNumberValue ScrollOffsetName
             and set value = _map.TrySetValue ScrollOffsetName (NumberValue(value)) |> ignore
+        member x.Sections
+            with get() = _map.GetStringValue SectionsName
+            and set value = _map.TrySetValue SectionsName (StringValue(value)) |> ignore
         member x.Selection
             with get() = _map.GetStringValue SelectionName
             and set value = _map.TrySetValue SelectionName (StringValue(value)) |> ignore

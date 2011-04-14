@@ -1789,7 +1789,9 @@ module GlobalSettingNames =
     let IgnoreCaseName = "ignorecase"
     let IncrementalSearchName = "incsearch"
     let MagicName = "magic"
+    let ParagraphsName = "paragraphs"
     let ScrollOffsetName = "scrolloff"
+    let SectionsName = "sections"
     let SelectionName = "selection"
     let ShiftWidthName = "shiftwidth"
     let SmartCaseName = "smartcase"
@@ -1841,9 +1843,6 @@ type IVimSettings =
 
 and IVimGlobalSettings = 
 
-    abstract ShiftWidth : int with get, set
-    abstract StartOfLine : bool with get, set
-
     /// Opacity of the caret.  This must be an integer between values 0 and 100 which
     /// will be converted into a double for the opacity of the caret
     abstract CaretOpacity : int with get, set
@@ -1875,6 +1874,16 @@ and IVimGlobalSettings =
     /// Is the Selection setting set to a value which permits the selection
     /// to extend past the line
     abstract IsSelectionPastLine : bool with get
+
+    /// The nrooff macros that separate paragraphs
+    abstract Paragraphs : string with get, set
+
+    /// The nrooff macros that separate sections
+    abstract Sections : string with get, set
+
+    abstract ShiftWidth : int with get, set
+
+    abstract StartOfLine : bool with get, set
 
     /// Controls how many spaces a tab counts for.
     abstract TabStop : int with get,set

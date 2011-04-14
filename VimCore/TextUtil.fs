@@ -18,7 +18,6 @@ module internal TextUtil =
         match kind with
         | WordKind.BigWord -> IsBigWordChar c
         | WordKind.NormalWord -> IsNormalWordChar c
-        | _ -> failwith "Invalid"
     
     let rec private GetNormalWordPredicate input index dir = 
         let nextIndex index = 
@@ -36,15 +35,14 @@ module internal TextUtil =
                     IsWordOtherChar
                 else
                     GetNormalWordPredicate input (nextIndex index) dir
-    
+
     // Get the predicate function for matching the particular WordKind value 
     // that is passed in as the first parameter
     let GetWordPred kind input index dir =
         match kind with 
             | WordKind.NormalWord -> GetNormalWordPredicate input index dir 
             | WordKind.BigWord -> IsBigWordChar
-            | _ -> failwith "Invalid enum value" 
-    
+
     // Find the span of the current word
     let private FindCurrentSpanCore (input:string) index pred = 
         let rec goWhile i =

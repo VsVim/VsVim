@@ -41,17 +41,20 @@ module TssUtil =
     let FindCurrentWordSpan point kind = (WrapTextSearch TextUtil.FindCurrentWordSpan) kind point
     let FindCurrentFullWordSpan point kind = (WrapTextSearch TextUtil.FindFullWordSpan) kind point
 
-    let FindAnyWordSpan (span:SnapshotSpan) wordKind (searchKind : SearchKind)= 
+    let FindAnyWordSpan (span:SnapshotSpan) wordKind path =
         let opt = 
-            if searchKind.IsAnyForward then 
+            match path with
+            | Path.Forward ->
                 match FindCurrentWordSpan span.Start wordKind with
-                | Some s -> Some s
+                | Some s -> 
+                    Some s
                 | None -> 
                     let pred = WrapTextSearch TextUtil.FindNextWordSpan 
                     pred wordKind span.Start 
-            else
+            | Path.Backward ->
                 match span.Length > 0 with
-                | false -> None
+                | false -> 
+                    None
                 | true ->
                 let point = span.End.Subtract(1)
                 match FindCurrentFullWordSpan point wordKind with
@@ -69,7 +72,7 @@ module TssUtil =
         let spans = match FindCurrentWordSpan point kind with
                         | Some s -> SnapshotPointUtil.GetSpans (s.End) SearchKind.Forward
                         | None -> SnapshotPointUtil.GetSpans point SearchKind.Forward
-        let found = spans |> Seq.tryPick (fun x -> FindAnyWordSpan x kind SearchKind.Forward)
+        let found = spans |> Seq.tryPick (fun x -> FindAnyWordSpan x kind Path.Forward)
         match found with
             | Some s -> s
             | None -> SnapshotSpan((SnapshotUtil.GetEndPoint (point.Snapshot)), 0)
@@ -78,7 +81,7 @@ module TssUtil =
     let FindPreviousWordSpan (point:SnapshotPoint) kind = 
         let startSpan = new SnapshotSpan(SnapshotUtil.GetStartPoint (point.Snapshot), 0)
         let fullSearch p2 =
-             let s = SnapshotPointUtil.GetSpans p2 SearchKind.Backward |> Seq.tryPick (fun x -> FindAnyWordSpan x kind SearchKind.Backward)                                
+             let s = SnapshotPointUtil.GetSpans p2 SearchKind.Backward |> Seq.tryPick (fun x -> FindAnyWordSpan x kind Path.Backward)                                
              match s with 
                 | Some span -> span
                 | None -> startSpan
@@ -125,27 +128,6 @@ module TssUtil =
         elif diff < 0 then new SnapshotSpan(line.Start, point)
         else new SnapshotSpan(point.Subtract(count), point)
 
-    let GetWordSpans point wordKind (searchKind : SearchKind) = 
-        let getForSpanForward span = 
-            span
-            |> Seq.unfold (fun cur -> 
-                match FindAnyWordSpan cur wordKind searchKind with
-                | Some(nextSpan) -> Some(nextSpan, SnapshotSpan(nextSpan.End, cur.End))
-                | None -> None )
-        let getForSpanBackwards span =
-            span
-            |> Seq.unfold (fun cur ->
-                match FindAnyWordSpan cur wordKind searchKind with
-                | Some(prevSpan) -> Some(prevSpan, SnapshotSpan(span.Start, prevSpan.Start))
-                | None -> None )
-
-        let getForSpan span = 
-            if searchKind.IsAnyForward then getForSpanForward span
-            else getForSpanBackwards span
-
-        SnapshotPointUtil.GetSpans point searchKind 
-            |> Seq.map getForSpan
-            |> Seq.concat
 
     let TryFindFirstNonWhiteSpaceCharacter line =
         line
@@ -208,4 +190,28 @@ module TssUtil =
         | None -> None
         | Some(point) -> SnapshotPointUtil.TryGetNextPointOnLine point
 
+    /// Get the Word spans in the given direction
+    let GetWordSpans kind path point =
+
+        let getForSpanForward span = 
+            span
+            |> Seq.unfold (fun cur -> 
+                match FindAnyWordSpan cur kind path with
+                | Some(nextSpan) -> Some(nextSpan, SnapshotSpan(nextSpan.End, cur.End))
+                | None -> None )
+        let getForSpanBackward span =
+            span
+            |> Seq.unfold (fun cur ->
+                match FindAnyWordSpan cur kind path with
+                | Some(prevSpan) -> Some(prevSpan, SnapshotSpan(span.Start, prevSpan.Start))
+                | None -> None )
+
+        let getForSpan span = 
+            match path with 
+            | Path.Forward -> getForSpanForward span
+            | Path.Backward -> getForSpanBackward span
+
+        SnapshotPointUtil.GetSpans point (SearchKind.OfPath path)
+        |> Seq.map getForSpan
+        |> Seq.concat
 

@@ -210,6 +210,17 @@ namespace VimCore.UnitTest
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
+        /// <summary>
+        /// The ']]' motion should stop on section macros
+        /// </summary>
+        [Test]
+        public void Motion_SectionForwardToMacro()
+        {
+            Create("cat", "", "bear", ".HU", "sheep");
+            _buffer.Process("]]");
+            Assert.AreEqual(_textView.GetLine(3).Start, _textView.GetCaretPoint());
+        }
+
         [Test]
         public void Motion_Paragraph()
         {
