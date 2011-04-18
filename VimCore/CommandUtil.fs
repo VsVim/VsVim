@@ -103,7 +103,7 @@ type internal CommandUtil
                 |> Option.get
             VisualSpan.Block col
 
-    /// Change the characters in the given span via the specied change kind
+    /// Change the characters in the given span via the specified change kind
     member x.ChangeCaseSpanCore kind (editSpan : EditSpan) =
 
         let func = 
@@ -115,7 +115,7 @@ type internal CommandUtil
 
         use edit = _textBuffer.CreateEdit()
         editSpan.Spans
-        |> Seq.map SnapshotSpanUtil.GetPoints
+        |> Seq.map (SnapshotSpanUtil.GetPoints Path.Forward)
         |> Seq.concat
         |> Seq.filter (fun p -> CharUtil.IsLetter (p.GetChar()))
         |> Seq.iter (fun p ->
@@ -132,7 +132,7 @@ type internal CommandUtil
         // so move before and inside the transaction
         let position = 
             x.CaretLine
-            |> SnapshotLineUtil.GetPoints
+            |> SnapshotLineUtil.GetPoints Path.Forward
             |> Seq.skipWhile SnapshotPointUtil.IsWhiteSpace
             |> Seq.map SnapshotPointUtil.GetPosition
             |> SeqUtil.tryHeadOnly
@@ -210,7 +210,7 @@ type internal CommandUtil
             if result.IsAnyWordMotion && result.IsForward then
                 let point = 
                     result.Span
-                    |> SnapshotSpanUtil.GetPointsBackward 
+                    |> SnapshotSpanUtil.GetPoints Path.Backward
                     |> Seq.tryFind (fun x -> x.GetChar() |> CharUtil.IsWhiteSpace |> not)
                 match point with 
                 | Some(p) -> 
@@ -251,7 +251,7 @@ type internal CommandUtil
         // of the first line.  If the line is blank the caret should remain un-moved
         let point =
             x.CaretLine
-            |> SnapshotLineUtil.GetPoints
+            |> SnapshotLineUtil.GetPoints Path.Forward
             |> Seq.skipWhile SnapshotPointUtil.IsWhiteSpace
             |> SeqUtil.tryHeadOnly
         match point with
@@ -751,7 +751,7 @@ type internal CommandUtil
     member x.InsertAtFirstNonBlank count =
         let point = 
             x.CaretLine
-            |> SnapshotLineUtil.GetPoints
+            |> SnapshotLineUtil.GetPoints Path.Forward
             |> Seq.skipWhile SnapshotPointUtil.IsWhiteSpace
             |> SeqUtil.tryHeadOnly
             |> OptionUtil.getOrDefault x.CaretLine.End
@@ -1319,7 +1319,7 @@ type internal CommandUtil
         _textView.Selection.Clear()
         let points = 
             visualSpan.Spans
-            |> Seq.map SnapshotSpanUtil.GetPoints
+            |> Seq.map (SnapshotSpanUtil.GetPoints Path.Forward)
             |> Seq.concat
         let editPoint = 
             match points |> SeqUtil.tryHeadOnly with

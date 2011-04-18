@@ -221,12 +221,51 @@ namespace VimCore.UnitTest
             Assert.AreEqual(_textView.GetLine(3).Start, _textView.GetCaretPoint());
         }
 
+        /// <summary>
+        /// Blank lines are sentences
+        /// </summary>
         [Test]
-        public void Motion_Paragraph()
+        public void Motion_MoveSentenceForBlankLine()
         {
-            Create("foo", "{", "bar", "baz", "jazz");
-            _textView.MoveCaretTo(_textView.TextSnapshot.GetEndPoint());
-            _buffer.Process("{{");
+            Create("dog.  ", "", "cat");
+            _buffer.Process(")");
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Make sure the paragraph move goes to the appropriate location
+        /// </summary>
+        [Test]
+        public void Motion_MoveParagraphForward()
+        {
+            Create("dog", "", "cat", "", "bear");
+            _buffer.Process("}");
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Make sure the paragraph move backward goes to the appropriate location
+        /// </summary>
+        [Test]
+        public void Motion_MoveParagraphBackward()
+        {
+            Create("dog", "", "cat", "pig", "");
+            _textView.MoveCaretToLine(3);
+            _buffer.Process("{");
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Make sure the paragraph move backward goes to the appropriate location when 
+        /// started on the first line of the paragraph containing actual text
+        /// </summary>
+        [Test]
+        public void Motion_MoveParagraphBackwardFromTextStart()
+        {
+            Create("dog", "", "cat", "pig", "");
+            _textView.MoveCaretToLine(2);
+            _buffer.Process("{");
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
         /// <summary>

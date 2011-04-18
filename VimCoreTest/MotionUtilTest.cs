@@ -803,30 +803,52 @@ namespace VimCore.UnitTest
         /// A single space after a '.' should make the '.' the sentence end
         /// </summary>
         [Test]
-        public void IsSentenceEndOnly_SingleSpace()
+        public void IsSentenceEnd_SingleSpace()
         {
             Create("a!b. c");
-            Assert.IsTrue(_motionUtil.IsSentenceEndOnly(SentenceKind.Default, _textBuffer.GetPoint(3)));
+            Assert.IsTrue(_motionUtil.IsSentenceEnd(SentenceKind.Default, _textBuffer.GetPoint(4)));
         }
 
         /// <summary>
         /// The last portion of many trailing characters is the end of a sentence
         /// </summary>
         [Test]
-        public void IsSentenceEndOnly_ManyTrailingCharacters()
+        public void IsSentenceEnd_ManyTrailingCharacters()
         {
             Create("a?)]' b.");
-            Assert.IsTrue(_motionUtil.IsSentenceEndOnly(SentenceKind.Default, _textBuffer.GetPoint(4)));
+            Assert.IsTrue(_motionUtil.IsSentenceEnd(SentenceKind.Default, _textBuffer.GetPoint(5)));
         }
 
         /// <summary>
         /// Don't report the start of a buffer as being the end of a sentence
         /// </summary>
         [Test]
-        public void IsSentenceEndOnly_StartOfBuffer()
+        public void IsSentenceEnd_StartOfBuffer()
         {
             Create("dog. cat");
-            Assert.IsFalse(_motionUtil.IsSentenceEndOnly(SentenceKind.Default, _textBuffer.GetPoint(0)));
+            Assert.IsFalse(_motionUtil.IsSentenceEnd(SentenceKind.Default, _textBuffer.GetPoint(0)));
+        }
+
+        /// <summary>
+        /// A blank line is a complete sentence so the EndLine value is the end of the sentence
+        /// </summary>
+        [Test]
+        public void IsSentenceEnd_BlankLine()
+        {
+            Create("dog", "", "bear");
+            Assert.IsTrue(_motionUtil.IsSentenceEnd(SentenceKind.Default, _textView.GetLine(1).Start));
+        }
+
+        [Test]
+        public void IsSentenceEnd_Thorough()
+        {
+            Create("dog", "cat", "bear");
+            for (var i = 1; i < _textBuffer.CurrentSnapshot.Length; i++)
+            {
+                var point = _textBuffer.GetPoint(i);
+                var test = _motionUtil.IsSentenceEnd(SentenceKind.Default, point);
+                Assert.IsFalse(test);
+            }
         }
 
         [Test]
@@ -845,6 +867,16 @@ namespace VimCore.UnitTest
             Create("dog. cat");
             Assert.IsTrue(_motionUtil.IsSentenceStartOnly(SentenceKind.Default, _textBuffer.GetPoint(0)));
             Assert.IsFalse(_motionUtil.IsSentenceStartOnly(SentenceKind.Default, _textBuffer.GetPoint(1)));
+        }
+
+        /// <summary>
+        /// A blank line is a sentence start
+        /// </summary>
+        [Test]
+        public void IsSentenceStart_BlankLine()
+        {
+            Create("dog.  ", "", "");
+            Assert.IsTrue(_motionUtil.IsSentenceStart(SentenceKind.Default, _textBuffer.GetLine(1).Start));
         }
 
         [Test]
@@ -1473,6 +1505,18 @@ namespace VimCore.UnitTest
             Assert.AreEqual("t", data.Span.GetText());
         }
 
+        /// <summary>
+        /// Make sure the column is properly set for a forward.  Else it will get lost
+        /// in the exclusive-linewise transformation
+        /// </summary>
+        [Test]
+        public void ParagraphForward_Column()
+        {
+            Create("dog", "", "cat");
+            var data = _motionUtil.ParagraphForward(1);
+            Assert.IsTrue(data.Column.IsSome(CaretColumn.NewInLastLine(0)));
+        }
+
         [Test]
         public void QuotedString1()
         {
@@ -1799,20 +1843,23 @@ namespace VimCore.UnitTest
         {
             Create("a", "b", "", "c");
             _textView.MoveCaretToLine(1);
-            var span = _motionUtil.AllParagraph(1).Span;
-            Assert.AreEqual(_snapshot.GetLineRange(0, 1).ExtentIncludingLineBreak, span);
-        }
-
-        [Test]
-        public void AllParagraph_FromStart()
-        {
-            Create("a", "b", "", "c");
-            var span = _motionUtil.AllParagraph(1).Span;
+            var span = _motionUtil.AllParagraph(1).Value.Span;
             Assert.AreEqual(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
         }
 
         /// <summary>
-        /// A full paragraph should not include the preceeding blanks when starting on
+        /// Get a paragraph motion from the start of the ITextBuffer
+        /// </summary>
+        [Test]
+        public void AllParagraph_FromStart()
+        {
+            Create("a", "b", "", "c");
+            var span = _motionUtil.AllParagraph(1).Value.Span;
+            Assert.AreEqual(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
+        }
+
+        /// <summary>
+        /// A full paragraph should not include the preceding blanks when starting on
         /// an actual portion of the paragraph
         /// </summary>
         [Test]
@@ -1820,21 +1867,32 @@ namespace VimCore.UnitTest
         {
             Create("a", "b", "", "c");
             _textView.MoveCaretToLine(2);
-            var span = _motionUtil.AllParagraph(1).Span;
+            var span = _motionUtil.AllParagraph(1).Value.Span;
             Assert.AreEqual(_snapshot.GetLineRange(2, 3).ExtentIncludingLineBreak, span);
         }
 
         /// <summary>
-        /// Make sure the preceeding blanks are included when starting on a blank
+        /// Make sure the preceding blanks are included when starting on a blank
         /// line but not the trailing ones
         /// </summary>
         [Test]
         public void AllParagraph_FromBlankLine()
         {
-            Create("", "dog", "cat", "", "pig");
+            Create("", "dog", "cat", "", "pig", "");
             _textView.MoveCaretToLine(3);
-            var span = _motionUtil.AllParagraph(1).Span;
+            var span = _motionUtil.AllParagraph(1).Value.Span;
             Assert.AreEqual(_snapshot.GetLineRange(3, 4).ExtentIncludingLineBreak, span);
+        }
+
+        /// <summary>
+        /// If the span consists of only blank lines then it results in a failed motion.
+        /// </summary>
+        [Test]
+        public void AllParagraph_InBlankLinesAtEnd()
+        {
+            Create("", "dog", "", "");
+            _textView.MoveCaretToLine(2);
+            Assert.IsTrue(_motionUtil.AllParagraph(1).IsNone());
         }
 
         /// <summary>
@@ -2138,6 +2196,19 @@ namespace VimCore.UnitTest
             var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Backward, _textBuffer.GetPoint(4));
             CollectionAssert.AreEquivalent(
                 new[] { "dog." },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        /// <summary>
+        /// A blank line is a sentence
+        /// </summary>
+        [Test]
+        public void GetSentences_BlankLinesAreSentences()
+        {
+            Create("dog.  ", "", "cat.");
+            var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Forward, _textBuffer.GetPoint(0));
+            CollectionAssert.AreEquivalent(
+                new [] {"dog.", Environment.NewLine, "cat."},
                 ret.Select(x => x.GetText()).ToList());
         }
 

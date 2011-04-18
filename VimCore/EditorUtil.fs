@@ -193,25 +193,17 @@ module SnapshotSpanUtil =
     /// Get the Snapshot
     let GetSnapshot (span:SnapshotSpan) = span.Snapshot
 
-    /// Get all of the points on the specified SnapshotSpan.  Will not return the End point
-    let GetPoints (span:SnapshotSpan) = 
-        let tss = span.Snapshot 
-        let startPos = span.Start.Position
-        if span.Length = 0 then 
-            Seq.empty 
-        else 
-            let max = span.Length-1
-            seq { for i in 0 .. max do yield SnapshotPoint(tss, startPos+i) }
-
-    /// Get all of the points on the specified SnapshotSpan backwards.  Will not return 
-    /// the End point
-    let GetPointsBackward (span:SnapshotSpan) =
-        let tss = span.Snapshot
-        let startPos = span.Start.Position
-        let length = span.Length
-        seq { for i in 1 .. length do 
-                let offset = length - i
-                yield SnapshotPoint(tss, startPos + offset) }
+    /// Get all of the SnapshotPoint values in the Span.  This will not return the End point
+    /// but will return line breaks
+    let GetPoints path span =
+        let startPoint = GetStartPoint span
+        let endPoint = GetEndPoint span
+        let positions =
+            let all = [ startPoint.Position .. (endPoint.Position - 1) ]
+            match path with
+            | Path.Forward -> all
+            | Path.Backward -> all |> List.rev
+        positions |> Seq.map (fun p -> SnapshotUtil.GetPoint span.Snapshot p)
 
     /// Get the first line in the SnapshotSpan
     let GetStartLine (span:SnapshotSpan) = span.Start.GetContainingLine()
@@ -357,8 +349,8 @@ module SnapshotSpanUtil =
         && line.Length = 0 
         && (span.End.Position >= span.End.Position && span.End.Position <= line.EndIncludingLineBreak.Position)
 
-    /// Given a NonEmptyCollection<SnapshotSpan> return the SnapshotSpan which is the overoarching span that
-    /// encompases all of the SnapshotSpan values in the collection.  The Start will be the minimum start of 
+    /// Given a NonEmptyCollection<SnapshotSpan> return the SnapshotSpan which is the overarching span that
+    /// encompasses all of the SnapshotSpan values in the collection.  The Start will be the minimum start of 
     /// all of the SnapshotSpan values and the End will be the maximum
     let GetOverarchingSpan (col : NonEmptyCollection<SnapshotSpan>) =
         let startPoint = col |> Seq.map (fun span -> span.Start) |> Seq.minBy (fun p -> p.Position)
@@ -459,16 +451,10 @@ module SnapshotLineUtil =
     let GetExtentIncludingLineBreak (line:ITextSnapshotLine) = line.ExtentIncludingLineBreak
 
     /// Get the points on the particular line in order 
-    let GetPoints line = GetExtent line |> SnapshotSpanUtil.GetPoints
+    let GetPoints path line = line |> GetExtent |> SnapshotSpanUtil.GetPoints path
 
     /// Get the points on the particular line including the line break
-    let GetPointsIncludingLineBreak line = GetExtentIncludingLineBreak line |> SnapshotSpanUtil.GetPoints
-
-    /// Get the points on the particular line in reverse
-    let GetPointsBackward line = GetExtent line |> SnapshotSpanUtil.GetPointsBackward
-
-    /// Get the points on the particular line including the line break in reverse
-    let GetPointsIncludingLineBreakBackward line = GetExtentIncludingLineBreak line |> SnapshotSpanUtil.GetPointsBackward
+    let GetPointsIncludingLineBreak path line = line |> GetExtentIncludingLineBreak |> SnapshotSpanUtil.GetPoints path
 
     /// Get the length of the line break
     let GetLineBreakLength (line:ITextSnapshotLine) = line.LengthIncludingLineBreak - line.Length
@@ -482,7 +468,7 @@ module SnapshotLineUtil =
     /// Get the indent point of the ITextSnapshotLine
     let GetIndent line =
         line 
-        |> GetPoints
+        |> GetPoints Path.Forward
         |> Seq.skipWhile (fun point -> point.GetChar() |> CharUtil.IsWhiteSpace)
         |> SeqUtil.tryHeadOnly
         |> OptionUtil.getOrDefault (GetEnd line)
@@ -493,7 +479,7 @@ module SnapshotLineUtil =
     /// Get the text of the ITextSnapshotLine including the line break
     let GetTextIncludingLineBreak (line : ITextSnapshotLine) = line.GetTextIncludingLineBreak()
 
-    /// Get the last point which is included in this line not consdiring the line 
+    /// Get the last point which is included in this line not conspiring the line 
     /// break.  Can be None if this is a 0 length line 
     let GetLastIncludedPoint line = 
         let span = GetExtent line
@@ -510,7 +496,7 @@ module SnapshotLineUtil =
     let IsWhiteSpace line = 
         line
         |> GetExtent
-        |> SnapshotSpanUtil.GetPoints
+        |> SnapshotSpanUtil.GetPoints Path.Forward
         |> Seq.forall (fun point -> CharUtil.IsWhiteSpace (point.GetChar()))
 
 [<RequireQualifiedAccess>]
@@ -557,10 +543,55 @@ module SnapshotPointUtil =
         let line = GetContainingLine point
         point.Position >= line.End.Position && not (IsEndPoint point)
 
-    /// Is this point whitespace?
+    /// Is this point white space?
     let IsWhiteSpace point =
         if IsEndPoint point then false
         else CharUtil.IsWhiteSpace (point.GetChar())
+
+    /// Is this point white space or inside the line break?
+    let IsWhiteSpaceOrInsideLineBreak point = 
+        IsWhiteSpace point || IsInsideLineBreak point
+
+    /// Try and add count to the SnapshotPoint.  Will return None if this causes
+    /// the point to go past the end of the Snapshot
+    let TryAdd point count = 
+        let pos = (GetPosition point) + count
+        let snapshot = GetSnapshot point
+        if pos > snapshot.Length then None
+        else point.Add(count) |> Some
+
+    /// Maybe add 1 to the given point.  Will return the original point
+    /// if it's the end of the Snapshot
+    let TryAddOne point = TryAdd point 1
+
+    /// Add the given count to the SnapshotPoint
+    let Add count (point:SnapshotPoint) = point.Add(count)
+
+    /// Add 1 to the given SnapshotPoint
+    let AddOne (point:SnapshotPoint) = point.Add(1)
+
+    /// Add 1 to the given snapshot point unless it's the end of the buffer in which case just
+    /// return the passed in value
+    let AddOneOrCurrent point =
+        match TryAddOne point with
+        | None -> point
+        | Some(point) -> point
+
+    /// Subtract the count from the SnapshotPoint
+    let SubtractOne (point:SnapshotPoint) =  point.Subtract(1)
+
+    /// Maybe subtract the count from the SnapshotPoint
+    let TrySubtractOne (point:SnapshotPoint) =  
+        if point.Position = 0 then None
+        else point |> SubtractOne |> Some
+
+    /// Try and subtract 1 from the given point unless it's the start of the buffer in which
+    /// case return the passed in value
+    let SubtractOneOrCurrent point = 
+        match TrySubtractOne point with
+        | Some (point) -> point
+        | None -> point
+
 
     /// Is the SnapshotPoint the provided char
     let IsChar c point =
@@ -685,32 +716,24 @@ module SnapshotPointUtil =
             | SearchKind.Backward -> getBackward false
             | SearchKind.BackwardWithWrap -> getBackward true
 
+    /// Get all of the SnapshotPoint values on the given path.  The first value returned
+    /// will be the passed in SnapshotPoint unless it's <end>
+    let GetPointsIncludingLineBreak path point =
+        let span = 
+            let snapshot = GetSnapshot point
+            match path with
+            | Path.Forward -> SnapshotSpan(point, SnapshotUtil.GetEndPoint snapshot)
+            | Path.Backward -> SnapshotSpan(SnapshotUtil.GetStartPoint snapshot, AddOneOrCurrent point)
+        SnapshotSpanUtil.GetPoints path span
+
     /// Start searching the snapshot at the given point and return the buffer as a 
     /// sequence of SnapshotPoints.  The first point returned will be the point passed
     /// in.
     ///
     /// Note: This will not return SnapshotPoint values for points in the line break
-    let GetPoints (kind : SearchKind) point =
-        let mapFunc = 
-            if kind.IsAnyForward then SnapshotSpanUtil.GetPoints
-            else SnapshotSpanUtil.GetPointsBackward 
-        GetSpans point kind 
-        |> Seq.map mapFunc
-        |> Seq.concat
-
-    /// Get all of the SnapshotPoint values on the given path.  The first value returned
-    /// will be the passed in SnapshotPoint 
-    let GetPointsIncludingLineBreak path point =
-        let position = GetPosition point
-        let positions =
-            match path with
-            | Path.Forward ->
-                let endPosition = SnapshotUtil.GetEndPoint point.Snapshot |> GetPosition
-                let endPosition = endPosition - 1
-                [ position .. endPosition ]
-            | Path.Backward ->
-                [ 0 .. position ] |> List.rev
-        positions |> Seq.map (fun p -> SnapshotUtil.GetPoint point.Snapshot p)
+    let GetPoints path point =
+        GetPointsIncludingLineBreak path point
+        |> Seq.filter (fun point -> not (IsInsideLineBreak point))
 
     /// Divide the ITextSnapshot into at most 2 SnapshotSpan instances at the provided
     /// SnapshotPoint.  If there is an above span it will be exclusive to the provided
@@ -725,7 +748,7 @@ module SnapshotPointUtil =
         | SearchKind.BackwardWithWrap -> [above; below] 
 
     /// Get the character associated with the current point.  Returns None for the last character
-    /// in the buffer which has no representable value
+    /// in the buffer which has no represent able value
     let TryGetChar point = 
         let tss = GetSnapshot point
         if point = SnapshotUtil.GetEndPoint tss then None
@@ -738,7 +761,7 @@ module SnapshotPointUtil =
         | Some(c) -> c
         | None -> defaultValue
 
-    /// Get the characeter associated with the point.  Will throw for the End point in the Snapshot
+    /// Get the character associated with the point.  Will throw for the End point in the Snapshot
     let GetChar (point:SnapshotPoint) = point.GetChar()
 
     /// Get the points on the containing line starting at the passed in value.  If the passed in start
@@ -747,7 +770,7 @@ module SnapshotPointUtil =
         if IsInsideLineBreak startPoint then Seq.empty
         else 
             let line = GetContainingLine startPoint
-            SnapshotSpan(startPoint, line.End) |> SnapshotSpanUtil.GetPoints
+            SnapshotSpan(startPoint, line.End) |> SnapshotSpanUtil.GetPoints Path.Forward
 
     /// Get the points on the containing line start starting at the passed in value in reverse order.  If the
     /// passed in point is inside the line break then the points of the entire line will be returned
@@ -759,7 +782,7 @@ module SnapshotPointUtil =
                 // Adding 1 is safe here.  The End position is always a valid SnapshotPoint and since we're
                 // not in the line break startPoint must be < End and hence startPoint.Add(1) <= End
                 SnapshotSpan(line.Start, startPoint.Add(1)) 
-        span |> SnapshotSpanUtil.GetPointsBackward
+        span |> SnapshotSpanUtil.GetPoints Path.Backward
 
     /// Try and get the previous point on the same line.  If this is at the start of the line 
     /// None will be returned
@@ -792,6 +815,11 @@ module SnapshotPointUtil =
         if line.Length = 0 then point = line.Start
         else point.Position + 1 = line.End.Position
 
+    /// Is this the last point on the line including the line break
+    let IsLastPointOnLineIncludingLineBreak point = 
+        let line = GetContainingLine point
+        point.Position + 1 = line.EndIncludingLineBreak.Position
+
     /// Try and get the next point on the same line.  If this is the end of the line or if
     /// the point is within the line break then None will be returned
     let TryGetNextPointOnLine point =
@@ -820,46 +848,6 @@ module SnapshotPointUtil =
             let endPosition = min line.End.Position (point.Position+count)
             let endPoint = SnapshotPoint(line.Snapshot, endPosition)
             SnapshotSpan(point, endPoint)
-
-    /// Try and add count to the SnapshotPoint.  Will return None if this causes
-    /// the point to go past the end of the Snapshot
-    let TryAdd point count = 
-        let pos = (GetPosition point) + count
-        let snapshot = GetSnapshot point
-        if pos > snapshot.Length then None
-        else point.Add(count) |> Some
-
-    /// Maybe add 1 to the given point.  Will return the original point
-    /// if it's the end of the Snapshot
-    let TryAddOne point = TryAdd point 1
-
-    /// Add the given coun to the SnapshotPoint
-    let Add count (point:SnapshotPoint) = point.Add(count)
-
-    /// Add 1 to the given SnapshotPoint
-    let AddOne (point:SnapshotPoint) = point.Add(1)
-
-    /// Add 1 to the given snapshot point unless it's the end of the buffer in which case just
-    /// return the passed in value
-    let AddOneOrCurrent point =
-        match TryAddOne point with
-        | None -> point
-        | Some(point) -> point
-
-    /// Subtract the count from the SnapshotPoint
-    let SubtractOne (point:SnapshotPoint) =  point.Subtract(1)
-
-    /// Maybe subtract the count from the SnapshotPoint
-    let TrySubtractOne (point:SnapshotPoint) =  
-        if point.Position = 0 then None
-        else point |> SubtractOne |> Some
-
-    /// Try and subtract 1 from the given point unless it's the start of the buffer in which
-    /// case return the passed in value
-    let SubtractOneOrCurrent point = 
-        match TrySubtractOne point with
-        | Some (point) -> point
-        | None -> point
 
     /// Used to order two SnapshotPoint's in ascending order.  
     let OrderAscending (left:SnapshotPoint) (right:SnapshotPoint) = 

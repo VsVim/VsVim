@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
 using Microsoft.VisualStudio.Text;
+using NUnit.Framework;
 using Vim;
 using Vim.UnitTest;
 
@@ -39,7 +37,7 @@ namespace VimCore.UnitTest
         public void GetPoints1()
         {
             Create("foo");
-            var points = SnapshotLineUtil.GetPoints(_buffer.CurrentSnapshot.GetLineFromLineNumber(0));
+            var points = SnapshotLineUtil.GetPoints(Path.Forward, _buffer.CurrentSnapshot.GetLineFromLineNumber(0));
             var text = points.Select(x => x.GetChar().ToString()).Aggregate((x, y) => x + y);
             Assert.AreEqual("foo",text);
         }

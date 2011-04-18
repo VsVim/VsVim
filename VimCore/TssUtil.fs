@@ -116,7 +116,7 @@ module TssUtil =
         inner point count 
 
     let FindIndentPosition (line:ITextSnapshotLine) tabSize =
-        SnapshotSpanUtil.GetPoints line.Extent
+        SnapshotSpanUtil.GetPoints Path.Forward line.Extent
         |> Seq.map (fun p -> p.GetChar())
         |> Seq.takeWhile CharUtil.IsWhiteSpace
         |> Seq.fold (fun acc c -> acc + (if c = '\t' then tabSize else 1)) 0
@@ -131,7 +131,7 @@ module TssUtil =
 
     let TryFindFirstNonWhiteSpaceCharacter line =
         line
-        |> SnapshotLineUtil.GetPoints
+        |> SnapshotLineUtil.GetPoints Path.Forward
         |> Seq.tryFind (fun p -> not (SnapshotPointUtil.IsWhiteSpace p))
 
     let FindFirstNonWhiteSpaceCharacter line = 
@@ -141,7 +141,7 @@ module TssUtil =
 
     let FindLastNonWhiteSpaceCharacter line =
         line
-        |> SnapshotLineUtil.GetPointsBackward
+        |> SnapshotLineUtil.GetPoints Path.Backward
         |> SeqUtil.tryFindOrDefault (fun p -> not (CharUtil.IsWhiteSpace (p.GetChar()))) (line.Start)
 
     let CreateTextStructureNavigator wordKind (baseImpl:ITextStructureNavigator) = 
