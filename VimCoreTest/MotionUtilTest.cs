@@ -799,6 +799,54 @@ namespace VimCore.UnitTest
             Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
         }
 
+        /// <summary>
+        /// A single space after a '.' should make the '.' the sentence end
+        /// </summary>
+        [Test]
+        public void IsSentenceEndOnly_SingleSpace()
+        {
+            Create("a!b. c");
+            Assert.IsTrue(_motionUtil.IsSentenceEndOnly(SentenceKind.Default, _textBuffer.GetPoint(3)));
+        }
+
+        /// <summary>
+        /// The last portion of many trailing characters is the end of a sentence
+        /// </summary>
+        [Test]
+        public void IsSentenceEndOnly_ManyTrailingCharacters()
+        {
+            Create("a?)]' b.");
+            Assert.IsTrue(_motionUtil.IsSentenceEndOnly(SentenceKind.Default, _textBuffer.GetPoint(4)));
+        }
+
+        /// <summary>
+        /// Don't report the start of a buffer as being the end of a sentence
+        /// </summary>
+        [Test]
+        public void IsSentenceEndOnly_StartOfBuffer()
+        {
+            Create("dog. cat");
+            Assert.IsFalse(_motionUtil.IsSentenceEndOnly(SentenceKind.Default, _textBuffer.GetPoint(0)));
+        }
+
+        [Test]
+        public void IsSentenceStartOnly_AfterTrailingChars()
+        {
+            Create("a?)]' b.");
+            Assert.IsTrue(_motionUtil.IsSentenceStartOnly(SentenceKind.Default, _textBuffer.GetPoint(6)));
+        }
+
+        /// <summary>
+        /// Make sure we don't report the second char as the start due to a math error
+        /// </summary>
+        [Test]
+        public void IsSentenceStartOnly_SecondChar()
+        {
+            Create("dog. cat");
+            Assert.IsTrue(_motionUtil.IsSentenceStartOnly(SentenceKind.Default, _textBuffer.GetPoint(0)));
+            Assert.IsFalse(_motionUtil.IsSentenceStartOnly(SentenceKind.Default, _textBuffer.GetPoint(1)));
+        }
+
         [Test]
         public void LineOrFirstToFirstNonWhiteSpace1()
         {
@@ -1744,9 +1792,7 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
-        /// Make sure find the full paragraph from a point in the middle.  Full paragraphs
-        /// are odd in that they trim the preeceding whitespace and include the trailing
-        /// one
+        /// Make sure find the full paragraph from a point in the middle.
         /// </summary>
         [Test]
         public void AllParagraph_FromMiddle()
@@ -1754,7 +1800,7 @@ namespace VimCore.UnitTest
             Create("a", "b", "", "c");
             _textView.MoveCaretToLine(1);
             var span = _motionUtil.AllParagraph(1).Span;
-            Assert.AreEqual(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
+            Assert.AreEqual(_snapshot.GetLineRange(0, 1).ExtentIncludingLineBreak, span);
         }
 
         [Test]
@@ -1937,7 +1983,7 @@ namespace VimCore.UnitTest
             Create("a. b.");
             var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Forward, _snapshot.GetPoint(0));
             CollectionAssert.AreEquivalent(
-                new string[] { "a.", " b." },
+                new[] { "a.", "b." },
                 ret.Select(x => x.GetText()).ToList());
         }
 
@@ -1947,7 +1993,7 @@ namespace VimCore.UnitTest
             Create("a! b.");
             var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Forward, _snapshot.GetPoint(0));
             CollectionAssert.AreEquivalent(
-                new string[] { "a!", " b." },
+                new[] { "a!", "b." },
                 ret.Select(x => x.GetText()).ToList());
         }
 
@@ -1957,7 +2003,7 @@ namespace VimCore.UnitTest
             Create("a? b.");
             var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Forward, _snapshot.GetPoint(0));
             CollectionAssert.AreEquivalent(
-                new string[] { "a?", " b." },
+                new[] { "a?", "b." },
                 ret.Select(x => x.GetText()).ToList());
         }
 
@@ -1980,7 +2026,7 @@ namespace VimCore.UnitTest
             Create("a? b.");
             var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Backward, _snapshot.GetEndPoint());
             CollectionAssert.AreEquivalent(
-                new[] { " b.", "a?" },
+                new[] { "b.", "a?" },
                 ret.Select(x => x.GetText()).ToList());
         }
 
@@ -2007,7 +2053,7 @@ namespace VimCore.UnitTest
             Create("a?)]' b.");
             var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Forward, _snapshot.GetPoint(0));
             CollectionAssert.AreEquivalent(
-                new[] { "a?)]' ", "b." },
+                new[] { "a?)]'", "b." },
                 ret.Select(x => x.GetText()).ToList());
         }
 
@@ -2020,18 +2066,20 @@ namespace VimCore.UnitTest
             Create("a?) b.");
             var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Backward, _snapshot.GetEndPoint());
             CollectionAssert.AreEquivalent(
-                new[] { "b.", "a?) " },
+                new[] { "b.", "a?)" },
                 ret.Select(x => x.GetText()).ToList());
         }
 
+        /// <summary>
+        /// Not a sentence unless the end character is followed by a space / tab / newline
+        /// </summary>
         [Test]
-        [Description("Only a sentence end if followed by certain items")]
-        public void GetSentence9()
+        public void GetSentences_NeedSpaceAfterEndCharacter()
         {
             Create("a!b. c");
             var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Forward, _snapshot.GetPoint(0));
             CollectionAssert.AreEquivalent(
-                new string[] { "a!b.", " c" },
+                new[] { "a!b.", "c" },
                 ret.Select(x => x.GetText()).ToList());
         }
 
@@ -2040,7 +2088,7 @@ namespace VimCore.UnitTest
         /// legal follow up characters (spaces, tabs, end of line after trailing chars)
         /// </summary>
         [Test]
-        public void GetSentence_IncompleteBoundary()
+        public void GetSentences_IncompleteBoundary()
         {
             Create("a!b. c");
             var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Backward, _snapshot.GetEndPoint());
@@ -2053,7 +2101,7 @@ namespace VimCore.UnitTest
         /// Make sure blank lines are included as sentence boundaries
         /// </summary>
         [Test]
-        public void GetSentence_ForwardBlankLinesAreBoundaries()
+        public void GetSentences_ForwardBlankLinesAreBoundaries()
         {
             Create("a", "", "", "b");
             var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Forward, _snapshot.GetPoint(0));
@@ -2066,13 +2114,30 @@ namespace VimCore.UnitTest
                 ret.ToList());
         }
 
+        /// <summary>
+        /// Get a sentence from the middle of the word
+        /// </summary>
         [Test]
-        public void GetSentence13()
+        public void GetSentences_FromMiddleOfWord()
         {
             Create("dog", "cat", "bear");
             var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Forward, _snapshot.GetEndPoint().Subtract(1));
             CollectionAssert.AreEquivalent(
-                new [] { "r" },
+                new[] { "dog" + Environment.NewLine + "cat" + Environment.NewLine + "bear" },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        /// <summary>
+        /// Don't include a sentence if we go backward from the first character of
+        /// the sentence
+        /// </summary>
+        [Test]
+        public void GetSentences_BackwardFromStartOfSentence()
+        {
+            Create("dog. cat");
+            var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Backward, _textBuffer.GetPoint(4));
+            CollectionAssert.AreEquivalent(
+                new[] { "dog." },
                 ret.Select(x => x.GetText()).ToList());
         }
 
@@ -2155,7 +2220,7 @@ namespace VimCore.UnitTest
             _globalSettings.Paragraphs = "hh";
             var ret = _motionUtil.GetParagraphs(Path.Forward, _snapshot.GetPoint(0));
             CollectionAssert.AreEquivalent(
-                new []
+                new[]
                 {
                     _textBuffer.GetLineRange(0, 0).ExtentIncludingLineBreak,
                     _textBuffer.GetLineRange(1,2).ExtentIncludingLineBreak
@@ -2173,7 +2238,7 @@ namespace VimCore.UnitTest
             _globalSettings.Paragraphs = "hhj ";
             var ret = _motionUtil.GetParagraphs(Path.Forward, _snapshot.GetPoint(0));
             CollectionAssert.AreEquivalent(
-                new []
+                new[]
                 {
                     _textBuffer.GetLineRange(0, 0).ExtentIncludingLineBreak,
                     _textBuffer.GetLineRange(1,2).ExtentIncludingLineBreak

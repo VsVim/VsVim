@@ -230,6 +230,25 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Case is explicitly called out in the ':help exclusive-linewise' portion
+        /// of the documentation
+        /// </summary>
+        [Test]
+        public void Motion_ExclusiveLineWise()
+        {
+            Create("  dog", "cat", "", "pig");
+            _textView.MoveCaretTo(2);
+            _buffer.Process("d{");
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
+            Assert.AreEqual("pig", _textView.GetLine(1).GetText());
+            _buffer.Process("p");
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(2).GetText());
+            Assert.AreEqual("pig", _textView.GetLine(3).GetText());
+        }
+
+        /// <summary>
         /// Make sure we move to the column on the current line when there is no count
         /// </summary>
         [Test]
