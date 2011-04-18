@@ -397,8 +397,8 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
-        /// For the purpose of the 'a' version of the motion, blank line constitute a sentence so 
-        /// don't jump over them when it comes to white space
+        /// Blank lines are sentences so don't include them as white space.  The gap between the '.'
+        /// and the blank line is white space though and should be included in the motion
         /// </summary>
         [Test]
         public void AllSentence_DontJumpBlankLinesAsWhiteSpace()
@@ -410,7 +410,10 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
-        /// Blank lines are sentences so treat them as such
+        /// Blank lines are sentences so treat them as such.  Note: A blank line includes the entire blank
+        /// line.  But when operating on a blank line it often appears that it doesn't due to the 
+        /// rules around motion adjustments spelled out in ':help exclusive'.  Namely if an exclusive motion
+        /// ends in column 0 then it gets moved back to the end of the previous line and becomes inclusive
         /// </summary>
         [Test]
         public void AllSentence_BlankLinesAreSentences()
@@ -418,6 +421,10 @@ namespace VimCore.UnitTest
             Create("dog.  ", "", "cat.");
             _textView.MoveCaretToLine(1);
             var data = _motionUtil.AllSentence(1);
+            Assert.AreEqual("  " + Environment.NewLine + Environment.NewLine, data.Span.GetText());
+
+            // Make sure it's adjusted properly for the exclusive exception
+            data = _motionUtil.GetMotion(Motion.AllSentence).Value;
             Assert.AreEqual("  " + Environment.NewLine, data.Span.GetText());
         }
 
@@ -2156,7 +2163,9 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
-        /// Make sure blank lines are included as sentence boundaries
+        /// Make sure blank lines are included as sentence boundaries.  Note: Only the first blank line in a series
+        /// of lines is actually a sentence.  Every following blank is just white space in between the blank line
+        /// sentence and the start of the next sentence
         /// </summary>
         [Test]
         public void GetSentences_ForwardBlankLinesAreBoundaries()
@@ -2167,7 +2176,8 @@ namespace VimCore.UnitTest
                 new[]
                 {
                     _textBuffer.GetLineRange(0, 0).ExtentIncludingLineBreak,
-                    _textBuffer.GetLineRange(1, 3).ExtentIncludingLineBreak
+                    _textBuffer.GetLineRange(1, 1).ExtentIncludingLineBreak,
+                    _textBuffer.GetLineRange(3, 3).ExtentIncludingLineBreak
                 },
                 ret.ToList());
         }

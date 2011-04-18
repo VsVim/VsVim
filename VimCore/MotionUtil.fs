@@ -361,7 +361,6 @@ type internal MotionUtil
             let snapshot = SnapshotPointUtil.GetSnapshot point
             let endPoint =
                 point
-                |> SnapshotPointUtil.AddOne
                 |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Forward
                 |> Seq.skipWhile (fun p -> not (x.IsSectionStart p))
                 |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint snapshot)
@@ -563,19 +562,29 @@ type internal MotionUtil
             else
                 false
 
-        // Is this an end point due to section or paragraph rules?  
-        let isOtherEnd point = 
-            let line = SnapshotPointUtil.GetContainingLine point
-            if x.IsParagraphStartOnly line.Start || x.IsSectionStart line.Start then
-                // If this is the last point on the section or paragraph start line then
-                // it ends a sentence
-                SnapshotPointUtil.IsLastPointOnLineIncludingLineBreak point
+        /// Is this point the start of a sentence line?  A sentence line is a sentence which is 
+        /// caused by a paragraph, section boundary or a blank line.
+        let isSentenceLineStart point = 
+            if x.IsTextMacroMatch point _globalSettings.Paragraphs || x.IsTextMacroMatch point _globalSettings.Sections then
+                true
             else
-                false
+                x.IsBlankLineWithNoBlankAbove point
 
-        if (x.IsParagraphStartOnly point || x.IsSectionStart point) && not (SnapshotPointUtil.IsStartPoint point) then
-            // If this is the start of a section or paragraph then it's the end point
-            // in a sentence span
+        // Is this the last point on a sentence line?  The last point on the sentence line is the 
+        // final character of the line break.  This is key to understand: the line break on a sentence
+        // line is not considered white space!!!  This can be verified by placing the caret on the 'b' in 
+        // the following and doing a 'yas'
+        //
+        //  a
+        //  
+        //  b
+        let isSentenceLineLast point =
+            let line = SnapshotPointUtil.GetContainingLine point
+            isSentenceLineStart line.Start && SnapshotPointUtil.IsLastPointOnLineIncludingLineBreak point
+
+        if isSentenceLineStart point then
+            // If this point is the start of a sentence line then it's the end point of the
+            // previous sentence span. 
             true
         else
             match SnapshotPointUtil.TrySubtractOne point with
@@ -584,8 +593,8 @@ type internal MotionUtil
                 false 
             | Some point -> 
                 match sentenceKind with
-                | SentenceKind.Default -> isEndNoTrailing point || isTrailing point || isOtherEnd point
-                | SentenceKind.NoTrailingCharacters -> isEndNoTrailing point || isOtherEnd point
+                | SentenceKind.Default -> isEndNoTrailing point || isTrailing point || isSentenceLineLast point
+                | SentenceKind.NoTrailingCharacters -> isEndNoTrailing point || isSentenceLineLast point
 
     /// Is this point the star of a sentence.  Considers sentences, paragraphs and section
     /// boundaries
@@ -1013,7 +1022,8 @@ type internal MotionUtil
     ///   - http://groups.google.com/group/vim_use/t/d3f28cf801dc2030 
     member x.AllSentence count =
 
-        let all = x.GetSentences SentenceKind.NoTrailingCharacters Path.Forward x.CaretPoint |> Seq.truncate count |> List.ofSeq
+        let kind = SentenceKind.NoTrailingCharacters
+        let all = x.GetSentences kind Path.Forward x.CaretPoint |> Seq.truncate count |> List.ofSeq
         let span = 
             match all with
             | [] ->
@@ -1021,15 +1031,46 @@ type internal MotionUtil
                 // an empty span
                 SnapshotSpan(x.CaretPoint, 0)
             | head :: _ ->
-                let last = List.nth all (all.Length - 1)
-                SnapshotSpan(head.Start, last.End)
 
+                let span = 
+                    let last = List.nth all (all.Length - 1)
+                    SnapshotSpan(head.Start, last.End)
+
+                // The 'as' motion considers anything between the SnapshotSpan of a sentence to
+                // be white space.  So the caret is in white space if it occurs before the sentence
+                let isCaretInWhiteSpace = x.CaretPoint.Position < span.Start.Position
+
+                // The white space after the sentence is the gap between this sentence and the next
+                // sentence
+                let whiteSpaceAfter =
+                    match x.GetSentences kind Path.Forward span.End |> SeqUtil.tryHeadOnly with
+                    | None -> None
+                    | Some nextSpan -> if span.End.Position < nextSpan.Start.Position then Some (SnapshotSpan(span.End, nextSpan.Start)) else None
+
+                // Include the preceding white space in the Span
+                let includePrecedingWhiteSpace () =
+                    let startPoint = 
+                        span.Start 
+                        |> x.GetSentences kind Path.Backward
+                        |> Seq.map SnapshotSpanUtil.GetEndPoint
+                        |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
+                    SnapshotSpan(startPoint, span.End)
+
+                // Now we need to do the standard adjustments listed at the bottom of 
+                // ':help text-objects'.
+                match isCaretInWhiteSpace, whiteSpaceAfter with
+                | true, _ -> includePrecedingWhiteSpace()
+                | false, None -> includePrecedingWhiteSpace()
+                | false, Some spaceSpan-> SnapshotSpan(span.Start, spaceSpan.End)
+
+
+        let column = span.End |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine |> Some
         {
             Span = span 
             IsForward = true 
             MotionKind = MotionKind.Exclusive 
             OperationKind = OperationKind.CharacterWise 
-            Column = None }
+            Column = column }
 
     /// Implements the 'aw' motion.  The 'aw' motion is limited to the current line and won't ever
     /// extend above or below it.
