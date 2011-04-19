@@ -29,18 +29,20 @@ module TssUtil =
             let text = line.GetText()
             let pos = point.Position - line.Start.Position
             match pos >= text.Length with
-                | true -> None
-                | false ->
+            | true -> None
+            | false ->
                 match func kind text pos with
-                    | Some s ->
-                        let adjusted = new Span(line.Start.Position+s.Start, s.Length)
-                        Some (new SnapshotSpan(point.Snapshot, adjusted))
-                    | None -> None
+                | Some s ->
+                    let adjusted = new Span(line.Start.Position+s.Start, s.Length)
+                    Some (new SnapshotSpan(point.Snapshot, adjusted))
+                | None -> 
+                    None
         f
         
     let FindCurrentWordSpan point kind = (WrapTextSearch TextUtil.FindCurrentWordSpan) kind point
     let FindCurrentFullWordSpan point kind = (WrapTextSearch TextUtil.FindFullWordSpan) kind point
 
+    /// Find any word span on the given SnapshotSpan value
     let FindAnyWordSpan (span:SnapshotSpan) wordKind path =
         let opt = 
             match path with
@@ -63,15 +65,15 @@ module TssUtil =
                         let pred = WrapTextSearch TextUtil.FindPreviousWordSpan
                         pred wordKind point
         match opt with
-        | Some(fullSpan) -> 
+        | Some fullSpan -> 
             let value = span.Intersection(fullSpan)
             if value.HasValue then Some value.Value else None
         | None -> None
     
     let FindNextWordSpan point kind =
         let spans = match FindCurrentWordSpan point kind with
-                        | Some s -> SnapshotPointUtil.GetSpans (s.End) SearchKind.Forward
-                        | None -> SnapshotPointUtil.GetSpans point SearchKind.Forward
+                        | Some s -> SnapshotPointUtil.GetSpans Path.Forward (s.End) 
+                        | None -> SnapshotPointUtil.GetSpans Path.Forward point
         let found = spans |> Seq.tryPick (fun x -> FindAnyWordSpan x kind Path.Forward)
         match found with
             | Some s -> s
@@ -81,7 +83,7 @@ module TssUtil =
     let FindPreviousWordSpan (point:SnapshotPoint) kind = 
         let startSpan = new SnapshotSpan(SnapshotUtil.GetStartPoint (point.Snapshot), 0)
         let fullSearch p2 =
-             let s = SnapshotPointUtil.GetSpans p2 SearchKind.Backward |> Seq.tryPick (fun x -> FindAnyWordSpan x kind Path.Backward)                                
+             let s = SnapshotPointUtil.GetSpans Path.Backward p2 |> Seq.tryPick (fun x -> FindAnyWordSpan x kind Path.Backward)                                
              match s with 
                 | Some span -> span
                 | None -> startSpan
@@ -211,7 +213,7 @@ module TssUtil =
             | Path.Forward -> getForSpanForward span
             | Path.Backward -> getForSpanBackward span
 
-        SnapshotPointUtil.GetSpans point (SearchKind.OfPath path)
+        SnapshotPointUtil.GetSpans path point
         |> Seq.map getForSpan
         |> Seq.concat
 

@@ -114,45 +114,27 @@ module SnapshotUtil =
         let lineNumber = if IsLineNumberValid tss lineNumber then lineNumber else 0
         tss.GetLineFromLineNumber(lineNumber)
 
-    /// Get the lines in the ITextSnapshot as a seq in forward fashion
-    let private GetLinesForwardCore tss startLine wrap =
-        let endLine = GetLastLineNumber tss
-        let endLine = tss.LineCount - 1
-        let forward = seq { for i in startLine .. endLine -> i }
-        let range = 
-            match wrap with 
-                | false -> forward
-                | true -> 
-                    let front = seq { for i in 0 .. (startLine-1) -> i}
-                    Seq.append forward front
-        range |> Seq.map (fun x -> tss.GetLineFromLineNumber(x))  
-
-    /// Get the lines in the ITextSnapshot as a seq in reverse order
-    let private GetLinesBackwardCore (tss : ITextSnapshot) startLine wrap =
-        let rev s = s |> List.ofSeq |> List.rev |> Seq.ofList
-        let endLine = tss.LineCount - 1
-        let all = seq { for i in 0 .. endLine -> i }
-        let backward = all |> Seq.take (startLine+1) |> rev
-        let range =               
-            match wrap with 
-                | false -> backward 
-                | true ->
-                    let tail = seq { for i in (startLine+1) .. endLine -> i } |> rev
-                    Seq.append backward tail
-        range |> Seq.map (fun x -> tss.GetLineFromLineNumber(x))                     
-
-    /// Get the lines in the buffer with the specified direction
-    let GetLines tss startLine kind =
-        match kind with 
-        | SearchKind.Forward -> GetLinesForwardCore tss startLine false
-        | SearchKind.ForwardWithWrap -> GetLinesForwardCore tss startLine true
-        | SearchKind.Backward -> GetLinesBackwardCore tss startLine false
-        | SearchKind.BackwardWithWrap -> GetLinesBackwardCore tss startLine true
+    /// Get the lines in the buffer with the specified direction.  The specified line number
+    /// will be included in the returned sequence unless it's an invalid line
+    let GetLines snapshot lineNumber path =
+        match path, IsLineNumberValid snapshot lineNumber with
+        | Path.Forward, true ->
+            let endLineNumber = GetLastLineNumber snapshot
+            [ lineNumber .. endLineNumber ]
+            |> Seq.map (fun number -> GetLine snapshot number)
+        | Path.Backward, true ->
+            [ 0 .. lineNumber ]
+            |> List.rev
+            |> Seq.map (fun number -> GetLine snapshot number)
+        | Path.Forward, false -> 
+            Seq.empty
+        | Path.Backward, false ->
+            Seq.empty
 
     /// Get the lines in the specified range
     let GetLineRange snapshot startLineNumber endLineNumber = 
         let count = endLineNumber - startLineNumber + 1
-        GetLines snapshot startLineNumber SearchKind.Forward
+        GetLines snapshot startLineNumber Path.Forward
         |> Seq.truncate count
 
     /// Try and get the line at the specified number
@@ -299,7 +281,7 @@ module SnapshotSpanUtil =
     let GetAllLines span = 
         let startLine = GetStartLine span
         let count = GetLineCount span
-        SnapshotUtil.GetLines span.Snapshot startLine.LineNumber SearchKind.Forward
+        SnapshotUtil.GetLines span.Snapshot startLine.LineNumber Path.Forward
         |> Seq.take count
 
     /// Break the SnapshotSpan into 3 separate parts.  The middle is the ITextSnapshotLine seq
@@ -682,39 +664,41 @@ module SnapshotPointUtil =
     /// Start searching the snapshot at the given point and return the buffer as a 
     /// sequence of SnapshotSpans.  One will be returned per line in the buffer.  The
     /// only exception is the start line which will be divided at the given start
-    /// point
-    let GetSpans point kind = 
-        let tss = GetSnapshot point
+    /// point.  Going forward the point will be included but going reverse it will not. 
+    /// The returned spans will not include line breaks in the buffer
+    let GetSpans path point = 
+
+        let snapshot = GetSnapshot point
         let startLine = GetContainingLine point
-        let inLineBreak = point.Position >= startLine.End.Position 
-        let middle = GetLines point kind |> Seq.skip 1 |> Seq.map SnapshotLineUtil.GetExtent
+        match path with
+        | Path.Forward ->
 
-        let getForward wrap = seq {
-            if point.Position <= startLine.End.Position && point.Position <> tss.Length then 
-                yield SnapshotSpan(point, startLine.End)
-            yield! middle
-            if wrap && point.Position <> startLine.Start.Position  then 
-                let endPoint = if inLineBreak then startLine.End else point
-                yield SnapshotSpan(startLine.Start, endPoint)
-        }
-        let getBackward wrap = seq {
+            seq {
+                // Return the rest of the start line if we are not in a line break
+                if not (IsInsideLineBreak point) then
+                    yield SnapshotSpan(point, startLine.End)
 
-            // First line. Don't forget it can be a 0 length line
-            if inLineBreak then yield startLine.Extent
-            elif startLine.Length > 0 then yield SnapshotSpan(startLine.Start, point.Add(1))
+                // Return the rest of the line extents
+                let lines = 
+                    SnapshotUtil.GetLines snapshot startLine.LineNumber Path.Forward
+                    |> SeqUtil.skipMax 1
+                    |> Seq.map SnapshotLineUtil.GetExtent
+                yield! lines
+            }
 
-            yield! middle
+        | Path.Backward ->
+            seq {
+                // Return the beginning of the start line if this is not the start
+                if point <> startLine.Start then
+                    yield SnapshotSpan(startLine.Start, point)
 
-            if point.Position + 1 < startLine.End.Position then
-                let lastSpan = SnapshotSpan(point.Add(1), startLine.End)
-                if wrap && lastSpan.Length > 0 then yield lastSpan
-        }
-        
-        match kind with
-            | SearchKind.Forward -> getForward false
-            | SearchKind.ForwardWithWrap -> getForward true
-            | SearchKind.Backward -> getBackward false
-            | SearchKind.BackwardWithWrap -> getBackward true
+                // Return the rest of the line extents
+                let lines =
+                    SnapshotUtil.GetLines snapshot startLine.LineNumber Path.Backward
+                    |> SeqUtil.skipMax 1
+                    |> Seq.map SnapshotLineUtil.GetExtent
+                yield! lines
+            }
 
     /// Get all of the SnapshotPoint values on the given path.  The first value returned
     /// will be the passed in SnapshotPoint unless it's <end>

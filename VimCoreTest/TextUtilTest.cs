@@ -1,11 +1,8 @@
-﻿using System;
-using System.Text;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
+using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
 using Vim;
-using Microsoft.VisualStudio.Text;
-using Microsoft.FSharp.Core;
 
 namespace VimCore.UnitTest
 {
@@ -15,6 +12,60 @@ namespace VimCore.UnitTest
     [TestFixture]
     public class TextUtilTest
     {
+        private void AssertWordSpans(string input, WordKind kind, params string[] expected)
+        {
+            var wordsForward = TextUtil.GetWordSpans(kind, Path.Forward, input).Select(x => input.Substring(x.Start, x.Length)).ToList();
+            CollectionAssert.AreEquivalent(
+                expected,
+                wordsForward);
+            var wordsBackward = TextUtil.GetWordSpans(kind, Path.Backward, input).Select(x => input.Substring(x.Start, x.Length)).ToList();
+            CollectionAssert.AreEquivalent(
+                expected.Reverse(),
+                wordsForward);
+        }
+
+        /// <summary>
+        /// Simple test of getting word spans
+        /// </summary>
+        [Test]
+        public void GetWordSpans_Simple()
+        {
+            AssertWordSpans("foo bar baz!", WordKind.NormalWord, "foo", "bar", "baz", "!");
+        }
+
+        /// <summary>
+        /// Put some digits and underscores into the words
+        /// </summary>
+        [Test]
+        public void GetWordSpans_WithDigitsAndUnderscores()
+        {
+            AssertWordSpans("h42o wo_orld", WordKind.NormalWord, "h42o", "wo_orld");
+        }
+
+        /// <summary>
+        /// Put some non-word characters into the middle of the words
+        /// </summary>
+        [Test]
+        public void GetWordSpans_NonWordCharacters()
+        {
+            AssertWordSpans("he$$o wor$d", WordKind.NormalWord, "he", "$$", "o", "wor", "$", "d");
+            AssertWordSpans("!@#$ cat!!!", WordKind.NormalWord, "!@#$", "cat", "!!!");
+            AssertWordSpans("!@#$ !!!cat", WordKind.NormalWord, "!@#$", "!!!", "cat");
+            AssertWordSpans("#$foo!@#$", WordKind.NormalWord, "#$", "foo", "!@#$");
+        }
+
+        /// <summary>
+        /// Big words only care about non-blanks
+        /// </summary>
+        [Test]
+        public void GetWordSpans_BigSimple()
+        {
+            AssertWordSpans("he$$o wor$d", WordKind.BigWord, "he$$o", "wor$d");
+            AssertWordSpans("!@#$ cat!!!", WordKind.BigWord, "!@#$", "cat!!!");
+            AssertWordSpans("!@#$ !!!cat", WordKind.BigWord, "!@#$", "!!!cat");
+            AssertWordSpans("#$foo!@#$", WordKind.BigWord, "#$foo!@#$");
+        }
+
         string FindCurrentNormalWord(string input, int index)
         {
             return TextUtil.FindCurrentWord(WordKind.NormalWord, input, index);
@@ -24,6 +75,7 @@ namespace VimCore.UnitTest
         {
             return TextUtil.FindCurrentWord(WordKind.BigWord, input, index);
         }
+
         /// <summary>
         /// Basic tests
         /// </summary>

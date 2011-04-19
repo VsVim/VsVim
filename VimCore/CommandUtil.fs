@@ -89,7 +89,7 @@ type internal CommandUtil
             // current caret position
             let column = x.CaretColumn
             let col = 
-                SnapshotUtil.GetLines x.CurrentSnapshot x.CaretLineNumber SearchKind.Forward
+                SnapshotUtil.GetLines x.CurrentSnapshot x.CaretLineNumber Path.Forward
                 |> Seq.truncate count
                 |> Seq.map (fun line ->
                     let startPoint = 

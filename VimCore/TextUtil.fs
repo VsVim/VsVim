@@ -10,15 +10,62 @@ type internal TextDirection =
 
 module internal TextUtil =
 
-    let private IsBigWordChar c = not (Char.IsWhiteSpace(c))
-    let private IsNormalWordChar c = Char.IsLetterOrDigit(c) || c = '_'
-    let private IsWordOtherChar c = (not (IsNormalWordChar c)) && (not (Char.IsWhiteSpace(c)))
+    let IsBigWordChar c = not (Char.IsWhiteSpace(c))
+    let IsNormalWordChar c = Char.IsLetterOrDigit(c) || c = '_'
+    let IsNormalWordOtherChar c = (not (IsNormalWordChar c)) && (not (Char.IsWhiteSpace(c)))
 
-    let IsWordChar c kind =
+    let IsWordChar kind c =
         match kind with
         | WordKind.BigWord -> IsBigWordChar c
-        | WordKind.NormalWord -> IsNormalWordChar c
-    
+        | WordKind.NormalWord -> IsNormalWordChar c || IsNormalWordOtherChar c
+
+    /// Get the word spans on the input in the given direction
+    let GetWordSpans kind path input =
+
+        // Function to determine if this is a word start and if return a predicate to
+        // match the remainder of the word
+        let isWordStart c = 
+            match kind with
+            | WordKind.NormalWord -> 
+                if IsNormalWordChar c then Some IsNormalWordChar
+                elif IsNormalWordOtherChar c then Some IsNormalWordOtherChar
+                else None
+            | WordKind.BigWord -> 
+                if IsBigWordChar c then Some IsBigWordChar
+                else None
+
+        // Build up a sequence to get the words in the line
+        let limit = (StringUtil.length input) - 1
+        let wordsForward = 
+            0
+            |> Seq.unfold (fun index -> 
+
+                // Get the start index of the word and the predicate to keep matching
+                // the word
+                let rec getWord index = 
+                    if index <= limit then
+                        match isWordStart input.[index] with
+                        | Some predicate -> 
+                            // Now to find the end of the word
+                            let endIndex = 
+                                let rec inner index = 
+                                    if index > limit || not (predicate input.[index]) then index
+                                    else inner (index + 1)
+                                inner (index + 1)
+                            Some (Span.FromBounds(index, endIndex), endIndex)
+                        | None -> 
+                            // Go to the next index
+                            getWord (index + 1)
+                    else
+                        None
+                getWord index)
+
+        // Now return the actual sequence 
+        match path with
+        | Path.Forward -> wordsForward
+        | Path.Backward -> wordsForward |> List.ofSeq |> List.rev |> Seq.ofList
+
+
     let rec private GetNormalWordPredicate input index dir = 
         let nextIndex index = 
             match dir with
@@ -31,8 +78,8 @@ module internal TextUtil =
             | Some c -> 
                 if IsNormalWordChar c then
                     IsNormalWordChar
-                else if IsWordOtherChar c then
-                    IsWordOtherChar
+                else if IsNormalWordOtherChar  c then
+                    IsNormalWordOtherChar
                 else
                     GetNormalWordPredicate input (nextIndex index) dir
 
@@ -47,21 +94,21 @@ module internal TextUtil =
     let private FindCurrentSpanCore (input:string) index pred = 
         let rec goWhile i =
             match i < input.Length with
-                | false -> Span(index, input.Length - index)
-                | true -> 
-                    match pred input.[i] with 
-                        | true -> goWhile (i+1)
-                        | false -> Span(index, i-index)
+            | false -> Span(index, input.Length - index)
+            | true -> 
+                match pred input.[i] with 
+                | true -> goWhile (i+1)
+                | false -> Span(index, i-index)
         match (StringUtil.isValidIndex index input) && (pred input.[index]) with 
-            | true -> Some (goWhile (index+1))
-            | false -> None
-            
+        | true -> Some (goWhile (index+1))
+        | false -> None
+
     // Find the full span of the current word
     let private FindFullSpanCore (input:string) index pred =
         let rec goBack i = 
             match (StringUtil.isValidIndex (i-1) input) && pred (input.[i-1]) with
-                | true -> goBack (i-1)
-                | false -> i
+            | true -> goBack (i-1)
+            | false -> i
         match (StringUtil.isValidIndex index input) && (pred input.[index]) with
             | true -> FindCurrentSpanCore input (goBack index) pred
             | false -> None

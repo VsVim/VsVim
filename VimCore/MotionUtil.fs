@@ -463,10 +463,33 @@ type internal MotionUtil
 
     /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
     /// in the middle of a word the span of the entire word will be returned
+    ///
+    /// TODO: We need to account for folded regions here in the future
     member x.GetWords kind path point = 
 
-        // TODO: Should probably re-implement this method
-        TssUtil.GetWordSpans kind path point
+        let snapshot = SnapshotPointUtil.GetSnapshot point
+        let line = SnapshotPointUtil.GetContainingLine point
+        SnapshotUtil.GetLines snapshot line.LineNumber path
+        |> Seq.map (fun line ->
+            if line.Length = 0 then
+                // Blank lines are words.  The word covers the entire line including the line
+                // break.  This can be verified by 'yw' on a blank line and pasting.  It will
+                // create a new line
+                line.ExtentIncludingLineBreak |> Seq.singleton
+            else 
+                let offset = line.Start.Position
+                line.Extent
+                |> SnapshotSpanUtil.GetText 
+                |> TextUtil.GetWordSpans kind path 
+                |> Seq.map (fun span -> SnapshotSpan(snapshot, span.Start + offset, span.Length)))
+        |> Seq.concat
+        |> Seq.filter (fun span -> 
+            // Need to filter off items from the first line.  The point can and will often be
+            // in the middle of a line and we can't return any spans which are past / before 
+            // the point depending on the direction
+            match path with
+            | Path.Forward -> span.End.Position > point.Position
+            | Path.Backward -> span.Start.Position < point.Position)
 
     /// Is this line a blank line with no blank lines above it 
     member x.IsBlankLineWithNoBlankAbove point = 

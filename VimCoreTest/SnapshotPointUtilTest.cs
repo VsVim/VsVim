@@ -148,7 +148,7 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar");
             var point = new SnapshotPoint(_snapshot, 0);
-            var agg = SnapshotPointUtil.GetLines(point, SearchKind.Forward).Select(x => x.GetText()).Aggregate((x, y) => x + y);
+            var agg = SnapshotPointUtil.GetLines(point, Path.Forward).Select(x => x.GetText()).Aggregate((x, y) => x + y);
             Assert.AreEqual("foobar", agg);
         }
 
@@ -160,15 +160,10 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar", "baz");
             var point = new SnapshotPoint(_snapshot, 6);
-            var agg = SnapshotPointUtil.GetLines(point, SearchKind.Forward)
+            var agg = SnapshotPointUtil.GetLines(point, Path.Forward)
                 .Select(x => x.GetText())
                 .Aggregate((x, y) => x + y);
             Assert.AreEqual("barbaz", agg);
-            var point2 = new SnapshotPoint(_snapshot, 6);
-            agg = SnapshotPointUtil.GetLines(point2, SearchKind.ForwardWithWrap)
-                .Select(x => x.GetText())
-                .Aggregate((x, y) => x + y);
-            Assert.AreEqual("barbazfoo", agg);
         }
 
         [Test]
@@ -176,7 +171,7 @@ namespace VimCore.UnitTest
         {
             Create("foo bar", "baz");
             var line = _snapshot.GetLineFromLineNumber(1);
-            var list = SnapshotPointUtil.GetLines(line.Start.Subtract(1), SearchKind.Backward);
+            var list = SnapshotPointUtil.GetLines(line.Start.Subtract(1), Path.Backward);
             Assert.AreEqual(1, list.Count());
         }
 
@@ -185,7 +180,7 @@ namespace VimCore.UnitTest
         {
             Create("abcde".Select(x => x.ToString()).ToArray());
             var line = _snapshot.GetLineFromLineNumber(2);
-            var msg = SnapshotPointUtil.GetLines(line.Start, SearchKind.Backward).Select(x => x.GetText()).Aggregate((x, y) => x + y);
+            var msg = SnapshotPointUtil.GetLines(line.Start, Path.Backward).Select(x => x.GetText()).Aggregate((x, y) => x + y);
             Assert.AreEqual("cba", msg);
         }
 
@@ -194,53 +189,8 @@ namespace VimCore.UnitTest
         {
             Create("abcde".Select(x => x.ToString()).ToArray());
             var line = _snapshot.GetLineFromLineNumber(2);
-            var msg = SnapshotPointUtil.GetLines(line.Start, SearchKind.Forward).Select(x => x.GetText()).Aggregate((x, y) => x + y);
+            var msg = SnapshotPointUtil.GetLines(line.Start, Path.Forward).Select(x => x.GetText()).Aggregate((x, y) => x + y);
             Assert.AreEqual("cde", msg);
-        }
-
-        [Test]
-        public void GetLines6()
-        {
-            Create("abcde".Select(x => x.ToString()).ToArray());
-            var line = _snapshot.GetLineFromLineNumber(2);
-            var msg = SnapshotPointUtil.GetLines(line.Start, SearchKind.BackwardWithWrap).Select(x => x.GetText()).Aggregate((x, y) => x + y);
-            Assert.AreEqual("cbaed", msg);
-        }
-
-        [Test]
-        public void GetLines7()
-        {
-            Create("abcde".Select(x => x.ToString()).ToArray());
-            var line = _snapshot.GetLineFromLineNumber(2);
-            var msg = SnapshotPointUtil.GetLines(line.Start, SearchKind.ForwardWithWrap).Select(x => x.GetText()).Aggregate((x, y) => x + y);
-            Assert.AreEqual("cdeab", msg);
-        }
-
-        [Test]
-        public void GetSpans1()
-        {
-            Create("foo", "bar");
-            var point = new SnapshotPoint(_snapshot, 0);
-            var list = SnapshotPointUtil.GetSpans(point, SearchKind.ForwardWithWrap).Select(x => x.GetText()).ToList();
-            CollectionAssert.AreEqual(new string[] { "foo", "bar" }, list);
-        }
-
-        [Test]
-        public void GetSpans2()
-        {
-            Create("foo", "bar");
-            var point = new SnapshotPoint(_snapshot, 1);
-            var list = SnapshotPointUtil.GetSpans(point, SearchKind.BackwardWithWrap).Select(x => x.GetText()).ToList();
-            CollectionAssert.AreEqual(new string[] { "fo", "bar", "o" }, list);
-        }
-
-        [Test, Description("Full lines starting at line not 0")]
-        public void GetSpans3()
-        {
-            Create("foo", "bar baz");
-            var line = _snapshot.GetLineFromLineNumber(1);
-            var list = SnapshotPointUtil.GetSpans(line.Start, SearchKind.ForwardWithWrap).Select(x => x.GetText()).ToList();
-            CollectionAssert.AreEqual(new string[] { "bar baz", "foo" }, list);
         }
 
         [Test, Description("Don't wrap if we say dont't wrap")]
@@ -248,7 +198,7 @@ namespace VimCore.UnitTest
         {
             Create("foo");
             var line = _snapshot.GetLineFromLineNumber(0);
-            var list = SnapshotPointUtil.GetSpans(line.End, SearchKind.Forward);
+            var list = SnapshotPointUtil.GetSpans(Path.Forward, line.End);
             Assert.AreEqual(0, list.Count());
         }
 
@@ -257,7 +207,7 @@ namespace VimCore.UnitTest
         {
             Create("foo");
             var line = _snapshot.GetLineFromLineNumber(0);
-            var list = SnapshotPointUtil.GetSpans(line.Start + 2, SearchKind.Backward);
+            var list = SnapshotPointUtil.GetSpans(Path.Backward, line.Start + 2);
             Assert.AreEqual(1, list.Count());
         }
 
@@ -266,7 +216,7 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar", "baz");
             var line = _snapshot.GetLineFromLineNumber(1);
-            var list = SnapshotPointUtil.GetSpans(line.Start + 1, SearchKind.Forward);
+            var list = SnapshotPointUtil.GetSpans(Path.Forward, line.Start + 1);
             Assert.AreEqual(2, list.Count());
         }
 
@@ -275,7 +225,7 @@ namespace VimCore.UnitTest
         {
             Create("foo bar", "baz");
             var line = _snapshot.GetLineFromLineNumber(1);
-            var list = SnapshotPointUtil.GetSpans(line.Start, SearchKind.Backward).Select(x => x.GetText()).ToList();
+            var list = SnapshotPointUtil.GetSpans(Path.Backward, line.Start).Select(x => x.GetText()).ToList();
             CollectionAssert.AreEqual(new string[] { "b", "foo bar" }, list);
         }
 
@@ -284,48 +234,8 @@ namespace VimCore.UnitTest
         {
             Create("foo bar", "baz");
             var line = _snapshot.GetLineFromLineNumber(1);
-            var list = SnapshotPointUtil.GetSpans(line.Start.Subtract(1), SearchKind.Backward);
+            var list = SnapshotPointUtil.GetSpans(Path.Backward, line.Start.Subtract(1));
             Assert.AreEqual(1, list.Count());
-        }
-
-        [Test, Description("Handle being given a point in the middle of a line break")]
-        public void GetSpans9()
-        {
-            Create("foo", "bar");
-            var point = _snapshot.GetLineFromLineNumber(0).End.Add(1);
-            var list = SnapshotPointUtil.GetSpans(point, SearchKind.ForwardWithWrap).Select(x => x.GetText()).ToList();
-            CollectionAssert.AreEqual(new string[] { "bar", "foo" }, list);
-        }
-
-        [Test]
-        public void GetSpans10()
-        {
-            Create("foo", "bar");
-            var spans = SnapshotPointUtil.GetSpans(SnapshotUtil.GetStartPoint(_textBuffer.CurrentSnapshot), SearchKind.ForwardWithWrap);
-            var data = spans
-                .Select(x => x.GetText())
-                .ToList();
-            CollectionAssert.AreEqual(new string[] { "foo", "bar" }, data);
-        }
-
-        [Test]
-        public void GetSpans11()
-        {
-            Create("foo", "bar");
-            var spans = SnapshotPointUtil.GetSpans(SnapshotUtil.GetStartPoint(_textBuffer.CurrentSnapshot), SearchKind.BackwardWithWrap);
-            var data = spans
-                .Select(x => x.GetText())
-                .ToList();
-            CollectionAssert.AreEqual(new string[] { "f", "bar", "oo" }, data);
-        }
-
-        [Test, Description("Handle being given a point in the middle of a line break")]
-        public void GetSpans12()
-        {
-            Create("foo", "bar");
-            var point = _snapshot.GetLineFromLineNumber(0).End.Add(1);
-            var list = SnapshotPointUtil.GetSpans(point, SearchKind.BackwardWithWrap).Select(x => x.GetText()).ToList();
-            CollectionAssert.AreEqual(new string[] { "foo", "bar" }, list);
         }
 
         [Test]
