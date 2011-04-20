@@ -277,7 +277,7 @@ namespace VimCore.UnitTest
         {
             Create("  dog", "cat", "", "pig");
             _textView.MoveCaretTo(2);
-            _buffer.Process("d{");
+            _buffer.Process("d}");
             Assert.AreEqual("", _textView.GetLine(0).GetText());
             Assert.AreEqual("pig", _textView.GetLine(1).GetText());
             _buffer.Process("p");

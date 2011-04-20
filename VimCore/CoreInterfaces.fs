@@ -470,11 +470,11 @@ type Motion =
     /// Backward a section in the editor or to an open brace
     | SectionBackwardOrOpenBrace
 
-    /// Forward a section in the editor
+    /// Forward a section in the editor or to a close brace
     | SectionForwardOrCloseBrace
 
     /// Forward a section in the editor
-    | SectionForwardOrOpenBrace
+    | SectionForward
 
     /// Count sentences backward 
     | SentenceBackward

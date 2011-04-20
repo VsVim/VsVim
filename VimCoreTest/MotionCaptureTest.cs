@@ -272,7 +272,7 @@ namespace VimCore.UnitTest
         [Test]
         public void SectionForwardOrOpenBrace()
         {
-            AssertMotion("]]", Motion.SectionForwardOrOpenBrace);
+            AssertMotion("]]", Motion.SectionForward);
         }
 
         [Test]

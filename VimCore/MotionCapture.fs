@@ -206,7 +206,7 @@ type internal MotionCapture
                 yield (
                     "]]", 
                     MotionFlags.CursorMovement,
-                    Motion.SectionForwardOrOpenBrace)
+                    Motion.SectionForward)
                 yield (
                     "][", 
                     MotionFlags.CursorMovement,

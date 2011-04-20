@@ -192,28 +192,3 @@ module TssUtil =
         | None -> None
         | Some(point) -> SnapshotPointUtil.TryGetNextPointOnLine point
 
-    /// Get the Word spans in the given direction
-    let GetWordSpans kind path point =
-
-        let getForSpanForward span = 
-            span
-            |> Seq.unfold (fun cur -> 
-                match FindAnyWordSpan cur kind path with
-                | Some(nextSpan) -> Some(nextSpan, SnapshotSpan(nextSpan.End, cur.End))
-                | None -> None )
-        let getForSpanBackward span =
-            span
-            |> Seq.unfold (fun cur ->
-                match FindAnyWordSpan cur kind path with
-                | Some(prevSpan) -> Some(prevSpan, SnapshotSpan(span.Start, prevSpan.Start))
-                | None -> None )
-
-        let getForSpan span = 
-            match path with 
-            | Path.Forward -> getForSpanForward span
-            | Path.Backward -> getForSpanBackward span
-
-        SnapshotPointUtil.GetSpans path point
-        |> Seq.map getForSpan
-        |> Seq.concat
-

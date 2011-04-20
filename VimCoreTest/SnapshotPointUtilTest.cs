@@ -193,8 +193,11 @@ namespace VimCore.UnitTest
             Assert.AreEqual("cde", msg);
         }
 
-        [Test, Description("Don't wrap if we say dont't wrap")]
-        public void GetSpans4()
+        /// <summary>
+        /// If going forward and starting from the end don't return any spans
+        /// </summary>
+        [Test]
+        public void GetSpans_FromEnd()
         {
             Create("foo");
             var line = _snapshot.GetLineFromLineNumber(0);
@@ -220,13 +223,16 @@ namespace VimCore.UnitTest
             Assert.AreEqual(2, list.Count());
         }
 
-        [Test, Description("multi lack of wrap reverse")]
-        public void GetSpans7()
+        /// <summary>
+        /// Don't include the provided point when getting spans backward
+        /// </summary>
+        [Test]
+        public void GetSpans_DontIncludePointGoingBackward()
         {
             Create("foo bar", "baz");
             var line = _snapshot.GetLineFromLineNumber(1);
             var list = SnapshotPointUtil.GetSpans(Path.Backward, line.Start).Select(x => x.GetText()).ToList();
-            CollectionAssert.AreEqual(new string[] { "b", "foo bar" }, list);
+            CollectionAssert.AreEqual(new [] { "foo bar" }, list);
         }
 
         [Test]

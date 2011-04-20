@@ -675,7 +675,7 @@ module SnapshotPointUtil =
 
             seq {
                 // Return the rest of the start line if we are not in a line break
-                if not (IsInsideLineBreak point) then
+                if not (IsInsideLineBreak point) && not (IsEndPoint point) then
                     yield SnapshotSpan(point, startLine.End)
 
                 // Return the rest of the line extents

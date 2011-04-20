@@ -1632,17 +1632,22 @@ namespace VimCore.UnitTest
             AssertData(data.Value, new SnapshotSpan(_snapshot, start, 3), MotionKind.Inclusive, OperationKind.CharacterWise);
         }
 
+        /// <summary>
+        /// Ensure that the space after the sentence is included
+        /// </summary>
         [Test]
-        public void SentencesForward1()
+        public void SentencesForward_SpaceAfter()
         {
             Create("a! b");
             var data = _motionUtil.SentenceForward(1);
-            AssertData(data, new SnapshotSpan(_snapshot, 0, 2));
+            AssertData(data, new SnapshotSpan(_snapshot, 0, 3));
         }
 
+        /// <summary>
+        /// At the end of the ITextBuffer there isn't a next sentence
+        /// </summary>
         [Test]
-        [Description("Don't return anything when at the end of the buffer")]
-        public void SentencesForward2()
+        public void SentencesForward_EndOfBuffer()
         {
             Create("a! b");
             _textView.MoveCaretTo(_snapshot.Length);
