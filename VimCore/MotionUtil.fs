@@ -1166,10 +1166,15 @@ type internal MotionUtil
             OperationKind = OperationKind.CharacterWise 
             Column = None}
 
+    /// Search for the specified char in the given direction.
     member x.CharSearch c count charSearch direction = 
         // Save the last search value
         _vimData.LastCharSearch <- Some (charSearch, direction, c)
 
+        x.CharSearchCore c count charSearch direction
+
+    /// Do the actual char search motion but don't update the 'LastCharSearch' value
+    member x.CharSearchCore c count charSearch direction = 
         match charSearch, direction with
         | CharSearchKind.ToChar, Path.Forward -> x.ForwardCharMotionCore c count TssUtil.FindNextOccurranceOfCharOnLine
         | CharSearchKind.TillChar, Path.Forward -> x.ForwardCharMotionCore c count TssUtil.FindTillNextOccurranceOfCharOnLine
@@ -1180,7 +1185,7 @@ type internal MotionUtil
     member x.RepeatLastCharSearch () =
         match _vimData.LastCharSearch with 
         | None -> None
-        | Some (kind, direction, c) -> x.CharSearch c 1 kind direction
+        | Some (kind, direction, c) -> x.CharSearchCore c 1 kind direction
 
     /// Repeat the last f, F, t or T search pattern in the opposite direction
     member x.RepeatLastCharSearchOpposite () =
@@ -1191,7 +1196,7 @@ type internal MotionUtil
                 match direction with
                 | Path.Forward -> Path.Backward
                 | Path.Backward -> Path.Forward
-            x.CharSearch c 1 kind direction
+            x.CharSearchCore c 1 kind direction
 
     member x.WordForward kind count =
         let start = x.CaretPoint

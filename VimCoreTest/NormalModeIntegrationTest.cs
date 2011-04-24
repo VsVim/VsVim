@@ -1465,6 +1465,24 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// The repeat last char search command shouldn't toggle itself.  Or in short it should be
+        /// possible to scan an entire line in one direction
+        /// </summary>
+        [Test]
+        public void RepeatLastCharSearch_ManyTimes()
+        {
+            Create("hello world dog");
+            _buffer.VimData.LastCharSearch = FSharpOption.Create(Tuple.Create(CharSearchKind.ToChar, Path.Forward, 'o'));
+            _textView.MoveCaretTo(_textView.GetEndPoint().Subtract(1));
+            _buffer.Process(',');
+            Assert.AreEqual(Path.Forward, _buffer.VimData.LastCharSearch.Value.Item2);
+            Assert.AreEqual(13, _textView.GetCaretPoint().Position);
+            _buffer.Process(',');
+            Assert.AreEqual(Path.Forward, _buffer.VimData.LastCharSearch.Value.Item2);
+            Assert.AreEqual(7, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
         /// Enter should not go through normal mode mapping during an incremental search
         /// </summary>
         [Test]
