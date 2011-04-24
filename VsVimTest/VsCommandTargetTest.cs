@@ -67,6 +67,10 @@ namespace VsVim.UnitTest
             {
                 return Tuple.Create(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.RETURN, IntPtr.Zero);
             }
+            else if (keyInput.Key == VimKey.Back)
+            {
+                return Tuple.Create(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.BACKSPACE, IntPtr.Zero);
+            }
             else
             {
                 Assert.Fail("Not a supported key");
@@ -192,20 +196,19 @@ namespace VsVim.UnitTest
             Assert.AreEqual(KeyInputUtil.EscapeKey, _targetRaw.SwallowIfNextExecMatches.Value);
             Assert.AreEqual(1, count);
             _factory.Verify();
-
         }
 
         /// <summary>
-        /// The Enter key isn't special so don't special case it in R#
+        /// The Backspace key isn't special so don't special case it in R#
         /// </summary>
         [Test]
-        public void QueryStatus_HandleEnterNormallyInResharperMode()
+        public void QueryStatus_HandleBackspaceNormallyInResharperMode()
         {
             var count = 0;
             _buffer.KeyInputProcessed += delegate { count++; };
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             _externalEditorManager.SetupGet(x => x.IsResharperLoaded).Returns(true).Verifiable();
-            Assert.IsTrue(RunQueryStatus(KeyInputUtil.EnterKey));
+            Assert.IsTrue(RunQueryStatus(KeyInputUtil.VimKeyToKeyInput(VimKey.Back)));
             Assert.AreEqual(0, count);
             _factory.Verify();
         }

@@ -27,9 +27,25 @@ type VimRegexOptions =
     /// the regex with a \m specifier
     | NoMagic = 0x10
 
+/// Case specifier found in the rege (\c, \C or nothing)
+[<RequireQualifiedAccess>]
+type CaseSpecifier =
+
+    /// Neither \c or \C was spceified
+    | None
+
+    /// Pattern contained the \c modifier
+    | IgnoreCase
+
+    /// Pattern contained the \C modifier
+    | OrdinalCase 
+
 /// Represents a Vim style regular expression 
 [<Sealed>]
 type VimRegex =
+
+    /// The Case Specifier for this VimRegex
+    member CaseSpecifier : CaseSpecifier
 
     /// Vim Pattern of the Regular expression
     member VimPattern : string

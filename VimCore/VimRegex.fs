@@ -13,6 +13,12 @@ type VimRegexOptions =
     | Magic = 0x8
     | NoMagic = 0x10
 
+[<RequireQualifiedAccess>]
+type CaseSpecifier =
+    | None
+    | IgnoreCase
+    | OrdinalCase 
+
 module VimRegexUtils = 
     let Escape c = c |> StringUtil.ofChar |> Regex.Escape 
 
@@ -78,9 +84,11 @@ module VimRegexUtils =
 type VimRegex 
     (
         _vimPattern : string,
+        _caseSpecifier : CaseSpecifier,
         _regexPattern : string,
         _regex : Regex ) =
 
+    member x.CaseSpecifier = _caseSpecifier
     member x.VimPattern = _vimPattern
     member x.RegexPattern = _regexPattern
     member x.Regex = _regex
@@ -119,8 +127,8 @@ type Data = {
     MatchCase : bool
     Builder : StringBuilder
 
-    /// Do either the \c or \C atoms appear in the pattern
-    HasCaseAtom : bool
+    /// Which case specifier appeared in the pattern
+    CaseSpecifier : CaseSpecifier
 
     /// Is the match completely broken and should match nothing
     IsBroken : bool
@@ -182,7 +190,7 @@ type VimRegexFactory
             Builder = new StringBuilder()
             MagicKind = kind
             MatchCase = not _settings.IgnoreCase
-            HasCaseAtom = false 
+            CaseSpecifier = CaseSpecifier.None
             IsBroken = false 
             IsStartOfPattern = true
             IsStartOfGrouping = false
@@ -198,10 +206,10 @@ type VimRegexFactory
 
         match x.Convert data with
         | None -> None
-        | Some(bclPattern,regex) -> VimRegex(pattern,bclPattern, regex) |> Some
+        | Some (bclPattern, caseSpecifier, regex) -> VimRegex(pattern, caseSpecifier, bclPattern, regex) |> Some
 
     // Create the actual BCL regex 
-    member x.CreateRegex (data:Data) =
+    member x.CreateRegex (data : Data) =
         let options = VimRegexUtils.ConvertToRegexOptions data.Options
 
         // Now factor case into the options.  The VimRegexOptions take precedence
@@ -212,25 +220,30 @@ type VimRegexFactory
             elif data.MatchCase then options
             else options ||| RegexOptions.IgnoreCase
 
-        if data.IsBroken then None
+        if data.IsBroken then 
+            None
         else 
             let bclPattern = data.Builder.ToString()
             let regex = VimRegexUtils.TryCreateRegex bclPattern options 
-            OptionUtil.combineRev bclPattern regex
+            match regex with
+            | None -> None
+            | Some regex -> Some (bclPattern, data.CaseSpecifier, regex)
 
-    member x.Convert (data : Data) =
-        let rec inner (data : Data) : (string * Regex) option =
-            if data.IsBroken then None
+    member x.Convert (data : Data) = 
+        let rec inner (data : Data) : (string * CaseSpecifier * Regex) option =
+            if data.IsBroken then 
+                None
             else
                 match data.CharAtIndex with
-                | None -> x.CreateRegex data 
-                | Some('\\') -> 
+                | None -> 
+                    x.CreateRegex data 
+                | Some '\\' -> 
                     let wasStartOfGrouping = data.IsStartOfGrouping
                     let data = data.IncrementIndex 1
                     let data = 
                         match data.CharAtIndex with 
                         | None -> x.ProcessNormalChar data '\\'
-                        | Some(c) -> x.ProcessEscapedChar (data.IncrementIndex 1) c
+                        | Some c -> x.ProcessEscapedChar (data.IncrementIndex 1) c
 
                     // If we were at the start of a grouping before processing this 
                     // char then we no longer are afterwards
@@ -238,7 +251,8 @@ type VimRegexFactory
                         if wasStartOfGrouping then { data with IsStartOfGrouping = false }
                         else data 
                     inner data
-                | Some(c) -> x.ProcessNormalChar (data.IncrementIndex 1) c |> inner
+                | Some c -> 
+                    x.ProcessNormalChar (data.IncrementIndex 1) c |> inner
         inner data
 
     /// Process an escaped character.  Look first for global options such as ignore 
@@ -246,8 +260,8 @@ type VimRegexFactory
     member x.ProcessEscapedChar data c  =
         let escape = VimRegexUtils.Escape
         match c with 
-        | 'C' -> {data with MatchCase = true; HasCaseAtom = true}
-        | 'c' -> {data with MatchCase = false; HasCaseAtom = true }
+        | 'C' -> {data with MatchCase = true; CaseSpecifier = CaseSpecifier.OrdinalCase }
+        | 'c' -> {data with MatchCase = false; CaseSpecifier = CaseSpecifier.IgnoreCase }
         | 'm' -> {data with MagicKind = MagicKind.Magic }
         | 'M' -> {data with MagicKind = MagicKind.NoMagic }
         | 'v' -> {data with MagicKind = MagicKind.VeryMagic }

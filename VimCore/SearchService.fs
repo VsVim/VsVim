@@ -21,8 +21,17 @@ type internal SearchService
         let pattern = searchData.Pattern
         let text, textOptions = 
             let useRegex () =
-                let text = _factory.Create pattern |> Option.map (fun p -> p.RegexPattern)
-                text, FindOptions.UseRegularExpressions
+                match _factory.Create pattern with
+                | None -> 
+                    None, FindOptions.None
+                | Some regex ->
+                    let options = FindOptions.UseRegularExpressions
+                    let options = 
+                        match regex.CaseSpecifier with
+                        | CaseSpecifier.None -> options
+                        | CaseSpecifier.IgnoreCase -> options
+                        | CaseSpecifier.OrdinalCase -> options ||| FindOptions.MatchCase
+                    Some regex.RegexPattern, options
             match PatternUtil.GetUnderlyingWholeWord pattern with
             | None -> 
                 useRegex ()

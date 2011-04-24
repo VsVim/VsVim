@@ -1250,6 +1250,19 @@ namespace VimCore.UnitTest
             Assert.AreEqual(4, _textView.GetCaretPoint().Position);
         }
 
+        /// <summary>
+        /// The case option in the search string should take precedence over the 
+        /// ignore case option
+        /// </summary>
+        [Test]
+        public void IncrementalSearch_CaseSensitiveAgain()
+        {
+            Create("hello dog DOG");
+            _globalSettings.IgnoreCase = true;
+            _buffer.Process(@"/\CDOG", enter: true);
+            Assert.AreEqual(10, _textView.GetCaretPoint());
+        }
+
         [Test]
         public void IncrementalSearch_HandlesEscape()
         {
