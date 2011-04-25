@@ -979,15 +979,18 @@ type NormalCommand =
     /// Go to the definition of hte word under the caret.
     | GoToDefinition
 
+    /// GoTo the file under the cursor.  The bool represents whether or not this should occur in
+    /// a different window
+    | GoToFileUnderCaret of bool
+
     /// Go to the global declaration of the word under the caret
     | GoToGlobalDeclaration
 
     /// Go to the local declaration of the word under the caret
     | GoToLocalDeclaration
 
-    /// GoTo the file under the cursor.  The bool represents whether or not this should occur in
-    /// a different window
-    | GoToFileUnderCaret of bool
+    /// Go to the next tab in the specified direction
+    | GoToNextTab of Path
 
     /// GoTo the ITextView in the specified direction
     | GoToView of Direction
@@ -1031,6 +1034,9 @@ type NormalCommand =
     /// Move the caret to the result of the given Motion.
     | MoveCaretToMotion of Motion
 
+    /// Undo count operations in the ITextBuffer
+    | Undo
+
     /// Not actually a Vim Command.  This is a simple ping command which makes 
     /// testing items like complex repeats significantly easier
     | Ping of PingData
@@ -1049,8 +1055,15 @@ type NormalCommand =
     /// Stop the recording of a macro to the specified Register
     | RecordMacroStop
 
+    /// Redo count operations in the ITextBuffer
+    | Redo
+
     /// Repeat the last command
     | RepeatLastCommand
+
+    /// Repeat the last substitute command.  The bool value is for whether or not the flags
+    /// from the last substitute should be reused as well
+    | RepeatLastSubstitute of bool
 
     /// Replace the text starting at the text by starting insert mode
     | ReplaceAtCaret
@@ -1087,6 +1100,9 @@ type NormalCommand =
 
     /// Yank the given motion into a register
     | Yank of MotionData
+
+    /// Yank the specified number of lines
+    | YankLines
 
 /// Visual mode commands which can be executed by the user 
 [<RequireQualifiedAccess>]

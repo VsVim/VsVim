@@ -880,29 +880,13 @@ namespace VimCore.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test, Description("A yy should grab the end of line including line break information")]
-        public void Yank_yy_1()
+        [Test]
+        public void Bind_YankLines()
         {
-            Create("foo", "bar");
-            var span = _textView.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak;
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Yank, span, OperationKind.LineWise))
-                .Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.YankLines);
             _mode.Process("yy");
-            _operations.Verify();
-        }
-
-        [Test, Description("yy should yank the entire line even if the cursor is not at the start")]
-        public void Yank_yy_2()
-        {
-            Create("foo", "bar");
-            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 1));
-            var span = _textView.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak;
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Yank, span, OperationKind.LineWise))
-                .Verifiable();
-            _mode.Process("yy");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
@@ -1176,40 +1160,21 @@ namespace VimCore.UnitTest
         #region Misc
 
         [Test]
-        public void Undo1()
+        public void Bind_Undo()
         {
-            Create("foo");
-            _operations.Setup(x => x.Undo(1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.Undo);
             _mode.Process("u");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Undo2()
+        public void Bind_Redo()
         {
-            Create("foo");
-            _operations.Setup(x => x.Undo(2)).Verifiable();
-            _mode.Process("2u");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Redo1()
-        {
-            Create("foo");
-            _operations.Setup(x => x.Redo(1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.Redo);
             _mode.Process(KeyInputUtil.CharWithControlToKeyInput('r'));
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Redo2()
-        {
-            Create("bar");
-            _operations.Setup(x => x.Redo(2)).Verifiable();
-            _mode.Process('2');
-            _mode.Process(KeyInputUtil.CharWithControlToKeyInput('r'));
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
@@ -1558,31 +1523,22 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        [Description("Make sure it doesn't pass the flag")]
-        public void Substitute1()
+        public void Bind_RepeatLastSubstitute_WithNoFlags()
         {
             Create("foo bar");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.Confirm));
-            _operations.Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewRepeatLastSubstitute(false));
             _mode.Process("&");
+            _commandUtil.Verify();
         }
 
+
         [Test]
-        [Description("No last substitute should do nothing")]
-        public void Substitute2()
+        public void Bind_RepeatLastSubstitute_WithFlags()
         {
             Create("foo bar");
-            _mode.Process("&");
-        }
-
-        [Test]
-        [Description("Flags are kept on full buffer substitute")]
-        public void Substitute3()
-        {
-            Create("foo bar", "baz");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.Confirm));
-            _operations.Setup(x => x.Substitute("a", "b", SnapshotLineRangeUtil.CreateForSnapshot(_textView.TextSnapshot), SubstituteFlags.Confirm));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewRepeatLastSubstitute(true));
             _mode.Process("g&");
+            _commandUtil.Verify();
         }
 
         [Test]
@@ -1632,77 +1588,39 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void gt_1()
+        public void Bind_GoToNextTab_Forward()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.GoToNextTab(Path.Forward, 1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToNextTab(Path.Forward));
             _mode.Process("gt");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void gt_2()
+        public void Bind_GoToNextTab_ForwardViaPageDown()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.GoToTab(2)).Verifiable();
-            _mode.Process("2gt");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void CPageDown_1()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.GoToNextTab(Path.Forward, 1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToNextTab(Path.Forward));
             _mode.Process(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.PageDown, KeyModifiers.Control));
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void CPageDown_2()
+        public void Bind_GoToNextTab_Backward()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.GoToTab(2)).Verifiable();
-            _mode.Process("2");
-            _mode.Process(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.PageDown, KeyModifiers.Control));
-            _operations.Verify();
-        }
-
-        [Test]
-        public void gT_1()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.GoToNextTab(Path.Backward, 1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToNextTab(Path.Backward));
             _mode.Process("gT");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void gT_2()
+        public void Bind_GoToNextTab_BackwardViaPageUp()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.GoToNextTab(Path.Backward, 2)).Verifiable();
-            _mode.Process("2gT");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void CPageUp_1()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.GoToNextTab(Path.Backward, 1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToNextTab(Path.Backward));
             _mode.Process(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.PageUp, KeyModifiers.Control));
-            _operations.Verify();
-        }
-
-        [Test]
-        public void CPageUp_2()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.GoToNextTab(Path.Backward, 2)).Verifiable();
-            _mode.Process('2');
-            _mode.Process(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.PageUp, KeyModifiers.Control));
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]

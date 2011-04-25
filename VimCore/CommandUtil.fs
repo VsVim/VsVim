@@ -669,6 +669,19 @@ type internal CommandUtil
         _operations.GoToLocalDeclaration()
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Go to the next tab in the specified direction
+    member x.GoToNextTab path countOption = 
+        match path with
+        | Path.Forward ->
+            match countOption with
+            | Some count -> _operations.GoToTab count
+            | None -> _operations.GoToNextTab path 1
+        | Path.Backward ->
+            let count = countOption |> OptionUtil.getOrDefault 1
+            _operations.GoToNextTab Path.Backward count
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// GoTo the ITextView in the specified direction
     member x.GoToView direction = 
         match direction with
@@ -1174,6 +1187,11 @@ type internal CommandUtil
         _buffer.Vim.MacroRecorder.StopRecording()
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Undo count operations in the ITextBuffer
+    member x.Redo count = 
+        _operations.Redo count
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Repeat the last executed command against the current buffer
     member x.RepeatLastCommand (repeatData : CommandData) = 
 
@@ -1271,6 +1289,22 @@ type internal CommandUtil
                     repeat command (Some repeatData)
             finally
                 _inRepeatLastChange <- false
+
+    /// Repeat the last subsitute command.  
+    member x.RepeatLastSubstitute useSameFlags = 
+        match _vimData.LastSubstituteData with
+        | None ->
+            _operations.Beep()
+        | Some data ->
+            let range = SnapshotLineRangeUtil.CreateForLine x.CaretLine
+            let flags = 
+                if useSameFlags then
+                    data.Flags
+                else
+                    SubstituteFlags.None
+            _operations.Substitute data.SearchPattern data.Substitute range flags
+
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Replace the text at the caret via replace mode
     member x.ReplaceAtCaret count =
@@ -1447,6 +1481,7 @@ type internal CommandUtil
         | NormalCommand.GoToFileUnderCaret useNewWindow -> x.GoToFileUnderCaret useNewWindow
         | NormalCommand.GoToGlobalDeclaration -> x.GoToGlobalDeclaration ()
         | NormalCommand.GoToLocalDeclaration -> x.GoToLocalDeclaration ()
+        | NormalCommand.GoToNextTab path -> x.GoToNextTab path data.Count
         | NormalCommand.GoToView direction -> x.GoToView direction
         | NormalCommand.InsertAfterCaret -> x.InsertAfterCaret count
         | NormalCommand.InsertBeforeCaret -> x.InsertBeforeCaret count
@@ -1464,6 +1499,14 @@ type internal CommandUtil
         | NormalCommand.Ping pingData -> x.Ping pingData data
         | NormalCommand.PutAfterCaret moveCaretAfterText -> x.PutAfterCaret register count moveCaretAfterText
         | NormalCommand.PutBeforeCaret moveCaretBeforeText -> x.PutBeforeCaret register count moveCaretBeforeText
+        | NormalCommand.RecordMacroStart c -> x.RecordMacroStart c
+        | NormalCommand.RecordMacroStop -> x.RecordMacroStop ()
+        | NormalCommand.Redo -> x.Redo count
+        | NormalCommand.RepeatLastCommand -> x.RepeatLastCommand data
+        | NormalCommand.RepeatLastSubstitute useSameFlags -> x.RepeatLastSubstitute useSameFlags
+        | NormalCommand.ReplaceAtCaret -> x.ReplaceAtCaret count
+        | NormalCommand.ReplaceChar keyInput -> x.ReplaceChar keyInput data.CountOrDefault
+        | NormalCommand.RunMacro registerName -> x.RunMacro registerName data.CountOrDefault
         | NormalCommand.SetMarkToCaret c -> x.SetMarkToCaret c
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count register
         | NormalCommand.ShiftLinesLeft -> x.ShiftLinesLeft count
@@ -1472,13 +1515,9 @@ type internal CommandUtil
         | NormalCommand.ShiftMotionLinesRight motion -> x.RunWithMotion motion x.ShiftMotionLinesRight
         | NormalCommand.SplitViewHorizontally -> x.SplitViewHorizontally()
         | NormalCommand.SplitViewVertically -> x.SplitViewVertically()
-        | NormalCommand.RecordMacroStart c -> x.RecordMacroStart c
-        | NormalCommand.RecordMacroStop -> x.RecordMacroStop ()
-        | NormalCommand.RepeatLastCommand -> x.RepeatLastCommand data
-        | NormalCommand.ReplaceAtCaret -> x.ReplaceAtCaret count
-        | NormalCommand.ReplaceChar keyInput -> x.ReplaceChar keyInput data.CountOrDefault
-        | NormalCommand.RunMacro registerName -> x.RunMacro registerName data.CountOrDefault
+        | NormalCommand.Undo -> x.Undo count
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion register)
+        | NormalCommand.YankLines -> x.YankLines count register
 
     /// Run a VisualCommand against the buffer
     member x.RunVisualCommand command (data : CommandData) (visualSpan : VisualSpan) = 
@@ -1674,10 +1713,24 @@ type internal CommandUtil
                 let value = RegisterValue.String (StringData.OfSpan span, OperationKind.CharacterWise)
                 _registerMap.SetRegisterValue register RegisterOperation.Delete value)
 
+    /// Undo count operations in the ITextBuffer
+    member x.Undo count = 
+        _operations.Undo count
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Yank the contents of the motion into the specified register
     member x.YankMotion register (result: MotionResult) = 
         let value = RegisterValue.String (StringData.OfSpan result.Span, result.OperationKind)
         _registerMap.SetRegisterValue register RegisterOperation.Yank value
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Yank the specified lines into the specified register 
+    member x.YankLines count register = 
+        let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
+        let data = StringData.OfSpan range.ExtentIncludingLineBreak 
+        let value = RegisterValue.String (data, OperationKind.LineWise)
+        _registerMap.SetRegisterValue register RegisterOperation.Yank value
+
         CommandResult.Completed ModeSwitch.NoSwitch
 
     interface ICommandUtil with
