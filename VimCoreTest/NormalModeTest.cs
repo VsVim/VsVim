@@ -8,6 +8,7 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
+using Vim.Modes;
 using Vim.Modes.Normal;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
@@ -27,7 +28,7 @@ namespace VimCore.UnitTest
         private IVimLocalSettings _localSettings;
         private MockRepository _factory;
         private Mock<IVimBuffer> _buffer;
-        private Mock<IOperations> _operations;
+        private Mock<ICommonOperations> _operations;
         private Mock<IEditorOperations> _editorOperations;
         private Mock<IIncrementalSearch> _incrementalSearch;
         private Mock<IJumpList> _jumpList;
@@ -92,7 +93,7 @@ namespace VimCore.UnitTest
                 incrementalSearch: _incrementalSearch.Object,
                 motionUtil: motionUtil,
                 settings: _localSettings);
-            _operations = _factory.Create<IOperations>(MockBehavior.Strict);
+            _operations = _factory.Create<ICommonOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _operations.SetupGet(x => x.TextView).Returns(_textView);
             _operations.SetupGet(x => x.FoldManager).Returns(_foldManager.Object);
@@ -412,22 +413,12 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Move_CHome_1()
+        public void Bind_Motion_LineOrFirst()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.GoToLineOrFirst(FSharpOption<int>.None)).Verifiable();
-            _mode.Process(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Home, KeyModifiers.Control));
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Move_CHome_2()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.GoToLineOrFirst(FSharpOption.Create(42))).Verifiable();
-            _mode.Process("42");
-            _mode.Process(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Home, KeyModifiers.Control));
-            _operations.Verify();
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.LineOrFirstToFirstNonWhiteSpace));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-Home>"));
+            _commandUtil.Verify();
         }
 
         #endregion
@@ -1240,13 +1231,12 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void GoToDefinition1()
+        public void Bind_GoToDefinition()
         {
-            var def = KeyInputUtil.CharWithControlToKeyInput(']');
-            Create("foo");
-            _operations.Setup(x => x.GoToDefinitionWrapper()).Verifiable();
-            _mode.Process(def);
-            _operations.Verify();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.GoToDefinition);
+            _mode.Process(KeyInputUtil.CharWithControlToKeyInput(']'));
+            _commandUtil.Verify();
         }
 
         [Test]

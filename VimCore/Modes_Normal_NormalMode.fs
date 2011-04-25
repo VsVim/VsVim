@@ -15,7 +15,7 @@ type internal NormalModeData = {
 type internal NormalMode 
     ( 
         _bufferData : IVimBuffer, 
-        _operations : IOperations,
+        _operations : ICommonOperations,
         _statusUtil : IStatusUtil,
         _displayWindowBroker : IDisplayWindowBroker,
         _runner : ICommandRunner,
@@ -178,6 +178,7 @@ type internal NormalMode
                 yield ("<C-w>v", CommandFlags.None, NormalCommand.SplitViewVertically)
                 yield ("<C-w><C-g><C-f>", CommandFlags.None, NormalCommand.GoToFileUnderCaret true)
                 yield ("<C-w>gf", CommandFlags.None, NormalCommand.GoToFileUnderCaret true)
+                yield ("<C-]>", CommandFlags.Special, NormalCommand.GoToDefinition)
                 yield ("<Del>", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
                 yield (".", CommandFlags.Special, NormalCommand.RepeatLastCommand)
                 yield ("<lt><lt>", CommandFlags.Repeatable, NormalCommand.ShiftLinesLeft)
@@ -387,11 +388,6 @@ type internal NormalMode
                     ModeSwitch.NoSwitch,
                     fun count _ -> _operations.ScrollPages ScrollDirection.Up count)
                 yield (
-                    "<C-]>", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _operations.GoToDefinitionWrapper())
-                yield (
                     "Y", 
                     CommandFlags.Special, 
                     ModeSwitch.NoSwitch,
@@ -443,10 +439,6 @@ type internal NormalMode
 
         let needCountAsOpt = 
             seq {
-                yield (
-                    ["<C-Home>"], 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.GoToLineOrFirst(count))
                 yield (
                     ["gt"; "<C-PageDown>"], 
                     CommandFlags.Movement, 

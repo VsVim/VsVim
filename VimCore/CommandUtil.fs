@@ -644,7 +644,15 @@ type internal CommandUtil
         _operations.FormatLines result.LineRange
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// GoTo the file name under the cursor and possiby use a new window
+    /// Go to the definition of the word under the caret
+    member x.GoToDefinition () =
+        match _operations.GoToDefinition() with
+        | Vim.Modes.Succeeded -> ()
+        | Vim.Modes.Failed(msg) -> _statusUtil.OnError msg
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// GoTo the file name under the cursor and possibly use a new window
     member x.GoToFileUnderCaret useNewWindow =
         if useNewWindow then _operations.GoToFileInNewWindow()
         else _operations.GoToFile()
@@ -1435,6 +1443,7 @@ type internal CommandUtil
         | NormalCommand.FoldMotion motion -> x.RunWithMotion motion x.FoldMotion
         | NormalCommand.FormatLines -> x.FormatLines count
         | NormalCommand.FormatMotion motion -> x.RunWithMotion motion x.FormatMotion 
+        | NormalCommand.GoToDefinition -> x.GoToDefinition ()
         | NormalCommand.GoToFileUnderCaret useNewWindow -> x.GoToFileUnderCaret useNewWindow
         | NormalCommand.GoToGlobalDeclaration -> x.GoToGlobalDeclaration ()
         | NormalCommand.GoToLocalDeclaration -> x.GoToLocalDeclaration ()

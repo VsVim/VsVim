@@ -976,6 +976,9 @@ type NormalCommand =
     /// Format the specified motion
     | FormatMotion of MotionData
 
+    /// Go to the definition of hte word under the caret.
+    | GoToDefinition
+
     /// Go to the global declaration of the word under the caret
     | GoToGlobalDeclaration
 
