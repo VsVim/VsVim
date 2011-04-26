@@ -2047,6 +2047,70 @@ namespace VimCore.UnitTest
             Assert.IsTrue(result2.MotionKind.IsInclusive);
         }
 
+        /// <summary>
+        /// Break on section macros
+        /// </summary>
+        [Test]
+        public void GetSectionsWithSplit_WithMacro()
+        {
+            Create("dog.", ".HH", "cat.");
+            _globalSettings.Sections = "HH";
+            var ret = _motionUtil.GetSectionsWithSplit(Path.Forward, SectionSplit.OnCloseBrace, _textBuffer.GetPoint(0));
+            CollectionAssert.AreEqual(
+                new[] { "dog." + Environment.NewLine, ".HH" + Environment.NewLine + "cat." },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        /// <summary>
+        /// Break on section macros
+        /// </summary>
+        [Test]
+        public void GetSectionsWithSplit_WithMacroBackward()
+        {
+            Create("dog.", ".HH", "cat.");
+            _globalSettings.Sections = "HH";
+            var ret = _motionUtil.GetSectionsWithSplit(Path.Backward, SectionSplit.OnCloseBrace, _textBuffer.GetEndPoint());
+            CollectionAssert.AreEqual(
+                new[] { ".HH" + Environment.NewLine + "cat.", "dog." + Environment.NewLine },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        /// <summary>
+        /// Going forward we should include the brace line
+        /// </summary>
+        [Test]
+        public void GetSectionsWithSplit_FromBraceLine()
+        {
+            Create("dog.", "}", "cat");
+            var ret = _motionUtil.GetSectionsWithSplit(Path.Forward, SectionSplit.OnCloseBrace, _textBuffer.GetLine(1).Start);
+            CollectionAssert.AreEqual(
+                new[] { "}" + Environment.NewLine + "cat" },
+                ret.Select(x => x.GetText()).ToList());
+
+            ret = _motionUtil.GetSectionsWithSplit(Path.Forward, SectionSplit.OnCloseBrace, _textBuffer.GetPoint(0));
+            CollectionAssert.AreEqual(
+                new[] { "dog." + Environment.NewLine, "}" + Environment.NewLine + "cat" },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        /// <summary>
+        /// Going backward we should not include the brace line
+        /// </summary>
+        [Test]
+        public void GetSectionsWithSplit_FromBraceLineBackward()
+        {
+            Create("dog.", "}", "cat");
+            var ret = _motionUtil.GetSectionsWithSplit(Path.Backward, SectionSplit.OnCloseBrace, _textBuffer.GetLine(1).Start);
+            CollectionAssert.AreEqual(
+                new[] { "dog." + Environment.NewLine },
+                ret.Select(x => x.GetText()).ToList());
+
+            ret = _motionUtil.GetSectionsWithSplit(Path.Backward, SectionSplit.OnCloseBrace, _textBuffer.GetEndPoint());
+            CollectionAssert.AreEqual(
+                new[] { "}" + Environment.NewLine + "cat", "dog." + Environment.NewLine},
+                ret.Select(x => x.GetText()).ToList());
+        }
+
         [Test]
         public void GetSentences1()
         {

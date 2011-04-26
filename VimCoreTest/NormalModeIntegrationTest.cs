@@ -217,6 +217,7 @@ namespace VimCore.UnitTest
         public void Motion_SectionForwardToMacro()
         {
             Create("cat", "", "bear", ".HU", "sheep");
+            _globalSettings.Sections = "HU";
             _buffer.Process("]]");
             Assert.AreEqual(_textView.GetLine(3).Start, _textView.GetCaretPoint());
         }
@@ -266,6 +267,36 @@ namespace VimCore.UnitTest
             _textView.MoveCaretToLine(2);
             _buffer.Process("{");
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Make sure that when starting on a section start line we jump over it when 
+        /// using the section forward motion
+        /// </summary>
+        [Test]
+        public void Motion_MoveSectionForwardFromCloseBrace()
+        {
+            Create("dog", "}", "bed", "cat");
+            var sections = ((MotionUtil)_buffer.MotionUtil).GetSections(Path.Forward, _textView.GetPoint(0));
+            _buffer.Process("][");
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            _buffer.Process("][");
+            Assert.AreEqual(_textView.GetLine(3).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Make sure that when starting on a section start line for a macro we jump 
+        /// over it when using the section forward motion
+        /// </summary>
+        [Test]
+        public void Motion_MoveSectionForwardFromMacro()
+        {
+            Create("dog", ".SH", "bed", "cat");
+            _globalSettings.Sections = "SH";
+            _buffer.Process("][");
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            _buffer.Process("][");
+            Assert.AreEqual(_textView.GetLine(3).Start, _textView.GetCaretPoint());
         }
 
         /// <summary>
