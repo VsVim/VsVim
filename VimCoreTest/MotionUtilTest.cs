@@ -1419,7 +1419,7 @@ namespace VimCore.UnitTest
             var data = _motionUtil.SectionBackwardOrOpenBrace(2);
             Assert.AreEqual(
                 new SnapshotSpan(
-                    _buffer.GetLine(1).Start,
+                    _buffer.GetLine(0).Start,
                     _buffer.GetLine(2).End),
                 data.Span);
         }
@@ -2047,6 +2047,70 @@ namespace VimCore.UnitTest
             Assert.IsTrue(result2.MotionKind.IsInclusive);
         }
 
+        /// <summary>
+        /// Break on section macros
+        /// </summary>
+        [Test]
+        public void GetSections_WithMacroAndCloseSplit()
+        {
+            Create("dog.", ".HH", "cat.");
+            _globalSettings.Sections = "HH";
+            var ret = _motionUtil.GetSections(SectionKind.OnCloseBrace, Path.Forward, _textBuffer.GetPoint(0));
+            CollectionAssert.AreEqual(
+                new[] { "dog." + Environment.NewLine, ".HH" + Environment.NewLine + "cat." },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        /// <summary>
+        /// Break on section macros
+        /// </summary>
+        [Test]
+        public void GetSections_WithMacroBackwardAndCloseSplit()
+        {
+            Create("dog.", ".HH", "cat.");
+            _globalSettings.Sections = "HH";
+            var ret = _motionUtil.GetSections(SectionKind.OnCloseBrace, Path.Backward, _textBuffer.GetEndPoint());
+            CollectionAssert.AreEqual(
+                new[] { ".HH" + Environment.NewLine + "cat.", "dog." + Environment.NewLine },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        /// <summary>
+        /// Going forward we should include the brace line
+        /// </summary>
+        [Test]
+        public void GetSectionsWithSplit_FromBraceLine()
+        {
+            Create("dog.", "}", "cat");
+            var ret = _motionUtil.GetSections(SectionKind.OnCloseBrace, Path.Forward, _textBuffer.GetLine(1).Start);
+            CollectionAssert.AreEqual(
+                new[] { "}" + Environment.NewLine + "cat" },
+                ret.Select(x => x.GetText()).ToList());
+
+            ret = _motionUtil.GetSections(SectionKind.OnCloseBrace, Path.Forward, _textBuffer.GetPoint(0));
+            CollectionAssert.AreEqual(
+                new[] { "dog." + Environment.NewLine, "}" + Environment.NewLine + "cat" },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        /// <summary>
+        /// Going backward we should not include the brace line
+        /// </summary>
+        [Test]
+        public void GetSectionsWithSplit_FromBraceLineBackward()
+        {
+            Create("dog.", "}", "cat");
+            var ret = _motionUtil.GetSections(SectionKind.OnCloseBrace, Path.Backward, _textBuffer.GetLine(1).Start);
+            CollectionAssert.AreEqual(
+                new[] { "dog." + Environment.NewLine },
+                ret.Select(x => x.GetText()).ToList());
+
+            ret = _motionUtil.GetSections(SectionKind.OnCloseBrace, Path.Backward, _textBuffer.GetEndPoint());
+            CollectionAssert.AreEqual(
+                new[] { "}" + Environment.NewLine + "cat", "dog." + Environment.NewLine },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
         [Test]
         public void GetSentences1()
         {
@@ -2223,7 +2287,7 @@ namespace VimCore.UnitTest
             Create("dog.  ", "", "cat.");
             var ret = _motionUtil.GetSentences(SentenceKind.Default, Path.Forward, _textBuffer.GetPoint(0));
             CollectionAssert.AreEquivalent(
-                new [] {"dog.", Environment.NewLine, "cat."},
+                new[] { "dog.", Environment.NewLine, "cat." },
                 ret.Select(x => x.GetText()).ToList());
         }
 
@@ -2236,7 +2300,7 @@ namespace VimCore.UnitTest
             Create("dog ca$$t $b");
             var ret = _motionUtil.GetWords(WordKind.NormalWord, Path.Forward, _textBuffer.GetPoint(0));
             CollectionAssert.AreEquivalent(
-                new [] { "dog", "ca", "$$", "t", "$", "b"},
+                new[] { "dog", "ca", "$$", "t", "$", "b" },
                 ret.Select(x => x.GetText()).ToList());
         }
 
@@ -2249,7 +2313,7 @@ namespace VimCore.UnitTest
             Create("dog cat", "", "bear");
             var ret = _motionUtil.GetWords(WordKind.NormalWord, Path.Forward, _textBuffer.GetPoint(0));
             CollectionAssert.AreEquivalent(
-                new [] { "dog", "cat", Environment.NewLine, "bear" },
+                new[] { "dog", "cat", Environment.NewLine, "bear" },
                 ret.Select(x => x.GetText()).ToList());
         }
 
@@ -2262,7 +2326,7 @@ namespace VimCore.UnitTest
             Create("dog cat");
             var ret = _motionUtil.GetWords(WordKind.NormalWord, Path.Forward, _textBuffer.GetPoint(1));
             CollectionAssert.AreEquivalent(
-                new [] { "dog", "cat" },
+                new[] { "dog", "cat" },
                 ret.Select(x => x.GetText()).ToList());
         }
 
@@ -2275,7 +2339,7 @@ namespace VimCore.UnitTest
             Create("dog cat");
             var ret = _motionUtil.GetWords(WordKind.NormalWord, Path.Forward, _textBuffer.GetPoint(2));
             CollectionAssert.AreEquivalent(
-                new [] { "dog", "cat" },
+                new[] { "dog", "cat" },
                 ret.Select(x => x.GetText()).ToList());
         }
 
@@ -2288,7 +2352,7 @@ namespace VimCore.UnitTest
             Create("dog cat");
             var ret = _motionUtil.GetWords(WordKind.NormalWord, Path.Backward, _textBuffer.GetPoint(5));
             CollectionAssert.AreEquivalent(
-                new [] { "cat", "dog" },
+                new[] { "cat", "dog" },
                 ret.Select(x => x.GetText()).ToList());
         }
 
@@ -2301,7 +2365,7 @@ namespace VimCore.UnitTest
             Create("dog cat");
             var ret = _motionUtil.GetWords(WordKind.NormalWord, Path.Backward, _textBuffer.GetPoint(4));
             CollectionAssert.AreEquivalent(
-                new [] { "dog" },
+                new[] { "dog" },
                 ret.Select(x => x.GetText()).ToList());
         }
 
@@ -2314,7 +2378,7 @@ namespace VimCore.UnitTest
             Create("dog", "", "cat");
             var ret = _motionUtil.GetWords(WordKind.NormalWord, Path.Backward, _textBuffer.GetLine(2).Start.Add(1));
             CollectionAssert.AreEquivalent(
-                new [] { "cat", Environment.NewLine, "dog" },
+                new[] { "cat", Environment.NewLine, "dog" },
                 ret.Select(x => x.GetText()).ToList());
         }
 

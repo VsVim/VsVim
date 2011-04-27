@@ -217,6 +217,7 @@ namespace VimCore.UnitTest
         public void Motion_SectionForwardToMacro()
         {
             Create("cat", "", "bear", ".HU", "sheep");
+            _globalSettings.Sections = "HU";
             _buffer.Process("]]");
             Assert.AreEqual(_textView.GetLine(3).Start, _textView.GetCaretPoint());
         }
@@ -266,6 +267,74 @@ namespace VimCore.UnitTest
             _textView.MoveCaretToLine(2);
             _buffer.Process("{");
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Make sure that when starting on a section start line we jump over it when 
+        /// using the section forward motion
+        /// </summary>
+        [Test]
+        public void Motion_MoveSectionForwardFromCloseBrace()
+        {
+            Create("dog", "}", "bed", "cat");
+            _buffer.Process("][");
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            _buffer.Process("][");
+            Assert.AreEqual(_textView.GetLine(3).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Make sure that we move off of the brace line when we are past the opening
+        /// brace on the line
+        /// </summary>
+        [Test]
+        public void Motion_MoveSectionFromAfterCloseBrace()
+        {
+            Create("dog", "} bed", "cat");
+            _textView.MoveCaretToLine(1, 3);
+            _buffer.Process("][");
+            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+            _textView.MoveCaretToLine(1, 3);
+            _buffer.Process("[]");
+            Assert.AreEqual(_textView.GetLine(0).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Make sure we handle the cases of many braces in a row correctly
+        /// </summary>
+        [Test]
+        public void Motion_MoveSectionBracesInARow()
+        {
+            Create("dog", "}", "}", "}", "cat");
+
+            // Go forward
+            for (var i = 0; i < 4; i++)
+            {
+                _buffer.Process("][");
+                Assert.AreEqual(_textView.GetLine(i + 1).Start, _textView.GetCaretPoint());
+            }
+
+            // And now backward
+            for (var i = 0; i < 4; i++)
+            {
+                _buffer.Process("[]");
+                Assert.AreEqual(_textView.GetLine(4 - i - 1).Start, _textView.GetCaretPoint());
+            }
+        }
+
+        /// <summary>
+        /// Make sure that when starting on a section start line for a macro we jump 
+        /// over it when using the section forward motion
+        /// </summary>
+        [Test]
+        public void Motion_MoveSectionForwardFromMacro()
+        {
+            Create("dog", ".SH", "bed", "cat");
+            _globalSettings.Sections = "SH";
+            _buffer.Process("][");
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            _buffer.Process("][");
+            Assert.AreEqual(_textView.GetLine(3).Start, _textView.GetCaretPoint());
         }
 
         /// <summary>

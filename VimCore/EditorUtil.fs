@@ -120,12 +120,16 @@ module SnapshotUtil =
         match path, IsLineNumberValid snapshot lineNumber with
         | Path.Forward, true ->
             let endLineNumber = GetLastLineNumber snapshot
-            [ lineNumber .. endLineNumber ]
-            |> Seq.map (fun number -> GetLine snapshot number)
+            seq {
+                for i = lineNumber to endLineNumber do
+                    yield GetLine snapshot i
+            }
         | Path.Backward, true ->
-            [ 0 .. lineNumber ]
-            |> List.rev
-            |> Seq.map (fun number -> GetLine snapshot number)
+            seq {
+                for i = 0 to lineNumber do
+                    let number = lineNumber - i
+                    yield GetLine snapshot number
+            }
         | Path.Forward, false -> 
             Seq.empty
         | Path.Backward, false ->
@@ -181,10 +185,20 @@ module SnapshotSpanUtil =
         let startPoint = GetStartPoint span
         let endPoint = GetEndPoint span
         let positions =
-            let all = [ startPoint.Position .. (endPoint.Position - 1) ]
-            match path with
-            | Path.Forward -> all
-            | Path.Backward -> all |> List.rev
+            let offset = startPoint.Position
+            match path with 
+            | Path.Forward ->
+                let max = span.Length - 1
+                seq {
+                    for i = 0 to max do
+                        yield i + offset
+                }
+            | Path.Backward ->
+                let length = span.Length
+                seq {
+                    for i = 1 to length do
+                        yield offset + (length - i)
+                }
         positions |> Seq.map (fun p -> SnapshotUtil.GetPoint span.Snapshot p)
 
     /// Get the first line in the SnapshotSpan
@@ -473,6 +487,15 @@ module SnapshotLineUtil =
     let GetOffsetOrEnd (line : ITextSnapshotLine) offset = 
         if line.Start.Position + offset >= line.End.Position then line.End
         else line.Start.Add(offset)
+
+    /// Is this the last included point on the ITextSnapshotLine
+    let IsLastPoint (line : ITextSnapshotLine) point = 
+        if line.Length = 0 then point = line.Start
+        else point.Position + 1 = line.End.Position
+
+    /// Is this the last point on the line including the line break
+    let IsLastPointIncludingLineBreak (line : ITextSnapshotLine) (point : SnapshotPoint) = 
+        point.Position + 1 = line.EndIncludingLineBreak.Position
 
     /// Does the line consist of only whitespace
     let IsWhiteSpace line = 

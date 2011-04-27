@@ -118,9 +118,13 @@ module internal SeqUtil =
             let tail = l |> Seq.skip 1 
             Some (head,tail)
 
-    let tryHeadOnly l = 
-        if Seq.isEmpty l then None
-        else Some (Seq.head l)
+    /// Try and get the head of the sequence
+    let tryHeadOnly (sequence : 'a seq) = 
+        use e = sequence.GetEnumerator()
+        if e.MoveNext() then
+            Some e.Current
+        else
+            None
 
     /// Get the head of the sequence or the default value if the sequence is empty
     let headOrDefault defaultValue l =
@@ -399,6 +403,11 @@ module NonEmptyCollectionUtil =
 type Contract = 
 
     static member Requires test = 
+        if not test then
+            raise (System.Exception("Contract failed"))
+
+    [<System.Diagnostics.Conditional("DEBUG")>]
+    static member Assert test = 
         if not test then
             raise (System.Exception("Contract failed"))
 
