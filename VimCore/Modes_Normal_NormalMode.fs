@@ -15,7 +15,7 @@ type internal NormalModeData = {
 type internal NormalMode 
     ( 
         _bufferData : IVimBuffer, 
-        _operations : IOperations,
+        _operations : ICommonOperations,
         _statusUtil : IStatusUtil,
         _displayWindowBroker : IDisplayWindowBroker,
         _runner : ICommandRunner,
@@ -141,6 +141,8 @@ type internal NormalMode
                 yield ("gI", CommandFlags.None, NormalCommand.InsertAtStartOfLine)
                 yield ("gp", CommandFlags.Repeatable, NormalCommand.PutAfterCaret true)
                 yield ("gP", CommandFlags.Repeatable, NormalCommand.PutBeforeCaret true)
+                yield ("gt", CommandFlags.Special, NormalCommand.GoToNextTab Path.Forward)
+                yield ("gT", CommandFlags.Special, NormalCommand.GoToNextTab Path.Backward)
                 yield ("gugu", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToLowerCase)
                 yield ("guu", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToLowerCase)
                 yield ("gUgU", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToUpperCase)
@@ -149,6 +151,7 @@ type internal NormalMode
                 yield ("g~~", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToggleCase)
                 yield ("g?g?", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.Rot13)
                 yield ("g??", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.Rot13)
+                yield ("g&", CommandFlags.Special, NormalCommand.RepeatLastSubstitute true)
                 yield ("i", CommandFlags.None, NormalCommand.InsertBeforeCaret)
                 yield ("I", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.InsertAtFirstNonBlank)
                 yield ("J", CommandFlags.Repeatable, NormalCommand.JoinLines JoinKind.RemoveEmptySpaces)
@@ -159,11 +162,16 @@ type internal NormalMode
                 yield ("R", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange, NormalCommand.ReplaceAtCaret)
                 yield ("s", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.SubstituteCharacterAtCaret)
                 yield ("S", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeLines)
+                yield ("u", CommandFlags.Special, NormalCommand.Undo)
                 yield ("x", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
                 yield ("X", CommandFlags.Repeatable, NormalCommand.DeleteCharacterBeforeCaret)
+                yield ("yy", CommandFlags.None, NormalCommand.YankLines)
                 yield ("<Insert>", CommandFlags.None, NormalCommand.InsertBeforeCaret)
                 yield ("<C-i>", CommandFlags.Movement, NormalCommand.JumpToNewerPosition)
                 yield ("<C-o>", CommandFlags.Movement, NormalCommand.JumpToOlderPosition)
+                yield ("<C-PageDown>", CommandFlags.Special, NormalCommand.GoToNextTab Path.Forward)
+                yield ("<C-PageUp>", CommandFlags.Special, NormalCommand.GoToNextTab Path.Backward)
+                yield ("<C-r>", CommandFlags.Special, NormalCommand.Redo)
                 yield ("<C-w><C-j>", CommandFlags.None, NormalCommand.GoToView Direction.Down)
                 yield ("<C-w>j", CommandFlags.None, NormalCommand.GoToView Direction.Down)
                 yield ("<C-w><C-k>", CommandFlags.None, NormalCommand.GoToView Direction.Up)
@@ -178,7 +186,9 @@ type internal NormalMode
                 yield ("<C-w>v", CommandFlags.None, NormalCommand.SplitViewVertically)
                 yield ("<C-w><C-g><C-f>", CommandFlags.None, NormalCommand.GoToFileUnderCaret true)
                 yield ("<C-w>gf", CommandFlags.None, NormalCommand.GoToFileUnderCaret true)
+                yield ("<C-]>", CommandFlags.Special, NormalCommand.GoToDefinition)
                 yield ("<Del>", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
+                yield ("&", CommandFlags.Special, NormalCommand.RepeatLastSubstitute false)
                 yield (".", CommandFlags.Special, NormalCommand.RepeatLastCommand)
                 yield ("<lt><lt>", CommandFlags.Repeatable, NormalCommand.ShiftLinesLeft)
                 yield (">>", CommandFlags.Repeatable, NormalCommand.ShiftLinesRight)
@@ -221,42 +231,6 @@ type internal NormalMode
         let doNothing _ _ = ()
         let commands = 
             seq {
-                yield (
-                    "yy", 
-                    CommandFlags.None, 
-                    ModeSwitch.NoSwitch,
-                    fun count reg -> 
-                        let point = TextViewUtil.GetCaretPoint _bufferData.TextView
-                        let point = point.GetContainingLine().Start
-                        let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Yank span OperationKind.LineWise )
-                yield (
-                    "&",
-                    CommandFlags.Special,
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> 
-                        let data = _bufferData.Vim.VimData
-                        match data.LastSubstituteData with
-                        | Some(data) -> 
-                            let range = TextViewUtil.GetCaretLineRange _bufferData.TextView 1
-                            _operations.Substitute data.SearchPattern data.Substitute range SubstituteFlags.None 
-                        | None -> () )
-                yield (
-                    "g&", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> 
-                        let data = _bufferData.Vim.VimData
-                        match data.LastSubstituteData with
-                        | Some(data) -> 
-                            let range = SnapshotLineRangeUtil.CreateForSnapshot this.TextBuffer.CurrentSnapshot
-                            _operations.Substitute data.SearchPattern data.Substitute range data.Flags
-                        | _ -> () )
-                yield (
-                    "u",  
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> _operations.Undo count)
                 yield (
                     "zo", 
                     CommandFlags.Special, 
@@ -332,11 +306,6 @@ type internal NormalMode
                     ModeSwitch.NoSwitch,
                     fun _ _ ->  _operations.Close(true) |> ignore )
                 yield (
-                    "<C-r>", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> _operations.Redo count)
-                yield (
                     "<C-u>", 
                     CommandFlags.Movement, 
                     ModeSwitch.NoSwitch,
@@ -387,11 +356,6 @@ type internal NormalMode
                     ModeSwitch.NoSwitch,
                     fun count _ -> _operations.ScrollPages ScrollDirection.Up count)
                 yield (
-                    "<C-]>", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _operations.GoToDefinitionWrapper())
-                yield (
                     "Y", 
                     CommandFlags.Special, 
                     ModeSwitch.NoSwitch,
@@ -441,36 +405,7 @@ type internal NormalMode
                     result
                 CommandBinding.LegacyBinding (name, kind, func2))
 
-        let needCountAsOpt = 
-            seq {
-                yield (
-                    ["<C-Home>"], 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.GoToLineOrFirst(count))
-                yield (
-                    ["gt"; "<C-PageDown>"], 
-                    CommandFlags.Movement, 
-                    fun count _ -> 
-                        match count with 
-                        | None -> _operations.GoToNextTab Path.Forward 1
-                        | Some(count) -> _operations.GoToTab count)
-                yield (
-                    ["gT"; "<C-PageUp>"], 
-                    CommandFlags.Movement, 
-                    fun count _ -> 
-                        let count = OptionUtil.getOrDefault 1 count
-                        _operations.GoToNextTab Path.Backward count)
-            }
-            |> Seq.map(fun (nameList,kind,func) -> 
-                nameList |> Seq.map (fun str ->
-                    let name = KeyNotationUtil.StringToKeyInputSet str
-                    let func2 count reg = 
-                        func count reg
-                        CommandResult.Completed ModeSwitch.NoSwitch
-                    CommandBinding.LegacyBinding (name, kind, func2)))
-            |> Seq.concat
-
-        Seq.append allWithCount needCountAsOpt 
+        allWithCount
 
     member this.Reset() =
         _runner.ResetState()

@@ -164,7 +164,6 @@ type internal VimBufferFactory
         let createCommandRunner kind = CommandRunner (view, vim.RegisterMap, capture, commandUtil, statusUtil, kind) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
         let bufferOptions = _editorOptionsFactoryService.GetOptions(view.TextBuffer)
-        let normalOpts = Modes.Normal.DefaultOperations(operationsData) :> Vim.Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(operationsData) :> Modes.Command.IOperations
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil, FileSystem() :> IFileSystem) :> Modes.Command.ICommandProcessor
         let visualOptsFactory kind = 
@@ -185,7 +184,7 @@ type internal VimBufferFactory
         let tracker = _textChangeTrackerFactory.GetTextChangeTracker buffer
         let modeList = 
             [
-                ((Modes.Normal.NormalMode(buffer, normalOpts, statusUtil,broker, createCommandRunner VisualKind.Character, capture)) :> IMode)
+                ((Modes.Normal.NormalMode(buffer, commonOperations, statusUtil,broker, createCommandRunner VisualKind.Character, capture)) :> IMode)
                 ((Modes.Command.CommandMode(buffer, commandProcessor, commonOperations)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, tracker, false)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, tracker, true)) :> IMode)

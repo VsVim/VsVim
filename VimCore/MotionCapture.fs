@@ -275,6 +275,10 @@ type internal MotionCapture
                     "gg", 
                     MotionFlags.CursorMovement,
                     Motion.LineOrFirstToFirstNonWhiteSpace)
+                yield ( 
+                    "<C-Home>", 
+                    MotionFlags.CursorMovement,
+                    Motion.LineOrFirstToFirstNonWhiteSpace)
                 yield (
                     "n",
                     MotionFlags.CursorMovement,
