@@ -408,6 +408,12 @@ namespace Vim.UnitTest
             return MoveCaretTo(textView, textView.GetLine(lineNumber).Start.Position);
         }
 
+        public static CaretPosition MoveCaretToLine(this ITextView textView, int lineNumber, int column)
+        {
+            var point = textView.GetLine(lineNumber).Start.Add(column);
+            return MoveCaretTo(textView, point.Position);
+        }
+
         public static void SelectAndUpdateCaret(this ITextView textView, SnapshotSpan span, TextSelectionMode mode = TextSelectionMode.Stream)
         {
             textView.Selection.Mode = mode;

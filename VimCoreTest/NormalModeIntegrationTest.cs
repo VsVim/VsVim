@@ -277,11 +277,49 @@ namespace VimCore.UnitTest
         public void Motion_MoveSectionForwardFromCloseBrace()
         {
             Create("dog", "}", "bed", "cat");
-            var sections = ((MotionUtil)_buffer.MotionUtil).GetSections(Path.Forward, _textView.GetPoint(0));
             _buffer.Process("][");
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
             _buffer.Process("][");
             Assert.AreEqual(_textView.GetLine(3).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Make sure that we move off of the brace line when we are past the opening
+        /// brace on the line
+        /// </summary>
+        [Test]
+        public void Motion_MoveSectionFromAfterCloseBrace()
+        {
+            Create("dog", "} bed", "cat");
+            _textView.MoveCaretToLine(1, 3);
+            _buffer.Process("][");
+            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+            _textView.MoveCaretToLine(1, 3);
+            _buffer.Process("[]");
+            Assert.AreEqual(_textView.GetLine(0).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Make sure we handle the cases of many braces in a row correctly
+        /// </summary>
+        [Test]
+        public void Motion_MoveSectionBracesInARow()
+        {
+            Create("dog", "}", "}", "}", "cat");
+
+            // Go forward
+            for (var i = 0; i < 4; i++)
+            {
+                _buffer.Process("][");
+                Assert.AreEqual(_textView.GetLine(i + 1).Start, _textView.GetCaretPoint());
+            }
+
+            // And now backward
+            for (var i = 0; i < 4; i++)
+            {
+                _buffer.Process("[]");
+                Assert.AreEqual(_textView.GetLine(4 - i - 1).Start, _textView.GetCaretPoint());
+            }
         }
 
         /// <summary>

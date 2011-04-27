@@ -236,14 +236,20 @@ type SentenceKind =
     | NoTrailingCharacters
 
 [<RequireQualifiedAccess>]
-type SectionSplit =
-    /// Split on an open brace
+type SectionKind =
+
+    /// By default a section break happens on a form feed in the first 
+    /// column or one of the nroff macros
+    | Default
+
+    /// Split on an open brace in addition to default settings
     | OnOpenBrace
 
-    /// Split on a close brace 
+    /// Split on a close brace in addition to default settings
     | OnCloseBrace
 
-    /// Split on an open brace or below a close brace
+    /// Split on an open brace or below a close brace in addition to default
+    /// settings
     | OnOpenBraceOrBelowCloseBrace
 
 type internal MotionUtil 
@@ -364,9 +370,9 @@ type internal MotionUtil
     /// Get the SnapshotLineRange values for the section values starting from the given SnapshotPoint 
     /// in the specified direction.  Note: The full span of the section will be returned if the 
     /// provided SnapshotPoint is in the middle of it
-    member x.GetSectionRanges path point =
+    member x.GetSectionRanges sectionKind path point =
 
-        let isNotSectionStart line = not (x.IsSectionStart line)
+        let isNotSectionStart line = not (x.IsSectionStart sectionKind line)
 
         // Get the ITextSnapshotLine which is the start of the nearest section from the given point.  
         let snapshot = SnapshotPointUtil.GetSnapshot point
@@ -378,7 +384,7 @@ type internal MotionUtil
 
         // Get the SnapshotLineRange from an ITextSnapshotLine which begins a section
         let getSectionRangeFromStart (startLine: ITextSnapshotLine) =
-            Contract.Assert (x.IsSectionStart startLine)
+            Contract.Assert (x.IsSectionStart sectionKind startLine)
             let nextStartLine = 
                 SnapshotUtil.GetLines snapshot startLine.LineNumber Path.Forward
                 |> SeqUtil.skipMax 1
@@ -420,6 +426,16 @@ type internal MotionUtil
                     let range = SnapshotLineRangeUtil.CreateForLineRange startLine endLine
                     Some (range, range.Start)
 
+            // There is a bit of a special case with backward sections.  If the point is 
+            // anywhere on the line of a section start then really it starts from the start
+            // of the line
+            let point = 
+                let line = SnapshotPointUtil.GetContainingLine point
+                if x.IsSectionStart sectionKind line then
+                    line.Start
+                else 
+                    point
+
             let startLine = getSectionStartBackward point
             let sections = Seq.unfold getPrevious startLine.Start
 
@@ -432,33 +448,11 @@ type internal MotionUtil
                 let added = startLine |> getSectionRangeFromStart |> Seq.singleton
                 Seq.append added sections
 
-    /// Get the sections forward accounting for the provided split 
-    member x.GetSectionsWithSplit path sectionSplit point =
-        match path with
-        | Path.Forward ->
-
-            // Get the sections forward accounting for the provided section split.  Make sure to
-            // filter the split results which end up coming before the start position
-            point
-            |> x.GetSectionRanges Path.Forward
-            |> x.SplitSectionsOnBraces Path.Forward sectionSplit
-            |> Seq.filter (fun (span : SnapshotSpan) -> span.End.Position > point.Position)
-
-        | Path.Backward ->
-
-            // Get the sections backward accounting for the provided section split.  Make sure
-            // to filter the split results which end up coming after or on the start position
-            point
-            |> x.GetSectionRanges Path.Backward
-            |> x.SplitSectionsOnBraces Path.Backward sectionSplit
-            |> Seq.filter (fun (span : SnapshotSpan) -> span.Start.Position < point.Position)
-
-
     /// Get the SnapshotSpan values for the section values starting from the given SnapshotPoint 
     /// in the specified direction.  Note: The full span of the section will be returned if the 
     /// provided SnapshotPoint is in the middle of it
-    member x.GetSections path point =
-        x.GetSectionRanges path point
+    member x.GetSections sectionKind path point =
+        x.GetSectionRanges sectionKind path point
         |> Seq.map (fun range -> range.ExtentIncludingLineBreak)
 
     /// Get the SnapshotSpan values for the sentence values starting from the given SnapshotPoint 
@@ -599,7 +593,7 @@ type internal MotionUtil
     member x.IsParagraphStart point =
         let line = SnapshotPointUtil.GetContainingLine point
         if line.Start = point then
-            x.IsParagraphStartOnly line || x.IsSectionStart line
+            x.IsParagraphStartOnly line || x.IsSectionStart SectionKind.Default line
         else
             false
 
@@ -614,15 +608,36 @@ type internal MotionUtil
         x.IsBlankLineWithNoBlankAbove line
 
     /// Is this line the start of a section.  Section boundaries can only occur at the
-    /// start of a line
-    member x.IsSectionStart line = 
+    /// start of a line or in a couple of scenarios around braces
+    member x.IsSectionStart kind line = 
+
+        // Is this a standard section start
         let startPoint = SnapshotLineUtil.GetStart line
-        if SnapshotPointUtil.IsStartPoint startPoint then
-            true
-        elif SnapshotPointUtil.IsChar '\f' startPoint then
+        let isStandardStart = 
+            if SnapshotPointUtil.IsStartPoint startPoint then
+                true
+            elif SnapshotPointUtil.IsChar '\f' startPoint then
+                true
+            else
+                x.IsTextMacroMatchLine line _globalSettings.Sections
+
+        if isStandardStart then
             true
         else
-            x.IsTextMacroMatchLine line _globalSettings.Sections
+            match kind with
+            | SectionKind.Default ->
+                false
+            | SectionKind.OnOpenBrace -> 
+                SnapshotPointUtil.IsChar '{' startPoint
+            | SectionKind.OnCloseBrace -> 
+                SnapshotPointUtil.IsChar '}' startPoint
+            | SectionKind.OnOpenBraceOrBelowCloseBrace -> 
+                if SnapshotPointUtil.IsChar '{' startPoint then
+                    true
+                else
+                    match SnapshotUtil.TryGetLine line.Snapshot (line.LineNumber - 1) with
+                    | None -> false
+                    | Some line -> SnapshotPointUtil.IsChar '}' line.Start
 
     /// Is this the end point of the span of an actual sentence.  Considers sentence, paragraph and 
     /// section semantics
@@ -723,7 +738,7 @@ type internal MotionUtil
         else
             let line = SnapshotPointUtil.GetContainingLine point
             if line.Start = point then
-                x.IsParagraphStartOnly line || x.IsSectionStart line
+                x.IsParagraphStartOnly line || x.IsSectionStart SectionKind.Default line
             else
                 false
 
@@ -1576,12 +1591,12 @@ type internal MotionUtil
             Column = None} |> x.ApplyStartOfLineOption
 
     /// Implements the core portion of section backward motions
-    member x.SectionBackwardCore sectionSplit count = 
+    member x.SectionBackwardCore sectionKind count = 
         _jumpList.Add x.CaretPoint
 
         let startPoint = 
             x.CaretPoint
-            |> x.GetSectionsWithSplit Path.Backward sectionSplit
+            |> x.GetSections sectionKind Path.Backward
             |> SeqUtil.skipMax (count - 1)
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
@@ -1598,17 +1613,17 @@ type internal MotionUtil
     member x.SectionForward context count = 
         let split = 
             match context with
-            | MotionContext.AfterOperator -> SectionSplit.OnOpenBraceOrBelowCloseBrace
-            | MotionContext.Movement -> SectionSplit.OnOpenBrace
+            | MotionContext.AfterOperator -> SectionKind.OnOpenBraceOrBelowCloseBrace
+            | MotionContext.Movement -> SectionKind.OnOpenBrace
         x.SectionForwardCore split count
 
     /// Implements the core parts of section forward operators
-    member x.SectionForwardCore sectionSplit count =
+    member x.SectionForwardCore sectionKind count =
         _jumpList.Add x.CaretPoint
 
         let endPoint = 
             x.CaretPoint
-            |> x.GetSectionsWithSplit Path.Forward sectionSplit
+            |> x.GetSections sectionKind Path.Forward
             |> SeqUtil.skipMax count
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
@@ -1623,15 +1638,15 @@ type internal MotionUtil
 
     /// Implements the '][' motion
     member x.SectionForwardOrCloseBrace count =
-        x.SectionForwardCore SectionSplit.OnCloseBrace count
+        x.SectionForwardCore SectionKind.OnCloseBrace count
 
     /// Implements the '[[' motion
     member x.SectionBackwardOrOpenBrace count = 
-        x.SectionBackwardCore SectionSplit.OnOpenBrace count
+        x.SectionBackwardCore SectionKind.OnOpenBrace count
 
     /// Implements the '[]' motion
     member x.SectionBackwardOrCloseBrace count = 
-        x.SectionBackwardCore SectionSplit.OnCloseBrace count
+        x.SectionBackwardCore SectionKind.OnCloseBrace count
 
     member x.SentenceForward count = 
         _jumpList.Add x.CaretPoint
@@ -1663,64 +1678,6 @@ type internal MotionUtil
             MotionKind = MotionKind.Exclusive 
             OperationKind = OperationKind.CharacterWise 
             Column = None}
-
-    /// Many of the section operators additionally break on an '{' or '}' if it
-    /// appears in the first column.  This is a shared method for splitting up those 
-    /// items
-    member x.SplitSectionsOnBraces path sectionSplit sections = 
-
-        // Split a section line range based on the '{' and '}' values
-        let split (range : SnapshotLineRange) = 
-
-            // Is this a line to spilt the span on?
-            let isSplitLine line =
-                let point = SnapshotLineUtil.GetStart line
-                match sectionSplit with
-                | SectionSplit.OnOpenBrace -> 
-                    SnapshotPointUtil.IsChar '{' point
-                | SectionSplit.OnCloseBrace -> 
-                    SnapshotPointUtil.IsChar '}' point
-                | SectionSplit.OnOpenBraceOrBelowCloseBrace -> 
-                    if SnapshotPointUtil.IsChar '{' point then
-                        true
-                    else
-                        match SnapshotUtil.TryGetLine point.Snapshot (line.LineNumber - 1) with
-                        | None -> false
-                        | Some line -> SnapshotPointUtil.IsChar '}' line.Start
-
-            let snapshot = x.CurrentSnapshot
-            let spans = 
-                range.Start
-                |> Seq.unfold (fun point ->
-                    if point = range.EndIncludingLineBreak then
-                        // Once we hit the end of the SnapshotLineRange we are done
-                        None
-                    else
-                        let line = SnapshotPointUtil.GetContainingLine point
-                        let splitLine = 
-                            // Need to skip past split points here so we don't create an infinite loop
-                            let number = if isSplitLine line then line.LineNumber + 1 else line.LineNumber
-                            SnapshotUtil.GetLines snapshot number Path.Forward
-                            |> Seq.takeWhile (fun line -> line.LineNumber <= range.EndLineNumber)
-                            |> Seq.skipWhile (fun line -> not (isSplitLine line))
-                            |> SeqUtil.tryHeadOnly
-
-                        let range = 
-                            match splitLine with 
-                            | Some splitLine -> SnapshotLineRangeUtil.CreateForLineAndCount line (splitLine.LineNumber - line.LineNumber) |> Option.get
-                            | None -> SnapshotLineRangeUtil.CreateForLineRange line range.EndLine
-    
-                        let span = range.ExtentIncludingLineBreak 
-                        Some (span, span.End))
-
-            // Make sure to adjust the split for the path 
-            match path with
-            | Path.Forward -> spans
-            | Path.Backward -> spans |> List.ofSeq |> List.rev |> Seq.ofList
-
-        sections
-        |> Seq.map split
-        |> Seq.concat
 
     /// Implements the '}' motion
     member x.ParagraphForward count = 
