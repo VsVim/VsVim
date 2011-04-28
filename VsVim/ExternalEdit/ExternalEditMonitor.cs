@@ -87,7 +87,7 @@ namespace VsVim.ExternalEdit
         private void CheckForExternalEdit()
         {
             // Only check for an external edit if there are visible lines.  In the middle of a nested layout
-            // the set of visible lines will temporarily be unavalaible
+            // the set of visible lines will temporarily be unavailable
             var range = _buffer.TextView.GetVisibleLineRange();
             if (range.IsError)
             {

@@ -362,6 +362,11 @@ namespace Vim.UnitTest
             return new SnapshotPoint(textView.TextSnapshot, position);
         }
 
+        public static SnapshotPoint GetPointInLine(this ITextView textView, int line, int column)
+        {
+            return textView.TextBuffer.GetPointInLine(line, column);
+        }
+
         public static SnapshotPoint GetEndPoint(this ITextView textView)
         {
             return textView.TextSnapshot.GetEndPoint();
@@ -485,6 +490,12 @@ namespace Vim.UnitTest
         public static SnapshotPoint GetPoint(this ITextBuffer buffer, int position)
         {
             return new SnapshotPoint(buffer.CurrentSnapshot, position);
+        }
+
+        public static SnapshotPoint GetPointInLine(this ITextBuffer textBuffer, int line, int column)
+        {
+            var snapshotLine = textBuffer.GetLine(line);
+            return snapshotLine.Start.Add(column);
         }
 
         public static SnapshotPoint GetEndPoint(this ITextBuffer buffer)

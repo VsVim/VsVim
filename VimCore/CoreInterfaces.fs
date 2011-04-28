@@ -234,6 +234,12 @@ type CaretColumn =
     /// in the motion
     | AfterLastLine
 
+    /// This is to cover cases where the last line is blank.  It's impossible for 
+    /// the caret movement code to tell the difference between a blank which should
+    /// be consider the last line or if the line above is last.  This helps
+    /// differentiate the two
+    | AfterLastLinePlusOne
+
 /// Data about a complete motion operation. 
 type MotionResult = {
 

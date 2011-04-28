@@ -1307,25 +1307,44 @@ type internal MotionUtil
             x.CharSearch c 1 kind direction
 
     member x.WordForward kind count =
-        let start = x.CaretPoint
-        let endPoint = TssUtil.FindNextWordStart start count kind  
-        let span = SnapshotSpan(start,endPoint)
+
+        // If we are in white space in the middle of the line then we adjust the 
+        // count down by 1.  From white space the 'w' motion should take us to the 
+        // start of the first word not the second.
+        let count = 
+            if SnapshotPointUtil.IsWhiteSpace x.CaretPoint && not (SnapshotPointUtil.IsInsideLineBreak x.CaretPoint) then
+                count - 1
+            else
+                count
+
+        let endPoint = 
+            x.GetWords kind Path.Forward x.CaretPoint
+            |> SeqUtil.skipMax count
+            |> Seq.map SnapshotSpanUtil.GetStartPoint
+            |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
+        let column = endPoint |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine |> Some
+        let span = SnapshotSpan(x.CaretPoint, endPoint)
         {
             Span = span 
             IsForward = true 
             MotionKind = MotionKind.AnyWord
             OperationKind = OperationKind.CharacterWise 
-            Column = None}
+            Column = column }
+
     member x.WordBackward kind count =
-        let start = x.CaretPoint
-        let startPoint = TssUtil.FindPreviousWordStart start count kind
-        let span = SnapshotSpan(startPoint,start)
+
+        let startPoint = 
+            x.GetWords kind Path.Backward x.CaretPoint
+            |> SeqUtil.skipMax (count - 1)
+            |> Seq.map SnapshotSpanUtil.GetStartPoint
+            |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
+        let span = SnapshotSpan(startPoint, x.CaretPoint)
         {
             Span = span 
             IsForward = false 
             MotionKind = MotionKind.AnyWord
             OperationKind = OperationKind.CharacterWise 
-            Column = None}
+            Column = None }
 
     /// Implements the 'e' and 'E' motions
     member x.EndOfWord kind count = 
@@ -1360,7 +1379,17 @@ type internal MotionUtil
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
 
         let span = SnapshotSpan(x.CaretPoint, endPoint)
-        let column = endPoint |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine |> Some
+
+        // This is an inclusive motion so the column should be the "end - 1".  
+        let column = 
+            let endPoint = 
+                if SnapshotPointUtil.IsStartOfLine endPoint || SnapshotPointUtil.IsStartPoint endPoint then 
+                    endPoint
+                else
+                    SnapshotPointUtil.SubtractOne endPoint
+            endPoint 
+            |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine |> Some
+
         { 
             Span = span
             IsForward = true
@@ -1870,17 +1899,6 @@ type internal MotionUtil
     /// word motions
     member x.AdjustMotionResult motion (motionResult : MotionResult) =
 
-        // There are certain motions to which we cannot apply the 'exclusive-linewise'
-        // adjustment.  They are not listed in the documentation (but it does note there
-        // are exceptions to the exception).  Experimentation has shown though that 
-        // it's the following
-        let allowExclusiveLineWise = 
-            match motion with
-            | Motion.AllWord _ -> false
-            | Motion.WordBackward _ -> false
-            | Motion.WordForward _ -> false
-            | _ -> true
-
         // Do the actual adjustment for exclusive motions.  The kind which should be 
         // added to the adjusted motion is provided
         let adjust kind = 
@@ -1890,7 +1908,26 @@ type internal MotionUtil
             let span = motionResult.Span
             let startLine = SnapshotSpanUtil.GetStartLine span
             let endLine = SnapshotPointUtil.GetContainingLine span.End
+            let snapshot = startLine.Snapshot
             let firstNonBlank = TssUtil.FindFirstNonWhiteSpaceCharacter startLine
+
+            // There are certain motions to which we cannot apply the 'exclusive-linewise'
+            // adjustment.  They are not listed in the documentation (but it does note there
+            // are exceptions to the exception).  Experimentation has shown though that 
+            // it's the following
+            let allowExclusiveLineWise = 
+                match motion with
+                | Motion.AllWord _ -> 
+                    false
+                | Motion.WordForward _ -> 
+                    // Word again is the special case of Vim.  The 'exclusive-linewise' promotion
+                    // is disallowed in every case except when the line above is a blank line.  Or
+                    // more simply when the last 'word' in the motion is a blank line
+                    match SnapshotUtil.TryGetLine snapshot (endLine.LineNumber - 1) with
+                    | Some line -> line.Length = 0
+                    | None -> false
+                | _ -> 
+                    true
 
             if endLine.LineNumber <= startLine.LineNumber then
                 // No adjustment needed when everything is on the same line
@@ -1908,12 +1945,13 @@ type internal MotionUtil
                 let column = motionResult.Column |> Option.map (fun _ -> CaretColumn.AfterLastLine)
                 { motionResult with Span = span; MotionKind = kind; OperationKind = OperationKind.LineWise; Column = column }
             else 
-                // Rule #1. Move this back a line
-                let endPoint = 
+                // Rule #1. Move this back a line.
+                let caretColumn, endPoint =
                     let line = SnapshotUtil.GetLine span.Snapshot (endLine.LineNumber - 1)
-                    line.End
+                    let caretColumn = if line.Length = 0 then CaretColumn.AfterLastLinePlusOne else CaretColumn.AfterLastLine
+                    caretColumn, line.End
                 let span = SnapshotSpan(span.Start, endPoint)
-                let column = motionResult.Column |> Option.map (fun _ -> CaretColumn.AfterLastLine)
+                let column = motionResult.Column |> Option.map (fun _ -> caretColumn)
                 { motionResult with Span = span; MotionKind = kind; Column = column }
 
         match motionResult.MotionKind with

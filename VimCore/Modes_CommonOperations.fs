@@ -115,6 +115,15 @@ type internal CommonOperations ( _data : OperationsData ) =
                         line.Start
                 else
                     getPointFromSpan()
+            | Some CaretColumn.AfterLastLinePlusOne ->
+                if result.IsForward then
+                    match SnapshotUtil.TryGetLine x.CurrentSnapshot (line.LineNumber + 2) with
+                    | None -> 
+                        getPointFromSpan()
+                    | Some line ->
+                        line.Start
+                else
+                    getPointFromSpan()
 
         x.MoveCaretToPointAndEnsureVisible point
         _operations.ResetSelection()
