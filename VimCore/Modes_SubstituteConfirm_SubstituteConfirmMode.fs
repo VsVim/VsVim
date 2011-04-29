@@ -30,10 +30,12 @@ type ConfirmAction = ConfirmData -> ModeSwitch
 type internal SubstituteConfirmMode
     (
         _buffer : IVimBuffer,
-        _operations : ICommonOperations ) as this = 
+        _operations : ICommonOperations
+    ) as this = 
 
     let _textBuffer = _buffer.TextBuffer
     let _factory = VimRegexFactory(_buffer.Settings.GlobalSettings)
+    let _editorOperations = _operations.EditorOperations
     let _currentMatchChanged = Event<_>()
     let mutable _commandMap : Map<KeyInput, ConfirmAction> = Map.empty
     let mutable _confirmData : ConfirmData option = None
@@ -52,10 +54,10 @@ type internal SubstituteConfirmMode
         add "q" (fun _ -> ModeSwitch.SwitchMode ModeKind.Normal)
         add "a" this.DoSubstituteAll 
         add "<C-e>" (fun _ -> 
-            _operations.ScrollPages ScrollDirection.Up 1
+            _editorOperations.PageUp(false)
             ModeSwitch.NoSwitch)
         add "<C-y>" (fun _ -> 
-            _operations.ScrollPages ScrollDirection.Down 1 
+            _editorOperations.PageDown(false)
             ModeSwitch.NoSwitch)
 
     member this.CurrentMatch = 

@@ -832,6 +832,13 @@ type VisualSpan =
         | Line range ->  range.Start
         | Block col -> col.Head.Start
 
+    /// What type of OperationKind does this VisualSpan represent
+    member x.OperationKind =
+        match x with
+        | VisualSpan.Character _ -> OperationKind.CharacterWise
+        | VisualSpan.Line _ -> OperationKind.LineWise
+        | VisualSpan.Block _ -> OperationKind.CharacterWise
+
 /// Information about the attributes of Command
 [<System.Flags>]
 type CommandFlags =
@@ -1077,6 +1084,12 @@ type NormalCommand =
     /// Set the specified mark to the current value of the caret
     | SetMarkToCaret of char
 
+    /// Scroll the screen in the specified direction
+    | ScrollLines of ScrollDirection
+
+    /// Move the display a single page in the specified direction
+    | ScrollPages of ScrollDirection
+
     /// Shift 'count' lines from the cursor left
     | ShiftLinesLeft
 
@@ -1145,6 +1158,12 @@ type VisualCommand =
 
     /// Shift the selected lines to the right
     | ShiftLinesRight
+
+    /// Yank the lines which are specified by the selection
+    | YankLineSelection
+
+    /// Yank the selection into the specified register
+    | YankSelection
 
 /// Commands which can be executed by the user
 [<RequireQualifiedAccess>]
@@ -1951,6 +1970,8 @@ and IVimGlobalSettings =
 
 /// Settings class which is local to a given IVimBuffer.  This will hide the work of merging
 /// global settings with non-global ones
+///
+/// TODO: Need to break this into local to buffer and local to window settings
 and IVimLocalSettings =
 
     abstract AutoIndent : bool with get, set

@@ -84,3 +84,18 @@ type internal CommandFactory
             |> Seq.filter (fun command -> not (taken.Contains command.KeyInputSet))
         standard |> Seq.append motion
 
+    /// Returns the set of commands which move the caret as a scroll operation
+    member x.CreateScrollCommands () =
+        seq {
+            yield ("<C-b>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Up)
+            yield ("<C-d>", CommandFlags.Movement, NormalCommand.ScrollLines ScrollDirection.Down)
+            yield ("<C-f>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Down)
+            yield ("<C-u>", CommandFlags.Movement, NormalCommand.ScrollLines ScrollDirection.Up)
+            yield ("<S-Down>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Down)
+            yield ("<S-Up>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Up)
+            yield ("<PageUp>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Up)
+            yield ("<PageDown>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Down)
+        } |> Seq.map (fun (str, flags, command) ->
+            let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
+            CommandBinding.NormalBinding (keyInputSet, flags, command))
+

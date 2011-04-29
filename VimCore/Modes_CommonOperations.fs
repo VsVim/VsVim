@@ -605,40 +605,12 @@ type internal CommonOperations ( _data : OperationsData ) =
                 _textView.Caret.MoveTo(caret) |> ignore
                 _textView.Caret.EnsureVisible()
 
-        member x.MoveCaretAndScrollLines dir count =
-            let lines = _settings.Scroll
-            let tss = _textView.TextSnapshot
-            let caretPoint = TextViewUtil.GetCaretPoint _textView
-            let curLine = caretPoint.GetContainingLine().LineNumber
-            let newLine = 
-                match dir with
-                | ScrollDirection.Down -> min (tss.LineCount - 1) (curLine + lines)
-                | ScrollDirection.Up -> max (0) (curLine - lines)
-                | _ -> failwith "Invalid enum value"
-            let newCaret = tss.GetLineFromLineNumber(newLine).Start
-            _operations.ResetSelection()
-            _textView.Caret.MoveTo(newCaret) |> ignore
-            _textView.Caret.EnsureVisible()
-
         member x.ScrollLines dir count =
             for i = 1 to count do
                 match dir with
                 | ScrollDirection.Down -> _operations.ScrollDownAndMoveCaretIfNecessary()
                 | ScrollDirection.Up -> _operations.ScrollUpAndMoveCaretIfNecessary()
                 | _ -> failwith "Invalid enum value"
-    
-        member x.ScrollPages dir count = 
-            let func,getLine =
-                match dir with
-                | ScrollDirection.Down -> (_operations.ScrollPageDown, fun () -> _textView.TextViewLines.LastVisibleLine)
-                | ScrollDirection.Up -> (_operations.ScrollPageUp, fun () -> _textView.TextViewLines.FirstVisibleLine)
-                | _ -> failwith "Invalid enum value"
-            for i = 1 to count do
-                func()
-
-            // Scrolling itself does not move the caret.  Must be manually moved
-            let line = getLine()
-            _textView.Caret.MoveTo(line) |> ignore
 
         member x.ShiftLineBlockLeft col multiplier = x.ShiftLineBlockLeft col multiplier
         member x.ShiftLineBlockRight col multiplier = x.ShiftLineBlockRight col multiplier

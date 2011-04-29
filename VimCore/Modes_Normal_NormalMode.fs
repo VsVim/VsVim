@@ -72,6 +72,7 @@ type internal NormalMode
             x.CreateSimpleCommands()
             |> Seq.append (x.CreateCommandBindings())
             |> Seq.append (factory.CreateMovementCommands())
+            |> Seq.append (factory.CreateScrollCommands())
             |> Seq.iter _runner.Add
 
             // Add in the special ~ command
@@ -306,16 +307,6 @@ type internal NormalMode
                     ModeSwitch.NoSwitch,
                     fun _ _ ->  _operations.Close(true) |> ignore )
                 yield (
-                    "<C-u>", 
-                    CommandFlags.Movement, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Up count)
-                yield (
-                    "<C-d>", 
-                    CommandFlags.Movement, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Down count)
-                yield (
                     "<C-y>", 
                     CommandFlags.Special, 
                     ModeSwitch.NoSwitch,
@@ -325,36 +316,6 @@ type internal NormalMode
                     CommandFlags.Special, 
                     ModeSwitch.NoSwitch,
                     fun count _ -> _operations.ScrollLines ScrollDirection.Down count)
-                yield (
-                    "<C-f>", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> _operations.ScrollPages ScrollDirection.Down count)
-                yield (
-                    "<S-Down>", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> _operations.ScrollPages ScrollDirection.Down count)
-                yield (
-                    "<PageDown>", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> _operations.ScrollPages ScrollDirection.Down count)
-                yield (
-                    "<C-b>", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> _operations.ScrollPages ScrollDirection.Up count)
-                yield (
-                    "<S-Up>", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> _operations.ScrollPages ScrollDirection.Up count)
-                yield (
-                    "<PageUp>", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> _operations.ScrollPages ScrollDirection.Up count)
                 yield (
                     "Y", 
                     CommandFlags.Special, 

@@ -30,6 +30,7 @@ type internal CommandUtil
     let _searchService = _vim.SearchService
     let _wordNavigator = _buffer.WordNavigator
     let _jumpList = _buffer.JumpList
+    let _editorOperations = _operations.EditorOperations
     let _options = _operations.EditorOptions
 
     let mutable _inRepeatLastChange = false
@@ -485,11 +486,7 @@ type internal CommandUtil
             let snapshot = edit.Apply()
             TextViewUtil.MoveCaretToPosition _textView startPoint.Position)
 
-        let operationKind = 
-            match visualSpan with
-            | VisualSpan.Character _ -> OperationKind.CharacterWise
-            | VisualSpan.Line _ -> OperationKind.LineWise
-            | VisualSpan.Block _ -> OperationKind.CharacterWise
+        let operationKind = visualSpan.OperationKind
         let value = RegisterValue.String (StringData.OfEditSpan visualSpan.EditSpan, operationKind)
         _registerMap.SetRegisterValue register RegisterOperation.Delete value
 
@@ -1508,6 +1505,8 @@ type internal CommandUtil
         | NormalCommand.ReplaceChar keyInput -> x.ReplaceChar keyInput data.CountOrDefault
         | NormalCommand.RunMacro registerName -> x.RunMacro registerName data.CountOrDefault
         | NormalCommand.SetMarkToCaret c -> x.SetMarkToCaret c
+        | NormalCommand.ScrollLines direction -> x.ScrollLines direction data.Count
+        | NormalCommand.ScrollPages direction -> x.ScrollPages direction data.CountOrDefault
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count register
         | NormalCommand.ShiftLinesLeft -> x.ShiftLinesLeft count
         | NormalCommand.ShiftLinesRight -> x.ShiftLinesRight count
@@ -1543,6 +1542,8 @@ type internal CommandUtil
         | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
+        | VisualCommand.YankLineSelection -> x.YankLineSelection register visualSpan
+        | VisualCommand.YankSelection -> x.YankSelection register visualSpan
 
     /// Get the MotionResult value for the provided MotionData and pass it
     /// if found to the provided function
@@ -1561,6 +1562,71 @@ type internal CommandUtil
             CommandResult.Error
         | Modes.Result.Succeeded ->
             CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Scroll the lines 'count' pages in the specified direction
+    ///
+    /// TODO: Should support the 'scroll' option here.  It should be the used value 
+    /// when a count is not specified
+    member x.ScrollLines direction countOption =
+        let count = 
+            match countOption with
+            | None -> TextViewUtil.GetVisibleLineCount _textView / 2
+            | Some count -> count
+        let count = if count <= 0 then 1 else count
+
+        let lineNumber = 
+            match direction with
+            | ScrollDirection.Up -> 
+                if x.CaretLine.LineNumber = 0 then 
+                    _operations.Beep()
+                    None
+                else 
+                    x.CaretLine.LineNumber - count |> Some
+            | ScrollDirection.Down ->
+                if x.CaretLine.LineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot then
+                    _operations.Beep()
+                    None
+                else
+                    x.CaretLine.LineNumber + count |> Some
+            | _ -> 
+                None
+
+        match lineNumber |> Option.map (fun number -> SnapshotUtil.GetLineOrLast x.CurrentSnapshot number) with
+        | None ->
+            ()
+        | Some line -> 
+            let point = 
+                let column = SnapshotPointUtil.GetColumn x.CaretPoint
+                if column < line.Length then
+                    line.Start.Add(column)
+                else
+                    line.Start
+            TextViewUtil.MoveCaretToPoint _textView point
+            _operations.EnsureCaretOnScreen()
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Scroll a page in the specified direction
+    member x.ScrollPages direction count = 
+        let doScroll () = 
+            match direction with
+            | ScrollDirection.Up -> _editorOperations.PageUp(false)
+            | ScrollDirection.Down -> _editorOperations.PageDown(false)
+            | _ -> _operations.Beep()
+
+        for i = 1 to count do
+            doScroll()
+
+        // The editor PageUp and PageDown don't actually move the caret.  Manually move it 
+        // here
+        let line = 
+            match direction with 
+            | ScrollDirection.Up -> _textView.TextViewLines.FirstVisibleLine
+            | ScrollDirection.Down -> _textView.TextViewLines.LastVisibleLine
+            | _ -> _textView.TextViewLines.FirstVisibleLine
+        _textView.Caret.MoveTo(line) |> ignore
+
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Shift the given line range left by the specified value.  The caret will be 
     /// placed at the first character on the first line of the shifted text
@@ -1718,12 +1784,6 @@ type internal CommandUtil
         _operations.Undo count
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Yank the contents of the motion into the specified register
-    member x.YankMotion register (result: MotionResult) = 
-        let value = RegisterValue.String (StringData.OfSpan result.Span, result.OperationKind)
-        _registerMap.SetRegisterValue register RegisterOperation.Yank value
-        CommandResult.Completed ModeSwitch.NoSwitch
-
     /// Yank the specified lines into the specified register 
     member x.YankLines count register = 
         let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
@@ -1731,6 +1791,39 @@ type internal CommandUtil
         let value = RegisterValue.String (data, OperationKind.LineWise)
         _registerMap.SetRegisterValue register RegisterOperation.Yank value
 
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Yank the contents of the motion into the specified register
+    member x.YankMotion register (result: MotionResult) = 
+        let value = RegisterValue.String (StringData.OfSpan result.Span, result.OperationKind)
+        _registerMap.SetRegisterValue register RegisterOperation.Yank value
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Yank the lines in the specified selection
+    member x.YankLineSelection register (visualSpan : VisualSpan) = 
+        let editSpan, operationKind = 
+            match visualSpan with 
+            | VisualSpan.Character span ->
+                // Extend the character selection to the full lines
+                let range = SnapshotLineRangeUtil.CreateForSpan span
+                EditSpan.Single range.ExtentIncludingLineBreak, OperationKind.LineWise
+            | VisualSpan.Line _ ->
+                // Simple case, just use the visual span as is
+                visualSpan.EditSpan, OperationKind.LineWise
+            | VisualSpan.Block _ ->
+                // Odd case.  Don't treat any different than a normal yank
+                visualSpan.EditSpan, visualSpan.OperationKind
+
+        let data = StringData.OfEditSpan editSpan
+        let value = RegisterValue.String (data, operationKind)
+        _registerMap.SetRegisterValue register RegisterOperation.Yank value
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Yank the selection into the specified register
+    member x.YankSelection register (visualSpan : VisualSpan) = 
+        let data = StringData.OfEditSpan visualSpan.EditSpan
+        let value = RegisterValue.String (data, visualSpan.OperationKind)
+        _registerMap.SetRegisterValue register RegisterOperation.Yank value
         CommandResult.Completed ModeSwitch.NoSwitch
 
     interface ICommandUtil with

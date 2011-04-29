@@ -158,9 +158,6 @@ type ICommonOperations =
     /// Maybe adjust the caret to respect the virtual edit setting
     abstract MoveCaretForVirtualEdit : unit -> unit
 
-    /// Move the caret the number of lines in the given direction and scroll the view
-    abstract MoveCaretAndScrollLines : ScrollDirection -> count:int -> unit
-
     /// Move the cursor backward count WordKind's
     abstract MoveWordBackward : WordKind -> count : int -> unit
 
@@ -200,9 +197,6 @@ type ICommonOperations =
 
     /// Scrolls the number of lines given and keeps the caret in the view
     abstract ScrollLines : ScrollDirection -> count:int -> unit
-
-    /// Scroll the buffer by the specified number of pages in the given direction
-    abstract ScrollPages : ScrollDirection -> count:int -> unit
 
     /// Shift the block of lines to the left by shiftwidth * 'multiplier'
     abstract ShiftLineBlockLeft : SnapshotSpan seq -> multiplier : int -> unit

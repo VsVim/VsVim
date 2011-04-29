@@ -1028,6 +1028,16 @@ module TextViewUtil =
         let point = SnapshotPoint(tss, pos)
         MoveCaretToPoint textView point 
 
+    /// Get the count of Visible lines in the ITextView
+    let GetVisibleLineCount (textView : ITextView) = 
+        try
+            textView.TextViewLines.Count
+        with 
+            // TextViewLines can throw if the view is being laid out.  Highly unlikely we'd hit
+            // that inside of Vim but need to be careful
+            | _ -> 50
+
+
 module TextSelectionUtil = 
 
     /// Returns the SnapshotSpan which represents the total of the selection.  This is a SnapshotSpan of the left

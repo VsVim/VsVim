@@ -426,33 +426,21 @@ namespace VimCore.UnitTest
         #region Scroll
 
         [Test]
-        public void MoveCaretAndScrollUp1()
+        public void Bind_ScrollLines_Up()
         {
-            Create("foo", "bar");
-            _operations.Setup(x => x.MoveCaretAndScrollLines(ScrollDirection.Up, 1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollLines(ScrollDirection.Up));
             _mode.Process(KeyInputUtil.CharWithControlToKeyInput('u'));
-            _operations.Verify();
-        }
-
-        [Test, Description("Don't break at line 0")]
-        public void MoveCaretAndScrollUp2()
-        {
-            Create("foo", "bar");
-            _textView.Caret.MoveTo(_textView.TextSnapshot.GetLineFromLineNumber(0).End);
-            _operations.Setup(x => x.MoveCaretAndScrollLines(ScrollDirection.Up, 2)).Verifiable();
-            _mode.Process('2');
-            _mode.Process(KeyInputUtil.CharWithControlToKeyInput('u'));
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void MoveCaretAndScrollDown1()
+        public void Bind_ScrollLines_Down()
         {
-            Create("foo", "bar");
-            _textView.Caret.MoveTo(_textView.TextSnapshot.GetLineFromLineNumber(0).End);
-            _operations.Setup(x => x.MoveCaretAndScrollLines(ScrollDirection.Down, 1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollLines(ScrollDirection.Down));
             _mode.Process(KeyInputUtil.CharWithControlToKeyInput('d'));
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
@@ -497,77 +485,57 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void ScrollPages1()
+        public void Bind_ScrollPages_Down()
         {
             Create("foo bar");
-            _operations.Setup(x => x.ScrollPages(ScrollDirection.Down, 1)).Verifiable();
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollPages(ScrollDirection.Down));
             _mode.Process(KeyInputUtil.CharWithControlToKeyInput('f'));
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void ScrollPages2()
+        public void Bind_ScrollPages_Down_ViaShiftDown()
         {
             Create("foo bar");
-            _operations.Setup(x => x.ScrollPages(ScrollDirection.Down, 2)).Verifiable();
-            _mode.Process('2');
-            _mode.Process(KeyInputUtil.CharWithControlToKeyInput('f'));
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ScollPages3()
-        {
-            Create("foo bar");
-            _operations.Setup(x => x.ScrollPages(ScrollDirection.Down, 1)).Verifiable();
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollPages(ScrollDirection.Down));
             _mode.Process(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Down, KeyModifiers.Shift));
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void ScrollPages4()
+        public void Bind_ScrollPages_Down_ViaPageDown()
         {
             Create("foo bar");
-            _operations.Setup(x => x.ScrollPages(ScrollDirection.Down, 1)).Verifiable();
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollPages(ScrollDirection.Down));
             _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.PageDown));
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void ScrollPages5()
+        public void Bind_ScrollPages_Up()
         {
             Create("foo bar");
-            _operations.Setup(x => x.ScrollPages(ScrollDirection.Up, 1)).Verifiable();
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollPages(ScrollDirection.Up));
             _mode.Process(KeyInputUtil.CharWithControlToKeyInput('b'));
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void ScrollPages6()
+        public void Bind_ScrollPages_Up_ViaPageUp()
         {
             Create("foo bar");
-            _operations.Setup(x => x.ScrollPages(ScrollDirection.Up, 2)).Verifiable();
-            _mode.Process('2');
-            _mode.Process(KeyInputUtil.CharWithControlToKeyInput('b'));
-            _operations.Verify();
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollPages(ScrollDirection.Up));
+            _mode.Process(VimKey.PageUp);
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void ScrollPages7()
+        public void Bind_ScrollPages_Up_ViaShiftUp()
         {
             Create("foo bar");
-            _operations.Setup(x => x.ScrollPages(ScrollDirection.Up, 1)).Verifiable();
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.PageUp));
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ScrollPages8()
-        {
-            Create("foo bar");
-            _operations.Setup(x => x.ScrollPages(ScrollDirection.Up, 1)).Verifiable();
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollPages(ScrollDirection.Up));
             _mode.Process(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Up, KeyModifiers.Shift));
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]

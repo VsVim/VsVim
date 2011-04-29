@@ -36,43 +36,14 @@ type internal VisualMode
     member x.BuildMoveSequence() = 
         let factory = Vim.Modes.CommandFactory(_operations, _capture, _buffer.MotionUtil, _buffer.JumpList, _buffer.Settings)
         factory.CreateMovementCommands()
+        |> Seq.append (factory.CreateScrollCommands())
 
     member x.BuildOperationsSequence() =
-
-        let runVisualCommand funcNormal funcBlock count reg visualSpan = 
-            match visualSpan with
-            | VisualSpan.Character span -> 
-                funcNormal count reg span
-            | VisualSpan.Line range -> 
-                funcNormal count reg range.ExtentIncludingLineBreak
-            | VisualSpan.Block col ->  
-                let col = NormalizedSnapshotSpanCollection(col)
-                funcBlock count reg col
 
         /// Commands which do not need a span to operate on
         let simples =
             let resultSwitchPrevious = CommandResult.Completed ModeSwitch.SwitchPreviousMode
             seq {
-                yield (
-                    "<C-u>", 
-                    CommandFlags.Movement,
-                    ModeSwitch.NoSwitch |> Some,
-                    fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Up count)
-                yield (
-                    "<C-d>", 
-                    CommandFlags.Movement, 
-                    ModeSwitch.NoSwitch |> Some,
-                    fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Down count)
-                yield (
-                    "<PageUp>",
-                    CommandFlags.Movement,
-                    ModeSwitch.NoSwitch |> Some,
-                    fun _ _ -> _operations.EditorOperations.PageUp(false))
-                yield (
-                    "<PageDown>",
-                    CommandFlags.Movement,
-                    ModeSwitch.NoSwitch |> Some,
-                    fun _ _ -> _operations.EditorOperations.PageDown(false))
                 yield (
                     "zo", 
                     CommandFlags.Special, 
@@ -141,53 +112,7 @@ type internal VisualMode
                 let name = KeyNotationUtil.StringToKeyInputSet name
                 CommandBinding.LegacyBinding (name, flags, func) )
 
-        /// Visual Commands
-        let visualSimple = 
-            seq {
-                yield (
-                    ["y"],
-                    CommandFlags.ResetCaret,
-                    None,
-                    (fun _ (reg:Register) span -> 
-                        let data = StringData.OfSpan span
-                        reg.RegisterValue <- RegisterValue.String (data, _operationKind)),
-                    (fun _ (reg:Register) col -> 
-                        let data = StringData.OfNormalizedSnasphotSpanCollection col
-                        reg.RegisterValue <- RegisterValue.String (data, _operationKind)))
-                yield (
-                    ["Y"],
-                    CommandFlags.ResetCaret,
-                    None,
-                    (fun _ (reg:Register) span -> 
-                        let data = span |> SnapshotSpanUtil.ExtendToFullLineIncludingLineBreak |> StringData.OfSpan 
-                        reg.RegisterValue <- RegisterValue.String (data, OperationKind.LineWise)),
-                    (fun _ (reg:Register) col -> 
-                        let data = 
-                            let normal() = col |> Seq.map SnapshotSpanUtil.ExtendToFullLine |> StringData.OfSeq 
-                            match _visualKind with 
-                            | VisualKind.Character -> normal()
-                            | VisualKind.Line -> normal()
-                            | VisualKind.Block -> StringData.OfNormalizedSnasphotSpanCollection col
-                        reg.RegisterValue <- RegisterValue.String (data, OperationKind.LineWise)))
-            }
-            |> Seq.map (fun (strList,flags,mode,funcNormal,funcBlock) ->
-                strList 
-                |> Seq.map (fun str ->
-                    let kiSet = KeyNotationUtil.StringToKeyInputSet str
-                    let modeSwitch = 
-                        match mode with
-                        | None -> ModeSwitch.SwitchPreviousMode
-                        | Some(kind) -> ModeSwitch.SwitchMode kind
-                    let func2 count reg visualSpan = 
-                        let count = CommandUtil2.CountOrDefault count
-                        runVisualCommand funcNormal funcBlock count reg visualSpan
-                        CommandResult.Completed modeSwitch
-    
-                    CommandBinding.LegacyVisualBinding (kiSet, flags, _visualKind, func2)))
-            |> Seq.concat
-
-        Seq.append simples visualSimple 
-        |> Seq.append customReturn
+        Seq.append simples customReturn
         |> Seq.append (x.CreateCommandBindings())
 
     /// Create the CommandBinding instances for the supported command values
@@ -212,6 +137,8 @@ type internal VisualMode
                 yield ("U", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToUpperCase)
                 yield ("x", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
                 yield ("X", CommandFlags.Repeatable, VisualCommand.DeleteLineSelection)
+                yield ("y", CommandFlags.ResetCaret, VisualCommand.YankSelection)
+                yield ("Y", CommandFlags.ResetCaret, VisualCommand.YankLineSelection)
                 yield ("zf", CommandFlags.None, VisualCommand.FoldSelection)
                 yield ("<Del>", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
                 yield ("<lt>", CommandFlags.Repeatable, VisualCommand.ShiftLinesLeft)

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
@@ -173,6 +174,45 @@ namespace VimCore.UnitTest
             Create("foo");
             Assert.IsTrue(_commandUtil.ReplaceChar(KeyInputUtil.CharToKeyInput('u'), 2).IsCompleted);
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Should be beeping at the last line in the ITextBuffer
+        /// </summary>
+        [Test]
+        public void ScrollLines_Down_BeepAtLastLine()
+        {
+            Create("dog", "cat");
+            _textView.MoveCaretTo(1);
+            _operations.Setup(x => x.Beep()).Verifiable();
+            _commandUtil.ScrollLines(ScrollDirection.Down, FSharpOption<int>.None);
+            _operations.Verify();
+        }
+
+        /// <summary>
+        /// Make sure the scroll lines down will hit the bottom of the screen
+        /// </summary>
+        [Test]
+        public void ScrollLines_Down_ToBottom()
+        {
+            Create("a", "b", "c", "d");
+            for (var i = 0; i < 5; i++)
+            {
+                _commandUtil.ScrollLines(ScrollDirection.Down, FSharpOption<int>.None);
+            }
+            Assert.AreEqual(_textView.GetLine(3).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Should be beeping at the first line in the ITextBuffer
+        /// </summary>
+        [Test]
+        public void ScrollLines_Up_BeepAtFirstLine()
+        {
+            Create("dog", "cat");
+            _operations.Setup(x => x.Beep()).Verifiable();
+            _commandUtil.ScrollLines(ScrollDirection.Up, FSharpOption<int>.None);
+            _operations.Verify();
         }
 
         [Test]
