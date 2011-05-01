@@ -118,6 +118,21 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// An up move at the start of the ITextBuffer should be an error and hence break 
+        /// a macro execution.  But the results of the macro before the error should be 
+        /// still visible
+        /// </summary>
+        [Test]
+        public void Error_UpMove()
+        {
+            Create("dog cat tree", "dog cat tree");
+            TestRegister.UpdateValue("lkdw");
+            _buffer.Process("@c");
+            Assert.AreEqual("dog cat tree", _textView.GetLine(0).GetText());
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
         /// Record a a text insert sequence followed by escape and play it back
         /// </summary>
         [Test]
