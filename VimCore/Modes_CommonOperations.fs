@@ -29,6 +29,10 @@ type internal CommonOperations ( _data : OperationsData ) =
 
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
+    member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
+
+    member x.CaretLine = TextViewUtil.GetCaretLine _textView
+
     /// Whether or not to use spaces over tabs where applicable
     member x.UseSpaces = 
         if _settings.GlobalSettings.UseEditorTabSettings then 
@@ -126,6 +130,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         x.MoveCaretForVirtualEdit()
         _operations.ResetSelection()
 
+    /// Return the full word under the cursor or an empty string
     member x.WordUnderCursorOrEmpty =
         let point =  TextViewUtil.GetCaretPoint _textView
         TssUtil.FindCurrentFullWordSpan point WordKind.BigWord

@@ -1317,10 +1317,6 @@ type CommandBinding =
     /// will be used
     | LegacyBinding of KeyInputSet * CommandFlags * (int option -> Register -> CommandResult)
 
-    /// Represents a command which has a name and relies on the Visual Mode Span to 
-    /// execute the command
-    | LegacyVisualBinding of KeyInputSet * CommandFlags * VisualKind * (int option -> Register -> VisualSpan -> CommandResult) 
-
     /// KeyInputSet bound to a particular NormalCommand instance
     | NormalBinding of KeyInputSet * CommandFlags * NormalCommand
 
@@ -1342,7 +1338,6 @@ type CommandBinding =
     member x.KeyInputSet = 
         match x with
         | LegacyBinding(value, _, _ ) -> value
-        | LegacyVisualBinding(value, _, _, _) -> value
         | NormalBinding (value, _, _) -> value
         | MotionBinding (value, _, _) -> value
         | VisualBinding (value, _, _) -> value
@@ -1353,7 +1348,6 @@ type CommandBinding =
     member x.CommandFlags =
         match x with
         | LegacyBinding(_, value, _ ) -> value
-        | LegacyVisualBinding(_, value, _, _) -> value
         | NormalBinding (_, value, _) -> value
         | MotionBinding (_, value, _) -> value
         | VisualBinding (_, value, _) -> value

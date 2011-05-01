@@ -182,15 +182,6 @@ type internal CommandRunner
                     BindResult.Complete (Command.LegacyCommand data, commandBinding)
                 | CommandBinding.NormalBinding (_, _, normalCommand) -> 
                     BindResult.Complete (Command.NormalCommand (normalCommand, commandData), commandBinding)
-                | CommandBinding.LegacyVisualBinding (_, _, kind, func) -> 
-                    match x.TryGetVisualSpan kind with
-                    | None ->
-                        _statusUtil.OnError Resources.Common_SelectionInvalid
-                        BindResult.Error
-                    | Some visualSpan ->
-                        let func () = func count (commandData.GetRegister _registerMap) visualSpan
-                        let data = LegacyData(func)
-                        BindResult.Complete (Command.LegacyCommand data, commandBinding)
                 | CommandBinding.VisualBinding (_, _, visualCommand) ->
                     match x.TryGetVisualSpan _visualKind with
                     | None -> 
@@ -251,8 +242,6 @@ type internal CommandRunner
                     | Some(command) ->
                         match command with
                         | CommandBinding.LegacyBinding _ -> 
-                            bindNext None
-                        | CommandBinding.LegacyVisualBinding _ -> 
                             bindNext None
                         | CommandBinding.MotionBinding (_, _, func) -> 
                             _data <- { _data with CommandFlags = Some command.CommandFlags }
