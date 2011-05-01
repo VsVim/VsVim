@@ -63,11 +63,11 @@ namespace VimCore.UnitTest
             _broker.SetupGet(x => x.IsQuickInfoActive).Returns(false);
             _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
             _modeRaw = new Vim.Modes.Insert.InsertMode(
-                _data.Object, 
-                _operations.Object, 
-                _broker.Object, 
-                _editorOptions.Object, 
-                _undoRedoOperations.Object, 
+                _data.Object,
+                _operations.Object,
+                _broker.Object,
+                _editorOptions.Object,
+                _undoRedoOperations.Object,
                 _textChangeTracker.Object,
                 _isReplace: !insertMode);
             _mode = _modeRaw;
@@ -107,10 +107,11 @@ namespace VimCore.UnitTest
         [Test]
         public void Escape_MoveCaretLeftOnExit()
         {
+            _textView.SetText("hello world", 3);
             _broker.SetupGet(x => x.IsCompletionActive).Returns(false).Verifiable();
             _broker.SetupGet(x => x.IsQuickInfoActive).Returns(false).Verifiable();
             _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(false).Verifiable();
-            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
+            _operations.Setup(x => x.MoveCaretToPointAndEnsureVisible(It.IsAny<SnapshotPoint>())).Verifiable();
             var res = _mode.Process(KeyInputUtil.EscapeKey);
             Assert.IsTrue(res.IsSwitchMode(ModeKind.Normal));
             _factory.Verify();
@@ -125,6 +126,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Escape_DismissCompletionWindows()
         {
+            _textView.SetText("hello world", 1);
             _broker
                 .SetupGet(x => x.IsCompletionActive)
                 .Returns(true)
@@ -132,7 +134,7 @@ namespace VimCore.UnitTest
             _broker
                 .Setup(x => x.DismissDisplayWindows())
                 .Verifiable();
-            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
+            _operations.Setup(x => x.MoveCaretToPointAndEnsureVisible(It.IsAny<SnapshotPoint>())).Verifiable();
             var res = _mode.Process(KeyInputUtil.EscapeKey);
             Assert.IsTrue(res.IsSwitchMode(ModeKind.Normal));
             _factory.Verify();
@@ -179,7 +181,6 @@ namespace VimCore.UnitTest
             _broker
                 .Setup(x => x.DismissDisplayWindows())
                 .Verifiable();
-            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
             var ki = KeyInputUtil.CharWithControlToKeyInput('[');
             var res = _mode.Process(ki);
             Assert.IsTrue(res.IsSwitchMode(ModeKind.Normal));

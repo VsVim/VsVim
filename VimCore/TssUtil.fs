@@ -159,9 +159,10 @@ module TssUtil =
             member x.GetSpanOfPreviousSibling span = baseImpl.GetSpanOfPreviousSibling(span) }
 
     let FindNextOccurranceOfCharOnLine point targetChar count = 
-        match SnapshotPointUtil.TryGetNextPointOnLine point with
-        | None -> None
-        | Some(point) ->
+        match SnapshotPointUtil.TryGetNextPointOnLine point 1 with
+        | None -> 
+            None
+        | Some point ->
             let matches =
                 SnapshotPointUtil.GetPointsOnContainingLineFrom point
                 |> Seq.filter (fun p -> p.GetChar() = targetChar)
@@ -173,11 +174,12 @@ module TssUtil =
     let FindTillNextOccurranceOfCharOnLine point targetChar count =
         match FindNextOccurranceOfCharOnLine point targetChar count with
         | None -> None
-        | Some(point) -> SnapshotPointUtil.TryGetPreviousPointOnLine point
+        | Some point -> SnapshotPointUtil.TryGetPreviousPointOnLine point 1
 
     let FindPreviousOccurranceOfCharOnLine point targetChar count =
-        match SnapshotPointUtil.TryGetPreviousPointOnLine point with
-        | None -> None
+        match SnapshotPointUtil.TryGetPreviousPointOnLine point 1 with
+        | None -> 
+            None
         | Some(point) ->
             let matches =
                 SnapshotPointUtil.GetPointsOnContainingLineBackwardsFrom point
@@ -190,5 +192,5 @@ module TssUtil =
     let FindTillPreviousOccurranceOfCharOnLine point targetChar count =
         match FindPreviousOccurranceOfCharOnLine point targetChar count with
         | None -> None
-        | Some(point) -> SnapshotPointUtil.TryGetNextPointOnLine point
+        | Some point -> SnapshotPointUtil.TryGetNextPointOnLine point 1
 

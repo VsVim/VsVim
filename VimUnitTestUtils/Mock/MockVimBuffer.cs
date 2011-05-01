@@ -128,7 +128,7 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        public bool Process(KeyInput value)
+        public ProcessResult Process(KeyInput value)
         {
             throw new NotImplementedException();
         }

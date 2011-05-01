@@ -5,6 +5,7 @@ using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.UnitTest
 {
@@ -17,6 +18,7 @@ namespace VimCore.UnitTest
         private IVimGlobalSettings _globalSettings;
         private IJumpList _jumpList;
         private IKeyMap _keyMap;
+        private MockVimHost _vimHost;
         private bool _assertOnErrorMessage = true;
         private bool _assertOnWarningMessage = true;
 
@@ -51,6 +53,8 @@ namespace VimCore.UnitTest
             _keyMap = _buffer.Vim.KeyMap;
             _globalSettings = _buffer.Settings.GlobalSettings;
             _jumpList = _buffer.JumpList;
+            _vimHost = (MockVimHost)_buffer.Vim.VimHost;
+            _vimHost.BeepCount = 0;
         }
 
         [TearDown]
@@ -902,7 +906,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void MoveEndOfWord_SeveralLines()
+        public void Move_EndOfWord_SeveralLines()
         {
             Create("the dog kicked the", "ball. The end. Bear");
             for (var i = 0; i < 10; i++)
@@ -910,6 +914,85 @@ namespace VimCore.UnitTest
                 _buffer.Process("e");
             }
             Assert.AreEqual(_textView.GetLine(1).End.Subtract(1), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Trying a move caret left at the start of the line should cause a beep 
+        /// to be produced
+        /// </summary>
+        [Test]
+        public void Move_CharLeftAtStartOfLine()
+        {
+            Create("cat", "dog");
+            _textView.MoveCaretToLine(1);
+            _buffer.Process("h");
+            Assert.AreEqual(1, _vimHost.BeepCount);
+        }
+
+        /// <summary>
+        /// Beep when moving a character right at the end of the line
+        /// </summary>
+        [Test]
+        public void Move_CharRightAtLastOfLine()
+        {
+            Create("cat", "dog");
+            _globalSettings.VirtualEdit = String.Empty;  // Ensure not 'OneMore'
+            _textView.MoveCaretTo(2);
+            _buffer.Process("l");
+            Assert.AreEqual(1, _vimHost.BeepCount);
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Succeed in moving when the 'onemore' option is set 
+        /// </summary>
+        [Test]
+        public void Move_CharRightAtLastOfLineWithOneMore()
+        {
+            Create("cat", "dog");
+            _globalSettings.VirtualEdit = "onemore";
+            _textView.MoveCaretTo(2);
+            _buffer.Process("l");
+            Assert.AreEqual(0, _vimHost.BeepCount);
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Fail at moving one more right when in the end 
+        /// </summary>
+        [Test]
+        public void Move_CharRightAtEndOfLine()
+        {
+            Create("cat", "dog");
+            _globalSettings.VirtualEdit = "onemore";
+            _textView.MoveCaretTo(3);
+            _buffer.Process("l");
+            Assert.AreEqual(1, _vimHost.BeepCount);
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// This should beep 
+        /// </summary>
+        [Test]
+        public void Move_UpFromFirstLine()
+        {
+            Create("cat");
+            _buffer.Process("k");
+            Assert.AreEqual(1, _vimHost.BeepCount);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// This should beep
+        /// </summary>
+        [Test]
+        public void Move_DownFromLastLine()
+        {
+            Create("cat");
+            _buffer.Process("j");
+            Assert.AreEqual(1, _vimHost.BeepCount);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
 
         /// <summary>
@@ -1667,6 +1750,20 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Deleting a word left at the start of the line results in empty data and
+        /// should not cause the register contents to be altered
+        /// </summary>
+        [Test]
+        public void Delete_LeftAtStartOfLine()
+        {
+            Create("dog", "cat");
+            UnnamedRegister.UpdateValue("hello");
+            _buffer.Process("dh");
+            Assert.AreEqual("hello", UnnamedRegister.StringValue);
+            Assert.AreEqual(0, _vimHost.BeepCount);
+        }
+
+        /// <summary>
         /// Make sure we properly update register 0 during a yank
         /// </summary>
         [Test]
@@ -1694,6 +1791,36 @@ namespace VimCore.UnitTest
             _buffer.Process("\"Cyaw");
             Assert.AreEqual("dogcat", _buffer.RegisterMap.GetRegister('c').StringValue);
             Assert.AreEqual("dogcat", _buffer.RegisterMap.GetRegister('C').StringValue);
+        }
+
+        /// <summary>
+        /// Trying to char left from the start of the line should not cause a beep to 
+        /// be emitted.  However it should cause the targetted register to be updated 
+        /// </summary>
+        [Test]
+        public void Yank_EmptyCharLeftMotion()
+        {
+            Create("dog", "cat");
+            UnnamedRegister.UpdateValue("hello");
+            _textView.MoveCaretToLine(1);
+            _buffer.Process("yh");
+            Assert.AreEqual("", UnnamedRegister.StringValue);
+            Assert.AreEqual(0, _vimHost.BeepCount);
+        }
+
+        /// <summary>
+        /// Yanking a line down from the end of the buffer should not cause the 
+        /// unnamed register text from resetting and it should cause a beep to occur
+        /// </summary>
+        [Test]
+        public void Yank_LineDownAtEndOfBuffer()
+        {
+            Create("dog", "cat");
+            _textView.MoveCaretToLine(1);
+            UnnamedRegister.UpdateValue("hello");
+            _buffer.Process("yj");
+            Assert.AreEqual(1, _vimHost.BeepCount);
+            Assert.AreEqual("hello", UnnamedRegister.StringValue);
         }
 
         /// <summary>

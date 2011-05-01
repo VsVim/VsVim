@@ -2,6 +2,7 @@
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using NUnit.Framework;
 using Vim;
@@ -21,6 +22,7 @@ namespace VimCore.UnitTest
         private Mock<ITextView> _textView;
         private Mock<IVimBuffer> _buffer;
         private Mock<ICommonOperations> _operations;
+        private Mock<IEditorOperations> _editorOperations;
         private ITextBuffer _textBuffer;
         private SubstituteConfirmMode _modeRaw;
         private ISubstituteConfirmMode _mode;
@@ -32,9 +34,11 @@ namespace VimCore.UnitTest
             _textCaret = _factory.Create<ITextCaret>();
             _textView = MockObjectFactory.CreateTextView(textBuffer: _textBuffer, caret: _textCaret.Object, factory: _factory);
             _buffer = MockObjectFactory.CreateVimBuffer(textView: _textView.Object, factory: _factory);
+            _editorOperations = _factory.Create<IEditorOperations>();
             _operations = _factory.Create<ICommonOperations>();
             _operations.Setup(x => x.MoveCaretToPoint(It.IsAny<SnapshotPoint>()));
             _operations.Setup(x => x.EnsureCaretOnScreenAndTextExpanded());
+            _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _modeRaw = new SubstituteConfirmMode(_buffer.Object, _operations.Object);
             _mode = _modeRaw;
         }

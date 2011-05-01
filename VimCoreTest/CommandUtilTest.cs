@@ -183,7 +183,7 @@ namespace VimCore.UnitTest
         public void ScrollLines_Down_BeepAtLastLine()
         {
             Create("dog", "cat");
-            _textView.MoveCaretTo(1);
+            _textView.MoveCaretToLine(1);
             _operations.Setup(x => x.Beep()).Verifiable();
             _commandUtil.ScrollLines(ScrollDirection.Down, FSharpOption<int>.None);
             _operations.Verify();

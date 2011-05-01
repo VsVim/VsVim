@@ -542,23 +542,76 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void CharLeft1()
+        public void CharLeft_Simple()
         {
             Create("foo bar");
             _textView.MoveCaretTo(2);
             var data = _motionUtil.CharLeft(2);
-            Assert.IsTrue(data.IsSome());
-            Assert.AreEqual("fo", data.Value.Span.GetText());
+            Assert.AreEqual("fo", data.Span.GetText());
+        }
+
+        /// <summary>
+        /// The char left operation should produce an empty span if it's at the start 
+        /// of a line 
+        /// </summary>
+        [Test]
+        public void CharLeft_FailAtStartOfLine()
+        {
+            Create("dog", "cat");
+            _textView.MoveCaretToLine(1);
+            var data = _motionUtil.CharLeft(1);
+            Assert.AreEqual(0, data.Span.Length);
+        }
+
+        /// <summary>
+        /// When the count is to high but the caret is not at the start then the 
+        /// caret should just move to the start of the line
+        /// </summary>
+        [Test]
+        public void CharLeft_CountTooHigh()
+        {
+            Create("dog", "cat");
+            _textView.MoveCaretToLine(1, 1);
+            var data = _motionUtil.CharLeft(300);
+            Assert.AreEqual("c", data.Span.GetText());
         }
 
         [Test]
-        public void CharRight1()
+        public void CharRight_Simple()
         {
             Create("foo");
             var data = _motionUtil.CharRight(1);
-            Assert.AreEqual("f", data.Value.Span.GetText());
-            Assert.AreEqual(OperationKind.CharacterWise, data.Value.OperationKind);
-            Assert.AreEqual(MotionKind.Exclusive, data.Value.MotionKind);
+            Assert.AreEqual("f", data.Span.GetText());
+            Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
+            Assert.AreEqual(MotionKind.Exclusive, data.MotionKind);
+        }
+
+        /// <summary>
+        /// The char right motion actually needs to succeed at the last point of the 
+        /// line.  It often appears to not succeed because many users have
+        /// 'virtualedit=' (at least not 'onemore').  So a 'l' at the end of the 
+        /// line fails to move the caret which gives the appearance of failure.  In
+        /// fact it succeeded but the caret move is not legal
+        /// </summary>
+        [Test]
+        public void CharRight_LastPointOnLine()
+        {
+            Create("cat", "dog", "tree");
+            _textView.MoveCaretToLine(1, 2);
+            var data = _motionUtil.CharRight(1);
+            Assert.AreEqual("g", data.Span.GetText());
+        }
+
+        /// <summary>
+        /// The char right should produce an empty span at the end of the line
+        /// </summary>
+        [Test]
+        public void CharRight_EndOfLine()
+        {
+            Create("cat", "dog");
+            _textView.MoveCaretTo(3);
+            var data = _motionUtil.CharRight(1);
+            Assert.AreEqual("", data.Span.GetText());
         }
 
         [Test]
@@ -1238,7 +1291,7 @@ namespace VimCore.UnitTest
         public void LineDown1()
         {
             Create("dog", "cat", "bird");
-            var data = _motionUtil.LineDown(1);
+            var data = _motionUtil.LineDown(1).Value;
             AssertData(
                 data,
                 _buffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
@@ -1250,7 +1303,7 @@ namespace VimCore.UnitTest
         public void LineDown2()
         {
             Create("dog", "cat", "bird");
-            var data = _motionUtil.LineDown(2);
+            var data = _motionUtil.LineDown(2).Value;
             AssertData(
                 data,
                 _buffer.GetLineRange(0, 2).ExtentIncludingLineBreak,
@@ -1263,7 +1316,7 @@ namespace VimCore.UnitTest
         {
             Create("dog", "cat", "bird", "horse");
             _textView.MoveCaretTo(_textView.GetLine(2).Start);
-            var data = _motionUtil.LineUp(1);
+            var data = _motionUtil.LineUp(1).Value;
             AssertData(
                 data,
                 _buffer.GetLineRange(1, 2).ExtentIncludingLineBreak,
@@ -1276,7 +1329,7 @@ namespace VimCore.UnitTest
         {
             Create("dog", "cat", "bird", "horse");
             _textView.MoveCaretTo(_textView.GetLine(2).Start);
-            var data = _motionUtil.LineUp(2);
+            var data = _motionUtil.LineUp(2).Value;
             AssertData(
                 data,
                 _buffer.GetLineRange(0, 2).ExtentIncludingLineBreak,
@@ -1289,7 +1342,7 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar");
             _textView.MoveCaretTo(_buffer.GetLineFromLineNumber(1).Start);
-            var data = _motionUtil.LineUp(1);
+            var data = _motionUtil.LineUp(1).Value;
             Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
             Assert.AreEqual("foo" + Environment.NewLine + "bar", data.Span.GetText());
         }

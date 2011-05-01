@@ -19,26 +19,7 @@ type internal CommandFactory
     /// Create the movement command bindings which are common to both Normal and 
     /// Visual mode
     member x.CreateStandardMovementBindings () = 
-        let moveLeft = fun count -> _operations.MoveCaretLeft(count)
-        let moveRight = fun count -> _operations.MoveCaretRight(count)
-        let moveUp = fun count -> _operations.MoveCaretUp(count)
-        let moveDown = fun count -> _operations.MoveCaretDown(count)
-
         seq {
-            yield ("h", NormalCommand.MoveCaretTo Direction.Left)
-            yield ("<Left>", NormalCommand.MoveCaretTo Direction.Left)
-            yield ("<Bs>", NormalCommand.MoveCaretTo Direction.Left)
-            yield ("<C-h>", NormalCommand.MoveCaretTo Direction.Left)
-            yield ("l", NormalCommand.MoveCaretTo Direction.Right)
-            yield ("<Right>", NormalCommand.MoveCaretTo Direction.Right)
-            yield ("<Space>", NormalCommand.MoveCaretTo Direction.Right)
-            yield ("k", NormalCommand.MoveCaretTo Direction.Up)
-            yield ("<Up>", NormalCommand.MoveCaretTo Direction.Up)
-            yield ("<C-p>", NormalCommand.MoveCaretTo Direction.Up)
-            yield ("j", NormalCommand.MoveCaretTo Direction.Down)
-            yield ("<Down>", NormalCommand.MoveCaretTo Direction.Down)
-            yield ("<C-n>", NormalCommand.MoveCaretTo Direction.Down)
-            yield ("<C-j>", NormalCommand.MoveCaretTo Direction.Down)
             yield ("gd", NormalCommand.GoToLocalDeclaration)
             yield ("gD", NormalCommand.GoToGlobalDeclaration)
         } |> Seq.map (fun (name, command) -> 

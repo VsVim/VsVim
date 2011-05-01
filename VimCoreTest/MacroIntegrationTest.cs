@@ -12,6 +12,7 @@ namespace VimCore.UnitTest
     {
         private IVimBuffer _buffer;
         private IWpfTextView _textView;
+        private IVimGlobalSettings _globalSettings;
 
         internal char TestRegisterChar
         {
@@ -28,6 +29,7 @@ namespace VimCore.UnitTest
             _textView = EditorUtil.CreateView(lines);
             _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _globalSettings = _buffer.Settings.GlobalSettings;
             ((MockVimHost)_buffer.Vim.VimHost).FocusedTextView = _textView;
         }
 
@@ -92,6 +94,27 @@ namespace VimCore.UnitTest
             _buffer.Process("2@c");
             Assert.AreEqual("Cat", _textView.GetLine(0).GetText());
             Assert.AreEqual("Dog", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// Any command which produces an error should cause the macro to stop playback.  One
+        /// such command is trying to move right past the end of a line in insert mode
+        /// </summary>
+        [Test]
+        public void Error_RightMove()
+        {
+            Create("cat", "cat");
+            _globalSettings.VirtualEdit = string.Empty; // ensure not 've=onemore'
+            TestRegister.UpdateValue("llidone", VimKey.Escape);
+
+            // Works because 'll' can get to the end of the line
+            _buffer.Process("@c");
+            Assert.AreEqual("cadonet", _textView.GetLine(0).GetText());
+
+            // Fails since the second 'l' fails
+            _textView.MoveCaretToLine(1, 2);
+            _buffer.Process("@c");
+            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
         }
 
         /// <summary>

@@ -88,6 +88,12 @@ type internal InsertMode
             |> Seq.map (fun (str, func) -> (KeyNotationUtil.StringToKeyInput str), func)
             |> Map.ofSeq
 
+    member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
+
+    member x.CaretLine = TextViewUtil.GetCaretLine _textView
+
+    member x.CurrentSnapshot = _textView.TextSnapshot
+
     member x.IsProcessingTextInput = _processTextInputCount > 0
 
     member x.ModeKind = if _isReplace then ModeKind.Replace else ModeKind.Insert
@@ -129,8 +135,8 @@ type internal InsertMode
                         _editorOperations.Delete(), sessionData
                     | TextEdit.ReplaceChar (oldChar, newChar) ->
                         let point = 
-                            let point = TextViewUtil.GetCaretPoint _textView 
-                            SnapshotPointUtil.GetPreviousPointOnLine point 1
+                            SnapshotPointUtil.TryGetPreviousPointOnLine x.CaretPoint 1 
+                            |> OptionUtil.getOrDefault x.CaretPoint
                         let span = Span(point.Position, 1)
                         let sessionData = { sessionData with TextEditList = t }
                         let result = _editorOperations.ReplaceText(span, (oldChar.ToString()))
@@ -193,23 +199,43 @@ type internal InsertMode
 
     /// Process the up command
     member x.ProcessUp () =
-        _operations.MoveCaretUp 1
-        ProcessResult.Handled ModeSwitch.NoSwitch
+        match SnapshotUtil.TryGetLine x.CurrentSnapshot (x.CaretLine.LineNumber - 1) with
+        | None ->
+            _operations.Beep()
+            ProcessResult.Error
+        | Some line ->
+            _editorOperations.MoveLineUp(false);
+            ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Process the down command
     member x.ProcessDown () =
-        _operations.MoveCaretDown 1
-        ProcessResult.Handled ModeSwitch.NoSwitch
+        match SnapshotUtil.TryGetLine x.CurrentSnapshot (x.CaretLine.LineNumber + 1) with
+        | None ->
+            _operations.Beep()
+            ProcessResult.Error
+        | Some line ->
+            _editorOperations.MoveLineDown(false);
+            ProcessResult.Handled ModeSwitch.NoSwitch
 
-    /// Process the left command
+    /// Process the left command.  Don't go past the start of the line 
     member x.ProcessLeft () =
-        _operations.MoveCaretLeft 1
-        ProcessResult.Handled ModeSwitch.NoSwitch
+        if x.CaretLine.Start.Position < x.CaretPoint.Position then
+            let point = SnapshotPointUtil.SubtractOne x.CaretPoint
+            _operations.MoveCaretToPointAndEnsureVisible point
+            ProcessResult.Handled ModeSwitch.NoSwitch
+        else
+            _operations.Beep()
+            ProcessResult.Error
 
     /// Process the right command
     member x.ProcessRight () =
-        _operations.MoveCaretRight 1
-        ProcessResult.Handled ModeSwitch.NoSwitch
+        if x.CaretPoint.Position < x.CaretLine.End.Position then
+            let point = SnapshotPointUtil.AddOne x.CaretPoint
+            _operations.MoveCaretToPointAndEnsureVisible point
+            ProcessResult.Handled ModeSwitch.NoSwitch
+        else
+            _operations.Beep()
+            ProcessResult.Error
 
     /// Process the <Insert> command.  This toggles between insert an replace mode
     member x.ProcessInsert () = 
@@ -288,11 +314,16 @@ type internal InsertMode
 
     member x.ProcessEscape () =
 
+        let moveCaretLeft () = 
+            match SnapshotPointUtil.TryGetPreviousPointOnLine x.CaretPoint 1 with
+            | None -> ()
+            | Some point -> _operations.MoveCaretToPointAndEnsureVisible point
+
         this.MaybeApplyRepeatedEdits()
 
         if _broker.IsCompletionActive || _broker.IsSignatureHelpActive || _broker.IsQuickInfoActive then
             _broker.DismissDisplayWindows()
-            _operations.MoveCaretLeft 1 
+            moveCaretLeft()
             ProcessResult.OfModeKind ModeKind.Normal
 
         else
@@ -302,7 +333,7 @@ type internal InsertMode
             if virtualPoint.IsInVirtualSpace then 
                 _operations.MoveCaretToPoint virtualPoint.Position
             else
-                _operations.MoveCaretLeft 1 
+                moveCaretLeft()
             ProcessResult.OfModeKind ModeKind.Normal
 
     /// Can Insert mode handle this particular KeyInput value 

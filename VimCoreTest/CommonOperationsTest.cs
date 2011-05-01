@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
@@ -54,8 +53,10 @@ namespace VimCore.UnitTest
             _globalSettings.SetupGet(x => x.Magic).Returns(true);
             _globalSettings.SetupGet(x => x.SmartCase).Returns(false);
             _globalSettings.SetupGet(x => x.IgnoreCase).Returns(true);
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
             _globalSettings.SetupGet(x => x.UseEditorIndent).Returns(false);
             _globalSettings.SetupGet(x => x.UseEditorTabSettings).Returns(false);
+            _globalSettings.SetupGet(x => x.VirtualEdit).Returns(String.Empty);
             _globalSettings.SetupGet(x => x.WrapScan).Returns(true);
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object, _factory);
             _settings.SetupGet(x => x.AutoIndent).Returns(false);
@@ -383,409 +384,6 @@ namespace VimCore.UnitTest
             Assert.AreEqual("cat", _textView.GetLine(0).GetText());
             Assert.AreEqual("dog", _textView.GetLine(1).GetText());
             Assert.AreEqual(2, _textView.TextSnapshot.LineCount);
-        }
-
-        [Test]
-        public void MoveCaretRight1()
-        {
-            Create("foo", "bar");
-            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
-            _operations.MoveCaretRight(1);
-            Assert.AreEqual(1, _textView.Caret.Position.BufferPosition.Position);
-            _editorOperations.Verify();
-        }
-
-        [Test]
-        public void MoveCaretRight2()
-        {
-            Create("foo", "bar");
-            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
-            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
-            _operations.MoveCaretRight(2);
-            Assert.AreEqual(2, _textView.Caret.Position.BufferPosition.Position);
-            _editorOperations.Verify();
-        }
-
-        [Test, Description("Don't move past the end of the line")]
-        public void MoveCaretRight3()
-        {
-            Create("foo", "bar");
-            var tss = _textView.TextSnapshot;
-            var endPoint = tss.GetLineFromLineNumber(0).End;
-            _textView.Caret.MoveTo(endPoint);
-            _operations.MoveCaretRight(1);
-            Assert.AreEqual(endPoint, _textView.Caret.Position.BufferPosition);
-        }
-
-        [Test, Description("Don't crash going off the buffer")]
-        public void MoveCaretRight4()
-        {
-            Create("foo", "bar");
-            var last = _textView.TextSnapshot.Lines.Last();
-            _textView.Caret.MoveTo(last.End);
-            _operations.MoveCaretRight(1);
-            Assert.AreEqual(last.End, _textView.Caret.Position.BufferPosition);
-        }
-
-        [Test, Description("Don't go off the end of the current line")]
-        public void MoveCaretRight5()
-        {
-            Create("foo", "bar");
-            var line = _textView.TextSnapshot.GetLineFromLineNumber(0);
-            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false).Verifiable();
-            _editorOperations.Setup(x => x.ResetSelection());
-            _textView.Caret.MoveTo(line.End.Subtract(1));
-            _operations.MoveCaretRight(1);
-            Assert.AreEqual(line.End.Subtract(1), _textView.Caret.Position.BufferPosition);
-            _editorOperations.Verify();
-            _globalSettings.Verify();
-        }
-
-        [Test, Description("If already past the line, MoveCaretRight should not move the caret at all")]
-        public void MoveCaretRight6()
-        {
-            Create("foo", "bar");
-            _textView.Caret.MoveTo(_textView.GetLine(0).End);
-            _operations.MoveCaretRight(1);
-            Assert.AreEqual(_textView.GetLine(0).End, _textView.GetCaretPoint());
-        }
-
-        [Test, Description("Move past the end of the line if VirtualEdit=onemore is set")]
-        public void MoveCaretRight7()
-        {
-            Create("foo", "bar");
-            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
-            _textView.Caret.MoveTo(_textView.GetLine(0).End.Subtract(1));
-            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true).Verifiable();
-            _operations.MoveCaretRight(1);
-            Assert.AreEqual(_textView.GetLine(0).End, _textView.GetCaretPoint());
-            _editorOperations.Verify();
-            _globalSettings.Verify();
-        }
-
-        [Test]
-        public void MoveCaretLeft1()
-        {
-            Create("foo", "bar");
-            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 1));
-            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
-            _operations.MoveCaretLeft(1);
-            Assert.AreEqual(0, _textView.Caret.Position.BufferPosition.Position);
-            _editorOperations.Verify();
-        }
-
-        [Test, Description("Move left on the start of the line should not go anywhere")]
-        public void MoveCaretLeft2()
-        {
-            Create("foo", "bar");
-            _operations.MoveCaretLeft(1);
-            Assert.AreEqual(0, _textView.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test]
-        public void MoveCaretLeft3()
-        {
-            Create("foo", "bar");
-            var line = _textView.TextSnapshot.GetLineFromLineNumber(0);
-            _textView.Caret.MoveTo(line.Start.Add(1));
-            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
-            _operations.MoveCaretLeft(1);
-            Assert.AreEqual(line.Start, _textView.Caret.Position.BufferPosition);
-            _editorOperations.Verify();
-        }
-
-        [Test, Description("Left at the start of the line should not go further")]
-        public void MoveCaretLeft4()
-        {
-            Create("foo", "bar");
-            var line = _textView.TextSnapshot.GetLineFromLineNumber(1);
-            _textView.Caret.MoveTo(line.Start);
-            _operations.MoveCaretLeft(1);
-            Assert.AreEqual(line.Start, _textView.Caret.Position.BufferPosition);
-        }
-
-        [Test]
-        public void MoveCaretUp1()
-        {
-            Create("foo", "bar", "baz");
-            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
-            var line = _textView.TextSnapshot.GetLineFromLineNumber(1);
-            _textView.Caret.MoveTo(line.Start);
-            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOperations.Setup(x => x.MoveLineUp(false)).Verifiable();
-            _operations.MoveCaretUp(1);
-            _editorOperations.Verify();
-        }
-
-        [Test, Description("Move caret up past the begining of the buffer should fail if it's already at the top")]
-        public void MoveCaretUp2()
-        {
-            Create("foo", "bar", "baz");
-            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
-            var first = _textView.TextSnapshot.Lines.First();
-            _textView.Caret.MoveTo(first.End);
-            _operations.MoveCaretUp(1);
-            Assert.AreEqual(first.End, _textView.Caret.Position.BufferPosition);
-        }
-
-        [Test, Description("Move caret up should respect column positions")]
-        public void MoveCaretUp3()
-        {
-            Create("foo", "bar");
-            var tss = _textView.TextSnapshot;
-            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
-            _textView.Caret.MoveTo(tss.GetLineFromLineNumber(1).Start.Add(1));
-            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOperations.Setup(x => x.MoveLineUp(false)).Verifiable();
-            _operations.MoveCaretUp(1);
-            _editorOperations.Verify();
-        }
-
-        [Test]
-        public void MoveCaretUp4()
-        {
-            Create("foo", "bar", "baz", "jaz");
-            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
-            _textView.Caret.MoveTo(_textView.TextSnapshot.GetLineFromLineNumber(3).Start);
-            var count = 0;
-            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOperations.Setup(x => x.MoveLineUp(false)).Callback(() => { count++; }).Verifiable();
-            _operations.MoveCaretUp(1);
-            Assert.AreEqual(1, count);
-            _editorOperations.Verify();
-        }
-
-        [Test]
-        public void MoveCaretUp5()
-        {
-            Create("foo", "bar", "baz", "jaz");
-            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
-            _textView.Caret.MoveTo(_textView.TextSnapshot.GetLineFromLineNumber(3).Start);
-            var count = 0;
-            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOperations.Setup(x => x.MoveLineUp(false)).Callback(() => { count++; }).Verifiable();
-            _operations.MoveCaretUp(2);
-            Assert.AreEqual(2, count);
-            _editorOperations.Verify();
-        }
-
-        [Test]
-        public void MoveCaretUp6()
-        {
-            Create("smaller", "foo bar baz");
-            _textView.MoveCaretTo(_textView.GetLine(1).End);
-            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
-            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOperations
-                .Setup(x => x.MoveLineUp(false))
-                .Callback(() => _textView.MoveCaretTo(_textView.GetLine(0).End))
-                .Verifiable();
-            _operations.MoveCaretUp(1);
-            var point = _textBuffer.GetLine(0).End.Subtract(1);
-            Assert.AreEqual(point, _textView.GetCaretPoint());
-        }
-
-        [Test]
-        public void MoveCaretUp7()
-        {
-            Create("foo bar baz", "", "smaller aoeu ao aou ");
-            _textView.MoveCaretTo(_textView.GetLine(2).End);
-            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
-            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOperations
-                .Setup(x => x.MoveLineUp(false))
-                .Callback(() => _textView.MoveCaretTo(_textView.GetLine(1).End))
-                .Verifiable();
-            _operations.MoveCaretUp(1);
-            var point = _textBuffer.GetLine(1).End;
-            Assert.AreEqual(point, _textView.GetCaretPoint());
-        }
-
-        [Test]
-        [Description("Should not reset the selection if the move is not possible")]
-        public void MoveCaretUp8()
-        {
-            Create("foo", "bar");
-            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
-            _operations.MoveCaretUp(1);
-            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-        }
-
-        [Test, Description("At end of line should wrap to the start of the next line if there is a word")]
-        public void MoveWordForward1()
-        {
-            Create(
-                "foo bar baz",
-                "boy kick ball",
-                "a big dog");
-            var line1 = _textView.TextSnapshot.GetLineFromLineNumber(0);
-            _textView.Caret.MoveTo(line1.End);
-            _operations.MoveWordForward(WordKind.NormalWord, 1);
-            var line2 = _textView.TextSnapshot.GetLineFromLineNumber(1);
-            Assert.AreEqual(line2.Start, _textView.Caret.Position.BufferPosition);
-        }
-
-        [Test]
-        public void MoveWordForward2()
-        {
-            Create(
-                "foo bar baz",
-                "boy kick ball",
-                "a big dog");
-            var line = _textView.TextSnapshot.GetLineFromLineNumber(0);
-            _textView.Caret.MoveTo(line.Start);
-            _operations.MoveWordForward(WordKind.NormalWord, 1);
-            Assert.AreEqual(4, _textView.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test]
-        public void MoveWordBackword1()
-        {
-            Create("foo bar");
-            var line = _textView.TextSnapshot.GetLineFromLineNumber(0);
-            _textView.Caret.MoveTo(line.End);
-            _operations.MoveWordBackward(WordKind.NormalWord, 1);
-            Assert.AreEqual(4, _textView.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test, Description("At the the start of a word move back to the start of the previous wodr")]
-        public void MoveWordBackward2()
-        {
-            Create("foo bar");
-            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 4));
-            Assert.AreEqual('b', _textView.Caret.Position.BufferPosition.GetChar());
-            _operations.MoveWordBackward(WordKind.NormalWord, 1);
-            Assert.AreEqual(0, _textView.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test, Description("Middle of word should move back to front")]
-        public void MoveWordBackard3()
-        {
-            Create("foo bar");
-            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 5));
-            Assert.AreEqual('a', _textView.Caret.Position.BufferPosition.GetChar());
-            _operations.MoveWordBackward(WordKind.NormalWord, 1);
-            Assert.AreEqual(4, _textView.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test, Description("Move backwards across lines")]
-        public void MoveWordBackward4()
-        {
-            Create("foo bar", "baz");
-            var line = _textView.TextSnapshot.GetLineFromLineNumber(1);
-            _textView.Caret.MoveTo(line.Start);
-            _operations.MoveWordBackward(WordKind.NormalWord, 1);
-            Assert.AreEqual(4, _textView.Caret.Position.BufferPosition.Position);
-        }
-
-
-        [Test]
-        public void MoveCaretDown1()
-        {
-            Create("foo", "bar", "baz");
-            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
-            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOperations.Setup(x => x.MoveLineDown(false)).Verifiable();
-            _operations.MoveCaretDown(1);
-            _editorOperations.Verify();
-        }
-
-        [Test, Description("Move caret down should fail if the caret is at the end of the buffer")]
-        public void MoveCaretDown2()
-        {
-            Create("bar", "baz", "aeu");
-            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
-            var last = _textView.TextSnapshot.Lines.Last();
-            _textView.Caret.MoveTo(last.Start);
-            _operations.MoveCaretDown(1);
-            Assert.AreEqual(last.Start, _textView.Caret.Position.BufferPosition);
-        }
-
-        [Test, Description("Move caret down should not crash if the line is the second to last line.  In other words, the last real line")]
-        public void MoveCaretDown3()
-        {
-            Create("foo", "bar", "baz");
-            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
-            var tss = _textView.TextSnapshot;
-            var line = tss.GetLineFromLineNumber(tss.LineCount - 2);
-            _textView.Caret.MoveTo(line.Start);
-            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOperations.Setup(x => x.MoveLineDown(false)).Verifiable();
-            _operations.MoveCaretDown(1);
-            _editorOperations.Verify();
-        }
-
-        [Test, Description("Move caret down should not crash if the line is the second to last line.  In other words, the last real line")]
-        public void MoveCaretDown4()
-        {
-            Create("foo", "bar", "baz");
-            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
-            var tss = _textView.TextSnapshot;
-            var line = tss.GetLineFromLineNumber(tss.LineCount - 1);
-            _textView.Caret.MoveTo(line.Start);
-            _operations.MoveCaretDown(1);
-        }
-
-        [Test]
-        public void MoveCaretDown5()
-        {
-            Create("foo", "bar", "baz", "jaz");
-            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
-            var count = 0;
-            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOperations
-                .Setup(x => x.MoveLineDown(false))
-                .Callback(() => { count++; })
-                .Verifiable();
-            _operations.MoveCaretDown(1);
-            Assert.AreEqual(1, count);
-            _editorOperations.Verify();
-        }
-
-        [Test]
-        public void MoveCaretDown6()
-        {
-            Create("foo", "bar", "baz", "jaz");
-            var count = 0;
-            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
-            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOperations
-                .Setup(x => x.MoveLineDown(false))
-                .Callback(() => { count++; })
-                .Verifiable();
-            _operations.MoveCaretDown(2);
-            Assert.AreEqual(2, count);
-            _editorOperations.Verify();
-        }
-
-        [Test]
-        public void MoveCaretDown7()
-        {
-            Create("foo bar baz", "smaller");
-            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
-            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOperations
-                .Setup(x => x.MoveLineDown(false))
-                .Callback(() => _textView.MoveCaretTo(_textView.GetLine(1).End))
-                .Verifiable();
-            _operations.MoveCaretDown(1);
-            var point = _textBuffer.GetLine(1).End.Subtract(1);
-            Assert.AreEqual(point, _textView.GetCaretPoint());
-        }
-
-        [Test]
-        public void MoveCaretDown8()
-        {
-            Create("foo bar baz", "", "smaller");
-            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
-            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOperations
-                .Setup(x => x.MoveLineDown(false))
-                .Callback(() => _textView.MoveCaretTo(_textView.GetLine(1).End))
-                .Verifiable();
-            _operations.MoveCaretDown(1);
-            var point = _textBuffer.GetLine(1).End;
-            Assert.AreEqual(point, _textView.GetCaretPoint());
         }
 
         [Test, Description("Only shift whitespace")]
@@ -1143,20 +741,6 @@ namespace VimCore.UnitTest
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
 
-        [Test, Description("Exclusive motions should go to End")]
-        public void MoveCaretToMotionResult5()
-        {
-            Create("foo", "bar", "baz");
-            _editorOperations.Setup(x => x.ResetSelection());
-            var data = VimUtil.CreateMotionResult(
-                new SnapshotSpan(_textBuffer.CurrentSnapshot, 1, 2),
-                true,
-                MotionKind.Exclusive,
-                OperationKind.CharacterWise);
-            _operations.MoveCaretToMotionResult(data);
-            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
-        }
-
         [Test]
         public void MoveCaretToMotionResult6()
         {
@@ -1215,7 +799,7 @@ namespace VimCore.UnitTest
                 OperationKind.LineWise,
                 100);
             _operations.MoveCaretToMotionResult(data);
-            Assert.AreEqual(Tuple.Create(1, 3), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
+            Assert.AreEqual(Tuple.Create(1, 2), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
         }
 
         [Test]
@@ -1330,6 +914,24 @@ namespace VimCore.UnitTest
                 FSharpOption.Create(CaretColumn.AfterLastLine));
             _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Exclusive motions should not go to the end if it puts them into virtual space and 
+        /// we don't have 've=onemore'
+        /// </summary>
+        [Test]
+        public void MoveCaretToMotionResult_InVirtualSpaceWithNoVirtualEdit()
+        {
+            Create("foo", "bar", "baz");
+            _editorOperations.Setup(x => x.ResetSelection());
+            var data = VimUtil.CreateMotionResult(
+                new SnapshotSpan(_textBuffer.CurrentSnapshot, 1, 2),
+                true,
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise);
+            _operations.MoveCaretToMotionResult(data);
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
         }
 
         [Test]

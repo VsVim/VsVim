@@ -793,28 +793,23 @@ module SnapshotPointUtil =
 
     /// Try and get the previous point on the same line.  If this is at the start of the line 
     /// None will be returned
-    let TryGetPreviousPointOnLine point = 
+    let TryGetPreviousPointOnLine point count = 
         let line = GetContainingLine point
-        let start = line.Start
-        if point.Position > start.Position then point.Subtract(1) |> Some
-        else None
+        let position = point.Position - count
+        if position >= line.Start.Position then
+            SnapshotPoint(point.Snapshot, position) |> Some
+        else
+            None
 
-    /// Get the previous point on the same line.  If this is the start of the line then the
-    /// original input will be returned
-    let GetPreviousPointOnLine point count = 
-        let rec inner point count = 
-            if 0 = count then point
-            else 
-                match TryGetPreviousPointOnLine point with 
-                | Some(previous) -> inner previous (count-1)
-                | None -> point
-        inner point count
-
-    /// Get the span of going "count" previous points on the line with the original "point"
-    /// value being the End (exclusive) point on the Span
-    let GetPreviousPointOnLineSpan point count = 
-        let start = GetPreviousPointOnLine point count
-        SnapshotSpan(start, point)
+    /// Try and get the next point on the same line.  If this is the end of the line or if
+    /// the point is within the line break then None will be returned
+    let TryGetNextPointOnLine point count =
+        let line = GetContainingLine point
+        let position = point.Position + count
+        if position < line.End.Position then
+            SnapshotPoint(point.Snapshot, position) |> Some
+        else
+            None
 
     /// Is this the last point on the line?
     let IsLastPointOnLine point = 
@@ -826,35 +821,6 @@ module SnapshotPointUtil =
     let IsLastPointOnLineIncludingLineBreak point = 
         let line = GetContainingLine point
         point.Position + 1 = line.EndIncludingLineBreak.Position
-
-    /// Try and get the next point on the same line.  If this is the end of the line or if
-    /// the point is within the line break then None will be returned
-    let TryGetNextPointOnLine point =
-        let line = GetContainingLine point
-        let endPoint = line.End
-        if point.Position + 1 < endPoint.Position then point.Add(1) |> Some
-        else None
-
-    /// Get the next point on the same line.  If this is the end of the line or if the 
-    /// point is within the line break then the original value will be returned
-    let GetNextPointOnLine point count =
-        let rec inner point count = 
-            if 0 = count then point
-            else
-                match TryGetNextPointOnLine point with 
-                | Some(next) -> inner next (count-1)
-                | None -> point
-        inner point count
-
-    /// Get the span of going "count" next points on the line with the passed in
-    /// point being the Start of the returned Span
-    let GetNextPointOnLineSpan point count =
-        let line = GetContainingLine point
-        if point.Position >= line.End.Position then SnapshotSpan(point,point)
-        else
-            let endPosition = min line.End.Position (point.Position+count)
-            let endPoint = SnapshotPoint(line.Snapshot, endPosition)
-            SnapshotSpan(point, endPoint)
 
     /// Used to order two SnapshotPoint's in ascending order.  
     let OrderAscending (left:SnapshotPoint) (right:SnapshotPoint) = 

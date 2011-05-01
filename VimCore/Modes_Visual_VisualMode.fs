@@ -194,12 +194,17 @@ type internal VisualMode
                         if Util.IsFlagSet commandRanData.CommandBinding.CommandFlags CommandFlags.ResetCaret then
                             _selectionTracker.ResetCaret()
 
-                        match commandRanData.ModeSwitch with
-                        | ModeSwitch.NoSwitch -> _selectionTracker.UpdateSelection()
-                        | ModeSwitch.SwitchMode(_) -> ()
-                        | ModeSwitch.SwitchModeWithArgument(_,_) -> ()
-                        | ModeSwitch.SwitchPreviousMode -> ()
-                        ProcessResult.Handled commandRanData.ModeSwitch
+                        match commandRanData.CommandResult with
+                        | CommandResult.Error ->
+                            _selectionTracker.UpdateSelection()
+                        | CommandResult.Completed modeSwitch ->
+                            match modeSwitch with
+                            | ModeSwitch.NoSwitch -> _selectionTracker.UpdateSelection()
+                            | ModeSwitch.SwitchMode(_) -> ()
+                            | ModeSwitch.SwitchModeWithArgument(_,_) -> ()
+                            | ModeSwitch.SwitchPreviousMode -> ()
+
+                        ProcessResult.OfCommandResult commandRanData.CommandResult
                     | BindResult.Error ->
                         _operations.Beep()
                         ProcessResult.Handled ModeSwitch.NoSwitch
@@ -212,6 +217,8 @@ type internal VisualMode
                 let toCommandMode = 
                     match result with
                     | ProcessResult.NotHandled -> 
+                        false
+                    | ProcessResult.Error ->
                         false
                     | ProcessResult.Handled switch ->
                         match switch with 

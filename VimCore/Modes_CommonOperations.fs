@@ -87,13 +87,19 @@ type internal CommonOperations ( _data : OperationsData ) =
         let getPointFromSpan () = 
             match result.OperationKind with
             | OperationKind.LineWise ->
-                if result.IsForward then SnapshotLineUtil.GetEnd line
-                else SnapshotLineUtil.GetStart line
+                if result.IsForward then 
+                    SnapshotLineUtil.GetEnd line
+                else 
+                    SnapshotLineUtil.GetStart line
             | OperationKind.CharacterWise ->
                 if result.IsForward then
-                    if result.IsExclusive then result.Span.End
-                    else SnapshotPointUtil.GetPreviousPointOnLine result.Span.End 1
-                else result.Span.Start
+                    if result.IsExclusive then 
+                        result.Span.End
+                    else 
+                        SnapshotPointUtil.TryGetPreviousPointOnLine result.Span.End 1 
+                        |> OptionUtil.getOrDefault result.Span.End
+                else
+                    result.Span.Start
 
         let point = 
             match result.Column with
@@ -117,6 +123,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                     getPointFromSpan()
 
         x.MoveCaretToPointAndEnsureVisible point
+        x.MoveCaretForVirtualEdit()
         _operations.ResetSelection()
 
     member x.WordUnderCursorOrEmpty =
@@ -524,68 +531,6 @@ type internal CommonOperations ( _data : OperationsData ) =
                 match map.GetLocalMark _textView.TextBuffer ident with
                 | Some(point) -> jumpLocal point
                 | None -> Failed Resources.Common_MarkNotSet
-
-        /// Move the cursor count spaces left
-        member x.MoveCaretLeft count = 
-            let caret = TextViewUtil.GetCaretPoint _textView
-            let leftPoint = SnapshotPointUtil.GetPreviousPointOnLine caret count
-            if caret <> leftPoint then
-                _operations.ResetSelection()
-                TextViewUtil.MoveCaretToPoint _textView leftPoint
-    
-        /// Move the cursor count spaces to the right
-        member x.MoveCaretRight count =
-            let caret = TextViewUtil.GetCaretPoint _textView
-            let doMove point = 
-                if point <> caret then
-                    _operations.ResetSelection()
-                    TextViewUtil.MoveCaretToPoint _textView point
-
-            if SnapshotPointUtil.IsLastPointOnLine caret then
-
-                // If we are an the last point of the line then only move if VirtualEdit=onemore
-                let line = SnapshotPointUtil.GetContainingLine caret
-                if _settings.GlobalSettings.IsVirtualEditOneMore && line.Length > 0 then 
-                    doMove line.End
-            else
-
-                let rightPoint = SnapshotPointUtil.GetNextPointOnLine caret count
-                doMove rightPoint
-    
-        /// Move the cursor count spaces up 
-        member x.MoveCaretUp count =
-            let caret = TextViewUtil.GetCaretPoint _textView
-            let current = caret.GetContainingLine()
-            let count = 
-                if current.LineNumber - count > 0 then count
-                else current.LineNumber 
-            if count > 0 then _operations.ResetSelection()
-            for i = 1 to count do   
-                _operations.MoveLineUp(false)
-            x.MoveCaretForVirtualEdit()
-
-        /// Move the cursor count spaces down
-        member x.MoveCaretDown count =
-            let caret = TextViewUtil.GetCaretPoint _textView
-            let line = caret.GetContainingLine()
-            let tss = line.Snapshot
-            let count = 
-                if line.LineNumber + count < tss.LineCount then count
-                else (tss.LineCount - line.LineNumber) - 1 
-            if count > 0 then _operations.ResetSelection()
-            for i = 1 to count do
-                _operations.MoveLineDown(false)
-            x.MoveCaretForVirtualEdit()
-
-        member x.MoveWordForward kind count = 
-            let caret = TextViewUtil.GetCaretPoint _textView
-            let pos = TssUtil.FindNextWordStart caret count kind
-            TextViewUtil.MoveCaretToPoint _textView pos 
-            
-        member x.MoveWordBackward kind count = 
-            let caret = TextViewUtil.GetCaretPoint _textView
-            let pos = TssUtil.FindPreviousWordStart caret count kind
-            TextViewUtil.MoveCaretToPoint _textView pos 
 
         member x.MoveCaretForVirtualEdit () = x.MoveCaretForVirtualEdit()
 

@@ -69,7 +69,7 @@ namespace Vim.UI.Wpf
                 if (keyboard != null)
                 {
                     var ki = KeyUtil.CharAndModifiersToKeyInput(args.Text[0], keyboard.Modifiers);
-                    handled = _buffer.CanProcess(ki) && _buffer.Process(ki);
+                    handled = _buffer.CanProcess(ki) && _buffer.Process(ki).IsAnyHandled;
                 }
             }
 
@@ -125,7 +125,7 @@ namespace Vim.UI.Wpf
                     KeyUtil.TryConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out ki) && 
                     !KeyUtil.IsMappedByChar(ki.Key);
                 handled = tryProcess
-                    ? _buffer.CanProcess(ki) && _buffer.Process(ki)
+                    ? _buffer.CanProcess(ki) && _buffer.Process(ki).IsAnyHandled
                     : false;
             }
             else if (0 != (args.KeyboardDevice.Modifiers & (ModifierKeys.Control | ModifierKeys.Alt)))
@@ -135,7 +135,7 @@ namespace Vim.UI.Wpf
                 KeyInput ki;
                 handled = KeyUtil.TryConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out ki)
                     && _buffer.CanProcess(ki)
-                    && _buffer.Process(ki);
+                    && _buffer.Process(ki).IsAnyHandled;
             }
             else
             {

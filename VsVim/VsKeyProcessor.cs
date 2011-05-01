@@ -86,7 +86,7 @@ namespace VsVim
                 // be routed along a more reliable route for us to convert back to Vim KeyInput
                 if (ki.KeyModifiers == KeyModifiers.None &&  KeyUtil.IsMappedByChar(ki.Key) &&  CoreCharacterSet.Contains(ki.Char))
                 {
-                    handled = VimBuffer.CanProcess(ki) && VimBuffer.Process(ki);
+                    handled = VimBuffer.CanProcess(ki) && VimBuffer.Process(ki).IsAnyHandled;
                 }
             }
 

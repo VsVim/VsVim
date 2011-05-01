@@ -115,34 +115,34 @@ type internal VimBuffer
     member x.SwitchMode kind arg = _modeMap.SwitchMode kind arg
 
     /// Actually process the input key.  Raise the change event on an actual change
-    member x.Process (keyInput : KeyInput) : bool = 
+    member x.Process (keyInput : KeyInput) =
 
         // Actually process the given KeyInput value
-        let doProcess keyInput = 
-            let ret, res =
+        let doProcess keyInput =
+            let processResult = 
                 _isProcessingInput <- true 
                 try
                     if keyInput = _vim.Settings.DisableCommand && x.Mode.ModeKind <> ModeKind.Disabled then
                         x.SwitchMode ModeKind.Disabled ModeArgument.None |> ignore
-                        true, ProcessResult.OfModeKind ModeKind.Disabled
+                        ProcessResult.OfModeKind ModeKind.Disabled
                     else
-                        let res = x.Mode.Process keyInput
-                        let ret = 
-                            match res with
-                            | ProcessResult.Handled modeSwitch ->
-                                match modeSwitch with
-                                | ModeSwitch.NoSwitch -> ()
-                                | ModeSwitch.SwitchMode kind -> x.SwitchMode kind ModeArgument.None |> ignore
-                                | ModeSwitch.SwitchModeWithArgument (kind, argument) -> x.SwitchMode kind argument |> ignore
-                                | ModeSwitch.SwitchPreviousMode -> _modeMap.SwitchPreviousMode() |> ignore
-                                true
-                            | ProcessResult.NotHandled -> 
-                                false
-                        ret, res
+                        let result = x.Mode.Process keyInput
+                        match result with
+                        | ProcessResult.Handled modeSwitch ->
+                            match modeSwitch with
+                            | ModeSwitch.NoSwitch -> ()
+                            | ModeSwitch.SwitchMode kind -> x.SwitchMode kind ModeArgument.None |> ignore
+                            | ModeSwitch.SwitchModeWithArgument (kind, argument) -> x.SwitchMode kind argument |> ignore
+                            | ModeSwitch.SwitchPreviousMode -> _modeMap.SwitchPreviousMode() |> ignore
+                        | ProcessResult.NotHandled -> 
+                            ()
+                        | ProcessResult.Error ->
+                            ()
+                        result
                 finally
                     _isProcessingInput <- false
-            _keyInputProcessedEvent.Trigger (keyInput, res)
-            ret
+            _keyInputProcessedEvent.Trigger (keyInput, processResult)
+            processResult
 
         // Calculate the current remapMode
         let remapMode = x.KeyRemapMode
@@ -178,10 +178,10 @@ type internal VimBuffer
             | MappingNeedsMoreInput -> 
                 _remapInput <- Some keyInputSet
                 _keyInputBufferedEvent.Trigger keyInput
-                true
+                ProcessResult.Handled ModeSwitch.NoSwitch
             | RecursiveMapping _ -> 
                 x.RaiseErrorMessage Resources.Vim_RecursiveMapping
-                true
+                ProcessResult.Error
             | Mapped keyInputSet -> 
                 keyInputSet.KeyInputs |> Seq.map doProcess |> SeqUtil.last
         finally 

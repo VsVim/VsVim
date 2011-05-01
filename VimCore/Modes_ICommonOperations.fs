@@ -143,26 +143,8 @@ type ICommonOperations =
     /// Move the caret to the MotionResult value
     abstract MoveCaretToMotionResult : MotionResult -> unit
 
-    /// Move the caret count spaces left on the same line
-    abstract MoveCaretLeft : count : int -> unit
-
-    /// Move the cursor count spaces right on the same line
-    abstract MoveCaretRight : count : int -> unit
-
-    /// Move the cursor up count lines
-    abstract MoveCaretUp : count : int -> unit
-
-    /// Move the cursor down count lines
-    abstract MoveCaretDown : count : int -> unit
-
     /// Maybe adjust the caret to respect the virtual edit setting
     abstract MoveCaretForVirtualEdit : unit -> unit
-
-    /// Move the cursor backward count WordKind's
-    abstract MoveWordBackward : WordKind -> count : int -> unit
-
-    /// Move the cursor forward count WordKind's 
-    abstract MoveWordForward : WordKind -> count : int -> unit
 
     /// Navigate to the given point which may occur in any ITextBuffer.  This will not update the 
     /// jump list

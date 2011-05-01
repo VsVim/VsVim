@@ -242,118 +242,118 @@ namespace VimCore.UnitTest
         #region Movement
 
         [Test]
-        public void Bind_MoveCaretTo_l()
+        public void Bind_Motion_l()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Right));
+            _commandUtil.SetupCommandMotion<NormalCommand.MoveCaretToMotion>();
             _mode.Process('l');
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_MoveCaretTo_h()
+        public void Bind_Motion_h()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Left));
+            _commandUtil.SetupCommandMotion<NormalCommand.MoveCaretToMotion>();
             _mode.Process('h');
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_MoveCaretTo_Backspace()
+        public void Bind_Motion_BackSpace()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Left));
+            _commandUtil.SetupCommandMotion<NormalCommand.MoveCaretToMotion>();
             _mode.Process(VimKey.Back);
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_MoveCaretTo_k()
+        public void Bind_Motion_k()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Up));
+            _commandUtil.SetupCommandMotion<NormalCommand.MoveCaretToMotion>();
             _mode.Process('k');
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_MoveCaretTo_j()
+        public void Bind_Motion_j()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Down));
+            _commandUtil.SetupCommandMotion<NormalCommand.MoveCaretToMotion>();
             _mode.Process('j');
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_MoveCaretTo_Left()
+        public void Bind_Motion_Left()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Left));
+            _commandUtil.SetupCommandMotion<NormalCommand.MoveCaretToMotion>();
             _mode.Process(VimKey.Left);
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_MoveCaretTo_Right()
+        public void Bind_Motion_Right()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Right));
+            _commandUtil.SetupCommandMotion<NormalCommand.MoveCaretToMotion>();
             _mode.Process(VimKey.Right);
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_MoveCaretTo_Up()
+        public void Bind_Motion_Up()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Up));
+            _commandUtil.SetupCommandMotion<NormalCommand.MoveCaretToMotion>();
             _mode.Process(VimKey.Up);
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_MoveCaretTo_Down()
+        public void Bind_Motion_Down()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Down));
+            _commandUtil.SetupCommandMotion<NormalCommand.MoveCaretToMotion>();
             _mode.Process(VimKey.Down);
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_MoveCaretTo_CtrlP()
+        public void Bind_Motion_CtrlP()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Up));
+            _commandUtil.SetupCommandMotion<NormalCommand.MoveCaretToMotion>();
             _mode.Process(KeyInputUtil.CharWithControlToKeyInput('p'));
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_MoveCaretTo_CtrlN()
+        public void Bind_Motion_CtrlN()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Down));
+            _commandUtil.SetupCommandMotion<NormalCommand.MoveCaretToMotion>();
             _mode.Process(KeyInputUtil.CharWithControlToKeyInput('n'));
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_MoveCaretTo_CtrlH()
+        public void Bind_Motion_CtrlH()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Left));
+            _commandUtil.SetupCommandMotion<NormalCommand.MoveCaretToMotion>();
             _mode.Process(KeyInputUtil.CharWithControlToKeyInput('h'));
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_MoveCaretTo_SpaceBar()
+        public void Bind_Motion_SpaceBar()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Right));
+            _commandUtil.SetupCommandMotion<NormalCommand.MoveCaretToMotion>();
             _mode.Process(' ');
             _commandUtil.Verify();
         }
@@ -591,20 +591,11 @@ namespace VimCore.UnitTest
         #region Motion
 
         [Test]
-        public void Motion_MoveCaretRight()
+        public void Motion_Motion_Right()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Right));
+            _commandUtil.SetupCommandMotion<NormalCommand.MoveCaretToMotion>();
             _mode.Process("l");
-            _commandUtil.Verify();
-        }
-
-        [Test]
-        public void Motion_MoveCaretRight_WithCount()
-        {
-            Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Right), count: 50);
-            _mode.Process("50l");
             _commandUtil.Verify();
         }
 
@@ -1465,7 +1456,7 @@ namespace VimCore.UnitTest
         public void OneTimeCommand1()
         {
             Create(string.Empty);
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Left));
+            _commandUtil.SetupCommandMotion<NormalCommand.MoveCaretToMotion>();
             _mode.OnEnter(ModeArgument.NewOneTimeCommand(ModeKind.Insert));
             var res = _mode.Process("h");
             Assert.IsTrue(res.IsSwitchMode(ModeKind.Insert));
@@ -1475,7 +1466,7 @@ namespace VimCore.UnitTest
         public void OneTimeCommand2()
         {
             Create(string.Empty);
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretTo(Direction.Left));
+            _commandUtil.SetupCommandMotion<NormalCommand.MoveCaretToMotion>();
             _mode.OnEnter(ModeArgument.NewOneTimeCommand(ModeKind.Command));
             var res = _mode.Process("h");
             Assert.IsTrue(res.IsSwitchMode(ModeKind.Command));

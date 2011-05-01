@@ -96,7 +96,7 @@ namespace Vim.UI.Wpf.Test
         public void KeyDown4()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
-            _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(true).Verifiable();
+            _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
 
             var array = new[] { Key.Enter, Key.Left, Key.Right, Key.Return };
             foreach (var cur in array)
@@ -152,7 +152,7 @@ namespace Vim.UI.Wpf.Test
         public void KeyDown_PassControlLetterToBuffer()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
-            _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(true).Verifiable();
+            _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
 
             for (var i = 0; i < 26; i++)
             {
@@ -170,7 +170,7 @@ namespace Vim.UI.Wpf.Test
         public void KeyDown_PassAltLetterToBuffer()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
-            _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(true).Verifiable();
+            _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
 
             for (var i = 0; i < 26; i++)
             {
@@ -187,7 +187,7 @@ namespace Vim.UI.Wpf.Test
         public void KeyDown_PassNonCharOnlyToBuffer()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
-            _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(true).Verifiable();
+            _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
 
             var array = new[] { Key.Left, Key.Right, Key.Up, Key.Down };
             foreach (var key in array)
@@ -207,7 +207,7 @@ namespace Vim.UI.Wpf.Test
         {
             var ki = KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Left, KeyModifiers.Shift);
             _buffer.Setup(x => x.CanProcess(ki)).Returns(true).Verifiable();
-            _buffer.Setup(x => x.Process(ki)).Returns(true).Verifiable();
+            _buffer.Setup(x => x.Process(ki)).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
 
             var arg = CreateKeyEventArgs(Key.Left, ModifierKeys.Shift);
             _processor.KeyDown(arg);

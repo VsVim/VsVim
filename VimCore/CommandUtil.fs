@@ -538,7 +538,6 @@ type internal CommandUtil
         //
         //  ^abc
         //   def
-        //    
         //
         // Then try 'd/    '.  It will not delete the final line even though this meets all of
         // the requirements.  Choosing to ignore this exception for now until I can find
@@ -552,9 +551,11 @@ type internal CommandUtil
             _textBuffer.Delete(span.Span) |> ignore
             TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
 
-        // Update the register with the result
-        let value = RegisterValue.String (StringData.OfSpan span, result.OperationKind)
-        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+        // Update the register with the result so long as something was actually deleted
+        // from the buffer
+        if not span.IsEmpty then
+            let value = RegisterValue.String (StringData.OfSpan span, result.OperationKind)
+            _registerMap.SetRegisterValue register RegisterOperation.Delete value
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -867,16 +868,6 @@ type internal CommandUtil
             TextViewUtil.MoveCaretToPoint _textView point
             _operations.EnsureCaretOnScreenAndTextExpanded()
 
-    /// Move the caret in the specified direction
-    member x.MoveCaretTo direction count =
-
-        match direction with
-        | Direction.Left -> _operations.MoveCaretLeft count
-        | Direction.Right -> _operations.MoveCaretRight count
-        | Direction.Up -> _operations.MoveCaretUp count
-        | Direction.Down -> _operations.MoveCaretDown count
-        CommandResult.Completed ModeSwitch.NoSwitch
-
     /// Move the caret to start of a line which is deleted.  Needs to preserve the original 
     /// indent if 'autoindent' is set.
     ///
@@ -945,9 +936,23 @@ type internal CommandUtil
     member x.MoveCaretToMotion motion count = 
         let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = count}
         match _motionUtil.GetMotion motion argument with
-        | None -> _operations.Beep()
-        | Some result -> _operations.MoveCaretToMotionResult result
-        CommandResult.Completed ModeSwitch.NoSwitch
+        | None -> 
+            // If the motion couldn't be gotten then just beep
+            _operations.Beep()
+            CommandResult.Error
+        | Some result -> 
+
+            let point = x.CaretPoint
+            _operations.MoveCaretToMotionResult result
+
+            // Beep if the motion doesn't actually move the caret.  This is currently done to 
+            // satisfy 'l' and 'h' at the end and start of lines respetively.  It may not be 
+            // needed for every empty motion but so far I can't find a reason why not
+            if point = x.CaretPoint then 
+                _operations.Beep()
+                CommandResult.Error
+            else
+                CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Run the Ping command
     member x.Ping (pingData : PingData) data = 
@@ -1420,26 +1425,41 @@ type internal CommandUtil
 
             try 
 
-                // Actually run the macro by replaying the key strokes one at a time
+                // Actually run the macro by replaying the key strokes one at a time.  Returns 
+                // false if the macro should be stopped due to a failed command
                 let runMacro () =
-                    for keyInput in list do
-        
-                        match _vim.FocusedBuffer with
-                        | None -> 
-                            // Nothing to do if we don't have an ITextBuffer with focus
-                            () 
-                        | Some buffer -> 
-                            // Make sure we have an IUndoTransaction open in the ITextBuffer
-                            if not (map.ContainsKey(buffer.TextBuffer)) then
-                                let transaction = _undoRedoOperations.CreateUndoTransaction "Macro Run"
-                                map.Add(buffer.TextBuffer, transaction)
-                                transaction.AddBeforeTextBufferChangePrimitive()
-        
-                            buffer.Process keyInput |> ignore
+                    let rec inner list = 
+                        match list with 
+                        | [] -> 
+                            // No more input so we are finished
+                            true
+                        | keyInput :: tail -> 
 
-                // Run the macro count times
+                            match _vim.FocusedBuffer with
+                            | None -> 
+                                // Nothing to do if we don't have an ITextBuffer with focus
+                                false
+                            | Some buffer -> 
+                                // Make sure we have an IUndoTransaction open in the ITextBuffer
+                                if not (map.ContainsKey(buffer.TextBuffer)) then
+                                    let transaction = _undoRedoOperations.CreateUndoTransaction "Macro Run"
+                                    map.Add(buffer.TextBuffer, transaction)
+                                    transaction.AddBeforeTextBufferChangePrimitive()
+            
+                                // Actually run the KeyInput.  If processing the KeyInput value results
+                                // in an error then we should stop processing the macro
+                                match buffer.Process keyInput with
+                                | ProcessResult.Handled _ -> inner tail
+                                | ProcessResult.NotHandled -> false
+                                | ProcessResult.Error -> false
+
+                    inner list
+
+                // Run the macro count times. 
+                let go = ref true
                 for i = 1 to count do
-                    runMacro()
+                    if go.Value then
+                        go := runMacro()
 
                 // Close out all of the transactions
                 for transaction in map.Values do
@@ -1491,7 +1511,6 @@ type internal CommandUtil
         | NormalCommand.JumpToMark c -> x.JumpToMark c
         | NormalCommand.JumpToOlderPosition -> x.JumpToOlderPosition count
         | NormalCommand.JumpToNewerPosition -> x.JumpToNewerPosition count
-        | NormalCommand.MoveCaretTo direction -> x.MoveCaretTo direction count
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
         | NormalCommand.Ping pingData -> x.Ping pingData data
         | NormalCommand.PutAfterCaret moveCaretAfterText -> x.PutAfterCaret register count moveCaretAfterText
@@ -1549,8 +1568,11 @@ type internal CommandUtil
     /// if found to the provided function
     member x.RunWithMotion (motion : MotionData) func = 
         match _motionUtil.GetMotion motion.Motion motion.MotionArgument with
-        | None -> CommandResult.Error
-        | Some data -> func data
+        | None -> 
+            _operations.Beep()
+            CommandResult.Error
+        | Some data ->
+            func data
 
     /// Process the m[a-z] command
     member x.SetMarkToCaret c = 

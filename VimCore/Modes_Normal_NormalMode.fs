@@ -383,13 +383,13 @@ type internal NormalMode
 
             // If we are in the one time mode then switch back to the previous
             // mode
-            let modeSwitch = 
+            let result = 
                 match _data.OneTimeMode with
-                | None -> commandData.ModeSwitch
-                | Some(modeKind) -> ModeSwitch.SwitchMode modeKind
+                | None -> ProcessResult.OfCommandResult commandData.CommandResult
+                | Some modeKind -> ProcessResult.OfModeKind modeKind
 
             this.Reset()
-            ProcessResult.Handled modeSwitch
+            result
         | BindResult.Error -> 
             this.Reset()
             ProcessResult.Handled ModeSwitch.NoSwitch

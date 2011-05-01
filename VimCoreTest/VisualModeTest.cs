@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
@@ -181,80 +180,21 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Yank1()
+        public void Bind_YankSelection()
         {
-            Create("foo", "bar");
-            var span = _textBuffer.GetLineRange(0).Extent;
-            _selection.Select(span);
-            Assert.IsTrue(_mode.Process('y').IsSwitchPreviousMode());
-            Assert.AreEqual("foo", _map.GetRegister(RegisterName.Unnamed).StringValue);
-        }
-
-        [Test, Description("Yank should go back to normal mode")]
-        public void Yank2()
-        {
-            Create("foo", "bar");
-            var span = _textBuffer.GetLineRange(0).Extent;
-            _selection.Select(span);
-            var res = _mode.Process('y');
-            Assert.IsTrue(res.IsSwitchPreviousMode());
-            Assert.AreEqual("foo", _map.GetRegister(RegisterName.Unnamed).StringValue);
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.YankSelection);
+            _mode.Process("y");
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Yank3()
+        public void Bind_YankLineSelection()
         {
-            Create("foo", "bar");
-            var span = _textBuffer.GetLineRange(0).Extent;
-            _selection.Select(span);
-            _mode.Process("\"cy");
-            Assert.AreEqual("foo", _map.GetRegister('c').StringValue);
-        }
-
-        [Test]
-        [Description("Yank should reset the caret")]
-        public void Yank4()
-        {
-            Create("foo", "bar");
-            var span = _textBuffer.GetLineRange(0).Extent;
-            _tracker.Setup(x => x.ResetCaret()).Verifiable();
-            _selection.Select(span);
-            Assert.IsTrue(_mode.Process('y').IsSwitchPreviousMode());
-            Assert.AreEqual("foo", _map.GetRegister(RegisterName.Unnamed).StringValue);
-            _tracker.Verify();
-        }
-
-
-        [Test]
-        public void Yank_Y_1()
-        {
-            Create("foo", "bar");
-            var span = _textBuffer.GetSpan(0, 1);
-            _selection.Select(span);
-            Assert.IsTrue(_mode.Process('Y').IsSwitchPreviousMode());
-            Assert.AreEqual(_textBuffer.GetLineRange(0).GetTextIncludingLineBreak(), _map.GetRegister(RegisterName.Unnamed).StringValue);
-        }
-
-        [Test]
-        public void Yank_Y_2()
-        {
-            Create2(ModeKind.VisualLine, "foo", "bar");
-            var span = _textBuffer.GetLineRange(0).ExtentIncludingLineBreak;
-            _selection.Select(span);
-            _mode.Process('y');
-            Assert.AreEqual("foo" + Environment.NewLine, _map.GetRegister(RegisterName.Unnamed).StringValue);
-            Assert.AreEqual(OperationKind.LineWise, _map.GetRegister(RegisterName.Unnamed).RegisterValue.OperationKind);
-        }
-
-        [Test]
-        public void Yank_Y_3()
-        {
-            Create("foo", "bar");
-            var span = _textBuffer.GetSpan(0, 1);
-            _selection.Select(span);
-            Assert.IsTrue(_mode.Process('Y').IsSwitchPreviousMode());
-            Assert.AreEqual(_textBuffer.GetLineRange(0).GetTextIncludingLineBreak(), _map.GetRegister(RegisterName.Unnamed).StringValue);
-            Assert.AreEqual(OperationKind.LineWise, _map.GetRegister(RegisterName.Unnamed).RegisterValue.OperationKind);
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.YankLineSelection);
+            _mode.Process("Y");
+            _commandUtil.Verify();
         }
 
         [Test]
@@ -527,23 +467,21 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void PageUp1()
+        public void Bind_ScrollPages_Up()
         {
             Create("");
-            _editorOperations.Setup(x => x.PageUp(false)).Verifiable();
-            _tracker.Setup(x => x.UpdateSelection()).Verifiable();
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollPages(ScrollDirection.Up));
             _mode.Process(KeyNotationUtil.StringToKeyInput("<PageUp>"));
-            _factory.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void PageDown1()
+        public void Bind_ScrollPages_Down()
         {
             Create("");
-            _editorOperations.Setup(x => x.PageDown(false)).Verifiable();
-            _tracker.Setup(x => x.UpdateSelection()).Verifiable();
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollPages(ScrollDirection.Down));
             _mode.Process(KeyNotationUtil.StringToKeyInput("<PageDown>"));
-            _factory.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]

@@ -205,7 +205,7 @@ namespace VsVim
                 : null;
             if (mode == null)
             {
-                return _buffer.Process(keyInput);
+                return _buffer.Process(keyInput).IsAnyHandled;
             }
 
             // Next we need to consider here are Key mappings.  The CanProcess and Process APIs 
@@ -215,7 +215,7 @@ namespace VsVim
             KeyInput mapped;
             if (!TryGetSingleMapping(KeyRemapMode.Insert, keyInput, out mapped) || CanProcessDirectly(mode, mapped))
             {
-                return _buffer.Process(keyInput);
+                return _buffer.Process(keyInput).IsAnyHandled;
             }
 
             // At this point we've determined that we need to intercept this 
@@ -257,7 +257,7 @@ namespace VsVim
             {
                 // If we couldn't process it using intercepting mechanism then just go straight to the IVimBuffer
                 // for processing.
-                result = _buffer.Process(originalKeyInput);
+                result = _buffer.Process(originalKeyInput).IsAnyHandled;
                 intercepted = false;
             }
 
@@ -431,7 +431,7 @@ namespace VsVim
                 action = CommandAction.Disable;
             }
 
-            if (action.HasValue && _buffer.Process(keyInput))
+            if (action.HasValue && _buffer.Process(keyInput).IsAnyHandled)
             {
                 SwallowIfNextExecMatches = FSharpOption.Create(keyInput);
             }

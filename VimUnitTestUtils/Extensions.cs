@@ -326,12 +326,12 @@ namespace Vim.UnitTest
 
         public static bool Process(this IVimBuffer buf, VimKey key)
         {
-            return buf.Process(KeyInputUtil.VimKeyToKeyInput(key));
+            return buf.Process(KeyInputUtil.VimKeyToKeyInput(key)).IsAnyHandled;
         }
 
         public static bool Process(this IVimBuffer buf, char c)
         {
-            return buf.Process(KeyInputUtil.CharToKeyInput(c));
+            return buf.Process(KeyInputUtil.CharToKeyInput(c)).IsAnyHandled;
         }
 
         public static void Process(this IVimBuffer buf, string input, bool enter = false)

@@ -771,6 +771,8 @@ type ModeSwitch =
     | SwitchModeWithArgument of ModeKind * ModeArgument
     | SwitchPreviousMode 
 
+// TODO: Should be suceeded or something other than Completed.  Error also completed just not
+// well
 [<RequireQualifiedAccess>]
 type CommandResult =   
 
@@ -778,7 +780,8 @@ type CommandResult =
     /// may just be a no-op
     | Completed  of ModeSwitch
 
-    /// An error was encountered and the command was unable to run
+    /// An error was encountered and the command was unable to run.  If this is encountered
+    /// during a macro run it will cause the macro to stop executing
     | Error
 
 
@@ -1034,9 +1037,6 @@ type NormalCommand =
 
     /// Jump to the next new item in the tag list
     | JumpToNewerPosition
-
-    /// Move the caret in the specified direction
-    | MoveCaretTo of Direction
 
     /// Move the caret to the result of the given Motion.
     | MoveCaretToMotion of Motion
@@ -1562,13 +1562,7 @@ type CommandRunData = {
     /// The result of the Command Run
     CommandResult : CommandResult
 
-} with
-
-    /// The ModeSwitch associated with this CommandRunData instance
-    member x.ModeSwitch = 
-        match x.CommandResult with
-        | CommandResult.Completed modeSwitch -> modeSwitch
-        | CommandResult.Error -> ModeSwitch.NoSwitch
+}
 
 /// Responsible for binding key input to a Motion and MotionArgument tuple.  Does
 /// not actually run the motions
@@ -1755,7 +1749,10 @@ type ProcessResult =
     /// The operation did not handle the input
     | NotHandled
 
-    // Is this any type of mode switch
+    /// The input was processed and resulted in an error
+    | Error
+
+    /// Is this any type of mode switch
     member x.IsAnySwitch =
         match x with
         | Handled modeSwitch ->
@@ -1766,10 +1763,24 @@ type ProcessResult =
             | ModeSwitch.SwitchPreviousMode -> true
         | NotHandled -> 
             false
+        | Error -> 
+            false
+
+    /// Did this actually handle the KeyInput
+    member x.IsAnyHandled = 
+        match x with
+        | Handled _ -> true
+        | Error -> true
+        | NotHandled -> false
 
     static member OfModeKind kind = 
         let switch = ModeSwitch.SwitchMode kind
         Handled switch
+
+    static member OfCommandResult commandResult = 
+        match commandResult with
+        | CommandResult.Completed modeSwitch -> Handled modeSwitch
+        | CommandResult.Error -> Error
 
 type SettingKind =
     | NumberKind
@@ -2269,7 +2280,7 @@ and IVimBuffer =
     abstract GetMode : ModeKind -> IMode
     
     /// Process the KeyInput and return whether or not the input was completely handled
-    abstract Process : KeyInput -> bool
+    abstract Process : KeyInput -> ProcessResult
 
     /// Can the passed in KeyInput be consumed by the current state of IVimBuffer.  The
     /// provided KeyInput will participate in remapping based on the current mode
