@@ -33,87 +33,10 @@ type internal VisualMode
 
     /// Build the set of CommandBinding which will be used to move the caret.  Typically
     /// these are just MotionBinding instances which are converted to movement commands
-    member x.BuildMoveSequence() = 
+    member x.CreateMovementBindings() = 
         let factory = Vim.Modes.CommandFactory(_operations, _capture, _buffer.MotionUtil, _buffer.JumpList, _buffer.Settings)
         factory.CreateMovementCommands()
         |> Seq.append (factory.CreateScrollCommands())
-
-    member x.BuildOperationsSequence() =
-
-        /// Commands which do not need a span to operate on
-        let simples =
-            let resultSwitchPrevious = CommandResult.Completed ModeSwitch.SwitchPreviousMode
-            seq {
-                yield (
-                    "zo", 
-                    CommandFlags.Special, 
-                    None,
-                    fun _ _ -> _operations.OpenFold x.SelectedSpan 1)
-                yield (
-                    "zO", 
-                    CommandFlags.Special, 
-                    None,
-                    fun _ _ -> _operations.OpenAllFolds x.SelectedSpan )
-                yield (
-                    "zc", 
-                    CommandFlags.Special, 
-                    None,
-                    fun _ _ -> _operations.CloseFold x.SelectedSpan 1)
-                yield (
-                    "zC", 
-                    CommandFlags.Special, 
-                    None,
-                    fun _ _ -> _operations.CloseAllFolds x.SelectedSpan )
-                yield (
-                    "zd", 
-                    CommandFlags.Special, 
-                    None,
-                    fun _ _ -> _operations.DeleteOneFoldAtCursor() )
-                yield (
-                    "zD", 
-                    CommandFlags.Special, 
-                    None,
-                    fun _ _ -> _operations.DeleteAllFoldsAtCursor() )
-                yield (
-                    "zE", 
-                    CommandFlags.Special, 
-                    None,
-                    fun _ _ -> _operations.FoldManager.DeleteAllFolds() )
-                yield (
-                    "zF", 
-                    CommandFlags.Special, 
-                    None,
-                    fun count _ -> 
-                        let line = TextViewUtil.GetCaretLine _textView
-                        let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount line count
-                        _operations.FoldManager.CreateFold range)
-            }
-            |> Seq.map (fun (str,flags,mode,func) ->
-                let kiSet = KeyNotationUtil.StringToKeyInputSet str
-                let modeSwitch = 
-                    match mode with
-                    | None -> ModeSwitch.SwitchPreviousMode
-                    | Some(switch) -> switch
-                let func2 count reg = 
-                    let count = CommandUtil2.CountOrDefault count
-                    func count reg 
-                    CommandResult.Completed modeSwitch
-                CommandBinding.LegacyBinding (kiSet, flags, func2) )
-
-        /// Commands which must customize their return
-        let customReturn = 
-            seq {
-                yield ( 
-                    ":", 
-                    CommandFlags.Special,
-                    fun _ _ -> ModeSwitch.SwitchModeWithArgument (ModeKind.Command,ModeArgument.FromVisual) |> CommandResult.Completed) 
-            }
-            |> Seq.map (fun (name,flags,func) ->
-                let name = KeyNotationUtil.StringToKeyInputSet name
-                CommandBinding.LegacyBinding (name, flags, func) )
-
-        Seq.append simples customReturn
-        |> Seq.append (x.CreateCommandBindings())
 
     /// Create the CommandBinding instances for the supported command values
     member x.CreateCommandBindings() =
@@ -140,6 +63,13 @@ type internal VisualMode
                 yield ("y", CommandFlags.ResetCaret, VisualCommand.YankSelection)
                 yield ("Y", CommandFlags.ResetCaret, VisualCommand.YankLineSelection)
                 yield ("zf", CommandFlags.None, VisualCommand.FoldSelection)
+                yield ("zF", CommandFlags.None, VisualCommand.FoldSelection)
+                yield ("zo", CommandFlags.Special, VisualCommand.OpenFoldInSelection)
+                yield ("zO", CommandFlags.Special, VisualCommand.OpenAllFoldsInSelection)
+                yield ("zc", CommandFlags.Special, VisualCommand.CloseFoldInSelection)
+                yield ("zC", CommandFlags.Special, VisualCommand.CloseAllFoldsInSelection)
+                yield ("zd", CommandFlags.Special, VisualCommand.DeleteFoldInSelection)
+                yield ("zD", CommandFlags.Special, VisualCommand.DeleteAllFoldsInSelection)
                 yield ("<Del>", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
                 yield ("<lt>", CommandFlags.Repeatable, VisualCommand.ShiftLinesLeft)
                 yield (">", CommandFlags.Repeatable, VisualCommand.ShiftLinesRight)
@@ -157,13 +87,21 @@ type internal VisualMode
                 let storage = BindDataStorage.Simple bindCommand
                 CommandBinding.ComplexVisualBinding (keyInputSet, flags, storage))
 
-        Seq.append visualSeq complexSeq
+        let normalSeq = 
+            seq {
+                yield ("zE", CommandFlags.Special, NormalCommand.DeleteAllFoldsInBuffer)
+                yield (":", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.Command, ModeArgument.FromVisual))
+            } |> Seq.map (fun (str, flags, command) -> 
+                let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
+                CommandBinding.NormalBinding (keyInputSet, flags, command))
+
+        Seq.append visualSeq complexSeq |> Seq.append normalSeq
 
     member x.EnsureCommandsBuilt() =
         if not _builtCommands then
             let map = 
-                x.BuildMoveSequence() 
-                |> Seq.append (x.BuildOperationsSequence())
+                x.CreateMovementBindings() 
+                |> Seq.append (x.CreateCommandBindings())
                 |> Seq.iter _runner.Add 
             _builtCommands <- true
 

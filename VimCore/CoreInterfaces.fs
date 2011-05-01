@@ -962,6 +962,9 @@ type NormalCommand =
     /// and start Insert Mode
     | ChangeTillEndOfLine
 
+    /// Delete all of the folds that are in the ITextBuffer
+    | DeleteAllFoldsInBuffer
+
     /// Delete the character at the current cursor position.  Implements the "x" command
     | DeleteCharacterAtCaret
 
@@ -1111,6 +1114,9 @@ type NormalCommand =
     /// Substitute the character at the cursor
     | SubstituteCharacterAtCaret
 
+    /// Switch modes with the specified information
+    | SwitchMode of ModeKind * ModeArgument
+
     /// Yank the given motion into a register
     | Yank of MotionData
 
@@ -1131,6 +1137,18 @@ type VisualCommand =
     /// is whether or not to treat block selection as a special case
     | ChangeLineSelection of bool
 
+    /// Close a fold in the selection
+    | CloseFoldInSelection
+
+    /// Close all folds in the selection
+    | CloseAllFoldsInSelection
+
+    /// Delete a fold in the selection
+    | DeleteFoldInSelection
+
+    /// Delete all folds in the selection
+    | DeleteAllFoldsInSelection
+
     /// Delete the selected lines
     | DeleteLineSelection
 
@@ -1145,6 +1163,12 @@ type VisualCommand =
 
     /// Join the selected lines
     | JoinSelection of JoinKind
+
+    /// Open all folds in the selection
+    | OpenAllFoldsInSelection
+
+    /// Open one fold in the selection
+    | OpenFoldInSelection
 
     /// Put the contents af the register after the selection.  The bool is for whether or not the
     // caret should be placed after the inserted text

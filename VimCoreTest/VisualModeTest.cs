@@ -379,47 +379,30 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Fold_zo()
+        public void Bind_OpenFoldInSelection()
         {
-            Create("foo bar");
-            var span = _textBuffer.GetSpan(0, 1);
-            _selection.Select(span);
-            _operations.Setup(x => x.OpenFold(span, 1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.OpenFoldInSelection);
             _mode.Process("zo");
-            _factory.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Fold_zc_1()
+        public void Bind_OpenAllFoldsInSelection()
         {
-            Create("foo bar");
-            var span = _textBuffer.GetSpan(0, 1);
-            _selection.Select(span);
-            _operations.Setup(x => x.CloseFold(span, 1)).Verifiable();
-            _mode.Process("zc");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Fold_zO()
-        {
-            Create("foo bar");
-            var span = _textBuffer.GetSpan(0, 1);
-            _selection.Select(span);
-            _operations.Setup(x => x.OpenAllFolds(span)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.OpenAllFoldsInSelection);
             _mode.Process("zO");
-            _factory.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Fold_zC()
+        public void Bind_CloseAllFoldsInSelection()
         {
-            Create("foo bar");
-            var span = _textBuffer.GetSpan(0, 1);
-            _selection.Select(span);
-            _operations.Setup(x => x.CloseAllFolds(span)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.CloseAllFoldsInSelection);
             _mode.Process("zC");
-            _factory.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
@@ -432,38 +415,39 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Fold_zd()
+        public void Bind_DeleteFoldInSelection()
         {
-            Create("foo bar");
-            _operations.Setup(x => x.DeleteOneFoldAtCursor()).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.DeleteFoldInSelection);
             _mode.Process("zd");
-            _factory.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Fold_zD()
+        public void Bind_DeleteAlLFoldsInSelection()
         {
-            Create("foo bar");
-            _operations.Setup(x => x.DeleteAllFoldsAtCursor()).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.DeleteAllFoldsInSelection);
             _mode.Process("zD");
-            _factory.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Fold_zE()
+        public void Bind_DeleteAllFoldsInBuffer()
         {
-            Create("foo bar");
-            _foldManager.Setup(x => x.DeleteAllFolds()).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.DeleteAllFoldsInBuffer);
             _mode.Process("zE");
-            _factory.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void SwitchMode1()
+        public void Bind_SwitchMode_Command()
         {
-            Create("foo bar");
-            var ret = _mode.Process(":");
-            Assert.IsTrue(ret.IsSwitchModeWithArgument(ModeKind.Command, ModeArgument.FromVisual));
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewSwitchMode(ModeKind.Command, ModeArgument.FromVisual));
+            _mode.Process(":");
+            _commandUtil.Verify();
         }
 
         [Test]

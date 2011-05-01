@@ -7,6 +7,8 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Outlining
 
+// TODO: The fold commands need to be revisited.  They're not implemented to spec but
+// are good enough for now 
 type internal CommandUtil 
     (
         _buffer : IVimBuffer,
@@ -358,6 +360,16 @@ type internal CommandUtil
 
             x.DeleteSelection register visualSpan |> ignore)
 
+    /// Close a single fold under the caret
+    member x.CloseFoldInSelection (visualSpan : VisualSpan) =
+        _operations.CloseFold visualSpan.LineRange.ExtentIncludingLineBreak 1
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Close all folds in the selection
+    member x.CloseAllFoldsInSelection (visualSpan : VisualSpan) =
+        _operations.CloseAllFolds visualSpan.LineRange.ExtentIncludingLineBreak
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Delete 'count' characters after the cursor on the current line.  Caret should 
     /// remain at it's original position 
     member x.DeleteCharacterAtCaret count register =
@@ -406,6 +418,21 @@ type internal CommandUtil
         let value = RegisterValue.String (StringData.OfSpan span, OperationKind.CharacterWise)
         _registerMap.SetRegisterValue register RegisterOperation.Delete value
 
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Delete a fold from the selection
+    member x.DeleteFoldInSelection (visualSpan : VisualSpan) =
+        _operations.DeleteOneFoldAtCursor()
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Delete a fold from the selection
+    member x.DeleteAllFoldInSelection (visualSpan : VisualSpan) =
+        _operations.DeleteAllFoldsAtCursor()
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Delete all of the folds in the ITextBuffer
+    member x.DeleteAllFoldsInBuffer () =
+        _operations.FoldManager.DeleteAllFolds()
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete the selected text from the buffer and put it into the specified 
@@ -607,6 +634,8 @@ type internal CommandUtil
 
         let arg = ModeArgument.InsertWithTransaction transaction
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
+
+    /// Close a fold under the caret
 
     /// Create a fold for the given MotionResult
     member x.FoldMotion (result : MotionResult) =
@@ -953,6 +982,16 @@ type internal CommandUtil
                 CommandResult.Error
             else
                 CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Open a fold in visual mode 
+    member x.OpenFoldInSelection (visualSpan : VisualSpan) = 
+        _operations.OpenFold visualSpan.LineRange.ExtentIncludingLineBreak 1
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Open all folds under the caret in visual mode
+    member x.OpenAllFoldsInSelection (visualSpan : VisualSpan) = 
+        _operations.OpenAllFolds visualSpan.LineRange.ExtentIncludingLineBreak
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Run the Ping command
     member x.Ping (pingData : PingData) data = 
@@ -1486,6 +1525,7 @@ type internal CommandUtil
         | NormalCommand.ChangeCaseMotion (kind, motion) -> x.RunWithMotion motion (x.ChangeCaseMotion kind)
         | NormalCommand.ChangeLines -> x.ChangeLines count register
         | NormalCommand.ChangeTillEndOfLine -> x.ChangeTillEndOfLine count register
+        | NormalCommand.DeleteAllFoldsInBuffer -> x.DeleteAllFoldsInBuffer ()
         | NormalCommand.DeleteCharacterAtCaret -> x.DeleteCharacterAtCaret count register
         | NormalCommand.DeleteCharacterBeforeCaret -> x.DeleteCharacterBeforeCaret count register
         | NormalCommand.DeleteLines -> x.DeleteLines count register
@@ -1533,6 +1573,7 @@ type internal CommandUtil
         | NormalCommand.ShiftMotionLinesRight motion -> x.RunWithMotion motion x.ShiftMotionLinesRight
         | NormalCommand.SplitViewHorizontally -> x.SplitViewHorizontally()
         | NormalCommand.SplitViewVertically -> x.SplitViewVertically()
+        | NormalCommand.SwitchMode (modeKind, modeArgument) -> x.SwitchMode modeKind modeArgument
         | NormalCommand.Undo -> x.Undo count
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion register)
         | NormalCommand.YankLines -> x.YankLines count register
@@ -1551,12 +1592,18 @@ type internal CommandUtil
         match command with
         | VisualCommand.ChangeCase kind -> x.ChangeCaseVisual kind visualSpan
         | VisualCommand.ChangeSelection -> x.ChangeSelection register visualSpan
+        | VisualCommand.CloseAllFoldsInSelection -> x.CloseAllFoldsInSelection visualSpan
+        | VisualCommand.CloseFoldInSelection -> x.CloseFoldInSelection visualSpan
         | VisualCommand.ChangeLineSelection specialCaseBlock -> x.ChangeLineSelection register visualSpan specialCaseBlock
+        | VisualCommand.DeleteAllFoldsInSelection -> x.DeleteAllFoldInSelection visualSpan
+        | VisualCommand.DeleteFoldInSelection -> x.DeleteFoldInSelection visualSpan
         | VisualCommand.DeleteSelection -> x.DeleteSelection register visualSpan
         | VisualCommand.DeleteLineSelection -> x.DeleteLineSelection register visualSpan
         | VisualCommand.FormatLines -> x.FormatLinesVisual visualSpan
         | VisualCommand.FoldSelection -> x.FoldSelection visualSpan
         | VisualCommand.JoinSelection kind -> x.JoinSelection kind visualSpan
+        | VisualCommand.OpenFoldInSelection -> x.OpenFoldInSelection visualSpan
+        | VisualCommand.OpenAllFoldsInSelection -> x.OpenAllFoldsInSelection visualSpan
         | VisualCommand.PutOverSelection moveCaretAfterText -> x.PutOverSelection register count moveCaretAfterText visualSpan 
         | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
@@ -1800,6 +1847,10 @@ type internal CommandUtil
                 // Put the deleted text into the specified register
                 let value = RegisterValue.String (StringData.OfSpan span, OperationKind.CharacterWise)
                 _registerMap.SetRegisterValue register RegisterOperation.Delete value)
+
+    /// Switch to the given mode
+    member x.SwitchMode modeKind modeArgument = 
+        CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (modeKind, modeArgument))
 
     /// Undo count operations in the ITextBuffer
     member x.Undo count = 
