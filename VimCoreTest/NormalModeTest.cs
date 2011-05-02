@@ -1605,57 +1605,39 @@ namespace VimCore.UnitTest
         #region Folding
 
         [Test]
-        public void Fold_zo()
+        public void Bind_OpenFoldUnderCaret()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.OpenFold(_textView.GetCaretLine().Extent, 1)).Verifiable();
+            _commandUtil.SetupCommandNormal(NormalCommand.OpenFoldUnderCaret);
             _mode.Process("zo");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Fold_zo_2()
+        public void Bind_CloseFoldUnderCaret()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.OpenFold(_textView.GetCaretLine().Extent, 3)).Verifiable();
-            _mode.Process("3zo");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Fold_zc_1()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.CloseFold(_textView.GetCaretLine().Extent, 1)).Verifiable();
+            _commandUtil.SetupCommandNormal(NormalCommand.CloseFoldUnderCaret);
             _mode.Process("zc");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Fold_zc_2()
+        public void Bind_OpenAllFoldsUnderCaret()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.CloseFold(_textView.GetCaretLine().Extent, 3)).Verifiable();
-            _mode.Process("3zc");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Fold_zO_1()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.OpenAllFolds(_textView.GetCaretLine().Extent)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.OpenAllFoldsUnderCaret);
             _mode.Process("zO");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Fold_zC_1()
+        public void Bind_CloseAllFoldsUnderCaret()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.CloseAllFolds(_textView.GetCaretLine().Extent)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.CloseAllFoldsUnderCaret);
             _mode.Process("zC");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]

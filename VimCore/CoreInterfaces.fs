@@ -962,6 +962,12 @@ type NormalCommand =
     /// and start Insert Mode
     | ChangeTillEndOfLine
 
+    /// Close all folds under the caret
+    | CloseAllFoldsUnderCaret
+
+    /// Close 'count' folds under the caret
+    | CloseFoldUnderCaret
+
     /// Delete all of the folds that are in the ITextBuffer
     | DeleteAllFoldsInBuffer
 
@@ -1046,6 +1052,12 @@ type NormalCommand =
 
     /// Undo count operations in the ITextBuffer
     | Undo
+
+    /// Open all of the folds under the caret
+    | OpenAllFoldsUnderCaret
+
+    /// Open a fold under the caret
+    | OpenFoldUnderCaret
 
     /// Not actually a Vim Command.  This is a simple ping command which makes 
     /// testing items like complex repeats significantly easier

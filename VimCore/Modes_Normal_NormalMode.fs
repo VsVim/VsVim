@@ -167,6 +167,10 @@ type internal NormalMode
                 yield ("x", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
                 yield ("X", CommandFlags.Repeatable, NormalCommand.DeleteCharacterBeforeCaret)
                 yield ("yy", CommandFlags.None, NormalCommand.YankLines)
+                yield ("zo", CommandFlags.Special, NormalCommand.OpenFoldUnderCaret)
+                yield ("zO", CommandFlags.Special, NormalCommand.OpenAllFoldsUnderCaret)
+                yield ("zc", CommandFlags.Special, NormalCommand.CloseFoldUnderCaret)
+                yield ("zC", CommandFlags.Special, NormalCommand.CloseAllFoldsUnderCaret)
                 yield ("<Insert>", CommandFlags.None, NormalCommand.InsertBeforeCaret)
                 yield ("<C-i>", CommandFlags.Movement, NormalCommand.JumpToNewerPosition)
                 yield ("<C-o>", CommandFlags.Movement, NormalCommand.JumpToOlderPosition)
@@ -232,26 +236,6 @@ type internal NormalMode
         let doNothing _ _ = ()
         let commands = 
             seq {
-                yield (
-                    "zo", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> _operations.OpenFold (TextViewUtil.GetCaretLineRange _bufferData.TextView 1).Extent count)
-                yield (
-                    "zO", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _operations.OpenAllFolds (TextViewUtil.GetCaretLineRange _bufferData.TextView 1).Extent)
-                yield (
-                    "zc", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> _operations.CloseFold (TextViewUtil.GetCaretLineRange _bufferData.TextView 1).Extent count)
-                yield (
-                    "zC", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _operations.CloseAllFolds (TextViewUtil.GetCaretLineRange _bufferData.TextView 1).Extent)
                 yield (
                     "zt", 
                     CommandFlags.Movement, 
