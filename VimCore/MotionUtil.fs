@@ -1929,10 +1929,18 @@ type internal MotionUtil
                 | _ -> 
                     true
 
+            // A shared component of both promotions is whether or not the caret ends in the
+            // first column of the next line.  Words are special in that it doesn't need to 
+            // be the first column but simply at or before the first non-blank on the line
+            let endsInColumnZero = 
+                match motion with
+                | Motion.WordForward _ -> span.End.Position <= (TssUtil.FindFirstNonWhiteSpaceCharacter endLine).Position
+                | _ -> SnapshotPointUtil.IsStartOfLine span.End
+
             if endLine.LineNumber <= startLine.LineNumber then
                 // No adjustment needed when everything is on the same line
                 motionResult
-            elif not (SnapshotPointUtil.IsStartOfLine span.End) then 
+            elif not endsInColumnZero then
                 // End is not the start of the line so there is no adjustment to 
                 // be made.  
                 motionResult
@@ -1941,7 +1949,7 @@ type internal MotionUtil
                 // set.  This is necessary because these set the column to 0 which
                 // is redundant and confusing for line wise motions when moving the 
                 // caret
-                let span = SnapshotSpan(startLine.Start, span.End)
+                let span = SnapshotSpan(startLine.Start, endLine.Start)
                 let column = motionResult.Column |> Option.map (fun _ -> CaretColumn.AfterLastLine)
                 { motionResult with Span = span; MotionKind = kind; OperationKind = OperationKind.LineWise; Column = column }
             else 

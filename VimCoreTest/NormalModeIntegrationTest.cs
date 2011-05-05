@@ -297,7 +297,7 @@ namespace VimCore.UnitTest
             _buffer.Process("b");
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
-    
+
         /// <summary>
         /// Blank lines are sentences
         /// </summary>
@@ -1744,6 +1744,86 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Delete a word at the end of the line.  It should not delete the line break
+        /// </summary>
+        [Test]
+        public void Delete_WordEndOfLine()
+        {
+            Create("the cat", "chased the bird");
+            _textView.MoveCaretTo(4);
+            _buffer.Process("dw");
+            Assert.AreEqual("the ", _textView.GetLine(0).GetText());
+            Assert.AreEqual("chased the bird", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// Delete a word at the end of the line where the next line doesn't start in column
+        /// 0.  This should still not cause the end of the line to delete
+        /// </summary>
+        [Test]
+        public void Delete_WordEndOfLineNextStartNotInColumnZero()
+        {
+            Create("the cat", "  chased the bird");
+            _textView.MoveCaretTo(4);
+            _buffer.Process("dw");
+            Assert.AreEqual("the ", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  chased the bird", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// Delete across a line where the search ends in white space but not inside of 
+        /// column 0
+        /// </summary>
+        [Test]
+        public void Delete_SearchAcrossLineNotInColumnZero()
+        {
+            Create("the cat", "  chased the bird");
+            _textView.MoveCaretTo(4);
+            _buffer.Process("d/cha", enter: true);
+            Assert.AreEqual("the chased the bird", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// Delete across a line where the search ends in column 0 of the next line
+        /// </summary>
+        [Test]
+        public void Delete_SearchAcrossLineIntoColumnZero()
+        {
+            Create("the cat", "chased the bird");
+            _textView.MoveCaretTo(4);
+            _buffer.Process("d/cha", enter: true);
+            Assert.AreEqual("the ", _textView.GetLine(0).GetText());
+            Assert.AreEqual("chased the bird", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// Don't delete the new line when doing a 'daw' at the end of the line
+        /// </summary>
+        [Test]
+        public void Delete_AllWordEndOfLineIntoColumnZero()
+        {
+            Create("the cat", "chased the bird");
+            _textView.MoveCaretTo(4);
+            _buffer.Process("daw");
+            Assert.AreEqual("the", _textView.GetLine(0).GetText());
+            Assert.AreEqual("chased the bird", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// Delete a word at the end of the line where the next line doesn't start in column
+        /// 0.  This should still not cause the end of the line to delete
+        /// </summary>
+        [Test]
+        public void Delete_AllWordEndOfLineNextStartNotInColumnZero()
+        {
+            Create("the cat", "  chased the bird");
+            _textView.MoveCaretTo(4);
+            _buffer.Process("daw");
+            Assert.AreEqual("the", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  chased the bird", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
         /// Make sure we properly update register 0 during a yank
         /// </summary>
         [Test]
@@ -1819,6 +1899,20 @@ namespace VimCore.UnitTest
         public void Yank_WordInEmptyLine()
         {
             Create("dog", "", "cat");
+            _textView.MoveCaretToLine(1);
+            _buffer.Process("yw");
+            Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
+            Assert.AreEqual(Environment.NewLine, UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Yanking a word in a blank line with white space in the following line should 
+        /// ignore the white space in the following line
+        /// </summary>
+        [Test]
+        public void Yank_WordInEmptyLineWithWhiteSpaceInFollowing()
+        {
+            Create("dog", "", "  cat");
             _textView.MoveCaretToLine(1);
             _buffer.Process("yw");
             Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
