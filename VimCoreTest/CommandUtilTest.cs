@@ -185,7 +185,7 @@ namespace VimCore.UnitTest
             Create("dog", "cat");
             _textView.MoveCaretToLine(1);
             _operations.Setup(x => x.Beep()).Verifiable();
-            _commandUtil.ScrollLines(ScrollDirection.Down, FSharpOption<int>.None);
+            _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption<int>.None);
             _operations.Verify();
         }
 
@@ -198,7 +198,7 @@ namespace VimCore.UnitTest
             Create("a", "b", "c", "d");
             for (var i = 0; i < 5; i++)
             {
-                _commandUtil.ScrollLines(ScrollDirection.Down, FSharpOption<int>.None);
+                _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption<int>.None);
             }
             Assert.AreEqual(_textView.GetLine(3).Start, _textView.GetCaretPoint());
         }
@@ -211,7 +211,7 @@ namespace VimCore.UnitTest
         {
             Create("dog", "cat");
             _operations.Setup(x => x.Beep()).Verifiable();
-            _commandUtil.ScrollLines(ScrollDirection.Up, FSharpOption<int>.None);
+            _commandUtil.ScrollLines(ScrollDirection.Up, true, FSharpOption<int>.None);
             _operations.Verify();
         }
 

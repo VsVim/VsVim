@@ -426,11 +426,20 @@ namespace VimCore.UnitTest
         #region Scroll
 
         [Test]
-        public void Bind_ScrollLines_Up()
+        public void Bind_ScrollLines_Up_WithOption()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollLines(ScrollDirection.Up));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollLines(ScrollDirection.Up, true));
             _mode.Process(KeyInputUtil.CharWithControlToKeyInput('u'));
+            _commandUtil.Verify();
+        }
+
+        [Test]
+        public void Bind_ScrollLines_Down_WithOption()
+        {
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollLines(ScrollDirection.Down, true));
+            _mode.Process(KeyInputUtil.CharWithControlToKeyInput('d'));
             _commandUtil.Verify();
         }
 
@@ -438,50 +447,18 @@ namespace VimCore.UnitTest
         public void Bind_ScrollLines_Down()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollLines(ScrollDirection.Down));
-            _mode.Process(KeyInputUtil.CharWithControlToKeyInput('d'));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollLines(ScrollDirection.Down, false));
+            _mode.Process(KeyInputUtil.CharWithControlToKeyInput('e'));
             _commandUtil.Verify();
         }
 
         [Test]
-        public void ScrollDown1()
+        public void Bind_ScrollLines_Up()
         {
-            Create("foo", "bar");
-            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
-            _operations.Setup(x => x.ScrollLines(ScrollDirection.Down, 1)).Verifiable();
-            _mode.Process(KeyInputUtil.CharWithControlToKeyInput('e'));
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ScrollDown2()
-        {
-            Create("foo", "bar");
-            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
-            _operations.Setup(x => x.ScrollLines(ScrollDirection.Down, 3)).Verifiable();
-            _mode.Process('3');
-            _mode.Process(KeyInputUtil.CharWithControlToKeyInput('e'));
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ScrollUp()
-        {
-            Create("foo", "bar");
-            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
-            _operations.Setup(x => x.ScrollLines(ScrollDirection.Up, 1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollLines(ScrollDirection.Up, false));
             _mode.Process(KeyInputUtil.CharWithControlToKeyInput('y'));
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Scroll_zEnter()
-        {
-            Create("foo", "bar");
-            _editorOperations.Setup(x => x.ScrollLineTop()).Verifiable();
-            _editorOperations.Setup(x => x.MoveToStartOfLineAfterWhiteSpace(false)).Verifiable();
-            _mode.Process("z", enter: true);
-            _editorOperations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
@@ -539,51 +516,58 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Scroll_zt()
+        public void Bind_ScrollCaretLineToTop_KeepCaret()
         {
-            Create("foo", "bar");
-            _editorOperations.Setup(x => x.ScrollLineTop()).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollCaretLineToTop(true));
             _mode.Process("zt");
-            _editorOperations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Scroll_zPeriod()
+        public void Bind_ScrollCaretLineToTop()
         {
-            Create("foo", "bar");
-            _editorOperations.Setup(x => x.ScrollLineCenter()).Verifiable();
-            _editorOperations.Setup(x => x.MoveToStartOfLineAfterWhiteSpace(false)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollCaretLineToTop(false));
+            _mode.Process("z");
+            _mode.Process(KeyInputUtil.EnterKey);
+            _commandUtil.Verify();
+        }
+
+        [Test]
+        public void Bind_ScrollCaretLineToMiddle()
+        {
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollCaretLineToMiddle(false));
             _mode.Process("z.");
-            _editorOperations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Scroll_zz()
+        public void Bind_ScrollCaretLineToMiddle_KeepCaret()
         {
-            Create("foo", "bar");
-            _editorOperations.Setup(x => x.ScrollLineCenter()).Verifiable();
-            _mode.Process("z.");
-            _editorOperations.Verify();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollCaretLineToMiddle(true));
+            _mode.Process("zz");
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Scroll_zDash()
+        public void Bind_ScrollCaretLineToBottom()
         {
-            Create(String.Empty);
-            _editorOperations.Setup(x => x.ScrollLineBottom()).Verifiable();
-            _editorOperations.Setup(x => x.MoveToStartOfLineAfterWhiteSpace(false)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollCaretLineToBottom(false));
             _mode.Process("z-");
-            _editorOperations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Scroll_zb()
+        public void Bind_ScrollCaretLineToBottom_KeepCaret()
         {
-            Create(String.Empty);
-            _editorOperations.Setup(x => x.ScrollLineBottom()).Verifiable();
-            _editorOperations.Setup(x => x.MoveToStartOfLineAfterWhiteSpace(false)).Verifiable();
-            _mode.Process("z-");
-            _editorOperations.Verify();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollCaretLineToBottom(true));
+            _mode.Process("zb");
+            _commandUtil.Verify();
         }
 
         #endregion
@@ -849,39 +833,12 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Yank_Y_1()
+        public void Bind_YankLines_ViaY()
         {
-            Create("foo", "bar");
-            var span = _textView.GetLineRange(0).ExtentIncludingLineBreak;
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Yank, span, OperationKind.LineWise))
-                .Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.YankLines);
             _mode.Process("Y");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Yank_Y_2()
-        {
-            Create("foo", "bar");
-            var span = _textView.GetLineRange(0).ExtentIncludingLineBreak;
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister('c'), RegisterOperation.Yank, span, OperationKind.LineWise))
-                .Verifiable();
-            _mode.Process("\"cY");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Yank_Y_3()
-        {
-            Create("foo", "bar", "jazz");
-            var span = _textView.GetLineRange(0, 1).ExtentIncludingLineBreak;
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Yank, span, OperationKind.LineWise))
-                .Verifiable();
-            _mode.Process("2Y");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         #endregion
@@ -1501,12 +1458,12 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Handle_ZZ()
+        public void Bind_WriteBufferAndQuit()
         {
-            Create("foo bar");
-            _operations.Setup(x => x.Close(true)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.WriteBufferAndQuit);
             _mode.Process("ZZ");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         #endregion
@@ -1514,27 +1471,30 @@ namespace VimCore.UnitTest
         #region Visual Mode
 
         [Test]
-        public void VisualMode1()
+        public void Bind_SwitchMode_VisualCharacter()
         {
-            Create(DefaultLines);
-            var res = _mode.Process('v');
-            Assert.IsTrue(res.IsSwitchMode(ModeKind.VisualCharacter));
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewSwitchMode(ModeKind.VisualCharacter, ModeArgument.None));
+            _mode.Process('v');
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void VisualMode2()
+        public void Bind_SwitchMode_VisualLine()
         {
-            Create(DefaultLines);
-            var res = _mode.Process('V');
-            Assert.IsTrue(res.IsSwitchMode(ModeKind.VisualLine));
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewSwitchMode(ModeKind.VisualLine, ModeArgument.None));
+            _mode.Process('V');
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void VisualMode3()
+        public void Bind_SwitchMode_VisualBlock()
         {
-            Create(DefaultLines);
-            var res = _mode.Process(KeyInputUtil.CharWithControlToKeyInput('q'));
-            Assert.IsTrue(res.IsSwitchMode(ModeKind.VisualBlock));
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewSwitchMode(ModeKind.VisualBlock, ModeArgument.None));
+            _mode.Process(KeyInputUtil.CharWithControlToKeyInput('q'));
+            _commandUtil.Verify();
         }
 
         [Test]
@@ -1650,48 +1610,39 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Fold_zF_1()
+        public void Bind_FoldLines()
         {
-            Create("the quick brown", "fox jumped", " over the dog");
-            _operations.Setup(x => x.FoldLines(1)).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.FoldLines);
             _mode.Process("zF");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Fold_zF_2()
+        public void Bind_DeleteFoldUnderCaret()
         {
-            Create("the quick brown", "fox jumped", " over the dog");
-            _operations.Setup(x => x.FoldLines(2)).Verifiable();
-            _mode.Process("2zF");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Fold_zd_1()
-        {
-            Create("the quick brown", "fox jumped", " over the dog");
-            _operations.Setup(x => x.DeleteOneFoldAtCursor()).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.DeleteFoldUnderCaret);
             _mode.Process("zd");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Fold_zD_1()
+        public void Bind_DeleteAllFoldsUnderCaret()
         {
-            Create("the quick brown", "fox jumped", " over the dog");
-            _operations.Setup(x => x.DeleteAllFoldsAtCursor()).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.DeleteAllFoldsUnderCaret);
             _mode.Process("zD");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Fold_zE_1()
+        public void Bind_DeleteAllFoldsInBuffer()
         {
-            Create("the quick brown", "fox jumped", " over the dog");
-            _foldManager.Setup(x => x.DeleteAllFolds()).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.DeleteAllFoldsInBuffer);
             _mode.Process("zE");
-            _foldManager.Verify();
+            _commandUtil.Verify();
         }
 
         #endregion

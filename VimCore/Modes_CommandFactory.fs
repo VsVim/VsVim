@@ -68,10 +68,18 @@ type internal CommandFactory
     /// Returns the set of commands which move the caret as a scroll operation
     member x.CreateScrollCommands () =
         seq {
+            yield ("z<Enter>", CommandFlags.Movement, NormalCommand.ScrollCaretLineToTop false)
+            yield ("zt", CommandFlags.Movement, NormalCommand.ScrollCaretLineToTop true)
+            yield ("z.", CommandFlags.Movement, NormalCommand.ScrollCaretLineToMiddle false)
+            yield ("zz", CommandFlags.Movement, NormalCommand.ScrollCaretLineToMiddle true)
+            yield ("z-", CommandFlags.Movement, NormalCommand.ScrollCaretLineToBottom false)
+            yield ("zb", CommandFlags.Movement, NormalCommand.ScrollCaretLineToBottom true)
             yield ("<C-b>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Up)
-            yield ("<C-d>", CommandFlags.Movement, NormalCommand.ScrollLines ScrollDirection.Down)
+            yield ("<C-d>", CommandFlags.Movement, NormalCommand.ScrollLines (ScrollDirection.Down, true))
+            yield ("<C-e>", CommandFlags.Movement, NormalCommand.ScrollLines (ScrollDirection.Down, false))
             yield ("<C-f>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Down)
-            yield ("<C-u>", CommandFlags.Movement, NormalCommand.ScrollLines ScrollDirection.Up)
+            yield ("<C-u>", CommandFlags.Movement, NormalCommand.ScrollLines (ScrollDirection.Up, true))
+            yield ("<C-y>", CommandFlags.Movement, NormalCommand.ScrollLines (ScrollDirection.Up, false))
             yield ("<S-Down>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Down)
             yield ("<S-Up>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Up)
             yield ("<PageUp>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Up)

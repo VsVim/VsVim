@@ -438,8 +438,18 @@ type internal CommandUtil
         _operations.DeleteOneFoldAtCursor()
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Delete a fold under the caret
+    member x.DeleteFoldUnderCaret () = 
+        _operations.DeleteOneFoldAtCursor()
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Delete a fold from the selection
     member x.DeleteAllFoldInSelection (visualSpan : VisualSpan) =
+        _operations.DeleteAllFoldsAtCursor()
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Delete all folds under the caret
+    member x.DeleteAllFoldsUnderCaret () =
         _operations.DeleteAllFoldsAtCursor()
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -648,7 +658,11 @@ type internal CommandUtil
         let arg = ModeArgument.InsertWithTransaction transaction
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
 
-    /// Close a fold under the caret
+    /// Close a fold under the caret for 'count' lines
+    member x.FoldLines count =
+        _operations.FoldLines count
+
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Create a fold for the given MotionResult
     member x.FoldMotion (result : MotionResult) =
@@ -1551,11 +1565,14 @@ type internal CommandUtil
         | NormalCommand.CloseAllFoldsUnderCaret -> x.CloseAllFoldsUnderCaret ()
         | NormalCommand.CloseFoldUnderCaret -> x.CloseFoldUnderCaret count
         | NormalCommand.DeleteAllFoldsInBuffer -> x.DeleteAllFoldsInBuffer ()
+        | NormalCommand.DeleteAllFoldsUnderCaret -> x.DeleteAllFoldsUnderCaret ()
         | NormalCommand.DeleteCharacterAtCaret -> x.DeleteCharacterAtCaret count register
         | NormalCommand.DeleteCharacterBeforeCaret -> x.DeleteCharacterBeforeCaret count register
+        | NormalCommand.DeleteFoldUnderCaret -> x.DeleteFoldUnderCaret ()
         | NormalCommand.DeleteLines -> x.DeleteLines count register
         | NormalCommand.DeleteMotion motion -> x.RunWithMotion motion (x.DeleteMotion register)
         | NormalCommand.DeleteTillEndOfLine -> x.DeleteTillEndOfLine count register
+        | NormalCommand.FoldLines -> x.FoldLines data.CountOrDefault
         | NormalCommand.FoldMotion motion -> x.RunWithMotion motion x.FoldMotion
         | NormalCommand.FormatLines -> x.FormatLines count
         | NormalCommand.FormatMotion motion -> x.RunWithMotion motion x.FormatMotion 
@@ -1591,8 +1608,11 @@ type internal CommandUtil
         | NormalCommand.ReplaceChar keyInput -> x.ReplaceChar keyInput data.CountOrDefault
         | NormalCommand.RunMacro registerName -> x.RunMacro registerName data.CountOrDefault
         | NormalCommand.SetMarkToCaret c -> x.SetMarkToCaret c
-        | NormalCommand.ScrollLines direction -> x.ScrollLines direction data.Count
+        | NormalCommand.ScrollLines (direction, useScrollOption) -> x.ScrollLines direction useScrollOption data.Count
         | NormalCommand.ScrollPages direction -> x.ScrollPages direction data.CountOrDefault
+        | NormalCommand.ScrollCaretLineToTop keepCaretColumn -> x.ScrollCaretLineToTop keepCaretColumn
+        | NormalCommand.ScrollCaretLineToMiddle keepCaretColumn -> x.ScrollCaretLineToMiddle keepCaretColumn
+        | NormalCommand.ScrollCaretLineToBottom keepCaretColumn -> x.ScrollCaretLineToBottom keepCaretColumn
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count register
         | NormalCommand.ShiftLinesLeft -> x.ShiftLinesLeft count
         | NormalCommand.ShiftLinesRight -> x.ShiftLinesRight count
@@ -1602,6 +1622,7 @@ type internal CommandUtil
         | NormalCommand.SplitViewVertically -> x.SplitViewVertically()
         | NormalCommand.SwitchMode (modeKind, modeArgument) -> x.SwitchMode modeKind modeArgument
         | NormalCommand.Undo -> x.Undo count
+        | NormalCommand.WriteBufferAndQuit -> x.WriteBufferAndQuit ()
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion register)
         | NormalCommand.YankLines -> x.YankLines count register
 
@@ -1663,7 +1684,7 @@ type internal CommandUtil
     ///
     /// TODO: Should support the 'scroll' option here.  It should be the used value 
     /// when a count is not specified
-    member x.ScrollLines direction countOption =
+    member x.ScrollLines direction useScrollOption countOption =
         let count = 
             match countOption with
             | None -> TextViewUtil.GetVisibleLineCount _textView / 2
@@ -1722,6 +1743,27 @@ type internal CommandUtil
             | _ -> _textView.TextViewLines.FirstVisibleLine
         _textView.Caret.MoveTo(line) |> ignore
 
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Scroll the line containing the caret to the top of the ITextView.  
+    member x.ScrollCaretLineToTop keepCaretColumn = 
+        _operations.EditorOperations.ScrollLineTop()
+        if not keepCaretColumn then
+            _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Scroll the line containing the caret to the middle of the ITextView.  
+    member x.ScrollCaretLineToMiddle keepCaretColumn = 
+        _operations.EditorOperations.ScrollLineCenter()
+        if not keepCaretColumn then
+            _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Scroll the line containing the caret to the bottom of the ITextView.  
+    member x.ScrollCaretLineToBottom keepCaretColumn = 
+        _operations.EditorOperations.ScrollLineBottom()
+        if not keepCaretColumn then
+            _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Shift the given line range left by the specified value.  The caret will be 
@@ -1882,6 +1924,11 @@ type internal CommandUtil
     /// Undo count operations in the ITextBuffer
     member x.Undo count = 
         _operations.Undo count
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Write out the ITextBuffer and quit
+    member x.WriteBufferAndQuit () =
+        _operations.Close(true) |> ignore
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Yank the specified lines into the specified register 

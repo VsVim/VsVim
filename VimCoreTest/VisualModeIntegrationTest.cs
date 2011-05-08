@@ -200,6 +200,30 @@ namespace VimCore.UnitTest
             Assert.AreEqual("bot", _textView.GetLine(1).GetText());
         }
 
+        /// <summary>
+        /// Switching to command mode shouldn't clear the selection
+        /// </summary>
+        [Test]
+        public void Switch_ToCommandShouldNotClearSelection()
+        {
+            Create("cat", "dog", "tree");
+            EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
+            _buffer.Process(":");
+            Assert.IsFalse(_textView.GetSelectionSpan().IsEmpty);
+        }
+
+        /// <summary>
+        /// Switching to normal mode should clear the selection
+        /// </summary>
+        [Test]
+        public void Switch_ToNormalShouldClearSelection()
+        {
+            Create("cat", "dog", "tree");
+            EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
+            _buffer.Process(VimKey.Escape);
+            Assert.IsTrue(_textView.GetSelectionSpan().IsEmpty);
+        }
+
         [Test]
         public void IncrementalSearch_LineModeShouldSelectFullLine()
         {

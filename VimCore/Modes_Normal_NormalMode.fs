@@ -69,8 +69,7 @@ type internal NormalMode
         if not x.IsCommandRunnerPopulated then
             let factory = Vim.Modes.CommandFactory(_operations, _capture, _bufferData.MotionUtil, _bufferData.JumpList, _bufferData.Settings)
 
-            x.CreateSimpleCommands()
-            |> Seq.append (x.CreateCommandBindings())
+            x.CreateCommandBindings()
             |> Seq.append (factory.CreateMovementCommands())
             |> Seq.append (factory.CreateScrollCommands())
             |> Seq.iter _runner.Add
@@ -164,18 +163,27 @@ type internal NormalMode
                 yield ("s", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.SubstituteCharacterAtCaret)
                 yield ("S", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeLines)
                 yield ("u", CommandFlags.Special, NormalCommand.Undo)
+                yield ("v", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.VisualCharacter, ModeArgument.None))
+                yield ("V", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.VisualLine, ModeArgument.None))
                 yield ("x", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
                 yield ("X", CommandFlags.Repeatable, NormalCommand.DeleteCharacterBeforeCaret)
+                yield ("Y", CommandFlags.None, NormalCommand.YankLines)
                 yield ("yy", CommandFlags.None, NormalCommand.YankLines)
                 yield ("zo", CommandFlags.Special, NormalCommand.OpenFoldUnderCaret)
                 yield ("zO", CommandFlags.Special, NormalCommand.OpenAllFoldsUnderCaret)
                 yield ("zc", CommandFlags.Special, NormalCommand.CloseFoldUnderCaret)
                 yield ("zC", CommandFlags.Special, NormalCommand.CloseAllFoldsUnderCaret)
+                yield ("zd", CommandFlags.Special, NormalCommand.DeleteFoldUnderCaret)
+                yield ("zD", CommandFlags.Special, NormalCommand.DeleteAllFoldsUnderCaret)
+                yield ("zE", CommandFlags.Special, NormalCommand.DeleteAllFoldsInBuffer)
+                yield ("zF", CommandFlags.Special, NormalCommand.FoldLines)
+                yield ("ZZ", CommandFlags.Special, NormalCommand.WriteBufferAndQuit)
                 yield ("<Insert>", CommandFlags.None, NormalCommand.InsertBeforeCaret)
                 yield ("<C-i>", CommandFlags.Movement, NormalCommand.JumpToNewerPosition)
                 yield ("<C-o>", CommandFlags.Movement, NormalCommand.JumpToOlderPosition)
                 yield ("<C-PageDown>", CommandFlags.Special, NormalCommand.GoToNextTab Path.Forward)
                 yield ("<C-PageUp>", CommandFlags.Special, NormalCommand.GoToNextTab Path.Backward)
+                yield ("<C-q>", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.VisualBlock, ModeArgument.None))
                 yield ("<C-r>", CommandFlags.Special, NormalCommand.Redo)
                 yield ("<C-w><C-j>", CommandFlags.None, NormalCommand.GoToView Direction.Down)
                 yield ("<C-w>j", CommandFlags.None, NormalCommand.GoToView Direction.Down)
@@ -198,6 +206,7 @@ type internal NormalMode
                 yield ("<lt><lt>", CommandFlags.Repeatable, NormalCommand.ShiftLinesLeft)
                 yield (">>", CommandFlags.Repeatable, NormalCommand.ShiftLinesRight)
                 yield ("==", CommandFlags.Repeatable, NormalCommand.FormatLines)
+                yield (":", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.Command, ModeArgument.None))
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.NormalBinding (keyInputSet, flags, command))
@@ -229,128 +238,6 @@ type internal NormalMode
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.ComplexNormalBinding (keyInputSet, flags, storage))
         Seq.append normalSeq motionSeq |> Seq.append complexSeq
-
-    /// Create the simple commands
-    member this.CreateSimpleCommands() =
-
-        let doNothing _ _ = ()
-        let commands = 
-            seq {
-                yield (
-                    "zt", 
-                    CommandFlags.Movement, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ ->  _operations.EditorOperations.ScrollLineTop())
-                yield (
-                    "z.", 
-                    CommandFlags.Movement, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> 
-                        _operations.EditorOperations.ScrollLineCenter() 
-                        _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) )
-                yield (
-                    "zz", 
-                    CommandFlags.Movement, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _operations.EditorOperations.ScrollLineCenter() )
-                yield (
-                    "z-", 
-                    CommandFlags.Movement, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ ->
-                        _operations.EditorOperations.ScrollLineBottom() 
-                        _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) )
-                yield (
-                    "zb", 
-                    CommandFlags.Movement, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _operations.EditorOperations.ScrollLineBottom() )
-                yield (
-                    "zF", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> _operations.FoldLines count)
-                yield (
-                    "zd", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _operations.DeleteOneFoldAtCursor() )
-                yield (
-                    "zD", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _operations.DeleteAllFoldsAtCursor() )
-                yield (
-                    "zE", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _operations.FoldManager.DeleteAllFolds() )
-                yield (
-                    "ZZ",
-                    CommandFlags.Special,
-                    ModeSwitch.NoSwitch,
-                    fun _ _ ->  _operations.Close(true) |> ignore )
-                yield (
-                    "<C-y>", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> _operations.ScrollLines ScrollDirection.Up count)
-                yield (
-                    "<C-e>", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> _operations.ScrollLines ScrollDirection.Down count)
-                yield (
-                    "Y", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun count reg -> 
-                        let point = 
-                            this.TextView 
-                            |> TextViewUtil.GetCaretLine 
-                            |> SnapshotLineUtil.GetStart
-                        let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Yank span OperationKind.LineWise)
-                yield (
-                    "z<Enter>", 
-                    CommandFlags.Movement, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> 
-                        _operations.EditorOperations.ScrollLineTop()
-                        _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) )
-                yield (
-                    ":", 
-                    CommandFlags.Special,
-                    ModeSwitch.SwitchMode ModeKind.Command, 
-                    doNothing)
-                yield (
-                    "v", 
-                    CommandFlags.Special,
-                    ModeSwitch.SwitchMode ModeKind.VisualCharacter, 
-                    doNothing)
-                yield (
-                    "V", 
-                    CommandFlags.Special,
-                    ModeSwitch.SwitchMode ModeKind.VisualLine, 
-                    doNothing)
-                yield (
-                    "<C-q>", 
-                    CommandFlags.Special,
-                    ModeSwitch.SwitchMode ModeKind.VisualBlock, 
-                    doNothing)
-            } |> Seq.map (fun (str, kind, switch, func) -> (str, kind, func, CommandResult.Completed switch))
-
-        let allWithCount = 
-            commands
-            |> Seq.map(fun (str,kind,func,result) -> 
-                let name = KeyNotationUtil.StringToKeyInputSet str
-                let func2 count reg =
-                    let count = CommandUtil2.CountOrDefault count
-                    func count reg
-                    result
-                CommandBinding.LegacyBinding (name, kind, func2))
-
-        allWithCount
 
     member this.Reset() =
         _runner.ResetState()

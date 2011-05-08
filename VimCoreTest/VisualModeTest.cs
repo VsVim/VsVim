@@ -160,26 +160,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        [Description("Clear the selection when leaving Visual Mode")]
-        public void ChangeModeToNormalShouldClearSelection()
-        {
-            Create(lines: "foo");
-            _selection.Select(_textView.GetLine(0).Extent);
-            _mode.Process(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(_selection.GetSpan().IsEmpty);
-        }
-
-        [Test]
-        [Description("Selection should be visible for the command mode operation")]
-        public void ChangeModeToCommandShouldNotClearSelection()
-        {
-            Create(lines: "foo");
-            _selection.Select(_textView.GetLine(0).Extent);
-            _mode.Process(':');
-            Assert.IsFalse(_selection.GetSpan().IsEmpty);
-        }
-
-        [Test]
         public void Bind_YankSelection()
         {
             Create("");

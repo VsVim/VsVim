@@ -936,7 +936,7 @@ type LegacyData (_func : unit -> CommandResult) =
     interface System.IEquatable<LegacyData> with
         member x.Equals other = x.Equals(other)
 
-/// Normal mode commands which can be executed by the user 
+/// Normal mode commands which can be executed by the user
 [<RequireQualifiedAccess>]
 [<StructuralEquality>]
 [<NoComparison>]
@@ -977,6 +977,12 @@ type NormalCommand =
     /// Delete the character before the cursor. Implements the "X" command
     | DeleteCharacterBeforeCaret
 
+    /// Delete the fold under the caret
+    | DeleteFoldUnderCaret
+
+    /// Delete all folds under the caret
+    | DeleteAllFoldsUnderCaret
+
     /// Delete lines from the buffer: dd
     | DeleteLines
 
@@ -985,6 +991,9 @@ type NormalCommand =
 
     /// Delete till the end of the line and 'count - 1' more lines down
     | DeleteTillEndOfLine
+
+    /// Fold 'count' lines in the ITextBuffer
+    | FoldLines
 
     /// Create a fold over the specified motion 
     | FoldMotion of MotionData
@@ -1099,11 +1108,24 @@ type NormalCommand =
     /// Set the specified mark to the current value of the caret
     | SetMarkToCaret of char
 
-    /// Scroll the screen in the specified direction
-    | ScrollLines of ScrollDirection
+    /// Scroll the screen in the specified direction.  The bool is whether or not to use
+    /// the 'scroll' option or 'count'
+    | ScrollLines of ScrollDirection * bool
 
     /// Move the display a single page in the specified direction
     | ScrollPages of ScrollDirection
+
+    /// Scroll the current line to the top of the ITextView.  The bool is whether or not
+    /// to leave the caret in the same column
+    | ScrollCaretLineToTop of bool
+
+    /// Scroll the caret line to the middle of the ITextView.  The bool is whether or not
+    /// to leave the caret in the same column
+    | ScrollCaretLineToMiddle of bool
+
+    /// Scroll the caret line to the bottom of the ITextView.  The bool is whether or not
+    /// to leave the caret in the same column
+    | ScrollCaretLineToBottom of bool
 
     /// Shift 'count' lines from the cursor left
     | ShiftLinesLeft
@@ -1128,6 +1150,9 @@ type NormalCommand =
 
     /// Switch modes with the specified information
     | SwitchMode of ModeKind * ModeArgument
+
+    /// Write out the ITextBuffer and quit
+    | WriteBufferAndQuit
 
     /// Yank the given motion into a register
     | Yank of MotionData
