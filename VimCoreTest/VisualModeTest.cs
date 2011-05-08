@@ -65,9 +65,6 @@ namespace VimCore.UnitTest
             _operations.SetupGet(x => x.TextView).Returns(_textView);
             _host = _factory.Create<IVimHost>(MockBehavior.Loose);
             _commandUtil = _factory.Create<ICommandUtil>();
-            _commandUtil
-                .Setup(x => x.RunCommand(It.Is<Command>(y => y.IsLegacyCommand)))
-                .Returns<Command>(c => c.AsLegacyCommand().Item.Function.Invoke(null));
             _incrementalSearch = MockObjectFactory.CreateIncrementalSearch(factory: _factory);
             var globalSettings = new GlobalSettings();
             var localSettings = new LocalSettings(globalSettings, _textView);

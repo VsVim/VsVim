@@ -1033,7 +1033,6 @@ type internal CommandUtil
     /// Run the Ping command
     member x.Ping (pingData : PingData) data = 
         pingData.Function data
-        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Put the contents of the specified register after the cursor.  Used for the
     /// 'p' and 'gp' command in normal mode
@@ -1346,13 +1345,6 @@ type internal CommandUtil
                         maybeCloseTransaction modeSwitch
                         repeat command2 None)
 
-            | StoredCommand.LegacyCommand (keyInputSet, _) -> 
-
-                // Don't support repeat of Legacy Commands.  They're the reason we moved to this
-                // new system
-                _statusUtil.OnError (Resources.Common_CannotRepeatLegacy (keyInputSet.ToString()))
-                CommandResult.Error
-
         if _inRepeatLastChange then
             _statusUtil.OnError Resources.NormalMode_RecursiveRepeatDetected
             CommandResult.Error 
@@ -1463,7 +1455,6 @@ type internal CommandUtil
         match command with
         | Command.NormalCommand (command, data) -> x.RunNormalCommand command data
         | Command.VisualCommand (command, data, visualSpan) -> x.RunVisualCommand command data visualSpan
-        | Command.LegacyCommand data -> data.Function()
 
     /// Run the Macro which is present in the specified char
     member x.RunMacro registerName count = 

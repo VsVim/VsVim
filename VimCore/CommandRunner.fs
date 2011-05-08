@@ -166,7 +166,7 @@ type internal CommandRunner
                     inner commandName previousCommandName keyInput
                 BindResult.NeedMoreInput { KeyRemapMode = keyRemapMode ; BindFunction = inner }
 
-            // Used to complete the transition from a LegacyMotionCommand to a NormalCommand
+            // Used to complete the transition from a MotionCommand to a NormalCommand
             let completeMotion commandBinding convertFunc (motion, motionCount) =
                 let argument = { MotionContext = MotionContext.AfterOperator; OperatorCount = count; MotionCount = motionCount }
                 let data = { Motion = motion; MotionArgument = argument }
@@ -176,10 +176,6 @@ type internal CommandRunner
             match Map.tryFind commandName _commandMap with
             | Some(commandBinding) ->
                 match commandBinding with
-                | CommandBinding.LegacyBinding (_, _, func) -> 
-                    let func () = func count (commandData.GetRegister _registerMap)
-                    let data = LegacyData(func)
-                    BindResult.Complete (Command.LegacyCommand data, commandBinding)
                 | CommandBinding.NormalBinding (_, _, normalCommand) -> 
                     BindResult.Complete (Command.NormalCommand (normalCommand, commandData), commandBinding)
                 | CommandBinding.VisualBinding (_, _, visualCommand) ->
@@ -229,8 +225,8 @@ type internal CommandRunner
                 let hasPrefixMatch = findPrefixMatches commandName |> SeqUtil.isNotEmpty
                 if commandName.KeyInputs.Length > 1 && not hasPrefixMatch then
     
-                    // It's possible to have 2 comamnds with similar prefixes where one of them is a 
-                    // LegacyMotionCommand.  Consider
+                    // It's possible to have 2 commands with similar prefixes where one of them is a 
+                    // MotionCommand.  Consider
                     //
                     //  g~{motion}
                     //  g~g~
@@ -241,8 +237,6 @@ type internal CommandRunner
                     match Map.tryFind previousCommandName _commandMap with
                     | Some(command) ->
                         match command with
-                        | CommandBinding.LegacyBinding _ -> 
-                            bindNext None
                         | CommandBinding.MotionBinding (_, _, func) -> 
                             _data <- { _data with CommandFlags = Some command.CommandFlags }
                             x.BindMotion currentInput (completeMotion command func)

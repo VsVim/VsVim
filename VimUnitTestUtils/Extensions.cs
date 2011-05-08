@@ -130,12 +130,6 @@ namespace Vim.UnitTest
 
         #region Command
 
-        public static Command.LegacyCommand AsLegacyCommand(this Command command)
-        {
-            Assert.IsTrue(command.IsLegacyCommand);
-            return (Command.LegacyCommand)command;
-        }
-
         public static Command.VisualCommand AsVisualCommand(this Command command)
         {
             Assert.IsTrue(command.IsVisualCommand);

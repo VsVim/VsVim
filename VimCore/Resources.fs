@@ -12,7 +12,6 @@ module internal Resources =
     let KeyInput_InvalidVimKey = "Invalid Vim Key provided"
     let KeyInput_DuplicateCharRepresentation = "Duplicate char representation detected"
 
-    let Common_CannotRepeatLegacy name = sprintf "Cannot repeat legacy command: %s" name
     let Common_GotoDefNoWordUnderCursor = "No word under cursor to go to the definition of"
     let Common_GotoDefFailed word = sprintf "Could not navigate to definition of %s" word
     let Common_MarkInvalid = "Argument must be a letter or forward / back quote"

@@ -70,9 +70,6 @@ namespace VimCore.UnitTest
             _foldManager = _factory.Create<IFoldManager>(MockBehavior.Strict);
             _host = _factory.Create<IVimHost>(MockBehavior.Loose);
             _commandUtil = _factory.Create<ICommandUtil>();
-            _commandUtil
-                .Setup(x => x.RunCommand(It.Is<Command>(y => y.IsLegacyCommand)))
-                .Returns<Command>(c => c.AsLegacyCommand().Item.Function.Invoke(null));
             _displayWindowBroker = _factory.Create<IDisplayWindowBroker>(MockBehavior.Strict);
             _displayWindowBroker.SetupGet(x => x.IsCompletionActive).Returns(false);
             _displayWindowBroker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);

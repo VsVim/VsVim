@@ -184,28 +184,29 @@ namespace Vim.UnitTest
             return new SearchService(EditorUtil.FactoryService.TextSearchService, settings);
         }
 
-        internal static CommandBinding CreateLegacyBinding(string name)
+        internal static CommandBinding CreateNormalBinding(string name)
         {
-            return CreateLegacyBinding(name, (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            return CreateNormalBinding(name, () => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
         }
 
-        internal static CommandBinding CreateLegacyBinding(string name, Action<FSharpOption<int>, Register> del)
+        internal static CommandBinding CreateNormalBinding(string name, Action del)
         {
-            return CreateLegacyBinding(
+            return CreateNormalBinding(
                 name,
-                (x, y) =>
+                unused =>
                 {
-                    del(x, y);
+                    del();
                     return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
                 });
         }
 
-        internal static CommandBinding CreateLegacyBinding(string name, Func<FSharpOption<int>, Register, CommandResult> func)
+        internal static CommandBinding CreateNormalBinding(string name, Func<CommandData, CommandResult> func)
         {
             var fsharpFunc = func.ToFSharpFunc();
             var list = name.Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
             var commandName = KeyInputSet.NewManyKeyInputs(list);
-            return CommandBinding.NewLegacyBinding(commandName, CommandFlags.None, fsharpFunc);
+            var command = NormalCommand.NewPing(new PingData(fsharpFunc));
+            return CommandBinding.NewNormalBinding(commandName, CommandFlags.None, command);
         }
 
         internal static ITextStructureNavigator CreateTextStructureNavigator(ITextBuffer textBuffer)
@@ -434,7 +435,13 @@ namespace Vim.UnitTest
 
         internal static NormalCommand CreatePing(Action<CommandData> action)
         {
-            var data = new PingData(action.ToFSharpFunc());
+            Func<CommandData, CommandResult> func = 
+                commandData =>
+                {
+                    action(commandData);
+                    return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
+                };
+            var data = new PingData(func.ToFSharpFunc());
             return NormalCommand.NewPing(data);
         }
 

@@ -909,7 +909,7 @@ type CommandData = {
 /// to ease testing requirements.  In order to do this and support Ping we need a 
 /// separate type here to wrap the Func to be comparable.  Does so in a reference 
 /// fashion
-type PingData (_func : CommandData -> unit) = 
+type PingData (_func : CommandData -> CommandResult) = 
 
     member x.Function = _func
 
@@ -918,22 +918,6 @@ type PingData (_func : CommandData -> unit) =
     override x.GetHashCode() = 1
     override x.Equals(obj) = System.Object.ReferenceEquals(x, obj)
     interface System.IEquatable<PingData> with
-        member x.Equals other = x.Equals(other)
-
-/// We want the Command discriminated union to have structural equality in order
-/// to ease testing requirements.  In order to do this and support LegacyCommands 
-/// for the time being we need a separate type here to wrap the Func to be comparable.  
-/// Does so in a reference fashion
-/// REPEAT TODO: Delete this when legacy commands go away
-type LegacyData (_func : unit -> CommandResult) = 
-
-    member x.Function = _func
-
-    static member op_Equality (this, other) = System.Object.ReferenceEquals(this, other)
-    static member op_Inequality (this, other) = not (System.Object.ReferenceEquals(this, other))
-    override x.GetHashCode() = 1
-    override x.Equals(obj) = System.Object.ReferenceEquals(x, obj)
-    interface System.IEquatable<LegacyData> with
         member x.Equals other = x.Equals(other)
 
 /// Normal mode commands which can be executed by the user
@@ -1238,11 +1222,6 @@ type Command =
     /// A Visual Mode Command
     | VisualCommand of VisualCommand * CommandData * VisualSpan
 
-    /// A Legacy command was run
-    /// 
-    /// REPEAT TODO: Delete this once legacy commands are eliminated
-    | LegacyCommand of LegacyData
-
 /// The result of binding to a Motion value.
 [<RequireQualifiedAccess>]
 type BindResult<'T> = 
@@ -1373,11 +1352,6 @@ type BindDataStorage<'T> =
 [<RequireQualifiedAccess>]
 type CommandBinding = 
 
-    /// Represents a Command which has no motion modifiers.  The  delegate takes 
-    /// an optional count and a Register.  If unspecified the default register
-    /// will be used
-    | LegacyBinding of KeyInputSet * CommandFlags * (int option -> Register -> CommandResult)
-
     /// KeyInputSet bound to a particular NormalCommand instance
     | NormalBinding of KeyInputSet * CommandFlags * NormalCommand
 
@@ -1398,7 +1372,6 @@ type CommandBinding =
     /// The raw command inputs
     member x.KeyInputSet = 
         match x with
-        | LegacyBinding(value, _, _ ) -> value
         | NormalBinding (value, _, _) -> value
         | MotionBinding (value, _, _) -> value
         | VisualBinding (value, _, _) -> value
@@ -1408,7 +1381,6 @@ type CommandBinding =
     /// The kind of the Command
     member x.CommandFlags =
         match x with
-        | LegacyBinding(_, value, _ ) -> value
         | NormalBinding (_, value, _) -> value
         | MotionBinding (_, value, _) -> value
         | VisualBinding (_, value, _) -> value
@@ -1531,12 +1503,6 @@ type StoredCommand =
     /// can be repeated together.
     | LinkedCommand of StoredCommand * StoredCommand
 
-    /// A Legacy command.  These cannot be repeated but we store them because it 
-    /// makes it easier to spot a Legacy command linked with a repeat text change.  
-    ///
-    /// REPEAT TODO: Delete this when all legacy commands are done
-    | LegacyCommand of KeyInputSet * CommandFlags
-
     with
 
     /// The CommandFlags associated with this StoredCommand
@@ -1546,7 +1512,6 @@ type StoredCommand =
         | VisualCommand (_, _, _, flags) -> flags
         | TextChangeCommand _ -> CommandFlags.None
         | LinkedCommand _ -> CommandFlags.None
-        | LegacyCommand (_, flags) -> flags
 
     /// Create a StoredCommand instance from the given Command value
     static member OfCommand command (commandBinding : CommandBinding) = 
@@ -1556,8 +1521,6 @@ type StoredCommand =
         | Command.VisualCommand (command, data, visualSpan) ->
             let storedVisualSpan = StoredVisualSpan.OfVisualSpan visualSpan
             StoredCommand.VisualCommand (command, data, storedVisualSpan, commandBinding.CommandFlags)
-        | Command.LegacyCommand _ ->
-            StoredCommand.LegacyCommand (commandBinding.KeyInputSet, commandBinding.CommandFlags)
 
 /// Flags about specific motions
 [<RequireQualifiedAccess>]

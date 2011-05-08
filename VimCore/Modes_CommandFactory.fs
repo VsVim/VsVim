@@ -26,7 +26,7 @@ type internal CommandFactory
             let keyInputSet = KeyNotationUtil.StringToKeyInputSet name
             CommandBinding.NormalBinding (keyInputSet, CommandFlags.Movement, command))
 
-    /// Build up a set of LegacyMotionCommand values from applicable Motion values.  These will 
+    /// Build up a set of NormalCommandBinding values from applicable Motion values.  These will 
     /// move the cursor to the result of the motion
     member x.CreateMovementsFromMotions() =
         let processMotionBinding (binding : MotionBinding) =
