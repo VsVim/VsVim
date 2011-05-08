@@ -2,6 +2,8 @@
 
 namespace Vim
 
+/// Map of a LHS of a mapping to the RHS.  The bool is used to indicate whether or not 
+/// the RHS should be remapped as part of an expansion
 type internal RemapModeMap = Map<KeyInputSet, (KeyInputSet * bool)>
 
 type internal KeyMap() =
@@ -14,15 +16,18 @@ type internal KeyMap() =
     member x.Clear mode = _map <- _map |> Map.remove mode
     member x.ClearAll () = _map <- Map.empty
 
+    /// Get a RemapModeMap for the given KeyRemapMode
     member x.GetRemapModeMap mode = 
         match Map.tryFind mode _map with
         | None -> Map.empty
         | Some(map) -> map
 
+    /// Get all of the mappings for the given KeyRemapMode
     member x.GetKeyMappingsForMode mode = 
         match Map.tryFind mode _map with
-        | None -> Seq.empty
-        | Some(map) -> 
+        | None ->
+            Seq.empty
+        | Some map -> 
             map
             |> Seq.map (fun pair -> 
                 let value,_ = pair.Value
@@ -35,19 +40,22 @@ type internal KeyMap() =
         else
             let key = KeyNotationUtil.TryStringToKeyInputSet lhs
             let rhs = KeyNotationUtil.TryStringToKeyInputSet rhs
-            match key,rhs with
-            | Some(key),Some(rightList) ->
-                let value = (rightList,allowRemap)
+            match key, rhs with
+            | Some key,Some rightList ->
+                let value = (rightList, allowRemap)
                 let modeMap = x.GetRemapModeMap mode
                 let modeMap = Map.add key value modeMap
                 _map <- Map.add mode modeMap _map
                 true
-            | _ -> false
+            | _ -> 
+                // Need both a valid LHS and RHS to create a mapping
+                false
 
     member x.Unmap lhs mode = 
         match KeyNotationUtil.TryStringToKeyInputSet lhs with
-        | None -> false
-        | Some(key) ->
+        | None -> 
+            false
+        | Some key ->
             let modeMap = x.GetRemapModeMap mode
             if Map.containsKey key modeMap then
                 let modeMap = Map.remove key modeMap
@@ -56,51 +64,110 @@ type internal KeyMap() =
             else
                 false
 
-    /// Get the key mapping for the passed in data.  Returns a KeyMappingResult represeting the 
+    /// Get the key mapping for the passed in data.  Returns a KeyMappingResult representing the 
     /// mapping
-    member x.GetKeyMapping keyInputSet mode =
+    member x.GetKeyMapping (keyInputSet : KeyInputSet) mode =
         let modeMap = x.GetRemapModeMap mode
 
-        let rec inner key set : (KeyMappingResult * Set<KeyInputSet> )=
-            if Set.contains key set then (RecursiveMapping key,set)
-            else
-                match modeMap |> Map.tryFind key with
+        let rec inner (current : KeyInputSet) (remaining : KeyInputSet) (result : KeyInputSet) didMapAny sourceMapping seenSet =
+            Contract.Assert(current.Length >= 0)
+
+            let processNext (remaining : KeyInputSet) (result : KeyInputSet) didMapAny = 
+                match remaining.KeyInputs with
+                | [] ->
+                    if didMapAny then
+                        KeyMappingResult.Mapped result
+                    else
+                        KeyMappingResult.NoMapping
+                | head :: tail -> 
+                    let current = KeyInputSet.OneKeyInput head
+                    let remaining = KeyInputSetUtil.OfList tail
+                    inner current remaining result didMapAny sourceMapping seenSet
+
+            // We were able to map current to a set of mapped keys which request remapping.  Process that remapping
+            // now 
+            let processRemap current (mapped : KeyInputSet) (result : KeyInputSet) seenSet =
+                if mapped.Length = 0 then
+                    // This indicates an error.  The mapped values should always have at least length 1
+                    KeyMappingResult.NoMapping
+                else
+                    let newSourceMapping = Some current
+                    let newSeenSet = Set.add current seenSet
+                    let newRemaining = mapped.Rest |> KeyInputSetUtil.OfList
+                    let current = mapped.FirstKeyInput |> Option.get |> KeyInputSet.OneKeyInput
+                    match inner current newRemaining KeyInputSet.Empty false newSourceMapping newSeenSet with
+                    | KeyMappingResult.Mapped mapped ->
+                        let result = KeyInputSetUtil.Combine result mapped
+                        processNext remaining result true
+                    | KeyMappingResult.NoMapping ->
+                        let result = KeyInputSetUtil.Combine result mapped
+                        processNext remaining result true
+                    | KeyMappingResult.Recursive ->
+                        KeyMappingResult.Recursive
+                    | KeyMappingResult.NeedsMoreInput ->
+                        KeyMappingResult.NeedsMoreInput
+
+            let doMap () = 
+                match modeMap |> Map.tryFind current with
                 | None -> 
-                    // Determine if there is a prefix match for an existing key 
+                    // The current item considered for mapping doesn't match an existing key.  It could still 
+                    // be the prefix of a key though.  
                     let matchesPrefix = 
                         modeMap 
                         |> MapUtil.keys
-                        |> Seq.filter (fun fullKey -> fullKey.StartsWith(key) )
+                        |> Seq.filter (fun fullKey -> fullKey.StartsWith(current))
                         |> SeqUtil.isNotEmpty
-                    if matchesPrefix then MappingNeedsMoreInput,set
-                    else NoMapping,set
-                | Some(mappedKeyInputs,allowRemap) -> 
-                    let set = set |> Set.add key
-                    if not allowRemap then (Mapped mappedKeyInputs), set
-                    else  
-                        
-                        // Time for a recursive mapping attempt
-                        let mutable anyRecursive = false
-                        let mutable set = set
-                        let list = new System.Collections.Generic.List<KeyInput>()
-                        for mappedKi in mappedKeyInputs.KeyInputs do
-                            let result,newSet = inner (OneKeyInput mappedKi) set
-                            set <- newSet
+                    if matchesPrefix then 
+                        // If there is a prefix match then we need to consider the next key in the LHS and 
+                        // add that in 
+                        match remaining.KeyInputs with
+                        | [] -> 
+                            // More input is needed to resolve the ambiguity and none exists.
+                            KeyMappingResult.NeedsMoreInput
+                        | head :: tail ->
+                            let current = current.Add head
+                            let remaining = KeyInputSetUtil.OfList tail
+                            inner current remaining result didMapAny sourceMapping seenSet
+                    elif current.Length > 1 then
+                        // This occurs when values of 'current - 1' was a prefix match and we had to consider
+                        // the next key to disambiguate the match.  We've now determined it doesn't match 
+                        // anything.  So add in the first item of current and re-process the rest of items
+                        let result = result.Add (current.FirstKeyInput |> Option.get)
+                        let remaining = current.Rest @ remaining.KeyInputs |> KeyInputSetUtil.OfList
+                        processNext remaining result didMapAny
+                    else
+                        // Single KeyInput didn't match.  Time to move along
+                        let result = result.Add (current.FirstKeyInput |> Option.get)
+                        processNext remaining result didMapAny
+                | Some (mapped, doRemap) ->
+                    if not doRemap then 
+                        let result = KeyInputSetUtil.Combine result mapped
+                        processNext remaining result true
+                    else
+                        processRemap current mapped result seenSet
 
-                            match result with
-                            | NoMapping -> list.Add(mappedKi)
-                            | Mapped(keyInputSet) -> list.AddRange(keyInputSet.KeyInputs)
-                            | RecursiveMapping(_) ->
-                                list.Add(mappedKi)
-                                anyRecursive <- true
-                            | MappingNeedsMoreInput-> list.Add(mappedKi)
+            let currentEqualMapping = 
+                match sourceMapping with
+                | None -> false
+                | Some sourceMapping -> sourceMapping = current
+            if currentEqualMapping then
+                // If the current item we're currently mapping then don't map it again.  In short
+                // when considering the mapping ':map j gj' we don't want it to be recursive
+                let result = KeyInputSetUtil.Combine result current
+                processNext remaining result didMapAny
+            elif Set.contains current seenSet then
+                // This is a recursive mapping.  
+                KeyMappingResult.Recursive
+            else
+                doMap()
 
-                        let keyInputSet = list |> KeyInputSetUtil.OfSeq 
-                        if anyRecursive then (RecursiveMapping keyInputSet, set)
-                        else (Mapped keyInputSet, set)
-    
-        let res,_ = inner keyInputSet Set.empty
-        res
+        match keyInputSet.FirstKeyInput with
+        | None -> 
+            KeyMappingResult.NoMapping
+        | Some head ->
+            let current = KeyInputSet.OneKeyInput head
+            let remaining = KeyInputSetUtil.OfList keyInputSet.Rest
+            inner current remaining KeyInputSet.Empty false None Set.empty
     
     interface IKeyMap with
         member x.GetKeyMappingsForMode mode = x.GetKeyMappingsForMode mode 

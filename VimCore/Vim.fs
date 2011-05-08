@@ -31,7 +31,7 @@ type internal StatusUtil() =
 type internal VimData() =
 
     let mutable _commandHistory = HistoryList()
-    let mutable _incrementalSearchHistory = HistoryList()
+    let mutable _searchHistory = HistoryList()
     let mutable _lastSubstituteData : SubstituteData option = None
     let mutable _lastPatternData = { Pattern = StringUtil.empty; Path = Path.Forward }
     let mutable _lastCharSearch : (CharSearchKind * Path * char) option = None
@@ -44,9 +44,9 @@ type internal VimData() =
         member x.CommandHistory
             with get () = _commandHistory
             and set value = _commandHistory <- value
-        member x.IncrementalSearchHistory 
-            with get () = _incrementalSearchHistory
-            and set value = _incrementalSearchHistory <- value
+        member x.SearchHistory 
+            with get () = _searchHistory
+            and set value = _searchHistory <- value
         member x.LastSubstituteData 
             with get () = _lastSubstituteData
             and set value = _lastSubstituteData <- value
@@ -256,7 +256,7 @@ type internal Vim
         (_globalSettings :> IVimSettings).SettingChanged 
         |> Event.filter (fun args -> StringUtil.isEqual args.Name GlobalSettingNames.HistoryName)
         |> Event.add (fun _ -> 
-            _vimData.IncrementalSearchHistory.Limit <- _globalSettings.History
+            _vimData.SearchHistory.Limit <- _globalSettings.History
             _vimData.CommandHistory.Limit <- _globalSettings.History)
 
     [<ImportingConstructor>]

@@ -228,12 +228,6 @@ namespace Vim.UnitTest
             return (KeyMappingResult.Mapped)res;
         }
 
-        public static KeyMappingResult.RecursiveMapping AsRecursiveMapping(this KeyMappingResult res)
-        {
-            Assert.IsTrue(res.IsRecursiveMapping);
-            return (KeyMappingResult.RecursiveMapping)res;
-        }
-
         #endregion
 
         #region SettingValue

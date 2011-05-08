@@ -545,13 +545,21 @@ type KeyInputSet =
     | ManyKeyInputs of KeyInput list
     with 
 
-    /// Returns the first KeyInput if preseent
+    /// Returns the first KeyInput if present
     member x.FirstKeyInput = 
         match x with 
         | Empty -> None
         | OneKeyInput(ki) -> Some ki
         | TwoKeyInputs(ki,_) -> Some ki
         | ManyKeyInputs(list) -> ListUtil.tryHeadOnly list
+
+    /// Returns the rest of the KeyInput values after the first
+    member x.Rest = 
+        match x with
+        | Empty -> List.empty
+        | OneKeyInput _ -> List.empty
+        | TwoKeyInputs (_, keyInput2) -> [ keyInput2 ]
+        | ManyKeyInputs list -> List.tail list
 
     /// Get the list of KeyInput which represent this KeyInputSet
     member x.KeyInputs =
@@ -664,6 +672,10 @@ module KeyInputSetUtil =
 
     let OfString (str:string) = str |> Seq.map KeyInputUtil.CharToKeyInput |> OfSeq
 
+    let Combine (left : KeyInputSet) (right : KeyInputSet) =
+        let all = left.KeyInputs @ right.KeyInputs
+        OfList all
+
 /// Modes for a key remapping
 [<RequireQualifiedAccess>]
 [<DebuggerDisplay("{ToString(),nq}")>]
@@ -688,6 +700,7 @@ type KeyRemapMode =
         | Command -> "Command"
         | Language -> "Language"
 
+[<RequireQualifiedAccess>]
 type KeyMappingResult =
 
     /// No mapping exists 
@@ -697,10 +710,10 @@ type KeyMappingResult =
     | Mapped of KeyInputSet 
 
     /// The mapping encountered a recursive element that had to be broken 
-    | RecursiveMapping of KeyInputSet
+    | Recursive
 
     /// More input is needed to resolve this mapping
-    | MappingNeedsMoreInput
+    | NeedsMoreInput
 
 
 /// Flags for the substitute command
@@ -1401,7 +1414,7 @@ type CommandBinding =
 
     override x.ToString() = System.String.Format("{0} -> {1}", x.KeyInputSet, x.CommandFlags)
 
-/// Used to exceute commands
+/// Used to execute commands
 and ICommandUtil = 
 
     /// Run a normal command
@@ -2051,6 +2064,10 @@ type HistoryList () =
                 |> List.ofSeq
             _list <- value :: list
 
+    /// Clear all of the items from the collection
+    member x.Clear () = 
+        _list <- List.empty
+
     member private x.MaybeTruncateList () = 
         if _list.Length > _limit then
             _list <-
@@ -2096,7 +2113,7 @@ type IVimData =
     abstract CommandHistory : HistoryList with get, set
 
     /// The ordered list of incremental search values
-    abstract IncrementalSearchHistory : HistoryList with get, set
+    abstract SearchHistory : HistoryList with get, set
 
     /// Motion function used with the last f, F, t or T motion.  The 
     /// first item in the tuple is the forward version and the second item

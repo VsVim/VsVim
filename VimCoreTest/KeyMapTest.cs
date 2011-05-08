@@ -185,6 +185,34 @@ namespace VimCore.UnitTest
             Assert.AreEqual('c', ret[1].Char);
         }
 
+        /// <summary>
+        /// When expanding a given key mapping that particular key should not be scanned for remapping 
+        /// on the RHS.  For example ":map j gj" is not recursive.  
+        /// </summary>
+        [Test]
+        public void MapWithRemap_SameKey()
+        {
+            Assert.IsTrue(_map.MapWithRemap("j", "gj", KeyRemapMode.Normal));
+            var ret = _map.GetKeyMapping('j', KeyRemapMode.Normal).ToList();
+            CollectionAssert.AreEquivalent(
+                new[] {'g', 'j'},
+                ret.Select(x => x.Char).ToList());
+        }
+
+        /// <summary>
+        /// When expanding a given key mapping that particular key should not be scanned for remapping 
+        /// on the RHS.  For example ":map j gj" is not recursive.  
+        /// </summary>
+        [Test]
+        public void MapWithRemap_SameKeyPair()
+        {
+            Assert.IsTrue(_map.MapWithRemap("jk", "jkg", KeyRemapMode.Normal));
+            var ret = _map.GetKeyMapping("jk", KeyRemapMode.Normal).ToList();
+            CollectionAssert.AreEquivalent(
+                new[] {'j', 'k', 'g'},
+                ret.Select(x => x.Char).ToList());
+        }
+
         [Test]
         public void MapWithRemap_HandleCommandKey()
         {
@@ -204,8 +232,7 @@ namespace VimCore.UnitTest
             Assert.IsTrue(_map.MapWithRemap("a", "b", KeyRemapMode.Normal));
             Assert.IsTrue(_map.MapWithRemap("b", "a", KeyRemapMode.Normal));
             var ret = _map.GetKeyMapping(KeyInputSetUtil.OfChar('a'), KeyRemapMode.Normal);
-            Assert.IsTrue(ret.IsRecursiveMapping);
-            Assert.AreEqual('b', ret.AsRecursiveMapping().Item.KeyInputs.Single().Char);
+            Assert.IsTrue(ret.IsRecursive);
         }
 
         [Test]
@@ -214,7 +241,7 @@ namespace VimCore.UnitTest
             Assert.IsTrue(_map.MapWithRemap("a", "b", KeyRemapMode.Normal));
             Assert.IsTrue(_map.MapWithRemap("b", "a", KeyRemapMode.Normal));
             var ret = _map.GetKeyMappingResult(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal);
-            Assert.IsTrue(ret.IsRecursiveMapping);
+            Assert.IsTrue(ret.IsRecursive);
         }
 
         [Test]
@@ -250,7 +277,7 @@ namespace VimCore.UnitTest
         {
             Assert.IsTrue(_map.MapWithNoRemap("aa", "b", KeyRemapMode.Normal));
             var res = _map.GetKeyMappingResult(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal);
-            Assert.IsTrue(res.IsMappingNeedsMoreInput);
+            Assert.IsTrue(res.IsNeedsMoreInput);
         }
 
         [Test]
@@ -318,7 +345,7 @@ namespace VimCore.UnitTest
 
             var input = "a".Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
             var res = _map.GetKeyMapping(KeyInputSet.NewManyKeyInputs(input), KeyRemapMode.Normal);
-            Assert.IsTrue(res.IsMappingNeedsMoreInput);
+            Assert.IsTrue(res.IsNeedsMoreInput);
         }
 
         [Test]

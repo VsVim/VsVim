@@ -126,7 +126,7 @@ namespace VsVim
                 mode);
 
             mapped = null;
-            if (result.IsMappingNeedsMoreInput || result.IsRecursiveMapping)
+            if (result.IsNeedsMoreInput || result.IsRecursive)
             {
                 // No single mapping
                 return false;

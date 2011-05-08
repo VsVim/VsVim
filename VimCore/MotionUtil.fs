@@ -1791,6 +1791,9 @@ type internal MotionUtil
         // All search operations update the jump list
         _jumpList.Add x.CaretPoint
 
+        // The search operation should also update the search history
+        _vimData.SearchHistory.Add patternData.Pattern
+
         let searchResult = _search.FindNextPattern patternData searchPoint _navigator count
         match searchResult with
         | SearchResult.NotFound (searchData, isOutsidePath) ->

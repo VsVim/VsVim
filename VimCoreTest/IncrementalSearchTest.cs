@@ -281,7 +281,7 @@ namespace VimCore.UnitTest
             _search.DoSearch("b");
             CollectionAssert.AreEquivalent(
                 new[] { "b", "a" },
-                _vimData.IncrementalSearchHistory);
+                _vimData.SearchHistory);
         }
 
         /// <summary>
@@ -295,7 +295,7 @@ namespace VimCore.UnitTest
             _search.DoSearch("b", enter: false).Run(VimKey.Escape);
             CollectionAssert.AreEquivalent(
                 new[] { "b", "a" },
-                _vimData.IncrementalSearchHistory);
+                _vimData.SearchHistory);
         }
 
         /// <summary>
@@ -310,7 +310,7 @@ namespace VimCore.UnitTest
             _search.DoSearch("a");
             CollectionAssert.AreEquivalent(
                 new[] { "a", "b" },
-                _vimData.IncrementalSearchHistory);
+                _vimData.SearchHistory);
         }
 
         /// <summary>
@@ -320,7 +320,7 @@ namespace VimCore.UnitTest
         public void History_UpShouldScroll()
         {
             Create("cat bear");
-            _vimData.IncrementalSearchHistory = (new[] { "a", "b" }).ToHistoryList();
+            _vimData.SearchHistory = (new[] { "a", "b" }).ToHistoryList();
             _search.Begin(Path.Forward).Run(VimKey.Up);
             Assert.AreEqual("a", _search.CurrentSearch.Value.Pattern);
         }
@@ -332,7 +332,7 @@ namespace VimCore.UnitTest
         public void History_UpShouldScrollAgain()
         {
             Create("dog cat");
-            _vimData.IncrementalSearchHistory = (new[] { "a", "b" }).ToHistoryList();
+            _vimData.SearchHistory = (new[] { "a", "b" }).ToHistoryList();
             _search.Begin(Path.Forward).Run(VimKey.Up).Run(VimKey.Up);
             Assert.AreEqual("b", _search.CurrentSearch.Value.Pattern);
         }
@@ -345,7 +345,7 @@ namespace VimCore.UnitTest
         public void History_DownShouldScrollBack()
         {
             Create("dog cat");
-            _vimData.IncrementalSearchHistory = (new[] { "a", "b" }).ToHistoryList();
+            _vimData.SearchHistory = (new[] { "a", "b" }).ToHistoryList();
             _search.Begin(Path.Forward).Run(VimKey.Up).Run(VimKey.Down);
             Assert.AreEqual("", _search.CurrentSearch.Value.Pattern);
         }
@@ -357,7 +357,7 @@ namespace VimCore.UnitTest
         public void History_DownShouldScrollBackAfterUp()
         {
             Create("dog cat");
-            _vimData.IncrementalSearchHistory = (new[] { "a", "b" }).ToHistoryList();
+            _vimData.SearchHistory = (new[] { "a", "b" }).ToHistoryList();
             _search.Begin(Path.Forward).Run(VimKey.Up, VimKey.Up, VimKey.Down);
             Assert.AreEqual("a", _search.CurrentSearch.Value.Pattern);
         }
@@ -369,7 +369,7 @@ namespace VimCore.UnitTest
         public void History_DownOffEndOfList()
         {
             Create("dog cat");
-            _vimData.IncrementalSearchHistory = (new[] { "a", "b" }).ToHistoryList();
+            _vimData.SearchHistory = (new[] { "a", "b" }).ToHistoryList();
             _vimHost.Setup(x => x.Beep()).Verifiable();
             _search.Begin(Path.Forward).Run(VimKey.Down);
             _vimHost.Verify();
@@ -382,7 +382,7 @@ namespace VimCore.UnitTest
         public void HistorySearch_OneMatch()
         {
             Create("");
-            _vimData.IncrementalSearchHistory = (new[] { "dog", "cat" }).ToHistoryList();
+            _vimData.SearchHistory = (new[] { "dog", "cat" }).ToHistoryList();
             _search.DoSearch("d", enter: false).Run(VimKey.Up);
             Assert.AreEqual("dog", _search.CurrentSearch.Value.Pattern);
         }
@@ -394,7 +394,7 @@ namespace VimCore.UnitTest
         public void HistorySearch_TwoMatches()
         {
             Create("");
-            _vimData.IncrementalSearchHistory = (new[] { "dog", "cat", "dip" }).ToHistoryList();
+            _vimData.SearchHistory = (new[] { "dog", "cat", "dip" }).ToHistoryList();
             _search.DoSearch("d", enter: false).Run(VimKey.Up).Run(VimKey.Up);
             Assert.AreEqual("dip", _search.CurrentSearch.Value.Pattern);
         }

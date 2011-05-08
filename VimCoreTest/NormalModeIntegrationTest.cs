@@ -18,6 +18,7 @@ namespace VimCore.UnitTest
         private IVimGlobalSettings _globalSettings;
         private IJumpList _jumpList;
         private IKeyMap _keyMap;
+        private IVimData _vimData;
         private MockVimHost _vimHost;
         private bool _assertOnErrorMessage = true;
         private bool _assertOnWarningMessage = true;
@@ -55,18 +56,22 @@ namespace VimCore.UnitTest
             _jumpList = _buffer.JumpList;
             _vimHost = (MockVimHost)_buffer.Vim.VimHost;
             _vimHost.BeepCount = 0;
+            _vimData = service.Vim.VimData;
         }
 
         [TearDown]
         public void TearDown()
         {
-            EditorUtil.FactoryService.Vim.KeyMap.ClearAll();
+            _keyMap.ClearAll();
             _buffer.Close();
 
             // Make sure that on tear down we don't have a current transaction.  Having one indicates
             // we didn't close it and hence are killing undo in the ITextBuffer
             var history = EditorUtil.GetUndoHistory(_textView.TextBuffer);
             Assert.IsNull(history.CurrentTransaction);
+
+            _vimData.SearchHistory.Clear();
+            _vimData.CommandHistory.Clear();
         }
 
         [Test]
@@ -905,6 +910,22 @@ namespace VimCore.UnitTest
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
 
+        /// <summary>
+        /// Ensure that we don't regress issue 522 which is a recursive key mapping problem
+        /// </summary>
+        [Test]
+        public void Map_Issue522()
+        {
+            Create("cat", "dog");
+            _textView.MoveCaretToLine(1);
+            _buffer.Process(":map j 3j", enter: true);
+            _buffer.Process(":ounmap j", enter: true);
+            _buffer.Process(":map k 3k", enter: true);
+            _buffer.Process(":ounmap k", enter: true);
+            _buffer.Process("k");
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
         [Test]
         public void Move_EndOfWord_SeveralLines()
         {
@@ -993,6 +1014,28 @@ namespace VimCore.UnitTest
             _buffer.Process("j");
             Assert.AreEqual(1, _vimHost.BeepCount);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// The '*' movement should update the search history for the buffer
+        /// </summary>
+        [Test]
+        public void Move_NextWordUnderCursor()
+        {
+            Create("cat", "dog", "cat");
+            _buffer.Process("*");
+            Assert.AreEqual(PatternUtil.CreateWholeWord("cat"), _vimData.SearchHistory.Items.Head);
+        }
+
+        /// <summary>
+        /// The 'g*' movement should update the search history for the buffer
+        /// </summary>
+        [Test]
+        public void Move_NextPartialWordUnderCursor()
+        {
+            Create("cat", "dog", "cat");
+            _buffer.Process("g*");
+            Assert.AreEqual("cat", _vimData.SearchHistory.Items.Head);
         }
 
         /// <summary>
