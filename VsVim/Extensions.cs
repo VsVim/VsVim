@@ -433,24 +433,75 @@ namespace VsVim
 
         #region ITextView
 
-        public static Result<SnapshotLineRange> GetVisibleLineRange(this ITextView textView)
+        /// <summary>
+        /// This will return the SnapshotSpan values from the EditBuffer which are actually visible
+        /// on the screen.
+        /// </summary>
+        public static NormalizedSnapshotSpanCollection GetVisibleSnapshotSpans(this ITextView textView)
+        {
+            var bufferGraph = textView.BufferGraph;
+            var visualSnapshot = textView.VisualSnapshot;
+            var formattedSpan = textView.TextViewLines.GetFormattedSpan();
+            if (formattedSpan.IsError)
+            {
+                return new NormalizedSnapshotSpanCollection();
+            }
+
+            var visualSpans = bufferGraph.MapUpToSnapshot(formattedSpan.Value, SpanTrackingMode.EdgeExclusive, visualSnapshot);
+            if (visualSpans.Count != 1)
+            {
+                return visualSpans;
+            }
+
+            return bufferGraph.MapDownToSnapshot(visualSpans.Single(), SpanTrackingMode.EdgeExclusive, textView.TextSnapshot);
+        }
+
+        /// <summary>
+        /// Get the set of all visible SnapshotSpan values and potentially some collapsed / invisible
+        /// ones.  It's common for users to have collapsed / invisible regions on the ITextView and 
+        /// hence simply getting a single SnapshotSpan for the set of visible text could return a huge
+        /// span (potentially many, many thousands) of lines.
+        /// 
+        /// This method attempts to return the set of SnapshotSpan values which actually have visible
+        /// text associated with them.
+        /// </summary>
+        public static NormalizedSnapshotSpanCollection GetLikelyVisibleSnapshotSpans(this ITextView textView)
+        {
+            // Mapping up and down is potentially expensive so we don't want to do it unless we have to.  Implement
+            // a heuristic to check for large sections of invisible text and if it's not present then just return
+            // the value which doesn't require allocations or deep calculations
+            var result = textView.TextViewLines.GetFormattedSpan();
+            if (result.IsError)
+            {
+                return new NormalizedSnapshotSpanCollection();
+            }
+
+            var formattedSpan = result.Value;
+            var formattedLength = formattedSpan.Length;
+            if (formattedLength / 2 <= textView.VisualSnapshot.Length)
+            {
+                return new NormalizedSnapshotSpanCollection(formattedSpan);
+            }
+
+            return GetVisibleSnapshotSpans(textView);
+        }
+
+        #endregion
+
+        #region ITextViewLineCollection
+
+        /// <summary>
+        /// Get the SnapshotSpan for the ITextViewLineCollection.  This can throw when the ITextView is being
+        /// laid out so we wrap the try / catch here
+        /// </summary>
+        public static Result<SnapshotSpan> GetFormattedSpan(this ITextViewLineCollection collection)
         {
             try
             {
-                var lines = textView.TextViewLines;
-                if (lines.Count == 0)
-                {
-                    return Result.Error;
-                }
-
-                var start = lines[0].Start;
-                var end = lines[lines.Count - 1].EndIncludingLineBreak;
-                var span = new SnapshotSpan(start, end);
-                return SnapshotLineRangeUtil.CreateForSpan(span);
+                return collection.FormattedSpan;
             }
             catch (Exception ex)
             {
-                // TextViewLines can throw when the view is being laid out
                 return Result.CreateError(ex);
             }
         }

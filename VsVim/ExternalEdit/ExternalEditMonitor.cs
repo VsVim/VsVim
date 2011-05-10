@@ -47,13 +47,6 @@ namespace VsVim.ExternalEdit
             _buffer.TextView.LayoutChanged -= OnLayoutChanged;
         }
 
-        internal List<SnapshotSpan> GetExternalEditSpans(SnapshotSpan span)
-        {
-            var list = new List<SnapshotSpan>();
-            GetExternalEditSpans(span, list);
-            return list;
-        }
-
         private void OnLayoutChanged(object sender, TextViewLayoutChangedEventArgs e)
         {
             CheckForExternalEdit();
@@ -72,29 +65,20 @@ namespace VsVim.ExternalEdit
         }
 
         /// <summary>
-        /// Save all of the current Edit markers for ignoring.  Have to consider the entire
-        /// buffer here because large external edits (big snippets, refactors, etc ...) could 
-        /// have off screen markers.  Don't want a future scroll which includes those markers
-        /// to make the user re-enter external edit mode
+        /// Save all of the current Edit markers in the visual span for ignoring.  Ideally we would 
+        /// consider the entire ITextBuffer but that could involve formatting many many thousands
+        /// of lines and be very expensive.  Instead we just consider the edit markers in the
+        /// visual ITextBuffer
         /// </summary>
         private void SaveCurrentEditorMarkersForIgnore()
         {
-            var span = SnapshotUtil.GetExtent(_buffer.TextSnapshot);
             _ignoredMarkers.Clear();
-            GetExternalEditSpans(span, _ignoredMarkers);
+            GetExternalEditSpans(_ignoredMarkers);
         }
 
         private void CheckForExternalEdit()
         {
-            // Only check for an external edit if there are visible lines.  In the middle of a nested layout
-            // the set of visible lines will temporarily be unavalaible
-            var range = _buffer.TextView.GetVisibleLineRange();
-            if (range.IsError)
-            {
-                return;
-            }
-
-            var markers = GetExternalEditSpans(range.Value.ExtentIncludingLineBreak);
+            var markers = GetExternalEditSpans();
             MoveIgnoredMarkersToCurrentSnapshot();
             if (markers.All(ShouldIgnore))
             {
@@ -123,10 +107,21 @@ namespace VsVim.ExternalEdit
             _ignoredMarkers.Clear();
         }
 
-        private void GetExternalEditSpans(SnapshotSpan span, List<SnapshotSpan> list)
+        internal List<SnapshotSpan> GetExternalEditSpans()
         {
-            GetExternalEditSpansFromMarkers(span, list);
-            GetExternalEditSpansFromTags(span, list);
+            var list = new List<SnapshotSpan>();
+            GetExternalEditSpans(list);
+            return list;
+        }
+
+        private void GetExternalEditSpans(List<SnapshotSpan> list)
+        {
+            var collection = _buffer.TextView.GetLikelyVisibleSnapshotSpans();
+            foreach (var span in collection)
+            {
+                GetExternalEditSpansFromMarkers(span, list);
+                GetExternalEditSpansFromTags(span, list);
+            }
         }
 
         private void GetExternalEditSpansFromTags(SnapshotSpan span, List<SnapshotSpan> list)

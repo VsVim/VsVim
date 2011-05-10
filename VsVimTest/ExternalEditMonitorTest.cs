@@ -131,7 +131,7 @@ namespace VsVim.UnitTest
             Setup("cat", "tree", "dog");
             var span = _textBuffer.GetLineRange(0).Extent;
             SetupTags(span);
-            var result = _monitor.GetExternalEditSpans(_textBuffer.GetExtent());
+            var result = _monitor.GetExternalEditSpans();
             Assert.AreEqual(0, result.Count);
             _factory.Verify();
         }
@@ -143,7 +143,7 @@ namespace VsVim.UnitTest
             var span = _textBuffer.GetLineRange(0).Extent;
             SetupTags(span);
             SetupAdapterCreateTagAsSnippet();
-            var result = _monitor.GetExternalEditSpans(_textBuffer.GetExtent());
+            var result = _monitor.GetExternalEditSpans();
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual(span, result.Single());
             _factory.Verify();
@@ -155,7 +155,7 @@ namespace VsVim.UnitTest
             Setup("cat", "tree", "dog");
             var span = _textBuffer.GetLineRange(0).Extent;
             SetupMarkers(15, span);
-            var result = _monitor.GetExternalEditSpans(_textBuffer.GetExtent());
+            var result = _monitor.GetExternalEditSpans();
             Assert.AreEqual(0, result.Count);
             _factory.Verify();
         }
@@ -167,7 +167,7 @@ namespace VsVim.UnitTest
             var span = _textBuffer.GetLineRange(0).Extent;
             SetupMarkers(15, span);
             SetupAdapterCreateMarkerAsSnippet();
-            var result = _monitor.GetExternalEditSpans(_textBuffer.GetExtent());
+            var result = _monitor.GetExternalEditSpans();
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual(span, result.Single());
         }
