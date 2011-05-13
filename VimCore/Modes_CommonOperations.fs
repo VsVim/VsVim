@@ -481,7 +481,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         | None ->
             ()
         | Some outliningManager -> 
-            let span = SnapshotSpan(point, 1)
+            let span = SnapshotSpan(point, 0)
             outliningManager.ExpandAll(span, fun _ -> true) |> ignore
 
     /// Ensure the point is visible on the screen and any regions surrounding the point are

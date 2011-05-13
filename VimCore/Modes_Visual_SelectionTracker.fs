@@ -36,10 +36,6 @@ type internal SelectionTracker
         _incrementalSearch.CurrentSearchCompleted 
         |> Observable.add (fun _ -> _lastIncrementalSearchResult <- None)
 
-    /// Should the selection currently be inclusive
-    member x.IsSelectionInclusive = 
-        StringUtil.isEqual _settings.Selection "inclusive" || StringUtil.isEqual _settings.Selection "old"
-
     /// Anchor point being tracked by the selection tracker
     member x.AnchorPoint = _anchorPoint
 
@@ -100,7 +96,7 @@ type internal SelectionTracker
             let last = endPoint 
             let first,last = VirtualSnapshotPointUtil.OrderAscending first last
             let last = 
-                if x.IsSelectionInclusive then VirtualSnapshotPointUtil.AddOneOnSameLine last 
+                if _settings.IsSelectionInclusive then VirtualSnapshotPointUtil.AddOneOnSameLine last 
                 else last
             _textView.Selection.Select(first,last)
 
