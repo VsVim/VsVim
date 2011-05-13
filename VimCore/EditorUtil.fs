@@ -889,7 +889,7 @@ module SnapshotLineRangeUtil =
         let count = min count maxCount
         SnapshotLineRange(line.Snapshot, line.LineNumber, count)
 
-    /// Cretae a line range which covers the start and end line of the provided span
+    /// Create a line range which covers the start and end line of the provided span
     let CreateForSpan span = 
         let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
         let count = (endLine.LineNumber - startLine.LineNumber) + 1
@@ -962,19 +962,6 @@ module TextViewUtil =
     let EnsureCaretOnScreen textView = 
         let caret = GetCaret textView
         caret.EnsureVisible()
-
-    /// Ensure the text pointed to by the caret is currently expanded
-    let EnsureCaretTextExpanded textView (outliningManager:IOutliningManager option) = 
-        match outliningManager with
-        | None -> ()
-        | Some(outliningManager) -> 
-            let point = GetCaretPoint textView
-            outliningManager.ExpandAll(SnapshotSpan(point,0), fun _ -> true) |> ignore
-
-    /// Ensure that the caret is both on screen and not in the middle of any outlining region
-    let EnsureCaretOnScreenAndTextExpanded textView outliningManager =
-        EnsureCaretOnScreen textView
-        EnsureCaretTextExpanded textView outliningManager
 
     /// Move the caret to the given point and ensure it is on screen.  Will not expand any outlining regions
     let MoveCaretToPoint textView (point:SnapshotPoint) = 

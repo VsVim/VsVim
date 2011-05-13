@@ -76,9 +76,9 @@ type internal SubstituteConfirmMode
                 ()
             | Some(data) -> 
 
-                // Adjust the caret to the new location and ensure it's visible to the user
-                _operations.MoveCaretToPoint data.CurrentMatch.Start
-                _operations.EnsureCaretOnScreenAndTextExpanded()
+                // Adjust the caret to the new location and ensure it's visible to the user.  We need
+                // to dig into collapsed regions here as well
+                _operations.MoveCaretToPointAndEnsureVisible data.CurrentMatch.Start
 
     member this.CurrentSubstitute =
         match _confirmData with

@@ -118,6 +118,19 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Recursive macros which move to the end of the line shouldn't recurse infinitely
+        /// </summary>
+        [Test]
+        public void Error_RecursiveRightMove()
+        {
+            Create("cat", "dog");
+            _globalSettings.VirtualEdit = string.Empty; // Ensure not 've=onemore'
+            TestRegister.UpdateValue("l@c");
+            _buffer.Process("@c");
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
         /// An up move at the start of the ITextBuffer should be an error and hence break 
         /// a macro execution.  But the results of the macro before the error should be 
         /// still visible

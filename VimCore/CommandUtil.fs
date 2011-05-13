@@ -918,11 +918,8 @@ type internal CommandUtil
     /// Jumps to the specified 
     member x.JumpToTagCore () =
         match _jumpList.Current with
-        | None ->
-            _operations.Beep()
-        | Some point ->
-            TextViewUtil.MoveCaretToPoint _textView point
-            _operations.EnsureCaretOnScreenAndTextExpanded()
+        | None -> _operations.Beep()
+        | Some point -> _operations.MoveCaretToPointAndEnsureVisible point
 
     /// Move the caret to start of a line which is deleted.  Needs to preserve the original 
     /// indent if 'autoindent' is set.
