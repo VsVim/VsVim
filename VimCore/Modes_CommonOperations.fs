@@ -359,9 +359,6 @@ type internal CommonOperations ( _data : OperationsData ) =
             // Now position the caret on the new snapshot
             edit.Apply() |> ignore
 
-    member x.UpdateRegister (reg:Register) regOperation value = 
-        _registerMap.SetRegisterValue reg regOperation value
-
     // Puts the provided StringData at the given point in the ITextBuffer.  Does not attempt
     // to move the caret as a result of this operation
     member x.Put point stringData opKind =
@@ -760,19 +757,6 @@ type internal CommonOperations ( _data : OperationsData ) =
                 // A substitute command should update both of them 
                 _vimData.LastSubstituteData <- Some { SearchPattern=pattern; Substitute=replace; Flags=flags}
                 _vimData.LastPatternData <- { Pattern = pattern; Path = Path.Forward }
-
-
-        member x.UpdateRegister reg regOp editSpan opKind = 
-            let value = RegisterValue.String (StringData.OfEditSpan editSpan, opKind)
-            x.UpdateRegister reg regOp value
-        member x.UpdateRegisterForValue reg regOp value = 
-            x.UpdateRegister reg regOp value
-        member x.UpdateRegisterForSpan reg regOp span opKind = 
-            let value = RegisterValue.String (StringData.OfSpan span, opKind)
-            x.UpdateRegister reg regOp value
-        member x.UpdateRegisterForCollection reg regOp col opKind = 
-            let value = RegisterValue.String (StringData.OfNormalizedSnasphotSpanCollection col, opKind)
-            x.UpdateRegister reg regOp value
 
         member x.GoToLocalDeclaration() = 
             if not (_host.GoToLocalDeclaration _textView x.WordUnderCursorOrEmpty) then _host.Beep()

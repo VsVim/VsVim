@@ -355,7 +355,9 @@ type internal CommandProcessor
             | Some(count) -> RangeUtil.ApplyCount count range
             | None -> range
 
-        _operations.UpdateRegisterForSpan reg RegisterOperation.Yank (range.ExtentIncludingLineBreak) OperationKind.LineWise
+        let stringData = StringData.OfSpan range.ExtentIncludingLineBreak
+        let value = RegisterValue.String (stringData, OperationKind.LineWise)
+        _registerMap.SetRegisterValue reg RegisterOperation.Yank value
 
     /// Process the :nohlsearch command
     member x.ProcessNoHighlightSearch _ _ _ =

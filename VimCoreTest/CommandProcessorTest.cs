@@ -155,86 +155,44 @@ namespace VimCore.UnitTest
         public void Yank1()
         {
             Create("foo", "bar");
-            var tss = _textView.TextSnapshot;
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(
-                    _map.GetRegister(RegisterName.Unnamed),
-                    RegisterOperation.Yank,
-                    tss.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
-                    OperationKind.LineWise))
-                .Verifiable();
             RunCommand("y");
-            _operations.Verify();
+            Assert.AreEqual("foo" + Environment.NewLine, UnnamedRegister.StringValue);
+            Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
         }
 
         [Test]
         public void Yank2()
         {
             Create("foo", "bar", "baz");
-            var tss = _textView.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(
-                    _map.GetRegister(RegisterName.Unnamed),
-                    RegisterOperation.Yank,
-                    span,
-                    OperationKind.LineWise))
-                .Verifiable();
             RunCommand("1,2y");
-            _operations.Verify();
+            var text = _textView.GetLineRange(0, 1).ExtentIncludingLineBreak.GetText();
+            Assert.AreEqual(text, UnnamedRegister.StringValue);
         }
 
         [Test]
         public void Yank3()
         {
             Create("foo", "bar");
-            var line = _textView.TextSnapshot.GetLineFromLineNumber(0);
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(
-                    _map.GetRegister('c'),
-                    RegisterOperation.Yank,
-                    line.ExtentIncludingLineBreak,
-                    OperationKind.LineWise))
-                .Verifiable();
             RunCommand("y c");
-            _operations.Verify();
+            Assert.AreEqual(_textView.GetLine(0).ExtentIncludingLineBreak.GetText(), _map.GetRegister('c').StringValue);
         }
 
         [Test]
         public void Yank4()
         {
             Create("foo", "bar");
-            var tss = _textView.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(
-                    _map.GetRegister(RegisterName.Unnamed),
-                    RegisterOperation.Yank,
-                    span,
-                    OperationKind.LineWise))
-                .Verifiable();
             RunCommand("y 2");
-            _operations.Verify();
+            var text = _textView.GetLineRange(0, 1).ExtentIncludingLineBreak.GetText();
+            Assert.AreEqual(text, UnnamedRegister.StringValue);
         }
 
         [Test]
         public void Yank_WithRangeAndCount1()
         {
             Create("cat", "dog", "rabbit", "tree");
-            var range = _textView.GetLineRange(1, 1);
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(
-                    _map.GetRegister(RegisterName.Unnamed),
-                    RegisterOperation.Yank,
-                    range.ExtentIncludingLineBreak,
-                    OperationKind.LineWise))
-                .Verifiable();
             RunCommand("2y 1");
-            _operations.Verify();
+            var text = _textView.GetLineRange(0, 1).ExtentIncludingLineBreak.GetText();
+            Assert.AreEqual(text, UnnamedRegister.StringValue);
         }
 
         /// <summary>
