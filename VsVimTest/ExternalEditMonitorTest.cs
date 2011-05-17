@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reflection;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
@@ -21,7 +21,7 @@ namespace VsVim.UnitTest
     {
         private MockRepository _factory;
         private ITextBuffer _textBuffer;
-        private Mock<ITextView> _textView;
+        private ITextView _textView;
         private Mock<IVimBuffer> _buffer;
         private Mock<IExternalEditAdapter> _adapter;
         private Mock<ITagAggregator<ITag>> _aggregator;
@@ -36,9 +36,9 @@ namespace VsVim.UnitTest
         public void Setup(bool isShimmed = true, params string[] lines)
         {
             _factory = new MockRepository(MockBehavior.Loose);
-            _textBuffer = EditorUtil.CreateBuffer(lines);
-            _textView = MockObjectFactory.CreateTextView(textBuffer: _textBuffer);
-            _buffer = MockObjectFactory.CreateVimBuffer(textView: _textView.Object);
+            _textView = EditorUtil.CreateView(lines);
+            _textBuffer = _textView.TextBuffer;
+            _buffer = MockObjectFactory.CreateVimBuffer(textView: _textView);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
 
             // Have adatper ignore by default
@@ -61,7 +61,7 @@ namespace VsVim.UnitTest
                 result = Result.Error;
             }
 
-            var list = new List<IExternalEditAdapter> {_adapter.Object};
+            var list = new List<IExternalEditAdapter> { _adapter.Object };
             var adapters = new ReadOnlyCollection<IExternalEditAdapter>(list);
             _monitor = new ExternalEditMonitor(
                 _buffer.Object,
@@ -116,13 +116,14 @@ namespace VsVim.UnitTest
             SetupAdapterCreateTagAsSnippet();
         }
 
-        private void RaiseLayoutChanged(SnapshotLineRange visibleRange = null)
+        private void RaiseLayoutChanged()
         {
-            visibleRange = visibleRange ?? _textBuffer.GetLineRange(0, _textBuffer.CurrentSnapshot.LineCount - 1);
-            _textView
-                .SetupGet(x => x.TextViewLines)
-                .Returns(MockObjectFactory.CreateTextViewLineCollection(visibleRange, _factory).Object);
-            _textView.Raise(x => x.LayoutChanged += null, null, null);
+            var methodInfo = _textView.GetType()
+                .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
+                .Where(x => x.Name == "RaiseLayoutChangeEvent")
+                .Where(x => x.GetParameters().Length == 0)
+                .Single();
+            methodInfo.Invoke(_textView, null);
         }
 
         [Test]
@@ -224,7 +225,7 @@ namespace VsVim.UnitTest
             var span = _textBuffer.GetLineRange(0).Extent;
             SetupExternalEditTag(_textBuffer.GetLineRange(0).Extent);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.ExternalEdit).Verifiable();
-            _textView.Raise(x => x.LayoutChanged += null, null, null);
+            RaiseLayoutChanged();
             _factory.Verify();
         }
 
@@ -236,16 +237,7 @@ namespace VsVim.UnitTest
             SetupTags(span);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.ExternalEdit).Verifiable();
             _buffer.Setup(x => x.SwitchMode(ModeKind.Insert, ModeArgument.None)).Verifiable();
-            _textView.Raise(x => x.LayoutChanged += null, null, null);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void LayoutChanged_InRecursiveLayoutDoNothing()
-        {
-            Setup("cat", "tree", "dog");
-            _textView.SetupGet(x => x.TextViewLines).Throws(new InvalidOperationException()).Verifiable();
-            _textView.Raise(x => x.LayoutChanged += null, null, null);
+            RaiseLayoutChanged();
             _factory.Verify();
         }
 
@@ -253,7 +245,7 @@ namespace VsVim.UnitTest
         public void LayoutChanged_VisibleLinesHaveNoMarkersShouldClearIgnored()
         {
             Setup("cat", "tree", "dog");
-            _monitor.IgnoredMarkers = new List<SnapshotSpan> {_textBuffer.GetLine(0).Extent};
+            _monitor.IgnoredMarkers = new List<SnapshotSpan> { _textBuffer.GetLine(0).Extent };
             RaiseLayoutChanged();
             Assert.AreEqual(0, _monitor.IgnoredMarkers.Count());
             _factory.Verify();
@@ -263,9 +255,9 @@ namespace VsVim.UnitTest
         public void LayoutChanged_ShouldMoveIgnoreMarkersForward()
         {
             Setup("cat", "tree", "dog");
-            _monitor.IgnoredMarkers = new List<SnapshotSpan> {_textBuffer.GetLine(0).Extent};
             _textBuffer.Replace(new Span(0, 0), "big ");
             var range = _textBuffer.GetLineRange(0);
+            _monitor.IgnoredMarkers = new List<SnapshotSpan> { _textBuffer.GetLine(0).Extent };
             SetupExternalEditTag(range.Extent);
             RaiseLayoutChanged();
             Assert.AreEqual(range.Extent, _monitor.IgnoredMarkers.Single());
@@ -291,7 +283,7 @@ namespace VsVim.UnitTest
             Setup("cat", "tree", "dog");
             var range = _textBuffer.GetLineRange(0);
             SetupExternalEditTag(range.Extent);
-            _monitor.IgnoredMarkers = new List<SnapshotSpan> {range.Extent};
+            _monitor.IgnoredMarkers = new List<SnapshotSpan> { range.Extent };
             RaiseLayoutChanged();
         }
 
