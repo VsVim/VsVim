@@ -14,12 +14,14 @@ type internal VisualMode
         _kind : ModeKind,
         _runner : ICommandRunner,
         _capture : IMotionCapture,
-        _selectionTracker : ISelectionTracker ) = 
+        _selectionTracker : ISelectionTracker
+    ) = 
 
     let _textView = _buffer.TextView
     let _textBuffer = _buffer.TextBuffer
     let _registerMap = _buffer.RegisterMap
     let _motionKind = MotionKind.Inclusive
+    let _eventHandlers = DisposableBag()
     let _operationKind, _visualKind = 
         match _kind with
         | ModeKind.VisualBlock -> (OperationKind.CharacterWise, VisualKind.Block)
@@ -99,10 +101,17 @@ type internal VisualMode
 
     member x.EnsureCommandsBuilt() =
         if not _builtCommands then
-            let map = 
-                x.CreateMovementBindings() 
-                |> Seq.append (x.CreateCommandBindings())
-                |> Seq.iter _runner.Add 
+            let factory = Vim.Modes.CommandFactory(_operations, _capture, _buffer.MotionUtil, _buffer.JumpList, _buffer.Settings)
+
+            // Add in the standard commands
+            factory.CreateMovementCommands()
+            |> Seq.append (factory.CreateScrollCommands())
+            |> Seq.append (x.CreateCommandBindings())
+            |> Seq.iter _runner.Add 
+
+            // Add in macro editing
+            factory.CreateMacroEditCommands _runner _buffer.Vim.MacroRecorder _eventHandlers
+
             _builtCommands <- true
 
     member x.ShouldHandleEscape = not _runner.IsHandlingEscape
@@ -179,7 +188,8 @@ type internal VisualMode
         member x.OnLeave () = 
             _runner.ResetState()
             _selectionTracker.Stop()
-        member x.OnClose() = ()
+        member x.OnClose() = 
+            _eventHandlers.DisposeAll()
 
     interface IVisualMode with
         member x.CommandRunner = _runner

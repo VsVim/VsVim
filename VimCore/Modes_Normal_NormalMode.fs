@@ -10,11 +10,11 @@ type internal NormalModeData = {
     Command : string
     IsInReplace : bool
     OneTimeMode : ModeKind option 
-} 
+}
 
 type internal NormalMode 
     ( 
-        _bufferData : IVimBuffer, 
+        _buffer : IVimBuffer, 
         _operations : ICommonOperations,
         _statusUtil : IStatusUtil,
         _displayWindowBroker : IDisplayWindowBroker,
@@ -22,8 +22,8 @@ type internal NormalMode
         _capture : IMotionCapture
     ) as this =
 
-    let _textView = _bufferData.TextView
-    let _settings = _bufferData.Settings
+    let _textView = _buffer.TextView
+    let _settings = _buffer.Settings
 
     /// Reset state for data in Normal Mode
     let _emptyData = {
@@ -43,18 +43,13 @@ type internal NormalMode
     do
         // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
         // a derived type
-        let settings = _bufferData.Settings.GlobalSettings :> IVimSettings
+        let settings = _buffer.Settings.GlobalSettings :> IVimSettings
         settings.SettingChanged.Subscribe this.OnGlobalSettingsChanged |> _eventHandlers.Add
 
-        // Need to listen to macro recording start / stop in order to insert the appropriate
-        // command
-        _bufferData.Vim.MacroRecorder.RecordingStarted.Subscribe this.OnMacroRecordingChanged |> _eventHandlers.Add
-        _bufferData.Vim.MacroRecorder.RecordingStopped.Subscribe this.OnMacroRecordingChanged |> _eventHandlers.Add
-
-    member this.TextView = _bufferData.TextView
-    member this.TextBuffer = _bufferData.TextBuffer
-    member this.CaretPoint = _bufferData.TextView.Caret.Position.BufferPosition
-    member this.Settings = _bufferData.Settings
+    member this.TextView = _buffer.TextView
+    member this.TextBuffer = _buffer.TextBuffer
+    member this.CaretPoint = _buffer.TextView.Caret.Position.BufferPosition
+    member this.Settings = _buffer.Settings
     member this.IsCommandRunnerPopulated = _runner.Commands |> SeqUtil.isNotEmpty
     member this.KeyRemapMode = 
         match _runner.KeyRemapMode with
@@ -67,7 +62,7 @@ type internal NormalMode
 
     member x.EnsureCommands() = 
         if not x.IsCommandRunnerPopulated then
-            let factory = Vim.Modes.CommandFactory(_operations, _capture, _bufferData.MotionUtil, _bufferData.JumpList, _bufferData.Settings)
+            let factory = Vim.Modes.CommandFactory(_operations, _capture, _buffer.MotionUtil, _buffer.JumpList, _buffer.Settings)
 
             x.CreateCommandBindings()
             |> Seq.append (factory.CreateMovementCommands())
@@ -79,7 +74,7 @@ type internal NormalMode
             _runner.Add command
 
             // Add in the macro command
-            _runner.Add (x.GetMacroCommand())
+            factory.CreateMacroEditCommands _runner _buffer.Vim.MacroRecorder _eventHandlers
 
     /// Raised when a global setting is changed
     member x.OnGlobalSettingsChanged (setting:Setting) = 
@@ -88,13 +83,6 @@ type internal NormalMode
         if StringUtil.isEqual setting.Name GlobalSettingNames.TildeOpName && x.IsCommandRunnerPopulated then
             let name, command = x.GetTildeCommand()
             _runner.Remove name
-            _runner.Add command
-
-    /// Raised when a macro recording starts or stops 
-    member x.OnMacroRecordingChanged () =
-        if x.IsCommandRunnerPopulated then
-            let command = x.GetMacroCommand()
-            _runner.Remove command.KeyInputSet
             _runner.Add command
 
     /// Bind the character in a replace character command: 'r'.  
@@ -111,20 +99,11 @@ type internal NormalMode
         let name = KeyInputUtil.CharToKeyInput '~' |> OneKeyInput
         let flags = CommandFlags.Repeatable
         let command = 
-            if _bufferData.Settings.GlobalSettings.TildeOp then
+            if _buffer.Settings.GlobalSettings.TildeOp then
                 CommandBinding.MotionBinding (name, flags, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.ToggleCase, motion)))
             else
                 CommandBinding.NormalBinding (name, flags, NormalCommand.ChangeCaseCaretPoint ChangeCharacterKind.ToggleCase)
         name, command
-
-    /// Check current IMacroRecorder state and return the proper command based on it
-    member x.GetMacroCommand () =
-        let recorder = _bufferData.Vim.MacroRecorder
-        let name = KeyNotationUtil.StringToKeyInputSet "q"
-        if recorder.IsRecording then
-            CommandBinding.NormalBinding (name, CommandFlags.Special, NormalCommand.RecordMacroStop)
-        else
-            CommandBinding.ComplexNormalBinding (name, CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar None NormalCommand.RecordMacroStart)
 
     /// Create the CommandBinding instances for the supported NormalCommand values
     member x.CreateCommandBindings() =
@@ -271,7 +250,7 @@ type internal NormalMode
     interface INormalMode with 
         member this.KeyRemapMode = this.KeyRemapMode
         member this.IsInReplace = _data.IsInReplace
-        member this.VimBuffer = _bufferData
+        member this.VimBuffer = _buffer
         member this.Command = this.Command
         member this.CommandRunner = _runner
         member this.CommandNames = 

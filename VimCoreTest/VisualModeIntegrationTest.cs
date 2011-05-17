@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
 using Vim.UnitTest;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.UnitTest
 {
@@ -20,6 +21,11 @@ namespace VimCore.UnitTest
             get { return _buffer.RegisterMap.GetRegister(RegisterName.Unnamed); }
         }
 
+        internal Register TestRegister
+        {
+            get { return _buffer.RegisterMap.GetRegister('c'); }
+        }
+
         public void Create(params string[] lines)
         {
             _context = new TestableSynchronizationContext();
@@ -30,6 +36,9 @@ namespace VimCore.UnitTest
             _buffer = service.Vim.CreateBuffer(_textView);
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             Assert.IsTrue(_context.IsEmpty);
+
+            // Need to make sure it's focused so macro recording will work
+            ((MockVimHost)_buffer.Vim.VimHost).FocusedTextView = _textView;
         }
 
         private void EnterMode(SnapshotSpan span, TextSelectionMode mode = TextSelectionMode.Stream)
@@ -225,6 +234,16 @@ namespace VimCore.UnitTest
         }
 
         [Test]
+        public void Handle_D_BlockMode()
+        {
+            Create("dog", "cat", "tree");
+            EnterBlock(_textView.GetBlock(1, 1, 0, 2));
+            _buffer.Process("D");
+            Assert.AreEqual("d", _textView.GetLine(0).GetText());
+            Assert.AreEqual("c", _textView.GetLine(1).GetText());
+        }
+
+        [Test]
         public void IncrementalSearch_LineModeShouldSelectFullLine()
         {
             Create("dog", "cat", "tree");
@@ -251,14 +270,34 @@ namespace VimCore.UnitTest
             Assert.AreEqual(new SnapshotSpan(_textView.GetLine(0).Start, 2), _textView.GetSelectionSpan());
         }
 
+        /// <summary>
+        /// Record a macro which delets selected text.  When the macro is played back it should
+        /// just run the delete against unselected text.  In other words it's just the raw keystrokes
+        /// which are saved not the selection state
+        /// </summary>
         [Test]
-        public void Handle_D_BlockMode()
+        public void Macro_RecordDeleteSelectedText()
         {
-            Create("dog", "cat", "tree");
-            EnterBlock(_textView.GetBlock(1, 1, 0, 2));
-            _buffer.Process("D");
-            Assert.AreEqual("d", _textView.GetLine(0).GetText());
-            Assert.AreEqual("c", _textView.GetLine(1).GetText());
+            Create("the cat chased the dog");
+            EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 3));
+            _buffer.Process("qcxq");
+            Assert.AreEqual(" cat chased the dog", _textView.GetLine(0).GetText());
+            _textView.MoveCaretTo(1);
+            _buffer.Process("@c");
+            Assert.AreEqual(" at chased the dog", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// Run the macro to delete the selected text
+        /// </summary>
+        [Test]
+        public void Macro_RunDeleteSelectedText()
+        {
+            Create("the cat chased the dog");
+            EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 3));
+            TestRegister.UpdateValue("x");
+            _buffer.Process("@c");
+            Assert.AreEqual(" cat chased the dog", _textView.GetLine(0).GetText());
         }
 
         /// <summary>

@@ -12,7 +12,8 @@ type internal CommandFactory
         _capture : IMotionCapture,
         _motionUtil : IMotionUtil, 
         _jumpList : IJumpList,
-        _settings : IVimLocalSettings ) =
+        _settings : IVimLocalSettings
+    ) =
 
     let _textView = _operations.TextView
 
@@ -88,3 +89,29 @@ type internal CommandFactory
             let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
             CommandBinding.NormalBinding (keyInputSet, flags, command))
 
+    /// Create the macro editing commands for the given information.  This relies on listening to events
+    /// and the observable values are added to the Disposable bag so the caller may unsubscribe at a 
+    /// later time
+    member x.CreateMacroEditCommands (runner : ICommandRunner) (macroRecorder : IMacroRecorder) (bag : DisposableBag) = 
+
+        // Check IMacroRecorder state and return the proper command based on it
+        let getMacroCommand () = 
+            let name = KeyNotationUtil.StringToKeyInputSet "q"
+            if macroRecorder.IsRecording then
+                CommandBinding.NormalBinding (name, CommandFlags.Special, NormalCommand.RecordMacroStop)
+            else
+                CommandBinding.ComplexNormalBinding (name, CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar None NormalCommand.RecordMacroStart)
+        
+        // Raised when macro recording starts or stops.  
+        let onMacroRecordingChanged () = 
+            let command = getMacroCommand()
+            runner.Remove command.KeyInputSet
+            runner.Add command
+
+        // Need to listen to macro recording start / stop in order to insert the appropriate
+        // command
+        macroRecorder.RecordingStarted.Subscribe onMacroRecordingChanged |> bag.Add
+        macroRecorder.RecordingStopped.Subscribe onMacroRecordingChanged |> bag.Add
+
+        // Go ahead and add in the initial command
+        runner.Add (getMacroCommand())
