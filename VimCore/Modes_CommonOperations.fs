@@ -13,7 +13,7 @@ type internal CommonOperations ( _data : OperationsData ) =
     let _textBuffer = _data.TextView.TextBuffer
     let _textView = _data.TextView
     let _operations = _data.EditorOperations
-    let _outlining = _data.OutliningManager
+    let _outliningManager = _data.OutliningManager
     let _vimData = _data.VimData
     let _host = _data.VimHost
     let _jumpList = _data.JumpList
@@ -66,9 +66,18 @@ type internal CommonOperations ( _data : OperationsData ) =
 
     /// Move the caret to the specified point and ensure it's visible and the surrounding 
     /// text is expanded
+    ///
+    /// Note: We actually do the operation in the opposite order.  The text needs to be expanded
+    /// before we even move the point.  Before the text is expanded the point we are moving to 
+    /// will map to the collapsed region.  When the text is subsequently expanded it has no 
+    /// memory and will just stay in place.  
+    ///
+    /// To avoid this we will expand then move the caret and finally ensure it's visible on 
+    /// the screen
     member x.MoveCaretToPointAndEnsureVisible point = 
+        x.EnsurePointExpanded point
         TextViewUtil.MoveCaretToPoint _textView point
-        x.EnsureCaretOnScreenAndTextExpanded()
+        x.EnsureCaretOnScreen()
 
     /// Move the caret to the position dictated by the given MotionResult value
     member x.MoveCaretToMotionResult (result : MotionResult) =
@@ -137,11 +146,10 @@ type internal CommonOperations ( _data : OperationsData ) =
         |> OptionUtil.getOrDefault (SnapshotSpanUtil.CreateEmpty point)
         |> SnapshotSpanUtil.GetText
 
-    member x.NavigateToPoint (point:VirtualSnapshotPoint) = 
+    member x.NavigateToPoint (point : VirtualSnapshotPoint) = 
         let buf = point.Position.Snapshot.TextBuffer
         if buf = _textView.TextBuffer then 
-            TextViewUtil.MoveCaretToPoint _textView point.Position
-            TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
+            x.MoveCaretToPointAndEnsureVisible point.Position
             true
         else  _host.NavigateTo point 
 
@@ -351,9 +359,6 @@ type internal CommonOperations ( _data : OperationsData ) =
             // Now position the caret on the new snapshot
             edit.Apply() |> ignore
 
-    member x.UpdateRegister (reg:Register) regOperation value = 
-        _registerMap.SetRegisterValue reg regOperation value
-
     // Puts the provided StringData at the given point in the ITextBuffer.  Does not attempt
     // to move the caret as a result of this operation
     member x.Put point stringData opKind =
@@ -443,9 +448,9 @@ type internal CommonOperations ( _data : OperationsData ) =
     member x.Beep() = if not _settings.GlobalSettings.VisualBell then _host.Beep()
 
     member x.DoWithOutlining func = 
-        match _outlining with
+        match _outliningManager with
         | None -> x.Beep()
-        | Some(outlining) -> func outlining
+        | Some outliningManager -> func outliningManager
 
     member x.CheckDirty func = 
         if _host.IsDirty _textView.TextBuffer then 
@@ -470,18 +475,26 @@ type internal CommonOperations ( _data : OperationsData ) =
     member x.EnsureCaretOnScreen () = 
         TextViewUtil.EnsureCaretOnScreen _textView 
 
-    /// Ensure the caret is visible on the screen and any regions surrounding the caret are
-    /// expanded such that the actual caret is visible
-    member x.EnsureCaretOnScreenAndTextExpanded () = 
-        TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
+    /// Ensure the given SnapshotPoint is not in a collapsed region on the screen
+    member x.EnsurePointExpanded point = 
+        match _outliningManager with
+        | None ->
+            ()
+        | Some outliningManager -> 
+            let span = SnapshotSpan(point, 0)
+            outliningManager.ExpandAll(span, fun _ -> true) |> ignore
 
     /// Ensure the point is visible on the screen and any regions surrounding the point are
     /// expanded such that the actual caret is visible
     member x.EnsurePointOnScreenAndTextExpanded point = 
+        x.EnsurePointExpanded point
         _host.EnsureVisible _textView point
-        match _outlining with
-        | None -> ()
-        | Some(outlining) -> outlining.ExpandAll(SnapshotSpan(point,0), fun _ -> true) |> ignore
+
+    /// Ensure the text is on the screen and that if it's in the middle of a collapsed region 
+    /// that the collapsed region is expanded to reveal the caret
+    member x.EnsureCaretOnScreenAndTextExpanded () =
+        x.EnsurePointExpanded x.CaretPoint
+        x.EnsureCaretOnScreen()
 
     interface ICommonOperations with
         member x.TextView = _textView 
@@ -519,8 +532,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.JumpToMark ident (map:IMarkMap) = 
             let before = TextViewUtil.GetCaretPoint _textView
             let jumpLocal (point:VirtualSnapshotPoint) = 
-                TextViewUtil.MoveCaretToPoint _textView point.Position
-                TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
+                x.MoveCaretToPointAndEnsureVisible point.Position
                 _jumpList.Add before |> ignore
                 Succeeded
             if not (map.IsLocalMark ident) then 
@@ -745,19 +757,6 @@ type internal CommonOperations ( _data : OperationsData ) =
                 // A substitute command should update both of them 
                 _vimData.LastSubstituteData <- Some { SearchPattern=pattern; Substitute=replace; Flags=flags}
                 _vimData.LastPatternData <- { Pattern = pattern; Path = Path.Forward }
-
-
-        member x.UpdateRegister reg regOp editSpan opKind = 
-            let value = RegisterValue.String (StringData.OfEditSpan editSpan, opKind)
-            x.UpdateRegister reg regOp value
-        member x.UpdateRegisterForValue reg regOp value = 
-            x.UpdateRegister reg regOp value
-        member x.UpdateRegisterForSpan reg regOp span opKind = 
-            let value = RegisterValue.String (StringData.OfSpan span, opKind)
-            x.UpdateRegister reg regOp value
-        member x.UpdateRegisterForCollection reg regOp col opKind = 
-            let value = RegisterValue.String (StringData.OfNormalizedSnasphotSpanCollection col, opKind)
-            x.UpdateRegister reg regOp value
 
         member x.GoToLocalDeclaration() = 
             if not (_host.GoToLocalDeclaration _textView x.WordUnderCursorOrEmpty) then _host.Beep()

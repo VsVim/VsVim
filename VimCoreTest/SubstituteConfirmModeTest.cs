@@ -37,7 +37,6 @@ namespace VimCore.UnitTest
             _editorOperations = _factory.Create<IEditorOperations>();
             _operations = _factory.Create<ICommonOperations>();
             _operations.Setup(x => x.MoveCaretToPoint(It.IsAny<SnapshotPoint>()));
-            _operations.Setup(x => x.EnsureCaretOnScreenAndTextExpanded());
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _modeRaw = new SubstituteConfirmMode(_buffer.Object, _operations.Object);
             _mode = _modeRaw;
