@@ -123,6 +123,21 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// It's possible for the search service to return a match of 0 length.  This is perfectly legal 
+        /// and should be treated as a match of length 1.  This is how gVim does it
+        /// </summary>
+        [Test]
+        public void GetTags_ZeroLengthResults()
+        {
+            Create("cat");
+            _vimData.LastPatternData = VimUtil.CreatePatternData(@"\|i\>");
+            var ret = _taggerRaw.GetTags(new NormalizedSnapshotSpanCollection(_textBuffer.GetExtent()));
+            CollectionAssert.AreEquivalent(
+                new [] {"c", "a", "t"},
+                ret.Select(x => x.Span.GetText()).ToList());
+        }
+
+        /// <summary>
         /// The one time disabled event should cause a TagsChaged event and the one time disabled
         /// flag to be set
         /// </summary>

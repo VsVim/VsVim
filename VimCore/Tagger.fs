@@ -172,15 +172,29 @@ type HighlightIncrementalSearchTagger
         let withSpan (span : SnapshotSpan) =  
             span.Start
             |> Seq.unfold (fun point -> 
-                if point.Position >= span.Length then 
+                if SnapshotPointUtil.IsEndPoint point then
+                    // If this is the end point of the ITextBuffer then we are done
                     None
                 else
                     match _search.FindNext searchData point _wordNav with
                     | SearchResult.NotFound _ -> 
                         None
                     | SearchResult.Found (_, foundSpan, _) ->
-                        if foundSpan.Start.Position <= span.End.Position then Some(foundSpan, foundSpan.End)
-                        else None )
+
+                        // It's possible for the SnapshotSpan here to be a 0 length span since Regex expressions
+                        // can match 0 width text.  For example "\|i\>" from issue #480.  Vim handles this by 
+                        // treating the 0 width match as a 1 width match. 
+                        let foundSpan = 
+                            if foundSpan.Length = 0 then
+                                SnapshotSpan(foundSpan.Start, 1)
+                            else
+                                foundSpan
+
+                        // Don't continue searching once we pass the end of the SnapshotSpan we are searching
+                        if foundSpan.Start.Position <= span.End.Position then 
+                            Some(foundSpan, foundSpan.End)
+                        else 
+                            None)
 
         if StringUtil.isNullOrEmpty searchData.Pattern then
             Seq.empty
