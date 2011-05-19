@@ -1952,14 +1952,14 @@ type internal CommandUtil
         let data = StringData.OfEditSpan editSpan
         let value = RegisterValue.String (data, operationKind)
         _registerMap.SetRegisterValue register RegisterOperation.Yank value
-        CommandResult.Completed ModeSwitch.NoSwitch
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Yank the selection into the specified register
     member x.YankSelection register (visualSpan : VisualSpan) = 
         let data = StringData.OfEditSpan visualSpan.EditSpan
         let value = RegisterValue.String (data, visualSpan.OperationKind)
         _registerMap.SetRegisterValue register RegisterOperation.Yank value
-        CommandResult.Completed ModeSwitch.NoSwitch
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     interface ICommandUtil with
         member x.RunNormalCommand command data = x.RunNormalCommand command data

@@ -646,5 +646,31 @@ namespace VimCore.UnitTest
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
             Assert.IsFalse(_textView.GetCaretVirtualPoint().IsInVirtualSpace);
         }
+
+        /// <summary>
+        /// The yank selection command should exit visual mode after the operation
+        /// </summary>
+        [Test]
+        public void YankSelection_ShouldExitVisualMode()
+        {
+            Create("cat", "dog");
+            EnterMode(ModeKind.VisualCharacter, _textView.GetLine(0).Extent);
+            _buffer.Process("y");
+            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
+            Assert.IsTrue(_textView.Selection.IsEmpty);
+        }
+
+        /// <summary>
+        /// The yank line selection command should exit visual mode after the operation
+        /// </summary>
+        [Test]
+        public void YankLineSelection_ShouldExitVisualMode()
+        {
+            Create("cat", "dog");
+            EnterMode(ModeKind.VisualCharacter, _textView.GetLine(0).Extent);
+            _buffer.Process("Y");
+            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
+            Assert.IsTrue(_textView.Selection.IsEmpty);
+        }
     }
 }
