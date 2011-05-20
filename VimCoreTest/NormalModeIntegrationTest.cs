@@ -1189,6 +1189,22 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Escape should exit one time normal mode and return back to the previous mode
+        /// </summary>
+        [Test]
+        public void OneTimeNormalMode_EscapeShouldExit()
+        {
+            Create("");
+            _buffer.Process("i");
+            _buffer.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
+            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
+            _buffer.Process(VimKey.Escape);
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            _buffer.Process(VimKey.Escape);
+            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
+        }
+
+        /// <summary>
         /// A putafter at the end of the line should still put the text after the caret
         /// </summary>
         [Test]

@@ -224,28 +224,34 @@ type internal NormalMode
     
     member this.ProcessCore (ki:KeyInput) =
         let command = _data.Command + ki.Char.ToString()
-        _data <- {_data with Command=command }
+        _data <- { _data with Command = command }
 
-        match _runner.Run ki with
-        | BindResult.NeedMoreInput _ -> 
-            ProcessResult.Handled ModeSwitch.NoSwitch
-        | BindResult.Complete commandData -> 
+        let run () = 
+            match _runner.Run ki with
+            | BindResult.NeedMoreInput _ -> 
+                ProcessResult.Handled ModeSwitch.NoSwitch
+            | BindResult.Complete commandData -> 
+    
+                // If we are in the one time mode then switch back to the previous
+                // mode
+                let result = 
+                    match _data.OneTimeMode with
+                    | None -> ProcessResult.OfCommandResult commandData.CommandResult
+                    | Some modeKind -> ProcessResult.OfModeKind modeKind
+    
+                this.Reset()
+                result
+            | BindResult.Error -> 
+                this.Reset()
+                ProcessResult.Handled ModeSwitch.NoSwitch
+            | BindResult.Cancelled -> 
+                this.Reset()
+                ProcessResult.Handled ModeSwitch.NoSwitch
 
-            // If we are in the one time mode then switch back to the previous
-            // mode
-            let result = 
-                match _data.OneTimeMode with
-                | None -> ProcessResult.OfCommandResult commandData.CommandResult
-                | Some modeKind -> ProcessResult.OfModeKind modeKind
-
-            this.Reset()
-            result
-        | BindResult.Error -> 
-            this.Reset()
-            ProcessResult.Handled ModeSwitch.NoSwitch
-        | BindResult.Cancelled -> 
-            this.Reset()
-            ProcessResult.Handled ModeSwitch.NoSwitch
+        match ki = KeyInputUtil.EscapeKey, _data.OneTimeMode with
+        | true, Some modeKind -> ProcessResult.OfModeKind modeKind
+        | true, None -> run ()
+        | false, _ -> run ()
 
     interface INormalMode with 
         member this.KeyRemapMode = this.KeyRemapMode
@@ -260,7 +266,7 @@ type internal NormalMode
         member this.ModeKind = ModeKind.Normal
         member this.OneTimeMode = _data.OneTimeMode
 
-        member this.CanProcess (ki:KeyInput) =
+        member this.CanProcess (ki : KeyInput) =
             let doesCommandStartWith ki =
                 let name = OneKeyInput ki
                 _runner.Commands 
@@ -273,19 +279,20 @@ type internal NormalMode
             elif _runner.IsWaitingForMoreInput then  true
             elif doesCommandStartWith ki then true
             elif Option.isSome ki.RawChar && KeyModifiers.None = ki.KeyModifiers && Set.contains ki.Char _coreCharSet then true
+            elif Option.isSome _data.OneTimeMode && ki = KeyInputUtil.EscapeKey then true
             else false
 
         member this.Process ki = this.ProcessCore ki
         member this.OnEnter arg = 
             this.EnsureCommands()
             this.Reset()
-            
+
             // Process the argument if it's applicable
             match arg with 
             | ModeArgument.None -> ()
             | ModeArgument.FromVisual -> ()
             | ModeArgument.Substitute(_) -> ()
-            | ModeArgument.OneTimeCommand(modeKind) -> _data <- { _data with OneTimeMode = Some modeKind }
+            | ModeArgument.OneTimeCommand modeKind -> _data <- { _data with OneTimeMode = Some modeKind }
             | ModeArgument.InsertWithCount _ -> ()
             | ModeArgument.InsertWithCountAndNewLine _ -> ()
             | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
