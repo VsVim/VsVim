@@ -102,9 +102,6 @@ type NumberedRegister =
         |> Seq.map Option.get
 
 /// The 52 named registers
-///
-/// TODO: This is wrong.  There are only 26 registers.  When the upper registers are
-/// used it's for append.  Need to fix this
 [<RequireQualifiedAccess>]
 type NamedRegister = 
     | Register_a
@@ -160,6 +157,9 @@ type NamedRegister =
     | Register_Y
     | Register_Z
     with 
+
+    /// Is this an append register
+    member x.IsAppend = CharUtil.IsUpper x.Char
 
     member x.Char =
         match x with 
@@ -361,6 +361,19 @@ type RegisterName =
         | ReadOnly(r) -> Some r.Char
         | SelectionAndDrop(r) -> Some r.Char
 
+    /// Is this one of the named append registers
+    member x.IsAppend =
+        match x with 
+        | Unnamed -> false
+        | SmallDelete -> false
+        | Blackhole -> false
+        | LastSearchPattern -> false
+        | Expression -> false
+        | Numbered _ -> false
+        | Named r -> r.IsAppend
+        | ReadOnly r -> false
+        | SelectionAndDrop _ -> false
+
     static member OfChar c = 
         match NumberedRegister.OfChar c with
         | Some(r) -> Some (Numbered r)
@@ -391,19 +404,16 @@ type RegisterName =
 
 module RegisterNameUtil = 
 
-    /// All of the available register names
-    let RegisterNames = RegisterName.All
-
     /// All of the char values which represent register names
     let RegisterNameChars = 
-        RegisterNames 
+        RegisterName.All
         |> Seq.map (fun n -> n.Char)
         |> SeqUtil.filterToSome
         |> List.ofSeq
 
     /// Mapping of the available char's to the appropriate RegisterName
     let RegisterMap = 
-        RegisterNames
+        RegisterName.All
         |> Seq.map (fun r -> (r.Char),r)
         |> Seq.map OptionUtil.combine2
         |> SeqUtil.filterToSome

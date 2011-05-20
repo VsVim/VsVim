@@ -33,10 +33,7 @@ type internal RegisterMap (_map: Map<RegisterName,Register> ) =
                 and set _ = () }
 
         // Is this an append register 
-        let isAppendRegister name = 
-            match name with 
-            | RegisterName.Named theName -> CharUtil.IsUpper theName.Char
-            | _ -> false
+        let isAppendRegister (name : RegisterName) = name.IsAppend
 
         let getBacking name = 
             match name with 
@@ -47,7 +44,7 @@ type internal RegisterMap (_map: Map<RegisterName,Register> ) =
 
         // Create the map without the append registers
         let map = 
-            RegisterNameUtil.RegisterNames
+            RegisterName.All
             |> Seq.filter (fun name -> not (isAppendRegister name))
             |> Seq.map (fun n -> n, Register(n, getBacking n))
             |> Map.ofSeq
@@ -56,7 +53,7 @@ type internal RegisterMap (_map: Map<RegisterName,Register> ) =
         // registers
         let map = 
             let originalMap = map
-            let names =  RegisterNameUtil.RegisterNames |> Seq.filter isAppendRegister
+            let names =  RegisterName.All |> Seq.filter isAppendRegister
             let foldFunc map (name : RegisterName) =
                 let backingName = 
                     name.Char 

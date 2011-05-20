@@ -190,9 +190,20 @@ namespace Vim.UI.Wpf
             MessageEvent(message);
         }
 
+        /// <summary>
+        /// Called after a StatusMessageLong event and we need to display the result to 
+        /// the user.  This is displayed in a line fashion so normalize out the newline 
+        /// values
+        /// </summary>
         private void OnStatusMessageLong(object sender, IEnumerable<string> lines)
         {
-            var message = lines.Aggregate((x, y) => x + Environment.NewLine + y);
+            // TODO: Right now we're arbitrarily limiting the line length to 100 characters. Really 
+            // it should be limited to the available line length. 
+            
+            // TODO: Should remove all new line characters not just Environment.NewLine
+            var message = lines
+                .Select(x => x.Replace(Environment.NewLine, " "))
+                .Aggregate((x, y) => x + Environment.NewLine + y);
             MessageEvent(message);
         }
 

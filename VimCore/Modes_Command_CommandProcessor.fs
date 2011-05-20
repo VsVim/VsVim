@@ -162,6 +162,7 @@ type internal CommandProcessor
             yield ("delete","d", this.ProcessDelete |> wrap)
             yield ("edit", "e", this.ProcessEdit |> wrap)
             yield ("exit", "exi", this.ProcessWriteQuit |> wrap)
+            yield ("display","di", this.ProcessRegisters |> wrap) 
             yield ("fold", "fo", this.ProcessFold |> wrap)
             yield ("join", "j", this.ProcessJoin |> wrap)
             yield ("make", "mak", this.ProcessMake |> wrap)
@@ -171,6 +172,7 @@ type internal CommandProcessor
             yield ("quit", "q", this.ProcessQuit |> wrap)
             yield ("qall", "qa", this.ProcessQuitAll |> wrap)
             yield ("redo", "red", this.ProcessRedo |> wrap)
+            yield ("registers", "reg", this.ProcessRegisters |> wrap)
             yield ("set", "se", this.ProcessSet |> wrap)
             yield ("source","so", this.ProcessSource |> wrap)
             yield ("split", "sp", this.ProcessSplit |> wrap)
@@ -492,6 +494,42 @@ type internal CommandProcessor
         match Seq.isEmpty rest with
         | true -> _operations.Redo 1
         | false -> _statusUtil.OnError x.BadMessage
+
+    /// Process the :registers command.  This will display the contents of the specified registers
+    /// or if none are specified the contents of non-empty registers
+    member x.ProcessRegisters rest _ _ = 
+        let rest = rest |> CommandParseUtil.SkipWhitespace
+
+        let names = 
+            match rest with
+            | [] -> 
+                // If no names are used then we display all named and numbered registers 
+                RegisterName.All
+                |> Seq.filter (fun name ->
+                    match name with
+                    | RegisterName.Numbered _ -> true
+                    | RegisterName.Named named -> not named.IsAppend
+                    | _ -> false)
+            | _ ->
+                // Convert the remaining items to registers.  Should work with any valid 
+                // name not just named and numbers
+                rest 
+                |> Seq.map RegisterName.OfChar
+                |> SeqUtil.filterToSome
+
+        // Build up the status string messages
+        let lines = 
+            names 
+            |> Seq.map (fun name -> 
+                let register = _registerMap.GetRegister name
+                match register.Name.Char, StringUtil.isNullOrEmpty register.StringValue with
+                | None, _ -> None
+                | Some c, true -> None
+                | Some c, false -> Some (c, register.StringValue))
+            |> SeqUtil.filterToSome
+            |> Seq.map (fun (name, value) -> sprintf "\"%c   %s" name value)
+        let lines = Seq.append (Seq.singleton Resources.CommandMode_RegisterBanner) lines
+        _statusUtil.OnStatusLong lines
 
     member x.ProcessMarks rest _ _ =
         match Seq.isEmpty rest with
