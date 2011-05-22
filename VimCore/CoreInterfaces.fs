@@ -206,25 +206,12 @@ type ISearchService =
     /// match anything at the provided start point.  That will be adjusted appropriately
     abstract FindNextPattern : PatternData -> SnapshotPoint -> ITextStructureNavigator -> count : int -> SearchResult
 
-/// Information about the type of the motion this was.
-[<RequireQualifiedAccess>]
-type MotionKind =
-
-    /// Any of the word motions
-    | AnyWord 
-
-    /// Any of the search motions
-    | AnySearch of SearchResult
-
-    /// An exclusive motion
-    | Exclusive
-
-    /// An inclusive motion
-    | Inclusive
-
 /// Column information about the caret in relation to this Motion Result
 [<RequireQualifiedAccess>]
 type CaretColumn = 
+
+    /// No column information was provided
+    | None
 
     /// Caret should be placed in the specified column on the last line in 
     /// the MotionResult
@@ -233,6 +220,36 @@ type CaretColumn =
     /// Caret should be placed at the start of the line after the last line
     /// in the motion
     | AfterLastLine
+
+/// These are the types of motions which must be handled separately
+[<RequireQualifiedAccess>]
+type MotionResultFlags = 
+
+    /// No special information for this motion
+    | None = 0
+
+    /// Any of the word motions
+    | AnyWord = 0x1
+
+    /// This was promoted under rule #1 listed in ':help exclusive'
+    | ExclusivePromotion = 0x2
+
+    /// Any search
+    /// TODO: Probably not necessary
+    | AnySearch = 0x4
+
+/// Information about the type of the motion this was.
+[<RequireQualifiedAccess>]
+type MotionKind =
+
+    | CharacterWiseInclusive
+
+    | CharacterWiseExclusive
+
+    /// In addition to recording the Span certain line wise operations like j and k also
+    /// record data about the desired column within the span.  This value may or may not
+    /// be a valid point within the line
+    | LineWise of CaretColumn
 
 /// Data about a complete motion operation. 
 type MotionResult = {
@@ -246,46 +263,46 @@ type MotionResult = {
     /// Kind of the motion
     MotionKind : MotionKind
 
-    /// OperationKind for the motion
-    OperationKind : OperationKind 
+    /// The flags on the MotionRelult
+    MotionResultFlags : MotionResultFlags
 
-    /// In addition to recording the Span certain line wise operations like j and k also
-    /// record data about the desired column within the span.  This value may or may not
-    /// be a valid point within the line
-    Column : CaretColumn option
 } with
+
+    /// The possible column of the MotionResult
+    member x.CaretColumn = 
+        match x.MotionKind with
+        | MotionKind.CharacterWiseExclusive -> CaretColumn.None
+        | MotionKind.CharacterWiseInclusive -> CaretColumn.None
+        | MotionKind.LineWise column -> column
 
     /// The Span as an EditSpan value
     member x.EditSpan = EditSpan.Single x.Span
 
-    /// Is this a word motion 
-    member x.IsAnyWordMotion = 
+    /// The OperationKind of the MotionResult
+    member x.OperationKind = 
         match x.MotionKind with
-        | MotionKind.AnyWord -> true
-        | _ -> false
+        | MotionKind.CharacterWiseExclusive -> OperationKind.CharacterWise
+        | MotionKind.CharacterWiseInclusive -> OperationKind.CharacterWise
+        | MotionKind.LineWise _ -> OperationKind.LineWise
+
+    /// Is this a word motion 
+    member x.IsAnyWordMotion = Util.IsFlagSet x.MotionResultFlags MotionResultFlags.AnyWord
+
+    /// Is this a search motion 
+    member x.IsAnySearchMotion = Util.IsFlagSet x.MotionResultFlags MotionResultFlags.AnySearch
 
     /// Is this an exclusive motion
     member x.IsExclusive =
         match x.MotionKind with
-        | MotionKind.AnySearch _ -> true
-        | MotionKind.AnyWord -> true
-        | MotionKind.Exclusive -> true
-        | MotionKind.Inclusive -> false
+        | MotionKind.CharacterWiseExclusive -> true
+        | MotionKind.CharacterWiseInclusive -> false
+        | MotionKind.LineWise _ -> false
 
     /// Is this an inclusive motion
     member x.IsInclusive = not x.IsExclusive
 
     /// The Span as a SnapshotLineRange value 
     member x.LineRange = SnapshotLineRangeUtil.CreateForSpan x.Span
-
-    static member CreateEmptyFromPoint point motionKind operationKind = 
-        let span = SnapshotSpanUtil.CreateWithLength point 0  
-        {
-            Span = span 
-            IsForward = true 
-            MotionKind = motionKind 
-            OperationKind = operationKind 
-            Column = None }
 
 /// Context on how the motion is being used.  Several motions (]] for example)
 /// change behavior based on how they are being used

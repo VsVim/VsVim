@@ -82,58 +82,56 @@ type internal CommonOperations ( _data : OperationsData ) =
     /// Move the caret to the position dictated by the given MotionResult value
     member x.MoveCaretToMotionResult (result : MotionResult) =
 
-        // Go ahead and raise any messages associated with a search
-        // based motion
-        match result.MotionKind with
-        | MotionKind.AnySearch searchResult -> x.RaiseSearchResultMessages searchResult
-        | MotionKind.AnyWord -> ()
-        | MotionKind.Inclusive -> ()
-        | MotionKind.Exclusive -> ()
-
-        // Reduce the Span to the line we care about 
-        let line = 
-            if result.IsForward then SnapshotSpanUtil.GetEndLine result.Span
-            else SnapshotSpanUtil.GetStartLine result.Span
-
-        // Get the point which is the last or first point valid on the 
-        // particular line / span 
-        let getPointFromSpan () = 
-            match result.OperationKind with
-            | OperationKind.LineWise ->
-                if result.IsForward then 
-                    SnapshotLineUtil.GetEnd line
-                else 
-                    SnapshotLineUtil.GetStart line
-            | OperationKind.CharacterWise ->
-                if result.IsForward then
-                    if result.IsExclusive then 
-                        result.Span.End
-                    else 
-                        SnapshotPointUtil.TryGetPreviousPointOnLine result.Span.End 1 
-                        |> OptionUtil.getOrDefault result.Span.End
-                else
-                    result.Span.Start
-
         let point = 
-            match result.Column with
-            | None -> 
-                // No column so just get the information from the span
-                getPointFromSpan()
-            | Some (CaretColumn.InLastLine col) ->
-                let endCol = line |> SnapshotLineUtil.GetEnd |> SnapshotPointUtil.GetColumn
-                if col < endCol then 
-                    line.Start.Add(col)
-                else 
-                    getPointFromSpan()
-            | Some CaretColumn.AfterLastLine ->
-                if result.IsForward then
+
+            if not result.IsForward then
+                match result.CaretColumn with
+                | CaretColumn.None -> 
+                    // No column specified so just move to the start of the Span
+                    result.Span.Start
+                | CaretColumn.AfterLastLine ->
+                    // This is only valid going forward so pretend there isn't a column
+                    result.Span.Start
+                | CaretColumn.InLastLine column -> 
+                    let line = SnapshotSpanUtil.GetStartLine result.Span
+                    if column > line.Length then
+                        line.End
+                    else
+                        line.Start.Add column
+            else
+
+                // Reduce the Span to the line we care about 
+                let line = SnapshotSpanUtil.GetEndLine result.Span
+
+                // Get the point when moving the caret after the last line in the SnapshotSpan
+                let getAfterLastLine() = 
                     match SnapshotUtil.TryGetLine x.CurrentSnapshot (line.LineNumber + 1) with
                     | None -> 
-                        getPointFromSpan()
+                        line.End
                     | Some line ->
                         line.Start
-                else
-                    getPointFromSpan()
+
+                match result.MotionKind with 
+                | MotionKind.CharacterWiseExclusive ->
+                    result.Span.End
+                | MotionKind.CharacterWiseInclusive -> 
+                    if Util.IsFlagSet result.MotionResultFlags MotionResultFlags.ExclusivePromotion then
+                        getAfterLastLine()
+                    else
+                        SnapshotPointUtil.TryGetPreviousPointOnLine result.Span.End 1 
+                        |> OptionUtil.getOrDefault result.Span.End
+                | MotionKind.LineWise column -> 
+                    match column with
+                    | CaretColumn.None -> 
+                        line.End
+                    | CaretColumn.InLastLine col ->
+                        let endCol = line |> SnapshotLineUtil.GetEnd |> SnapshotPointUtil.GetColumn
+                        if col < endCol then 
+                            line.Start.Add(col)
+                        else 
+                            line.End
+                    | CaretColumn.AfterLastLine ->
+                        getAfterLastLine()
 
         x.MoveCaretToPointAndEnsureVisible point
         x.MoveCaretForVirtualEdit()

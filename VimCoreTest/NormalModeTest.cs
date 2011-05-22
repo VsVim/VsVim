@@ -112,16 +112,6 @@ namespace VimCore.UnitTest
             _mode.OnEnter(ModeArgument.None);
         }
 
-        private MotionResult CreateMotionResult(SnapshotSpan? span = null)
-        {
-            span = span ?? new SnapshotSpan(_textView.TextSnapshot, 0, 3);
-            return VimUtil.CreateMotionResult(
-                span.Value,
-                true,
-                MotionKind.Exclusive,
-                OperationKind.LineWise);
-        }
-
         [TearDown]
         public void TearDown()
         {
@@ -592,7 +582,7 @@ namespace VimCore.UnitTest
             var arg = new MotionArgument(MotionContext.AfterOperator, FSharpOption<int>.None, FSharpOption<int>.None);
             util
                 .Setup(x => x.GetMotion(Motion.LineOrLastToFirstNonWhiteSpace, arg))
-                .Returns(FSharpOption.Create(VimUtil.CreateMotionResult(span, operationKind: OperationKind.LineWise)));
+                .Returns(FSharpOption.Create(VimUtil.CreateMotionResult(span, motionKind: MotionKind.NewLineWise(CaretColumn.None))));
             _commandUtil
                 .Setup(x => x.RunCommand(It.Is<Command>(y => y.AsNormalCommand().Item2.Count.IsNone())))
                 .Returns(CommandResult.NewCompleted(ModeSwitch.NoSwitch))

@@ -20,7 +20,6 @@ type internal VisualMode
     let _textView = _buffer.TextView
     let _textBuffer = _buffer.TextBuffer
     let _registerMap = _buffer.RegisterMap
-    let _motionKind = MotionKind.Inclusive
     let _eventHandlers = DisposableBag()
     let _operationKind, _visualKind = 
         match _kind with

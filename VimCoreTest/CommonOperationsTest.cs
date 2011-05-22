@@ -677,8 +677,7 @@ namespace VimCore.UnitTest
             var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 1, 2),
                 true,
-                MotionKind.Inclusive,
-                OperationKind.CharacterWise);
+                MotionKind.CharacterWiseInclusive);
             _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(2, _textView.GetCaretPoint().Position);
         }
@@ -691,8 +690,7 @@ namespace VimCore.UnitTest
             var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 1),
                 true,
-                MotionKind.Inclusive,
-                OperationKind.CharacterWise);
+                MotionKind.CharacterWiseInclusive);
             _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
@@ -705,8 +703,7 @@ namespace VimCore.UnitTest
             var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 0),
                 true,
-                MotionKind.Inclusive,
-                OperationKind.CharacterWise);
+                MotionKind.CharacterWiseInclusive);
             _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
@@ -719,8 +716,7 @@ namespace VimCore.UnitTest
             var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3),
                 false,
-                MotionKind.Inclusive,
-                OperationKind.CharacterWise);
+                MotionKind.CharacterWiseInclusive);
             _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
@@ -733,8 +729,7 @@ namespace VimCore.UnitTest
             var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 1),
                 true,
-                MotionKind.Exclusive,
-                OperationKind.CharacterWise);
+                MotionKind.CharacterWiseExclusive);
             _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
@@ -748,8 +743,7 @@ namespace VimCore.UnitTest
             var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, _textBuffer.CurrentSnapshot.Length),
                 true,
-                MotionKind.Inclusive,
-                OperationKind.LineWise);
+                MotionKind.NewLineWise(CaretColumn.None));
             _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(2, _textView.GetCaretPoint().GetContainingLine().LineNumber);
         }
@@ -763,9 +757,7 @@ namespace VimCore.UnitTest
             var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 true,
-                MotionKind.Inclusive,
-                OperationKind.LineWise,
-                1);
+                MotionKind.NewLineWise(CaretColumn.NewInLastLine(1)));
             _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(Tuple.Create(1, 1), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
         }
@@ -779,9 +771,7 @@ namespace VimCore.UnitTest
             var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 true,
-                MotionKind.Inclusive,
-                OperationKind.LineWise,
-                100);
+                MotionKind.NewLineWise(CaretColumn.NewInLastLine(100)));
             _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(Tuple.Create(1, 2), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
         }
@@ -795,9 +785,7 @@ namespace VimCore.UnitTest
             var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 true,
-                MotionKind.Inclusive,
-                OperationKind.LineWise,
-                0);
+                MotionKind.NewLineWise(CaretColumn.NewInLastLine(0)));
             _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(Tuple.Create(1, 0), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
         }
@@ -811,9 +799,7 @@ namespace VimCore.UnitTest
             var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 false,
-                MotionKind.Inclusive,
-                OperationKind.CharacterWise,
-                0);
+                MotionKind.CharacterWiseInclusive);
             _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(Tuple.Create(0, 0), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
         }
@@ -825,11 +811,9 @@ namespace VimCore.UnitTest
             Create("dog", "cat", "bear");
             _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionResult(
-                _textBuffer.GetLineRange(0, 1).Extent,
+                _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
                 false,
-                MotionKind.Inclusive,
-                OperationKind.CharacterWise,
-                2);
+                MotionKind.NewLineWise(CaretColumn.NewInLastLine(2)));
             _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(Tuple.Create(0, 2), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
         }
@@ -843,27 +827,9 @@ namespace VimCore.UnitTest
             var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
                 false,
-                MotionKind.Exclusive,
-                OperationKind.CharacterWise,
-                0);
+                MotionKind.CharacterWiseExclusive);
             _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(_textBuffer.GetLine(0).Start, _textView.GetCaretPoint());
-        }
-
-        [Test]
-        [Description("Exclusive spans going forward ending on a endline having a 0 column and starting in the middle of a span checks")]
-        public void MoveCaretToMotionResult15()
-        {
-            Create("dog", "cat", "bear");
-            _editorOperations.Setup(x => x.ResetSelection());
-            var data = VimUtil.CreateMotionResult(
-                _textBuffer.GetSpan(1, _textBuffer.GetLine(1).EndIncludingLineBreak.Position),
-                true,
-                MotionKind.Exclusive,
-                OperationKind.CharacterWise,
-                0);
-            _operations.MoveCaretToMotionResult(data);
-            Assert.AreEqual(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
         }
 
         [Test]
@@ -875,8 +841,7 @@ namespace VimCore.UnitTest
             var data = VimUtil.CreateMotionResult(
                 span: _textView.GetLineRange(0, 1).ExtentIncludingLineBreak,
                 isForward: false,
-                operationKind: OperationKind.LineWise,
-                column: 1);
+                motionKind: MotionKind.NewLineWise(CaretColumn.NewInLastLine(1)));
             _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
@@ -890,12 +855,10 @@ namespace VimCore.UnitTest
         {
             Create("dog", "cat", "bear");
             _editorOperations.Setup(x => x.ResetSelection());
-            var data = new MotionResult(
+            var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0).ExtentIncludingLineBreak,
                 true,
-                MotionKind.Exclusive,
-                OperationKind.CharacterWise,
-                FSharpOption.Create(CaretColumn.AfterLastLine));
+                MotionKind.NewLineWise(CaretColumn.AfterLastLine));
             _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
         }
@@ -912,8 +875,7 @@ namespace VimCore.UnitTest
             var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 1, 2),
                 true,
-                MotionKind.Exclusive,
-                OperationKind.CharacterWise);
+                MotionKind.CharacterWiseExclusive);
             _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(2, _textView.GetCaretPoint().Position);
         }

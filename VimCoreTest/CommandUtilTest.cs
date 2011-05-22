@@ -714,8 +714,8 @@ namespace VimCore.UnitTest
                 VimUtil.CreateMotionResult(
                     _textBuffer.GetSpan(0, 3),
                     isForward: true,
-                    motionKind: MotionKind.AnyWord,
-                    operationKind: OperationKind.CharacterWise));
+                    motionKind: MotionKind.CharacterWiseExclusive,
+                    flags: MotionResultFlags.AnyWord));
             Assert.AreEqual("  bar", _textBuffer.GetLineRange(0).GetText());
             Assert.AreEqual("foo", UnnamedRegister.StringValue);
         }
@@ -732,8 +732,8 @@ namespace VimCore.UnitTest
                 VimUtil.CreateMotionResult(
                     _textBuffer.GetSpan(0, 5),
                     isForward: true,
-                    motionKind: MotionKind.AnyWord,
-                    operationKind: OperationKind.LineWise));
+                    motionKind: MotionKind.NewLineWise(CaretColumn.None),
+                    flags: MotionResultFlags.AnyWord));
             Assert.AreEqual("  bar", _textBuffer.GetLineRange(0).GetText());
             Assert.AreEqual("foo", UnnamedRegister.StringValue);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
@@ -751,8 +751,7 @@ namespace VimCore.UnitTest
                 VimUtil.CreateMotionResult(
                     _textBuffer.GetSpan(0, 5),
                     isForward: true,
-                    motionKind: MotionKind.Inclusive,
-                    operationKind: OperationKind.LineWise));
+                    motionKind: MotionKind.NewLineWise(CaretColumn.None)));
             Assert.AreEqual("bar", _textBuffer.GetLineRange(0).GetText());
         }
 
@@ -768,8 +767,7 @@ namespace VimCore.UnitTest
                 VimUtil.CreateMotionResult(
                     _textBuffer.GetSpan(4, 4),
                     false,
-                    MotionKind.Inclusive,
-                    OperationKind.CharacterWise));
+                    MotionKind.CharacterWiseInclusive));
             Assert.AreEqual("cat tree", _textBuffer.GetLineRange(0).GetText());
             Assert.AreEqual(4, _textView.GetCaretPoint().Position);
         }

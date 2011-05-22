@@ -84,9 +84,7 @@ namespace VimCore.UnitTest
             return VimUtil.CreateMotionResult(
                 new SnapshotSpan(point, point),
                 true,
-                MotionKind.Inclusive,
-                OperationKind.CharacterWise,
-                42);
+                MotionKind.CharacterWiseInclusive);
         }
 
         private static FSharpOption<MotionResult> CreateMotionResultSome()

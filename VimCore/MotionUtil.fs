@@ -168,7 +168,7 @@ module internal MotionUtilLegacy =
             let endPoint = SnapshotUtil.GetEndPoint startPoint.Snapshot
             let searchSpan = SnapshotSpan(startPoint, endPoint)
 
-            // Searching for a matching end token is straigh forward.  Go forward 
+            // Searching for a matching end token is straight forward.  Go forward 
             // until we find the first matching item 
             use e = (GetMatchTokens searchSpan).GetEnumerator()
             let rec inner depth = 
@@ -287,15 +287,17 @@ type internal MotionUtil
         else SnapshotSpan(line2.Start, line1.End),false
 
     /// Apply the 'startofline' option to the given MotionResult
-    member x.ApplyStartOfLineOption (motionData:MotionResult) =
-        if not _globalSettings.StartOfLine then motionData 
+    member x.ApplyStartOfLineOption (motionData : MotionResult) =
+        Contract.Assert(match motionData.MotionKind with MotionKind.LineWise _ -> true | _ -> false)
+        if not _globalSettings.StartOfLine then 
+            motionData 
         else
             let endLine = 
                 if motionData.IsForward then SnapshotSpanUtil.GetEndLine motionData.Span
                 else SnapshotSpanUtil.GetStartLine motionData.Span
             let point = TssUtil.FindFirstNonWhiteSpaceCharacter endLine
-            let column = SnapshotPointUtil.GetColumn point
-            { motionData with Column = Some (CaretColumn.InLastLine column) }
+            let column = SnapshotPointUtil.GetColumn point |> CaretColumn.InLastLine
+            { motionData with MotionKind = MotionKind.LineWise column }
 
     /// Get the motion between the provided two lines.  The motion will be linewise
     /// and have a column of the first non-whitespace character.  If the 'startofline'
@@ -308,6 +310,7 @@ type internal MotionUtil
                 endLine |> TssUtil.FindFirstNonWhiteSpaceCharacter |> SnapshotPointUtil.GetColumn
             else
                 _textView |> TextViewUtil.GetCaretPoint |> SnapshotPointUtil.GetColumn
+        let column = CaretColumn.InLastLine column
 
         // Create the range based on the provided lines.  Remember they can be in reverse
         // order
@@ -319,9 +322,8 @@ type internal MotionUtil
         {
             Span = range.ExtentIncludingLineBreak
             IsForward = isForward
-            OperationKind = OperationKind.LineWise 
-            MotionKind = MotionKind.Inclusive 
-            Column = Some (CaretColumn.InLastLine column) }
+            MotionKind = MotionKind.LineWise column
+            MotionResultFlags = MotionResultFlags.None }
 
     /// Get the SnapshotSpan values for the paragraph object starting from the given SnapshotPoint
     /// in the specified direction.  
@@ -894,9 +896,8 @@ type internal MotionUtil
             {
                 Span = span
                 IsForward = caretPoint = startPoint
-                MotionKind = MotionKind.Exclusive
-                OperationKind = OperationKind.CharacterWise
-                Column = Some (CaretColumn.InLastLine column) } |> Some
+                MotionKind = MotionKind.CharacterWiseExclusive
+                MotionResultFlags = MotionResultFlags.None } |> Some
 
     member x.MarkLine c =
         match _markMap.GetLocalMark _textBuffer c with 
@@ -914,15 +915,14 @@ type internal MotionUtil
             {
                 Span = range.ExtentIncludingLineBreak
                 IsForward = x.CaretPoint = startPoint
-                MotionKind = MotionKind.Inclusive
-                OperationKind = OperationKind.LineWise
-                Column = 
+                MotionKind =
                     virtualPoint.Position
                     |> SnapshotPointUtil.GetContainingLine
                     |> TssUtil.FindFirstNonWhiteSpaceCharacter
                     |> SnapshotPointUtil.GetColumn
                     |> CaretColumn.InLastLine
-                    |> Some } |> Some
+                    |> MotionKind.LineWise
+                MotionResultFlags = MotionResultFlags.None } |> Some
 
     /// Find the matching token for the next token on the current line 
     member x.MatchingToken() = 
@@ -950,17 +950,11 @@ type internal MotionUtil
                         SnapshotSpan(caretPoint, otherToken.End), true
                     else
                         SnapshotSpan(otherToken.Start, caretPoint.Add(1)), false
-                let column = 
-                    otherToken.Start 
-                    |> SnapshotPointUtil.GetColumn 
-                    |> CaretColumn.InLastLine
-                    |> Some
                 {
                     Span = span
                     IsForward = isForward
-                    MotionKind = MotionKind.Inclusive
-                    OperationKind = OperationKind.CharacterWise
-                    Column = column } |> Some
+                    MotionKind = MotionKind.CharacterWiseInclusive
+                    MotionResultFlags = MotionResultFlags.None } |> Some
 
     /// Implementation of the 'ap' motion.  Unfortunately this is not as simple as the documentation
     /// states it is.  While the 'ap' motion uses the same underlying definition of a paragraph 
@@ -1041,9 +1035,8 @@ type internal MotionUtil
                 {
                     Span = span 
                     IsForward = true 
-                    MotionKind = MotionKind.Exclusive 
-                    OperationKind = OperationKind.CharacterWise 
-                    Column = None } |> Some
+                    MotionKind = MotionKind.CharacterWiseExclusive
+                    MotionResultFlags = MotionResultFlags.None } |> Some
             else
                 None
 
@@ -1151,13 +1144,11 @@ type internal MotionUtil
                 | false, Some spaceSpan-> SnapshotSpan(span.Start, spaceSpan.End)
 
 
-        let column = span.End |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine |> Some
         {
             Span = span 
             IsForward = true 
-            MotionKind = MotionKind.Exclusive 
-            OperationKind = OperationKind.CharacterWise 
-            Column = column }
+            MotionKind = MotionKind.CharacterWiseExclusive
+            MotionResultFlags = MotionResultFlags.None }
 
     /// Implements the 'aw' motion.  The 'aw' motion is limited to the current line and won't ever
     /// extend above or below it.
@@ -1238,9 +1229,8 @@ type internal MotionUtil
             {
                 Span = span 
                 IsForward = true 
-                MotionKind = MotionKind.Exclusive 
-                OperationKind = OperationKind.CharacterWise 
-                Column = None } |> Some
+                MotionKind = MotionKind.CharacterWiseExclusive
+                MotionResultFlags = MotionResultFlags.None } |> Some
 
     member x.BeginingOfLine() = 
         let start = x.CaretPoint
@@ -1249,9 +1239,8 @@ type internal MotionUtil
         {
             Span = span 
             IsForward = false 
-            MotionKind = MotionKind.Exclusive 
-            OperationKind = OperationKind.CharacterWise 
-            Column = None}
+            MotionKind = MotionKind.CharacterWiseExclusive
+            MotionResultFlags = MotionResultFlags.None }
 
     /// Search for the specified char in the given direction.
     member x.CharSearch c count charSearch direction = 
@@ -1284,20 +1273,20 @@ type internal MotionUtil
                 forward () |> Option.map (fun point ->
                     let endPoint = SnapshotPointUtil.AddOneOrCurrent point
                     let span = SnapshotSpan(x.CaretPoint, endPoint)
-                    span, MotionKind.Inclusive)
+                    span, MotionKind.CharacterWiseInclusive)
             | CharSearchKind.TillChar, Path.Forward -> 
                 forward () |> Option.map (fun point ->
                     let span = SnapshotSpan(x.CaretPoint, point)
-                    span, MotionKind.Inclusive)
+                    span, MotionKind.CharacterWiseInclusive)
             | CharSearchKind.ToChar, Path.Backward ->
                 backward () |> Option.map (fun point ->
                     let span = SnapshotSpan(point, x.CaretPoint)
-                    span, MotionKind.Exclusive)
+                    span, MotionKind.CharacterWiseExclusive)
             | CharSearchKind.TillChar, Path.Backward ->
                 backward () |> Option.map (fun point ->
                     let point = SnapshotPointUtil.AddOne point
                     let span = SnapshotSpan(point, x.CaretPoint)
-                    span, MotionKind.Exclusive)
+                    span, MotionKind.CharacterWiseExclusive)
         match option with 
         | None ->
             None
@@ -1306,8 +1295,7 @@ type internal MotionUtil
                 Span = span;
                 IsForward = match direction with | Path.Forward -> true | Path.Backward -> false
                 MotionKind = motionKind
-                OperationKind = OperationKind.CharacterWise 
-                Column = None } |> Some
+                MotionResultFlags = MotionResultFlags.None } |> Some
 
     /// Repeat the last f, F, t or T search pattern.
     member x.RepeatLastCharSearch () =
@@ -1333,9 +1321,9 @@ type internal MotionUtil
         {
             Span = span 
             IsForward = true 
-            MotionKind = MotionKind.AnyWord
-            OperationKind = OperationKind.CharacterWise 
-            Column = None}
+            MotionKind = MotionKind.CharacterWiseExclusive
+            MotionResultFlags = MotionResultFlags.AnyWord }
+
     member x.WordBackward kind count =
         let start = x.CaretPoint
         let startPoint = TssUtil.FindPreviousWordStart start count kind
@@ -1343,9 +1331,8 @@ type internal MotionUtil
         {
             Span = span 
             IsForward = false 
-            MotionKind = MotionKind.AnyWord
-            OperationKind = OperationKind.CharacterWise 
-            Column = None}
+            MotionKind = MotionKind.CharacterWiseExclusive
+            MotionResultFlags = MotionResultFlags.AnyWord }
 
     /// Implements the 'e' and 'E' motions
     member x.EndOfWord kind count = 
@@ -1384,9 +1371,8 @@ type internal MotionUtil
         { 
             Span = span
             IsForward = true
-            MotionKind = MotionKind.Inclusive
-            OperationKind = OperationKind.CharacterWise
-            Column = column }
+            MotionKind = MotionKind.CharacterWiseInclusive
+            MotionResultFlags = MotionResultFlags.None }
 
     member x.EndOfLine count = 
         let start = x.CaretPoint
@@ -1394,9 +1380,8 @@ type internal MotionUtil
         {
             Span = span 
             IsForward = true 
-            MotionKind = MotionKind.Inclusive 
-            OperationKind = OperationKind.CharacterWise 
-            Column = None}
+            MotionKind = MotionKind.CharacterWiseInclusive
+            MotionResultFlags = MotionResultFlags.None }
 
     /// Find the first non-whitespace character on the current line.  
     member x.FirstNonWhiteSpaceOnCurrentLine () =
@@ -1413,9 +1398,8 @@ type internal MotionUtil
         {
             Span = span 
             IsForward = isForward 
-            MotionKind = MotionKind.Exclusive 
-            OperationKind = OperationKind.CharacterWise 
-            Column = None } 
+            MotionKind = MotionKind.CharacterWiseExclusive
+            MotionResultFlags = MotionResultFlags.None }
 
     /// Create a line wise motion from the current line to (count - 1) lines
     /// downward 
@@ -1424,27 +1408,25 @@ type internal MotionUtil
         let endLine = 
             let number = startLine.LineNumber + (count - 1)
             SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
-        let column = TssUtil.FindFirstNonWhiteSpaceCharacter endLine |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine |> Some
+        let column = TssUtil.FindFirstNonWhiteSpaceCharacter endLine |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
         let range = SnapshotLineRangeUtil.CreateForLineRange startLine endLine
         {
             Span = range.ExtentIncludingLineBreak
             IsForward = true
-            MotionKind = MotionKind.Inclusive
-            OperationKind = OperationKind.LineWise
-            Column = column }
+            MotionKind = MotionKind.LineWise column
+            MotionResultFlags = MotionResultFlags.None }
 
     member x.LineDownToFirstNonWhiteSpace count =
         let line = x.CaretPoint |> SnapshotPointUtil.GetContainingLine
         let number = line.LineNumber + count
         let endLine = SnapshotUtil.GetLineOrLast line.Snapshot number
-        let column = TssUtil.FindFirstNonWhiteSpaceCharacter endLine |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine |> Some
+        let column = TssUtil.FindFirstNonWhiteSpaceCharacter endLine |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
         let span = SnapshotSpan(line.Start, endLine.EndIncludingLineBreak)
         {
             Span = span 
             IsForward = true 
-            MotionKind = MotionKind.Inclusive 
-            OperationKind = OperationKind.LineWise 
-            Column = column}
+            MotionKind = MotionKind.LineWise column
+            MotionResultFlags = MotionResultFlags.None }
 
     member x.LineUpToFirstNonWhiteSpace count =
         let point = x.CaretPoint
@@ -1459,9 +1441,8 @@ type internal MotionUtil
         {
             Span = span 
             IsForward = false 
-            MotionKind = MotionKind.Inclusive 
-            OperationKind = OperationKind.LineWise 
-            Column = Some column}
+            MotionKind = MotionKind.LineWise column
+            MotionResultFlags = MotionResultFlags.None }
 
     /// Get the motion which is 'count' characters to the left of the caret on
     /// the same line
@@ -1472,9 +1453,8 @@ type internal MotionUtil
         {
             Span = SnapshotSpan(startPoint, x.CaretPoint)
             IsForward = false 
-            MotionKind = MotionKind.Exclusive 
-            OperationKind = OperationKind.CharacterWise 
-            Column = None }
+            MotionKind = MotionKind.CharacterWiseExclusive
+            MotionResultFlags = MotionResultFlags.None }
 
     /// Get the motion which is 'count' characetrs to the right of the caret 
     /// on the same line
@@ -1490,9 +1470,8 @@ type internal MotionUtil
         {
             Span = SnapshotSpan(x.CaretPoint, endPoint)
             IsForward = true 
-            MotionKind = MotionKind.Exclusive 
-            OperationKind = OperationKind.CharacterWise 
-            Column = None }
+            MotionKind = MotionKind.CharacterWiseExclusive
+            MotionResultFlags = MotionResultFlags.None }
 
     /// Move a single line up from the current line.  Should fail if we are currenly
     /// on the first line of the ITextBuffer
@@ -1502,13 +1481,12 @@ type internal MotionUtil
         else
             let startLine = SnapshotUtil.GetLineOrFirst x.CurrentSnapshot (x.CaretLine.LineNumber - count)
             let span = SnapshotSpan(startLine.Start, x.CaretLine.EndIncludingLineBreak)
-            let column = x.CaretPoint |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine |> Some
+            let column = x.CaretPoint |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
             {
                 Span = span 
                 IsForward = false 
-                MotionKind = MotionKind.Inclusive 
-                OperationKind = OperationKind.LineWise 
-                Column = column } |> Some
+                MotionKind = MotionKind.LineWise column
+                MotionResultFlags = MotionResultFlags.None } |> Some
 
     /// Move a single line down from the current line.  Should fail if we are currenly 
     /// on the last line of the ITextBuffer
@@ -1518,13 +1496,12 @@ type internal MotionUtil
         else
             let endLine = SnapshotUtil.GetLineOrLast x.CurrentSnapshot (x.CaretLine.LineNumber + count)
             let span = SnapshotSpan(x.CaretLine.Start, endLine.EndIncludingLineBreak)
-            let column = x.CaretPoint |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine |> Some
+            let column = x.CaretPoint |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
             {
                 Span = span 
                 IsForward = true 
-                MotionKind = MotionKind.Inclusive 
-                OperationKind = OperationKind.LineWise 
-                Column = column } |> Some
+                MotionKind = MotionKind.LineWise column
+                MotionResultFlags = MotionResultFlags.None } |> Some
 
     member x.LineOrFirstToFirstNonWhiteSpace numberOpt = 
         let point = x.CaretPoint
@@ -1561,9 +1538,8 @@ type internal MotionUtil
         {
             Span = span 
             IsForward = true 
-            MotionKind = MotionKind.Inclusive 
-            OperationKind = OperationKind.CharacterWise 
-            Column = None}
+            MotionKind = MotionKind.CharacterWiseInclusive
+            MotionResultFlags = MotionResultFlags.None }
 
     member x.LineFromTopOfVisibleWindow countOpt = 
         _jumpList.Add x.CaretPoint 
@@ -1581,9 +1557,8 @@ type internal MotionUtil
         {
             Span = span 
             IsForward = isForward 
-            MotionKind = MotionKind.Inclusive 
-            OperationKind = OperationKind.LineWise 
-            Column = None} |> x.ApplyStartOfLineOption
+            MotionKind = MotionKind.LineWise CaretColumn.None
+            MotionResultFlags = MotionResultFlags.None } |> x.ApplyStartOfLineOption
 
     member x.LineFromBottomOfVisibleWindow countOpt =
         _jumpList.Add x.CaretPoint 
@@ -1603,9 +1578,8 @@ type internal MotionUtil
         {
             Span = span 
             IsForward = isForward 
-            MotionKind = MotionKind.Inclusive 
-            OperationKind = OperationKind.LineWise 
-            Column = None} |> x.ApplyStartOfLineOption
+            MotionKind = MotionKind.LineWise CaretColumn.None
+            MotionResultFlags = MotionResultFlags.None } |> x.ApplyStartOfLineOption
 
     member x.LineInMiddleOfVisibleWindow () =
         _jumpList.Add x.CaretPoint 
@@ -1617,13 +1591,12 @@ type internal MotionUtil
             else 
                 let index = lines.Length / 2
                 List.nth lines index
-        let span,isForward = x.SpanAndForwardFromLines caretLine middleLine
+        let span, isForward = x.SpanAndForwardFromLines caretLine middleLine
         {
             Span = span 
             IsForward = isForward 
-            MotionKind = MotionKind.Inclusive 
-            OperationKind = OperationKind.LineWise 
-            Column = None} |> x.ApplyStartOfLineOption
+            MotionKind = MotionKind.LineWise CaretColumn.None
+            MotionResultFlags = MotionResultFlags.None } |> x.ApplyStartOfLineOption
 
     /// Implements the core portion of section backward motions
     member x.SectionBackwardCore sectionKind count = 
@@ -1640,9 +1613,8 @@ type internal MotionUtil
         {
             Span = span 
             IsForward = false 
-            MotionKind = MotionKind.Exclusive 
-            OperationKind = OperationKind.CharacterWise 
-            Column = None }
+            MotionKind = MotionKind.CharacterWiseExclusive
+            MotionResultFlags = MotionResultFlags.None }
 
     /// Implements the ']]' operator
     member x.SectionForward context count = 
@@ -1667,9 +1639,8 @@ type internal MotionUtil
         {
             Span = span 
             IsForward = true 
-            MotionKind = MotionKind.Exclusive 
-            OperationKind = OperationKind.CharacterWise 
-            Column = Some (CaretColumn.InLastLine 0) }
+            MotionKind = MotionKind.CharacterWiseExclusive
+            MotionResultFlags = MotionResultFlags.None }
 
     /// Implements the '][' motion
     member x.SectionForwardOrCloseBrace count =
@@ -1690,14 +1661,12 @@ type internal MotionUtil
             |> SeqUtil.skipMax count
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
-        let column = endPoint |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine |> Some
         let span = SnapshotSpan(x.CaretPoint, endPoint)
         {
             Span = span 
             IsForward = true 
-            MotionKind = MotionKind.Exclusive 
-            OperationKind = OperationKind.CharacterWise 
-            Column = column}
+            MotionKind = MotionKind.CharacterWiseExclusive
+            MotionResultFlags = MotionResultFlags.None }
 
     member x.SentenceBackward count = 
         _jumpList.Add x.CaretPoint
@@ -1710,9 +1679,8 @@ type internal MotionUtil
         {
             Span = span 
             IsForward = false 
-            MotionKind = MotionKind.Exclusive 
-            OperationKind = OperationKind.CharacterWise 
-            Column = None}
+            MotionKind = MotionKind.CharacterWiseExclusive
+            MotionResultFlags = MotionResultFlags.None }
 
     /// Implements the '}' motion
     member x.ParagraphForward count = 
@@ -1723,14 +1691,12 @@ type internal MotionUtil
             |> SeqUtil.skipMax count
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
-        let column = 0 |> CaretColumn.InLastLine |> Some
         let span = SnapshotSpan(x.CaretPoint, endPoint)
         {
             Span = span 
             IsForward = true
-            MotionKind = MotionKind.Exclusive
-            OperationKind = OperationKind.CharacterWise
-            Column = column }
+            MotionKind = MotionKind.CharacterWiseExclusive
+            MotionResultFlags = MotionResultFlags.None }
 
     /// Implements the '{' motion
     member x.ParagraphBackward count = 
@@ -1745,9 +1711,8 @@ type internal MotionUtil
         {
             Span = span 
             IsForward = false
-            MotionKind = MotionKind.Exclusive
-            OperationKind = OperationKind.CharacterWise
-            Column = None }
+            MotionKind = MotionKind.CharacterWiseExclusive
+            MotionResultFlags = MotionResultFlags.None }
 
     member x.QuotedString () = 
         match x.GetQuotedStringData() with
@@ -1759,9 +1724,8 @@ type internal MotionUtil
             {
                 Span = span 
                 IsForward = true 
-                MotionKind = MotionKind.Inclusive 
-                OperationKind = OperationKind.CharacterWise 
-                Column = None} |> Some
+                MotionKind = MotionKind.CharacterWiseInclusive
+                MotionResultFlags = MotionResultFlags.None } |> Some
 
     member x.QuotedStringContents () = 
         match x.GetQuotedStringData() with
@@ -1771,9 +1735,8 @@ type internal MotionUtil
             {
                 Span = span 
                 IsForward = true 
-                MotionKind = MotionKind.Inclusive 
-                OperationKind = OperationKind.CharacterWise 
-                Column = None} |> Some
+                MotionKind = MotionKind.CharacterWiseInclusive
+                MotionResultFlags = MotionResultFlags.None } |> Some
 
     /// Get the motion for a search command.  Used to implement the '/' and '?' motions
     member x.Search (patternData : PatternData) count = 
@@ -1828,16 +1791,14 @@ type internal MotionUtil
                 {
                     Span = SnapshotSpan(caretPoint, endPoint)
                     IsForward = true
-                    MotionKind = MotionKind.AnySearch searchResult
-                    OperationKind = OperationKind.CharacterWise
-                    Column = SnapshotPointUtil.GetColumn endPoint |> CaretColumn.InLastLine |> Some } |> Some
+                    MotionKind = MotionKind.CharacterWiseExclusive
+                    MotionResultFlags = MotionResultFlags.AnySearch } |> Some
             else 
                 {
                     Span = SnapshotSpan(endPoint, caretPoint)
                     IsForward = false
-                    MotionKind = MotionKind.AnySearch searchResult
-                    OperationKind = OperationKind.CharacterWise
-                    Column = SnapshotPointUtil.GetColumn endPoint |> CaretColumn.InLastLine |> Some } |> Some
+                    MotionKind = MotionKind.CharacterWiseExclusive
+                    MotionResultFlags = MotionResultFlags.AnySearch } |> Some
 
     /// Move the caret to the next occurrence of the last search
     member x.LastSearch isReverse count =
@@ -1923,7 +1884,7 @@ type internal MotionUtil
 
         // Do the actual adjustment for exclusive motions.  The kind which should be 
         // added to the adjusted motion is provided
-        let adjust kind = 
+        let adjust () = 
 
             // Intentionally look at the line containing the End here as we
             // want to look to see if this is in column 0 (Vim calls it column 1). 
@@ -1945,22 +1906,22 @@ type internal MotionUtil
                 // is redundant and confusing for line wise motions when moving the 
                 // caret
                 let span = SnapshotSpan(startLine.Start, span.End)
-                let column = motionResult.Column |> Option.map (fun _ -> CaretColumn.AfterLastLine)
-                { motionResult with Span = span; MotionKind = kind; OperationKind = OperationKind.LineWise; Column = column }
+                let kind = MotionKind.LineWise CaretColumn.AfterLastLine
+                { motionResult with Span = span; MotionKind = kind }
             else 
                 // Rule #1. Move this back a line
                 let endPoint = 
                     let line = SnapshotUtil.GetLine span.Snapshot (endLine.LineNumber - 1)
                     line.End
                 let span = SnapshotSpan(span.Start, endPoint)
-                let column = motionResult.Column |> Option.map (fun _ -> CaretColumn.AfterLastLine)
-                { motionResult with Span = span; MotionKind = kind; Column = column }
+                let flags = motionResult.MotionResultFlags ||| MotionResultFlags.ExclusivePromotion
+                let kind = MotionKind.CharacterWiseInclusive
+                { motionResult with Span = span; MotionKind = kind; MotionResultFlags = flags }
 
         match motionResult.MotionKind with
-        | MotionKind.Inclusive -> motionResult
-        | MotionKind.AnyWord -> adjust motionResult.MotionKind
-        | MotionKind.Exclusive -> adjust MotionKind.Inclusive
-        | MotionKind.AnySearch _ -> adjust motionResult.MotionKind
+        | MotionKind.CharacterWiseInclusive -> motionResult
+        | MotionKind.CharacterWiseExclusive -> adjust ()
+        | MotionKind.LineWise _ -> motionResult
 
     /// Run the specified motion and return it's result
     member x.GetMotion motion (motionArgument : MotionArgument) = 

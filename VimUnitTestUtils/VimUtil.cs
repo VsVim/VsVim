@@ -415,13 +415,10 @@ namespace Vim.UnitTest
             SnapshotSpan span,
             bool isForward = true,
             MotionKind motionKind = null,
-            OperationKind operationKind = null,
-            int? column = null)
+            MotionResultFlags flags = MotionResultFlags.None)
         {
-            motionKind = motionKind ?? MotionKind.Inclusive;
-            operationKind = operationKind ?? OperationKind.CharacterWise;
-            var col = column.HasValue ? FSharpOption.Create(CaretColumn.NewInLastLine(column.Value)) : FSharpOption<CaretColumn>.None;
-            return new MotionResult(span, isForward, motionKind, operationKind, col);
+            motionKind = motionKind ?? MotionKind.CharacterWiseInclusive;
+            return new MotionResult(span, isForward, motionKind, flags);
         }
 
         internal static CommandData CreateCommandData(

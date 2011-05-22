@@ -210,12 +210,12 @@ type internal CommandProcessor
             yield ("imapclear", "imapc", [KeyRemapMode.Insert]);
             yield ("cmapclear", "cmapc", [KeyRemapMode.Command]);
         }
+
         let mapClearSeq = 
             mapClearSeq 
             |> Seq.map (fun (name,short,modes) -> (name, short, fun _ _ hasBang -> 
                 this.ProcessKeyMapClear modes hasBang
                 RunResult.Completed))
-
 
         let unmapSeq = seq {
             yield ("unmap", "unm", [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
