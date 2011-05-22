@@ -5,6 +5,7 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
+open Vim.Modes
 
 type QuotedStringData =  {
     LeadingWhiteSpace : SnapshotSpan
@@ -1758,21 +1759,14 @@ type internal MotionUtil
         _vimData.SearchHistory.Add patternData.Pattern
 
         let searchResult = _search.FindNextPattern patternData searchPoint _navigator count
+
+        // Raise the messages that go with this given result
+        CommonUtil.RaiseSearchResultMessage _statusUtil searchResult
+
         match searchResult with
         | SearchResult.NotFound (searchData, isOutsidePath) ->
 
-            // If the search is not found we need to raise the appropriate error
-            // message here.  Warning messages are only produced if the caret
-            // is actually moved (done elsewhere)
-            let format = 
-                if isOutsidePath then
-                    match searchData.Kind.Path with
-                    | Path.Forward -> Resources.Common_SearchHitBottomWithout
-                    | Path.Backward -> Resources.Common_SearchHitTopWithout 
-                else
-                    Resources.Common_PatternNotFound
-
-            _statusUtil.OnError (format searchData.Pattern)
+            // Nothing to return here. 
             None
 
         | SearchResult.Found (_, span, _) ->

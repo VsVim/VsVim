@@ -44,7 +44,7 @@ namespace VimCore.UnitTest
             _statusUtil = _factory.Create<IStatusUtil>();
             _operations = _factory.Create<ICommonOperations>();
             _operations.Setup(x => x.EnsureCaretOnScreenAndTextExpanded());
-            _operations.Setup(x => x.RaiseSearchResultMessages(It.IsAny<SearchResult>()));
+            _operations.Setup(x => x.RaiseSearchResultMessage(It.IsAny<SearchResult>()));
             _operations.Setup(x => x.EditorOptions).Returns(EditorUtil.FactoryService.EditorOptionsFactory.GetOptions(_textView));
             _recorder = _factory.Create<IMacroRecorder>(MockBehavior.Loose);
             _smartIdentationService = _factory.Create<ISmartIndentationService>();

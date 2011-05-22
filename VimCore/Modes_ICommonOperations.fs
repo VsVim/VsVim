@@ -27,13 +27,8 @@ type OperationsData = {
 }
 
 type Result = 
-| Succeeded
-| Failed of string
-
-[<RequireQualifiedAccess>]
-type PutKind =
-| Before
-| After
+    | Succeeded
+    | Failed of string
 
 /// This class abstracts out the operations that are common to normal, visual and 
 /// command mode.  It usually contains common edit and movement operations and very
@@ -160,7 +155,7 @@ type ICommonOperations =
     abstract Put : SnapshotPoint -> StringData -> OperationKind -> unit
 
     /// Raise the error / warning messages for the given SearchResult
-    abstract RaiseSearchResultMessages : SearchResult -> unit
+    abstract RaiseSearchResultMessage : SearchResult -> unit
 
     /// Redo the buffer changes "count" times
     abstract Redo : count:int -> unit

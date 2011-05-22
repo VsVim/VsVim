@@ -235,7 +235,7 @@ namespace VimCore.UnitTest
         /// Blank lines are sentences
         /// </summary>
         [Test]
-        public void Motion_MoveSentenceForBlankLine()
+        public void Move_SentenceForBlankLine()
         {
             Create("dog.  ", "", "cat");
             _buffer.Process(")");
@@ -243,10 +243,33 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// A warning message should be raised when a search forward for a value
+        /// causes a wrap to occur
+        /// </summary>
+        [Test]
+        public void Move_SearchWraps()
+        {
+            Create("dog", "cat", "tree");
+            var didHit = false;
+            _textView.MoveCaretToLine(1);
+            _assertOnWarningMessage = false;
+            _buffer.Settings.GlobalSettings.WrapScan = true;
+            _buffer.WarningMessage +=
+                (_, msg) =>
+                {
+                    Assert.AreEqual(Resources.Common_SearchForwardWrapped, msg);
+                    didHit = true;
+                };
+            _buffer.Process("/dog", enter: true);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.IsTrue(didHit);
+        }
+
+        /// <summary>
         /// Make sure the paragraph move goes to the appropriate location
         /// </summary>
         [Test]
-        public void Motion_MoveParagraphForward()
+        public void Move_ParagraphForward()
         {
             Create("dog", "", "cat", "", "bear");
             _buffer.Process("}");
@@ -257,7 +280,7 @@ namespace VimCore.UnitTest
         /// Make sure the paragraph move backward goes to the appropriate location
         /// </summary>
         [Test]
-        public void Motion_MoveParagraphBackward()
+        public void Move_ParagraphBackward()
         {
             Create("dog", "", "cat", "pig", "");
             _textView.MoveCaretToLine(3);
@@ -270,7 +293,7 @@ namespace VimCore.UnitTest
         /// started on the first line of the paragraph containing actual text
         /// </summary>
         [Test]
-        public void Motion_MoveParagraphBackwardFromTextStart()
+        public void Move_ParagraphBackwardFromTextStart()
         {
             Create("dog", "", "cat", "pig", "");
             _textView.MoveCaretToLine(2);
@@ -284,7 +307,7 @@ namespace VimCore.UnitTest
         /// </summary>
         [Test]
         [Ignore("Wait for the section last line issue to be fixed")]
-        public void Motion_MoveSectionForwardFromCloseBrace()
+        public void Move_SectionForwardFromCloseBrace()
         {
             Create("dog", "}", "bed", "cat");
             _buffer.Process("][");
@@ -299,7 +322,7 @@ namespace VimCore.UnitTest
         /// </summary>
         [Test]
         [Ignore("Wait for the section last line issue to be fixed")]
-        public void Motion_MoveSectionFromAfterCloseBrace()
+        public void Move_SectionFromAfterCloseBrace()
         {
             Create("dog", "} bed", "cat");
             _textView.MoveCaretToLine(1, 3);
@@ -315,7 +338,7 @@ namespace VimCore.UnitTest
         /// </summary>
         [Test]
         [Ignore("Wait for the section last line issue to be fixed")]
-        public void Motion_MoveSectionBracesInARow()
+        public void Move_SectionBracesInARow()
         {
             Create("dog", "}", "}", "}", "cat");
 
@@ -340,7 +363,7 @@ namespace VimCore.UnitTest
         /// </summary>
         [Test]
         [Ignore("Wait for the section last line issue to be fixed")]
-        public void Motion_MoveSectionForwardFromMacro()
+        public void Move_SectionForwardFromMacro()
         {
             Create("dog", ".SH", "bed", "cat");
             _globalSettings.Sections = "SH";
@@ -1840,6 +1863,29 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// When a delete of a search motion which wraps occurs a warning message should
+        /// be displayed
+        /// </summary>
+        [Test]
+        public void Delete_SearchWraps()
+        {
+            Create("dog", "cat", "tree");
+            var didHit = false;
+            _textView.MoveCaretToLine(1);
+            _assertOnWarningMessage = false;
+            _buffer.WarningMessage +=
+                (_, msg) =>
+                {
+                    Assert.AreEqual(Resources.Common_SearchForwardWrapped, msg);
+                    didHit = true;
+                };
+            _buffer.Process("d/dog", enter: true);
+            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual("tree", _textView.GetLine(1).GetText());
+            Assert.IsTrue(didHit);
+        }
+
+        /// <summary>
         /// Make sure we properly update register 0 during a yank
         /// </summary>
         [Test]
@@ -1930,12 +1976,20 @@ namespace VimCore.UnitTest
         public void Yank_WrappingSearchSucceeds()
         {
             Create("dog", "cat", "dog", "fish");
+            var didHit = false;
+            _buffer.WarningMessage +=
+                (_, msg) =>
+                {
+                    Assert.AreEqual(Resources.Common_SearchForwardWrapped, msg);
+                    didHit = true;
+                };
+            _assertOnWarningMessage = false;
             _globalSettings.WrapScan = true;
             _textView.MoveCaretToLine(2);
-            _assertOnErrorMessage = false;
 
             _buffer.Process("y/dog", enter: true);
             Assert.AreEqual("dog" + Environment.NewLine + "cat" + Environment.NewLine, UnnamedRegister.StringValue);
+            Assert.IsTrue(didHit);
         }
 
         /// <summary>
@@ -1980,13 +2034,21 @@ namespace VimCore.UnitTest
         public void JumpList_NextWordUnderCursorWithNoMatch()
         {
             Create("cat", "dog", "fish");
-            _assertOnErrorMessage = false;
+            var didHit = false;
+            _buffer.WarningMessage +=
+                (_, msg) =>
+                {
+                    Assert.AreEqual(Resources.Common_SearchForwardWrapped, msg);
+                    didHit = true;
+                };
+            _assertOnWarningMessage = false;
             _buffer.Process("*");
             _textView.MoveCaretToLine(2);
             _buffer.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
             Assert.AreEqual(_textView.GetPoint(0), _textView.GetCaretPoint());
             _buffer.Process(KeyInputUtil.CharWithControlToKeyInput('i'));
             Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+            Assert.IsTrue(didHit);
         }
 
         /// <summary>

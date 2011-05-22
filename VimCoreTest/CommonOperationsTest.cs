@@ -1109,7 +1109,7 @@ namespace VimCore.UnitTest
         {
             Create("");
             _statusUtil.Setup(x => x.OnError(Resources.Common_PatternNotFound("dog"))).Verifiable();
-            _operations.RaiseSearchResultMessages(SearchResult.NewNotFound(
+            _operations.RaiseSearchResultMessage(SearchResult.NewNotFound(
                 VimUtil.CreateSearchData("dog"),
                 false));
             _statusUtil.Verify();
@@ -1124,7 +1124,7 @@ namespace VimCore.UnitTest
         {
             Create("");
             _statusUtil.Setup(x => x.OnError(Resources.Common_SearchHitBottomWithout("dog"))).Verifiable();
-            _operations.RaiseSearchResultMessages(SearchResult.NewNotFound(
+            _operations.RaiseSearchResultMessage(SearchResult.NewNotFound(
                 VimUtil.CreateSearchData("dog", SearchKind.Forward),
                 true));
             _statusUtil.Verify();
@@ -1139,7 +1139,7 @@ namespace VimCore.UnitTest
         {
             Create("");
             _statusUtil.Setup(x => x.OnError(Resources.Common_SearchHitTopWithout("dog"))).Verifiable();
-            _operations.RaiseSearchResultMessages(SearchResult.NewNotFound(
+            _operations.RaiseSearchResultMessage(SearchResult.NewNotFound(
                 VimUtil.CreateSearchData("dog", SearchKind.Backward),
                 true));
             _statusUtil.Verify();

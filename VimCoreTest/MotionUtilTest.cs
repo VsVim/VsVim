@@ -1955,9 +1955,11 @@ namespace VimCore.UnitTest
         public void NextWord_BackwardGoPastBlanks()
         {
             Create("dog   cat", "cat");
+            _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchBackwardWrapped)).Verifiable();
             _textView.MoveCaretTo(4);
             var result = _motionUtil.NextWord(Path.Backward, 1).Value;
             Assert.AreEqual("  cat" + Environment.NewLine, result.Span.GetText());
+            _statusUtil.Verify();
         }
 
         /// <summary>
@@ -1997,8 +1999,10 @@ namespace VimCore.UnitTest
             Create("dog cat", "dog", "dog");
             var data = VimUtil.CreatePatternData("dog", Path.Forward);
             _vimData.LastPatternData = data;
+            _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchBackwardWrapped)).Verifiable();
             _motionUtil.LastSearch(true, 1);
             Assert.AreEqual(data, _vimData.LastPatternData);
+            _statusUtil.Verify();
         }
 
         /// <summary>

@@ -9,6 +9,29 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 open System.Text.RegularExpressions
 
+module internal CommonUtil = 
+
+    /// Raise the error / warning messages for a given SearchResult
+    let RaiseSearchResultMessage (statusUtil : IStatusUtil) searchResult =
+
+        match searchResult with 
+        | SearchResult.Found (searchData, _, didWrap) ->
+            if didWrap then
+                let message = 
+                    if searchData.Kind.IsAnyForward then Resources.Common_SearchForwardWrapped
+                    else Resources.Common_SearchBackwardWrapped
+                statusUtil.OnWarning message
+        | SearchResult.NotFound (searchData, isOutsidePath) ->
+            let format = 
+                if isOutsidePath then
+                    match searchData.Kind.Path with
+                    | Path.Forward -> Resources.Common_SearchHitBottomWithout
+                    | Path.Backward -> Resources.Common_SearchHitTopWithout 
+                else
+                    Resources.Common_PatternNotFound
+
+            statusUtil.OnError (format searchData.Pattern)
+
 type internal CommonOperations ( _data : OperationsData ) =
     let _textBuffer = _data.TextView.TextBuffer
     let _textView = _data.TextView
@@ -197,27 +220,6 @@ type internal CommonOperations ( _data : OperationsData ) =
             let prefix = StringUtil.repeatChar tabCount '\t'
             let suffix = StringUtil.repeatChar spacesCount ' '
             prefix + suffix
-
-    /// Raise the messages for the given SearchResult
-    member x.RaiseSearchResultMessages searchResult = 
-
-        match searchResult with 
-        | SearchResult.Found (searchData, _, didWrap) ->
-            if didWrap then
-                let message = 
-                    if searchData.Kind.IsAnyForward then Resources.Common_SearchForwardWrapped
-                    else Resources.Common_SearchBackwardWrapped
-                _statusUtil.OnWarning message
-        | SearchResult.NotFound (searchData, isOutsidePath) ->
-            let format = 
-                if isOutsidePath then
-                    match searchData.Kind.Path with
-                    | Path.Forward -> Resources.Common_SearchHitBottomWithout
-                    | Path.Backward -> Resources.Common_SearchHitTopWithout 
-                else
-                    Resources.Common_PatternNotFound
-
-            _statusUtil.OnError (format searchData.Pattern)
 
     /// Shifts a block of lines to the left
     member x.ShiftLineBlockLeft (col: SnapshotSpan seq) multiplier =
@@ -456,6 +458,9 @@ type internal CommonOperations ( _data : OperationsData ) =
         else
             func()
 
+    member x.RaiseSearchResultMessage searchResult = 
+        CommonUtil.RaiseSearchResultMessage _statusUtil searchResult
+
     /// Undo 'count' operations in the ITextBuffer and ensure the caret is on the screen
     /// after the undo completes
     member x.Undo count = 
@@ -517,7 +522,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                     Failed(msg)
                 | None ->  Failed(Resources.Common_GotoDefNoWordUnderCursor) 
 
-        member x.RaiseSearchResultMessages searchResult = x.RaiseSearchResultMessages searchResult
+        member x.RaiseSearchResultMessage searchResult = x.RaiseSearchResultMessage searchResult
         member x.SetMark point c (markMap : IMarkMap) = 
             if System.Char.IsLetter(c) || c = '\'' || c = '`' then
                 markMap.SetMark point c

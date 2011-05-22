@@ -389,7 +389,7 @@ type internal CommandProcessor
 
         let patternData = { Pattern = pattern; Path = path }
         let result = _searchService.FindNextPattern patternData startPoint _buffer.WordNavigator 1
-        _operations.RaiseSearchResultMessages(result)
+        _operations.RaiseSearchResultMessage(result)
 
         match result with
         | SearchResult.Found (_, span, _) ->
