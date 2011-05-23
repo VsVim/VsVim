@@ -895,6 +895,37 @@ namespace VimCore.UnitTest
             Assert.AreEqual("};", _textView.GetLine(1).GetText());
         }
 
+        /// <summary>
+        /// The insert line above command should be linked the the following text change
+        /// </summary>
+        [Test]
+        public void RepeatCommand_InsertLineAbove()
+        {
+            Create("cat", "dog", "tree");
+            _textView.MoveCaretToLine(2);
+            _buffer.Process("O  fish");
+            _buffer.Process(VimKey.Escape);
+            Assert.AreEqual("  fish", _textView.GetLine(2).GetText());
+            _textView.MoveCaretToLine(1);
+            _buffer.Process(".");
+            Assert.AreEqual("  fish", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// The insert line below command should be linked the the following text change
+        /// </summary>
+        [Test]
+        public void RepeatCommand_InsertLineBelow()
+        {
+            Create("cat", "dog", "tree");
+            _buffer.Process("o  fish");
+            _buffer.Process(VimKey.Escape);
+            Assert.AreEqual("  fish", _textView.GetLine(1).GetText());
+            _textView.MoveCaretToLine(2);
+            _buffer.Process(".");
+            Assert.AreEqual("  fish", _textView.GetLine(3).GetText());
+        }
+
         [Test]
         public void Repeat_DeleteWithIncrementalSearch()
         {
