@@ -2167,6 +2167,9 @@ and IVim =
     /// which has focus 
     abstract ActiveBuffer : IVimBuffer option
 
+    /// Get the set of tracked IVimBuffer instances
+    abstract Buffers : IVimBuffer list
+
     /// Get the IVimBuffer which currently has KeyBoard focus
     abstract FocusedBuffer : IVimBuffer option
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
@@ -31,6 +32,7 @@ namespace VimCore.UnitTest
         private Mock<IStatusUtil> _statusUtil;
         private Mock<IFileSystem> _fileSystem;
         private Mock<IVimHost> _host;
+        private Mock<IVim> _vim;
 
         public void Create(params string[] lines)
         {
@@ -46,10 +48,11 @@ namespace VimCore.UnitTest
             _statusUtil = _factory.Create<IStatusUtil>();
             _fileSystem = _factory.Create<IFileSystem>(MockBehavior.Strict);
             _vimData = new VimData();
+            _vim = MockObjectFactory.CreateVim(_map, host: _host.Object, vimData: _vimData, factory: _factory);
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _textView,
                 "test",
-                MockObjectFactory.CreateVim(_map, host: _host.Object, vimData: _vimData).Object);
+                _vim.Object);
             _processorRaw = new Vim.Modes.Command.CommandProcessor(_bufferData.Object, _operations.Object, _statusUtil.Object, _fileSystem.Object);
             _processor = _processorRaw;
         }
@@ -1545,31 +1548,50 @@ namespace VimCore.UnitTest
             _factory.Verify();
         }
 
+        /// <summary>
+        /// When provided the ! bang option the application should just rudely exit
+        /// </summary>
         [Test]
-        public void QuitAll1()
+        public void QuitAll_WithBang()
         {
             Create("");
-            _operations.Setup(x => x.CloseAll(true)).Verifiable();
-            RunCommand("qall");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void QuitAll2()
-        {
-            Create("");
-            _operations.Setup(x => x.CloseAll(false)).Verifiable();
+            _host.Setup(x => x.Quit()).Verifiable();
             RunCommand("qall!");
-            _operations.Verify();
+            _host.Verify();
         }
 
+        /// <summary>
+        /// If there are no dirty files then we should just be exiting and not raising any messages
+        /// </summary>
         [Test]
-        public void QuitAll3()
+        public void QuitAll_WithNoDirty()
         {
             Create("");
-            _operations.Setup(x => x.CloseAll(true)).Verifiable();
-            RunCommand("qa");
-            _operations.Verify();
+            var buffer = _factory.Create<IVimBuffer>();
+            buffer.SetupGet(x => x.TextBuffer).Returns(_factory.Create<ITextBuffer>().Object);
+            var list = new List<IVimBuffer>() { buffer.Object };
+            _vim.SetupGet(x => x.Buffers).Returns(list.ToFSharpList()).Verifiable();
+            _host.Setup(x => x.IsDirty(It.IsAny<ITextBuffer>())).Returns(false).Verifiable();
+            _host.Setup(x => x.Quit()).Verifiable();
+            RunCommand("qall");
+            _factory.Verify();
+        }
+
+        /// <summary>
+        /// If there are dirty buffers and the ! option is missing then an error needs to be raised
+        /// </summary>
+        [Test]
+        public void QuitAll_WithDirty()
+        {
+            Create("");
+            var buffer = _factory.Create<IVimBuffer>();
+            buffer.SetupGet(x => x.TextBuffer).Returns(_factory.Create<ITextBuffer>().Object);
+            var list = new List<IVimBuffer>() { buffer.Object };
+            _vim.SetupGet(x => x.Buffers).Returns(list.ToFSharpList()).Verifiable();
+            _host.Setup(x => x.IsDirty(It.IsAny<ITextBuffer>())).Returns(true).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.Common_NoWriteSinceLastChange)).Verifiable();
+            RunCommand("qall");
+            _factory.Verify();
         }
 
         [Test]

@@ -139,7 +139,8 @@ type internal CommandProcessor
     let _host = _buffer.Vim.VimHost
     let _regexFactory = VimRegexFactory(_buffer.Settings.GlobalSettings)
     let _registerMap = _buffer.RegisterMap
-    let _searchService = _buffer.Vim.SearchService
+    let _vim = _buffer.Vim
+    let _searchService = _vim.SearchService
     let _vimData = _buffer.VimData
 
     let mutable _command : System.String = System.String.Empty
@@ -171,6 +172,7 @@ type internal CommandProcessor
             yield ("put", "pu", this.ProcessPut |> wrap)
             yield ("quit", "q", this.ProcessQuit |> wrap)
             yield ("qall", "qa", this.ProcessQuitAll |> wrap)
+            yield ("quitall", "quita", this.ProcessQuitAll |> wrap)
             yield ("redo", "red", this.ProcessRedo |> wrap)
             yield ("registers", "reg", this.ProcessRegisters |> wrap)
             yield ("set", "se", this.ProcessSet |> wrap)
@@ -443,11 +445,22 @@ type internal CommandProcessor
 
         host.Close _textView false
 
-    member x.ProcessQuit _ _ hasBang = _buffer.Vim.VimHost.Close _buffer.TextView (not hasBang)
+    member x.ProcessQuit _ _ hasBang = 
+        _buffer.Vim.VimHost.Close _buffer.TextView (not hasBang)
 
+    /// Process the ':quitall' family of commands.
     member x.ProcessQuitAll _ _ hasBang =
-        let checkDirty = not hasBang
-        _operations.CloseAll checkDirty
+
+        // If the ! flag is not passed then we raise an error if any of the ITextBuffer instances 
+        // are dirty
+        if not hasBang then
+            let anyDirty = _vim.Buffers |> Seq.exists (fun buffer -> _host.IsDirty buffer.TextBuffer)
+            if anyDirty then 
+                _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
+            else
+                _host.Quit()
+        else
+            _host.Quit()
 
     member x.ProcessTabNext rest _ _ =
         let count, _ = RangeUtil.ParseNumber rest

@@ -288,6 +288,8 @@ type internal Vim
 
     member x.ActiveBuffer = ListUtil.tryHeadOnly _activeBufferStack
 
+    member x.Buffers = _bufferMap.Values |> Seq.map fst |> List.ofSeq
+
     member x.FocusedBuffer = 
         match _host.GetFocusedTextView() with
         | None -> 
@@ -372,6 +374,7 @@ type internal Vim
 
     interface IVim with
         member x.ActiveBuffer = x.ActiveBuffer
+        member x.Buffers = x.Buffers
         member x.FocusedBuffer = x.FocusedBuffer
         member x.VimData = _vimData
         member x.VimHost = _host

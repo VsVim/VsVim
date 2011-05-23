@@ -66,9 +66,6 @@ type ICommonOperations =
     /// Close the current buffer
     abstract Close : checkDirty : bool -> unit
 
-    /// Close all open files
-    abstract CloseAll : checkDirty : bool -> unit
-
     /// Close count folds in the given SnapshotSpan
     abstract CloseFold : SnapshotSpan -> count:int -> unit
 

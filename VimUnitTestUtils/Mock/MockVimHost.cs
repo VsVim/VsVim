@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.FSharp.Collections;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
@@ -17,6 +18,7 @@ namespace Vim.UnitTest.Mock
         public bool NavigateToReturn { get; set; }
         public int ShowOpenFileDialogCount { get; set; }
         public ITextView FocusedTextView { get; set; }
+        public FSharpList<IVimBuffer> Buffers { get; set; }
 
         public MockVimHost()
         {
@@ -53,11 +55,6 @@ namespace Vim.UnitTest.Mock
         }
 
         void IVimHost.Close(ITextView textView, bool checkDirty)
-        {
-            throw new NotImplementedException();
-        }
-
-        void IVimHost.CloseAllFiles(bool checkDirty)
         {
             throw new NotImplementedException();
         }
@@ -166,6 +163,11 @@ namespace Vim.UnitTest.Mock
         public Microsoft.FSharp.Core.FSharpOption<ITextView> GetFocusedTextView()
         {
             return FSharpOption.CreateForReference(FocusedTextView);
+        }
+
+        void IVimHost.Quit()
+        {
+            throw new NotImplementedException();
         }
     }
 }

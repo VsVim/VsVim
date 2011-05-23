@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Media;
+using System.Windows;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -36,8 +37,6 @@ namespace Vim.UI.Wpf
         {
             textView.Close();
         }
-
-        public abstract void CloseAllFiles(bool checkDirty);
 
         /// <summary>
         /// Ensure the given SnapshotPoint is visible on the screen
@@ -155,6 +154,11 @@ namespace Vim.UI.Wpf
 
         public abstract bool NavigateTo(VirtualSnapshotPoint point);
 
+        public virtual void Quit()
+        {
+            Application.Current.Shutdown();
+        }
+
         public virtual bool Reload(ITextBuffer textBuffer)
         {
             ITextDocument document;
@@ -197,5 +201,149 @@ namespace Vim.UI.Wpf
             _textViewList.Add(textView);
             textView.Closed += delegate { _textViewList.Remove(textView); };
         }
+
+        #region IVimHost
+
+        void IVimHost.Beep()
+        {
+            Beep();
+        }
+
+        void IVimHost.BuildSolution()
+        {
+            BuildSolution();
+        }
+
+        void IVimHost.Close(ITextView value, bool checkDirty)
+        {
+            Close(value, checkDirty);
+        }
+
+        void IVimHost.EnsureVisible(ITextView textView, SnapshotPoint point)
+        {
+            EnsureVisible(textView, point);
+        }
+
+        void IVimHost.FormatLines(ITextView textView, SnapshotLineRange range)
+        {
+            FormatLines(textView, range);
+        }
+
+        FSharpOption<ITextView> IVimHost.GetFocusedTextView()
+        {
+            return GetFocusedTextView();
+        }
+
+        string IVimHost.GetName(ITextBuffer textBuffer)
+        {
+            return GetName(textBuffer);
+        }
+
+        bool IVimHost.GoToDefinition()
+        {
+            return GoToDefinition();
+        }
+
+        bool IVimHost.GoToGlobalDeclaration(ITextView textView, string identifier)
+        {
+            return GoToGlobalDeclaration(textView, identifier);
+        }
+
+        bool IVimHost.GoToLocalDeclaration(ITextView textView, string identifier)
+        {
+            return GoToLocalDeclaration(textView, identifier);
+        }
+
+        void IVimHost.GoToNextTab(Path value, int count)
+        {
+            GoToNextTab(value, count);
+        }
+
+        void IVimHost.GoToTab(int index)
+        {
+            GoToTab(index);
+        }
+
+        bool IVimHost.IsDirty(ITextBuffer textBuffer)
+        {
+            return IsDirty(textBuffer);
+        }
+
+        HostResult IVimHost.LoadFileIntoExistingWindow(string filePath, ITextBuffer textBuffer)
+        {
+            return LoadFileIntoExistingWindow(filePath, textBuffer);
+        }
+
+        HostResult IVimHost.LoadFileIntoNewWindow(string filePath)
+        {
+            return LoadFileIntoNewWindow(filePath);
+        }
+
+        void IVimHost.MoveViewDown(ITextView value)
+        {
+            MoveViewDown(value);
+        }
+
+        void IVimHost.MoveViewLeft(ITextView value)
+        {
+            MoveViewLeft(value);
+        }
+
+        void IVimHost.MoveViewRight(ITextView value)
+        {
+            MoveViewRight(value);
+        }
+
+        void IVimHost.MoveViewUp(ITextView value)
+        {
+            MoveViewUp(value);
+        }
+
+        bool IVimHost.NavigateTo(VirtualSnapshotPoint point)
+        {
+            return NavigateTo(point);
+        }
+
+        void IVimHost.Quit()
+        {
+            Quit();
+        }
+
+        bool IVimHost.Reload(ITextBuffer value)
+        {
+            return Reload(value);
+        }
+
+        bool IVimHost.Save(ITextBuffer value)
+        {
+            return Save(value);
+        }
+
+        bool IVimHost.SaveAllFiles()
+        {
+            return SaveAllFiles();
+        }
+
+        bool IVimHost.SaveTextAs(string text, string filePath)
+        {
+            return SaveTextAs(text, filePath);
+        }
+
+        void IVimHost.ShowOpenFileDialog()
+        {
+            ShowOpenFileDialog();
+        }
+
+        HostResult IVimHost.SplitViewHorizontally(ITextView value)
+        {
+            return SplitViewHorizontally(value);
+        }
+
+        HostResult IVimHost.SplitViewVertically(ITextView value)
+        {
+            return SplitViewVertically(value);
+        }
+
+        #endregion
     }
 }

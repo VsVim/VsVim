@@ -590,7 +590,6 @@ type internal CommonOperations ( _data : OperationsData ) =
             _host.SaveTextAs text fileName
         member x.SaveAll() = _host.SaveAllFiles()
         member x.Close checkDirty = _host.Close _textView checkDirty
-        member x.CloseAll checkDirty = _host.CloseAllFiles checkDirty
         member x.GoToNextTab direction count = _host.GoToNextTab direction count
         member x.GoToTab index = _host.GoToTab index
         member x.EnsureCaretOnScreen () = x.EnsureCaretOnScreen()
