@@ -39,7 +39,7 @@ namespace VsVim.UI
 
             foreach (var firstKey in allFirstKeys)
             {
-                KeyBindingData data = new KeyBindingData(handledByVsVim[firstKey].Union(handledByVs[firstKey]));
+                var data = new KeyBindingData(handledByVsVim[firstKey].Union(handledByVs[firstKey]));
                 data.HandledByVsVim = handledByVsVim.Contains(firstKey);
                 _keyBindingList.Add(data);
             }

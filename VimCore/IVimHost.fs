@@ -78,9 +78,6 @@ type IVimHost =
     /// Save the current document as a new file with the specified name
     abstract SaveTextAs : text:string -> filePath:string -> bool 
 
-    /// Saves all files
-    abstract SaveAllFiles : unit -> bool
-
     /// Close the provided view
     abstract Close : ITextView -> checkDirty:bool -> unit
 

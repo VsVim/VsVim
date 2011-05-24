@@ -69,11 +69,6 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        bool IVimHost.SaveAllFiles()
-        {
-            throw new NotImplementedException();
-        }
-
         HostResult IVimHost.SplitViewHorizontally(ITextView textView)
         {
             throw new NotImplementedException();

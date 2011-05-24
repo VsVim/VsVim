@@ -183,8 +183,6 @@ namespace Vim.UI.Wpf
             return true;
         }
 
-        public abstract bool SaveAllFiles();
-
         public abstract bool SaveTextAs(string text, string filePath);
 
         public abstract void ShowOpenFileDialog();
@@ -317,11 +315,6 @@ namespace Vim.UI.Wpf
         bool IVimHost.Save(ITextBuffer value)
         {
             return Save(value);
-        }
-
-        bool IVimHost.SaveAllFiles()
-        {
-            return SaveAllFiles();
         }
 
         bool IVimHost.SaveTextAs(string text, string filePath)

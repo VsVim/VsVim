@@ -63,9 +63,6 @@ type ICommonOperations =
     /// Run the beep operation
     abstract Beep : unit -> unit
 
-    /// Close the current buffer
-    abstract Close : checkDirty : bool -> unit
-
     /// Close count folds in the given SnapshotSpan
     abstract CloseFold : SnapshotSpan -> count:int -> unit
 
@@ -156,15 +153,6 @@ type ICommonOperations =
 
     /// Redo the buffer changes "count" times
     abstract Redo : count:int -> unit
-
-    /// Save the current document
-    abstract Save : unit -> bool 
-
-    /// Save the current document as the specified file
-    abstract SaveAs : string -> bool
-
-    /// Save all files
-    abstract SaveAll : unit -> bool
 
     /// Sets a mark at the specified point.  If this operation fails an error message will be generated
     abstract SetMark : SnapshotPoint -> char -> IMarkMap -> Result

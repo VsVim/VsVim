@@ -223,21 +223,6 @@ namespace VsVim
             }
         }
 
-        public override bool SaveAllFiles()
-        {
-            var anyFailed = false;
-            var all = _textManager.TextBuffers;
-            foreach (var textBuffer in all)
-            {
-                if (_textManager.Save(textBuffer).IsError)
-                {
-                    anyFailed = true;
-                }
-            }
-
-            return anyFailed;
-        }
-
         public override void Close(ITextView textView, bool checkDirty)
         {
             _textManager.CloseView(textView, checkDirty);

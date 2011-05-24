@@ -425,11 +425,16 @@ type internal CommandProcessor
     member x.ProcessWrite (rest:char list) _ _ = 
         let name = rest |> StringUtil.ofCharSeq 
         let name = name.Trim()
-        if StringUtil.isNullOrEmpty name then _operations.Save() |> ignore
-        else _operations.SaveAs name |> ignore
+        if StringUtil.isNullOrEmpty name then 
+            _host.Save _textBuffer |> ignore
+        else 
+            let text = _textBuffer.CurrentSnapshot.GetText()
+            _host.SaveTextAs text name |> ignore
 
+    /// Save all of the open IVimBuffer instances
     member x.ProcessWriteAll _ _ _ = 
-        _operations.SaveAll() |> ignore
+        for buffer in _vim.Buffers do
+            _host.Save buffer.TextBuffer |> ignore
 
     member x.ProcessWriteQuit (rest:char list) range hasBang = 
         let host = _buffer.Vim.VimHost
