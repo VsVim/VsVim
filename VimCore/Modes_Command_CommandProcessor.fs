@@ -682,7 +682,7 @@ type internal CommandProcessor
                     // Iterate recursively down the characters looking for the '/' which
                     // ends this value.  Have to check for escaped delimiter values (those
                     // which are prefixed with '\\'
-                    let rec getValue value rest valueWithoutBackslash = 
+                    let rec getValue value rest = 
 
                         match rest with
                         | [] ->
@@ -690,15 +690,22 @@ type internal CommandProcessor
                             value |> List.rev |> StringUtil.ofCharList, []
                         | head :: tail ->
                             if head = delimiter then
-                                // If the last value was a backslash then we ignore the backslash
-                                // and instead use the delimiter.  Else this ends the value 
-                                match valueWithoutBackslash with
-                                | None -> value |> List.rev |> StringUtil.ofCharList, rest
-                                | Some value -> getValue (delimiter :: value) tail None
+                                // Head is the delimiter and there is no back slash ahead of it
+                                // so we are done
+                                value |> List.rev |> StringUtil.ofCharList, rest
                             elif head = '\\' then
-                                getValue (head :: value) tail (Some value)
+                                if List.length tail > 0 && delimiter = List.head tail then
+                                    // Back slash which precedes a delimiter character.  We should simply
+                                    // append the delimiter here and not the back slash
+                                    getValue (delimiter :: value) (List.tail tail)
+                                elif List.length tail > 0 then
+                                    // Append both the back slash and the following character.  
+                                    let escaped = List.head tail
+                                    getValue (escaped :: '\\' :: value) (List.tail tail)
+                                else
+                                    getValue ('\\' :: value) []
                             else
-                                getValue (head :: value) tail None
+                                getValue (head :: value) tail
 
                     match rest with
                     | [] -> 
@@ -709,7 +716,7 @@ type internal CommandProcessor
                             notFound()
                         else 
                             // Actually parse out the value
-                            let value, rest = getValue [] tail None
+                            let value, rest = getValue [] tail
                             found value rest
 
                 let defaultMsg = Resources.CommandMode_InvalidCommand

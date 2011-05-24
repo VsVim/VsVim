@@ -181,6 +181,17 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Verify we handle escaped back slashes correctly
+        /// </summary>
+        [Test]
+        public void Substitute_WithBackslashes()
+        {
+            Create(@"\\\\abc\\\\def");
+            RunCommand(@"s/\\\{4\}/\\\\/g");
+            Assert.AreEqual(@"\\abc\\def", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
         /// Using the search forward feature which hits a match.  Search should start after the range
         /// so the first match will be after it 
         /// </summary>

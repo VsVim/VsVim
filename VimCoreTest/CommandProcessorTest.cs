@@ -968,6 +968,36 @@ namespace VimCore.UnitTest
             _operations.Verify();
         }
 
+        /// <summary>
+        /// Handle the case where the replace string consists only of back slashes.  Note: We don't want to interpret
+        /// the backslashes here but instead want to pass them onto the substitute function.
+        /// </summary>
+        [Test]
+        public void Substitute_ReplaceWithOnlyBackslashes()
+        {
+            Create("");
+            _operations
+                .Setup(x => x.Substitute("a", @"\\\\", _textView.GetLineRange(0, 0), SubstituteFlags.None))
+                .Verifiable();
+            RunCommand(@":s/a/\\\\");
+            _operations.Verify();
+        }
+
+        /// <summary>
+        /// Handle the case where the replace string consists only of back slashes.  Note: We don't want to interpret
+        /// the backslashes here but instead want to pass them onto the substitute function.
+        /// </summary>
+        [Test]
+        public void Substitute_ReplaceWithOnlyBackslashesAndTrailingDelimiter()
+        {
+            Create("");
+            _operations
+                .Setup(x => x.Substitute("a", @"\\\\", _textView.GetLineRange(0, 0), SubstituteFlags.None))
+                .Verifiable();
+            RunCommand(@":s/a/\\\\/");
+            _operations.Verify();
+        }
+
         [Test]
         public void Redo1()
         {
