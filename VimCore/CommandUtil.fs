@@ -1923,8 +1923,17 @@ type internal CommandUtil
 
     /// Write out the ITextBuffer and quit
     member x.WriteBufferAndQuit () =
-        _operations.Close(true) |> ignore
-        CommandResult.Completed ModeSwitch.NoSwitch
+        let result = 
+            if _vimHost.IsDirty _textBuffer then
+                _vimHost.Save _textBuffer
+            else
+                true
+
+        if result then
+            _vimHost.Close _textView false
+            CommandResult.Completed ModeSwitch.NoSwitch
+        else
+            CommandResult.Error
 
     /// Yank the specified lines into the specified register 
     member x.YankLines count register = 

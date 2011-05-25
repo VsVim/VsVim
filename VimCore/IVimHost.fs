@@ -13,10 +13,10 @@ type IVimHost =
     abstract Beep : unit -> unit
 
     /// Ensure that the given point is visible
-    abstract EnsureVisible : ITextView -> SnapshotPoint -> unit
+    abstract EnsureVisible : textView : ITextView -> point : SnapshotPoint -> unit
 
     /// Format the provided lines
-    abstract FormatLines : ITextView -> SnapshotLineRange -> unit
+    abstract FormatLines : textView : ITextView -> range : SnapshotLineRange -> unit
 
     /// Get the ITextView which currently has keyboard focus
     abstract GetFocusedTextView : unit -> ITextView option
@@ -25,10 +25,10 @@ type IVimHost =
     abstract GoToDefinition : unit -> bool
 
     /// Go to the local declaration of the value under the cursor
-    abstract GoToLocalDeclaration : ITextView -> string -> bool
+    abstract GoToLocalDeclaration : textView : ITextView -> identifier : string -> bool
 
     /// Go to the local declaration of the value under the cursor
-    abstract GoToGlobalDeclaration : ITextView -> string -> bool
+    abstract GoToGlobalDeclaration : tetxView : ITextView -> identifier : string -> bool
 
     /// Go to the "count" next tab window in the specified direction.  This will wrap 
     /// around
@@ -38,48 +38,16 @@ type IVimHost =
     abstract GoToTab : index : int -> unit
 
     /// Get the name of the given ITextBuffer
-    abstract GetName : ITextBuffer -> string
+    abstract GetName : textBuffer : ITextBuffer -> string
 
     /// Is the ITextBuffer in a dirty state?
-    abstract IsDirty : ITextBuffer -> bool
+    abstract IsDirty : textBuffer : ITextBuffer -> bool
 
     /// Loads the new file into the existing window
     abstract LoadFileIntoExistingWindow : filePath : string -> textBuffer : ITextBuffer -> HostResult
 
     /// Loads the new file into a new existing window
     abstract LoadFileIntoNewWindow : filePath : string -> HostResult
-
-    abstract NavigateTo : point : VirtualSnapshotPoint -> bool
-
-    /// Display the open file dialog 
-    abstract ShowOpenFileDialog : unit -> unit
-
-    /// Reload the contents of the ITextBuffer discarding any changes
-    abstract Reload : ITextBuffer -> bool
-
-    /// Save the provided ITextBuffer instance
-    abstract Save : ITextBuffer -> bool 
-
-    /// Save the current document as a new file with the specified name
-    abstract SaveTextAs : text:string -> filePath:string -> bool 
-
-    /// Saves all files
-    abstract SaveAllFiles : unit -> bool
-
-    /// Closes all files
-    abstract CloseAllFiles : checkDirty:bool -> unit
-
-    /// Close the provided view
-    abstract Close : ITextView -> checkDirty:bool -> unit
-
-    /// Builds the solution
-    abstract BuildSolution : unit -> unit
-
-    /// Split the views horizontally
-    abstract SplitViewHorizontally : ITextView -> HostResult
-
-    /// Split the views horizontally
-    abstract SplitViewVertically: ITextView -> HostResult
 
     /// Move to the view above the current one
     abstract MoveViewUp : ITextView -> unit
@@ -93,6 +61,34 @@ type IVimHost =
     /// Move to the view to the right of the current one
     abstract MoveViewLeft : ITextView -> unit
 
+    abstract NavigateTo : point : VirtualSnapshotPoint -> bool
+
+    /// Quit the application
+    abstract Quit : unit -> unit
+
+    /// Display the open file dialog 
+    abstract ShowOpenFileDialog : unit -> unit
+
+    /// Reload the contents of the ITextBuffer discarding any changes
+    abstract Reload : ITextBuffer -> bool
+
+    /// Save the provided ITextBuffer instance
+    abstract Save : ITextBuffer -> bool 
+
+    /// Save the current document as a new file with the specified name
+    abstract SaveTextAs : text:string -> filePath:string -> bool 
+
+    /// Close the provided view
+    abstract Close : ITextView -> checkDirty:bool -> unit
+
+    /// Builds the solution
+    abstract BuildSolution : unit -> unit
+
+    /// Split the views horizontally
+    abstract SplitViewHorizontally : ITextView -> HostResult
+
+    /// Split the views horizontally
+    abstract SplitViewVertically: ITextView -> HostResult
 
 module internal VimHostExtensions =
     type IVimHost with 

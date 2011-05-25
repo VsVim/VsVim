@@ -34,6 +34,9 @@ module VimRegexUtils =
                     appendChar '$'
                     appendChar c
                     inner (index + 2)
+                elif c = '\\' then
+                    appendChar '\\'
+                    inner (index + 2)
                 else 
                     Escape c |> appendString
                     inner (index + 2)
@@ -46,7 +49,8 @@ module VimRegexUtils =
                     | None -> 
                         Escape c |> appendString
                         builder.ToString()
-                    | Some(c) -> handleEscapeChar c 
+                    | Some c -> 
+                        handleEscapeChar c 
                 else 
                     appendChar c
                     inner (index + 1)

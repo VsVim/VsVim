@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
@@ -21,7 +22,7 @@ namespace VimCore.UnitTest
         private IWpfTextView _textView;
         private ITextBuffer _textBuffer;
         private MockRepository _factory;
-        private Mock<IVimBuffer> _bufferData;
+        private Mock<IVimBuffer> _buffer;
         private CommandProcessor _processorRaw;
         private ICommandProcessor _processor;
         private IRegisterMap _map;
@@ -30,7 +31,8 @@ namespace VimCore.UnitTest
         private Mock<IOperations> _operations;
         private Mock<IStatusUtil> _statusUtil;
         private Mock<IFileSystem> _fileSystem;
-        private Mock<IVimHost> _host;
+        private Mock<IVimHost> _vimHost;
+        private Mock<IVim> _vim;
 
         public void Create(params string[] lines)
         {
@@ -40,17 +42,18 @@ namespace VimCore.UnitTest
             _factory = new MockRepository(MockBehavior.Strict);
             _map = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             _editOpts = _factory.Create<IEditorOperations>();
-            _host = _factory.Create<IVimHost>();
+            _vimHost = _factory.Create<IVimHost>();
             _operations = _factory.Create<IOperations>();
             _operations.SetupGet(x => x.EditorOperations).Returns(_editOpts.Object);
             _statusUtil = _factory.Create<IStatusUtil>();
             _fileSystem = _factory.Create<IFileSystem>(MockBehavior.Strict);
             _vimData = new VimData();
-            _bufferData = MockObjectFactory.CreateVimBuffer(
+            _vim = MockObjectFactory.CreateVim(_map, host: _vimHost.Object, vimData: _vimData, factory: _factory);
+            _buffer = MockObjectFactory.CreateVimBuffer(
                 _textView,
                 "test",
-                MockObjectFactory.CreateVim(_map, host: _host.Object, vimData: _vimData).Object);
-            _processorRaw = new Vim.Modes.Command.CommandProcessor(_bufferData.Object, _operations.Object, _statusUtil.Object, _fileSystem.Object);
+                _vim.Object);
+            _processorRaw = new Vim.Modes.Command.CommandProcessor(_buffer.Object, _operations.Object, _statusUtil.Object, _fileSystem.Object);
             _processor = _processorRaw;
         }
 
@@ -965,6 +968,36 @@ namespace VimCore.UnitTest
             _operations.Verify();
         }
 
+        /// <summary>
+        /// Handle the case where the replace string consists only of back slashes.  Note: We don't want to interpret
+        /// the backslashes here but instead want to pass them onto the substitute function.
+        /// </summary>
+        [Test]
+        public void Substitute_ReplaceWithOnlyBackslashes()
+        {
+            Create("");
+            _operations
+                .Setup(x => x.Substitute("a", @"\\\\", _textView.GetLineRange(0, 0), SubstituteFlags.None))
+                .Verifiable();
+            RunCommand(@":s/a/\\\\");
+            _operations.Verify();
+        }
+
+        /// <summary>
+        /// Handle the case where the replace string consists only of back slashes.  Note: We don't want to interpret
+        /// the backslashes here but instead want to pass them onto the substitute function.
+        /// </summary>
+        [Test]
+        public void Substitute_ReplaceWithOnlyBackslashesAndTrailingDelimiter()
+        {
+            Create("");
+            _operations
+                .Setup(x => x.Substitute("a", @"\\\\", _textView.GetLineRange(0, 0), SubstituteFlags.None))
+                .Verifiable();
+            RunCommand(@":s/a/\\\\/");
+            _operations.Verify();
+        }
+
         [Test]
         public void Redo1()
         {
@@ -1023,7 +1056,7 @@ namespace VimCore.UnitTest
         public void Marks1()
         {
             Create("foo");
-            _operations.Setup(x => x.PrintMarks(_bufferData.Object.MarkMap)).Verifiable();
+            _operations.Setup(x => x.PrintMarks(_buffer.Object.MarkMap)).Verifiable();
             RunCommand("marks");
         }
 
@@ -1040,8 +1073,8 @@ namespace VimCore.UnitTest
         public void Edit_NoArgumentsShouldReload()
         {
             Create("foo");
-            _host.Setup(x => x.Reload(_textBuffer)).Returns(true).Verifiable();
-            _host.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
+            _vimHost.Setup(x => x.Reload(_textBuffer)).Returns(true).Verifiable();
+            _vimHost.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
             RunCommand("e");
             _operations.Verify();
             RunCommand("edi");
@@ -1052,7 +1085,7 @@ namespace VimCore.UnitTest
         public void Edit_NoArgumentsButDirtyShouldError()
         {
             Create("");
-            _host.Setup(x => x.IsDirty(_textBuffer)).Returns(true).Verifiable();
+            _vimHost.Setup(x => x.IsDirty(_textBuffer)).Returns(true).Verifiable();
             _statusUtil.Setup(x => x.OnError(Resources.Common_NoWriteSinceLastChange)).Verifiable();
             RunCommand("e");
             _factory.Verify();
@@ -1062,7 +1095,7 @@ namespace VimCore.UnitTest
         public void Edit_FilePathButDirtyShouldError()
         {
             Create("foo");
-            _host.Setup(x => x.IsDirty(_textBuffer)).Returns(true).Verifiable();
+            _vimHost.Setup(x => x.IsDirty(_textBuffer)).Returns(true).Verifiable();
             _statusUtil.Setup(x => x.OnError(Resources.Common_NoWriteSinceLastChange)).Verifiable();
             RunCommand("e cat.txt");
             _factory.Verify();
@@ -1073,8 +1106,8 @@ namespace VimCore.UnitTest
         public void Edit_NoArgumentsReloadFailsShouldBeep()
         {
             Create("foo");
-            _host.Setup(x => x.Reload(_textBuffer)).Returns(false).Verifiable();
-            _host.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
+            _vimHost.Setup(x => x.Reload(_textBuffer)).Returns(false).Verifiable();
+            _vimHost.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
             _operations.Setup(x => x.Beep()).Verifiable();
             RunCommand("e");
             _factory.Verify();
@@ -1093,8 +1126,8 @@ namespace VimCore.UnitTest
         public void Edit_FilePathShouldLoadIntoExisting()
         {
             Create("");
-            _host.Setup(x => x.LoadFileIntoExistingWindow("cat.txt", _textBuffer)).Returns(HostResult.Success).Verifiable();
-            _host.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
+            _vimHost.Setup(x => x.LoadFileIntoExistingWindow("cat.txt", _textBuffer)).Returns(HostResult.Success).Verifiable();
+            _vimHost.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
             RunCommand("e cat.txt");
             _factory.Verify();
         }
@@ -1424,66 +1457,74 @@ namespace VimCore.UnitTest
             TestPrintMap("xmap", KeyRemapMode.Visual);
         }
 
+        /// <summary>
+        /// Make sure the short name causes a save
+        /// </summary>
         [Test]
-        public void Write1()
+        public void Write_ShortName()
         {
             Create("");
-            _operations.Setup(x => x.Save()).Returns(true).Verifiable();
+            _vimHost.Setup(x => x.Save(_textBuffer)).Returns(true).Verifiable();
             RunCommand("w");
-            _operations.Verify();
+            _vimHost.Verify();
         }
 
+        /// <summary>
+        /// Make sure the full name causes a save
+        /// </summary>
         [Test]
-        public void Write2()
+        public void Write_FullName()
         {
             Create("");
-            _operations.Setup(x => x.Save()).Returns(true).Verifiable();
+            _vimHost.Setup(x => x.Save(_textBuffer)).Returns(true).Verifiable();
             RunCommand("write");
-            _operations.Verify();
+            _vimHost.Verify();
         }
 
+        /// <summary>
+        /// Providing an alternate name should cause the contents to be saved to a different
+        /// file
+        /// </summary>
         [Test]
-        public void Write3()
+        public void Write_DifferentName()
         {
-            Create("");
-            _operations.Setup(x => x.SaveAs("foo")).Returns(true).Verifiable();
-            RunCommand("write foo");
-            _operations.Verify();
+            Create("cat");
+            _vimHost.Setup(x => x.SaveTextAs("cat", "test.txt")).Returns(true).Verifiable();
+            RunCommand("write test.txt");
+            _vimHost.Verify();
         }
 
+        /// <summary>
+        /// Short name should still cause all buffers to be written
+        /// </summary>
         [Test]
-        public void Write4()
+        public void WriteAll_ShortName()
         {
             Create("");
-            _operations.Setup(x => x.SaveAs("foo")).Returns(true).Verifiable();
-            RunCommand("w foo");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void WriteAll1()
-        {
-            Create("");
-            _operations.Setup(x => x.SaveAll()).Returns(true).Verifiable();
+            var list = new List<IVimBuffer>() { _buffer.Object };
+            _vim.SetupGet(x => x.Buffers).Returns(list.ToFSharpList()).Verifiable();
+            _vimHost.Setup(x => x.Save(_textBuffer)).Returns(true).Verifiable();
             RunCommand("wa");
-            _operations.Verify();
+            _factory.Verify();
         }
 
         [Test]
-        public void WriteAll2()
+        public void WriteAll_FullName()
         {
             Create("");
-            _operations.Setup(x => x.SaveAll()).Returns(true).Verifiable();
+            var list = new List<IVimBuffer>() { _buffer.Object };
+            _vim.SetupGet(x => x.Buffers).Returns(list.ToFSharpList()).Verifiable();
+            _vimHost.Setup(x => x.Save(_textBuffer)).Returns(true).Verifiable();
             RunCommand("wall");
-            _operations.Verify();
+            _factory.Verify();
         }
 
         [Test]
         public void WriteQuit_NoArguments()
         {
             Create("");
-            _host.Setup(x => x.Save(_textView.TextBuffer)).Returns(true).Verifiable();
-            _host.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.Save(_textView.TextBuffer)).Returns(true).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
             RunCommand("wq");
             _factory.Verify();
         }
@@ -1492,8 +1533,8 @@ namespace VimCore.UnitTest
         public void WriteQuit_WithBang()
         {
             Create("");
-            _host.Setup(x => x.Save(_textView.TextBuffer)).Returns(true).Verifiable();
-            _host.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.Save(_textView.TextBuffer)).Returns(true).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
             RunCommand("wq!");
             _factory.Verify();
         }
@@ -1502,8 +1543,8 @@ namespace VimCore.UnitTest
         public void WriteQuit_FileName()
         {
             Create("bar");
-            _host.Setup(x => x.SaveTextAs("bar", "foo.txt")).Returns(true).Verifiable();
-            _host.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.SaveTextAs("bar", "foo.txt")).Returns(true).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
             RunCommand("wq foo.txt");
             _factory.Verify();
         }
@@ -1512,8 +1553,8 @@ namespace VimCore.UnitTest
         public void WriteQuit_Range()
         {
             Create("dog", "cat", "bear");
-            _host.Setup(x => x.SaveTextAs(It.IsAny<string>(), "foo.txt")).Returns(true).Verifiable();
-            _host.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.SaveTextAs(It.IsAny<string>(), "foo.txt")).Returns(true).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
             RunCommand("1,2wq foo.txt");
             _factory.Verify();
         }
@@ -1522,7 +1563,7 @@ namespace VimCore.UnitTest
         public void Quit1()
         {
             Create("");
-            _host.Setup(x => x.Close(_textView, true)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView, true)).Verifiable();
             RunCommand("quit");
             _factory.Verify();
         }
@@ -1531,7 +1572,7 @@ namespace VimCore.UnitTest
         public void Quit2()
         {
             Create("");
-            _host.Setup(x => x.Close(_textView, true)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView, true)).Verifiable();
             RunCommand("q");
             _factory.Verify();
         }
@@ -1540,36 +1581,55 @@ namespace VimCore.UnitTest
         public void Quit3()
         {
             Create("");
-            _host.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
             RunCommand("q!");
             _factory.Verify();
         }
 
+        /// <summary>
+        /// When provided the ! bang option the application should just rudely exit
+        /// </summary>
         [Test]
-        public void QuitAll1()
+        public void QuitAll_WithBang()
         {
             Create("");
-            _operations.Setup(x => x.CloseAll(true)).Verifiable();
-            RunCommand("qall");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void QuitAll2()
-        {
-            Create("");
-            _operations.Setup(x => x.CloseAll(false)).Verifiable();
+            _vimHost.Setup(x => x.Quit()).Verifiable();
             RunCommand("qall!");
-            _operations.Verify();
+            _vimHost.Verify();
         }
 
+        /// <summary>
+        /// If there are no dirty files then we should just be exiting and not raising any messages
+        /// </summary>
         [Test]
-        public void QuitAll3()
+        public void QuitAll_WithNoDirty()
         {
             Create("");
-            _operations.Setup(x => x.CloseAll(true)).Verifiable();
-            RunCommand("qa");
-            _operations.Verify();
+            var buffer = _factory.Create<IVimBuffer>();
+            buffer.SetupGet(x => x.TextBuffer).Returns(_factory.Create<ITextBuffer>().Object);
+            var list = new List<IVimBuffer>() { buffer.Object };
+            _vim.SetupGet(x => x.Buffers).Returns(list.ToFSharpList()).Verifiable();
+            _vimHost.Setup(x => x.IsDirty(It.IsAny<ITextBuffer>())).Returns(false).Verifiable();
+            _vimHost.Setup(x => x.Quit()).Verifiable();
+            RunCommand("qall");
+            _factory.Verify();
+        }
+
+        /// <summary>
+        /// If there are dirty buffers and the ! option is missing then an error needs to be raised
+        /// </summary>
+        [Test]
+        public void QuitAll_WithDirty()
+        {
+            Create("");
+            var buffer = _factory.Create<IVimBuffer>();
+            buffer.SetupGet(x => x.TextBuffer).Returns(_factory.Create<ITextBuffer>().Object);
+            var list = new List<IVimBuffer>() { buffer.Object };
+            _vim.SetupGet(x => x.Buffers).Returns(list.ToFSharpList()).Verifiable();
+            _vimHost.Setup(x => x.IsDirty(It.IsAny<ITextBuffer>())).Returns(true).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.Common_NoWriteSinceLastChange)).Verifiable();
+            RunCommand("qall");
+            _factory.Verify();
         }
 
         [Test]
@@ -1648,7 +1708,7 @@ namespace VimCore.UnitTest
         public void Split1()
         {
             Create("");
-            _host.Setup(x => x.SplitViewHorizontally(_textView)).Returns(HostResult.Success).Verifiable();
+            _vimHost.Setup(x => x.SplitViewHorizontally(_textView)).Returns(HostResult.Success).Verifiable();
             RunCommand("split");
             _factory.Verify();
         }
@@ -1657,7 +1717,7 @@ namespace VimCore.UnitTest
         public void Split2()
         {
             Create("");
-            _host.Setup(x => x.SplitViewHorizontally(_textView)).Returns(HostResult.Success).Verifiable();
+            _vimHost.Setup(x => x.SplitViewHorizontally(_textView)).Returns(HostResult.Success).Verifiable();
             RunCommand("sp");
             _factory.Verify();
         }
@@ -1666,7 +1726,7 @@ namespace VimCore.UnitTest
         public void Close1()
         {
             Create("");
-            _host.Setup(x => x.Close(_textView, true)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView, true)).Verifiable();
             RunCommand(":close");
             _factory.Verify();
         }
@@ -1675,7 +1735,7 @@ namespace VimCore.UnitTest
         public void Close2()
         {
             Create("");
-            _host.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
             RunCommand(":close!");
             _factory.Verify();
         }
@@ -1684,7 +1744,7 @@ namespace VimCore.UnitTest
         public void Close3()
         {
             Create("");
-            _host.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
             RunCommand(":clo!");
             _factory.Verify();
         }

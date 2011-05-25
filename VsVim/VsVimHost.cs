@@ -160,7 +160,7 @@ namespace VsVim
                 // during an open will cause the method to abandon and produce a user error 
                 // message
                 VsShellUtilities.OpenDocument(_adapter.ServiceProvider, filePath);
-                _textManager.Close(textBuffer, false);
+                _textManager.Close(textBuffer, checkDirty: false);
                 return HostResult.Success;
             }
             catch (Exception e)
@@ -220,33 +220,6 @@ namespace VsVim
             catch (Exception)
             {
                 return false;
-            }
-        }
-
-        public override bool SaveAllFiles()
-        {
-            var anyFailed = false;
-            var all = _textManager.TextBuffers;
-            foreach (var textBuffer in all)
-            {
-                if (_textManager.Save(textBuffer).IsError)
-                {
-                    anyFailed = true;
-                }
-            }
-
-            return anyFailed;
-        }
-
-        public override void CloseAllFiles(bool checkDirty)
-        {
-            var all = _textManager.TextViews
-                .Select(x => x.TextBuffer)
-                .Distinct()
-                .ToList();
-            foreach (var textBuffer in all)
-            {
-                _textManager.Close(textBuffer, checkDirty);
             }
         }
 
@@ -342,6 +315,11 @@ namespace VsVim
             }
 
             return FSharpOption<ITextView>.None;
+        }
+
+        public override void Quit()
+        {
+            _dte.Quit();
         }
 
         /// <summary>

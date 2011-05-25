@@ -134,6 +134,7 @@ namespace Vim.UI.Wpf.Test
         [Test]
         public void VisualMode1()
         {
+            _settings.SetupGet(x => x.IsSelectionInclusive).Returns(true);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualBlock);
             _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Block);
             _controller.Update();
@@ -142,6 +143,7 @@ namespace Vim.UI.Wpf.Test
         [Test]
         public void VisualMode2()
         {
+            _settings.SetupGet(x => x.IsSelectionInclusive).Returns(true);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualCharacter);
             _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Block);
             _controller.Update();
@@ -150,6 +152,7 @@ namespace Vim.UI.Wpf.Test
         [Test]
         public void VisualMode3()
         {
+            _settings.SetupGet(x => x.IsSelectionInclusive).Returns(true);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualLine);
             _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Block);
             _controller.Update();

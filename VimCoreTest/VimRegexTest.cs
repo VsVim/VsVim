@@ -632,6 +632,15 @@ namespace VimCore.UnitTest
             VerifyReplace(@"\(\.*\)b\(\.*\)", "abc", @"\1blah\2", "ablahc");
         }
 
+        /// <summary>
+        /// Escaped back slashes should appear as normal back slashes in the replacement string
+        /// </summary>
+        [Test]
+        public void Replace_EscapedBackSlashes()
+        {
+            VerifyReplace("b", "abc", @"\\\\", @"a\\c");
+        }
+
         [Test]
         [Description("Options take precedent over embedded case")]
         public void CreateWithOptions1()

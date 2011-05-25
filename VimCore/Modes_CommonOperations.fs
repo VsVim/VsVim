@@ -586,13 +586,6 @@ type internal CommonOperations ( _data : OperationsData ) =
 
         member x.Undo count = x.Undo count
         member x.Redo count = x.Redo count
-        member x.Save() = _host.Save _textView.TextBuffer
-        member x.SaveAs fileName = 
-            let text = SnapshotUtil.GetText _textView.TextSnapshot
-            _host.SaveTextAs text fileName
-        member x.SaveAll() = _host.SaveAllFiles()
-        member x.Close checkDirty = _host.Close _textView checkDirty
-        member x.CloseAll checkDirty = _host.CloseAllFiles checkDirty
         member x.GoToNextTab direction count = _host.GoToNextTab direction count
         member x.GoToTab index = _host.GoToTab index
         member x.EnsureCaretOnScreen () = x.EnsureCaretOnScreen()

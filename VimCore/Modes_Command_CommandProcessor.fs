@@ -139,7 +139,8 @@ type internal CommandProcessor
     let _host = _buffer.Vim.VimHost
     let _regexFactory = VimRegexFactory(_buffer.Settings.GlobalSettings)
     let _registerMap = _buffer.RegisterMap
-    let _searchService = _buffer.Vim.SearchService
+    let _vim = _buffer.Vim
+    let _searchService = _vim.SearchService
     let _vimData = _buffer.VimData
 
     let mutable _command : System.String = System.String.Empty
@@ -171,6 +172,7 @@ type internal CommandProcessor
             yield ("put", "pu", this.ProcessPut |> wrap)
             yield ("quit", "q", this.ProcessQuit |> wrap)
             yield ("qall", "qa", this.ProcessQuitAll |> wrap)
+            yield ("quitall", "quita", this.ProcessQuitAll |> wrap)
             yield ("redo", "red", this.ProcessRedo |> wrap)
             yield ("registers", "reg", this.ProcessRegisters |> wrap)
             yield ("set", "se", this.ProcessSet |> wrap)
@@ -423,11 +425,16 @@ type internal CommandProcessor
     member x.ProcessWrite (rest:char list) _ _ = 
         let name = rest |> StringUtil.ofCharSeq 
         let name = name.Trim()
-        if StringUtil.isNullOrEmpty name then _operations.Save() |> ignore
-        else _operations.SaveAs name |> ignore
+        if StringUtil.isNullOrEmpty name then 
+            _host.Save _textBuffer |> ignore
+        else 
+            let text = _textBuffer.CurrentSnapshot.GetText()
+            _host.SaveTextAs text name |> ignore
 
+    /// Save all of the open IVimBuffer instances
     member x.ProcessWriteAll _ _ _ = 
-        _operations.SaveAll() |> ignore
+        for buffer in _vim.Buffers do
+            _host.Save buffer.TextBuffer |> ignore
 
     member x.ProcessWriteQuit (rest:char list) range hasBang = 
         let host = _buffer.Vim.VimHost
@@ -443,11 +450,22 @@ type internal CommandProcessor
 
         host.Close _textView false
 
-    member x.ProcessQuit _ _ hasBang = _buffer.Vim.VimHost.Close _buffer.TextView (not hasBang)
+    member x.ProcessQuit _ _ hasBang = 
+        _buffer.Vim.VimHost.Close _buffer.TextView (not hasBang)
 
+    /// Process the ':quitall' family of commands.
     member x.ProcessQuitAll _ _ hasBang =
-        let checkDirty = not hasBang
-        _operations.CloseAll checkDirty
+
+        // If the ! flag is not passed then we raise an error if any of the ITextBuffer instances 
+        // are dirty
+        if not hasBang then
+            let anyDirty = _vim.Buffers |> Seq.exists (fun buffer -> _host.IsDirty buffer.TextBuffer)
+            if anyDirty then 
+                _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
+            else
+                _host.Quit()
+        else
+            _host.Quit()
 
     member x.ProcessTabNext rest _ _ =
         let count, _ = RangeUtil.ParseNumber rest
@@ -664,7 +682,7 @@ type internal CommandProcessor
                     // Iterate recursively down the characters looking for the '/' which
                     // ends this value.  Have to check for escaped delimiter values (those
                     // which are prefixed with '\\'
-                    let rec getValue value rest valueWithoutBackslash = 
+                    let rec getValue value rest = 
 
                         match rest with
                         | [] ->
@@ -672,15 +690,22 @@ type internal CommandProcessor
                             value |> List.rev |> StringUtil.ofCharList, []
                         | head :: tail ->
                             if head = delimiter then
-                                // If the last value was a backslash then we ignore the backslash
-                                // and instead use the delimiter.  Else this ends the value 
-                                match valueWithoutBackslash with
-                                | None -> value |> List.rev |> StringUtil.ofCharList, rest
-                                | Some value -> getValue (delimiter :: value) tail None
+                                // Head is the delimiter and there is no back slash ahead of it
+                                // so we are done
+                                value |> List.rev |> StringUtil.ofCharList, rest
                             elif head = '\\' then
-                                getValue (head :: value) tail (Some value)
+                                if List.length tail > 0 && delimiter = List.head tail then
+                                    // Back slash which precedes a delimiter character.  We should simply
+                                    // append the delimiter here and not the back slash
+                                    getValue (delimiter :: value) (List.tail tail)
+                                elif List.length tail > 0 then
+                                    // Append both the back slash and the following character.  
+                                    let escaped = List.head tail
+                                    getValue (escaped :: '\\' :: value) (List.tail tail)
+                                else
+                                    getValue ('\\' :: value) []
                             else
-                                getValue (head :: value) tail None
+                                getValue (head :: value) tail
 
                     match rest with
                     | [] -> 
@@ -691,7 +716,7 @@ type internal CommandProcessor
                             notFound()
                         else 
                             // Actually parse out the value
-                            let value, rest = getValue [] tail None
+                            let value, rest = getValue [] tail
                             found value rest
 
                 let defaultMsg = Resources.CommandMode_InvalidCommand

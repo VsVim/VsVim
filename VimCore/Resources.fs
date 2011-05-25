@@ -27,6 +27,7 @@ module internal Resources =
     let Common_SearchBackwardWrapped = "search hit TOP, continuing at BOTTOM"
     let Common_SearchHitBottomWithout name = sprintf "search hit BOTTOM without match for: %s" name
     let Common_SearchHitTopWithout name = sprintf "search hit TOP without match for: %s" name
+    let Common_SaveFailed = "Save operation failed"
 
     let NormalMode_NoPreviousSearch = "No previous search"
     let NormalMode_NoWordUnderCursor = "No word under cursor"

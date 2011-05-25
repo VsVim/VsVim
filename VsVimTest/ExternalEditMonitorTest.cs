@@ -222,7 +222,6 @@ namespace VsVim.UnitTest
         public void LayoutChanged_InExternalEditDoNothingIfEditMarkersStillPresent()
         {
             Setup("cat", "tree", "dog");
-            var span = _textBuffer.GetLineRange(0).Extent;
             SetupExternalEditTag(_textBuffer.GetLineRange(0).Extent);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.ExternalEdit).Verifiable();
             RaiseLayoutChanged();
