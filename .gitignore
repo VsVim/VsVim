@@ -19,6 +19,7 @@
 *.user
 *.suo
 *.db 
+*.psess
 TestResult.xml
 
 # NUnit files

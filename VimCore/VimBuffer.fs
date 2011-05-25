@@ -64,7 +64,7 @@ type internal VimBuffer
 
     let _properties = PropertyCollection()
     let mutable _modeMap = ModeMap()
-    let mutable _isProcessingInput = false
+    let mutable _processingInputCount = 0
     let mutable _isClosed = false
 
     /// This is the buffered input when a remap request needs more than one 
@@ -120,7 +120,7 @@ type internal VimBuffer
         // Actually process the given KeyInput value
         let doProcess keyInput =
             let processResult = 
-                _isProcessingInput <- true 
+                _processingInputCount <- _processingInputCount + 1
                 try
                     if keyInput = _vim.Settings.DisableCommand && x.Mode.ModeKind <> ModeKind.Disabled then
                         x.SwitchMode ModeKind.Disabled ModeArgument.None |> ignore
@@ -140,7 +140,7 @@ type internal VimBuffer
                             ()
                         result
                 finally
-                    _isProcessingInput <- false
+                    _processingInputCount <- _processingInputCount + 1
             _keyInputProcessedEvent.Trigger (keyInput, processResult)
             processResult
 
@@ -228,7 +228,7 @@ type internal VimBuffer
         member x.UndoRedoOperations = _undoRedoOperations
         member x.BufferedRemapKeyInputs = x.BufferedRemapKeyInputs 
         member x.IncrementalSearch = _incrementalSearch
-        member x.IsProcessingInput = _isProcessingInput
+        member x.IsProcessingInput = _processingInputCount > 0
         member x.Name = _vim.VimHost.GetName _textView.TextBuffer
         member x.MarkMap = _vim.MarkMap
         member x.JumpList = _jumpList

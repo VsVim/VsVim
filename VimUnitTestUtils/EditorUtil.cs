@@ -59,6 +59,9 @@ namespace Vim.UnitTest
 
             [Import]
             public ICompletionBroker CompletionBroker;
+
+            [Import]
+            public IVimErrorDetector VimErrorDetector;
         }
 
         #endregion
@@ -198,7 +201,8 @@ namespace Vim.UnitTest
                 typeof(ClipboardDevice),
                 typeof(KeyboardDevice),
                 typeof(MouseDevice),
-                typeof(VimHost)));
+                typeof(VimHost),
+                typeof(VimErrorDetector)));
 
             return list;
         }

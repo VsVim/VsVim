@@ -10,7 +10,7 @@ using Vim.UnitTest.Mock;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class NormalModeIntegrationTest
+    public class NormalModeIntegrationTest : VimTestBase
     {
         private IVimBuffer _buffer;
         private IWpfTextView _textView;

@@ -178,6 +178,8 @@
     <Compile Include="EditorUtil.cs" />
     <Compile Include="EqualityUtil.cs" />
     <Compile Include="Exports\ClipboardDevice.cs" />
+    <Compile Include="Exports\VimErrorHandler.cs" />
+    <Compile Include="IVimErrorDetector.cs" />
     <Compile Include="Exports\KeyboardDevice.cs" />
     <Compile Include="Exports\MouseDevice.cs" />
     <Compile Include="Exports\TextUndoHistory.cs" />
@@ -201,6 +203,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestableSynchronizationContext.cs" />
     <Compile Include="TestConstants.cs" />
+    <Compile Include="VimTestBase.cs" />
     <Compile Include="VimUtil.cs" />
   </ItemGroup>
   <ItemGroup>

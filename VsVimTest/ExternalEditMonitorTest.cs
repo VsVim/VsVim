@@ -17,7 +17,7 @@ using VsVim.ExternalEdit;
 namespace VsVim.UnitTest
 {
     [TestFixture]
-    public class ExternalEditMonitorTest
+    public class ExternalEditMonitorTest : VimTestBase
     {
         private MockRepository _factory;
         private ITextBuffer _textBuffer;
@@ -40,6 +40,7 @@ namespace VsVim.UnitTest
             _textBuffer = _textView.TextBuffer;
             _buffer = MockObjectFactory.CreateVimBuffer(textView: _textView);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
+            _buffer.SetupGet(x => x.IsProcessingInput).Returns(false);
 
             // Have adatper ignore by default
             _adapter = _factory.Create<IExternalEditAdapter>(MockBehavior.Strict);
@@ -235,7 +236,7 @@ namespace VsVim.UnitTest
             var span = _textBuffer.GetLineRange(0).Extent;
             SetupTags(span);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.ExternalEdit).Verifiable();
-            _buffer.Setup(x => x.SwitchMode(ModeKind.Insert, ModeArgument.None)).Verifiable();
+            _buffer.Setup(x => x.SwitchMode(ModeKind.Insert, ModeArgument.None)).Returns(_factory.Create<IMode>().Object).Verifiable();
             RaiseLayoutChanged();
             _factory.Verify();
         }

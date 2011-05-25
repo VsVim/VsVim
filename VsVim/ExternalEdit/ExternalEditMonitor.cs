@@ -17,6 +17,7 @@ namespace VsVim.ExternalEdit
         private readonly ITagAggregator<ITag> _tagAggregator;
         private readonly ReadOnlyCollection<IExternalEditAdapter> _externalEditorAdapters;
         private readonly List<SnapshotSpan> _ignoredMarkers = new List<SnapshotSpan>();
+        private bool _checkForExternalEdit;
 
         internal IEnumerable<SnapshotSpan> IgnoredMarkers
         {
@@ -40,6 +41,8 @@ namespace VsVim.ExternalEdit
             _buffer = buffer;
             _buffer.TextView.LayoutChanged += OnLayoutChanged;
             _buffer.SwitchedMode += OnSwitchedMode;
+            _buffer.KeyInputEnd += delegate { OnKeyInputComplete(); };
+            _buffer.KeyInputBuffered += delegate { OnKeyInputComplete(); };
         }
 
         internal void Close()
@@ -47,9 +50,36 @@ namespace VsVim.ExternalEdit
             _buffer.TextView.LayoutChanged -= OnLayoutChanged;
         }
 
+        /// <summary>
+        /// A layout change will occur when tags are changed in the ITextBuffer.  We use it as a clue that 
+        /// we need to look for external edit tags
+        /// </summary>
         private void OnLayoutChanged(object sender, TextViewLayoutChangedEventArgs e)
         {
+            // If the IVimBuffer is still processing input when the layout occurs it's possible and 
+            // in fact probably in scenarios like macros that more edits and hence more layouts will
+            // be coming in the future.  Don't process it now but instead delay it until input is 
+            // finished processing
+            if (_buffer.IsProcessingInput)
+            {
+                _checkForExternalEdit = true;
+                return;
+            }
+
             CheckForExternalEdit();
+        }
+
+        /// <summary>
+        /// Raised when a KeyInput action is complete in the IVimBuffer.  We queue up our check for external
+        /// edit calls until we are done processing KeyInput.  Else we would end up processing external edits
+        /// N times instead of the necessary 1 for a given Vim command
+        /// </summary>
+        private void OnKeyInputComplete()
+        {
+            if (!_buffer.IsProcessingInput && _checkForExternalEdit)
+            {
+                CheckForExternalEdit();
+            }
         }
 
         private void OnSwitchedMode(object sender, SwitchModeEventArgs args)
@@ -78,6 +108,9 @@ namespace VsVim.ExternalEdit
 
         private void CheckForExternalEdit()
         {
+            // Reset the flag now that we've checked
+            _checkForExternalEdit = false;
+
             var markers = GetExternalEditSpans();
             MoveIgnoredMarkersToCurrentSnapshot();
             if (markers.All(ShouldIgnore))
