@@ -56,20 +56,6 @@ type internal CommonOperations ( _data : OperationsData ) =
 
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
 
-    /// Whether or not to use spaces over tabs where applicable
-    member x.UseSpaces = 
-        if _settings.GlobalSettings.UseEditorTabSettings then 
-            DefaultOptionExtensions.IsConvertTabsToSpacesEnabled(_options) 
-        else
-            _settings.ExpandTab
-
-    /// How many spaces does a tab count for 
-    member x.TabSize =
-        if _settings.GlobalSettings.UseEditorTabSettings then
-            DefaultOptionExtensions.GetTabSize(_options)
-        else
-            _settings.TabStop
-
     /// Apply the TextChange to the ITextBuffer 'count' times as a single operation.
     member x.ApplyTextChange textChange addNewLines count =
         Contract.Requires (count > 0)
@@ -225,7 +211,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             |> Seq.takeWhile CharUtil.IsWhiteSpace
             |> List.ofSeq
         let builder = System.Text.StringBuilder()
-        let tabSize = x.TabSize
+        let tabSize = _settings.TabStop
         for c in text do
             match c with 
             | ' ' -> 
@@ -244,10 +230,10 @@ type internal CommonOperations ( _data : OperationsData ) =
     /// Normalize the whitespace into tabs / spaces based on the ExpandTab,
     /// TabSize settings
     member x.NormalizeWhiteSpace (text : string) = 
-        if x.UseSpaces then 
+        if _settings.ExpandTab then
             text
         else
-            let tabSize = x.TabSize
+            let tabSize = _settings.TabStop
             let spacesCount = text.Length % tabSize
             let tabCount = (text.Length - spacesCount) / tabSize 
             let prefix = StringUtil.repeatChar tabCount '\t'
@@ -337,7 +323,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             |> Seq.takeWhile CharUtil.IsWhiteSpace
             |> List.ofSeq
         let builder = System.Text.StringBuilder()
-        let tabSize = x.TabSize
+        let tabSize = _settings.TabStop
         for c in text do
             match c with 
             | ' ' -> 
@@ -538,8 +524,6 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.EditorOptions = _options
         member x.FoldManager = _data.FoldManager
         member x.SearchService = _data.SearchService
-        member x.TabSize = x.TabSize
-        member x.UseSpaces = x.UseSpaces
         member x.UndoRedoOperations = _data.UndoRedoOperations
 
         member x.ApplyTextChange textChange addNewLines count = x.ApplyTextChange textChange addNewLines count

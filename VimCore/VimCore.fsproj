@@ -111,6 +111,7 @@
     <Compile Include="KeyMap.fsi" />
     <Compile Include="KeyMap.fs" />
     <Compile Include="JumpList.fs" />
+    <Compile Include="VimSettings.fsi" />
     <Compile Include="VimSettings.fs" />
     <Compile Include="FileSystem.fs" />
     <Compile Include="UndoRedoOperations.fsi" />

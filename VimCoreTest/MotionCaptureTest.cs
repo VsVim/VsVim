@@ -28,7 +28,7 @@ namespace VimCore.UnitTest
         public void SetUp()
         {
             _textView = EditorUtil.CreateView();
-            _localSettings = new LocalSettings(new GlobalSettings(), _textView);
+            _localSettings = new LocalSettings(new GlobalSettings(), EditorUtil.GetOptions(_textView), _textView);
             _incrementalSearch = VimUtil.CreateIncrementalSearch(_textView, _localSettings, new VimData());
             _factory = new MockRepository(MockBehavior.Strict);
             _host = _factory.Create<IVimHost>();

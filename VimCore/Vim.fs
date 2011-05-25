@@ -93,7 +93,7 @@ type internal VimBufferFactory
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
         let editOptions = _editorOptionsFactoryService.GetOptions(view)
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
-        let localSettings = LocalSettings(vim.Settings, Some view) :> IVimLocalSettings
+        let localSettings = LocalSettings(vim.Settings, editOptions, view) :> IVimLocalSettings
         let jumpList = JumpList(_tlcService) :> IJumpList
         let statusUtil = StatusUtil()
         let motionUtil = MotionUtil(view, vim.MarkMap, localSettings, vim.SearchService, wordNav, jumpList, statusUtil, vim.VimData) :> IMotionUtil

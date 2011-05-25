@@ -2069,6 +2069,9 @@ and IVimLocalSettings =
     /// Whether or not to highlight the line the cursor is on
     abstract CursorLine : bool with get, set
 
+    /// The IEditorOptions associated with the settings if one exists
+    abstract EditorOptions : IEditorOptions option
+
     /// Whether or not to expand tabs into spaces
     abstract ExpandTab : bool with get, set
 

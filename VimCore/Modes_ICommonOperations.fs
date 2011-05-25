@@ -51,12 +51,6 @@ type ICommonOperations =
     /// Associated ISearchService instance
     abstract SearchService : ISearchService
 
-    /// Tab Size for the IVimBuffer
-    abstract TabSize : int
-
-    /// Whether or not we should be using spaces in the IVimBuffer
-    abstract UseSpaces : bool
-
     /// Associated IUndoRedoOperations
     abstract UndoRedoOperations : IUndoRedoOperations
 

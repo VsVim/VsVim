@@ -67,7 +67,7 @@ namespace VimCore.UnitTest
             _commandUtil = _factory.Create<ICommandUtil>();
             _incrementalSearch = MockObjectFactory.CreateIncrementalSearch(factory: _factory);
             var globalSettings = new GlobalSettings();
-            var localSettings = new LocalSettings(globalSettings, _textView);
+            var localSettings = new LocalSettings(globalSettings, EditorUtil.GetOptions(_textView), _textView);
             var motionUtil = VimUtil.CreateTextViewMotionUtil(
                 _textView,
                 _markMap,

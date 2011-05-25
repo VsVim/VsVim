@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using EnvDTE;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
@@ -161,7 +162,7 @@ namespace Vim.UnitTest.Mock
             jumpList = jumpList ?? (factory.Create<IJumpList>().Object);
             motionUtil = motionUtil ?? factory.Create<IMotionUtil>().Object;
             wordNavigator = wordNavigator ?? factory.Create<ITextStructureNavigator>().Object;
-            settings = settings ?? new LocalSettings(vim.Settings, FSharpOption.Create(textView));
+            settings = settings ?? new LocalSettings(vim.Settings, FSharpOption<IEditorOptions>.None, FSharpOption.Create(textView));
             var mock = factory.Create<IVimBuffer>();
             mock.SetupGet(x => x.TextView).Returns(textView);
             mock.SetupGet(x => x.MotionUtil).Returns(motionUtil);

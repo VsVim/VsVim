@@ -599,18 +599,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void ShiftLineRangeRight_PreferEditorTabSetting()
-        {
-            Create("cat", "dog");
-            _globalSettings.SetupGet(x => x.UseEditorTabSettings).Returns(true);
-            _globalSettings.SetupGet(x => x.ShiftWidth).Returns(4);
-            _editorOptions.SetOptionValue(DefaultOptions.ConvertTabsToSpacesOptionId, false);
-            _editorOptions.SetOptionValue(DefaultOptions.TabSizeOptionId, 4);
-            _operations.ShiftLineRangeRight(1);
-            Assert.AreEqual("\tcat", _textView.GetLine(0).GetText());
-        }
-
-        [Test]
         public void ShiftLineRangeRight_NoExpandTab()
         {
             Create("cat", "dog");

@@ -1009,18 +1009,23 @@ module TextSelectionUtil =
 module EditorOptionsUtil =
 
     /// Get the option value if it exists
-    let GetOptionValue (opts:IEditorOptions) (key:EditorOptionKey<'a>) =
+    let GetOptionValue (opts : IEditorOptions) (key : EditorOptionKey<'a>) =
         try
-            if opts.IsOptionDefined(key, false) then opts.GetOptionValue(key) |> Some
-            else None
+            if opts.IsOptionDefined(key, false) then 
+                opts.GetOptionValue(key) |> Some
+            else 
+                None
         with
             | :? System.ArgumentException-> None
             | :? System.InvalidOperationException -> None
 
     let GetOptionValueOrDefault opts key defaultValue = 
         match GetOptionValue opts key with
-        | Some(value) -> value
+        | Some value -> value
         | None -> defaultValue
+
+    let SetOptionValue (opts : IEditorOptions) (key : EditorOptionKey<'a>) value =
+        opts.SetOptionValue(key, value)
 
 module TrackingPointUtil =
     

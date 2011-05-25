@@ -53,7 +53,7 @@ namespace VimCore.UnitTest
             _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice().Object);
             _markMap = new MarkMap(new TrackingLineColumnService());
             _globalSettings = new GlobalSettings();
-            _localSettings = new LocalSettings(_globalSettings, _textView);
+            _localSettings = new LocalSettings(_globalSettings, EditorUtil.GetOptions(_textView), _textView);
 
             var localSettings = new LocalSettings(new Vim.GlobalSettings());
             _motionUtil = VimUtil.CreateTextViewMotionUtil(

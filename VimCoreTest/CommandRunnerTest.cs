@@ -33,7 +33,7 @@ namespace VimCore.UnitTest
             _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             _vimData = new VimData();
             var settings = new GlobalSettings();
-            var localSettings = new LocalSettings(settings, _textView);
+            var localSettings = new LocalSettings(settings, EditorUtil.GetOptions(_textView), _textView);
             var motionUtil = VimUtil.CreateTextViewMotionUtil(
                 _textView,
                 settings: localSettings,

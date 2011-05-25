@@ -238,6 +238,7 @@ type internal GlobalSettings() =
 type internal LocalSettings
     ( 
         _global : IVimGlobalSettings,
+        _editorOptions : IEditorOptions option,
         _textView : ITextView option
     ) as this =
 
@@ -261,15 +262,15 @@ type internal LocalSettings
                 Value = CalculatedValue(this.CalculateScroll); 
                 DefaultValue = CalculatedValue(this.CalculateScroll) }
 
-    new (settings) = LocalSettings(settings, None)
-
-    new (settings, textView : ITextView) = LocalSettings(settings, Some textView)
+    new (settings) = LocalSettings(settings, None, None)
+    new (settings, editorOptions) = LocalSettings(settings, Some editorOptions, None)
+    new (settings, editorOptions, textView : ITextView) = LocalSettings(settings, Some editorOptions, Some textView)
 
     member x.Map = _map
 
-    /// Calculate the scroll value as specified in the Vim documenation.  Should be half the number of 
+    /// Calculate the scroll value as specified in the Vim documentation.  Should be half the number of 
     /// visible lines 
-    member private x.CalculateScroll() =
+    member x.CalculateScroll() =
         let defaultValue = 10
         let lineCount = 
             match _textView with
@@ -289,8 +290,27 @@ type internal LocalSettings
                     :? System.InvalidOperationException -> defaultValue
         NumberValue(lineCount)
 
+    member x.GetTabValue editorKey vimValue = 
+        match _global.UseEditorTabSettings, _editorOptions with
+        | true, Some editorOptions -> 
+            match EditorOptionsUtil.GetOptionValue editorOptions editorKey with
+            | Some value -> value
+            | None -> vimValue
+        | _ ->
+            vimValue
+
+    member x.SetTabValue editorKey value vimName vimValue = 
+        match _global.UseEditorTabSettings, _editorOptions with
+        | true, Some editorOptions -> EditorOptionsUtil.SetOptionValue editorOptions editorKey value
+        | _ -> ()
+
+        _map.TrySetValue vimName vimValue |> ignore
+
     static member Copy (settings : IVimLocalSettings) = 
-        let copy = LocalSettings(settings.GlobalSettings)
+        let copy = 
+            match settings.EditorOptions with
+            | None -> LocalSettings(settings.GlobalSettings)
+            | Some editorOptions-> LocalSettings(settings.GlobalSettings, editorOptions)
         settings.AllSettings
         |> Seq.filter (fun s -> not s.IsGlobal && not s.IsValueCalculated)
         |> Seq.iter (fun s -> copy.Map.TrySetValue s.Name s.Value |> ignore)
@@ -300,6 +320,7 @@ type internal LocalSettings
         // IVimSettings
         
         member x.AllSettings = _map.AllSettings |> Seq.append _global.AllSettings
+        member x.EditorOptions = _editorOptions
         member x.TrySetValue settingName value = 
             if _map.OwnsSetting settingName then _map.TrySetValue settingName value
             else _global.TrySetValue settingName value
@@ -318,14 +339,14 @@ type internal LocalSettings
             with get() = _map.GetBoolValue CursorLineName
             and set value = _map.TrySetValue CursorLineName (ToggleValue(value)) |> ignore
         member x.ExpandTab
-            with get() = _map.GetBoolValue ExpandTabName
-            and set value = _map.TrySetValue ExpandTabName (ToggleValue(value)) |> ignore
+            with get() = x.GetTabValue DefaultOptions.ConvertTabsToSpacesOptionId (_map.GetBoolValue ExpandTabName)
+            and set value = x.SetTabValue DefaultOptions.ConvertTabsToSpacesOptionId value ExpandTabName (ToggleValue(value))
         member x.Scroll 
             with get() = _map.GetNumberValue ScrollName
             and set value = _map.TrySetValue ScrollName (NumberValue(value)) |> ignore
         member x.TabStop
-            with get() = _map.GetNumberValue TabStopName
-            and set value = _map.TrySetValue TabStopName (NumberValue(value)) |> ignore
+            with get() = x.GetTabValue DefaultOptions.TabSizeOptionId (_map.GetNumberValue TabStopName)
+            and set value = x.SetTabValue DefaultOptions.TabSizeOptionId value TabStopName (NumberValue(value))
         member x.QuoteEscape
             with get() = _map.GetStringValue QuoteEscapeName
             and set value = _map.TrySetValue QuoteEscapeName (StringValue(value)) |> ignore

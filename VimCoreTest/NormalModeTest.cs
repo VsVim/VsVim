@@ -77,7 +77,7 @@ namespace VimCore.UnitTest
             _vimData = new VimData();
 
             _globalSettings = new Vim.GlobalSettings();
-            _localSettings = new LocalSettings(_globalSettings, _textView);
+            _localSettings = new LocalSettings(_globalSettings, EditorUtil.GetOptions(_textView), _textView);
             motionUtil = motionUtil ?? VimUtil.CreateTextViewMotionUtil(
                 _textView,
                 new MarkMap(new TrackingLineColumnService()),
@@ -99,7 +99,7 @@ namespace VimCore.UnitTest
                 _host.Object,
                 _textView,
                 _incrementalSearch.Object,
-                new LocalSettings(new GlobalSettings(), _textView));
+                new LocalSettings(new GlobalSettings(), EditorUtil.GetOptions(_textView), _textView));
             var runner = new CommandRunner(_textView, _map, capture, _commandUtil.Object, _statusUtil.Object, VisualKind.Character);
             _modeRaw = new NormalMode(
                 _buffer.Object,

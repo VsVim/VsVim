@@ -32,7 +32,7 @@ namespace VimCore.UnitTest
             _globalSettings = new Vim.GlobalSettings();
             _globalSettings.IncrementalSearch = true;
             _globalSettings.WrapScan = true;
-            _localSettings = new LocalSettings(_globalSettings, _textView);
+            _localSettings = new LocalSettings(_globalSettings, EditorUtil.GetOptions(_textView), _textView);
             _nav = VimUtil.CreateTextStructureNavigator(_textView.TextBuffer);
             _factory = new MockRepository(MockBehavior.Strict);
             _vimHost = _factory.Create<IVimHost>();

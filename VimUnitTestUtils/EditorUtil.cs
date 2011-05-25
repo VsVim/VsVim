@@ -138,6 +138,11 @@ namespace Vim.UnitTest
             return FactoryService.EditorOperationsFactory.GetEditorOperations(view);
         }
 
+        public static IEditorOptions GetOptions(ITextView textView)
+        {
+            return FactoryService.EditorOptionsFactory.GetOptions(textView);
+        }
+
         public static ITextUndoHistory GetUndoHistory(ITextBuffer textBuffer)
         {
             return FactoryService.UndoManagerProvider.GetTextBufferUndoManager(textBuffer).TextBufferUndoHistory;

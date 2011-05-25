@@ -66,10 +66,11 @@ namespace Vim.UnitTest
             ITextStructureNavigator navigator = null,
             IJumpList jumpList = null,
             IStatusUtil statusUtil = null,
-            IVimData vimData = null)
+            IVimData vimData = null,
+            IEditorOptions editorOptions = null)
         {
             markMap = markMap ?? new MarkMap(new TrackingLineColumnService());
-            settings = settings ?? new LocalSettings(new GlobalSettings(), textView);
+            settings = settings ?? new LocalSettings(new GlobalSettings(), FSharpOption.CreateForReference(editorOptions), FSharpOption.CreateForReference(textView));
             search = search ?? CreateSearchService(settings.GlobalSettings);
             navigator = navigator ?? CreateTextStructureNavigator(textView.TextBuffer);
             jumpList = jumpList ?? CreateJumpList();
