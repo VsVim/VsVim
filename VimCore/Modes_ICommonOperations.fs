@@ -39,12 +39,6 @@ type ICommonOperations =
     /// Associated ITextView
     abstract TextView : ITextView 
 
-    /// The TabSize for the buffer
-    abstract TabSize : int
-
-    /// Whether or not to use Spaces in the buffer
-    abstract UseSpaces : bool
-
     /// Associated IEditorOperations
     abstract EditorOperations : IEditorOperations
 
@@ -57,8 +51,17 @@ type ICommonOperations =
     /// Associated ISearchService instance
     abstract SearchService : ISearchService
 
+    /// Tab Size for the IVimBuffer
+    abstract TabSize : int
+
+    /// Whether or not we should be using spaces in the IVimBuffer
+    abstract UseSpaces : bool
+
     /// Associated IUndoRedoOperations
     abstract UndoRedoOperations : IUndoRedoOperations
+
+    /// Apply the TextChange to the ITextBuffer 'count' times
+    abstract ApplyTextChange : TextChange -> addNewLintes : bool -> int -> unit
 
     /// Run the beep operation
     abstract Beep : unit -> unit
@@ -118,9 +121,6 @@ type ICommonOperations =
 
     /// Go the nth tab.  The first tab can be accessed with both 0 and 1
     abstract GoToTab : int -> unit
-
-    /// Insert text at the caret
-    abstract InsertText : string -> int -> unit
 
     /// Joins the lines in the range
     abstract Join : SnapshotLineRange -> JoinKind -> unit

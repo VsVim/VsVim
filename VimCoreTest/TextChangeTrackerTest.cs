@@ -214,6 +214,79 @@ namespace VimCore.UnitTest
             Assert.IsFalse(didRun);
         }
 
+        /// <summary>
+        /// When spaces are in the buffer and tabs are hit and used Visual Studio will often convert
+        /// spaces to tabs.  Without interpreting the line it looks like X spaces are deleted and 2 
+        /// tabs are inserted when really it's just a conversion and should show up as a single tab
+        /// insert
+        /// </summary>
+        [Test]
+        [Ignore("Needed to do a bit of a refactoring before I can fix this")]
+        public void Special_SpaceToTab()
+        {
+            Create("    hello");
+            _textBuffer.Replace(new Span(0, 4), "\t\t");
+            Assert.AreEqual(TextChange.NewInsert("\t"), _tracker.CurrentChange.Value);
+        }
+
+        /// <summary>
+        /// Make sure a straight forward replace is handled properly 
+        /// </summary>
+        [Test]
+        public void Replace_Complete()
+        {
+            Create("cat");
+            _textBuffer.Replace(new Span(0, 3), "dog");
+            var change = _tracker.CurrentChange.Value;
+            Assert.IsTrue(change.IsCombination);
+            Assert.IsTrue(change.AsCombination().Item1.IsDelete(3));
+            Assert.IsTrue(change.AsCombination().Item2.IsInsert("dog"));
+        }
+
+        /// <summary>
+        /// Replace a set of text with a smaller set of text
+        /// </summary>
+        [Test]
+        public void Replace_Small()
+        {
+            Create("house");
+            _textBuffer.Replace(new Span(0, 5), "dog");
+            var change = _tracker.CurrentChange.Value;
+            Assert.IsTrue(change.IsCombination);
+            Assert.IsTrue(change.AsCombination().Item1.IsDelete(5));
+            Assert.IsTrue(change.AsCombination().Item2.IsInsert("dog"));
+        }
+
+        /// <summary>
+        /// Replace a set of text with a bigger set of text
+        /// </summary>
+        [Test]
+        public void Replace_Big()
+        {
+            Create("dog");
+            _textBuffer.Replace(new Span(0, 3), "house");
+            var change = _tracker.CurrentChange.Value;
+            Assert.IsTrue(change.IsCombination);
+            Assert.IsTrue(change.AsCombination().Item1.IsDelete(3));
+            Assert.IsTrue(change.AsCombination().Item2.IsInsert("house"));
+        }
+
+        /// <summary>
+        /// A replace which occurs after an insert should be merged
+        /// </summary>
+        [Test]
+        public void Merge_ReplaceAfterInsert()
+        {
+            Create("dog");
+            _textBuffer.Replace(new Span(0, 0), "i");
+            Assert.IsTrue(_tracker.CurrentChange.Value.IsInsert);
+            _textBuffer.Replace(new Span(1, 3), "cat");
+            var change = _trackerRaw.CurrentChange.Value;
+            Assert.IsTrue(change.IsCombination);
+            Assert.IsTrue(change.AsCombination().Item1.IsInsert("i"));
+            Assert.IsTrue(change.AsCombination().Item2.IsCombination);
+        }
+
         [Test]
         public void SwitchMode1()
         {

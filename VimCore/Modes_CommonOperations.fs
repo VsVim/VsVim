@@ -70,6 +70,48 @@ type internal CommonOperations ( _data : OperationsData ) =
         else
             _settings.TabStop
 
+    /// Apply the TextChange to the ITextBuffer 'count' times as a single operation.
+    member x.ApplyTextChange textChange addNewLines count =
+        Contract.Requires (count > 0)
+
+        // Apply a single change to the ITextBuffer as a transaction 
+        let rec applyChange textChange = 
+            match textChange with
+            | TextChange.Insert text -> 
+                // Insert the same text 'count - 1' times at the cursor
+                let text = 
+                    if addNewLines then
+                        System.Environment.NewLine + text
+                    else 
+                        text
+
+                let caretPoint = TextViewUtil.GetCaretPoint _textView
+                let span = SnapshotSpan(caretPoint, 0)
+                let snapshot = _textView.TextBuffer.Replace(span.Span, text) |> ignore
+
+                // Now make sure to position the caret at the end of the inserted
+                // text
+                TextViewUtil.MoveCaretToPosition _textView (caretPoint.Position + text.Length)
+            | TextChange.Delete deleteCount -> 
+                // Delete '(count - 1) * deleteCount' more characters
+                let caretPoint = TextViewUtil.GetCaretPoint _textView
+                let count = deleteCount
+                let count = min (_textView.TextSnapshot.Length - caretPoint.Position) count
+                _textView.TextBuffer.Delete((Span(caretPoint.Position, count))) |> ignore
+
+                // Now make sure the caret is still at the same position
+                TextViewUtil.MoveCaretToPosition _textView caretPoint.Position
+            | TextChange.Combination (left, right) ->
+                applyChange left 
+                applyChange right
+
+        // Create a transaction so the textChange is applied as a single edit and to 
+        // maintain caret position 
+        _undoRedoOperations.EditWithUndoTransaction "Repeat Edits" (fun () -> 
+
+            for i = 1 to count do
+                applyChange textChange)
+
     /// The caret sometimes needs to be adjusted after an Up or Down movement.  Caret position
     /// and virtual space is actually quite a predicamite for VsVim because of how Vim standard 
     /// works.  Vim has no concept of Virtual Space and is designed to work in a fixed width
@@ -173,15 +215,6 @@ type internal CommonOperations ( _data : OperationsData ) =
             x.MoveCaretToPointAndEnsureVisible point.Position
             true
         else  _host.NavigateTo point 
-
-    member x.DeleteBlock (col:NormalizedSnapshotSpanCollection) = 
-        use edit = _textView.TextBuffer.CreateEdit()
-        col |> Seq.iter (fun span -> edit.Delete(span.Span) |> ignore)
-        edit.Apply() |> ignore
-
-    member x.DeleteSpan (span:SnapshotSpan) = 
-        let buffer = span.Snapshot.TextBuffer
-        buffer.Delete(span.Span) |> ignore
 
     /// Convert the provided whitespace into spaces.  The conversion of tabs into spaces will be 
     /// done based on the TabSize setting
@@ -501,14 +534,15 @@ type internal CommonOperations ( _data : OperationsData ) =
 
     interface ICommonOperations with
         member x.TextView = _textView 
-        member x.TabSize = x.TabSize
-        member x.UseSpaces = x.UseSpaces
         member x.EditorOperations = _operations
         member x.EditorOptions = _options
         member x.FoldManager = _data.FoldManager
         member x.SearchService = _data.SearchService
+        member x.TabSize = x.TabSize
+        member x.UseSpaces = x.UseSpaces
         member x.UndoRedoOperations = _data.UndoRedoOperations
 
+        member x.ApplyTextChange textChange addNewLines count = x.ApplyTextChange textChange addNewLines count
         member x.Join range kind = x.Join range kind
         member x.GoToDefinition () = 
             let before = TextViewUtil.GetCaretPoint _textView
@@ -553,22 +587,6 @@ type internal CommonOperations ( _data : OperationsData ) =
                 | None -> Failed Resources.Common_MarkNotSet
 
         member x.MoveCaretForVirtualEdit () = x.MoveCaretForVirtualEdit()
-
-        member x.InsertText text count = 
-            let text = StringUtil.repeat count text
-            let point = TextViewUtil.GetCaretPoint _textView
-            use edit = _textView.TextBuffer.CreateEdit()
-            edit.Insert(point.Position, text) |> ignore
-            edit.Apply() |> ignore
-             
-            // Need to adjust the caret to the end of the inserted text.  Very important
-            // for operations like repeat
-            if not (StringUtil.isNullOrEmpty text) then
-                let snapshot = _textView.TextSnapshot
-                let position = point.Position + text.Length - 1 
-                let caret = SnapshotPoint(snapshot, position)
-                _textView.Caret.MoveTo(caret) |> ignore
-                _textView.Caret.EnsureVisible()
 
         member x.ScrollLines dir count =
             for i = 1 to count do

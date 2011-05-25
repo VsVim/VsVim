@@ -1508,10 +1508,41 @@ type StoredVisualSpan =
             let count = col.Count
             StoredVisualSpan.Block (length, count)
 
+/// Represents the type of text change operations we recognize in the ITextBuffer.  These
+/// items are repeatable
 [<RequireQualifiedAccess>]
 type TextChange = 
     | Insert of string
     | Delete of int
+    | Combination of TextChange * TextChange
+
+    with 
+
+    /// Merge two TextChange values together.  The goal is to produce a the smallest TextChange
+    /// value possible
+    static member Merge left right =
+        match left, right with
+        | Insert leftStr, Insert rightStr -> 
+            Insert (leftStr + rightStr)
+        | Delete leftCount, Delete rightCount -> 
+            Delete (leftCount + rightCount)
+        | Insert leftStr, Delete rightCount ->
+            let diff = leftStr.Length - rightCount
+            if diff >= 0 then
+                let value = leftStr.Substring(0, diff)
+                Insert value
+            else
+                Delete (-diff)
+        | Delete _, Insert _ ->
+            // Can't reduce a left delete any further so we just create a Combination value
+            Combination (left, right)
+        | _ -> 
+            Combination (left, right)
+
+    static member Replace str =
+        let left = str |> StringUtil.length |> TextChange.Delete
+        let right = TextChange.Insert str
+        TextChange.Combination (left, right)
 
 /// Contains information about an executed Command.  This instance *will* be stored
 /// for long periods of time and used to repeat a Command instance across multiple

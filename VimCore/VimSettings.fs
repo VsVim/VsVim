@@ -3,6 +3,7 @@
 namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
+open Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
 open Vim.GlobalSettingNames
 open Vim.LocalSettingNames
 
@@ -237,7 +238,8 @@ type internal GlobalSettings() =
 type internal LocalSettings
     ( 
         _global : IVimGlobalSettings,
-        _textView : ITextView option) as this =
+        _textView : ITextView option
+    ) as this =
 
     static let LocalSettingInfo =
         [|

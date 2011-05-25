@@ -111,7 +111,6 @@
     <Compile Include="KeyMap.fsi" />
     <Compile Include="KeyMap.fs" />
     <Compile Include="JumpList.fs" />
-    <Compile Include="TextChangeTracker.fs" />
     <Compile Include="VimSettings.fs" />
     <Compile Include="FileSystem.fs" />
     <Compile Include="UndoRedoOperations.fsi" />
@@ -119,6 +118,8 @@
     <Compile Include="CommandRunner.fsi" />
     <Compile Include="CommandRunner.fs" />
     <Compile Include="Vim.fs" />
+    <Compile Include="TextChangeTracker.fsi" />
+    <Compile Include="TextChangeTracker.fs" />
     <Compile Include="MefComponents.fs" />
     <Compile Include="FSharpExtensions.fs" />
     <Compile Include="AssemblyInfo.fs" />

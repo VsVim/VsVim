@@ -105,5 +105,19 @@ namespace VimCore.UnitTest
             Assert.AreEqual("catcat", _textView.GetLine(0).GetText());
             Assert.AreEqual(5, _textView.GetCaretPoint().Position);
         }
+
+        /// <summary>
+        /// When repeating the insert it should write over the remaining text vs. inserting
+        /// </summary>
+        [Test]
+        public void Repeat_InsertOver()
+        {
+            Create("fish tree");
+            _buffer.SwitchMode(ModeKind.Replace, ModeArgument.NewInsertWithCount(2));
+            _buffer.Process("cat");
+            _buffer.Process(VimKey.Escape);
+            Assert.AreEqual("catcatree", _textView.GetLine(0).GetText());
+            Assert.AreEqual(5, _textView.GetCaretPoint().Position);
+        }
     }
 }

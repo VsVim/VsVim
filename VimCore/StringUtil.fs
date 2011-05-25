@@ -121,4 +121,6 @@ module internal StringUtil =
     [<CompiledName("ContainsChar")>]
     let containsChar (arg:string) (c:char) = arg.IndexOf(c) >= 0
 
+    [<CompiledName("IsWhiteSpace")>]
+    let isWhiteSpace (arg : string) = not (Seq.exists CharUtil.IsNotWhiteSpace arg)
 

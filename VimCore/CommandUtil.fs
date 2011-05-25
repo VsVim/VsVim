@@ -1284,25 +1284,6 @@ type internal CommandUtil
                     | Some count -> { original with Count = repeatData.Count }
                     | None -> original
 
-            // Repeat a text change.  
-            let repeatTextChange change = 
-
-                // Calculate the count of the repeat
-                let count = 
-                    match repeatData with
-                    | Some repeatData -> repeatData.CountOrDefault
-                    | None -> 1
-
-                match change with 
-                | TextChange.Insert text -> 
-                    _operations.InsertText text count
-                | TextChange.Delete(count) -> 
-                    let caretPoint, caretLine = x.CaretPointAndLine
-                    let length = min count (caretLine.EndIncludingLineBreak.Position - caretPoint.Position)
-                    let span = SnapshotSpanUtil.CreateWithLength caretPoint length
-                    _textBuffer.Delete(span.Span) |> ignore
-                CommandResult.Completed ModeSwitch.NoSwitch
-
             match command with
             | StoredCommand.NormalCommand (command, data, _) ->
                 let data = getCommandData data
@@ -1312,7 +1293,12 @@ type internal CommandUtil
                 let visualSpan = x.CalculateVisualSpan storedVisualSpan
                 x.RunVisualCommand command data visualSpan
             | StoredCommand.TextChangeCommand change ->
-                repeatTextChange change
+                // Calculate the count of the repeat
+                let count = 
+                    match repeatData with
+                    | Some repeatData -> repeatData.CountOrDefault
+                    | None -> 1
+                x.RepeatTextChange change count
             | StoredCommand.LinkedCommand (command1, command2) -> 
 
                 // Running linked commands will throw away the ModeSwitch value.  This can contain
@@ -1370,6 +1356,27 @@ type internal CommandUtil
                 else
                     SubstituteFlags.None
             _operations.Substitute data.SearchPattern data.Substitute range flags
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Repeat the TextChange value 'count' times in the ITextBuffer
+    member x.RepeatTextChange textChange count =
+
+        x.EditWithUndoTransaciton "Repeat Text Change" (fun () ->
+
+            // First apply the TextChange to the buffer then we will position the caret
+            _operations.ApplyTextChange textChange false count
+
+            // Next we need to do the final positioning of the caret.  While replaying 
+            // a series of edits we put the caret in a very particular place in order to 
+            // make the edits line up.  Once the edits are complete we need to reposition 
+            // the caret one item to the left.  This is to simulate the leaving of insert 
+            // mode and the caret moving left
+            let point = 
+                match SnapshotPointUtil.TryGetPreviousPointOnLine x.CaretPoint 1 with
+                | None -> x.CaretPoint
+                | Some point -> point
+            TextViewUtil.MoveCaretToPoint _textView point)
 
         CommandResult.Completed ModeSwitch.NoSwitch
 

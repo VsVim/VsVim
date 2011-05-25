@@ -279,8 +279,9 @@ namespace VimCore.UnitTest
         public void RepeatLastCommand_InsertText()
         {
             Create("");
-            _vimData.LastCommand = FSharpOption.Create(StoredCommand.NewTextChangeCommand(TextChange.NewInsert("h")));
-            _operations.Setup(x => x.InsertText("h", 1)).Verifiable();
+            var change = TextChange.NewInsert("h");
+            _vimData.LastCommand = FSharpOption.Create(StoredCommand.NewTextChangeCommand(change));
+            _operations.Setup(x => x.ApplyTextChange(change, false, 1)).Verifiable();
             _commandUtil.RepeatLastCommand(VimUtil.CreateCommandData());
             _factory.Verify();
         }
@@ -292,8 +293,9 @@ namespace VimCore.UnitTest
         public void RepeatLastCommand_InsertTextNewCount()
         {
             Create("");
-            _vimData.LastCommand = FSharpOption.Create(StoredCommand.NewTextChangeCommand(TextChange.NewInsert("h")));
-            _operations.Setup(x => x.InsertText("h", 3)).Verifiable();
+            var change = TextChange.NewInsert("h");
+            _vimData.LastCommand = FSharpOption.Create(StoredCommand.NewTextChangeCommand(change));
+            _operations.Setup(x => x.ApplyTextChange(change, false, 3)).Verifiable();
             _commandUtil.RepeatLastCommand(VimUtil.CreateCommandData(count: 3));
             _factory.Verify();
         }

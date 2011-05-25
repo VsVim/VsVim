@@ -268,41 +268,12 @@ type internal InsertMode
     /// Apply the repeated edits the the ITextBuffer
     member x.MaybeApplyRepeatedEdits () = 
 
-        // Function to actually repeat the edits
-        let repeatEdits count addNewLines change = 
-            match change with
-            | TextChange.Insert text -> 
-                // Insert the same text 'count - 1' times at the cursor
-                let text = 
-                    if addNewLines then
-                        let text = Environment.NewLine + text
-                        StringUtil.repeat (count - 1) text
-                    else 
-                        StringUtil.repeat (count - 1) text
-
-                let caretPoint = TextViewUtil.GetCaretPoint _textView
-                let span = SnapshotSpan(caretPoint, 0)
-                let snapshot = _textView.TextBuffer.Replace(span.Span, text) |> ignore
-
-                // Now make sure to position the caret at the end of the inserted
-                // text
-                TextViewUtil.MoveCaretToPosition _textView (caretPoint.Position + text.Length)
-            | TextChange.Delete deleteCount -> 
-                // Delete '(count - 1) * deleteCount' more characters
-                let caretPoint = TextViewUtil.GetCaretPoint _textView
-                let count = deleteCount * (count - 1)
-                let count = min (_textView.TextSnapshot.Length - caretPoint.Position) count
-                _textView.TextBuffer.Delete((Span(caretPoint.Position, count))) |> ignore
-
-                // Now make sure the caret is still at the same position
-                TextViewUtil.MoveCaretToPosition _textView caretPoint.Position
-
         try
             match _sessionData.RepeatData, _textChangeTracker.CurrentChange with
             | None, None -> ()
             | None, Some _ -> ()
             | Some _, None -> ()
-            | Some (count, addNewLines), Some change -> repeatEdits count addNewLines change
+            | Some (count, addNewLines), Some change -> _operations.ApplyTextChange change addNewLines (count - 1)
         finally
             // Make sure to close out the transaction
             match _sessionData.Transaction with

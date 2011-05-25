@@ -762,6 +762,35 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region TextChange
+
+        public static TextChange.Insert AsInsert(this TextChange change)
+        {
+            return (TextChange.Insert) change;
+        }
+
+        public static TextChange.Delete AsDelete(this TextChange change)
+        {
+            return (TextChange.Delete) change;
+        }
+
+        public static TextChange.Combination AsCombination(this TextChange change)
+        {
+            return (TextChange.Combination) change;
+        }
+
+        public static bool IsInsert(this TextChange change, string text)
+        {
+            return change.IsInsert && change.AsInsert().Item == text;
+        }
+
+        public static bool IsDelete(this TextChange change, int count)
+        {
+            return change.IsDelete && change.AsDelete().Item == count;
+        }
+
+        #endregion
+
         /// <summary>
         /// Run the specified motion with default arguments
         /// </summary>

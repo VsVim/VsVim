@@ -59,71 +59,95 @@ type internal TextChangeTracker
 
     /// The change is completed.  Raises the changed event and resets the current text change 
     /// state
-    member private x.ChangeCompleted() = 
+    member x.ChangeCompleted() = 
         match _currentTextChange with
-        | None -> ()
-        | Some(change,_) -> 
+        | None -> 
+            ()
+        | Some (change,_) -> 
             _currentTextChange <- None
             _changeCompletedEvent.Trigger change
 
-    member private x.OnTextChanged (args:TextContentChangedEventArgs) = 
+    /// Convert the ITextChange value into a TextChange instance.  This will not handle any special 
+    /// edit patterns and simply does a raw adjustment
+    member x.ConvertBufferChange (change : ITextChange) =
+        if change.OldText.Length = 0 then
+            // This is a straight insert operation
+            TextChange.Insert change.NewText
+        elif change.NewText.Length = 0 then 
+            // This is a straight delete operation
+            TextChange.Delete change.OldText.Length
+        else
+            // This is a delete + insert combination 
+            let left = TextChange.Delete change.OldText.Length
+            let right = TextChange.Insert change.NewText
+            TextChange.Combination (left, right)
 
-        // Also at this time we only support contiguous changes (or rather a single change)
+    /// Looks for special edit patterns in the buffer and creates an TextChange value for those
+    /// specific patterns
+    member x.ConvertSpecialBufferChange (change : ITextChange) = 
+
+        // Look for the pattern where tabs are used to replace spaces.  When there are spaces in 
+        // the ITextBuffer and tabs are enabled and the user hits <Tab> the spaces will be deleted
+        // and replaced with tabs.  The result of the edit though should be recorded as simply 
+        // tabs
+
+        // TODO: Finish
+        None
+
+    member x.OnTextChanged (args : TextContentChangedEventArgs) = 
+
+        // At this time we only support contiguous changes (or rather a single change)
         if args.Changes.Count = 1 then
-            let change = args.Changes.Item(0)
-            let opt = 
-                if change.Delta > 0 then 
-                    Some (TextChange.Insert change.NewText)
-                elif change.Delta < 0 then 
-                    Some (TextChange.Delete change.OldLength)
-                else 
-                    // Really this is a replace but for the purpose of change we model it
-                    // as Insert.  Could as easily be modeled as Replace (and possibly 
-                    // should but don't need the flexibility right now)
-                    Some (TextChange.Insert change.NewText)
-            match opt with 
-            | None -> ()
-            | Some(textChange) ->
-                match _currentTextChange with
-                | None -> _currentTextChange <- Some(textChange, change)
-                | Some(oldTextChange,oldRawChange) -> x.MergeChange oldTextChange oldRawChange textChange change 
-            else 
-                x.ChangeCompleted()
+            let newBufferChange = args.Changes.Item(0)
+            let newTextChange = 
+                match x.ConvertSpecialBufferChange newBufferChange with
+                | None -> x.ConvertBufferChange newBufferChange
+                | Some textChange -> textChange
 
-    member private x.MergeChange oldTextChange (oldChange:ITextChange) newTextChange (newChange:ITextChange) =
+            match _currentTextChange with
+            | None -> _currentTextChange <- Some (newTextChange, newBufferChange)
+            | Some (oldTextChange, oldBufferChange) -> x.MergeChange oldTextChange oldBufferChange newTextChange newBufferChange 
+        else
+            x.ChangeCompleted()
 
-        // Right now we only support merging Insert with insert and delete with delete
-        match oldTextChange, newTextChange with
-        | TextChange.Insert(t1), TextChange.Insert(t2) -> 
-            if oldChange.NewEnd = newChange.OldPosition then 
-                _currentTextChange <- Some ((TextChange.Insert (t1 + t2)), newChange)
+    /// Attempt to merge the change operations together
+    member x.MergeChange oldTextChange (oldChange : ITextChange) newTextChange (newChange : ITextChange) =
+
+        // First step is to determine if we can merge the changes.  Essentially we need to ensure that
+        // the changes are occurring at the same point in the ITextBuffer 
+        let canMerge = 
+            if newChange.OldText.Length = 0 then 
+                // This is a pure insert so it must occur at the end of the last ITextChange
+                // in order to be valid 
+                oldChange.NewEnd = newChange.OldPosition
+            elif newChange.NewText.Length = 0 then 
+                // This is a pure delete operation.  The delete must start from the end of the 
+                // previous change 
+                oldChange.NewEnd = newChange.OldEnd
+            elif newChange.Delta >= 0 && oldChange.NewEnd = newChange.OldPosition then
+                // Replace just after the previous edit
+                true
             else
-                x.ChangeCompleted()
-                _currentTextChange <- Some (newTextChange,newChange)
-        | TextChange.Delete(len1), TextChange.Delete(len2) -> 
-            if oldChange.NewPosition - 1= newChange.OldPosition then
-                _currentTextChange <- Some ((TextChange.Delete (len1+len2)), newChange)
-            else
-                x.ChangeCompleted()
-                _currentTextChange <- Some (newTextChange, newChange)
-        | TextChange.Insert(t1), TextChange.Delete(len1) -> 
-            if oldChange.NewEnd - 1 = newChange.OldPosition then
-                let newLength = t1.Length - len1
-                if newLength > 0 then 
-                    let text = t1.Substring(0,newLength)
-                    _currentTextChange <- Some ((TextChange.Insert(text), newChange))
-                else
-                    x.ChangeCompleted()
-            else
-                x.ChangeCompleted()
-                _currentTextChange <- Some (newTextChange, newChange)
-        | TextChange.Delete(_), TextChange.Insert(_) -> 
-            () // Not supported yet
+                // This is a replace operation.  Easiest way to check is to see if the delta applied
+                // to the previous end puts us in the correct end position
+                oldChange.NewEnd - newChange.OldText.Length = newChange.OldPosition
+
+        if canMerge then 
+            // Change is legal.  Merge it with the existing one and move on
+            let mergedChange = TextChange.Merge oldTextChange newTextChange 
+            _currentTextChange <- Some (mergedChange, newChange)
+        else
+            // If we can't merge then the previous change is complete and we can switch our focus to 
+            // the new TextChange value
+            x.ChangeCompleted()
+            _currentTextChange <- Some (newTextChange, newChange)
+
 
     /// This is raised when caret changes.  If this is the result of a user click then 
     /// we need to complete the change.
-    member private x.OnCaretPositionChanged () = 
-        if _mouse.IsLeftButtonPressed then x.ChangeCompleted()
+    member x.OnCaretPositionChanged () = 
+        if _mouse.IsLeftButtonPressed then 
+            x.ChangeCompleted()
         elif _buffer.ModeKind = ModeKind.Insert then 
             let keyMove = 
                 [ VimKey.Left; VimKey.Right; VimKey.Up; VimKey.Down ]
