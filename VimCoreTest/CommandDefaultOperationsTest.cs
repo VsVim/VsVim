@@ -72,7 +72,7 @@ namespace VimCore.UnitTest
                 foldManager: null,
                 registerMap: _registerMap.Object,
                 searchService: _searchService);
-            _operationsRaw = new DefaultOperations(data);
+            _operationsRaw = new DefaultOperations(new CommonOperations(data), data);
             _operations = _operationsRaw;
         }
 

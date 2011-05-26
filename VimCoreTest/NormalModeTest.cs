@@ -93,7 +93,6 @@ namespace VimCore.UnitTest
             _operations = _factory.Create<ICommonOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _operations.SetupGet(x => x.TextView).Returns(_textView);
-            _operations.SetupGet(x => x.FoldManager).Returns(_foldManager.Object);
 
             var capture = new MotionCapture(
                 _host.Object,

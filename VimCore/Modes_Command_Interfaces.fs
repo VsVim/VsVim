@@ -51,8 +51,6 @@ type IOperations =
     /// Print a single setting out to the host
     abstract PrintSetting : settingName:string -> unit
 
-    inherit Modes.ICommonOperations
-
 type ICommandProcessor =
 
     /// Run the specified command

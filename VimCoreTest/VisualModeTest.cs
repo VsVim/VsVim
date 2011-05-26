@@ -59,7 +59,6 @@ namespace VimCore.UnitTest
             _foldManager = _factory.Create<IFoldManager>();
             _editorOperations = _factory.Create<IEditorOperations>();
             _operations = _factory.Create<ICommonOperations>();
-            _operations.SetupGet(x => x.FoldManager).Returns(_foldManager.Object);
             _operations.SetupGet(x => x.UndoRedoOperations).Returns(_undoRedoOperations.Object);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _operations.SetupGet(x => x.TextView).Returns(_textView);

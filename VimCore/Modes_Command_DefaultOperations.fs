@@ -10,11 +10,14 @@ open Microsoft.VisualStudio.Text.Outlining
 open System.Text.RegularExpressions
 open Vim.RegexPatternUtil
 
-type internal DefaultOperations ( _data : OperationsData ) =
-    inherit CommonOperations(_data)
+type internal DefaultOperations 
+    ( 
+        _operations : ICommonOperations,
+        _data : OperationsData
+     ) =
 
     let _textView = _data.TextView
-    let _operations = _data.EditorOperations;
+    let _editorOperations = _data.EditorOperations;
     let _outlining = _data.OutliningManager;
     let _vimData = _data.VimData
     let _host = _data.VimHost
@@ -37,8 +40,6 @@ type internal DefaultOperations ( _data : OperationsData ) =
 
     member x.CurrentSnapshot = _textView.TextSnapshot
 
-    member private x.CommonImpl = x :> ICommonOperations
-
     interface IOperations with
         member x.ShowOpenFileDialog () = _host.ShowOpenFileDialog()
 
@@ -47,14 +48,14 @@ type internal DefaultOperations ( _data : OperationsData ) =
 
             // Need to get the cursor position correct for undo / redo so start an undo 
             // transaction 
-            x.CommonImpl.UndoRedoOperations.EditWithUndoTransaction "PutLine" (fun () ->
+            _operations.UndoRedoOperations.EditWithUndoTransaction "PutLine" (fun () ->
 
                 // Get the point to start the Put operation at 
                 let point = 
                     if putBefore then line.Start
                     else line.EndIncludingLineBreak
 
-                x.CommonImpl.Put point register.StringData OperationKind.LineWise
+                _operations.Put point register.StringData OperationKind.LineWise
 
                 // Need to put the caret on the first non-blank of the last line of the 
                 // inserted text

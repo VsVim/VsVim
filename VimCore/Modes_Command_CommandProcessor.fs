@@ -129,9 +129,11 @@ type CommandAction = char list -> SnapshotLineRange option -> bool -> RunResult
 type internal CommandProcessor 
     ( 
         _buffer : IVimBuffer, 
-        _operations : IOperations,
+        _operations : ICommonOperations,
+        _commandOperations : IOperations,
         _statusUtil : IStatusUtil,
-        _fileSystem : IFileSystem
+        _fileSystem : IFileSystem,
+        _foldManager : IFoldManager
     ) as this = 
 
     let _textView = _buffer.TextView
@@ -343,7 +345,7 @@ type internal CommandProcessor
     /// Parse out the fold command and create the fold
     member x.ProcessFold _ (range : SnapshotLineRange option) _ =
         let range = RangeUtil.RangeOrCurrentLine _buffer.TextView range
-        _operations.FoldManager.CreateFold range
+        _foldManager.CreateFold range
 
     /// Parse out the Yank command
     member x.ProcessYank (rest:char list) (range: SnapshotLineRange option) _ =
@@ -375,7 +377,7 @@ type internal CommandProcessor
             |> CommandParseUtil.SkipRegister _buffer.RegisterMap
         
         let range = RangeUtil.RangeOrCurrentLine _buffer.TextView range
-        _operations.PutLine reg range.EndLine bang
+        _commandOperations.PutLine reg range.EndLine bang
 
     /// Process the search pattern command
     member x.ProcessSearchPattern path (rest : char list) range _ =
@@ -551,23 +553,23 @@ type internal CommandProcessor
 
     member x.ProcessMarks rest _ _ =
         match Seq.isEmpty rest with
-        | true -> _operations.PrintMarks _buffer.MarkMap
+        | true -> _commandOperations.PrintMarks _buffer.MarkMap
         | false -> _statusUtil.OnError x.BadMessage
 
     /// Parse out the :set command
     member x.ProcessSet (rest:char list) _ _=
         let rest,data = rest |> CommandParseUtil.SkipNonWhitespace
-        if System.String.IsNullOrEmpty(data) then _operations.PrintModifiedSettings()
+        if System.String.IsNullOrEmpty(data) then _commandOperations.PrintModifiedSettings()
         else
             match data with
-            | Match1("^all$") _ -> _operations.PrintAllSettings()
-            | Match2("^(\w+)\?$") (_,name) -> _operations.PrintSetting name
-            | Match2("^no(\w+)$") (_,name) -> _operations.ResetSetting name
-            | Match2("^(\w+)\!$") (_,name) -> _operations.InvertSetting name
-            | Match2("^inv(\w+)$") (_,name) -> _operations.InvertSetting name
-            | Match3("^(\w+):(\w+)$") (_,name,value) -> _operations.SetSettingValue name value
-            | Match3("^(\w+)=(\w+)$") (_,name,value) -> _operations.SetSettingValue name value
-            | Match2("^(\w+)$") (_,name) -> _operations.OperateSetting(name)
+            | Match1("^all$") _ -> _commandOperations.PrintAllSettings()
+            | Match2("^(\w+)\?$") (_,name) -> _commandOperations.PrintSetting name
+            | Match2("^no(\w+)$") (_,name) -> _commandOperations.ResetSetting name
+            | Match2("^(\w+)\!$") (_,name) -> _commandOperations.InvertSetting name
+            | Match2("^inv(\w+)$") (_,name) -> _commandOperations.InvertSetting name
+            | Match3("^(\w+):(\w+)$") (_,name,value) -> _commandOperations.SetSettingValue name value
+            | Match3("^(\w+)=(\w+)$") (_,name,value) -> _commandOperations.SetSettingValue name value
+            | Match2("^(\w+)$") (_,name) -> _commandOperations.OperateSetting(name)
             | _ -> ()
 
     /// Used to parse out the :source command.  List is pointing past the o in :source
@@ -807,14 +809,14 @@ type internal CommandProcessor
         let modes = 
             if hasBang then [KeyRemapMode.Insert; KeyRemapMode.Command]
             else modes
-        _operations.ClearKeyMapModes modes
+        _commandOperations.ClearKeyMapModes modes
 
     member x.ProcessKeyUnmap (name:string) (modes: KeyRemapMode list) (hasBang:bool) (rest: char list) = 
         let modes = 
             if hasBang then [KeyRemapMode.Insert; KeyRemapMode.Command]
             else modes
         let rest,lhs = rest |> CommandParseUtil.SkipNonWhitespace
-        _operations.UnmapKeys lhs modes
+        _commandOperations.UnmapKeys lhs modes
         
     member x.ProcessKeyMap (name:string) (allowRemap:bool) (modes: KeyRemapMode list) (hasBang:bool) (rest: char list) = 
         let modes = 
@@ -823,9 +825,9 @@ type internal CommandProcessor
 
         // If there are no arguments then this is a print vs. remap call
         if rest |> Seq.skipWhile CharUtil.IsWhiteSpace |> Seq.isEmpty then 
-            _operations.PrintKeyMap modes
+            _commandOperations.PrintKeyMap modes
         else
-            let withKeys lhs rhs _ = _operations.RemapKeys lhs rhs modes allowRemap 
+            let withKeys lhs rhs _ = _commandOperations.RemapKeys lhs rhs modes allowRemap 
             CommandParseUtil.ParseKeys rest withKeys (fun() -> _statusUtil.OnError x.BadMessage)
 
     member x.ParseAndRunCommand (rest:char list) (range:SnapshotLineRange option) =

@@ -7,6 +7,6 @@ open Microsoft.VisualStudio.Text
 open System.Text.RegularExpressions
 
 type internal CommandProcessor = 
-    new : IVimBuffer * IOperations * IStatusUtil * IFileSystem -> CommandProcessor
+    new : IVimBuffer * ICommonOperations * IOperations * IStatusUtil * IFileSystem * IFoldManager -> CommandProcessor
 
     interface ICommandProcessor

@@ -455,7 +455,7 @@ type internal CommandUtil
 
     /// Delete all of the folds in the ITextBuffer
     member x.DeleteAllFoldsInBuffer () =
-        _operations.FoldManager.DeleteAllFolds()
+        _foldManager.DeleteAllFolds()
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete the selected text from the buffer and put it into the specified 

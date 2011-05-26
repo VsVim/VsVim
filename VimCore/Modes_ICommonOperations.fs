@@ -26,6 +26,7 @@ type OperationsData = {
     Navigator : ITextStructureNavigator
 }
 
+[<RequireQualifiedAccess>]
 type Result = 
     | Succeeded
     | Failed of string
@@ -44,9 +45,6 @@ type ICommonOperations =
 
     /// Associated IEditorOptions
     abstract EditorOptions : IEditorOptions
-
-    /// Associated IFoldManager
-    abstract FoldManager : IFoldManager
 
     /// Associated ISearchService instance
     abstract SearchService : ISearchService

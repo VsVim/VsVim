@@ -13,6 +13,7 @@ using Vim.Extensions;
 using Vim.Modes.Command;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
+using Vim.Modes;
 
 namespace VimCore.UnitTest
 {
@@ -28,9 +29,11 @@ namespace VimCore.UnitTest
         private IRegisterMap _map;
         private IVimData _vimData;
         private Mock<IEditorOperations> _editOpts;
-        private Mock<IOperations> _operations;
+        private Mock<ICommonOperations> _operations;
+        private Mock<IOperations> _commandOperations;
         private Mock<IStatusUtil> _statusUtil;
         private Mock<IFileSystem> _fileSystem;
+        private Mock<IFoldManager> _foldManager;
         private Mock<IVimHost> _vimHost;
         private Mock<IVim> _vim;
 
@@ -43,17 +46,25 @@ namespace VimCore.UnitTest
             _map = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             _editOpts = _factory.Create<IEditorOperations>();
             _vimHost = _factory.Create<IVimHost>();
-            _operations = _factory.Create<IOperations>();
+            _operations = _factory.Create<ICommonOperations>();
             _operations.SetupGet(x => x.EditorOperations).Returns(_editOpts.Object);
+            _commandOperations = _factory.Create<IOperations>();
             _statusUtil = _factory.Create<IStatusUtil>();
             _fileSystem = _factory.Create<IFileSystem>(MockBehavior.Strict);
+            _foldManager = _factory.Create<IFoldManager>(MockBehavior.Strict);
             _vimData = new VimData();
             _vim = MockObjectFactory.CreateVim(_map, host: _vimHost.Object, vimData: _vimData, factory: _factory);
             _buffer = MockObjectFactory.CreateVimBuffer(
                 _textView,
                 "test",
                 _vim.Object);
-            _processorRaw = new Vim.Modes.Command.CommandProcessor(_buffer.Object, _operations.Object, _statusUtil.Object, _fileSystem.Object);
+            _processorRaw = new CommandProcessor(
+                _buffer.Object,
+                _operations.Object,
+                _commandOperations.Object,
+                _statusUtil.Object,
+                _fileSystem.Object,
+                _foldManager.Object);
             _processor = _processorRaw;
         }
 
@@ -79,28 +90,28 @@ namespace VimCore.UnitTest
 
         private void TestMapCore(string input, string lhs, string rhs, bool allowRemap, params KeyRemapMode[] modes)
         {
-            _operations.Setup(x => x.RemapKeys(lhs, rhs, modes, allowRemap)).Verifiable();
+            _commandOperations.Setup(x => x.RemapKeys(lhs, rhs, modes, allowRemap)).Verifiable();
             RunCommand(input);
             _operations.Verify();
         }
 
         private void TestMapClear(string input, params KeyRemapMode[] modes)
         {
-            _operations.Setup(x => x.ClearKeyMapModes(modes)).Verifiable();
+            _commandOperations.Setup(x => x.ClearKeyMapModes(modes)).Verifiable();
             RunCommand(input);
             _operations.Verify();
         }
 
         private void TestUnmap(string input, string lhs, params KeyRemapMode[] modes)
         {
-            _operations.Setup(x => x.UnmapKeys(lhs, modes)).Verifiable();
+            _commandOperations.Setup(x => x.UnmapKeys(lhs, modes)).Verifiable();
             RunCommand(input);
             _operations.Verify();
         }
 
         private void TestPrintMap(string input, params KeyRemapMode[] modes)
         {
-            _operations
+            _commandOperations
                 .Setup(x => x.PrintKeyMap(It.IsAny<FSharpList<KeyRemapMode>>()))
                 .Callback<FSharpList<KeyRemapMode>>(
                     list =>
@@ -206,13 +217,13 @@ namespace VimCore.UnitTest
         public void Put_ShouldBeLinewise()
         {
             Create("foo", "bar");
-            _operations
+            _commandOperations
                 .Setup(x => x.PutLine(_map.GetRegister(RegisterName.Unnamed), It.IsAny<ITextSnapshotLine>(), false))
                 .Callback<Register, ITextSnapshotLine, bool>((register, line, putBefore) => Assert.IsTrue(line.LineNumber == 0))
                 .Verifiable();
             _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey", OperationKind.CharacterWise);
             RunCommand("put");
-            _operations.Verify();
+            _commandOperations.Verify();
         }
 
         /// <summary>
@@ -222,13 +233,13 @@ namespace VimCore.UnitTest
         public void Put_BangShouldPutTextBefore()
         {
             Create("foo", "bar");
-            _operations
+            _commandOperations
                 .Setup(x => x.PutLine(_map.GetRegister(RegisterName.Unnamed), It.IsAny<ITextSnapshotLine>(), true))
                 .Callback<Register, ITextSnapshotLine, bool>((register, line, putBefore) => Assert.IsTrue(line.LineNumber == 0))
                 .Verifiable();
             _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey", OperationKind.CharacterWise);
             RunCommand("put!");
-            _operations.Verify();
+            _commandOperations.Verify();
         }
 
         [Test]
@@ -1056,7 +1067,7 @@ namespace VimCore.UnitTest
         public void Marks1()
         {
             Create("foo");
-            _operations.Setup(x => x.PrintMarks(_buffer.Object.MarkMap)).Verifiable();
+            _commandOperations.Setup(x => x.PrintMarks(_buffer.Object.MarkMap)).Verifiable();
             RunCommand("marks");
         }
 
@@ -1136,7 +1147,7 @@ namespace VimCore.UnitTest
         public void Set1()
         {
             Create("bar");
-            _operations.Setup(x => x.PrintModifiedSettings()).Verifiable();
+            _commandOperations.Setup(x => x.PrintModifiedSettings()).Verifiable();
             RunCommand("se");
             _operations.Verify();
         }
@@ -1145,99 +1156,99 @@ namespace VimCore.UnitTest
         public void Set2()
         {
             Create("bar");
-            _operations.Setup(x => x.PrintModifiedSettings()).Verifiable();
+            _commandOperations.Setup(x => x.PrintModifiedSettings()).Verifiable();
             RunCommand("set");
-            _operations.Verify();
+            _commandOperations.Verify();
         }
 
         [Test]
         public void Set3()
         {
             Create("bar");
-            _operations.Setup(x => x.PrintAllSettings()).Verifiable();
+            _commandOperations.Setup(x => x.PrintAllSettings()).Verifiable();
             RunCommand("se all");
-            _operations.Verify();
+            _commandOperations.Verify();
         }
 
         [Test]
         public void Set4()
         {
             Create("bar");
-            _operations.Setup(x => x.PrintAllSettings()).Verifiable();
+            _commandOperations.Setup(x => x.PrintAllSettings()).Verifiable();
             RunCommand("set all");
-            _operations.Verify();
+            _commandOperations.Verify();
         }
 
         [Test]
         public void Set5()
         {
             Create("bar");
-            _operations.Setup(x => x.PrintSetting("foo")).Verifiable();
+            _commandOperations.Setup(x => x.PrintSetting("foo")).Verifiable();
             RunCommand("set foo?");
-            _operations.Verify();
+            _commandOperations.Verify();
         }
 
         [Test]
         public void Set6()
         {
             Create("bar");
-            _operations.Setup(x => x.OperateSetting("foo")).Verifiable();
+            _commandOperations.Setup(x => x.OperateSetting("foo")).Verifiable();
             RunCommand("set foo");
-            _operations.Verify();
+            _commandOperations.Verify();
         }
 
         [Test]
         public void Set7()
         {
             Create("bor");
-            _operations.Setup(x => x.ResetSetting("foo")).Verifiable();
+            _commandOperations.Setup(x => x.ResetSetting("foo")).Verifiable();
             RunCommand("set nofoo");
-            _operations.Verify();
+            _commandOperations.Verify();
         }
 
         [Test]
         public void Set8()
         {
             Create("bar");
-            _operations.Setup(x => x.InvertSetting("foo")).Verifiable();
+            _commandOperations.Setup(x => x.InvertSetting("foo")).Verifiable();
             RunCommand("set foo!");
-            _operations.Verify();
+            _commandOperations.Verify();
         }
 
         [Test]
         public void Set9()
         {
             Create("bar");
-            _operations.Setup(x => x.InvertSetting("foo")).Verifiable();
+            _commandOperations.Setup(x => x.InvertSetting("foo")).Verifiable();
             RunCommand("set invfoo");
-            _operations.Verify();
+            _commandOperations.Verify();
         }
 
         [Test]
         public void Set10()
         {
             Create("bar");
-            _operations.Setup(x => x.SetSettingValue("foo", "bar")).Verifiable();
+            _commandOperations.Setup(x => x.SetSettingValue("foo", "bar")).Verifiable();
             RunCommand("set foo=bar");
-            _operations.Verify();
+            _commandOperations.Verify();
         }
 
         [Test]
         public void Set11()
         {
             Create("baa");
-            _operations.Setup(x => x.SetSettingValue("foo", "true")).Verifiable();
+            _commandOperations.Setup(x => x.SetSettingValue("foo", "true")).Verifiable();
             RunCommand("set foo=true");
-            _operations.Verify();
+            _commandOperations.Verify();
         }
 
         [Test]
         public void Set12()
         {
             Create("baa");
-            _operations.Setup(x => x.SetSettingValue("foo", "true")).Verifiable();
+            _commandOperations.Setup(x => x.SetSettingValue("foo", "true")).Verifiable();
             RunCommand("set foo:true");
-            _operations.Verify();
+            _commandOperations.Verify();
         }
 
         [Test]
@@ -1264,9 +1275,9 @@ namespace VimCore.UnitTest
         {
             var text = new string[] { "set noignorecase" };
             _fileSystem.Setup(x => x.ReadAllLines("blah.txt")).Returns(FSharpOption.Create(text)).Verifiable();
-            _operations.Setup(x => x.ResetSetting("ignorecase")).Verifiable();
+            _commandOperations.Setup(x => x.ResetSetting("ignorecase")).Verifiable();
             RunCommand("source blah.txt");
-            _operations.Verify();
+            _commandOperations.Verify();
             _fileSystem.Verify();
         }
 
@@ -1275,8 +1286,8 @@ namespace VimCore.UnitTest
         {
             var text = new string[] { "set noignorecase", "set nofoo" };
             _fileSystem.Setup(x => x.ReadAllLines("blah.txt")).Returns(FSharpOption.Create(text)).Verifiable();
-            _operations.Setup(x => x.ResetSetting("ignorecase")).Verifiable();
-            _operations.Setup(x => x.ResetSetting("foo")).Verifiable();
+            _commandOperations.Setup(x => x.ResetSetting("ignorecase")).Verifiable();
+            _commandOperations.Setup(x => x.ResetSetting("foo")).Verifiable();
             RunCommand("source blah.txt");
             _operations.Verify();
         }
@@ -1285,7 +1296,7 @@ namespace VimCore.UnitTest
         public void RunCommand1()
         {
             var list = ListModule.OfSeq(":set nofoo");
-            _operations.Setup(x => x.ResetSetting("foo")).Verifiable();
+            _commandOperations.Setup(x => x.ResetSetting("foo")).Verifiable();
             _processor.RunCommand(list);
             _operations.Verify();
         }
