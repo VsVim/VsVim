@@ -1943,7 +1943,6 @@ namespace VimCore.UnitTest
             Create("hello world", "hello");
             var result = _motionUtil.NextWord(Path.Forward, 1).Value;
             Assert.AreEqual(_textView.GetLine(0).ExtentIncludingLineBreak, result.Span);
-            Assert.IsTrue(result.IsAnySearchMotion);
             Assert.AreEqual(@"\<hello\>", _vimData.LastPatternData.Pattern);
         }
 

@@ -80,7 +80,6 @@ namespace VsVim
     /// </summary>
     internal sealed class VsCommandTarget : IOleCommandTarget
     {
-
         private enum CommandAction
         {
             Enable,
@@ -431,7 +430,16 @@ namespace VsVim
                 action = CommandAction.Disable;
             }
 
-            if (action.HasValue && _buffer.Process(keyInput).IsAnyHandled)
+            // Only process the KeyInput if we are enabling the value.  When the value is Enabled
+            // we return Enabled from QueryStatus and Visual Studio will push the KeyInput back
+            // through the event chain where either of the following will happen 
+            //
+            //  1. R# will handle the KeyInput
+            //  2. R# will not handle it, it will get back to us and we will ignore it
+            //
+            // If the command is disabled though it will not go through IOleCommandTarget and instead will end 
+            // up in the KeyProcessor code which will handle the value
+            if (action.HasValue && action.Value == CommandAction.Enable && _buffer.Process(keyInput).IsAnyHandled)
             {
                 SwallowIfNextExecMatches = FSharpOption.Create(keyInput);
             }
@@ -450,6 +458,5 @@ namespace VsVim
             var hresult = vsTextView.AddCommandFilter(filter, out filter._nextTarget);
             return Result.CreateSuccessOrError(filter, hresult);
         }
-
     }
 }

@@ -164,11 +164,25 @@ type internal CommonOperations ( _data : OperationsData ) =
 
                 match result.MotionKind with 
                 | MotionKind.CharacterWiseExclusive ->
+                    // Exclusive motions are straight forward.  Move to the end of the SnapshotSpan
+                    // which was recorded.  Exclusive doesn't include the last point in the span 
+                    // but does move to it when going forward so End works here
                     result.Span.End
                 | MotionKind.CharacterWiseInclusive -> 
                     if Util.IsFlagSet result.MotionResultFlags MotionResultFlags.ExclusivePromotion then
-                        getAfterLastLine()
+                        // If we adjusted a span under rule #1 of ':help exclusive' then we should still
+                        // move the caret to the original end of the span
+
+                        if Util.IsFlagSet result.MotionResultFlags MotionResultFlags.ExclusivePromotionPlusOne then
+                            match SnapshotUtil.TryGetLine x.CurrentSnapshot (line.LineNumber + 2) with
+                            | None -> 
+                                result.Span.End
+                            | Some line ->
+                                line.Start
+                        else
+                            getAfterLastLine()
                     else
+                        // Normal exclusive motion should go to the last real point on the SnapshotSpan
                         SnapshotPointUtil.TryGetPreviousPointOnLine result.Span.End 1 
                         |> OptionUtil.getOrDefault result.Span.End
                 | MotionKind.LineWise column -> 

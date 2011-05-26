@@ -232,6 +232,82 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Move the caret using the end of word motion repeatedly
+        /// </summary>
+        [Test]
+        public void Motion_MoveEndOfWord()
+        {
+            Create("the cat chases the dog");
+            _buffer.Process("e");
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+            _buffer.Process("e");
+            Assert.AreEqual(6, _textView.GetCaretPoint().Position);
+            _buffer.Process("e");
+            Assert.AreEqual(13, _textView.GetCaretPoint().Position);
+            _buffer.Process("e");
+            Assert.AreEqual(17, _textView.GetCaretPoint().Position);
+            _buffer.Process("e");
+            Assert.AreEqual(21, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// The 'w' needs to be able to get off of a blank line
+        /// </summary>
+        [Test]
+        public void Motion_MoveWordAcrossBlankLine()
+        {
+            Create("dog", "", "cat ball");
+            _buffer.Process("w");
+            Assert.AreEqual(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            _buffer.Process("w");
+            Assert.AreEqual(_textView.GetPointInLine(2, 0), _textView.GetCaretPoint());
+            _buffer.Process("w");
+            Assert.AreEqual(_textView.GetPointInLine(2, 4), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// The 'w' from a blank should move to the next word
+        /// </summary>
+        [Test]
+        public void Motion_WordFromBlank()
+        {
+            Create("the dog chased the ball");
+            _textView.MoveCaretTo(3);
+            _buffer.Process("w");
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+            _buffer.Process("w");
+            Assert.AreEqual(8, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// The 'b' from a blank should move to the start of the previous word
+        /// </summary>
+        [Test]
+        public void Motion_WordFromBlankBackward()
+        {
+            Create("the dog chased the ball");
+            _textView.MoveCaretTo(7);
+            _buffer.Process("b");
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+            _buffer.Process("b");
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// The 'b' from the start of a word should move to the start of the previous word
+        /// </summary>
+        [Test]
+        public void Motion_WordFromStartBackward()
+        {
+            Create("the dog chased the ball");
+            _textView.MoveCaretTo(8);
+            _buffer.Process("b");
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+            _buffer.Process("b");
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
         /// Blank lines are sentences
         /// </summary>
         [Test]
@@ -393,6 +469,25 @@ namespace VimCore.UnitTest
             Assert.AreEqual(0, _textView.GetCaretPoint());
             _buffer.Process('%');
             Assert.AreEqual(7, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// See the full discussion in issue #509
+        ///
+        /// https://github.com/jaredpar/VsVim/issues/509
+        ///
+        /// Make sure that doing a ""][" from the middle of the line ends on the '}' if it is
+        /// preceded by a blank line
+        /// </summary>
+        [Test]
+        public void Motion_MoveSection_RegressionTest_509()
+        {
+            Create("cat", "", "}");
+            _buffer.Process("][");
+            Assert.AreEqual(_textView.GetPointInLine(2, 0), _textView.GetCaretPoint());
+            _textView.MoveCaretTo(1);
+            _buffer.Process("][");
+            Assert.AreEqual(_textView.GetPointInLine(2, 0), _textView.GetCaretPoint());
         }
 
         /// <summary>
@@ -1917,6 +2012,86 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Delete a word at the end of the line.  It should not delete the line break
+        /// </summary>
+        [Test]
+        public void Delete_WordEndOfLine()
+        {
+            Create("the cat", "chased the bird");
+            _textView.MoveCaretTo(4);
+            _buffer.Process("dw");
+            Assert.AreEqual("the ", _textView.GetLine(0).GetText());
+            Assert.AreEqual("chased the bird", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// Delete a word at the end of the line where the next line doesn't start in column
+        /// 0.  This should still not cause the end of the line to delete
+        /// </summary>
+        [Test]
+        public void Delete_WordEndOfLineNextStartNotInColumnZero()
+        {
+            Create("the cat", "  chased the bird");
+            _textView.MoveCaretTo(4);
+            _buffer.Process("dw");
+            Assert.AreEqual("the ", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  chased the bird", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// Delete across a line where the search ends in white space but not inside of 
+        /// column 0
+        /// </summary>
+        [Test]
+        public void Delete_SearchAcrossLineNotInColumnZero()
+        {
+            Create("the cat", "  chased the bird");
+            _textView.MoveCaretTo(4);
+            _buffer.Process("d/cha", enter: true);
+            Assert.AreEqual("the chased the bird", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// Delete across a line where the search ends in column 0 of the next line
+        /// </summary>
+        [Test]
+        public void Delete_SearchAcrossLineIntoColumnZero()
+        {
+            Create("the cat", "chased the bird");
+            _textView.MoveCaretTo(4);
+            _buffer.Process("d/cha", enter: true);
+            Assert.AreEqual("the ", _textView.GetLine(0).GetText());
+            Assert.AreEqual("chased the bird", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// Don't delete the new line when doing a 'daw' at the end of the line
+        /// </summary>
+        [Test]
+        public void Delete_AllWordEndOfLineIntoColumnZero()
+        {
+            Create("the cat", "chased the bird");
+            _textView.MoveCaretTo(4);
+            _buffer.Process("daw");
+            Assert.AreEqual("the", _textView.GetLine(0).GetText());
+            Assert.AreEqual("chased the bird", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// Delete a word at the end of the line where the next line doesn't start in column
+        /// 0.  This should still not cause the end of the line to delete
+        /// </summary>
+        [Test]
+        public void Delete_AllWordEndOfLineNextStartNotInColumnZero()
+        {
+            Create("the cat", "  chased the bird");
+            _textView.MoveCaretTo(4);
+            _buffer.Process("daw");
+            Assert.AreEqual("the", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  chased the bird", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
         /// Make sure we properly update register 0 during a yank
         /// </summary>
         [Test]
@@ -1997,6 +2172,81 @@ namespace VimCore.UnitTest
                 };
             _buffer.Process("y*");
             Assert.IsTrue(didSee);
+        }
+
+        /// <summary>
+        /// Doing a word yank from a blank should yank the white space till the start of 
+        /// the next word 
+        /// </summary>
+        [Test]
+        public void Yank_WordFromBlank()
+        {
+            Create("dog cat  ball");
+            _textView.MoveCaretTo(3);
+            _buffer.Process("yw");
+            Assert.AreEqual(" ", UnnamedRegister.StringValue);
+            _textView.MoveCaretTo(7);
+            _buffer.Process("yw");
+            Assert.AreEqual("  ", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Yanking a word in a blank line should yank the line and be a linewise motion
+        /// </summary>
+        [Test]
+        public void Yank_WordInEmptyLine()
+        {
+            Create("dog", "", "cat");
+            _textView.MoveCaretToLine(1);
+            _buffer.Process("yw");
+            Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
+            Assert.AreEqual(Environment.NewLine, UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Yanking a word in a blank line with white space in the following line should 
+        /// ignore the white space in the following line
+        /// </summary>
+        [Test]
+        public void Yank_WordInEmptyLineWithWhiteSpaceInFollowing()
+        {
+            Create("dog", "", "  cat");
+            _textView.MoveCaretToLine(1);
+            _buffer.Process("yw");
+            Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
+            Assert.AreEqual(Environment.NewLine, UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Yanking a word which includes a blank line should still be line wise if it started at 
+        /// the beginning of the previous word
+        /// </summary>
+        [Test]
+        public void Yank_WordEndInEmptyLine()
+        {
+            Create("dog", "", "cat");
+            _buffer.Process("y2w");
+            Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
+            Assert.AreEqual("dog" + Environment.NewLine + Environment.NewLine, UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Yanking a word which includes a blank line should not be line wise if it starts in 
+        /// the middle of a word
+        /// </summary>
+        [Test]
+        public void Yank_WordMiddleEndInEmptyLin()
+        {
+            Create("dog", "", "cat");
+            _textView.MoveCaretTo(1);
+            _buffer.Process("y2w");
+            Assert.AreEqual(OperationKind.CharacterWise, UnnamedRegister.OperationKind);
+            Assert.AreEqual("og" + Environment.NewLine, UnnamedRegister.StringValue);
+            _buffer.Process("p");
+            Assert.AreEqual("doog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("g", _textView.GetLine(1).GetText());
+            Assert.AreEqual("", _textView.GetLine(2).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(3).GetText());
         }
 
         /// <summary>

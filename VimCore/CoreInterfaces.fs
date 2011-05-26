@@ -234,9 +234,11 @@ type MotionResultFlags =
     /// This was promoted under rule #1 listed in ':help exclusive'
     | ExclusivePromotion = 0x2
 
-    /// Any search
-    /// TODO: Probably not necessary
-    | AnySearch = 0x4
+    /// This is to cover cases where the last line is blank and an exclusive promotion
+    /// under rule #1 occurs.  It's impossible for the caret movement code to tell the 
+    /// difference between a blank which should be consider the last line or if the 
+    // line above is last.  This helps differentiate the two
+    | ExclusivePromotionPlusOne = 0x4
 
 /// Information about the type of the motion this was.
 [<RequireQualifiedAccess>]
@@ -287,9 +289,6 @@ type MotionResult = {
 
     /// Is this a word motion 
     member x.IsAnyWordMotion = Util.IsFlagSet x.MotionResultFlags MotionResultFlags.AnyWord
-
-    /// Is this a search motion 
-    member x.IsAnySearchMotion = Util.IsFlagSet x.MotionResultFlags MotionResultFlags.AnySearch
 
     /// Is this an exclusive motion
     member x.IsExclusive =
