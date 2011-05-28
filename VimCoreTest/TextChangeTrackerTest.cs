@@ -230,8 +230,8 @@ namespace VimCore.UnitTest
         public void Special_SpaceToTab()
         {
             Create("    hello");
-            _operations.Setup(x => x.NormalizeWhiteSpace("    ")).Returns("\t");
-            _operations.Setup(x => x.NormalizeWhiteSpace("\t\t")).Returns("\t\t");
+            _operations.Setup(x => x.NormalizeSpacesAndTabs("    ")).Returns("\t");
+            _operations.Setup(x => x.NormalizeSpacesAndTabs("\t\t")).Returns("\t\t");
             _textBuffer.Replace(new Span(0, 4), "\t\t");
             Assert.AreEqual(TextChange.NewInsert("\t"), _tracker.CurrentChange.Value);
         }

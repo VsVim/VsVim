@@ -91,9 +91,9 @@ type internal TextChangeTracker
         // the ITextBuffer and tabs are enabled and the user hits <Tab> the spaces will be deleted
         // and replaced with tabs.  The result of the edit though should be recorded as simply 
         // tabs
-        if StringUtil.isWhiteSpace change.NewText && StringUtil.isWhiteSpace change.OldText then
-            let oldText = _operations.NormalizeWhiteSpace change.OldText
-            let newText = _operations.NormalizeWhiteSpace change.NewText
+        if change.OldText.Length > 0 && StringUtil.isSpacesAndTabs change.NewText && StringUtil.isSpacesAndTabs change.OldText then
+            let oldText = _operations.NormalizeSpacesAndTabs change.OldText
+            let newText = _operations.NormalizeSpacesAndTabs change.NewText
             if newText.StartsWith oldText then
                 let diffText = newText.Substring(oldText.Length)
                 TextChange.Insert diffText |> Some

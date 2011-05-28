@@ -239,14 +239,14 @@ type internal CommonOperations ( _data : OperationsData ) =
         let text = 
             span
             |> SnapshotSpanUtil.GetText
-            |> Seq.takeWhile CharUtil.IsWhiteSpace
+            |> Seq.takeWhile CharUtil.IsSpaceOrTab
             |> StringUtil.ofCharSeq
         x.NormalizeWhiteSpaceToSpaces text, text.Length
 
     /// Normalize any white space to the appropriate number of space characters based on the 
     /// Vim settings
     member x.NormalizeWhiteSpaceToSpaces (text : string) =
-        Contract.Assert(StringUtil.isWhiteSpace text)
+        Contract.Assert(StringUtil.isSpacesAndTabs text)
         let builder = System.Text.StringBuilder()
         let tabSize = _settings.TabStop
         for c in text do
@@ -279,8 +279,8 @@ type internal CommonOperations ( _data : OperationsData ) =
 
     /// Fully normalize white space into tabs / spaces based on the ExpandTab, TabSize 
     /// settings
-    member x.NormalizeWhiteSpace text = 
-        Contract.Assert(StringUtil.isWhiteSpace text)
+    member x.NormalizeSpacesAndTabs text = 
+        Contract.Assert(StringUtil.isSpacesAndTabs text)
         text
         |> x.NormalizeWhiteSpaceToSpaces
         |> x.NormalizeSpaces
@@ -639,7 +639,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.MoveCaretToPoint point =  TextViewUtil.MoveCaretToPoint _textView point 
         member x.MoveCaretToPointAndEnsureVisible point = x.MoveCaretToPointAndEnsureVisible point
         member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
-        member x.NormalizeWhiteSpace text = x.NormalizeWhiteSpace text
+        member x.NormalizeSpacesAndTabs text = x.NormalizeSpacesAndTabs text
 
         member x.OpenFold span count = 
             x.DoWithOutlining (fun outlining ->

@@ -95,6 +95,27 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Ensure that multi-line changes are properly recorded and repeated in the ITextBuffer
+        /// </summary>
+        [Test]
+        public void Repeat_MultilineChange()
+        {
+            Create("cat", "dog");
+            _buffer.Settings.TabStop = 4;
+            _buffer.Settings.ExpandTab = false;
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _buffer.Process("if (condition)", enter: true);
+            _buffer.Process("\t");
+            _buffer.Process(VimKey.Escape);
+            Assert.AreEqual("if (condition)", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("\tcat", _textBuffer.GetLine(1).GetText());
+            _textView.MoveCaretToLine(2);
+            _buffer.Process(".");
+            Assert.AreEqual("if (condition)", _textBuffer.GetLine(2).GetText());
+            Assert.AreEqual("\tdog", _textBuffer.GetLine(3).GetText());
+        }
+
+        /// <summary>
         /// Ensure we can use a double keystroke to escape
         /// </summary>
         [Test]
