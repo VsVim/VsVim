@@ -2204,13 +2204,9 @@ type VimBufferData = {
 
     StatusUtil : IStatusUtil
 
-    MotionUtil : IMotionUtil
-
     UndoRedoOperations : IUndoRedoOperations
 
     Vim : IVim
-
-    WordNavigator : ITextStructureNavigator
 }
 
 /// Vim instance.  Global for a group of buffers
@@ -2346,6 +2342,9 @@ and IVimBuffer =
 
     /// Owning IVim instance
     abstract Vim : IVim
+
+    /// VimBufferData for the given IVimBuffer
+    abstract VimBufferData : VimBufferData
 
     /// The ITextStructureNavigator for word values in the buffer
     abstract WordNavigator : ITextStructureNavigator

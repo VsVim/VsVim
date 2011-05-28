@@ -21,7 +21,6 @@ type OperationsData = {
     UndoRedoOperations : IUndoRedoOperations
     VimData : IVimData
     VimHost : IVimHost
-    Navigator : ITextStructureNavigator
 }
 
 module internal CommonUtil =

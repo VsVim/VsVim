@@ -60,7 +60,8 @@ type internal VimBuffer
         _incrementalSearch : IIncrementalSearch,
         _motionUtil : IMotionUtil,
         _wordNavigator : ITextStructureNavigator,
-        _undoRedoOperations : IUndoRedoOperations
+        _undoRedoOperations : IUndoRedoOperations,
+        _statusUtil : IStatusUtil
     ) =
 
     let _properties = PropertyCollection()
@@ -85,7 +86,7 @@ type internal VimBuffer
     member x.BufferedRemapKeyInputs =
         match _remapInput with
         | None -> List.empty
-        | Some(keyInputSet) -> keyInputSet.KeyInputs
+        | Some (keyInputSet) -> keyInputSet.KeyInputs
     
     /// Get the current mode
     member x.Mode = _modeMap.Mode
@@ -111,6 +112,15 @@ type internal VimBuffer
         | ModeKind.VisualCharacter -> Some(KeyRemapMode.Visual)
         | ModeKind.VisualLine -> Some(KeyRemapMode.Visual)
         | _ -> None
+
+    member x.VimBufferData = 
+        {
+            TextView = _textView
+            JumpList = _jumpList
+            LocalSettings = _settings
+            StatusUtil = _statusUtil
+            UndoRedoOperations = _undoRedoOperations
+            Vim = _vim }
 
     /// Switch to the desired mode
     member x.SwitchMode kind arg = _modeMap.SwitchMode kind arg
@@ -221,6 +231,7 @@ type internal VimBuffer
     interface IVimBuffer with
         member x.Vim = _vim
         member x.VimData = _vim.VimData
+        member x.VimBufferData = x.VimBufferData
         member x.WordNavigator = _wordNavigator
         member x.TextView = _textView
         member x.MotionUtil = _motionUtil

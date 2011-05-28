@@ -249,6 +249,9 @@ type ICommonOperations =
     /// jump list
     abstract NavigateToPoint : VirtualSnapshotPoint -> bool
 
+    /// Normalize the spaces and tabs in the string
+    abstract NormalizeWhiteSpace : string -> string
+
     /// Open count folds in the given SnapshotSpan 
     abstract OpenFold : SnapshotSpan -> count:int -> unit
 

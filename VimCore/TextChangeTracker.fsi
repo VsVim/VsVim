@@ -9,8 +9,8 @@ open Microsoft.VisualStudio.Utilities
 open System.ComponentModel.Composition
 
 /// Used to track changes to an individual IVimBuffer
+[<Class>]
 type internal TextChangeTracker =
     interface ITextChangeTracker
 
-    new : IVimBuffer * IKeyboardDevice * IMouseDevice -> TextChangeTracker
     

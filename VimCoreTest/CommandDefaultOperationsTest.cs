@@ -69,7 +69,6 @@ namespace VimCore.UnitTest
                 keyMap: _keyMap.Object,
                 undoRedoOperations: _undoRedoOperations,
                 editorOptions: null,
-                navigator: null,
                 foldManager: null,
                 registerMap: _registerMap.Object,
                 searchService: _searchService);

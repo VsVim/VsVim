@@ -84,7 +84,6 @@ namespace VimCore.UnitTest
                 registerMap: _registerMap,
                 editorOptions: _editorOptions,
                 keyMap: null,
-                navigator: null,
                 statusUtil: _statusUtil.Object,
                 foldManager: null,
                 searchService: _searchService);

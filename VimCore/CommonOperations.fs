@@ -48,7 +48,6 @@ type OperationsData = {
     UndoRedoOperations : IUndoRedoOperations
     VimData : IVimData
     VimHost : IVimHost
-    Navigator : ITextStructureNavigator
 }
 
 type internal CommonOperations ( _data : OperationsData ) =
@@ -63,7 +62,6 @@ type internal CommonOperations ( _data : OperationsData ) =
     let _options = _data.EditorOptions
     let _undoRedoOperations = _data.UndoRedoOperations
     let _statusUtil = _data.StatusUtil
-    let _wordNavigator =  _data.Navigator
     let _registerMap = _data.RegisterMap
     let _search = _data.SearchService
     let _regexFactory = VimRegexFactory(_data.LocalSettings.GlobalSettings)
@@ -242,7 +240,13 @@ type internal CommonOperations ( _data : OperationsData ) =
             span
             |> SnapshotSpanUtil.GetText
             |> Seq.takeWhile CharUtil.IsWhiteSpace
-            |> List.ofSeq
+            |> StringUtil.ofCharSeq
+        x.NormalizeWhiteSpaceToSpaces text, text.Length
+
+    /// Normalize any white space to the appropriate number of space characters based on the 
+    /// Vim settings
+    member x.NormalizeWhiteSpaceToSpaces (text : string) =
+        Contract.Assert(StringUtil.isWhiteSpace text)
         let builder = System.Text.StringBuilder()
         let tabSize = _settings.TabStop
         for c in text do
@@ -258,11 +262,11 @@ type internal CommonOperations ( _data : OperationsData ) =
                     builder.Append(' ') |> ignore
             | _ -> 
                 builder.Append(' ') |> ignore
-        builder.ToString(), text.Length
+        builder.ToString()
 
-    /// Normalize the whitespace into tabs / spaces based on the ExpandTab,
-    /// TabSize settings
-    member x.NormalizeWhiteSpace (text : string) = 
+    /// Normalize spaces into tabs / spaces based on the ExpandTab, TabSize settings
+    member x.NormalizeSpaces (text : string) = 
+        Contract.Assert(Seq.forall (fun c -> c = ' ') text)
         if _settings.ExpandTab then
             text
         else
@@ -272,6 +276,14 @@ type internal CommonOperations ( _data : OperationsData ) =
             let prefix = StringUtil.repeatChar tabCount '\t'
             let suffix = StringUtil.repeatChar spacesCount ' '
             prefix + suffix
+
+    /// Fully normalize white space into tabs / spaces based on the ExpandTab, TabSize 
+    /// settings
+    member x.NormalizeWhiteSpace text = 
+        Contract.Assert(StringUtil.isWhiteSpace text)
+        text
+        |> x.NormalizeWhiteSpaceToSpaces
+        |> x.NormalizeSpaces
 
     /// Shifts a block of lines to the left
     member x.ShiftLineBlockLeft (col: SnapshotSpan seq) multiplier =
@@ -290,7 +302,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             let ws, originalLength = x.GetAndNormalizeLeadingWhiteSpaceToSpaces span
             let ws = 
                 let length = max (ws.Length - count) 0
-                StringUtil.repeatChar length ' ' |> x.NormalizeWhiteSpace
+                StringUtil.repeatChar length ' ' |> x.NormalizeSpaces
             edit.Replace(span.Start.Position, originalLength, ws) |> ignore)
 
         edit.Apply() |> ignore
@@ -306,7 +318,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         col |> Seq.iter (fun span ->
             // Get the span we are formatting within the line
             let ws, originalLength = x.GetAndNormalizeLeadingWhiteSpaceToSpaces span
-            let ws = x.NormalizeWhiteSpace (ws + shiftText)
+            let ws = x.NormalizeSpaces (ws + shiftText)
             edit.Replace(span.Start.Position, originalLength, ws) |> ignore)
 
         edit.Apply() |> ignore
@@ -325,7 +337,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             let ws, originalLength = x.GetAndNormalizeLeadingWhiteSpaceToSpaces span
             let ws = 
                 let length = max (ws.Length - count) 0
-                StringUtil.repeatChar length ' ' |> x.NormalizeWhiteSpace
+                StringUtil.repeatChar length ' ' |> x.NormalizeSpaces
             edit.Replace(span.Start.Position, originalLength, ws) |> ignore)
         edit.Apply() |> ignore
 
@@ -343,7 +355,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             // Get the span we are formatting within the line
             let span = line.Extent
             let ws, originalLength = x.GetAndNormalizeLeadingWhiteSpaceToSpaces span
-            let ws = x.NormalizeWhiteSpace (ws + shiftText)
+            let ws = x.NormalizeSpaces (ws + shiftText)
             edit.Replace(line.Start.Position, originalLength, ws) |> ignore)
         edit.Apply() |> ignore
 
@@ -559,6 +571,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.UndoRedoOperations = _data.UndoRedoOperations
 
         member x.ApplyTextChange textChange addNewLines count = x.ApplyTextChange textChange addNewLines count
+        member x.Beep () = x.Beep()
         member x.Join range kind = x.Join range kind
         member x.GoToDefinition () = 
             let before = TextViewUtil.GetCaretPoint _textView
@@ -626,7 +639,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.MoveCaretToPoint point =  TextViewUtil.MoveCaretToPoint _textView point 
         member x.MoveCaretToPointAndEnsureVisible point = x.MoveCaretToPointAndEnsureVisible point
         member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
-        member x.Beep () = x.Beep()
+        member x.NormalizeWhiteSpace text = x.NormalizeWhiteSpace text
 
         member x.OpenFold span count = 
             x.DoWithOutlining (fun outlining ->
@@ -846,7 +859,6 @@ type CommonOperationsFactory
             JumpList = bufferData.JumpList
             KeyMap = vim.KeyMap
             LocalSettings = bufferData.LocalSettings
-            Navigator = bufferData.WordNavigator
             OutliningManager = outlining
             RegisterMap = vim.RegisterMap
             SearchService = vim.SearchService 

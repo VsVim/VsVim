@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Text;
+﻿using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
@@ -18,7 +19,9 @@ namespace VimCore.UnitTest
         private Mock<ITextCaret> _textCaret;
         private Mock<IMouseDevice> _mouse;
         private Mock<IKeyboardDevice> _keyboard;
-        private MockVimBuffer _vimBuffer;
+        private Mock<IVimLocalSettings> _localSettings;
+        private Mock<IVimBuffer> _buffer;
+        private Mock<ICommonOperations> _operations;
         private TextChangeTracker _trackerRaw;
         private ITextChangeTracker _tracker;
         private TextChange _lastChange;
@@ -28,17 +31,20 @@ namespace VimCore.UnitTest
             _textBuffer = EditorUtil.CreateBuffer(lines);
             _factory = new MockRepository(MockBehavior.Loose);
             _textCaret = _factory.Create<ITextCaret>();
-            _textView = _factory.Create<ITextView>();
-            _textView.SetupGet(x => x.Caret).Returns(_textCaret.Object);
+            _textView = MockObjectFactory.CreateTextView(
+                textBuffer: _textBuffer,
+                caret: _textCaret.Object,
+                factory: _factory);
             _textView.SetupGet(x => x.HasAggregateFocus).Returns(true);
+            _localSettings = _factory.Create<IVimLocalSettings>();
             _mouse = _factory.Create<IMouseDevice>();
             _keyboard = _factory.Create<IKeyboardDevice>();
-            _vimBuffer = new MockVimBuffer()
-            {
-                TextViewImpl = _textView.Object,
-                TextBufferImpl = _textBuffer
-            };
-            _trackerRaw = new TextChangeTracker(_vimBuffer, _keyboard.Object, _mouse.Object);
+            _buffer = MockObjectFactory.CreateVimBuffer(
+                textView: _textView.Object,
+                settings: _localSettings.Object,
+                factory: _factory);
+            _operations = _factory.Create<ICommonOperations>(MockBehavior.Strict);
+            _trackerRaw = new TextChangeTracker(_buffer.Object, _operations.Object, _keyboard.Object, _mouse.Object);
             _tracker = _trackerRaw;
             _tracker.ChangeCompleted += (sender, data) => { _lastChange = data; };
         }
@@ -221,10 +227,11 @@ namespace VimCore.UnitTest
         /// insert
         /// </summary>
         [Test]
-        [Ignore("Needed to do a bit of a refactoring before I can fix this")]
         public void Special_SpaceToTab()
         {
             Create("    hello");
+            _operations.Setup(x => x.NormalizeWhiteSpace("    ")).Returns("\t");
+            _operations.Setup(x => x.NormalizeWhiteSpace("\t\t")).Returns("\t\t");
             _textBuffer.Replace(new Span(0, 4), "\t\t");
             Assert.AreEqual(TextChange.NewInsert("\t"), _tracker.CurrentChange.Value);
         }
@@ -292,7 +299,7 @@ namespace VimCore.UnitTest
         {
             Create("the quick brown fox");
             _textBuffer.Insert(1, "b");
-            _vimBuffer.RaiseSwitchedMode((IMode)null);
+            _buffer.Raise(x => x.SwitchedMode += null, null, new SwitchModeEventArgs(FSharpOption<IMode>.None, null));
             Assert.AreEqual(TextChange.NewInsert("b"), _lastChange);
         }
 
@@ -303,9 +310,8 @@ namespace VimCore.UnitTest
             Create("the quick brown fox");
             var didRun = false;
             _tracker.ChangeCompleted += delegate { didRun = true; };
-            _vimBuffer.RaiseSwitchedMode((IMode)null);
+            _buffer.Raise(x => x.SwitchedMode += null, null, new SwitchModeEventArgs(FSharpOption<IMode>.None, null));
             Assert.IsFalse(didRun);
         }
-
     }
 }

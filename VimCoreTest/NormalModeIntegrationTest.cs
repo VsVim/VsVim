@@ -894,6 +894,23 @@ namespace VimCore.UnitTest
             Assert.AreEqual("ababccabcbear", _textView.GetLine(0).GetText());
         }
 
+        /// <summary>
+        /// Test the repeating of a command that changes white space to tabs
+        /// </summary>
+        [Test]
+        public void RepeatCommand_TextInsert_WhiteSpaceToTab()
+        {
+            Create("    hello world", "dog");
+            _buffer.Settings.TabStop = 4;
+            _buffer.Settings.ExpandTab = false;
+            _buffer.Process('i');
+            _textBuffer.Replace(new Span(0, 4), "\t\t");
+            _buffer.Process(VimKey.Escape);
+            _textView.MoveCaretToLine(1);
+            _buffer.Process('.');
+            Assert.AreEqual("\tdog", _textView.GetLine(1).GetText());
+        }
+
         [Test]
         [Description("The first repeat of I should go to the first non-blank")]
         public void RepeatCommand_CapitalI1()

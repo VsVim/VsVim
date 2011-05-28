@@ -337,5 +337,11 @@ namespace Vim.UnitTest.Mock
         {
             get { throw new NotImplementedException(); }
         }
+
+
+        public VimBufferData VimBufferData
+        {
+            get { throw new NotImplementedException(); }
+        }
     }
 }

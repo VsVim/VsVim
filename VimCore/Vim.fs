@@ -96,8 +96,6 @@ type internal VimBufferFactory
         let localSettings = LocalSettings(vim.Settings, editOptions, view) :> IVimLocalSettings
         let jumpList = JumpList(_tlcService) :> IJumpList
         let statusUtil = StatusUtil()
-        let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
-        let motionUtil = MotionUtil(view, vim.MarkMap, localSettings, vim.SearchService, wordNav, jumpList, statusUtil, vim.VimData) :> IMotionUtil
         let undoRedoOperations = 
             let history = 
                 let manager = _undoManagerProvider.GetTextBufferUndoManager(view.TextBuffer)
@@ -109,12 +107,11 @@ type internal VimBufferFactory
             JumpList = jumpList
             LocalSettings = localSettings
             StatusUtil = statusUtil :> IStatusUtil
-            MotionUtil = motionUtil 
             UndoRedoOperations = undoRedoOperations
-            Vim = vim
-            WordNavigator = wordNav }
+            Vim = vim }
         let commonOperations = _commonOperationsFactory.GetCommonOperations bufferData
 
+        let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let incrementalSearch = 
             IncrementalSearch(
                 commonOperations,
@@ -124,6 +121,7 @@ type internal VimBufferFactory
                 vim.VimData) :> IIncrementalSearch
         let capture = MotionCapture(vim.VimHost, view, incrementalSearch, localSettings) :> IMotionCapture
 
+        let motionUtil = MotionUtil(view, vim.MarkMap, localSettings, vim.SearchService, wordNav, jumpList, statusUtil, vim.VimData) :> IMotionUtil
         let bufferRaw = 
             VimBuffer( 
                 vim,
@@ -133,7 +131,8 @@ type internal VimBufferFactory
                 incrementalSearch,
                 motionUtil,
                 wordNav,
-                undoRedoOperations)
+                undoRedoOperations,
+                statusUtil)
         let buffer = bufferRaw :> IVimBuffer
 
         let foldManager = _foldManagerFactory.GetFoldManager view.TextBuffer

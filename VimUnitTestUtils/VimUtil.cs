@@ -22,7 +22,6 @@ namespace Vim.UnitTest
             IUndoRedoOperations undoRedoOperations = null,
             IVimData vimData = null,
             IVimHost vimHost = null,
-            ITextStructureNavigator navigator = null,
             IClipboardDevice clipboardDevice = null,
             IFoldManager foldManager = null)
         {
@@ -37,7 +36,6 @@ namespace Vim.UnitTest
                                  new UndoRedoOperations(statusUtil, FSharpOption<ITextUndoHistory>.None, editorOperations);
             vimData = vimData ?? new VimData();
             vimHost = vimHost ?? new MockVimHost();
-            navigator = navigator ?? CreateTextStructureNavigator(textView.TextBuffer);
             clipboardDevice = clipboardDevice ?? new MockClipboardDevice();
             var operationsData = new OperationsData(
                 editorOperations,
@@ -53,8 +51,7 @@ namespace Vim.UnitTest
                 textView,
                 undoRedoOperations,
                 vimData,
-                vimHost,
-                navigator);
+                vimHost);
             return new CommonOperations(operationsData);
         }
 

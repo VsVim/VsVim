@@ -11,6 +11,7 @@ open System.ComponentModel.Composition
 type internal TextChangeTracker
     ( 
         _buffer : IVimBuffer,
+        _operations : ICommonOperations,
         _keyboard : IKeyboardDevice,
         _mouse : IMouseDevice ) as this =
 
@@ -90,9 +91,16 @@ type internal TextChangeTracker
         // the ITextBuffer and tabs are enabled and the user hits <Tab> the spaces will be deleted
         // and replaced with tabs.  The result of the edit though should be recorded as simply 
         // tabs
-
-        // TODO: Finish
-        None
+        if StringUtil.isWhiteSpace change.NewText && StringUtil.isWhiteSpace change.OldText then
+            let oldText = _operations.NormalizeWhiteSpace change.OldText
+            let newText = _operations.NormalizeWhiteSpace change.NewText
+            if newText.StartsWith oldText then
+                let diffText = newText.Substring(oldText.Length)
+                TextChange.Insert diffText |> Some
+            else
+                None
+        else 
+            None
 
     member x.OnTextChanged (args : TextContentChangedEventArgs) = 
 
@@ -167,10 +175,14 @@ type internal TextChangeTrackerFactory
     [<ImportingConstructor>]
     (
         _keyboardDevice : IKeyboardDevice,
-        _mouseDevice : IMouseDevice )  =
+        _mouseDevice : IMouseDevice,
+        _commonOperationsFactory : ICommonOperationsFactory
+    )  =
 
     let _key = System.Object()
     
     interface ITextChangeTrackerFactory with
-        member x.GetTextChangeTracker (vimBuffer:IVimBuffer) = 
-            vimBuffer.Properties.GetOrCreateSingletonProperty(_key, fun () -> TextChangeTracker(vimBuffer, _keyboardDevice, _mouseDevice) :> ITextChangeTracker )
+        member x.GetTextChangeTracker (vimBuffer : IVimBuffer) = 
+            vimBuffer.Properties.GetOrCreateSingletonProperty(_key, fun () -> 
+                let operations = _commonOperationsFactory.GetCommonOperations vimBuffer.VimBufferData
+                TextChangeTracker(vimBuffer, operations, _keyboardDevice, _mouseDevice) :> ITextChangeTracker )

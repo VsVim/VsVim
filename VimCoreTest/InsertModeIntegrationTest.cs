@@ -77,6 +77,24 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Repeated white space change to tabs should only repeat the normalized change
+        /// </summary>
+        [Test]
+        public void Repeat_WhiteSpaceChange()
+        {
+            Create("blue\t\t    dog");
+            _buffer.Settings.TabStop = 4;
+            _buffer.Settings.ExpandTab = false;
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.NewInsertWithCount(2));
+            _textView.MoveCaretTo(10);
+            _textBuffer.Replace(new Span(6, 4), "\t\t");
+            _textView.MoveCaretTo(8);
+            Assert.AreEqual("blue\t\t\t\tdog", _textBuffer.GetLine(0).GetText());
+            _buffer.Process(VimKey.Escape);
+            Assert.AreEqual("blue\t\t\t\t\tdog", _textBuffer.GetLine(0).GetText());
+        }
+
+        /// <summary>
         /// Ensure we can use a double keystroke to escape
         /// </summary>
         [Test]
