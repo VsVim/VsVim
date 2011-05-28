@@ -701,8 +701,8 @@ type internal CommandUtil
     /// Go to the definition of the word under the caret
     member x.GoToDefinition () =
         match _operations.GoToDefinition() with
-        | Vim.Modes.Succeeded -> ()
-        | Vim.Modes.Failed(msg) -> _statusUtil.OnError msg
+        | Result.Succeeded -> ()
+        | Result.Failed(msg) -> _statusUtil.OnError msg
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -909,10 +909,10 @@ type internal CommandUtil
     /// Jump to the specified mark
     member x.JumpToMark c =
         match _operations.JumpToMark c _markMap with
-        | Modes.Result.Failed msg ->
+        | Result.Failed msg ->
             _statusUtil.OnError msg
             CommandResult.Error
-        | Modes.Result.Succeeded ->
+        | Result.Succeeded ->
             CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Jumps to the specified 
@@ -1668,11 +1668,11 @@ type internal CommandUtil
     member x.SetMarkToCaret c = 
         let caretPoint = TextViewUtil.GetCaretPoint _textView
         match _operations.SetMark caretPoint c _markMap with
-        | Modes.Result.Failed msg ->
+        | Result.Failed msg ->
             _operations.Beep()
             _statusUtil.OnError msg
             CommandResult.Error
-        | Modes.Result.Succeeded ->
+        | Result.Succeeded ->
             CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Scroll the lines 'count' pages in the specified direction

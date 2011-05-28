@@ -7,7 +7,7 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Outlining
 
 type internal IncrementalSearch =
-    new : Modes.ICommonOperations * IVimLocalSettings * ITextStructureNavigator * IStatusUtil * IVimData -> IncrementalSearch
+    new : ICommonOperations * IVimLocalSettings * ITextStructureNavigator * IStatusUtil * IVimData -> IncrementalSearch
 
     interface IIncrementalSearch
 

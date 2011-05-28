@@ -7,6 +7,6 @@ open Microsoft.VisualStudio.Text.Outlining
 
 type internal CommandUtil =
 
-    new : IVimBuffer * Modes.ICommonOperations * IStatusUtil * IUndoRedoOperations * ISmartIndentationService * IFoldManager -> CommandUtil
+    new : IVimBuffer * ICommonOperations * IStatusUtil * IUndoRedoOperations * ISmartIndentationService * IFoldManager -> CommandUtil
 
     interface ICommandUtil

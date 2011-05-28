@@ -13,19 +13,16 @@ open Vim.RegexPatternUtil
 type internal DefaultOperations 
     ( 
         _operations : ICommonOperations,
-        _data : OperationsData
+        _textView : ITextView,
+        _editorOperations : IEditorOperations,
+        _jumpList : IJumpList,
+        _settings : IVimLocalSettings,
+        _undoRedoOperations : IUndoRedoOperations,
+        _keyMap : IKeyMap,
+        _vimData : IVimData, 
+        _host : IVimHost,
+        _statusUtil : IStatusUtil
      ) =
-
-    let _textView = _data.TextView
-    let _editorOperations = _data.EditorOperations;
-    let _outlining = _data.OutliningManager;
-    let _vimData = _data.VimData
-    let _host = _data.VimHost
-    let _jumpList = _data.JumpList;
-    let _settings = _data.LocalSettings;
-    let _undoRedoOperations = _data.UndoRedoOperations;
-    let _keyMap = _data.KeyMap
-    let _statusUtil = _data.StatusUtil
 
     /// Format the setting for use in output
     let FormatSetting(setting:Setting) = 

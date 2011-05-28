@@ -50,7 +50,7 @@ type InsertSessionData = {
 type internal InsertMode
     ( 
         _buffer : IVimBuffer, 
-        _operations : Modes.ICommonOperations,
+        _operations : ICommonOperations,
         _broker : IDisplayWindowBroker, 
         _editorOptions : IEditorOptions,
         _undoRedoOperations : IUndoRedoOperations,

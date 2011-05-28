@@ -81,6 +81,7 @@ type internal VimBufferFactory
         _editorOptionsFactoryService : IEditorOptionsFactoryService,
         _outliningManagerService : IOutliningManagerService,
         _completionWindowBrokerFactoryService : IDisplayWindowBrokerFactoryService,
+        _commonOperationsFactory : ICommonOperationsFactory,
         _textChangeTrackerFactory : ITextChangeTrackerFactory,
         _textSearchService : ITextSearchService,
         _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService,
@@ -89,44 +90,30 @@ type internal VimBufferFactory
         _undoManagerProvider : ITextBufferUndoManagerProvider,
         _foldManagerFactory : IFoldManagerFactory ) = 
 
-    member x.CreateBuffer (vim:IVim) view = 
+    member x.CreateBuffer (vim : IVim) view = 
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
         let editOptions = _editorOptionsFactoryService.GetOptions(view)
-        let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let localSettings = LocalSettings(vim.Settings, editOptions, view) :> IVimLocalSettings
         let jumpList = JumpList(_tlcService) :> IJumpList
         let statusUtil = StatusUtil()
+        let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let motionUtil = MotionUtil(view, vim.MarkMap, localSettings, vim.SearchService, wordNav, jumpList, statusUtil, vim.VimData) :> IMotionUtil
-        let outlining = 
-            // This will return null in ITextBuffer instances where there is no IOutliningManager such
-            // as TFS annotated buffers.
-            let ret = _outliningManagerService.GetOutliningManager(view)
-            if ret = null then None else Some ret
-        let foldManager = _foldManagerFactory.GetFoldManager(view.TextBuffer)
-
         let undoRedoOperations = 
             let history = 
                 let manager = _undoManagerProvider.GetTextBufferUndoManager(view.TextBuffer)
                 if manager = null then None
                 else manager.TextBufferUndoHistory |> Some
             UndoRedoOperations(statusUtil, history, editOperations) :> IUndoRedoOperations
-        let operationsData = { 
-            EditorOperations = editOperations
-            EditorOptions = editOptions
-            FoldManager = foldManager
-            JumpList = jumpList
-            KeyMap = vim.KeyMap
-            LocalSettings = localSettings
-            Navigator = wordNav
-            OutliningManager = outlining
-            RegisterMap = vim.RegisterMap
-            SearchService = vim.SearchService 
-            StatusUtil = statusUtil :> IStatusUtil
+        let bufferData : VimBufferData = {
             TextView = view
+            JumpList = jumpList
+            LocalSettings = localSettings
+            StatusUtil = statusUtil :> IStatusUtil
+            MotionUtil = motionUtil 
             UndoRedoOperations = undoRedoOperations
-            VimData = vim.VimData
-            VimHost = _host }
-        let commonOperations = Modes.CommonOperations(operationsData) :> Modes.ICommonOperations
+            Vim = vim
+            WordNavigator = wordNav }
+        let commonOperations = _commonOperationsFactory.GetCommonOperations bufferData
 
         let incrementalSearch = 
             IncrementalSearch(
@@ -149,6 +136,7 @@ type internal VimBufferFactory
                 undoRedoOperations)
         let buffer = bufferRaw :> IVimBuffer
 
+        let foldManager = _foldManagerFactory.GetFoldManager view.TextBuffer
         let commandUtil = CommandUtil(buffer, commonOperations, statusUtil, undoRedoOperations, _smartIndentationService, foldManager) :> ICommandUtil
 
         /// Create the selection change tracker so that it will begin to monitor
@@ -164,7 +152,7 @@ type internal VimBufferFactory
         let createCommandRunner kind = CommandRunner (view, vim.RegisterMap, capture, commandUtil, statusUtil, kind) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
         let bufferOptions = _editorOptionsFactoryService.GetOptions(view.TextBuffer)
-        let commandOpts = Modes.Command.DefaultOperations(commonOperations, operationsData) :> Modes.Command.IOperations
+        let commandOpts = Modes.Command.DefaultOperations(commonOperations, view, editOperations, jumpList, localSettings, undoRedoOperations, vim.KeyMap, vim.VimData, vim.VimHost, statusUtil :> IStatusUtil) :> Modes.Command.IOperations
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commonOperations, commandOpts, statusUtil, FileSystem() :> IFileSystem, foldManager) :> Modes.Command.ICommandProcessor
         let visualOptsFactory kind = 
             let kind = VisualKind.OfModeKind kind |> Option.get
@@ -202,7 +190,6 @@ type internal VimBufferFactory
 
     interface IVimBufferFactory with
         member x.CreateBuffer vim view = x.CreateBuffer vim view :> IVimBuffer
-
 
 /// Default implementation of IVim 
 [<Export(typeof<IVim>)>]

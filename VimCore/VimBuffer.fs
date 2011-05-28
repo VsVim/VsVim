@@ -50,6 +50,7 @@ type internal ModeMap() =
     member x.RemoveMode (mode : IMode) = 
         _modeMap <- Map.remove mode.ModeKind _modeMap
 
+// TODO: Need to add an fsi for this file
 type internal VimBuffer 
     (
         _vim : IVim,

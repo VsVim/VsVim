@@ -2193,6 +2193,26 @@ type IVimData =
     [<CLIEvent>]
     abstract HighlightSearchOneTimeDisabled : IEvent<unit>
 
+/// Core parts of an IVimBuffer
+type VimBufferData = {
+
+    TextView : ITextView
+
+    JumpList : IJumpList
+
+    LocalSettings : IVimLocalSettings
+
+    StatusUtil : IStatusUtil
+
+    MotionUtil : IMotionUtil
+
+    UndoRedoOperations : IUndoRedoOperations
+
+    Vim : IVim
+
+    WordNavigator : ITextStructureNavigator
+}
+
 /// Vim instance.  Global for a group of buffers
 and IVim =
 
@@ -2259,7 +2279,9 @@ and IVim =
 and SwitchModeEventArgs 
     (
         _previousMode : IMode option,
-        _currentMode : IMode ) = 
+        _currentMode : IMode
+    ) = 
+
     inherit System.EventArgs()
 
     /// Current IMode 

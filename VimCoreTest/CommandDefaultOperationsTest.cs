@@ -56,8 +56,9 @@ namespace VimCore.UnitTest
             _undoRedoOperations = VimUtil.CreateUndoRedoOperations(_statusUtil.Object);
             _searchService = VimUtil.CreateSearchService(_globalSettings.Object);
 
+            var vimData = new VimData();
             var data = new OperationsData(
-                vimData: new VimData(),
+                vimData: vimData,
                 vimHost: _host.Object,
                 textView: _textView,
                 editorOperations: _editOpts.Object,
@@ -72,7 +73,17 @@ namespace VimCore.UnitTest
                 foldManager: null,
                 registerMap: _registerMap.Object,
                 searchService: _searchService);
-            _operationsRaw = new DefaultOperations(new CommonOperations(data), data);
+            _operationsRaw = new DefaultOperations(
+                new CommonOperations(data),
+                _textView,
+                _editOpts.Object,
+                _jumpList.Object,
+                _settings.Object,
+                _undoRedoOperations,
+                _keyMap.Object,
+                vimData,
+                _host.Object,
+                _statusUtil.Object);
             _operations = _operationsRaw;
         }
 

@@ -23,7 +23,7 @@ type IncrementalSearchData = {
 
 type internal IncrementalSearch
     (
-        _operations : Modes.ICommonOperations,
+        _operations : ICommonOperations,
         _settings : IVimLocalSettings,
         _navigator : ITextStructureNavigator,
         _statusUtil : IStatusUtil,

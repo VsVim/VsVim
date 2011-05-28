@@ -65,8 +65,8 @@
     <Compile Include="HistoryUtil.fsi" />
     <Compile Include="HistoryUtil.fs" />
     <Compile Include="PatternUtil.fs" />
-    <Compile Include="Modes_ICommonOperations.fs" />
-    <Compile Include="Modes_CommonOperations.fs" />
+    <Compile Include="CommonOperations.fsi" />
+    <Compile Include="CommonOperations.fs" />
     <Compile Include="Modes_CommandFactory.fsi" />
     <Compile Include="Modes_CommandFactory.fs" />
     <Compile Include="Modes_Command_Interfaces.fs" />
