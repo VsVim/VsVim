@@ -141,7 +141,7 @@ type internal VimBuffer
                             ()
                         result
                 finally
-                    _processingInputCount <- _processingInputCount + 1
+                    _processingInputCount <- _processingInputCount - 1
             _keyInputProcessedEvent.Trigger (keyInput, processResult)
             processResult
 

@@ -198,7 +198,7 @@ namespace VimCore.UnitTest
             var caught = false;
             try
             {
-            _buffer.Process('l');
+                _buffer.Process('l');
             }
             catch (Exception)
             {
@@ -353,7 +353,7 @@ namespace VimCore.UnitTest
             _keyMap.MapWithRemap("a", "b", KeyRemapMode.Normal);
             _keyMap.MapWithRemap("b", "a", KeyRemapMode.Normal);
             var didRun = false;
-            _buffer.ErrorMessage += 
+            _buffer.ErrorMessage +=
                 (notUsed, msg) =>
                 {
                     Assert.AreEqual(Resources.Vim_RecursiveMapping, msg);
@@ -432,5 +432,51 @@ namespace VimCore.UnitTest
             _buffer.Close();
         }
 
+        /// <summary>
+        /// Make sure the event is true while processing input
+        /// </summary>
+        [Test]
+        public void IsProcessing_Basic()
+        {
+            var didRun = false;
+            Assert.IsFalse(_buffer.IsProcessingInput);
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _textView.TextBuffer.Changed +=
+                delegate
+                {
+                    Assert.IsTrue(_buffer.IsProcessingInput);
+                    didRun = true;
+                };
+            _buffer.Process("h");   // Changing text will raise Changed
+            Assert.IsFalse(_buffer.IsProcessingInput);
+            Assert.IsTrue(didRun);
+        }
+
+        /// <summary>
+        /// Make sure the event properly resets while recursively processing 
+        /// input
+        /// </summary>
+        [Test]
+        public void IsProcessing_Recursive()
+        {
+            var didRun = false;
+            var isFirst = true;
+            Assert.IsFalse(_buffer.IsProcessingInput);
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _textView.TextBuffer.Changed +=
+                delegate
+                {
+                    if (isFirst)
+                    {
+                        isFirst = false;
+                        _buffer.Process('o');
+                    }
+                    Assert.IsTrue(_buffer.IsProcessingInput);
+                    didRun = true;
+                };
+            _buffer.Process("h");   // Changing text will raise Changed
+            Assert.IsFalse(_buffer.IsProcessingInput);
+            Assert.IsTrue(didRun);
+        }
     }
 }
