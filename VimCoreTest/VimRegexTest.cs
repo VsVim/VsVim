@@ -74,7 +74,7 @@ namespace VimCore.UnitTest
         {
             var regex = _factory.Create(pattern);
             Assert.IsTrue(regex.IsSome());
-            Assert.AreEqual(result, regex.Value.ReplaceAll(input, replace));
+            Assert.AreEqual(result, regex.Value.ReplaceAll(input, replace, _settings.Magic));
         }
 
         [Test]
@@ -639,6 +639,52 @@ namespace VimCore.UnitTest
         public void Replace_EscapedBackSlashes()
         {
             VerifyReplace("b", "abc", @"\\\\", @"a\\c");
+        }
+
+        /// <summary>
+        /// When the '&' character is used in the replacement string it should replace with 
+        /// the entire matched pattern
+        /// </summary>
+        [Test]
+        public void Replace_Ampersand()
+        {
+            _settings.Magic = true;
+            VerifyReplace("a", "cat", @"o&", "coat");
+            VerifyReplace(@"a\+", "caat", @"o&", "coaat");
+        }
+
+        /// <summary>
+        /// When there is no magic then the ampersand is not special and should replace 
+        /// as normal
+        /// </summary>
+        [Test]
+        public void Replace_Ampersand_NoMagic()
+        {
+            _settings.Magic = false;
+            VerifyReplace("a", "cat", @"o&", "co&t");
+            VerifyReplace(@"a\+", "caat", @"o&", "co&t");
+        }
+
+        /// <summary>
+        /// When escaped with magic it should behave simply as an ampersand
+        /// </summary>
+        [Test]
+        public void Replace_EscapedAmpersand()
+        {
+            _settings.Magic = true;
+            VerifyReplace("a", "cat", @"o\&", "co&t");
+            VerifyReplace(@"a\+", "caat", @"o\&", "co&t");
+        }
+
+        /// <summary>
+        /// The '\0' pattern is used to match the entire matched pattern.  It acts exactly 
+        /// as '&' does in the replacement string
+        /// </summary>
+        [Test]
+        public void Replace_EscapedZero()
+        {
+            VerifyReplace("a", "cat", @"o\0", "coat");
+            VerifyReplace(@"a\+", "caat", @"o\0", "coaat");
         }
 
         [Test]

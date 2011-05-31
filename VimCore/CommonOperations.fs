@@ -705,7 +705,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                 use edit = _textView.TextBuffer.CreateEdit()
 
                 let replaceOne (span:SnapshotSpan) (c:Capture) = 
-                    let newText =  regex.Replace c.Value replace 1
+                    let newText =  regex.Replace c.Value replace _globalSettings.Magic 1
                     let offset = span.Start.Position
                     edit.Replace(Span(c.Index+offset, c.Length), newText) |> ignore
                 let getMatches (span:SnapshotSpan) = 

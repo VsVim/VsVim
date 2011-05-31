@@ -34,6 +34,7 @@ type internal SubstituteConfirmMode
     ) as this = 
 
     let _textBuffer = _buffer.TextBuffer
+    let _globalSettings = _buffer.Settings.GlobalSettings
     let _factory = VimRegexFactory(_buffer.Settings.GlobalSettings)
     let _editorOperations = _operations.EditorOperations
     let _currentMatchChanged = Event<_>()
@@ -83,7 +84,7 @@ type internal SubstituteConfirmMode
     member this.CurrentSubstitute =
         match _confirmData with
         | None -> None
-        | Some(data) -> data.Regex.ReplaceOne (data.CurrentMatch.GetText()) (data.SubstituteText) |> Some
+        | Some data -> data.Regex.ReplaceOne (data.CurrentMatch.GetText()) (data.SubstituteText) _globalSettings.Magic |> Some
 
     member this.EndOperation () = 
         this.ConfirmData <- None
@@ -126,7 +127,7 @@ type internal SubstituteConfirmMode
                 doSearch line.EndIncludingLineBreak
 
     member this.ReplaceCurrent (data:ConfirmData) =
-        let text = data.Regex.Replace (data.CurrentMatch.GetText()) data.SubstituteText 1 
+        let text = data.Regex.Replace (data.CurrentMatch.GetText()) data.SubstituteText _globalSettings.Magic 1 
         _textBuffer.Replace(data.CurrentMatch.Span, text) |> ignore
 
     /// Substitute the current match and move to the next
@@ -160,7 +161,7 @@ type internal SubstituteConfirmMode
         let edit = _textBuffer.CreateEdit()
         lineSpans 
         |> Seq.iter (fun span ->
-            let text = doReplace (span.GetText()) data.SubstituteText
+            let text = doReplace (span.GetText()) data.SubstituteText _globalSettings.Magic
             edit.Replace(span.Span, text) |> ignore)
         if edit.HasEffectiveChanges then edit.Apply() |> ignore else edit.Cancel()
 

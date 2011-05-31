@@ -22,7 +22,7 @@ type CaseSpecifier =
 module VimRegexUtils = 
     let Escape c = c |> StringUtil.ofChar |> Regex.Escape 
 
-    let ConvertReplacementString (replacement:string) = 
+    let ConvertReplacementString (replacement : string) magic = 
         let builder = StringBuilder()
         let appendChar (c:char) = builder.Append(c) |> ignore
         let appendString (str:string) = builder.Append(str) |> ignore
@@ -33,27 +33,36 @@ module VimRegexUtils =
                 if CharUtil.IsDigit c then 
                     appendChar '$'
                     appendChar c
-                    inner (index + 2)
+                elif c = '&' && not magic then
+                    appendString "$0"
                 elif c = '\\' then
                     appendChar '\\'
-                    inner (index + 2)
                 else 
                     Escape c |> appendString
-                    inner (index + 2)
+                inner (index + 2)
 
             match StringUtil.charAtOption index replacement with
-            | None -> builder.ToString()
-            | Some(c) -> 
-                if c = '\\' then 
-                    match StringUtil.charAtOption (index + 1) replacement with 
-                    | None -> 
-                        Escape c |> appendString
-                        builder.ToString()
-                    | Some c -> 
-                        handleEscapeChar c 
-                else 
-                    appendChar c
-                    inner (index + 1)
+            | None -> 
+                builder.ToString()
+            | Some '&' -> 
+                if magic then
+                    // This is a special character in the replacement string and should 
+                    // match the entire matched string
+                    appendString "$0"
+                else
+                    // In no magic this is simply a normal character
+                    appendChar '&'
+                inner (index + 1)
+            | Some '\\' -> 
+                match StringUtil.charAtOption (index + 1) replacement with 
+                | None -> 
+                    Escape '\\' |> appendString
+                    builder.ToString()
+                | Some c -> 
+                    handleEscapeChar c 
+            | Some c -> 
+                appendChar c
+                inner (index + 1)
 
         inner 0
 
@@ -97,14 +106,14 @@ type VimRegex
     member x.RegexPattern = _regexPattern
     member x.Regex = _regex
     member x.IsMatch input = _regex.IsMatch(input)
-    member x.ReplaceAll (input:string) (replacement:string) = 
-        let replacement = VimRegexUtils.ConvertReplacementString replacement
+    member x.ReplaceAll (input : string) (replacement : string) magic = 
+        let replacement = VimRegexUtils.ConvertReplacementString replacement magic
         _regex.Replace(input, replacement) 
-    member x.Replace (input:string) (replacement:string) (count:int) = 
-        let replacement = VimRegexUtils.ConvertReplacementString replacement
+    member x.Replace (input:string) (replacement:string) magic (count:int) = 
+        let replacement = VimRegexUtils.ConvertReplacementString replacement magic
         _regex.Replace(input, replacement, count) 
-    member x.ReplaceOne (input:string) (replacement:string) =
-        x.Replace input replacement 1
+    member x.ReplaceOne (input:string) (replacement:string) magic =
+        x.Replace input replacement magic 1
 
 [<RequireQualifiedAccess>]
 type MagicKind = 
