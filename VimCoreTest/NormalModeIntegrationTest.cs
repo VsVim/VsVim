@@ -617,6 +617,36 @@ namespace VimCore.UnitTest
             Assert.AreEqual("cat bear", _textView.GetLine(0).GetText());
         }
 
+        /// <summary>
+        /// Ensure that we can change the character at the end of a line
+        /// </summary>
+        [Test]
+        public void Change_CharAtEndOfLine()
+        {
+            Create("hat", "cat");
+            _textView.MoveCaretTo(2);
+            _buffer.Settings.GlobalSettings.VirtualEdit = String.Empty;
+            _buffer.Process("cl");
+            Assert.AreEqual("ha", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+        }
+
+        /// <summary>
+        /// Ensure that we can change the character at the end of a line when 've=onemore'
+        /// </summary>
+        [Test]
+        public void Change_CharAtEndOfLine_VirtualEditOneMore()
+        {
+            Create("hat", "cat");
+            _textView.MoveCaretTo(2);
+            _buffer.Settings.GlobalSettings.VirtualEdit = "onemore";
+            _buffer.Process("cl");
+            Assert.AreEqual("ha", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+        }
+
         [Test]
         [Description("With no virtual edit the cursor should move backwards after x")]
         public void CursorPositionWith_x_1()
