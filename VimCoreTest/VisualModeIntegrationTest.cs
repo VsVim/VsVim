@@ -68,6 +68,59 @@ namespace VimCore.UnitTest
             _buffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.None);
         }
 
+        /// <summary>
+        /// When changing a line wise selection one blank line should be left remaining in the ITextBuffer
+        /// </summary>
+        [Test]
+        public void Change_LineWise()
+        {
+            Create("cat", "  dog", "  bear", "tree");
+            EnterMode(ModeKind.VisualLine, _textView.GetLineRange(1, 2).ExtentIncludingLineBreak);
+            _buffer.Settings.AutoIndent = true;
+            _buffer.Process("c");
+            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual("", _textView.GetLine(1).GetText());
+            Assert.AreEqual("tree", _textView.GetLine(2).GetText());
+            Assert.AreEqual(2, _textView.Caret.Position.VirtualBufferPosition.VirtualSpaces);
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+        }
+
+        /// <summary>
+        /// When changing a word we just delete it all and put the caret at the start of the deleted
+        /// selection
+        /// </summary>
+        [Test]
+        public void Change_Word()
+        {
+            Create("cat chases the ball");
+            EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 4));
+            _buffer.Settings.AutoIndent = true;
+            _buffer.Process("c");
+            Assert.AreEqual("chases the ball", _textView.GetLine(0).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+        }
+
+        /// <summary>
+        /// Make sure we handle the virtual spaces properly here.  The 'C' command should leave the caret
+        /// in virtual space due to the previous indent and escape should cause the caret to jump back to 
+        /// real spaces when leaving insert mode
+        /// </summary>
+        [Test]
+        public void ChangeLineSelection_VirtualSpaceHandling()
+        {
+            Create("  cat", "dog");
+            EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 2, 2));
+            _buffer.Process('C');
+            _buffer.Process(VimKey.Escape);
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.IsFalse(_textView.GetCaretVirtualPoint().IsInVirtualSpace);
+        }
+
+
         [Test]
         public void Repeat1()
         {
@@ -646,24 +699,6 @@ namespace VimCore.UnitTest
             Assert.AreEqual(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
             Assert.AreEqual(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
             Assert.AreEqual(ModeKind.VisualLine, _buffer.ModeKind);
-        }
-
-        /// <summary>
-        /// Make sure we handle the virtual spaces properly here.  The 'C' command should leave the caret
-        /// in virtual space due to the previous indent and escape should cause the caret to jump back to 
-        /// real spaces when leaving insert mode
-        /// </summary>
-        [Test]
-        public void ChangeLineSelection_VirtualSpaceHandling()
-        {
-            Create("  cat", "dog");
-            EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 2, 2));
-            _buffer.Process('C');
-            _buffer.Process(VimKey.Escape);
-            Assert.AreEqual("", _textView.GetLine(0).GetText());
-            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
-            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-            Assert.IsFalse(_textView.GetCaretVirtualPoint().IsInVirtualSpace);
         }
 
         /// <summary>

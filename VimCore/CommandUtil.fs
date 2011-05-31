@@ -302,14 +302,27 @@ type internal CommandUtil
     member x.ChangeLines count register = 
 
         let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
-        let lineNumber = x.CaretLine.LineNumber
+        x.ChangeLinesCore range register
 
-        // Caret position before the delete needs to be on the first non-whitespace character
-        // of the first line.  If the line is blank the caret should remain un-moved
-        let point =
-            x.CaretLine
+    /// Core routine for changing a set of lines in the ITextBuffer.  This is the backing function
+    /// for changing lines in both normal and visual mode
+    member x.ChangeLinesCore (range : SnapshotLineRange) register = 
+
+        // Caret position for the undo operation depends on the number of lines which are in
+        // range being deleted.  If there is a single line then we position it before the first
+        // non space / tab character in the first line.  If there is more than one line then we 
+        // position it at the equivalent location in the second line.  
+        // 
+        // There appears to be no logical reason for this behavior difference but it exists
+        let point = 
+            let line = 
+                if range.Count = 1 then
+                    range.StartLine
+                else
+                    SnapshotUtil.GetLine range.Snapshot (range.StartLineNumber + 1)
+            line
             |> SnapshotLineUtil.GetPoints Path.Forward
-            |> Seq.skipWhile SnapshotPointUtil.IsWhiteSpace
+            |> Seq.skipWhile SnapshotPointUtil.IsSpaceOrTab
             |> SeqUtil.tryHeadOnly
         match point with
         | None -> ()
@@ -320,10 +333,9 @@ type internal CommandUtil
         x.EditWithLinkedChange "ChangeLines" (fun () -> 
 
             // Actually delete the text and position the caret
-            let snapshot = _textBuffer.Delete(range.Extent.Span)
-            let line = SnapshotUtil.GetLine snapshot lineNumber
+            _textBuffer.Delete(range.Extent.Span) |> ignore
             x.MoveCaretToDeletedLineStart range.StartLine
-    
+
             // Update the register now that the operation is complete.  Register value is odd here
             // because we really didn't delete linewise but it's required to be a linewise 
             // operation.  
@@ -407,12 +419,19 @@ type internal CommandUtil
     /// transaction. 
     member x.ChangeSelection register (visualSpan : VisualSpan) = 
 
-        // Caret needs to be positioned at the front of the span in undo so move it
-        // before we create the transaction
-        TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
-        x.EditWithLinkedChange "ChangeSelection" (fun() -> 
+        // For block and character modes the change selection command is simply a 
+        // delete of the span and move into insert mode.  
+        let editSelection () = 
+            // Caret needs to be positioned at the front of the span in undo so move it
+            // before we create the transaction
+            TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
+            x.EditWithLinkedChange "ChangeSelection" (fun() -> 
+                x.DeleteSelection register visualSpan |> ignore)
 
-            x.DeleteSelection register visualSpan |> ignore)
+        match visualSpan with
+        | VisualSpan.Character _ -> editSelection()
+        | VisualSpan.Block _ ->  editSelection()
+        | VisualSpan.Line range -> x.ChangeLinesCore range register
 
     /// Close a single fold under the caret
     member x.CloseFoldInSelection (visualSpan : VisualSpan) =

@@ -553,6 +553,11 @@ module SnapshotPointUtil =
         if IsEndPoint point then false
         else CharUtil.IsWhiteSpace (point.GetChar())
 
+    /// Is this point a space or tab
+    let IsSpaceOrTab point = 
+        if IsEndPoint point then false
+        else CharUtil.IsSpaceOrTab (point.GetChar())
+
     /// Is this point white space or inside the line break?
     let IsWhiteSpaceOrInsideLineBreak point = 
         IsWhiteSpace point || IsInsideLineBreak point

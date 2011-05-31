@@ -2550,5 +2550,39 @@ namespace VimCore.UnitTest
             _buffer.Process("u");
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
+
+        /// <summary>
+        /// Undoing a change lines for a single line should put the caret at the start of the
+        /// line which was changed
+        /// </summary>
+        [Test]
+        public void Undo_ChangeLines_OneLine()
+        {
+            Create("  cat");
+            _textView.MoveCaretTo(4);
+            _buffer.Settings.AutoIndent = true;
+            _buffer.Process("cc");
+            _buffer.Process(VimKey.Escape);
+            _buffer.Process("u");
+            Assert.AreEqual("  cat", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Undoing a change lines for a multiple lines should put the caret at the start of the
+        /// second line which was changed.  
+        /// </summary>
+        [Test]
+        public void Undo_ChangeLines_MultipleLines()
+        {
+            Create("dog", "  cat", "  bear", "  tree");
+            _textView.MoveCaretToLine(1);
+            _buffer.Settings.AutoIndent = true;
+            _buffer.Process("3cc");
+            _buffer.Process(VimKey.Escape);
+            _buffer.Process("u");
+            Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual(_textView.GetPointInLine(2, 2), _textView.GetCaretPoint());
+        }
     }
 }
