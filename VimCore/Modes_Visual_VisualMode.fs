@@ -32,13 +32,6 @@ type internal VisualMode
 
     member x.SelectedSpan = (TextSelectionUtil.GetStreamSelectionSpan _buffer.TextView.Selection).SnapshotSpan
 
-    /// Build the set of CommandBinding which will be used to move the caret.  Typically
-    /// these are just MotionBinding instances which are converted to movement commands
-    member x.CreateMovementBindings() = 
-        let factory = Vim.Modes.CommandFactory(_operations, _capture, _buffer.MotionUtil, _buffer.JumpList, _buffer.Settings)
-        factory.CreateMovementCommands()
-        |> Seq.append (factory.CreateScrollCommands())
-
     /// Create the CommandBinding instances for the supported command values
     member x.CreateCommandBindings() =
         let visualSeq = 
@@ -91,6 +84,10 @@ type internal VisualMode
         let normalSeq = 
             seq {
                 yield ("zE", CommandFlags.Special, NormalCommand.DeleteAllFoldsInBuffer)
+                yield ("[p", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
+                yield ("[P", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
+                yield ("]p", CommandFlags.Repeatable, NormalCommand.PutAfterCaretWithIndent)
+                yield ("]P", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
                 yield (":", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.Command, ModeArgument.FromVisual))
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str

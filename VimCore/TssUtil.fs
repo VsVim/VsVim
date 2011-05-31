@@ -117,6 +117,7 @@ module TssUtil =
                 inner prevPos (count-1)
         inner point count 
 
+    // TODO: Most uses of this just want to check for spaces and tabs.  Write a new API
     let FindIndentPosition (line:ITextSnapshotLine) tabSize =
         SnapshotSpanUtil.GetPoints Path.Forward line.Extent
         |> Seq.map (fun p -> p.GetChar())
@@ -130,12 +131,13 @@ module TssUtil =
         elif diff < 0 then new SnapshotSpan(line.Start, point)
         else new SnapshotSpan(point.Subtract(count), point)
 
-
+    // TODO: Most uses of this just want to check for spaces and tabs.  Write a new API
     let TryFindFirstNonWhiteSpaceCharacter line =
         line
         |> SnapshotLineUtil.GetPoints Path.Forward
         |> Seq.tryFind (fun p -> not (SnapshotPointUtil.IsWhiteSpace p))
 
+    // TODO: Most uses of this just want to check for spaces and tabs.  Write a new API
     let FindFirstNonWhiteSpaceCharacter line = 
         match TryFindFirstNonWhiteSpaceCharacter line with
         | Some point -> point

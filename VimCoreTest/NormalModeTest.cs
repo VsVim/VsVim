@@ -8,7 +8,6 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
-using Vim.Modes;
 using Vim.Modes.Normal;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
@@ -841,11 +840,38 @@ namespace VimCore.UnitTest
         }
 
         [Test]
+        public void Bind_PutAfterCaretWithIndent()
+        {
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.PutAfterCaretWithIndent);
+            _mode.Process("]p");
+            _commandUtil.Verify();
+        }
+
+        [Test]
         public void Bind_PutBeforeCaret()
         {
             Create("foo");
             _commandUtil.SetupCommandNormal(NormalCommand.NewPutBeforeCaret(false));
             _mode.Process("P");
+            _commandUtil.Verify();
+        }
+
+        [Test]
+        public void Bind_PutBeforeCaretWithIndent()
+        {
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.PutBeforeCaretWithIndent);
+            _mode.Process("[p");
+            _commandUtil.Verify();
+        }
+
+        [Test]
+        public void Bind_PutBeforeCaretWithIndent_ViaCapitalP()
+        {
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.PutBeforeCaretWithIndent);
+            _mode.Process("[P");
             _commandUtil.Verify();
         }
 

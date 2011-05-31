@@ -103,7 +103,7 @@ type internal SelectionTracker
         match _kind with
         | VisualKind.Character -> selectStandard()
         | VisualKind.Line ->
-            let first,last = 
+            let first, last = 
                 if VirtualSnapshotPointUtil.GetPosition _anchorPoint <= VirtualSnapshotPointUtil.GetPosition endPoint then 
                     (_anchorPoint, endPoint)
                 else 

@@ -1467,6 +1467,23 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// When putting a character wise selection which spans over multiple lines into 
+        /// the ITextBuffer the caret is positioned at the start of the text and not 
+        /// after it as it is with most put operations
+        /// </summary>
+        [Test]
+        public void PutAfter_CharacterWise_MultipleLines()
+        {
+            Create("dog", "cat");
+            UnnamedRegister.UpdateValue("tree" + Environment.NewLine + "be");
+            _buffer.Process("p");
+            Assert.AreEqual("dtree", _textView.GetLine(0).GetText());
+            Assert.AreEqual("beog", _textView.GetLine(1).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(2).GetText());
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
         /// Caret should be positioned after the last character of the inserted text
         /// </summary>
         [Test]
@@ -1526,6 +1543,68 @@ namespace VimCore.UnitTest
             Assert.AreEqual("tree", _textView.GetLine(2).GetText());
             Assert.AreEqual("cat", _textView.GetLine(3).GetText());
             Assert.AreEqual(_textView.GetLine(3).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Putting a word which doesn't span multiple lines with indent is simply no 
+        /// different than a typically put after command
+        /// </summary>
+        [Test]
+        public void PutAfterWithIndent_Word()
+        {
+            Create("  dog", "  cat", "fish", "tree");
+            UnnamedRegister.UpdateValue("bear", OperationKind.CharacterWise);
+            _buffer.Process("]p");
+            Assert.AreEqual(" bear dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Putting a line should cause the indent to be matched in the second line irrespective
+        /// of what the original indent was
+        /// </summary>
+        [Test]
+        public void PutAfterWithIndent_SingleLine()
+        {
+            Create("  dog", "  cat", "fish", "tree");
+            UnnamedRegister.UpdateValue("bear" + Environment.NewLine, OperationKind.LineWise);
+            _buffer.Process("]p");
+            Assert.AreEqual("  dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  bear", _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Putting a line should cause the indent to be matched in all of the pasted lines 
+        /// irrespective of their original indent
+        /// </summary>
+        [Test]
+        public void PutAfterWithIndent_MultipleLines()
+        {
+            Create("  dog", "  cat");
+            UnnamedRegister.UpdateValue("    tree" + Environment.NewLine + "    bear" + Environment.NewLine, OperationKind.LineWise);
+            _buffer.Process("]p");
+            Assert.AreEqual("  dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
+            Assert.AreEqual("  bear", _textView.GetLine(2).GetText());
+            Assert.AreEqual(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Putting a character wise block of text which spans multiple lines is the trickiest
+        /// version.  It requires that the first line remain unchanged while the subsequent lines
+        /// are indeed indented to the proper level
+        /// </summary>
+        [Test]
+        public void PutAfterWithIndent_CharcterWiseOverSeveralLines()
+        {
+            Create("  dog", "  cat");
+            UnnamedRegister.UpdateValue("tree" + Environment.NewLine + "be", OperationKind.CharacterWise);
+            _buffer.Process("]p");
+            Assert.AreEqual(" tree", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  be dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual("  cat", _textView.GetLine(2).GetText());
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
 
         /// <summary>
@@ -1599,6 +1678,68 @@ namespace VimCore.UnitTest
             Assert.AreEqual("bcat", _textView.GetLine(1).GetText());
             Assert.AreEqual("cbear", _textView.GetLine(2).GetText());
             Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(0).Start);
+        }
+
+        /// <summary>
+        /// Putting a word which doesn't span multiple lines with indent is simply no 
+        /// different than a typically put after command
+        /// </summary>
+        [Test]
+        public void PutBeforeWithIndent_Word()
+        {
+            Create("  dog", "  cat", "fish", "tree");
+            UnnamedRegister.UpdateValue("bear", OperationKind.CharacterWise);
+            _buffer.Process("[p");
+            Assert.AreEqual("bear  dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Putting a line should cause the indent to be matched in the second line irrespective
+        /// of what the original indent was
+        /// </summary>
+        [Test]
+        public void PutBeforeWithIndent_SingleLine()
+        {
+            Create("  dog", "  cat", "fish", "tree");
+            UnnamedRegister.UpdateValue("bear" + Environment.NewLine, OperationKind.LineWise);
+            _buffer.Process("[p");
+            Assert.AreEqual("  bear", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetPointInLine(0, 2), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Putting a line should cause the indent to be matched in all of the pasted lines 
+        /// irrespective of their original indent
+        /// </summary>
+        [Test]
+        public void PutBeforeWithIndent_MultipleLines()
+        {
+            Create("  dog", "  cat");
+            UnnamedRegister.UpdateValue("    tree" + Environment.NewLine + "    bear" + Environment.NewLine, OperationKind.LineWise);
+            _buffer.Process("[p");
+            Assert.AreEqual("  tree", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  bear", _textView.GetLine(1).GetText());
+            Assert.AreEqual("  dog", _textView.GetLine(2).GetText());
+            Assert.AreEqual(_textView.GetPointInLine(0, 2), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Putting a character wise block of text which spans multiple lines is the trickiest
+        /// version.  It requires that the first line remain unchanged while the subsequent lines
+        /// are indeed indented to the proper level
+        /// </summary>
+        [Test]
+        public void PutBeforeWithIndent_CharcterWiseOverSeveralLines()
+        {
+            Create("  dog", "  cat");
+            UnnamedRegister.UpdateValue("tree" + Environment.NewLine + "be", OperationKind.CharacterWise);
+            _buffer.Process("[p");
+            Assert.AreEqual("tree", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  be  dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual("  cat", _textView.GetLine(2).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
 
         [Test]

@@ -160,6 +160,7 @@
     <Compile Include="RegisterTest.cs" />
     <Compile Include="SnapshotLineRangeTest.cs" />
     <Compile Include="SubstituteConfirmTaggerTest.cs" />
+    <Compile Include="TextLineTest.cs" />
     <Compile Include="VimRegexTest.cs" />
     <Compile Include="VirtualSnapshotPointUtilTest.cs" />
     <Compile Include="MotionUtilLegacyTest.cs" />

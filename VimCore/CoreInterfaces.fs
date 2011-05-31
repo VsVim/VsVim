@@ -1089,9 +1089,17 @@ type NormalCommand =
     /// whether or not the caret should be placed after the inserted text
     | PutAfterCaret of bool
 
+    /// Put the contents of the register into the buffer after the cursor and respecting 
+    /// the indent of the current line
+    | PutAfterCaretWithIndent
+
     /// Put the contents of the register into the buffer before the cursor.  The bool is 
     /// whether or not the caret should be placed after the inserted text
     | PutBeforeCaret of bool
+
+    /// Put the contents of the register into the buffer before the cursor and respecting 
+    /// the indent of the current line
+    | PutBeforeCaretWithIndent
 
     /// Start the recording of a macro to the specified Register
     | RecordMacroStart of char

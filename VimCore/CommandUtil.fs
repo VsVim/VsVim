@@ -58,6 +58,57 @@ type internal CommandUtil
     /// The current ITextSnapshot instance for the ITextBuffer
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
+    /// Calculate the new RegisterValue for the provided one for put with indent
+    /// operations.
+    member x.CalculateIdentStringData (registerValue : RegisterValue) =
+
+        // Get the indent string to apply to the lines which are indented
+        let indent = 
+            x.CaretLine.GetText()
+            |> Seq.takeWhile CharUtil.IsSpaceOrTab
+            |> StringUtil.ofCharSeq
+            |> _operations.NormalizeSpacesAndTabs
+
+        // Adjust the indentation on a given line of text to have the indentation
+        // previously calculated
+        let adjustTextLine (textLine : TextLine) =
+            let oldIndent = textLine.Text |> Seq.takeWhile CharUtil.IsSpaceOrTab |> StringUtil.ofCharSeq
+            let text = indent + (textLine.Text.Substring(oldIndent.Length))
+            { textLine with Text = text }
+
+        // Really a put after with indent is just a normal put after of the adjusted 
+        // register value.  So adjust here and forward on the magic
+        let stringData = 
+            let stringData = registerValue.StringData
+            match stringData with 
+            | StringData.Block _ -> 
+                // Block values don't participate in indentation of this manner
+                stringData 
+            | StringData.Simple text ->
+                match registerValue.OperationKind with
+                | OperationKind.CharacterWise ->
+    
+                    // We only change lines after the first.  So break it into separate lines
+                    // fix their indent and then produce the new value.
+                    let lines = TextLine.GetTextLines text
+                    let head = lines.Head
+                    let rest = lines.Rest |> Seq.map adjustTextLine
+                    let text = 
+                        let all = Seq.append (Seq.singleton head) rest
+                        TextLine.CreateString all
+                    StringData.Simple text
+
+                | OperationKind.LineWise -> 
+
+                    // Change every line for a line wise operation
+                    text
+                    |> TextLine.GetTextLines
+                    |> Seq.map adjustTextLine
+                    |> TextLine.CreateString
+                    |> StringData.Simple
+
+        RegisterValue.String (stringData, registerValue.OperationKind)
+
     /// Calculate the VisualSpan value for the associated ITextBuffer given the 
     /// StoreVisualSpan value
     member x.CalculateVisualSpan stored =
@@ -1034,9 +1085,14 @@ type internal CommandUtil
     /// Put the contents of the specified register after the cursor.  Used for the
     /// 'p' and 'gp' command in normal mode
     member x.PutAfterCaret (register : Register) count moveCaretAfterText =
-        let stringData = register.StringData.ApplyCount count
+        x.PutAfterCaretCore (register.RegisterValue) count moveCaretAfterText 
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Core put after function used by many of the put after operations
+    member x.PutAfterCaretCore (registerValue : RegisterValue) count moveCaretAfterText =
+        let stringData = registerValue.StringData.ApplyCount count
         let point = 
-            match register.OperationKind with
+            match registerValue.OperationKind with
             | OperationKind.CharacterWise -> 
                 if x.CaretLine.Length = 0 then 
                     x.CaretLine.Start
@@ -1045,27 +1101,43 @@ type internal CommandUtil
             | OperationKind.LineWise -> 
                 x.CaretLine.EndIncludingLineBreak
 
-        x.PutCore point stringData register.OperationKind moveCaretAfterText
+        x.PutCore point stringData registerValue.OperationKind moveCaretAfterText
 
+    /// Put the contents of the register into the buffer after the cursor and respect
+    /// the indent of the current line.  Used for the ']p' command
+    member x.PutAfterCaretWithIndent (register : Register) count = 
+        let registerValue = x.CalculateIdentStringData register.RegisterValue
+        x.PutAfterCaretCore registerValue count false
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Put the contents of the specified register before the cursor.  Used for the
     /// 'P' and 'gP' commands in normal mode
     member x.PutBeforeCaret (register : Register) count moveCaretAfterText =
-        let stringData = register.StringData.ApplyCount count
+        x.PutBeforeCaretCore register.RegisterValue count moveCaretAfterText
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Put the contents of the specified register before the caret and respect the
+    /// indent of the current line.  Used for the '[p' and family commands
+    member x.PutBeforeCaretWithIndent (register : Register) count =
+        let registerValue = x.CalculateIdentStringData register.RegisterValue
+        x.PutBeforeCaretCore registerValue count false
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Core put function used by many of the put before operations
+    member x.PutBeforeCaretCore (registerValue : RegisterValue) count moveCaretAfterText =
+        let stringData = registerValue.StringData.ApplyCount count
         let point = 
-            match register.OperationKind with
+            match registerValue.OperationKind with
             | OperationKind.CharacterWise -> x.CaretPoint
             | OperationKind.LineWise -> x.CaretLine.Start
 
-        x.PutCore point stringData register.OperationKind moveCaretAfterText
-
-        CommandResult.Completed ModeSwitch.NoSwitch
+        x.PutCore point stringData registerValue.OperationKind moveCaretAfterText
 
     /// Put the contents of the specified register after the cursor.  Used for the
-    /// normal 'p', 'gp', 'P' and 'gP' commands.  For linewise put operations the
-    /// point must be at the start of a line
+    /// normal 'p', 'gp', 'P', 'gP', ']p' and '[p' commands.  For linewise put operations 
+    /// the point must be at the start of a line
     member x.PutCore point stringData operationKind moveCaretAfterText =
+
         // Save the point incase this is a linewise insertion and we need to
         // move after the inserted lines
         let oldPoint = point
@@ -1084,14 +1156,19 @@ type internal CommandUtil
 
                 let point = 
                     match stringData with
-                    | StringData.Simple _ ->
-                        // For characterwise we just increment the length of the first string inserted
-                        // and possibily one more if moving after
-                        let point = 
+                    | StringData.Simple text ->
+                        if EditUtil.HasNewLine text && not moveCaretAfterText then 
+                            // For multi-line operations which do not specify to move the caret after
+                            // the text we instead put the caret at the first character of the new 
+                            // text
+                            point
+                        else
+                            // For characterwise we just increment the length of the first string inserted
+                            // and possibily one more if moving after
                             let offset = stringData.FirstString.Length - 1
                             let offset = max 0 offset
-                            SnapshotPointUtil.Add offset point
-                        if moveCaretAfterText then SnapshotPointUtil.AddOneOrCurrent point else point
+                            let point = SnapshotPointUtil.Add offset point
+                            if moveCaretAfterText then SnapshotPointUtil.AddOneOrCurrent point else point
                     | StringData.Block col -> 
                         if moveCaretAfterText then
                             // Needs to be positioned after the last item in the collection
@@ -1593,7 +1670,9 @@ type internal CommandUtil
         | NormalCommand.OpenFoldUnderCaret -> x.OpenFoldUnderCaret data.CountOrDefault
         | NormalCommand.Ping pingData -> x.Ping pingData data
         | NormalCommand.PutAfterCaret moveCaretAfterText -> x.PutAfterCaret register count moveCaretAfterText
+        | NormalCommand.PutAfterCaretWithIndent -> x.PutAfterCaretWithIndent register count
         | NormalCommand.PutBeforeCaret moveCaretBeforeText -> x.PutBeforeCaret register count moveCaretBeforeText
+        | NormalCommand.PutBeforeCaretWithIndent -> x.PutBeforeCaretWithIndent register count
         | NormalCommand.RecordMacroStart c -> x.RecordMacroStart c
         | NormalCommand.RecordMacroStop -> x.RecordMacroStop ()
         | NormalCommand.Redo -> x.Redo count

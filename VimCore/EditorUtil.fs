@@ -1118,6 +1118,11 @@ module EditUtil =
     /// Does the specified string end with a valid newline string 
     let EndsWithNewLine value = 0 <> GetLineBreakLengthAtEnd value
 
+    /// Does this text have a new line character inside of it?
+    let HasNewLine (text : string) = 
+        { 0 .. (text.Length - 1) }
+        |> SeqUtil.any (fun index -> GetLineBreakLength text index > 0)
+
     /// Remove the NewLine at the beginning of the string.  Returns the original input
     /// if no newline is found
     let RemoveBeginingNewLine value = 
@@ -1141,3 +1146,74 @@ module EditUtil =
                 value
             else
                 value.Substring(0, value.Length - length)
+
+/// In some cases we need to break a complete string into a series of text representations
+/// and new lines.  It's easiest to view this as a sequence of text values with their 
+/// associated line breaks
+type TextLine = {
+
+    /// The text of the line
+    Text : string
+
+    /// The string for the new line 
+    NewLine : string
+
+} with
+
+    member x.HasNewLine = x.NewLine.Length = 0
+
+    /// Create a string back from the provided TextLine values
+    static member CreateString (textLines : TextLine seq) = 
+        let builder = System.Text.StringBuilder()
+        for textLine in textLines do
+            builder.Append(textLine.Text) |> ignore
+            builder.Append(textLine.NewLine) |> ignore
+        builder.ToString()
+
+    /// Break a string representation into a series of TextNode values.  This will 
+    /// always return at least a single value for even an empty string so we use 
+    /// a NonEmptyCollection
+    static member GetTextLines (fullText : string) = 
+
+        // Get the next new line item from the given index
+        let rec getNextNewLine index = 
+            if index >= fullText.Length then
+                None
+            else
+                let length = EditUtil.GetLineBreakLength fullText index
+                if length = 0 then
+                    getNextNewLine (index + 1)
+                else
+                    Some (index, length)
+
+        // Get the TextLine and next index value for the provided index 
+        let getForIndex index =
+            match getNextNewLine index with 
+            | None -> 
+                if index >= fullText.Length then
+                    None
+                else
+                    // There is no more data in the string yet the index is still
+                    let textLine = { Text = fullText.Substring(index); NewLine = "" }
+                    Some (textLine, fullText.Length + 1)
+            | Some (newLineIndex, length) ->
+                let text = fullText.Substring(index, (newLineIndex - index))
+                let newLine = fullText.Substring(newLineIndex, length)
+                let textLine = { Text = text; NewLine = newLine }
+                Some (textLine, newLineIndex + length)
+
+        if System.String.IsNullOrEmpty fullText then
+            // Corner case.  When provided an empty string just return back an
+            // empty TextLine value
+            let head = { Text = ""; NewLine = "" }
+            NonEmptyCollection(head, [])
+        else
+
+            // Calculate the first entry here.  The 'getForIndex' function will return at
+            // valid node since we are not dealing with an empty string
+            let firstLine, index = getForIndex 0 |> Option.get
+    
+            // Now calculate the rest 
+            let rest : TextLine list = Seq.unfold getForIndex index |> List.ofSeq
+
+            NonEmptyCollection(firstLine, rest)

@@ -630,6 +630,25 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Put with indent commands are another odd ball item in Vim.  It's the one put command
+        /// which doesn't delete the selection when putting the text into the buffer.  Instead 
+        /// it just continues on in visual mode after the put
+        /// </summary>
+        [Test]
+        public void PutAfterWithIndent_VisualLine()
+        {
+            Create("  dog", "  cat", "bear");
+            EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
+            UnnamedRegister.UpdateValue("bear", OperationKind.LineWise);
+            _buffer.Process("]p");
+            Assert.AreEqual("  dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  bear", _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
+            Assert.AreEqual(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
+            Assert.AreEqual(ModeKind.VisualLine, _buffer.ModeKind);
+        }
+
+        /// <summary>
         /// Make sure we handle the virtual spaces properly here.  The 'C' command should leave the caret
         /// in virtual space due to the previous indent and escape should cause the caret to jump back to 
         /// real spaces when leaving insert mode
