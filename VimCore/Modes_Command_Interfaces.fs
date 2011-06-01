@@ -30,6 +30,9 @@ type IOperations =
     /// Remap the specified keys
     abstract RemapKeys : lhs:string -> rhs:string -> modes:KeyRemapMode seq -> allowRemap : bool -> unit
 
+    /// Retab the specified line range with the current 'tabstop' and 'expandtab' values
+    abstract RetabLineRange : SnapshotLineRange -> includeSpaces : bool -> unit
+
     /// Remap the specified key sequence
     abstract UnmapKeys : lhs:string -> modes:KeyRemapMode seq -> unit
 

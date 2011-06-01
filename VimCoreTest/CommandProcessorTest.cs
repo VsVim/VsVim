@@ -13,7 +13,6 @@ using Vim.Extensions;
 using Vim.Modes.Command;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
-using Vim.Modes;
 
 namespace VimCore.UnitTest
 {
@@ -1033,6 +1032,31 @@ namespace VimCore.UnitTest
             Create("foo");
             _statusUtil.Setup(x => x.OnError(Resources.CommandMode_CannotRun("real"))).Verifiable();
             RunCommand("real");
+            _factory.Verify();
+        }
+
+        /// <summary>
+        /// By default the retab command should affect the entire ITextBuffer and not include
+        /// space strings
+        /// </summary>
+        [Test]
+        public void Retab_Default()
+        {
+            Create("cat", "dog");
+            _commandOperations.Setup(x => x.RetabLineRange(_textBuffer.GetLineRange(0, 1), false)).Verifiable();
+            RunCommand("retab");
+            _factory.Verify();
+        }
+
+        /// <summary>
+        /// The ! operator should force the command to include spaces
+        /// </summary>
+        [Test]
+        public void Retab_WithBang()
+        {
+            Create("cat", "dog");
+            _commandOperations.Setup(x => x.RetabLineRange(_textBuffer.GetLineRange(0, 1), true)).Verifiable();
+            RunCommand("retab!");
             _factory.Verify();
         }
 

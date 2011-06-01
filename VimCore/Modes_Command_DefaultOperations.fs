@@ -22,7 +22,9 @@ type internal DefaultOperations
         _vimData : IVimData, 
         _host : IVimHost,
         _statusUtil : IStatusUtil
-     ) =
+    ) =
+
+    let _textBuffer = _textView.TextBuffer
 
     /// Format the setting for use in output
     let FormatSetting(setting:Setting) = 
@@ -36,6 +38,59 @@ type internal DefaultOperations
         | _ -> "Invalid value"
 
     member x.CurrentSnapshot = _textView.TextSnapshot
+
+    /// Retab the line range 
+    member x.RetabLineRange (range : SnapshotLineRange) includeSpaces =
+
+        let snapshot = range.Snapshot
+
+        // First break into a sequence of SnapshotSpan values which contain only space and tab
+        // values.  We'll filter out the space only ones later if needed
+        let spans = 
+
+            // Find the next position which has a space or tab value 
+            let rec nextPoint (point : SnapshotPoint) = 
+                if point.Position >= range.End.Position then
+                    None
+                elif SnapshotPointUtil.IsSpaceOrTab point then
+                    Some point
+                else
+                    point |> SnapshotPointUtil.AddOne |> nextPoint 
+
+            Seq.unfold (fun point ->
+                match nextPoint point with
+                | None ->
+                    None
+                | Some startPoint -> 
+                    // Now find the first point which is not a space or tab. 
+                    let endPoint = 
+                        SnapshotSpan(startPoint, range.End)
+                        |> SnapshotSpanUtil.GetPoints Path.Forward
+                        |> Seq.skipWhile SnapshotPointUtil.IsSpaceOrTab
+                        |> SeqUtil.headOrDefault range.End
+                    let span = SnapshotSpan(startPoint, endPoint)
+                    Some (span, endPoint)) range.Start
+            |> Seq.filter (fun span -> 
+
+                // Filter down to the SnapshotSpan values which contain tabs or spaces
+                // depending on the switch
+                if includeSpaces then
+                    true
+                else
+                    let hasTab = 
+                        span 
+                        |> SnapshotSpanUtil.GetPoints Path.Forward
+                        |> SeqUtil.any (SnapshotPointUtil.IsChar '\t')
+                    hasTab)
+
+        // Now that we have the set of spans perform the edit
+        use edit = _textBuffer.CreateEdit()
+        for span in spans do
+            let oldText = span.GetText()
+            let newText = _operations.NormalizeSpacesAndTabs oldText
+            edit.Replace(span.Span, newText) |> ignore
+
+        edit.Apply() |> ignore
 
     interface IOperations with
         member x.ShowOpenFileDialog () = _host.ShowOpenFileDialog()
@@ -129,6 +184,8 @@ type internal DefaultOperations
                 |> Seq.filter (fun (_,ret) -> not ret)
             if not (failed |> Seq.isEmpty) then
                 _statusUtil.OnError (Resources.CommandMode_NotSupported_KeyMapping lhs rhs)
+
+        member x.RetabLineRange range includeSpaces = x.RetabLineRange range includeSpaces
 
         member x.ClearKeyMapModes modes = modes |> Seq.iter (fun mode -> _keyMap.Clear mode)
 

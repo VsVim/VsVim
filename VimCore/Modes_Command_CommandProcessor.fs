@@ -144,6 +144,7 @@ type internal CommandProcessor
     let _vim = _buffer.Vim
     let _searchService = _vim.SearchService
     let _vimData = _buffer.VimData
+    let _localSettings = _buffer.Settings
 
     let mutable _command : System.String = System.String.Empty
 
@@ -177,6 +178,7 @@ type internal CommandProcessor
             yield ("quitall", "quita", this.ProcessQuitAll |> wrap)
             yield ("redo", "red", this.ProcessRedo |> wrap)
             yield ("registers", "reg", this.ProcessRegisters |> wrap)
+            yield ("retab", "ret", this.ProcessRetab |> wrap)
             yield ("set", "se", this.ProcessSet |> wrap)
             yield ("source","so", this.ProcessSource |> wrap)
             yield ("split", "sp", this.ProcessSplit |> wrap)
@@ -550,6 +552,27 @@ type internal CommandProcessor
             |> Seq.map (fun (name, value) -> sprintf "\"%c   %s" name value)
         let lines = Seq.append (Seq.singleton Resources.CommandMode_RegisterBanner) lines
         _statusUtil.OnStatusLong lines
+
+    /// Process the :retab command.  Changes all sequences of spaces and tabs which contain
+    /// at least a single tab into the normalized value based on the provided 'tabstop' or 
+    /// default 'tabstop' setting
+    member x.ProcessRetab rest range hasBang = 
+
+        // The default range for most commands is the current line.  This command instead 
+        // defaults to the entire snapshot
+        let range = 
+            match range with
+            | None -> SnapshotLineRangeUtil.CreateForSnapshot _textBuffer.CurrentSnapshot
+            | Some range -> range
+
+        // If the user explicitly specified a 'tabstop' it becomes the new value.  Do this before
+        // we re-tab the line so the new value will be used
+        let number, rest = rest |> CommandParseUtil.SkipWhitespace |> RangeUtil.ParseNumber
+        match number with
+        | None -> ()
+        | Some number -> _localSettings.TabStop <- number
+
+        _commandOperations.RetabLineRange range hasBang 
 
     member x.ProcessMarks rest _ _ =
         match Seq.isEmpty rest with
