@@ -29,6 +29,9 @@ VsVim.sln.VisualState.xml
 # Resharper
 _ReSharper.*
 
+# Productivity Power Tools
+VsVim.sln.docstates
+
 # Directories 
 */obj/
 */bin/

@@ -2155,13 +2155,15 @@ type internal IHistoryClient<'TData, 'TResult> =
     /// Beep
     abstract Beep : unit -> unit
 
-    /// Process the new string
+    /// Process the new command with the previous TData value
     abstract ProcessCommand : 'TData -> string -> 'TData
 
-    /// Called when the command is completed
+    /// Called when the command is completed.  The last valid TData and command
+    /// string will be provided
     abstract Completed : 'TData -> string -> 'TResult
 
-    /// Called when the command is cancelled
+    /// Called when the command is cancelled.  The last valid TData value will
+    /// be provided
     abstract Cancelled : 'TData -> unit
 
 /// Represents shared state which is available to all IVimBuffer instances.

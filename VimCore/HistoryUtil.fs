@@ -113,7 +113,7 @@ type internal HistoryUtil ()  =
                 if index = 0 then
                     let clientData = data.HistoryClient.ProcessCommand data.ClientData ""
                     let data = { data with ClientData = clientData; HistoryState = HistoryState.Empty }
-                    data, command
+                    data, ""
                 else
                     HistoryUtil.DoHistoryScroll data command list (index - 1)
 
