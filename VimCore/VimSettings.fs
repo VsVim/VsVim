@@ -4,13 +4,15 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
+open System.ComponentModel.Composition
 open Vim.GlobalSettingNames
 open Vim.LocalSettingNames
 
 type internal SettingsMap
     (
         _rawData : (string*string*SettingKind*SettingValue) seq,
-        _isGlobal : bool ) =
+        _isGlobal : bool
+    ) =
 
     let _settingChangedEvent = new Event<_>()
 
@@ -200,9 +202,6 @@ type internal GlobalSettings() =
         member x.StartOfLine 
             with get() = _map.GetBoolValue StartOfLineName
             and set value = _map.TrySetValue StartOfLineName (ToggleValue(value)) |> ignore
-        member x.TabStop
-            with get() = _map.GetNumberValue TabStopName
-            and set value = _map.TrySetValue TabStopName (NumberValue(value)) |> ignore
         member x.TildeOp
             with get() = _map.GetBoolValue TildeOpName
             and set value = _map.TrySetValue TildeOpName (ToggleValue(value)) |> ignore
@@ -237,7 +236,7 @@ type internal GlobalSettings() =
 
 type internal LocalSettings
     ( 
-        _global : IVimGlobalSettings,
+        _globalSettings : IVimGlobalSettings,
         _editorOptions : IEditorOptions option,
         _textView : ITextView option
     ) as this =
@@ -290,22 +289,6 @@ type internal LocalSettings
                     :? System.InvalidOperationException -> defaultValue
         NumberValue(lineCount)
 
-    member x.GetTabValue editorKey vimValue = 
-        match _global.UseEditorTabSettings, _editorOptions with
-        | true, Some editorOptions -> 
-            match EditorOptionsUtil.GetOptionValue editorOptions editorKey with
-            | Some value -> value
-            | None -> vimValue
-        | _ ->
-            vimValue
-
-    member x.SetTabValue editorKey value vimName vimValue = 
-        match _global.UseEditorTabSettings, _editorOptions with
-        | true, Some editorOptions -> EditorOptionsUtil.SetOptionValue editorOptions editorKey value
-        | _ -> ()
-
-        _map.TrySetValue vimName vimValue |> ignore
-
     static member Copy (settings : IVimLocalSettings) = 
         let copy = 
             match settings.EditorOptions with
@@ -319,39 +302,137 @@ type internal LocalSettings
     interface IVimLocalSettings with 
         // IVimSettings
         
-        member x.AllSettings = _map.AllSettings |> Seq.append _global.AllSettings
+        member x.AllSettings = _map.AllSettings |> Seq.append _globalSettings.AllSettings
         member x.EditorOptions = _editorOptions
         member x.TrySetValue settingName value = 
             if _map.OwnsSetting settingName then _map.TrySetValue settingName value
-            else _global.TrySetValue settingName value
+            else _globalSettings.TrySetValue settingName value
         member x.TrySetValueFromString settingName strValue = 
             if _map.OwnsSetting settingName then _map.TrySetValueFromString settingName strValue
-            else _global.TrySetValueFromString settingName strValue
+            else _globalSettings.TrySetValueFromString settingName strValue
         member x.GetSetting settingName =
             if _map.OwnsSetting settingName then _map.GetSetting settingName
-            else _global.GetSetting settingName
+            else _globalSettings.GetSetting settingName
 
-        member x.GlobalSettings = _global
+        member x.GlobalSettings = _globalSettings
         member x.AutoIndent
             with get() = _map.GetBoolValue AutoIndentName
-            and set value = _map.TrySetValue AutoIndentName (ToggleValue(value)) |> ignore
+            and set value = _map.TrySetValue AutoIndentName (ToggleValue value) |> ignore
         member x.CursorLine 
             with get() = _map.GetBoolValue CursorLineName
-            and set value = _map.TrySetValue CursorLineName (ToggleValue(value)) |> ignore
+            and set value = _map.TrySetValue CursorLineName (ToggleValue value) |> ignore
         member x.ExpandTab
-            with get() = x.GetTabValue DefaultOptions.ConvertTabsToSpacesOptionId (_map.GetBoolValue ExpandTabName)
-            and set value = x.SetTabValue DefaultOptions.ConvertTabsToSpacesOptionId value ExpandTabName (ToggleValue(value))
+            with get() = _map.GetBoolValue ExpandTabName
+            and set value = _map.TrySetValue ExpandTabName (ToggleValue value) |> ignore
         member x.Scroll 
             with get() = _map.GetNumberValue ScrollName
-            and set value = _map.TrySetValue ScrollName (NumberValue(value)) |> ignore
+            and set value = _map.TrySetValue ScrollName (NumberValue value) |> ignore
         member x.TabStop
-            with get() = x.GetTabValue DefaultOptions.TabSizeOptionId (_map.GetNumberValue TabStopName)
-            and set value = x.SetTabValue DefaultOptions.TabSizeOptionId value TabStopName (NumberValue(value))
+            with get() = _map.GetNumberValue TabStopName
+            and set value = _map.TrySetValue TabStopName (NumberValue value) |> ignore
         member x.QuoteEscape
             with get() = _map.GetStringValue QuoteEscapeName
-            and set value = _map.TrySetValue QuoteEscapeName (StringValue(value)) |> ignore
+            and set value = _map.TrySetValue QuoteEscapeName (StringValue value) |> ignore
 
         [<CLIEvent>]
         member x.SettingChanged = _map.SettingChanged
-    
 
+/// Certain changes need to be synchronized between the editor, local and global 
+/// settings.  This MEF component takes care of that synchronization 
+[<Export(typeof<IVimBufferCreationListener>)>]
+type internal EditToSettingSynchronizer
+    [<ImportingConstructor>]
+    (
+        _vim : IVim
+    ) =
+
+    let _globalSettings = _vim.Settings
+    let _syncronizingSet = System.Collections.Generic.HashSet<IVimLocalSettings>()
+
+    member x.VimBufferCreated (buffer : IVimBuffer) = 
+        match buffer.Settings.EditorOptions with
+        | None ->
+            // The synchronization involve editor options so if they are not available
+            // then there is nothing to do
+            ()
+        | Some editorOptions -> 
+
+            let bag = DisposableBag()
+            let localSettings = buffer.Settings
+
+            // Raised when a local setting is changed.  We need to inspect this setting and 
+            // determine if it's an interesting setting and if so synchronize it with the 
+            // editor options
+            //
+            // Cast up to IVimSettings to avoid the F# bug of accessing a CLIEvent from 
+            // a derived interface
+            (buffer.Settings :> IVimSettings).SettingChanged 
+            |> Observable.filter x.IsTrackedLocalSetting
+            |> Observable.subscribe (fun _ -> x.TrySyncLocalToEditor localSettings editorOptions)
+            |> bag.Add
+
+            /// Raised when an editor option is changed.  If it's one of the values we care about
+            /// then we need to sync to the local settings
+            editorOptions.OptionChanged
+            |> Observable.filter (fun e -> x.IsTrackedEditorSetting e.OptionId)
+            |> Observable.subscribe (fun _ -> x.TrySyncEditorToLocal localSettings editorOptions)
+            |> bag.Add
+
+            // Finally we need to clean up our listeners when the buffer is closed.  At
+            // that point synchronization is no longer needed
+            buffer.Closed
+            |> Observable.add (fun _ -> bag.DisposeAll())
+
+            // Next we do the initial sync between editor and local settings
+            if _globalSettings.UseEditorTabSettings then
+                x.TrySyncEditorToLocal buffer.Settings editorOptions
+            else
+                x.TrySyncLocalToEditor buffer.Settings editorOptions
+
+    /// Is this a local setting of note
+    member x.IsTrackedLocalSetting (setting : Setting) = 
+        if setting.Name = LocalSettingNames.TabStopName then
+            true
+        elif setting.Name = LocalSettingNames.ExpandTabName then
+            true
+        else
+            false
+
+    /// Is this an editor setting of note
+    member x.IsTrackedEditorSetting optionId =
+        if optionId = DefaultOptions.TabSizeOptionId.Name then
+            true
+        elif optionId = DefaultOptions.ConvertTabsToSpacesOptionId.Name then
+            true
+        else
+            false
+
+    /// Synchronize the settings if needed.  Prevent recursive sync's here
+    member x.TrySync localSettings syncFunc = 
+
+        if _syncronizingSet.Add(localSettings) then
+            try
+                syncFunc()
+            finally
+                _syncronizingSet.Remove(localSettings) |> ignore
+
+    /// Synchronize the settings from the editor to the local settings.  Do not
+    /// call this directly but instead call through SynchronizeSettings
+    member x.TrySyncLocalToEditor (localSettings : IVimLocalSettings) editorOptions =
+        x.TrySync localSettings (fun () ->
+            EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.TabSizeOptionId localSettings.TabStop
+            EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.ConvertTabsToSpacesOptionId localSettings.ExpandTab)
+
+    /// Synchronize the settings from the local settings to the editor.  Do not
+    /// call this directly but instead call through SynchronizeSettings
+    member x.TrySyncEditorToLocal (localSettings : IVimLocalSettings) editorOptions =
+        x.TrySync localSettings (fun () ->
+            match EditorOptionsUtil.GetOptionValue editorOptions DefaultOptions.TabSizeOptionId with
+            | None -> ()
+            | Some tabSize -> localSettings.TabStop <- tabSize
+            match EditorOptionsUtil.GetOptionValue editorOptions DefaultOptions.ConvertTabsToSpacesOptionId with
+            | None -> ()
+            | Some convertTabToSpace -> localSettings.ExpandTab <- convertTabToSpace)
+
+    interface IVimBufferCreationListener with
+        member x.VimBufferCreated buffer = x.VimBufferCreated buffer

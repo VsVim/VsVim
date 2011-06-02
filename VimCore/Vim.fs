@@ -296,8 +296,9 @@ type internal Vim
 
         // Apply the specified local buffer settings
         match localSettings with
-        | None -> ()
-        | Some(localSettings) ->
+        | None -> 
+            ()
+        | Some localSettings ->
             localSettings.AllSettings
             |> Seq.filter (fun s -> not s.IsGlobal && not s.IsValueCalculated)
             |> Seq.iter (fun s -> buffer.Settings.TrySetValue s.Name s.Value |> ignore)

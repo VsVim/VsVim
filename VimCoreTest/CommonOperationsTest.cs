@@ -8,7 +8,6 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
-using Vim.Modes;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
@@ -614,7 +613,7 @@ namespace VimCore.UnitTest
             Create("cat", "dog");
             _globalSettings.SetupGet(x => x.UseEditorTabSettings).Returns(false);
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
-            _globalSettings.SetupGet(x => x.TabStop).Returns(4);
+            _settings.SetupGet(x => x.TabStop).Returns(4);
             _settings.SetupGet(x => x.ExpandTab).Returns(false);
             _operations.ShiftLineRangeRight(1);
             Assert.AreEqual("  cat", _textView.GetLine(0).GetText());

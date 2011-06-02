@@ -1931,7 +1931,6 @@ module GlobalSettingNames =
     let ShiftWidthName = "shiftwidth"
     let SmartCaseName = "smartcase"
     let StartOfLineName = "startofline"
-    let TabStopName = "tabstop"
     let TildeOpName = "tildeop"
     let UseEditorIndentName = "vsvim_useeditorindent"
     let UseEditorTabSettingsName = "vsvim_useeditortabsettings"
@@ -2020,9 +2019,6 @@ and IVimGlobalSettings =
 
     abstract StartOfLine : bool with get, set
 
-    /// Controls how many spaces a tab counts for.
-    abstract TabStop : int with get,set
-
     /// Controls the behavior of ~ in normal mode
     abstract TildeOp : bool with get,set
 
@@ -2088,6 +2084,7 @@ and IVimLocalSettings =
     /// How many spaces a tab counts for 
     abstract TabStop : int with get, set
 
+    /// The scroll size 
     abstract Scroll : int with get, set
 
     /// Which characters escape quotes for certain motion types
@@ -2250,6 +2247,7 @@ and IVim =
     /// ISearchService for this IVim instance
     abstract SearchService : ISearchService
 
+    /// TODO: Rename GlobalSettings
     abstract Settings : IVimGlobalSettings
 
     abstract VimData : IVimData 
@@ -2329,6 +2327,7 @@ and IVimBuffer =
     abstract Name : string
 
     /// Local settings for the buffer
+    /// TODO: Rename to LocalSettings
     abstract Settings : IVimLocalSettings
 
     /// Register map for IVim.  Global to all IVimBuffer instances but provided here

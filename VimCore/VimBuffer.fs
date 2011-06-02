@@ -56,7 +56,7 @@ type internal VimBuffer
         _vim : IVim,
         _textView : ITextView,
         _jumpList : IJumpList,
-        _settings : IVimLocalSettings,
+        _localSettings : IVimLocalSettings,
         _incrementalSearch : IIncrementalSearch,
         _motionUtil : IMotionUtil,
         _wordNavigator : ITextStructureNavigator,
@@ -117,7 +117,7 @@ type internal VimBuffer
         {
             TextView = _textView
             JumpList = _jumpList
-            LocalSettings = _settings
+            LocalSettings = _localSettings
             StatusUtil = _statusUtil
             UndoRedoOperations = _undoRedoOperations
             Vim = _vim }
@@ -223,6 +223,19 @@ type internal VimBuffer
         _keyInputProcessedEvent.Trigger (keyInput, ProcessResult.Handled ModeSwitch.NoSwitch)
         _keyInputEndEvent.Trigger keyInput
 
+    member x.Close () = 
+        if _isClosed then 
+            invalidOp Resources.VimBuffer_AlreadyClosed
+        else
+            try
+                x.Mode.OnLeave()
+                _modeMap.Modes |> Seq.iter (fun x -> x.OnClose())
+                _vim.RemoveBuffer _textView |> ignore
+                _undoRedoOperations.Close()
+                _closedEvent.Trigger System.EventArgs.Empty
+            finally 
+                _isClosed <- true
+
     member x.RaiseErrorMessage msg = _errorMessageEvent.Trigger msg
     member x.RaiseWarningMessage msg = _warningMessageEvent.Trigger msg
     member x.RaiseStatusMessage msg = _statusMessageEvent.Trigger msg
@@ -257,7 +270,7 @@ type internal VimBuffer
         member x.ExternalEditMode = x.ExternalEditMode
         member x.DisabledMode = x.DisabledMode
         member x.AllModes = _modeMap.Modes
-        member x.Settings = _settings
+        member x.Settings = _localSettings
         member x.RegisterMap = _vim.RegisterMap
         member x.GetRegister name = _vim.RegisterMap.GetRegister name
         member x.GetMode kind = _modeMap.GetMode kind
@@ -286,17 +299,7 @@ type internal VimBuffer
         member x.Closed = _closedEvent.Publish
 
         member x.CanProcess ki = x.CanProcess ki
-        member x.Close () = 
-            if _isClosed then invalidOp Resources.VimBuffer_AlreadyClosed
-            else
-                try
-                    x.Mode.OnLeave()
-                    _modeMap.Modes |> Seq.iter (fun x -> x.OnClose())
-                    _vim.RemoveBuffer _textView |> ignore
-                    _undoRedoOperations.Close()
-                    _closedEvent.Trigger System.EventArgs.Empty
-                finally 
-                    _isClosed <- true
+        member x.Close () = x.Close()
         member x.Process ki = x.Process ki
         member x.SimulateProcessed ki = x.SimulateProcessed ki
 
