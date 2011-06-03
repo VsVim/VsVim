@@ -139,12 +139,12 @@ type internal CommandProcessor
     let _textView = _buffer.TextView
     let _textBuffer = _textView.TextBuffer
     let _host = _buffer.Vim.VimHost
-    let _regexFactory = VimRegexFactory(_buffer.Settings.GlobalSettings)
+    let _regexFactory = VimRegexFactory(_buffer.LocalSettings.GlobalSettings)
     let _registerMap = _buffer.RegisterMap
     let _vim = _buffer.Vim
     let _searchService = _vim.SearchService
     let _vimData = _buffer.VimData
-    let _localSettings = _buffer.Settings
+    let _localSettings = _buffer.LocalSettings
 
     let mutable _command : System.String = System.String.Empty
 

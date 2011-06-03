@@ -30,7 +30,7 @@ namespace Vim.UI.Wpf
             var caret = _blockCaretFactoryService.CreateBlockCaret(textView);
             var caretController = new BlockCaretController(buffer, caret);
 
-            buffer.Settings.SettingChanged += (_, args) => OnSettingChanged(buffer, args);
+            buffer.LocalSettings.SettingChanged += (_, args) => OnSettingChanged(buffer, args);
         }
 
         private void OnSettingChanged(IVimBuffer buffer, Setting args)
@@ -38,7 +38,7 @@ namespace Vim.UI.Wpf
             if (args.Name == LocalSettingNames.CursorLineName)
             {
                 var options = _editorOptionsFatoryService.GetOptions(buffer.TextView);
-                options.SetOptionValue(DefaultWpfViewOptions.EnableHighlightCurrentLineId, buffer.Settings.CursorLine);
+                options.SetOptionValue(DefaultWpfViewOptions.EnableHighlightCurrentLineId, buffer.LocalSettings.CursorLine);
             }
         }
     }

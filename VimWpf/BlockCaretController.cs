@@ -14,7 +14,7 @@ namespace Vim.UI.Wpf
         {
             _buffer = buffer;
             _blockCaret = blockCaret;
-            _globalSettings = _buffer.Settings.GlobalSettings;
+            _globalSettings = _buffer.LocalSettings.GlobalSettings;
             _buffer.SwitchedMode += OnCaretRelatedEvent;
             _buffer.KeyInputStart += OnCaretRelatedEvent;
             _buffer.KeyInputEnd += OnCaretRelatedEvent;
@@ -58,7 +58,7 @@ namespace Vim.UI.Wpf
 
         private void UpdateCaretOpacity()
         {
-            var value = _buffer.Settings.GlobalSettings.CaretOpacity;
+            var value = _buffer.LocalSettings.GlobalSettings.CaretOpacity;
             if (value >= 0 && value <= 100)
             {
                 var opacity = ((double)value / 100);

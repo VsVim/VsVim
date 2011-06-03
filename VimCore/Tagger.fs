@@ -13,7 +13,7 @@ type IncrementalSearchTagger (_buffer : IVimBuffer) as this =
 
     let _search = _buffer.IncrementalSearch
     let _textBuffer = _buffer.TextBuffer
-    let _globalSettings = _buffer.Settings.GlobalSettings
+    let _globalSettings = _buffer.LocalSettings.GlobalSettings
     let _eventHandlers = DisposableBag()
     let _tagsChanged = new Event<System.EventHandler<SnapshotSpanEventArgs>, SnapshotSpanEventArgs>()
     let mutable _searchSpan : ITrackingSpan option = None
@@ -233,7 +233,7 @@ type HighlightIncrementalSearchTaggerProvider
             | None -> null
             | Some buffer ->
                 let nav = buffer.IncrementalSearch.WordNavigator
-                let tagger = new HighlightIncrementalSearchTagger(textBuffer, buffer.Settings.GlobalSettings, nav, _vim.SearchService, _vim.VimData)
+                let tagger = new HighlightIncrementalSearchTagger(textBuffer, buffer.LocalSettings.GlobalSettings, nav, _vim.SearchService, _vim.VimData)
                 tagger :> obj :?> ITagger<'T>
 
 /// Tagger for matches as they appear during a confirm substitute

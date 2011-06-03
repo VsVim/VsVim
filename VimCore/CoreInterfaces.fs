@@ -2274,7 +2274,10 @@ and IVim =
 
     /// Load the VimRc file.  If the file was previously loaded a new load will be 
     /// attempted.  Returns true if a VimRc was actually loaded
-    abstract LoadVimRc : IFileSystem -> createViewFunc:(unit -> ITextView) -> bool
+    ///
+    /// TODO: Should rethink this API for pushing a func down to create the 
+    /// ITextView.  Forces awkward code in host factory start methods
+    abstract LoadVimRc : createViewFunc:(unit -> ITextView) -> bool
 
     /// Remove the IVimBuffer associated with the given view.  This will not actually close
     /// the IVimBuffer but instead just removes it's association with the given view
@@ -2327,8 +2330,7 @@ and IVimBuffer =
     abstract Name : string
 
     /// Local settings for the buffer
-    /// TODO: Rename to LocalSettings
-    abstract Settings : IVimLocalSettings
+    abstract LocalSettings : IVimLocalSettings
 
     /// Register map for IVim.  Global to all IVimBuffer instances but provided here
     /// for convenience

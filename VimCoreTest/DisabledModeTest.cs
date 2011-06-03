@@ -12,7 +12,7 @@ namespace VimCore.UnitTest
     public class DisabledModeTest
     {
         private Mock<IVimLocalSettings> _settings;
-        private Mock<IVimBuffer> _bufferData;
+        private Mock<IVimBuffer> _buffer;
         private DisabledMode _modeRaw;
         private IDisabledMode _mode;
 
@@ -20,9 +20,9 @@ namespace VimCore.UnitTest
         public void Init()
         {
             _settings = MockObjectFactory.CreateLocalSettings();
-            _bufferData = new Mock<IVimBuffer>(MockBehavior.Strict);
-            _bufferData.SetupGet(x => x.Settings).Returns(_settings.Object);
-            _modeRaw = new DisabledMode(_bufferData.Object);
+            _buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
+            _buffer.SetupGet(x => x.LocalSettings).Returns(_settings.Object);
+            _modeRaw = new DisabledMode(_buffer.Object);
             _mode = _modeRaw;
         }
 

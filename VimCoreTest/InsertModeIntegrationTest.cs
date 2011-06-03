@@ -83,8 +83,8 @@ namespace VimCore.UnitTest
         public void Repeat_WhiteSpaceChange()
         {
             Create("blue\t\t    dog");
-            _buffer.Settings.TabStop = 4;
-            _buffer.Settings.ExpandTab = false;
+            _buffer.LocalSettings.TabStop = 4;
+            _buffer.LocalSettings.ExpandTab = false;
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.NewInsertWithCount(2));
             _textView.MoveCaretTo(10);
             _textBuffer.Replace(new Span(6, 4), "\t\t");
@@ -101,8 +101,8 @@ namespace VimCore.UnitTest
         public void Repeat_MultilineChange()
         {
             Create("cat", "dog");
-            _buffer.Settings.TabStop = 4;
-            _buffer.Settings.ExpandTab = false;
+            _buffer.LocalSettings.TabStop = 4;
+            _buffer.LocalSettings.ExpandTab = false;
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _buffer.Process("if (condition)", enter: true);
             _buffer.Process("\t");

@@ -35,7 +35,7 @@ namespace VsVim
                 .Select(x => x.KeyInputs.First()));
 
             // Include the key used to disable VsVim
-            hashSet.Add(buffer.Settings.GlobalSettings.DisableCommand);
+            hashSet.Add(buffer.LocalSettings.GlobalSettings.DisableCommand);
 
             return CreateCommandKeyBindingSnapshot(hashSet);
         }

@@ -350,7 +350,7 @@ type internal EditToSettingSynchronizer
     let _syncronizingSet = System.Collections.Generic.HashSet<IVimLocalSettings>()
 
     member x.VimBufferCreated (buffer : IVimBuffer) = 
-        match buffer.Settings.EditorOptions with
+        match buffer.LocalSettings.EditorOptions with
         | None ->
             // The synchronization involve editor options so if they are not available
             // then there is nothing to do
@@ -358,7 +358,7 @@ type internal EditToSettingSynchronizer
         | Some editorOptions -> 
 
             let bag = DisposableBag()
-            let localSettings = buffer.Settings
+            let localSettings = buffer.LocalSettings
 
             // Raised when a local setting is changed.  We need to inspect this setting and 
             // determine if it's an interesting setting and if so synchronize it with the 
@@ -366,7 +366,7 @@ type internal EditToSettingSynchronizer
             //
             // Cast up to IVimSettings to avoid the F# bug of accessing a CLIEvent from 
             // a derived interface
-            (buffer.Settings :> IVimSettings).SettingChanged 
+            (localSettings :> IVimSettings).SettingChanged 
             |> Observable.filter x.IsTrackedLocalSetting
             |> Observable.subscribe (fun _ -> x.TrySyncLocalToEditor localSettings editorOptions)
             |> bag.Add
@@ -385,9 +385,9 @@ type internal EditToSettingSynchronizer
 
             // Next we do the initial sync between editor and local settings
             if _globalSettings.UseEditorTabSettings then
-                x.TrySyncEditorToLocal buffer.Settings editorOptions
+                x.TrySyncEditorToLocal localSettings editorOptions
             else
-                x.TrySyncLocalToEditor buffer.Settings editorOptions
+                x.TrySyncLocalToEditor localSettings editorOptions
 
     /// Is this a local setting of note
     member x.IsTrackedLocalSetting (setting : Setting) = 

@@ -29,7 +29,6 @@ namespace VsVim
         private readonly IVim _vim;
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
         private readonly Dictionary<IVimBuffer, VsCommandTarget> _filterMap = new Dictionary<IVimBuffer, VsCommandTarget>();
-        private readonly IFileSystem _fileSystem;
         private readonly IVsAdapter _adapter;
 
         [ImportingConstructor]
@@ -43,7 +42,6 @@ namespace VsVim
             IVsEditorAdaptersFactoryService adaptersFactory,
             IExternalEditorManager externalEditorManager,
             IDisplayWindowBrokerFactoryService displayWindowBrokerFactoryService,
-            IFileSystem fileSystem,
             IVsAdapter adapter)
         {
             _vim = vim;
@@ -54,7 +52,6 @@ namespace VsVim
             _externalEditorManager = externalEditorManager;
             _displayWindowBrokerFactoryServcie = displayWindowBrokerFactoryService;
             _adaptersFactory = adaptersFactory;
-            _fileSystem = fileSystem;
             _adapter = adapter;
         }
 
@@ -69,7 +66,7 @@ namespace VsVim
                 Func<ITextView> createViewFunc = () => _editorFactoryService.CreateTextView(
                     _bufferFactoryService.CreateTextBuffer(),
                     _editorFactoryService.NoRoles);
-                if (!_vim.LoadVimRc(_fileSystem, createViewFunc.ToFSharpFunc()))
+                if (!_vim.LoadVimRc(createViewFunc.ToFSharpFunc()))
                 {
                     // If no VimRc file is loaded add a couple of sanity settings
                     _vim.VimRcLocalSettings.AutoIndent = true;

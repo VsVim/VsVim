@@ -212,7 +212,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "cat", "fish");
             var didHit = false;
-            _buffer.Settings.GlobalSettings.WrapScan = false;
+            _buffer.LocalSettings.GlobalSettings.WrapScan = false;
             _buffer.ErrorMessage +=
                 (sender, message) =>
                 {

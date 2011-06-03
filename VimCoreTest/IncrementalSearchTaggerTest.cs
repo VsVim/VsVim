@@ -23,7 +23,7 @@ namespace VimCore.UnitTest
         {
             _textView = EditorUtil.CreateView(lines);
             _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
-            _globalSettings = _buffer.Settings.GlobalSettings;
+            _globalSettings = _buffer.LocalSettings.GlobalSettings;
             _globalSettings.IncrementalSearch = true;
             _globalSettings.WrapScan = true;
             _search = _buffer.IncrementalSearch;

@@ -138,7 +138,7 @@ namespace Vim.UnitTest.Mock
             get { throw new NotImplementedException(); }
         }
 
-        public IVimLocalSettings Settings
+        public IVimLocalSettings LocalSettings
         {
             get { throw new NotImplementedException(); }
         }

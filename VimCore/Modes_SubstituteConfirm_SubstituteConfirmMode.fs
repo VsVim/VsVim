@@ -34,8 +34,8 @@ type internal SubstituteConfirmMode
     ) as this = 
 
     let _textBuffer = _buffer.TextBuffer
-    let _globalSettings = _buffer.Settings.GlobalSettings
-    let _factory = VimRegexFactory(_buffer.Settings.GlobalSettings)
+    let _globalSettings = _buffer.LocalSettings.GlobalSettings
+    let _factory = VimRegexFactory(_buffer.LocalSettings.GlobalSettings)
     let _editorOperations = _operations.EditorOperations
     let _currentMatchChanged = Event<_>()
     let mutable _commandMap : Map<KeyInput, ConfirmAction> = Map.empty

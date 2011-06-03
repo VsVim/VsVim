@@ -26,7 +26,7 @@ namespace Vim.UI.Wpf.Test
             _buffer = _factory.Create<IVimBuffer>(MockBehavior.Strict);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Command);
             _buffer.SetupGet(x => x.TextView).Returns(_textView.Object);
-            _buffer.SetupGet(x => x.Settings).Returns(_localSettings.Object);
+            _buffer.SetupGet(x => x.LocalSettings).Returns(_localSettings.Object);
             _caret = _factory.Create<IBlockCaret>(MockBehavior.Strict);
             _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Invisible);
             _caret.SetupSet(x => x.CaretOpacity = It.IsAny<double>());

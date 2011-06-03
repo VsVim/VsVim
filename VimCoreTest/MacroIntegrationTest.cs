@@ -29,7 +29,7 @@ namespace VimCore.UnitTest
             _textView = EditorUtil.CreateView(lines);
             _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            _globalSettings = _buffer.Settings.GlobalSettings;
+            _globalSettings = _buffer.LocalSettings.GlobalSettings;
             ((MockVimHost)_buffer.Vim.VimHost).FocusedTextView = _textView;
         }
 

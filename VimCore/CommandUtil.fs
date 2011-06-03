@@ -25,7 +25,7 @@ type internal CommandUtil
     let _registerMap = _buffer.RegisterMap
     let _markMap = _buffer.MarkMap
     let _vimData = _buffer.VimData
-    let _localSettings = _buffer.Settings
+    let _localSettings = _buffer.LocalSettings
     let _globalSettings = _localSettings.GlobalSettings
     let _vim = _buffer.Vim
     let _vimHost = _vim.VimHost

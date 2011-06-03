@@ -66,6 +66,7 @@ namespace VimCore.UnitTest
         /// When the UseEditorTabSettings is true we should prefer Editor settings
         /// </summary>
         [Test]
+        [Ignore("Need to move these test to include the sync class")]
         public void TabStop_UseEditor()
         {
             _global.UseEditorTabSettings = true;

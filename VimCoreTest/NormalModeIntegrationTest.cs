@@ -52,7 +52,7 @@ namespace VimCore.UnitTest
                     }
                 };
             _keyMap = _buffer.Vim.KeyMap;
-            _globalSettings = _buffer.Settings.GlobalSettings;
+            _globalSettings = _buffer.LocalSettings.GlobalSettings;
             _jumpList = _buffer.JumpList;
             _vimHost = (MockVimHost)_buffer.Vim.VimHost;
             _vimHost.BeepCount = 0;
@@ -329,7 +329,7 @@ namespace VimCore.UnitTest
             var didHit = false;
             _textView.MoveCaretToLine(1);
             _assertOnWarningMessage = false;
-            _buffer.Settings.GlobalSettings.WrapScan = true;
+            _buffer.LocalSettings.GlobalSettings.WrapScan = true;
             _buffer.WarningMessage +=
                 (_, msg) =>
                 {
@@ -625,7 +625,7 @@ namespace VimCore.UnitTest
         {
             Create("hat", "cat");
             _textView.MoveCaretTo(2);
-            _buffer.Settings.GlobalSettings.VirtualEdit = String.Empty;
+            _buffer.LocalSettings.GlobalSettings.VirtualEdit = String.Empty;
             _buffer.Process("cl");
             Assert.AreEqual("ha", _textView.GetLine(0).GetText());
             Assert.AreEqual("cat", _textView.GetLine(1).GetText());
@@ -640,7 +640,7 @@ namespace VimCore.UnitTest
         {
             Create("hat", "cat");
             _textView.MoveCaretTo(2);
-            _buffer.Settings.GlobalSettings.VirtualEdit = "onemore";
+            _buffer.LocalSettings.GlobalSettings.VirtualEdit = "onemore";
             _buffer.Process("cl");
             Assert.AreEqual("ha", _textView.GetLine(0).GetText());
             Assert.AreEqual("cat", _textView.GetLine(1).GetText());
@@ -652,7 +652,7 @@ namespace VimCore.UnitTest
         public void CursorPositionWith_x_1()
         {
             Create("test");
-            _buffer.Settings.GlobalSettings.VirtualEdit = string.Empty;
+            _buffer.LocalSettings.GlobalSettings.VirtualEdit = string.Empty;
             _textView.MoveCaretTo(3);
             _buffer.Process('x');
             Assert.AreEqual("tes", _textView.GetLineRange(0).GetText());
@@ -664,7 +664,7 @@ namespace VimCore.UnitTest
         public void CursorPositionWith_x_2()
         {
             Create("test", "bar");
-            _buffer.Settings.GlobalSettings.VirtualEdit = "onemore";
+            _buffer.LocalSettings.GlobalSettings.VirtualEdit = "onemore";
             _textView.MoveCaretTo(3);
             _buffer.Process('x');
             Assert.AreEqual("tes", _textView.GetLineRange(0).GetText());
@@ -676,7 +676,7 @@ namespace VimCore.UnitTest
         public void CursorPositionWith_x_3()
         {
             Create("test", "bar");
-            _buffer.Settings.GlobalSettings.VirtualEdit = string.Empty;
+            _buffer.LocalSettings.GlobalSettings.VirtualEdit = string.Empty;
             _textView.MoveCaretTo(1);
             _buffer.Process('x');
             Assert.AreEqual("tst", _textView.GetLineRange(0).GetText());
@@ -736,7 +736,7 @@ namespace VimCore.UnitTest
         public void RepeatCommand_ShiftLeft1()
         {
             Create("    bear", "    dog", "    cat", "    zebra", "    fox", "    jazz");
-            _buffer.Settings.GlobalSettings.ShiftWidth = 1;
+            _buffer.LocalSettings.GlobalSettings.ShiftWidth = 1;
             _buffer.Process("<<");
             _buffer.Process(".");
             Assert.AreEqual("  bear", _textView.GetLine(0).GetText());
@@ -746,7 +746,7 @@ namespace VimCore.UnitTest
         public void RepeatCommand_ShiftLeft2()
         {
             Create("    bear", "    dog", "    cat", "    zebra", "    fox", "    jazz");
-            _buffer.Settings.GlobalSettings.ShiftWidth = 1;
+            _buffer.LocalSettings.GlobalSettings.ShiftWidth = 1;
             _buffer.Process("2<<");
             _buffer.Process(".");
             Assert.AreEqual("  bear", _textView.GetLine(0).GetText());
@@ -757,7 +757,7 @@ namespace VimCore.UnitTest
         public void RepeatCommand_ShiftRight1()
         {
             Create("bear", "dog", "cat", "zebra", "fox", "jazz");
-            _buffer.Settings.GlobalSettings.ShiftWidth = 1;
+            _buffer.LocalSettings.GlobalSettings.ShiftWidth = 1;
             _buffer.Process(">>");
             _buffer.Process(".");
             Assert.AreEqual("  bear", _textView.GetLine(0).GetText());
@@ -767,7 +767,7 @@ namespace VimCore.UnitTest
         public void RepeatCommand_ShiftRight2()
         {
             Create("bear", "dog", "cat", "zebra", "fox", "jazz");
-            _buffer.Settings.GlobalSettings.ShiftWidth = 1;
+            _buffer.LocalSettings.GlobalSettings.ShiftWidth = 1;
             _buffer.Process("2>>");
             _buffer.Process(".");
             Assert.AreEqual("  bear", _textView.GetLine(0).GetText());
@@ -931,8 +931,8 @@ namespace VimCore.UnitTest
         public void RepeatCommand_TextInsert_WhiteSpaceToTab()
         {
             Create("    hello world", "dog");
-            _buffer.Settings.TabStop = 4;
-            _buffer.Settings.ExpandTab = false;
+            _buffer.LocalSettings.TabStop = 4;
+            _buffer.LocalSettings.ExpandTab = false;
             _buffer.Process('i');
             _textBuffer.Replace(new Span(0, 4), "\t\t");
             _buffer.Process(VimKey.Escape);
@@ -1279,7 +1279,7 @@ namespace VimCore.UnitTest
         public void Handle_cc_AutoIndentShouldPreserveOnSingle()
         {
             Create("  dog", "  cat", "  tree");
-            _buffer.Settings.AutoIndent = true;
+            _buffer.LocalSettings.AutoIndent = true;
             _buffer.Process("cc");
             Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
             Assert.AreEqual(2, _textView.GetCaretVirtualPoint().VirtualSpaces);
@@ -1290,7 +1290,7 @@ namespace VimCore.UnitTest
         public void Handle_cc_NoAutoIndentShouldRemoveAllOnSingle()
         {
             Create("  dog", "  cat");
-            _buffer.Settings.AutoIndent = false;
+            _buffer.LocalSettings.AutoIndent = false;
             _buffer.Process("cc");
             Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
@@ -1304,7 +1304,7 @@ namespace VimCore.UnitTest
         public void Handle_cc_AutoIndentShouldPreserveOnMultiple()
         {
             Create("  dog", "  cat", "  tree");
-            _buffer.Settings.AutoIndent = true;
+            _buffer.LocalSettings.AutoIndent = true;
             _buffer.Process("2cc");
             Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
             Assert.AreEqual(2, _textView.GetCaretVirtualPoint().VirtualSpaces);
@@ -1319,7 +1319,7 @@ namespace VimCore.UnitTest
         public void Handle_cc_AutoIndentShouldPreserveFirstOneOnMultiple()
         {
             Create("    dog", "  cat", "  tree");
-            _buffer.Settings.AutoIndent = true;
+            _buffer.LocalSettings.AutoIndent = true;
             _buffer.Process("2cc");
             Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
             Assert.AreEqual(4, _textView.GetCaretVirtualPoint().VirtualSpaces);
@@ -1331,7 +1331,7 @@ namespace VimCore.UnitTest
         public void Handle_cc_NoAutoIndentShouldRemoveAllOnMultiple()
         {
             Create("  dog", "  cat", "  tree");
-            _buffer.Settings.AutoIndent = false;
+            _buffer.LocalSettings.AutoIndent = false;
             _buffer.Process("2cc");
             Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
@@ -1476,7 +1476,7 @@ namespace VimCore.UnitTest
         {
             Create("dog", "cat", "bear", "tree");
             UnnamedRegister.UpdateValue("  pig\n", OperationKind.LineWise);
-            _buffer.Settings.AutoIndent = false;
+            _buffer.LocalSettings.AutoIndent = false;
             _buffer.Process("p");
             Assert.AreEqual("dog", _textView.GetLine(0).GetText());
             Assert.AreEqual("  pig", _textView.GetLine(1).GetText());
@@ -2089,7 +2089,7 @@ namespace VimCore.UnitTest
         {
             Create("dog cat dog");
             _textView.MoveCaretTo(1);
-            _buffer.Settings.GlobalSettings.WrapScan = false;
+            _buffer.LocalSettings.GlobalSettings.WrapScan = false;
             _buffer.VimData.LastPatternData = VimUtil.CreatePatternData("dog", Path.Backward);
             _buffer.Process('/');
             _buffer.Process(VimKey.Enter);
@@ -2560,7 +2560,7 @@ namespace VimCore.UnitTest
         {
             Create("  cat");
             _textView.MoveCaretTo(4);
-            _buffer.Settings.AutoIndent = true;
+            _buffer.LocalSettings.AutoIndent = true;
             _buffer.Process("cc");
             _buffer.Process(VimKey.Escape);
             _buffer.Process("u");
@@ -2577,7 +2577,7 @@ namespace VimCore.UnitTest
         {
             Create("dog", "  cat", "  bear", "  tree");
             _textView.MoveCaretToLine(1);
-            _buffer.Settings.AutoIndent = true;
+            _buffer.LocalSettings.AutoIndent = true;
             _buffer.Process("3cc");
             _buffer.Process(VimKey.Escape);
             _buffer.Process("u");

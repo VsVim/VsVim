@@ -76,7 +76,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "  dog", "  bear", "tree");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(1, 2).ExtentIncludingLineBreak);
-            _buffer.Settings.AutoIndent = true;
+            _buffer.LocalSettings.AutoIndent = true;
             _buffer.Process("c");
             Assert.AreEqual("cat", _textView.GetLine(0).GetText());
             Assert.AreEqual("", _textView.GetLine(1).GetText());
@@ -95,7 +95,7 @@ namespace VimCore.UnitTest
         {
             Create("cat chases the ball");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 4));
-            _buffer.Settings.AutoIndent = true;
+            _buffer.LocalSettings.AutoIndent = true;
             _buffer.Process("c");
             Assert.AreEqual("chases the ball", _textView.GetLine(0).GetText());
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
@@ -126,7 +126,7 @@ namespace VimCore.UnitTest
         {
             Create("dog again", "cat again", "chicken");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
-            _buffer.Settings.GlobalSettings.ShiftWidth = 2;
+            _buffer.LocalSettings.GlobalSettings.ShiftWidth = 2;
             _buffer.Process(">.");
             Assert.AreEqual("    dog again", _textView.GetLine(0).GetText());
         }
@@ -136,7 +136,7 @@ namespace VimCore.UnitTest
         {
             Create("dog again", "cat again", "chicken");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
-            _buffer.Settings.GlobalSettings.ShiftWidth = 2;
+            _buffer.LocalSettings.GlobalSettings.ShiftWidth = 2;
             _buffer.Process(">..");
             Assert.AreEqual("      dog again", _textView.GetLine(0).GetText());
         }

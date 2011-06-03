@@ -97,7 +97,7 @@ type internal VisualMode
 
     member x.EnsureCommandsBuilt() =
         if not _builtCommands then
-            let factory = Vim.Modes.CommandFactory(_operations, _capture, _buffer.MotionUtil, _buffer.JumpList, _buffer.Settings)
+            let factory = Vim.Modes.CommandFactory(_operations, _capture, _buffer.MotionUtil, _buffer.JumpList, _buffer.LocalSettings)
 
             // Add in the standard commands
             factory.CreateMovementCommands()

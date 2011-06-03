@@ -202,6 +202,7 @@ type internal Vim
         _keyMap : IKeyMap,
         _clipboardDevice : IClipboardDevice,
         _search : ISearchService,
+        _fileSystem : IFileSystem,
         _vimData : IVimData ) =
 
     /// Holds an IVimBuffer and the DisposableBag for event handlers on the IVimBuffer.  This
@@ -252,6 +253,7 @@ type internal Vim
         tlcService : ITrackingLineColumnService,
         [<ImportMany>] bufferCreationListeners : Lazy<IVimBufferCreationListener> seq,
         search : ITextSearchService,
+        fileSystem : IFileSystem,
         clipboard : IClipboardDevice ) =
         let markMap = MarkMap(tlcService)
         let vimData = VimData() :> IVimData
@@ -270,6 +272,7 @@ type internal Vim
             KeyMap() :> IKeyMap,
             clipboard,
             SearchService(search, globalSettings) :> ISearchService,
+            fileSystem,
             vimData)
 
     member x.ActiveBuffer = ListUtil.tryHeadOnly _activeBufferStack
@@ -287,7 +290,7 @@ type internal Vim
 
     member x.GetSettingsForNewBuffer () =
         match x.ActiveBuffer with
-        | Some(buffer) -> buffer.Settings
+        | Some(buffer) -> buffer.LocalSettings
         | None -> _vimrcLocalSettings
 
     member x.CreateBuffer view (localSettings : IVimLocalSettings option) = 
@@ -301,7 +304,7 @@ type internal Vim
         | Some localSettings ->
             localSettings.AllSettings
             |> Seq.filter (fun s -> not s.IsGlobal && not s.IsValueCalculated)
-            |> Seq.iter (fun s -> buffer.Settings.TrySetValue s.Name s.Value |> ignore)
+            |> Seq.iter (fun s -> buffer.LocalSettings.TrySetValue s.Name s.Value |> ignore)
 
         // Setup the handlers for KeyInputStart and KeyInputEnd to accurately track the active
         // IVimBuffer instance
@@ -343,11 +346,11 @@ type internal Vim
             let settings = x.GetSettingsForNewBuffer()
             x.CreateBuffer view (Some settings)
 
-    member x.LoadVimRc (fileSystem:IFileSystem) (createViewFunc : (unit -> ITextView)) =
+    member x.LoadVimRc (createViewFunc : (unit -> ITextView)) =
         _globalSettings.VimRc <- System.String.Empty
-        _globalSettings.VimRcPaths <- fileSystem.GetVimRcDirectories() |> String.concat ";"
+        _globalSettings.VimRcPaths <- _fileSystem.GetVimRcDirectories() |> String.concat ";"
 
-        match fileSystem.LoadVimRc() with
+        match _fileSystem.LoadVimRc() with
         | None -> false
         | Some(path,lines) ->
             _globalSettings.VimRc <- path
@@ -355,7 +358,7 @@ type internal Vim
             let buffer = x.CreateBuffer view None
             let mode = buffer.CommandMode
             lines |> Seq.iter (fun input -> mode.RunCommand input |> ignore)
-            _vimrcLocalSettings <- LocalSettings.Copy buffer.Settings
+            _vimrcLocalSettings <- LocalSettings.Copy buffer.LocalSettings
             view.Close()
             true
 
@@ -384,5 +387,5 @@ type internal Vim
             match keys |> Seq.isEmpty with
             | true -> None
             | false -> keys |> Seq.head |> x.GetBufferCore
-        member x.LoadVimRc fileSystem createViewFunc = x.LoadVimRc fileSystem createViewFunc
+        member x.LoadVimRc createViewFunc = x.LoadVimRc createViewFunc
 
