@@ -13,6 +13,10 @@ using Vim.Extensions;
 
 namespace VsVim
 {
+    /// <summary>
+    /// Factory responsible for creating IVimBuffer instances as ITextView instances are created 
+    /// in Visual Studio
+    /// </summary>
     [Export(typeof(IWpfTextViewCreationListener))]
     [Export(typeof(IVimBufferCreationListener))]
     [Export(typeof(IVsTextViewCreationListener))]
@@ -20,6 +24,16 @@ namespace VsVim
     [TextViewRole(PredefinedTextViewRoles.Document)]
     internal sealed class HostFactory : IWpfTextViewCreationListener, IVimBufferCreationListener, IVsTextViewCreationListener
     {
+        /// <summary>
+        /// Holds data about the IVimBuffer needed by the factory over the IVimBuffer life time
+        /// </summary>
+        private sealed class BufferData
+        {
+            internal int TabStop;
+            internal bool ExpandTab;
+            internal VsCommandTarget VsCommandTarget;
+        }
+
         private readonly IKeyBindingService _keyBindingService;
         private readonly ITextBufferFactoryService _bufferFactoryService;
         private readonly ITextEditorFactoryService _editorFactoryService;
@@ -28,7 +42,7 @@ namespace VsVim
         private readonly IDisplayWindowBrokerFactoryService  _displayWindowBrokerFactoryServcie;
         private readonly IVim _vim;
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
-        private readonly Dictionary<IVimBuffer, VsCommandTarget> _filterMap = new Dictionary<IVimBuffer, VsCommandTarget>();
+        private readonly Dictionary<IVimBuffer, BufferData> _bufferMap = new Dictionary<IVimBuffer, BufferData>();
         private readonly IVsAdapter _adapter;
 
         [ImportingConstructor]
@@ -74,7 +88,6 @@ namespace VsVim
             }
         }
 
-
         void IWpfTextViewCreationListener.TextViewCreated(IWpfTextView textView)
         {
             // Load the VimRC file if we haven't tried yet
@@ -83,6 +96,10 @@ namespace VsVim
             // Create the IVimBuffer after loading the VimRc so that it gets the appropriate
             // settings
             var buffer = _vim.GetOrCreateBuffer(textView);
+
+            // Save the tab size and expand tab in case we need to reset them later
+            var bufferData = new BufferData {TabStop = buffer.LocalSettings.TabStop, ExpandTab = buffer.LocalSettings.ExpandTab};
+            _bufferMap[buffer] = bufferData;
 
             Action doCheck = () =>
             {
@@ -109,30 +126,66 @@ namespace VsVim
             textView.Closed += (x, y) =>
             {
                 buffer.Close();
-                _filterMap.Remove(buffer);
+                _bufferMap.Remove(buffer);
             };
         }
 
+        /// <summary>
+        /// Raised when an IVsTextView is created.  When this occurs it means a previously created
+        /// ITextView was associated with an IVsTextView shim.  This means the ITextView will be 
+        /// hooked into the Visual Studio command system and a host of other items.  Setup all of
+        /// our plumbing here
+        /// </summary>
         void IVsTextViewCreationListener.VsTextViewCreated(IVsTextView vsView)
         {
-            var view = _adaptersFactory.GetWpfTextView(vsView);
-            if (view == null)
+            // Get the ITextView created.  Shouldn't ever be null unless a non-standard Visual Studio
+            // component is calling this function
+            var textView = _adaptersFactory.GetWpfTextView(vsView);
+            if (textView == null)
             {
                 return;
             }
 
-            var opt = _vim.GetBuffer(view);
+            // Sanity check. No reason for this to be null
+            var opt = _vim.GetBuffer(textView);
             if (!opt.IsSome())
             {
                 return;
             }
 
             var buffer = opt.Value;
-            var broker = _displayWindowBrokerFactoryServcie.CreateDisplayWindowBroker(view);
+            BufferData bufferData;
+            if (_bufferMap.TryGetValue(buffer, out bufferData))
+            {
+                // During the lifetime of an IVimBuffer the local and editor settings are kept
+                // in sync for tab values.  At startup though a decision has to be made about which
+                // settings should "win" and this is controlled by 'UseEditorTabSettings'.
+                //
+                // Visual Studio of course makes this difficult.  It will create an ITextView and 
+                // then later force all of it's language preference settings down on the ITextView
+                // if it does indeed have an IVsTextView.  This setting will inherently overwrite
+                // the custom settings with the stored Visual Studio settings.  
+                //
+                // To work around this we store the original values and reset them here.  This event
+                // is raised after this propagation occurs so we can put them back
+                if (!_vim.Settings.UseEditorTabSettings)
+                {
+                    buffer.LocalSettings.TabStop = bufferData.TabStop;
+                    buffer.LocalSettings.ExpandTab = bufferData.ExpandTab;
+                }
+            }
+            else
+            {
+                bufferData = new BufferData();
+                _bufferMap[buffer] = bufferData;
+            }
+
+            var broker = _displayWindowBrokerFactoryServcie.CreateDisplayWindowBroker(textView);
             var result = VsCommandTarget.Create(buffer, vsView, _adapter, broker, _externalEditorManager);
             if (result.IsSuccess)
             {
-                _filterMap.Add(buffer, result.Value);
+                // Store the value for debugging
+                bufferData.VsCommandTarget = result.Value;
             }
 
             // Try and install the IVsFilterKeys adapter.  This cannot be done synchronously here

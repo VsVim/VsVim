@@ -108,7 +108,7 @@ type internal SubstituteConfirmMode
             if line.LineNumber > data.LastLineNumber || SnapshotPointUtil.IsEndPoint point then
                 this.EndOperation()
             else 
-                let span = SnapshotSpanUtil.CreateFromBounds point line.EndIncludingLineBreak
+                let span = SnapshotSpan(point, line.EndIncludingLineBreak)
                 match RegexUtil.MatchSpan span data.Regex.Regex with
                 | Some(span,_) ->
                     this.ConfirmData <- Some { data with CurrentMatch=span }
@@ -151,7 +151,7 @@ type internal SubstituteConfirmMode
                 else 
                     let range = SnapshotLineRangeUtil.CreateForLineNumberRange line.Snapshot (line.LineNumber + 1) data.LastLineNumber
                     range.Lines |> Seq.map SnapshotLineUtil.GetExtentIncludingLineBreak
-            let first = SnapshotSpanUtil.CreateFromBounds data.CurrentMatch.Start line.EndIncludingLineBreak
+            let first = SnapshotSpan(data.CurrentMatch.Start, line.EndIncludingLineBreak)
             Seq.append (Seq.singleton first) rest
 
         let doReplace = 

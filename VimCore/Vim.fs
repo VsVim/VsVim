@@ -122,17 +122,7 @@ type internal VimBufferFactory
         let capture = MotionCapture(vim.VimHost, view, incrementalSearch, localSettings) :> IMotionCapture
 
         let motionUtil = MotionUtil(view, vim.MarkMap, localSettings, vim.SearchService, wordNav, jumpList, statusUtil, vim.VimData) :> IMotionUtil
-        let bufferRaw = 
-            VimBuffer( 
-                vim,
-                view,
-                jumpList,
-                localSettings,
-                incrementalSearch,
-                motionUtil,
-                wordNav,
-                undoRedoOperations,
-                statusUtil)
+        let bufferRaw = VimBuffer(bufferData, incrementalSearch, motionUtil, wordNav)
         let buffer = bufferRaw :> IVimBuffer
 
         let foldManager = _foldManagerFactory.GetFoldManager view.TextBuffer

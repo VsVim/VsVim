@@ -50,20 +50,20 @@ type internal ModeMap() =
     member x.RemoveMode (mode : IMode) = 
         _modeMap <- Map.remove mode.ModeKind _modeMap
 
-// TODO: Need to add an fsi for this file
 type internal VimBuffer 
     (
-        _vim : IVim,
-        _textView : ITextView,
-        _jumpList : IJumpList,
-        _localSettings : IVimLocalSettings,
+        _bufferData : VimBufferData,
         _incrementalSearch : IIncrementalSearch,
         _motionUtil : IMotionUtil,
-        _wordNavigator : ITextStructureNavigator,
-        _undoRedoOperations : IUndoRedoOperations,
-        _statusUtil : IStatusUtil
+        _wordNavigator : ITextStructureNavigator
     ) =
 
+    let _vim = _bufferData.Vim
+    let _textView = _bufferData.TextView
+    let _jumpList = _bufferData.JumpList
+    let _localSettings = _bufferData.LocalSettings
+    let _undoRedoOperations = _bufferData.UndoRedoOperations
+    let _statusUtil = _bufferData.StatusUtil
     let _properties = PropertyCollection()
     let mutable _modeMap = ModeMap()
     let mutable _processingInputCount = 0
@@ -113,14 +113,7 @@ type internal VimBuffer
         | ModeKind.VisualLine -> Some(KeyRemapMode.Visual)
         | _ -> None
 
-    member x.VimBufferData = 
-        {
-            TextView = _textView
-            JumpList = _jumpList
-            LocalSettings = _localSettings
-            StatusUtil = _statusUtil
-            UndoRedoOperations = _undoRedoOperations
-            Vim = _vim }
+    member x.VimBufferData = _bufferData
 
     /// Switch to the desired mode
     member x.SwitchMode kind arg = _modeMap.SwitchMode kind arg

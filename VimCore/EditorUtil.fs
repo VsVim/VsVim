@@ -359,10 +359,6 @@ module SnapshotSpanUtil =
     /// Create an empty span at the given point
     let CreateEmpty point = SnapshotSpan(point, 0)
 
-    /// Create a SnapshotSpan from the given bounds. 
-    /// TODO: Delete this
-    let CreateFromBounds (startPoint:SnapshotPoint) (endPoint:SnapshotPoint) = SnapshotSpan(startPoint,endPoint)
-
     /// Create a span from the given point with the specified length
     let CreateWithLength (startPoint:SnapshotPoint) (length:int) = SnapshotSpan(startPoint, length)
 

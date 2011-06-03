@@ -1411,7 +1411,7 @@ type internal MotionUtil
         let startPoint,endPoint,isForward = 
             if start.Position <= target.Position then start,target,true
             else target,start,false
-        let span = SnapshotSpanUtil.CreateFromBounds startPoint endPoint
+        let span = SnapshotSpan(startPoint, endPoint)
         {
             Span = span 
             IsForward = isForward 

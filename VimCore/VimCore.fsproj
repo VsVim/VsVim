@@ -96,6 +96,7 @@
     <Compile Include="SelectionChangeTracker.fsi" />
     <Compile Include="SelectionChangeTracker.fs" />
     <Compile Include="FoldManager.fs" />
+    <Compile Include="VimBuffer.fsi" />
     <Compile Include="VimBuffer.fs" />
     <Compile Include="MotionUtil.fsi" />
     <Compile Include="MotionUtil.fs" />

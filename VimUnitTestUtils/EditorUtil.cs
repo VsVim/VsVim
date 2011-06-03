@@ -14,7 +14,9 @@ using IOPath = System.IO.Path;
 
 namespace Vim.UnitTest
 {
-    // TODO: Need to change this so that creating an IVimBuffer doesn't read my _vsvimrc file
+    /// <summary>
+    /// Util for caching and creating MEF based components for unit tests
+    /// </summary>
     public static class EditorUtil
     {
         #region Factory
@@ -87,7 +89,6 @@ namespace Vim.UnitTest
         {
             get
             {
-
                 if (null == _factory)
                 {
                     _factory = new Factory();
