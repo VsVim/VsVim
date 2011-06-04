@@ -132,7 +132,7 @@ type internal GlobalSettings() =
             (TabStopName, "ts", NumberKind, NumberValue(8))
             (TildeOpName, "top", ToggleKind, ToggleValue(false))
             (UseEditorIndentName, UseEditorIndentName, ToggleKind, ToggleValue(true))
-            (UseEditorTabSettingsName, UseEditorTabSettingsName, ToggleKind, ToggleValue(true))
+            (UseEditorSettingsName, UseEditorSettingsName, ToggleKind, ToggleValue(true))
             (VimRcName, VimRcName, StringKind, StringValue(System.String.Empty))
             (VimRcPathsName, VimRcPathsName, StringKind, StringValue(System.String.Empty))
             (VirtualEditName, "ve", StringKind, StringValue(StringUtil.empty))
@@ -208,9 +208,9 @@ type internal GlobalSettings() =
         member x.UseEditorIndent
             with get() = _map.GetBoolValue UseEditorIndentName
             and set value = _map.TrySetValue UseEditorIndentName (ToggleValue(value)) |> ignore
-        member x.UseEditorTabSettings
-            with get() = _map.GetBoolValue UseEditorTabSettingsName
-            and set value = _map.TrySetValue UseEditorTabSettingsName (ToggleValue(value)) |> ignore
+        member x.UseEditorSettings
+            with get() = _map.GetBoolValue UseEditorSettingsName
+            and set value = _map.TrySetValue UseEditorSettingsName (ToggleValue(value)) |> ignore
         member x.VimRc 
             with get() = _map.GetStringValue VimRcName
             and set value = _map.TrySetValue VimRcName (StringValue(value)) |> ignore
@@ -327,6 +327,9 @@ type internal LocalSettings
         member x.Scroll 
             with get() = _map.GetNumberValue ScrollName
             and set value = _map.TrySetValue ScrollName (NumberValue value) |> ignore
+        member x.Number
+            with get() = _map.GetBoolValue NumberName
+            and set value = _map.TrySetValue NumberName (ToggleValue value) |> ignore
         member x.TabStop
             with get() = _map.GetNumberValue TabStopName
             and set value = _map.TrySetValue TabStopName (NumberValue value) |> ignore
@@ -384,7 +387,7 @@ type internal EditToSettingSynchronizer
             |> Observable.add (fun _ -> bag.DisposeAll())
 
             // Next we do the initial sync between editor and local settings
-            if _globalSettings.UseEditorTabSettings then
+            if _globalSettings.UseEditorSettings then
                 x.TrySyncEditorToLocal localSettings editorOptions
             else
                 x.TrySyncLocalToEditor localSettings editorOptions
@@ -395,6 +398,8 @@ type internal EditToSettingSynchronizer
             true
         elif setting.Name = LocalSettingNames.ExpandTabName then
             true
+        elif setting.Name = LocalSettingNames.NumberName then
+            true
         else
             false
 
@@ -404,12 +409,13 @@ type internal EditToSettingSynchronizer
             true
         elif optionId = DefaultOptions.ConvertTabsToSpacesOptionId.Name then
             true
+        elif optionId = DefaultTextViewHostOptions.LineNumberMarginId.Name then
+            true
         else
             false
 
     /// Synchronize the settings if needed.  Prevent recursive sync's here
     member x.TrySync localSettings syncFunc = 
-
         if _syncronizingSet.Add(localSettings) then
             try
                 syncFunc()
@@ -421,7 +427,8 @@ type internal EditToSettingSynchronizer
     member x.TrySyncLocalToEditor (localSettings : IVimLocalSettings) editorOptions =
         x.TrySync localSettings (fun () ->
             EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.TabSizeOptionId localSettings.TabStop
-            EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.ConvertTabsToSpacesOptionId localSettings.ExpandTab)
+            EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.ConvertTabsToSpacesOptionId localSettings.ExpandTab
+            EditorOptionsUtil.SetOptionValue editorOptions DefaultTextViewHostOptions.LineNumberMarginId localSettings.Number)
 
     /// Synchronize the settings from the local settings to the editor.  Do not
     /// call this directly but instead call through SynchronizeSettings
@@ -432,7 +439,10 @@ type internal EditToSettingSynchronizer
             | Some tabSize -> localSettings.TabStop <- tabSize
             match EditorOptionsUtil.GetOptionValue editorOptions DefaultOptions.ConvertTabsToSpacesOptionId with
             | None -> ()
-            | Some convertTabToSpace -> localSettings.ExpandTab <- convertTabToSpace)
+            | Some convertTabToSpace -> localSettings.ExpandTab <- convertTabToSpace
+            match EditorOptionsUtil.GetOptionValue editorOptions DefaultTextViewHostOptions.LineNumberMarginId with
+            | None -> ()
+            | Some show -> localSettings.Number <- show)
 
     interface IVimBufferCreationListener with
         member x.VimBufferCreated buffer = x.VimBufferCreated buffer

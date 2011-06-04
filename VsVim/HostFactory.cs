@@ -31,6 +31,7 @@ namespace VsVim
         {
             internal int TabStop;
             internal bool ExpandTab;
+            internal bool Number;
             internal VsCommandTarget VsCommandTarget;
         }
 
@@ -39,7 +40,7 @@ namespace VsVim
         private readonly ITextEditorFactoryService _editorFactoryService;
         private readonly IEditorOptionsFactoryService _editorOptionsFactoryService;
         private readonly IExternalEditorManager _externalEditorManager;
-        private readonly IDisplayWindowBrokerFactoryService  _displayWindowBrokerFactoryServcie;
+        private readonly IDisplayWindowBrokerFactoryService _displayWindowBrokerFactoryServcie;
         private readonly IVim _vim;
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
         private readonly Dictionary<IVimBuffer, BufferData> _bufferMap = new Dictionary<IVimBuffer, BufferData>();
@@ -98,7 +99,12 @@ namespace VsVim
             var buffer = _vim.GetOrCreateBuffer(textView);
 
             // Save the tab size and expand tab in case we need to reset them later
-            var bufferData = new BufferData {TabStop = buffer.LocalSettings.TabStop, ExpandTab = buffer.LocalSettings.ExpandTab};
+            var bufferData = new BufferData
+            {
+                TabStop = buffer.LocalSettings.TabStop,
+                ExpandTab = buffer.LocalSettings.ExpandTab,
+                Number = buffer.LocalSettings.Number
+            };
             _bufferMap[buffer] = bufferData;
 
             Action doCheck = () =>
@@ -159,7 +165,7 @@ namespace VsVim
             {
                 // During the lifetime of an IVimBuffer the local and editor settings are kept
                 // in sync for tab values.  At startup though a decision has to be made about which
-                // settings should "win" and this is controlled by 'UseEditorTabSettings'.
+                // settings should "win" and this is controlled by 'UseEditorSettings'.
                 //
                 // Visual Studio of course makes this difficult.  It will create an ITextView and 
                 // then later force all of it's language preference settings down on the ITextView
@@ -168,10 +174,11 @@ namespace VsVim
                 //
                 // To work around this we store the original values and reset them here.  This event
                 // is raised after this propagation occurs so we can put them back
-                if (!_vim.Settings.UseEditorTabSettings)
+                if (!_vim.Settings.UseEditorSettings)
                 {
                     buffer.LocalSettings.TabStop = bufferData.TabStop;
                     buffer.LocalSettings.ExpandTab = bufferData.ExpandTab;
+                    buffer.LocalSettings.Number = bufferData.Number;
                 }
             }
             else

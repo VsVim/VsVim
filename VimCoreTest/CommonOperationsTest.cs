@@ -54,7 +54,7 @@ namespace VimCore.UnitTest
             _globalSettings.SetupGet(x => x.IgnoreCase).Returns(true);
             _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
             _globalSettings.SetupGet(x => x.UseEditorIndent).Returns(false);
-            _globalSettings.SetupGet(x => x.UseEditorTabSettings).Returns(false);
+            _globalSettings.SetupGet(x => x.UseEditorSettings).Returns(false);
             _globalSettings.SetupGet(x => x.VirtualEdit).Returns(String.Empty);
             _globalSettings.SetupGet(x => x.WrapScan).Returns(true);
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object, _factory);
@@ -600,7 +600,7 @@ namespace VimCore.UnitTest
         public void ShiftLineRangeRight_NoExpandTab()
         {
             Create("cat", "dog");
-            _globalSettings.SetupGet(x => x.UseEditorTabSettings).Returns(false);
+            _globalSettings.SetupGet(x => x.UseEditorSettings).Returns(false);
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(4);
             _settings.SetupGet(x => x.ExpandTab).Returns(false);
             _operations.ShiftLineRangeRight(1);
@@ -611,7 +611,7 @@ namespace VimCore.UnitTest
         public void ShiftLineRangeRight_NoExpandTabKeepSpacesWhenFewerThanTabStop()
         {
             Create("cat", "dog");
-            _globalSettings.SetupGet(x => x.UseEditorTabSettings).Returns(false);
+            _globalSettings.SetupGet(x => x.UseEditorSettings).Returns(false);
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
             _settings.SetupGet(x => x.TabStop).Returns(4);
             _settings.SetupGet(x => x.ExpandTab).Returns(false);
@@ -623,7 +623,7 @@ namespace VimCore.UnitTest
         public void ShiftLineRangeRight_SpacesStartUsingTabs()
         {
             Create("  cat", "dog");
-            _globalSettings.SetupGet(x => x.UseEditorTabSettings).Returns(false);
+            _globalSettings.SetupGet(x => x.UseEditorSettings).Returns(false);
             _settings.SetupGet(x => x.ExpandTab).Returns(false);
             _settings.SetupGet(x => x.TabStop).Returns(2);
             _operations.ShiftLineRangeRight(1);

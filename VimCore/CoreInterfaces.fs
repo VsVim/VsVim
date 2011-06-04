@@ -1933,7 +1933,7 @@ module GlobalSettingNames =
     let StartOfLineName = "startofline"
     let TildeOpName = "tildeop"
     let UseEditorIndentName = "vsvim_useeditorindent"
-    let UseEditorTabSettingsName = "vsvim_useeditortabsettings"
+    let UseEditorSettingsName = "vsvim_useeditorsettings"
     let VisualBellName = "visualbell"
     let VirtualEditName = "virtualedit"
     let VimRcName = "vimrc"
@@ -2038,7 +2038,7 @@ and IVimGlobalSettings =
     abstract UseEditorIndent : bool with get, set
 
     /// Use the editor tab setting over the ExpandTab one
-    abstract UseEditorTabSettings : bool with get, set
+    abstract UseEditorSettings : bool with get, set
 
     /// Retrieves the location of the loaded VimRC file.  Will be the empty string if the load 
     /// did not succeed or has not been tried
@@ -2080,6 +2080,9 @@ and IVimLocalSettings =
 
     /// Return the handle to the global IVimSettings instance
     abstract GlobalSettings : IVimGlobalSettings
+
+    /// Whether or not to put the numbers on the left column of the display
+    abstract Number : bool with get, set
 
     /// How many spaces a tab counts for 
     abstract TabStop : int with get, set
