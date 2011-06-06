@@ -1790,7 +1790,9 @@ type internal CommandUtil
                 if x.CaretLine.LineNumber = 0 then 
                     _operations.Beep()
                     None
-                else 
+                elif x.CaretLine.LineNumber < count then
+                    0 |> Some
+                else
                     x.CaretLine.LineNumber - count |> Some
             | ScrollDirection.Down ->
                 if x.CaretLine.LineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot then
