@@ -18,8 +18,8 @@ module TssUtil =
 
     let VimLineToTssLine line = 
         match line with
-            | 0 -> 0
-            | _ -> line-1
+        | 0 -> 0
+        | _ -> line - 1
 
     /// Wrap the TextUtil functions which operate on String and int locations into 
     /// a SnapshotPoint and SnapshotSpan version

@@ -135,33 +135,70 @@ namespace VimCore.UnitTest
             _operations.Verify();
         }
 
+        /// <summary>
+        /// Ensure the '$' / move to last line command is implemented properly
+        /// </summary>
         [Test]
-        public void Jump_LastLine()
+        public void LastLine()
         {
             Create("foo", "bar", "baz");
             _operations
-                .Setup(x => x.MoveCaretToPoint(_textView.GetLastLine().Start))
+                .Setup(x => x.MoveCaretToPointAndEnsureVisible(_textView.GetLastLine().Start))
                 .Verifiable();
             RunCommand("$");
             _operations.Verify();
         }
 
+        /// <summary>
+        /// Entering just a line number should jump to the corresponding Vim line number.  Note that Vim
+        /// and ITextBuffer line numbers differ as Vim begins at 1
+        /// </summary>
         [Test]
-        public void Jump_LastLineWithVimLineNumber()
+        public void Jump_UseVimLineNumber()
         {
-            Create("foo", "bar");
-            _operations.Setup(x => x.MoveCaretToPoint(_textView.GetLastLine().Start)).Verifiable();
+            Create("cat", "dog", "tree");
+            _operations.Setup(x => x.MoveCaretToPointAndEnsureVisible(_textView.GetLine(1).Start)).Verifiable();
             RunCommand("2");
-            _editOpts.Verify();
+            _operations.Verify();
         }
 
+        /// <summary>
+        /// Even though Vim line numbers begin at 1, 0 is still a valid jump to the first line number 
+        /// in Vim
+        /// </summary>
         [Test]
-        public void Jump3()
+        public void Jump_FirstLineSpecial()
         {
-            Create("foo");
-            _statusUtil.Setup(x => x.OnError(It.IsAny<string>())).Verifiable();
-            RunCommand("400");
-            _factory.Verify();
+            Create("cat", "dog", "tree");
+            _operations.Setup(x => x.MoveCaretToPointAndEnsureVisible(_textView.GetLine(0).Start)).Verifiable();
+            RunCommand("0");
+            _operations.Verify();
+        }
+
+        /// <summary>
+        /// When the line number exceeds the number of lines in the ITextBuffer it should just go to the
+        /// last line number
+        /// </summary>
+        [Test]
+        public void Jump_LineNumberTooBig()
+        {
+            Create("cat", "dog", "tree");
+            _operations.Setup(x => x.MoveCaretToPointAndEnsureVisible(_textView.GetLine(2).Start)).Verifiable();
+            RunCommand("300");
+            _operations.Verify();
+        }
+
+        /// <summary>
+        /// Whichever line is targeted the point it jumps to should be the first non space / tab character on
+        /// that line
+        /// </summary>
+        [Test]
+        public void Jump_Indent()
+        {
+            Create("cat", "  dog", "tree");
+            _operations.Setup(x => x.MoveCaretToPointAndEnsureVisible(_textView.GetPointInLine(1, 2))).Verifiable();
+            RunCommand("2");
+            _operations.Verify();
         }
 
         [Test]
@@ -197,6 +234,19 @@ namespace VimCore.UnitTest
             RunCommand("y 2");
             var text = _textView.GetLineRange(0, 1).ExtentIncludingLineBreak.GetText();
             Assert.AreEqual(text, UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Ensure that an invalid line number still registers an error with commands line yank vs. chosing
+        /// the last line in the ITextBuffer as it does for jump commands
+        /// </summary>
+        [Test]
+        public void Yank_InvalidLineNumber()
+        {
+            Create("hello", "world");
+            _statusUtil.Setup(x => x.OnError(Resources.Range_Invalid)).Verifiable();
+            RunCommand("300y");
+            _statusUtil.Verify();
         }
 
         [Test]

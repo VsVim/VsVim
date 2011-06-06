@@ -201,7 +201,6 @@ type internal CommandProcessor
             yield ("?", "", this.ProcessSearchPattern Path.Backward |> wrap)
             yield ("<", "", this.ProcessShiftLeft |> wrap)
             yield (">", "", this.ProcessShiftRight |> wrap)
-            yield ("$", "", this.ProcessEndOfDocument |> wrap)
             yield ("&", "&", this.ProcessSubstituteRepeat SubstituteFlags.None )
             yield ("~", "~", this.ProcessSubstituteWithLastPattern)
         }
@@ -287,13 +286,17 @@ type internal CommandProcessor
 
     member x.BadMessage = Resources.CommandMode_CannotRun _command
 
+    member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
+
+    member x.CaretLine = TextViewUtil.GetCaretLine _textView
+
+    member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
+
     /// The flags from the previous substitute operation
     member x.PreviousSubstituteFlags = 
         match _vimData.LastSubstituteData with
         | None -> SubstituteFlags.None
         | Some data -> data.Flags
-
-    member x.ProcessEndOfDocument _ _ _ = _operations.EditorOperations.MoveToEndOfDocument(false)
 
     /// Process the :close command
     member x.ProcessClose _ _ hasBang = _buffer.Vim.VimHost.Close _buffer.TextView (not hasBang)
@@ -853,7 +856,7 @@ type internal CommandProcessor
             let withKeys lhs rhs _ = _commandOperations.RemapKeys lhs rhs modes allowRemap 
             CommandParseUtil.ParseKeys rest withKeys (fun() -> _statusUtil.OnError x.BadMessage)
 
-    member x.ParseAndRunCommand (rest:char list) (range:SnapshotLineRange option) =
+    member x.RunCommandWithRange (rest : char list) (range : SnapshotLineRange option) =
 
         // Get the name of the command.  Need to special case a few items as they
         // don't quite play by normal rules
@@ -898,28 +901,48 @@ type internal CommandProcessor
             let rest = rest |> CommandParseUtil.SkipWhitespace
             action rest range hasBang
 
-    member x.ParseAndRunInput (originalInputs : char list) =
-        let withRange (range:SnapshotLineRange option) (inputs:char list) = x.ParseAndRunCommand inputs range
-        let line = TextViewUtil.GetCaretLine _buffer.TextView
-        match RangeUtil.ParseRange line _buffer.MarkMap originalInputs with
-        | ParseRangeResult.Succeeded(range, inputs) -> 
-            if inputs |> List.isEmpty then
-                if range.Count = 1 then range.StartLine |> TssUtil.FindFirstNonWhiteSpaceCharacter |> _operations.MoveCaretToPoint
-                else _statusUtil.OnError("Invalid Command String")
-                RunResult.Completed
-            else
-                withRange (Some(range)) inputs
-        | NoRange -> 
-            withRange None originalInputs
-        | ParseRangeResult.Failed(msg) -> 
-            _statusUtil.OnError msg
-            RunResult.Completed
+    /// Parse out the range of the string and run the corresponding command
+    member x.ParseAndRunInput (command : char list) =
 
-    /// Run the specified command.  This funtion can be called recursively
+        let moveToLine line = 
+            let point = TssUtil.FindFirstNonWhiteSpaceCharacter line
+            _operations.MoveCaretToPointAndEnsureVisible point
+
+        if Seq.forall CharUtil.IsDigit command then
+            // Dandle the ':[line number]' command.  It's a bit special in that it's really a command 
+            // with no name and it allows the user to specify an invalid line number.
+            let number, rest = RangeUtil.ParseNumber command
+            match number, List.isEmpty rest with
+            | Some number, true -> 
+                // We have a valid number and no other input so move the caret to that line number
+                // and ensure that it's visible on the screen.  This input is given in terms of 
+                // Vim line numbers so convert appropriately
+                let number = TssUtil.VimLineToTssLine number
+                let line = SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
+                moveToLine line
+            | _ ->
+                // Anything else is an error
+                _statusUtil.OnError (Resources.CommandMode_CannotRun (StringUtil.ofCharList command))
+            RunResult.Completed
+        elif command.Length = 1 && List.head command = '$' then
+            let line = SnapshotUtil.GetLastLine x.CurrentSnapshot
+            moveToLine line
+            RunResult.Completed
+        else
+            match RangeUtil.ParseRange x.CaretLine _buffer.MarkMap command with
+            | ParseRangeResult.Succeeded (range, inputs) -> 
+                x.RunCommandWithRange inputs (Some range)
+            | ParseRangeResult.NoRange -> 
+                x.RunCommandWithRange command None
+            | ParseRangeResult.Failed msg -> 
+                _statusUtil.OnError msg
+                RunResult.Completed
+
+    /// Run the specified command.  This function can be called recursively
     member x.RunCommand (input: char list)=
         let prev = _command
         try
-            // Strip off the preceeding :
+            // Strip off the preceding :
             let input = 
                 match ListUtil.tryHead input with
                 | None -> input

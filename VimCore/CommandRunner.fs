@@ -174,7 +174,7 @@ type internal CommandRunner
                 (Command.NormalCommand (command, commandData), commandBinding)
 
             match Map.tryFind commandName _commandMap with
-            | Some(commandBinding) ->
+            | Some commandBinding ->
                 match commandBinding with
                 | CommandBinding.NormalBinding (_, _, normalCommand) -> 
                     BindResult.Complete (Command.NormalCommand (normalCommand, commandData), commandBinding)
@@ -249,7 +249,7 @@ type internal CommandRunner
                         | CommandBinding.ComplexVisualBinding _ -> 
                             bindNext None
                     | None -> 
-                        // No prefix matches and no previous motion so won't ever match a comamand
+                        // No prefix matches and no previous motion so won't ever match a command
                         BindResult.Error
                 elif hasPrefixMatch then
                     // At least one command with a prefix matching the current input.  Wait for the 
@@ -262,7 +262,7 @@ type internal CommandRunner
         // Lets get it started
         inner (KeyInputSet.OneKeyInput keyInput) KeyInputSet.Empty keyInput
 
-    /// Should the Esacpe key cancel the current command
+    /// Should the Escape key cancel the current command
     member x.ShouldEscapeCancelCurrentCommand () = 
         match _data.CommandFlags with
         | None -> true
@@ -275,7 +275,7 @@ type internal CommandRunner
             BindResult.Cancelled
         elif _inBind then 
             // If we're in the middle of binding the previous value then error.  We don't
-            // support re-entrancy while binding
+            // support reentrancy while binding
             BindResult.Error
         else
             _data <- {_data with Inputs = ki :: _data.Inputs }
