@@ -2484,6 +2484,53 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Doing an 'iw' yank from the start of the word should yank just the word
+        /// </summary>
+        [Test]
+        public void Yank_InnerWord_FromWordStart()
+        {
+            Create("the dog chased the ball");
+            _buffer.Process("yiw");
+            Assert.AreEqual("the", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Doing an 'iw' yank with a count of 2 should yank the word and the trailing
+        /// white space
+        /// </summary>
+        [Test]
+        public void Yank_InnerWord_FromWordStartWithCount()
+        {
+            Create("the dog chased the ball");
+            _buffer.Process("y2iw");
+            Assert.AreEqual("the ", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Doing an 'iw' from white space should yank the white space
+        /// </summary>
+        [Test]
+        public void Yank_InnerWord_FromWhiteSpace()
+        {
+            Create("the dog chased the ball");
+            _textView.MoveCaretTo(3);
+            _buffer.Process("y2iw");
+            Assert.AreEqual(" dog", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Yanking a word across new lines should not count the new line as a word. Odd since
+        /// most white space is counted
+        /// </summary>
+        [Test]
+        public void Yank_InnerWord_AcrossNewLine()
+        {
+            Create("cat", "dog", "bear");
+            _buffer.Process("y2iw");
+            Assert.AreEqual("cat" + Environment.NewLine + "dog", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
         /// A yank of a jump motion should update the jump list
         /// </summary>
         [Test]

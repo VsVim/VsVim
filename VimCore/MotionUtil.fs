@@ -1433,6 +1433,151 @@ type internal MotionUtil
             MotionKind = MotionKind.LineWise column
             MotionResultFlags = MotionResultFlags.None }
 
+    /// Implement the 'iw' motion.  Unlike the 'aw' motion it is not limited to a specific line
+    /// and can exceed it
+    ///
+    /// Many of the text object selection motions are not documented as to whether or not they 
+    /// are inclusive or exclusive including this one.  Experimentation shows though that this
+    /// is inclusive.  The primary evidence being
+    ///
+    ///  - It doesn't go through the exclusive-linewise promotion 
+    ///  - The caret position suggests inclusive when used as a caret movement in visual mode
+    member x.InnerWord wordKind count =
+
+        // Given a point which is a tab or space get the space and tab span backwards up 
+        // to and including the point
+        let getReverseSpaceAndTabSpaceStart point =
+            Contract.Assert(SnapshotPointUtil.IsSpaceOrTab point) 
+
+            let line = SnapshotPointUtil.GetContainingLine point
+            let startPoint = 
+                SnapshotSpan(line.Start, point)
+                |> SnapshotSpanUtil.GetPoints Path.Backward
+                |> Seq.skipWhile SnapshotPointUtil.IsSpaceOrTab
+                |> SeqUtil.headOrDefault line.Start
+
+            if SnapshotPointUtil.IsSpaceOrTab startPoint then
+                startPoint
+            else
+                SnapshotPointUtil.AddOne startPoint 
+
+        // From the given point get the end point of the inner word span.  Note: This can
+        // be None if the count surpasses the number of elements in the ITextBuffer.  
+        //
+        // The 'count' passed to inner word counts the white space and word spans equally as
+        // an item.  Here we expand a word to a tuple of the word and the span of the following
+        // white space
+        //
+        // Note: Line breaks do not factor into this calculation.  This can be demonstrated 
+        // experimentally
+        let getSpan (startPoint : SnapshotPoint) point count =
+            Contract.Assert(not (SnapshotPointUtil.IsInsideLineBreak point))
+
+            let rec inner (wordSpan : SnapshotSpan) (remainingWords : SnapshotSpan list) count = 
+                if count = 0 then 
+                    // Count gets us to this word so return it's start
+                    Some wordSpan.Start
+                elif count = 1 then
+                    // Count gets us to the end of this word so return it's end
+                    Some wordSpan.End
+                elif SnapshotPointUtil.IsInsideLineBreak wordSpan.End then
+                    // Line breaks don't count in this calculation.  The next start point is the
+                    // start of the next line.
+                    match remainingWords with
+                    | [] ->
+                        // Count of at least 2 and no words left.  The end is not available
+                        None 
+                    | nextWordSpan :: tail  ->
+                        let nextLine = SnapshotPointUtil.GetContainingLine nextWordSpan.Start 
+                        if nextLine.Start = nextWordSpan.Start then
+                            // Subtract 1 since we needed it to get past the white space
+                            inner nextWordSpan tail (count - 1)
+                        else
+                            // No need to subtract one to jump across the new line
+                            inner nextWordSpan tail count
+                else 
+                    match remainingWords with
+                    | [] ->
+                        None
+                    | nextWordSpan :: tail ->
+                        // Subtract 2 because we got past the word and it's trailing white space
+                        inner nextWordSpan tail (count - 2)
+
+            // Get the set of words as a list.  To prevent excessive memory allocation cap the 
+            // number of words at 'count'.  Since the 'count' includes the white space between
+            // the words 'count' is a definite max on the number of words we need to consider
+            let words = 
+                x.GetWords wordKind Path.Forward point
+                |> Seq.truncate count
+                |> List.ofSeq
+
+            match words with 
+            | [] -> 
+                None
+            | head :: tail -> 
+                let endPoint = 
+                    if point.Position < head.Start.Position then
+                        // Head was in white space so it costs 1 to get over that
+                        inner head tail (count - 1)
+                    else
+                        inner head tail count
+                match endPoint with
+                | None -> 
+                    None
+                | Some endPoint ->
+                    let startPoint = 
+                        if head.Start.Position < startPoint.Position then
+                            head.Start
+                        else
+                            startPoint
+                    SnapshotSpan(startPoint, endPoint) |> Some
+
+        let span = 
+            if SnapshotPointUtil.IsInsideLineBreak x.CaretPoint && count = 1 then
+                // The behavior of 'iw' is special in the case it begins in the line break and 
+                // has a single count.  If there is white space before the caret we grab that 
+                // else we grab a single character.  
+
+                match SnapshotLineUtil.GetLastIncludedPoint x.CaretLine with
+                | None -> 
+                    // This intentionally produces an empty span vs. None.  Doing a 'yiw' on an
+                    // empty line followed by a 'put' and then 'undo' causes the no-op 'put' to 
+                    // be undone
+                    SnapshotSpan(x.CaretLine.Start, 0) |> Some
+                | Some point -> 
+                    if SnapshotPointUtil.IsSpaceOrTab point then
+                        // If it's a space or tab then get the space / tab span
+                        let startPoint = getReverseSpaceAndTabSpaceStart point
+                        SnapshotSpan(startPoint, x.CaretLine.End) |> Some
+                    else
+                        // If it's character then we get the single character.  So weird
+                        SnapshotSpan(point, 1) |> Some
+            elif SnapshotPointUtil.IsInsideLineBreak x.CaretPoint then
+                // With a count of greater than 1 then starting in the line break behaves
+                // like a normal command.  Costs a count of 1 to get over the line break
+                getSpan x.CaretPoint x.CaretLine.EndIncludingLineBreak (count - 1)
+            else
+                // Simple case.  Need to move the point backwards though if it starts in
+                // a space or tab to get the full span
+                let point = 
+                    if SnapshotPointUtil.IsSpaceOrTab x.CaretPoint then
+                        getReverseSpaceAndTabSpaceStart x.CaretPoint
+                    else
+                        x.CaretPoint
+                getSpan point point count
+
+        match span with
+        | None ->
+            None
+        | Some span -> 
+
+            {
+                Span = span 
+                IsForward = true 
+                MotionKind = MotionKind.CharacterWiseInclusive
+                MotionResultFlags = MotionResultFlags.AnyWord } |> Some
+
+
     member x.LineDownToFirstNonWhiteSpace count =
         let line = x.CaretPoint |> SnapshotPointUtil.GetContainingLine
         let number = line.LineNumber + count
@@ -1974,6 +2119,7 @@ type internal MotionUtil
             | Motion.EndOfWord wordKind -> x.EndOfWord wordKind motionArgument.Count |> Some
             | Motion.FirstNonWhiteSpaceOnCurrentLine -> x.FirstNonWhiteSpaceOnCurrentLine() |> Some
             | Motion.FirstNonWhiteSpaceOnLine -> x.FirstNonWhiteSpaceOnLine motionArgument.Count |> Some
+            | Motion.InnerWord wordKind -> x.InnerWord wordKind motionArgument.Count
             | Motion.LastNonWhiteSpaceOnLine -> x.LastNonWhiteSpaceOnLine motionArgument.Count |> Some
             | Motion.LastSearch isReverse -> x.LastSearch isReverse motionArgument.Count
             | Motion.LineDown -> x.LineDown motionArgument.Count

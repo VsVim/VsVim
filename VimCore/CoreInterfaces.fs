@@ -400,6 +400,9 @@ type Motion =
     /// Find the first non-whitespace character on the (count - 1) line below this line
     | FirstNonWhiteSpaceOnLine
 
+    /// Inner word motion
+    | InnerWord of WordKind
+
     /// Find the last non-whitespace character on the line.  Count causes it to go "count" lines
     /// down and perform the search
     | LastNonWhiteSpaceOnLine

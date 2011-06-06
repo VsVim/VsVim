@@ -856,6 +856,102 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Inner word from the middle of a word
+        /// </summary>
+        [Test]
+        public void InnerWord_Simple()
+        {
+            Create("the dog");
+            _textView.MoveCaretTo(1);
+            var data = _motionUtil.InnerWord(WordKind.NormalWord, 1).Value;
+            Assert.AreEqual("the", data.Span.GetText());
+            Assert.IsTrue(data.IsInclusive);
+            Assert.IsTrue(data.IsForward);
+        }
+
+        /// <summary>
+        /// An inner word motion which begins in space should include the full space span
+        /// in the return
+        /// </summary>
+        [Test]
+        public void InnerWord_FromSpace()
+        {
+            Create("   the dog");
+            _textView.MoveCaretTo(1);
+            var data = _motionUtil.InnerWord(WordKind.NormalWord, 1).Value;
+            Assert.AreEqual("   ", data.Span.GetText());
+        }
+
+
+        /// <summary>
+        /// The count should apply equally to white space and the following words
+        /// </summary>
+        [Test]
+        public void InnerWord_FromSpaceWithCount()
+        {
+            Create("   the dog");
+            _textView.MoveCaretTo(1);
+            var data = _motionUtil.InnerWord(WordKind.NormalWord, 2).Value;
+            Assert.AreEqual("   the", data.Span.GetText());
+        }
+
+        /// <summary>
+        /// Including a case where the count gives us white space on both ends of the 
+        /// returned span
+        /// </summary>
+        [Test]
+        public void InnerWord_FromSpaceWithOddCount()
+        {
+            Create("   the dog");
+            _textView.MoveCaretTo(1);
+            var data = _motionUtil.InnerWord(WordKind.NormalWord, 3).Value;
+            Assert.AreEqual("   the ", data.Span.GetText());
+        }
+
+        /// <summary>
+        /// When the caret is in the line break and there is a word at the end of the 
+        /// line and there is a count of 1 then we just grab the last character of the
+        /// previous word
+        /// </summary>
+        [Test]
+        public void InnerWord_FromLineBreakWthPrecedingWord()
+        {
+            Create("cat", "dog");
+            _textView.MoveCaretTo(_textView.GetLine(0).End);
+            var data = _motionUtil.InnerWord(WordKind.NormalWord, 1).Value;
+            Assert.AreEqual("t", data.Span.GetText());
+            Assert.IsTrue(data.IsForward);
+        }
+
+        /// <summary>
+        /// When the caret is in the line break and there is a space at the end of the 
+        /// line and there is a count of 1 then we just grab the entire preceding space
+        /// </summary>
+        [Test]
+        public void InnerWord_FromLineBreakWthPrecedingSpace()
+        {
+            Create("cat  ", "dog");
+            _textView.MoveCaretTo(_textView.GetLine(0).End);
+            var data = _motionUtil.InnerWord(WordKind.NormalWord, 1).Value;
+            Assert.AreEqual("  ", data.Span.GetText());
+            Assert.IsTrue(data.IsForward);
+        }
+
+        /// <summary>
+        /// When in the line break and given a count the line break counts as our first
+        /// and other wise proceed as a normal inner word motion
+        /// </summary>
+        [Test]
+        public void InnerWord_FromLineBreakWthCount()
+        {
+            Create("cat", "fish dog");
+            _textView.MoveCaretTo(_textView.GetLine(0).End);
+            var data = _motionUtil.InnerWord(WordKind.NormalWord, 2).Value;
+            Assert.AreEqual(Environment.NewLine + "fish", data.Span.GetText());
+            Assert.IsTrue(data.IsForward);
+        }
+
+        /// <summary>
         /// A single space after a '.' should make the '.' the sentence end
         /// </summary>
         [Test]

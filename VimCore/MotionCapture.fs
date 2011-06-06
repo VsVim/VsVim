@@ -303,6 +303,14 @@ type internal MotionCapture
                     "g#",
                     MotionFlags.CursorMovement,
                     Motion.NextPartialWord Path.Backward)
+                yield (
+                    "iw",
+                    MotionFlags.TextObjectSelection,
+                    Motion.InnerWord WordKind.NormalWord)
+                yield (
+                    "iW",
+                    MotionFlags.TextObjectSelection,
+                    Motion.InnerWord WordKind.BigWord)
             } 
             
         motionSeq 
