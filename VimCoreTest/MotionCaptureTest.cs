@@ -42,7 +42,7 @@ namespace VimCore.UnitTest
 
         internal BindResult<Motion> Process(string input, bool enter = false)
         {
-            var res = _capture.GetOperatorMotion(KeyInputUtil.CharToKeyInput(input[0]));
+            var res = _capture.GetMotionAndCount(KeyInputUtil.CharToKeyInput(input[0]));
             foreach (var cur in input.Skip(1))
             {
                 Assert.IsTrue(res.IsNeedMoreInput);
@@ -68,7 +68,7 @@ namespace VimCore.UnitTest
 
         private void AssertMotion(KeyInput keyInput, Motion motion)
         {
-            var result = _capture.GetOperatorMotion(keyInput);
+            var result = _capture.GetMotionAndCount(keyInput);
             Assert.IsTrue(result.IsComplete);
             Assert.AreEqual(motion, result.AsComplete().Item.Item1);
         }
@@ -392,7 +392,7 @@ namespace VimCore.UnitTest
         public void IncrementalSearch_ShouldUseCommandMapping()
         {
             _textView.SetText("cat dog");
-            var result = _capture.GetOperatorMotion(KeyInputUtil.CharToKeyInput('/'));
+            var result = _capture.GetMotionAndCount(KeyInputUtil.CharToKeyInput('/'));
             Assert.IsTrue(result.IsNeedMoreInput);
             Assert.IsTrue(result.AsNeedMoreInput().Item.KeyRemapMode.IsSome(KeyRemapMode.Command));
         }
@@ -405,7 +405,7 @@ namespace VimCore.UnitTest
         public void IncrementalSearch_ShouldUseCommandMappingForAll()
         {
             _textView.SetText("cat dog");
-            var result = _capture.GetOperatorMotion(KeyInputUtil.CharToKeyInput('/'));
+            var result = _capture.GetMotionAndCount(KeyInputUtil.CharToKeyInput('/'));
             result = result.AsNeedMoreInput().Item.BindFunction.Invoke(KeyInputUtil.CharToKeyInput('a'));
             Assert.IsTrue(result.IsNeedMoreInput);
             Assert.IsTrue(result.AsNeedMoreInput().Item.KeyRemapMode.IsSome(KeyRemapMode.Command));
@@ -415,8 +415,8 @@ namespace VimCore.UnitTest
         public void LineDownToFirstNonWhitespace_ShouldAcceptBothEnters()
         {
             _textView.SetText("cat\ndog\nbear");
-            Assert.IsTrue(_capture.GetOperatorMotion(KeyInputUtil.AlternateEnterKey).IsComplete);
-            Assert.IsTrue(_capture.GetOperatorMotion(KeyInputUtil.EnterKey).IsComplete);
+            Assert.IsTrue(_capture.GetMotionAndCount(KeyInputUtil.AlternateEnterKey).IsComplete);
+            Assert.IsTrue(_capture.GetMotionAndCount(KeyInputUtil.EnterKey).IsComplete);
         }
 
         [Test]
@@ -456,7 +456,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Search_EnsureStartedOnSlash()
         {
-            _capture.GetOperatorMotion('/');
+            _capture.GetMotionAndCount('/');
             Assert.IsTrue(_incrementalSearch.InSearch);
         }
 
@@ -466,7 +466,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Search_EscapeShouldEndTheSearch()
         {
-            var result = _capture.GetOperatorMotion('/');
+            var result = _capture.GetMotionAndCount('/');
             Assert.IsTrue(result.IsNeedMoreInput);
             result.AsNeedMoreInput().Item.BindFunction.Invoke(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
             Assert.IsFalse(_incrementalSearch.InSearch);

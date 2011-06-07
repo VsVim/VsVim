@@ -7,7 +7,6 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim.Extensions;
-using Vim.Modes;
 using Vim.Modes.Command;
 
 namespace Vim.UnitTest
@@ -30,15 +29,6 @@ namespace Vim.UnitTest
         {
             Assert.IsTrue(mode.IsSwitchModeWithArgument);
             return (ModeSwitch.SwitchModeWithArgument)mode;
-        }
-
-        #endregion
-
-        #region CountResult
-
-        internal static CountResult.NeedMore AsNeedMore(this CountResult res)
-        {
-            return (CountResult.NeedMore)res;
         }
 
         #endregion
@@ -146,9 +136,9 @@ namespace Vim.UnitTest
 
         #region IMotionCapture
 
-        public static BindResult<Tuple<Motion, FSharpOption<int>>> GetOperatorMotion(this IMotionCapture capture, char c)
+        public static BindResult<Tuple<Motion, FSharpOption<int>>> GetMotionAndCount(this IMotionCapture capture, char c)
         {
-            return capture.GetOperatorMotion(KeyInputUtil.CharToKeyInput(c));
+            return capture.GetMotionAndCount(KeyInputUtil.CharToKeyInput(c));
         }
 
         #endregion

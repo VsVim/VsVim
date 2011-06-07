@@ -901,6 +901,16 @@ type CommandFlags =
     /// after completing
     | ResetCaret = 0x20
 
+    /// Vim allows for special handling of the 'd' command in normal mode such that it can
+    /// have the pattern 'd#d'.  This flag is used to tag the 'd' command to allow such
+    /// a pattern
+    | Delete = 0x40
+
+    /// Vim allows for special handling of the 'y' command in normal mode such that it can
+    /// have the pattern 'y#y'.  This flag is used to tag the 'd' command to allow such
+    /// a pattern
+    | Yank = 0x80
+
 /// Data about the run of a given MotionResult
 type MotionData = {
 
@@ -1284,21 +1294,26 @@ type BindResult<'T> =
         let data = { KeyRemapMode = keyRemapModeOpt; BindFunction = bindFunc }
         NeedMoreInput data
 
-    /// Used to convert a BindResult<'T> to BindResult<'U> through a conversion
-    /// function
-    member x.Convert mapFunc = 
+    /// Used to compose to BindResult<'T> functions together by forwarding from
+    /// one to the other once the value is completed
+    member x.Map mapFunc =
         match x with
-        | Complete value -> Complete (mapFunc value)
-        | NeedMoreInput bindData -> NeedMoreInput (bindData.Convert mapFunc)
+        | Complete value -> mapFunc value
+        | NeedMoreInput bindData -> NeedMoreInput (bindData.Map mapFunc)
         | Error -> Error
         | Cancelled -> Cancelled
+
+    /// Used to convert a BindResult<'T>.Completed to BindResult<'U>.Completed through a conversion
+    /// function
+    member x.Convert convertFunc = 
+        x.Map (fun value -> convertFunc value |> BindResult.Complete)
 
 and BindData<'T> = {
 
     /// The optional KeyRemapMode which should be used when binding
     /// the next KeyInput in the sequence
     KeyRemapMode : KeyRemapMode option
-    
+
     /// Function to call to get the BindResult for this data
     BindFunction : KeyInput -> BindResult<'T>
 
@@ -1326,17 +1341,9 @@ and BindData<'T> = {
 
     /// Often types bindings need to compose together because we need an inner binding
     /// to succeed so we can create a projected value.  This function will allow us
-    /// to translate a BindData.Completed<'T> -> BindData.Completed<'U>
+    /// to translate a BindData<'T>.Completed -> BindData<'U>.Completed
     member x.Convert convertFunc = 
-
-        let rec inner bindFunction keyInput = 
-            match x.BindFunction keyInput with
-            | BindResult.Cancelled -> BindResult.Cancelled
-            | BindResult.Complete value -> BindResult.Complete (convertFunc value)
-            | BindResult.Error -> BindResult.Error
-            | BindResult.NeedMoreInput bindData -> BindResult.NeedMoreInput (bindData.Convert convertFunc)
-
-        { KeyRemapMode = x.KeyRemapMode; BindFunction = inner x.BindFunction }
+        x.Map (fun value -> convertFunc value |> BindResult.Complete)
 
     /// Very similar to the Convert function.  This will instead map a BindData<'T>.Completed
     /// to a BindData<'U> of any form 
@@ -1351,7 +1358,7 @@ and BindData<'T> = {
 
         { KeyRemapMode = x.KeyRemapMode; BindFunction = inner x.BindFunction }
 
-/// Several types of BindData<'T> need to take an actiov when a binding begins against
+/// Several types of BindData<'T> need to take an action when a binding begins against
 /// themselves.  This action needs to occur before the first KeyInput value is processed
 /// and hence they need a jump start.  The most notable is IncrementalSearch which 
 /// needs to enter 'Search' mode before processing KeyInput values so the cursor can
@@ -1663,8 +1670,11 @@ type IMotionCapture =
     /// Set of MotionBinding values supported
     abstract MotionBindings : seq<MotionBinding>
 
-    /// Get the motion starting with the given KeyInput
-    abstract GetOperatorMotion : KeyInput -> BindResult<Motion * int option>
+    /// Get the motion and count starting with the given KeyInput
+    abstract GetMotionAndCount : KeyInput -> BindResult<Motion * int option>
+
+    /// Get the motion with the provided KeyInput
+    abstract GetMotion : KeyInput -> BindResult<Motion>
 
 module CommandUtil2 = 
 

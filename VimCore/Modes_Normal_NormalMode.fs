@@ -197,11 +197,11 @@ type internal NormalMode
         let motionSeq = 
             seq {
                 yield ("c", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeMotion)
-                yield ("d", CommandFlags.Repeatable, NormalCommand.DeleteMotion)
+                yield ("d", CommandFlags.Repeatable ||| CommandFlags.Delete, NormalCommand.DeleteMotion)
                 yield ("gU", CommandFlags.Repeatable, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.ToUpperCase, motion)))
                 yield ("gu", CommandFlags.Repeatable, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.ToLowerCase, motion)))
                 yield ("g?", CommandFlags.Repeatable, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.Rot13, motion)))
-                yield ("y", CommandFlags.None, NormalCommand.Yank)
+                yield ("y", CommandFlags.Yank, NormalCommand.Yank)
                 yield ("zf", CommandFlags.None, NormalCommand.FoldMotion)
                 yield ("<lt>", CommandFlags.Repeatable, NormalCommand.ShiftMotionLinesLeft)
                 yield (">", CommandFlags.Repeatable, NormalCommand.ShiftMotionLinesRight)

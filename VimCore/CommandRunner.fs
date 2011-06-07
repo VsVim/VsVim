@@ -132,11 +132,55 @@ type internal CommandRunner
         // Now we put it altogether
         tryRegisterThenCount keyInput (fun keyInput -> tryCountThenRegister keyInput (fun keyInput -> x.BindCommand None None keyInput))
 
-    /// Wait for a motion binding to be complete
-    member x.BindMotion keyInput completeFunc =
+    /// Bind a Motion command.  
+    ///
+    /// This function will take into account the special motion commands delete and yank.  Both of these special
+    /// cases are specific to these commands and these commands only.  For example 'd#d' makes it appear like
+    /// 'd' is a valid motion but it is not and can be verified with other commands (like yank or change).
+    ///
+    /// This makes the function feel a bit hacky but sadly it's just a special case in Vim which requires a 
+    /// corresponding special case here
+    member x.BindMotion (commandBinding : CommandBinding) commandData motionFunc keyInput =
 
-        let result = _capture.GetOperatorMotion keyInput
-        result.Convert completeFunc
+        // Convert the motion information into a BindResult.Complete value
+        let convertMotion motion motionCount =
+            let argument = { MotionContext = MotionContext.AfterOperator; OperatorCount = commandData.Count; MotionCount = motionCount }
+            let data = { Motion = motion; MotionArgument = argument }
+            let command = motionFunc data
+            (Command.NormalCommand (command, commandData), commandBinding)
+
+        // Handle the special case of 'd' and 'y' 
+        let doSpecialBinding normalCommand targetKey = 
+
+            let result = CountCapture.GetCount None keyInput
+            result.Map (fun (countOpt, keyInput) -> 
+
+                if keyInput.Key = targetKey then
+
+                    // This is the special case.  Get the count for the combined command.  It's the 
+                    // multiplier of the two counts
+                    let count = 
+                        match commandData.Count, countOpt with
+                        | Some left, Some right -> Some (left * right)
+                        | Some left, None -> Some left
+                        | None, Some right -> Some right
+                        | None, None -> None
+                    let commandData = { commandData with Count = count }
+                    let command = Command.NormalCommand (normalCommand, commandData)
+                    BindResult.Complete (command, commandBinding)
+                else
+                    // Not the special case so just do a normal motion mapping.  We have the count at 
+                    // this point so go straight for the motion
+                    let result = _capture.GetMotion keyInput
+                    result.Convert (fun motion -> convertMotion motion countOpt))
+
+        if Util.IsFlagSet commandBinding.CommandFlags CommandFlags.Delete then
+            doSpecialBinding NormalCommand.DeleteLines VimKey.LowerD
+        elif Util.IsFlagSet commandBinding.CommandFlags CommandFlags.Yank then
+            doSpecialBinding NormalCommand.YankLines VimKey.LowerY
+        else
+            let result = _capture.GetMotionAndCount keyInput
+            result.Convert (fun (motion, motionCount) -> convertMotion motion motionCount)
 
     /// Bind the Command instance
     member x.BindCommand registerName count keyInput = 
@@ -166,13 +210,6 @@ type internal CommandRunner
                     inner commandName previousCommandName keyInput
                 BindResult.NeedMoreInput { KeyRemapMode = keyRemapMode ; BindFunction = inner }
 
-            // Used to complete the transition from a MotionCommand to a NormalCommand
-            let completeMotion commandBinding convertFunc (motion, motionCount) =
-                let argument = { MotionContext = MotionContext.AfterOperator; OperatorCount = count; MotionCount = motionCount }
-                let data = { Motion = motion; MotionArgument = argument }
-                let command = convertFunc data
-                (Command.NormalCommand (command, commandData), commandBinding)
-
             match Map.tryFind commandName _commandMap with
             | Some commandBinding ->
                 match commandBinding with
@@ -196,14 +233,14 @@ type internal CommandRunner
                     if Seq.isEmpty withPrefix then 
                         // Nothing else matched so we are good to go for this motion.
                         _data <- { _data with CommandFlags = Some commandBinding.CommandFlags }
-                        BindResult<_>.CreateNeedMoreInput (Some KeyRemapMode.OperatorPending) (fun keyInput -> x.BindMotion keyInput (completeMotion commandBinding func))
+                        BindResult<_>.CreateNeedMoreInput (Some KeyRemapMode.OperatorPending) (fun keyInput -> x.BindMotion commandBinding commandData func keyInput)
                     else 
                         // At least one other command matched so we need at least one more piece of input to
                         // differentiate the commands.  At this point though because the command is of the
                         // motion variety we are in operator pending
                         _data <- { _data with CommandFlags = Some commandBinding.CommandFlags }
                         bindNext (Some KeyRemapMode.OperatorPending)
-    
+
                 | CommandBinding.ComplexNormalBinding (_, _, bindDataStorage) -> 
                     _data <- { _data with CommandFlags = Some commandBinding.CommandFlags }
                     let bindData = bindDataStorage.CreateBindData()
@@ -221,7 +258,7 @@ type internal CommandRunner
                             let visualCommand = Command.VisualCommand (visualCommand, commandData, visualSpan)
                             BindResult.Complete (visualCommand, commandBinding))
                     BindResult.NeedMoreInput bindData
-            | None -> 
+            | None ->
                 let hasPrefixMatch = findPrefixMatches commandName |> SeqUtil.isNotEmpty
                 if commandName.KeyInputs.Length > 1 && not hasPrefixMatch then
     
@@ -235,11 +272,11 @@ type internal CommandRunner
                     // command name.  If the new name isn't the prefix of any other command then we can
                     // choose the motion 
                     match Map.tryFind previousCommandName _commandMap with
-                    | Some(command) ->
+                    | Some command ->
                         match command with
                         | CommandBinding.MotionBinding (_, _, func) -> 
                             _data <- { _data with CommandFlags = Some command.CommandFlags }
-                            x.BindMotion currentInput (completeMotion command func)
+                            x.BindMotion command commandData func currentInput
                         | CommandBinding.NormalBinding _ -> 
                             bindNext None
                         | CommandBinding.VisualBinding _ -> 

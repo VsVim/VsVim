@@ -1,6 +1,8 @@
-﻿using System.Linq;
+﻿using System;
+using Microsoft.FSharp.Core;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Vim.UnitTest;
 
 namespace VimCore.UnitTest
@@ -8,50 +10,52 @@ namespace VimCore.UnitTest
     [TestFixture]
     public class CountCaptureTest
     {
-        private CountResult.Complete Process(string input)
+        /// <summary>
+        /// Get the BindResult created from playing this text to the function
+        /// </summary>
+        public Tuple<FSharpOption<int>, KeyInput> GetComplete(string text)
         {
-            var res = CountCapture.Process(KeyInputUtil.CharToKeyInput(input[0]));
-            foreach (var cur in input.Skip(1))
+            var first = KeyInputUtil.CharToKeyInput(text[0]);
+            var result = CountCapture.GetCount(FSharpOption<KeyRemapMode>.None, first);
+            if (text.Length > 1)
             {
-                Assert.IsTrue(res.IsNeedMore);
-                var i = KeyInputUtil.CharToKeyInput(cur);
-                res = res.AsNeedMore().item.Invoke(i);
+                return result.Run(text.Substring(1)).AsComplete().Item;
             }
 
-            Assert.IsTrue(res.IsComplete);
-            return (CountResult.Complete)res;
+            return result.AsComplete().Item;
         }
 
+        /// <summary>
+        /// Letters don't count as a count
+        /// </summary>
         [Test]
-        public void Simple1()
+        public void GetCount_NoCount()
         {
-            var res = Process("A");
-
-            Assert.AreEqual(1, res.Item1);
-            Assert.AreEqual(VimKey.UpperA, res.Item2.Key);
-            Assert.AreEqual(KeyModifiers.None, res.Item2.KeyModifiers);
+            var tuple = GetComplete("a");
+            Assert.IsTrue(tuple.Item1.IsNone());
+            Assert.AreEqual(VimKey.LowerA, tuple.Item2.Key);
         }
 
-
+        /// <summary>
+        /// Zero is not actually a count it is instead a motion.
+        /// </summary>
         [Test]
-        public void Simple2()
+        public void GetCount_Zero()
         {
-            var res = Process("1A");
-            Assert.AreEqual(1, res.Item1);
-            Assert.AreEqual('A', res.Item2.Char);
+            var tuple = GetComplete("0");
+            Assert.IsTrue(tuple.Item1.IsNone());
+            Assert.AreEqual(VimKey.Number0, tuple.Item2.Key);
         }
 
+        /// <summary>
+        /// Test with a simple count followed by a value
+        /// </summary>
         [Test]
-        public void Simple3()
+        public void GetCount_Simple()
         {
-            var res = Process("23B");
-            Assert.AreEqual(23, res.Item1);
-            Assert.AreEqual('B', res.item2.Char);
+            var tuple = GetComplete("42a");
+            Assert.IsTrue(tuple.Item1.IsSome(42));
+            Assert.AreEqual(VimKey.LowerA, tuple.Item2.Key);
         }
-
-
-
-
-
     }
 }

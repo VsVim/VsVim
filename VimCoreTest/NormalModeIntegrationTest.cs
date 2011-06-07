@@ -647,6 +647,20 @@ namespace VimCore.UnitTest
             Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
         }
 
+        /// <summary>
+        /// Make sure the d#d syntax doesn't apply to other commands like change.  The 'd' suffix in 'd#d' is 
+        /// *not* a valid motion
+        /// </summary>
+        [Test]
+        public void Change_Illegal()
+        {
+            Create("cat", "dog", "tree");
+            _buffer.Process("c2d");
+            Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textBuffer.GetLine(1).GetText());
+            Assert.AreEqual("tree", _textBuffer.GetLine(2).GetText());
+        }
+
         [Test]
         [Description("With no virtual edit the cursor should move backwards after x")]
         public void CursorPositionWith_x_1()
@@ -2163,6 +2177,19 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Make sure that 'd0' is interpreted correctly as 'd{motion}' and not 'd#d'.  0 is not 
+        /// a count
+        /// </summary>
+        [Test]
+        public void Delete_BeginingOfLine()
+        {
+            Create("dog");
+            _textView.MoveCaretTo(1);
+            _buffer.Process("d0");
+            Assert.AreEqual("og", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
         /// Deleting a word left at the start of the line results in empty data and
         /// should not cause the register contents to be altered
         /// </summary>
@@ -2277,6 +2304,31 @@ namespace VimCore.UnitTest
             _buffer.Process("daw");
             Assert.AreEqual("the", _textView.GetLine(0).GetText());
             Assert.AreEqual("  chased the bird", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// Delete lines with the special d#d count syntax
+        /// </summary>
+        [Test]
+        public void DeleteLines_Special_Simple()
+        {
+            Create("cat", "dog", "bear", "fish");
+            _buffer.Process("d2d");
+            Assert.AreEqual("bear", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual(2, _textBuffer.CurrentSnapshot.LineCount);
+        }
+
+
+        /// <summary>
+        /// Delete lines with both counts and make sure the counts are multiplied together
+        /// </summary>
+        [Test]
+        public void DeleteLines_Special_TwoCounts()
+        {
+            Create("cat", "dog", "bear", "fish", "tree");
+            _buffer.Process("2d2d");
+            Assert.AreEqual("tree", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual(1, _textBuffer.CurrentSnapshot.LineCount);
         }
 
         /// <summary>
@@ -2528,6 +2580,18 @@ namespace VimCore.UnitTest
             Create("cat", "dog", "bear");
             _buffer.Process("y2iw");
             Assert.AreEqual("cat" + Environment.NewLine + "dog", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Yank lines using the special y#y syntax
+        /// </summary>
+        [Test]
+        public void YankLines_Special_Simple()
+        {
+            Create("cat", "dog", "bear");
+            _buffer.Process("y2y");
+            Assert.AreEqual("cat" + Environment.NewLine + "dog" + Environment.NewLine, UnnamedRegister.StringValue);
+            Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
         }
 
         /// <summary>
