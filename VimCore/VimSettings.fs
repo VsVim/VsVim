@@ -343,7 +343,7 @@ type internal LocalSettings
 /// Certain changes need to be synchronized between the editor, local and global 
 /// settings.  This MEF component takes care of that synchronization 
 [<Export(typeof<IVimBufferCreationListener>)>]
-type internal EditToSettingSynchronizer
+type internal EditorToSettingSynchronizer
     [<ImportingConstructor>]
     (
         _vim : IVim

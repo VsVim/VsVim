@@ -249,14 +249,15 @@ namespace VimCore.UnitTest
             _statusUtil.Verify();
         }
 
+        /// <summary>
+        /// The count should be applied to the specified line number for yank
+        /// </summary>
         [Test]
-        [Ignore("Refactoring of this code introduced a bug that needs to be fixed")]
-        public void Yank_WithRangeAndCount1()
+        public void Yank_WithRangeAndCount()
         {
             Create("cat", "dog", "rabbit", "tree");
             RunCommand("2y 1");
-            var text = _textView.GetLineRange(0, 1).ExtentIncludingLineBreak.GetText();
-            Assert.AreEqual(text, UnnamedRegister.StringValue);
+            Assert.AreEqual("dog" + Environment.NewLine, UnnamedRegister.StringValue);
         }
 
         /// <summary>

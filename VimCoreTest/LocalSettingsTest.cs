@@ -48,34 +48,5 @@ namespace VimCore.UnitTest
         {
             Assert.AreSame(_global, _local.GlobalSettings);
         }
-
-        /// <summary>
-        /// When the UseEditorTabSettings is false we should prefer Vim settings
-        /// </summary>
-        [Test]
-        public void TabStop_UseVim()
-        {
-            _global.UseEditorSettings = false;
-            _editorOptions.SetOptionValue(DefaultOptions.TabSizeOptionId, 4);
-            _local.TabStop = 42;
-            Assert.AreEqual(4, _editorOptions.GetTabSize());
-            Assert.AreEqual(42, _local.TabStop);
-        }
-
-        /// <summary>
-        /// When the UseEditorSettings is true we should prefer Editor settings
-        /// </summary>
-        [Test]
-        [Ignore("Need to move these test to include the sync class")]
-        public void TabStop_UseEditor()
-        {
-            _global.UseEditorSettings = true;
-            _editorOptions.SetOptionValue(DefaultOptions.TabSizeOptionId, 42);
-            Assert.AreEqual(42, _local.TabStop);
-            _local.TabStop = 13;
-            Assert.AreEqual(13, _local.TabStop);
-            Assert.AreEqual(13, _editorOptions.GetTabSize());
-        }
-
     }
 }
