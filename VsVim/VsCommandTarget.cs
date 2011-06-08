@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 using Vim.Extensions;
@@ -88,6 +89,7 @@ namespace VsVim
         }
 
         private readonly IVimBuffer _buffer;
+        private readonly ITextBuffer _textBuffer;
         private readonly IVsAdapter _adapter;
         private readonly IDisplayWindowBroker _broker;
         private readonly IExternalEditorManager _externalEditManager;
@@ -102,6 +104,7 @@ namespace VsVim
             IExternalEditorManager externalEditorManager)
         {
             _buffer = buffer;
+            _textBuffer = _buffer.TextBuffer;
             _adapter = adapter;
             _broker = broker;
             _externalEditManager = externalEditorManager;
@@ -217,58 +220,70 @@ namespace VsVim
                 return _buffer.Process(keyInput).IsAnyHandled;
             }
 
-            // At this point we've determined that we need to intercept this 
-            return TryExecIntercepted(ref commandGroup, ref oleCommandData, keyInput, mapped);
+            // We've successfully mapped the KeyInput (even if t's a no-op) and determined that
+            // we don't want to process it directly if possible.  Now we try and process the 
+            // potentially mapped value
+            return TryExecForInsertMode(ref commandGroup, ref oleCommandData, keyInput, mapped);
         }
 
         /// <summary>
-        /// Try and exec this KeyInput in an intercepted fashion
+        /// Try and process the given KeyInput for insert mode in the middle of an Exec.  This is 
+        /// called for commands which can't be processed directly like edits.  We'd prefer these 
+        /// go through Visual Studio's command system so items like Intellisense work properly.
         /// </summary>
-        private bool TryExecIntercepted(ref Guid commandGroup, ref OleCommandData oleCommandData, KeyInput originalKeyInput, KeyInput mappedKeyInput)
+        private bool TryExecForInsertMode(ref Guid commandGroup, ref OleCommandData oleCommandData, KeyInput originalKeyInput, KeyInput mappedKeyInput)
         {
-            bool intercepted;
-            bool result;
+            var versionNumber = _textBuffer.CurrentSnapshot.Version.VersionNumber;
+            int? hr = null;
             Guid mappedCommandGroup;
             OleCommandData mappedOleCommandData;
             if (originalKeyInput == mappedKeyInput)
             {
                 // No changes so just use the original OleCommandData
-                result = VSConstants.S_OK == _nextTarget.Exec(
+                hr = _nextTarget.Exec(
                     ref commandGroup,
                     oleCommandData.CommandId,
                     oleCommandData.CommandExecOpt,
                     oleCommandData.VariantIn,
                     oleCommandData.VariantOut);
-                intercepted = true;
             }
             else if (OleCommandUtil.TryConvert(mappedKeyInput, out mappedCommandGroup, out mappedOleCommandData))
             {
-                result = VSConstants.S_OK == _nextTarget.Exec(
+                hr = _nextTarget.Exec(
                     ref mappedCommandGroup,
                     mappedOleCommandData.CommandId,
                     mappedOleCommandData.CommandExecOpt,
                     mappedOleCommandData.VariantIn,
                     mappedOleCommandData.VariantOut);
-                intercepted = true;
                 OleCommandData.Release(ref mappedOleCommandData);
+            }
+
+            if (hr.HasValue)
+            {
+                // Whether or not an Exec succeeded is a bit of a heuristic.  IOleCommandTarget implementations like
+                // C++ will return E_ABORT if Intellisense failed but the character was actually inserted into 
+                // the ITextBuffer.  VsVim really only cares about the character insert.  However we must also
+                // consider cases where the character successfully resulted in no action as a success
+                var result = ErrorHandler.Succeeded(hr.Value) || versionNumber < _textBuffer.CurrentSnapshot.Version.VersionNumber;
+
+                // We processed the input and bypassed the IVimBuffer instance.  We need to tell IVimBuffer this
+                // KeyInput was processed so it can track it for macro purposes.  Make sure to track the mapped
+                // KeyInput value.  The SimulateProcessed method does not do any mapping
+                if (result)
+                {
+                    _buffer.SimulateProcessed(mappedKeyInput);
+                }
+
+                // Whether or not this succeeded it was processed to the fullest possible extent
+                return true;
             }
             else
             {
-                // If we couldn't process it using intercepting mechanism then just go straight to the IVimBuffer
-                // for processing.
-                result = _buffer.Process(originalKeyInput).IsAnyHandled;
-                intercepted = false;
+                // If we couldn't map the KeyInput value into a Visual Studio command then go straight to the 
+                // ITextBuffer.  Insert mode is already designed to handle these KeyInput values we'd just prefer
+                // to pass them through Visual Studio.
+                return _buffer.Process(originalKeyInput).IsAnyHandled;
             }
-
-            if (intercepted)
-            {
-                // We processed the input and bypassed the IVimBuffer instance.  We need to tell IVimBuffer this
-                // KeyInput was processed so it can track it for macro purposes.  Make sure to track the mapped
-                // KeyInput value.  The SimulateProcessed method does not mapping
-                _buffer.SimulateProcessed(mappedKeyInput);
-            }
-
-            return result;
         }
 
         /// <summary>
