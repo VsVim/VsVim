@@ -134,16 +134,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        [Description("See issue 288")]
-        public void dj_1()
-        {
-            Create("abc", "def", "ghi", "jkl");
-            _buffer.Process("dj");
-            Assert.AreEqual("ghi", _textView.GetLine(0).GetText());
-            Assert.AreEqual("jkl", _textView.GetLine(1).GetText());
-        }
-
-        [Test]
         [Description("A d with Enter should delete the line break")]
         public void Issue317_1()
         {
@@ -448,10 +438,6 @@ namespace VimCore.UnitTest
         /// <summary>
         /// Ensure the '%' motion properly moves between the block comments in the 
         /// mismatch case
-        ///
-        /// TODO: This test is broken currently because a change revealed a bug in 
-        /// matching tokens.  The caret will be on the '/' in the closing '*/' but
-        /// can't navigate from that back to the start of the comment block
         /// </summary>
         [Test]
         public void MatchingToken_MismatchedBlockComments()
@@ -656,9 +642,12 @@ namespace VimCore.UnitTest
             Assert.AreEqual("tree", _textBuffer.GetLine(2).GetText());
         }
 
+        /// <summary>
+        /// When virtual edit is disabled and 'x' is used to delete the last character on the line
+        /// then the caret needs to move backward to maintain the non-virtual edit position
+        /// </summary>
         [Test]
-        [Description("With no virtual edit the cursor should move backwards after x")]
-        public void CursorPositionWith_x_1()
+        public void DeleteChar_EndOfLine_NoVirtualEdit()
         {
             Create("test");
             _buffer.LocalSettings.GlobalSettings.VirtualEdit = string.Empty;
@@ -668,9 +657,12 @@ namespace VimCore.UnitTest
             Assert.AreEqual(2, _textView.GetCaretPoint().Position);
         }
 
+        /// <summary>
+        /// When virtual edit is enabled and 'x' is used to delete the last character on the line
+        /// then the caret should stay in it's current position 
+        /// </summary>
         [Test]
-        [Description("With virtual edit the cursor should not move and stay at the end of the line")]
-        public void CursorPositionWith_x_2()
+        public void DeleteChar_EndOfLine_VirtualEdit()
         {
             Create("test", "bar");
             _buffer.LocalSettings.GlobalSettings.VirtualEdit = "onemore";
@@ -680,9 +672,12 @@ namespace VimCore.UnitTest
             Assert.AreEqual(3, _textView.GetCaretPoint().Position);
         }
 
+        /// <summary>
+        /// Caret position should remain unchanged when deleting a character in the middle of 
+        /// a word
+        /// </summary>
         [Test]
-        [Description("Caret position should remain the same in the middle of a word")]
-        public void CursorPositionWith_x_3()
+        public void DeleteChar_MiddleOfWord()
         {
             Create("test", "bar");
             _buffer.LocalSettings.GlobalSettings.VirtualEdit = string.Empty;
@@ -2195,6 +2190,23 @@ namespace VimCore.UnitTest
             _buffer.Process("dh");
             Assert.AreEqual("hello", UnnamedRegister.StringValue);
             Assert.AreEqual(0, _vimHost.BeepCount);
+        }
+
+        /// <summary>
+        /// Delete when combined with the line down motion 'j' should delete two lines
+        /// since it's deleting the result of the motion from the caret
+        ///
+        /// Convered by issue 288
+        /// </summary>
+        [Test]
+        public void Delete_LineDown()
+        {
+            Create("abc", "def", "ghi", "jkl");
+            _textView.MoveCaretTo(1);
+            _buffer.Process("dj");
+            Assert.AreEqual("ghi", _textView.GetLine(0).GetText());
+            Assert.AreEqual("jkl", _textView.GetLine(1).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint());
         }
 
         /// <summary>
