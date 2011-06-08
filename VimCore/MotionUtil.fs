@@ -1784,10 +1784,10 @@ type internal MotionUtil
             match context with
             | MotionContext.AfterOperator -> SectionKind.OnOpenBraceOrBelowCloseBrace
             | MotionContext.Movement -> SectionKind.OnOpenBrace
-        x.SectionForwardCore split count
+        x.SectionForwardCore split context count
 
     /// Implements the core parts of section forward operators
-    member x.SectionForwardCore sectionKind count =
+    member x.SectionForwardCore sectionKind context count =
         _jumpList.Add x.CaretPoint
 
         let endPoint = 
@@ -1797,16 +1797,40 @@ type internal MotionUtil
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
 
-        let span = SnapshotSpan(x.CaretPoint, endPoint)
+        // Modify the 'endPoint' based on the context.  When section forward is used outside
+        // the context of an operator, during a movement for example, and the 'endPoint' 
+        // occurs on the last line of the ITextBuffer then the first non-space / tab character
+        // is chosen
+        let endPoint = 
+            match context with
+            | MotionContext.AfterOperator ->
+                endPoint
+            | MotionContext.Movement -> 
+                let line = SnapshotPointUtil.GetContainingLine endPoint
+                if SnapshotLineUtil.IsLastLine line then 
+                    match SnapshotLineUtil.GetFirstNonSpaceOrTabCharacter line with
+                    | Some point -> point
+                    | None -> line.End
+                else
+                    endPoint
+
+        // This can be backwards when a section forward movement occurs in the last line
+        // of the ITextBuffer after the first non-space / tab character
+        let isForward = x.CaretPoint.Position <= endPoint.Position
+
+        let span = 
+            let startPoint, endPoint = SnapshotPointUtil.OrderAscending x.CaretPoint endPoint
+            SnapshotSpan(startPoint, endPoint)
+
         {
             Span = span 
-            IsForward = true 
+            IsForward = isForward
             MotionKind = MotionKind.CharacterWiseExclusive
             MotionResultFlags = MotionResultFlags.None }
 
     /// Implements the '][' motion
-    member x.SectionForwardOrCloseBrace count =
-        x.SectionForwardCore SectionKind.OnCloseBrace count
+    member x.SectionForwardOrCloseBrace context count =
+        x.SectionForwardCore SectionKind.OnCloseBrace context count
 
     /// Implements the '[[' motion
     member x.SectionBackwardOrOpenBrace count = 
@@ -2146,7 +2170,7 @@ type internal MotionUtil
             | Motion.SectionBackwardOrCloseBrace -> x.SectionBackwardOrCloseBrace motionArgument.Count |> Some
             | Motion.SectionBackwardOrOpenBrace -> x.SectionBackwardOrOpenBrace motionArgument.Count |> Some
             | Motion.SectionForward -> x.SectionForward motionArgument.MotionContext motionArgument.Count |> Some
-            | Motion.SectionForwardOrCloseBrace -> x.SectionForwardOrCloseBrace motionArgument.Count |> Some
+            | Motion.SectionForwardOrCloseBrace -> x.SectionForwardOrCloseBrace motionArgument.MotionContext motionArgument.Count |> Some
             | Motion.SentenceBackward -> x.SentenceBackward motionArgument.Count |> Some
             | Motion.SentenceForward -> x.SentenceForward motionArgument.Count |> Some
             | Motion.WordBackward wordKind -> x.WordBackward wordKind motionArgument.Count |> Some

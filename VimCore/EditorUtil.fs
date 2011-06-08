@@ -64,7 +64,7 @@ type SnapshotLineRange
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module SnapshotUtil = 
-    
+
     /// Get the last line in the ITextSnapshot.  Avoid pulling the entire buffer into memory
     /// slowly by using the index
     let GetLastLine (tss:ITextSnapshot) =
@@ -493,12 +493,25 @@ module SnapshotLineUtil =
     let IsLastPointIncludingLineBreak (line : ITextSnapshotLine) (point : SnapshotPoint) = 
         point.Position + 1 = line.EndIncludingLineBreak.Position
 
+    /// Is this the last line in the ITextBuffer
+    let IsLastLine (line : ITextSnapshotLine) = 
+        let snapshot = line.Snapshot
+        snapshot.LineCount - 1 = line.LineNumber
+
     /// Does the line consist of only whitespace
     let IsWhiteSpace line = 
         line
         |> GetExtent
         |> SnapshotSpanUtil.GetPoints Path.Forward
         |> Seq.forall (fun point -> CharUtil.IsWhiteSpace (point.GetChar()))
+
+    /// Get the first non-space / tab character on the line
+    let GetFirstNonSpaceOrTabCharacter line = 
+        line
+        |> GetExtent
+        |> SnapshotSpanUtil.GetPoints Path.Forward
+        |> Seq.skipWhile (fun point -> CharUtil.IsSpaceOrTab (point.GetChar()))
+        |> SeqUtil.tryHeadOnly
 
 [<RequireQualifiedAccess>]
 type PointKind =

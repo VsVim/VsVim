@@ -1422,19 +1422,52 @@ namespace VimCore.UnitTest
             Assert.AreEqual("foo" + Environment.NewLine + "bar", data.Span.GetText());
         }
 
+        /// <summary>
+        /// Make sure that section forward stops on a formfeed and doesn't 
+        /// include it in the SnapshotSpan
+        /// </summary>
         [Test]
-        public void SectionForward1()
+        public void SectionForward_FormFeedInFirstColumn()
         {
             Create(0, "dog", "\fpig", "{fox");
             var data = _motionUtil.SectionForward(MotionContext.Movement, 1);
             Assert.AreEqual(_textView.GetLineRange(0).ExtentIncludingLineBreak, data.Span);
         }
 
+        /// <summary>
+        /// Make sure that when the formfeed is the first character on the last line 
+        /// that we don't count it as a blank when doing a last line adjustment for
+        /// a movement
+        /// </summary>
+        [Test]
+        public void SectionForward_FormFeedOnLastLine()
+        {
+            Create(0, "dog", "cat", "\bbear");
+            var data = _motionUtil.SectionForward(MotionContext.Movement, 1);
+            Assert.AreEqual(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
+            Assert.IsTrue(data.IsForward);
+        }
+
+        /// <summary>
+        /// Doing a movement on the last line the movement should be backwards when the
+        /// caret is positioned after the first non-blank on the line
+        /// </summary>
+        [Test]
+        public void SectionForward_BackwardsOnLastLine()
+        {
+            Create(0, "dog", "  cat");
+            _textView.MoveCaretToLine(1, 4);
+            var data = _motionUtil.SectionForward(MotionContext.Movement, 1);
+            Assert.AreEqual("ca", data.Span.GetText());
+            Assert.IsFalse(data.IsForward);
+        }
+
+
         [Test]
         public void SectionForward2()
         {
             Create(0, "dog", "\fpig", "fox");
-            var data = _motionUtil.SectionForward(MotionContext.Movement, 2);
+            var data = _motionUtil.SectionForward(MotionContext.AfterOperator, 2);
             Assert.AreEqual(new SnapshotSpan(_snapshot, 0, _snapshot.Length), data.Span);
         }
 
@@ -1442,7 +1475,7 @@ namespace VimCore.UnitTest
         public void SectionForward3()
         {
             Create(0, "dog", "{pig", "fox");
-            var data = _motionUtil.SectionForward(MotionContext.Movement, 2);
+            var data = _motionUtil.SectionForward(MotionContext.AfterOperator, 2);
             Assert.AreEqual(new SnapshotSpan(_snapshot, 0, _snapshot.Length), data.Span);
         }
 
@@ -1468,7 +1501,7 @@ namespace VimCore.UnitTest
         {
             Create(0, "dog", "}pig", "fox");
             var data = _motionUtil.SectionForward(MotionContext.Movement, 1);
-            Assert.AreEqual(new SnapshotSpan(_snapshot, 0, _snapshot.Length), data.Span);
+            Assert.AreEqual(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
         }
 
         [Test]

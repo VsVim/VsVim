@@ -382,7 +382,6 @@ namespace VimCore.UnitTest
         /// using the section forward motion
         /// </summary>
         [Test]
-        [Ignore("Wait for the section last line issue to be fixed")]
         public void Move_SectionForwardFromCloseBrace()
         {
             Create("dog", "}", "bed", "cat");
@@ -397,7 +396,6 @@ namespace VimCore.UnitTest
         /// brace on the line
         /// </summary>
         [Test]
-        [Ignore("Wait for the section last line issue to be fixed")]
         public void Move_SectionFromAfterCloseBrace()
         {
             Create("dog", "} bed", "cat");
@@ -413,7 +411,6 @@ namespace VimCore.UnitTest
         /// Make sure we handle the cases of many braces in a row correctly
         /// </summary>
         [Test]
-        [Ignore("Wait for the section last line issue to be fixed")]
         public void Move_SectionBracesInARow()
         {
             Create("dog", "}", "}", "}", "cat");
@@ -438,7 +435,6 @@ namespace VimCore.UnitTest
         /// over it when using the section forward motion
         /// </summary>
         [Test]
-        [Ignore("Wait for the section last line issue to be fixed")]
         public void Move_SectionForwardFromMacro()
         {
             Create("dog", ".SH", "bed", "cat");
@@ -2345,6 +2341,20 @@ namespace VimCore.UnitTest
             _buffer.Process("dw");
             _buffer.Process("\"0p");
             Assert.AreEqual("dog", _textView.GetLine(2).GetText());
+        }
+
+        /// <summary>
+        /// Where there are not section boundaries between the caret and the end of the 
+        /// ITextBuffer the entire ITextBuffer should be yanked when section forward 
+        /// is used
+        /// </summary>
+        [Test]
+        public void Yank_SectionForwardToEndOfBuffer()
+        {
+            Create("dog", "cat", "bear");
+            _buffer.Process("y]]");
+            Assert.AreEqual("dog" + Environment.NewLine + "cat" + Environment.NewLine + "bear", UnnamedRegister.StringValue);
+            Assert.AreEqual(OperationKind.CharacterWise, UnnamedRegister.OperationKind);
         }
 
         /// <summary>
