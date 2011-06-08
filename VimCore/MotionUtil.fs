@@ -927,10 +927,17 @@ type internal MotionUtil
 
     /// Find the matching token for the next token on the current line 
     member x.MatchingToken() = 
-        // First find the next token on this line from the caret point
-        let caretPoint, caretLine = TextViewUtil.GetCaretPointAndLine _textView
-        let tokens = MotionUtilLegacy.GetMatchTokens (SnapshotSpan(caretPoint, caretLine.End))
-        match SeqUtil.tryHeadOnly tokens with
+
+        // First step is to find the token under the caret point or the one
+        // immediately after it.  
+        let all = MotionUtilLegacy.GetMatchTokens x.CaretLine.Extent
+        let token = 
+            MotionUtilLegacy.GetMatchTokens x.CaretLine.Extent
+            |> Seq.tryFind (fun (span, _) -> 
+                span.Contains(x.CaretPoint) || 
+                span.Start.Position >= x.CaretPoint.Position)
+
+        match token with
         | None -> 
             // No tokens on the line 
             None
@@ -947,10 +954,11 @@ type internal MotionUtil
 
                 // Nice now order the tokens appropriately to get the span 
                 let span, isForward = 
-                    if caretPoint.Position < otherToken.Start.Position then
-                        SnapshotSpan(caretPoint, otherToken.End), true
+                    if x.CaretPoint.Position < otherToken.Start.Position then
+                        SnapshotSpan(x.CaretPoint, otherToken.End), true
                     else
-                        SnapshotSpan(otherToken.Start, caretPoint.Add(1)), false
+                        SnapshotSpan(otherToken.Start, SnapshotPointUtil.AddOneOrCurrent x.CaretPoint), false
+
                 {
                     Span = span
                     IsForward = isForward

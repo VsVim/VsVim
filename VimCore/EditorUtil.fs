@@ -567,6 +567,10 @@ module SnapshotPointUtil =
         if IsEndPoint point then false
         else CharUtil.IsBlank (point.GetChar())
 
+    /// Is this point not a blank 
+    let IsNotBlank point =
+        not (IsBlank point)
+
     /// Is this point white space or inside the line break?
     let IsWhiteSpaceOrInsideLineBreak point = 
         IsWhiteSpace point || IsInsideLineBreak point

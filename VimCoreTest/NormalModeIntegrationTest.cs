@@ -454,7 +454,6 @@ namespace VimCore.UnitTest
         /// can't navigate from that back to the start of the comment block
         /// </summary>
         [Test]
-        [Ignore]
         public void MatchingToken_MismatchedBlockComments()
         {
             Create("/* /* */");
@@ -2002,7 +2001,6 @@ namespace VimCore.UnitTest
         /// come of the '/' in a '*/'
         /// </summary>
         [Test]
-        [Ignore]
         public void MatchingTokens_DifferentTypes()
         {
             Create("{ { (( } /* a /*) b */ })");
