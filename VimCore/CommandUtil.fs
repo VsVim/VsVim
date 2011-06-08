@@ -65,14 +65,14 @@ type internal CommandUtil
         // Get the indent string to apply to the lines which are indented
         let indent = 
             x.CaretLine.GetText()
-            |> Seq.takeWhile CharUtil.IsSpaceOrTab
+            |> Seq.takeWhile CharUtil.IsBlank
             |> StringUtil.ofCharSeq
             |> _operations.NormalizeSpacesAndTabs
 
         // Adjust the indentation on a given line of text to have the indentation
         // previously calculated
         let adjustTextLine (textLine : TextLine) =
-            let oldIndent = textLine.Text |> Seq.takeWhile CharUtil.IsSpaceOrTab |> StringUtil.ofCharSeq
+            let oldIndent = textLine.Text |> Seq.takeWhile CharUtil.IsBlank |> StringUtil.ofCharSeq
             let text = indent + (textLine.Text.Substring(oldIndent.Length))
             { textLine with Text = text }
 
@@ -322,7 +322,7 @@ type internal CommandUtil
                     SnapshotUtil.GetLine range.Snapshot (range.StartLineNumber + 1)
             line
             |> SnapshotLineUtil.GetPoints Path.Forward
-            |> Seq.skipWhile SnapshotPointUtil.IsSpaceOrTab
+            |> Seq.skipWhile SnapshotPointUtil.IsBlank
             |> SeqUtil.tryHeadOnly
         match point with
         | None -> ()

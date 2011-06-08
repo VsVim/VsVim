@@ -52,7 +52,7 @@ type internal DefaultOperations
             let rec nextPoint (point : SnapshotPoint) = 
                 if point.Position >= range.End.Position then
                     None
-                elif SnapshotPointUtil.IsSpaceOrTab point then
+                elif SnapshotPointUtil.IsBlank point then
                     Some point
                 else
                     point |> SnapshotPointUtil.AddOne |> nextPoint 
@@ -66,7 +66,7 @@ type internal DefaultOperations
                     let endPoint = 
                         SnapshotSpan(startPoint, range.End)
                         |> SnapshotSpanUtil.GetPoints Path.Forward
-                        |> Seq.skipWhile SnapshotPointUtil.IsSpaceOrTab
+                        |> Seq.skipWhile SnapshotPointUtil.IsBlank
                         |> SeqUtil.headOrDefault range.End
                     let span = SnapshotSpan(startPoint, endPoint)
                     Some (span, endPoint)) range.Start

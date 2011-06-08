@@ -506,11 +506,11 @@ module SnapshotLineUtil =
         |> Seq.forall (fun point -> CharUtil.IsWhiteSpace (point.GetChar()))
 
     /// Get the first non-space / tab character on the line
-    let GetFirstNonSpaceOrTabCharacter line = 
+    let GetFirstNonBlank line = 
         line
         |> GetExtent
         |> SnapshotSpanUtil.GetPoints Path.Forward
-        |> Seq.skipWhile (fun point -> CharUtil.IsSpaceOrTab (point.GetChar()))
+        |> Seq.skipWhile (fun point -> CharUtil.IsBlank (point.GetChar()))
         |> SeqUtil.tryHeadOnly
 
 [<RequireQualifiedAccess>]
@@ -563,9 +563,9 @@ module SnapshotPointUtil =
         else CharUtil.IsWhiteSpace (point.GetChar())
 
     /// Is this point a space or tab
-    let IsSpaceOrTab point = 
+    let IsBlank point = 
         if IsEndPoint point then false
-        else CharUtil.IsSpaceOrTab (point.GetChar())
+        else CharUtil.IsBlank (point.GetChar())
 
     /// Is this point white space or inside the line break?
     let IsWhiteSpaceOrInsideLineBreak point = 

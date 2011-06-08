@@ -124,6 +124,6 @@ module internal StringUtil =
     [<CompiledName("IsWhiteSpace")>]
     let isWhiteSpace (arg : string) = not (Seq.exists CharUtil.IsNotWhiteSpace arg)
 
-    [<CompiledName("IsSpaceAndTabs")>]
-    let isSpacesAndTabs (arg : string) = Seq.forall CharUtil.IsSpaceOrTab arg
+    [<CompiledName("IsBlanks")>]
+    let isBlanks (arg : string) = Seq.forall CharUtil.IsBlank arg
 

@@ -1447,16 +1447,16 @@ type internal MotionUtil
         // Given a point which is a tab or space get the space and tab span backwards up 
         // to and including the point
         let getReverseSpaceAndTabSpaceStart point =
-            Contract.Assert(SnapshotPointUtil.IsSpaceOrTab point) 
+            Contract.Assert(SnapshotPointUtil.IsBlank point) 
 
             let line = SnapshotPointUtil.GetContainingLine point
             let startPoint = 
                 SnapshotSpan(line.Start, point)
                 |> SnapshotSpanUtil.GetPoints Path.Backward
-                |> Seq.skipWhile SnapshotPointUtil.IsSpaceOrTab
+                |> Seq.skipWhile SnapshotPointUtil.IsBlank
                 |> SeqUtil.headOrDefault line.Start
 
-            if SnapshotPointUtil.IsSpaceOrTab startPoint then
+            if SnapshotPointUtil.IsBlank startPoint then
                 startPoint
             else
                 SnapshotPointUtil.AddOne startPoint 
@@ -1545,7 +1545,7 @@ type internal MotionUtil
                     // be undone
                     SnapshotSpan(x.CaretLine.Start, 0) |> Some
                 | Some point -> 
-                    if SnapshotPointUtil.IsSpaceOrTab point then
+                    if SnapshotPointUtil.IsBlank point then
                         // If it's a space or tab then get the space / tab span
                         let startPoint = getReverseSpaceAndTabSpaceStart point
                         SnapshotSpan(startPoint, x.CaretLine.End) |> Some
@@ -1560,7 +1560,7 @@ type internal MotionUtil
                 // Simple case.  Need to move the point backwards though if it starts in
                 // a space or tab to get the full span
                 let point = 
-                    if SnapshotPointUtil.IsSpaceOrTab x.CaretPoint then
+                    if SnapshotPointUtil.IsBlank x.CaretPoint then
                         getReverseSpaceAndTabSpaceStart x.CaretPoint
                     else
                         x.CaretPoint
@@ -1808,7 +1808,7 @@ type internal MotionUtil
             | MotionContext.Movement -> 
                 let line = SnapshotPointUtil.GetContainingLine endPoint
                 if SnapshotLineUtil.IsLastLine line then 
-                    match SnapshotLineUtil.GetFirstNonSpaceOrTabCharacter line with
+                    match SnapshotLineUtil.GetFirstNonBlank line with
                     | Some point -> point
                     | None -> line.End
                 else

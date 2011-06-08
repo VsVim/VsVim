@@ -239,14 +239,14 @@ type internal CommonOperations ( _data : OperationsData ) =
         let text = 
             span
             |> SnapshotSpanUtil.GetText
-            |> Seq.takeWhile CharUtil.IsSpaceOrTab
+            |> Seq.takeWhile CharUtil.IsBlank
             |> StringUtil.ofCharSeq
         x.NormalizeWhiteSpaceToSpaces text, text.Length
 
     /// Normalize any white space to the appropriate number of space characters based on the 
     /// Vim settings
     member x.NormalizeWhiteSpaceToSpaces (text : string) =
-        Contract.Assert(StringUtil.isSpacesAndTabs text)
+        Contract.Assert(StringUtil.isBlanks text)
         let builder = System.Text.StringBuilder()
         let tabSize = _settings.TabStop
         for c in text do
@@ -280,7 +280,7 @@ type internal CommonOperations ( _data : OperationsData ) =
     /// Fully normalize white space into tabs / spaces based on the ExpandTab, TabSize 
     /// settings
     member x.NormalizeSpacesAndTabs text = 
-        Contract.Assert(StringUtil.isSpacesAndTabs text)
+        Contract.Assert(StringUtil.isBlanks text)
         text
         |> x.NormalizeWhiteSpaceToSpaces
         |> x.NormalizeSpaces
