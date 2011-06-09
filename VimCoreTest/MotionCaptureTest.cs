@@ -120,12 +120,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void FirstNonWhitespaceOnLine()
-        {
-            AssertMotion("^", Motion.FirstNonWhiteSpaceOnCurrentLine);
-        }
-
-        [Test]
         public void AllWord()
         {
             AssertMotion("aw", Motion.NewAllWord(WordKind.NormalWord));
@@ -195,21 +189,21 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void LineOrLastToFirstNonWhiteSpace()
+        public void LineOrLastToFirstNonBlank()
         {
-            AssertMotion("G", Motion.LineOrLastToFirstNonWhiteSpace);
+            AssertMotion("G", Motion.LineOrLastToFirstNonBlank);
         }
 
         [Test]
-        public void LineOrFirstToFirstNonWhiteSpace()
+        public void LineOrFirstToFirstNonBlank()
         {
-            AssertMotion("gg", Motion.LineOrFirstToFirstNonWhiteSpace);
+            AssertMotion("gg", Motion.LineOrFirstToFirstNonBlank);
         }
 
         [Test]
-        public void LastNonWhiteSpaceOnLine()
+        public void LastNonBlankOnLine()
         {
-            AssertMotion("g_", Motion.LastNonWhiteSpaceOnLine);
+            AssertMotion("g_", Motion.LastNonBlankOnLine);
         }
 
         [Test]
@@ -225,9 +219,15 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void FirstNonWhiteSpaceOnLine()
+        public void FirstNonBlankOnLine()
         {
-            AssertMotion("_", Motion.FirstNonWhiteSpaceOnLine);
+            AssertMotion("_", Motion.FirstNonBlankOnLine);
+        }
+
+        [Test]
+        public void FirstNonBlankOnLineOnCurrentLine()
+        {
+            AssertMotion("^", Motion.FirstNonBlankOnCurrentLine);
         }
 
         [Test]
@@ -412,7 +412,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void LineDownToFirstNonWhitespace_ShouldAcceptBothEnters()
+        public void LineDownToFirstNonBlank_ShouldAcceptBothEnters()
         {
             _textView.SetText("cat\ndog\nbear");
             Assert.IsTrue(_capture.GetMotionAndCount(KeyInputUtil.AlternateEnterKey).IsComplete);

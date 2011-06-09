@@ -62,5 +62,3 @@ module TssUtil =
     /// base implementation to fall back on
     val CreateTextStructureNavigator : WordKind -> ITextStructureNavigator -> ITextStructureNavigator
 
-
-    

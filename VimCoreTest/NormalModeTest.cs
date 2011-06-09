@@ -374,7 +374,7 @@ namespace VimCore.UnitTest
         public void Bind_Motion_Hat()
         {
             Create("   foo bar");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.FirstNonWhiteSpaceOnCurrentLine));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.FirstNonBlankOnCurrentLine));
             _mode.Process('^');
             _commandUtil.Verify();
         }
@@ -401,7 +401,7 @@ namespace VimCore.UnitTest
         public void Bind_Motion_LineOrFirst()
         {
             Create(DefaultLines);
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.LineOrFirstToFirstNonWhiteSpace));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.LineOrFirstToFirstNonBlank));
             _mode.Process(KeyNotationUtil.StringToKeyInput("<C-Home>"));
             _commandUtil.Verify();
         }
@@ -579,7 +579,7 @@ namespace VimCore.UnitTest
             var span = _textView.GetLine(0).Extent;
             var arg = new MotionArgument(MotionContext.AfterOperator, FSharpOption<int>.None, FSharpOption<int>.None);
             util
-                .Setup(x => x.GetMotion(Motion.LineOrLastToFirstNonWhiteSpace, arg))
+                .Setup(x => x.GetMotion(Motion.LineOrLastToFirstNonBlank, arg))
                 .Returns(FSharpOption.Create(VimUtil.CreateMotionResult(span, motionKind: MotionKind.NewLineWise(CaretColumn.None))));
             _commandUtil
                 .Setup(x => x.RunCommand(It.Is<Command>(y => y.AsNormalCommand().Item2.Count.IsNone())))

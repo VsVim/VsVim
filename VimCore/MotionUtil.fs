@@ -306,7 +306,7 @@ type internal MotionUtil
     /// Get the motion between the provided two lines.  The motion will be linewise
     /// and have a column of the first non-whitespace character.  If the 'startofline'
     /// option is not set it will keep the original column
-    member x.LineToLineFirstNonWhiteSpaceMotion (startLine : ITextSnapshotLine) (endLine : ITextSnapshotLine) = 
+    member x.LineToLineFirstNonBlankMotion (startLine : ITextSnapshotLine) (endLine : ITextSnapshotLine) = 
 
         // Get the column based on the 'startofline' option
         let column = 
@@ -1412,7 +1412,7 @@ type internal MotionUtil
             MotionResultFlags = MotionResultFlags.None }
 
     /// Find the first non-whitespace character on the current line.  
-    member x.FirstNonWhiteSpaceOnCurrentLine () =
+    member x.FirstNonBlankOnCurrentLine () =
         let start = x.CaretPoint
         let line = start.GetContainingLine()
         let target = 
@@ -1431,7 +1431,7 @@ type internal MotionUtil
 
     /// Create a line wise motion from the current line to (count - 1) lines
     /// downward 
-    member x.FirstNonWhiteSpaceOnLine count = 
+    member x.FirstNonBlankOnLine count = 
         let startLine = x.CaretLine
         let endLine = 
             let number = startLine.LineNumber + (count - 1)
@@ -1589,7 +1589,7 @@ type internal MotionUtil
                 MotionResultFlags = MotionResultFlags.AnyWord } |> Some
 
 
-    member x.LineDownToFirstNonWhiteSpace count =
+    member x.LineDownToFirstNonBlank count =
         let line = x.CaretPoint |> SnapshotPointUtil.GetContainingLine
         let number = line.LineNumber + count
         let endLine = SnapshotUtil.GetLineOrLast line.Snapshot number
@@ -1601,7 +1601,7 @@ type internal MotionUtil
             MotionKind = MotionKind.LineWise column
             MotionResultFlags = MotionResultFlags.None }
 
-    member x.LineUpToFirstNonWhiteSpace count =
+    member x.LineUpToFirstNonBlank count =
         let point = x.CaretPoint
         let endLine = SnapshotPointUtil.GetContainingLine point
         let startLine = SnapshotUtil.GetLineOrFirst endLine.Snapshot (endLine.LineNumber - count)
@@ -1676,7 +1676,7 @@ type internal MotionUtil
                 MotionKind = MotionKind.LineWise column
                 MotionResultFlags = MotionResultFlags.None } |> Some
 
-    member x.LineOrFirstToFirstNonWhiteSpace numberOpt = 
+    member x.LineOrFirstToFirstNonBlank numberOpt = 
         let point = x.CaretPoint
         let originLine = SnapshotPointUtil.GetContainingLine point
         let tss= originLine.Snapshot
@@ -1684,10 +1684,10 @@ type internal MotionUtil
             match numberOpt with
             | Some(number) ->  SnapshotUtil.GetLineOrFirst tss (TssUtil.VimLineToTssLine number)
             | None -> SnapshotUtil.GetFirstLine tss 
-        x.LineToLineFirstNonWhiteSpaceMotion originLine endLine
+        x.LineToLineFirstNonBlankMotion originLine endLine
 
     /// Implements the 'G" motion
-    member x.LineOrLastToFirstNonWhiteSpace numberOpt = 
+    member x.LineOrLastToFirstNonBlank numberOpt = 
         _jumpList.Add x.CaretPoint
 
         let point = x.CaretPoint
@@ -1697,10 +1697,10 @@ type internal MotionUtil
             match numberOpt with
             | Some number ->  SnapshotUtil.GetLineOrLast tss (TssUtil.VimLineToTssLine number)
             | None -> SnapshotUtil.GetLastLine tss 
-        x.LineToLineFirstNonWhiteSpaceMotion originLine endLine
+        x.LineToLineFirstNonBlankMotion originLine endLine
 
     /// Go to the last non-blank character on the 'count - 1' line
-    member x.LastNonWhiteSpaceOnLine count = 
+    member x.LastNonBlankOnLine count = 
         let number = x.CaretLine.LineNumber + (count-1)
         let endLine = SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
         let endPoint = 
@@ -2166,20 +2166,20 @@ type internal MotionUtil
             | Motion.CharSearch (kind, direction, c) -> x.CharSearch c motionArgument.Count kind direction
             | Motion.EndOfLine -> x.EndOfLine motionArgument.Count |> Some
             | Motion.EndOfWord wordKind -> x.EndOfWord wordKind motionArgument.Count |> Some
-            | Motion.FirstNonWhiteSpaceOnCurrentLine -> x.FirstNonWhiteSpaceOnCurrentLine() |> Some
-            | Motion.FirstNonWhiteSpaceOnLine -> x.FirstNonWhiteSpaceOnLine motionArgument.Count |> Some
+            | Motion.FirstNonBlankOnCurrentLine -> x.FirstNonBlankOnCurrentLine() |> Some
+            | Motion.FirstNonBlankOnLine -> x.FirstNonBlankOnLine motionArgument.Count |> Some
             | Motion.InnerWord wordKind -> x.InnerWord wordKind motionArgument.Count
-            | Motion.LastNonWhiteSpaceOnLine -> x.LastNonWhiteSpaceOnLine motionArgument.Count |> Some
+            | Motion.LastNonBlankOnLine -> x.LastNonBlankOnLine motionArgument.Count |> Some
             | Motion.LastSearch isReverse -> x.LastSearch isReverse motionArgument.Count
             | Motion.LineDown -> x.LineDown motionArgument.Count
-            | Motion.LineDownToFirstNonWhiteSpace -> x.LineDownToFirstNonWhiteSpace motionArgument.Count |> Some
+            | Motion.LineDownToFirstNonBlank -> x.LineDownToFirstNonBlank motionArgument.Count |> Some
             | Motion.LineFromBottomOfVisibleWindow -> x.LineFromBottomOfVisibleWindow motionArgument.RawCount |> Some
             | Motion.LineFromTopOfVisibleWindow -> x.LineFromTopOfVisibleWindow motionArgument.RawCount |> Some
             | Motion.LineInMiddleOfVisibleWindow -> x.LineInMiddleOfVisibleWindow() |> Some
-            | Motion.LineOrFirstToFirstNonWhiteSpace -> x.LineOrFirstToFirstNonWhiteSpace motionArgument.RawCount |> Some
-            | Motion.LineOrLastToFirstNonWhiteSpace -> x.LineOrLastToFirstNonWhiteSpace motionArgument.RawCount |> Some
+            | Motion.LineOrFirstToFirstNonBlank -> x.LineOrFirstToFirstNonBlank motionArgument.RawCount |> Some
+            | Motion.LineOrLastToFirstNonBlank -> x.LineOrLastToFirstNonBlank motionArgument.RawCount |> Some
             | Motion.LineUp -> x.LineUp motionArgument.Count
-            | Motion.LineUpToFirstNonWhiteSpace -> x.LineUpToFirstNonWhiteSpace motionArgument.Count |> Some
+            | Motion.LineUpToFirstNonBlank -> x.LineUpToFirstNonBlank motionArgument.Count |> Some
             | Motion.Mark c -> x.Mark c
             | Motion.MarkLine c -> x.MarkLine c 
             | Motion.MatchingToken -> x.MatchingToken()

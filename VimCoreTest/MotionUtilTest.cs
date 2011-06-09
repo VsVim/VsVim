@@ -242,62 +242,62 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void FirstNonWhiteSpaceOnCurrentLine1()
+        public void FirstNonBlankOnCurrentLine1()
         {
             Create("foo");
             _textView.MoveCaretTo(_buffer.GetLineFromLineNumber(0).End);
-            var tuple = _motionUtil.FirstNonWhiteSpaceOnCurrentLine();
+            var tuple = _motionUtil.FirstNonBlankOnCurrentLine();
             Assert.AreEqual("foo", tuple.Span.GetText());
             Assert.AreEqual(MotionKind.CharacterWiseExclusive, tuple.MotionKind);
             Assert.AreEqual(OperationKind.CharacterWise, tuple.OperationKind);
         }
 
         [Test, Description("Make sure it goes to the first non-whitespace character")]
-        public void FirstNonWhiteSpaceOnCurrentLine2()
+        public void FirstNonBlankOnCurrentLine2()
         {
             Create("  foo");
             _textView.MoveCaretTo(_buffer.GetLineFromLineNumber(0).End);
-            var tuple = _motionUtil.FirstNonWhiteSpaceOnCurrentLine();
+            var tuple = _motionUtil.FirstNonBlankOnCurrentLine();
             Assert.AreEqual("foo", tuple.Span.GetText());
             Assert.AreEqual(MotionKind.CharacterWiseExclusive, tuple.MotionKind);
             Assert.AreEqual(OperationKind.CharacterWise, tuple.OperationKind);
         }
 
         [Test, Description("Make sure to ignore tabs")]
-        public void FirstNonWhiteSpaceOnCurrentLine3()
+        public void FirstNonBlankOnCurrentLine3()
         {
             var text = "\tfoo";
             Create(text);
             _textView.MoveCaretTo(_buffer.GetLineFromLineNumber(0).End);
-            var tuple = _motionUtil.FirstNonWhiteSpaceOnCurrentLine();
+            var tuple = _motionUtil.FirstNonBlankOnCurrentLine();
             Assert.AreEqual(text.IndexOf('f'), tuple.Span.Start);
             Assert.IsFalse(tuple.IsForward);
         }
 
         [Test]
         [Description("Make sure to move forward to the first non-whitespace")]
-        public void FirstNonWhiteSpaceOnCurrentLine4()
+        public void FirstNonBlankOnCurrentLine4()
         {
             Create(0, "   bar");
-            var data = _motionUtil.FirstNonWhiteSpaceOnCurrentLine();
+            var data = _motionUtil.FirstNonBlankOnCurrentLine();
             Assert.AreEqual(_buffer.GetSpan(0, 3), data.Span);
         }
 
         [Test]
         [Description("Empty line case")]
-        public void FirstNonWhiteSpaceOnCurrentLine5()
+        public void FirstNonBlankOnCurrentLine5()
         {
             Create(0, "");
-            var data = _motionUtil.FirstNonWhiteSpaceOnCurrentLine();
+            var data = _motionUtil.FirstNonBlankOnCurrentLine();
             Assert.AreEqual(_buffer.GetSpan(0, 0), data.Span);
         }
 
         [Test]
         [Description("Backwards case")]
-        public void FirstNonWhiteSpaceOnCurrentLine6()
+        public void FirstNonBlankOnCurrentLine6()
         {
             Create(3, "bar");
-            var data = _motionUtil.FirstNonWhiteSpaceOnCurrentLine();
+            var data = _motionUtil.FirstNonBlankOnCurrentLine();
             Assert.AreEqual(_buffer.GetSpan(0, 3), data.Span);
             Assert.IsFalse(data.IsForward);
         }
@@ -306,10 +306,10 @@ namespace VimCore.UnitTest
         /// A count of 1 should return a single line 
         /// </summary>
         [Test]
-        public void FirstNonWhiteSpaceOnLine_Single()
+        public void FirstNonBlankOnLine_Single()
         {
             Create(0, "cat", "dog");
-            var data = _motionUtil.FirstNonWhiteSpaceOnLine(1);
+            var data = _motionUtil.FirstNonBlankOnLine(1);
             Assert.AreEqual("cat", data.LineRange.Extent.GetText());
             Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
             Assert.IsTrue(data.IsForward);
@@ -321,10 +321,10 @@ namespace VimCore.UnitTest
         /// line
         /// </summary>
         [Test]
-        public void FirstNonWhiteSpaceOnLine_Double()
+        public void FirstNonBlankOnLine_Double()
         {
             Create(0, "cat", " dog");
-            var data = _motionUtil.FirstNonWhiteSpaceOnLine(2);
+            var data = _motionUtil.FirstNonBlankOnLine(2);
             Assert.AreEqual(_textView.GetLineRange(0, 1), data.LineRange);
             Assert.AreEqual(1, data.CaretColumn.AsInLastLine().Item);
         }
@@ -1032,11 +1032,11 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void LineOrFirstToFirstNonWhiteSpace1()
+        public void LineOrFirstToFirstNonBlank1()
         {
             Create("foo", "bar", "baz");
             _textView.MoveCaretTo(_buffer.GetLine(1).Start);
-            var data = _motionUtil.LineOrFirstToFirstNonWhiteSpace(FSharpOption.Create(0));
+            var data = _motionUtil.LineOrFirstToFirstNonBlank(FSharpOption.Create(0));
             Assert.AreEqual(_buffer.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
             Assert.IsFalse(data.IsForward);
             Assert.IsTrue(data.MotionKind.IsLineWise);
@@ -1044,10 +1044,10 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void LineOrFirstToFirstNonWhiteSpace2()
+        public void LineOrFirstToFirstNonBlank2()
         {
             Create("foo", "bar", "baz");
-            var data = _motionUtil.LineOrFirstToFirstNonWhiteSpace(FSharpOption.Create(2));
+            var data = _motionUtil.LineOrFirstToFirstNonBlank(FSharpOption.Create(2));
             Assert.AreEqual(_buffer.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
             Assert.IsTrue(data.IsForward);
             Assert.IsTrue(data.MotionKind.IsLineWise);
@@ -1055,10 +1055,10 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void LineOrFirstToFirstNonWhiteSpace3()
+        public void LineOrFirstToFirstNonBlank3()
         {
             Create("foo", "  bar", "baz");
-            var data = _motionUtil.LineOrFirstToFirstNonWhiteSpace(FSharpOption.Create(2));
+            var data = _motionUtil.LineOrFirstToFirstNonBlank(FSharpOption.Create(2));
             Assert.AreEqual(_buffer.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
             Assert.IsTrue(data.IsForward);
             Assert.IsTrue(data.MotionKind.IsLineWise);
@@ -1066,10 +1066,10 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void LineOrFirstToFirstNonWhiteSpace4()
+        public void LineOrFirstToFirstNonBlank4()
         {
             Create("foo", "  bar", "baz");
-            var data = _motionUtil.LineOrFirstToFirstNonWhiteSpace(FSharpOption.Create(500));
+            var data = _motionUtil.LineOrFirstToFirstNonBlank(FSharpOption.Create(500));
             Assert.AreEqual(_buffer.GetLineRange(0, 0).ExtentIncludingLineBreak, data.Span);
             Assert.IsTrue(data.IsForward);
             Assert.IsTrue(data.MotionKind.IsLineWise);
@@ -1077,21 +1077,21 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void LineOrFirstToFirstNonWhiteSpace5()
+        public void LineOrFirstToFirstNonBlank5()
         {
             Create("  the", "dog", "jumped");
             _textView.MoveCaretTo(_textView.GetLine(1).Start);
-            var data = _motionUtil.LineOrFirstToFirstNonWhiteSpace(FSharpOption<int>.None);
+            var data = _motionUtil.LineOrFirstToFirstNonBlank(FSharpOption<int>.None);
             Assert.AreEqual(0, data.Span.Start.Position);
             Assert.AreEqual(2, data.CaretColumn.AsInLastLine().Item);
             Assert.IsFalse(data.IsForward);
         }
 
         [Test]
-        public void LineOrLastToFirstNonWhiteSpace1()
+        public void LineOrLastToFirstNonBlank1()
         {
             Create("foo", "bar", "baz");
-            var data = _motionUtil.LineOrLastToFirstNonWhiteSpace(FSharpOption.Create(2));
+            var data = _motionUtil.LineOrLastToFirstNonBlank(FSharpOption.Create(2));
             Assert.AreEqual(_buffer.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
             Assert.IsTrue(data.IsForward);
             Assert.IsTrue(data.MotionKind.IsLineWise);
@@ -1099,11 +1099,11 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void LineOrLastToFirstNonWhiteSpace2()
+        public void LineOrLastToFirstNonBlank2()
         {
             Create("foo", "bar", "baz");
             _textView.MoveCaretTo(_buffer.GetLine(1).Start);
-            var data = _motionUtil.LineOrLastToFirstNonWhiteSpace(FSharpOption.Create(0));
+            var data = _motionUtil.LineOrLastToFirstNonBlank(FSharpOption.Create(0));
             Assert.AreEqual(_buffer.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
             Assert.IsFalse(data.IsForward);
             Assert.IsTrue(data.MotionKind.IsLineWise);
@@ -1111,11 +1111,11 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void LineOrLastToFirstNonWhiteSpace3()
+        public void LineOrLastToFirstNonBlank3()
         {
             Create("foo", "bar", "baz");
             _textView.MoveCaretTo(_buffer.GetLine(1).Start);
-            var data = _motionUtil.LineOrLastToFirstNonWhiteSpace(FSharpOption.Create(500));
+            var data = _motionUtil.LineOrLastToFirstNonBlank(FSharpOption.Create(500));
             Assert.AreEqual(_buffer.GetLineRange(1, 2).ExtentIncludingLineBreak, data.Span);
             Assert.IsTrue(data.IsForward);
             Assert.IsTrue(data.MotionKind.IsLineWise);
@@ -1123,10 +1123,10 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void LineOrLastToFirstNonWhiteSpace4()
+        public void LineOrLastToFirstNonBlank4()
         {
             Create("foo", "bar", "baz");
-            var data = _motionUtil.LineOrLastToFirstNonWhiteSpace(FSharpOption<int>.None);
+            var data = _motionUtil.LineOrLastToFirstNonBlank(FSharpOption<int>.None);
             var span = new SnapshotSpan(_buffer.CurrentSnapshot, 0, _buffer.CurrentSnapshot.Length);
             Assert.AreEqual(span, data.Span);
             Assert.IsTrue(data.IsForward);
@@ -1135,10 +1135,10 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void LastNonWhiteSpaceOnLine1()
+        public void LastNonBlankOnLine1()
         {
             Create("foo", "bar ");
-            var data = _motionUtil.LastNonWhiteSpaceOnLine(1);
+            var data = _motionUtil.LastNonBlankOnLine(1);
             Assert.AreEqual(_buffer.GetLineRange(0).Extent, data.Span);
             Assert.IsTrue(data.IsForward);
             Assert.IsTrue(data.MotionKind.IsCharacterWiseInclusive);
@@ -1147,10 +1147,10 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void LastNonWhiteSpaceOnLine2()
+        public void LastNonBlankOnLine2()
         {
             Create("foo", "bar ", "jaz");
-            var data = _motionUtil.LastNonWhiteSpaceOnLine(2);
+            var data = _motionUtil.LastNonBlankOnLine(2);
             Assert.AreEqual(new SnapshotSpan(_buffer.GetPoint(0), _buffer.GetLine(1).Start.Add(3)), data.Span);
             Assert.IsTrue(data.IsForward);
             Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
@@ -1158,10 +1158,10 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void LastNonWhiteSpaceOnLine3()
+        public void LastNonBlankOnLine3()
         {
             Create("foo", "bar ", "jaz", "");
-            var data = _motionUtil.LastNonWhiteSpaceOnLine(300);
+            var data = _motionUtil.LastNonBlankOnLine(300);
             Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, _buffer.CurrentSnapshot.Length), data.Span);
             Assert.IsTrue(data.IsForward);
             Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
@@ -1295,20 +1295,20 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void LineDownToFirstNonWhiteSpace1()
+        public void LineDownToFirstNonBlank1()
         {
             Create("a", "b", "c", "d");
-            var data = _motionUtil.LineDownToFirstNonWhiteSpace(1);
+            var data = _motionUtil.LineDownToFirstNonBlank(1);
             Assert.IsTrue(data.MotionKind.IsLineWise);
             Assert.AreEqual(_buffer.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
             Assert.IsTrue(data.IsForward);
         }
 
         [Test]
-        public void LineDownToFirstNonWhiteSpace2()
+        public void LineDownToFirstNonBlank2()
         {
             Create("a", "b", "c", "d");
-            var data = _motionUtil.LineDownToFirstNonWhiteSpace(2);
+            var data = _motionUtil.LineDownToFirstNonBlank(2);
             Assert.IsTrue(data.MotionKind.IsLineWise);
             Assert.AreEqual(_buffer.GetLineRange(0, 2).ExtentIncludingLineBreak, data.Span);
             Assert.IsTrue(data.IsForward);
@@ -1316,10 +1316,10 @@ namespace VimCore.UnitTest
 
         [Test]
         [Description("Count of 0 is valid for this motion")]
-        public void LineDownToFirstNonWhiteSpace3()
+        public void LineDownToFirstNonBlank3()
         {
             Create("a", "b", "c", "d");
-            var data = _motionUtil.LineDownToFirstNonWhiteSpace(0);
+            var data = _motionUtil.LineDownToFirstNonBlank(0);
             Assert.IsTrue(data.MotionKind.IsLineWise);
             Assert.AreEqual(_buffer.GetLineRange(0).ExtentIncludingLineBreak, data.Span);
             Assert.IsTrue(data.IsForward);
@@ -1327,41 +1327,41 @@ namespace VimCore.UnitTest
 
         [Test]
         [Description("This is a linewise motion and should return line spans")]
-        public void LineDownToFirstNonWhiteSpace4()
+        public void LineDownToFirstNonBlank4()
         {
             Create("cat", "dog", "bird");
             _textView.MoveCaretTo(1);
-            var data = _motionUtil.LineDownToFirstNonWhiteSpace(1);
+            var data = _motionUtil.LineDownToFirstNonBlank(1);
             var span = _textView.GetLineRange(0, 1).ExtentIncludingLineBreak;
             Assert.AreEqual(span, data.Span);
         }
 
         [Test]
-        public void LineDownToFirstNonWhiteSpace5()
+        public void LineDownToFirstNonBlank5()
         {
             Create("cat", "  dog", "bird");
             _textView.MoveCaretTo(1);
-            var data = _motionUtil.LineDownToFirstNonWhiteSpace(1);
+            var data = _motionUtil.LineDownToFirstNonBlank(1);
             Assert.IsTrue(data.CaretColumn.IsInLastLine);
             Assert.AreEqual(2, data.CaretColumn.AsInLastLine().Item);
         }
 
         [Test]
-        public void LineDownToFirstNonWhiteSpace6()
+        public void LineDownToFirstNonBlank6()
         {
             Create("cat", "  dog and again", "bird");
             _textView.MoveCaretTo(1);
-            var data = _motionUtil.LineDownToFirstNonWhiteSpace(1);
+            var data = _motionUtil.LineDownToFirstNonBlank(1);
             Assert.IsTrue(data.CaretColumn.IsInLastLine);
             Assert.AreEqual(2, data.CaretColumn.AsInLastLine().Item);
         }
 
         [Test]
-        public void LineDownToFirstNonWhiteSpaceg()
+        public void LineDownToFirstNonBlankg()
         {
             Create("cat", "  dog and again", " here bird again");
             _textView.MoveCaretTo(1);
-            var data = _motionUtil.LineDownToFirstNonWhiteSpace(2);
+            var data = _motionUtil.LineDownToFirstNonBlank(2);
             Assert.IsTrue(data.CaretColumn.IsInLastLine);
             Assert.AreEqual(1, data.CaretColumn.AsInLastLine().Item);
         }
@@ -1861,11 +1861,11 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void LineUpToFirstNonWhiteSpace_UseColumnNotPosition()
+        public void LineUpToFirstNonBlank_UseColumnNotPosition()
         {
             Create("the", "  dog", "cat");
             _textView.MoveCaretToLine(2);
-            var data = _motionUtil.LineUpToFirstNonWhiteSpace(1);
+            var data = _motionUtil.LineUpToFirstNonBlank(1);
             Assert.AreEqual(2, data.CaretColumn.AsInLastLine().Item);
             Assert.IsFalse(data.IsForward);
             Assert.AreEqual(_textView.GetLineRange(1, 2).ExtentIncludingLineBreak, data.Span);
