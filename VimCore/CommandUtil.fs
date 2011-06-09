@@ -1873,7 +1873,7 @@ type internal CommandUtil
             // line 
             let line = SnapshotUtil.GetLine x.CurrentSnapshot range.StartLineNumber
             let point = 
-                match TssUtil.TryFindFirstNonWhiteSpaceCharacter line with
+                match SnapshotLineUtil.GetFirstNonBlank line with 
                 | None -> SnapshotLineUtil.GetLastIncludedPoint line |> OptionUtil.getOrDefault line.Start
                 | Some point -> point
             TextViewUtil.MoveCaretToPoint _textView point)
@@ -1890,7 +1890,7 @@ type internal CommandUtil
             // line 
             let line = SnapshotUtil.GetLine x.CurrentSnapshot range.StartLineNumber
             let point = 
-                match TssUtil.TryFindFirstNonWhiteSpaceCharacter line with
+                match SnapshotLineUtil.GetFirstNonBlank line with 
                 | None -> SnapshotLineUtil.GetLastIncludedPoint line |> OptionUtil.getOrDefault line.Start
                 | Some point -> point
             TextViewUtil.MoveCaretToPoint _textView point)

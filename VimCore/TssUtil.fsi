@@ -36,18 +36,6 @@ module TssUtil =
     /// will be returned
     val FindNextWordStart : SnapshotPoint -> int -> WordKind -> SnapshotPoint
 
-    /// Find and return the SnapshotPoint representing the first non-whitespace character on
-    /// the given ITextSnapshotLine
-    val FindFirstNonWhiteSpaceCharacter : ITextSnapshotLine -> SnapshotPoint
-
-    /// Find and return the SnapshotPoint representing the first non-whitespace character on
-    /// the given ITextSnapshotLine.  Returns None if there is no surch characetr
-    val TryFindFirstNonWhiteSpaceCharacter : ITextSnapshotLine -> SnapshotPoint option
-
-    /// Find and return the SnapshotPoint representing the last non-whitespace character on
-    /// the given ITextSnapshotLine
-    val FindLastNonWhiteSpaceCharacter : ITextSnapshotLine -> SnapshotPoint
-
     /// This function is mainly a backing for the "b" command mode command.  It is really
     /// used to find the position of the start of the current or previous word.  Unless we 
     /// are currently at the start of a word, in which case it should go back to the previous
@@ -65,9 +53,6 @@ module TssUtil =
 
     /// Find the point just before next "count" ocurrance of the given "char" on the specified line
     val FindTillPreviousOccurranceOfCharOnLine : SnapshotPoint -> char -> int -> SnapshotPoint option
-
-    /// Find the indent position for the given line.  
-    val FindIndentPosition : ITextSnapshotLine -> tabSize:int -> int
 
     /// Get the reverse character span.  This will search backwards count items until the 
     /// count is satisfied or the begining of the line is reached

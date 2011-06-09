@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
 using Vim;
@@ -194,30 +193,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void FindIndentPosition()
-        {
-            Create("  foo");
-            var line = _snapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual(2, TssUtil.FindIndentPosition(line, 1));
-        }
-
-        [Test]
-        public void FindIndentPosition2()
-        {
-            Create("foo");
-            var line = _snapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual(0, TssUtil.FindIndentPosition(line, 1));
-        }
-
-        [Test]
-        public void FindIndentPosition3()
-        {
-            Create("\tfoo");
-            var line = _snapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual(4, TssUtil.FindIndentPosition(line, 4));
-        }
-
-        [Test]
         public void GetReverseCharacterSpan1()
         {
             Create("foo");
@@ -292,38 +267,6 @@ namespace VimCore.UnitTest
                 Path.Backward);
             Assert.IsTrue(span.IsSome());
             Assert.AreEqual("ba", span.Value.GetText());
-        }
-
-        [Test]
-        public void FindFirstNoneWhiteSpaceCharacter1()
-        {
-            Create("foo");
-            var point = TssUtil.FindFirstNonWhiteSpaceCharacter(_textBuffer.GetLine(0));
-            Assert.AreEqual(_textBuffer.GetLine(0).Start, point);
-        }
-
-        [Test]
-        public void FindFirstNoneWhiteSpaceCharacter2()
-        {
-            Create(" foo");
-            var point = TssUtil.FindFirstNonWhiteSpaceCharacter(_textBuffer.GetLine(0));
-            Assert.AreEqual(_textBuffer.GetLine(0).Start.Add(1), point);
-        }
-
-        [Test]
-        public void FindFirstNoneWhiteSpaceCharacter3()
-        {
-            Create("");
-            var point = TssUtil.FindFirstNonWhiteSpaceCharacter(_textBuffer.GetLine(0));
-            Assert.AreEqual(_textBuffer.GetLine(0).Start, point);
-        }
-
-        [Test]
-        public void FindFirstNoneWhiteSpaceCharacter4()
-        {
-            Create("  bar");
-            var point = TssUtil.FindFirstNonWhiteSpaceCharacter(_textBuffer.GetLine(0));
-            Assert.AreEqual(_textBuffer.GetLine(0).Start.Add(2), point);
         }
 
         [Test]

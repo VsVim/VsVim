@@ -905,7 +905,7 @@ type internal CommandProcessor
     member x.ParseAndRunInput (command : char list) =
 
         let moveToLine line = 
-            let point = TssUtil.FindFirstNonWhiteSpaceCharacter line
+            let point = SnapshotLineUtil.GetFirstNonBlankOrStart line
             _operations.MoveCaretToPointAndEnsureVisible point
 
         if Seq.forall CharUtil.IsDigit command then

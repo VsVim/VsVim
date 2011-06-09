@@ -117,36 +117,12 @@ module TssUtil =
                 inner prevPos (count-1)
         inner point count 
 
-    // TODO: Most uses of this just want to check for spaces and tabs.  Write a new API
-    let FindIndentPosition (line:ITextSnapshotLine) tabSize =
-        SnapshotSpanUtil.GetPoints Path.Forward line.Extent
-        |> Seq.map (fun p -> p.GetChar())
-        |> Seq.takeWhile CharUtil.IsWhiteSpace
-        |> Seq.fold (fun acc c -> acc + (if c = '\t' then tabSize else 1)) 0
-        
     let GetReverseCharacterSpan (point:SnapshotPoint) count =
         let line = point.GetContainingLine()
         let diff = line.Start.Position - count
         if line.Start.Position = point.Position then new SnapshotSpan(point,point)
         elif diff < 0 then new SnapshotSpan(line.Start, point)
         else new SnapshotSpan(point.Subtract(count), point)
-
-    // TODO: Most uses of this just want to check for spaces and tabs.  Write a new API
-    let TryFindFirstNonWhiteSpaceCharacter line =
-        line
-        |> SnapshotLineUtil.GetPoints Path.Forward
-        |> Seq.tryFind (fun p -> not (SnapshotPointUtil.IsWhiteSpace p))
-
-    // TODO: Most uses of this just want to check for spaces and tabs.  Write a new API
-    let FindFirstNonWhiteSpaceCharacter line = 
-        match TryFindFirstNonWhiteSpaceCharacter line with
-        | Some point -> point
-        | None -> line.Start
-
-    let FindLastNonWhiteSpaceCharacter line =
-        line
-        |> SnapshotLineUtil.GetPoints Path.Backward
-        |> SeqUtil.tryFindOrDefault (fun p -> not (CharUtil.IsWhiteSpace (p.GetChar()))) (line.Start)
 
     let CreateTextStructureNavigator wordKind (baseImpl:ITextStructureNavigator) = 
         { new ITextStructureNavigator with 
