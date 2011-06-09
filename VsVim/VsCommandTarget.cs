@@ -10,6 +10,10 @@ using Vim.Extensions;
 
 namespace VsVim
 {
+    /// <summary>
+    /// Container for the 4 common pieces of data which are needed for an OLE
+    /// command.  Makes it easy to pass them around between functions
+    /// </summary>
     internal struct OleCommandData
     {
         readonly internal uint CommandId;
@@ -45,6 +49,10 @@ namespace VsVim
             VariantOut = variantOut;
         }
 
+        /// <summary>
+        /// Create an OleCommandData for typing the given character.  This causes a native resource
+        /// allocation and must be freed at a later time with Release
+        /// </summary>
         public static OleCommandData Allocate(char c)
         {
             var variantIn = Marshal.AllocCoTaskMem(32); // size of(VARIANT), 16 may be enough
@@ -56,6 +64,14 @@ namespace VsVim
                 IntPtr.Zero);
         }
 
+        /// <summary>
+        /// Release the contents of the OleCommandData.  If no allocation was performed then this 
+        /// will be a no-op
+        ///
+        /// Do no call this one OleCommandData instances that you don't own.  Calling this on 
+        /// parameters created by Visual Studio for example could easily lead to memory corruption
+        /// issues
+        /// </summary>
         public static void Release(ref OleCommandData oleCommandData)
         {
             if (oleCommandData.VariantIn != IntPtr.Zero)

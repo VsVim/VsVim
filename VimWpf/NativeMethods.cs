@@ -3,22 +3,37 @@ using System.Runtime.InteropServices;
 
 namespace Vim.UI.Wpf
 {
+    /// <summary>
+    /// Holder for all of the PInvoke and related defines for this DLL
+    /// </summary>
     internal static class NativeMethods
     {
         /// <summary>
         /// Flag for LoadKeyboardLayout which will make the layout the active one for the thread
         /// </summary>
-        public const uint KLF_ACTIVATE = 0x1;
+        internal const uint KLF_ACTIVATE = 0x1;
 
-        public const uint KL_NAMELENGTH = 9;
+        internal const uint KL_NAMELENGTH = 9;
 
-        public const string LayoutEnglish = "00000409";
+        /// <summary>
+        /// Keyboard code for the default English QWERTY layout
+        /// </summary>
+        internal const string LayoutEnglish = "00000409";
 
-        public const string LayoutDvorak = "00010409";
+        /// <summary>
+        /// Keyboard code for the Dvorak layout
+        /// </summary>
+        internal const string LayoutDvorak = "00010409";
 
-        public const string LayoutPortuguese = "00000816";
+        /// <summary>
+        /// Keyboard code for the Portuguese layout
+        /// </summary>
+        internal const string LayoutPortuguese = "00000816";
 
-        public const string LayoutTurkishF = "00001055";
+        /// <summary>
+        /// Keyboard code for the TurkishF layout
+        /// </summary>
+        internal const string LayoutTurkishF = "00001055";
 
         [DllImport("user32.dll")]
         internal static extern int GetCaretBlinkTime();
