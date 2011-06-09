@@ -5,11 +5,13 @@ using Vim;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class SeqUtilTest
+    public sealed class SeqUtilTest
     {
+        /// <summary>
+        /// Ensure the count is not incorrectly cached leaving us with a changing IEnumerable
+        /// </summary>
         [Test]
-        [Description("Make sure we don't wrongly cache the count and have a changing IEnumerable")]
-        public void SkipMax1()
+        public void SkipMax_Count()
         {
             var res = SeqUtil.skipMax(1, "foo");
             Assert.AreEqual(2, res.Count());
@@ -17,9 +19,11 @@ namespace VimCore.UnitTest
             Assert.AreEqual(2, res.Count());
         }
 
+        /// <summary>
+        /// Ensure the count is not incorrectly cached leaving us with a changing IEnumerable
+        /// </summary>
         [Test]
-        [Description("Make sure we don't wrongly cache the count and have a changing IEnumerable")]
-        public void SkipMax2()
+        public void SkipMax_Count2()
         {
             var res = SeqUtil.skipMax(100, "foo");
             Assert.AreEqual(0, res.Count());
@@ -27,9 +31,11 @@ namespace VimCore.UnitTest
             Assert.AreEqual(0, res.Count());
         }
 
+        /// <summary>
+        /// Ensure the count is not incorrectly cached leaving us with a changing IEnumerable
+        /// </summary>
         [Test]
-        [Description("Make sure we don't wrongly cache the count and have a changing IEnumerable")]
-        public void SkipMax3()
+        public void SkipMax_Count3()
         {
             var res = SeqUtil.skipMax(0, "foo");
             Assert.AreEqual(3, res.Count());

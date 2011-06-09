@@ -56,7 +56,7 @@ namespace Vim.UnitTest
             [Import]
             public ITextStructureNavigatorSelectorService TextStructureNavigatorSelectorService;
 
-            [Import] 
+            [Import]
             public ISmartIndentationService SmartIndentationService;
 
             [Import]
@@ -152,12 +152,15 @@ namespace Vim.UnitTest
             return FactoryService.UndoManagerProvider.GetTextBufferUndoManager(textBuffer).TextBufferUndoHistory;
         }
 
+        /// <summary>
+        /// Get or create a content type of the specified name with the specified base content type
+        /// </summary>
         public static IContentType GetOrCreateContentType(string type, string baseType)
         {
             var ct = FactoryService.ContentTypeRegistryService.GetContentType(type);
             if (ct == null)
             {
-                ct = FactoryService.ContentTypeRegistryService.AddContentType(type, new string[] { baseType });
+                ct = FactoryService.ContentTypeRegistryService.AddContentType(type, new[] { baseType });
             }
 
             return ct;
