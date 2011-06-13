@@ -356,11 +356,15 @@ namespace VsVim
                 {
                     if (editCommand.IsUndo)
                     {
+                        // The user hit the undo button.  Don't attempt to map anything here and instead just 
+                        // run a single Vim undo operation
                         _buffer.UndoRedoOperations.Undo(1);
                         return NativeMethods.S_OK;
                     }
                     else if (editCommand.IsRedo)
                     {
+                        // The user hit the redo button.  Don't attempt to map anything here and instead just 
+                        // run a single Vim redo operation
                         _buffer.UndoRedoOperations.Redo(1);
                         return NativeMethods.S_OK;
                     }

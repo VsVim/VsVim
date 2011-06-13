@@ -7,14 +7,19 @@ namespace VsVim
     /// </summary>
     internal enum EditCommandKind
     {
-        Unknown,
-        TypeChar,
-        Return,
-        Cancel,
-        Delete,
-        Backspace,
-        CursorMovement,
+        /// <summary>
+        /// This command represents user input
+        /// </summary>
+        UserInput,
+
+        /// <summary>
+        /// This command represents the user clicking on the undo button
+        /// </summary>
         Undo,
+
+        /// <summary>
+        /// This command represents the user clicking on the redo button
+        /// </summary>
         Redo
     }
 }
