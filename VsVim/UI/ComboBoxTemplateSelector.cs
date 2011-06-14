@@ -3,12 +3,12 @@ using System.Windows.Controls;
 
 namespace VsVim.UI
 {
-    /// <summary>Selects the appropriate expanded/collapsed template when showing a KeyBindingOption.</summary>
-    /// <remarks>
+    /// <summary>
+    /// Selects the appropriate expanded/collapsed template when showing a KeyBindingOption
     /// See http://social.msdn.microsoft.com/Forums/en-US/wpf/thread/cdd666d8-5d3d-4977-96ff-97305eaca644 for how this
     /// is used.
-    /// </remarks>
-    internal class ComboBoxTemplateSelector : DataTemplateSelector
+    /// </summary>
+    internal sealed class ComboBoxTemplateSelector : DataTemplateSelector
     {
         public override DataTemplate SelectTemplate(object item, DependencyObject container)
         {

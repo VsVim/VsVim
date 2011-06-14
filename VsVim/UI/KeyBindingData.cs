@@ -7,12 +7,18 @@ namespace VsVim.UI
 {
     public sealed class KeyBindingData : DependencyObject
     {
-        private KeyBindingHandledByOption _visualStudioOption;
-        private KeyBindingHandledByOption _vsVimOption;
+        private readonly KeyBindingHandledByOption _visualStudioOption;
+        private readonly KeyBindingHandledByOption _vsVimOption;
+        private readonly ObservableCollection<KeyBindingHandledByOption> _handledByOptions = new ObservableCollection<KeyBindingHandledByOption>();
 
         public static readonly DependencyProperty KeyNameProperty = DependencyProperty.Register(
             "KeyName",
             typeof(string),
+            typeof(KeyBindingData));
+
+        public static readonly DependencyProperty SelectedHandledByOptionProperty = DependencyProperty.Register(
+            "SelectedHandledByOption",
+            typeof(KeyBindingHandledByOption),
             typeof(KeyBindingData));
 
         public string KeyName
@@ -24,23 +30,15 @@ namespace VsVim.UI
         public bool HandledByVsVim
         {
             get { return SelectedHandledByOption == _vsVimOption; }
-            set
-            {
-                SelectedHandledByOption = value ? _vsVimOption : _visualStudioOption;
-            }
+            set { SelectedHandledByOption = value ? _vsVimOption : _visualStudioOption; }
         }
 
-        public static readonly DependencyProperty SelectedHandledByOptionProperty = DependencyProperty.Register(
-            "SelectedHandledByOption",
-            typeof(KeyBindingHandledByOption),
-            typeof(KeyBindingData));
         public KeyBindingHandledByOption SelectedHandledByOption
         {
             get { return (KeyBindingHandledByOption)GetValue(SelectedHandledByOptionProperty); }
             set { SetValue(SelectedHandledByOptionProperty, value); }
         }
 
-        private ObservableCollection<KeyBindingHandledByOption> _handledByOptions = new ObservableCollection<KeyBindingHandledByOption>();
         public ObservableCollection<KeyBindingHandledByOption> HandledByOptions
         {
             get { return _handledByOptions; }
@@ -50,6 +48,7 @@ namespace VsVim.UI
 
         public KeyBindingData()
         {
+
         }
 
         public KeyBindingData(IEnumerable<CommandKeyBinding> bindings)

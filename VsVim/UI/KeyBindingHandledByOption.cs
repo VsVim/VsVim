@@ -1,13 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Windows;
 
 namespace VsVim.UI
 {
     public sealed class KeyBindingHandledByOption : DependencyObject
     {
+        /// <summary>
+        /// Name of the component which handles the KeyBinding.  Usually "VsVim" or "Visual Studio"
+        /// </summary>
+        public string HandlerName { get; private set; }
+
+        /// <summary>
+        /// Additional details about the handler.  For Visual Studio this includes the command the 
+        /// KeyBinding is bound to
+        /// </summary>
+        public string HandlerDetails { get; private set; }
+
         /// <summary>
         /// Creates a new KeyBindingHandledByOption.
         /// </summary>
@@ -67,8 +76,5 @@ namespace VsVim.UI
                 HandlerDetails = "Used by " + string.Join(", ", cleanedUpCommands);
             }
         }
-
-        public string HandlerName { get; private set; }
-        public string HandlerDetails { get; private set; }
     }
 }

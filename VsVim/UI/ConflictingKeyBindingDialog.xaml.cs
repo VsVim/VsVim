@@ -1,8 +1,10 @@
-﻿using System.Collections.ObjectModel;
+﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using Microsoft.VisualStudio.PlatformUI;
+using Vim;
 
 namespace VsVim.UI
 {
@@ -13,6 +15,7 @@ namespace VsVim.UI
     {
         private readonly ObservableCollection<KeyBindingData> _keyBindingList = new ObservableCollection<KeyBindingData>();
         private readonly CommandKeyBindingSnapshot _snapshot;
+        private readonly HashSet<KeyBindingData> _advancedSet = new HashSet<KeyBindingData>();
 
         public ConflictingKeyBindingDialog(CommandKeyBindingSnapshot snapshot)
         {
@@ -42,14 +45,27 @@ namespace VsVim.UI
                 var data = new KeyBindingData(handledByVsVim[firstKey].Union(handledByVs[firstKey]));
                 data.HandledByVsVim = handledByVsVim.Contains(firstKey);
                 _keyBindingList.Add(data);
+
+                if (IsAdvanced(firstKey))
+                {
+                    _advancedSet.Add(data);
+                }
             }
         }
 
+        /// <summary>
+        /// Switch all of the bindings to VsVim except for the advanced ones
+        /// </summary>
         private void OnEnableAllVimKeysClick(object sender, RoutedEventArgs e)
         {
-            _keyBindingList.ForEach(x => x.HandledByVsVim = true);
+            _keyBindingList
+                .Where(x => !_advancedSet.Contains(x))
+                .ForEach(x => x.HandledByVsVim = true);
         }
 
+        /// <summary>
+        /// Switch all of the bindings to Visual Studio
+        /// </summary>
         private void OnDisableAllVimKeysClick(object sender, RoutedEventArgs e)
         {
             _keyBindingList.ForEach(x => x.HandledByVsVim = false);
@@ -66,7 +82,32 @@ namespace VsVim.UI
             UpdateKeyBindings();
         }
 
-        void UpdateKeyBindings()
+        /// <summary>
+        /// Is this an advanced key stroke like CTRL+V which we don't want to automatically 
+        /// convert.  
+        /// </summary>
+        private bool IsAdvanced(KeyStroke keyStroke)
+        {
+            // Look for paste
+            if (keyStroke.KeyModifiers == KeyModifiers.Control &&
+                keyStroke.KeyInput.Key == VimKey.LowerV &&
+                keyStroke.KeyInput.KeyModifiers == KeyModifiers.None)
+            {
+                return true;
+            }
+
+            // Look for cut
+            if (keyStroke.KeyModifiers == KeyModifiers.Control &&
+                keyStroke.KeyInput.Key == VimKey.LowerX &&
+                keyStroke.KeyInput.KeyModifiers == KeyModifiers.None)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private void UpdateKeyBindings()
         {
             var keyBindingsByHandled = _keyBindingList.ToLookup(data => data.HandledByVsVim);
 
