@@ -12,6 +12,7 @@ using Microsoft.VisualStudio.Text.Formatting;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
+using Microsoft.VisualStudio.Utilities;
 using Moq;
 using Vim.Extensions;
 
@@ -244,12 +245,14 @@ namespace Vim.UnitTest.Mock
             lines.SetupGet(x => x.FirstVisibleLine).Returns(firstLine.Object);
             lines.SetupGet(x => x.LastVisibleLine).Returns(lastLine.Object);
 
+            var properties = new PropertyCollection();
             var view = factory.Create<ITextView>();
             view.SetupGet(x => x.TextBuffer).Returns(buffer);
             view.SetupGet(x => x.TextViewLines).Returns(lines.Object);
             view.SetupGet(x => x.Caret).Returns(caret.Object);
             view.SetupGet(x => x.InLayout).Returns(false);
             view.SetupGet(x => x.TextSnapshot).Returns(() => buffer.CurrentSnapshot);
+            view.SetupGet(x => x.Properties).Returns(properties);
             return Tuple.Create(view, factory);
         }
 

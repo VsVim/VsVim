@@ -529,36 +529,6 @@ type internal MotionUtil
 
             Seq.unfold getPrevious point
 
-    /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
-    /// in the middle of a word the span of the entire word will be returned
-    ///
-    /// TODO: We need to account for folded regions here in the future
-    member x.GetWords kind path point = 
-
-        let snapshot = SnapshotPointUtil.GetSnapshot point
-        let line = SnapshotPointUtil.GetContainingLine point
-        SnapshotUtil.GetLines snapshot line.LineNumber path
-        |> Seq.map (fun line ->
-            if line.Length = 0 then
-                // Blank lines are words.  The word covers the entire line including the line
-                // break.  This can be verified by 'yw' on a blank line and pasting.  It will
-                // create a new line
-                line.ExtentIncludingLineBreak |> Seq.singleton
-            else 
-                let offset = line.Start.Position
-                line.Extent
-                |> SnapshotSpanUtil.GetText 
-                |> TextUtil.GetWordSpans kind path 
-                |> Seq.map (fun span -> SnapshotSpan(snapshot, span.Start + offset, span.Length)))
-        |> Seq.concat
-        |> Seq.filter (fun span -> 
-            // Need to filter off items from the first line.  The point can and will often be
-            // in the middle of a line and we can't return any spans which are past / before 
-            // the point depending on the direction
-            match path with
-            | Path.Forward -> span.End.Position > point.Position
-            | Path.Backward -> span.Start.Position < point.Position)
-
     /// Is this line a blank line with no blank lines above it 
     member x.IsBlankLineWithNoBlankAbove line = 
         if 0 = SnapshotLineUtil.GetLength line then
@@ -1175,7 +1145,7 @@ type internal MotionUtil
 
         // Get all of the words on this line going forward
         let all = 
-            x.GetWords kind Path.Forward x.CaretPoint
+            _wordUtil.GetWords kind Path.Forward x.CaretPoint
             |> Seq.takeWhile isOnSameLine
             |> Seq.truncate count
             |> List.ofSeq
@@ -1230,7 +1200,7 @@ type internal MotionUtil
                     // though they are not called out in the documentation.  We should only include
                     // white space here if there is a word on the same line before this one.  
                     let startPoint = 
-                        x.GetWords kind Path.Backward span.Start
+                        _wordUtil.GetWords kind Path.Backward span.Start
                         |> Seq.filter isOnSameLine
                         |> Seq.map SnapshotSpanUtil.GetEndPoint
                         |> SeqUtil.headOrDefault span.Start
@@ -1339,7 +1309,7 @@ type internal MotionUtil
                 count
 
         let endPoint = 
-            x.GetWords kind Path.Forward x.CaretPoint
+            _wordUtil.GetWords kind Path.Forward x.CaretPoint
             |> SeqUtil.skipMax count
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
@@ -1353,7 +1323,7 @@ type internal MotionUtil
     member x.WordBackward kind count =
 
         let startPoint = 
-            x.GetWords kind Path.Backward x.CaretPoint
+            _wordUtil.GetWords kind Path.Backward x.CaretPoint
             |> SeqUtil.skipMax (count - 1)
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
@@ -1371,7 +1341,7 @@ type internal MotionUtil
         // on the last point inside a word then we calculate the next word starting at
         // the end of the first word.
         let searchPoint = 
-            match x.GetWords kind Path.Forward x.CaretPoint |> SeqUtil.tryHeadOnly with
+            match _wordUtil.GetWords kind Path.Forward x.CaretPoint |> SeqUtil.tryHeadOnly with
             | None -> 
                 x.CaretPoint
             | Some span -> 
@@ -1382,7 +1352,7 @@ type internal MotionUtil
 
         let endPoint = 
             searchPoint
-            |> x.GetWords kind Path.Forward
+            |> _wordUtil.GetWords kind Path.Forward
             |> Seq.filter (fun span ->
                 // The typical word motion includes blank lines as part of the word. The one 
                 // exception is end of word which doesn't count blank lines as words.  Filter
@@ -1519,7 +1489,7 @@ type internal MotionUtil
             // number of words at 'count'.  Since the 'count' includes the white space between
             // the words 'count' is a definite max on the number of words we need to consider
             let words = 
-                x.GetWords wordKind Path.Forward point
+                _wordUtil.GetWords wordKind Path.Forward point
                 |> Seq.truncate count
                 |> List.ofSeq
 

@@ -13,21 +13,49 @@ type internal WordUtil
         _textStructureNavigator : ITextStructureNavigator
     ) = 
 
+    /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
+    /// in the middle of a word the span of the entire word will be returned
+    ///
+    /// TODO: Need to consider folded regions
+    member x.GetWords kind path point = 
+
+        let snapshot = SnapshotPointUtil.GetSnapshot point
+        let line = SnapshotPointUtil.GetContainingLine point
+        SnapshotUtil.GetLines snapshot line.LineNumber path
+        |> Seq.map (fun line ->
+            if line.Length = 0 then
+                // Blank lines are words.  The word covers the entire line including the line
+                // break.  This can be verified by 'yw' on a blank line and pasting.  It will
+                // create a new line
+                line.ExtentIncludingLineBreak |> Seq.singleton
+            else 
+                let offset = line.Start.Position
+                line.Extent
+                |> SnapshotSpanUtil.GetText 
+                |> TextUtil.GetWordSpans kind path 
+                |> Seq.map (fun span -> SnapshotSpan(snapshot, span.Start + offset, span.Length)))
+        |> Seq.concat
+        |> Seq.filter (fun span -> 
+            // Need to filter off items from the first line.  The point can and will often be
+            // in the middle of a line and we can't return any spans which are past / before 
+            // the point depending on the direction
+            match path with
+            | Path.Forward -> span.End.Position > point.Position
+            | Path.Backward -> span.Start.Position < point.Position)
+
     /// Get the SnapshotSpan for the full word span which crosses the given SanpshotPoint
     member x.GetFullWordSpan wordKind point = 
-        let line = SnapshotPointUtil.GetContainingLine point
-        let text = line.GetText()
-        let pos = point.Position - line.Start.Position
-        match pos >= text.Length with
-        | true -> 
-            // It's in the line break.  There is no word in the line break
+        let word = x.GetWords wordKind Path.Forward point |> SeqUtil.tryHeadOnly
+        match word with 
+        | None -> 
+            // No more words forward then no word at the given SnapshotPoint
             None
-        | false ->
-            match TextUtil.FindFullWordSpan wordKind text pos with
-            | Some s ->
-                let adjusted = new Span(line.Start.Position+s.Start, s.Length)
-                Some (new SnapshotSpan(point.Snapshot, adjusted))
-            | None -> 
+        | Some span ->
+            // Need to account for the first word not being on the given point.  Blanks 
+            // for instance
+            if span.Contains(point) then
+                Some span
+            else 
                 None
 
     /// Create an ITextStructure navigator for the ITextBuffer where the GetWordExtent function 
@@ -49,12 +77,13 @@ type internal WordUtil
     interface IWordUtil with 
         member x.TextBuffer = _textBuffer
         member x.GetFullWordSpan wordKind point = x.GetFullWordSpan wordKind point
+        member x.GetWords wordKind path point = x.GetWords wordKind path point
         member x.CreateTextStructureNavigator wordKind = x.CreateTextStructureNavigator wordKind 
 
 // TODO: Need to think through how we handled folded regions here.  Should we be looking an the ITextView
 // snapshot or instead looking at the normal snapshot and the fold manager explicitly.  How this is done
 // will have a big impact on the structure of this API
-[<Export(typeof<IWordUtil>)>]
+[<Export(typeof<IWordUtilFactory>)>]
 type internal WordUtilFactory
     [<ImportingConstructor>]
     (

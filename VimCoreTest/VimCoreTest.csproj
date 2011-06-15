@@ -215,6 +215,7 @@
     <Compile Include="VimIntegrationTests.cs" />
     <Compile Include="VimTest.cs" />
     <Compile Include="VisualModeTest.cs" />
+    <Compile Include="WordUtilTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Todo.txt" />

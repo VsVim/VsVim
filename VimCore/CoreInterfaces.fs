@@ -84,6 +84,10 @@ type IWordUtil =
     /// Get the full word span for the word value which crosses the given SnapshotPoint
     abstract GetFullWordSpan : WordKind -> SnapshotPoint -> SnapshotSpan option
 
+    /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
+    /// in the middle of a word the span of the entire word will be returned
+    abstract GetWords : WordKind -> Path -> SnapshotPoint -> SnapshotSpan seq
+
     /// Create an ITextStructureNavigator where the extent of words is calculated for
     /// the specified WordKind value
     abstract CreateTextStructureNavigator : WordKind -> ITextStructureNavigator
