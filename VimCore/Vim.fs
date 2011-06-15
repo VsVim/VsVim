@@ -82,9 +82,9 @@ type internal VimBufferFactory
         _outliningManagerService : IOutliningManagerService,
         _completionWindowBrokerFactoryService : IDisplayWindowBrokerFactoryService,
         _commonOperationsFactory : ICommonOperationsFactory,
+        _wordUtilFactory : IWordUtilFactory,
         _textChangeTrackerFactory : ITextChangeTrackerFactory,
         _textSearchService : ITextSearchService,
-        _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService,
         _smartIndentationService : ISmartIndentationService,
         _tlcService : ITrackingLineColumnService,
         _undoManagerProvider : ITextBufferUndoManagerProvider,
@@ -110,8 +110,9 @@ type internal VimBufferFactory
             UndoRedoOperations = undoRedoOperations
             Vim = vim }
         let commonOperations = _commonOperationsFactory.GetCommonOperations bufferData
+        let wordUtil = _wordUtilFactory.GetWordUtil view
 
-        let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
+        let wordNav = wordUtil.CreateTextStructureNavigator WordKind.NormalWord
         let incrementalSearch = 
             IncrementalSearch(
                 commonOperations,
@@ -121,7 +122,7 @@ type internal VimBufferFactory
                 vim.VimData) :> IIncrementalSearch
         let capture = MotionCapture(vim.VimHost, view, incrementalSearch, localSettings) :> IMotionCapture
 
-        let motionUtil = MotionUtil(view, vim.MarkMap, localSettings, vim.SearchService, wordNav, jumpList, statusUtil, vim.VimData) :> IMotionUtil
+        let motionUtil = MotionUtil(view, vim.MarkMap, localSettings, vim.SearchService, wordNav, jumpList, statusUtil, wordUtil, vim.VimData) :> IMotionUtil
         let bufferRaw = VimBuffer(bufferData, incrementalSearch, motionUtil, wordNav)
         let buffer = bufferRaw :> IVimBuffer
 
@@ -172,10 +173,6 @@ type internal VimBufferFactory
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
         buffer.SwitchMode ModeKind.Normal ModeArgument.None |> ignore
         bufferRaw
-
-    member private x.CreateTextStructureNavigator textBuffer wordKind =
-        let baseImpl = _textStructureNavigatorSelectorService.GetTextStructureNavigator(textBuffer)
-        TssUtil.CreateTextStructureNavigator wordKind baseImpl
 
     interface IVimBufferFactory with
         member x.CreateBuffer vim view = x.CreateBuffer vim view :> IVimBuffer

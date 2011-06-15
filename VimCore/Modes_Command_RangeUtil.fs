@@ -98,7 +98,7 @@ module internal RangeUtil =
         let opt,remaining = ParseNumber input
         match opt with 
         | Some number ->
-            let number = TssUtil.VimLineToTssLine number
+            let number = Util.VimLineToTssLine number
             if number < tss.LineCount then 
                 let range = tss.GetLineFromLineNumber(number) |> SnapshotLineRangeUtil.CreateForLine
                 ValidRange(range, LineNumber, remaining)

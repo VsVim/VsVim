@@ -262,6 +262,7 @@ type internal MotionUtil
         _navigator : ITextStructureNavigator,
         _jumpList : IJumpList, 
         _statusUtil : IStatusUtil,
+        _wordUtil : IWordUtil,
         _vimData : IVimData
     ) = 
 
@@ -1682,7 +1683,7 @@ type internal MotionUtil
         let tss= originLine.Snapshot
         let endLine = 
             match numberOpt with
-            | Some(number) ->  SnapshotUtil.GetLineOrFirst tss (TssUtil.VimLineToTssLine number)
+            | Some(number) ->  SnapshotUtil.GetLineOrFirst tss (Util.VimLineToTssLine number)
             | None -> SnapshotUtil.GetFirstLine tss 
         x.LineToLineFirstNonBlankMotion originLine endLine
 
@@ -1695,7 +1696,7 @@ type internal MotionUtil
         let tss= originLine.Snapshot
         let endLine = 
             match numberOpt with
-            | Some number ->  SnapshotUtil.GetLineOrLast tss (TssUtil.VimLineToTssLine number)
+            | Some number ->  SnapshotUtil.GetLineOrLast tss (Util.VimLineToTssLine number)
             | None -> SnapshotUtil.GetLastLine tss 
         x.LineToLineFirstNonBlankMotion originLine endLine
 
@@ -2039,7 +2040,7 @@ type internal MotionUtil
             |> SeqUtil.tryHeadOnly
             |> OptionUtil.getOrDefault x.CaretPoint
 
-        match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
+        match _wordUtil.GetFullWordSpan WordKind.NormalWord point with
         | None -> 
             // Nothing to do if no word under the cursor
             _statusUtil.OnError Resources.NormalMode_NoWordUnderCursor

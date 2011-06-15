@@ -62,7 +62,7 @@ namespace VimCore.UnitTest
             _search = VimUtil.CreateSearchService(_globalSettings);
             _jumpList = VimUtil.CreateJumpList();
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
-            _navigator = VimUtil.CreateTextStructureNavigator(_textView.TextBuffer);
+            _navigator = VimUtil.CreateTextStructureNavigator(_textView, WordKind.NormalWord);
             _motionUtil = new MotionUtil(
                 _textView,
                 _markMap,
@@ -71,6 +71,7 @@ namespace VimCore.UnitTest
                 _navigator,
                 _jumpList,
                 _statusUtil.Object,
+                VimUtil.GetWordUtil(textView),
                 _vimData);
         }
 

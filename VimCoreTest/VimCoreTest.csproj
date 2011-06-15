@@ -207,7 +207,6 @@
     <Compile Include="TextUtilTest2.cs" />
     <Compile Include="TextViewUtilTest.cs" />
     <Compile Include="TrackingLineColumnTest.cs" />
-    <Compile Include="TssUtilTest.cs" />
     <Compile Include="UndoRedoOperationsTest.cs" />
     <Compile Include="UndoTransactionTest.cs" />
     <Compile Include="ViewUtilTest.cs" />

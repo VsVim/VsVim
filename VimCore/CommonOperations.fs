@@ -48,6 +48,7 @@ type OperationsData = {
     UndoRedoOperations : IUndoRedoOperations
     VimData : IVimData
     VimHost : IVimHost
+    WordUtil : IWordUtil
 }
 
 type internal CommonOperations ( _data : OperationsData ) =
@@ -66,6 +67,7 @@ type internal CommonOperations ( _data : OperationsData ) =
     let _search = _data.SearchService
     let _regexFactory = VimRegexFactory(_data.LocalSettings.GlobalSettings)
     let _globalSettings = _settings.GlobalSettings
+    let _wordUtil = _data.WordUtil
 
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
@@ -222,7 +224,7 @@ type internal CommonOperations ( _data : OperationsData ) =
     /// Return the full word under the cursor or an empty string
     member x.WordUnderCursorOrEmpty =
         let point =  TextViewUtil.GetCaretPoint _textView
-        TssUtil.FindCurrentFullWordSpan point WordKind.BigWord
+        _wordUtil.GetFullWordSpan WordKind.BigWord point 
         |> OptionUtil.getOrDefault (SnapshotSpanUtil.CreateEmpty point)
         |> SnapshotSpanUtil.GetText
 
@@ -579,7 +581,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                 _jumpList.Add before |> ignore
                 Result.Succeeded
             else
-                match TssUtil.FindCurrentFullWordSpan _textView.Caret.Position.BufferPosition Vim.WordKind.BigWord with
+                match _wordUtil.GetFullWordSpan WordKind.BigWord _textView.Caret.Position.BufferPosition with
                 | Some(span) -> 
                     let msg = Resources.Common_GotoDefFailed (span.GetText())
                     Result.Failed(msg)
@@ -832,7 +834,9 @@ type CommonOperationsFactory
         _editorOptionsFactoryService : IEditorOptionsFactoryService,
         _outliningManagerService : IOutliningManagerService,
         _undoManagerProvider : ITextBufferUndoManagerProvider,
-        _foldManagerFactory : IFoldManagerFactory ) = 
+        _foldManagerFactory : IFoldManagerFactory,
+        _wordUtilFactory : IWordUtilFactory
+    ) = 
 
     /// Use an object instance as a key.  Makes it harder for components to ignore this
     /// service and instead manually query by a predefined key
@@ -866,19 +870,14 @@ type CommonOperationsFactory
             TextView = textView
             UndoRedoOperations = bufferData.UndoRedoOperations
             VimData = vim.VimData
-            VimHost = vim.VimHost }
+            VimHost = vim.VimHost
+            WordUtil = _wordUtilFactory.GetWordUtil textView }
         CommonOperations(operationsData) :> ICommonOperations
 
     /// Get or create the ICommonOperations for the given buffer
     member x.GetCommonOperations (bufferData : VimBufferData) = 
         let properties = bufferData.TextView.Properties
-        let found, value = properties.TryGetProperty<ICommonOperations>(_key)
-        if found then 
-            value
-        else
-            let value = x.CreateCommonOperations bufferData
-            properties.AddProperty(_key, value)
-            value
+        properties.GetOrCreateSingletonProperty(_key, (fun () -> x.CreateCommonOperations bufferData))
 
     interface ICommonOperationsFactory with
         member x.GetCommonOperations bufferData = x.GetCommonOperations bufferData

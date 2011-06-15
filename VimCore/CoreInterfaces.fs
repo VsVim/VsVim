@@ -75,6 +75,25 @@ type IFileSystem =
     /// Attempt to read all of the lines from the given file 
     abstract ReadAllLines : path:string -> string[] option
 
+/// Utility functions relating to Word values in an ITextBuffer
+type IWordUtil = 
+
+    /// The ITextBuffer associated with this word utility
+    abstract TextBuffer : ITextBuffer
+
+    /// Get the full word span for the word value which crosses the given SnapshotPoint
+    abstract GetFullWordSpan : WordKind -> SnapshotPoint -> SnapshotSpan option
+
+    /// Create an ITextStructureNavigator where the extent of words is calculated for
+    /// the specified WordKind value
+    abstract CreateTextStructureNavigator : WordKind -> ITextStructureNavigator
+
+/// Factory for getting IWordUtil instances.  This is an importable MEF component
+type IWordUtilFactory = 
+
+    /// Get the IWordUtil instance for the given ITextView
+    abstract GetWordUtil : ITextView -> IWordUtil
+
 /// Wraps an ITextUndoTransaction so we can avoid all of the null checks
 type IUndoTransaction =
 

@@ -70,7 +70,8 @@ namespace VimCore.UnitTest
                 editorOptions: null,
                 foldManager: null,
                 registerMap: _registerMap.Object,
-                searchService: _searchService);
+                searchService: _searchService,
+                wordUtil: VimUtil.GetWordUtil(_textView));
             _operationsRaw = new DefaultOperations(
                 new CommonOperations(data),
                 _textView,
