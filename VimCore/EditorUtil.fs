@@ -499,11 +499,11 @@ module SnapshotLineUtil =
         snapshot.LineCount - 1 = line.LineNumber
 
     /// Does the line consist of only whitespace
-    let IsWhiteSpace line = 
+    let IsBlank line = 
         line
         |> GetExtent
         |> SnapshotSpanUtil.GetPoints Path.Forward
-        |> Seq.forall (fun point -> CharUtil.IsWhiteSpace (point.GetChar()))
+        |> Seq.forall (fun point -> CharUtil.IsBlank (point.GetChar()))
 
     /// Get the first non-blank character on the line
     let GetFirstNonBlank line = 

@@ -67,7 +67,7 @@ type internal CommandUtil
             x.CaretLine.GetText()
             |> Seq.takeWhile CharUtil.IsBlank
             |> StringUtil.ofCharSeq
-            |> _operations.NormalizeSpacesAndTabs
+            |> _operations.NormalizeBlanks
 
         // Adjust the indentation on a given line of text to have the indentation
         // previously calculated

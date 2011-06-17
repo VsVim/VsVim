@@ -237,17 +237,17 @@ type internal CommonOperations ( _data : OperationsData ) =
 
     /// Convert the provided whitespace into spaces.  The conversion of tabs into spaces will be 
     /// done based on the TabSize setting
-    member x.GetAndNormalizeLeadingWhiteSpaceToSpaces span = 
+    member x.GetAndNormalizeLeadingBlanksToSpaces span = 
         let text = 
             span
             |> SnapshotSpanUtil.GetText
             |> Seq.takeWhile CharUtil.IsBlank
             |> StringUtil.ofCharSeq
-        x.NormalizeWhiteSpaceToSpaces text, text.Length
+        x.NormalizeBlanksToSpaces text, text.Length
 
-    /// Normalize any white space to the appropriate number of space characters based on the 
+    /// Normalize any blanks to the appropriate number of space characters based on the 
     /// Vim settings
-    member x.NormalizeWhiteSpaceToSpaces (text : string) =
+    member x.NormalizeBlanksToSpaces (text : string) =
         Contract.Assert(StringUtil.isBlanks text)
         let builder = System.Text.StringBuilder()
         let tabSize = _settings.TabStop
@@ -281,10 +281,10 @@ type internal CommonOperations ( _data : OperationsData ) =
 
     /// Fully normalize white space into tabs / spaces based on the ExpandTab, TabSize 
     /// settings
-    member x.NormalizeSpacesAndTabs text = 
+    member x.NormalizeBlanks text = 
         Contract.Assert(StringUtil.isBlanks text)
         text
-        |> x.NormalizeWhiteSpaceToSpaces
+        |> x.NormalizeBlanksToSpaces
         |> x.NormalizeSpaces
 
     /// Shifts a block of lines to the left
@@ -301,7 +301,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                 let line = SnapshotPointUtil.GetContainingLine span.Start
                 SnapshotSpan(span.Start, line.End)
 
-            let ws, originalLength = x.GetAndNormalizeLeadingWhiteSpaceToSpaces span
+            let ws, originalLength = x.GetAndNormalizeLeadingBlanksToSpaces span
             let ws = 
                 let length = max (ws.Length - count) 0
                 StringUtil.repeatChar length ' ' |> x.NormalizeSpaces
@@ -319,7 +319,7 @@ type internal CommonOperations ( _data : OperationsData ) =
 
         col |> Seq.iter (fun span ->
             // Get the span we are formatting within the line
-            let ws, originalLength = x.GetAndNormalizeLeadingWhiteSpaceToSpaces span
+            let ws, originalLength = x.GetAndNormalizeLeadingBlanksToSpaces span
             let ws = x.NormalizeSpaces (ws + shiftText)
             edit.Replace(span.Start.Position, originalLength, ws) |> ignore)
 
@@ -336,7 +336,7 @@ type internal CommonOperations ( _data : OperationsData ) =
 
             // Get the span we are formatting within the line
             let span = line.Extent
-            let ws, originalLength = x.GetAndNormalizeLeadingWhiteSpaceToSpaces span
+            let ws, originalLength = x.GetAndNormalizeLeadingBlanksToSpaces span
             let ws = 
                 let length = max (ws.Length - count) 0
                 StringUtil.repeatChar length ' ' |> x.NormalizeSpaces
@@ -356,14 +356,14 @@ type internal CommonOperations ( _data : OperationsData ) =
 
             // Get the span we are formatting within the line
             let span = line.Extent
-            let ws, originalLength = x.GetAndNormalizeLeadingWhiteSpaceToSpaces span
+            let ws, originalLength = x.GetAndNormalizeLeadingBlanksToSpaces span
             let ws = x.NormalizeSpaces (ws + shiftText)
             edit.Replace(line.Start.Position, originalLength, ws) |> ignore)
         edit.Apply() |> ignore
 
     /// Convert the provided whitespace into spaces.  The conversion of 
     /// tabs into spaces will be done based on the TabSize setting
-    member x.GetAndNormalizeLeadingWhitespaceToSpaces line = 
+    member x.GetAndNormalizeLeadingBlanksToSpaces line = 
         let text = 
             line
             |> SnapshotLineUtil.GetText
@@ -641,7 +641,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.MoveCaretToPoint point =  TextViewUtil.MoveCaretToPoint _textView point 
         member x.MoveCaretToPointAndEnsureVisible point = x.MoveCaretToPointAndEnsureVisible point
         member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
-        member x.NormalizeSpacesAndTabs text = x.NormalizeSpacesAndTabs text
+        member x.NormalizeBlanks text = x.NormalizeBlanks text
 
         member x.OpenFold span count = 
             x.DoWithOutlining (fun outlining ->

@@ -92,8 +92,8 @@ type internal TextChangeTracker
         // and replaced with tabs.  The result of the edit though should be recorded as simply 
         // tabs
         if change.OldText.Length > 0 && StringUtil.isBlanks change.NewText && StringUtil.isBlanks change.OldText then
-            let oldText = _operations.NormalizeSpacesAndTabs change.OldText
-            let newText = _operations.NormalizeSpacesAndTabs change.NewText
+            let oldText = _operations.NormalizeBlanks change.OldText
+            let newText = _operations.NormalizeBlanks change.NewText
             if newText.StartsWith oldText then
                 let diffText = newText.Substring(oldText.Length)
                 TextChange.Insert diffText |> Some

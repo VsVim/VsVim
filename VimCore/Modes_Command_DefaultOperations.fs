@@ -87,7 +87,7 @@ type internal DefaultOperations
         use edit = _textBuffer.CreateEdit()
         for span in spans do
             let oldText = span.GetText()
-            let newText = _operations.NormalizeSpacesAndTabs oldText
+            let newText = _operations.NormalizeBlanks oldText
             edit.Replace(span.Span, newText) |> ignore
 
         edit.Apply() |> ignore
