@@ -29,7 +29,7 @@ namespace VimCore.UnitTest
         [Test]
         public void RemoveBuffer2()
         {
-            var view = EditorUtil.CreateView("foo bar");
+            var view = EditorUtil.CreateTextView("foo bar");
             var vimBuffer = _vim.CreateBuffer(view);
             Assert.IsTrue(_vim.RemoveBuffer(view));
             Assert.IsTrue(_vim.GetBuffer(view).IsNone());
@@ -38,7 +38,7 @@ namespace VimCore.UnitTest
         [Test]
         public void CreateBuffer1()
         {
-            var view = EditorUtil.CreateView("foo bar");
+            var view = EditorUtil.CreateTextView("foo bar");
             var vimBuffer = _vim.CreateBuffer(view);
             Assert.IsTrue(_vim.GetBuffer(view).IsSome());
             Assert.AreSame(view, _vim.GetBuffer(view).Value.TextView);
@@ -47,7 +47,7 @@ namespace VimCore.UnitTest
         [Test,ExpectedException(typeof(ArgumentException))]
         public void CreateBuffer2()
         {
-            var view = EditorUtil.CreateView("foo bar");
+            var view = EditorUtil.CreateTextView("foo bar");
             var vimBuffer = _vim.CreateBuffer(view);
             var vimBuffer2 = _vim.CreateBuffer(view);
         }

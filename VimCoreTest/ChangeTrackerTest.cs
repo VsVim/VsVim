@@ -25,7 +25,7 @@ namespace VimCore.UnitTest
 
         private void CreateForText(params string[] lines)
         {
-            _textBuffer = EditorUtil.CreateBuffer(lines);
+            _textBuffer = EditorUtil.CreateTextBuffer(lines);
             _textView = MockObjectFactory.CreateTextView(_textBuffer);
             _textView.SetupGet(x => x.HasAggregateFocus).Returns(true);
 

@@ -30,7 +30,7 @@ namespace VimCore.UnitTest
 
         public void Create(params string[] lines)
         {
-            var tuple = EditorUtil.CreateViewAndOperations(lines);
+            var tuple = EditorUtil.CreateTextViewAndEditorOperations(lines);
             _textView = tuple.Item1;
             _textBuffer = _textView.TextBuffer;
             var service = EditorUtil.FactoryService;

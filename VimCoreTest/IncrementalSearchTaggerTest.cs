@@ -21,7 +21,7 @@ namespace VimCore.UnitTest
 
         public void Create(params string[] lines)
         {
-            _textView = EditorUtil.CreateView(lines);
+            _textView = EditorUtil.CreateTextView(lines);
             _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
             _globalSettings = _buffer.LocalSettings.GlobalSettings;
             _globalSettings.IncrementalSearch = true;

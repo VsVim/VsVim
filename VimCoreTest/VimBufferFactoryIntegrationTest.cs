@@ -26,7 +26,7 @@ namespace VimCore.UnitTest
         [Test]
         public void CreateBuffer1()
         {
-            var view = EditorUtil.CreateView("foo bar");
+            var view = EditorUtil.CreateTextView("foo bar");
             var buffer = _factory.CreateBuffer(_vim, view);
             Assert.IsNotNull(buffer);
             Assert.AreEqual(ModeKind.Normal, buffer.ModeKind);
@@ -35,8 +35,8 @@ namespace VimCore.UnitTest
         [Test,Description("Factory has no state and should be able to create multiple IVimBuffer for the same IWpfTextView")]
         public void CreateBuffer2()
         {
-            var view1 = EditorUtil.CreateView("foo bar");
-            var view2 = EditorUtil.CreateView("foo bar");
+            var view1 = EditorUtil.CreateTextView("foo bar");
+            var view2 = EditorUtil.CreateTextView("foo bar");
             var buffer1 = _factory.CreateBuffer(_vim, view1);
             Assert.IsNotNull(buffer1);
             var buffer2 = _factory.CreateBuffer(_vim, view2);

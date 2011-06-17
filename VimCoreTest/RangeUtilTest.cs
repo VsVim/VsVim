@@ -27,7 +27,7 @@ namespace VimCore.UnitTest
 
         private void Create(params string[] lines)
         {
-            _textBuffer = EditorUtil.CreateBuffer(lines);
+            _textBuffer = EditorUtil.CreateTextBuffer(lines);
         }
 
         private ParseRangeResult Parse(string input, IMarkMap map = null, int contextLine = 0)
@@ -182,7 +182,7 @@ namespace VimCore.UnitTest
         [Test]
         public void RangeOrCurrentLine1()
         {
-            var view = EditorUtil.CreateView("foo");
+            var view = EditorUtil.CreateTextView("foo");
             var res = RangeUtil.RangeOrCurrentLine(view, FSharpOption<SnapshotLineRange>.None);
             Assert.AreEqual(view.GetLineRange(0), res);
         }

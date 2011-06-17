@@ -42,7 +42,7 @@ namespace VimCore.UnitTest
         {
             _factory = new MockRepository(MockBehavior.Strict);
             _factory.DefaultValue = DefaultValue.Mock;
-            _textView = EditorUtil.CreateView();
+            _textView = EditorUtil.CreateTextView();
             _vim = _factory.Create<IVim>(MockBehavior.Loose);
             _editorOptions = _factory.Create<IEditorOptions>(MockBehavior.Loose);
             _globalSettings = _factory.Create<IVimGlobalSettings>();

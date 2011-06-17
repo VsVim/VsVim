@@ -14,7 +14,7 @@ namespace VimCore.UnitTest
         protected override IVimSettings Create()
         {
             var global = new Vim.GlobalSettings();
-            var view = EditorUtil.CreateView("foo");
+            var view = EditorUtil.CreateTextView("foo");
             var editorOptions = EditorUtil.FactoryService.EditorOptionsFactory.GetOptions(view);
             return new LocalSettings(global, editorOptions, view);
         }
@@ -28,8 +28,8 @@ namespace VimCore.UnitTest
         [SetUp]
         public void SetUp()
         {
-            _textView = EditorUtil.CreateView("");
-            _editorOptions = EditorUtil.GetOptions(_textView);
+            _textView = EditorUtil.CreateTextView("");
+            _editorOptions = EditorUtil.GetEditorOptions(_textView);
             _global = new GlobalSettings();
             _localRaw = new LocalSettings(_global, _editorOptions, _textView);
             _local = _localRaw;

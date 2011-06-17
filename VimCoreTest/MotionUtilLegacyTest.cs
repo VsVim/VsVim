@@ -14,7 +14,7 @@ namespace VimCore.UnitTest
 
         private void Create(params string[] lines)
         {
-            _textBuffer = EditorUtil.CreateBuffer(lines);
+            _textBuffer = EditorUtil.CreateTextBuffer(lines);
             _snapshot = _textBuffer.CurrentSnapshot;
         }
 

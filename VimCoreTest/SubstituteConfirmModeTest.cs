@@ -29,7 +29,7 @@ namespace VimCore.UnitTest
 
         public void Create(params string[] lines)
         {
-            _textBuffer = EditorUtil.CreateBuffer(lines);
+            _textBuffer = EditorUtil.CreateTextBuffer(lines);
             _factory = new MockRepository(MockBehavior.Strict);
             _textCaret = _factory.Create<ITextCaret>();
             _textView = MockObjectFactory.CreateTextView(textBuffer: _textBuffer, caret: _textCaret.Object, factory: _factory);

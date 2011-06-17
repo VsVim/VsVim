@@ -19,7 +19,7 @@ namespace VimCore.UnitTest
 
         public void Create(params string[] lines)
         {
-            _textBuffer = EditorUtil.CreateBuffer(lines);
+            _textBuffer = EditorUtil.CreateTextBuffer(lines);
             _navigator = VimUtil.CreateTextStructureNavigator(_textBuffer, WordKind.NormalWord);
             _globalSettings = new Vim.GlobalSettings();
             _globalSettings.Magic = true;

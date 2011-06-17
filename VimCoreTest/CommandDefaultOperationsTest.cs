@@ -36,7 +36,7 @@ namespace VimCore.UnitTest
 
         private void Create(params string[] lines)
         {
-            _textView = EditorUtil.CreateView(lines);
+            _textView = EditorUtil.CreateTextView(lines);
             _factory = new MockRepository(MockBehavior.Strict);
             _editOpts = _factory.Create<IEditorOperations>();
             _editOpts.Setup(x => x.AddAfterTextBufferChangePrimitive());

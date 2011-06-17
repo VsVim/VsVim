@@ -36,7 +36,7 @@ namespace VimCore.UnitTest
 
         public void Create(params string[] lines)
         {
-            _textView = EditorUtil.CreateView(lines);
+            _textView = EditorUtil.CreateTextView(lines);
             _vimData = new VimData();
             _editorOptions = EditorUtil.FactoryService.EditorOptionsFactory.GetOptions(_textView);
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
@@ -257,7 +257,7 @@ namespace VimCore.UnitTest
         public void JumpToMark4()
         {
             Create();
-            var view = EditorUtil.CreateView("foo", "bar");
+            var view = EditorUtil.CreateTextView("foo", "bar");
             var map = new MarkMap(new TrackingLineColumnService());
             map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'A');
             _host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(view.TextSnapshot, 0))).Returns(false);

@@ -27,7 +27,7 @@ namespace VsVim.UnitTest
         [SetUp]
         public void SetUp()
         {
-            var textView = EditorUtil.CreateView("");
+            var textView = EditorUtil.CreateTextView("");
             _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(textView);
             _factory = new MockRepository(MockBehavior.Strict);
 

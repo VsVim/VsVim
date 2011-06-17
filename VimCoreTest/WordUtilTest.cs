@@ -29,7 +29,7 @@ namespace VimCore.UnitTest
 
         private void Create(int caretPosition, params string[] lines)
         {
-            _textView = EditorUtil.CreateView(lines);
+            _textView = EditorUtil.CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
             _wordUtilRaw = new WordUtil(_textBuffer, EditorUtil.FactoryService.TextStructureNavigatorSelectorService.GetTextStructureNavigator(_textBuffer));
             _wordUtil = _wordUtilRaw;

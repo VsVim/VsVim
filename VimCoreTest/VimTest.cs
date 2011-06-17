@@ -53,7 +53,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Create_SimpleTextView()
         {
-            var textView = EditorUtil.CreateView();
+            var textView = EditorUtil.CreateTextView();
             var ret = _vim.CreateBuffer(textView);
             Assert.IsNotNull(ret);
             Assert.AreSame(textView, ret.TextView);
@@ -62,7 +62,7 @@ namespace VimCore.UnitTest
         [Test, ExpectedException(typeof(ArgumentException))]
         public void Create_CreateTwiceForSameViewShouldFail()
         {
-            var textView = EditorUtil.CreateView();
+            var textView = EditorUtil.CreateTextView();
             _vim.CreateBuffer(textView);
             _vim.CreateBuffer(textView);
         }
@@ -70,7 +70,7 @@ namespace VimCore.UnitTest
         [Test]
         public void GetBuffer_ReturnNoneForViewThatHasNoBuffer()
         {
-            var textView = EditorUtil.CreateView();
+            var textView = EditorUtil.CreateTextView();
             var ret = _vim.GetBuffer(textView);
             Assert.IsTrue(ret.IsNone());
         }
@@ -78,7 +78,7 @@ namespace VimCore.UnitTest
         [Test]
         public void GetBuffer_ReturnBufferForCachedCreated()
         {
-            var textView = EditorUtil.CreateView();
+            var textView = EditorUtil.CreateTextView();
             var bufferFromCreate = _vim.CreateBuffer(textView);
             var bufferFromGet = _vim.GetBuffer(textView);
             Assert.IsTrue(bufferFromGet.IsSome());
@@ -88,7 +88,7 @@ namespace VimCore.UnitTest
         [Test]
         public void GetOrCreateBuffer_CreateForNewView()
         {
-            var textView = EditorUtil.CreateView();
+            var textView = EditorUtil.CreateTextView();
             var buffer = _vim.GetOrCreateBuffer(textView);
             Assert.AreSame(textView, buffer.TextView);
         }
@@ -96,7 +96,7 @@ namespace VimCore.UnitTest
         [Test]
         public void GetOrCreateBuffer_SecondCallShouldReturnAlreadyCreatedVimBuffer()
         {
-            var textView = EditorUtil.CreateView();
+            var textView = EditorUtil.CreateTextView();
             var buffer1 = _vim.GetOrCreateBuffer(textView);
             var buffer2 = _vim.GetOrCreateBuffer(textView);
             Assert.AreSame(buffer1, buffer2);
@@ -107,7 +107,7 @@ namespace VimCore.UnitTest
         {
             _vim.VimRcLocalSettings.AutoIndent = true;
             _vim.VimRcLocalSettings.QuoteEscape = "b";
-            var textView = EditorUtil.CreateView();
+            var textView = EditorUtil.CreateTextView();
             var buffer = _vim.GetOrCreateBuffer(textView);
             Assert.IsTrue(buffer.LocalSettings.AutoIndent);
             Assert.AreEqual("b", buffer.LocalSettings.QuoteEscape);
@@ -116,7 +116,7 @@ namespace VimCore.UnitTest
         [Test]
         public void GetOrCreateBuffer_ApplyActiveBufferSettings()
         {
-            var textView = EditorUtil.CreateView();
+            var textView = EditorUtil.CreateTextView();
             var buffer = _vim.GetOrCreateBuffer(textView);
             buffer.LocalSettings.AutoIndent = true;
             buffer.LocalSettings.QuoteEscape = "b";
@@ -124,7 +124,7 @@ namespace VimCore.UnitTest
             var didRun = false;
             buffer.KeyInputStart += delegate
             {
-                var textView2 = EditorUtil.CreateView();
+                var textView2 = EditorUtil.CreateTextView();
                 var buffer2 = _vim.GetOrCreateBuffer(textView2);
                 Assert.IsTrue(buffer2.LocalSettings.AutoIndent);
                 Assert.AreEqual("b", buffer2.LocalSettings.QuoteEscape);
@@ -137,14 +137,14 @@ namespace VimCore.UnitTest
         [Test]
         public void RemoveBuffer_ReturnFalseForNonAssociatedTextView()
         {
-            var textView = EditorUtil.CreateView();
+            var textView = EditorUtil.CreateTextView();
             Assert.IsFalse(_vim.RemoveBuffer(textView));
         }
 
         [Test]
         public void RemoveBuffer_AssociatedTextView()
         {
-            var textView = EditorUtil.CreateView();
+            var textView = EditorUtil.CreateTextView();
             _vim.CreateBuffer(textView);
             Assert.IsTrue(_vim.RemoveBuffer(textView));
             var ret = _vim.GetBuffer(textView);
@@ -186,7 +186,7 @@ namespace VimCore.UnitTest
             _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { "" }).Verifiable();
             _fileSystem.Setup(x => x.LoadVimRc()).Returns(FSharpOption.Create(tuple)).Verifiable();
 
-            Func<ITextView> createViewFunc = () => EditorUtil.CreateView();
+            Func<ITextView> createViewFunc = () => EditorUtil.CreateTextView();
             Assert.IsTrue(_vim.LoadVimRc(createViewFunc.ToFSharpFunc()));
 
             Assert.IsTrue(_vim.VimRcLocalSettings.AutoIndent);
@@ -202,7 +202,7 @@ namespace VimCore.UnitTest
         [Test]
         public void ActiveBuffer2()
         {
-            var textView = EditorUtil.CreateView();
+            var textView = EditorUtil.CreateTextView();
             var buffer = _vim.CreateBuffer(textView);
             var didRun = false;
             buffer.KeyInputStart += delegate
@@ -220,7 +220,7 @@ namespace VimCore.UnitTest
         [Test]
         public void ActiveBuffer3()
         {
-            var textView = EditorUtil.CreateView();
+            var textView = EditorUtil.CreateTextView();
             var buffer = _vim.CreateBuffer(textView);
             buffer.Process('a');
             Assert.IsTrue(_vim.ActiveBuffer.IsNone());

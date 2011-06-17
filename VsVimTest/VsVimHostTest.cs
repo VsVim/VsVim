@@ -72,7 +72,7 @@ namespace VsVim.UnitTest
         public void GotoDefinition1()
         {
             Create();
-            var textView = EditorUtil.CreateView("");
+            var textView = EditorUtil.CreateTextView("");
             _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
             Assert.IsFalse(_host.GoToDefinition());
         }
@@ -81,7 +81,7 @@ namespace VsVim.UnitTest
         public void GotoDefinition2()
         {
             Create();
-            var textView = EditorUtil.CreateView("");
+            var textView = EditorUtil.CreateTextView("");
             _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, String.Empty)).Throws(new Exception());
             Assert.IsFalse(_host.GoToDefinition());
@@ -91,7 +91,7 @@ namespace VsVim.UnitTest
         public void GotoDefinition3()
         {
             Create();
-            var textView = EditorUtil.CreateView("");
+            var textView = EditorUtil.CreateTextView("");
             _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, String.Empty));
             Assert.IsTrue(_host.GoToDefinition());
@@ -102,7 +102,7 @@ namespace VsVim.UnitTest
         {
             Create();
             var ct = EditorUtil.GetOrCreateContentType(VsVim.Constants.CPlusPlusContentType, "code");
-            var textView = EditorUtil.CreateView(ct, "hello world");
+            var textView = EditorUtil.CreateTextView(ct, "hello world");
             _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, "hello"));
             Assert.IsTrue(_host.GoToDefinition());
@@ -114,7 +114,7 @@ namespace VsVim.UnitTest
         {
             Create();
             var ct = EditorUtil.GetOrCreateContentType("csharp", "code");
-            var textView = EditorUtil.CreateView(ct, "hello world");
+            var textView = EditorUtil.CreateTextView(ct, "hello world");
             _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, ""));
             Assert.IsTrue(_host.GoToDefinition());
@@ -124,7 +124,7 @@ namespace VsVim.UnitTest
         public void NavigateTo1()
         {
             Create();
-            var buffer = EditorUtil.CreateBuffer("foo", "bar");
+            var buffer = EditorUtil.CreateTextBuffer("foo", "bar");
             var point = new VirtualSnapshotPoint(buffer.CurrentSnapshot, 2);
             _textManager.Setup(x => x.NavigateTo(point)).Returns(true);
             _host.NavigateTo(new VirtualSnapshotPoint(buffer.CurrentSnapshot, 2));

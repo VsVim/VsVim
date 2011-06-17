@@ -26,14 +26,14 @@ namespace VimCore.UnitTest
 
         private void Create(params string[] lines)
         {
-            _textView = EditorUtil.CreateView(lines);
+            _textView = EditorUtil.CreateTextView(lines);
             _factory = new MockRepository(MockBehavior.Strict);
             _host = _factory.Create<IVimHost>();
             _statusUtil = _factory.Create<IStatusUtil>();
             _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             _vimData = new VimData();
             var settings = new GlobalSettings();
-            var localSettings = new LocalSettings(settings, EditorUtil.GetOptions(_textView), _textView);
+            var localSettings = new LocalSettings(settings, EditorUtil.GetEditorOptions(_textView), _textView);
             var motionUtil = VimUtil.CreateTextViewMotionUtil(
                 _textView,
                 settings: localSettings,

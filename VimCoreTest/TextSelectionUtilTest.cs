@@ -42,7 +42,7 @@ namespace VimCore.UnitTest
         [Test]
         public void GetOverarchingSpan3()
         {
-            var buffer = EditorUtil.CreateBuffer("foo bar");
+            var buffer = EditorUtil.CreateTextBuffer("foo bar");
             var span = buffer.GetLineRange(0).Extent;
             var col = new NormalizedSnapshotSpanCollection(span);
             _selection.SetupGet(x => x.SelectedSpans).Returns(col).Verifiable();
@@ -53,7 +53,7 @@ namespace VimCore.UnitTest
         [Test]
         public void GetOverarchingSpan4()
         {
-            var buffer = EditorUtil.CreateBuffer("foo", "baz", "bar");
+            var buffer = EditorUtil.CreateTextBuffer("foo", "baz", "bar");
             var span1 = buffer.GetLineRange(0).Extent;
             var span2 = buffer.GetLineRange(0, 1).Extent;
             var col = new NormalizedSnapshotSpanCollection(new SnapshotSpan[] { span1, span2 });

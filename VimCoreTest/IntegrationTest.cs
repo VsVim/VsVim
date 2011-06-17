@@ -23,7 +23,7 @@ namespace VimCore.UnitTest
 
         private void CreateBuffer(params string[] lines)
         {
-            var tuple = EditorUtil.CreateViewAndOperations(lines);
+            var tuple = EditorUtil.CreateTextViewAndEditorOperations(lines);
             _textView = tuple.Item1;
             var service = EditorUtil.FactoryService;
             _buffer = service.Vim.CreateBuffer(_textView);

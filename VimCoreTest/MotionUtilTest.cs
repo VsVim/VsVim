@@ -37,8 +37,8 @@ namespace VimCore.UnitTest
 
         private void Create(params string[] lines)
         {
-            var textView = EditorUtil.CreateView(lines);
-            Create(textView, EditorUtil.GetOptions(textView));
+            var textView = EditorUtil.CreateTextView(lines);
+            Create(textView, EditorUtil.GetEditorOptions(textView));
         }
 
         private void Create(int caretPosition, params string[] lines)
@@ -1170,7 +1170,7 @@ namespace VimCore.UnitTest
         [Test]
         public void LineFromTopOfVisibleWindow1()
         {
-            var buffer = EditorUtil.CreateBuffer("foo", "bar", "baz");
+            var buffer = EditorUtil.CreateTextBuffer("foo", "bar", "baz");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 1);
             Create(tuple.Item1.Object);
             var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None);
@@ -1182,7 +1182,7 @@ namespace VimCore.UnitTest
         [Test]
         public void LineFromTopOfVisibleWindow2()
         {
-            var buffer = EditorUtil.CreateBuffer("foo", "bar", "baz", "jazz");
+            var buffer = EditorUtil.CreateTextBuffer("foo", "bar", "baz", "jazz");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
             Create(tuple.Item1.Object);
             var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption.Create(2));
@@ -1195,7 +1195,7 @@ namespace VimCore.UnitTest
         [Description("From visible line not caret point")]
         public void LineFromTopOfVisibleWindow3()
         {
-            var buffer = EditorUtil.CreateBuffer("foo", "bar", "baz", "jazz");
+            var buffer = EditorUtil.CreateTextBuffer("foo", "bar", "baz", "jazz");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2, caretPosition: buffer.GetLine(2).Start.Position);
             Create(tuple.Item1.Object);
             var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption.Create(2));
@@ -1207,7 +1207,7 @@ namespace VimCore.UnitTest
         [Test]
         public void LineFromTopOfVisibleWindow4()
         {
-            var buffer = EditorUtil.CreateBuffer("  foo", "bar");
+            var buffer = EditorUtil.CreateTextBuffer("  foo", "bar");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 1, caretPosition: buffer.GetLine(1).End);
             Create(tuple.Item1.Object);
             var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None);
@@ -1217,7 +1217,7 @@ namespace VimCore.UnitTest
         [Test]
         public void LineFromTopOfVisibleWindow5()
         {
-            var buffer = EditorUtil.CreateBuffer("  foo", "bar");
+            var buffer = EditorUtil.CreateTextBuffer("  foo", "bar");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 1, caretPosition: buffer.GetLine(1).End);
             Create(tuple.Item1.Object);
             _globalSettings.StartOfLine = false;
@@ -1228,7 +1228,7 @@ namespace VimCore.UnitTest
         [Test]
         public void LineFromBottomOfVisibleWindow1()
         {
-            var buffer = EditorUtil.CreateBuffer("a", "b", "c", "d");
+            var buffer = EditorUtil.CreateTextBuffer("a", "b", "c", "d");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
             Create(tuple.Item1.Object);
             var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None);
@@ -1240,7 +1240,7 @@ namespace VimCore.UnitTest
         [Test]
         public void LineFromBottomOfVisibleWindow2()
         {
-            var buffer = EditorUtil.CreateBuffer("a", "b", "c", "d");
+            var buffer = EditorUtil.CreateTextBuffer("a", "b", "c", "d");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
             Create(tuple.Item1.Object);
             var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption.Create(2));
@@ -1252,7 +1252,7 @@ namespace VimCore.UnitTest
         [Test]
         public void LineFromBottomOfVisibleWindow3()
         {
-            var buffer = EditorUtil.CreateBuffer("a", "b", "c", "d");
+            var buffer = EditorUtil.CreateTextBuffer("a", "b", "c", "d");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2, caretPosition: buffer.GetLine(2).End);
             Create(tuple.Item1.Object);
             var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption.Create(2));
@@ -1264,7 +1264,7 @@ namespace VimCore.UnitTest
         [Test]
         public void LineFromBottomOfVisibleWindow4()
         {
-            var buffer = EditorUtil.CreateBuffer("a", "b", "  c", "d");
+            var buffer = EditorUtil.CreateTextBuffer("a", "b", "  c", "d");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
             Create(tuple.Item1.Object);
             var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None);
@@ -1274,7 +1274,7 @@ namespace VimCore.UnitTest
         [Test]
         public void LineFromBottomOfVisibleWindow5()
         {
-            var buffer = EditorUtil.CreateBuffer("a", "b", "  c", "d");
+            var buffer = EditorUtil.CreateTextBuffer("a", "b", "  c", "d");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
             Create(tuple.Item1.Object);
             _globalSettings.StartOfLine = false;
@@ -1285,7 +1285,7 @@ namespace VimCore.UnitTest
         [Test]
         public void LineFromMiddleOfWindow1()
         {
-            var buffer = EditorUtil.CreateBuffer("a", "b", "c", "d");
+            var buffer = EditorUtil.CreateTextBuffer("a", "b", "c", "d");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
             Create(tuple.Item1.Object);
             var data = _motionUtil.LineInMiddleOfVisibleWindow();

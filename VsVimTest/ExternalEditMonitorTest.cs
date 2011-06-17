@@ -36,7 +36,7 @@ namespace VsVim.UnitTest
         public void Setup(bool isShimmed = true, params string[] lines)
         {
             _factory = new MockRepository(MockBehavior.Loose);
-            _textView = EditorUtil.CreateView(lines);
+            _textView = EditorUtil.CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
             _buffer = MockObjectFactory.CreateVimBuffer(textView: _textView);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();

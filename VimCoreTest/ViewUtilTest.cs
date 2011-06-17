@@ -19,7 +19,7 @@ namespace VimCore.UnitTest
 
         public void CreateView(params string[] lines)
         {
-            _view = EditorUtil.CreateView(lines);
+            _view = EditorUtil.CreateTextView(lines);
         }
 
         public void Init()

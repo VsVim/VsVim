@@ -40,7 +40,7 @@ namespace VimCore.UnitTest
         [Test]
         public void SimpleEdit1()
         {
-            var buffer = EditorUtil.CreateBuffer("foo bar", "baz");
+            var buffer = EditorUtil.CreateTextBuffer("foo bar", "baz");
             var tlc = Create(buffer, 0, 1);
             buffer.Replace(new Span(0, 0), "foo");
             AssertPoint(tlc, 0, 1);
@@ -49,7 +49,7 @@ namespace VimCore.UnitTest
         [Test, Description("Replace the line, shouldn't affect the column tracking")]
         public void SimpleEdit2()
         {
-            var buffer = EditorUtil.CreateBuffer("foo bar", "baz");
+            var buffer = EditorUtil.CreateTextBuffer("foo bar", "baz");
             var tlc = Create(buffer, 0, 1);
             buffer.Replace(new Span(0, 5), "barbar");
             AssertPoint(tlc, 0, 1);
@@ -58,7 +58,7 @@ namespace VimCore.UnitTest
         [Test, Description("Edit at the end of the line")]
         public void SimpleEdit3()
         {
-            var buffer = EditorUtil.CreateBuffer("foo bar", "baz");
+            var buffer = EditorUtil.CreateTextBuffer("foo bar", "baz");
             var tlc = Create(buffer, 0, 1);
             buffer.Replace(new Span(5, 0), "barbar");
             AssertPoint(tlc, 0, 1);
@@ -67,7 +67,7 @@ namespace VimCore.UnitTest
         [Test, Description("Edit a different line")]
         public void SimpleEdit4()
         {
-            var buffer = EditorUtil.CreateBuffer("foo bar", "baz");
+            var buffer = EditorUtil.CreateTextBuffer("foo bar", "baz");
             var tlc = Create(buffer, 0, 1);
             buffer.Replace(buffer.GetLineRange(1, 1).ExtentIncludingLineBreak.Span, "hello world");
             AssertPoint(tlc, 0, 1);
@@ -79,7 +79,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Edit_DeleteLine()
         {
-            var buffer = EditorUtil.CreateBuffer("foo", "bar");
+            var buffer = EditorUtil.CreateTextBuffer("foo", "bar");
             var tlc = Create(buffer, 0, 0);
             buffer.Delete(buffer.GetLineFromLineNumber(0).ExtentIncludingLineBreak.Span);
             Assert.IsTrue(tlc.Point.IsNone());
@@ -92,7 +92,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Edit_DeleteLineBelow()
         {
-            var buffer = EditorUtil.CreateBuffer("foo", "bar");
+            var buffer = EditorUtil.CreateTextBuffer("foo", "bar");
             var tlc = Create(buffer, 0, 2);
             buffer.Delete(buffer.GetLineFromLineNumber(1).ExtentIncludingLineBreak.Span);
             AssertPoint(tlc, 0, 2);
@@ -104,7 +104,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Edit_DeleteLineAbove()
         {
-            var buffer = EditorUtil.CreateBuffer("foo", "bar", "baz");
+            var buffer = EditorUtil.CreateTextBuffer("foo", "bar", "baz");
             var tlc = Create(buffer, 1, 2);
             buffer.Delete(buffer.GetLineFromLineNumber(0).ExtentIncludingLineBreak.Span);
             AssertPoint(tlc, 0, 2);
@@ -113,7 +113,7 @@ namespace VimCore.UnitTest
         [Test]
         public void TruncatingEdit1()
         {
-            var buffer = EditorUtil.CreateBuffer("foo bar baz");
+            var buffer = EditorUtil.CreateTextBuffer("foo bar baz");
             var tlc = Create(buffer, 0, 5);
             buffer.Replace(buffer.GetLine(0).ExtentIncludingLineBreak, "yes");
             AssertPoint(tlc, 0, 3);
@@ -122,7 +122,7 @@ namespace VimCore.UnitTest
         [Test, Description("Make it 0 width")]
         public void TruncatingEdit2()
         {
-            var buffer = EditorUtil.CreateBuffer("foo bar baz");
+            var buffer = EditorUtil.CreateTextBuffer("foo bar baz");
             var tlc = Create(buffer, 0, 5);
             buffer.Replace(buffer.GetLineFromLineNumber(0).ExtentIncludingLineBreak, "");
             AssertPoint(tlc, 0, 0);

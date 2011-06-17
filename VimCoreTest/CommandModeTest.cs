@@ -33,7 +33,7 @@ namespace VimCore.UnitTest
             _selection = _factory.Create<ITextSelection>();
             _selection.Setup(x => x.IsEmpty).Returns(true);
             _operations = _factory.Create<ICommonOperations>();
-            _buffer = EditorUtil.CreateBuffer();
+            _buffer = EditorUtil.CreateTextBuffer();
             _caret = MockObjectFactory.CreateCaret(factory: _factory);
             _caret.SetupProperty(x => x.IsHidden);
             _textView = MockObjectFactory.CreateTextView(

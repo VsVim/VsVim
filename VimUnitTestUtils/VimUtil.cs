@@ -25,7 +25,7 @@ namespace Vim.UnitTest
             IFoldManager foldManager = null,
             IWordUtil wordUtil = null)
         {
-            var editorOperations = EditorUtil.GetOperations(textView);
+            var editorOperations = EditorUtil.GetEditorOperations(textView);
             var editorOptions = EditorUtil.FactoryService.EditorOptionsFactory.GetOptions(textView);
             var jumpList = new JumpList(new TrackingLineColumnService());
             var keyMap = new KeyMap();

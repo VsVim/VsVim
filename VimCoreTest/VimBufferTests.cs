@@ -19,7 +19,7 @@ namespace VimCore.UnitTest
         [SetUp]
         public void Setup()
         {
-            _textView = EditorUtil.CreateView("here we go");
+            _textView = EditorUtil.CreateTextView("here we go");
             _textView.MoveCaretTo(0);
             _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
             _buffer.SwitchMode(ModeKind.Command, ModeArgument.None);

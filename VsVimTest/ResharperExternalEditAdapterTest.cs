@@ -24,7 +24,7 @@ namespace VsVim.UnitTest
 
         public void Create(params string[] lines)
         {
-            _textBuffer = EditorUtil.CreateBuffer(lines);
+            _textBuffer = EditorUtil.CreateTextBuffer(lines);
             _factory = new MockRepository(MockBehavior.Strict);
             _adapterRaw = new ResharperExternalEditAdapter();
             _adapter = _adapterRaw;

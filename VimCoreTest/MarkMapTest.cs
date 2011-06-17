@@ -34,7 +34,7 @@ namespace VimCore.UnitTest
 
         private void Create(params string[] lines)
         {
-            _textView = EditorUtil.CreateView(lines);
+            _textView = EditorUtil.CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
             var vimBuffer = new MockVimBuffer() { TextViewImpl = _textView, TextBufferImpl = _textView.TextBuffer };
             _mapListener.VimBufferCreated(vimBuffer);
@@ -173,7 +173,7 @@ namespace VimCore.UnitTest
         public void DeleteLocalMark4()
         {
             Create("foo");
-            var buffer2 = EditorUtil.CreateBuffer("baz");
+            var buffer2 = EditorUtil.CreateTextBuffer("baz");
             _mapRaw.SetLocalMark(new SnapshotPoint(_textBuffer.CurrentSnapshot, 0), 'a');
             _mapRaw.SetLocalMark(new SnapshotPoint(buffer2.CurrentSnapshot, 0), 'a');
             Assert.IsTrue(_mapRaw.DeleteLocalMark(buffer2, 'a'));
@@ -198,7 +198,7 @@ namespace VimCore.UnitTest
         [Test]
         public void DeleteAllMarksForBuffer1()
         {
-            var buf1 = EditorUtil.CreateBuffer("foo");
+            var buf1 = EditorUtil.CreateTextBuffer("foo");
             _mapRaw.SetLocalMark(new SnapshotPoint(buf1.CurrentSnapshot, 0), 'a');
             _mapRaw.DeleteAllMarksForBuffer(buf1);
             Assert.IsTrue(_mapRaw.GetLocalMark(buf1, 'a').IsNone());
@@ -207,8 +207,8 @@ namespace VimCore.UnitTest
         [Test]
         public void DeleteAllMarksForBuffer2()
         {
-            var buf1 = EditorUtil.CreateBuffer("foo");
-            var buf2 = EditorUtil.CreateBuffer("bar");
+            var buf1 = EditorUtil.CreateTextBuffer("foo");
+            var buf2 = EditorUtil.CreateTextBuffer("bar");
             _mapRaw.SetLocalMark(new SnapshotPoint(buf1.CurrentSnapshot, 0), 'a');
             _mapRaw.SetLocalMark(new SnapshotPoint(buf2.CurrentSnapshot, 0), 'b');
             _mapRaw.DeleteAllMarksForBuffer(buf1);
@@ -234,7 +234,7 @@ namespace VimCore.UnitTest
         [Test]
         public void GetMark1()
         {
-            var buf1 = EditorUtil.CreateBuffer("foo");
+            var buf1 = EditorUtil.CreateTextBuffer("foo");
             _mapRaw.SetLocalMark(new SnapshotPoint(buf1.CurrentSnapshot, 0), 'a');
             var ret = _mapRaw.GetMark(buf1, 'a');
             Assert.IsTrue(ret.IsSome());
@@ -244,8 +244,8 @@ namespace VimCore.UnitTest
         [Test]
         public void GetMark2()
         {
-            var buf1 = EditorUtil.CreateBuffer("foo");
-            var buf2 = EditorUtil.CreateBuffer("bar");
+            var buf1 = EditorUtil.CreateTextBuffer("foo");
+            var buf2 = EditorUtil.CreateTextBuffer("bar");
             _mapRaw.SetLocalMark(new SnapshotPoint(buf1.CurrentSnapshot, 0), 'a');
             var ret = _mapRaw.GetMark(buf2, 'a');
             Assert.IsTrue(ret.IsNone());
@@ -255,7 +255,7 @@ namespace VimCore.UnitTest
         [Description("Closed should remove all data")]
         public void BufferLifetime1()
         {
-            var textView = EditorUtil.CreateView("foo");
+            var textView = EditorUtil.CreateTextView("foo");
             var vimBuffer = new MockVimBuffer() { TextBufferImpl = textView.TextBuffer, TextViewImpl = textView };
             _mapListener.VimBufferCreated(vimBuffer);
             _map.SetLocalMark(new SnapshotPoint(textView.TextSnapshot, 0), 'c');

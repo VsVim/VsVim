@@ -20,7 +20,7 @@ namespace VimCore.UnitTest
 
         private void Create(params string[] lines)
         {
-            _textBuffer = EditorUtil.CreateBuffer(lines);
+            _textBuffer = EditorUtil.CreateTextBuffer(lines);
             _globalSettings = new GlobalSettings();
             _globalSettings.IgnoreCase = true;
             _globalSettings.HighlightSearch = true;

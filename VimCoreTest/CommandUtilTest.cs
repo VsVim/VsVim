@@ -36,7 +36,7 @@ namespace VimCore.UnitTest
 
         private void Create(params string[] lines)
         {
-            _textView = EditorUtil.CreateView(lines);
+            _textView = EditorUtil.CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
 
             _factory = new MockRepository(MockBehavior.Loose);
@@ -53,7 +53,7 @@ namespace VimCore.UnitTest
             _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice().Object);
             _markMap = new MarkMap(new TrackingLineColumnService());
             _globalSettings = new GlobalSettings();
-            _localSettings = new LocalSettings(_globalSettings, EditorUtil.GetOptions(_textView), _textView);
+            _localSettings = new LocalSettings(_globalSettings, EditorUtil.GetEditorOptions(_textView), _textView);
 
             var localSettings = new LocalSettings(new Vim.GlobalSettings());
             _motionUtil = VimUtil.CreateTextViewMotionUtil(

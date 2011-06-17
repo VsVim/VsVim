@@ -16,7 +16,7 @@ namespace VimCore.UnitTest
 
         public void Create(params string[] lines)
         {
-            _textBuffer = EditorUtil.CreateBuffer(lines);
+            _textBuffer = EditorUtil.CreateTextBuffer(lines);
             _trackingLineColumnService = new TrackingLineColumnService();
             _jumpListRaw = new JumpList(_trackingLineColumnService);
             _jumpList = _jumpListRaw;

@@ -14,7 +14,7 @@ namespace VimCore.UnitTest
 
         public void SetUp(params string[] lines)
         {
-            _textBuffer = EditorUtil.CreateBuffer(lines);
+            _textBuffer = EditorUtil.CreateTextBuffer(lines);
             _manager = new FoldManager(_textBuffer);
         }
 

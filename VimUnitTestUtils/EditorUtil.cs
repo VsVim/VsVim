@@ -15,7 +15,7 @@ using IOPath = System.IO.Path;
 namespace Vim.UnitTest
 {
     /// <summary>
-    /// Util for caching and creating MEF based components for unit tests
+    /// Utility for caching and creating MEF based components for unit tests
     /// </summary>
     public static class EditorUtil
     {
@@ -76,6 +76,10 @@ namespace Vim.UnitTest
         [ThreadStatic]
         private static Factory _factory;
 
+        /// <summary>
+        /// The MEF composition container for the current thread.  We cache all of our compositions in this
+        /// container to speed up the unit tests
+        /// </summary>
         public static CompositionContainer Container
         {
             get
@@ -88,6 +92,9 @@ namespace Vim.UnitTest
             }
         }
 
+        /// <summary>
+        /// Factory service for gaining access to our MEF types
+        /// </summary>
         public static Factory FactoryService
         {
             get
@@ -100,12 +107,19 @@ namespace Vim.UnitTest
                 return _factory;
             }
         }
-        public static ITextBuffer CreateBuffer(params string[] lines)
+
+        /// <summary>
+        /// Create an ITextBuffer instance with the given lines of code
+        /// </summary>
+        public static ITextBuffer CreateTextBuffer(params string[] lines)
         {
-            return CreateBuffer(null, lines);
+            return CreateTextBuffer(null, lines);
         }
 
-        public static ITextBuffer CreateBuffer(IContentType contentType, params string[] lines)
+        /// <summary>
+        /// Create an ITextBuffer instance with the given lines of code
+        /// </summary>
+        public static ITextBuffer CreateTextBuffer(IContentType contentType, params string[] lines)
         {
             var factory = FactoryService.TextBufferFactory;
             var buffer = contentType != null
@@ -121,31 +135,40 @@ namespace Vim.UnitTest
             return buffer;
         }
 
-        public static IWpfTextView CreateView(params string[] lines)
+        /// <summary>
+        /// Create an ITextView / ITextBuffer pair with the specified lines
+        /// </summary>
+        public static IWpfTextView CreateTextView(params string[] lines)
         {
-            return CreateView(null, lines);
+            return CreateTextView(null, lines);
         }
 
-        public static IWpfTextView CreateView(IContentType contentType, params string[] lines)
+        /// <summary>
+        /// Create an ITextView / ITextBuffer pair with the specified lines and content type
+        /// </summary>
+        public static IWpfTextView CreateTextView(IContentType contentType, params string[] lines)
         {
-            var buffer = CreateBuffer(contentType, lines);
+            var buffer = CreateTextBuffer(contentType, lines);
             var view = FactoryService.TextEditorFactory.CreateTextView(buffer);
             return view;
         }
 
-        public static Tuple<IWpfTextView, IEditorOperations> CreateViewAndOperations(params string[] lines)
+        /// <summary>
+        /// Create an ITextView / IEditorOperations pair with the specified lines and content type
+        /// </summary>
+        public static Tuple<IWpfTextView, IEditorOperations> CreateTextViewAndEditorOperations(params string[] lines)
         {
-            var view = CreateView(lines);
+            var view = CreateTextView(lines);
             var opts = FactoryService.EditorOperationsFactory.GetEditorOperations(view);
             return Tuple.Create(view, opts);
         }
 
-        public static IEditorOperations GetOperations(ITextView view)
+        public static IEditorOperations GetEditorOperations(ITextView view)
         {
             return FactoryService.EditorOperationsFactory.GetEditorOperations(view);
         }
 
-        public static IEditorOptions GetOptions(ITextView textView)
+        public static IEditorOptions GetEditorOptions(ITextView textView)
         {
             return FactoryService.EditorOptionsFactory.GetOptions(textView);
         }

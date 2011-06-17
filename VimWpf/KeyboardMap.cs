@@ -201,7 +201,7 @@ namespace Vim.UI.Wpf
                     charToKeyModifiersMap[current.Char] = modKeys;
                 }
 
-                // Only processing items which can map to acual keys
+                // Only processing items which can map to actual keys
                 var key = KeyInterop.KeyFromVirtualKey(virtualKeyCode);
                 if (Key.None == key)
                 {

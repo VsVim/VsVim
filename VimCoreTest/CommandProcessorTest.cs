@@ -38,7 +38,7 @@ namespace VimCore.UnitTest
 
         public void Create(params string[] lines)
         {
-            _textView = EditorUtil.CreateView(lines);
+            _textView = EditorUtil.CreateTextView(lines);
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
             _textBuffer = _textView.TextBuffer;
             _factory = new MockRepository(MockBehavior.Strict);

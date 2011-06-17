@@ -19,7 +19,7 @@ namespace VimCore.UnitTest
 
         public void CreateLines(params string[] lines)
         {
-            var tuple = EditorUtil.CreateViewAndOperations(lines);
+            var tuple = EditorUtil.CreateTextViewAndEditorOperations(lines);
             _view = tuple.Item1;
             _buffer = _view.TextBuffer;
             _operations = tuple.Item2;

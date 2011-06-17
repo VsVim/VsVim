@@ -22,7 +22,7 @@ namespace VimCore.UnitTest
         public void Setup()
         {
             _synchronizer = new EditorToSettingSynchronizer(EditorUtil.FactoryService.Vim);
-            _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(EditorUtil.CreateView(""));
+            _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(EditorUtil.CreateTextView(""));
             _localSettings = _buffer.LocalSettings;
             _globalSettings = _localSettings.GlobalSettings;
             _editorOptions = _localSettings.EditorOptions.Value;

@@ -44,7 +44,7 @@ namespace VimCore.UnitTest
             ModeKind kind = ModeKind.VisualCharacter,
             params string[] lines)
         {
-            _textView = EditorUtil.CreateView(lines);
+            _textView = EditorUtil.CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
             _selection = _textView.Selection;
             _factory = new MockRepository(MockBehavior.Strict);
@@ -66,7 +66,7 @@ namespace VimCore.UnitTest
             _commandUtil = _factory.Create<ICommandUtil>();
             _incrementalSearch = MockObjectFactory.CreateIncrementalSearch(factory: _factory);
             var globalSettings = new GlobalSettings();
-            var localSettings = new LocalSettings(globalSettings, EditorUtil.GetOptions(_textView), _textView);
+            var localSettings = new LocalSettings(globalSettings, EditorUtil.GetEditorOptions(_textView), _textView);
             var motionUtil = VimUtil.CreateTextViewMotionUtil(
                 _textView,
                 _markMap,

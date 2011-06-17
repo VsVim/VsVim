@@ -25,7 +25,7 @@ namespace VimCore.UnitTest
         {
             _factory = new MockRepository(MockBehavior.Loose);
             _mode = _factory.Create<ISubstituteConfirmMode>();
-            _textBuffer = EditorUtil.CreateBuffer("cat", "dog", "bird", "tree");
+            _textBuffer = EditorUtil.CreateTextBuffer("cat", "dog", "bird", "tree");
             _taggerRaw = new SubstituteConfirmTagger(_textBuffer, _mode.Object);
             _tagger = _taggerRaw;
         }
