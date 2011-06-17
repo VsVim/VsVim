@@ -75,6 +75,29 @@ type IFileSystem =
     /// Attempt to read all of the lines from the given file 
     abstract ReadAllLines : path:string -> string[] option
 
+/// Utility functions relating to Word values in an ITextBuffer
+type IWordUtil = 
+
+    /// The ITextBuffer associated with this word utility
+    abstract TextBuffer : ITextBuffer
+
+    /// Get the full word span for the word value which crosses the given SnapshotPoint
+    abstract GetFullWordSpan : WordKind -> SnapshotPoint -> SnapshotSpan option
+
+    /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
+    /// in the middle of a word the span of the entire word will be returned
+    abstract GetWords : WordKind -> Path -> SnapshotPoint -> SnapshotSpan seq
+
+    /// Create an ITextStructureNavigator where the extent of words is calculated for
+    /// the specified WordKind value
+    abstract CreateTextStructureNavigator : WordKind -> ITextStructureNavigator
+
+/// Factory for getting IWordUtil instances.  This is an importable MEF component
+type IWordUtilFactory = 
+
+    /// Get the IWordUtil instance for the given ITextView
+    abstract GetWordUtil : ITextView -> IWordUtil
+
 /// Wraps an ITextUndoTransaction so we can avoid all of the null checks
 type IUndoTransaction =
 
@@ -392,31 +415,31 @@ type Motion =
     /// this motion deals with lines, it's still a character wise motion motion. 
     | EndOfLine
 
-    /// Find the first non-whitespace character as the start of the span.  This is an exclusive
+    /// Find the first non-blank character as the start of the span.  This is an exclusive
     /// motion so be careful we don't go to far forward.  Providing a count to this motion has
     /// no affect
-    | FirstNonWhiteSpaceOnCurrentLine
+    | FirstNonBlankOnCurrentLine
 
-    /// Find the first non-whitespace character on the (count - 1) line below this line
-    | FirstNonWhiteSpaceOnLine
+    /// Find the first non-blank character on the (count - 1) line below this line
+    | FirstNonBlankOnLine
 
     /// Inner word motion
     | InnerWord of WordKind
 
-    /// Find the last non-whitespace character on the line.  Count causes it to go "count" lines
+    /// Find the last non-blank character on the line.  Count causes it to go "count" lines
     /// down and perform the search
-    | LastNonWhiteSpaceOnLine
+    | LastNonBlankOnLine
 
     /// Find the next occurrence of the last search.  The bool parameter is true if the search
     /// should be in the opposite direction
     | LastSearch of bool
 
-    /// Handle the lines down to first non-whitespace motion.  This is one of the motions which 
+    /// Handle the lines down to first non-blank motion.  This is one of the motions which 
     /// can accept a count of 0.
-    | LineDownToFirstNonWhiteSpace
+    | LineDownToFirstNonBlank
 
     /// Handle the - motion
-    | LineUpToFirstNonWhiteSpace
+    | LineUpToFirstNonBlank
 
     /// Get the span of "count" lines upward careful not to run off the beginning of the
     /// buffer.  Implementation of the "k" motion
@@ -427,10 +450,10 @@ type Motion =
     | LineDown
 
     /// Go to the specified line number or the first line if no line number is provided 
-    | LineOrFirstToFirstNonWhiteSpace
+    | LineOrFirstToFirstNonBlank
 
     /// Go to the specified line number or the last line of no line number is provided
-    | LineOrLastToFirstNonWhiteSpace
+    | LineOrLastToFirstNonBlank
 
     /// Go to the "count - 1" line from the top of the visible window.  If the count exceeds
     /// the number of visible lines it will end on the last visible line

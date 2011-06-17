@@ -905,7 +905,7 @@ type internal CommandProcessor
     member x.ParseAndRunInput (command : char list) =
 
         let moveToLine line = 
-            let point = TssUtil.FindFirstNonWhiteSpaceCharacter line
+            let point = SnapshotLineUtil.GetFirstNonBlankOrStart line
             _operations.MoveCaretToPointAndEnsureVisible point
 
         if Seq.forall CharUtil.IsDigit command then
@@ -917,7 +917,7 @@ type internal CommandProcessor
                 // We have a valid number and no other input so move the caret to that line number
                 // and ensure that it's visible on the screen.  This input is given in terms of 
                 // Vim line numbers so convert appropriately
-                let number = TssUtil.VimLineToTssLine number
+                let number = Util.VimLineToTssLine number
                 let line = SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
                 moveToLine line
             | _ ->

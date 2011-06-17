@@ -14,6 +14,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
+using Command = EnvDTE.Command;
 
 namespace VsVim
 {
@@ -21,7 +22,11 @@ namespace VsVim
     {
         #region Command
 
-        public static IEnumerable<string> GetCommandStrings(this EnvDTE.Command command)
+        /// <summary>
+        /// Get the binding strings for this Command.  Digs through the various ways a 
+        /// binding string can be stored and returns a uniform result
+        /// </summary>
+        public static IEnumerable<string> GetBindings(this Command command)
         {
             if (null == command)
             {
@@ -46,14 +51,23 @@ namespace VsVim
             return Enumerable.Empty<string>();
         }
 
-        public static IEnumerable<CommandKeyBinding> GetCommandKeyBindings(this EnvDTE.Command command)
+        /// <summary>
+        /// Get the binding strings in the form of CommandKeyBinding instances
+        /// </summary>
+        public static IEnumerable<CommandKeyBinding> GetCommandKeyBindings(this Command command)
         {
             if (null == command)
             {
                 throw new ArgumentNullException("command");
             }
 
-            foreach (var cur in command.GetCommandStrings())
+            // Need a helper method here so that the argument checking is prompt
+            return GetCommandKeyBindingsHelper(command);
+        }
+
+        private static IEnumerable<CommandKeyBinding> GetCommandKeyBindingsHelper(Command command)
+        {
+            foreach (var cur in command.GetBindings())
             {
                 KeyBinding binding;
                 if (KeyBinding.TryParse(cur, out binding))
@@ -63,17 +77,24 @@ namespace VsVim
             }
         }
 
-        public static IEnumerable<KeyBinding> GetKeyBindings(this EnvDTE.Command command)
+        public static IEnumerable<KeyBinding> GetKeyBindings(this Command command)
         {
             return GetCommandKeyBindings(command).Select(x => x.KeyBinding);
         }
 
-        public static bool HasKeyBinding(this EnvDTE.Command command, KeyBinding binding)
+        /// <summary>
+        /// Does the Command have the provided KeyBinding as a valid binding
+        /// </summary>
+        public static bool HasKeyBinding(this Command command, KeyBinding binding)
         {
             return GetCommandKeyBindings(command).Any(x => x.KeyBinding == binding);
         }
 
-        public static void SafeResetBindings(this EnvDTE.Command command)
+        /// <summary>
+        /// Remove all bindings on the provided Command value
+        /// </summary>
+        /// <param name="command"></param>
+        public static void SafeResetBindings(this Command command)
         {
             try
             {
@@ -86,7 +107,10 @@ namespace VsVim
             }
         }
 
-        public static void SafeSetBindings(this EnvDTE.Command command, KeyBinding binding)
+        /// <summary>
+        /// Safely reset the bindings on this Command to the provided KeyBinding value
+        /// </summary>
+        public static void SafeSetBindings(this Command command, KeyBinding binding)
         {
             try
             {
@@ -94,7 +118,8 @@ namespace VsVim
             }
             catch (COMException)
             {
-
+                // Several implementations, Transact SQL in particular, return E_FAIL for this
+                // operation.  Simply ignore the failure and continue
             }
         }
 
@@ -102,9 +127,9 @@ namespace VsVim
 
         #region Commands
 
-        public static IEnumerable<EnvDTE.Command> GetCommands(this Commands commands)
+        public static IEnumerable<Command> GetCommands(this Commands commands)
         {
-            return commands.Cast<EnvDTE.Command>();
+            return commands.Cast<Command>();
         }
 
         #endregion
@@ -220,7 +245,7 @@ namespace VsVim
         public static Result<List<IVsWindowFrame>> GetDocumentWindowFrames(this IVsUIShell4 vsShell, __WindowFrameTypeFlags flags)
         {
             IEnumWindowFrames enumFrames;
-            var hr = vsShell.GetWindowEnum((uint) flags, out enumFrames);
+            var hr = vsShell.GetWindowEnum((uint)flags, out enumFrames);
             return ErrorHandler.Failed(hr) ? Result.CreateError(hr) : enumFrames.GetContents();
         }
 
@@ -235,7 +260,7 @@ namespace VsVim
             while (true)
             {
                 uint num;
-                var hr = enumFrames.Next((uint) array.Length, array, out num);
+                var hr = enumFrames.Next((uint)array.Length, array, out num);
                 if (ErrorHandler.Failed(hr))
                 {
                     return Result.CreateError(hr);

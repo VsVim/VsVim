@@ -10,6 +10,10 @@ using Vim.Extensions;
 
 namespace VsVim
 {
+    /// <summary>
+    /// Container for the 4 common pieces of data which are needed for an OLE
+    /// command.  Makes it easy to pass them around between functions
+    /// </summary>
     internal struct OleCommandData
     {
         readonly internal uint CommandId;
@@ -45,6 +49,10 @@ namespace VsVim
             VariantOut = variantOut;
         }
 
+        /// <summary>
+        /// Create an OleCommandData for typing the given character.  This causes a native resource
+        /// allocation and must be freed at a later time with Release
+        /// </summary>
         public static OleCommandData Allocate(char c)
         {
             var variantIn = Marshal.AllocCoTaskMem(32); // size of(VARIANT), 16 may be enough
@@ -56,6 +64,14 @@ namespace VsVim
                 IntPtr.Zero);
         }
 
+        /// <summary>
+        /// Release the contents of the OleCommandData.  If no allocation was performed then this 
+        /// will be a no-op
+        ///
+        /// Do no call this one OleCommandData instances that you don't own.  Calling this on 
+        /// parameters created by Visual Studio for example could easily lead to memory corruption
+        /// issues
+        /// </summary>
         public static void Release(ref OleCommandData oleCommandData)
         {
             if (oleCommandData.VariantIn != IntPtr.Zero)
@@ -340,11 +356,15 @@ namespace VsVim
                 {
                     if (editCommand.IsUndo)
                     {
+                        // The user hit the undo button.  Don't attempt to map anything here and instead just 
+                        // run a single Vim undo operation
                         _buffer.UndoRedoOperations.Undo(1);
                         return NativeMethods.S_OK;
                     }
                     else if (editCommand.IsRedo)
                     {
+                        // The user hit the redo button.  Don't attempt to map anything here and instead just 
+                        // run a single Vim redo operation
                         _buffer.UndoRedoOperations.Redo(1);
                         return NativeMethods.S_OK;
                     }

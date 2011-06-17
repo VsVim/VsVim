@@ -116,8 +116,9 @@ type internal DefaultOperations
                     let number = if putBefore then line.LineNumber else line.LineNumber + 1
                     let number = number + (lineCount - 1)
                     SnapshotUtil.GetLine x.CurrentSnapshot number
-                let point = TssUtil.FindFirstNonWhiteSpaceCharacter line
-                TextViewUtil.MoveCaretToPoint _textView point)
+                let point = SnapshotLineUtil.GetFirstNonBlankOrEnd line
+                _operations.MoveCaretToPoint point
+                _operations.MoveCaretForVirtualEdit())
 
         member x.PrintMarks (markMap:IMarkMap) =    
             let printMark (ident:char) (point:VirtualSnapshotPoint) =

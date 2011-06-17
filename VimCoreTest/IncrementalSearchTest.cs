@@ -33,7 +33,7 @@ namespace VimCore.UnitTest
             _globalSettings.IncrementalSearch = true;
             _globalSettings.WrapScan = true;
             _localSettings = new LocalSettings(_globalSettings, EditorUtil.GetOptions(_textView), _textView);
-            _nav = VimUtil.CreateTextStructureNavigator(_textView.TextBuffer);
+            _nav = VimUtil.CreateTextStructureNavigator(_textView, WordKind.NormalWord);
             _factory = new MockRepository(MockBehavior.Strict);
             _vimHost = _factory.Create<IVimHost>();
             _vimHost.Setup(x => x.EnsureVisible(_textView, It.IsAny<SnapshotPoint>()));

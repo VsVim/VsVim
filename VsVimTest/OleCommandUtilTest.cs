@@ -65,7 +65,7 @@ namespace VsVim.UnitTest
         public void TypeChar1()
         {
             var command = ConvertTypeChar('a');
-            Assert.AreEqual(EditCommandKind.TypeChar, command.EditCommandKind);
+            Assert.AreEqual(EditCommandKind.UserInput, command.EditCommandKind);
             Assert.AreEqual(Key.A, command.KeyInput.Key);
         }
 
@@ -73,64 +73,64 @@ namespace VsVim.UnitTest
         public void TypeChar2()
         {
             var command = ConvertTypeChar('b');
-            Assert.AreEqual(EditCommandKind.TypeChar, command.EditCommandKind);
+            Assert.AreEqual(EditCommandKind.UserInput, command.EditCommandKind);
             Assert.AreEqual(Key.B, command.KeyInput.Key);
         }
 
         [Test]
         public void ArrowKeys()
         {
-            VerifyConvert(VSConstants.VSStd2KCmdID.LEFT, VimKey.Left, EditCommandKind.CursorMovement);
-            VerifyConvert(VSConstants.VSStd2KCmdID.LEFT_EXT, VimKey.Left, EditCommandKind.CursorMovement);
-            VerifyConvert(VSConstants.VSStd2KCmdID.LEFT_EXT_COL, VimKey.Left, EditCommandKind.CursorMovement);
-            VerifyConvert(VSConstants.VSStd2KCmdID.RIGHT, VimKey.Right, EditCommandKind.CursorMovement);
-            VerifyConvert(VSConstants.VSStd2KCmdID.RIGHT_EXT, VimKey.Right, EditCommandKind.CursorMovement);
-            VerifyConvert(VSConstants.VSStd2KCmdID.RIGHT_EXT_COL, VimKey.Right, EditCommandKind.CursorMovement);
-            VerifyConvert(VSConstants.VSStd2KCmdID.UP, VimKey.Up, EditCommandKind.CursorMovement);
-            VerifyConvert(VSConstants.VSStd2KCmdID.UP_EXT, VimKey.Up, EditCommandKind.CursorMovement);
-            VerifyConvert(VSConstants.VSStd2KCmdID.UP_EXT_COL, VimKey.Up, EditCommandKind.CursorMovement);
-            VerifyConvert(VSConstants.VSStd2KCmdID.DOWN, VimKey.Down, EditCommandKind.CursorMovement);
-            VerifyConvert(VSConstants.VSStd2KCmdID.DOWN_EXT, VimKey.Down, EditCommandKind.CursorMovement);
-            VerifyConvert(VSConstants.VSStd2KCmdID.DOWN_EXT_COL, VimKey.Down, EditCommandKind.CursorMovement);
+            VerifyConvert(VSConstants.VSStd2KCmdID.LEFT, VimKey.Left, EditCommandKind.UserInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.LEFT_EXT, VimKey.Left, EditCommandKind.UserInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.LEFT_EXT_COL, VimKey.Left, EditCommandKind.UserInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.RIGHT, VimKey.Right, EditCommandKind.UserInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.RIGHT_EXT, VimKey.Right, EditCommandKind.UserInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.RIGHT_EXT_COL, VimKey.Right, EditCommandKind.UserInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.UP, VimKey.Up, EditCommandKind.UserInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.UP_EXT, VimKey.Up, EditCommandKind.UserInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.UP_EXT_COL, VimKey.Up, EditCommandKind.UserInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.DOWN, VimKey.Down, EditCommandKind.UserInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.DOWN_EXT, VimKey.Down, EditCommandKind.UserInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.DOWN_EXT_COL, VimKey.Down, EditCommandKind.UserInput);
         }
 
         [Test]
         public void Tab1()
         {
-            VerifyConvert(VSConstants.VSStd2KCmdID.TAB, KeyInputUtil.TabKey, EditCommandKind.TypeChar);
+            VerifyConvert(VSConstants.VSStd2KCmdID.TAB, KeyInputUtil.TabKey, EditCommandKind.UserInput);
         }
 
         [Test]
         public void F1Help1()
         {
-            VerifyConvert(VSConstants.VSStd97CmdID.F1Help, VimKey.F1, EditCommandKind.Unknown);
+            VerifyConvert(VSConstants.VSStd97CmdID.F1Help, VimKey.F1, EditCommandKind.UserInput);
         }
 
         [Test]
         public void Escape()
         {
-            VerifyConvert(VSConstants.VSStd97CmdID.Escape, KeyInputUtil.EscapeKey, EditCommandKind.Cancel);
-            VerifyConvert(VSConstants.VSStd2KCmdID.CANCEL, KeyInputUtil.EscapeKey, EditCommandKind.Cancel);
+            VerifyConvert(VSConstants.VSStd97CmdID.Escape, KeyInputUtil.EscapeKey, EditCommandKind.UserInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.CANCEL, KeyInputUtil.EscapeKey, EditCommandKind.UserInput);
         }
 
         [Test]
         public void PageUp()
         {
-            VerifyConvert(VSConstants.VSStd2KCmdID.PAGEUP, VimKey.PageUp, EditCommandKind.CursorMovement);
-            VerifyConvert(VSConstants.VSStd2KCmdID.PAGEUP_EXT, VimKey.PageUp, EditCommandKind.CursorMovement);
+            VerifyConvert(VSConstants.VSStd2KCmdID.PAGEUP, VimKey.PageUp, EditCommandKind.UserInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.PAGEUP_EXT, VimKey.PageUp, EditCommandKind.UserInput);
         }
 
         [Test]
         public void PageDown()
         {
-            VerifyConvert(VSConstants.VSStd2KCmdID.PAGEDN, VimKey.PageDown, EditCommandKind.CursorMovement);
-            VerifyConvert(VSConstants.VSStd2KCmdID.PAGEDN_EXT, VimKey.PageDown, EditCommandKind.CursorMovement);
+            VerifyConvert(VSConstants.VSStd2KCmdID.PAGEDN, VimKey.PageDown, EditCommandKind.UserInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.PAGEDN_EXT, VimKey.PageDown, EditCommandKind.UserInput);
         }
 
         [Test]
         public void Backspace()
         {
-            VerifyConvert(VSConstants.VSStd2KCmdID.BACKSPACE, VimKey.Back, EditCommandKind.Backspace);
+            VerifyConvert(VSConstants.VSStd2KCmdID.BACKSPACE, VimKey.Back, EditCommandKind.UserInput);
         }
 
         /// <summary>

@@ -505,13 +505,27 @@ module SnapshotLineUtil =
         |> SnapshotSpanUtil.GetPoints Path.Forward
         |> Seq.forall (fun point -> CharUtil.IsWhiteSpace (point.GetChar()))
 
-    /// Get the first non-space / tab character on the line
+    /// Get the first non-blank character on the line
     let GetFirstNonBlank line = 
         line
         |> GetExtent
         |> SnapshotSpanUtil.GetPoints Path.Forward
         |> Seq.skipWhile (fun point -> CharUtil.IsBlank (point.GetChar()))
         |> SeqUtil.tryHeadOnly
+
+    /// Get the first non-blank character on the line or the Start point if all 
+    /// characters are blank
+    let GetFirstNonBlankOrStart line = 
+        match GetFirstNonBlank line with
+        | None -> line.Start
+        | Some point -> point
+
+    /// Get the first non-blank character on the line or the End point if all
+    /// characters are blank
+    let GetFirstNonBlankOrEnd line = 
+        match GetFirstNonBlank line with
+        | None -> line.End
+        | Some point -> point
 
 [<RequireQualifiedAccess>]
 type PointKind =
@@ -566,6 +580,10 @@ module SnapshotPointUtil =
     let IsBlank point = 
         if IsEndPoint point then false
         else CharUtil.IsBlank (point.GetChar())
+
+    /// Is this point a blank or the end point of the ITextSnapshot
+    let IsBlankOrEnd point = 
+        IsBlank point || IsEndPoint point
 
     /// Is this point not a blank 
     let IsNotBlank point =

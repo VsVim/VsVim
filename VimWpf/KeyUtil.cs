@@ -33,7 +33,7 @@ namespace Vim.UI.Wpf
         ///  1) LeftShift 
         ///  2) LeftShift + b
         /// This helps us filter out items like #1 which we don't want to process
-        /// </summar>
+        /// </summary>
         public static bool IsNonInputKey(Key k)
         {
             switch (k)

@@ -129,7 +129,7 @@ module internal MotionUtilLegacy =
                 // Filter out tokens which must begin at the start of the line
                 // and don't
                 let line = SnapshotSpanUtil.GetStartLine span
-                TssUtil.FindFirstNonWhiteSpaceCharacter line = span.Start
+                SnapshotLineUtil.GetFirstNonBlankOrStart line = span.Start
             else
                 true)
 
@@ -262,6 +262,7 @@ type internal MotionUtil
         _navigator : ITextStructureNavigator,
         _jumpList : IJumpList, 
         _statusUtil : IStatusUtil,
+        _wordUtil : IWordUtil,
         _vimData : IVimData
     ) = 
 
@@ -296,19 +297,22 @@ type internal MotionUtil
             let endLine = 
                 if motionData.IsForward then SnapshotSpanUtil.GetEndLine motionData.Span
                 else SnapshotSpanUtil.GetStartLine motionData.Span
-            let point = TssUtil.FindFirstNonWhiteSpaceCharacter endLine
+
+            // TODO: Is GetFirstNonBlankOrStart correct here?  Should it be using the
+            // End version?
+            let point = SnapshotLineUtil.GetFirstNonBlankOrStart endLine
             let column = SnapshotPointUtil.GetColumn point |> CaretColumn.InLastLine
             { motionData with MotionKind = MotionKind.LineWise column }
 
     /// Get the motion between the provided two lines.  The motion will be linewise
     /// and have a column of the first non-whitespace character.  If the 'startofline'
     /// option is not set it will keep the original column
-    member x.LineToLineFirstNonWhiteSpaceMotion (startLine : ITextSnapshotLine) (endLine : ITextSnapshotLine) = 
+    member x.LineToLineFirstNonBlankMotion (startLine : ITextSnapshotLine) (endLine : ITextSnapshotLine) = 
 
         // Get the column based on the 'startofline' option
         let column = 
             if _globalSettings.StartOfLine then 
-                endLine |> TssUtil.FindFirstNonWhiteSpaceCharacter |> SnapshotPointUtil.GetColumn
+                endLine |> SnapshotLineUtil.GetFirstNonBlankOrStart |> SnapshotPointUtil.GetColumn
             else
                 _textView |> TextViewUtil.GetCaretPoint |> SnapshotPointUtil.GetColumn
         let column = CaretColumn.InLastLine column
@@ -524,36 +528,6 @@ type internal MotionUtil
                     Some (span, startPoint)
 
             Seq.unfold getPrevious point
-
-    /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
-    /// in the middle of a word the span of the entire word will be returned
-    ///
-    /// TODO: We need to account for folded regions here in the future
-    member x.GetWords kind path point = 
-
-        let snapshot = SnapshotPointUtil.GetSnapshot point
-        let line = SnapshotPointUtil.GetContainingLine point
-        SnapshotUtil.GetLines snapshot line.LineNumber path
-        |> Seq.map (fun line ->
-            if line.Length = 0 then
-                // Blank lines are words.  The word covers the entire line including the line
-                // break.  This can be verified by 'yw' on a blank line and pasting.  It will
-                // create a new line
-                line.ExtentIncludingLineBreak |> Seq.singleton
-            else 
-                let offset = line.Start.Position
-                line.Extent
-                |> SnapshotSpanUtil.GetText 
-                |> TextUtil.GetWordSpans kind path 
-                |> Seq.map (fun span -> SnapshotSpan(snapshot, span.Start + offset, span.Length)))
-        |> Seq.concat
-        |> Seq.filter (fun span -> 
-            // Need to filter off items from the first line.  The point can and will often be
-            // in the middle of a line and we can't return any spans which are past / before 
-            // the point depending on the direction
-            match path with
-            | Path.Forward -> span.End.Position > point.Position
-            | Path.Backward -> span.Start.Position < point.Position)
 
     /// Is this line a blank line with no blank lines above it 
     member x.IsBlankLineWithNoBlankAbove line = 
@@ -919,7 +893,7 @@ type internal MotionUtil
                 MotionKind =
                     virtualPoint.Position
                     |> SnapshotPointUtil.GetContainingLine
-                    |> TssUtil.FindFirstNonWhiteSpaceCharacter
+                    |> SnapshotLineUtil.GetFirstNonBlankOrStart
                     |> SnapshotPointUtil.GetColumn
                     |> CaretColumn.InLastLine
                     |> MotionKind.LineWise
@@ -1171,7 +1145,7 @@ type internal MotionUtil
 
         // Get all of the words on this line going forward
         let all = 
-            x.GetWords kind Path.Forward x.CaretPoint
+            _wordUtil.GetWords kind Path.Forward x.CaretPoint
             |> Seq.takeWhile isOnSameLine
             |> Seq.truncate count
             |> List.ofSeq
@@ -1226,7 +1200,7 @@ type internal MotionUtil
                     // though they are not called out in the documentation.  We should only include
                     // white space here if there is a word on the same line before this one.  
                     let startPoint = 
-                        x.GetWords kind Path.Backward span.Start
+                        _wordUtil.GetWords kind Path.Backward span.Start
                         |> Seq.filter isOnSameLine
                         |> Seq.map SnapshotSpanUtil.GetEndPoint
                         |> SeqUtil.headOrDefault span.Start
@@ -1335,7 +1309,7 @@ type internal MotionUtil
                 count
 
         let endPoint = 
-            x.GetWords kind Path.Forward x.CaretPoint
+            _wordUtil.GetWords kind Path.Forward x.CaretPoint
             |> SeqUtil.skipMax count
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
@@ -1349,7 +1323,7 @@ type internal MotionUtil
     member x.WordBackward kind count =
 
         let startPoint = 
-            x.GetWords kind Path.Backward x.CaretPoint
+            _wordUtil.GetWords kind Path.Backward x.CaretPoint
             |> SeqUtil.skipMax (count - 1)
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
@@ -1367,7 +1341,7 @@ type internal MotionUtil
         // on the last point inside a word then we calculate the next word starting at
         // the end of the first word.
         let searchPoint = 
-            match x.GetWords kind Path.Forward x.CaretPoint |> SeqUtil.tryHeadOnly with
+            match _wordUtil.GetWords kind Path.Forward x.CaretPoint |> SeqUtil.tryHeadOnly with
             | None -> 
                 x.CaretPoint
             | Some span -> 
@@ -1378,7 +1352,7 @@ type internal MotionUtil
 
         let endPoint = 
             searchPoint
-            |> x.GetWords kind Path.Forward
+            |> _wordUtil.GetWords kind Path.Forward
             |> Seq.filter (fun span ->
                 // The typical word motion includes blank lines as part of the word. The one 
                 // exception is end of word which doesn't count blank lines as words.  Filter
@@ -1409,7 +1383,7 @@ type internal MotionUtil
             MotionResultFlags = MotionResultFlags.None }
 
     /// Find the first non-whitespace character on the current line.  
-    member x.FirstNonWhiteSpaceOnCurrentLine () =
+    member x.FirstNonBlankOnCurrentLine () =
         let start = x.CaretPoint
         let line = start.GetContainingLine()
         let target = 
@@ -1428,12 +1402,12 @@ type internal MotionUtil
 
     /// Create a line wise motion from the current line to (count - 1) lines
     /// downward 
-    member x.FirstNonWhiteSpaceOnLine count = 
+    member x.FirstNonBlankOnLine count = 
         let startLine = x.CaretLine
         let endLine = 
             let number = startLine.LineNumber + (count - 1)
             SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
-        let column = TssUtil.FindFirstNonWhiteSpaceCharacter endLine |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
+        let column = SnapshotLineUtil.GetFirstNonBlankOrStart endLine |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
         let range = SnapshotLineRangeUtil.CreateForLineRange startLine endLine
         {
             Span = range.ExtentIncludingLineBreak
@@ -1515,7 +1489,7 @@ type internal MotionUtil
             // number of words at 'count'.  Since the 'count' includes the white space between
             // the words 'count' is a definite max on the number of words we need to consider
             let words = 
-                x.GetWords wordKind Path.Forward point
+                _wordUtil.GetWords wordKind Path.Forward point
                 |> Seq.truncate count
                 |> List.ofSeq
 
@@ -1586,11 +1560,11 @@ type internal MotionUtil
                 MotionResultFlags = MotionResultFlags.AnyWord } |> Some
 
 
-    member x.LineDownToFirstNonWhiteSpace count =
+    member x.LineDownToFirstNonBlank count =
         let line = x.CaretPoint |> SnapshotPointUtil.GetContainingLine
         let number = line.LineNumber + count
         let endLine = SnapshotUtil.GetLineOrLast line.Snapshot number
-        let column = TssUtil.FindFirstNonWhiteSpaceCharacter endLine |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
+        let column = SnapshotLineUtil.GetFirstNonBlankOrStart endLine |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
         let span = SnapshotSpan(line.Start, endLine.EndIncludingLineBreak)
         {
             Span = span 
@@ -1598,14 +1572,14 @@ type internal MotionUtil
             MotionKind = MotionKind.LineWise column
             MotionResultFlags = MotionResultFlags.None }
 
-    member x.LineUpToFirstNonWhiteSpace count =
+    member x.LineUpToFirstNonBlank count =
         let point = x.CaretPoint
         let endLine = SnapshotPointUtil.GetContainingLine point
         let startLine = SnapshotUtil.GetLineOrFirst endLine.Snapshot (endLine.LineNumber - count)
         let span = SnapshotSpan(startLine.Start, endLine.End)
         let column = 
             startLine 
-            |> TssUtil.FindFirstNonWhiteSpaceCharacter
+            |> SnapshotLineUtil.GetFirstNonBlankOrStart
             |> SnapshotPointUtil.GetColumn
             |> CaretColumn.InLastLine
         {
@@ -1673,18 +1647,18 @@ type internal MotionUtil
                 MotionKind = MotionKind.LineWise column
                 MotionResultFlags = MotionResultFlags.None } |> Some
 
-    member x.LineOrFirstToFirstNonWhiteSpace numberOpt = 
+    member x.LineOrFirstToFirstNonBlank numberOpt = 
         let point = x.CaretPoint
         let originLine = SnapshotPointUtil.GetContainingLine point
         let tss= originLine.Snapshot
         let endLine = 
             match numberOpt with
-            | Some(number) ->  SnapshotUtil.GetLineOrFirst tss (TssUtil.VimLineToTssLine number)
+            | Some(number) ->  SnapshotUtil.GetLineOrFirst tss (Util.VimLineToTssLine number)
             | None -> SnapshotUtil.GetFirstLine tss 
-        x.LineToLineFirstNonWhiteSpaceMotion originLine endLine
+        x.LineToLineFirstNonBlankMotion originLine endLine
 
     /// Implements the 'G" motion
-    member x.LineOrLastToFirstNonWhiteSpace numberOpt = 
+    member x.LineOrLastToFirstNonBlank numberOpt = 
         _jumpList.Add x.CaretPoint
 
         let point = x.CaretPoint
@@ -1692,22 +1666,36 @@ type internal MotionUtil
         let tss= originLine.Snapshot
         let endLine = 
             match numberOpt with
-            | Some number ->  SnapshotUtil.GetLineOrLast tss (TssUtil.VimLineToTssLine number)
+            | Some number ->  SnapshotUtil.GetLineOrLast tss (Util.VimLineToTssLine number)
             | None -> SnapshotUtil.GetLastLine tss 
-        x.LineToLineFirstNonWhiteSpaceMotion originLine endLine
+        x.LineToLineFirstNonBlankMotion originLine endLine
 
-    member x.LastNonWhiteSpaceOnLine count = 
-        let start = x.CaretPoint
-        let startLine = SnapshotPointUtil.GetContainingLine start
-        let snapshot = startLine.Snapshot
-        let number = startLine.LineNumber + (count-1)
-        let endLine = SnapshotUtil.GetLineOrLast snapshot number
-        let endPoint = TssUtil.FindLastNonWhiteSpaceCharacter endLine
-        let endPoint = if SnapshotUtil.GetEndPoint snapshot = endPoint then endPoint else endPoint.Add(1)
-        let span = SnapshotSpan(start,endPoint)
+    /// Go to the last non-blank character on the 'count - 1' line
+    member x.LastNonBlankOnLine count = 
+        let number = x.CaretLine.LineNumber + (count-1)
+        let endLine = SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
+        let endPoint = 
+            // Find the last non-blank character on the line.  If the line is 
+            // completely blank then the start of the line is used.  Remember we need
+            // to move 1 past the character in order to include it in the line
+            let endPoint = 
+                endLine.Extent
+                |> SnapshotSpanUtil.GetPoints Path.Backward
+                |> Seq.skipWhile SnapshotPointUtil.IsBlankOrEnd
+                |> SeqUtil.tryHeadOnly
+            match endPoint with
+            | Some point -> SnapshotPointUtil.AddOne point
+            | None -> endLine.Start
+
+        // This motion can definitely be backwards on lines which end in blanks or
+        // are completely blank
+        let isForward = x.CaretPoint.Position <= endPoint.Position
+        let startPoint, endPoint = SnapshotPointUtil.OrderAscending x.CaretPoint endPoint
+        let span = SnapshotSpan(startPoint, endPoint)
+
         {
             Span = span 
-            IsForward = true 
+            IsForward = isForward
             MotionKind = MotionKind.CharacterWiseInclusive
             MotionResultFlags = MotionResultFlags.None }
 
@@ -2022,7 +2010,7 @@ type internal MotionUtil
             |> SeqUtil.tryHeadOnly
             |> OptionUtil.getOrDefault x.CaretPoint
 
-        match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
+        match _wordUtil.GetFullWordSpan WordKind.NormalWord point with
         | None -> 
             // Nothing to do if no word under the cursor
             _statusUtil.OnError Resources.NormalMode_NoWordUnderCursor
@@ -2068,7 +2056,7 @@ type internal MotionUtil
             let startLine = SnapshotSpanUtil.GetStartLine span
             let endLine = SnapshotPointUtil.GetContainingLine span.End
             let snapshot = startLine.Snapshot
-            let firstNonBlank = TssUtil.FindFirstNonWhiteSpaceCharacter startLine
+            let firstNonBlank = SnapshotLineUtil.GetFirstNonBlankOrStart startLine
 
             // There are certain motions to which we cannot apply the 'exclusive-linewise'
             // adjustment.  They are not listed in the documentation (but it does note there
@@ -2093,7 +2081,7 @@ type internal MotionUtil
             // be the first column but simply at or before the first non-blank on the line
             let endsInColumnZero = 
                 match motion with
-                | Motion.WordForward _ -> span.End.Position <= (TssUtil.FindFirstNonWhiteSpaceCharacter endLine).Position
+                | Motion.WordForward _ -> span.End.Position <= (SnapshotLineUtil.GetFirstNonBlankOrStart endLine).Position
                 | _ -> SnapshotPointUtil.IsStartOfLine span.End
 
             if endLine.LineNumber <= startLine.LineNumber then
@@ -2149,20 +2137,20 @@ type internal MotionUtil
             | Motion.CharSearch (kind, direction, c) -> x.CharSearch c motionArgument.Count kind direction
             | Motion.EndOfLine -> x.EndOfLine motionArgument.Count |> Some
             | Motion.EndOfWord wordKind -> x.EndOfWord wordKind motionArgument.Count |> Some
-            | Motion.FirstNonWhiteSpaceOnCurrentLine -> x.FirstNonWhiteSpaceOnCurrentLine() |> Some
-            | Motion.FirstNonWhiteSpaceOnLine -> x.FirstNonWhiteSpaceOnLine motionArgument.Count |> Some
+            | Motion.FirstNonBlankOnCurrentLine -> x.FirstNonBlankOnCurrentLine() |> Some
+            | Motion.FirstNonBlankOnLine -> x.FirstNonBlankOnLine motionArgument.Count |> Some
             | Motion.InnerWord wordKind -> x.InnerWord wordKind motionArgument.Count
-            | Motion.LastNonWhiteSpaceOnLine -> x.LastNonWhiteSpaceOnLine motionArgument.Count |> Some
+            | Motion.LastNonBlankOnLine -> x.LastNonBlankOnLine motionArgument.Count |> Some
             | Motion.LastSearch isReverse -> x.LastSearch isReverse motionArgument.Count
             | Motion.LineDown -> x.LineDown motionArgument.Count
-            | Motion.LineDownToFirstNonWhiteSpace -> x.LineDownToFirstNonWhiteSpace motionArgument.Count |> Some
+            | Motion.LineDownToFirstNonBlank -> x.LineDownToFirstNonBlank motionArgument.Count |> Some
             | Motion.LineFromBottomOfVisibleWindow -> x.LineFromBottomOfVisibleWindow motionArgument.RawCount |> Some
             | Motion.LineFromTopOfVisibleWindow -> x.LineFromTopOfVisibleWindow motionArgument.RawCount |> Some
             | Motion.LineInMiddleOfVisibleWindow -> x.LineInMiddleOfVisibleWindow() |> Some
-            | Motion.LineOrFirstToFirstNonWhiteSpace -> x.LineOrFirstToFirstNonWhiteSpace motionArgument.RawCount |> Some
-            | Motion.LineOrLastToFirstNonWhiteSpace -> x.LineOrLastToFirstNonWhiteSpace motionArgument.RawCount |> Some
+            | Motion.LineOrFirstToFirstNonBlank -> x.LineOrFirstToFirstNonBlank motionArgument.RawCount |> Some
+            | Motion.LineOrLastToFirstNonBlank -> x.LineOrLastToFirstNonBlank motionArgument.RawCount |> Some
             | Motion.LineUp -> x.LineUp motionArgument.Count
-            | Motion.LineUpToFirstNonWhiteSpace -> x.LineUpToFirstNonWhiteSpace motionArgument.Count |> Some
+            | Motion.LineUpToFirstNonBlank -> x.LineUpToFirstNonBlank motionArgument.Count |> Some
             | Motion.Mark c -> x.Mark c
             | Motion.MarkLine c -> x.MarkLine c 
             | Motion.MatchingToken -> x.MatchingToken()

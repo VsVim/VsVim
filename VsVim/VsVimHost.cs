@@ -35,6 +35,7 @@ namespace VsVim
 
         private readonly IVsAdapter _adapter;
         private readonly ITextManager _textManager;
+        private readonly IWordUtilFactory _wordUtilFactory;
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
         private readonly _DTE _dte;
 
@@ -51,11 +52,13 @@ namespace VsVim
             ITextManager textManager,
             ITextDocumentFactoryService textDocumentFactoryService,
             IEditorOperationsFactoryService editorOperationsFactoryService,
+            IWordUtilFactory wordUtilFactory,
             SVsServiceProvider serviceProvider)
             : base(textDocumentFactoryService, editorOperationsFactoryService)
         {
             _adapter = adapter;
             _editorAdaptersFactoryService = editorAdaptersFactoryService;
+            _wordUtilFactory = wordUtilFactory;
             _dte = (_DTE)serviceProvider.GetService(typeof(_DTE));
             _textManager = textManager;
         }
@@ -82,7 +85,8 @@ namespace VsVim
             if (target == null)
             {
                 var caretPoint = textView.Caret.Position.BufferPosition;
-                var span = TssUtil.FindCurrentFullWordSpan(caretPoint, WordKind.NormalWord);
+                var wordUtil = _wordUtilFactory.GetWordUtil(textView);
+                var span = wordUtil.GetFullWordSpan(WordKind.NormalWord, caretPoint);
                 target = span.IsSome()
                     ? span.Value.GetText()
                     : null;

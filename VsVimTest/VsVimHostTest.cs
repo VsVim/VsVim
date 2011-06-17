@@ -24,6 +24,7 @@ namespace VsVim.UnitTest
         private Mock<IVsEditorAdaptersFactoryService> _editorAdaptersFactoryService;
         private Mock<ITextBufferUndoManagerProvider> _undoManagerProvider;
         private Mock<IEditorOperationsFactoryService> _editorOperationsFactoryService;
+        private Mock<IWordUtilFactory> _wordUtilFactory;
         private Mock<_DTE> _dte;
         private Mock<IVsUIShell4> _shell;
         private Mock<StatusBar> _statusBar;
@@ -35,6 +36,7 @@ namespace VsVim.UnitTest
             _undoManagerProvider = _factory.Create<ITextBufferUndoManagerProvider>();
             _editorAdaptersFactoryService = _factory.Create<IVsEditorAdaptersFactoryService>();
             _editorOperationsFactoryService = _factory.Create<IEditorOperationsFactoryService>();
+            _wordUtilFactory = _factory.Create<IWordUtilFactory>();
             _statusBar = _factory.Create<StatusBar>();
             _shell = _factory.Create<IVsUIShell4>();
             _dte = _factory.Create<_DTE>();
@@ -51,6 +53,7 @@ namespace VsVim.UnitTest
                 _textManager.Object,
                 _factory.Create<ITextDocumentFactoryService>().Object,
                 _editorOperationsFactoryService.Object,
+                _wordUtilFactory.Object,
                 sp.Object);
             _host = _hostRaw;
         }

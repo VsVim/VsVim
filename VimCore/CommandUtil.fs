@@ -1069,7 +1069,7 @@ type internal CommandUtil
             _operations.MoveCaretToMotionResult result
 
             // Beep if the motion doesn't actually move the caret.  This is currently done to 
-            // satisfy 'l' and 'h' at the end and start of lines respetively.  It may not be 
+            // satisfy 'l' and 'h' at the end and start of lines respectively.  It may not be 
             // needed for every empty motion but so far I can't find a reason why not
             if point = x.CaretPoint then 
                 _operations.Beep()
@@ -1873,7 +1873,7 @@ type internal CommandUtil
             // line 
             let line = SnapshotUtil.GetLine x.CurrentSnapshot range.StartLineNumber
             let point = 
-                match TssUtil.TryFindFirstNonWhiteSpaceCharacter line with
+                match SnapshotLineUtil.GetFirstNonBlank line with 
                 | None -> SnapshotLineUtil.GetLastIncludedPoint line |> OptionUtil.getOrDefault line.Start
                 | Some point -> point
             TextViewUtil.MoveCaretToPoint _textView point)
@@ -1890,7 +1890,7 @@ type internal CommandUtil
             // line 
             let line = SnapshotUtil.GetLine x.CurrentSnapshot range.StartLineNumber
             let point = 
-                match TssUtil.TryFindFirstNonWhiteSpaceCharacter line with
+                match SnapshotLineUtil.GetFirstNonBlank line with 
                 | None -> SnapshotLineUtil.GetLastIncludedPoint line |> OptionUtil.getOrDefault line.Start
                 | Some point -> point
             TextViewUtil.MoveCaretToPoint _textView point)

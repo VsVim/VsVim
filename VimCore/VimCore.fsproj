@@ -49,8 +49,6 @@
     <Compile Include="StringUtil.fs" />
     <Compile Include="TextUtil.fsi" />
     <Compile Include="TextUtil.fs" />
-    <Compile Include="TssUtil.fsi" />
-    <Compile Include="TssUtil.fs" />
     <Compile Include="OperationKind.fs" />
     <Compile Include="Register.fs" />
     <Compile Include="CoreInterfaces.fs" />
@@ -119,6 +117,8 @@
     <Compile Include="UndoRedoOperations.fs" />
     <Compile Include="CommandRunner.fsi" />
     <Compile Include="CommandRunner.fs" />
+    <Compile Include="WordUtil.fsi" />
+    <Compile Include="WordUtil.fs" />
     <Compile Include="Vim.fs" />
     <Compile Include="TextChangeTracker.fsi" />
     <Compile Include="TextChangeTracker.fs" />

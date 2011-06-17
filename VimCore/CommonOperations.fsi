@@ -21,6 +21,7 @@ type OperationsData = {
     UndoRedoOperations : IUndoRedoOperations
     VimData : IVimData
     VimHost : IVimHost
+    WordUtil : IWordUtil
 }
 
 module internal CommonUtil =

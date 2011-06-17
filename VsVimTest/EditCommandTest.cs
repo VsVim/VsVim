@@ -27,18 +27,18 @@ namespace VsVim.UnitTest
         [Test]
         public void Ctor1()
         {
-            var command = Create(KeyInputUtil.CharToKeyInput('a'), EditCommandKind.TypeChar);
+            var command = Create(KeyInputUtil.CharToKeyInput('a'), EditCommandKind.UserInput);
             Assert.AreEqual(KeyInputUtil.CharToKeyInput('a'), command.KeyInput);
-            Assert.AreEqual(EditCommandKind.TypeChar, command.EditCommandKind);
+            Assert.AreEqual(EditCommandKind.UserInput, command.EditCommandKind);
         }
 
         [Test]
         public void IsInput1()
         {
-            Assert.IsTrue(Create('a', EditCommandKind.TypeChar).HasKeyInput);
-            Assert.IsTrue(Create('a', EditCommandKind.Backspace).HasKeyInput);
-            Assert.IsTrue(Create('a', EditCommandKind.Delete).HasKeyInput);
-            Assert.IsTrue(Create('a', EditCommandKind.Return).HasKeyInput);
+            Assert.IsTrue(Create('a', EditCommandKind.UserInput).HasKeyInput);
+            Assert.IsTrue(Create('a', EditCommandKind.UserInput).HasKeyInput);
+            Assert.IsTrue(Create('a', EditCommandKind.UserInput).HasKeyInput);
+            Assert.IsTrue(Create('a', EditCommandKind.UserInput).HasKeyInput);
         }
     }
 }

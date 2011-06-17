@@ -64,6 +64,9 @@ namespace Vim.UnitTest
 
             [Import]
             public IVimErrorDetector VimErrorDetector;
+
+            [Import]
+            public IWordUtilFactory WordUtilFactory;
         }
 
         #endregion

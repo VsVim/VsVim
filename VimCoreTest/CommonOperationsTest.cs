@@ -85,7 +85,8 @@ namespace VimCore.UnitTest
                 keyMap: null,
                 statusUtil: _statusUtil.Object,
                 foldManager: null,
-                searchService: _searchService);
+                searchService: _searchService,
+                wordUtil: VimUtil.GetWordUtil(_textView));
 
             _operationsRaw = new CommonOperations(data);
             _operations = _operationsRaw;

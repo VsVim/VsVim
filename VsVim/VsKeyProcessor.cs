@@ -57,7 +57,7 @@ namespace VsVim
         /// </summary>
         public override void KeyDown(KeyEventArgs args)
         {
-            // Don't intercept keystrokse if Visual Studio IncrementalSearch is active
+            // Don't intercept keystrokes if Visual Studio IncrementalSearch is active
             if (_adapter.IsIncrementalSearchActive(TextView))
             {
                 return;
