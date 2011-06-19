@@ -30,8 +30,12 @@ namespace Vim.UnitTest
             var jumpList = new JumpList(new TrackingLineColumnService());
             var keyMap = new KeyMap();
             wordUtil = wordUtil ?? GetWordUtil(textView);
-            foldManager = foldManager ?? new FoldManager(textView.TextBuffer);
             statusUtil = statusUtil ?? new StatusUtil();
+            foldManager = foldManager ?? new FoldManager(
+                textView, 
+                new FoldData(textView.TextBuffer),
+                statusUtil, 
+                FSharpOption.Create(EditorUtil.FactoryService.OutliningManagerService.GetOutliningManager(textView)));
             searchService = searchService ?? CreateSearchService(localSettings.GlobalSettings);
             undoRedoOperations = undoRedoOperations ??
                                  new UndoRedoOperations(statusUtil, FSharpOption<ITextUndoHistory>.None, editorOperations);
@@ -127,7 +131,7 @@ namespace Vim.UnitTest
             motionUtil = motionUtil ?? CreateTextViewMotionUtil(textView, markMap: markMap, vimData: vimData, settings: localSettings);
             operations = operations ?? CreateCommonOperations(textView, localSettings, vimData: vimData, statusUtil: statusUtil);
             smartIndentationService = smartIndentationService ?? CreateSmartIndentationService();
-            foldManager = foldManager ?? CreateFoldManager(textView.TextBuffer);
+            foldManager = foldManager ?? EditorUtil.FactoryService.FoldManagerFactory.GetFoldManager(textView);
             searchService = searchService ?? CreateSearchService(localSettings.GlobalSettings);
             wordNavigator = wordNavigator ?? CreateTextStructureNavigator(textView, WordKind.NormalWord);
             jumpList = jumpList ?? CreateJumpList();
@@ -158,11 +162,6 @@ namespace Vim.UnitTest
         internal static ISmartIndentationService CreateSmartIndentationService()
         {
             return EditorUtil.FactoryService.SmartIndentationService;
-        }
-
-        internal static FoldManager CreateFoldManager(ITextBuffer textBuffer)
-        {
-            return new FoldManager(textBuffer);
         }
 
         internal static UndoRedoOperations CreateUndoRedoOperations(IStatusUtil statusUtil = null)

@@ -68,7 +68,8 @@ module internal Resources =
 
     let CommandRunner_CommandNameAlreadyAdded = "A Command with the given name is already present"
 
-    let Internal_NotSupported = "Undo / Redo is not supported on this buffer"
+    let Internal_UndoRedoNotSupported = "Undo / Redo is not supported on this buffer"
+    let Internal_FoldsNotSupported = "Folds are not supported on this buffer"
     let Internal_CannotUndo = "Cannot undo the last action"
     let Internal_CannotRedo = "Cannot redo the last action"
     let Internal_ErrorMappingToVisual = "Error mapping to the visual buffer defaulting to edit buffer"

@@ -22,7 +22,6 @@ namespace VimCore.UnitTest
         private IKeyMap _keyMap;
         private IVimData _vimData;
         private IFoldManager _foldManager;
-        private IOutliningManager _outliningManager;
         private MockVimHost _vimHost;
         private bool _assertOnErrorMessage = true;
         private bool _assertOnWarningMessage = true;
@@ -61,8 +60,7 @@ namespace VimCore.UnitTest
             _vimHost = (MockVimHost)_buffer.Vim.VimHost;
             _vimHost.BeepCount = 0;
             _vimData = service.Vim.VimData;
-            _foldManager = EditorUtil.FactoryService.FoldManagerFactory.GetFoldManager(_textBuffer);
-            _outliningManager = EditorUtil.FactoryService.OutliningManagerService.GetOutliningManager(_textView);
+            _foldManager = EditorUtil.FactoryService.FoldManagerFactory.GetFoldManager(_textView);
 
             // Many of the operations operate on both the visual and edit / text snapshot
             // simultaneously.  Ensure that our setup code is producing a proper IElisionSnapshot
@@ -1276,7 +1274,6 @@ namespace VimCore.UnitTest
             Create("cat", "dog", "tree", "fish");
             var range = _textView.GetLineRange(1, 2);
             _foldManager.CreateFold(range);
-            _outliningManager.CollapseAll(range.ExtentIncludingLineBreak, x => true);
             _buffer.Process('j');
             Assert.AreEqual(1, _textView.GetCaretLine().LineNumber);
             _buffer.Process('j');

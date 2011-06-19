@@ -614,6 +614,8 @@ type internal CommandUtil
 
     /// Delete count lines from the cursor.  The caret should be positioned at the start
     /// of the first line for both undo / redo
+    ///
+    /// TODO: this needs to operate on the Visual Snapshot
     member x.DeleteLines count register = 
         let line = x.CaretLine
         let span, stringData = 
@@ -2036,6 +2038,8 @@ type internal CommandUtil
             CommandResult.Error
 
     /// Yank the specified lines into the specified register 
+    ///
+    /// TODO: this needs to operate on the Visual Snapshot
     member x.YankLines count register = 
         let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
         let data = StringData.OfSpan range.ExtentIncludingLineBreak 

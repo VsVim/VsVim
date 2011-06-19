@@ -49,7 +49,7 @@ namespace VimCore.UnitTest
         public void Undo_WithoutHistory()
         {
             Create(haveHistory: false);
-            _statusUtil.Setup(x => x.OnError(Resources.Internal_NotSupported)).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.Internal_UndoRedoNotSupported)).Verifiable();
             _operationsRaw.Undo(1);
             _factory.Verify();
         }
@@ -121,7 +121,7 @@ namespace VimCore.UnitTest
         public void Redo_NoHistory()
         {
             Create(haveHistory: false);
-            _statusUtil.Setup(x => x.OnError(Resources.Internal_NotSupported)).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.Internal_UndoRedoNotSupported)).Verifiable();
             _operationsRaw.Redo(1);
             _factory.Verify();
         }

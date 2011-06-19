@@ -81,13 +81,16 @@ type IVimBufferCreationListener =
     /// Called whenever an IVimBuffer is created
     abstract VimBufferCreated : IVimBuffer -> unit
 
-/// Supports the creation and deletion of folds within a ITextBuffer
-type IFoldManager = 
+/// Supports the creation and deletion of folds within a ITextBuffer.  Most components
+/// should talk to IFoldManager directly
+type IFoldData = 
 
-    /// Associated ITextBuffer
+    /// Associated ITextBuffer the data is over
     abstract TextBuffer : ITextBuffer
 
-    /// Gets snapshot spans for all of the currently existing folds
+    /// Gets snapshot spans for all of the currently existing folds.  This will
+    /// only return the folds explicitly created by vim.  It won't return any
+    /// collapsed regions in the ITextView
     abstract Folds : SnapshotSpan seq
 
     /// Create a fold for the given line range
@@ -100,14 +103,37 @@ type IFoldManager =
     /// Delete all of the folds in the buffer
     abstract DeleteAllFolds : unit -> unit
 
-    /// Raised when the collection of folds are updated
+    /// Raised when the collection of folds are updated for any reason
     [<CLIEvent>]
     abstract FoldsUpdated: IEvent<System.EventArgs>
+
+/// Supports the creation and deletion of folds within a ITextBuffer
+///
+/// TODO: This should become a merger between folds and outlining regions in 
+/// an ITextBuffer / ITextView
+type IFoldManager = 
+
+    /// Associated ITextView
+    abstract TextView : ITextView
+
+    /// Create a fold for the given line range
+    abstract CreateFold : SnapshotLineRange -> unit 
+
+    /// Delete a fold which crosses the given SnapshotPoint.  Returns false if 
+    /// there was no fold to be deleted
+    abstract DeleteFold : SnapshotPoint -> bool
+
+    /// Delete all of the folds in the buffer
+    abstract DeleteAllFolds : unit -> unit
 
 /// Supports the get and creation of IFoldManager for a given ITextBuffer
 type IFoldManagerFactory =
 
-    abstract GetFoldManager : ITextBuffer -> IFoldManager
+    /// Get the IFoldData for this ITextBuffer
+    abstract GetFoldData : ITextBuffer -> IFoldData
+
+    /// Get the IFoldManager for this ITextView.
+    abstract GetFoldManager : ITextView -> IFoldManager
 
 /// Abstract representation of the mouse
 type IMouseDevice = 

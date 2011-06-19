@@ -168,7 +168,7 @@
     <Compile Include="SelectionChangeTrackerTest.cs" />
     <Compile Include="SeqUtilTest.cs" />
     <Compile Include="VisualModeIntegrationTest.cs" />
-    <Compile Include="FoldManagerTest.cs" />
+    <Compile Include="FoldDataTest.cs" />
     <Compile Include="InsertModeIntegrationTest.cs" />
     <Compile Include="FileSystemTest.cs" />
     <Compile Include="MotionUtilTest.cs" />

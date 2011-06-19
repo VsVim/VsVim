@@ -866,7 +866,7 @@ type CommonOperationsFactory
             // as TFS annotated buffers.
             let ret = _outliningManagerService.GetOutliningManager(textView)
             if ret = null then None else Some ret
-        let foldManager = _foldManagerFactory.GetFoldManager(textView.TextBuffer)
+        let foldManager = _foldManagerFactory.GetFoldManager textView
 
         let vim = bufferData.Vim
         let operationsData = { 

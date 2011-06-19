@@ -93,6 +93,7 @@
     <Compile Include="Tagger.fs" />
     <Compile Include="SelectionChangeTracker.fsi" />
     <Compile Include="SelectionChangeTracker.fs" />
+    <Compile Include="FoldManager.fsi" />
     <Compile Include="FoldManager.fs" />
     <Compile Include="VimBuffer.fsi" />
     <Compile Include="VimBuffer.fs" />
@@ -120,6 +121,8 @@
     <Compile Include="WordUtil.fsi" />
     <Compile Include="WordUtil.fs" />
     <Compile Include="Vim.fs" />
+    <Compile Include="StatusUtil.fsi" />
+    <Compile Include="StatusUtil.fs" />
     <Compile Include="TextChangeTracker.fsi" />
     <Compile Include="TextChangeTracker.fs" />
     <Compile Include="MefComponents.fs" />

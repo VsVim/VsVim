@@ -53,6 +53,12 @@ type IStatusUtil =
     /// Raised when there is a warning message that needs to be reported
     abstract OnWarning : string -> unit 
 
+/// Factory for getting IStatusUtil instances.  This is an importable MEF component
+type IStatusUtilFactory =
+
+    /// Get the IStatusUtil instance for the given ITextView
+    abstract GetStatusUtil : ITextView -> IStatusUtil
+
 /// Abstracts away VsVim's interaction with the file system to facilitate testing
 type IFileSystem =
 
