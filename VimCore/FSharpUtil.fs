@@ -357,6 +357,13 @@ module internal OptionUtil =
         | Some(value) -> value
         | None -> defaultValue
 
+    /// Convert the Nullable<T> to an Option<T>
+    let ofNullable (value : System.Nullable<'T>) =
+        if value.HasValue then
+            Some value.Value
+        else
+            None
+
 /// Represents a collection which is guarantee to have at least a single element.  This
 /// is very useful when dealing with discriminated unions of values where one is an element
 /// and another is a collection where the collection has the constraint that it must 

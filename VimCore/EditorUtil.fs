@@ -2,6 +2,7 @@
 
 namespace Vim
 open Microsoft.VisualStudio.Text
+open Microsoft.VisualStudio.Text.Projection
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
 open Microsoft.VisualStudio.Text.Operations
@@ -957,6 +958,51 @@ module SnapshotLineRangeUtil =
         let endLine = snapshot.GetLineFromLineNumber(endNumber)
         CreateForLineRange startLine endLine
 
+module BufferGraphUtil = 
+
+    /// Map the point up to the given ITextSnapshot.  Returns None if the mapping is not 
+    /// possible
+    let MapPointUpToSnapshot (bufferGraph : IBufferGraph) point trackingMode affinity snapshot =
+        try
+            bufferGraph.MapUpToSnapshot(point, trackingMode, affinity, snapshot)
+            |> OptionUtil.ofNullable
+        with
+            | :? System.ArgumentException-> None
+            | :? System.InvalidOperationException -> None
+
+    /// Map the point down to the given ITextSnapshot.  Returns None if the mapping is not 
+    /// possible
+    let MapPointDownToSnapshot (bufferGraph : IBufferGraph) point trackingMode affinity snapshot =
+        try
+            bufferGraph.MapDownToSnapshot(point, trackingMode, affinity, snapshot)
+            |> OptionUtil.ofNullable
+        with
+            | :? System.ArgumentException-> None
+            | :? System.InvalidOperationException -> None
+
+    /// Map the SnapshotSpan down to the given ITextSnapshot.  Returns None if the mapping is
+    /// not possible
+    let MapSpanDownToSnapshot (bufferGraph : IBufferGraph) span trackingMode snapshot =
+        try
+            bufferGraph.MapDownToSnapshot(span, trackingMode, snapshot) |> Some
+        with
+            | :? System.ArgumentException-> None
+            | :? System.InvalidOperationException -> None
+
+/// The common pieces of information about an ITextSnapshot which are used
+/// to calculate items like motions
+type SnapshotData = {
+
+    /// SnapshotPoint for the Caret
+    CaretPoint : SnapshotPoint
+
+    /// ITextSnapshotLine on which the caret resides
+    CaretLine : ITextSnapshotLine
+
+    /// The current ITextSnapshot on which this data is based
+    CurrentSnapshot : ITextSnapshot
+}
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module TextViewUtil =
@@ -981,9 +1027,19 @@ module TextViewUtil =
 
     let GetCaretPointAndLine textView = (GetCaretPoint textView),(GetCaretLine textView)
 
-    /// Returns a sequence of ITextSnapshotLines representing the visible lines in the buffer
-    let GetVisibleSnapshotLines (textView:ITextView) =
-        if textView.InLayout then Seq.empty
+    /// Get the count of Visible lines in the ITextView
+    let GetVisibleLineCount (textView : ITextView) = 
+        try
+            textView.TextViewLines.Count
+        with 
+            // TextViewLines can throw if the view is being laid out.  Highly unlikely we'd hit
+            // that inside of Vim but need to be careful
+            | _ -> 50
+
+    /// Returns a sequence of ITextSnapshotLine values representing the visible lines in the buffer
+    let GetVisibleSnapshotLines (textView : ITextView) =
+        if textView.InLayout then
+            Seq.empty
         else 
             let lines = textView.TextViewLines
             let startNumber = lines.FirstVisibleLine.Start.GetContainingLine().LineNumber
@@ -1017,15 +1073,48 @@ module TextViewUtil =
         let point = SnapshotPoint(tss, pos)
         MoveCaretToPoint textView point 
 
-    /// Get the count of Visible lines in the ITextView
-    let GetVisibleLineCount (textView : ITextView) = 
-        try
-            textView.TextViewLines.Count
-        with 
-            // TextViewLines can throw if the view is being laid out.  Highly unlikely we'd hit
-            // that inside of Vim but need to be careful
-            | _ -> 50
+    /// Get the SnapshotData value for the edit buffer.  Unlike the SnapshotData for the Visual Buffer this 
+    /// can always be retrieved because the caret point is presented in terms of the edit buffer
+    let GetEditSnapshotData (textView : ITextView) = 
+        let caretPoint = GetCaretPoint textView
+        let caretLine = SnapshotPointUtil.GetContainingLine caretPoint
+        { 
+            CaretPoint = caretPoint
+            CaretLine = caretLine
+            CurrentSnapshot = caretLine.Snapshot }
 
+    /// Get the SnapshotData value for the visual buffer.  Can return None if the information is not mappable
+    /// to the visual buffer.  Really this shouldn't ever happen unless the IProjectionBuffer was incorrectly
+    /// hooked up though
+    let GetVisualSnapshotData (textView : ITextView) = 
+
+        // Get the visual buffer information
+        let visualBuffer = textView.TextViewModel.VisualBuffer
+        let visualSnapshot = visualBuffer.CurrentSnapshot
+
+        // Map the caret up to the visual buffer from the edit buffer.  The visual buffer will be
+        // above the edit buffer.
+        //
+        // The choice of PointTrackingMode and PositionAffinity is quite arbitrary here and it's very
+        // possible there is a better choice for these values.  Since we are going up to a single root
+        // ITextBuffer in this case though these shouldn't matter too much
+        let caretPoint = 
+            let bufferGraph = textView.BufferGraph
+            let editCaretPoint = GetCaretPoint textView
+            BufferGraphUtil.MapPointUpToSnapshot bufferGraph editCaretPoint PointTrackingMode.Negative PositionAffinity.Predecessor visualSnapshot
+
+        match caretPoint with
+        | None ->
+            // If the caret can't be mapped up to the visual buffer then there is no way to get the 
+            // visual SnapshotData information.  This should represent a rather serious issue with the 
+            // ITextView though
+            None
+        | Some caretPoint ->
+            let caretLine = SnapshotPointUtil.GetContainingLine caretPoint
+            { 
+                CaretPoint = caretPoint
+                CaretLine = caretLine
+                CurrentSnapshot = caretLine.Snapshot } |> Some
 
 module TextSelectionUtil = 
 

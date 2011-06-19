@@ -12,7 +12,7 @@ open System.ComponentModel.Composition
 open System.Collections.Generic
 
 type FoldManager(_textBuffer : ITextBuffer) = 
-    
+
     let _updated = Event<System.EventArgs>()
     let mutable _folds : ITrackingSpan list = List.empty
 
@@ -26,7 +26,7 @@ type FoldManager(_textBuffer : ITextBuffer) =
     /// Create a fold over the given line range
     member x.CreateFold (range : SnapshotLineRange) = 
         if range.Count > 1 then
-            let span = range.ExtentIncludingLineBreak
+            let span = range.Extent
             let span = _textBuffer.CurrentSnapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeInclusive)
             _folds <- span :: _folds
             _updated.Trigger System.EventArgs.Empty
@@ -48,6 +48,7 @@ type FoldManager(_textBuffer : ITextBuffer) =
                 true
         _updated.Trigger System.EventArgs.Empty
         ret
+
     member x.DeleteAllFolds () =
         _folds <- List.empty
         _updated.Trigger System.EventArgs.Empty
@@ -72,7 +73,7 @@ type internal FoldTagger
         let handle _ = _tagsChanged.Trigger(this, new SnapshotSpanEventArgs(SnapshotUtil.GetExtent _textBuffer.CurrentSnapshot))
         _foldManager.FoldsUpdated |> Event.add handle
 
-    member x.GetTags (col:NormalizedSnapshotSpanCollection) =
+    member x.GetTags (col : NormalizedSnapshotSpanCollection) =
         let getDescription span = 
             let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
             sprintf "%d lines ---" ((endLine.LineNumber - startLine.LineNumber) + 1)
@@ -87,7 +88,7 @@ type internal FoldTagger
                 let tag = OutliningRegionTag(true, true, description, "Fold Hint")
                 TagSpan<OutliningRegionTag>(span, tag) :> ITagSpan<OutliningRegionTag> )
 
-    interface ITagger<OutliningRegionTag > with
+    interface ITagger<OutliningRegionTag> with
         member x.GetTags col = x.GetTags col
         [<CLIEvent>]
         member x.TagsChanged = _tagsChanged.Publish

@@ -54,5 +54,3 @@ module internal Util =
         match line with
         | 0 -> 0
         | _ -> line - 1
-
-

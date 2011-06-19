@@ -106,7 +106,7 @@ type IFoldManager =
 
 /// Supports the get and creation of IFoldManager for a given ITextBuffer
 type IFoldManagerFactory =
-    
+
     abstract GetFoldManager : ITextBuffer -> IFoldManager
 
 /// Abstract representation of the mouse

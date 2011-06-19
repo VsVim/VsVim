@@ -260,8 +260,11 @@ type MotionResultFlags =
     /// This is to cover cases where the last line is blank and an exclusive promotion
     /// under rule #1 occurs.  It's impossible for the caret movement code to tell the 
     /// difference between a blank which should be consider the last line or if the 
-    // line above is last.  This helps differentiate the two
+    /// line above is last.  This helps differentiate the two
     | ExclusivePromotionPlusOne = 0x4
+
+    /// This motion was promoted under rule #2 to a line wise motion
+    | ExclusiveLineWise = 0x8
 
 /// Information about the type of the motion this was.
 [<RequireQualifiedAccess>]

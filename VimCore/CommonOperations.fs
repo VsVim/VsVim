@@ -149,6 +149,12 @@ type internal CommonOperations ( _data : OperationsData ) =
         TextViewUtil.MoveCaretToPoint _textView point
         x.EnsureCaretOnScreen()
 
+    /// Move the caret to the specified point and ensure it's on screen.  Does not expand the 
+    /// surrounding text if this is in the middle of a collapsed region
+    member x.MoveCaretToPointAndEnsureOnScreen point = 
+        TextViewUtil.MoveCaretToPoint _textView point
+        x.EnsureCaretOnScreen()
+
     /// Move the caret to the position dictated by the given MotionResult value
     member x.MoveCaretToMotionResult (result : MotionResult) =
 
@@ -217,7 +223,14 @@ type internal CommonOperations ( _data : OperationsData ) =
                     | CaretColumn.AfterLastLine ->
                         getAfterLastLine()
 
-        x.MoveCaretToPointAndEnsureVisible point
+        if result.OperationKind = OperationKind.LineWise && not (Util.IsFlagSet result.MotionResultFlags MotionResultFlags.ExclusiveLineWise) then
+            // Line wise motions should not cause any collapsed regions to be expanded.  Instead they
+            // should leave the regions collapsed and just move the point into the region
+            x.MoveCaretToPointAndEnsureOnScreen point
+        else
+            // Character wise motions should expand regions
+            x.MoveCaretToPointAndEnsureVisible point
+
         x.MoveCaretForVirtualEdit()
         _operations.ResetSelection()
 

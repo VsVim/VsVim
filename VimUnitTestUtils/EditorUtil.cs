@@ -11,6 +11,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
 using Vim.UnitTest.Exports;
 using IOPath = System.IO.Path;
+using Microsoft.VisualStudio.Text.Outlining;
 
 namespace Vim.UnitTest
 {
@@ -67,6 +68,12 @@ namespace Vim.UnitTest
 
             [Import]
             public IWordUtilFactory WordUtilFactory;
+
+            [Import]
+            public IFoldManagerFactory FoldManagerFactory;
+
+            [Import]
+            public IOutliningManagerService OutliningManagerService;
         }
 
         #endregion

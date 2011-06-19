@@ -253,6 +253,26 @@ type SectionKind =
     /// settings
     | OnOpenBraceOrBelowCloseBrace
 
+/// Result of trying to run a motion against the Visual Snapshot.  By default motions
+/// are run against the edit snapshot but line wise motions which involve counts need
+/// to be run against the visual snapshot in order to properly account for folded regions
+[<RequireQualifiedAccess>]
+type VisualMotionResult =
+
+    /// The mapping succeeded
+    | Succeeded of MotionResult
+
+    /// The motion simply produced no data
+    | FailedNoMotionResult
+
+    /// The motion failed because the Visual SnapshotData could not be retrieved
+    | FailedNoVisualSnapshotData
+
+    /// The motion failed because the SnapshotData could not be mapped back down to the
+    /// Edit snapshot
+    | FailedNoMapToEditSnapshot
+
+
 type internal MotionUtil 
     ( 
         _textView : ITextView,
@@ -267,6 +287,8 @@ type internal MotionUtil
     ) = 
 
     let _textBuffer = _textView.TextBuffer
+    let _bufferGraph = _textView.BufferGraph
+    let _visualBuffer = _textView.TextViewModel.VisualBuffer
     let _globalSettings = _localSettings.GlobalSettings
 
     /// Set of characters which represent the end of a sentence. 
@@ -288,21 +310,99 @@ type internal MotionUtil
         if line1.LineNumber <= line2.LineNumber then SnapshotSpan(line1.Start, line2.End),true
         else SnapshotSpan(line2.Start, line1.End),false
 
-    /// Apply the 'startofline' option to the given MotionResult
+    /// Apply the 'startofline' option to the given MotionResult.  This function must be 
+    /// called with the MotionData mapped back to the edit snapshot
     member x.ApplyStartOfLineOption (motionData : MotionResult) =
         Contract.Assert(match motionData.MotionKind with MotionKind.LineWise _ -> true | _ -> false)
+        Contract.Assert(motionData.Span.Snapshot = x.CurrentSnapshot)
         if not _globalSettings.StartOfLine then 
             motionData 
         else
             let endLine = 
-                if motionData.IsForward then SnapshotSpanUtil.GetEndLine motionData.Span
-                else SnapshotSpanUtil.GetStartLine motionData.Span
+                if motionData.IsForward then
+                    SnapshotSpanUtil.GetEndLine motionData.Span
+                else
+                    SnapshotSpanUtil.GetStartLine motionData.Span
 
             // TODO: Is GetFirstNonBlankOrStart correct here?  Should it be using the
             // End version?
             let point = SnapshotLineUtil.GetFirstNonBlankOrStart endLine
             let column = SnapshotPointUtil.GetColumn point |> CaretColumn.InLastLine
             { motionData with MotionKind = MotionKind.LineWise column }
+
+    /// Linewise motions often need to deal with the VisualSnapshot of the ITextView because
+    /// they see folded regions as single lines vs. the many of which are actually represented
+    /// within the fold.  
+    ///
+    /// This function wraps the conversion of the information from the edit buffer into the 
+    /// visual buffer and back again when we are done. 
+    member x.MotionWithVisualSnapshotCore (action : SnapshotData -> 'T) (getMotionResult : 'T -> MotionResult option) =
+
+        // First get the SnapshotData for the VisualBuffer based on the current position of the
+        // caret in the EditBuffer.  
+        //
+        // Although highly unlikely it's possible for the caret point to be unmappable into the 
+        // VisualBuffer.  This would likely represent a bug in the projection mapping or the way
+        // in which a projection was setup.
+        match TextViewUtil.GetVisualSnapshotData _textView with
+        | None -> 
+            _statusUtil.OnWarning Resources.Internal_ErrorMappingToVisual
+            VisualMotionResult.FailedNoVisualSnapshotData
+        | Some snapshotData ->
+
+            // Calculate the motion information based on this SnapshotData value
+            let value = action snapshotData
+
+            match getMotionResult value with
+            | None ->
+                VisualMotionResult.FailedNoMotionResult
+            | Some motionResult ->  
+                // Now migrate the SnapshotSpan down to the EditBuffer.  If we cannot map this span into
+                // the EditBuffer then we must fail. 
+                let collection = BufferGraphUtil.MapSpanDownToSnapshot _bufferGraph motionResult.Span SpanTrackingMode.EdgeExclusive x.CurrentSnapshot
+                match collection with
+                | None ->
+                    _statusUtil.OnError Resources.Internal_ErrorMappingBackToEdit
+                    VisualMotionResult.FailedNoMapToEditSnapshot
+                | Some collection ->
+                    let span = NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan collection
+                    { motionResult with Span = span } |> VisualMotionResult.Succeeded
+
+    /// Run the motion function against the Visual Snapshot
+    member x.MotionWithVisualSnapshot (action : SnapshotData -> MotionResult) = 
+
+        match x.MotionWithVisualSnapshotCore action (fun x -> Some x) with
+        | VisualMotionResult.Succeeded motionResult ->
+            motionResult
+        | _ -> 
+            // This can only fail due to mapping issues of the Snapshot back and
+            // forth between the visual and edit snapshot.  If that happens just 
+            // run against the edit snapshot
+            let snapshotData = TextViewUtil.GetEditSnapshotData _textView
+            action snapshotData
+
+    /// Run the motion function against the Visual Snapshot
+    member x.MotionOptionWithVisualSnapshot (action : SnapshotData -> MotionResult option) = 
+
+        match x.MotionWithVisualSnapshotCore action (fun x -> x) with
+        | VisualMotionResult.Succeeded motionResult ->
+            Some motionResult
+        | VisualMotionResult.FailedNoMotionResult ->
+            // If the motion can't be calculated on the Visual Snapshot then there's no reason
+            // to expect it to be calculated properly on the edit snapshot.
+            None
+        | VisualMotionResult.FailedNoMapToEditSnapshot ->
+            // If the motion result couldn't be mapped back to the edit snapshot then just run
+            // against the edit snapshot directly.
+            let snapshotData = TextViewUtil.GetEditSnapshotData _textView
+            action snapshotData
+        | VisualMotionResult.FailedNoVisualSnapshotData ->
+            // This should only happen in cases where the ITextView is in a very bad state as 
+            // it can't map the caret from the edit buffer to the Visual Snapshot.  Can't think
+            // of any reason why this could happen but as a fail safe fall back to the edit buffer
+            // here
+            let snapshotData = TextViewUtil.GetEditSnapshotData _textView
+            action snapshotData
 
     /// Get the motion between the provided two lines.  The motion will be linewise
     /// and have a column of the first non-whitespace character.  If the 'startofline'
@@ -874,6 +974,9 @@ type internal MotionUtil
                 MotionKind = MotionKind.CharacterWiseExclusive
                 MotionResultFlags = MotionResultFlags.None } |> Some
 
+    /// Motion from the caret to the given mark within the ITextBuffer.  Because this uses
+    /// absolute positions and not counts we can operate on the edit buffer and don't need
+    /// to consider the visual buffer
     member x.MarkLine c =
         match _markMap.GetLocalMark _textBuffer c with 
         | None -> 
@@ -1403,17 +1506,18 @@ type internal MotionUtil
     /// Create a line wise motion from the current line to (count - 1) lines
     /// downward 
     member x.FirstNonBlankOnLine count = 
-        let startLine = x.CaretLine
-        let endLine = 
-            let number = startLine.LineNumber + (count - 1)
-            SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
-        let column = SnapshotLineUtil.GetFirstNonBlankOrStart endLine |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
-        let range = SnapshotLineRangeUtil.CreateForLineRange startLine endLine
-        {
-            Span = range.ExtentIncludingLineBreak
-            IsForward = true
-            MotionKind = MotionKind.LineWise column
-            MotionResultFlags = MotionResultFlags.None }
+        x.MotionWithVisualSnapshot (fun x -> 
+            let startLine = x.CaretLine
+            let endLine = 
+                let number = startLine.LineNumber + (count - 1)
+                SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
+            let column = SnapshotLineUtil.GetFirstNonBlankOrStart endLine |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
+            let range = SnapshotLineRangeUtil.CreateForLineRange startLine endLine
+            {
+                Span = range.ExtentIncludingLineBreak
+                IsForward = true
+                MotionKind = MotionKind.LineWise column
+                MotionResultFlags = MotionResultFlags.None })
 
     /// Implement the 'iw' motion.  Unlike the 'aw' motion it is not limited to a specific line
     /// and can exceed it
@@ -1559,34 +1663,40 @@ type internal MotionUtil
                 MotionKind = MotionKind.CharacterWiseInclusive
                 MotionResultFlags = MotionResultFlags.AnyWord } |> Some
 
-
+    /// Implements the '+', '<CR>', 'CTRL-M' motions. 
+    ///
+    /// This is a line wise motion which uses counts hence we must use the visual snapshot
+    /// when calculating the value
     member x.LineDownToFirstNonBlank count =
-        let line = x.CaretPoint |> SnapshotPointUtil.GetContainingLine
-        let number = line.LineNumber + count
-        let endLine = SnapshotUtil.GetLineOrLast line.Snapshot number
-        let column = SnapshotLineUtil.GetFirstNonBlankOrStart endLine |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
-        let span = SnapshotSpan(line.Start, endLine.EndIncludingLineBreak)
-        {
-            Span = span 
-            IsForward = true 
-            MotionKind = MotionKind.LineWise column
-            MotionResultFlags = MotionResultFlags.None }
+        x.MotionWithVisualSnapshot (fun x ->
+            let number = x.CaretLine.LineNumber + count
+            let endLine = SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
+            let column = SnapshotLineUtil.GetFirstNonBlankOrStart endLine |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
+            let span = SnapshotSpan(x.CaretLine.Start, endLine.EndIncludingLineBreak)
+            {
+                Span = span 
+                IsForward = true 
+                MotionKind = MotionKind.LineWise column
+                MotionResultFlags = MotionResultFlags.None })
 
+    /// Implements the '-'
+    ///
+    /// This is a line wise motion which uses counts hence we must use the visual snapshot
+    /// when calculating the value
     member x.LineUpToFirstNonBlank count =
-        let point = x.CaretPoint
-        let endLine = SnapshotPointUtil.GetContainingLine point
-        let startLine = SnapshotUtil.GetLineOrFirst endLine.Snapshot (endLine.LineNumber - count)
-        let span = SnapshotSpan(startLine.Start, endLine.End)
-        let column = 
-            startLine 
-            |> SnapshotLineUtil.GetFirstNonBlankOrStart
-            |> SnapshotPointUtil.GetColumn
-            |> CaretColumn.InLastLine
-        {
-            Span = span 
-            IsForward = false 
-            MotionKind = MotionKind.LineWise column
-            MotionResultFlags = MotionResultFlags.None }
+        x.MotionWithVisualSnapshot (fun x ->
+            let startLine = SnapshotUtil.GetLineOrFirst x.CurrentSnapshot (x.CaretLine.LineNumber - count)
+            let span = SnapshotSpan(startLine.Start, x.CaretLine.EndIncludingLineBreak)
+            let column = 
+                startLine 
+                |> SnapshotLineUtil.GetFirstNonBlankOrStart
+                |> SnapshotPointUtil.GetColumn
+                |> CaretColumn.InLastLine
+            {
+                Span = span 
+                IsForward = false 
+                MotionKind = MotionKind.LineWise column
+                MotionResultFlags = MotionResultFlags.None })
 
     /// Get the motion which is 'count' characters to the left of the caret on
     /// the same line
@@ -1620,85 +1730,92 @@ type internal MotionUtil
     /// Move a single line up from the current line.  Should fail if we are currenly
     /// on the first line of the ITextBuffer
     member x.LineUp count =
-        if x.CaretLine.LineNumber = 0 then
-            None
-        else
-            let startLine = SnapshotUtil.GetLineOrFirst x.CurrentSnapshot (x.CaretLine.LineNumber - count)
-            let span = SnapshotSpan(startLine.Start, x.CaretLine.EndIncludingLineBreak)
-            let column = x.CaretPoint |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
-            {
-                Span = span 
-                IsForward = false 
-                MotionKind = MotionKind.LineWise column
-                MotionResultFlags = MotionResultFlags.None } |> Some
+        x.MotionOptionWithVisualSnapshot (fun x ->
+            if x.CaretLine.LineNumber = 0 then
+                None
+            else
+                let startLine = SnapshotUtil.GetLineOrFirst x.CurrentSnapshot (x.CaretLine.LineNumber - count)
+                let span = SnapshotSpan(startLine.Start, x.CaretLine.EndIncludingLineBreak)
+                let column = x.CaretPoint |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
+                {
+                    Span = span 
+                    IsForward = false 
+                    MotionKind = MotionKind.LineWise column
+                    MotionResultFlags = MotionResultFlags.None } |> Some)
 
     /// Move a single line down from the current line.  Should fail if we are currenly 
     /// on the last line of the ITextBuffer
     member x.LineDown count = 
-        if x.CaretLine.LineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot then
-            None
-        else
-            let endLine = SnapshotUtil.GetLineOrLast x.CurrentSnapshot (x.CaretLine.LineNumber + count)
-            let span = SnapshotSpan(x.CaretLine.Start, endLine.EndIncludingLineBreak)
-            let column = x.CaretPoint |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
-            {
-                Span = span 
-                IsForward = true 
-                MotionKind = MotionKind.LineWise column
-                MotionResultFlags = MotionResultFlags.None } |> Some
+        x.MotionOptionWithVisualSnapshot (fun x -> 
+            if x.CaretLine.LineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot then
+                None
+            else
+                let endLine = SnapshotUtil.GetLineOrLast x.CurrentSnapshot (x.CaretLine.LineNumber + count)
+                let span = SnapshotSpan(x.CaretLine.Start, endLine.EndIncludingLineBreak)
+                let column = x.CaretPoint |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
+                {
+                    Span = span 
+                    IsForward = true 
+                    MotionKind = MotionKind.LineWise column
+                    MotionResultFlags = MotionResultFlags.None } |> Some)
 
+    /// Implements the 'gg' motion.  
+    ///
+    /// Because this uses specific line numbers instead of counts we don't want to operate
+    /// on the visual buffer here as vim line numbers always apply to the edit buffer. 
     member x.LineOrFirstToFirstNonBlank numberOpt = 
-        let point = x.CaretPoint
-        let originLine = SnapshotPointUtil.GetContainingLine point
-        let tss= originLine.Snapshot
+        _jumpList.Add x.CaretPoint
+
         let endLine = 
             match numberOpt with
-            | Some(number) ->  SnapshotUtil.GetLineOrFirst tss (Util.VimLineToTssLine number)
-            | None -> SnapshotUtil.GetFirstLine tss 
-        x.LineToLineFirstNonBlankMotion originLine endLine
+            | Some number ->  SnapshotUtil.GetLineOrFirst x.CurrentSnapshot (Util.VimLineToTssLine number)
+            | None -> SnapshotUtil.GetFirstLine x.CurrentSnapshot
+        x.LineToLineFirstNonBlankMotion x.CaretLine endLine
 
     /// Implements the 'G" motion
+    ///
+    /// Because this uses specific line numbers instead of counts we don't want to operate
+    /// on the visual buffer here as vim line numbers always apply to the edit buffer. 
     member x.LineOrLastToFirstNonBlank numberOpt = 
         _jumpList.Add x.CaretPoint
 
-        let point = x.CaretPoint
-        let originLine = SnapshotPointUtil.GetContainingLine point
-        let tss= originLine.Snapshot
         let endLine = 
             match numberOpt with
-            | Some number ->  SnapshotUtil.GetLineOrLast tss (Util.VimLineToTssLine number)
-            | None -> SnapshotUtil.GetLastLine tss 
-        x.LineToLineFirstNonBlankMotion originLine endLine
+            | Some number ->  SnapshotUtil.GetLineOrLast x.CurrentSnapshot (Util.VimLineToTssLine number)
+            | None -> SnapshotUtil.GetLastLine x.CurrentSnapshot 
+        x.LineToLineFirstNonBlankMotion x.CaretLine endLine
 
     /// Go to the last non-blank character on the 'count - 1' line
     member x.LastNonBlankOnLine count = 
-        let number = x.CaretLine.LineNumber + (count-1)
-        let endLine = SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
-        let endPoint = 
-            // Find the last non-blank character on the line.  If the line is 
-            // completely blank then the start of the line is used.  Remember we need
-            // to move 1 past the character in order to include it in the line
+        x.MotionWithVisualSnapshot (fun x -> 
+            let number = x.CaretLine.LineNumber + (count - 1)
+            let endLine = SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
             let endPoint = 
-                endLine.Extent
-                |> SnapshotSpanUtil.GetPoints Path.Backward
-                |> Seq.skipWhile SnapshotPointUtil.IsBlankOrEnd
-                |> SeqUtil.tryHeadOnly
-            match endPoint with
-            | Some point -> SnapshotPointUtil.AddOne point
-            | None -> endLine.Start
+                // Find the last non-blank character on the line.  If the line is 
+                // completely blank then the start of the line is used.  Remember we need
+                // to move 1 past the character in order to include it in the line
+                let endPoint = 
+                    endLine.Extent
+                    |> SnapshotSpanUtil.GetPoints Path.Backward
+                    |> Seq.skipWhile SnapshotPointUtil.IsBlankOrEnd
+                    |> SeqUtil.tryHeadOnly
+                match endPoint with
+                | Some point -> SnapshotPointUtil.AddOne point
+                | None -> endLine.Start
 
-        // This motion can definitely be backwards on lines which end in blanks or
-        // are completely blank
-        let isForward = x.CaretPoint.Position <= endPoint.Position
-        let startPoint, endPoint = SnapshotPointUtil.OrderAscending x.CaretPoint endPoint
-        let span = SnapshotSpan(startPoint, endPoint)
+            // This motion can definitely be backwards on lines which end in blanks or
+            // are completely blank
+            let isForward = x.CaretPoint.Position <= endPoint.Position
+            let startPoint, endPoint = SnapshotPointUtil.OrderAscending x.CaretPoint endPoint
+            let span = SnapshotSpan(startPoint, endPoint)
 
-        {
-            Span = span 
-            IsForward = isForward
-            MotionKind = MotionKind.CharacterWiseInclusive
-            MotionResultFlags = MotionResultFlags.None }
+            {
+                Span = span 
+                IsForward = isForward
+                MotionKind = MotionKind.CharacterWiseInclusive
+                MotionResultFlags = MotionResultFlags.None })
 
+    // TODO: Need to convert this to use the visual snapshot
     member x.LineFromTopOfVisibleWindow countOpt = 
         _jumpList.Add x.CaretPoint 
 
@@ -1718,6 +1835,7 @@ type internal MotionUtil
             MotionKind = MotionKind.LineWise CaretColumn.None
             MotionResultFlags = MotionResultFlags.None } |> x.ApplyStartOfLineOption
 
+    // TODO: Need to convert this to use the visual snapshot
     member x.LineFromBottomOfVisibleWindow countOpt =
         _jumpList.Add x.CaretPoint 
 
@@ -1739,6 +1857,7 @@ type internal MotionUtil
             MotionKind = MotionKind.LineWise CaretColumn.None
             MotionResultFlags = MotionResultFlags.None } |> x.ApplyStartOfLineOption
 
+    // TODO: Need to convert this to use the visual snapshot
     member x.LineInMiddleOfVisibleWindow () =
         _jumpList.Add x.CaretPoint 
 
@@ -2098,7 +2217,8 @@ type internal MotionUtil
                 // caret
                 let span = SnapshotSpan(startLine.Start, endLine.Start)
                 let kind = MotionKind.LineWise CaretColumn.AfterLastLine
-                { motionResult with Span = span; MotionKind = kind }
+                let flags = motionResult.MotionResultFlags ||| MotionResultFlags.ExclusiveLineWise
+                { motionResult with Span = span; MotionKind = kind; MotionResultFlags = flags }
             else 
                 // Rule #1. Move this back a line.
                 let line = SnapshotUtil.GetLine span.Snapshot (endLine.LineNumber - 1)

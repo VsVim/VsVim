@@ -1,6 +1,8 @@
 ﻿using System;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Outlining;
+using Microsoft.VisualStudio.Text.Projection;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
@@ -19,6 +21,8 @@ namespace VimCore.UnitTest
         private IJumpList _jumpList;
         private IKeyMap _keyMap;
         private IVimData _vimData;
+        private IFoldManager _foldManager;
+        private IOutliningManager _outliningManager;
         private MockVimHost _vimHost;
         private bool _assertOnErrorMessage = true;
         private bool _assertOnWarningMessage = true;
@@ -57,6 +61,15 @@ namespace VimCore.UnitTest
             _vimHost = (MockVimHost)_buffer.Vim.VimHost;
             _vimHost.BeepCount = 0;
             _vimData = service.Vim.VimData;
+            _foldManager = EditorUtil.FactoryService.FoldManagerFactory.GetFoldManager(_textBuffer);
+            _outliningManager = EditorUtil.FactoryService.OutliningManagerService.GetOutliningManager(_textView);
+
+            // Many of the operations operate on both the visual and edit / text snapshot
+            // simultaneously.  Ensure that our setup code is producing a proper IElisionSnapshot
+            // for the Visual portion so we can root out any bad mixing of instances between
+            // the two
+            Assert.IsTrue(_textView.VisualSnapshot is IElisionSnapshot);
+            Assert.IsTrue(_textView.VisualSnapshot != _textView.TextSnapshot);
         }
 
         [TearDown]
@@ -1251,6 +1264,23 @@ namespace VimCore.UnitTest
             Create("cat", "dog", "cat");
             _buffer.Process("*");
             Assert.AreEqual(PatternUtil.CreateWholeWord("cat"), _vimData.SearchHistory.Items.Head);
+        }
+
+        /// <summary>
+        /// When moving a line down over a fold it should not be expanded and the entire fold
+        /// should count as a single line
+        /// </summary>
+        [Test]
+        public void Move_LineDown_OverFold()
+        {
+            Create("cat", "dog", "tree", "fish");
+            var range = _textView.GetLineRange(1, 2);
+            _foldManager.CreateFold(range);
+            _outliningManager.CollapseAll(range.ExtentIncludingLineBreak, x => true);
+            _buffer.Process('j');
+            Assert.AreEqual(1, _textView.GetCaretLine().LineNumber);
+            _buffer.Process('j');
+            Assert.AreEqual(3, _textView.GetCaretLine().LineNumber);
         }
 
         /// <summary>

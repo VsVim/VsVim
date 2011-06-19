@@ -204,9 +204,9 @@ and UndoRedoOperations
     member x.Undo count =
         match _history with
         | None -> 
-            _statusUtil.OnError Resources.UndoRedo_NotSupported
+            _statusUtil.OnError Resources.Internal_NotSupported
         | Some history ->
-            let undoStack, redoStack = x.UndoRedoCommon (fun count -> history.Undo count) _undoStack _redoStack count Resources.UndoRedo_CannotUndo
+            let undoStack, redoStack = x.UndoRedoCommon (fun count -> history.Undo count) _undoStack _redoStack count Resources.Internal_CannotUndo
             _undoStack <- undoStack
             _redoStack <- redoStack
 
@@ -214,9 +214,9 @@ and UndoRedoOperations
     /// number of redo operations we actually have to perform because of the ILinkedUndoTransaction items
     member x.Redo count =
         match _history with
-        | None -> _statusUtil.OnError Resources.UndoRedo_NotSupported
+        | None -> _statusUtil.OnError Resources.Internal_NotSupported
         | Some(history) ->
-            let redoStack, undoStack = x.UndoRedoCommon (fun count -> history.Redo count) _redoStack _undoStack count Resources.UndoRedo_CannotRedo
+            let redoStack, undoStack = x.UndoRedoCommon (fun count -> history.Redo count) _redoStack _undoStack count Resources.Internal_CannotRedo
             _undoStack <- undoStack
             _redoStack <- redoStack
 
