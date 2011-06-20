@@ -108,6 +108,8 @@ type internal FoldManager
             let span = SnapshotSpan(point, 0)
             outliningManager.GetAllRegions(span)
             |> Seq.filter (fun region -> not region.IsCollapsed)
+            |> List.ofSeq
+            |> List.rev
             |> Seq.truncate count
             |> Seq.iter (fun region -> outliningManager.TryCollapse(region) |> ignore))
 
