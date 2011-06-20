@@ -1116,6 +1116,13 @@ module TextViewUtil =
                 CaretLine = caretLine
                 CurrentSnapshot = caretLine.Snapshot } |> Some
 
+    /// Get the SnapshotData for the visual buffer if available.  If it's not available then fall back
+    /// to the edit buffer
+    let GetVisualSnapshotDataOrEdit textView = 
+        match GetVisualSnapshotData textView with
+        | Some snapshotData -> snapshotData
+        | None -> GetEditSnapshotData textView
+
 module TextSelectionUtil = 
 
     /// Returns the SnapshotSpan which represents the total of the selection.  This is a SnapshotSpan of the left

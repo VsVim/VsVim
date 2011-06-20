@@ -7,8 +7,6 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Outlining
 
-// TODO: The fold commands need to be revisited.  They're not implemented to spec but
-// are good enough for now 
 type internal CommandUtil 
     (
         _buffer : IVimBuffer,
@@ -2057,10 +2055,11 @@ type internal CommandUtil
         else
             CommandResult.Error
 
-    /// Yank the specified lines into the specified register 
-    ///
-    /// TODO: this needs to operate on the Visual Snapshot
+    /// Yank the specified lines into the specified register.  This command should operate
+    /// against the visual buffer if possible.  Yanking a line which contains the fold should
+    /// yank the entire fold
     member x.YankLines count register = 
+        let x = TextViewUtil.GetVisualSnapshotDataOrEdit _textView
         let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
         let data = StringData.OfSpan range.ExtentIncludingLineBreak 
         let value = RegisterValue.String (data, OperationKind.LineWise)
