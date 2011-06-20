@@ -10,7 +10,6 @@ using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
-using Microsoft.VisualStudio.Text.Projection;
 
 namespace VimCore.UnitTest
 {
@@ -72,13 +71,6 @@ namespace VimCore.UnitTest
                 _statusUtil.Object,
                 VimUtil.GetWordUtil(textView),
                 _vimData);
-
-            // Many of the motions operate on both the visual and edit / text snapshot
-            // simultaneously.  Ensure that our setup code is producing a proper IElisionSnapshot
-            // for the Visual portion so we can root out any bad mixing of instances between
-            // the two
-            Assert.IsTrue(_textView.VisualSnapshot is IElisionSnapshot);
-            Assert.IsTrue(_textView.VisualSnapshot != _textView.TextSnapshot);
         }
 
         public void AssertData(
