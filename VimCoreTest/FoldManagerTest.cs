@@ -1,104 +1,69 @@
-﻿using System.Linq;
-using Microsoft.VisualStudio.Text;
+﻿using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
+using Moq;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Vim.UnitTest;
 
 namespace VimCore.UnitTest
 {
+    /// <summary>
+    /// Tests for the IFoldManager implementation.  The Vim behavior for folds, especial that of 
+    /// nested folds, is largely undocumented and this class serves to test the implementation 
+    /// we've inferred via behavior checks
+    ///
+    /// This test eschews any mocks because the behavior of both Vim and several editor types, 
+    /// IOutuliningManager, in particular are not documented well.  Their behavior is the documentation
+    /// and it's important that it's correct
+    /// </summary>
     [TestFixture]
-    public class FoldManagerTest
+    public sealed class FoldManagerTest
     {
-        private FoldManager _manager;
-        private ITextBuffer _textBuffer;
+        private ITextView _textView;
+        private IFoldData _foldData;
+        private FoldManager _foldManagerRaw;
+        private IFoldManager _foldManager;
+        private Mock<IStatusUtil> _statusUtil;
+        private ITextBuffer _visualBuffer;
 
-        public void SetUp(params string[] lines)
+        private void Create(params string[] lines)
         {
-            _textBuffer = EditorUtil.CreateTextBuffer(lines);
-            _manager = new FoldManager(_textBuffer);
+            _textView = EditorUtil.CreateTextView(lines);
+            _visualBuffer = _textView.TextViewModel.VisualBuffer;
+            _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
+            _foldData = EditorUtil.FactoryService.FoldManagerFactory.GetFoldData(_textView.TextBuffer);
+            _foldManagerRaw = new FoldManager(
+                _textView,
+                _foldData,
+                _statusUtil.Object,
+                FSharpOption.Create(EditorUtil.FactoryService.OutliningManagerService.GetOutliningManager(_textView)));
+            _foldManager = _foldManagerRaw;
         }
 
-        [TearDown]
-        public void TearDown()
-        {
-            _textBuffer = null;
-            _manager = null;
-        }
-
+        /// <summary>
+        /// Creating a new fold in the ITextView should automatically close it
+        /// </summary>
         [Test]
-        public void Folds1()
+        public void CreateFold_ShouldClose()
         {
-            SetUp(string.Empty);
-            Assert.AreEqual(0, _manager.Folds.Count());
+            Create("cat", "dog", "bear", "fish");
+            _foldManager.CreateFold(_textView.GetLineRange(1, 2));
+            Assert.AreEqual(3, _visualBuffer.CurrentSnapshot.LineCount);
+            Assert.AreEqual("cat", _visualBuffer.GetLine(0).GetText());
+            Assert.AreEqual("fish", _visualBuffer.GetLine(2).GetText());
         }
 
+        /// <summary>
+        /// Creating a fold with a range of 1 line should have no affect.  Vim doesn't supporting
+        /// folding of 1 line as it makes no sense since it only supports line based folds
+        /// </summary>
         [Test]
-        public void Folds2()
+        public void CreateFold_OneLine()
         {
-            SetUp("the quick brown", "fox jumped", " over the dog");
-            var range = _textBuffer.GetLineRange(0, 1);
-            _manager.CreateFold(range);
-            Assert.AreEqual(range.ExtentIncludingLineBreak, _manager.Folds.Single());
-        }
-
-        [Test]
-        [Description("Don't create a fold unless it's at least 2 lines")]
-        public void CreateFold1()
-        {
-            SetUp("the quick brown", "fox jumped", " over the dog");
-            var range = _textBuffer.GetLineRange(0);
-            _manager.CreateFold(range);
-            Assert.AreEqual(0, _manager.Folds.Count());
-        }
-
-        [Test]
-        public void CreateFold2()
-        {
-            SetUp("the quick brown", "fox jumped", " over the dog");
-            var range = _textBuffer.GetLineRange(0, 1);
-            _manager.CreateFold(range);
-            Assert.AreEqual(range.ExtentIncludingLineBreak, _manager.Folds.Single());
-        }
-
-        [Test]
-        public void CreateFold3()
-        {
-            SetUp("the quick brown", "fox jumped", " over the dog");
-            var range1 = _textBuffer.GetLineRange(0, 1);
-            _manager.CreateFold(range1);
-            var range2 = _textBuffer.GetLineRange(0, 2);
-            _manager.CreateFold(range2);
-            Assert.IsTrue(_manager.Folds.Contains(range1.ExtentIncludingLineBreak));
-            Assert.IsTrue(_manager.Folds.Contains(range2.ExtentIncludingLineBreak));
-        }
-
-        [Test]
-        public void DeleteFold1()
-        {
-            SetUp("the quick brown", "fox jumped", " over the dog");
-            var range = _textBuffer.GetLineRange(0, 1);
-            _manager.CreateFold(range);
-            Assert.IsFalse(_manager.DeleteFold(_textBuffer.GetLine(2).Start));
-        }
-
-        [Test]
-        public void DeleteFold2()
-        {
-            SetUp("the quick brown", "fox jumped", " over the dog");
-            var range = _textBuffer.GetLineRange(0, 1);
-            _manager.CreateFold(range);
-            Assert.IsTrue(_manager.DeleteFold(_textBuffer.GetLine(0).Start));
-            Assert.AreEqual(0, _manager.Folds.Count());
-        }
-
-        [Test]
-        public void DeleteAllFolds1()
-        {
-            SetUp("the quick brown", "fox jumped", " over the dog");
-            _manager.CreateFold(_textBuffer.GetLineRange(0, 1));
-            _manager.CreateFold(_textBuffer.GetLineRange(0, 2));
-            _manager.DeleteAllFolds();
-            Assert.AreEqual(0, _manager.Folds.Count());
+            Create("cat", "dog", "bear");
+            _foldManager.CreateFold(_textView.GetLineRange(0, 0));
+            Assert.AreEqual(3, _visualBuffer.CurrentSnapshot.LineCount);
         }
     }
 }

@@ -655,63 +655,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.MoveCaretToPointAndEnsureVisible point = x.MoveCaretToPointAndEnsureVisible point
         member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
         member x.NormalizeBlanks text = x.NormalizeBlanks text
-
-        member x.OpenFold span count = 
-            x.DoWithOutlining (fun outlining ->
-                let regions = outlining.GetCollapsedRegions(span) |> Seq.truncate count
-                if Seq.isEmpty regions then _statusUtil.OnError Resources.Common_NoFoldFound
-                else  regions |> Seq.iter (fun x -> outlining.Expand(x) |> ignore ))
-
-        member x.OpenAllFolds span =
-            x.DoWithOutlining (fun outlining ->
-                let regions = outlining.GetCollapsedRegions(span) 
-                if Seq.isEmpty regions then _statusUtil.OnError Resources.Common_NoFoldFound
-                else  regions |> Seq.iter (fun x -> outlining.Expand(x) |> ignore ))
-
-        member x.CloseFold span count = 
-            x.DoWithOutlining (fun outlining ->
-                let pos = span |> SnapshotSpanUtil.GetStartPoint |> SnapshotPointUtil.GetPosition
-                let temp = 
-                    outlining.GetAllRegions(span) 
-                    |> Seq.filter (fun x -> not (x.IsCollapsed))
-                    |> Seq.map (fun x -> (TrackingSpanUtil.GetSpan _textView.TextSnapshot x.Extent) ,x)
-                    |> SeqUtil.filterToSome2
-                    |> Seq.sortBy (fun (span,_) -> pos - span.Start.Position )
-                    |> List.ofSeq
-                let regions = temp  |> Seq.truncate count
-                if Seq.isEmpty regions then _statusUtil.OnError Resources.Common_NoFoldFound
-                else regions |> Seq.iter (fun (_,x) -> outlining.TryCollapse(x) |> ignore))
-
-        member x.CloseAllFolds span =
-            x.DoWithOutlining (fun outlining ->
-                let regions = outlining.GetAllRegions(span) 
-                if Seq.isEmpty regions then _statusUtil.OnError Resources.Common_NoFoldFound
-                else  regions |> Seq.iter (fun x -> outlining.TryCollapse(x) |> ignore ))
-
-        member x.FoldLines count = 
-            if count > 1 then 
-                let caretLine = TextViewUtil.GetCaretLine _textView
-                let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount caretLine count
-                _data.FoldManager.CreateFold range
-
-        member x.FormatLines range =
-            _host.FormatLines _textView range
-
-        member x.DeleteOneFoldAtCursor () = 
-            let point = TextViewUtil.GetCaretPoint _textView
-            if not ( _data.FoldManager.DeleteFold point ) then
-                _statusUtil.OnError Resources.Common_NoFoldFound
-
-        member x.DeleteAllFoldsAtCursor () =
-            let deleteAtCaret () = 
-                let point = TextViewUtil.GetCaretPoint _textView
-                _data.FoldManager.DeleteFold point
-            if not (deleteAtCaret()) then
-                _statusUtil.OnError Resources.Common_NoFoldFound
-            else
-                while deleteAtCaret() do
-                    // Keep on deleteing 
-                    ()
+        member x.FormatLines range = _host.FormatLines _textView range
 
         member x.Substitute pattern replace (range:SnapshotLineRange) flags = 
 

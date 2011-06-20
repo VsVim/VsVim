@@ -100,8 +100,8 @@ type IFoldData =
     /// there was no fold to be deleted
     abstract DeleteFold : SnapshotPoint -> bool
 
-    /// Delete all of the folds in the buffer
-    abstract DeleteAllFolds : unit -> unit
+    /// Delete all of the folds which intersect the given SnapshotSpan
+    abstract DeleteAllFolds : SnapshotSpan -> unit
 
     /// Raised when the collection of folds are updated for any reason
     [<CLIEvent>]
@@ -119,12 +119,24 @@ type IFoldManager =
     /// Create a fold for the given line range
     abstract CreateFold : SnapshotLineRange -> unit 
 
+    /// Close 'count' fold values under the given SnapshotPoint
+    abstract CloseFold : SnapshotPoint -> int -> unit
+
+    /// Close all folds which intersect the given SnapshotSpan
+    abstract CloseAllFolds : SnapshotSpan -> unit
+
     /// Delete a fold which crosses the given SnapshotPoint.  Returns false if 
     /// there was no fold to be deleted
-    abstract DeleteFold : SnapshotPoint -> bool
+    abstract DeleteFold : SnapshotPoint -> unit
 
-    /// Delete all of the folds in the buffer
-    abstract DeleteAllFolds : unit -> unit
+    /// Delete all of the folds which intersect the SnapshotSpan
+    abstract DeleteAllFolds : SnapshotSpan -> unit
+
+    /// Open 'count' folds under the given SnapshotPoint
+    abstract OpenFold : SnapshotPoint -> int -> unit
+
+    /// Open all folds which intersect the given SnapshotSpan
+    abstract OpenAllFolds : SnapshotSpan -> unit
 
 /// Supports the get and creation of IFoldManager for a given ITextBuffer
 type IFoldManagerFactory =
@@ -202,18 +214,6 @@ type ICommonOperations =
     /// Run the beep operation
     abstract Beep : unit -> unit
 
-    /// Close count folds in the given SnapshotSpan
-    abstract CloseFold : SnapshotSpan -> count:int -> unit
-
-    /// Close all folds which intersect with the given SnapshotSpan
-    abstract CloseAllFolds : SnapshotSpan -> unit
-
-    /// Delete one folds at the cursor
-    abstract DeleteOneFoldAtCursor : unit -> unit
-
-    /// Delete all folds at the cursor
-    abstract DeleteAllFoldsAtCursor : unit -> unit
-
     /// Ensure the caret is on the visible screen
     abstract EnsureCaretOnScreen : unit -> unit
 
@@ -222,9 +222,6 @@ type ICommonOperations =
 
     /// Ensure the point is on screen and that it is not in a collapsed region
     abstract EnsurePointOnScreenAndTextExpanded : SnapshotPoint -> unit
-
-    /// Fold count lines under the cursor
-    abstract FoldLines : count:int -> unit
 
     /// Format the specified line range
     abstract FormatLines : SnapshotLineRange -> unit
@@ -277,12 +274,6 @@ type ICommonOperations =
 
     /// Normalize the spaces and tabs in the string
     abstract NormalizeBlanks : string -> string
-
-    /// Open count folds in the given SnapshotSpan 
-    abstract OpenFold : SnapshotSpan -> count:int -> unit
-
-    /// Open all folds which intersect with the given SnapshotSpan
-    abstract OpenAllFolds : SnapshotSpan -> unit
 
     /// Put the specified StringData at the given point.
     abstract Put : SnapshotPoint -> StringData -> OperationKind -> unit

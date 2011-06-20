@@ -66,8 +66,15 @@ type internal FoldData
         _updated.Trigger System.EventArgs.Empty
         ret
 
-    member x.DeleteAllFolds () =
-        _folds <- List.empty
+    /// Delete all folds which intersect the given SnapshotSpan
+    member x.DeleteAllFolds (span : SnapshotSpan) =
+        _folds <-
+            _folds
+            |> Seq.map (TrackingSpanUtil.GetSpan _textBuffer.CurrentSnapshot)
+            |> SeqUtil.filterToSome
+            |> Seq.filter (fun s -> not (span.IntersectsWith(s)))
+            |> Seq.map (fun span -> _textBuffer.CurrentSnapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeInclusive))
+            |> List.ofSeq
         _updated.Trigger System.EventArgs.Empty
 
     interface IFoldData with
@@ -75,7 +82,7 @@ type internal FoldData
         member x.Folds = x.Folds
         member x.CreateFold range = x.CreateFold range
         member x.DeleteFold point = x.DeleteFold point
-        member x.DeleteAllFolds () = x.DeleteAllFolds()
+        member x.DeleteAllFolds span = x.DeleteAllFolds span
         [<CLIEvent>]
         member x.FoldsUpdated = _updated.Publish
 
@@ -87,6 +94,32 @@ type internal FoldManager
         _outliningManager : IOutliningManager option
     ) =
 
+    member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
+
+    member x.CaretLine = TextViewUtil.GetCaretLine _textView
+
+    member x.CurrentSnapshot = _textView.TextSnapshot
+
+    /// Close 'count' folds under the given SnapshotPoint
+    member x.CloseFold point count = 
+        x.DoWithOutliningManager (fun outliningManager -> 
+            // Get the collapsed regions and map them to SnapshotSpan values in this buffer.  Then
+            // order them by most start and then length
+            let span = SnapshotSpan(point, 0)
+            outliningManager.GetAllRegions(span)
+            |> Seq.filter (fun region -> not region.IsCollapsed)
+            |> Seq.truncate count
+            |> Seq.iter (fun region -> outliningManager.TryCollapse(region) |> ignore))
+
+    /// Close all folds which intersect with the given SnapshotSpan
+    member x.CloseAllFolds (span : SnapshotSpan) =
+        x.DoWithOutliningManager (fun outliningManager -> 
+            // Get the collapsed regions and map them to SnapshotSpan values in this buffer.  Then
+            // order them by most start and then length
+            outliningManager.GetAllRegions(span)
+            |> Seq.filter (fun region -> not region.IsCollapsed)
+            |> Seq.iter (fun region -> outliningManager.TryCollapse(region) |> ignore))
+
     /// Create a fold over the given line range
     member x.CreateFold (range : SnapshotLineRange) = 
         _foldData.CreateFold range
@@ -94,7 +127,7 @@ type internal FoldManager
 
             // Folds should be collapsed by default in vim.  Need to communicate with the outlining
             // manager to have this happen
-            x.WithOutliningManager (fun outliningManager -> 
+            x.DoWithOutliningManager (fun outliningManager -> 
                 outliningManager.CollapseAll(range.Extent, (fun collapsible ->
                     // The CollapseAll function will run the predicate over every ICollpasible which crosses
                     // the provided SnapshotSpan.  We only want to collapse the single region we just created
@@ -103,23 +136,54 @@ type internal FoldManager
                     | None -> false
                     | Some span -> span = range.Extent)) |> ignore)
 
-    /// Delete the fold which corresponds to the given SnapshotPoint
-    member x.DeleteFold point =
-        _foldData.DeleteFold point
-
-    member x.DeleteAllFolds () =
-        _foldData.DeleteAllFolds()
-
-    member x.WithOutliningManager (action : IOutliningManager -> unit) = 
+    /// Do the given operation with the IOutliningManager.  If there is no IOutliningManager
+    /// associated with this ITextView then no action will occur and an error message will
+    /// be raised to the user
+    member x.DoWithOutliningManager (action : IOutliningManager -> unit) = 
         match _outliningManager with
         | None -> _statusUtil.OnWarning Resources.Internal_FoldsNotSupported
         | Some outliningManager -> action outliningManager
 
+    /// Delete the fold which corresponds to the given SnapshotPoint
+    member x.DeleteFold point =
+        if not (_foldData.DeleteFold point) then
+            _statusUtil.OnError Resources.Common_NoFoldFound
+
+    member x.DeleteAllFolds span =
+        _foldData.DeleteAllFolds span
+
+    /// Open 'count' folds under the point.  There is no explicit documentation on which folds should
+    /// be opened when several folds exist under the caret but experimentation shows that it appears
+    /// to be the most encompassing first followed by inner folds later.  The ordering provided
+    /// by the IOutliningManager appears to mimic this ordering
+    ///
+    /// This method operates both on vim folds and any other outlining region
+    member x.OpenFold point count = 
+        x.DoWithOutliningManager (fun outliningManager -> 
+
+            // Get the collapsed regions and map them to SnapshotSpan values in this buffer.  Then
+            // order them by most start and then length
+            let span = SnapshotSpan(point, 0)
+            outliningManager.GetCollapsedRegions(span)
+            |> Seq.truncate count
+            |> Seq.iter (fun region -> outliningManager.Expand(region) |> ignore))
+
+    /// Open all folds which intersect the given SnapshotSpan value
+    member x.OpenAllFolds (span : SnapshotSpan) =
+        x.DoWithOutliningManager (fun outliningManager -> 
+
+            outliningManager.GetCollapsedRegions(span)
+            |> Seq.iter (fun region -> outliningManager.Expand(region) |> ignore))
+
     interface IFoldManager with
         member x.TextView = _textView
+        member x.CloseFold point count = x.CloseFold point count
+        member x.CloseAllFolds span = x.CloseAllFolds span
         member x.CreateFold range = x.CreateFold range
         member x.DeleteFold point = x.DeleteFold point
-        member x.DeleteAllFolds () = x.DeleteAllFolds()
+        member x.DeleteAllFolds span = x.DeleteAllFolds span
+        member x.OpenFold point count = x.OpenFold point count
+        member x.OpenAllFolds span = x.OpenAllFolds span
 
 /// Fold tagger for the IOutliningRegion tags created by folds.  Note that folds work
 /// on an ITextBuffer level and not an ITextView level.  Hence this works directly with

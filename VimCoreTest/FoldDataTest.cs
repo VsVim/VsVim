@@ -103,7 +103,7 @@ namespace VimCore.UnitTest
             SetUp("the quick brown", "fox jumped", " over the dog");
             _foldData.CreateFold(_textBuffer.GetLineRange(0, 1));
             _foldData.CreateFold(_textBuffer.GetLineRange(0, 2));
-            _foldData.DeleteAllFolds();
+            _foldData.DeleteAllFolds(_textBuffer.GetExtent());
             Assert.AreEqual(0, _foldData.Folds.Count());
         }
     }

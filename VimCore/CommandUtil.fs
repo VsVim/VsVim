@@ -435,22 +435,28 @@ type internal CommandUtil
 
     /// Close a single fold under the caret
     member x.CloseFoldInSelection (visualSpan : VisualSpan) =
-        _operations.CloseFold visualSpan.LineRange.ExtentIncludingLineBreak 1
+        let range = visualSpan.LineRange
+        let offset = range.StartLineNumber
+        for i = 0 to range.Count - 1 do
+            let line = SnapshotUtil.GetLine x.CurrentSnapshot (offset + 1)
+            _foldManager.CloseFold line.Start 1
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Close 'count' folds under the caret
     member x.CloseFoldUnderCaret count =
-        _operations.CloseFold x.CaretLineRange.ExtentIncludingLineBreak count
+        _foldManager.CloseFold x.CaretPoint count
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Close all folds under the caret
     member x.CloseAllFoldsUnderCaret () =
-        _operations.CloseAllFolds x.CaretLineRange.ExtentIncludingLineBreak 
+        let span = SnapshotSpan(x.CaretPoint, 0)
+        _foldManager.CloseAllFolds span
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Close all folds in the selection
     member x.CloseAllFoldsInSelection (visualSpan : VisualSpan) =
-        _operations.CloseAllFolds visualSpan.LineRange.ExtentIncludingLineBreak
+        let span = visualSpan.LineRange.Extent
+        _foldManager.CloseAllFolds span
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete 'count' characters after the cursor on the current line.  Caret should 
@@ -505,27 +511,34 @@ type internal CommandUtil
 
     /// Delete a fold from the selection
     member x.DeleteFoldInSelection (visualSpan : VisualSpan) =
-        _operations.DeleteOneFoldAtCursor()
+        let range = visualSpan.LineRange
+        let offset = range.StartLineNumber
+        for i = 0 to range.Count - 1 do
+            let line = SnapshotUtil.GetLine x.CurrentSnapshot (offset + 1)
+            _foldManager.DeleteFold line.Start
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete a fold under the caret
     member x.DeleteFoldUnderCaret () = 
-        _operations.DeleteOneFoldAtCursor()
+        _foldManager.DeleteFold x.CaretPoint
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete a fold from the selection
     member x.DeleteAllFoldInSelection (visualSpan : VisualSpan) =
-        _operations.DeleteAllFoldsAtCursor()
+        let span = visualSpan.LineRange.Extent
+        _foldManager.DeleteAllFolds span
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete all folds under the caret
     member x.DeleteAllFoldsUnderCaret () =
-        _operations.DeleteAllFoldsAtCursor()
+        let span = SnapshotSpan(x.CaretPoint, 0)
+        _foldManager.DeleteAllFolds span
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete all of the folds in the ITextBuffer
     member x.DeleteAllFoldsInBuffer () =
-        _foldManager.DeleteAllFolds()
+        let extent = SnapshotUtil.GetExtent x.CurrentSnapshot
+        _foldManager.DeleteAllFolds extent
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete the selected text from the buffer and put it into the specified 
@@ -732,8 +745,8 @@ type internal CommandUtil
 
     /// Close a fold under the caret for 'count' lines
     member x.FoldLines count =
-        _operations.FoldLines count
-
+        let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
+        _foldManager.CreateFold range
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Create a fold for the given MotionResult
@@ -1079,24 +1092,31 @@ type internal CommandUtil
             else
                 CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Open a fold in visual mode 
+    /// Open a fold in visual mode.  In Visual Mode a single fold level is opened for every
+    /// line in the selection
     member x.OpenFoldInSelection (visualSpan : VisualSpan) = 
-        _operations.OpenFold visualSpan.LineRange.ExtentIncludingLineBreak 1
+        let range = visualSpan.LineRange
+        let offset = range.StartLineNumber
+        for i = 0 to range.Count - 1 do
+            let line = SnapshotUtil.GetLine x.CurrentSnapshot (offset + 1)
+            _foldManager.OpenFold line.Start 1
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Open 'count' folds under the caret
     member x.OpenFoldUnderCaret count = 
-        _operations.OpenFold x.CaretLineRange.ExtentIncludingLineBreak count
+        _foldManager.OpenFold x.CaretPoint count
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Open all of the folds under the caret 
     member x.OpenAllFoldsUnderCaret () =
-        _operations.OpenAllFolds x.CaretLineRange.ExtentIncludingLineBreak
+        let span = SnapshotSpan(x.CaretPoint, 1)
+        _foldManager.OpenAllFolds span
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Open all folds under the caret in visual mode
     member x.OpenAllFoldsInSelection (visualSpan : VisualSpan) = 
-        _operations.OpenAllFolds visualSpan.LineRange.ExtentIncludingLineBreak
+        let span = visualSpan.LineRange.ExtentIncludingLineBreak
+        _foldManager.OpenAllFolds span
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Run the Ping command
