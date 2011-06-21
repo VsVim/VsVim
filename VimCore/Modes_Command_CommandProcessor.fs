@@ -151,9 +151,13 @@ type internal CommandProcessor
     /// List of supported commands.  The bool value on the lambda is whether or not there was a 
     /// bang following the command.  The two strings represent the full and short match name
     /// of the command.  String.Empty represents no shorten'd command available
-    let mutable _commandList : (string * string * CommandAction) list = List.empty
+    ///
+    /// This list is calculated on an as needed basis.  Perf Watson reports show that building
+    /// this list can be a factor in startup performance.  So now we only build it on demand
+    let mutable _commandListStorage : (string * string * CommandAction) list = List.empty
 
-    do
+    /// Create the command list for this command processor
+    member x.CreateCommandListStorage () =
 
         // Wrap a unit returning command into one that returns a Complete result
         let wrap func = 
@@ -266,7 +270,7 @@ type internal CommandProcessor
                 this.ProcessKeyMap name allowRemap modes hasBang rest
                 RunResult.Completed)))
 
-        _commandList <- 
+        _commandListStorage <- 
             normalSeq 
             |> Seq.append remapSeq
             |> Seq.append mapClearSeq
@@ -276,13 +280,17 @@ type internal CommandProcessor
 #if DEBUG
         // Make sure there are no duplicates
         let set = new System.Collections.Generic.HashSet<string>()
-        for name in _commandList |> Seq.map (fun (name,_,_) -> name) do
+        for name in _commandListStorage |> Seq.map (fun (name,_,_) -> name) do
             if not (set.Add(name)) then failwith (sprintf "Duplicate command name %s" name)
         let set = new System.Collections.Generic.HashSet<string>()
-        for name in _commandList |> Seq.map (fun (_,short,_) -> short) do
+        for name in _commandListStorage |> Seq.map (fun (_,short,_) -> short) do
             if name <> "" && not (set.Add(name)) then failwith (sprintf "Duplicate command short name %s" name)
-
 #endif
+
+    member x.GetOrCreateCommandList () = 
+        if List.isEmpty _commandListStorage then
+            x.CreateCommandListStorage()
+        _commandListStorage
 
     member x.BadMessage = Resources.CommandMode_CannotRun _command
 
@@ -875,7 +883,7 @@ type internal CommandProcessor
 
             // First look for the exact match
             let found =
-                _commandList
+                x.GetOrCreateCommandList()
                 |> Seq.tryFind (fun (name,shortName,_) -> name = commandName || shortName = commandName)
             match found,StringUtil.isNullOrEmpty commandName with
             | _,true -> None
@@ -884,7 +892,7 @@ type internal CommandProcessor
                 
                 // No exact name matches look for a prefix match on the full command name
                 let found =
-                    _commandList
+                    x.GetOrCreateCommandList()
                     |> Seq.filter (fun (name,_,_) -> name.StartsWith(commandName, System.StringComparison.Ordinal))
                 match found |> Seq.length with
                 | 1 -> found |> Seq.head |> Some
