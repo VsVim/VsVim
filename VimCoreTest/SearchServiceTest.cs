@@ -8,7 +8,7 @@ using Vim.UnitTest;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class SearchServiceTest
+    public sealed class SearchServiceTest
     {
         private ITextBuffer _textBuffer;
         private ITextStructureNavigator _navigator;
@@ -319,6 +319,31 @@ namespace VimCore.UnitTest
             var result = FindNextPattern("dog", Path.Backward, _textBuffer.GetPoint(0), 1);
             Assert.IsTrue(result.IsNotFound);
             Assert.IsTrue(result.AsNotFound().Item2);
+        }
+
+        /// <summary>
+        /// There is a bug in the Dev10 implementation of the ITextSearchService which causes
+        /// it to enter an infinite loop if the following conditions are met.  
+        ///
+        ///   1. Search is for a whole word
+        ///   2. Search is backwards
+        ///   3. Search string is 1 or 2 characters long
+        ///   4. Any line above the search point starts with the search string but doesn't match
+        ///      it's contents
+        ///
+        /// This is very impactful to C++ projects where 'i' is a common variable and lines at
+        /// the top of the file commonly start with 'i' as they have a return type of 'int'.  
+        /// 
+        /// Our implementation of ITextSearchService works around this issue.  Make sure we don't
+        /// regress the behavior
+        /// </summary>
+        [Test]
+        public void FindNextPattern_Regression_InfiniteLoop()
+        {
+            Create("i", "int foo()", "cat");
+            var pattern = PatternUtil.CreateWholeWord("i");
+            var result = FindNextPattern(pattern, Path.Backward, _textBuffer.GetPointInLine(2, 1), 1);
+            Assert.IsTrue(result.IsFound(0));
         }
     }
 

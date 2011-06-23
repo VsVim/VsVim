@@ -36,9 +36,27 @@ type internal SearchService
             | None -> 
                 useRegex ()
             | Some word ->
-                // If it's just letters and numbers then it's a straight text search. 
-                let any = Seq.exists (fun c -> not (CharUtil.IsLetterOrDigit c || CharUtil.IsWhiteSpace c)) word
-                if any then 
+                // If possible we'd like to avoid the overhead of a regular expression here.  In general
+                // if the pattern is jusnt letters and numbers then we can do a non-regex search on the 
+                // buffer.  
+                let isSimplePattern = Seq.forall (fun c -> CharUtil.IsLetterOrDigit c || CharUtil.IsBlank c) word
+
+                // There is one exception to this rule though.  There is a bug in the Dev10 implementation
+                // of ITextSearchService that causes it to hit an infinite loop if the following conditions
+                // are met
+                //
+                //  1. Search is for a whole word
+                //  2. Search is backwards 
+                //  3. Search string is 1 or 2 characters long
+                //  4. Any line above the search point starts with the search string but doesn't match
+                //     it's contents
+                // 
+                // If 1-3 is true then we force a regex in order to avoid this bug
+                let isBugPattern = 
+                    searchData.Kind.IsAnyBackward &&
+                    String.length word <= 2
+
+                if isBugPattern || not isSimplePattern then
                     useRegex()
                 else
                     Some word, FindOptions.WholeWord
