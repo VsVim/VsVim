@@ -14,6 +14,7 @@ namespace VimCore.UnitTest
     {
         private IVimBuffer _buffer;
         private IWpfTextView _textView;
+        private IRegisterMap _registerMap;
         private TestableSynchronizationContext _context;
 
         internal Register UnnamedRegister
@@ -35,6 +36,7 @@ namespace VimCore.UnitTest
             var service = EditorUtil.FactoryService;
             _buffer = service.Vim.CreateBuffer(_textView);
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _registerMap = _buffer.RegisterMap;
             Assert.IsTrue(_context.IsEmpty);
 
             // Need to make sure it's focused so macro recording will work
@@ -446,6 +448,37 @@ namespace VimCore.UnitTest
             Assert.AreEqual("daag", _textView.GetLine(0).GetText());
             Assert.AreEqual("cbbat", _textView.GetLine(1).GetText());
             Assert.AreEqual(_textView.GetLine(1).Start.Add(3), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// When doing a put over selection the text being deleted should be put into
+        /// the unnamed register.
+        /// </summary>
+        [Test]
+        public void PutOver_CharacterWise_NamedRegisters()
+        {
+            Create("dog", "cat");
+            EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 3));
+            _registerMap.GetRegister('c').UpdateValue("pig");
+            _buffer.Process("\"cp");
+            Assert.AreEqual("pig", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dog", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// When doing a put over selection the text being deleted should be put into
+        /// the unnamed register.  If the put came from the unnamed register then the 
+        /// original put value is overwritten
+        /// </summary>
+        [Test]
+        public void PutOver_CharacterWise_UnnamedRegisters()
+        {
+            Create("dog", "cat");
+            EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 3));
+            UnnamedRegister.UpdateValue("pig");
+            _buffer.Process("\"cp");
+            Assert.AreEqual("pig", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dog", UnnamedRegister.StringValue);
         }
 
         /// <summary>

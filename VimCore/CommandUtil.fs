@@ -1337,9 +1337,10 @@ type internal CommandUtil
 
                     EditSpan.Block col, OperationKind.CharacterWise)
 
-        // Update the register with the deleted text
+        // Update the unnamed register with the deleted text
         let value = RegisterValue.String (StringData.OfEditSpan deletedSpan, operationKind)
-        _registerMap.SetRegisterValue register RegisterOperation.Delete value 
+        let unnamedRegister = _registerMap.GetRegister RegisterName.Unnamed
+        _registerMap.SetRegisterValue unnamedRegister RegisterOperation.Delete value 
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
