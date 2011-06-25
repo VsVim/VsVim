@@ -71,7 +71,8 @@ type internal SelectionTracker
             | VisualKind.Character -> TextSelectionMode.Stream
             | VisualKind.Line -> TextSelectionMode.Stream
             | VisualKind.Block -> TextSelectionMode.Box
-        if _textView.Selection.Mode <> desiredMode then _textView.Selection.Mode <- desiredMode
+        if _textView.Selection.Mode <> desiredMode then 
+            _textView.Selection.Mode <- desiredMode
 
         // Get the end point of the desired selection.  Typically this is 
         // just the caret.  If an incremental search is active though and 
@@ -80,7 +81,7 @@ type internal SelectionTracker
             let caretPoint = _textView.Caret.Position.VirtualBufferPosition 
             if _incrementalSearch.InSearch then
                 match _lastIncrementalSearchResult with
-                | Some(result) ->
+                | Some result ->
                     match result with
                     | SearchResult.Found (_, span, _) -> VirtualSnapshotPoint(span.Start)
                     | SearchResult.NotFound _ -> caretPoint
@@ -94,14 +95,15 @@ type internal SelectionTracker
         let selectStandard() = 
             let first = _anchorPoint
             let last = endPoint 
-            let first,last = VirtualSnapshotPointUtil.OrderAscending first last
+            let first, last = VirtualSnapshotPointUtil.OrderAscending first last
             let last = 
                 if _settings.IsSelectionInclusive then VirtualSnapshotPointUtil.AddOneOnSameLine last 
                 else last
             _textView.Selection.Select(first,last)
 
         match _kind with
-        | VisualKind.Character -> selectStandard()
+        | VisualKind.Character -> 
+            selectStandard()
         | VisualKind.Line ->
             let first, last = 
                 if VirtualSnapshotPointUtil.GetPosition _anchorPoint <= VirtualSnapshotPointUtil.GetPosition endPoint then 
@@ -114,7 +116,8 @@ type internal SelectionTracker
                 |> SnapshotLineUtil.GetStart
                 |> VirtualSnapshotPointUtil.OfPoint
             let last =
-                if last.IsInVirtualSpace then last
+                if last.IsInVirtualSpace then 
+                    last
                 else 
                     last 
                     |> VirtualSnapshotPointUtil.GetContainingLine
@@ -130,7 +133,7 @@ type internal SelectionTracker
         let trackingPoint = point.Snapshot.CreateTrackingPoint(point.Position, PointTrackingMode.Negative)
         _anchorPoint <- 
             match TrackingPointUtil.GetPoint args.After trackingPoint with
-            | Some(point) -> VirtualSnapshotPoint(point)
+            | Some point -> VirtualSnapshotPoint(point)
             | None -> VirtualSnapshotPoint(args.After, 0)
 
     member private x.ResetCaret() =

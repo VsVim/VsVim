@@ -15,6 +15,7 @@ namespace VimCore.UnitTest
         private IVimBuffer _buffer;
         private IWpfTextView _textView;
         private IRegisterMap _registerMap;
+        private IVimGlobalSettings _globalSettings;
         private TestableSynchronizationContext _context;
 
         internal Register UnnamedRegister
@@ -37,6 +38,7 @@ namespace VimCore.UnitTest
             _buffer = service.Vim.CreateBuffer(_textView);
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             _registerMap = _buffer.RegisterMap;
+            _globalSettings = _buffer.LocalSettings.GlobalSettings;
             Assert.IsTrue(_context.IsEmpty);
 
             // Need to make sure it's focused so macro recording will work
@@ -122,6 +124,34 @@ namespace VimCore.UnitTest
             Assert.IsFalse(_textView.GetCaretVirtualPoint().IsInVirtualSpace);
         }
 
+        /// <summary>
+        /// When an entire line is selected in character wise mode and then deleted
+        /// it should not be a line delete but instead delete the contents of the 
+        /// line.
+        /// </summary>
+        [Test]
+        public void Delete_CharacterWise_LineContents()
+        {
+            Create("cat", "dog");
+            EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 3));
+            _buffer.Process("x");
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// If the character wise selection extents into the line break then the 
+        /// entire line should be deleted
+        /// </summary>
+        [Test]
+        public void Delete_CharacterWise_LineContentsFromBreak()
+        {
+            Create("cat", "dog");
+            _globalSettings.VirtualEdit = "onemore";
+            EnterMode(ModeKind.VisualCharacter, _textView.GetLine(0).ExtentIncludingLineBreak);
+            _buffer.Process("x");
+            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
+        }
 
         [Test]
         public void Repeat1()

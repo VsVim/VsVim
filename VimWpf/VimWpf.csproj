@@ -124,7 +124,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="WpfEditorToSettingSynchronizer.cs" />
+    <Compile Include="VimBufferCreationListener.cs" />
     <Compile Include="VimHost.cs" />
   </ItemGroup>
   <ItemGroup>

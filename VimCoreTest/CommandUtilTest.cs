@@ -1307,6 +1307,33 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// When a full line is selected make sure that it doesn't include the line break
+        /// in the deletion
+        /// </summary>
+        [Test]
+        public void DeleteSelection_Character_FullLine()
+        {
+            Create("cat", "dog");
+            var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 0, 3));
+            _commandUtil.DeleteSelection(UnnamedRegister, visualSpan);
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// When a full line is selected and the selection extents into the line break 
+        /// then the deletion should include the entire line including the line break
+        /// </summary>
+        [Test]
+        public void DeleteSelection_Character_FullLineFromLineBreak()
+        {
+            Create("cat", "dog");
+            var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 0, 4));
+            _commandUtil.DeleteSelection(UnnamedRegister, visualSpan);
+            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
         /// Make sure caret starts at the begining of the line when there is no auto-indent
         /// </summary>
         [Test]

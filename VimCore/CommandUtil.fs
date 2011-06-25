@@ -605,13 +605,21 @@ type internal CommandUtil
             use edit = _textBuffer.CreateEdit()
             visualSpan.Spans |> Seq.iter (fun span -> 
 
-                // If the span ends partially in a LineBreak extent put it fully across
-                // the extent
-                let span = 
-                    let line = span.End.GetContainingLine()
-                    let extent = SnapshotLineUtil.GetLineBreakSpan line
-                    if extent.Contains span.End then SnapshotSpan(span.Start, line.EndIncludingLineBreak)
-                    else span
+                // If the last included point in the SnapshotSpan is inside the line break
+                // portion of a line then extend the SnapshotSpan to encompass the full
+                // line break
+                let span =
+                    match SnapshotSpanUtil.GetLastIncludedPoint span with
+                    | None -> 
+                        // Don't need to special case a 0 length span as it won't actually
+                        // cause any change in the ITextBuffer
+                        span
+                    | Some last ->
+                        if SnapshotPointUtil.IsInsideLineBreak last then
+                            let line = SnapshotPointUtil.GetContainingLine last
+                            SnapshotSpan(span.Start, line.EndIncludingLineBreak)
+                        else
+                            span
 
                 edit.Delete(span.Span) |> ignore)
             let snapshot = edit.Apply()
