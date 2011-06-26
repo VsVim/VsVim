@@ -4,15 +4,15 @@ using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
-using Vim.UnitTest.Mock;
 
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class MarkMapTest
+    public sealed class MarkMapTest
     {
         private ITextView _textView;
         private ITextBuffer _textBuffer;
+        private IVimBuffer _buffer;
         private MarkMap _mapRaw;
         private IMarkMap _map;
         private IVimBufferCreationListener _mapListener;
@@ -30,14 +30,18 @@ namespace VimCore.UnitTest
         public void Cleanup()
         {
             _mapRaw.DeleteAllMarks();
+            if (_buffer != null)
+            {
+                _buffer.Close();
+            }
         }
 
         private void Create(params string[] lines)
         {
             _textView = EditorUtil.CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
-            var vimBuffer = new MockVimBuffer() { TextViewImpl = _textView, TextBufferImpl = _textView.TextBuffer };
-            _mapListener.VimBufferCreated(vimBuffer);
+            _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
+            _mapListener.VimBufferCreated(_buffer);
         }
 
         [Test]
@@ -256,10 +260,10 @@ namespace VimCore.UnitTest
         public void BufferLifetime1()
         {
             var textView = EditorUtil.CreateTextView("foo");
-            var vimBuffer = new MockVimBuffer() { TextBufferImpl = textView.TextBuffer, TextViewImpl = textView };
+            var vimBuffer = EditorUtil.FactoryService.Vim.CreateBuffer(textView);
             _mapListener.VimBufferCreated(vimBuffer);
             _map.SetLocalMark(new SnapshotPoint(textView.TextSnapshot, 0), 'c');
-            vimBuffer.RaiseClosed();
+            vimBuffer.Close();
             Assert.IsTrue(_map.GetLocalMark(textView.TextBuffer, 'c').IsNone());
         }
 

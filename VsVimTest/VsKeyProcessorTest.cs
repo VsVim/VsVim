@@ -130,6 +130,7 @@ namespace VsVim.UnitTest
         public void KeyDown_DontHandleIfIncrementalSearchActive()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
+            _buffer.Setup(x => x.CanProcessNotDirectInsert(It.IsAny<KeyInput>())).Returns(true).Verifiable();
             _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
             VerifyHandle(Key.Enter);
             _adapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(true);

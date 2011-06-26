@@ -145,7 +145,7 @@ namespace VsVim.UnitTest
             buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             foreach (var cur in KeyInputUtil.VimKeyInputList)
             {
-                if (!buffer.InsertMode.IsTextInput(cur))
+                if (!buffer.InsertMode.IsDirectInsert(cur))
                 {
                     continue;
                 }

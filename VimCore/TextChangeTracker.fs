@@ -37,7 +37,7 @@ type internal TextChangeTracker
         // repeat and logging based on that
         _buffer.TextBuffer.Changed 
         |> Observable.filter (fun _ -> _buffer.TextView.HasAggregateFocus || _buffer.ModeKind = ModeKind.Insert || _buffer.ModeKind = ModeKind.Replace)
-        |> Observable.filter (fun _ -> (not _buffer.IsProcessingInput) || _buffer.InsertMode.IsProcessingTextInput || _buffer.ReplaceMode.IsProcessingTextInput)
+        |> Observable.filter (fun _ -> (not _buffer.IsProcessingInput) || _buffer.InsertMode.IsProcessingDirectInsert || _buffer.ReplaceMode.IsProcessingDirectInsert)
         |> Observable.subscribe (fun args -> this.OnTextChanged args)
         |> _bag.Add
 

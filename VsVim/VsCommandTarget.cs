@@ -132,40 +132,39 @@ namespace VsVim
         /// </summary>
         private bool TryGetSingleMapping(KeyRemapMode mode, KeyInput original, out KeyInput mapped)
         {
-            // If we're currently in the middle of a key mapping sequence we won't provide a KeyInput
-            if (!_buffer.BufferedRemapKeyInputs.IsEmpty)
+            var result = _buffer.GetKeyInputMapping(original);
+            if (result.IsNeedsMoreInput || result.IsRecursive)
             {
+                // No single mapping
                 mapped = null;
                 return false;
             }
 
-            var result = _buffer.Vim.KeyMap.GetKeyMapping(
-                KeyInputSet.NewOneKeyInput(original),
-                mode);
-
-            mapped = null;
-            if (result.IsNeedsMoreInput || result.IsRecursive)
-            {
-                // No single mapping
-                return false;
-            }
-            else if (result.IsMapped)
+            if (result.IsMapped)
             {
                 var set = ((KeyMappingResult.Mapped)result).Item;
                 if (!set.IsOneKeyInput)
                 {
+                    mapped = null;
                     return false;
                 }
 
                 mapped = set.FirstKeyInput.Value;
                 return true;
             }
-            else
+
+            if (result.IsNoMapping)
             {
                 // No mapping.  Use the original
                 mapped = original;
                 return true;
             }
+
+            // Shouldn't get here because all cases of KeyMappingResult should be
+            // handled abvoe
+            Contract.Assert(false);
+            mapped = null;
+            return false;
         }
 
         /// <summary>
@@ -173,9 +172,9 @@ namespace VsVim
         /// </summary>
         private bool CanProcessDirectly(IInsertMode mode, KeyInput keyInput)
         {
-            // Don't let the mode directly process anything it considers text input.  We need this to go
-            // through IOleCommandTarget in order to get InsertMode values.  
-            if (mode.IsTextInput(keyInput))
+            // Don't let the mode directly process anything it considers direct input.  We need this to go
+            // through IOleCommandTarget in order for features like intellisense to work properly
+            if (mode.IsDirectInsert(keyInput))
             {
                 return false;
             }

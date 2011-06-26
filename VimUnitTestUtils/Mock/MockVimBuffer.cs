@@ -332,7 +332,6 @@ namespace Vim.UnitTest.Mock
         public event Microsoft.FSharp.Control.FSharpHandler<string> WarningMessage;
 #pragma warning restore 67
 
-
         public IUndoRedoOperations UndoRedoOperations
         {
             get { throw new NotImplementedException(); }
@@ -342,6 +341,18 @@ namespace Vim.UnitTest.Mock
         public VimBufferData VimBufferData
         {
             get { throw new NotImplementedException(); }
+        }
+
+
+        public KeyMappingResult GetKeyInputMapping(KeyInput value)
+        {
+            throw new NotImplementedException();
+        }
+
+
+        public bool CanProcessNotDirectInsert(KeyInput value)
+        {
+            throw new NotImplementedException();
         }
     }
 }

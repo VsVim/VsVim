@@ -86,18 +86,18 @@ namespace VimCore.UnitTest
         /// Ensure we can process a variety of TextInput but that it's explicitly listed as such
         /// </summary>
         [Test]
-        public void CanProcess_TextInput()
+        public void CanProcess_DirectInput()
         {
             Assert.IsTrue(_mode.CanProcess(KeyInputUtil.EnterKey));
-            Assert.IsTrue(_mode.IsTextInput(KeyInputUtil.EnterKey));
+            Assert.IsTrue(_mode.IsDirectInsert(KeyInputUtil.EnterKey));
             Assert.IsTrue(_mode.CanProcess(KeyInputUtil.AlternateEnterKey));
-            Assert.IsTrue(_mode.IsTextInput(KeyInputUtil.AlternateEnterKey));
+            Assert.IsTrue(_mode.IsDirectInsert(KeyInputUtil.AlternateEnterKey));
 
             foreach (var cur in KeyInputUtilTest.CharsAll)
             {
                 var input = KeyInputUtil.CharToKeyInput(cur);
                 Assert.IsTrue(_mode.CanProcess(input));
-                Assert.IsTrue(_mode.IsTextInput(input));
+                Assert.IsTrue(_mode.IsDirectInsert(input));
             }
         }
 

@@ -45,8 +45,6 @@ type InsertSessionData = {
 
     member x.AddTextEdit edit = { x with TextEditList = edit::x.TextEditList }
 
-
-
 type internal InsertMode
     ( 
         _buffer : IVimBuffer, 
@@ -55,12 +53,13 @@ type internal InsertMode
         _editorOptions : IEditorOptions,
         _undoRedoOperations : IUndoRedoOperations,
         _textChangeTracker : ITextChangeTracker,
-        _isReplace : bool ) as this =
+        _isReplace : bool 
+    ) as this =
 
     let _textView = _buffer.TextView
     let _editorOperations = _operations.EditorOperations
     let mutable _commandMap : Map<KeyInput, CommandFunction> = Map.empty
-    let mutable _processTextInputCount = 0
+    let mutable _processDirectInsertCount = 0
     let _emptySessionData = {
         Transaction = None
         RepeatData = None
@@ -94,25 +93,28 @@ type internal InsertMode
 
     member x.CurrentSnapshot = _textView.TextSnapshot
 
-    member x.IsProcessingTextInput = _processTextInputCount > 0
+    member x.IsProcessingDirectInsert = _processDirectInsertCount > 0
 
     member x.ModeKind = if _isReplace then ModeKind.Replace else ModeKind.Insert
 
-    /// Is this KeyInput a raw text input item.  Really anything is text input except 
-    /// for a few specific items
-    member x.IsTextInput (ki : KeyInput) = 
-        if Map.tryFind ki _commandMap |> Option.isSome then
-            // Known commands are not text input
+    /// Is this KeyInput a raw text insert into the ITextBuffer.  Anything that would be 
+    /// processed by adding characters to the ITextBuffer.  This is anything which has an
+    /// associated character that is not an insert mode command
+    member x.IsDirectInsert (keyInput : KeyInput) = 
+        match Map.tryFind keyInput _commandMap with
+        | Some _ ->
+            // Known commands are not direct text insert
             false
-        else
-            match ki.Key with
+        | None ->
+            // Not a command so check for known direct text inserts
+            match keyInput.Key with
             | VimKey.Enter -> true
             | VimKey.Back -> true
             | VimKey.Delete -> true
-            | _ -> Option.isSome ki.RawChar
+            | _ -> Option.isSome keyInput.RawChar
 
-    /// Process the TextInput value
-    member x.ProcessTextInput (ki : KeyInput) = 
+    /// Process the direct text insert command
+    member x.ProcessDirectInsert (ki : KeyInput) = 
 
         // Actually process the edit
         let processReplaceEdit () =
@@ -178,7 +180,7 @@ type internal InsertMode
                 let text = ki.Char.ToString()
                 _editorOperations.InsertText(text)
 
-        _processTextInputCount <- _processTextInputCount + 1
+        _processDirectInsertCount <- _processDirectInsertCount + 1
         try
             let value, sessionData =
                 if _isReplace then 
@@ -195,7 +197,7 @@ type internal InsertMode
             else
                 ProcessResult.NotHandled
          finally 
-            _processTextInputCount <- _processTextInputCount - 1
+            _processDirectInsertCount <- _processDirectInsertCount - 1
 
     /// Process the up command
     member x.ProcessUp () =
@@ -312,7 +314,7 @@ type internal InsertMode
         if Map.containsKey ki _commandMap then
             true
         else
-            x.IsTextInput ki
+            x.IsDirectInsert ki
 
     /// Process the KeyInput
     member x.Process ki = 
@@ -320,8 +322,8 @@ type internal InsertMode
         | Some(func) -> 
             func()
         | None -> 
-            if x.IsTextInput ki then 
-                x.ProcessTextInput ki
+            if x.IsDirectInsert ki then 
+                x.ProcessDirectInsert ki
             else
                 ProcessResult.NotHandled
 
@@ -388,9 +390,9 @@ type internal InsertMode
         member x.VimBuffer = _buffer
         member x.CommandNames =  _commandMap |> Seq.map (fun p -> p.Key) |> Seq.map OneKeyInput
         member x.ModeKind = x.ModeKind
-        member x.IsProcessingTextInput = x.IsProcessingTextInput
+        member x.IsProcessingDirectInsert = x.IsProcessingDirectInsert
         member x.CanProcess ki = x.CanProcess ki
-        member x.IsTextInput ki = x.IsTextInput ki
+        member x.IsDirectInsert ki = x.IsDirectInsert ki
         member x.Process ki = x.Process ki
         member x.OnEnter arg = x.OnEnter arg
         member x.OnLeave () = x.OnLeave ()
