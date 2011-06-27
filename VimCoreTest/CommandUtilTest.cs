@@ -638,8 +638,51 @@ namespace VimCore.UnitTest
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
 
+        /// <summary>
+        /// Standard case of deleting several lines in the buffer
+        /// </summary>
         [Test]
-        public void DeleteLinesIncludingLineBreak_Simple()
+        public void DeleteLines_Multiple()
+        {
+            Create("cat", "dog", "bear");
+            _commandUtil.DeleteLines(2, UnnamedRegister);
+            Assert.AreEqual(EditorUtil.CreateLinesWithLineBreak("cat", "dog"), UnnamedRegister.StringValue);
+            Assert.AreEqual("bear", _textView.GetLine(0).GetText());
+            Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
+        }
+
+        /// <summary>
+        /// Verify the deleting of lines where the count causes the deletion to cross 
+        /// over a fold
+        /// </summary>
+        [Test]
+        public void DeleteLines_OverFold()
+        {
+            Create("cat", "dog", "bear", "fish", "tree");
+            _foldManager.CreateFold(_textView.GetLineRange(1, 2));
+            _commandUtil.DeleteLines(3, UnnamedRegister);
+            Assert.AreEqual(EditorUtil.CreateLinesWithLineBreak("cat", "dog", "bear", "fish"), UnnamedRegister.StringValue);
+            Assert.AreEqual("tree", _textView.GetLine(0).GetText());
+            Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
+        }
+
+        /// <summary>
+        /// Verify the deleting of lines where the count causes the deletion to cross 
+        /// over a fold which begins the deletion span
+        /// </summary>
+        [Test]
+        public void DeleteLines_StartOfFold()
+        {
+            Create("cat", "dog", "bear", "fish", "tree");
+            _foldManager.CreateFold(_textView.GetLineRange(0, 1));
+            _commandUtil.DeleteLines(2, UnnamedRegister);
+            Assert.AreEqual(EditorUtil.CreateLinesWithLineBreak("cat", "dog", "bear"), UnnamedRegister.StringValue);
+            Assert.AreEqual("fish", _textView.GetLine(0).GetText());
+            Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
+        }
+
+        [Test]
+        public void DeleteLines_Simple()
         {
             Create("foo", "bar", "baz", "jaz");
             _commandUtil.DeleteLines(1, UnnamedRegister);
@@ -649,7 +692,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void DeleteLinesIncludingLineBreak_WithCount()
+        public void DeleteLines_WithCount()
         {
             Create("foo", "bar", "baz", "jaz");
             _commandUtil.DeleteLines(2, UnnamedRegister);
@@ -662,7 +705,7 @@ namespace VimCore.UnitTest
         /// Delete the last line and make sure it actually deletes a line from the buffer
         /// </summary>
         [Test]
-        public void DeleteLinesIncludingLineBreak_LastLine()
+        public void DeleteLines_LastLine()
         {
             Create("foo", "bar");
             _textView.MoveCaretToLine(1);
@@ -1683,13 +1726,27 @@ namespace VimCore.UnitTest
         /// the folded text
         /// </summary>
         [Test]
-        public void YankLines_OverFold()
+        public void YankLines_StartOfFold()
         {
             Create("cat", "dog", "bear", "fish", "pig");
             _foldManager.CreateFold(_textView.GetLineRange(1, 2));
             _textView.MoveCaretToLine(1);
             _commandUtil.YankLines(2, UnnamedRegister);
             Assert.AreEqual("dog" + Environment.NewLine + "bear" + Environment.NewLine + "fish" + Environment.NewLine, UnnamedRegister.StringValue);
+            Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
+        }
+
+        /// <summary>
+        /// Ensure that yanking over a fold will count the fold as one line
+        /// </summary>
+        [Test]
+        public void YankLines_OverFold()
+        {
+            Create("cat", "dog", "bear", "fish", "pig");
+            _foldManager.CreateFold(_textView.GetLineRange(1, 2));
+            _commandUtil.YankLines(3, UnnamedRegister);
+            var text = EditorUtil.CreateLines("cat", "dog", "bear", "fish") + Environment.NewLine;
+            Assert.AreEqual(text, UnnamedRegister.StringValue);
             Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
         }
     }

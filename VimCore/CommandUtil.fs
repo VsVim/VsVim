@@ -634,11 +634,14 @@ type internal CommandUtil
 
     /// Delete count lines from the cursor.  The caret should be positioned at the start
     /// of the first line for both undo / redo
-    ///
-    /// TODO: this needs to operate on the Visual Snapshot
     member x.DeleteLines count register = 
-        let line = x.CaretLine
-        let span, stringData = 
+
+        let span, includesLastLine =
+            // The span should be calculated using the visual snapshot if available.  Binding 
+            // it as 'x' here will help prevent us from accidentally mixing the visual and text
+            // snapshot values
+            let x = TextViewUtil.GetVisualSnapshotDataOrEdit _textView
+            let line = x.CaretLine
             if line.LineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot && x.CurrentSnapshot.LineCount > 1 then
                 // The last line is an unfortunate special case here as it does not have a line break.  Hence 
                 // in order to delete the line we must delete the line break at the end of the preceeding line.  
@@ -648,24 +651,39 @@ type internal CommandUtil
                 // deal with
                 let above = SnapshotUtil.GetLine x.CurrentSnapshot (line.LineNumber - 1)
                 let span = SnapshotSpan(above.End, line.EndIncludingLineBreak)
-                let data = StringData.Simple (line.GetText() + System.Environment.NewLine)
-                (span, data)
+                span, true
             else 
                 // Simpler case.  Get the line range and delete
                 let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
-                (range.ExtentIncludingLineBreak, StringData.OfSpan range.ExtentIncludingLineBreak)
+                range.ExtentIncludingLineBreak, false
 
-        // Use a transaction to properly position the caret for undo / redo.  We want it in the same
-        // place for undo / redo so move it before the transaction
-        TextViewUtil.MoveCaretToPoint _textView span.Start
-        x.EditWithUndoTransaciton "DeleteLines" (fun() -> 
-            let snapshot = _textBuffer.Delete(span.Span)
-            TextViewUtil.MoveCaretToPoint _textView (SnapshotPoint(snapshot, span.Start.Position)))
+        // Make sure to map the SnapshotSpan back into the text / edit buffer
+        match BufferGraphUtil.MapSpanDownToSingle _bufferGraph span x.CurrentSnapshot with
+        | None ->
+            // If we couldn't map back down raise an error
+            _statusUtil.OnError Resources.Internal_ErrorMappingToVisual
+        | Some span ->
 
-        // Now update the register after the delete completes
-        let value = RegisterValue.String (stringData, OperationKind.LineWise)
-        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+            // When calculating the text to put into the register we must add in a trailing new line
+            // if we were dealing with the last line.  The last line won't include a line break but 
+            // we require that line wise values end in breaks for consistency
+            let stringData = 
+                if includesLastLine then
+                    (span.GetText()) + System.Environment.NewLine |> EditUtil.RemoveBeginingNewLine |> StringData.Simple
+                else
+                    StringData.OfSpan span
 
+            // Use a transaction to properly position the caret for undo / redo.  We want it in the same
+            // place for undo / redo so move it before the transaction
+            TextViewUtil.MoveCaretToPoint _textView span.Start
+            x.EditWithUndoTransaciton "DeleteLines" (fun() -> 
+                let snapshot = _textBuffer.Delete(span.Span)
+                TextViewUtil.MoveCaretToPoint _textView (SnapshotPoint(snapshot, span.Start.Position)))
+
+            // Now update the register after the delete completes
+            let value = RegisterValue.String (stringData, OperationKind.LineWise)
+            _registerMap.SetRegisterValue register RegisterOperation.Delete value
+    
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete the specified motion of text
