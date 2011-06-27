@@ -1683,13 +1683,13 @@ namespace VimCore.UnitTest
         /// the folded text
         /// </summary>
         [Test]
-        [Ignore("Broke by earlier change.  Need to fix")]
-        public void YankLines_Overfold()
+        public void YankLines_OverFold()
         {
-            Create("cat", "dog", "bear", "fish");
-            _foldManager.CreateFold(_textView.GetLineRange(0, 1));
+            Create("cat", "dog", "bear", "fish", "pig");
+            _foldManager.CreateFold(_textView.GetLineRange(1, 2));
+            _textView.MoveCaretToLine(1);
             _commandUtil.YankLines(2, UnnamedRegister);
-            Assert.AreEqual("cat" + Environment.NewLine + "dog" + Environment.NewLine + "bear" + Environment.NewLine, UnnamedRegister.StringValue);
+            Assert.AreEqual("dog" + Environment.NewLine + "bear" + Environment.NewLine + "fish" + Environment.NewLine, UnnamedRegister.StringValue);
             Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
         }
     }

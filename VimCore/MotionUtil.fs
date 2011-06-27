@@ -359,13 +359,12 @@ type internal MotionUtil
             | Some motionResult ->  
                 // Now migrate the SnapshotSpan down to the EditBuffer.  If we cannot map this span into
                 // the EditBuffer then we must fail. 
-                let collection = BufferGraphUtil.MapSpanDownToSnapshot _bufferGraph motionResult.Span SpanTrackingMode.EdgeExclusive x.CurrentSnapshot
-                match collection with
+                let span = BufferGraphUtil.MapSpanDownToSingle _bufferGraph motionResult.Span x.CurrentSnapshot
+                match span with
                 | None ->
                     _statusUtil.OnError Resources.Internal_ErrorMappingBackToEdit
                     VisualMotionResult.FailedNoMapToEditSnapshot
-                | Some collection ->
-                    let span = NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan collection
+                | Some span ->
                     { motionResult with Span = span } |> VisualMotionResult.Succeeded
 
     /// Run the motion function against the Visual Snapshot

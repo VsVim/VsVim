@@ -1,4 +1,4 @@
-﻿
+﻿#light
 
 namespace Vim
 open Vim.Modes
@@ -19,6 +19,7 @@ type internal CommandUtil
 
     let _textView = _buffer.TextView
     let _textBuffer = _textView.TextBuffer
+    let _bufferGraph = _textView.BufferGraph
     let _motionUtil = _buffer.MotionUtil
     let _registerMap = _buffer.RegisterMap
     let _markMap = _buffer.MarkMap
@@ -748,6 +749,13 @@ type internal CommandUtil
 
         let arg = ModeArgument.InsertWithTransaction transaction
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
+
+    /// Used for commands which need to operate on the visual buffer and produce a SnapshotSpan
+    /// to be mapped back to the text / edit buffer
+    member x.EditWithVisualSnapshot action = 
+        let snapshotData = TextViewUtil.GetVisualSnapshotDataOrEdit _textView
+        let span = action snapshotData
+        BufferGraphUtil.MapSpanDownToSingle _bufferGraph span x.CurrentSnapshot
 
     /// Close a fold under the caret for 'count' lines
     member x.FoldLines count =
@@ -2068,11 +2076,21 @@ type internal CommandUtil
     /// against the visual buffer if possible.  Yanking a line which contains the fold should
     /// yank the entire fold
     member x.YankLines count register = 
-        let x = TextViewUtil.GetVisualSnapshotDataOrEdit _textView
-        let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
-        let data = StringData.OfSpan range.ExtentIncludingLineBreak 
-        let value = RegisterValue.String (data, OperationKind.LineWise)
-        _registerMap.SetRegisterValue register RegisterOperation.Yank value
+        let span = x.EditWithVisualSnapshot (fun x -> 
+
+            // Get the line range in the snapshot data
+            let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
+            range.ExtentIncludingLineBreak)
+
+        match span with
+        | None ->
+            // If we couldn't map back down raise an error
+            _statusUtil.OnError Resources.Internal_ErrorMappingToVisual
+        | Some span ->
+
+            let data = StringData.OfSpan span
+            let value = RegisterValue.String (data, OperationKind.LineWise)
+            _registerMap.SetRegisterValue register RegisterOperation.Yank value
 
         CommandResult.Completed ModeSwitch.NoSwitch
 

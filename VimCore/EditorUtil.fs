@@ -972,9 +972,9 @@ module BufferGraphUtil =
 
     /// Map the point down to the given ITextSnapshot.  Returns None if the mapping is not 
     /// possible
-    let MapPointDownToSnapshot (bufferGraph : IBufferGraph) point trackingMode affinity snapshot =
+    let MapPointDownToSnapshot (bufferGraph : IBufferGraph) point trackingMode snapshot affinity =
         try
-            bufferGraph.MapDownToSnapshot(point, trackingMode, affinity, snapshot)
+            bufferGraph.MapDownToSnapshot(point, trackingMode, snapshot, affinity)
             |> OptionUtil.ofNullable
         with
             | :? System.ArgumentException-> None
@@ -988,6 +988,20 @@ module BufferGraphUtil =
         with
             | :? System.ArgumentException-> None
             | :? System.InvalidOperationException -> None
+
+    /// Map the SnapshotSpan down to the given ITextSnapshot by the Start and End points
+    /// instead of by the mapped Spans
+    ///
+    /// TODO: Need to talk with the editor team to better understand why this behavior is 
+    /// so different
+    let MapSpanDownToSingle (bufferGraph : IBufferGraph) (span : SnapshotSpan) snapshot = 
+        let startPoint = MapPointDownToSnapshot bufferGraph span.Start PointTrackingMode.Negative snapshot PositionAffinity.Predecessor
+        let endPoint = MapPointDownToSnapshot bufferGraph span.End PointTrackingMode.Positive snapshot PositionAffinity.Successor
+        match startPoint, endPoint with
+        | Some startPoint, Some endPoint -> SnapshotSpan(startPoint, endPoint) |> Some
+        | None, Some _ -> None
+        | Some _, None -> None
+        | None, None -> None
 
 /// The common pieces of information about an ITextSnapshot which are used
 /// to calculate items like motions
