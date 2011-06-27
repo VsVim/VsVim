@@ -8,7 +8,7 @@ using Vim.UnitTest;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class VimBufferTests
+    public sealed class VimBufferTest
     {
         private ITextView _textView;
         private VimBuffer _bufferRaw;
@@ -407,6 +407,61 @@ namespace VimCore.UnitTest
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             Assert.IsTrue(_buffer.CanProcess('a'));
             normal.Verify();
+        }
+
+        /// <summary>
+        /// When there is buffered input due to a key mapping make sure that 
+        /// we consider the final mapped input for processing and not the immediate
+        /// KeyInput value
+        /// </summary>
+        [Test]
+        public void CanProcess_BufferedInput()
+        {
+            _keyMap.MapWithRemap("la", "iexample", KeyRemapMode.Normal);
+            _textView.SetText("dog cat");
+            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+
+            // <F4> is not a valid command
+            Assert.IsFalse(_buffer.CanProcess(VimKey.F4));
+            _buffer.Process("l");
+            Assert.IsFalse(_buffer.BufferedRemapKeyInputs.IsEmpty);
+
+            // Is is still not a valid command but when mapping is considered it will
+            // expand to l<F4> and l is a valid command
+            Assert.IsTrue(_buffer.CanProcess(VimKey.F4));
+        }
+
+        /// <summary>
+        /// Make sure that commands like 'a' are still considered commands when the
+        /// IVimBuffer is in normal mode
+        /// </summary>
+        [Test]
+        public void CanProcessAsCommand_Command()
+        {
+            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            Assert.IsTrue(_buffer.CanProcessAsCommand('a'));
+        }
+
+        /// <summary>
+        /// Make sure that commands like 'a' are not considered commands when in 
+        /// insert mode
+        /// </summary>
+        [Test]
+        public void CanProcessAsCommand_InsertMode()
+        {
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            Assert.IsFalse(_buffer.CanProcessAsCommand('a'));
+        }
+
+        /// <summary>
+        /// Make sure that commands like 'a' are not considered commands when in 
+        /// replace mode
+        /// </summary>
+        [Test]
+        public void CanProcessAsCommand_ReplaceMode()
+        {
+            _buffer.SwitchMode(ModeKind.Replace, ModeArgument.None);
+            Assert.IsFalse(_buffer.CanProcessAsCommand('a'));
         }
 
         /// <summary>

@@ -118,7 +118,6 @@ type internal VimBuffer
     /// Switch to the desired mode
     member x.SwitchMode kind arg = _modeMap.SwitchMode kind arg
 
-    
     /// Add an IMode into the IVimBuffer instance
     member x.AddMode mode = _modeMap.AddMode mode
 
@@ -169,14 +168,23 @@ type internal VimBuffer
             else
                 false
 
-        match x.GetKeyInputMapping keyInput with
+        let keyMappingResult, keyInputSet = x.GetKeyInputMappingCore keyInput
+        match keyMappingResult with
         | KeyMappingResult.Mapped keyInputSet -> 
             match keyInputSet.FirstKeyInput with
             | Some keyInput -> canProcess keyInput
             | None -> false
         | KeyMappingResult.NoMapping -> 
-            // Simplest case.  There is no mapping so just consider the input by itself
-            canProcess keyInput
+            // Simplest case.  There is no mapping so just consider the first character
+            // of the input.  
+            //
+            // Note: This is not necessarily the provided KeyInput.  There could be several
+            // buffered KeyInput values which are around because the matched the prefix of a
+            // mapping which this KeyInput has broken.  So the first KeyInput we would
+            // process is the first buffered KeyInput
+            match keyInputSet.FirstKeyInput with
+            | Some keyInput -> canProcess keyInput
+            | None -> false
         | KeyMappingResult.NeedsMoreInput -> 
             // If this will simply further a key mapping then yes it can be processed
             // now

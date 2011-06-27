@@ -290,16 +290,40 @@ namespace Vim.UnitTest
 
         #region IVimBuffer
 
+        /// <summary>
+        /// Helper for the CanProcess function which maps the char to a KeyInput value
+        /// </summary>
         public static bool CanProcess(this IVimBuffer buffer, char c)
         {
             var keyInput = KeyInputUtil.CharToKeyInput(c);
             return buffer.CanProcess(keyInput);
         }
 
+        /// <summary>
+        /// Helper for the CanProcess function which maps the VimKey to a KeyInput value
+        /// </summary>
         public static bool CanProcess(this IVimBuffer buffer, VimKey key)
         {
             var keyInput = KeyInputUtil.VimKeyToKeyInput(key);
             return buffer.CanProcess(keyInput);
+        }
+
+        /// <summary>
+        /// Helper for the CanProcessAsCommand function which maps the char to a KeyInput value
+        /// </summary>
+        public static bool CanProcessAsCommand(this IVimBuffer buffer, char c)
+        {
+            var keyInput = KeyInputUtil.CharToKeyInput(c);
+            return buffer.CanProcessAsCommand(keyInput);
+        }
+
+        /// <summary>
+        /// Helper for the CanProcessAsCommand function which maps the VimKey to a KeyInput value
+        /// </summary>
+        public static bool CanProcessAsCommand(this IVimBuffer buffer, VimKey key)
+        {
+            var keyInput = KeyInputUtil.VimKeyToKeyInput(key);
+            return buffer.CanProcessAsCommand(keyInput);
         }
 
         public static bool Process(this IVimBuffer buf, VimKey key)

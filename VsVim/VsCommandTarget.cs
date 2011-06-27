@@ -170,7 +170,7 @@ namespace VsVim
         /// <summary>
         /// Determine if the IInsertMode value should process the given KeyInput
         /// </summary>
-        private bool CanProcessDirectly(IInsertMode mode, KeyInput keyInput)
+        private bool CanProcessWithInsertMode(IInsertMode mode, KeyInput keyInput)
         {
             // Don't let the mode directly process anything it considers direct input.  We need this to go
             // through IOleCommandTarget in order for features like intellisense to work properly
@@ -194,7 +194,7 @@ namespace VsVim
             }
 
             // Unfortunately there is no way to detect if the R# completion windows are active.  We have
-            // to take the pessimistic view that they are not and just not handle the input
+            // to take the pessimistic view that they are and just not handle the input
             if (isAnyArrow && _externalEditManager.IsResharperLoaded)
             {
                 return false;
@@ -206,7 +206,7 @@ namespace VsVim
         /// <summary>
         /// Try and process the KeyInput from the Exec method
         /// </summary>
-        private bool TryExec(ref Guid commandGroup, ref OleCommandData oleCommandData, KeyInput keyInput)
+        private bool TryProcessWithBuffer(ref Guid commandGroup, ref OleCommandData oleCommandData, KeyInput keyInput)
         {
             if (!_buffer.CanProcess(keyInput))
             {
@@ -230,7 +230,7 @@ namespace VsVim
             // not at the individual IMode.  Have to manually map here and test against the 
             // mapped KeyInput
             KeyInput mapped;
-            if (!TryGetSingleMapping(KeyRemapMode.Insert, keyInput, out mapped) || CanProcessDirectly(mode, mapped))
+            if (!TryGetSingleMapping(KeyRemapMode.Insert, keyInput, out mapped) || CanProcessWithInsertMode(mode, mapped))
             {
                 return _buffer.Process(keyInput).IsAnyHandled;
             }
@@ -238,7 +238,7 @@ namespace VsVim
             // We've successfully mapped the KeyInput (even if t's a no-op) and determined that
             // we don't want to process it directly if possible.  Now we try and process the 
             // potentially mapped value
-            return TryExecForInsertMode(ref commandGroup, ref oleCommandData, keyInput, mapped);
+            return TryProcessWithExec(ref commandGroup, ref oleCommandData, keyInput, mapped);
         }
 
         /// <summary>
@@ -246,7 +246,7 @@ namespace VsVim
         /// called for commands which can't be processed directly like edits.  We'd prefer these 
         /// go through Visual Studio's command system so items like Intellisense work properly.
         /// </summary>
-        private bool TryExecForInsertMode(ref Guid commandGroup, ref OleCommandData oleCommandData, KeyInput originalKeyInput, KeyInput mappedKeyInput)
+        private bool TryProcessWithExec(ref Guid commandGroup, ref OleCommandData oleCommandData, KeyInput originalKeyInput, KeyInput mappedKeyInput)
         {
             var versionNumber = _textBuffer.CurrentSnapshot.Version.VersionNumber;
             int? hr = null;
@@ -292,13 +292,11 @@ namespace VsVim
                 // Whether or not this succeeded it was processed to the fullest possible extent
                 return true;
             }
-            else
-            {
-                // If we couldn't map the KeyInput value into a Visual Studio command then go straight to the 
-                // ITextBuffer.  Insert mode is already designed to handle these KeyInput values we'd just prefer
-                // to pass them through Visual Studio.
-                return _buffer.Process(originalKeyInput).IsAnyHandled;
-            }
+
+            // If we couldn't map the KeyInput value into a Visual Studio command then go straight to the 
+            // ITextBuffer.  Insert mode is already designed to handle these KeyInput values we'd just prefer
+            // to pass them through Visual Studio.
+            return _buffer.Process(originalKeyInput).IsAnyHandled;
         }
 
         /// <summary>
@@ -377,8 +375,9 @@ namespace VsVim
                             return NativeMethods.S_OK;
                         }
 
+                        // Try and process the command with the IVimBuffer
                         var commandData = new OleCommandData(commandId, commandExecOpt, variantIn, variantOut);
-                        if (TryExec(ref commandGroup, ref commandData, keyInput))
+                        if (TryProcessWithBuffer(ref commandGroup, ref commandData, keyInput))
                         {
                             return NativeMethods.S_OK;
                         }
