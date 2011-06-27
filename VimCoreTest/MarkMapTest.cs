@@ -33,6 +33,7 @@ namespace VimCore.UnitTest
             if (_buffer != null)
             {
                 _buffer.Close();
+                _buffer = null;
             }
         }
 
