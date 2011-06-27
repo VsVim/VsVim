@@ -2458,9 +2458,14 @@ and IVimBuffer =
     /// provided KeyInput will participate in remapping based on the current mode
     abstract CanProcess: KeyInput -> bool
 
-    /// Exactly the same behavior as CanProcess except it will return false if the item
-    /// would be considered direct text input to the ITextBuffer
-    abstract CanProcessNotDirectInsert : KeyInput -> bool
+    /// Can the passed in KeyInput be processed as a Vim command by the current state of
+    /// the IVimBuffer.  The provided KeyInput will participate in remapping based on the
+    /// current mode
+    ///
+    /// This is very similar to CanProcess except it will return false for any KeyInput
+    /// which would be processed as a direct insert.  In other words commands like 'a',
+    /// 'b' when handled by insert / replace mode
+    abstract CanProcessAsCommand : KeyInput -> bool
 
     /// Switch the current mode to the provided value
     abstract SwitchMode : ModeKind -> ModeArgument -> IMode

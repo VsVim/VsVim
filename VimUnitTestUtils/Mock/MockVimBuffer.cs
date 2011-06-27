@@ -354,5 +354,11 @@ namespace Vim.UnitTest.Mock
         {
             throw new NotImplementedException();
         }
+
+
+        public bool CanProcessAsCommand(KeyInput value)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -147,23 +147,36 @@ type internal VimBuffer
     member x.GetKeyInputMapping keyInput =
         x.GetKeyInputMappingCore keyInput |> fst
 
-    /// Can the KeyInput value be processed?  This particular function doesn't consider 
-    /// key mapping.  
-    member x.CanProcessCore keyInput = 
-        x.Mode.CanProcess keyInput || keyInput = _vim.Settings.DisableCommand
-
     /// Can the KeyInput value be processed in the given the current state of the
     /// IVimBuffer
-    member x.CanProcess keyInput =  
+    member x.CanProcessCore keyInput allowDirectInsert =  
+
+        // Is this KeyInput going to be used for direct insert
+        let isDirectInsert keyInput = 
+            match x.Mode.ModeKind with
+            | ModeKind.Insert -> x.InsertMode.IsDirectInsert keyInput
+            | ModeKind.Replace -> x.ReplaceMode.IsDirectInsert keyInput
+            | _ -> false
+
+        // Can the given KeyInput be processed as a command or potentially a 
+        // direct insert
+        let canProcess keyInput = 
+            if keyInput = _vim.Settings.DisableCommand then
+                // The disable command can be processed at all times
+                true
+            elif x.Mode.CanProcess keyInput then
+                allowDirectInsert || not (isDirectInsert keyInput)
+            else
+                false
 
         match x.GetKeyInputMapping keyInput with
         | KeyMappingResult.Mapped keyInputSet -> 
             match keyInputSet.FirstKeyInput with
-            | Some keyInput -> x.CanProcessCore keyInput
+            | Some keyInput -> canProcess keyInput
             | None -> false
         | KeyMappingResult.NoMapping -> 
             // Simplest case.  There is no mapping so just consider the input by itself
-           x.CanProcessCore keyInput
+            canProcess keyInput
         | KeyMappingResult.NeedsMoreInput -> 
             // If this will simply further a key mapping then yes it can be processed
             // now
@@ -173,41 +186,18 @@ type internal VimBuffer
             // be processed now
             true
 
-    /// Exactly the same behavior as CanProcess except it will return false if the item
-    /// would be considered direct text input to the ITextBuffer
-    member x.CanProcessNotDirectInsert keyInput =
+    /// Can the KeyInput value be processed in the given the current state of the
+    /// IVimBuffer
+    member x.CanProcess keyInput = x.CanProcessCore keyInput true
 
-        // Only insert and replace mode actually support direct input
-        let mode = 
-            match x.Mode.ModeKind with
-            | ModeKind.Insert -> Some x.InsertMode
-            | ModeKind.Replace -> Some x.ReplaceMode
-            | _ -> None
-
-        match mode with
-        | None ->
-            // Not in a mode which supports direct input so it's just a question of 
-            // whether or not we can process it
-            x.CanProcess keyInput
-
-        | Some mode ->
-
-            // Function to actually test the input
-            let can keyInput = not (mode.IsDirectInsert keyInput) && x.CanProcessCore keyInput
-
-            match x.GetKeyInputMapping keyInput with
-            | KeyMappingResult.Mapped keyInputSet -> 
-                match keyInputSet.FirstKeyInput with
-                | Some keyInput ->  can keyInput
-                | None -> false
-            | KeyMappingResult.NoMapping -> 
-                can keyInput
-            | KeyMappingResult.NeedsMoreInput -> 
-                // Default to CanProcess since there is no input to consider
-                x.CanProcess keyInput
-            | KeyMappingResult.Recursive -> 
-                // Default to CanProcess since there is no input to consider
-                x.CanProcess keyInput
+    /// Can the passed in KeyInput be processed as a Vim command by the current state of
+    /// the IVimBuffer.  The provided KeyInput will participate in remapping based on the
+    /// current mode
+    ///
+    /// This is very similar to CanProcess except it will return false for any KeyInput
+    /// which would be processed as a direct insert.  In other words commands like 'a',
+    /// 'b' when handled by insert / replace mode
+    member x.CanProcessAsCommand keyInput = x.CanProcessCore keyInput false
 
     /// Actually process the input key.  Raise the change event on an actual change
     member x.Process (keyInput : KeyInput) =
@@ -322,11 +312,16 @@ type internal VimBuffer
         member x.LocalSettings = _localSettings
         member x.RegisterMap = _vim.RegisterMap
 
+        member x.CanProcess keyInput = x.CanProcess keyInput
+        member x.CanProcessAsCommand keyInput = x.CanProcessAsCommand keyInput
+        member x.Close () = x.Close()
         member x.GetKeyInputMapping keyInput = x.GetKeyInputMapping keyInput
         member x.GetMode kind = _modeMap.GetMode kind
         member x.GetRegister name = _vim.RegisterMap.GetRegister name
+        member x.Process keyInput = x.Process keyInput
         member x.SwitchMode kind arg = x.SwitchMode kind arg
         member x.SwitchPreviousMode () = _modeMap.SwitchPreviousMode()
+        member x.SimulateProcessed keyInput = x.SimulateProcessed keyInput
 
         [<CLIEvent>]
         member x.SwitchedMode = _modeMap.SwitchedEvent
@@ -348,12 +343,6 @@ type internal VimBuffer
         member x.StatusMessageLong = _statusMessageLongEvent.Publish
         [<CLIEvent>]
         member x.Closed = _closedEvent.Publish
-
-        member x.CanProcess ki = x.CanProcess ki
-        member x.CanProcessNotDirectInsert ki = x.CanProcessNotDirectInsert ki
-        member x.Close () = x.Close()
-        member x.Process ki = x.Process ki
-        member x.SimulateProcessed ki = x.SimulateProcessed ki
 
     interface IPropertyOwner with
         member x.Properties = _properties

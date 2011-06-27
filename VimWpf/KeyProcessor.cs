@@ -134,7 +134,7 @@ namespace Vim.UI.Wpf
                     KeyUtil.TryConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out ki) &&
                     !KeyUtil.IsMappedByChar(ki.Key);
                 handled = tryProcess
-                    ? _buffer.CanProcessNotDirectInsert(ki) && _buffer.Process(ki).IsAnyHandled
+                    ? _buffer.CanProcessAsCommand(ki) && _buffer.Process(ki).IsAnyHandled
                     : false;
             }
             else if (0 != (args.KeyboardDevice.Modifiers & (ModifierKeys.Control | ModifierKeys.Alt)))
@@ -143,7 +143,7 @@ namespace Vim.UI.Wpf
                 // and see if can be handled by Vim
                 KeyInput ki;
                 handled = KeyUtil.TryConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out ki)
-                    && _buffer.CanProcessNotDirectInsert(ki)
+                    && _buffer.CanProcessAsCommand(ki)
                     && _buffer.Process(ki).IsAnyHandled;
             }
             else

@@ -95,7 +95,7 @@ namespace Vim.UI.Wpf.Test
         [Description("Do handle non printable characters here")]
         public void KeyDown4()
         {
-            _buffer.Setup(x => x.CanProcessNotDirectInsert(It.IsAny<KeyInput>())).Returns(true).Verifiable();
+            _buffer.Setup(x => x.CanProcessAsCommand(It.IsAny<KeyInput>())).Returns(true).Verifiable();
             _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
 
             var array = new[] { Key.Enter, Key.Left, Key.Right, Key.Return };
@@ -113,7 +113,7 @@ namespace Vim.UI.Wpf.Test
         [Description("Do pass non-printable charcaters onto the IVimBuffer")]
         public void KeyDown5()
         {
-            _buffer.Setup(x => x.CanProcessNotDirectInsert(It.IsAny<KeyInput>())).Returns(false).Verifiable();
+            _buffer.Setup(x => x.CanProcessAsCommand(It.IsAny<KeyInput>())).Returns(false).Verifiable();
 
             var array = new[] { Key.Enter, Key.Left, Key.Right, Key.Return };
             foreach (var cur in array)
@@ -130,7 +130,7 @@ namespace Vim.UI.Wpf.Test
         [Description("Do pass Control and Alt modified input onto the IVimBuffer")]
         public void KeyDown6()
         {
-            _buffer.Setup(x => x.CanProcessNotDirectInsert(It.IsAny<KeyInput>())).Returns(false).Verifiable();
+            _buffer.Setup(x => x.CanProcessAsCommand(It.IsAny<KeyInput>())).Returns(false).Verifiable();
 
             for (var i = 0; i < 26; i++)
             {
@@ -151,7 +151,7 @@ namespace Vim.UI.Wpf.Test
         [Description("Control + char won't end up as TextInput so we handle it directly")]
         public void KeyDown_PassControlLetterToBuffer()
         {
-            _buffer.Setup(x => x.CanProcessNotDirectInsert(It.IsAny<KeyInput>())).Returns(true).Verifiable();
+            _buffer.Setup(x => x.CanProcessAsCommand(It.IsAny<KeyInput>())).Returns(true).Verifiable();
             _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
 
             for (var i = 0; i < 26; i++)
@@ -171,7 +171,7 @@ namespace Vim.UI.Wpf.Test
         [Test]
         public void KeyDown_PassAltLetterToBuffer()
         {
-            _buffer.Setup(x => x.CanProcessNotDirectInsert(It.IsAny<KeyInput>())).Returns(true).Verifiable();
+            _buffer.Setup(x => x.CanProcessAsCommand(It.IsAny<KeyInput>())).Returns(true).Verifiable();
             _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
 
             for (var i = 0; i < 26; i++)
@@ -188,7 +188,7 @@ namespace Vim.UI.Wpf.Test
         [Test]
         public void KeyDown_PassNonCharOnlyToBuffer()
         {
-            _buffer.Setup(x => x.CanProcessNotDirectInsert(It.IsAny<KeyInput>())).Returns(true).Verifiable();
+            _buffer.Setup(x => x.CanProcessAsCommand(It.IsAny<KeyInput>())).Returns(true).Verifiable();
             _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
 
             var array = new[] { Key.Left, Key.Right, Key.Up, Key.Down };
@@ -208,7 +208,7 @@ namespace Vim.UI.Wpf.Test
         public void KeyDown_NonCharWithModifierShouldCarryModifier()
         {
             var ki = KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Left, KeyModifiers.Shift);
-            _buffer.Setup(x => x.CanProcessNotDirectInsert(ki)).Returns(true).Verifiable();
+            _buffer.Setup(x => x.CanProcessAsCommand(ki)).Returns(true).Verifiable();
             _buffer.Setup(x => x.Process(ki)).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
 
             var arg = CreateKeyEventArgs(Key.Left, ModifierKeys.Shift);
@@ -227,7 +227,7 @@ namespace Vim.UI.Wpf.Test
         {
             KeyInput ki;
             Assert.IsTrue(KeyUtil.TryConvertToKeyInput(Key.Escape, ModifierKeys.Shift, out ki));
-            _buffer.Setup(x => x.CanProcessNotDirectInsert(ki)).Returns(false).Verifiable();
+            _buffer.Setup(x => x.CanProcessAsCommand(ki)).Returns(false).Verifiable();
 
             var arg = CreateKeyEventArgs(Key.Escape, ModifierKeys.Shift);
             _processor.KeyDown(arg);
