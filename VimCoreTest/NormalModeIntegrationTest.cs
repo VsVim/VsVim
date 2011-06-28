@@ -1,7 +1,6 @@
 ﻿using System;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text.Outlining;
 using Microsoft.VisualStudio.Text.Projection;
 using NUnit.Framework;
 using Vim;
@@ -11,8 +10,11 @@ using Vim.UnitTest.Mock;
 
 namespace VimCore.UnitTest
 {
+    /// <summary>
+    /// Class for testing the full integration story of normal mode in VsVim
+    /// </summary>
     [TestFixture]
-    public class NormalModeIntegrationTest : VimTestBase
+    public sealed class NormalModeIntegrationTest : VimTestBase
     {
         private IVimBuffer _buffer;
         private IWpfTextView _textView;
@@ -696,6 +698,36 @@ namespace VimCore.UnitTest
             _buffer.Process('x');
             Assert.AreEqual("tst", _textView.GetLineRange(0).GetText());
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// When virtual edit is not enabled then the delete till end of line should cause the 
+        /// caret to move back to the last non-editted character
+        /// </summary>
+        [Test]
+        public void DeleteTillEndOfLine_NoVirtualEdit()
+        {
+            Create("cat", "dog");
+            _globalSettings.VirtualEdit = string.Empty;
+            _textView.MoveCaretTo(1);
+            _buffer.Process('D');
+            Assert.AreEqual("c", _textView.GetLine(0).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// When virtual edit is enabled then the delete till end of line should not move 
+        /// the caret at all
+        /// </summary>
+        [Test]
+        public void DeleteTillEndOfLine_WithVirtualEdit()
+        {
+            Create("cat", "dog");
+            _globalSettings.VirtualEdit = "onemore";
+            _textView.MoveCaretTo(1);
+            _buffer.Process('D');
+            Assert.AreEqual("c", _textView.GetLine(0).GetText());
+            Assert.AreEqual(1, _textView.GetCaretPoint());
         }
 
         [Test]
@@ -2337,6 +2369,36 @@ namespace VimCore.UnitTest
             _buffer.Process("daw");
             Assert.AreEqual("the", _textView.GetLine(0).GetText());
             Assert.AreEqual("  chased the bird", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// When virtual edit is enabled then deletion should not cause the caret to 
+        /// move if it would otherwise be in virtual space
+        /// </summary>
+        [Test]
+        public void Delete_WithVirtualEdit()
+        {
+            Create("cat", "dog");
+            _globalSettings.VirtualEdit = "onemore";
+            _textView.MoveCaretTo(2);
+            _buffer.Process("dl");
+            Assert.AreEqual("ca", _textView.GetLine(0).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// When virtual edit is not enabled then deletion should cause the caret to 
+        /// move if it would end up in virtual space
+        /// </summary>
+        [Test]
+        public void Delete_NoVirtualEdit()
+        {
+            Create("cat", "dog");
+            _globalSettings.VirtualEdit = string.Empty;
+            _textView.MoveCaretTo(2);
+            _buffer.Process("dl");
+            Assert.AreEqual("ca", _textView.GetLine(0).GetText());
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
 
         /// <summary>

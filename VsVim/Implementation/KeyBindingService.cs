@@ -9,7 +9,6 @@ using Vim;
 
 namespace VsVim.Implementation
 {
-
     /// <summary>
     /// Responsible for dealing with the conflicting key bindings inside of Visual Studio
     /// </summary>

@@ -709,7 +709,8 @@ type internal CommandUtil
         TextViewUtil.MoveCaretToPoint _textView span.Start
         x.EditWithUndoTransaciton "Delete" (fun () ->
             _textBuffer.Delete(span.Span) |> ignore
-            TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
+            TextViewUtil.MoveCaretToPosition _textView span.Start.Position
+            _operations.MoveCaretForVirtualEdit())
 
         // Update the register with the result so long as something was actually deleted
         // from the buffer
@@ -724,7 +725,7 @@ type internal CommandUtil
     member x.DeleteTillEndOfLine count register =
         let span = 
             if count = 1 then
-                // Just deleting till the end of 
+                // Just deleting till the end of the caret line
                 SnapshotSpan(x.CaretPoint, x.CaretLine.End)
             else
                 // Grab a SnapshotLineRange for the 'count - 1' lines and combine in with
@@ -736,7 +737,8 @@ type internal CommandUtil
         // delete so wrap it in an undo transaction
         x.EditWithUndoTransaciton "Delete" (fun () -> 
             _textBuffer.Delete(span.Span) |> ignore
-            TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
+            TextViewUtil.MoveCaretToPosition _textView span.Start.Position
+            _operations.MoveCaretForVirtualEdit())
 
         // Delete is complete so update the register.  Strangely enough this is a characterwise
         // operation even though it involves line deletion

@@ -132,11 +132,17 @@ namespace VsVim
                     break;
                 case VSConstants.VSStd2KCmdID.UNDO:
                 case VSConstants.VSStd2KCmdID.UNDONOMOVE:
+                    // Visual Studio was asked to undo.  This happens when either the undo button
+                    // was hit or the visual studio key combination bound to the undo command 
+                    // was executed
                     ki = KeyInput.DefaultValue;
                     kind = EditCommandKind.Undo;
                     break;
                 case VSConstants.VSStd2KCmdID.REDO:
                 case VSConstants.VSStd2KCmdID.REDONOMOVE:
+                    // Visual Studio was asked to redo.  This happens when either the redo button
+                    // was hit or the visual studio key combination bound to the redo command 
+                    // was executed
                     ki = KeyInput.DefaultValue;
                     kind = EditCommandKind.Redo;
                     break;

@@ -241,11 +241,7 @@ module internal MapUtil =
 module internal CharUtil =
     let MinValue = System.Char.MinValue
     let IsDigit x = System.Char.IsDigit(x)
-
-    /// TODO: Consider uses of this.  Should be using IsBlank
     let IsWhiteSpace x = System.Char.IsWhiteSpace(x)
-
-    /// TODO: Consider uses of this.  Should be using IsNotBlank
     let IsNotWhiteSpace x = not (System.Char.IsWhiteSpace(x))
 
     /// Is this the Vim definition of a blank character.  That is it a space
