@@ -233,8 +233,8 @@ type internal CommandUtil
             x.ChangeCaseSpanCore kind editSpan
 
             // Move the caret but make sure to respect the 'virtualedit' option
-            TextViewUtil.MoveCaretToPosition _textView span.End.Position
-            _operations.MoveCaretForVirtualEdit())
+            let point = SnapshotPoint(x.CurrentSnapshot, span.End.Position)
+            _operations.MoveCaretToPointAndCheckVirtualSpace point)
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -473,11 +473,11 @@ type internal CommandUtil
             x.EditWithUndoTransaciton "DeleteChar" (fun () -> 
                 let position = x.CaretPoint.Position
                 let snapshot = _textBuffer.Delete(span.Span)
-                TextViewUtil.MoveCaretToPoint _textView (SnapshotPoint(snapshot, position))
 
                 // Need to respect the virtual edit setting here as we could have 
                 // deleted the last character on the line
-                _operations.MoveCaretForVirtualEdit())
+                let point = SnapshotPoint(snapshot, position)
+                _operations.MoveCaretToPointAndCheckVirtualSpace point)
 
             // Put the deleted text into the specified register
             let value = RegisterValue.String (StringData.OfSpan span, OperationKind.CharacterWise)
@@ -580,11 +580,11 @@ type internal CommandUtil
                 edit.Apply() |> ignore
     
                 // Now position the cursor back at the start of the VisualSpan
-                TextViewUtil.MoveCaretToPosition _textView visualSpan.Start.Position
-    
+                //
                 // Possible for a block mode to deletion to cause the start to now be in the line 
                 // break so we need to acount for the 'virtualedit' setting
-                _operations.MoveCaretForVirtualEdit()
+                let point = SnapshotPoint(x.CurrentSnapshot, visualSpan.Start.Position)
+                _operations.MoveCaretToPointAndCheckVirtualSpace point
 
                 editSpan)
 
@@ -709,8 +709,10 @@ type internal CommandUtil
         TextViewUtil.MoveCaretToPoint _textView span.Start
         x.EditWithUndoTransaciton "Delete" (fun () ->
             _textBuffer.Delete(span.Span) |> ignore
-            TextViewUtil.MoveCaretToPosition _textView span.Start.Position
-            _operations.MoveCaretForVirtualEdit())
+
+            // Get the point on the current ITextSnapshot
+            let point = SnapshotPoint(x.CurrentSnapshot, span.Start.Position)
+            _operations.MoveCaretToPointAndCheckVirtualSpace point)
 
         // Update the register with the result so long as something was actually deleted
         // from the buffer
@@ -737,8 +739,10 @@ type internal CommandUtil
         // delete so wrap it in an undo transaction
         x.EditWithUndoTransaciton "Delete" (fun () -> 
             _textBuffer.Delete(span.Span) |> ignore
-            TextViewUtil.MoveCaretToPosition _textView span.Start.Position
-            _operations.MoveCaretForVirtualEdit())
+
+            // Get the point on the current ITextSnapshot
+            let point = SnapshotPoint(x.CurrentSnapshot, span.Start.Position)
+            _operations.MoveCaretToPointAndCheckVirtualSpace point)
 
         // Delete is complete so update the register.  Strangely enough this is a characterwise
         // operation even though it involves line deletion
@@ -1257,7 +1261,7 @@ type internal CommandUtil
                             // Position at the original insertion point
                             SnapshotUtil.GetPoint x.CurrentSnapshot oldPoint.Position
 
-                TextViewUtil.MoveCaretToPoint _textView point
+                _operations.MoveCaretToPointAndCheckVirtualSpace point
             | OperationKind.LineWise ->
 
                 // Get the line on which we will be positioning the caret
@@ -1282,9 +1286,7 @@ type internal CommandUtil
 
                 // Get the indent point of the line.  That's what the caret needs to be moved to
                 let point = SnapshotLineUtil.GetIndent line
-                TextViewUtil.MoveCaretToPoint _textView point
-
-            _operations.MoveCaretForVirtualEdit())
+                _operations.MoveCaretToPointAndCheckVirtualSpace point)
 
     /// Put the contents of the specified register over the selection.  This is used for all
     /// visual mode put commands. 

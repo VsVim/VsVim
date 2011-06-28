@@ -9,7 +9,6 @@ open Microsoft.VisualStudio.Text.Outlining
 open System.ComponentModel.Composition
 open System.Text.RegularExpressions
 
-// TODO: Delete this
 module internal CommonUtil = 
 
     /// Raise the error / warning messages for a given SearchResult
@@ -32,6 +31,23 @@ module internal CommonUtil =
                     Resources.Common_PatternNotFound
 
             statusUtil.OnError (format searchData.Pattern)
+
+    /// The caret sometimes needs to be adjusted after an Up or Down movement.  Caret position
+    /// and virtual space is actually quite a predicamite for VsVim because of how Vim standard 
+    /// works.  Vim has no concept of Virtual Space and is designed to work in a fixed width
+    /// font buffer.  Visual Studio has essentially the exact opposite.  Non-fixed width fonts are
+    /// the most problematic because it makes the natural Vim motion of column based up and down
+    /// make little sense visually.  Instead we rely on the core editor for up and down motions.
+    ///
+    /// The one exception has to do with the VirtualEdit setting.  By default the 'l' motion will 
+    /// only move you to the last character on the line and no further.  Visual Studio up and down
+    /// though acts like virtualedit=onemore.  We correct this here
+    let MoveCaretForVirtualEdit textView (settings : IVimGlobalSettings) =
+        if not settings.IsVirtualEditOneMore then 
+            let point = TextViewUtil.GetCaretPoint textView
+            let line = SnapshotPointUtil.GetContainingLine point
+            if point.Position >= line.End.Position && line.Length > 0 then 
+                TextViewUtil.MoveCaretToPoint textView (line.End.Subtract(1))
 
 type OperationsData = {
     EditorOperations : IEditorOperations
@@ -117,22 +133,6 @@ type internal CommonOperations ( _data : OperationsData ) =
             for i = 1 to count do
                 applyChange textChange)
 
-    /// The caret sometimes needs to be adjusted after an Up or Down movement.  Caret position
-    /// and virtual space is actually quite a predicamite for VsVim because of how Vim standard 
-    /// works.  Vim has no concept of Virtual Space and is designed to work in a fixed width
-    /// font buffer.  Visual Studio has essentially the exact opposite.  Non-fixed width fonts are
-    /// the most problematic because it makes the natural Vim motion of column based up and down
-    /// make little sense visually.  Instead we rely on the core editor for up and down motions.
-    ///
-    /// The one exception has to do with the VirtualEdit setting.  By default the 'l' motion will 
-    /// only move you to the last character on the line and no further.  Visual Studio up and down
-    /// though acts like virtualedit=onemore.  We correct this here
-    member x.MoveCaretForVirtualEdit () =
-        if not _settings.GlobalSettings.IsVirtualEditOneMore then 
-            let point = TextViewUtil.GetCaretPoint _textView
-            let line = SnapshotPointUtil.GetContainingLine point
-            if point.Position >= line.End.Position && line.Length > 0 then 
-                TextViewUtil.MoveCaretToPoint _textView (line.End.Subtract(1))
 
     /// Move the caret to the specified point and ensure it's visible and the surrounding 
     /// text is expanded
@@ -231,8 +231,14 @@ type internal CommonOperations ( _data : OperationsData ) =
             // Character wise motions should expand regions
             x.MoveCaretToPointAndEnsureVisible point
 
-        x.MoveCaretForVirtualEdit()
+        CommonUtil.MoveCaretForVirtualEdit _textView _globalSettings
         _operations.ResetSelection()
+
+    /// Move the caret to the specified point but adjust the result if it's in virtual space
+    /// and current settings disallow that
+    member x.MoveCaretToPointAndCheckVirtualSpace point =
+        TextViewUtil.MoveCaretToPoint _textView point
+        CommonUtil.MoveCaretForVirtualEdit _textView _globalSettings
 
     /// Return the full word under the cursor or an empty string
     member x.WordUnderCursorOrEmpty =
@@ -630,7 +636,6 @@ type internal CommonOperations ( _data : OperationsData ) =
                 | Some(point) -> jumpLocal point
                 | None -> Result.Failed Resources.Common_MarkNotSet
 
-        member x.MoveCaretForVirtualEdit () = x.MoveCaretForVirtualEdit()
 
         member x.ScrollLines dir count =
             for i = 1 to count do
@@ -653,6 +658,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.EnsurePointOnScreenAndTextExpanded point = x.EnsurePointOnScreenAndTextExpanded point
         member x.MoveCaretToPoint point =  TextViewUtil.MoveCaretToPoint _textView point 
         member x.MoveCaretToPointAndEnsureVisible point = x.MoveCaretToPointAndEnsureVisible point
+        member x.MoveCaretToPointAndCheckVirtualSpace point = x.MoveCaretToPointAndCheckVirtualSpace point
         member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
         member x.NormalizeBlanks text = x.NormalizeBlanks text
         member x.FormatLines range = _host.FormatLines _textView range

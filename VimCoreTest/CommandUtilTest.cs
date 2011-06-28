@@ -43,10 +43,6 @@ namespace VimCore.UnitTest
             _factory = new MockRepository(MockBehavior.Loose);
             _vimHost = _factory.Create<IVimHost>();
             _statusUtil = _factory.Create<IStatusUtil>();
-            _operations = _factory.Create<ICommonOperations>();
-            _operations.Setup(x => x.EnsureCaretOnScreenAndTextExpanded());
-            _operations.Setup(x => x.RaiseSearchResultMessage(It.IsAny<SearchResult>()));
-            _operations.Setup(x => x.EditorOptions).Returns(EditorUtil.FactoryService.EditorOptionsFactory.GetOptions(_textView));
             _recorder = _factory.Create<IMacroRecorder>(MockBehavior.Loose);
             _smartIdentationService = _factory.Create<ISmartIndentationService>();
 
@@ -55,6 +51,19 @@ namespace VimCore.UnitTest
             _markMap = new MarkMap(new TrackingLineColumnService());
             _globalSettings = new GlobalSettings();
             _localSettings = new LocalSettings(_globalSettings, EditorUtil.GetEditorOptions(_textView), _textView);
+
+            _operations = _factory.Create<ICommonOperations>();
+            _operations.Setup(x => x.EnsureCaretOnScreenAndTextExpanded());
+            _operations.Setup(x => x.RaiseSearchResultMessage(It.IsAny<SearchResult>()));
+            _operations.Setup(x => x.EditorOptions).Returns(EditorUtil.FactoryService.EditorOptionsFactory.GetOptions(_textView));
+            _operations
+                .Setup(x => x.MoveCaretToPointAndCheckVirtualSpace(It.IsAny<SnapshotPoint>()))
+                .Callback<SnapshotPoint>(
+                    point =>
+                    {
+                        TextViewUtil.MoveCaretToPoint(_textView, point);
+                        CommonUtil.MoveCaretForVirtualEdit(_textView, _globalSettings);
+                    });
 
             var localSettings = new LocalSettings(new Vim.GlobalSettings());
             _motionUtil = VimUtil.CreateTextViewMotionUtil(
@@ -606,6 +615,7 @@ namespace VimCore.UnitTest
         public void DeleteCharacterAtCaret_CountExceedsLine()
         {
             Create("the cat", "bar");
+            _globalSettings.VirtualEdit = "onemore";
             _textView.MoveCaretTo(1);
             _commandUtil.DeleteCharacterAtCaret(300, UnnamedRegister);
             Assert.AreEqual("t", _textView.GetLine(0).GetText());
@@ -907,6 +917,7 @@ namespace VimCore.UnitTest
         public void ChangeCaseCaretPoint_CountExceedsLine()
         {
             Create("bar", "baz");
+            _globalSettings.VirtualEdit = "onemore";
             _commandUtil.ChangeCaseCaretPoint(ChangeCharacterKind.ToUpperCase, 300);
             Assert.AreEqual("BAR", _textView.GetLine(0).GetText());
             Assert.AreEqual("baz", _textView.GetLine(1).GetText());
@@ -1167,12 +1178,10 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog");
             var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 1, 1));
-            _operations.Setup(x => x.MoveCaretForVirtualEdit());
             _commandUtil.DeleteLineSelection(UnnamedRegister, visualSpan);
             Assert.AreEqual("cat" + Environment.NewLine, UnnamedRegister.StringValue);
             Assert.AreEqual("dog", _textView.GetLine(0).GetText());
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
-            _operations.Verify();
         }
 
         /// <summary>
@@ -1201,13 +1210,11 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "fish");
             _globalSettings.VirtualEdit = String.Empty;
-            _operations.Setup(x => x.MoveCaretForVirtualEdit());
             var visualSpan = VisualSpan.NewBlock(_textView.GetBlock(1, 1, 0, 2));
             _commandUtil.DeleteLineSelection(UnnamedRegister, visualSpan);
             Assert.AreEqual("c", _textView.GetLine(0).GetText());
             Assert.AreEqual("d", _textView.GetLine(1).GetText());
-            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
-            _operations.Verify();
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
 
         /// <summary>
@@ -1312,11 +1319,12 @@ namespace VimCore.UnitTest
         public void ChangeTillEndOfLine_MiddleOfLine()
         {
             Create("cat");
+            _globalSettings.VirtualEdit = string.Empty;
             _textView.MoveCaretTo(1);
             var result = _commandUtil.ChangeTillEndOfLine(1, UnnamedRegister);
             AssertInsertWithTransaction(result);
             Assert.AreEqual("c", _textView.GetLine(0).GetText());
-            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
 
         /// <summary>

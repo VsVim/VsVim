@@ -262,11 +262,12 @@ type ICommonOperations =
     /// text is expanded
     abstract MoveCaretToPointAndEnsureVisible : SnapshotPoint -> unit
 
+    /// Move the caret to the specified SnapshotPoint and make sure to adjust for the 
+    /// virtual edit settings
+    abstract MoveCaretToPointAndCheckVirtualSpace : SnapshotPoint -> unit
+
     /// Move the caret to the MotionResult value
     abstract MoveCaretToMotionResult : MotionResult -> unit
-
-    /// Maybe adjust the caret to respect the virtual edit setting
-    abstract MoveCaretForVirtualEdit : unit -> unit
 
     /// Navigate to the given point which may occur in any ITextBuffer.  This will not update the 
     /// jump list

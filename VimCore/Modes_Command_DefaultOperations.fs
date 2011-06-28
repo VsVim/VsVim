@@ -117,8 +117,7 @@ type internal DefaultOperations
                     let number = number + (lineCount - 1)
                     SnapshotUtil.GetLine x.CurrentSnapshot number
                 let point = SnapshotLineUtil.GetFirstNonBlankOrEnd line
-                _operations.MoveCaretToPoint point
-                _operations.MoveCaretForVirtualEdit())
+                _operations.MoveCaretToPointAndCheckVirtualSpace point)
 
         member x.PrintMarks (markMap:IMarkMap) =    
             let printMark (ident:char) (point:VirtualSnapshotPoint) =
