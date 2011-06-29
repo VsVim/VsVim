@@ -74,6 +74,9 @@ namespace Vim.UnitTest
 
             [Import]
             public IOutliningManagerService OutliningManagerService;
+
+            [Import]
+            public IAdhocOutlinerFactory AdhocOutlinerFactory;
         }
 
         #endregion
@@ -257,7 +260,8 @@ namespace Vim.UnitTest
                 typeof(KeyboardDevice),
                 typeof(MouseDevice),
                 typeof(VimHost),
-                typeof(VimErrorDetector)));
+                typeof(VimErrorDetector),
+                typeof(AdhocOutlinerFactory)));
 
             return list;
         }

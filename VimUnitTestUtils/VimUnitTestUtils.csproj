@@ -177,8 +177,10 @@
   <ItemGroup>
     <Compile Include="EditorUtil.cs" />
     <Compile Include="EqualityUtil.cs" />
+    <Compile Include="Exports\AdhocOutliner.cs" />
     <Compile Include="Exports\ClipboardDevice.cs" />
     <Compile Include="Exports\VimErrorHandler.cs" />
+    <Compile Include="IAdhocOutliner.cs" />
     <Compile Include="IVimErrorDetector.cs" />
     <Compile Include="Exports\KeyboardDevice.cs" />
     <Compile Include="Exports\MouseDevice.cs" />
