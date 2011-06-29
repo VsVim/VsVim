@@ -213,7 +213,7 @@ type internal FoldTagger(_foldData : IFoldData) as this =
             let snapshot = (col.Item(0)).Snapshot
             _foldData.Folds
             |> Seq.filter ( fun span -> span.Snapshot = snapshot )
-            |> Seq.map (fun span -> 
+            |> Seq.map (fun span ->
                 let description = getDescription span
                 let hint = span.GetText()
                 let tag = OutliningRegionTag(true, true, description, hint)
@@ -256,15 +256,16 @@ type FoldManagerFactory
         textBuffer.Properties.GetOrCreateSingletonProperty(_dataKey, (fun _ -> FoldData(textBuffer)))
 
     member x.GetFoldManager (textView : ITextView) = 
-        let outliningManager = 
-            let outliningManager = _outliningManagerService.GetOutliningManager textView
-            if outliningManager = null then
-                None
-            else
-                Some outliningManager
-        let statusUtil = _statusUtilFactory.GetStatusUtil textView
-        let foldData = x.GetFoldData(textView.TextBuffer)
-        FoldManager(textView, foldData :> IFoldData, statusUtil, outliningManager) :> IFoldManager
+        textView.Properties.GetOrCreateSingletonProperty(_managerKey, (fun _ ->
+            let outliningManager = 
+                let outliningManager = _outliningManagerService.GetOutliningManager textView
+                if outliningManager = null then
+                    None
+                else
+                    Some outliningManager
+            let statusUtil = _statusUtilFactory.GetStatusUtil textView
+            let foldData = x.GetFoldData(textView.TextBuffer)
+            FoldManager(textView, foldData :> IFoldData, statusUtil, outliningManager) :> IFoldManager))
 
     interface IFoldManagerFactory with
         member x.GetFoldData textBuffer = x.GetFoldData textBuffer :> IFoldData
