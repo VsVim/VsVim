@@ -24,7 +24,6 @@ namespace VsVim.UnitTest
         private Mock<IVsEditorAdaptersFactoryService> _editorAdaptersFactoryService;
         private Mock<ITextBufferUndoManagerProvider> _undoManagerProvider;
         private Mock<IEditorOperationsFactoryService> _editorOperationsFactoryService;
-        private Mock<IWordUtilFactory> _wordUtilFactory;
         private Mock<_DTE> _dte;
         private Mock<IVsUIShell4> _shell;
         private Mock<StatusBar> _statusBar;
@@ -36,7 +35,6 @@ namespace VsVim.UnitTest
             _undoManagerProvider = _factory.Create<ITextBufferUndoManagerProvider>();
             _editorAdaptersFactoryService = _factory.Create<IVsEditorAdaptersFactoryService>();
             _editorOperationsFactoryService = _factory.Create<IEditorOperationsFactoryService>();
-            _wordUtilFactory = _factory.Create<IWordUtilFactory>();
             _statusBar = _factory.Create<StatusBar>();
             _shell = _factory.Create<IVsUIShell4>();
             _dte = _factory.Create<_DTE>();
@@ -53,7 +51,7 @@ namespace VsVim.UnitTest
                 _textManager.Object,
                 _factory.Create<ITextDocumentFactoryService>().Object,
                 _editorOperationsFactoryService.Object,
-                _wordUtilFactory.Object,
+                EditorUtil.FactoryService.WordUtilFactory,
                 sp.Object);
             _host = _hostRaw;
         }
@@ -97,20 +95,28 @@ namespace VsVim.UnitTest
             Assert.IsTrue(_host.GoToDefinition());
         }
 
+        /// <summary>
+        /// The C++ implementation of the goto definition command requires that the word which 
+        /// it should target be passed along as an argument to the command
+        /// </summary>
         [Test]
-        public void GotoDefinition4()
+        public void GotoDefinition_CPlusPlus()
         {
             Create();
             var ct = EditorUtil.GetOrCreateContentType(VsVim.Constants.CPlusPlusContentType, "code");
             var textView = EditorUtil.CreateTextView(ct, "hello world");
+            var wordUtil = EditorUtil.FactoryService.WordUtilFactory.GetWordUtil(textView);
             _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, "hello"));
             Assert.IsTrue(_host.GoToDefinition());
         }
 
+        /// <summary>
+        /// For most languages the word which is targeted should not be included in the 
+        /// command
+        /// </summary>
         [Test]
-        [Description("Non-C++ doesn't need the work around")]
-        public void GotoDefinition5()
+        public void GotoDefinition_Normal()
         {
             Create();
             var ct = EditorUtil.GetOrCreateContentType("csharp", "code");
@@ -153,5 +159,7 @@ namespace VsVim.UnitTest
             _editorAdaptersFactoryService.Setup(x => x.GetBufferAdapter(buffer.Object)).Returns(vsTextBuffer.Object);
             Assert.AreEqual("foo", _host.GetName(buffer.Object));
         }
+
+        public object VimUtil { get; set; }
     }
 }
