@@ -3,7 +3,7 @@
   <Identifier Id="VsVim.Microsoft.e214908b-0458-4ae2-a583-4310f29687c3">
     <Name>VsVim</Name>
     <Author>Jared Parsons</Author>
-    <Version>1.0.0.0</Version>
+    <Version>1.0.1.0</Version>
     <Description xml:space="preserve">VIM emulation layer for Visual Studio</Description>
     <Locale>1033</Locale>
     <License>License.rtf</License>
