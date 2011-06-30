@@ -715,7 +715,7 @@ namespace Vim.UnitTest
 
         #region Dispatcher
 
-        public static void DoEvents(this System.Windows.Threading.Dispatcher dispatcher)
+        public static void DoEvents(this Dispatcher dispatcher)
         {
             var frame = new DispatcherFrame();
             Action<DispatcherFrame> action = _ => { frame.Continue = false; };

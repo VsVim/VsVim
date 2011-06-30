@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Windows.Threading;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
@@ -12,164 +14,279 @@ namespace VsVim.ExternalEdit
 {
     internal sealed class ExternalEditMonitor
     {
+        /// <summary>
+        /// What kind of check needs to be performed
+        /// </summary>
+        internal enum CheckKind
+        {
+            None = 0,
+            Tags = 0x1,
+            Markers = 0x2,
+            All = Tags | Markers
+        }
+
         private readonly IVimBuffer _buffer;
         private readonly Result<IVsTextLines> _vsTextLines;
-        private readonly ITagAggregator<ITag> _tagAggregator;
+        private readonly Result<ITagger<ITag>> _tagger;
         private readonly ReadOnlyCollection<IExternalEditAdapter> _externalEditorAdapters;
-        private readonly List<SnapshotSpan> _ignoredMarkers = new List<SnapshotSpan>();
-        private bool _checkForExternalEdit;
+        private readonly List<ITrackingSpan> _ignoredExternalEditSpans = new List<ITrackingSpan>();
+        private CheckKind? _queuedCheckKind;
+        private bool _leavingExternalEdit;
 
-        internal IEnumerable<SnapshotSpan> IgnoredMarkers
+        /// <summary>
+        /// This is the set of spans in the ITextBuffer which we ignore for detecting new
+        /// external edits.  These come about when the user manually ends an external edit
+        /// session but there are still active edit spans in the ITextBuffer
+        /// </summary>
+        internal IEnumerable<ITrackingSpan> IgnoredExternalEditSpans
         {
-            get { return _ignoredMarkers; }
+            get
+            {
+                return _ignoredExternalEditSpans;
+            }
             set
             {
-                _ignoredMarkers.Clear();
-                _ignoredMarkers.AddRange(value);
+                _ignoredExternalEditSpans.Clear();
+                _ignoredExternalEditSpans.AddRange(value);
             }
         }
 
         internal ExternalEditMonitor(
             IVimBuffer buffer,
             Result<IVsTextLines> vsTextLines,
-            ReadOnlyCollection<IExternalEditAdapter> externalEditorAdapters,
-            ITagAggregator<ITag> tagAggregator)
+            Result<ITagger<ITag>> tagger,
+            ReadOnlyCollection<IExternalEditAdapter> externalEditorAdapters)
         {
             _vsTextLines = vsTextLines;
             _externalEditorAdapters = externalEditorAdapters;
-            _tagAggregator = tagAggregator;
+            _tagger = tagger;
             _buffer = buffer;
             _buffer.TextView.LayoutChanged += OnLayoutChanged;
             _buffer.SwitchedMode += OnSwitchedMode;
-            _buffer.KeyInputEnd += delegate { OnKeyInputComplete(); };
-            _buffer.KeyInputBuffered += delegate { OnKeyInputComplete(); };
+
+            if (_tagger.IsSuccess)
+            {
+                _tagger.Value.TagsChanged += OnTagsChanged;
+            }
         }
 
         internal void Close()
         {
             _buffer.TextView.LayoutChanged -= OnLayoutChanged;
+            if (_tagger.IsSuccess)
+            {
+                _tagger.Value.TagsChanged -= OnTagsChanged;
+            }
         }
 
         /// <summary>
         /// A layout change will occur when tags are changed in the ITextBuffer.  We use it as a clue that 
-        /// we need to look for external edit tags
+        /// we need to look for external edit tags on markers
         /// </summary>
         private void OnLayoutChanged(object sender, TextViewLayoutChangedEventArgs e)
         {
-            // If the IVimBuffer is still processing input when the layout occurs it's possible and 
-            // in fact probably in scenarios like macros that more edits and hence more layouts will
-            // be coming in the future.  Don't process it now but instead delay it until input is 
-            // finished processing
-            if (_buffer.IsProcessingInput)
-            {
-                _checkForExternalEdit = true;
-                return;
-            }
-
-            CheckForExternalEdit();
+            QueueCheck(CheckKind.Markers);
         }
 
         /// <summary>
-        /// Raised when a KeyInput action is complete in the IVimBuffer.  We queue up our check for external
-        /// edit calls until we are done processing KeyInput.  Else we would end up processing external edits
-        /// N times instead of the necessary 1 for a given Vim command
+        /// When we get a TagsChnaged event we need to queue up an external edit check to examine the
+        /// changes
         /// </summary>
-        private void OnKeyInputComplete()
+        private void OnTagsChanged(object sender, SnapshotSpanEventArgs e)
         {
-            if (!_buffer.IsProcessingInput && _checkForExternalEdit)
-            {
-                CheckForExternalEdit();
-            }
+            QueueCheck(CheckKind.Tags);
         }
 
+        /// <summary>
+        /// Handles the switch mode event of the ITextBuffer.  We need to monitor this in case 
+        /// the user exits external edit mode while edit tags are still around.  These need to 
+        /// be saved
+        /// </summary>
         private void OnSwitchedMode(object sender, SwitchModeEventArgs args)
         {
+            // If we're forcing the leave of external edit then that code is responsible for 
+            // saving the ignore markers
+            if (_leavingExternalEdit)
+            {
+                return;
+            }
+
             if (args.PreviousMode.IsSome() && args.PreviousMode.Value.ModeKind == ModeKind.ExternalEdit)
             {
                 // If we're in the middle of an external edit and the mode switches then we 
                 // need to record the current edit markers so we can ignore them going 
                 // forward.  Further updates which cause these markers to be rendered shouldn't
                 // cause us to re-enter external edit mode
-                SaveCurrentEditorMarkersForIgnore();
+                SetIgnoredExternalEditSpans(GetExternalEditSpans(CheckKind.All));
+            }
+        }
+
+        private void SetIgnoredExternalEditSpans(IEnumerable<SnapshotSpan> spans)
+        {
+            _ignoredExternalEditSpans.Clear();
+            _ignoredExternalEditSpans.AddRange(spans.Select(x => x.Snapshot.CreateTrackingSpan(x.Span, SpanTrackingMode.EdgeInclusive)));
+        }
+
+        /// <summary>
+        /// Perform the specified check against the ITextBuffer
+        /// </summary>
+        internal void PerformCheck(CheckKind kind)
+        {
+            if (kind == CheckKind.None)
+            {
+                return;
+            }
+
+            // If we're in the middle of a layout then there is no sense in checking now as the values
+            // will all be invalidated when the layout ends.  Queue one up for later
+            if (_buffer.TextView.InLayout)
+            {
+                QueueCheck(kind);
+                return;
+            }
+
+            if (_buffer.ModeKind == ModeKind.ExternalEdit)
+            {
+                CheckForExternalEditEnd();
+            }
+            else
+            {
+                CheckForExternalEditStart(kind);
             }
         }
 
         /// <summary>
-        /// Save all of the current Edit markers in the visual span for ignoring.  Ideally we would 
-        /// consider the entire ITextBuffer but that could involve formatting many many thousands
-        /// of lines and be very expensive.  Instead we just consider the edit markers in the
-        /// visual ITextBuffer
+        /// Check and see if we should start an external edit operation
         /// </summary>
-        private void SaveCurrentEditorMarkersForIgnore()
+        private void CheckForExternalEditStart(CheckKind kind)
         {
-            _ignoredMarkers.Clear();
-            GetExternalEditSpans(_ignoredMarkers);
+            Contract.Assert(_buffer.ModeKind != ModeKind.ExternalEdit);
+
+            var externalEditSpans = GetExternalEditSpans(kind);
+
+            // If at some point all of the external edit spans dissapear then we 
+            // don't need to track them anymore.  Very important to clear the cache 
+            // here as the user could fire up an external edit at the exact same location
+            // and we want that to register as an external edit
+            if (externalEditSpans.Count == 0)
+            {
+                _ignoredExternalEditSpans.Clear();
+                return;
+            }
+
+            // If we should ignore all of the spans then we've not entered an external 
+            // edit
+            if (externalEditSpans.All(ShouldIgnore))
+            {
+                return;
+            }
+
+            // Clear out the ignored markers.  Everything is fair game again when we restart
+            // the external edit
+            _ignoredExternalEditSpans.Clear();
+
+            // Not in an external edit and there are edit markers we need to consider.  Time to enter
+            // external edit mode
+            _buffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
         }
 
-        private void CheckForExternalEdit()
+        /// <summary>
+        /// Check and see if we should end an external edit operation.
+        /// We are already in an external edit then we need to check all tags to determine
+        /// if we should be leaving the external edit or not.  Else we only check tags when
+        /// we're in an external edit for markers, there are no tags and we bail out 
+        /// incorrectly
+        /// </summary>
+        private void CheckForExternalEditEnd()
         {
-            // Reset the flag now that we've checked
-            _checkForExternalEdit = false;
+            Contract.Assert(_buffer.ModeKind == ModeKind.ExternalEdit);
+            Contract.Assert(_ignoredExternalEditSpans.Count == 0);
 
-            var markers = GetExternalEditSpans();
-            MoveIgnoredMarkersToCurrentSnapshot();
-            if (markers.All(ShouldIgnore))
+            var externalEditSpans = GetExternalEditSpans(CheckKind.All);
+            if (externalEditSpans.Count == 0)
             {
-                if (markers.Count == 0)
+                // If we're in an external edit and all of the markers leave then transition back to
+                // insert mode.  Make sure to mark we are doing this so that we avoid double
+                // caching certain values
+                _leavingExternalEdit = true;
+                try
                 {
-                    ClearIgnoreMarkers();
-
-                    // If we're in an external edit and all of the markers leave then transition back to
-                    // insert mode
-                    if (_buffer.ModeKind == ModeKind.ExternalEdit)
-                    {
-                        _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-                    }
+                    _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                }
+                finally
+                {
+                    _leavingExternalEdit = false;
                 }
             }
-            else if (_buffer.ModeKind != ModeKind.ExternalEdit)
-            {
-                // Not in an external edit and there are edit markers we need to consider.  Time to enter
-                // external edit mode
-                _buffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
-            }
         }
 
-        private void ClearIgnoreMarkers()
+        /// <summary>
+        /// Queue up a check for the specified type here.  If there is already check queued 
+        /// this wont' have any effect other than to ensure the specified check is included
+        /// in the existing queue
+        /// </summary>
+        private void QueueCheck(CheckKind kind)
         {
-            _ignoredMarkers.Clear();
+            if (_queuedCheckKind.HasValue)
+            {
+                _queuedCheckKind |= kind;
+                return;
+            }
+
+            Action doCheck =
+                () =>
+                {
+                    var saved = _queuedCheckKind ?? kind;
+                    _queuedCheckKind = null;
+                    PerformCheck(saved);
+                };
+
+            Dispatcher.CurrentDispatcher.BeginInvoke(doCheck, DispatcherPriority.Loaded);
         }
 
-        internal List<SnapshotSpan> GetExternalEditSpans()
+        internal List<SnapshotSpan> GetExternalEditSpans(CheckKind kind)
         {
             var list = new List<SnapshotSpan>();
-            GetExternalEditSpans(list);
+            GetExternalEditSpans(list, kind);
             return list;
         }
 
-        private void GetExternalEditSpans(List<SnapshotSpan> list)
+        private void GetExternalEditSpans(List<SnapshotSpan> list, CheckKind kind)
         {
             var collection = _buffer.TextView.GetLikelyVisibleSnapshotSpans();
             foreach (var span in collection)
             {
-                GetExternalEditSpansFromMarkers(span, list);
-                GetExternalEditSpansFromTags(span, list);
+                if (0 != (kind & CheckKind.Markers))
+                {
+                    GetExternalEditSpansFromMarkers(span, list);
+                }
+
+                if (0 != (kind & CheckKind.Tags))
+                {
+                    GetExternalEditSpansFromTags(span, list);
+                }
             }
         }
 
+        /// <summary>
+        /// Get the external edit spans which come from ITag values
+        /// </summary>
         private void GetExternalEditSpansFromTags(SnapshotSpan span, List<SnapshotSpan> list)
         {
-            var tags = _tagAggregator.GetTags(span);
+            if (!_tagger.IsSuccess)
+            {
+                return;
+            }
+
+            var collection = new NormalizedSnapshotSpanCollection(span);
+            var tags = _tagger.Value.GetTags(collection);
             foreach (var cur in tags)
             {
                 foreach (var adapter in _externalEditorAdapters)
                 {
                     if (adapter.IsExternalEditTag(cur.Tag))
                     {
-                        foreach (var tagSpan in cur.Span.GetSpans(_buffer.TextSnapshot))
-                        {
-                            list.Add(tagSpan);
-                        }
+                        list.Add(cur.Span);
                     }
                 }
             }
@@ -202,42 +319,21 @@ namespace VsVim.ExternalEdit
             }
         }
 
-        private bool ShouldIgnore(SnapshotSpan marker)
+        /// <summary>
+        /// Should we ignore this SnapshotSpan when considering it for an external edit?
+        /// </summary>
+        private bool ShouldIgnore(SnapshotSpan externalEditSpan)
         {
-            foreach (var ignore in _ignoredMarkers)
+            foreach (var ignoreTrackingSpan in _ignoredExternalEditSpans)
             {
-                if (ignore.Span.OverlapsWith(marker))
+                var ignoreSpan = TrackingSpanUtil.GetSpan(externalEditSpan.Snapshot, ignoreTrackingSpan);
+                if (ignoreSpan.IsSome() && ignoreSpan.Value.OverlapsWith(externalEditSpan))
                 {
                     return true;
                 }
             }
 
             return false;
-        }
-
-        private void MoveIgnoredMarkersToCurrentSnapshot()
-        {
-            var snapshot = _buffer.TextSnapshot;
-            var i = 0;
-            while (i < _ignoredMarkers.Count)
-            {
-                if (_ignoredMarkers[i].Snapshot == snapshot)
-                {
-                    i++;
-                    continue;
-                }
-
-                var mapped = _ignoredMarkers[i].SafeTranslateTo(snapshot, SpanTrackingMode.EdgeInclusive);
-                if (mapped.IsSuccess)
-                {
-                    _ignoredMarkers[i] = mapped.Value;
-                }
-                else
-                {
-                    _ignoredMarkers.RemoveAt(i);
-                }
-                i++;
-            }
         }
     }
 }

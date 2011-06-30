@@ -195,7 +195,7 @@ namespace VsVim
 
             // Unfortunately there is no way to detect if the R# completion windows are active.  We have
             // to take the pessimistic view that they are and just not handle the input
-            if (isAnyArrow && _externalEditManager.IsResharperLoaded)
+            if (isAnyArrow && _externalEditManager.IsResharperInstalled)
             {
                 return false;
             }
@@ -405,7 +405,7 @@ namespace VsVim
                 else if (editCommand.HasKeyInput && _buffer.CanProcess(editCommand.KeyInput))
                 {
                     action = CommandAction.Enable;
-                    if (_externalEditManager.IsResharperLoaded)
+                    if (_externalEditManager.IsResharperInstalled)
                     {
                         action = QueryStatusInResharper(editCommand.KeyInput) ?? CommandAction.Enable;
                     }

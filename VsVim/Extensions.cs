@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
@@ -449,9 +450,55 @@ namespace VsVim
 
         #region IContentType
 
+        /// <summary>
+        /// Does this IContentType represent C++
+        /// </summary>
         public static bool IsCPlusPlus(this IContentType ct)
         {
             return ct.IsOfType(Constants.CPlusPlusContentType);
+        }
+
+        /// <summary>
+        /// Is this IContentType of any of the specified types
+        /// </summary>
+        public static bool IsOfAnyType(this IContentType contentType, IEnumerable<string> types)
+        {
+            foreach (var type in types)
+            {
+                if (contentType.IsOfType(type))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        #endregion
+
+        #region ITaggerProvider
+
+        /// <summary>
+        /// Creating an ITagger for an ITaggerProvider can fail in a number of ways.  Wrap them
+        /// all up here 
+        /// </summary>
+        public static Result<ITagger<T>> SafeCreateTagger<T>(this ITaggerProvider taggerProvider, ITextBuffer textbuffer)
+            where T : ITag
+        {
+            try
+            {
+                var tagger = taggerProvider.CreateTagger<T>(textbuffer);
+                if (tagger == null)
+                {
+                    return Result.Error;
+                }
+
+                return Result.CreateSuccess(tagger);
+            }
+            catch (Exception e)
+            {
+                return Result.CreateError(e);
+            }
         }
 
         #endregion
