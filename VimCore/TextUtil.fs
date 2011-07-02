@@ -69,10 +69,10 @@ module internal TextUtil =
     let rec private GetNormalWordPredicate input index dir = 
         let nextIndex index = 
             match dir with
-                | TextDirection.Left -> index - 1
-                | TextDirection.Right -> index + 1
-                | TextDirection.Neither -> -1
-        
+            | TextDirection.Left -> index - 1
+            | TextDirection.Right -> index + 1
+            | TextDirection.Neither -> -1
+
         match StringUtil.charAtOption index input with 
             | None -> IsNormalWordChar
             | Some c -> 
@@ -117,14 +117,14 @@ module internal TextUtil =
     let rec private FindPreviousSpanCore (input:string) index pred  =
         let rec findNotStartOnWord i =
             match (pred input.[i],i) with
-                | (true,_) -> FindFullSpanCore input i pred
-                | (false,0) -> None
-                | (false,_) -> findNotStartOnWord (i-1)
+            | (true,_) -> FindFullSpanCore input i pred
+            | (false,0) -> None
+            | (false,_) -> findNotStartOnWord (i-1)
         let findStartOnWord =
             match (index>0 && pred input.[index-1],index) with 
-                | (true,_) -> FindFullSpanCore input index pred  // Middle of word, get the start
-                | (false,0) -> None
-                | (false,_) -> findNotStartOnWord (index-1)
+            | (true,_) -> FindFullSpanCore input index pred  // Middle of word, get the start
+            | (false,0) -> None
+            | (false,_) -> findNotStartOnWord (index-1)
         match (index,StringUtil.isValidIndex index input) with 
             | (0,_) -> None
             | (_,false) -> None
@@ -136,8 +136,8 @@ module internal TextUtil =
     let rec private FindNextSpanCore (input:string) index (pred:char->bool) = 
         let filter (i,c) = 
             match pred c with 
-                | true -> Some i
-                | false -> None
+            | true -> Some i
+            | false -> None
         let found = 
             input 
                 |> Seq.mapi (fun i c -> i,c)
@@ -145,8 +145,8 @@ module internal TextUtil =
                 |> Seq.skipWhile (fun (i,c) -> pred c)
                 |> Seq.tryPick filter
         match found with 
-            | Some i -> FindCurrentSpanCore input i pred
-            | None -> None
+        | Some i -> FindCurrentSpanCore input i pred
+        | None -> None
     
     let FindSpanCore spanFunc kind input index dir =
         let pred = GetWordPred kind input index dir 
@@ -154,26 +154,13 @@ module internal TextUtil =
             
     let private FindWordCore (input:string) (span:option<Span>) =
         match span with 
-            | None -> String.Empty
-            | Some v -> input.Substring(v.Start, v.Length)
-            
-    
+        | None -> String.Empty
+        | Some v -> input.Substring(v.Start, v.Length)
+
     let FindCurrentWordSpan kind input index = 
         let f = FindCurrentSpanCore
         FindSpanCore f kind input index TextDirection.Right
-    let FindCurrentWord kind input index = 
-        let span = FindCurrentWordSpan kind input index
-        FindWordCore input span
     let FindFullWordSpan kind input index = FindSpanCore FindFullSpanCore kind input index TextDirection.Right
-    let FindFullWord kind input index = 
-        let span = FindFullWordSpan kind input index
-        FindWordCore input span
     let FindPreviousWordSpan kind input index = FindSpanCore FindPreviousSpanCore kind input index TextDirection.Left
-    let FindPreviousWord kind input index = 
-        let span = FindPreviousWordSpan kind input index
-        FindWordCore input span
     let FindNextWordSpan kind input index = FindSpanCore FindNextSpanCore kind input index TextDirection.Right
-    let FindNextWord kind input index = 
-        let span = FindNextWordSpan kind input index
-        FindWordCore input span
-    
+

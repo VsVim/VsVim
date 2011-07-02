@@ -16,10 +16,3 @@ module internal TextUtil =
     val FindPreviousWordSpan : WordKind -> string -> int -> option<Span>
     val FindNextWordSpan : WordKind -> string -> int -> option<Span>
 
-    // TODO: Consider deleting as they are no longer used.  Make sure to consider keeping
-    // any tests which test some underlying functionality
-    val FindFullWord : WordKind -> string -> int -> string
-    val FindNextWord : WordKind -> string -> int -> string
-    val FindCurrentWord : WordKind -> string -> int -> string
-    val FindPreviousWord : WordKind -> string -> int -> string
-
