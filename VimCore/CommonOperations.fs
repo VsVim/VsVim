@@ -661,6 +661,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.MoveCaretToPointAndCheckVirtualSpace point = x.MoveCaretToPointAndCheckVirtualSpace point
         member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
         member x.NormalizeBlanks text = x.NormalizeBlanks text
+        member x.NormalizeBlanksToSpaces text = x.NormalizeBlanksToSpaces text
         member x.FormatLines range = _host.FormatLines _textView range
 
         member x.Substitute pattern replace (range:SnapshotLineRange) flags = 

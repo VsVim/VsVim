@@ -276,6 +276,9 @@ type ICommonOperations =
     /// Normalize the spaces and tabs in the string
     abstract NormalizeBlanks : string -> string
 
+    /// Normalize the set of blanks into spaces
+    abstract NormalizeBlanksToSpaces : string -> string
+
     /// Put the specified StringData at the given point.
     abstract Put : SnapshotPoint -> StringData -> OperationKind -> unit
 

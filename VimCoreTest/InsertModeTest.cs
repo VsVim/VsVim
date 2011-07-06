@@ -6,7 +6,6 @@ using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using NUnit.Framework;
 using Vim;
-using Vim.Modes;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
@@ -30,6 +29,7 @@ namespace VimCore.UnitTest
         private Mock<IEditorOptions> _editorOptions;
         private Mock<IUndoRedoOperations> _undoRedoOperations;
         private Mock<ITextChangeTracker> _textChangeTracker;
+        private Mock<IInsertUtil> _insertUtil;
         private Mock<IVim> _vim;
 
         [SetUp]
@@ -62,6 +62,7 @@ namespace VimCore.UnitTest
             _broker.SetupGet(x => x.IsCompletionActive).Returns(false);
             _broker.SetupGet(x => x.IsQuickInfoActive).Returns(false);
             _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
+            _insertUtil = _factory.Create<IInsertUtil>();
             _modeRaw = new Vim.Modes.Insert.InsertMode(
                 _data.Object,
                 _operations.Object,
@@ -69,6 +70,7 @@ namespace VimCore.UnitTest
                 _editorOptions.Object,
                 _undoRedoOperations.Object,
                 _textChangeTracker.Object,
+                _insertUtil.Object,
                 _isReplace: !insertMode);
             _mode = _modeRaw;
         }

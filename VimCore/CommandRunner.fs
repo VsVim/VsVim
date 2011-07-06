@@ -215,6 +215,8 @@ type internal CommandRunner
                 match commandBinding with
                 | CommandBinding.NormalBinding (_, _, normalCommand) -> 
                     BindResult.Complete (Command.NormalCommand (normalCommand, commandData), commandBinding)
+                | CommandBinding.InsertBinding (_, _, insertCommand) ->
+                    BindResult.Complete (Command.InsertCommand insertCommand, commandBinding)
                 | CommandBinding.VisualBinding (_, _, visualCommand) ->
                     match x.TryGetVisualSpan _visualKind with
                     | None -> 
@@ -280,6 +282,8 @@ type internal CommandRunner
                         | CommandBinding.NormalBinding _ -> 
                             bindNext None
                         | CommandBinding.VisualBinding _ -> 
+                            bindNext None
+                        | CommandBinding.InsertBinding _ ->
                             bindNext None
                         | CommandBinding.ComplexNormalBinding _ -> 
                             bindNext None

@@ -41,6 +41,7 @@ type InsertSessionData = {
 
     /// The set of edit's which have occurred in this session
     TextEditList : TextEdit list
+
 } with
 
     member x.AddTextEdit edit = { x with TextEditList = edit::x.TextEditList }
@@ -53,11 +54,13 @@ type internal InsertMode
         _editorOptions : IEditorOptions,
         _undoRedoOperations : IUndoRedoOperations,
         _textChangeTracker : ITextChangeTracker,
+        _insertUtil : IInsertUtil,
         _isReplace : bool 
     ) as this =
 
     let _textView = _buffer.TextView
     let _editorOperations = _operations.EditorOperations
+    let _commandRanEvent = Event<_>()
     let mutable _commandMap : Map<KeyInput, CommandFunction> = Map.empty
     let mutable _processDirectInsertCount = 0
     let _emptySessionData = {
@@ -68,7 +71,7 @@ type internal InsertMode
     let mutable _sessionData = _emptySessionData
 
     do
-        let commands : (string * CommandFunction) list = 
+        let oldCommands : (string * CommandFunction) list = 
             [
                 ("<Down>", this.ProcessDown)
                 ("<Esc>", this.ProcessEscape)
@@ -76,14 +79,34 @@ type internal InsertMode
                 ("<Left>", this.ProcessLeft)
                 ("<Right>", this.ProcessRight)
                 ("<Up>", this.ProcessUp)
-                ("<C-d>", this.ProcessShiftLeft)
-                ("<C-t>", this.ProcessShiftRight)
                 ("<C-o>", this.ProcessNormalModeOneCommand)
             ]
 
+        let commands : (string * InsertCommand) list =
+            [
+                ("<C-d>", InsertCommand.ShiftLineLeft)
+                ("<C-t>", InsertCommand.ShiftLineRight)
+            ]
+
+        let mappedCommands : (string * CommandFunction) list = 
+            commands
+            |> Seq.map (fun (name, command) ->
+                let func () = 
+                    let keyInputSet = KeyNotationUtil.StringToKeyInputSet name
+                    let result = _insertUtil.RunInsertCommand command
+                    let data = {
+                        CommandBinding = CommandBinding.InsertBinding (keyInputSet, CommandFlags.Repeatable, command)
+                        Command = Command.InsertCommand command
+                        CommandResult = result }
+                    _commandRanEvent.Trigger data
+                    ProcessResult.OfCommandResult result
+                (name, func))
+            |> List.ofSeq
+
+        let both = Seq.append oldCommands mappedCommands
         _commandMap <-
-            commands 
-            |> Seq.ofList
+            oldCommands
+            |> Seq.append mappedCommands
             |> Seq.map (fun (str, func) -> (KeyNotationUtil.StringToKeyInput str), func)
             |> Map.ofSeq
 
@@ -255,18 +278,6 @@ type internal InsertMode
         let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Normal, ModeArgument.OneTimeCommand x.ModeKind)
         ProcessResult.Handled switch
 
-    /// Process the CTRL-D combination and do a shift left
-    member x.ProcessShiftLeft() = 
-        let range = TextViewUtil.GetCaretLineRange _textView 1
-        _operations.ShiftLineRangeLeft range 1
-        ProcessResult.Handled ModeSwitch.NoSwitch
-
-    /// Process the CTRL-T combination and do a shift right
-    member x.ProcessShiftRight () = 
-        let range = TextViewUtil.GetCaretLineRange _textView 1
-        _operations.ShiftLineRangeRight range 1
-        ProcessResult.Handled ModeSwitch.NoSwitch
-
     /// Apply the repeated edits the the ITextBuffer
     member x.MaybeApplyRepeatedEdits () = 
 
@@ -397,4 +408,7 @@ type internal InsertMode
         member x.OnEnter arg = x.OnEnter arg
         member x.OnLeave () = x.OnLeave ()
         member x.OnClose() = ()
+
+        [<CLIEvent>]
+        member x.CommandRan = _commandRanEvent.Publish
 

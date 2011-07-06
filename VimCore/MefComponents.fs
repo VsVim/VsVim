@@ -278,6 +278,8 @@ type internal ChangeTracker
         buffer.VisualLineMode.CommandRunner.CommandRan |> Event.add handler
         buffer.VisualBlockMode.CommandRunner.CommandRan |> Event.add handler
         buffer.VisualCharacterMode.CommandRunner.CommandRan |> Event.add handler
+        buffer.InsertMode.CommandRan |> Event.add handler
+        buffer.ReplaceMode.CommandRan |> Event.add handler
 
         let tracker = _textChangeTrackerFactory.GetTextChangeTracker buffer
         tracker.ChangeCompleted |> Event.add (x.OnTextChanged buffer)

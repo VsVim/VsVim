@@ -89,6 +89,8 @@
     <Compile Include="IncrementalSearch.fs" />
     <Compile Include="CommandUtil.fsi" />
     <Compile Include="CommandUtil.fs" />
+    <Compile Include="InsertUtil.fsi" />
+    <Compile Include="InsertUtil.fs" />
     <Compile Include="Tagger.fsi" />
     <Compile Include="Tagger.fs" />
     <Compile Include="SelectionChangeTracker.fsi" />

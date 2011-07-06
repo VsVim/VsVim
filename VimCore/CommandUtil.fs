@@ -7,30 +7,43 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Outlining
 
+/// This type houses the functionality behind a large set of the available
+/// Vim commands.
+///
+/// This type could be further broken down into 2-3 types (one util to support
+/// the commands for specific modes).  But there is a lot of benefit to keeping
+/// them together as it reduces the overhead of sharing common infrastructure.
+///
+/// I've debated back and forth about separating them out.  Thus far though I've
+/// decided to keep them all together because while there is a large set of 
+/// functionality here there is very little state.  So long as I can keep the 
+/// amount of stored state low here I believe it counters the size of the type
 type internal CommandUtil 
     (
-        _buffer : IVimBuffer,
+        _bufferData : VimBufferData,
+        _motionUtil : IMotionUtil,
         _operations : ICommonOperations,
-        _statusUtil : IStatusUtil,
-        _undoRedoOperations : IUndoRedoOperations,
         _smartIndentationService : ISmartIndentationService,
-        _foldManager : IFoldManager
+        _foldManager : IFoldManager,
+        _wordNavigator : ITextStructureNavigator,
+        _insertUtil : IInsertUtil
     ) =
 
-    let _textView = _buffer.TextView
+    let _textView = _bufferData.TextView
     let _textBuffer = _textView.TextBuffer
     let _bufferGraph = _textView.BufferGraph
-    let _motionUtil = _buffer.MotionUtil
-    let _registerMap = _buffer.RegisterMap
-    let _markMap = _buffer.MarkMap
-    let _vimData = _buffer.VimData
-    let _localSettings = _buffer.LocalSettings
+    let _statusUtil = _bufferData.StatusUtil
+    let _undoRedoOperations = _bufferData.UndoRedoOperations
+    let _localSettings = _bufferData.LocalSettings
     let _globalSettings = _localSettings.GlobalSettings
-    let _vim = _buffer.Vim
+    let _vim = _bufferData.Vim
+    let _vimData = _vim.VimData
     let _vimHost = _vim.VimHost
+    let _markMap = _vim.MarkMap
+    let _registerMap = _vim.RegisterMap
     let _searchService = _vim.SearchService
-    let _wordNavigator = _buffer.WordNavigator
-    let _jumpList = _buffer.JumpList
+    let _macroRecorder = _vim.MacroRecorder
+    let _jumpList = _bufferData.JumpList
     let _editorOperations = _operations.EditorOperations
     let _options = _operations.EditorOptions
 
@@ -1407,13 +1420,13 @@ type internal CommandUtil
             _operations.Beep()
         | Some name ->
             let register = _registerMap.GetRegister name
-            _buffer.Vim.MacroRecorder.StartRecording register isAppend
+            _macroRecorder.StartRecording register isAppend
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Stop a macro recording
     member x.RecordMacroStop () =
-        _buffer.Vim.MacroRecorder.StopRecording()
+        _macroRecorder.StopRecording()
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Undo count operations in the ITextBuffer
@@ -1447,6 +1460,8 @@ type internal CommandUtil
                 let data = getCommandData data
                 let visualSpan = x.CalculateVisualSpan storedVisualSpan
                 x.RunVisualCommand command data visualSpan
+            | StoredCommand.InsertCommand command ->
+                x.RunInsertCommand command
             | StoredCommand.TextChangeCommand change ->
                 // Calculate the count of the repeat
                 let count = 
@@ -1614,6 +1629,7 @@ type internal CommandUtil
         match command with
         | Command.NormalCommand (command, data) -> x.RunNormalCommand command data
         | Command.VisualCommand (command, data, visualSpan) -> x.RunVisualCommand command data visualSpan
+        | Command.InsertCommand command -> x.RunInsertCommand command
 
     /// Run the Macro which is present in the specified char
     member x.RunMacro registerName count = 
@@ -1700,6 +1716,10 @@ type internal CommandUtil
             _vimData.LastMacroRun <- Some registerName
 
         CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Run a InsertCommand against the buffer
+    member x.RunInsertCommand command =
+        _insertUtil.RunInsertCommand command
 
     /// Run a NormalCommand against the buffer
     member x.RunNormalCommand command (data : CommandData) =
@@ -2152,5 +2172,6 @@ type internal CommandUtil
     interface ICommandUtil with
         member x.RunNormalCommand command data = x.RunNormalCommand command data
         member x.RunVisualCommand command data visualSpan = x.RunVisualCommand command data visualSpan 
+        member x.RunInsertCommand command = x.RunInsertCommand command
         member x.RunCommand command = x.RunCommand command
 

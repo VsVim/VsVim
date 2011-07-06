@@ -1292,6 +1292,18 @@ type VisualCommand =
     /// Yank the selection into the specified register
     | YankSelection
 
+/// Insert mode commands that can be executed by the user
+[<RequireQualifiedAccess>]
+[<StructuralEquality>]
+[<NoComparison>]
+type InsertCommand  =
+
+    /// Shift the current line one indent width to the left
+    | ShiftLineLeft 
+
+    /// Shift the current line one indent width to the right
+    | ShiftLineRight
+
 /// Commands which can be executed by the user
 [<RequireQualifiedAccess>]
 [<StructuralEquality>]
@@ -1303,6 +1315,9 @@ type Command =
 
     /// A Visual Mode Command
     | VisualCommand of VisualCommand * CommandData * VisualSpan
+
+    /// An Insert / Replace Mode Command
+    | InsertCommand of InsertCommand
 
 /// The result of binding to a Motion value.
 [<RequireQualifiedAccess>]
@@ -1443,6 +1458,9 @@ type CommandBinding =
     /// KeyInputSet bound to a particular VisualCommand instance
     | VisualBinding of KeyInputSet * CommandFlags * VisualCommand
 
+    /// KeyInputSet bound to an insert mode command
+    | InsertBinding of KeyInputSet * CommandFlags * InsertCommand
+
     /// KeyInputSet bound to a complex VisualCommand instance
     | ComplexVisualBinding of KeyInputSet * CommandFlags * BindDataStorage<VisualCommand>
 
@@ -1454,6 +1472,7 @@ type CommandBinding =
         | NormalBinding (value, _, _) -> value
         | MotionBinding (value, _, _) -> value
         | VisualBinding (value, _, _) -> value
+        | InsertBinding (value, _, _) -> value
         | ComplexNormalBinding (value, _, _) -> value
         | ComplexVisualBinding (value, _, _) -> value
 
@@ -1463,6 +1482,7 @@ type CommandBinding =
         | NormalBinding (_, value, _) -> value
         | MotionBinding (_, value, _) -> value
         | VisualBinding (_, value, _) -> value
+        | InsertBinding (_, value, _) -> value
         | ComplexNormalBinding (_, value, _) -> value
         | ComplexVisualBinding (_, value, _) -> value
 
@@ -1489,8 +1509,16 @@ and ICommandUtil =
     /// Run a visual command
     abstract RunVisualCommand : VisualCommand -> CommandData -> VisualSpan -> CommandResult
 
+    /// Run a insert command
+    abstract RunInsertCommand : InsertCommand -> CommandResult
+
     /// Run a command
     abstract RunCommand : Command -> CommandResult
+
+type internal IInsertUtil = 
+
+    /// Run a insert command
+    abstract RunInsertCommand : InsertCommand -> CommandResult
 
 /// Contains the stored information about a Visual Span.  This instance *will* be 
 /// stored for long periods of time and used to erpeat a Command instance across
@@ -1606,6 +1634,9 @@ type StoredCommand =
     /// The stored information about a VisualCommand
     | VisualCommand of VisualCommand * CommandData * StoredVisualSpan * CommandFlags
 
+    /// The storef information about a InsertCommand
+    | InsertCommand of InsertCommand
+
     /// A Text Change which occurred
     | TextChangeCommand of TextChange
 
@@ -1620,6 +1651,7 @@ type StoredCommand =
         match x with 
         | NormalCommand (_, _, flags) -> flags
         | VisualCommand (_, _, _, flags) -> flags
+        | InsertCommand _ -> CommandFlags.None
         | TextChangeCommand _ -> CommandFlags.None
         | LinkedCommand _ -> CommandFlags.None
 
@@ -1631,6 +1663,8 @@ type StoredCommand =
         | Command.VisualCommand (command, data, visualSpan) ->
             let storedVisualSpan = StoredVisualSpan.OfVisualSpan visualSpan
             StoredCommand.VisualCommand (command, data, storedVisualSpan, commandBinding.CommandFlags)
+        | Command.InsertCommand command ->
+            StoredCommand.InsertCommand command
 
 /// Flags about specific motions
 [<RequireQualifiedAccess>]
@@ -2590,6 +2624,10 @@ and IInsertMode =
     /// like 'CTRL-D' but instead commands like 'a', 'b' which directly edit the 
     /// ITextBuffer
     abstract IsDirectInsert : KeyInput -> bool
+
+    /// Raised when a command is successfully run
+    [<CLIEvent>]
+    abstract CommandRan : IEvent<CommandRunData>
 
     inherit IMode
 

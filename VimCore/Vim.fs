@@ -105,11 +105,12 @@ type internal VimBufferFactory
         let capture = MotionCapture(vim.VimHost, view, incrementalSearch, localSettings) :> IMotionCapture
 
         let motionUtil = MotionUtil(view, vim.MarkMap, localSettings, vim.SearchService, wordNav, jumpList, statusUtil, wordUtil, vim.VimData) :> IMotionUtil
+        let foldManager = _foldManagerFactory.GetFoldManager view
+        let insertUtil = InsertUtil(bufferData, commonOperations) :> IInsertUtil
+        let commandUtil = CommandUtil(bufferData, motionUtil, commonOperations, _smartIndentationService, foldManager, wordNav, insertUtil) :> ICommandUtil
+
         let bufferRaw = VimBuffer(bufferData, incrementalSearch, motionUtil, wordNav)
         let buffer = bufferRaw :> IVimBuffer
-
-        let foldManager = _foldManagerFactory.GetFoldManager view
-        let commandUtil = CommandUtil(buffer, commonOperations, statusUtil, undoRedoOperations, _smartIndentationService, foldManager) :> ICommandUtil
 
         /// Create the selection change tracker so that it will begin to monitor
         /// selection events.  
@@ -144,8 +145,8 @@ type internal VimBufferFactory
             [
                 ((Modes.Normal.NormalMode(buffer, commonOperations, statusUtil,broker, createCommandRunner VisualKind.Character, capture)) :> IMode)
                 ((Modes.Command.CommandMode(buffer, commandProcessor, commonOperations)) :> IMode)
-                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, tracker, false)) :> IMode)
-                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, tracker, true)) :> IMode)
+                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, tracker, insertUtil, false)) :> IMode)
+                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, tracker, insertUtil, true)) :> IMode)
                 ((Modes.SubstituteConfirm.SubstituteConfirmMode(buffer, commonOperations) :> IMode))
                 (DisabledMode(buffer) :> IMode)
                 (ExternalEditMode(buffer) :> IMode)

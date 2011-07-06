@@ -32,9 +32,9 @@ namespace Vim.UnitTest
             wordUtil = wordUtil ?? GetWordUtil(textView);
             statusUtil = statusUtil ?? new StatusUtil();
             foldManager = foldManager ?? new FoldManager(
-                textView, 
+                textView,
                 new FoldData(textView.TextBuffer),
-                statusUtil, 
+                statusUtil,
                 FSharpOption.Create(EditorUtil.FactoryService.OutliningManagerService.GetOutliningManager(textView)));
             searchService = searchService ?? CreateSearchService(localSettings.GlobalSettings);
             undoRedoOperations = undoRedoOperations ??
@@ -93,7 +93,7 @@ namespace Vim.UnitTest
                 vimData);
         }
 
-        internal static IJumpList CreateJumpList(ITrackingLineColumnService trackingLineColumnService = null )
+        internal static IJumpList CreateJumpList(ITrackingLineColumnService trackingLineColumnService = null)
         {
             trackingLineColumnService = trackingLineColumnService ?? new TrackingLineColumnService();
             return new JumpList(trackingLineColumnService);
@@ -143,21 +143,46 @@ namespace Vim.UnitTest
                 vimData: vimData,
                 recorder: recorder,
                 searchService: searchService);
-            var buffer = MockObjectFactory.CreateVimBuffer(
-                textView: textView,
-                settings: localSettings,
-                motionUtil: motionUtil,
-                vim: vim.Object,
-                wordNavigator: wordNavigator,
-                jumpList: jumpList);
-            return new CommandUtil(
-                buffer.Object,
-                operations,
+            var bufferData = CreateVimBufferData(
+                textView,
+                jumpList,
+                localSettings,
                 statusUtil,
                 undoRedOperations,
+                vim.Object);
+
+            var insertUtil = new InsertUtil(bufferData, operations);
+            return new CommandUtil(
+                bufferData,
+                motionUtil,
+                operations,
                 smartIndentationService,
-                foldManager);
+                foldManager,
+                wordNavigator,
+                insertUtil);
         }
+
+        /// <summary>
+        /// Create a new instance of VimBufferData.  Centralized here to make it easier to 
+        /// absorb API changes in the Unit Tests
+        /// </summary>
+        public static VimBufferData CreateVimBufferData(
+            ITextView textView,
+            IJumpList jumpList,
+            IVimLocalSettings localSettings,
+            IStatusUtil statusUtil,
+            IUndoRedoOperations undoRedoOperations,
+            IVim vim)
+        {
+            return new VimBufferData(
+                textView,
+                jumpList,
+                localSettings,
+                statusUtil,
+                undoRedoOperations,
+                vim);
+        }
+
 
         internal static ISmartIndentationService CreateSmartIndentationService()
         {
@@ -439,7 +464,7 @@ namespace Vim.UnitTest
 
         internal static NormalCommand CreatePing(Action<CommandData> action)
         {
-            Func<CommandData, CommandResult> func = 
+            Func<CommandData, CommandResult> func =
                 commandData =>
                 {
                     action(commandData);
