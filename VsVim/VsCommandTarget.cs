@@ -155,13 +155,23 @@ namespace VsVim
 
             if (result.IsNoMapping)
             {
-                // No mapping.  Use the original
+                // If there is no mapping we still need to consider the case of buffered 
+                // KeyInput values.  If there are any buffered KeyInput values then we 
+                // have > 1 input values: the current and whatever is mapped
+                if (!_buffer.BufferedRemapKeyInputs.IsEmpty)
+                {
+                    mapped = null;
+                    return false;
+                }
+
+                // No mapping and no buffered input so it's just a simple normal KeyInput
+                // value to be processed
                 mapped = original;
                 return true;
             }
 
             // Shouldn't get here because all cases of KeyMappingResult should be
-            // handled abvoe
+            // handled above
             Contract.Assert(false);
             mapped = null;
             return false;

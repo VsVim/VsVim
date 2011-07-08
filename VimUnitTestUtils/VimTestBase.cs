@@ -1,6 +1,6 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using NUnit.Framework;
-using System;
 
 namespace Vim.UnitTest
 {
@@ -8,6 +8,7 @@ namespace Vim.UnitTest
     /// Standard test base for vim services which wish to do standard error monitoring like
     ///   - No dangling transactions
     ///   - No silent swallowed MEF errors
+    ///   - Remove any key mappings 
     /// </summary>
     [TestFixture]
     public abstract class VimTestBase
@@ -29,6 +30,8 @@ namespace Vim.UnitTest
                 var msg = String.Format("Extension Exception: {0}", _vimErrorDetector.GetErrors().First().Message);
                 Assert.Fail(msg);
             }
+
+            EditorUtil.FactoryService.Vim.KeyMap.ClearAll();
         }
     }
 }

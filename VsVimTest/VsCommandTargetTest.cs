@@ -13,10 +13,12 @@ using Vim.UnitTest.Mock;
 namespace VsVim.UnitTest
 {
     [TestFixture]
-    public class VsCommandTargetTest
+    public sealed class VsCommandTargetTest : VimTestBase
     {
         private MockRepository _factory;
         private IVimBuffer _buffer;
+        private IVim _vim;
+        private ITextView _textView;
         private Mock<IVsAdapter> _adapter;
         private Mock<IExternalEditorManager> _externalEditorManager;
         private Mock<IOleCommandTarget> _nextTarget;
@@ -27,11 +29,12 @@ namespace VsVim.UnitTest
         [SetUp]
         public void SetUp()
         {
-            var textView = EditorUtil.CreateTextView("");
-            _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(textView);
+            _textView = EditorUtil.CreateTextView("");
+            _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
+            _vim = _buffer.Vim;
             _factory = new MockRepository(MockBehavior.Strict);
 
-            // By default resharper isn't loaded
+            // By default Resharper isn't loaded
             _externalEditorManager = _factory.Create<IExternalEditorManager>();
             _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(false);
 
@@ -57,43 +60,72 @@ namespace VsVim.UnitTest
             _target = _targetRaw;
         }
 
-        private static Tuple<Guid, uint, IntPtr> ToVsInforamtion(KeyInput keyInput)
+        /// <summary>
+        /// Make sure to clear the KeyMap map on tear down so we don't mess up other tests
+        /// </summary>
+        [TearDown]
+        public void TearDown()
         {
-            if (keyInput == KeyInputUtil.EscapeKey)
-            {
-                return Tuple.Create(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.CANCEL, IntPtr.Zero);
-            }
-            else if (keyInput == KeyInputUtil.EnterKey)
-            {
-                return Tuple.Create(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.RETURN, IntPtr.Zero);
-            }
-            else if (keyInput.Key == VimKey.Back)
-            {
-                return Tuple.Create(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.BACKSPACE, IntPtr.Zero);
-            }
-            else
-            {
-                Assert.Fail("Not a supported key");
-                return null;
-            }
+            _vim.KeyMap.ClearAll();
         }
 
+        /// <summary>
+        /// Run the KeyInput value through Exec
+        /// </summary>
         private void RunExec(KeyInput keyInput)
         {
-            var data = ToVsInforamtion(keyInput);
-            var guid = data.Item1;
-            _target.Exec(ref guid, data.Item2, 0, data.Item3, IntPtr.Zero);
+            OleCommandData data;
+            Guid commandGroup;
+            Assert.IsTrue(OleCommandUtil.TryConvert(keyInput, out commandGroup, out data));
+            try
+            {
+                _target.Exec(ref commandGroup, data.CommandId, data.CommandExecOpt, data.VariantIn, data.VariantOut);
+            }
+            finally
+            {
+                OleCommandData.Release(ref data);
+            }
         }
 
+        /// <summary>
+        /// Run the given command as a type char through the Exec function
+        /// </summary>
+        private void RunExec(char c)
+        {
+            var keyInput = KeyInputUtil.CharToKeyInput(c);
+            RunExec(keyInput);
+        }
+
+        /// <summary>
+        /// Run the KeyInput value through QueryStatus.  Returns true if the QueryStatus call
+        /// indicated the command was supported
+        /// </summary>
         private bool RunQueryStatus(KeyInput keyInput)
         {
-            var data = ToVsInforamtion(keyInput);
-            var guid = data.Item1;
-            var cmds = new OLECMD[1];
-            cmds[0] = new OLECMD { cmdID = data.Item2 };
-            return
-                ErrorHandler.Succeeded(_target.QueryStatus(ref guid, 1, cmds, data.Item3)) &&
-                cmds[0].cmdf == (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
+            OleCommandData data;
+            Guid commandGroup;
+            Assert.IsTrue(OleCommandUtil.TryConvert(keyInput, out commandGroup, out data));
+            try
+            {
+                var cmds = new OLECMD[1];
+                cmds[0] = new OLECMD { cmdID = data.CommandId};
+                return
+                    ErrorHandler.Succeeded(_target.QueryStatus(ref commandGroup, 1, cmds, data.VariantIn)) &&
+                    cmds[0].cmdf == (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
+            }
+            finally
+            {
+                OleCommandData.Release(ref data);
+            }
+        }
+
+        /// <summary>
+        /// Run the char through the QueryStatus method
+        /// </summary>
+        private bool RunQueryStatus(char c)
+        {
+            var keyInput = KeyInputUtil.CharToKeyInput(c);
+            return RunQueryStatus(keyInput);
         }
 
         private void AssertCannotConvert2K(VSConstants.VSStd2KCmdID id)
@@ -256,6 +288,60 @@ namespace VsVim.UnitTest
             Assert.AreEqual(1, count);
             _factory.Verify();
         }
+
+        /// <summary>
+        /// If there is buffered KeyInput values then the provided KeyInput shouldn't ever be 
+        /// directly handled by the VsCommandTarget or the next IOleCommandTarget in the 
+        /// chain.  It should be passed directly to the IVimBuffer if it can be handled else 
+        /// it shouldn't be handled
+        /// </summary>
+        [Test]
+        public void Exec_WithUnmatchedBufferedInput()
+        {
+            _vim.KeyMap.MapWithNoRemap("jj", "hello", KeyRemapMode.Insert);
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            RunExec('j');
+            Assert.IsFalse(_buffer.BufferedRemapKeyInputs.IsEmpty);
+            RunExec('a');
+            Assert.AreEqual("ja", _textView.GetLine(0).GetText());
+            Assert.IsTrue(_buffer.BufferedRemapKeyInputs.IsEmpty);
+        }
+
+        /// <summary>
+        /// Make sure in the case that the next input matches the final expansion of a 
+        /// buffered input that it's processed correctly
+        /// </summary>
+        [Test]
+        public void Exec_WithMatchedBufferedInput()
+        {
+            _vim.KeyMap.MapWithNoRemap("jj", "hello", KeyRemapMode.Insert);
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            RunExec('j');
+            Assert.IsFalse(_buffer.BufferedRemapKeyInputs.IsEmpty);
+            RunExec('j');
+            Assert.AreEqual("hello", _textView.GetLine(0).GetText());
+            Assert.IsTrue(_buffer.BufferedRemapKeyInputs.IsEmpty);
+        }
+
+        /// <summary>
+        /// In the case where there is buffered KeyInput values and the next KeyInput collapses
+        /// it into a single value then we should process the result as a single key stroke and
+        /// go through Exec
+        /// </summary>
+        [Test]
+        public void Exec_CollapseBufferedInputToSingleKeyInput()
+        {
+            _vim.KeyMap.MapWithNoRemap("jj", "z", KeyRemapMode.Insert);
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            RunExec('j');
+            Assert.IsFalse(_buffer.BufferedRemapKeyInputs.IsEmpty);
+            _nextTarget.SetupExec().Callback(() => _textView.SetText("hello")).Verifiable();
+            RunExec('j');
+            Assert.AreEqual("hello", _textView.GetLine(0).GetText());
+            Assert.IsTrue(_buffer.BufferedRemapKeyInputs.IsEmpty);
+            _nextTarget.Verify();
+        }
+
     }
 }
 

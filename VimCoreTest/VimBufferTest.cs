@@ -8,7 +8,7 @@ using Vim.UnitTest;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public sealed class VimBufferTest
+    public sealed class VimBufferTest : VimTestBase
     {
         private ITextView _textView;
         private VimBuffer _bufferRaw;
@@ -26,12 +26,6 @@ namespace VimCore.UnitTest
             _keyMap = _buffer.Vim.KeyMap;
             _bufferRaw = (VimBuffer)_buffer;
             _factory = new MockRepository(MockBehavior.Strict);
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            EditorUtil.FactoryService.Vim.KeyMap.ClearAll();
         }
 
         private Mock<INormalMode> CreateAndAddNormalMode(MockBehavior behavior = MockBehavior.Strict)
@@ -532,6 +526,60 @@ namespace VimCore.UnitTest
             _buffer.Process("h");   // Changing text will raise Changed
             Assert.IsFalse(_buffer.IsProcessingInput);
             Assert.IsTrue(didRun);
+        }
+
+        /// <summary>
+        /// Ensure the key simulation raises the appropriate key APIs
+        /// </summary>
+        [Test]
+        public void SimulateProcessed_RaiseEvent()
+        {
+            var ranStart = false;
+            var ranProcessed = false;
+            var ranEnd = false;
+            _buffer.KeyInputStart += delegate { ranStart = true; };
+            _buffer.KeyInputProcessed += delegate { ranProcessed = true; };
+            _buffer.KeyInputEnd += delegate { ranEnd = true; };
+            _buffer.SimulateProcessed(KeyInputUtil.CharToKeyInput('c'));
+            Assert.IsTrue(ranStart);
+            Assert.IsTrue(ranEnd);
+            Assert.IsTrue(ranProcessed);
+        }
+
+        /// <summary>
+        /// Ensure the SimulateProcessed API doesn't go through key remapping.  The caller
+        /// who wants the simulated input is declaring the literal KeyInput was processed
+        /// </summary>
+        [Test]
+        public void SimulateProcessed_DontMap()
+        {
+            _buffer.Vim.KeyMap.MapWithNoRemap("a", "b", KeyRemapMode.Normal);
+            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            var ranProcessed = false;
+            _buffer.KeyInputProcessed +=
+                (unused, tuple) =>
+                {
+                    Assert.AreEqual(KeyInputUtil.CharToKeyInput('a'), tuple.Item1);
+                    ranProcessed = true;
+                };
+            _buffer.SimulateProcessed(KeyInputUtil.CharToKeyInput('a'));
+            Assert.IsTrue(ranProcessed);
+        }
+
+        /// <summary>
+        /// When input is simulated it should clear any existing buffered KeyInput 
+        /// values.  The caller who simulates the input is responsible for understanding
+        /// and ignoring buffered input values
+        /// </summary>
+        [Test]
+        public void SimulateProcessed_ClearBufferedInput()
+        {
+            _buffer.Vim.KeyMap.MapWithNoRemap("jj", "b", KeyRemapMode.Normal);
+            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _buffer.Process('j');
+            Assert.IsFalse(_buffer.BufferedRemapKeyInputs.IsEmpty);
+            _buffer.SimulateProcessed(KeyInputUtil.CharToKeyInput('a'));
+            Assert.IsTrue(_buffer.BufferedRemapKeyInputs.IsEmpty);
         }
     }
 }
