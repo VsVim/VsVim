@@ -713,21 +713,6 @@ namespace Vim.UnitTest
 
         #endregion
 
-        #region Dispatcher
-
-        public static void DoEvents(this Dispatcher dispatcher)
-        {
-            var frame = new DispatcherFrame();
-            Action<DispatcherFrame> action = _ => { frame.Continue = false; };
-            dispatcher.BeginInvoke(
-                DispatcherPriority.SystemIdle,
-                action,
-                frame);
-            Dispatcher.PushFrame(frame);
-        }
-
-        #endregion
-
         #region BindResult<T>
 
         public static BindResult<T> Run<T>(this BindResult<T> result, string text)

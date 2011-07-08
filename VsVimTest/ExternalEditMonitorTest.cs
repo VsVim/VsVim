@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using NUnit.Framework;
 using Vim;
+using Vim.UI.Wpf;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 using VsVim.ExternalEdit;
@@ -69,6 +70,7 @@ namespace VsVim.UnitTest
             var adapters = new ReadOnlyCollection<IExternalEditAdapter>(list);
             _monitor = new ExternalEditMonitor(
                 _buffer,
+                ProtectedOperations,
                 textLines,
                 tagger,
                 adapters);

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
 using NUnit.Framework;
+using Vim.UI.Wpf;
+using Vim.UI.Wpf.Implementation;
 
 namespace Vim.UnitTest
 {
@@ -14,12 +16,23 @@ namespace Vim.UnitTest
     public abstract class VimTestBase
     {
         private IVimErrorDetector _vimErrorDetector;
+        private IProtectedOperations _protectedOperations;
+
+        /// <summary>
+        /// An IProtectedOperations value which will be properly checked in the context of this
+        /// test case
+        /// </summary>
+        protected IProtectedOperations ProtectedOperations
+        {
+            get { return _protectedOperations; }
+        }
 
         [SetUp]
         public void SetupBase()
         {
             _vimErrorDetector = EditorUtil.FactoryService.VimErrorDetector;
             _vimErrorDetector.Clear();
+            _protectedOperations = new ProtectedOperations(_vimErrorDetector);
         }
 
         [TearDown]

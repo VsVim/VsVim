@@ -110,6 +110,7 @@
     <Compile Include="KeyProcessorTest.cs" />
     <Compile Include="KeyUtilTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ProtectedOperationsTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VimCoreTest\VimCoreTest.csproj">

@@ -8,11 +8,12 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Classification;
 using Moq;
 using Vim.UI.Wpf.Implementation;
+using Vim.UnitTest;
 
 namespace Vim.UI.Wpf.Test
 {
     [TestFixture]
-    public class BlockCaretTest
+    public class BlockCaretTest : VimTestBase
     {
         private Mock<ITextView> _textview;
         private Mock<ITextCaret> _caret;
@@ -28,7 +29,7 @@ namespace Vim.UI.Wpf.Test
             _textview.SetupGet(x => x.Caret).Returns(_caret.Object);
             _formatMap = new Mock<IEditorFormatMap>(MockBehavior.Strict);
             _layer = new Mock<IAdornmentLayer>(MockBehavior.Strict);
-            _blockCaretRaw = new BlockCaret(_textview.Object, _formatMap.Object, _layer.Object);
+            _blockCaretRaw = new BlockCaret(_textview.Object, _formatMap.Object, _layer.Object, ProtectedOperations);
             _blockCaret = _blockCaretRaw;
         }
 

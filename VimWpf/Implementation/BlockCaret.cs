@@ -33,6 +33,7 @@ namespace Vim.UI.Wpf.Implementation
         }
 
         private readonly ITextView _view;
+        private readonly IProtectedOperations _protectedOperations;
         private readonly IEditorFormatMap _formatMap;
         private readonly IAdornmentLayer _layer;
         private readonly Object _tag = new object();
@@ -113,11 +114,12 @@ namespace Vim.UI.Wpf.Implementation
             }
         }
 
-        internal BlockCaret(ITextView view, IEditorFormatMap formatMap, IAdornmentLayer layer)
+        internal BlockCaret(ITextView view, IEditorFormatMap formatMap, IAdornmentLayer layer, IProtectedOperations protectedOperations)
         {
             _view = view;
             _formatMap = formatMap;
             _layer = layer;
+            _protectedOperations = protectedOperations;
 
             _view.LayoutChanged += OnCaretEvent;
             _view.GotAggregateFocus += OnCaretEvent;
@@ -130,12 +132,12 @@ namespace Vim.UI.Wpf.Implementation
             _blinkTimer = new DispatcherTimer(
                 caretBlinkTimeSpan,
                 DispatcherPriority.Normal,
-                OnCaretBlinkTimer,
+                _protectedOperations.GetProtectedEventHandler(OnCaretBlinkTimer),
                 Dispatcher.CurrentDispatcher);
         }
 
-        internal BlockCaret(IWpfTextView view, string adornmentLayerName, IEditorFormatMap formatMap) :
-            this(view, formatMap, view.GetAdornmentLayer(adornmentLayerName))
+        internal BlockCaret(IWpfTextView view, string adornmentLayerName, IEditorFormatMap formatMap, IProtectedOperations protectedOperations) :
+            this(view, formatMap, view.GetAdornmentLayer(adornmentLayerName), protectedOperations)
         {
         }
 

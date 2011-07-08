@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.ComponentModel.Composition;
+﻿using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
@@ -15,6 +11,7 @@ namespace Vim.UI.Wpf.Implementation
         internal const string BlockCaretAdornmentLayerName = "BlockCaretAdornmentLayer";
 
         private readonly IEditorFormatMapService _formatMapService;
+        private readonly IProtectedOperations _protectedOperations;
 
 #pragma warning disable 169
         [Export(typeof(AdornmentLayerDefinition))]
@@ -24,15 +21,16 @@ namespace Vim.UI.Wpf.Implementation
 #pragma warning restore 169
 
         [ImportingConstructor]
-        internal BlockCaretFactoryService(IEditorFormatMapService formatMapService)
+        internal BlockCaretFactoryService(IEditorFormatMapService formatMapService, IProtectedOperations protectedOperations)
         {
             _formatMapService = formatMapService;
+            _protectedOperations = protectedOperations;
         }
 
         public IBlockCaret CreateBlockCaret(IWpfTextView textView)
         {
             var formatMap = _formatMapService.GetEditorFormatMap(textView);
-            return new BlockCaret(textView, BlockCaretAdornmentLayerName, formatMap);
+            return new BlockCaret(textView, BlockCaretAdornmentLayerName, formatMap, _protectedOperations);
         }
     }
 }
