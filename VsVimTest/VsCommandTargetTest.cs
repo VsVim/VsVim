@@ -245,6 +245,49 @@ namespace VsVim.UnitTest
             _factory.Verify();
         }
 
+        /// <summary>
+        /// When Visual Studio is in debug mode R# will attempt to handle the Enter key directly
+        /// and do nothing.  Presumably they are doing this because it is an edit command and they
+        /// are suppressing it's action.  We want to process this directly though if Vim believes
+        /// Enter to be a command and not an edit, for example in normal mode
+        /// </summary>
+        [Test]
+        public void QueryStatus_Resharper_HandleEnterInDebugModeIfCommand()
+        {
+            _textView.SetText("cat", "dog");
+            _textView.MoveCaretTo(0);
+            _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(true).Verifiable();
+            _adapter.SetupGet(x => x.InDebugMode).Returns(true).Verifiable();
+            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            Assert.IsTrue(_buffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
+            Assert.IsTrue(RunQueryStatus(KeyInputUtil.EnterKey));
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            Assert.AreEqual(KeyInputUtil.EnterKey, _targetRaw.SwallowIfNextExecMatches.Value);
+            _factory.Verify();
+        }
+
+        /// <summary>
+        /// If Enter isn't going to be processed as a command then don't special case it in Debug
+        /// mode for R#.  It would be an edit and we don't want to interfere with R#'s handling 
+        /// of edits
+        /// </summary>
+        [Test]
+        public void QueryStatus_Resharper_DontHandleEnterInDebugModeIfNotCommand()
+        {
+            _textView.SetText("cat", "dog");
+            _textView.MoveCaretTo(0);
+            var savedSnapshot = _textView.TextSnapshot;
+            _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(true).Verifiable();
+            _adapter.SetupGet(x => x.InDebugMode).Returns(true).Verifiable();
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            Assert.IsFalse(_buffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
+            Assert.IsTrue(RunQueryStatus(KeyInputUtil.EnterKey));
+            Assert.IsTrue(_targetRaw.SwallowIfNextExecMatches.IsNone());
+            Assert.AreEqual(_textView.GetLine(0).Start, _textView.GetCaretPoint());
+            Assert.AreSame(savedSnapshot, _textView.TextSnapshot);
+            _factory.Verify();
+        }
+
         [Test]
         public void Exec_PassOnIfCantHandle()
         {
