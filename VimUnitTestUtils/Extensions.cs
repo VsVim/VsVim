@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows.Threading;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -11,6 +10,9 @@ using Vim.Modes.Command;
 
 namespace Vim.UnitTest
 {
+    /// <summary>
+    /// Contains extension methods common to all unit test
+    /// </summary>
     public static class Extensions
     {
         #region CommandResult
