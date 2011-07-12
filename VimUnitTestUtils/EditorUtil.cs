@@ -77,6 +77,9 @@ namespace Vim.UnitTest
 
             [Import]
             public IAdhocOutlinerFactory AdhocOutlinerFactory;
+
+            [Import]
+            public ICommonOperationsFactory CommonOperationsFactory;
         }
 
         #endregion

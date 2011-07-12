@@ -405,9 +405,23 @@ namespace Vim.UnitTest
             return textView.TextSnapshot.GetFirstLine();
         }
 
+        /// <summary>
+        /// Move the caret to the given position in the ITextView
+        /// </summary>
         public static CaretPosition MoveCaretTo(this ITextView textView, int position)
         {
             return textView.Caret.MoveTo(new SnapshotPoint(textView.TextSnapshot, position));
+        }
+
+        /// <summary>
+        /// Move the caret to the given position in the ITextView with the set amount of virtual 
+        /// spaces
+        /// </summary>
+        public static void MoveCaretTo(this ITextView textView, int position, int virtualSpaces)
+        {
+            var point = new SnapshotPoint(textView.TextSnapshot, position);
+            var virtualPoint = new VirtualSnapshotPoint(point, virtualSpaces);
+            textView.Caret.MoveTo(virtualPoint);
         }
 
         public static CaretPosition MoveCaretToLine(this ITextView textView, int lineNumber)

@@ -151,6 +151,7 @@
     <Compile Include="CommandUtilTest.cs" />
     <Compile Include="EditorToSettingSynchronizerTest.cs" />
     <Compile Include="FoldManagerTest.cs" />
+    <Compile Include="InsertUtilTest.cs" />
     <Compile Include="ReplaceModeIntegrationTest.cs" />
     <Compile Include="MacroIntegrationTest.cs" />
     <Compile Include="IncrementalSearchTaggerTest.cs" />

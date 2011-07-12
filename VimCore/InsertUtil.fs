@@ -23,6 +23,9 @@ type internal InsertUtil
     /// The SnapshotPoint for the caret
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
+    /// The VirtualSnapshotPoint for the caret
+    member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
+
     /// The ITextSnapshotLine for the caret
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
 
@@ -51,8 +54,18 @@ type internal InsertUtil
             let endPoint = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
             SnapshotSpan(x.CaretLine.Start, endPoint)
 
-        if indentSpan.Length > 0 then
-            let spaces = _operations.NormalizeBlanksToSpaces (indentSpan.GetText())
+        if indentSpan.Length > 0 || x.CaretVirtualPoint.IsInVirtualSpace then
+            let spaces = 
+                let spaces = _operations.NormalizeBlanksToSpaces (indentSpan.GetText())
+
+                // Make sure to account for the caret being in virtual space.  This simply
+                // adds extra spaces to the line equal to the number of virtual spaces
+                if x.CaretVirtualPoint.IsInVirtualSpace then
+                    let extra = StringUtil.repeatChar x.CaretVirtualPoint.VirtualSpaces ' '
+                    spaces + extra
+                else
+                    spaces
+
             let trim = 
                 let remainder = spaces.Length % _globalSettings.ShiftWidth
                 if remainder = 0 then
