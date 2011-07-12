@@ -15,6 +15,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using NUnit.Framework;
 using Vim;
+using Vim.UI.Wpf;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 namespace VsVim.UnitTest

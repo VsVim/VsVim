@@ -32,4 +32,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyVersion("0.5.0.0")]
 [assembly: AssemblyFileVersion("0.5.0.0")]
 [assembly: InternalsVisibleTo("VsVim.UnitTest")]
+[assembly: InternalsVisibleTo("Vim.UnitTest.Utils")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")] // Moq
+
+

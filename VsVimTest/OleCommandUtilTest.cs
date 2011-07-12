@@ -150,11 +150,11 @@ namespace VsVim.UnitTest
                     continue;
                 }
 
-                Guid commandGroup;
-                OleCommandData oleCommandData = new OleCommandData();
-                KeyInput converted;
+                var oleCommandData = new OleCommandData();
                 try
                 {
+                    KeyInput converted;
+                    Guid commandGroup;
                     Assert.IsTrue(OleCommandUtil.TryConvert(cur, out commandGroup, out oleCommandData));
 
                     // We lose fidelity on these keys because they both get written out as numbers

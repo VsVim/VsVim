@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows.Threading;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -11,6 +10,9 @@ using Vim.Modes.Command;
 
 namespace Vim.UnitTest
 {
+    /// <summary>
+    /// Contains extension methods common to all unit test
+    /// </summary>
     public static class Extensions
     {
         #region CommandResult
@@ -709,21 +711,6 @@ namespace Vim.UnitTest
             var number = operations.TextView.GetCaretLine().LineNumber;
             var range = operations.TextView.GetLineRange(number, number + (count - 1));
             operations.ShiftLineRangeRight(range, 1);
-        }
-
-        #endregion
-
-        #region Dispatcher
-
-        public static void DoEvents(this Dispatcher dispatcher)
-        {
-            var frame = new DispatcherFrame();
-            Action<DispatcherFrame> action = _ => { frame.Continue = false; };
-            dispatcher.BeginInvoke(
-                DispatcherPriority.SystemIdle,
-                action,
-                frame);
-            Dispatcher.PushFrame(frame);
         }
 
         #endregion

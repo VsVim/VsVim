@@ -13,7 +13,6 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Moq.Language.Flow;
 using Vim.Extensions;
-using Vim.Modes;
 using VsVim;
 
 namespace Vim.UnitTest.Mock

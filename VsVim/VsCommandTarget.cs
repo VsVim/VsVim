@@ -130,7 +130,7 @@ namespace VsVim
         /// Try and map a KeyInput to a single KeyInput value.  This will only succeed for KeyInput 
         /// values which have no mapping or map to a single KeyInput value
         /// </summary>
-        private bool TryGetSingleMapping(KeyRemapMode mode, KeyInput original, out KeyInput mapped)
+        private bool TryGetSingleMapping(KeyInput original, out KeyInput mapped)
         {
             var result = _buffer.GetKeyInputMapping(original);
             if (result.IsNeedsMoreInput || result.IsRecursive)
@@ -155,13 +155,23 @@ namespace VsVim
 
             if (result.IsNoMapping)
             {
-                // No mapping.  Use the original
+                // If there is no mapping we still need to consider the case of buffered 
+                // KeyInput values.  If there are any buffered KeyInput values then we 
+                // have > 1 input values: the current and whatever is mapped
+                if (!_buffer.BufferedRemapKeyInputs.IsEmpty)
+                {
+                    mapped = null;
+                    return false;
+                }
+
+                // No mapping and no buffered input so it's just a simple normal KeyInput
+                // value to be processed
                 mapped = original;
                 return true;
             }
 
             // Shouldn't get here because all cases of KeyMappingResult should be
-            // handled abvoe
+            // handled above
             Contract.Assert(false);
             mapped = null;
             return false;
@@ -230,7 +240,7 @@ namespace VsVim
             // not at the individual IMode.  Have to manually map here and test against the 
             // mapped KeyInput
             KeyInput mapped;
-            if (!TryGetSingleMapping(KeyRemapMode.Insert, keyInput, out mapped) || CanProcessWithInsertMode(mode, mapped))
+            if (!TryGetSingleMapping(keyInput, out mapped) || CanProcessWithInsertMode(mode, mapped))
             {
                 return _buffer.Process(keyInput).IsAnyHandled;
             }
@@ -450,9 +460,11 @@ namespace VsVim
                 // normal mode
                 action = CommandAction.Enable;
             }
-            else if (_adapter.InDebugMode && (keyInput == KeyInputUtil.EnterKey || keyInput.Key == VimKey.Back))
+            else if (_adapter.InDebugMode && _buffer.CanProcessAsCommand(keyInput) && (keyInput == KeyInputUtil.EnterKey || keyInput.Key == VimKey.Back))
             {
-                // In debug mode R# will intercept Enter and Back 
+                // In debug mode R# will intercept Enter and Back in Exec and we won't see them.  This is fine when
+                // they are being interpreted as Edits.  When they are being interpreted as commands though we 
+                // want to handle so do so here
                 action = CommandAction.Enable;
             }
             else if (keyInput == KeyInputUtil.EnterKey && _buffer.ModeKind != ModeKind.Insert && _buffer.ModeKind != ModeKind.Replace)
@@ -468,10 +480,11 @@ namespace VsVim
             // through the event chain where either of the following will happen 
             //
             //  1. R# will handle the KeyInput
-            //  2. R# will not handle it, it will get back to us and we will ignore it
+            //  2. R# will not handle it, it will come back to use in Exec and we will ignore it
             //
-            // If the command is disabled though it will not go through IOleCommandTarget and instead will end 
-            // up in the KeyProcessor code which will handle the value
+            // Even after we handle the command it's important that we still register the command 
+            // as Enabled from QueryStatus.  If we say it's not enabled then the calling code will assume
+            // IOleCommandTarget did not handle the command and will pass it onto the KeyProcessor
             if (action.HasValue && action.Value == CommandAction.Enable && _buffer.Process(keyInput).IsAnyHandled)
             {
                 SwallowIfNextExecMatches = FSharpOption.Create(keyInput);
