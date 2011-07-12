@@ -7,7 +7,7 @@ using Vim.UnitTest;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class InsertModeIntegrationTest
+    public sealed class InsertModeIntegrationTest : VimTestBase
     {
         private IVimBuffer _buffer;
         private IWpfTextView _textView;
@@ -128,5 +128,31 @@ namespace VimCore.UnitTest
             Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
         }
 
+        /// <summary>
+        /// Make sure that shift left does a round up before it shifts to the left.
+        /// </summary>
+        [Test]
+        public void ShiftLeft_RoundUp()
+        {
+            Create("     hello");
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _buffer.GlobalSettings.ShiftWidth = 4;
+            _buffer.Process(KeyNotationUtil.StringToKeyInput("<C-D>"));
+            Assert.AreEqual("    hello", _textBuffer.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// Make sure that when the text is properly rounded to a shift width that the 
+        /// shift left just deletes a shift width
+        /// </summary>
+        [Test]
+        public void ShiftLeft_Normal()
+        {
+            Create("        hello");
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _buffer.GlobalSettings.ShiftWidth = 4;
+            _buffer.Process(KeyNotationUtil.StringToKeyInput("<C-D>"));
+            Assert.AreEqual("    hello", _textBuffer.GetLine(0).GetText());
+        }
     }
 }

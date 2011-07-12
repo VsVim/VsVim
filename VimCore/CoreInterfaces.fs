@@ -2411,6 +2411,9 @@ and IVimBuffer =
     /// Name of the buffer.  Used for items like Marks
     abstract Name : string
 
+    /// Global settings for the buffer
+    abstract GlobalSettings : IVimGlobalSettings
+
     /// Local settings for the buffer
     abstract LocalSettings : IVimLocalSettings
 

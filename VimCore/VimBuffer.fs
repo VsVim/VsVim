@@ -317,6 +317,7 @@ type internal VimBuffer
         member x.ExternalEditMode = x.ExternalEditMode
         member x.DisabledMode = x.DisabledMode
         member x.AllModes = _modeMap.Modes
+        member x.GlobalSettings = _localSettings.GlobalSettings;
         member x.LocalSettings = _localSettings
         member x.RegisterMap = _vim.RegisterMap
 
