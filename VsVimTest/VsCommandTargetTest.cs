@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Windows;
+using System.Windows.Input;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Text.Editor;
@@ -9,6 +11,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
+using VsVim.Implementation;
 
 namespace VsVim.UnitTest
 {
@@ -17,6 +20,7 @@ namespace VsVim.UnitTest
     {
         private MockRepository _factory;
         private IVimBuffer _buffer;
+        private IVimBufferCoordinator _bufferCoordinator;
         private IVim _vim;
         private ITextView _textView;
         private Mock<IVsAdapter> _adapter;
@@ -31,6 +35,7 @@ namespace VsVim.UnitTest
         {
             _textView = EditorUtil.CreateTextView("");
             _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
+            _bufferCoordinator = new VimBufferCoordinator(_buffer);
             _vim = _buffer.Vim;
             _factory = new MockRepository(MockBehavior.Strict);
 
@@ -38,7 +43,7 @@ namespace VsVim.UnitTest
             _externalEditorManager = _factory.Create<IExternalEditorManager>();
             _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(false);
 
-            _nextTarget = _factory.Create<IOleCommandTarget>(MockBehavior.Loose);
+            _nextTarget = _factory.Create<IOleCommandTarget>(MockBehavior.Strict);
             _adapter = _factory.Create<IVsAdapter>();
             _adapter.Setup(x => x.InAutomationFunction).Returns(false);
             _adapter.Setup(x => x.InDebugMode).Returns(false);
@@ -50,7 +55,7 @@ namespace VsVim.UnitTest
             var vsTextView = _factory.Create<IVsTextView>(MockBehavior.Loose);
             vsTextView.Setup(x => x.AddCommandFilter(It.IsAny<IOleCommandTarget>(), out oldCommandFilter)).Returns(0);
             var result = VsCommandTarget.Create(
-                _buffer,
+                _bufferCoordinator,
                 vsTextView.Object,
                 _adapter.Object,
                 _broker.Object,
@@ -108,7 +113,7 @@ namespace VsVim.UnitTest
             try
             {
                 var cmds = new OLECMD[1];
-                cmds[0] = new OLECMD { cmdID = data.CommandId};
+                cmds[0] = new OLECMD { cmdID = data.CommandId };
                 return
                     ErrorHandler.Succeeded(_target.QueryStatus(ref commandGroup, 1, cmds, data.VariantIn)) &&
                     cmds[0].cmdf == (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
@@ -195,20 +200,60 @@ namespace VsVim.UnitTest
         }
 
         /// <summary>
-        /// Make sure we process Escape during QueryStatus if we're in insert mode.  R# will
-        /// intercept escape and never give it to us and we'll think we're still in insert
+        /// Make sure we process Escape during QueryStatus if we're in insert mode and still pass
+        /// it on to R#.  R# will intercept escape and never give it to us and we'll think 
+        /// we're still in insert.  
         /// </summary>
         [Test]
-        public void QueryStatus_EnableAndHandleEscapeInResharperPlusInsert()
+        public void QueryStatus_Resharper_EnableAndHandleEscape()
         {
             var count = 0;
             _buffer.KeyInputProcessed += delegate { count++; };
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(true).Verifiable();
             Assert.IsTrue(RunQueryStatus(KeyInputUtil.EscapeKey));
-            Assert.IsTrue(_targetRaw.SwallowIfNextExecMatches.IsSome());
-            Assert.AreEqual(KeyInputUtil.EscapeKey, _targetRaw.SwallowIfNextExecMatches.Value);
+            Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsSome(KeyInputUtil.EscapeKey));
             Assert.AreEqual(1, count);
+            _factory.Verify();
+        }
+
+        /// <summary>
+        /// When Back is processed as a command make sure we handle it in QueryStatus and hide
+        /// it from R#.  Back in R# is used to do special parens delete and we don't want that
+        /// overriding a command
+        /// </summary>
+        [Test]
+        public void QueryStatus_Reshaper_BackspaceAsCommand()
+        {
+            var backKeyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Back);
+            var count = 0;
+            _buffer.KeyInputProcessed += delegate { count++; };
+            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(true).Verifiable();
+            Assert.IsTrue(_buffer.CanProcessAsCommand(backKeyInput));
+            Assert.IsFalse(RunQueryStatus(backKeyInput));
+            Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsSome(backKeyInput));
+            Assert.AreEqual(1, count);
+            _factory.Verify();
+        }
+
+        /// <summary>
+        /// When Back is processed as an edit make sure we don't special case it and instead let
+        /// it go back to R# for processing.  They special case Back during edit to do actions
+        /// like matched paren deletion that we want to enable.
+        /// </summary>
+        [Test]
+        public void QueryStatus_Reshaper_BackspaceAsDirectEdit()
+        {
+            var backKeyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Back);
+            var count = 0;
+            _buffer.KeyInputProcessed += delegate { count++; };
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(true).Verifiable();
+            Assert.IsFalse(_buffer.CanProcessAsCommand(backKeyInput));
+            Assert.IsTrue(RunQueryStatus(backKeyInput));
+            Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsNone());
+            Assert.AreEqual(0, count);
             _factory.Verify();
         }
 
@@ -224,23 +269,22 @@ namespace VsVim.UnitTest
             _buffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
             _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(true).Verifiable();
             Assert.IsTrue(RunQueryStatus(KeyInputUtil.EscapeKey));
-            Assert.IsTrue(_targetRaw.SwallowIfNextExecMatches.IsSome());
-            Assert.AreEqual(KeyInputUtil.EscapeKey, _targetRaw.SwallowIfNextExecMatches.Value);
+            Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsSome(KeyInputUtil.EscapeKey));
             Assert.AreEqual(1, count);
             _factory.Verify();
         }
 
         /// <summary>
-        /// The Backspace key isn't special so don't special case it in R#
+        /// The PageUp key isn't special so don't special case it in R#
         /// </summary>
         [Test]
-        public void QueryStatus_HandleBackspaceNormallyInResharperMode()
+        public void QueryStatus_Reshaprer_HandlePageUpNormally()
         {
             var count = 0;
             _buffer.KeyInputProcessed += delegate { count++; };
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(true).Verifiable();
-            Assert.IsTrue(RunQueryStatus(KeyInputUtil.VimKeyToKeyInput(VimKey.Back)));
+            Assert.IsTrue(RunQueryStatus(KeyInputUtil.VimKeyToKeyInput(VimKey.PageUp)));
             Assert.AreEqual(0, count);
             _factory.Verify();
         }
@@ -252,37 +296,35 @@ namespace VsVim.UnitTest
         /// Enter to be a command and not an edit, for example in normal mode
         /// </summary>
         [Test]
-        public void QueryStatus_Resharper_HandleEnterInDebugModeIfCommand()
+        public void QueryStatus_Resharper_EnterAsCommand()
         {
             _textView.SetText("cat", "dog");
             _textView.MoveCaretTo(0);
             _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(true).Verifiable();
-            _adapter.SetupGet(x => x.InDebugMode).Returns(true).Verifiable();
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             Assert.IsTrue(_buffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
-            Assert.IsTrue(RunQueryStatus(KeyInputUtil.EnterKey));
+            Assert.IsFalse(RunQueryStatus(KeyInputUtil.EnterKey));
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            Assert.AreEqual(KeyInputUtil.EnterKey, _targetRaw.SwallowIfNextExecMatches.Value);
+            Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsSome(KeyInputUtil.EnterKey));
             _factory.Verify();
         }
 
         /// <summary>
-        /// If Enter isn't going to be processed as a command then don't special case it in Debug
+        /// If Enter isn't going to be processed as a command then don't special case it
         /// mode for R#.  It would be an edit and we don't want to interfere with R#'s handling 
         /// of edits
         /// </summary>
         [Test]
-        public void QueryStatus_Resharper_DontHandleEnterInDebugModeIfNotCommand()
+        public void QueryStatus_Resharper_EnterAsDirectEdit()
         {
             _textView.SetText("cat", "dog");
             _textView.MoveCaretTo(0);
             var savedSnapshot = _textView.TextSnapshot;
             _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(true).Verifiable();
-            _adapter.SetupGet(x => x.InDebugMode).Returns(true).Verifiable();
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             Assert.IsFalse(_buffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
             Assert.IsTrue(RunQueryStatus(KeyInputUtil.EnterKey));
-            Assert.IsTrue(_targetRaw.SwallowIfNextExecMatches.IsNone());
+            Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsNone());
             Assert.AreEqual(_textView.GetLine(0).Start, _textView.GetCaretPoint());
             Assert.AreSame(savedSnapshot, _textView.TextSnapshot);
             _factory.Verify();
@@ -298,13 +340,40 @@ namespace VsVim.UnitTest
             _factory.Verify();
         }
 
+        /// <summary>
+        /// If a given KeyInput is marked for discarding make sure we don't pass it along to the
+        /// next IOleCommandTarget.
+        ///
+        /// Also make sure that the Exec clears the discarded KeyInput
+        /// </summary>
         [Test]
-        public void Exec_SwallowShouldNotPassOnTheCommandIfMatches()
+        public void Exec_DiscardedKeyInput()
         {
-            _targetRaw.SwallowIfNextExecMatches = FSharpOption.Create(KeyInputUtil.EscapeKey);
+            _bufferCoordinator.DiscardedKeyInput = FSharpOption.Create(KeyInputUtil.EscapeKey);
             RunExec(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(_targetRaw.SwallowIfNextExecMatches.IsNone());
+            Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsNone());
             _factory.Verify();
+        }
+
+        /// <summary>
+        /// The Exec method should clear out the discarded KeyInput value.  The discard is only
+        /// meant to last for a single key stroke so the next Exec or QueryStatus should clear it 
+        /// out.  
+        /// 
+        /// The clear of discard happens irrespective of what the current KeyInput is.  The point
+        /// of DiscardedKeyInput is to prevent user input for a single key stroke.  If Exec comes
+        /// along with a different KeyInput then clearly another KeyInput has happened and we 
+        /// are done
+        /// </summary>
+        [Test]
+        public void Exec_ClearDiscardedKeyInput()
+        {
+            _bufferCoordinator.DiscardedKeyInput = FSharpOption.Create(KeyInputUtil.EnterKey);
+
+            // Make sur Ecape isn't handled so it will go to the next IOleCommandTarget
+            Assert.IsTrue(_buffer.CanProcess(KeyInputUtil.EscapeKey));
+            RunExec(KeyInputUtil.EscapeKey);
+            Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsNone());
         }
 
         [Test]
@@ -384,7 +453,6 @@ namespace VsVim.UnitTest
             Assert.IsTrue(_buffer.BufferedRemapKeyInputs.IsEmpty);
             _nextTarget.Verify();
         }
-
     }
 }
 

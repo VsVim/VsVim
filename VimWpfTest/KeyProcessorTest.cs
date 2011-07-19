@@ -20,6 +20,10 @@ namespace Vim.UI.Wpf.Test
             Setup(null);
         }
 
+        /// <summary>
+        /// Setup the KeyProcessor giving it the keyboard layout specified by the provided
+        /// language id
+        /// </summary>
         protected virtual void Setup(string languageId)
         {
             if (!String.IsNullOrEmpty(languageId))

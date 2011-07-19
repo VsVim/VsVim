@@ -46,6 +46,7 @@ namespace VsVim
         private readonly Dictionary<IVimBuffer, BufferData> _bufferMap = new Dictionary<IVimBuffer, BufferData>();
         private readonly IVsAdapter _adapter;
         private readonly IProtectedOperations _protectedOperations;
+        private readonly IVimBufferCoordinatorFactory _bufferCoordinatorFactory;
 
         [ImportingConstructor]
         public HostFactory(
@@ -59,7 +60,8 @@ namespace VsVim
             IExternalEditorManager externalEditorManager,
             IDisplayWindowBrokerFactoryService displayWindowBrokerFactoryService,
             IVsAdapter adapter,
-            IProtectedOperations protectedOperations)
+            IProtectedOperations protectedOperations,
+            IVimBufferCoordinatorFactory bufferCoordinatorFactory)
         {
             _vim = vim;
             _keyBindingService = keyBindingService;
@@ -71,6 +73,7 @@ namespace VsVim
             _adaptersFactory = adaptersFactory;
             _adapter = adapter;
             _protectedOperations = protectedOperations;
+            _bufferCoordinatorFactory = bufferCoordinatorFactory;
         }
 
         private void MaybeLoadVimRc()
@@ -191,7 +194,8 @@ namespace VsVim
             }
 
             var broker = _displayWindowBrokerFactoryServcie.CreateDisplayWindowBroker(textView);
-            var result = VsCommandTarget.Create(buffer, vsView, _adapter, broker, _externalEditorManager);
+            var bufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(buffer);
+            var result = VsCommandTarget.Create(bufferCoordinator, vsView, _adapter, broker, _externalEditorManager);
             if (result.IsSuccess)
             {
                 // Store the value for debugging
