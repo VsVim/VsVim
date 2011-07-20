@@ -87,14 +87,8 @@ namespace Vim.UI.Wpf
                 }
             }
 
-            if (handled)
-            {
-                args.Handled = true;
-            }
-            else
-            {
-                base.TextInput(args);
-            }
+            args.Handled = handled;
+            base.TextInput(args);
         }
 
         /// <summary>
@@ -163,15 +157,8 @@ namespace Vim.UI.Wpf
                 handled = false;
             }
 
-            if (handled)
-            {
-                args.Handled = true;
-            }
-            else
-            {
-                base.KeyDown(args);
-            }
+            args.Handled = handled;
+            base.KeyDown(args);
         }
-
     }
 }

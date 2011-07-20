@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Windows.Input;
+using Microsoft.FSharp.Core;
 using Vim;
 using Vim.UI.Wpf;
-using Microsoft.FSharp.Core;
 
 namespace VsVim
 {
@@ -32,10 +32,15 @@ namespace VsVim
         /// <summary>
         /// This method is called to process KeyInput in any fashion by the IVimBuffer.  There are 
         /// several cases where we want to defer to Visual Studio and IOleCommandTarget for processing
-        /// of a command.  In particular we don't want to process any 
+        /// of a command.  In particular we don't want to process any text input here
         /// </summary>
         protected override bool TryProcess(KeyInput keyInput)
         {
+            if (TryProcessCore(keyInput))
+            {
+                return true;
+            }
+
             // Don't handle input when incremental search is active.  Let Visual Studio handle it
             if (_adapter.IsIncrementalSearchActive(TextView))
             {
@@ -51,12 +56,6 @@ namespace VsVim
                 return false;
             }
 
-            // Check to see if we should be discarding this KeyInput value
-            if (_bufferCoordinator.DiscardedKeyInput.IsSome(keyInput))
-            {
-                return true;
-            }
-
             return base.TryProcess(keyInput);
         }
 
@@ -65,13 +64,34 @@ namespace VsVim
         /// </summary>
         protected override bool TryProcessAsCommand(KeyInput keyInput)
         {
-            // Check to see if we should be discarding this KeyInput value
-            if (_bufferCoordinator.DiscardedKeyInput.IsSome(keyInput))
+            if (TryProcessCore(keyInput))
             {
                 return true;
             }
 
+            // Don't handle input when incremental search is active.  Let Visual Studio handle it
+            if (_adapter.IsIncrementalSearchActive(TextView))
+            {
+                return false;
+            }
+
             return base.TryProcessAsCommand(keyInput);
+        }
+
+        /// <summary>
+        /// Implement the common logic for TryProcess as it relates to Visual Studio specific 
+        /// input
+        /// </summary>
+        private bool TryProcessCore(KeyInput keyInput)
+        {
+            // Check to see if we should be discarding this KeyInput value.  If the KeyInput matches
+            // then we mark the KeyInput as handled since it's the value we want to discard.  In either
+            // case though we clear out the discarded KeyInput value.  This value is only meant to
+            // last for a single key stroke.
+            var handled = _bufferCoordinator.DiscardedKeyInput.IsSome(keyInput);
+            _bufferCoordinator.DiscardedKeyInput = FSharpOption<KeyInput>.None;
+
+            return handled;
         }
 
         /// <summary>
@@ -85,23 +105,23 @@ namespace VsVim
         /// </summary>
         public override void KeyDown(KeyEventArgs args)
         {
-            // Don't intercept keystrokes if Visual Studio IncrementalSearch is active
-            if (_adapter.IsIncrementalSearchActive(TextView))
-            {
-                return;
-            }
-
             base.KeyDown(args);
             if (args.Handled)
             {
                 return;
             }
 
+            // Don't attempt to handle this if we're in an incremental search
+            if (_adapter.IsIncrementalSearchActive(TextView))
+            {
+                return;
+            }
+
             // Don't process anything unless we're in a case where TranslateAccelorator would 
             // win.  Also get rid of the problem cases from the start
-            if (!_adapter.IsReadOnly(TextBuffer)
-                || !KeyUtil.IsInputKey(args.Key)
-                || KeyUtil.IsAltGr(args.KeyboardDevice.Modifiers))
+            if (!_adapter.IsReadOnly(TextBuffer) ||
+                !KeyUtil.IsInputKey(args.Key) ||
+                KeyUtil.IsAltGr(args.KeyboardDevice.Modifiers))
             {
                 return;
             }
