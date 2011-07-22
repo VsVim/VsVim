@@ -407,12 +407,19 @@ type internal CommandUtil
     /// Delete till the end of the line and start insert mode
     member x.ChangeTillEndOfLine count register =
 
-        // Exact same operation as DeleteTillEndOfLine except we end by switching to 
-        // insert mode.  Use a transaction so we can pass it to insert mode and get
-        // the appropriate undo / redo behavior
+        // The actual text edit portion of this operation is identical to the 
+        // DeleteTillEndOfLine operation.  There is a difference though in the
+        // positioning of the caret.  DeleteTillEndOfLine needs to consider the virtual
+        // space settings since it remains in normal mode but change does not due
+        // to it switching to insert mode
+        let caretPosition = x.CaretPoint.Position
         x.EditWithLinkedChange "ChangeTillEndOfLine" (fun () ->
+            x.DeleteTillEndOfLineCore count register
 
-            x.DeleteTillEndOfLine count register |> ignore)
+            // Move the caret back to it's original position.  Don't consider virtual
+            // space here since we're switching to insert mode
+            let point = SnapshotPoint(x.CurrentSnapshot, caretPosition)
+            _operations.MoveCaretToPoint point)
 
     /// Delete the selected text in Visual Mode and begin insert mode with a linked
     /// transaction. 
@@ -723,8 +730,24 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete from the cursor to the end of the line and then 'count - 1' more lines into
-    /// the buffer.
+    /// the buffer.  This is the implementation of the 'D' command
     member x.DeleteTillEndOfLine count register =
+
+        let caretPosition = x.CaretPoint.Position
+
+        // The caret is already at the start of the Span and it needs to be after the 
+        // delete so wrap it in an undo transaction
+        x.EditWithUndoTransaciton "Delete" (fun () -> 
+            x.DeleteTillEndOfLineCore count register
+
+            // Move the caret back to the original position in the ITextBuffer.
+            let point = SnapshotPoint(x.CurrentSnapshot, caretPosition)
+            _operations.MoveCaretToPointAndCheckVirtualSpace point)
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Delete from the caret to the end of the line and 'count - 1' more lines
+    member x.DeleteTillEndOfLineCore count register = 
         let span = 
             if count = 1 then
                 // Just deleting till the end of the caret line
@@ -735,21 +758,12 @@ type internal CommandUtil
                 let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
                 SnapshotSpan(x.CaretPoint, range.End)
 
-        // The caret is already at the start of the Span and it needs to be after the 
-        // delete so wrap it in an undo transaction
-        x.EditWithUndoTransaciton "Delete" (fun () -> 
-            _textBuffer.Delete(span.Span) |> ignore
+        _textBuffer.Delete(span.Span) |> ignore
 
-            // Get the point on the current ITextSnapshot
-            let point = SnapshotPoint(x.CurrentSnapshot, span.Start.Position)
-            _operations.MoveCaretToPointAndCheckVirtualSpace point)
-
-        // Delete is complete so update the register.  Strangely enough this is a characterwise
+        // Delete is complete so update the register.  Strangely enough this is a character wise
         // operation even though it involves line deletion
         let value = RegisterValue.String (StringData.OfSpan span, OperationKind.CharacterWise)
         _registerMap.SetRegisterValue register RegisterOperation.Delete value
-
-        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
     /// an edit command manipulates the caret

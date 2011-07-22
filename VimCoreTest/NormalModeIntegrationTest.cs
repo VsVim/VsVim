@@ -642,6 +642,67 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Changing till the end of the line should leave the caret in it's current position
+        /// </summary>
+        [Test]
+        public void Change_TillEndOfLine_NoVirtualEdit()
+        {
+            Create("hello", "world");
+            _textView.MoveCaretTo(2);
+            _buffer.LocalSettings.GlobalSettings.VirtualEdit = "";
+            _buffer.Process("C");
+            Assert.AreEqual("he", _textView.GetLine(0).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+        }
+
+        /// <summary>
+        /// Changing till the end of the line should leave the caret in it's current position.  The virtual
+        /// edit setting shouldn't affect this
+        /// </summary>
+        [Test]
+        public void Change_TillEndOfLine_VirtualEditOneMore()
+        {
+            Create("hello", "world");
+            _textView.MoveCaretTo(2);
+            _buffer.LocalSettings.GlobalSettings.VirtualEdit = "onemore";
+            _buffer.Process("C");
+            Assert.AreEqual("he", _textView.GetLine(0).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+        }
+
+        /// <summary>
+        /// Verify that doing a change till the end of the line won't move the cursor
+        /// </summary>
+        [Test]
+        public void Change_Motion_EndOfLine_NoVirtualEdit()
+        {
+            Create("hello", "world");
+            _textView.MoveCaretTo(2);
+            _buffer.LocalSettings.GlobalSettings.VirtualEdit = "";
+            _buffer.Process("c$");
+            Assert.AreEqual("he", _textView.GetLine(0).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+        }
+
+        /// <summary>
+        /// Verify that doing a change till the end of the line won't move the cursor
+        /// </summary>
+        [Test]
+        public void Change_Motion_EndOfLine_VirtualEditOneMore()
+        {
+            Create("hello", "world");
+            _textView.MoveCaretTo(2);
+            _buffer.LocalSettings.GlobalSettings.VirtualEdit = "onemore";
+            _buffer.Process("c$");
+            Assert.AreEqual("he", _textView.GetLine(0).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+        }
+
+        /// <summary>
         /// Make sure the d#d syntax doesn't apply to other commands like change.  The 'd' suffix in 'd#d' is 
         /// *not* a valid motion
         /// </summary>
