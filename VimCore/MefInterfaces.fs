@@ -168,6 +168,9 @@ type ITextChangeTracker =
     /// Current change
     abstract CurrentChange : TextChange option
 
+    /// Complete the current change if there is on
+    abstract CompleteChange : unit -> unit
+
     /// Raised when a change is completed
     [<CLIEvent>]
     abstract ChangeCompleted : IEvent<TextChange>

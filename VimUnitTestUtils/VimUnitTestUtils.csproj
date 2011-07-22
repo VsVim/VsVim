@@ -199,7 +199,6 @@
     <Compile Include="Mock\MockObjectFactory.cs" />
     <Compile Include="Mock\MockPresentationSource.cs" />
     <Compile Include="Mock\MockRegisterValueBacking.cs" />
-    <Compile Include="Mock\MockTextChangeTracker.cs" />
     <Compile Include="Mock\MockVimBuffer.cs" />
     <Compile Include="Mock\MockVimHost.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

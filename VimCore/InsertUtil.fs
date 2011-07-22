@@ -47,6 +47,18 @@ type internal InsertUtil
     member x.EditWithUndoTransaciton<'T> (name : string) (action : unit -> 'T) : 'T = 
         _undoRedoOperations.EditWithUndoTransaction name action
 
+    /// Delete all of the indentation on the current line.  This should not affect caret
+    /// position
+    member x.DeleteAllIndent () =
+
+        let indentSpan = 
+            let endPoint = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
+            SnapshotSpan(x.CaretLine.Start, endPoint)
+
+        _textBuffer.Delete(indentSpan.Span) |> ignore
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Insert a new line into the ITextBuffer
     member x.InsertNewLine() =
         _textBuffer.Insert(x.CaretPoint.Position, System.Environment.NewLine) |> ignore
@@ -75,6 +87,7 @@ type internal InsertUtil
 
     member x.RunInsertCommand command = 
         match command with
+        | InsertCommand.DeleteAllIndent -> x.DeleteAllIndent() 
         | InsertCommand.InsertNewLine -> x.InsertNewLine()
         | InsertCommand.InsertTab -> x.InsertTab()
         | InsertCommand.ShiftLineLeft -> x.ShiftLineLeft ()

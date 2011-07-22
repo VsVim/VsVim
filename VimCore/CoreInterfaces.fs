@@ -1299,6 +1299,9 @@ type VisualCommand =
 [<NoComparison>]
 type InsertCommand  =
 
+    /// Delete all indentation on the current line
+    | DeleteAllIndent
+
     /// Insert a new line into the ITextBuffer
     | InsertNewLine
 
@@ -1601,6 +1604,13 @@ type TextChange =
     | Combination of TextChange * TextChange
 
     with 
+
+    /// Get the last / most recent change in the TextChange tree
+    member x.LastChange = 
+        match x with
+        | Insert _ -> x
+        | Delete _ -> x
+        | Combination (_, right) -> right.LastChange
 
     /// Merge two TextChange values together.  The goal is to produce a the smallest TextChange
     /// value possible

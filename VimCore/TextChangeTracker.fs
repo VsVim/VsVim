@@ -48,7 +48,7 @@ type internal TextChangeTracker
 
         // Mode switches end the current edit
         _buffer.SwitchedMode 
-        |> Observable.subscribe (fun _ -> this.ChangeCompleted())
+        |> Observable.subscribe (fun _ -> this.CompleteChange())
         |> _bag.Add
 
         _buffer.Closed |> Event.add (fun _ -> _bag.DisposeAll())
@@ -56,11 +56,11 @@ type internal TextChangeTracker
     member x.CurrentChange = 
         match _currentTextChange with
         | None -> None
-        | Some(change,_) -> Some change
+        | Some (change,_) -> Some change
 
     /// The change is completed.  Raises the changed event and resets the current text change 
     /// state
-    member x.ChangeCompleted() = 
+    member x.CompleteChange() = 
         match _currentTextChange with
         | None -> 
             ()
@@ -116,7 +116,7 @@ type internal TextChangeTracker
             | None -> _currentTextChange <- Some (newTextChange, newBufferChange)
             | Some (oldTextChange, oldBufferChange) -> x.MergeChange oldTextChange oldBufferChange newTextChange newBufferChange 
         else
-            x.ChangeCompleted()
+            x.CompleteChange()
 
     /// Attempt to merge the change operations together
     member x.MergeChange oldTextChange (oldChange : ITextChange) newTextChange (newChange : ITextChange) =
@@ -147,26 +147,26 @@ type internal TextChangeTracker
         else
             // If we can't merge then the previous change is complete and we can switch our focus to 
             // the new TextChange value
-            x.ChangeCompleted()
+            x.CompleteChange()
             _currentTextChange <- Some (newTextChange, newChange)
-
 
     /// This is raised when caret changes.  If this is the result of a user click then 
     /// we need to complete the change.
     member x.OnCaretPositionChanged () = 
         if _mouse.IsLeftButtonPressed then 
-            x.ChangeCompleted()
+            x.CompleteChange()
         elif _buffer.ModeKind = ModeKind.Insert then 
             let keyMove = 
                 [ VimKey.Left; VimKey.Right; VimKey.Up; VimKey.Down ]
                 |> Seq.map (fun k -> KeyInputUtil.VimKeyToKeyInput k)
                 |> Seq.filter (fun k -> _keyboard.IsKeyDown k.Key)
                 |> SeqUtil.isNotEmpty
-            if keyMove then x.ChangeCompleted()
+            if keyMove then x.CompleteChange()
 
     interface ITextChangeTracker with 
         member x.VimBuffer = _buffer
         member x.CurrentChange = x.CurrentChange
+        member x.CompleteChange () = x.CompleteChange ()
         [<CLIEvent>]
         member x.ChangeCompleted = _changeCompletedEvent.Publish
 

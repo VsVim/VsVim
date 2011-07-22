@@ -59,6 +59,7 @@ type internal InsertMode
     ) as this =
 
     let _textView = _buffer.TextView
+    let _textBuffer = _buffer.TextBuffer
     let _editorOperations = _operations.EditorOperations
     let _commandRanEvent = Event<_>()
     let mutable _commandMap : Map<KeyInput, CommandFunction> = Map.empty
@@ -82,26 +83,20 @@ type internal InsertMode
                 ("<C-o>", this.ProcessNormalModeOneCommand)
             ]
 
-        let commands : (string * InsertCommand) list =
+        let commands : (string * InsertCommand * bool) list =
             [
-                ("<C-i>", InsertCommand.InsertTab)
-                ("<C-d>", InsertCommand.ShiftLineLeft)
-                ("<C-m>", InsertCommand.InsertNewLine)
-                ("<C-t>", InsertCommand.ShiftLineRight)
+                ("<C-i>", InsertCommand.InsertTab, false)
+                ("<C-d>", InsertCommand.ShiftLineLeft, true)
+                ("<C-m>", InsertCommand.InsertNewLine, false)
+                ("<C-t>", InsertCommand.ShiftLineRight, true)
             ]
 
         let mappedCommands : (string * CommandFunction) list = 
             commands
-            |> Seq.map (fun (name, command) ->
+            |> Seq.map (fun (name, command, completesChange) ->
                 let func () = 
                     let keyInputSet = KeyNotationUtil.StringToKeyInputSet name
-                    let result = _insertUtil.RunInsertCommand command
-                    let data = {
-                        CommandBinding = CommandBinding.InsertBinding (keyInputSet, CommandFlags.Repeatable, command)
-                        Command = Command.InsertCommand command
-                        CommandResult = result }
-                    _commandRanEvent.Trigger data
-                    ProcessResult.OfCommandResult result
+                    this.RunInsertCommand command keyInputSet CommandFlags.Repeatable completesChange
                 (name, func))
             |> List.ofSeq
 
@@ -329,16 +324,75 @@ type internal InsertMode
         else
             x.IsDirectInsert ki
 
-    /// Process the KeyInput
-    member x.Process ki = 
-        match Map.tryFind ki _commandMap with
-        | Some(func) -> 
-            func()
-        | None -> 
-            if x.IsDirectInsert ki then 
-                x.ProcessDirectInsert ki
-            else
-                ProcessResult.NotHandled
+    /// Run the insert command with the given information
+    member x.RunInsertCommand command keyInputSet commandFlags completesChange = 
+
+        // Certain commands don't have an relation to the inserted text and effectively 
+        // complete the existing text change.  
+        if completesChange then
+            _textChangeTracker.CompleteChange()
+
+        let result = _insertUtil.RunInsertCommand command
+        let data = {
+            CommandBinding = CommandBinding.InsertBinding (keyInputSet, commandFlags, command)
+            Command = Command.InsertCommand command
+            CommandResult = result }
+        _commandRanEvent.Trigger data
+        ProcessResult.OfCommandResult result
+
+    /// Try and process the KeyInput by considering the current text edit in Insert Mode
+    member x.ProcessWithCurrentChange keyInput = 
+
+        // Actually try and process this with the current change 
+        let func (text : string) = 
+            let data = 
+                if text.EndsWith("0") && keyInput = KeyInputUtil.CharWithControlToKeyInput 'd' then
+                    let keyInputSet = KeyNotationUtil.StringToKeyInputSet "0<C-d>"
+                    Some (InsertCommand.DeleteAllIndent, keyInputSet, "0")
+                else
+                    None
+
+            match data with
+            | None ->
+                None
+            | Some (command, keyInputSet, text) ->
+
+                // First step is to delete the portion of the current change which matches up with
+                // our command.
+                if x.CaretPoint.Position >= text.Length then
+                    let span = 
+                        let startPoint = SnapshotPoint(x.CurrentSnapshot, x.CaretPoint.Position - text.Length)
+                        SnapshotSpan(startPoint, text.Length)
+                    _textBuffer.Delete(span.Span) |> ignore
+
+                // Now run the command
+                x.RunInsertCommand command keyInputSet CommandFlags.Repeatable true |> Some
+
+        match _textChangeTracker.CurrentChange with
+        | None ->
+            None
+        | Some textChange ->
+            match textChange.LastChange with
+            | TextChange.Insert text -> func text
+            | TextChange.Delete _ -> None
+            | TextChange.Combination _ -> None
+
+    /// Process the KeyInput value
+    member x.Process keyInput = 
+
+        // First try and process by examining the current change
+        match x.ProcessWithCurrentChange keyInput with
+        | Some result ->
+            result
+        | None ->
+            match Map.tryFind keyInput _commandMap with
+            | Some func -> 
+                func()
+            | None -> 
+                if x.IsDirectInsert keyInput then 
+                    x.ProcessDirectInsert keyInput
+                else
+                    ProcessResult.NotHandled
 
     /// Entering an insert or replace mode.  Setup the InsertSessionData based on the 
     /// ModeArgument value. 
