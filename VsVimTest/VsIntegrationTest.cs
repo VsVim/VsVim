@@ -58,7 +58,7 @@ namespace VsVim.UnitTest
         public void Resharper_Back_ParenWorksInInsert()
         {
             Create(true, "method();", "next");
-            _textView.MoveCaretTo(8);
+            _textView.MoveCaretTo(7);
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _simulation.Run(VimKey.Back);
             Assert.AreEqual("method;", _textView.GetLine(0).GetText());

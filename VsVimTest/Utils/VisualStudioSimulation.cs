@@ -161,8 +161,8 @@ namespace VsVim.UnitTest.Utils
         /// </summary>
         private sealed class ResharperCommandTarget : IOleCommandTarget
         {
-            private ITextView _textView;
-            private IOleCommandTarget _nextCommandTarget;
+            private readonly ITextView _textView;
+            private readonly IOleCommandTarget _nextCommandTarget;
 
             internal ResharperCommandTarget(ITextView textView, IOleCommandTarget nextCommandTarget)
             {
@@ -190,13 +190,13 @@ namespace VsVim.UnitTest.Utils
             {
                 var caretPoint = _textView.GetCaretPoint();
                 if (caretPoint.Position < 2 ||
-                    caretPoint.Subtract(1).GetChar() != ')' ||
-                    caretPoint.Subtract(2).GetChar() != '(')
+                    caretPoint.GetChar() != ')' ||
+                    caretPoint.Subtract(1).GetChar() != '(')
                 {
                     return false;
                 }
 
-                var span = new Span(caretPoint.Position - 2, 2);
+                var span = new Span(caretPoint.Position - 1, 2);
                 _textView.TextBuffer.Delete(span);
                 return true;
             }
