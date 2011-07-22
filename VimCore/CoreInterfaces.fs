@@ -1299,6 +1299,9 @@ type VisualCommand =
 [<NoComparison>]
 type InsertCommand  =
 
+    /// Insert a new line into the ITextBuffer
+    | InsertNewLine
+
     /// Insert a tab into the ITextBuffer
     | InsertTab
 

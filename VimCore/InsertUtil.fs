@@ -47,6 +47,11 @@ type internal InsertUtil
     member x.EditWithUndoTransaciton<'T> (name : string) (action : unit -> 'T) : 'T = 
         _undoRedoOperations.EditWithUndoTransaction name action
 
+    /// Insert a new line into the ITextBuffer
+    member x.InsertNewLine() =
+        _textBuffer.Insert(x.CaretPoint.Position, System.Environment.NewLine) |> ignore
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Insert a single tab into the ITextBuffer.  If 'expandtab' is enabled then insert
     /// the appropriate number of spaces
     member x.InsertTab () =
@@ -70,6 +75,7 @@ type internal InsertUtil
 
     member x.RunInsertCommand command = 
         match command with
+        | InsertCommand.InsertNewLine -> x.InsertNewLine()
         | InsertCommand.InsertTab -> x.InsertTab()
         | InsertCommand.ShiftLineLeft -> x.ShiftLineLeft ()
         | InsertCommand.ShiftLineRight -> x.ShiftLineRight ()

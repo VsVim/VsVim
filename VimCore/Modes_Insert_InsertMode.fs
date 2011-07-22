@@ -86,6 +86,7 @@ type internal InsertMode
             [
                 ("<C-i>", InsertCommand.InsertTab)
                 ("<C-d>", InsertCommand.ShiftLineLeft)
+                ("<C-m>", InsertCommand.InsertNewLine)
                 ("<C-t>", InsertCommand.ShiftLineRight)
             ]
 
