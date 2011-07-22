@@ -84,6 +84,7 @@ type internal InsertMode
 
         let commands : (string * InsertCommand) list =
             [
+                ("<C-i>", InsertCommand.InsertTab)
                 ("<C-d>", InsertCommand.ShiftLineLeft)
                 ("<C-t>", InsertCommand.ShiftLineRight)
             ]

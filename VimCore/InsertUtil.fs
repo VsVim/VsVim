@@ -16,6 +16,7 @@ type internal InsertUtil
     let _textBuffer = _textView.TextBuffer
     let _localSettings = _bufferData.LocalSettings
     let _globalSettings = _localSettings.GlobalSettings
+    let _undoRedoOperations = _bufferData.UndoRedoOperations
 
     /// The column of the caret
     member x.CaretColumn = SnapshotPointUtil.GetColumn x.CaretPoint
@@ -41,8 +42,35 @@ type internal InsertUtil
     /// The current ITextSnapshot instance for the ITextBuffer
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
+    /// Run the specified action with a wrapped undo transaction.  This is often necessary when
+    /// an edit command manipulates the caret
+    member x.EditWithUndoTransaciton<'T> (name : string) (action : unit -> 'T) : 'T = 
+        _undoRedoOperations.EditWithUndoTransaction name action
+
+    /// Insert a single tab into the ITextBuffer.  If 'expandtab' is enabled then insert
+    /// the appropriate number of spaces
+    member x.InsertTab () =
+
+        x.EditWithUndoTransaciton "Insert Tab" (fun () -> 
+
+            let text = 
+                if _localSettings.ExpandTab then
+                    StringUtil.repeatChar _globalSettings.ShiftWidth ' '
+                else
+                    "\t"
+
+            let position = x.CaretPoint.Position + text.Length
+            _textBuffer.Insert(x.CaretPoint.Position, text) |> ignore
+
+            // Move the caret to the end of the insertion
+            let point = SnapshotPoint(x.CurrentSnapshot, position)
+            _operations.MoveCaretToPoint point)
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     member x.RunInsertCommand command = 
         match command with
+        | InsertCommand.InsertTab -> x.InsertTab()
         | InsertCommand.ShiftLineLeft -> x.ShiftLineLeft ()
         | InsertCommand.ShiftLineRight -> x.ShiftLineRight ()
 

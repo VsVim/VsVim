@@ -15,6 +15,8 @@ namespace VimCore.UnitTest
         private ITextView _textView;
         private InsertUtil _insertUtilRaw;
         private IInsertUtil _insertUtil;
+        private IVimLocalSettings _localSettings;
+        private IVimGlobalSettings _globalSettings;
 
         /// <summary>
         /// Create the IVimBuffer with the given set of lines.  Note that we intentionally don't
@@ -26,10 +28,27 @@ namespace VimCore.UnitTest
         {
             _textView = EditorUtil.CreateTextView(lines);
             _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
+            _globalSettings = _buffer.GlobalSettings;
+            _localSettings = _buffer.LocalSettings;
             _insertUtilRaw = new InsertUtil(
                 _buffer.VimBufferData,
                 EditorUtil.FactoryService.CommonOperationsFactory.GetCommonOperations(_buffer.VimBufferData));
             _insertUtil = _insertUtilRaw;
+        }
+
+        /// <summary>
+        /// Make sure the caret position is correct when inserting in the middle of a word
+        /// </summary>
+        [Test]
+        public void InsertTab_MiddleOfText()
+        {
+            Create("hello");
+            _textView.MoveCaretTo(2);
+            _localSettings.ExpandTab = true;
+            _globalSettings.ShiftWidth = 3;
+            _insertUtilRaw.InsertTab();
+            Assert.AreEqual("he   llo", _textView.GetLine(0).GetText());
+            Assert.AreEqual(5, _textView.GetCaretPoint().Position);
         }
 
         /// <summary>

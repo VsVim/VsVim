@@ -1299,6 +1299,9 @@ type VisualCommand =
 [<NoComparison>]
 type InsertCommand  =
 
+    /// Insert a tab into the ITextBuffer
+    | InsertTab
+
     /// Shift the current line one indent width to the left
     | ShiftLineLeft 
 
