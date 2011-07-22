@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 using Vim.Extensions;
+using Vim.UI.Wpf;
 
 namespace VsVim.ExternalEdit
 {
@@ -26,6 +27,8 @@ namespace VsVim.ExternalEdit
         }
 
         private readonly IVimBuffer _buffer;
+        private readonly ITextView _textView;
+        private readonly IProtectedOperations _protectedOperations;
         private readonly Result<IVsTextLines> _vsTextLines;
         private readonly Result<ITagger<ITag>> _tagger;
         private readonly ReadOnlyCollection<IExternalEditAdapter> _externalEditorAdapters;
@@ -53,16 +56,19 @@ namespace VsVim.ExternalEdit
 
         internal ExternalEditMonitor(
             IVimBuffer buffer,
+            IProtectedOperations protectedOperations,
             Result<IVsTextLines> vsTextLines,
             Result<ITagger<ITag>> tagger,
             ReadOnlyCollection<IExternalEditAdapter> externalEditorAdapters)
         {
             _vsTextLines = vsTextLines;
+            _protectedOperations = protectedOperations;
             _externalEditorAdapters = externalEditorAdapters;
             _tagger = tagger;
             _buffer = buffer;
             _buffer.TextView.LayoutChanged += OnLayoutChanged;
             _buffer.SwitchedMode += OnSwitchedMode;
+            _textView = _buffer.TextView;
 
             if (_tagger.IsSuccess)
             {
@@ -238,10 +244,21 @@ namespace VsVim.ExternalEdit
                 {
                     var saved = _queuedCheckKind ?? kind;
                     _queuedCheckKind = null;
+
+                    // The ITextView can close in between the time of dispatch and the actual 
+                    // execution of the call.  
+                    //
+                    // In addition to being the right thing to do by bailing out early, there are parts 
+                    // of the SHIM layer which can't handle being called after the ITextView is 
+                    // called.  EnumMarkers for example will throw a NullReferenceException.
+                    if (_textView.IsClosed)
+                    {
+                        return;
+                    }
                     PerformCheck(saved);
                 };
 
-            Dispatcher.CurrentDispatcher.BeginInvoke(doCheck, DispatcherPriority.Loaded);
+            _protectedOperations.BeginInvoke(doCheck, DispatcherPriority.Loaded);
         }
 
         internal List<SnapshotSpan> GetExternalEditSpans(CheckKind kind)

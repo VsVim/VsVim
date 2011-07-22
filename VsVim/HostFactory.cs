@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.Windows.Threading;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
@@ -10,6 +9,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
+using Vim.UI.Wpf;
 
 namespace VsVim
 {
@@ -45,6 +45,8 @@ namespace VsVim
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
         private readonly Dictionary<IVimBuffer, BufferData> _bufferMap = new Dictionary<IVimBuffer, BufferData>();
         private readonly IVsAdapter _adapter;
+        private readonly IProtectedOperations _protectedOperations;
+        private readonly IVimBufferCoordinatorFactory _bufferCoordinatorFactory;
 
         [ImportingConstructor]
         public HostFactory(
@@ -57,7 +59,9 @@ namespace VsVim
             IVsEditorAdaptersFactoryService adaptersFactory,
             IExternalEditorManager externalEditorManager,
             IDisplayWindowBrokerFactoryService displayWindowBrokerFactoryService,
-            IVsAdapter adapter)
+            IVsAdapter adapter,
+            IProtectedOperations protectedOperations,
+            IVimBufferCoordinatorFactory bufferCoordinatorFactory)
         {
             _vim = vim;
             _keyBindingService = keyBindingService;
@@ -68,6 +72,8 @@ namespace VsVim
             _displayWindowBrokerFactoryServcie = displayWindowBrokerFactoryService;
             _adaptersFactory = adaptersFactory;
             _adapter = adapter;
+            _protectedOperations = protectedOperations;
+            _bufferCoordinatorFactory = bufferCoordinatorFactory;
         }
 
         private void MaybeLoadVimRc()
@@ -123,7 +129,7 @@ namespace VsVim
                 }
             };
 
-            Dispatcher.CurrentDispatcher.BeginInvoke(doCheck, null);
+            _protectedOperations.BeginInvoke(doCheck);
         }
 
         void IVimBufferCreationListener.VimBufferCreated(IVimBuffer buffer)
@@ -188,7 +194,8 @@ namespace VsVim
             }
 
             var broker = _displayWindowBrokerFactoryServcie.CreateDisplayWindowBroker(textView);
-            var result = VsCommandTarget.Create(buffer, vsView, _adapter, broker, _externalEditorManager);
+            var bufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(buffer);
+            var result = VsCommandTarget.Create(bufferCoordinator, vsView, _adapter, broker, _externalEditorManager);
             if (result.IsSuccess)
             {
                 // Store the value for debugging
@@ -201,7 +208,7 @@ namespace VsVim
             // view.  Occurs for aspx and .js pages
             Action install = () => VsFilterKeysAdapter.TryInstallFilterKeysAdapter(_adapter, _editorOptionsFactoryService, buffer);
 
-            Dispatcher.CurrentDispatcher.BeginInvoke(install, null);
+            _protectedOperations.BeginInvoke(install);
         }
 
 

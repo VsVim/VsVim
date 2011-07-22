@@ -142,10 +142,13 @@
     <Compile Include="ExternalEdit\SnippetExternalEditAdapter.cs" />
     <Compile Include="IExternalEditorManager.cs" />
     <Compile Include="Implementation\TextManager.cs" />
+    <Compile Include="Implementation\VimBufferCoordinator.cs" />
     <Compile Include="Implementation\VsAdapter.cs" />
     <Compile Include="ITextManager.cs" />
+    <Compile Include="IVimBufferCoordinator.cs" />
     <Compile Include="IVsAdapter.cs" />
     <Compile Include="KeyStroke.cs" />
+    <Compile Include="OleCommandData.cs" />
     <Compile Include="OleCommandUtil.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="HostFactory.cs" />
@@ -159,7 +162,7 @@
     <Compile Include="KeyBinding.cs" />
     <Compile Include="Implementation\KeyBindingService.cs" />
     <Compile Include="CommandKeyBindingSnapshot.cs" />
-    <Compile Include="Implementation\KeyProcessorProvider.cs" />
+    <Compile Include="Implementation\VsKeyProcessorProvider.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="Implementation\OptionsProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

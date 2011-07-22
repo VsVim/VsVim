@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Vim;
+using Vim.UI.Wpf;
 
 namespace VsVim.ExternalEdit
 {
@@ -18,6 +19,7 @@ namespace VsVim.ExternalEdit
         private static readonly Guid Resharper5Guid = new Guid("0C6E6407-13FC-4878-869A-C8B4016C57FE");
         private static readonly string ResharperTaggerName = "VsDocumentMarkupTaggerProvider";
 
+        private readonly IProtectedOperations _protectedOperations;
         private readonly IVsAdapter _vsAdapter;
         private readonly IVsShell _vsShell;
         private readonly List<IExternalEditAdapter> _adapterList = new List<IExternalEditAdapter>();
@@ -40,9 +42,10 @@ namespace VsVim.ExternalEdit
         }
 
         [ImportingConstructor]
-        internal ExternalEditorManager(SVsServiceProvider serviceProvider, IVsAdapter vsAdapter)
+        internal ExternalEditorManager(SVsServiceProvider serviceProvider, IVsAdapter vsAdapter, IProtectedOperations protectedOperations)
         {
             _vsAdapter = vsAdapter;
+            _protectedOperations = protectedOperations;
             _vsShell = serviceProvider.GetService<SVsShell, IVsShell>();
             _adapterList.Add(new SnippetExternalEditAdapter());
             _isResharperInstalled = CheckResharperInstalled();
@@ -62,6 +65,7 @@ namespace VsVim.ExternalEdit
 
             _monitorMap[buffer] = new ExternalEditMonitor(
                 buffer,
+                _protectedOperations,
                 _vsAdapter.GetTextLines(buffer.TextBuffer),
                 tagger,
                 new ReadOnlyCollection<IExternalEditAdapter>(_adapterList));

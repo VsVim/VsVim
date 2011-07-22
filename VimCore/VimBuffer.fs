@@ -264,8 +264,16 @@ type internal VimBuffer
         finally 
             _keyInputEndEvent.Trigger keyInput
 
-    /// Simulate the KeyInput being processed.  Should not go through remapping
+    /// Simulate the KeyInput being processed.  Should not go through remapping because the caller
+    /// is responsible for doing the mapping.  They are indicating the literal key was processed
     member x.SimulateProcessed keyInput = 
+
+        // When simulating KeyInput as being processed we clear out any buffered KeyInput 
+        // values.  By calling this API the caller wants us to simulate a specific key was 
+        // pressed and they action was handled by them.  We assume they accounted for any 
+        // buffered input with this action.
+        _remapInput <- None
+
         _keyInputStartEvent.Trigger keyInput
         _keyInputProcessedEvent.Trigger (keyInput, ProcessResult.Handled ModeSwitch.NoSwitch)
         _keyInputEndEvent.Trigger keyInput

@@ -5,6 +5,7 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.UnitTest.Mock;
+using VsVim.Implementation;
 
 namespace VsVim.UnitTest
 {
@@ -13,6 +14,7 @@ namespace VsVim.UnitTest
     {
         private Mock<IVsAdapter> _adapter;
         private Mock<ITextBuffer> _textBuffer;
+        private IVimBufferCoordinator _bufferCoordinator;
         private VsKeyProcessor _vsProcessor;
         private MockKeyboardDevice _device;
 
@@ -25,7 +27,8 @@ namespace VsVim.UnitTest
             _adapter.Setup(x => x.IsReadOnly(_textBuffer.Object)).Returns(false);
             _adapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(false);
             _buffer = MockObjectFactory.CreateVimBuffer(_textBuffer.Object);
-            _vsProcessor = new VsKeyProcessor(_adapter.Object, _buffer.Object);
+            _bufferCoordinator = new VimBufferCoordinator(_buffer.Object);
+            _vsProcessor = new VsKeyProcessor(_adapter.Object, _bufferCoordinator);
             _processor = _vsProcessor;
             _device = new MockKeyboardDevice();
         }

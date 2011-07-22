@@ -7,6 +7,7 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Utilities
 open System.Diagnostics
+open System.Runtime.CompilerServices
 
 [<RequireQualifiedAccess>]
 type JoinKind = 
@@ -2675,4 +2676,13 @@ and ISubstituteConfirmMode =
     abstract CurrentMatchChanged : IEvent<SnapshotSpan option> 
 
     inherit IMode 
+
+[<Extension>]
+module VimExtensions = 
+    
+    /// Is this ModeKind any type of Insert: Insert or Replace
+    [<Extension>]
+    let IsAnyInsert modeKind = 
+        modeKind = ModeKind.Insert ||
+        modeKind = ModeKind.Replace
 

@@ -6,6 +6,9 @@ using Vim.UnitTest;
 
 namespace VimCore.UnitTest
 {
+    /// <summary>
+    /// Used to test the integrated behavior if Insert Mode 
+    /// </summary>
     [TestFixture]
     public sealed class InsertModeIntegrationTest : VimTestBase
     {
@@ -20,6 +23,16 @@ namespace VimCore.UnitTest
             _textBuffer = _textView.TextBuffer;
             var service = EditorUtil.FactoryService;
             _buffer = service.Vim.CreateBuffer(_textView);
+        }
+
+        /// <summary>
+        /// Clear out the key mappings on tear down so that they don't affect future suite
+        /// runs
+        /// </summary>
+        [TearDown]
+        public void TearDown()
+        {
+            EditorUtil.FactoryService.Vim.KeyMap.ClearAll();
         }
 
         [Test]
@@ -153,6 +166,21 @@ namespace VimCore.UnitTest
             _buffer.GlobalSettings.ShiftWidth = 4;
             _buffer.Process(KeyNotationUtil.StringToKeyInput("<C-D>"));
             Assert.AreEqual("    hello", _textBuffer.GetLine(0).GetText());
+        }
+
+        /// Make sure that in the case where there is buffered input and we fail at the mapping 
+        /// that both values are inserted into the ITextBuffer
+        /// </summary>
+        [Test]
+        public void KeyRemap_BufferedInputFailsMapping()
+        {
+            Create("");
+            _buffer.Vim.KeyMap.MapWithNoRemap("jj", "<Esc>", KeyRemapMode.Insert);
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _buffer.Process("j");
+            Assert.AreEqual("", _textBuffer.GetLine(0).GetText());
+            _buffer.Process("a");
+            Assert.AreEqual("ja", _textBuffer.GetLine(0).GetText());
         }
     }
 }

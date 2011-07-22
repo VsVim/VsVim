@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
@@ -11,117 +10,49 @@ using Vim.Extensions;
 namespace VsVim
 {
     /// <summary>
-    /// Container for the 4 common pieces of data which are needed for an OLE
-    /// command.  Makes it easy to pass them around between functions
-    /// </summary>
-    internal struct OleCommandData
-    {
-        readonly internal uint CommandId;
-        readonly internal uint CommandExecOpt;
-        readonly internal IntPtr VariantIn;
-        readonly internal IntPtr VariantOut;
-
-        internal OleCommandData(VSConstants.VSStd2KCmdID id)
-            : this((uint)id)
-        {
-
-        }
-
-        internal OleCommandData(
-            uint commandId,
-            uint commandExecOpt = 0u)
-        {
-            CommandId = commandId;
-            CommandExecOpt = commandExecOpt;
-            VariantIn = IntPtr.Zero;
-            VariantOut = IntPtr.Zero;
-        }
-
-        internal OleCommandData(
-            uint commandId,
-            uint commandExecOpt,
-            IntPtr variantIn,
-            IntPtr variantOut)
-        {
-            CommandId = commandId;
-            CommandExecOpt = commandExecOpt;
-            VariantIn = variantIn;
-            VariantOut = variantOut;
-        }
-
-        /// <summary>
-        /// Create an OleCommandData for typing the given character.  This causes a native resource
-        /// allocation and must be freed at a later time with Release
-        /// </summary>
-        public static OleCommandData Allocate(char c)
-        {
-            var variantIn = Marshal.AllocCoTaskMem(32); // size of(VARIANT), 16 may be enough
-            Marshal.GetNativeVariantForObject(c, variantIn);
-            return new OleCommandData(
-                (uint)VSConstants.VSStd2KCmdID.TYPECHAR,
-                0,
-                variantIn,
-                IntPtr.Zero);
-        }
-
-        /// <summary>
-        /// Release the contents of the OleCommandData.  If no allocation was performed then this 
-        /// will be a no-op
-        ///
-        /// Do no call this one OleCommandData instances that you don't own.  Calling this on 
-        /// parameters created by Visual Studio for example could easily lead to memory corruption
-        /// issues
-        /// </summary>
-        public static void Release(ref OleCommandData oleCommandData)
-        {
-            if (oleCommandData.VariantIn != IntPtr.Zero)
-            {
-                NativeMethods.VariantClear(oleCommandData.VariantIn);
-                Marshal.FreeCoTaskMem(oleCommandData.VariantIn);
-            }
-
-            if (oleCommandData.VariantOut != IntPtr.Zero)
-            {
-                NativeMethods.VariantClear(oleCommandData.VariantOut);
-                Marshal.FreeCoTaskMem(oleCommandData.VariantOut);
-            }
-
-            oleCommandData = new OleCommandData();
-        }
-    }
-
-    /// <summary>
     /// This class needs to intercept commands which the core VIM engine wants to process and call into the VIM engine 
     /// directly.  It needs to be very careful to not double use commands that will be processed by the KeyProcessor.  In 
     /// general it just needs to avoid processing text input
     /// </summary>
     internal sealed class VsCommandTarget : IOleCommandTarget
     {
-        private enum CommandAction
+        private enum CommandStatus
         {
+            /// <summary>
+            /// Command is enabled
+            /// </summary>
             Enable,
+
+            /// <summary>
+            /// Command is disabled
+            /// </summary>
             Disable,
-            PassOn
+
+            /// <summary>
+            /// VsVim isn't concerned about the command and it's left to the next IOleCommandTarget
+            /// to determine if it's enabled or not
+            /// </summary>
+            PassOn,
         }
 
         private readonly IVimBuffer _buffer;
+        private readonly IVimBufferCoordinator _bufferCoordinator;
         private readonly ITextBuffer _textBuffer;
-        private readonly IVsAdapter _adapter;
+        private readonly IVsAdapter _vsAdapter;
         private readonly IDisplayWindowBroker _broker;
         private readonly IExternalEditorManager _externalEditManager;
         private IOleCommandTarget _nextTarget;
 
-        internal FSharpOption<KeyInput> SwallowIfNextExecMatches { get; set; }
-
         private VsCommandTarget(
-            IVimBuffer buffer,
-            IVsAdapter adapter,
+            IVimBufferCoordinator bufferCoordinator,
+            IVsAdapter vsAdapter,
             IDisplayWindowBroker broker,
             IExternalEditorManager externalEditorManager)
         {
-            _buffer = buffer;
+            _buffer = bufferCoordinator.VimBuffer;
+            _bufferCoordinator = bufferCoordinator;
             _textBuffer = _buffer.TextBuffer;
-            _adapter = adapter;
+            _vsAdapter = vsAdapter;
             _broker = broker;
             _externalEditManager = externalEditorManager;
         }
@@ -130,7 +61,7 @@ namespace VsVim
         /// Try and map a KeyInput to a single KeyInput value.  This will only succeed for KeyInput 
         /// values which have no mapping or map to a single KeyInput value
         /// </summary>
-        private bool TryGetSingleMapping(KeyRemapMode mode, KeyInput original, out KeyInput mapped)
+        private bool TryGetSingleMapping(KeyInput original, out KeyInput mapped)
         {
             var result = _buffer.GetKeyInputMapping(original);
             if (result.IsNeedsMoreInput || result.IsRecursive)
@@ -155,13 +86,23 @@ namespace VsVim
 
             if (result.IsNoMapping)
             {
-                // No mapping.  Use the original
+                // If there is no mapping we still need to consider the case of buffered 
+                // KeyInput values.  If there are any buffered KeyInput values then we 
+                // have > 1 input values: the current and whatever is mapped
+                if (!_buffer.BufferedRemapKeyInputs.IsEmpty)
+                {
+                    mapped = null;
+                    return false;
+                }
+
+                // No mapping and no buffered input so it's just a simple normal KeyInput
+                // value to be processed
                 mapped = original;
                 return true;
             }
 
             // Shouldn't get here because all cases of KeyMappingResult should be
-            // handled abvoe
+            // handled above
             Contract.Assert(false);
             mapped = null;
             return false;
@@ -230,7 +171,7 @@ namespace VsVim
             // not at the individual IMode.  Have to manually map here and test against the 
             // mapped KeyInput
             KeyInput mapped;
-            if (!TryGetSingleMapping(KeyRemapMode.Insert, keyInput, out mapped) || CanProcessWithInsertMode(mode, mapped))
+            if (!TryGetSingleMapping(keyInput, out mapped) || CanProcessWithInsertMode(mode, mapped))
             {
                 return _buffer.Process(keyInput).IsAnyHandled;
             }
@@ -330,13 +271,13 @@ namespace VsVim
 
             // Don't ever process a command when we are in an automation function.  Doing so will cause VsVim to 
             // intercept items like running Macros and certain wizard functionality
-            if (_adapter.InAutomationFunction)
+            if (_vsAdapter.InAutomationFunction)
             {
                 return false;
             }
 
             // Don't intercept commands while incremental search is active.  Don't want to interfere with it
-            if (_adapter.IsIncrementalSearchActive(_buffer.TextView))
+            if (_vsAdapter.IsIncrementalSearchActive(_buffer.TextView))
             {
                 return false;
             }
@@ -369,8 +310,8 @@ namespace VsVim
                     {
                         var keyInput = editCommand.KeyInput;
 
-                        // Swallow the input if it's been flagged by a previous QueryStatus
-                        if (SwallowIfNextExecMatches.IsSome() && SwallowIfNextExecMatches.Value == keyInput)
+                        // Discard the input if it's been flagged by a previous QueryStatus
+                        if (_bufferCoordinator.DiscardedKeyInput.IsSome(keyInput))
                         {
                             return NativeMethods.S_OK;
                         }
@@ -386,7 +327,7 @@ namespace VsVim
             }
             finally
             {
-                SwallowIfNextExecMatches = FSharpOption<KeyInput>.None;
+                _bufferCoordinator.DiscardedKeyInput = FSharpOption<KeyInput>.None;
             }
 
             return _nextTarget.Exec(commandGroup, commandId, commandExecOpt, variantIn, variantOut);
@@ -397,29 +338,31 @@ namespace VsVim
             EditCommand editCommand;
             if (1 == cCmds && TryConvert(pguidCmdGroup, prgCmds[0].cmdID, pCmdText, out editCommand))
             {
-                var action = CommandAction.PassOn;
+                _bufferCoordinator.DiscardedKeyInput = FSharpOption<KeyInput>.None;
+
+                var action = CommandStatus.PassOn;
                 if (editCommand.IsUndo || editCommand.IsRedo)
                 {
-                    action = CommandAction.Enable;
+                    action = CommandStatus.Enable;
                 }
                 else if (editCommand.HasKeyInput && _buffer.CanProcess(editCommand.KeyInput))
                 {
-                    action = CommandAction.Enable;
+                    action = CommandStatus.Enable;
                     if (_externalEditManager.IsResharperInstalled)
                     {
-                        action = QueryStatusInResharper(editCommand.KeyInput) ?? CommandAction.Enable;
+                        action = QueryStatusInResharper(editCommand.KeyInput) ?? CommandStatus.Enable;
                     }
                 }
 
                 switch (action)
                 {
-                    case CommandAction.Enable:
+                    case CommandStatus.Enable:
                         prgCmds[0].cmdf = (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
                         return NativeMethods.S_OK;
-                    case CommandAction.Disable:
-                        prgCmds[0].cmdf = 0;
+                    case CommandStatus.Disable:
+                        prgCmds[0].cmdf = (uint)OLECMDF.OLECMDF_SUPPORTED;
                         return NativeMethods.S_OK;
-                    case CommandAction.PassOn:
+                    case CommandStatus.PassOn:
                         return _nextTarget.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText);
                 }
             }
@@ -433,34 +376,40 @@ namespace VsVim
         /// will swallow the event and not propagate it to us.  So handle, return and account 
         /// for the double stroke in exec
         /// </summary>
-        private CommandAction? QueryStatusInResharper(KeyInput keyInput)
+        private CommandStatus? QueryStatusInResharper(KeyInput keyInput)
         {
-            CommandAction? action = null;
-            if (_buffer.ModeKind == ModeKind.Insert && keyInput == KeyInputUtil.EscapeKey)
+            CommandStatus? status = null;
+            var passToResharper = true;
+            if (_buffer.ModeKind.IsAnyInsert() && keyInput == KeyInputUtil.EscapeKey)
             {
                 // Have to special case Escape here for insert mode.  R# is typically ahead of us on the IOleCommandTarget
                 // chain.  If a completion window is open and we wait for Exec to run R# will be ahead of us and run
                 // their Exec call.  This will lead to them closing the completion window and not calling back into
                 // our exec leaving us in insert mode.
-                action = CommandAction.Enable;
+                status = CommandStatus.Enable;
             }
             else if (_buffer.ModeKind == ModeKind.ExternalEdit && keyInput == KeyInputUtil.EscapeKey)
             {
                 // Have to special case Escape here for external edit mode because we want escape to get us back to 
-                // normal mode
-                action = CommandAction.Enable;
+                // normal mode.  However we do want this key to make it to R# as well since they may need to dismiss
+                // intellisense
+                status = CommandStatus.Enable;
             }
-            else if (_adapter.InDebugMode && (keyInput == KeyInputUtil.EnterKey || keyInput.Key == VimKey.Back))
+            else if ((keyInput.Key == VimKey.Back || keyInput == KeyInputUtil.EnterKey) && _buffer.CanProcessAsCommand(keyInput))
             {
-                // In debug mode R# will intercept Enter and Back 
-                action = CommandAction.Enable;
-            }
-            else if (keyInput == KeyInputUtil.EnterKey && _buffer.ModeKind != ModeKind.Insert && _buffer.ModeKind != ModeKind.Replace)
-            {
-                // R# will intercept the Enter key when we are in the middle of an XML doc comment presumable
-                // to do some custom formatting.  If we're not insert mode we need to handle that here and 
-                // suppress the command to keep them from running it
-                action = CommandAction.Disable;
+                // R# special cases both the Back and Enter command in various scenarios
+                //
+                //  - Enter is special cased in XML doc comments presumably to do custom formatting 
+                //  - Enter is supressed during debugging in Exec.  Presumably this is done to avoid the annoying
+                //    "Invalid ENC Edit" dialog during debugging.
+                //  - Back is special cased to delete matched parens in Exec.  
+                //
+                // In all of these scenarios if the Enter or Back key is registered as a valid Vim
+                // command we want to process it as such and prevent R# from seeing the command.  If 
+                // R# is allowed to see the command they will process it often resulting in double 
+                // actions
+                status = CommandStatus.Enable;
+                passToResharper = false;
             }
 
             // Only process the KeyInput if we are enabling the value.  When the value is Enabled
@@ -468,26 +417,36 @@ namespace VsVim
             // through the event chain where either of the following will happen 
             //
             //  1. R# will handle the KeyInput
-            //  2. R# will not handle it, it will get back to us and we will ignore it
-            //
-            // If the command is disabled though it will not go through IOleCommandTarget and instead will end 
-            // up in the KeyProcessor code which will handle the value
-            if (action.HasValue && action.Value == CommandAction.Enable && _buffer.Process(keyInput).IsAnyHandled)
+            //  2. R# will not handle it, it will come back to use in Exec and we will ignore it
+            //     because we mark it as silently handled
+            if (status.HasValue && status.Value == CommandStatus.Enable && _buffer.Process(keyInput).IsAnyHandled)
             {
-                SwallowIfNextExecMatches = FSharpOption.Create(keyInput);
+                // We've broken the rules a bit by handling the command in QueryStatus and we need
+                // to silently handle this command if it comes back to us again either through 
+                // Exec or through the VsKeyProcessor
+                _bufferCoordinator.DiscardedKeyInput = FSharpOption.Create(keyInput);
+
+                // If we need to cooperate with R# to handle this command go ahead and pass it on 
+                // to them.  Else mark it as Disabled.
+                //
+                // Marking it as Disabled will cause the QueryStatus call to fail.  This means the 
+                // KeyInput will be routed to the KeyProcessor chain for the ITextView eventually
+                // making it to our VsKeyProcessor.  That component respects the SilentlyHandled 
+                // statu of KeyInput and will siently handle it
+                status = passToResharper ? CommandStatus.Enable : CommandStatus.Disable;
             }
 
-            return action;
+            return status;
         }
 
         internal static Result<VsCommandTarget> Create(
-            IVimBuffer buffer,
+            IVimBufferCoordinator bufferCoordinator,
             IVsTextView vsTextView,
             IVsAdapter adapter,
             IDisplayWindowBroker broker,
             IExternalEditorManager externalEditorManager)
         {
-            var filter = new VsCommandTarget(buffer, adapter, broker, externalEditorManager);
+            var filter = new VsCommandTarget(bufferCoordinator, adapter, broker, externalEditorManager);
             var hresult = vsTextView.AddCommandFilter(filter, out filter._nextTarget);
             return Result.CreateSuccessOrError(filter, hresult);
         }

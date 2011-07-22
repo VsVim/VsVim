@@ -44,16 +44,15 @@ namespace VsVim
             {
                 return TryConvert((VSConstants.VSStd97CmdID)commandId, pVariableIn, out ki, out kind);
             }
-            else if (VSConstants.VSStd2K == commandGroup)
+
+            if (VSConstants.VSStd2K == commandGroup)
             {
                 return TryConvert((VSConstants.VSStd2KCmdID)commandId, pVariableIn, out ki, out kind);
             }
-            else
-            {
-                ki = null;
-                kind = EditCommandKind.UserInput;
-                return false;
-            }
+
+            ki = null;
+            kind = EditCommandKind.UserInput;
+            return false;
         }
 
         /// <summary>
@@ -145,6 +144,22 @@ namespace VsVim
                     // was executed
                     ki = KeyInput.DefaultValue;
                     kind = EditCommandKind.Redo;
+                    break;
+                case VSConstants.VSStd2KCmdID.BOL:
+                case VSConstants.VSStd2KCmdID.BOL_EXT:
+                case VSConstants.VSStd2KCmdID.BOL_EXT_COL:
+                    // Even though there as a HOME value defined, Visual Studio apparently maps the 
+                    // Home key to BOL
+                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Home);
+                    kind = EditCommandKind.UserInput;
+                    break;
+                case VSConstants.VSStd2KCmdID.EOL:
+                case VSConstants.VSStd2KCmdID.EOL_EXT:
+                case VSConstants.VSStd2KCmdID.EOL_EXT_COL:
+                    // Even though there as a END value defined, Visual Studio apparently maps the 
+                    // Home key to EOL
+                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.End);
+                    kind = EditCommandKind.UserInput;
                     break;
                 default:
                     ki = null;

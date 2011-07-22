@@ -98,6 +98,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BlockCaretController.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="CommandMarginController.cs" />
     <Compile Include="Implementation\ClipboardDevice.cs" />
     <Compile Include="Implementation\EditorFormatDefinitions.cs" />
@@ -112,8 +113,10 @@
     <Compile Include="IBlockCaretFactoryService.cs" />
     <Compile Include="Implementation\KeyboardDeviceImpl.cs" />
     <Compile Include="Implementation\MouseDeviceImpl.cs" />
+    <Compile Include="Implementation\ProtectedOperations.cs" />
     <Compile Include="IOptionsProvider.cs" />
     <Compile Include="IOptionsProviderFactory.cs" />
+    <Compile Include="IProtectedOperations.cs" />
     <Compile Include="KeyboardMap.cs" />
     <Compile Include="KeyProcessor.cs" />
     <Compile Include="KeyUtil.cs" />

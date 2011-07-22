@@ -309,6 +309,10 @@ namespace Vim.UnitTest.Mock
             return CreateServiceProvider(null, serviceList);
         }
 
+        /// <summary>
+        /// Create an IServiceProvider instance which provides services of the specified object via 
+        /// the provided Type
+        /// </summary>
         public static Mock<IServiceProvider> CreateServiceProvider(MockRepository factory, params Tuple<Type, object>[] serviceList)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);

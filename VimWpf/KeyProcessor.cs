@@ -45,12 +45,26 @@ namespace Vim.UI.Wpf
         }
 
         /// <summary>
-        /// Hook to allow for derived types to supress the handling of TextInput and
-        /// instead cause this to just forward it onto the base type
+        /// Try and process the given KeyInput with the IVimBuffer.  This is overridable by 
+        /// derived classes in order for them to prevent any KeyInput from reaching the 
+        /// IVimBuffer
         /// </summary>
-        protected virtual bool IgnoreTextInput
+        protected virtual bool TryProcess(KeyInput keyInput)
         {
-            get { return false; }
+            return _buffer.CanProcess(keyInput) && _buffer.Process(keyInput).IsAnyHandled;
+        }
+
+        /// <summary>
+        /// Try and process the given KeyInput with the IVimBuffer as a command.  This is called
+        /// from situations where we have to guess at the KeyInput a bit.  It may be a key in a
+        /// multi-key character and hence we only want to process if it's bound to a command
+        ///
+        /// This is overridable by derived classes in order for them to prevent any KeyInput from 
+        /// reaching the IVimBuffer
+        /// </summary>
+        protected virtual bool TryProcessAsCommand(KeyInput keyInput)
+        {
+            return _buffer.CanProcessAsCommand(keyInput) && _buffer.Process(keyInput).IsAnyHandled;
         }
 
         /// <summary>
@@ -61,26 +75,20 @@ namespace Vim.UI.Wpf
         public override void TextInput(TextCompositionEventArgs args)
         {
             bool handled = false;
-            if (!String.IsNullOrEmpty(args.Text) && 1 == args.Text.Length && !IgnoreTextInput)
+            if (!String.IsNullOrEmpty(args.Text) && 1 == args.Text.Length)
             {
                 // Only want to intercept text coming from the keyboard.  Let other 
                 // components edit without having to come through us
                 var keyboard = args.Device as KeyboardDevice;
                 if (keyboard != null)
                 {
-                    var ki = KeyUtil.CharAndModifiersToKeyInput(args.Text[0], keyboard.Modifiers);
-                    handled = _buffer.CanProcess(ki) && _buffer.Process(ki).IsAnyHandled;
+                    var keyInput = KeyUtil.CharAndModifiersToKeyInput(args.Text[0], keyboard.Modifiers);
+                    handled = TryProcess(keyInput);
                 }
             }
 
-            if (handled)
-            {
-                args.Handled = true;
-            }
-            else
-            {
-                base.TextInput(args);
-            }
+            args.Handled = handled;
+            base.TextInput(args);
         }
 
         /// <summary>
@@ -129,37 +137,28 @@ namespace Vim.UI.Wpf
                 // process input which isn't mapped by a char.  If it is mapped by a char value 
                 // then it will appear in TextInput and we can do a much more definitive mapping
                 // from that result
-                KeyInput ki;
+                KeyInput keyInput;
                 var tryProcess =
-                    KeyUtil.TryConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out ki) &&
-                    !KeyUtil.IsMappedByChar(ki.Key);
-                handled = tryProcess
-                    ? _buffer.CanProcessAsCommand(ki) && _buffer.Process(ki).IsAnyHandled
-                    : false;
+                    KeyUtil.TryConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out keyInput) &&
+                    !KeyUtil.IsMappedByChar(keyInput.Key);
+                handled = tryProcess ? TryProcessAsCommand(keyInput) : false;
             }
             else if (0 != (args.KeyboardDevice.Modifiers & (ModifierKeys.Control | ModifierKeys.Alt)))
             {
                 // There is a modifier and it's not just shift.  Attempt to convert the input 
                 // and see if can be handled by Vim
-                KeyInput ki;
-                handled = KeyUtil.TryConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out ki)
-                    && _buffer.CanProcessAsCommand(ki)
-                    && _buffer.Process(ki).IsAnyHandled;
+                KeyInput keyInput;
+                handled =
+                    KeyUtil.TryConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out keyInput) &&
+                    TryProcessAsCommand(keyInput);
             }
             else
             {
                 handled = false;
             }
 
-            if (handled)
-            {
-                args.Handled = true;
-            }
-            else
-            {
-                base.KeyDown(args);
-            }
+            args.Handled = handled;
+            base.KeyDown(args);
         }
-
     }
 }

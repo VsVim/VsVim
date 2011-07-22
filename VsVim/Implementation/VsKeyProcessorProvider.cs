@@ -10,22 +10,25 @@ namespace VsVim.Implementation
     [Name("VsVim")]
     [TextViewRole(PredefinedTextViewRoles.Document)]
     [ContentType(Vim.Constants.ContentType)]
-    public sealed class KeyProcessorProvider : IKeyProcessorProvider
+    internal sealed class VsKeyProcessorProvider : IKeyProcessorProvider
     {
+        private readonly IVimBufferCoordinatorFactory _bufferCoordinatorFactory;
         private readonly IVsAdapter _adapter;
         private readonly IVim _vim;
 
         [ImportingConstructor]
-        public KeyProcessorProvider(IVim vim, IVsAdapter adapter)
+        internal VsKeyProcessorProvider(IVim vim, IVsAdapter adapter, IVimBufferCoordinatorFactory bufferCoordinatorFactory)
         {
             _vim = vim;
             _adapter = adapter;
+            _bufferCoordinatorFactory = bufferCoordinatorFactory;
         }
 
-        public KeyProcessor GetAssociatedProcessor(IWpfTextView wpfTextView)
+        KeyProcessor IKeyProcessorProvider.GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
             var buffer = _vim.GetOrCreateBuffer(wpfTextView);
-            return new VsKeyProcessor(_adapter, buffer);
+            var bufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(buffer);
+            return new VsKeyProcessor(_adapter, bufferCoordinator);
         }
     }
 }

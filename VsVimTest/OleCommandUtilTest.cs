@@ -9,7 +9,7 @@ using VsVim.UnitTest.Utils;
 namespace VsVim.UnitTest
 {
     [TestFixture()]
-    public class OleCommandUtilTest
+    public sealed class OleCommandUtilTest
     {
         internal EditCommand ConvertTypeChar(char data)
         {
@@ -150,11 +150,11 @@ namespace VsVim.UnitTest
                     continue;
                 }
 
-                Guid commandGroup;
-                OleCommandData oleCommandData = new OleCommandData();
-                KeyInput converted;
+                var oleCommandData = new OleCommandData();
                 try
                 {
+                    KeyInput converted;
+                    Guid commandGroup;
                     Assert.IsTrue(OleCommandUtil.TryConvert(cur, out commandGroup, out oleCommandData));
 
                     // We lose fidelity on these keys because they both get written out as numbers
@@ -171,8 +171,34 @@ namespace VsVim.UnitTest
                     OleCommandData.Release(ref oleCommandData);
                 }
             }
-
         }
 
+        /// <summary>
+        /// Make sure the End key converts.
+        /// 
+        /// Even though the VSStd2KCmdID enumeration defines an END value, it appears to use EOL when
+        /// the End key is hit.
+        /// </summary>
+        [Test]
+        public void TryConvert_End()
+        {
+            VerifyConvert(VSConstants.VSStd2KCmdID.EOL, VimKey.End, EditCommandKind.UserInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.EOL_EXT, VimKey.End, EditCommandKind.UserInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.EOL_EXT_COL, VimKey.End, EditCommandKind.UserInput);
+        }
+
+        /// <summary>
+        /// Make sure the Home key converts.
+        /// 
+        /// Even though the VSStd2KCmdID enumeration defines an HOME value, it appears to use BOL when
+        /// the Home key is hit.
+        /// </summary>
+        [Test]
+        public void TryConvert_Home()
+        {
+            VerifyConvert(VSConstants.VSStd2KCmdID.BOL, VimKey.Home, EditCommandKind.UserInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.BOL_EXT, VimKey.Home, EditCommandKind.UserInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.BOL_EXT_COL, VimKey.Home, EditCommandKind.UserInput);
+        }
     }
 }
