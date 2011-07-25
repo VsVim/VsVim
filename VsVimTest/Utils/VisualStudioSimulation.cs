@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Permissions;
 using System.Windows;
 using System.Windows.Input;
 using Microsoft.VisualStudio;
@@ -14,7 +14,6 @@ using Moq;
 using Vim;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
-using System.Security.Permissions;
 
 namespace VsVim.UnitTest.Utils
 {
@@ -554,16 +553,16 @@ namespace VsVim.UnitTest.Utils
             }
 
             // First raise the KeyDown event
-            var keyEventArgs = new KeyEventArgs(
+            var keyDownEventArgs = new KeyEventArgs(
                 Keyboard.PrimaryDevice,
                 presentationSource.Object,
                 0,
                 key);
-            keyEventArgs.RoutedEvent = UIElement.KeyDownEvent;
-            _defaultInputController.HandleKeyDown(this, keyEventArgs);
+            keyDownEventArgs.RoutedEvent = UIElement.KeyDownEvent;
+            _defaultInputController.HandleKeyDown(this, keyDownEventArgs);
 
             // If the event is handled then return
-            if (keyEventArgs.Handled)
+            if (keyDownEventArgs.Handled)
             {
                 return;
             }
@@ -575,13 +574,13 @@ namespace VsVim.UnitTest.Utils
             textInputEventArgs.RoutedEvent = UIElement.TextInputEvent;
             _defaultInputController.HandleTextInput(this, textInputEventArgs);
 
-            if (textInputEventArgs.Handled)
-            {
-                // TODO: Should we raise KeyUp even if TextInput was handled?
-                return;
-            }
-
-            _defaultInputController.HandleKeyUp(this, keyEventArgs);
+            var keyUpEventArgs = new KeyEventArgs(
+                Keyboard.PrimaryDevice,
+                presentationSource.Object,
+                0,
+                key);
+            keyUpEventArgs.RoutedEvent = UIElement.KeyUpEvent;
+            _defaultInputController.HandleKeyUp(this, keyUpEventArgs);
         }
     }
 }
