@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -12,16 +13,16 @@ using Vim.UnitTest.Mock;
 namespace VimCore.UnitTest
 {
     /// <summary>
-    /// Summary description for InputMode
+    /// Tests to verify the operation of Insert / Replace Mode
     /// </summary>
     [TestFixture]
-    public class InsertModeTest
+    public sealed class InsertModeTest
     {
         private MockRepository _factory;
-        private Mock<IVimBuffer> _data;
         private Vim.Modes.Insert.InsertMode _modeRaw;
         private IInsertMode _mode;
         private ITextView _textView;
+        private ITextBuffer _textBuffer;
         private Mock<ICommonOperations> _operations;
         private Mock<IDisplayWindowBroker> _broker;
         private Mock<IVimGlobalSettings> _globalSettings;
@@ -30,28 +31,37 @@ namespace VimCore.UnitTest
         private Mock<IUndoRedoOperations> _undoRedoOperations;
         private Mock<ITextChangeTracker> _textChangeTracker;
         private Mock<IInsertUtil> _insertUtil;
+        private Mock<IKeyboardDevice> _keyboardDevice;
+        private Mock<IMouseDevice> _mouseDevice;
         private Mock<IVim> _vim;
 
         [SetUp]
         public void SetUp()
         {
-            SetUp(insertMode: true);
+            Create(insertMode: true);
         }
 
-        public void SetUp(bool insertMode)
+        private void Create(params string[] lines)
+        {
+            Create(true, lines);
+        }
+
+        private void Create(bool insertMode, params string[] lines)
         {
             _factory = new MockRepository(MockBehavior.Strict);
             _factory.DefaultValue = DefaultValue.Mock;
-            _textView = EditorUtil.CreateTextView();
+            _textView = EditorUtil.CreateTextView(lines);
+            _textBuffer = _textView.TextBuffer;
             _vim = _factory.Create<IVim>(MockBehavior.Loose);
             _editorOptions = _factory.Create<IEditorOptions>(MockBehavior.Loose);
             _globalSettings = _factory.Create<IVimGlobalSettings>();
             _localSettings = _factory.Create<IVimLocalSettings>();
             _localSettings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
-            _textChangeTracker = _factory.Create<ITextChangeTracker>();
+            _textChangeTracker = _factory.Create<ITextChangeTracker>(MockBehavior.Loose);
             _textChangeTracker.SetupGet(x => x.CurrentChange).Returns(FSharpOption<TextChange>.None);
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
-            _data = MockObjectFactory.CreateVimBuffer(
+
+            var buffer = MockObjectFactory.CreateVimBuffer(
                 _textView,
                 settings: _localSettings.Object,
                 vim: _vim.Object,
@@ -63,15 +73,27 @@ namespace VimCore.UnitTest
             _broker.SetupGet(x => x.IsQuickInfoActive).Returns(false);
             _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
             _insertUtil = _factory.Create<IInsertUtil>();
+
+            // Setup the mouse.  By default we say it has no buttons down as that's the normal state
+            _mouseDevice = _factory.Create<IMouseDevice>();
+            _mouseDevice.SetupGet(x => x.IsLeftButtonPressed).Returns(false);
+
+            // Setup the keyboard.  By default we don't say that any button is pressed.  Insert mode is usually
+            // only concerned with arrow keys and we will set those up as appropriate for the typing tests
+            _keyboardDevice = _factory.Create<IKeyboardDevice>();
+            _keyboardDevice.Setup(x => x.IsKeyDown(It.IsAny<VimKey>())).Returns(false);
+
             _modeRaw = new Vim.Modes.Insert.InsertMode(
-                _data.Object,
+                buffer.Object,
                 _operations.Object,
                 _broker.Object,
                 _editorOptions.Object,
                 _undoRedoOperations.Object,
                 _textChangeTracker.Object,
                 _insertUtil.Object,
-                _isReplace: !insertMode);
+                !insertMode,
+                _keyboardDevice.Object,
+                _mouseDevice.Object);
             _mode = _modeRaw;
         }
 
@@ -189,17 +211,32 @@ namespace VimCore.UnitTest
             _factory.Verify();
         }
 
+        /// <summary>
+        /// Make sure we bind the shift left command
+        /// </summary>
         [Test]
-        public void ShiftLeft1()
+        public void Command_ShiftLeft()
         {
             _textView.SetText("hello world");
-            _operations
-                .Setup(x => x.ShiftLineRangeLeft(_textView.GetLineRange(0, 0), 1))
-                .Verifiable(); ;
+            _insertUtil.Setup(x => x.RunInsertCommand(InsertCommand.ShiftLineLeft)).Returns(CommandResult.NewCompleted(ModeSwitch.NoSwitch)).Verifiable();
             var res = _mode.Process(KeyInputUtil.CharWithControlToKeyInput('d'));
             Assert.IsTrue(res.IsHandledNoSwitch());
             _factory.Verify();
         }
+
+        /// <summary>
+        /// Make sure we bind the shift right command
+        /// </summary>
+        [Test]
+        public void Command_ShiftRight()
+        {
+            SetUp();
+            _textView.SetText("hello world");
+            _insertUtil.Setup(x => x.RunInsertCommand(InsertCommand.ShiftLineRight)).Returns(CommandResult.NewCompleted(ModeSwitch.NoSwitch)).Verifiable();
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-T>"));
+            _factory.Verify();
+        }
+
 
         [Test]
         public void OnLeave1()
@@ -218,14 +255,14 @@ namespace VimCore.UnitTest
         [Test]
         public void ReplaceMode1()
         {
-            SetUp(insertMode: false);
+            Create(insertMode: false);
             Assert.AreEqual(ModeKind.Replace, _mode.ModeKind);
         }
 
         [Test]
         public void ReplaceMode2()
         {
-            SetUp(insertMode: false);
+            Create(insertMode: false);
             _editorOptions
                 .Setup(x => x.SetOptionValue(DefaultTextViewOptions.OverwriteModeId, false))
                 .Verifiable();
@@ -233,15 +270,32 @@ namespace VimCore.UnitTest
             _factory.Verify();
         }
 
+        /// <summary>
+        /// When the caret moves due to the mouse being clicked that should complete the current text change
+        /// </summary>
         [Test]
-        public void ShiftRight1()
+        public void TextChange_CaretMoveFromClickShouldComplete()
         {
-            SetUp();
-            _textView.SetText("hello world");
-            _operations.Setup(x => x.ShiftLineRangeRight(_textView.GetLineRange(0, 0), 1)).Verifiable();
-            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-T>"));
+            Create("the quick brown fox");
+            _textBuffer.Insert(0, "a");
+            _textChangeTracker.Setup(x => x.CompleteChange()).Verifiable();
+            _mouseDevice.SetupGet(x => x.IsLeftButtonPressed).Returns(true).Verifiable();
+            _textView.MoveCaretTo(7);
             _factory.Verify();
         }
 
+        /// <summary>
+        /// When the caret moves as a part of the edit then it shouldn't cause the change to complete
+        /// </summary>
+        [Test]
+        public void TextChange_CaretMoveFromEdit()
+        {
+            Create("the quick brown fox");
+            _textChangeTracker.Setup(x => x.CompleteChange()).Throws(new Exception());
+            _mouseDevice.SetupGet(x => x.IsLeftButtonPressed).Returns(false).Verifiable();
+            _textBuffer.Insert(0, "a");
+            _textView.MoveCaretTo(7);
+            _factory.Verify();
+        }
     }
 }

@@ -150,8 +150,9 @@ namespace Vim.UnitTest
                 statusUtil,
                 undoRedOperations,
                 vim.Object);
+            var textChangeTracker = new TextChangeTracker(textView, operations);
 
-            var insertUtil = new InsertUtil(bufferData, operations);
+            var insertUtil = new InsertUtil(bufferData, operations, textChangeTracker);
             return new CommandUtil(
                 bufferData,
                 motionUtil,

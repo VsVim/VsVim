@@ -45,7 +45,7 @@ namespace VimCore.UnitTest
             // for the IVimBuffer
             _textChangeTracker = _factory.Create<ITextChangeTracker>(MockBehavior.Loose);
             _textChangeTrackerFactory = _factory.Create<ITextChangeTrackerFactory>();
-            _textChangeTrackerFactory.Setup(x => x.GetTextChangeTracker(It.IsAny<IVimBuffer>())).Returns(_textChangeTracker.Object);
+            _textChangeTrackerFactory.Setup(x => x.GetTextChangeTracker(It.IsAny<VimBufferData>())).Returns(_textChangeTracker.Object);
 
             _vimData = new VimData();
             var vim = MockObjectFactory.CreateVim(vimData: _vimData);

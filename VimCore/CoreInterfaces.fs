@@ -1308,6 +1308,9 @@ type InsertCommand  =
     /// Insert a tab into the ITextBuffer
     | InsertTab
 
+    /// Move the caret in the given direction
+    | MoveCaret of Direction
+
     /// Shift the current line one indent width to the left
     | ShiftLineLeft 
 
@@ -1651,7 +1654,7 @@ type StoredCommand =
     /// The stored information about a VisualCommand
     | VisualCommand of VisualCommand * CommandData * StoredVisualSpan * CommandFlags
 
-    /// The storef information about a InsertCommand
+    /// The stored information about a InsertCommand
     | InsertCommand of InsertCommand
 
     /// A Text Change which occurred

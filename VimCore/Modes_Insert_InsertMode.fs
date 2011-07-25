@@ -55,9 +55,12 @@ type internal InsertMode
         _undoRedoOperations : IUndoRedoOperations,
         _textChangeTracker : ITextChangeTracker,
         _insertUtil : IInsertUtil,
-        _isReplace : bool 
+        _isReplace : bool,
+        _keyboard : IKeyboardDevice,
+        _mouse : IMouseDevice
     ) as this =
 
+    let _bag = DisposableBag()
     let _textView = _buffer.TextView
     let _textBuffer = _buffer.TextBuffer
     let _editorOperations = _operations.EditorOperations
@@ -71,32 +74,33 @@ type internal InsertMode
     }
     let mutable _sessionData = _emptySessionData
 
+    /// The set of commands supported by insert mode.  The final bool is for whether
+    /// or not the command should end the current text change before running
+    static let commands : (string * InsertCommand * CommandFlags * bool) list =
+        [
+            ("<Left>", InsertCommand.MoveCaret Direction.Left, CommandFlags.Movement, false)
+            ("<Down>", InsertCommand.MoveCaret Direction.Down, CommandFlags.Movement, false)
+            ("<Right>", InsertCommand.MoveCaret Direction.Right, CommandFlags.Movement, false)
+            ("<Up>", InsertCommand.MoveCaret Direction.Up, CommandFlags.Movement, false)
+            ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable, false)
+            ("<C-d>", InsertCommand.ShiftLineLeft, CommandFlags.Repeatable, true)
+            ("<C-t>", InsertCommand.ShiftLineRight, CommandFlags.Repeatable, true)
+        ]
+
     do
         let oldCommands : (string * CommandFunction) list = 
             [
-                ("<Down>", this.ProcessDown)
                 ("<Esc>", this.ProcessEscape)
                 ("<Insert>", this.ProcessInsert)
-                ("<Left>", this.ProcessLeft)
-                ("<Right>", this.ProcessRight)
-                ("<Up>", this.ProcessUp)
                 ("<C-o>", this.ProcessNormalModeOneCommand)
-            ]
-
-        let commands : (string * InsertCommand * bool) list =
-            [
-                ("<C-i>", InsertCommand.InsertTab, false)
-                ("<C-d>", InsertCommand.ShiftLineLeft, true)
-                ("<C-m>", InsertCommand.InsertNewLine, false)
-                ("<C-t>", InsertCommand.ShiftLineRight, true)
             ]
 
         let mappedCommands : (string * CommandFunction) list = 
             commands
-            |> Seq.map (fun (name, command, completesChange) ->
+            |> Seq.map (fun (name, command, commandFlags, completesChange) ->
                 let func () = 
                     let keyInputSet = KeyNotationUtil.StringToKeyInputSet name
-                    this.RunInsertCommand command keyInputSet CommandFlags.Repeatable completesChange
+                    this.RunInsertCommand command keyInputSet commandFlags completesChange
                 (name, func))
             |> List.ofSeq
 
@@ -107,6 +111,11 @@ type internal InsertMode
             |> Seq.map (fun (str, func) -> (KeyNotationUtil.StringToKeyInput str), func)
             |> Map.ofSeq
 
+        // Caret changes can end a text change operation.
+        _textView.Caret.PositionChanged
+        |> Observable.subscribe (fun _ -> this.OnCaretPositionChanged() )
+        |> _bag.Add
+
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
@@ -116,6 +125,9 @@ type internal InsertMode
     member x.IsProcessingDirectInsert = _processDirectInsertCount > 0
 
     member x.ModeKind = if _isReplace then ModeKind.Replace else ModeKind.Insert
+
+    /// Is this the currently active mode?
+    member x.IsActive = x.ModeKind = _buffer.ModeKind
 
     /// Is this KeyInput a raw text insert into the ITextBuffer.  Anything that would be 
     /// processed by adding characters to the ITextBuffer.  This is anything which has an
@@ -219,46 +231,6 @@ type internal InsertMode
          finally 
             _processDirectInsertCount <- _processDirectInsertCount - 1
 
-    /// Process the up command
-    member x.ProcessUp () =
-        match SnapshotUtil.TryGetLine x.CurrentSnapshot (x.CaretLine.LineNumber - 1) with
-        | None ->
-            _operations.Beep()
-            ProcessResult.Error
-        | Some line ->
-            _editorOperations.MoveLineUp(false);
-            ProcessResult.Handled ModeSwitch.NoSwitch
-
-    /// Process the down command
-    member x.ProcessDown () =
-        match SnapshotUtil.TryGetLine x.CurrentSnapshot (x.CaretLine.LineNumber + 1) with
-        | None ->
-            _operations.Beep()
-            ProcessResult.Error
-        | Some line ->
-            _editorOperations.MoveLineDown(false);
-            ProcessResult.Handled ModeSwitch.NoSwitch
-
-    /// Process the left command.  Don't go past the start of the line 
-    member x.ProcessLeft () =
-        if x.CaretLine.Start.Position < x.CaretPoint.Position then
-            let point = SnapshotPointUtil.SubtractOne x.CaretPoint
-            _operations.MoveCaretToPointAndEnsureVisible point
-            ProcessResult.Handled ModeSwitch.NoSwitch
-        else
-            _operations.Beep()
-            ProcessResult.Error
-
-    /// Process the right command
-    member x.ProcessRight () =
-        if x.CaretPoint.Position < x.CaretLine.End.Position then
-            let point = SnapshotPointUtil.AddOne x.CaretPoint
-            _operations.MoveCaretToPointAndEnsureVisible point
-            ProcessResult.Handled ModeSwitch.NoSwitch
-        else
-            _operations.Beep()
-            ProcessResult.Error
-
     /// Process the <Insert> command.  This toggles between insert an replace mode
     member x.ProcessInsert () = 
 
@@ -338,6 +310,10 @@ type internal InsertMode
             Command = Command.InsertCommand command
             CommandResult = result }
         _commandRanEvent.Trigger data
+
+        if completesChange then
+            _textChangeTracker.ClearChange()
+
         ProcessResult.OfCommandResult result
 
     /// Try and process the KeyInput by considering the current text edit in Insert Mode
@@ -394,9 +370,39 @@ type internal InsertMode
                 else
                     ProcessResult.NotHandled
 
+    /// This is raised when caret changes.  If this is the result of a user click then 
+    /// we need to complete the change.
+    ///
+    /// Need to be careful to not end the edit due to the caret moving as a result of 
+    /// normal typing
+    ///
+    /// TODO: We really need to reconsider how this is used.  If the user has mapped say 
+    /// '1' to 'Left' then we will misfire here.  Not a huge concern I think but we need
+    /// to find a crisper solution here.
+    member x.OnCaretPositionChanged () = 
+        if _mouse.IsLeftButtonPressed then 
+            _textChangeTracker.CompleteChange()
+        elif _buffer.ModeKind = ModeKind.Insert then 
+            let keyMove = 
+                [ VimKey.Left; VimKey.Right; VimKey.Up; VimKey.Down ]
+                |> Seq.map (fun k -> KeyInputUtil.VimKeyToKeyInput k)
+                |> Seq.filter (fun k -> _keyboard.IsKeyDown k.Key)
+                |> SeqUtil.isNotEmpty
+            if keyMove then 
+                _textChangeTracker.CompleteChange()
+
+    /// Called when the IVimBuffer is closed.  We need to unsubscribe from several events
+    /// when this happens to prevent the ITextBuffer / ITextView from being kept alive
+    member x.OnClose () =
+        _bag.DisposeAll()
+
     /// Entering an insert or replace mode.  Setup the InsertSessionData based on the 
     /// ModeArgument value. 
     member x.OnEnter arg =
+
+        // When starting insert mode we want to track the edits to the IVimBuffer as a 
+        // text change
+        _textChangeTracker.Enabled <- true
 
         // On enter we need to check the 'count' and possibly set up a transaction to 
         // lump edits and their repeats together
@@ -442,6 +448,10 @@ type internal InsertMode
     /// a transaction was open
     member x.OnLeave () =
 
+        // When leaving insert mode we complete the current change
+        _textChangeTracker.CompleteChange()
+        _textChangeTracker.Enabled <- false
+
         try
             match _sessionData.Transaction with
             | None -> ()
@@ -463,7 +473,7 @@ type internal InsertMode
         member x.Process ki = x.Process ki
         member x.OnEnter arg = x.OnEnter arg
         member x.OnLeave () = x.OnLeave ()
-        member x.OnClose() = ()
+        member x.OnClose() = x.OnClose ()
 
         [<CLIEvent>]
         member x.CommandRan = _commandRanEvent.Publish

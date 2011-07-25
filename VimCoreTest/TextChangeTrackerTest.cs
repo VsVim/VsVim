@@ -17,10 +17,7 @@ namespace VimCore.UnitTest
         private ITextBuffer _textBuffer;
         private Mock<ITextView> _textView;
         private Mock<ITextCaret> _textCaret;
-        private Mock<IMouseDevice> _mouse;
-        private Mock<IKeyboardDevice> _keyboard;
         private Mock<IVimLocalSettings> _localSettings;
-        private Mock<IVimBuffer> _buffer;
         private Mock<ICommonOperations> _operations;
         private TextChangeTracker _trackerRaw;
         private ITextChangeTracker _tracker;
@@ -37,14 +34,8 @@ namespace VimCore.UnitTest
                 factory: _factory);
             _textView.SetupGet(x => x.HasAggregateFocus).Returns(true);
             _localSettings = _factory.Create<IVimLocalSettings>();
-            _mouse = _factory.Create<IMouseDevice>();
-            _keyboard = _factory.Create<IKeyboardDevice>();
-            _buffer = MockObjectFactory.CreateVimBuffer(
-                textView: _textView.Object,
-                settings: _localSettings.Object,
-                factory: _factory);
             _operations = _factory.Create<ICommonOperations>(MockBehavior.Strict);
-            _trackerRaw = new TextChangeTracker(_buffer.Object, _operations.Object, _keyboard.Object, _mouse.Object);
+            _trackerRaw = new TextChangeTracker(_textView.Object, _operations.Object);
             _tracker = _trackerRaw;
             _tracker.ChangeCompleted += (sender, data) => { _lastChange = data; };
         }
@@ -167,59 +158,6 @@ namespace VimCore.UnitTest
             Assert.AreEqual(TextChange.NewDelete(2), _tracker.CurrentChange.Value);
         }
 
-        [Test]
-        [Description("Mouse click should complete the change")]
-        public void CaretMove1()
-        {
-            Create("the quick brown fox");
-            _textBuffer.Insert(0, "a");
-            _mouse.SetupGet(x => x.IsLeftButtonPressed).Returns(true).Verifiable();
-            _textCaret.Raise(x => x.PositionChanged += null, (CaretPositionChangedEventArgs)null);
-            Assert.AreEqual(TextChange.NewInsert("a"), _lastChange);
-            Assert.IsTrue(_tracker.CurrentChange.IsNone());
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("Normal caret movement (as part of an edit) shouldn't complete changse")]
-        public void CaretMove2()
-        {
-            Create("the quick brown fox");
-            _mouse.SetupGet(x => x.IsLeftButtonPressed).Returns(false).Verifiable();
-            _textBuffer.Insert(0, "a");
-            _textCaret.Raise(x => x.PositionChanged += null, (CaretPositionChangedEventArgs)null);
-            _textBuffer.Insert(1, "b");
-            Assert.IsNull(_lastChange);
-            Assert.AreEqual(TextChange.NewInsert("ab"), _tracker.CurrentChange.Value);
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("Commit style events with no change shoudn't raise the ChangeCompleted event")]
-        public void ChangedEvent1()
-        {
-            Create("the quick brown fox");
-            var didRun = false;
-            _tracker.ChangeCompleted += delegate { didRun = true; };
-            _mouse.SetupGet(x => x.IsLeftButtonPressed).Returns(true).Verifiable();
-            _textCaret.Raise(x => x.PositionChanged += null, (CaretPositionChangedEventArgs)null);
-            Assert.IsFalse(didRun);
-        }
-
-        [Test]
-        [Description("Don't double raise the event")]
-        public void ChangedEvent2()
-        {
-            Create("the quick brown fox");
-            _textBuffer.Insert(1, "b");
-            _mouse.SetupGet(x => x.IsLeftButtonPressed).Returns(true).Verifiable();
-            _textCaret.Raise(x => x.PositionChanged += null, (CaretPositionChangedEventArgs)null);
-            var didRun = false;
-            _tracker.ChangeCompleted += delegate { didRun = true; };
-            _textCaret.Raise(x => x.PositionChanged += null, (CaretPositionChangedEventArgs)null);
-            Assert.IsFalse(didRun);
-        }
-
         /// <summary>
         /// When spaces are in the buffer and tabs are hit and used Visual Studio will often convert
         /// spaces to tabs.  Without interpreting the line it looks like X spaces are deleted and 2 
@@ -292,26 +230,6 @@ namespace VimCore.UnitTest
             Assert.IsTrue(change.IsCombination);
             Assert.IsTrue(change.AsCombination().Item1.IsInsert("i"));
             Assert.IsTrue(change.AsCombination().Item2.IsCombination);
-        }
-
-        [Test]
-        public void SwitchMode1()
-        {
-            Create("the quick brown fox");
-            _textBuffer.Insert(1, "b");
-            _buffer.Raise(x => x.SwitchedMode += null, null, new SwitchModeEventArgs(FSharpOption<IMode>.None, null));
-            Assert.AreEqual(TextChange.NewInsert("b"), _lastChange);
-        }
-
-        [Test]
-        [Description("Don't run if there are no changes")]
-        public void SwitchMode2()
-        {
-            Create("the quick brown fox");
-            var didRun = false;
-            _tracker.ChangeCompleted += delegate { didRun = true; };
-            _buffer.Raise(x => x.SwitchedMode += null, null, new SwitchModeEventArgs(FSharpOption<IMode>.None, null));
-            Assert.IsFalse(didRun);
         }
     }
 }

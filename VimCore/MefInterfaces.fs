@@ -159,17 +159,24 @@ type IKeyboardDevice =
     /// Is the given key pressed
     abstract IsKeyDown : VimKey -> bool
 
-/// Tracks changes to the IVimBuffer
+/// Tracks changes to the associated ITextView
 type ITextChangeTracker =
 
-    /// Associated IVimBuffer
-    abstract VimBuffer : IVimBuffer
+    /// Associated ITextView
+    abstract TextView : ITextView
+
+    /// Whether or not change tracking is currently enabled.  Disabling the tracking will
+    /// cause the current change to be completed
+    abstract Enabled : bool with get, set
 
     /// Current change
     abstract CurrentChange : TextChange option
 
-    /// Complete the current change if there is on
+    /// Complete the current change if there is one
     abstract CompleteChange : unit -> unit
+
+    /// Clear out the current change without completing it
+    abstract ClearChange : unit -> unit
 
     /// Raised when a change is completed
     [<CLIEvent>]
@@ -178,12 +185,13 @@ type ITextChangeTracker =
 /// Manages the ITextChangeTracker instances
 type ITextChangeTrackerFactory =
 
-    abstract GetTextChangeTracker : IVimBuffer -> ITextChangeTracker
+    /// Get the ITextChangeTracker associated with the given vim buffer information
+    abstract GetTextChangeTracker : VimBufferData -> ITextChangeTracker
 
 /// Provides access to the system clipboard 
 type IClipboardDevice =
 
-    abstract Text : string with get,set
+    abstract Text : string with get, set
 
 [<RequireQualifiedAccess>]
 type Result = 

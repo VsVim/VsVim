@@ -9,7 +9,8 @@ open Microsoft.VisualStudio.Text.Outlining
 type internal InsertUtil
     (
         _bufferData : VimBufferData,
-        _operations : ICommonOperations
+        _operations : ICommonOperations,
+        _textChangeTracker : ITextChangeTracker
     ) =
 
     let _textView = _bufferData.TextView
@@ -17,6 +18,7 @@ type internal InsertUtil
     let _localSettings = _bufferData.LocalSettings
     let _globalSettings = _localSettings.GlobalSettings
     let _undoRedoOperations = _bufferData.UndoRedoOperations
+    let _editorOperations = _operations.EditorOperations
 
     /// The column of the caret
     member x.CaretColumn = SnapshotPointUtil.GetColumn x.CaretPoint
@@ -85,11 +87,64 @@ type internal InsertUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Move the caret in the given direction
+    member x.MoveCaret direction = 
+
+        // An explicit move of the caret ends the current text change 
+        _textChangeTracker.CompleteChange()
+
+        /// Move the caret up
+        let moveUp () =
+            match SnapshotUtil.TryGetLine x.CurrentSnapshot (x.CaretLine.LineNumber - 1) with
+            | None ->
+                _operations.Beep()
+                CommandResult.Error
+            | Some line ->
+                _editorOperations.MoveLineUp(false);
+                CommandResult.Completed ModeSwitch.NoSwitch
+
+        /// Move the caret down
+        let moveDown () =
+            match SnapshotUtil.TryGetLine x.CurrentSnapshot (x.CaretLine.LineNumber + 1) with
+            | None ->
+                _operations.Beep()
+                CommandResult.Error
+            | Some line ->
+                _editorOperations.MoveLineDown(false);
+                CommandResult.Completed ModeSwitch.NoSwitch
+    
+        /// Move the caret left.  Don't go past the start of the line 
+        let moveLeft () = 
+            if x.CaretLine.Start.Position < x.CaretPoint.Position then
+                let point = SnapshotPointUtil.SubtractOne x.CaretPoint
+                _operations.MoveCaretToPointAndEnsureVisible point
+                CommandResult.Completed ModeSwitch.NoSwitch
+            else
+                _operations.Beep()
+                CommandResult.Error
+
+        /// Move the caret right.  Don't go off the end of the line
+        let moveRight () =
+            if x.CaretPoint.Position < x.CaretLine.End.Position then
+                let point = SnapshotPointUtil.AddOne x.CaretPoint
+                _operations.MoveCaretToPointAndEnsureVisible point
+                CommandResult.Completed ModeSwitch.NoSwitch
+            else
+                _operations.Beep()
+                CommandResult.Error
+
+        match direction with
+        | Direction.Up -> moveUp()
+        | Direction.Down -> moveDown()
+        | Direction.Left -> moveLeft()
+        | Direction.Right -> moveRight()
+
     member x.RunInsertCommand command = 
         match command with
         | InsertCommand.DeleteAllIndent -> x.DeleteAllIndent() 
         | InsertCommand.InsertNewLine -> x.InsertNewLine()
         | InsertCommand.InsertTab -> x.InsertTab()
+        | InsertCommand.MoveCaret direction -> x.MoveCaret direction
         | InsertCommand.ShiftLineLeft -> x.ShiftLineLeft ()
         | InsertCommand.ShiftLineRight -> x.ShiftLineRight ()
 

@@ -1324,7 +1324,7 @@ namespace VimCore.UnitTest
             var result = _commandUtil.ChangeTillEndOfLine(1, UnnamedRegister);
             AssertInsertWithTransaction(result);
             Assert.AreEqual("c", _textView.GetLine(0).GetText());
-            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
 
         /// <summary>

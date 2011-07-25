@@ -6,7 +6,7 @@ open Microsoft.VisualStudio.Text.Outlining
 
 type internal InsertUtil =
 
-    new : VimBufferData * ICommonOperations -> InsertUtil
+    new : VimBufferData * ICommonOperations * ITextChangeTracker -> InsertUtil
 
     interface IInsertUtil
 

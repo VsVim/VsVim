@@ -30,9 +30,12 @@ namespace VimCore.UnitTest
             _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
             _globalSettings = _buffer.GlobalSettings;
             _localSettings = _buffer.LocalSettings;
+
+            var operations = EditorUtil.FactoryService.CommonOperationsFactory.GetCommonOperations(_buffer.VimBufferData);
             _insertUtilRaw = new InsertUtil(
                 _buffer.VimBufferData,
-                EditorUtil.FactoryService.CommonOperationsFactory.GetCommonOperations(_buffer.VimBufferData));
+                operations,
+                new TextChangeTracker(_buffer.TextView, operations));
             _insertUtil = _insertUtilRaw;
         }
 

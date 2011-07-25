@@ -70,7 +70,10 @@ type internal VimBufferFactory
         _tlcService : ITrackingLineColumnService,
         _undoManagerProvider : ITextBufferUndoManagerProvider,
         _statusUtilFactory : IStatusUtilFactory,
-        _foldManagerFactory : IFoldManagerFactory ) = 
+        _foldManagerFactory : IFoldManagerFactory,
+        _keyboardDevice : IKeyboardDevice,
+        _mouseDevice : IMouseDevice
+    ) = 
 
     member x.CreateBuffer (vim : IVim) view = 
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
@@ -104,9 +107,10 @@ type internal VimBufferFactory
                 vim.VimData) :> IIncrementalSearch
         let capture = MotionCapture(vim.VimHost, view, incrementalSearch, localSettings) :> IMotionCapture
 
+        let textChangeTracker = _textChangeTrackerFactory.GetTextChangeTracker bufferData
         let motionUtil = MotionUtil(view, vim.MarkMap, localSettings, vim.SearchService, wordNav, jumpList, statusUtil, wordUtil, vim.VimData) :> IMotionUtil
         let foldManager = _foldManagerFactory.GetFoldManager view
-        let insertUtil = InsertUtil(bufferData, commonOperations) :> IInsertUtil
+        let insertUtil = InsertUtil(bufferData, commonOperations, textChangeTracker) :> IInsertUtil
         let commandUtil = CommandUtil(bufferData, motionUtil, commonOperations, _smartIndentationService, foldManager, wordNav, insertUtil) :> ICommandUtil
 
         let bufferRaw = VimBuffer(bufferData, incrementalSearch, motionUtil, wordNav)
@@ -140,13 +144,12 @@ type internal VimBufferFactory
             |> List.ofSeq
     
         // Normal mode values
-        let tracker = _textChangeTrackerFactory.GetTextChangeTracker buffer
         let modeList = 
             [
                 ((Modes.Normal.NormalMode(buffer, commonOperations, statusUtil,broker, createCommandRunner VisualKind.Character, capture)) :> IMode)
                 ((Modes.Command.CommandMode(buffer, commandProcessor, commonOperations)) :> IMode)
-                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, tracker, insertUtil, false)) :> IMode)
-                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, tracker, insertUtil, true)) :> IMode)
+                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, false, _keyboardDevice, _mouseDevice)) :> IMode)
+                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, true, _keyboardDevice, _mouseDevice)) :> IMode)
                 ((Modes.SubstituteConfirm.SubstituteConfirmMode(buffer, commonOperations) :> IMode))
                 (DisabledMode(buffer) :> IMode)
                 (ExternalEditMode(buffer) :> IMode)

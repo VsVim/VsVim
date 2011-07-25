@@ -281,7 +281,7 @@ type internal ChangeTracker
         buffer.InsertMode.CommandRan |> Event.add handler
         buffer.ReplaceMode.CommandRan |> Event.add handler
 
-        let tracker = _textChangeTrackerFactory.GetTextChangeTracker buffer
+        let tracker = _textChangeTrackerFactory.GetTextChangeTracker buffer.VimBufferData
         tracker.ChangeCompleted |> Event.add (x.OnTextChanged buffer)
 
     member x.OnCommandRan buffer (data : CommandRunData) = 
