@@ -110,7 +110,7 @@ type internal VimBufferFactory
         let textChangeTracker = _textChangeTrackerFactory.GetTextChangeTracker bufferData
         let motionUtil = MotionUtil(view, vim.MarkMap, localSettings, vim.SearchService, wordNav, jumpList, statusUtil, wordUtil, vim.VimData) :> IMotionUtil
         let foldManager = _foldManagerFactory.GetFoldManager view
-        let insertUtil = InsertUtil(bufferData, commonOperations, textChangeTracker) :> IInsertUtil
+        let insertUtil = InsertUtil(bufferData, commonOperations) :> IInsertUtil
         let commandUtil = CommandUtil(bufferData, motionUtil, commonOperations, _smartIndentationService, foldManager, wordNav, insertUtil) :> ICommandUtil
 
         let bufferRaw = VimBuffer(bufferData, incrementalSearch, motionUtil, wordNav)

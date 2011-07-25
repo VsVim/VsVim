@@ -36,8 +36,8 @@ type internal VisualMode
     member x.CreateCommandBindings() =
         let visualSeq = 
             seq {
-                yield ("c", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange, VisualCommand.ChangeSelection)
-                yield ("C", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange, VisualCommand.ChangeLineSelection true)
+                yield ("c", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextCommand, VisualCommand.ChangeSelection)
+                yield ("C", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextCommand, VisualCommand.ChangeLineSelection true)
                 yield ("d", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
                 yield ("D", CommandFlags.Repeatable, VisualCommand.DeleteLineSelection)
                 yield ("gJ", CommandFlags.Repeatable, VisualCommand.JoinSelection JoinKind.KeepEmptySpaces)
@@ -47,9 +47,9 @@ type internal VisualMode
                 yield ("J", CommandFlags.Repeatable, VisualCommand.JoinSelection JoinKind.RemoveEmptySpaces)
                 yield ("p", CommandFlags.Repeatable, VisualCommand.PutOverSelection false)
                 yield ("P", CommandFlags.Repeatable, VisualCommand.PutOverSelection false)
-                yield ("R", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange, VisualCommand.ChangeLineSelection false)
-                yield ("s", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange, VisualCommand.ChangeSelection)
-                yield ("S", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange, VisualCommand.ChangeLineSelection false)
+                yield ("R", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextCommand, VisualCommand.ChangeLineSelection false)
+                yield ("s", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextCommand, VisualCommand.ChangeSelection)
+                yield ("S", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextCommand, VisualCommand.ChangeLineSelection false)
                 yield ("u", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToLowerCase)
                 yield ("U", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToUpperCase)
                 yield ("x", CommandFlags.Repeatable, VisualCommand.DeleteSelection)

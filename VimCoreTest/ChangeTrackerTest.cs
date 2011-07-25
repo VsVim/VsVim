@@ -57,7 +57,7 @@ namespace VimCore.UnitTest
         public void LinkedWithTextChange_Simple()
         {
             CreateForText("hello");
-            var data = VimUtil.CreateCommandRunData(flags: CommandFlags.LinkedWithNextTextChange | CommandFlags.Repeatable);
+            var data = VimUtil.CreateCommandRunData(flags: CommandFlags.LinkedWithNextCommand | CommandFlags.Repeatable);
             _runner.Raise(x => x.CommandRan += null, (object) null, data);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
             _textChangeTracker.Raise(x => x.ChangeCompleted += null, (object) null, TextChange.NewInsert("foo"));

@@ -9,8 +9,7 @@ open Microsoft.VisualStudio.Text.Outlining
 type internal InsertUtil
     (
         _bufferData : VimBufferData,
-        _operations : ICommonOperations,
-        _textChangeTracker : ITextChangeTracker
+        _operations : ICommonOperations
     ) =
 
     let _textView = _bufferData.TextView
@@ -74,7 +73,7 @@ type internal InsertUtil
 
             let text = 
                 if _localSettings.ExpandTab then
-                    StringUtil.repeatChar _globalSettings.ShiftWidth ' '
+                    StringUtil.repeatChar _localSettings.TabStop ' '
                 else
                     "\t"
 
@@ -89,9 +88,6 @@ type internal InsertUtil
 
     /// Move the caret in the given direction
     member x.MoveCaret direction = 
-
-        // An explicit move of the caret ends the current text change 
-        _textChangeTracker.CompleteChange()
 
         /// Move the caret up
         let moveUp () =

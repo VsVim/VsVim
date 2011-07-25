@@ -308,7 +308,7 @@ type internal CommandUtil
         commandResult
 
     /// Delete 'count' lines and begin insert mode.  The documentation of this command 
-    /// and behavior are a bit off.  It's documented like it behaves lke 'dd + insert mode' 
+    /// and behavior are a bit off.  It's documented like it behaves like 'dd + insert mode' 
     /// but behaves more like ChangeTillEndOfLine but linewise and deletes the entire
     /// first line
     member x.ChangeLines count register = 
@@ -1474,8 +1474,8 @@ type internal CommandUtil
                 let data = getCommandData data
                 let visualSpan = x.CalculateVisualSpan storedVisualSpan
                 x.RunVisualCommand command data visualSpan
-            | StoredCommand.InsertCommand command ->
-                x.RunInsertCommand command
+            | StoredCommand.InsertCommand (command, _) ->
+                x.RunInsertCommand command 
             | StoredCommand.TextChangeCommand change ->
                 // Calculate the count of the repeat
                 let count = 
@@ -1543,24 +1543,14 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Repeat the TextChange value 'count' times in the ITextBuffer
+    /// Repeat the TextChange value 'count' times in the ITextBuffer.
     member x.RepeatTextChange textChange count =
 
-        x.EditWithUndoTransaciton "Repeat Text Change" (fun () ->
-
-            // First apply the TextChange to the buffer then we will position the caret
-            _operations.ApplyTextChange textChange false count
-
-            // Next we need to do the final positioning of the caret.  While replaying 
-            // a series of edits we put the caret in a very particular place in order to 
-            // make the edits line up.  Once the edits are complete we need to reposition 
-            // the caret one item to the left.  This is to simulate the leaving of insert 
-            // mode and the caret moving left
-            let point = 
-                match SnapshotPointUtil.TryGetPreviousPointOnLine x.CaretPoint 1 with
-                | None -> x.CaretPoint
-                | Some point -> point
-            TextViewUtil.MoveCaretToPoint _textView point)
+        // There is no need to position the caret after the edit to simulate leaving insert mode.  It 
+        // would in fact cause an error.  Leaving insert mode generates it's own command which positions
+        // the caret post edit.  A single insert mode can result in several separate changes and we 
+        // only want to move the caret once.  Let that command manipulate the caret
+        _operations.ApplyTextChange textChange false count
 
         CommandResult.Completed ModeSwitch.NoSwitch
 

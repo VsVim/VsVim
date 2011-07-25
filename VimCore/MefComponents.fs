@@ -289,26 +289,31 @@ type internal ChangeTracker
         if command.IsMovement || command.IsSpecial then
             // Movement and special commands don't participate in change tracking
             ()
-        elif command.IsRepeatable then 
-            _vimData.LastCommand <- StoredCommand.OfCommand data.Command data.CommandBinding |> Some
+        elif command.IsRepeatable then
+            let storedCommand = StoredCommand.OfCommand data.Command data.CommandBinding
+            x.StoreCommand storedCommand
         else 
             _vimData.LastCommand <- None
 
     member x.OnTextChanged buffer data = 
         let textChange = StoredCommand.TextChangeCommand data
-        let useCurrent() = 
-            _vimData.LastCommand <- Some textChange
+        x.StoreCommand textChange
 
-        let maybeLink (command : StoredCommand) = 
-            if Util.IsFlagSet command.CommandFlags CommandFlags.LinkedWithNextTextChange then
-                let change = StoredCommand.LinkedCommand (command, textChange)
-                _vimData.LastCommand <- Some change
-            else 
-                useCurrent()
-
+    /// Store the given StoredCommand as the last command executed in the IVimBuffer.  Take into
+    /// account linking with the previous command
+    member x.StoreCommand currentCommand = 
         match _vimData.LastCommand with
-        | None -> useCurrent()
-        | Some storedCommand -> maybeLink storedCommand
+        | None -> 
+            // No last command so no linking to consider
+            _vimData.LastCommand <- Some currentCommand
+        | Some lastCommand ->
+            let shouldLink = 
+                Util.IsFlagSet currentCommand.CommandFlags CommandFlags.LinkedWithPreviousCommand ||
+                Util.IsFlagSet lastCommand.CommandFlags CommandFlags.LinkedWithNextCommand 
+            if shouldLink then
+                _vimData.LastCommand <- StoredCommand.LinkedCommand (lastCommand, currentCommand) |> Some
+            else
+                _vimData.LastCommand <- Some currentCommand
 
     interface IVimBufferCreationListener with
         member x.VimBufferCreated buffer = x.OnVimBufferCreated buffer

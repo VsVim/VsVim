@@ -97,6 +97,10 @@ namespace VimCore.UnitTest
             Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
         }
 
+        /// <summary>
+        /// Test the repeat of a repeated command.  Essentially ensure the act of repeating doesn't
+        /// disturb the cached LastCommand value
+        /// </summary>
         [Test]
         public void RepeatCommand_Repeated()
         {

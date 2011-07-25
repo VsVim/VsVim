@@ -109,10 +109,10 @@ type internal NormalMode
     member x.CreateCommandBindings() =
         let normalSeq = 
             seq {
-                yield ("a", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.InsertAfterCaret)
-                yield ("A", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.InsertAtEndOfLine)
-                yield ("C", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeTillEndOfLine)
-                yield ("cc", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeLines)
+                yield ("a", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.InsertAfterCaret)
+                yield ("A", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.InsertAtEndOfLine)
+                yield ("C", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.ChangeTillEndOfLine)
+                yield ("cc", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.ChangeLines)
                 yield ("dd", CommandFlags.Repeatable, NormalCommand.DeleteLines)
                 yield ("D", CommandFlags.Repeatable, NormalCommand.DeleteTillEndOfLine)
                 yield ("gf", CommandFlags.None, NormalCommand.GoToFileUnderCaret false)
@@ -132,15 +132,15 @@ type internal NormalMode
                 yield ("g??", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.Rot13)
                 yield ("g&", CommandFlags.Special, NormalCommand.RepeatLastSubstitute true)
                 yield ("i", CommandFlags.None, NormalCommand.InsertBeforeCaret)
-                yield ("I", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.InsertAtFirstNonBlank)
+                yield ("I", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.InsertAtFirstNonBlank)
                 yield ("J", CommandFlags.Repeatable, NormalCommand.JoinLines JoinKind.RemoveEmptySpaces)
-                yield ("o", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.InsertLineBelow)
-                yield ("O", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.InsertLineAbove)
+                yield ("o", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.InsertLineBelow)
+                yield ("O", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.InsertLineAbove)
                 yield ("p", CommandFlags.Repeatable, NormalCommand.PutAfterCaret false)
                 yield ("P", CommandFlags.Repeatable, NormalCommand.PutBeforeCaret false)
-                yield ("R", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange, NormalCommand.ReplaceAtCaret)
-                yield ("s", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.SubstituteCharacterAtCaret)
-                yield ("S", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeLines)
+                yield ("R", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextCommand, NormalCommand.ReplaceAtCaret)
+                yield ("s", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.SubstituteCharacterAtCaret)
+                yield ("S", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.ChangeLines)
                 yield ("u", CommandFlags.Special, NormalCommand.Undo)
                 yield ("v", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.VisualCharacter, ModeArgument.None))
                 yield ("V", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.VisualLine, ModeArgument.None))
@@ -197,7 +197,7 @@ type internal NormalMode
             
         let motionSeq = 
             seq {
-                yield ("c", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeMotion)
+                yield ("c", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.ChangeMotion)
                 yield ("d", CommandFlags.Repeatable ||| CommandFlags.Delete, NormalCommand.DeleteMotion)
                 yield ("gU", CommandFlags.Repeatable, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.ToUpperCase, motion)))
                 yield ("gu", CommandFlags.Repeatable, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.ToLowerCase, motion)))

@@ -24,8 +24,10 @@ type internal TextChangeTracker
     let mutable _enabled = false
 
     do
-        // Listen to text buffer change events in order to track edits
+        // Listen to text buffer change events in order to track edits.  Don't respond to changes
+        // while disabled though
         _textView.TextBuffer.Changed
+        |> Observable.filter (fun _ -> _enabled)
         |> Observable.subscribe (fun args -> this.OnTextChanged args)
         |> _bag.Add
 
@@ -36,6 +38,13 @@ type internal TextChangeTracker
         match _currentTextChange with
         | None -> None
         | Some (change,_) -> Some change
+
+    member x.Enabled 
+        with get () = _enabled
+        and set value = 
+            if _enabled <> value then
+                _currentTextChange <- None
+                _enabled <- value
 
     /// The change is completed.  Raises the changed event and resets the current text change 
     /// state
@@ -136,8 +145,8 @@ type internal TextChangeTracker
     interface ITextChangeTracker with 
         member x.TextView = _textView
         member x.Enabled 
-            with get () = _enabled
-            and set value = _enabled <- value
+            with get () = x.Enabled
+            and set value = x.Enabled <- value
         member x.CurrentChange = x.CurrentChange
         member x.CompleteChange () = x.CompleteChange ()
         member x.ClearChange () = x.ClearChange ()

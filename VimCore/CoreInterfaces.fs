@@ -928,21 +928,25 @@ type CommandFlags =
 
     /// For the purposes of change repeating the command is linked with the following
     /// text change
-    | LinkedWithNextTextChange = 0x10
+    | LinkedWithNextCommand = 0x10
+
+    /// For the purposes of change repeating the command is linked with the previous
+    /// text change if it exists
+    | LinkedWithPreviousCommand = 0x20
 
     /// For Visual Mode commands which should reset the cursor to the original point
     /// after completing
-    | ResetCaret = 0x20
+    | ResetCaret = 0x40
 
     /// Vim allows for special handling of the 'd' command in normal mode such that it can
     /// have the pattern 'd#d'.  This flag is used to tag the 'd' command to allow such
     /// a pattern
-    | Delete = 0x40
+    | Delete = 0x80
 
     /// Vim allows for special handling of the 'y' command in normal mode such that it can
     /// have the pattern 'y#y'.  This flag is used to tag the 'd' command to allow such
     /// a pattern
-    | Yank = 0x80
+    | Yank = 0x100
 
 /// Data about the run of a given MotionResult
 type MotionData = {
@@ -1655,7 +1659,7 @@ type StoredCommand =
     | VisualCommand of VisualCommand * CommandData * StoredVisualSpan * CommandFlags
 
     /// The stored information about a InsertCommand
-    | InsertCommand of InsertCommand
+    | InsertCommand of InsertCommand * CommandFlags
 
     /// A Text Change which occurred
     | TextChangeCommand of TextChange
@@ -1671,9 +1675,19 @@ type StoredCommand =
         match x with 
         | NormalCommand (_, _, flags) -> flags
         | VisualCommand (_, _, _, flags) -> flags
-        | InsertCommand _ -> CommandFlags.None
+        | InsertCommand (_, flags) -> flags
         | TextChangeCommand _ -> CommandFlags.None
-        | LinkedCommand _ -> CommandFlags.None
+        | LinkedCommand (_, rightCommand) -> rightCommand.CommandFlags
+
+    /// Returns the last command.  For most StoredCommand values this is just an identity 
+    /// function but for LinkedCommand values it returns the right most
+    member x.LastCommand =
+        match x with
+        | NormalCommand _ -> x
+        | VisualCommand _ -> x
+        | InsertCommand _ -> x
+        | TextChangeCommand _ -> x
+        | LinkedCommand (_, right) -> right.LastCommand
 
     /// Create a StoredCommand instance from the given Command value
     static member OfCommand command (commandBinding : CommandBinding) = 
@@ -1684,7 +1698,7 @@ type StoredCommand =
             let storedVisualSpan = StoredVisualSpan.OfVisualSpan visualSpan
             StoredCommand.VisualCommand (command, data, storedVisualSpan, commandBinding.CommandFlags)
         | Command.InsertCommand command ->
-            StoredCommand.InsertCommand command
+            StoredCommand.InsertCommand (command, commandBinding.CommandFlags)
 
 /// Flags about specific motions
 [<RequireQualifiedAccess>]

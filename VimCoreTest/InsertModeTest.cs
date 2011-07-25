@@ -97,6 +97,14 @@ namespace VimCore.UnitTest
             _mode = _modeRaw;
         }
 
+        private void SetupMoveCaretLeft()
+        {
+            _insertUtil
+                .Setup(x => x.RunInsertCommand(InsertCommand.NewMoveCaret(Direction.Left)))
+                .Returns(CommandResult.NewCompleted(ModeSwitch.NewSwitchMode(ModeKind.Normal)))
+                .Verifiable();
+        }
+
         /// <summary>
         /// Make sure we can process escape
         /// </summary>
@@ -135,7 +143,7 @@ namespace VimCore.UnitTest
             _broker.SetupGet(x => x.IsCompletionActive).Returns(false).Verifiable();
             _broker.SetupGet(x => x.IsQuickInfoActive).Returns(false).Verifiable();
             _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(false).Verifiable();
-            _operations.Setup(x => x.MoveCaretToPointAndEnsureVisible(It.IsAny<SnapshotPoint>())).Verifiable();
+            SetupMoveCaretLeft();
             var res = _mode.Process(KeyInputUtil.EscapeKey);
             Assert.IsTrue(res.IsSwitchMode(ModeKind.Normal));
             _factory.Verify();
@@ -158,7 +166,7 @@ namespace VimCore.UnitTest
             _broker
                 .Setup(x => x.DismissDisplayWindows())
                 .Verifiable();
-            _operations.Setup(x => x.MoveCaretToPointAndEnsureVisible(It.IsAny<SnapshotPoint>())).Verifiable();
+            SetupMoveCaretLeft();
             var res = _mode.Process(KeyInputUtil.EscapeKey);
             Assert.IsTrue(res.IsSwitchMode(ModeKind.Normal));
             _factory.Verify();
@@ -196,7 +204,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Control_OpenBraket2()
+        public void Control_OpenBracket2()
         {
             _broker
                 .SetupGet(x => x.IsCompletionActive)
@@ -204,6 +212,10 @@ namespace VimCore.UnitTest
                 .Verifiable();
             _broker
                 .Setup(x => x.DismissDisplayWindows())
+                .Verifiable();
+            _insertUtil
+                .Setup(x => x.RunInsertCommand(InsertCommand.NewMoveCaret(Direction.Left)))
+                .Returns(CommandResult.NewCompleted(ModeSwitch.NewSwitchMode(ModeKind.Normal)))
                 .Verifiable();
             var ki = KeyInputUtil.CharWithControlToKeyInput('[');
             var res = _mode.Process(ki);

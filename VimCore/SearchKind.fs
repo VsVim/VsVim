@@ -2,6 +2,9 @@
 
 namespace Vim
 
+[<RequireQualifiedAccess>]
+[<StructuralEquality>]
+[<NoComparison>]
 type Direction =
     | Up
     | Down

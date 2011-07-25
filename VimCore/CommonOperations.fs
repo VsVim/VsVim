@@ -108,10 +108,10 @@ type internal CommonOperations ( _data : OperationsData ) =
 
                 let caretPoint = TextViewUtil.GetCaretPoint _textView
                 let span = SnapshotSpan(caretPoint, 0)
-                let snapshot = _textView.TextBuffer.Replace(span.Span, text) |> ignore
+                _textView.TextBuffer.Replace(span.Span, text) |> ignore
 
                 // Now make sure to position the caret at the end of the inserted
-                // text
+                // text so the next edit will occur after.
                 TextViewUtil.MoveCaretToPosition _textView (caretPoint.Position + text.Length)
             | TextChange.Delete deleteCount -> 
                 // Delete '(count - 1) * deleteCount' more characters
@@ -132,7 +132,6 @@ type internal CommonOperations ( _data : OperationsData ) =
 
             for i = 1 to count do
                 applyChange textChange)
-
 
     /// Move the caret to the specified point and ensure it's visible and the surrounding 
     /// text is expanded

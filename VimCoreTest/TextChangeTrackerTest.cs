@@ -1,5 +1,4 @@
-﻿using Microsoft.FSharp.Core;
-using Microsoft.VisualStudio.Text;
+﻿using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
@@ -11,7 +10,7 @@ using Vim.UnitTest.Mock;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class TextChangeTrackerTest
+    public sealed class TextChangeTrackerTest
     {
         private MockRepository _factory;
         private ITextBuffer _textBuffer;
@@ -23,7 +22,7 @@ namespace VimCore.UnitTest
         private ITextChangeTracker _tracker;
         private TextChange _lastChange;
 
-        protected void Create(params string[] lines)
+        private void Create(params string[] lines)
         {
             _textBuffer = EditorUtil.CreateTextBuffer(lines);
             _factory = new MockRepository(MockBehavior.Loose);
@@ -36,6 +35,7 @@ namespace VimCore.UnitTest
             _localSettings = _factory.Create<IVimLocalSettings>();
             _operations = _factory.Create<ICommonOperations>(MockBehavior.Strict);
             _trackerRaw = new TextChangeTracker(_textView.Object, _operations.Object);
+            _trackerRaw.Enabled = true;
             _tracker = _trackerRaw;
             _tracker.ChangeCompleted += (sender, data) => { _lastChange = data; };
         }
@@ -46,6 +46,33 @@ namespace VimCore.UnitTest
             _tracker = null;
             _textBuffer = null;
             _lastChange = null;
+        }
+
+        /// <summary>
+        /// Make sure that no tracking occurs when we are disabled
+        /// </summary>
+        [Test]
+        public void DontTrackWhenDisabled()
+        {
+            Create("");
+            _tracker.Enabled = false;
+            _textBuffer.Insert(0, "a");
+            Assert.IsNull(_lastChange);
+            Assert.IsTrue(_tracker.CurrentChange.IsNone());
+        }
+
+        /// <summary>
+        /// Make sure we clear out the text when disabling.  Don't want a change to persist across
+        /// several enabled sessions
+        /// </summary>
+        [Test]
+        public void DisableShouldClearCurrentChange()
+        {
+            Create("");
+            _textBuffer.Insert(0, "a");
+            _tracker.Enabled = false;
+            Assert.IsNull(_lastChange);
+            Assert.IsTrue(_tracker.CurrentChange.IsNone());
         }
 
         [Test]

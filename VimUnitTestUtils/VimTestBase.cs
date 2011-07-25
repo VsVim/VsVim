@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Microsoft.FSharp.Core;
 using NUnit.Framework;
 using Vim.UI.Wpf;
 using Vim.UI.Wpf.Implementation;
@@ -44,6 +45,7 @@ namespace Vim.UnitTest
                 Assert.Fail(msg);
             }
 
+            EditorUtil.FactoryService.Vim.VimData.LastCommand = FSharpOption<StoredCommand>.None;
             EditorUtil.FactoryService.Vim.KeyMap.ClearAll();
         }
     }

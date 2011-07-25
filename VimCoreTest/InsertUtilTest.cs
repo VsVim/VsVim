@@ -32,10 +32,7 @@ namespace VimCore.UnitTest
             _localSettings = _buffer.LocalSettings;
 
             var operations = EditorUtil.FactoryService.CommonOperationsFactory.GetCommonOperations(_buffer.VimBufferData);
-            _insertUtilRaw = new InsertUtil(
-                _buffer.VimBufferData,
-                operations,
-                new TextChangeTracker(_buffer.TextView, operations));
+            _insertUtilRaw = new InsertUtil(_buffer.VimBufferData, operations);
             _insertUtil = _insertUtilRaw;
         }
 
@@ -48,7 +45,7 @@ namespace VimCore.UnitTest
             Create("hello");
             _textView.MoveCaretTo(2);
             _localSettings.ExpandTab = true;
-            _globalSettings.ShiftWidth = 3;
+            _localSettings.TabStop = 3;
             _insertUtilRaw.InsertTab();
             Assert.AreEqual("he   llo", _textView.GetLine(0).GetText());
             Assert.AreEqual(5, _textView.GetCaretPoint().Position);

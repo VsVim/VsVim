@@ -74,17 +74,18 @@ type internal InsertMode
     }
     let mutable _sessionData = _emptySessionData
 
-    /// The set of commands supported by insert mode.  The final bool is for whether
-    /// or not the command should end the current text change before running
-    static let commands : (string * InsertCommand * CommandFlags * bool) list =
+    /// The set of commands supported by insert mode
+    static let s_commands : (string * InsertCommand * CommandFlags) list =
+        let linkBoth = CommandFlags.LinkedWithPreviousCommand ||| CommandFlags.LinkedWithNextCommand
         [
-            ("<Left>", InsertCommand.MoveCaret Direction.Left, CommandFlags.Movement, false)
-            ("<Down>", InsertCommand.MoveCaret Direction.Down, CommandFlags.Movement, false)
-            ("<Right>", InsertCommand.MoveCaret Direction.Right, CommandFlags.Movement, false)
-            ("<Up>", InsertCommand.MoveCaret Direction.Up, CommandFlags.Movement, false)
-            ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable, false)
-            ("<C-d>", InsertCommand.ShiftLineLeft, CommandFlags.Repeatable, true)
-            ("<C-t>", InsertCommand.ShiftLineRight, CommandFlags.Repeatable, true)
+            ("<Left>", InsertCommand.MoveCaret Direction.Left, CommandFlags.Movement)
+            ("<Down>", InsertCommand.MoveCaret Direction.Down, CommandFlags.Movement)
+            ("<Right>", InsertCommand.MoveCaret Direction.Right, CommandFlags.Movement)
+            ("<Tab>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| linkBoth)
+            ("<Up>", InsertCommand.MoveCaret Direction.Up, CommandFlags.Movement)
+            ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| linkBoth)
+            ("<C-d>", InsertCommand.ShiftLineLeft, CommandFlags.Repeatable)
+            ("<C-t>", InsertCommand.ShiftLineRight, CommandFlags.Repeatable)
         ]
 
     do
@@ -96,11 +97,11 @@ type internal InsertMode
             ]
 
         let mappedCommands : (string * CommandFunction) list = 
-            commands
-            |> Seq.map (fun (name, command, commandFlags, completesChange) ->
+            s_commands
+            |> Seq.map (fun (name, command, commandFlags) ->
                 let func () = 
                     let keyInputSet = KeyNotationUtil.StringToKeyInputSet name
-                    this.RunInsertCommand command keyInputSet commandFlags completesChange
+                    this.RunInsertCommand command keyInputSet commandFlags
                 (name, func))
             |> List.ofSeq
 
@@ -267,10 +268,15 @@ type internal InsertMode
 
     member x.ProcessEscape () =
 
+        // Move the caret one to the left.  Note that this actually counts as a Vim command and is itself
+        // a repeatable item.  It works with insert mode by linking with the previous change
         let moveCaretLeft () = 
-            match SnapshotPointUtil.TryGetPreviousPointOnLine x.CaretPoint 1 with
-            | None -> ()
-            | Some point -> _operations.MoveCaretToPointAndEnsureVisible point
+
+            // TODO: Perhaps we can clean this up a bit.  Do we need to go through all of the ceremony of
+            // creating the KeyInputSet?
+            let keyInputSet = KeyNotationUtil.StringToKeyInputSet "<Left>"
+            let commandFlags = CommandFlags.Repeatable ||| CommandFlags.LinkedWithPreviousCommand
+            x.RunInsertCommand (InsertCommand.MoveCaret Direction.Left) keyInputSet commandFlags |> ignore
 
         this.MaybeApplyRepeatedEdits()
 
@@ -297,12 +303,11 @@ type internal InsertMode
             x.IsDirectInsert ki
 
     /// Run the insert command with the given information
-    member x.RunInsertCommand command keyInputSet commandFlags completesChange = 
+    member x.RunInsertCommand command keyInputSet commandFlags = 
 
-        // Certain commands don't have an relation to the inserted text and effectively 
-        // complete the existing text change.  
-        if completesChange then
-            _textChangeTracker.CompleteChange()
+        // When running an explicit command then we need to go ahead and complete the previous 
+        // change
+        _textChangeTracker.CompleteChange()
 
         let result = _insertUtil.RunInsertCommand command
         let data = {
@@ -311,8 +316,9 @@ type internal InsertMode
             CommandResult = result }
         _commandRanEvent.Trigger data
 
-        if completesChange then
-            _textChangeTracker.ClearChange()
+        // Clear up any text changes this command caused.  They shouldn't raise as a text change
+        // event as repeat needs to go through the command
+        _textChangeTracker.ClearChange()
 
         ProcessResult.OfCommandResult result
 
@@ -342,7 +348,7 @@ type internal InsertMode
                     _textBuffer.Delete(span.Span) |> ignore
 
                 // Now run the command
-                x.RunInsertCommand command keyInputSet CommandFlags.Repeatable true |> Some
+                x.RunInsertCommand command keyInputSet CommandFlags.Repeatable |> Some
 
         match _textChangeTracker.CurrentChange with
         | None ->
@@ -429,6 +435,17 @@ type internal InsertMode
                     Some transaction, None
                 else
                     None, None
+
+        // If the LastCommand coming into insert / replace mode is not setup for linking 
+        // with the next change then clear it out now.  This is needed to implement functions
+        // like 'dw' followed by insert, <Esc> and immediately by '.'.  It should simply 
+        // move the caret left
+        match _buffer.VimData.LastCommand with
+        | None ->
+            ()
+        | Some lastCommand ->
+            if not (Util.IsFlagSet lastCommand.CommandFlags CommandFlags.LinkedWithNextCommand) then
+                _buffer.VimData.LastCommand <- None
 
         _sessionData <- {
             Transaction = transaction
