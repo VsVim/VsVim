@@ -46,6 +46,18 @@ type InsertSessionData = {
 
     member x.AddTextEdit edit = { x with TextEditList = edit::x.TextEditList }
 
+type InsertFlags =
+
+    | None = 0
+
+    /// This is for command values which are still considered direct inserts into the 
+    /// IVimBuffer instead of actual commands.  For example Enter is a command but it's 
+    /// still considered direct input into the buffer.  While Shift Left is a command 
+    /// because it actually thinks about about context.
+    ///
+    /// This distinction is vague at best
+    | DirectInsert = 0x1
+
 type internal InsertMode
     ( 
         _buffer : IVimBuffer, 
@@ -65,7 +77,7 @@ type internal InsertMode
     let _textBuffer = _buffer.TextBuffer
     let _editorOperations = _operations.EditorOperations
     let _commandRanEvent = Event<_>()
-    let mutable _commandMap : Map<KeyInput, CommandFunction> = Map.empty
+    let mutable _commandMap : Map<KeyInput, CommandFunction * bool> = Map.empty
     let mutable _processDirectInsertCount = 0
     let _emptySessionData = {
         Transaction = None
@@ -75,17 +87,19 @@ type internal InsertMode
     let mutable _sessionData = _emptySessionData
 
     /// The set of commands supported by insert mode
-    static let s_commands : (string * InsertCommand * CommandFlags) list =
+    static let s_commands : (string * InsertCommand * CommandFlags * InsertFlags) list =
         let linkBoth = CommandFlags.LinkedWithPreviousCommand ||| CommandFlags.LinkedWithNextCommand
         [
-            ("<Left>", InsertCommand.MoveCaret Direction.Left, CommandFlags.Movement)
-            ("<Down>", InsertCommand.MoveCaret Direction.Down, CommandFlags.Movement)
-            ("<Right>", InsertCommand.MoveCaret Direction.Right, CommandFlags.Movement)
-            ("<Tab>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| linkBoth)
-            ("<Up>", InsertCommand.MoveCaret Direction.Up, CommandFlags.Movement)
-            ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| linkBoth)
-            ("<C-d>", InsertCommand.ShiftLineLeft, CommandFlags.Repeatable)
-            ("<C-t>", InsertCommand.ShiftLineRight, CommandFlags.Repeatable)
+            ("<Enter>", InsertCommand.InsertNewLine, CommandFlags.Repeatable, InsertFlags.DirectInsert)
+            ("<Left>", InsertCommand.MoveCaret Direction.Left, CommandFlags.Movement, InsertFlags.None)
+            ("<Down>", InsertCommand.MoveCaret Direction.Down, CommandFlags.Movement, InsertFlags.None)
+            ("<Right>", InsertCommand.MoveCaret Direction.Right, CommandFlags.Movement, InsertFlags.None)
+            ("<Tab>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| linkBoth, InsertFlags.DirectInsert)
+            ("<Up>", InsertCommand.MoveCaret Direction.Up, CommandFlags.Movement, InsertFlags.None)
+            ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| linkBoth, InsertFlags.DirectInsert)
+            ("<C-d>", InsertCommand.ShiftLineLeft, CommandFlags.Repeatable, InsertFlags.None)
+            ("<C-m>", InsertCommand.InsertNewLine, CommandFlags.Repeatable, InsertFlags.DirectInsert)
+            ("<C-t>", InsertCommand.ShiftLineRight, CommandFlags.Repeatable, InsertFlags.None)
         ]
 
     do
@@ -98,18 +112,19 @@ type internal InsertMode
 
         let mappedCommands : (string * CommandFunction) list = 
             s_commands
-            |> Seq.map (fun (name, command, commandFlags) ->
+            |> Seq.map (fun (name, command, commandFlags, insertFlags) ->
                 let func () = 
                     let keyInputSet = KeyNotationUtil.StringToKeyInputSet name
                     this.RunInsertCommand command keyInputSet commandFlags
-                (name, func))
+                let isDirectInsert = Util.IsFlagSet insertFlags InsertFlags.DirectInsert
+                (name, (func, isDirectInsert)))
             |> List.ofSeq
 
         let both = Seq.append oldCommands mappedCommands
         _commandMap <-
             oldCommands
             |> Seq.append mappedCommands
-            |> Seq.map (fun (str, func) -> (KeyNotationUtil.StringToKeyInput str), func)
+            |> Seq.map (fun (str, func) -> (KeyNotationUtil.StringToKeyInput str), (func, false))
             |> Map.ofSeq
 
         // Caret changes can end a text change operation.
@@ -144,6 +159,7 @@ type internal InsertMode
             | VimKey.Enter -> true
             | VimKey.Back -> true
             | VimKey.Delete -> true
+            | VimKey.Tab -> true
             | _ -> Option.isSome keyInput.RawChar
 
     /// Process the direct text insert command
@@ -296,7 +312,9 @@ type internal InsertMode
             ProcessResult.OfModeKind ModeKind.Normal
 
     /// Can Insert mode handle this particular KeyInput value 
-    member x.CanProcess ki = 
+    member x.CanProcess keyInput = 
+        match Map.tryFind keyInput _commandMap with
+        | 
         if Map.containsKey ki _commandMap then
             true
         else
@@ -368,7 +386,7 @@ type internal InsertMode
             result
         | None ->
             match Map.tryFind keyInput _commandMap with
-            | Some func -> 
+            | Some (func, _) -> 
                 func()
             | None -> 
                 if x.IsDirectInsert keyInput then 
