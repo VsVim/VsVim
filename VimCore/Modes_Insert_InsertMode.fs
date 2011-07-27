@@ -9,26 +9,6 @@ open System
 
 type CommandFunction = unit -> ProcessResult
 
-/// This is information describing a particular TextEdit which was done 
-/// to the ITextBuffer.  
-[<RequireQualifiedAccess>]
-type TextEdit =
-
-    /// A character was inserted into the ITextBuffer
-    | InsertChar of char
-
-    /// A character was replaced in the ITextBuffer.  The first char is the
-    /// original and the second is the new value
-    | ReplaceChar of char * char
-
-    /// A newline was inserted into the ITextBuffer
-    | NewLine
-
-    /// An unknown edit operation occurred.  Happens when actions like a
-    /// normal mode command is run.  This breaks the ability for certain
-    /// operations like replace mode to do a back space properly
-    | UnknownEdit 
-
 /// Data relating to a particular Insert mode session
 type InsertSessionData = {
 
@@ -39,24 +19,9 @@ type InsertSessionData = {
     /// whether or not a newline should be inserted after the text
     RepeatData : (int * bool) option
 
-    /// The set of edit's which have occurred in this session
-    TextEditList : TextEdit list
-
-} with
-
-    member x.AddTextEdit edit = { x with TextEditList = edit::x.TextEditList }
-
-type InsertFlags =
-
-    | None = 0
-
-    /// This is for command values which are still considered direct inserts into the 
-    /// IVimBuffer instead of actual commands.  For example Enter is a command but it's 
-    /// still considered direct input into the buffer.  While Shift Left is a command 
-    /// because it actually thinks about about context.
-    ///
-    /// This distinction is vague at best
-    | DirectInsert = 0x1
+    /// This is the current InsertCommand being built up
+    CombinedEditCommand : InsertCommand option
+}
 
 type internal InsertMode
     ( 
@@ -77,29 +42,30 @@ type internal InsertMode
     let _textBuffer = _buffer.TextBuffer
     let _editorOperations = _operations.EditorOperations
     let _commandRanEvent = Event<_>()
-    let mutable _commandMap : Map<KeyInput, CommandFunction * bool> = Map.empty
+    let mutable _commandMap : Map<KeyInput, CommandFunction> = Map.empty
     let mutable _processDirectInsertCount = 0
     let _emptySessionData = {
         Transaction = None
         RepeatData = None
-        TextEditList = List.empty
+        CombinedEditCommand = None
     }
     let mutable _sessionData = _emptySessionData
 
     /// The set of commands supported by insert mode
-    static let s_commands : (string * InsertCommand * CommandFlags * InsertFlags) list =
-        let linkBoth = CommandFlags.LinkedWithPreviousCommand ||| CommandFlags.LinkedWithNextCommand
+    static let s_commands : (string * InsertCommand * CommandFlags) list =
         [
-            ("<Enter>", InsertCommand.InsertNewLine, CommandFlags.Repeatable, InsertFlags.DirectInsert)
-            ("<Left>", InsertCommand.MoveCaret Direction.Left, CommandFlags.Movement, InsertFlags.None)
-            ("<Down>", InsertCommand.MoveCaret Direction.Down, CommandFlags.Movement, InsertFlags.None)
-            ("<Right>", InsertCommand.MoveCaret Direction.Right, CommandFlags.Movement, InsertFlags.None)
-            ("<Tab>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| linkBoth, InsertFlags.DirectInsert)
-            ("<Up>", InsertCommand.MoveCaret Direction.Up, CommandFlags.Movement, InsertFlags.None)
-            ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| linkBoth, InsertFlags.DirectInsert)
-            ("<C-d>", InsertCommand.ShiftLineLeft, CommandFlags.Repeatable, InsertFlags.None)
-            ("<C-m>", InsertCommand.InsertNewLine, CommandFlags.Repeatable, InsertFlags.DirectInsert)
-            ("<C-t>", InsertCommand.ShiftLineRight, CommandFlags.Repeatable, InsertFlags.None)
+            ("<BS>", InsertCommand.Back, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+            ("<Del>", InsertCommand.Delete, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+            ("<Enter>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+            ("<Left>", InsertCommand.MoveCaret Direction.Left, CommandFlags.Movement)
+            ("<Down>", InsertCommand.MoveCaret Direction.Down, CommandFlags.Movement)
+            ("<Right>", InsertCommand.MoveCaret Direction.Right, CommandFlags.Movement)
+            ("<Tab>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+            ("<Up>", InsertCommand.MoveCaret Direction.Up, CommandFlags.Movement)
+            ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+            ("<C-d>", InsertCommand.ShiftLineLeft, CommandFlags.Repeatable)
+            ("<C-m>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+            ("<C-t>", InsertCommand.ShiftLineRight, CommandFlags.Repeatable)
         ]
 
     do
@@ -112,24 +78,29 @@ type internal InsertMode
 
         let mappedCommands : (string * CommandFunction) list = 
             s_commands
-            |> Seq.map (fun (name, command, commandFlags, insertFlags) ->
+            |> Seq.map (fun (name, command, commandFlags) ->
                 let func () = 
                     let keyInputSet = KeyNotationUtil.StringToKeyInputSet name
                     this.RunInsertCommand command keyInputSet commandFlags
-                let isDirectInsert = Util.IsFlagSet insertFlags InsertFlags.DirectInsert
-                (name, (func, isDirectInsert)))
+                (name, func))
             |> List.ofSeq
 
         let both = Seq.append oldCommands mappedCommands
         _commandMap <-
             oldCommands
             |> Seq.append mappedCommands
-            |> Seq.map (fun (str, func) -> (KeyNotationUtil.StringToKeyInput str), (func, false))
+            |> Seq.map (fun (str, func) -> (KeyNotationUtil.StringToKeyInput str), func)
             |> Map.ofSeq
 
         // Caret changes can end a text change operation.
         _textView.Caret.PositionChanged
         |> Observable.subscribe (fun _ -> this.OnCaretPositionChanged() )
+        |> _bag.Add
+
+        // Listen for text changes
+        _textChangeTracker.ChangeCompleted
+        |> Observable.filter (fun _ -> this.IsActive)
+        |> Observable.subscribe (fun args -> this.OnTextChange args)
         |> _bag.Add
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
@@ -154,92 +125,23 @@ type internal InsertMode
             // Known commands are not direct text insert
             false
         | None ->
-            // Not a command so check for known direct text inserts
-            match keyInput.Key with
-            | VimKey.Enter -> true
-            | VimKey.Back -> true
-            | VimKey.Delete -> true
-            | VimKey.Tab -> true
-            | _ -> Option.isSome keyInput.RawChar
+            // If it's not a command and has an associated 'char' then it's a direct text
+            // insert
+            Option.isSome keyInput.RawChar
 
     /// Process the direct text insert command
-    member x.ProcessDirectInsert (ki : KeyInput) = 
-
-        // Actually process the edit
-        let processReplaceEdit () =
-            let sessionData = _sessionData
-            match ki.Key with
-            | VimKey.Enter -> 
-                let sessionData = sessionData.AddTextEdit TextEdit.NewLine
-                _editorOperations.InsertNewLine(), sessionData
-            | VimKey.Back ->
-                // In replace we only support a backspace if the TextEdit stack is not
-                // empty and points to something we can handle 
-                match sessionData.TextEditList with 
-                | [] ->
-                    // Even though we take no action here we handled the KeyInput
-                    true, sessionData
-                | h::t ->
-                    match h with 
-                    | TextEdit.InsertChar _ -> 
-                        let sessionData = { sessionData with TextEditList = t }
-                        _editorOperations.Delete(), sessionData
-                    | TextEdit.ReplaceChar (oldChar, newChar) ->
-                        let point = 
-                            SnapshotPointUtil.TryGetPreviousPointOnLine x.CaretPoint 1 
-                            |> OptionUtil.getOrDefault x.CaretPoint
-                        let span = Span(point.Position, 1)
-                        let sessionData = { sessionData with TextEditList = t }
-                        let result = _editorOperations.ReplaceText(span, (oldChar.ToString()))
-
-                        // If the replace succeeded we need to position the caret back at the 
-                        // start of the replace
-                        if result then
-                            TextViewUtil.MoveCaretToPosition _textView point.Position
-
-                        result, sessionData
-                    | TextEdit.NewLine -> 
-                        true, sessionData
-                    | TextEdit.UnknownEdit ->
-                        true, sessionData
-            | VimKey.Delete ->
-                // Strangely a delete in replace actually does a delete but doesn't affect 
-                // the edit stack
-                _editorOperations.Delete(), sessionData
-            | _ ->
-                let text = ki.Char.ToString()
-                let caretPoint = TextViewUtil.GetCaretPoint _textView
-                let edit = 
-                    if SnapshotPointUtil.IsInsideLineBreak caretPoint then
-                        TextEdit.InsertChar ki.Char
-                    else
-                        TextEdit.ReplaceChar ((caretPoint.GetChar()), ki.Char)
-                let sessionData = sessionData.AddTextEdit edit
-                _editorOperations.InsertText(text), sessionData
-
-        let processInsertEdit () =
-            match ki.Key with
-            | VimKey.Enter -> 
-                _editorOperations.InsertNewLine()
-            | VimKey.Back -> 
-                _editorOperations.Backspace()
-            | VimKey.Delete -> 
-                _editorOperations.Delete()
-            | _ ->
-                let text = ki.Char.ToString()
-                _editorOperations.InsertText(text)
+    member x.ProcessDirectInsert (keyInput : KeyInput) = 
 
         _processDirectInsertCount <- _processDirectInsertCount + 1
         try
-            let value, sessionData =
-                if _isReplace then 
-                    processReplaceEdit()
-                else
-                    processInsertEdit(), _sessionData
-
-            // If the edit succeeded then record the new InsertSessionData
-            if value then
-                _sessionData <- sessionData
+            let value = 
+                match keyInput.RawChar with
+                | None -> 
+                    // Nothing to do
+                    false
+                | Some c ->
+                    let text = c.ToString()
+                    _editorOperations.InsertText(text)
 
             if value then
                 ProcessResult.Handled ModeSwitch.NoSwitch
@@ -257,22 +159,22 @@ type internal InsertMode
     /// Enter normal mode for a single command.  
     member x.ProcessNormalModeOneCommand () =
 
-        // If we're in replace mode then this will be a blocking edit.  Record it
-        if _isReplace then
-            _sessionData <- _sessionData.AddTextEdit TextEdit.UnknownEdit
-
         let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Normal, ModeArgument.OneTimeCommand x.ModeKind)
         ProcessResult.Handled switch
 
     /// Apply the repeated edits the the ITextBuffer
     member x.MaybeApplyRepeatedEdits () = 
 
+        // Flush out any existing text changes so the CombinedEditCommand has the final
+        // edit data for the session
+        _textChangeTracker.CompleteChange()
+
         try
-            match _sessionData.RepeatData, _textChangeTracker.CurrentChange with
+            match _sessionData.RepeatData, _sessionData.CombinedEditCommand with
             | None, None -> ()
             | None, Some _ -> ()
             | Some _, None -> ()
-            | Some (count, addNewLines), Some change -> _operations.ApplyTextChange change addNewLines (count - 1)
+            | Some (count, addNewLines), Some command -> _insertUtil.RepeatEdit command addNewLines (count - 1)
         finally
             // Make sure to close out the transaction
             match _sessionData.Transaction with
@@ -313,30 +215,62 @@ type internal InsertMode
 
     /// Can Insert mode handle this particular KeyInput value 
     member x.CanProcess keyInput = 
-        match Map.tryFind keyInput _commandMap with
-        | 
-        if Map.containsKey ki _commandMap then
+        if Map.containsKey keyInput _commandMap then
             true
         else
-            x.IsDirectInsert ki
+            x.IsDirectInsert keyInput
+
+    /// Complete the current batched edit command if one exists
+    member x.CompleteCombinedEditCommand () = 
+        match _sessionData.CombinedEditCommand with
+        | None ->
+            // Nothing to do
+            () 
+        | Some command -> 
+            _sessionData <- { _sessionData with CombinedEditCommand = None }
+
+            let data = {
+                CommandBinding = CommandBinding.InsertBinding (KeyInputSet.Empty, CommandFlags.Repeatable ||| CommandFlags.InsertEdit, command)
+                Command = Command.InsertCommand command
+                CommandResult = CommandResult.Completed ModeSwitch.NoSwitch }
+            _commandRanEvent.Trigger data
 
     /// Run the insert command with the given information
     member x.RunInsertCommand command keyInputSet commandFlags = 
 
         // When running an explicit command then we need to go ahead and complete the previous 
-        // change
+        // text change
         _textChangeTracker.CompleteChange()
 
         let result = _insertUtil.RunInsertCommand command
-        let data = {
-            CommandBinding = CommandBinding.InsertBinding (keyInputSet, commandFlags, command)
-            Command = Command.InsertCommand command
-            CommandResult = result }
-        _commandRanEvent.Trigger data
 
         // Clear up any text changes this command caused.  They shouldn't raise as a text change
         // event as repeat needs to go through the command
         _textChangeTracker.ClearChange()
+
+        // Now we need to decided how the external world sees this edit.  If it links with an
+        // existing edit then we save it and send it out as a batch later.
+        let isEdit = Util.IsFlagSet commandFlags CommandFlags.InsertEdit
+        if isEdit then
+
+            // If it's an edit then combine it with the existing command and batch them 
+            // together.  Don't raise the event yet
+            let command = 
+                match _sessionData.CombinedEditCommand with
+                | None -> command
+                | Some previousCommand -> InsertCommand.Combined (previousCommand, command)
+            _sessionData <- { _sessionData with CombinedEditCommand = Some command }
+
+        else
+            // Not an edit command.  If there is an existing edit command then go ahead and flush
+            // it out before raising this command
+            x.CompleteCombinedEditCommand()
+
+            let data = {
+                CommandBinding = CommandBinding.InsertBinding (keyInputSet, commandFlags, command)
+                Command = Command.InsertCommand command
+                CommandResult = result }
+            _commandRanEvent.Trigger data
 
         ProcessResult.OfCommandResult result
 
@@ -386,7 +320,7 @@ type internal InsertMode
             result
         | None ->
             match Map.tryFind keyInput _commandMap with
-            | Some (func, _) -> 
+            | Some func -> 
                 func()
             | None -> 
                 if x.IsDirectInsert keyInput then 
@@ -414,6 +348,20 @@ type internal InsertMode
                 |> SeqUtil.isNotEmpty
             if keyMove then 
                 _textChangeTracker.CompleteChange()
+
+    /// Raised on the completion of a TextChange event.  This event is not raised immediately
+    /// and instead is added to the CombinedEditCommand value for this session which will be 
+    /// raised as a command at a later time
+    /// Insert Command whenever it completes
+    member x.OnTextChange textChange =
+
+        let command = 
+            let textChangeCommand = InsertCommand.TextChange textChange
+            match _sessionData.CombinedEditCommand with
+            | None -> textChangeCommand
+            | Some command -> InsertCommand.Combined (command, textChangeCommand)
+
+        _sessionData <- { _sessionData with CombinedEditCommand = Some command } 
 
     /// Called when the IVimBuffer is closed.  We need to unsubscribe from several events
     /// when this happens to prevent the ITextBuffer / ITextView from being kept alive
@@ -468,7 +416,7 @@ type internal InsertMode
         _sessionData <- {
             Transaction = transaction
             RepeatData = repeatData
-            TextEditList = List.empty
+            CombinedEditCommand = None
         }
 
         // If this is replace mode then go ahead and setup overwrite
@@ -486,6 +434,10 @@ type internal InsertMode
         // When leaving insert mode we complete the current change
         _textChangeTracker.CompleteChange()
         _textChangeTracker.Enabled <- false
+
+        // Possibly raise the edit command.  This will have already happened if <Esc> was used
+        // to exit insert mode.  This case takes care of being asked to exit programmatically 
+        x.CompleteCombinedEditCommand()
 
         try
             match _sessionData.Transaction with

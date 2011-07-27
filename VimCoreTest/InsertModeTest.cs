@@ -115,22 +115,31 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
-        /// Ensure we can process a variety of TextInput but that it's explicitly listed as such
+        /// Ensure that all known character values are considered direct input.  They cause direct
+        /// edits to the buffer.  They are not commands.
         /// </summary>
         [Test]
-        public void CanProcess_DirectInput()
+        public void IsDirectInput_Chars()
         {
-            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.EnterKey));
-            Assert.IsTrue(_mode.IsDirectInsert(KeyInputUtil.EnterKey));
-            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.AlternateEnterKey));
-            Assert.IsTrue(_mode.IsDirectInsert(KeyInputUtil.AlternateEnterKey));
-
             foreach (var cur in KeyInputUtilTest.CharsAll)
             {
                 var input = KeyInputUtil.CharToKeyInput(cur);
                 Assert.IsTrue(_mode.CanProcess(input));
                 Assert.IsTrue(_mode.IsDirectInsert(input));
             }
+        }
+
+        /// <summary>
+        /// Certain keys do cause buffer edits but are not direct input.  They are interpreted by Vim
+        /// and given specific values based on settings.  While they cause edits the values passed down
+        /// don't directly go to the buffer
+        /// </summary>
+        [Test]
+        public void IsDirectInput_SpecialKeys()
+        {
+            Assert.IsFalse(_mode.IsDirectInsert(KeyInputUtil.EnterKey));
+            Assert.IsFalse(_mode.IsDirectInsert(KeyInputUtil.AlternateEnterKey));
+            Assert.IsFalse(_mode.IsDirectInsert(KeyInputUtil.VimKeyToKeyInput(VimKey.Tab)));
         }
 
         /// <summary>

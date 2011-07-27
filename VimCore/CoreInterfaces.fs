@@ -159,6 +159,49 @@ type IUndoRedoOperations =
     /// Undo the last "count" operations
     abstract Undo : count:int -> unit
 
+/// Represents the type of text change operations we recognize in the ITextBuffer.  These
+/// items are repeatable
+[<RequireQualifiedAccess>]
+type TextChange = 
+    | Insert of string
+    | Delete of int
+    | Combination of TextChange * TextChange
+
+    with 
+
+    /// Get the last / most recent change in the TextChange tree
+    member x.LastChange = 
+        match x with
+        | Insert _ -> x
+        | Delete _ -> x
+        | Combination (_, right) -> right.LastChange
+
+    /// Merge two TextChange values together.  The goal is to produce a the smallest TextChange
+    /// value possible
+    static member Merge left right =
+        match left, right with
+        | Insert leftStr, Insert rightStr -> 
+            Insert (leftStr + rightStr)
+        | Delete leftCount, Delete rightCount -> 
+            Delete (leftCount + rightCount)
+        | Insert leftStr, Delete rightCount ->
+            let diff = leftStr.Length - rightCount
+            if diff >= 0 then
+                let value = leftStr.Substring(0, diff)
+                Insert value
+            else
+                Delete (-diff)
+        | Delete _, Insert _ ->
+            // Can't reduce a left delete any further so we just create a Combination value
+            Combination (left, right)
+        | _ -> 
+            Combination (left, right)
+
+    static member Replace str =
+        let left = str |> StringUtil.length |> TextChange.Delete
+        let right = TextChange.Insert str
+        TextChange.Combination (left, right)
+
 [<System.Flags>]
 type SearchOptions = 
     | None = 0x0
@@ -772,10 +815,13 @@ type KeyMappingResult =
 [<System.Flags>]
 type SubstituteFlags = 
     | None = 0
-    /// Replace all occurances on the line
+
+    /// Replace all occurrences on the line
     | ReplaceAll = 0x1
+
     /// Ignore case for the search pattern
     | IgnoreCase = 0x2
+
     /// Report only 
     | ReportOnly = 0x4
     | Confirm = 0x8
@@ -947,6 +993,9 @@ type CommandFlags =
     /// have the pattern 'y#y'.  This flag is used to tag the 'd' command to allow such
     /// a pattern
     | Yank = 0x100
+
+    /// Represents an insert edit action which can be linked with other insert edit actions
+    | InsertEdit = 0x200
 
 /// Data about the run of a given MotionResult
 type MotionData = {
@@ -1303,6 +1352,15 @@ type VisualCommand =
 [<NoComparison>]
 type InsertCommand  =
 
+    /// Back space at the current caret position
+    | Back
+
+    /// This is an insert command which is a combination of other insert commands
+    | Combined of InsertCommand * InsertCommand
+
+    /// Delete the character under the caret
+    | Delete
+
     /// Delete all indentation on the current line
     | DeleteAllIndent
 
@@ -1320,6 +1378,9 @@ type InsertCommand  =
 
     /// Shift the current line one indent width to the right
     | ShiftLineRight
+
+    /// Text Change 
+    | TextChange of TextChange
 
 /// Commands which can be executed by the user
 [<RequireQualifiedAccess>]
@@ -1537,6 +1598,9 @@ type internal IInsertUtil =
     /// Run a insert command
     abstract RunInsertCommand : InsertCommand -> CommandResult
 
+    /// Repeat the given edit series. 
+    abstract RepeatEdit : InsertCommand -> addNewLines : bool -> count : int -> unit
+
 /// Contains the stored information about a Visual Span.  This instance *will* be 
 /// stored for long periods of time and used to erpeat a Command instance across
 /// mulitiple IVimBuffer instances so it must be buffer agnostic
@@ -1602,49 +1666,6 @@ type StoredVisualSpan =
             let count = col.Count
             StoredVisualSpan.Block (length, count)
 
-/// Represents the type of text change operations we recognize in the ITextBuffer.  These
-/// items are repeatable
-[<RequireQualifiedAccess>]
-type TextChange = 
-    | Insert of string
-    | Delete of int
-    | Combination of TextChange * TextChange
-
-    with 
-
-    /// Get the last / most recent change in the TextChange tree
-    member x.LastChange = 
-        match x with
-        | Insert _ -> x
-        | Delete _ -> x
-        | Combination (_, right) -> right.LastChange
-
-    /// Merge two TextChange values together.  The goal is to produce a the smallest TextChange
-    /// value possible
-    static member Merge left right =
-        match left, right with
-        | Insert leftStr, Insert rightStr -> 
-            Insert (leftStr + rightStr)
-        | Delete leftCount, Delete rightCount -> 
-            Delete (leftCount + rightCount)
-        | Insert leftStr, Delete rightCount ->
-            let diff = leftStr.Length - rightCount
-            if diff >= 0 then
-                let value = leftStr.Substring(0, diff)
-                Insert value
-            else
-                Delete (-diff)
-        | Delete _, Insert _ ->
-            // Can't reduce a left delete any further so we just create a Combination value
-            Combination (left, right)
-        | _ -> 
-            Combination (left, right)
-
-    static member Replace str =
-        let left = str |> StringUtil.length |> TextChange.Delete
-        let right = TextChange.Insert str
-        TextChange.Combination (left, right)
-
 /// Contains information about an executed Command.  This instance *will* be stored
 /// for long periods of time and used to repeat a Command instance across multiple
 /// IVimBuffer instances so it simply cannot store any state specific to an 
@@ -1661,9 +1682,6 @@ type StoredCommand =
     /// The stored information about a InsertCommand
     | InsertCommand of InsertCommand * CommandFlags
 
-    /// A Text Change which occurred
-    | TextChangeCommand of TextChange
-
     /// A Linked Command links together 2 other StoredCommand objects so they
     /// can be repeated together.
     | LinkedCommand of StoredCommand * StoredCommand
@@ -1676,7 +1694,6 @@ type StoredCommand =
         | NormalCommand (_, _, flags) -> flags
         | VisualCommand (_, _, _, flags) -> flags
         | InsertCommand (_, flags) -> flags
-        | TextChangeCommand _ -> CommandFlags.None
         | LinkedCommand (_, rightCommand) -> rightCommand.CommandFlags
 
     /// Returns the last command.  For most StoredCommand values this is just an identity 
@@ -1686,7 +1703,6 @@ type StoredCommand =
         | NormalCommand _ -> x
         | VisualCommand _ -> x
         | InsertCommand _ -> x
-        | TextChangeCommand _ -> x
         | LinkedCommand (_, right) -> right.LastCommand
 
     /// Create a StoredCommand instance from the given Command value

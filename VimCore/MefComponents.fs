@@ -266,7 +266,6 @@ type internal TrackingLineColumnService() =
 type internal ChangeTracker
     [<ImportingConstructor>]
     (
-        _textChangeTrackerFactory : ITextChangeTrackerFactory,
         _vim : IVim
     ) =
 
@@ -281,9 +280,6 @@ type internal ChangeTracker
         buffer.InsertMode.CommandRan |> Event.add handler
         buffer.ReplaceMode.CommandRan |> Event.add handler
 
-        let tracker = _textChangeTrackerFactory.GetTextChangeTracker buffer.VimBufferData
-        tracker.ChangeCompleted |> Event.add (x.OnTextChanged buffer)
-
     member x.OnCommandRan buffer (data : CommandRunData) = 
         let command = data.CommandBinding
         if command.IsMovement || command.IsSpecial then
@@ -294,10 +290,6 @@ type internal ChangeTracker
             x.StoreCommand storedCommand
         else 
             _vimData.LastCommand <- None
-
-    member x.OnTextChanged buffer data = 
-        let textChange = StoredCommand.TextChangeCommand data
-        x.StoreCommand textChange
 
     /// Store the given StoredCommand as the last command executed in the IVimBuffer.  Take into
     /// account linking with the previous command

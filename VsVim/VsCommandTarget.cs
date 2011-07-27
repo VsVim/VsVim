@@ -111,37 +111,48 @@ namespace VsVim
         /// <summary>
         /// Determine if the IInsertMode value should process the given KeyInput
         /// </summary>
-        private bool CanProcessWithInsertMode(IInsertMode mode, KeyInput keyInput)
+        private bool ShouldProcessInsertModeInputWithCommandTarget(IInsertMode mode, KeyInput keyInput)
         {
             // Don't let the mode directly process anything it considers direct input.  We need this to go
             // through IOleCommandTarget in order for features like intellisense to work properly
             if (mode.IsDirectInsert(keyInput))
             {
-                return false;
+                return true;
             }
 
-            var isAnyArrow =
+            // Don't handle Enter or Tab in general as they are often very much special cased by the 
+            // language service
+            if (keyInput == KeyInputUtil.EnterKey || keyInput.Key == VimKey.Tab)
+            {
+                return true;
+            }
+
+            // Is this a key known to impact IntelliSense
+            var isIntelliSenseKey =
                 keyInput.Key == VimKey.Up ||
                 keyInput.Key == VimKey.Down ||
                 keyInput.Key == VimKey.Left ||
-                keyInput.Key == VimKey.Right;
+                keyInput.Key == VimKey.Right ||
+                keyInput.Key == VimKey.Tab ||
+                keyInput.Key == VimKey.Back ||
+                keyInput == KeyInputUtil.EnterKey;
 
             // If this is any of the arrow keys and one of the help windows is active then don't 
             // let insert mode process the input.  We want the KeyInput to be routed to the windows
             // like Intellisense so navigation can occur
-            if (isAnyArrow && (_broker.IsCompletionActive || _broker.IsQuickInfoActive || _broker.IsSignatureHelpActive || _broker.IsSmartTagSessionActive))
+            if (isIntelliSenseKey && (_broker.IsCompletionActive || _broker.IsQuickInfoActive || _broker.IsSignatureHelpActive || _broker.IsSmartTagSessionActive))
             {
-                return false;
+                return true;
             }
 
             // Unfortunately there is no way to detect if the R# completion windows are active.  We have
             // to take the pessimistic view that they are and just not handle the input
-            if (isAnyArrow && _externalEditManager.IsResharperInstalled)
+            if (isIntelliSenseKey  && _externalEditManager.IsResharperInstalled)
             {
-                return false;
+                return true;
             }
 
-            return true;
+            return false;
         }
 
         /// <summary>
@@ -171,7 +182,7 @@ namespace VsVim
             // not at the individual IMode.  Have to manually map here and test against the 
             // mapped KeyInput
             KeyInput mapped;
-            if (!TryGetSingleMapping(keyInput, out mapped) || CanProcessWithInsertMode(mode, mapped))
+            if (!TryGetSingleMapping(keyInput, out mapped) || !ShouldProcessInsertModeInputWithCommandTarget(mode, mapped))
             {
                 return _buffer.Process(keyInput).IsAnyHandled;
             }
@@ -395,7 +406,7 @@ namespace VsVim
                 // intellisense
                 status = CommandStatus.Enable;
             }
-            else if ((keyInput.Key == VimKey.Back || keyInput == KeyInputUtil.EnterKey) && _buffer.CanProcessAsCommand(keyInput))
+            else if ((keyInput.Key == VimKey.Back || keyInput == KeyInputUtil.EnterKey) && _buffer.ModeKind != ModeKind.Insert)
             {
                 // R# special cases both the Back and Enter command in various scenarios
                 //

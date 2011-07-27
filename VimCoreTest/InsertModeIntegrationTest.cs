@@ -129,7 +129,6 @@ namespace VimCore.UnitTest
         /// Ensure that multi-line changes are properly recorded and repeated in the ITextBuffer
         /// </summary>
         [Test]
-        [Ignore("Need to fix this once we resolve the ownership story of text changes")]
         public void Repeat_MultilineChange()
         {
             Create("cat", "dog");

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Windows;
-using System.Windows.Input;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Text.Editor;
@@ -243,14 +241,14 @@ namespace VsVim.UnitTest
         /// like matched paren deletion that we want to enable.
         /// </summary>
         [Test]
-        public void QueryStatus_Reshaper_BackspaceAsDirectEdit()
+        public void QueryStatus_Reshaper_BackspaceInInsert()
         {
             var backKeyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Back);
             var count = 0;
             _buffer.KeyInputProcessed += delegate { count++; };
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(true).Verifiable();
-            Assert.IsFalse(_buffer.CanProcessAsCommand(backKeyInput));
+            Assert.IsTrue(_buffer.CanProcessAsCommand(backKeyInput));
             Assert.IsTrue(RunQueryStatus(backKeyInput));
             Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsNone());
             Assert.AreEqual(0, count);
@@ -315,14 +313,14 @@ namespace VsVim.UnitTest
         /// of edits
         /// </summary>
         [Test]
-        public void QueryStatus_Resharper_EnterAsDirectEdit()
+        public void QueryStatus_Resharper_EnterInInsert()
         {
             _textView.SetText("cat", "dog");
             _textView.MoveCaretTo(0);
             var savedSnapshot = _textView.TextSnapshot;
             _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(true).Verifiable();
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-            Assert.IsFalse(_buffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
+            Assert.IsTrue(_buffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
             Assert.IsTrue(RunQueryStatus(KeyInputUtil.EnterKey));
             Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsNone());
             Assert.AreEqual(_textView.GetLine(0).Start, _textView.GetCaretPoint());

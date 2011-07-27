@@ -48,6 +48,20 @@ type internal InsertUtil
     member x.EditWithUndoTransaciton<'T> (name : string) (action : unit -> 'T) : 'T = 
         _undoRedoOperations.EditWithUndoTransaction name action
 
+    /// Delete the character before the cursor
+    member x.Back () = 
+        _editorOperations.Backspace() |> ignore
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    member x.Combined left right =
+        x.RunInsertCommand left |> ignore
+        x.RunInsertCommand right
+
+    /// Delete the character under the cursor
+    member x.Delete () = 
+        _editorOperations.Delete() |> ignore
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Delete all of the indentation on the current line.  This should not affect caret
     /// position
     member x.DeleteAllIndent () =
@@ -135,14 +149,32 @@ type internal InsertUtil
         | Direction.Left -> moveLeft()
         | Direction.Right -> moveRight()
 
-    member x.RunInsertCommand command = 
+    /// Repeat the given edit InsertCommand.  This is used at the exit of insert mode to
+    /// apply the edits again and again
+    member x.RepeatEdit command addNewLines count = 
+
+        // Create a transaction so the textChange is applied as a single edit and to 
+        // maintain caret position 
+        _undoRedoOperations.EditWithUndoTransaction "Repeat Edits" (fun () -> 
+
+            for i = 1 to count do
+                x.RunInsertCommandCore command addNewLines |> ignore)
+
+    member x.RunInsertCommandCore command addNewLines = 
         match command with
+        | InsertCommand.Back -> x.Back()
+        | InsertCommand.Combined (left, right) -> x.Combined left right
+        | InsertCommand.Delete -> x.Delete()
         | InsertCommand.DeleteAllIndent -> x.DeleteAllIndent() 
         | InsertCommand.InsertNewLine -> x.InsertNewLine()
         | InsertCommand.InsertTab -> x.InsertTab()
         | InsertCommand.MoveCaret direction -> x.MoveCaret direction
         | InsertCommand.ShiftLineLeft -> x.ShiftLineLeft ()
         | InsertCommand.ShiftLineRight -> x.ShiftLineRight ()
+        | InsertCommand.TextChange textChange -> x.TextChange textChange addNewLines
+
+    member x.RunInsertCommand command = 
+        x.RunInsertCommandCore command false
 
     /// Shift the caret line one 'shiftwidth' to the left.  This is different than 
     /// both normal and visual mode shifts because it will round up the blanks to
@@ -181,7 +213,12 @@ type internal InsertUtil
     member x.ShiftLineRight () =
         CommandResult.Error
 
+    member x.TextChange textChange addNewLines = 
+        _operations.ApplyTextChange textChange addNewLines 1
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     interface IInsertUtil with
 
         member x.RunInsertCommand command = x.RunInsertCommand command
+        member x.RepeatEdit command addNewLines count = x.RepeatEdit command addNewLines count
 

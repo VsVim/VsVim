@@ -1475,14 +1475,14 @@ type internal CommandUtil
                 let visualSpan = x.CalculateVisualSpan storedVisualSpan
                 x.RunVisualCommand command data visualSpan
             | StoredCommand.InsertCommand (command, _) ->
-                x.RunInsertCommand command 
-            | StoredCommand.TextChangeCommand change ->
-                // Calculate the count of the repeat
+
+                (*
                 let count = 
                     match repeatData with
                     | Some repeatData -> repeatData.CountOrDefault
-                    | None -> 1
-                x.RepeatTextChange change count
+                    | None -> 1 *)
+
+                x.RunInsertCommand command
             | StoredCommand.LinkedCommand (command1, command2) -> 
 
                 // Running linked commands will throw away the ModeSwitch value.  This can contain
@@ -1527,7 +1527,7 @@ type internal CommandUtil
             finally
                 _inRepeatLastChange <- false
 
-    /// Repeat the last subsitute command.  
+    /// Repeat the last subsitute command.
     member x.RepeatLastSubstitute useSameFlags = 
         match _vimData.LastSubstituteData with
         | None ->
@@ -1540,17 +1540,6 @@ type internal CommandUtil
                 else
                     SubstituteFlags.None
             _operations.Substitute data.SearchPattern data.Substitute range flags
-
-        CommandResult.Completed ModeSwitch.NoSwitch
-
-    /// Repeat the TextChange value 'count' times in the ITextBuffer.
-    member x.RepeatTextChange textChange count =
-
-        // There is no need to position the caret after the edit to simulate leaving insert mode.  It 
-        // would in fact cause an error.  Leaving insert mode generates it's own command which positions
-        // the caret post edit.  A single insert mode can result in several separate changes and we 
-        // only want to move the caret once.  Let that command manipulate the caret
-        _operations.ApplyTextChange textChange false count
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
