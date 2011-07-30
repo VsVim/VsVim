@@ -4,9 +4,9 @@ using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
-using Vim;
+using Vim.UI.Wpf.Implementation;
 
-namespace VimCore.UnitTest
+namespace Vim.UI.Wpf.Test
 {
     [TestFixture]
     public class DisplayWindowBrokerTest
@@ -61,7 +61,7 @@ namespace VimCore.UnitTest
         {
             var session = new Mock<ISmartTagSession>();
             session.SetupGet(x => x.State).Returns(SmartTagState.Collapsed);
-            var list = Enumerable.Repeat(session.Object,1).ToList().AsReadOnly();
+            var list = Enumerable.Repeat(session.Object, 1).ToList().AsReadOnly();
             _smartTagBroker.Setup(x => x.IsSmartTagActive(_textView.Object)).Returns(true).Verifiable();
             _smartTagBroker
                 .Setup(x => x.GetSessions(_textView.Object))
@@ -76,7 +76,7 @@ namespace VimCore.UnitTest
         {
             var session = new Mock<ISmartTagSession>();
             session.SetupGet(x => x.State).Returns(SmartTagState.Expanded);
-            var list = Enumerable.Repeat(session.Object,1).ToList().AsReadOnly();
+            var list = Enumerable.Repeat(session.Object, 1).ToList().AsReadOnly();
             _smartTagBroker.Setup(x => x.IsSmartTagActive(_textView.Object)).Returns(true).Verifiable();
             _smartTagBroker
                 .Setup(x => x.GetSessions(_textView.Object))

@@ -4,52 +4,10 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Tagging
 open Microsoft.VisualStudio.Text.Operations
-open Microsoft.VisualStudio.Language.Intellisense
 open Microsoft.VisualStudio.Text.Classification
 open Microsoft.VisualStudio.Utilities
 open System.ComponentModel.Composition
 open System.Collections.Generic
-
-type internal DisplayWindowBroker 
-    ( 
-        _textView : ITextView,
-        _completionBroker : ICompletionBroker,
-        _signatureBroker : ISignatureHelpBroker,
-        _smartTagBroker : ISmartTagBroker,
-        _quickInfoBroker : IQuickInfoBroker)  =
-    interface IDisplayWindowBroker with
-        member x.TextView = _textView
-        member x.IsCompletionActive = _completionBroker.IsCompletionActive(_textView)
-        member x.IsSignatureHelpActive = _signatureBroker.IsSignatureHelpActive(_textView)
-        member x.IsQuickInfoActive = _quickInfoBroker.IsQuickInfoActive(_textView)
-        member x.IsSmartTagSessionActive = 
-            if _smartTagBroker.IsSmartTagActive(_textView) then
-                _smartTagBroker.GetSessions(_textView) 
-                |> Seq.filter (fun x -> x.State = SmartTagState.Expanded) 
-                |> SeqUtil.isNotEmpty
-            else
-                false
-        member x.DismissDisplayWindows() =
-            if _completionBroker.IsCompletionActive(_textView) then
-                _completionBroker.DismissAllSessions(_textView)
-            if _signatureBroker.IsSignatureHelpActive(_textView) then
-                _signatureBroker.DismissAllSessions(_textView)
-            if _quickInfoBroker.IsQuickInfoActive(_textView) then
-                _quickInfoBroker.GetSessions(_textView) |> Seq.iter (fun x -> x.Dismiss())
-
-[<Export(typeof<IDisplayWindowBrokerFactoryService>)>]
-type internal DisplayWindowBrokerFactoryService
-    [<ImportingConstructor>]
-    (
-        _completionBroker : ICompletionBroker,
-        _signatureBroker : ISignatureHelpBroker,
-        _smartTagBroker : ISmartTagBroker,
-        _quickInfoBroker : IQuickInfoBroker ) = 
-
-    interface IDisplayWindowBrokerFactoryService with
-        member x.CreateDisplayWindowBroker textView = 
-            let broker = DisplayWindowBroker(textView, _completionBroker, _signatureBroker, _smartTagBroker, _quickInfoBroker)
-            broker :> IDisplayWindowBroker
 
 /// This is the type responsible for tracking a line + column across edits to the
 /// underlying ITextBuffer.  In a perfect world this would be implemented as an 

@@ -139,10 +139,6 @@
       <HintPath>..\References\Microsoft.VisualStudio.CoreUtility.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Microsoft.VisualStudio.Language.Intellisense">
-      <HintPath>C:\Users\jaredpar\VsVim\References\Microsoft.VisualStudio.Language.Intellisense.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Microsoft.VisualStudio.Text.Data">
       <HintPath>..\References\Microsoft.VisualStudio.Text.Data.dll</HintPath>
       <Private>False</Private>

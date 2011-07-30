@@ -5,7 +5,6 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
-open Microsoft.VisualStudio.Language.Intellisense
 open Microsoft.VisualStudio.Text.Classification
 open System.ComponentModel.Composition
 open Vim.Modes
