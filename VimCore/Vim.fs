@@ -71,7 +71,8 @@ type internal VimBufferFactory
         _statusUtilFactory : IStatusUtilFactory,
         _foldManagerFactory : IFoldManagerFactory,
         _keyboardDevice : IKeyboardDevice,
-        _mouseDevice : IMouseDevice
+        _mouseDevice : IMouseDevice,
+        _wordCompletionSessionFactoryService : IWordCompletionSessionFactoryService
     ) = 
 
     member x.CreateBuffer (vim : IVim) view = 
@@ -147,8 +148,8 @@ type internal VimBufferFactory
             [
                 ((Modes.Normal.NormalMode(buffer, commonOperations, statusUtil,broker, createCommandRunner VisualKind.Character, capture)) :> IMode)
                 ((Modes.Command.CommandMode(buffer, commandProcessor, commonOperations)) :> IMode)
-                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, false, _keyboardDevice, _mouseDevice)) :> IMode)
-                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, true, _keyboardDevice, _mouseDevice)) :> IMode)
+                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, false, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
+                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, true, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
                 ((Modes.SubstituteConfirm.SubstituteConfirmMode(buffer, commonOperations) :> IMode))
                 (DisabledMode(buffer) :> IMode)
                 (ExternalEditMode(buffer) :> IMode)

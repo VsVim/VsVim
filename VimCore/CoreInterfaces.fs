@@ -105,6 +105,35 @@ type IWordUtilFactory =
     /// Get the IWordUtil instance for the given ITextView
     abstract GetWordUtil : ITextView -> IWordUtil
 
+
+/// Used to display a word completion list to the user
+type IWordCompletionSession =
+
+    /// Is the session dismissed
+    abstract IsDismissed : bool
+
+    /// The associated ITextView instance
+    abstract TextView : ITextView
+
+    /// Select the next word in the session
+    abstract MoveNext : unit -> bool
+
+    /// Select the previous word in the session.
+    abstract MovePrevious : unit -> bool
+
+    /// Dismiss the completion session 
+    abstract Dismiss : unit -> unit
+
+    /// Raised when the session is dismissed
+    [<CLIEvent>]
+    abstract Dismissed: IEvent<System.EventArgs>
+
+/// Factory service for creating IWordCompletionSession instances
+type IWordCompletionSessionFactoryService = 
+
+    /// Create a session with the given set of words
+    abstract CreateWordCompletionSession : textView : ITextView -> wordSpan : SnapshotSpan -> words : string seq -> isForward : bool -> IWordCompletionSession
+
 /// Wraps an ITextUndoTransaction so we can avoid all of the null checks
 type IUndoTransaction =
 
@@ -2668,6 +2697,9 @@ and INormalMode =
 
 /// This is the interface implemented by Insert and Replace mode
 and IInsertMode =
+
+    /// The active IWordCompletionSession if one is active
+    abstract ActiveWordCompletionSession : IWordCompletionSession option
 
     /// Is InsertMode currently processing a Text Input value
     abstract IsProcessingDirectInsert : bool

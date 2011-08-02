@@ -34,6 +34,7 @@ namespace VimCore.UnitTest
         private Mock<IKeyboardDevice> _keyboardDevice;
         private Mock<IMouseDevice> _mouseDevice;
         private Mock<IVim> _vim;
+        private Mock<IWordCompletionSessionFactoryService> _wordCompletionSessionFactoryService;
 
         [SetUp]
         public void SetUp()
@@ -93,7 +94,9 @@ namespace VimCore.UnitTest
                 _insertUtil.Object,
                 !insertMode,
                 _keyboardDevice.Object,
-                _mouseDevice.Object);
+                _mouseDevice.Object,
+                EditorUtil.FactoryService.WordUtilFactory.GetWordUtil(_textView),
+                EditorUtil.FactoryService.WordCompletionSessionFactoryService);
             _mode = _modeRaw;
         }
 

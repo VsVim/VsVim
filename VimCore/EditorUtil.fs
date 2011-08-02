@@ -586,6 +586,10 @@ module SnapshotPointUtil =
     let IsBlankOrEnd point = 
         IsBlank point || IsEndPoint point
 
+    /// Is this point a blank or inside the line break?
+    let IsBlankOrInsideLineBreak point = 
+        IsBlank point || IsInsideLineBreak point
+
     /// Is this point not a blank 
     let IsNotBlank point =
         not (IsBlank point)

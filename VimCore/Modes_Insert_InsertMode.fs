@@ -21,6 +21,9 @@ type InsertSessionData = {
 
     /// This is the current InsertCommand being built up
     CombinedEditCommand : InsertCommand option
+
+    /// This is the active IWordCompletionSession if one exists
+    ActiveWordCompletionSession : IWordCompletionSession option
 }
 
 type internal InsertMode
@@ -34,12 +37,15 @@ type internal InsertMode
         _insertUtil : IInsertUtil,
         _isReplace : bool,
         _keyboard : IKeyboardDevice,
-        _mouse : IMouseDevice
+        _mouse : IMouseDevice,
+        _wordUtil : IWordUtil,
+        _wordCompletionSessionFactoryService : IWordCompletionSessionFactoryService
     ) as this =
 
     let _bag = DisposableBag()
     let _textView = _buffer.TextView
     let _textBuffer = _buffer.TextBuffer
+    let _globalSettings = _buffer.GlobalSettings
     let _editorOperations = _operations.EditorOperations
     let _commandRanEvent = Event<_>()
     let mutable _commandMap : Map<KeyInput, CommandFunction> = Map.empty
@@ -48,6 +54,7 @@ type internal InsertMode
         Transaction = None
         RepeatData = None
         CombinedEditCommand = None
+        ActiveWordCompletionSession = None
     }
     let mutable _sessionData = _emptySessionData
 
@@ -74,6 +81,8 @@ type internal InsertMode
                 ("<Esc>", this.ProcessEscape)
                 ("<Insert>", this.ProcessInsert)
                 ("<C-o>", this.ProcessNormalModeOneCommand)
+                ("<C-p>", this.ProcessWordCompletionPrevious)
+                ("<C-n>", this.ProcessWordCompletionNext)
             ]
 
         let mappedCommands : (string * CommandFunction) list = 
@@ -103,6 +112,8 @@ type internal InsertMode
         |> Observable.subscribe (fun args -> this.OnTextChange args)
         |> _bag.Add
 
+    member x.ActiveWordCompletionSession = _sessionData.ActiveWordCompletionSession
+
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
@@ -115,6 +126,18 @@ type internal InsertMode
 
     /// Is this the currently active mode?
     member x.IsActive = x.ModeKind = _buffer.ModeKind
+
+    /// Cancel the active IWordCompletionSession if there is such a session 
+    /// active
+    member x.CancelWordCompletionSession () = 
+        match _sessionData.ActiveWordCompletionSession with
+        | None -> 
+            ()
+        | Some wordCompletionSession -> 
+            if not wordCompletionSession.IsDismissed then
+                 wordCompletionSession.Dismiss()
+
+            _sessionData <- { _sessionData with ActiveWordCompletionSession = None }
 
     /// Is this KeyInput a raw text insert into the ITextBuffer.  Anything that would be 
     /// processed by adding characters to the ITextBuffer.  This is anything which has an
@@ -131,6 +154,9 @@ type internal InsertMode
 
     /// Process the direct text insert command
     member x.ProcessDirectInsert (keyInput : KeyInput) = 
+
+        // When doing a direct insert go ahead and cancel the active IWordCompletion session
+        x.CancelWordCompletionSession()
 
         _processDirectInsertCount <- _processDirectInsertCount + 1
         try
@@ -161,6 +187,29 @@ type internal InsertMode
 
         let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Normal, ModeArgument.OneTimeCommand x.ModeKind)
         ProcessResult.Handled switch
+
+    /// Process the CTRL-N key stroke which calls for the previous word completion
+    member x.ProcessWordCompletionNext () = 
+        match _sessionData.ActiveWordCompletionSession with
+        | None -> 
+            x.StartWordCompletionSession true
+        | Some wordCompletionSession ->
+            if wordCompletionSession.MoveNext() then
+                ProcessResult.Handled ModeSwitch.NoSwitch
+            else
+                ProcessResult.Error
+
+    /// Process the CTRL-P key stroke which calls for the previous word completion
+    member x.ProcessWordCompletionPrevious () =
+        match _sessionData.ActiveWordCompletionSession with
+        | None -> 
+            // TODO actually implement
+            ProcessResult.Error
+        | Some wordCompletionSession ->
+            if wordCompletionSession.MovePrevious() then
+                ProcessResult.Handled ModeSwitch.NoSwitch
+            else
+                ProcessResult.Error
 
     /// Apply the repeated edits the the ITextBuffer
     member x.MaybeApplyRepeatedEdits () = 
@@ -213,6 +262,84 @@ type internal InsertMode
                 moveCaretLeft()
             ProcessResult.OfModeKind ModeKind.Normal
 
+    /// Start a word completion session in the given direction at the current caret point
+    member x.StartWordCompletionSession isForward = 
+
+        /// Get the Span for the word we are trying to complete
+        let getWordCompletionSpan () =
+            if SnapshotLineUtil.IsBlank x.CaretLine then
+                // Have to special case a bit here.  Blank lines are actually words but we
+                // don't want to replace the new line when doing a completion
+                SnapshotSpan(x.CaretPoint, 0)
+            elif SnapshotPointUtil.IsBlankOrInsideLineBreak x.CaretPoint && x.CaretPoint.Position > 0 then
+                // If we are currently on a blank and the previous point is the end of a word
+                // then we are replacing that word
+                let previousPoint = SnapshotPointUtil.SubtractOne x.CaretPoint
+                match _wordUtil.GetFullWordSpan WordKind.NormalWord previousPoint with
+                | None -> SnapshotSpan(x.CaretPoint, 0)
+                | Some span -> span
+            else
+                match _wordUtil.GetFullWordSpan WordKind.NormalWord x.CaretPoint with
+                | None -> SnapshotSpan(x.CaretPoint, 0)
+                | Some span -> span
+
+        /// Get the word completions for the given word text in the ITextBuffer
+        let getWordCompletions (wordSpan : SnapshotSpan) =
+
+            // Get the sequence of words before the completion word 
+            let wordsBefore = 
+                let startPoint = SnapshotUtil.GetStartPoint x.CurrentSnapshot
+                _wordUtil.GetWords WordKind.NormalWord Path.Forward startPoint
+                |> Seq.filter (fun span -> span.End.Position >= wordSpan.Start.Position)
+
+            // Get the sequence of words after the completion word 
+            let wordsAfter =
+                _wordUtil.GetWords WordKind.NormalWord Path.Forward wordSpan.End
+
+            let filterText = wordSpan.GetText()
+            let filterFunc =
+
+                // Is this actually a word we're intereset in.  Need to clear out new lines, 
+                // comment characters, etc ... 
+                let isWord text =
+                    if StringUtil.isNullOrEmpty text then 
+                        false
+                    else
+                        TextUtil.IsWordChar WordKind.NormalWord (text.[0])
+
+                if String.IsNullOrEmpty filterText then
+                    (fun (wordSpan : SnapshotSpan) ->
+                        let wordText = wordSpan.GetText()
+                        isWord wordText)
+                else
+                    let comparer = if _globalSettings.IgnoreCase then StringComparison.OrdinalIgnoreCase else StringComparison.Ordinal
+                    (fun (wordSpan : SnapshotSpan) -> 
+                        let wordText = wordSpan.GetText()
+                        if wordText.StartsWith(filterText, comparer) && isWord wordText then
+                            true
+                        else
+                            false)
+
+            // Combine the collections
+            Seq.append wordsAfter wordsBefore
+            |> Seq.filter filterFunc
+            |> Seq.map SnapshotSpanUtil.GetText
+            |> Seq.distinct
+
+        // Time to start a completion.  
+        let wordSpan = getWordCompletionSpan()
+        let wordCollection = getWordCompletions wordSpan
+
+        let wordCompletionSession = _wordCompletionSessionFactoryService.CreateWordCompletionSession _textView wordSpan wordCollection true
+
+        // When the completion session is dismissed we want to clean out the session 
+        // data 
+        wordCompletionSession.Dismissed
+        |> Event.add (fun _ -> x.CancelWordCompletionSession())
+
+        _sessionData <- { _sessionData with ActiveWordCompletionSession = Some wordCompletionSession }
+        ProcessResult.Handled ModeSwitch.NoSwitch
+
     /// Can Insert mode handle this particular KeyInput value 
     member x.CanProcess keyInput = 
         if Map.containsKey keyInput _commandMap then
@@ -237,6 +364,9 @@ type internal InsertMode
 
     /// Run the insert command with the given information
     member x.RunInsertCommand command keyInputSet commandFlags = 
+
+        // Dismiss the completion when running an explicit insert commend
+        x.CancelWordCompletionSession()
 
         // When running an explicit command then we need to go ahead and complete the previous 
         // text change
@@ -417,6 +547,7 @@ type internal InsertMode
             Transaction = transaction
             RepeatData = repeatData
             CombinedEditCommand = None
+            ActiveWordCompletionSession = None
         }
 
         // If this is replace mode then go ahead and setup overwrite
@@ -439,6 +570,9 @@ type internal InsertMode
         // to exit insert mode.  This case takes care of being asked to exit programmatically 
         x.CompleteCombinedEditCommand()
 
+        // Dismiss any active ICompletionSession 
+        x.CancelWordCompletionSession()
+
         try
             match _sessionData.Transaction with
             | None -> ()
@@ -451,6 +585,7 @@ type internal InsertMode
             _editorOptions.SetOptionValue(DefaultTextViewOptions.OverwriteModeId, false)
 
     interface IInsertMode with 
+        member x.ActiveWordCompletionSession = x.ActiveWordCompletionSession
         member x.VimBuffer = _buffer
         member x.CommandNames =  _commandMap |> Seq.map (fun p -> p.Key) |> Seq.map OneKeyInput
         member x.ModeKind = x.ModeKind

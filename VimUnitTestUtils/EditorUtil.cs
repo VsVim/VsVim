@@ -82,6 +82,9 @@ namespace Vim.UnitTest
 
             [Import]
             public ICommonOperationsFactory CommonOperationsFactory;
+
+            [Import]
+            public IWordCompletionSessionFactoryService WordCompletionSessionFactoryService;
         }
 
         #endregion
@@ -267,7 +270,8 @@ namespace Vim.UnitTest
                 typeof(VimHost),
                 typeof(VimErrorDetector),
                 typeof(AdhocOutlinerFactory),
-                typeof(DisplayWindowBrokerFactoryService)));
+                typeof(DisplayWindowBrokerFactoryService),
+                typeof(WordCompletionSessionFactoryService)));
 
             return list;
         }

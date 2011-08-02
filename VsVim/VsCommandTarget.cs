@@ -147,7 +147,7 @@ namespace VsVim
 
             // Unfortunately there is no way to detect if the R# completion windows are active.  We have
             // to take the pessimistic view that they are and just not handle the input
-            if (isIntelliSenseKey  && _externalEditManager.IsResharperInstalled)
+            if (isIntelliSenseKey && _externalEditManager.IsResharperInstalled)
             {
                 return true;
             }
@@ -185,6 +185,14 @@ namespace VsVim
             if (!TryGetSingleMapping(keyInput, out mapped) || !ShouldProcessInsertModeInputWithCommandTarget(mode, mapped))
             {
                 return _buffer.Process(keyInput).IsAnyHandled;
+            }
+
+            // We are now intentionally by passing insert mode here.  If there is an active 
+            // IWordCompletionSession here we need to manually dismiss it.  Else it will remain
+            // as we start typing a new word
+            if (mode.ActiveWordCompletionSession.IsSome())
+            {
+                mode.ActiveWordCompletionSession.Value.Dismiss();
             }
 
             // We've successfully mapped the KeyInput (even if t's a no-op) and determined that

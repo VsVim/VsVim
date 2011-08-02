@@ -328,4 +328,3 @@ type ICommonOperationsFactory =
 
     /// Get the ICommonOperations instance for this IVimBuffer
     abstract GetCommonOperations : VimBufferData -> ICommonOperations
-
