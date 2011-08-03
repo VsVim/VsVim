@@ -907,6 +907,14 @@ namespace Vim.UnitTest
             reg.RegisterValue = RegisterValue.NewKeyInput(all, OperationKind.CharacterWise);
         }
 
+        /// <summary>
+        /// Update the value with the specified set of KeyInput values
+        /// </summary>
+        public static void UpdateValue(this Register reg, params KeyInput[] keys)
+        {
+            reg.RegisterValue = RegisterValue.NewKeyInput(keys.ToFSharpList(), OperationKind.CharacterWise);
+        }
+
         public static void UpdateValue(this Register reg, string value, OperationKind kind)
         {
             reg.RegisterValue = RegisterValue.OfString(value, kind);

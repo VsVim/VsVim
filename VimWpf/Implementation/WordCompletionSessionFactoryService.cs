@@ -25,7 +25,7 @@ namespace Vim.UI.Wpf.Implementation
     [Export(typeof(ICompletionSourceProvider))]
     internal sealed class WordCompletionSessionFactoryService : IWordCompletionSessionFactoryService, ICompletionSourceProvider
     {
-        private const string WordCompletionSetName = "Word Completion";
+        private const string WordCompletionSetName = "Words";
 
         #region CompletionData
 
@@ -146,7 +146,7 @@ namespace Vim.UI.Wpf.Implementation
             _intellisenseSessionStackMapService = intellisenseSessionStackMapService;
         }
 
-        #region IWordCompletionSession
+        #region IWordCompletionSessionFactoryService
 
         IWordCompletionSession IWordCompletionSessionFactoryService.CreateWordCompletionSession(ITextView textView, SnapshotSpan wordSpan, IEnumerable<string> wordCollection, bool isForward)
         {
@@ -156,6 +156,14 @@ namespace Vim.UI.Wpf.Implementation
             textView.Properties[_completionDataKey] = completionData;
             try
             {
+                // Dismiss any active ICompletionSession instances.  It's possible and possibly common for 
+                // normal intellisense to be active when the user invokes word completion.  We want only word
+                // completion displayed at this point 
+                foreach (var existingCompletionSession in _completionBroker.GetSessions(textView))
+                {
+                    existingCompletionSession.Dismiss();
+                }
+
                 // Create a completion session at the start of the word.  The actual session information will 
                 // take care of mapping it to a specific span
                 var trackingPoint = textView.TextSnapshot.CreateTrackingPoint(wordSpan.Start, PointTrackingMode.Positive);
@@ -174,10 +182,11 @@ namespace Vim.UI.Wpf.Implementation
 
                 completionSession.SelectedCompletionSet = wordCompletionSet;
 
+                var intellisenseSessionStack = _intellisenseSessionStackMapService.GetStackForTextView(textView);
                 var wordTrackingSpan = wordSpan.Snapshot.CreateTrackingSpan(wordSpan.Span, SpanTrackingMode.EdgeInclusive);
                 var wordCompletionSession = new WordCompletionSession(
                     wordTrackingSpan,
-                    _intellisenseSessionStackMapService.GetStackForTextView(textView),
+                    intellisenseSessionStack,
                     completionSession,
                     wordCompletionSet);
 

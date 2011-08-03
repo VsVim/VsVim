@@ -1,12 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
@@ -35,6 +36,7 @@ namespace VimCore.UnitTest
         private Mock<IMouseDevice> _mouseDevice;
         private Mock<IVim> _vim;
         private Mock<IWordCompletionSessionFactoryService> _wordCompletionSessionFactoryService;
+        private Mock<IWordCompletionSession> _activeWordCompletionSession;
 
         [SetUp]
         public void SetUp()
@@ -56,11 +58,13 @@ namespace VimCore.UnitTest
             _vim = _factory.Create<IVim>(MockBehavior.Loose);
             _editorOptions = _factory.Create<IEditorOptions>(MockBehavior.Loose);
             _globalSettings = _factory.Create<IVimGlobalSettings>();
+            _globalSettings.SetupGet(x => x.IgnoreCase).Returns(true);
             _localSettings = _factory.Create<IVimLocalSettings>();
             _localSettings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
             _textChangeTracker = _factory.Create<ITextChangeTracker>(MockBehavior.Loose);
             _textChangeTracker.SetupGet(x => x.CurrentChange).Returns(FSharpOption<TextChange>.None);
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
+            _wordCompletionSessionFactoryService = _factory.Create<IWordCompletionSessionFactoryService>();
 
             var buffer = MockObjectFactory.CreateVimBuffer(
                 _textView,
@@ -68,7 +72,7 @@ namespace VimCore.UnitTest
                 vim: _vim.Object,
                 factory: _factory);
             _operations = _factory.Create<ICommonOperations>();
-            _operations.SetupGet(x => x.EditorOperations).Returns(_factory.Create<IEditorOperations>().Object);
+            _operations.SetupGet(x => x.EditorOperations).Returns(EditorUtil.FactoryService.EditorOperationsFactory.GetEditorOperations(_textView));
             _broker = _factory.Create<IDisplayWindowBroker>();
             _broker.SetupGet(x => x.IsCompletionActive).Returns(false);
             _broker.SetupGet(x => x.IsQuickInfoActive).Returns(false);
@@ -96,7 +100,7 @@ namespace VimCore.UnitTest
                 _keyboardDevice.Object,
                 _mouseDevice.Object,
                 EditorUtil.FactoryService.WordUtilFactory.GetWordUtil(_textView),
-                EditorUtil.FactoryService.WordCompletionSessionFactoryService);
+                _wordCompletionSessionFactoryService.Object);
             _mode = _modeRaw;
         }
 
@@ -108,6 +112,28 @@ namespace VimCore.UnitTest
                 .Verifiable();
         }
 
+        private void SetupActiveWordCompletionSession()
+        {
+            _activeWordCompletionSession = _factory.Create<IWordCompletionSession>(MockBehavior.Loose);
+            _wordCompletionSessionFactoryService
+                .Setup(x => x.CreateWordCompletionSession(_textView, It.IsAny<SnapshotSpan>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>()))
+                .Returns(_activeWordCompletionSession.Object);
+            _modeRaw.StartWordCompletionSession(true);
+        }
+
+        /// <summary>
+        /// If the active IWordCompletionSession is dismissed via the API it should cause the 
+        /// ActiveWordCompletionSession value to be reset as well
+        /// </summary>
+        [Test]
+        public void ActiveWordCompletionSession_Dismissed()
+        {
+            Create("");
+            SetupActiveWordCompletionSession();
+            _activeWordCompletionSession.Raise(x => x.Dismissed += null, EventArgs.Empty);
+            Assert.IsTrue(_mode.ActiveWordCompletionSession.IsNone());
+        }
+
         /// <summary>
         /// Make sure we can process escape
         /// </summary>
@@ -115,6 +141,96 @@ namespace VimCore.UnitTest
         public void CanProcess_Escape()
         {
             Assert.IsTrue(_mode.CanProcess(KeyInputUtil.EscapeKey));
+        }
+
+        /// <summary>
+        /// When there is an active IWordCompletionSession we should still process all input even though 
+        /// the word completion session can only process a limited set of key strokes.  The extra key 
+        /// strokes are used to cancel the session and then be processed as normal
+        /// </summary>
+        [Test]
+        public void CanProcess_ActiveWordCompletion()
+        {
+            Create("");
+            SetupActiveWordCompletionSession();
+            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput('a')));
+        }
+
+        /// <summary>
+        /// After a word should return the entire word 
+        /// </summary>
+        [Test]
+        public void GetWordCompletionSpan_AfterWord()
+        {
+            Create("cat dog");
+            _textView.MoveCaretTo(3);
+            Assert.AreEqual("cat", _modeRaw.GetWordCompletionSpan().Value.GetText());
+        }
+
+        /// <summary>
+        /// In the middle of the word should only consider the word up till the caret for the 
+        /// completion section
+        /// </summary>
+        [Test]
+        public void GetWordCompletionSpan_MiddleOfWord()
+        {
+            Create("cat dog");
+            _textView.MoveCaretTo(1);
+            Assert.AreEqual("c", _modeRaw.GetWordCompletionSpan().Value.GetText());
+        }
+
+        /// <summary>
+        /// When provided an empty SnapshotSpan the words should be returned in order from the given
+        /// point
+        /// </summary>
+        [Test]
+        public void GetWordCompletions_All()
+        {
+            Create("cat dog tree");
+            var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 3, 0));
+            CollectionAssert.AreEquivalent(
+                new[] { "dog", "tree", "cat" },
+                words.ToList());
+        }
+
+        /// <summary>
+        /// Don't include any comments or non-words when getting the words from the buffer
+        /// </summary>
+        [Test]
+        public void GetWordCompletions_All_JustWords()
+        {
+            Create("cat dog // tree &&");
+            var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 3, 0));
+            CollectionAssert.AreEquivalent(
+                new[] { "dog", "tree", "cat" },
+                words.ToList());
+        }
+
+        /// <summary>
+        /// When given a word span only include strings which start with the given prefix
+        /// </summary>
+        [Test]
+        public void GetWordCompletions_Prefix()
+        {
+            Create("c cat dog // tree && copter");
+            var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 0, 1));
+            CollectionAssert.AreEquivalent(
+                new[] { "cat", "copter" },
+                words.ToList());
+        }
+
+        /// <summary>
+        /// Starting from the middle of a word should consider the part of the word to the right of 
+        /// the caret as a word
+        /// </summary>
+        [Test]
+        public void GetWordCompletions_MiddleOfWord()
+        {
+            Create("test", "ccrook cat caturday");
+            var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.GetLine(1).Start, 1));
+            CollectionAssert.AreEquivalent(
+                new[] { "cat", "caturday", "crook" },
+                words.ToList());
         }
 
         /// <summary>
@@ -261,7 +377,6 @@ namespace VimCore.UnitTest
             _factory.Verify();
         }
 
-
         [Test]
         public void OnLeave1()
         {
@@ -320,6 +435,75 @@ namespace VimCore.UnitTest
             _textBuffer.Insert(0, "a");
             _textView.MoveCaretTo(7);
             _factory.Verify();
+        }
+
+        /// <summary>
+        /// Ensure that CTRL-N is mapped to MoveNext in the IWordCompletionSession
+        /// </summary>
+        [Test]
+        public void Process_WordCompletion_CtrlN()
+        {
+            Create("hello world");
+            SetupActiveWordCompletionSession();
+            _activeWordCompletionSession.Setup(x => x.MoveNext()).Returns(true).Verifiable();
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-n>"));
+            _activeWordCompletionSession.Verify();
+        }
+
+        /// <summary>
+        /// Ensure that down is mapped to MoveeNext in the IWordCompletionSession
+        /// </summary>
+        [Test]
+        public void Process_WordCompletion_Down()
+        {
+            Create("hello world");
+            SetupActiveWordCompletionSession();
+            _activeWordCompletionSession.Setup(x => x.MoveNext()).Returns(true).Verifiable();
+            _mode.Process(VimKey.Down);
+            _activeWordCompletionSession.Verify();
+        }
+
+        /// <summary>
+        /// Ensure that CTRL-N is mapped to MovePrevious in the IWordCompletionSession
+        /// </summary>
+        [Test]
+        public void Process_WordCompletion_CtrlP()
+        {
+            Create("hello world");
+            SetupActiveWordCompletionSession();
+            _activeWordCompletionSession.Setup(x => x.MovePrevious()).Returns(true).Verifiable();
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-p>"));
+            _activeWordCompletionSession.Verify();
+        }
+
+        /// <summary>
+        /// Ensure that up is mapped to MovePrevious in the IWordCompletionSession
+        /// </summary>
+        [Test]
+        public void Process_WordCompletion_Up()
+        {
+            Create("hello world");
+            SetupActiveWordCompletionSession();
+            _activeWordCompletionSession.Setup(x => x.MovePrevious()).Returns(true).Verifiable();
+            _mode.Process(VimKey.Up);
+            _activeWordCompletionSession.Verify();
+        }
+
+        /// <summary>
+        /// Typing any character should cause the IWordCompletionSession to be dismissed and 
+        /// be processed as a normal char
+        /// </summary>
+        [Test]
+        public void Process_WordCompletion_Char()
+        {
+            Create("hello world");
+            SetupActiveWordCompletionSession();
+            _textView.MoveCaretTo(0);
+            _activeWordCompletionSession.Setup(x => x.Dismiss()).Verifiable();
+            _mode.Process('c');
+            _activeWordCompletionSession.Verify();
+            Assert.AreEqual("chello world", _textView.GetLine(0).GetText());
+            Assert.IsTrue(_mode.ActiveWordCompletionSession.IsNone());
         }
     }
 }

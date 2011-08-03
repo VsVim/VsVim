@@ -113,6 +113,14 @@ namespace VsVim
         /// </summary>
         private bool ShouldProcessInsertModeInputWithCommandTarget(IInsertMode mode, KeyInput keyInput)
         {
+            // In the middle of a word completion session let insert mode handle the input.  It's 
+            // displaying the intellisense itself and this method is meant to let custom intellisense
+            // operate normally
+            if (mode.ActiveWordCompletionSession.IsSome())
+            {
+                return false;
+            }
+
             // Don't let the mode directly process anything it considers direct input.  We need this to go
             // through IOleCommandTarget in order for features like intellisense to work properly
             if (mode.IsDirectInsert(keyInput))

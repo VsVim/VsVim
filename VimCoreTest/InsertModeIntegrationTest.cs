@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Vim.UnitTest;
 
 namespace VimCore.UnitTest
@@ -68,14 +69,30 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
-        /// This test is mainly a regression test against the selection change logic
+        /// Make sure that in the case where there is buffered input and we fail at the mapping 
+        /// that both values are inserted into the ITextBuffer
         /// </summary>
         [Test]
-        public void SelectionChange1()
+        public void KeyRemap_BufferedInputFailsMapping()
         {
-            Create("foo", "bar");
-            _textView.SelectAndUpdateCaret(new SnapshotSpan(_textView.GetLine(0).Start, 0));
-            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            Create("");
+            _buffer.Vim.KeyMap.MapWithNoRemap("jj", "<Esc>", KeyRemapMode.Insert);
+            _buffer.Process("j");
+            Assert.AreEqual("", _textBuffer.GetLine(0).GetText());
+            _buffer.Process("a");
+            Assert.AreEqual("ja", _textBuffer.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// Ensure we can use a double keystroke to escape
+        /// </summary>
+        [Test]
+        public void KeyRemap_TwoKeysToEscape()
+        {
+            Create(ModeArgument.NewInsertWithCount(2), "hello");
+            _buffer.Vim.KeyMap.MapWithNoRemap("jj", "<Esc>", KeyRemapMode.Insert);
+            _buffer.Process("jj");
+            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
         }
 
         /// <summary>
@@ -251,15 +268,14 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
-        /// Ensure we can use a double keystroke to escape
+        /// This test is mainly a regression test against the selection change logic
         /// </summary>
         [Test]
-        public void KeyRemap_TwoKeysToEscape()
+        public void SelectionChange1()
         {
-            Create(ModeArgument.NewInsertWithCount(2), "hello");
-            _buffer.Vim.KeyMap.MapWithNoRemap("jj", "<Esc>", KeyRemapMode.Insert);
-            _buffer.Process("jj");
-            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
+            Create("foo", "bar");
+            _textView.SelectAndUpdateCaret(new SnapshotSpan(_textView.GetLine(0).Start, 0));
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
         }
 
         /// <summary>
@@ -288,18 +304,72 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
-        /// Make sure that in the case where there is buffered input and we fail at the mapping 
-        /// that both values are inserted into the ITextBuffer
+        /// Simple word completion action which accepts the first match
         /// </summary>
         [Test]
-        public void KeyRemap_BufferedInputFailsMapping()
+        public void WordCompletion_Simple()
         {
-            Create("");
-            _buffer.Vim.KeyMap.MapWithNoRemap("jj", "<Esc>", KeyRemapMode.Insert);
-            _buffer.Process("j");
-            Assert.AreEqual("", _textBuffer.GetLine(0).GetText());
-            _buffer.Process("a");
-            Assert.AreEqual("ja", _textBuffer.GetLine(0).GetText());
+            Create("c dog", "cat");
+            _textView.MoveCaretTo(1);
+            _buffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
+            Assert.AreEqual("cat dog", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// Simulate choosing the second possibility in the completion list
+        /// </summary>
+        [Test]
+        public void WordCompletion_ChooseNext()
+        {
+            Create("c dog", "cat copter");
+            _textView.MoveCaretTo(1);
+            _buffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
+            _buffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
+            Assert.AreEqual("copter dog", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// Typing a char while the completion list is up should cancel it out and 
+        /// cause the char to be added to the IVimBuffer
+        /// </summary>
+        [Test]
+        public void WordCompletion_TypeAfter()
+        {
+            Create("c dog", "cat");
+            _textView.MoveCaretTo(1);
+            _buffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
+            _buffer.Process('s');
+            Assert.AreEqual("cats dog", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// Esacpe should cancel both word completion and insert mode.  It's just
+        /// like normal intellisense in that respect
+        /// </summary>
+        [Test]
+        public void WordCompletion_Escape()
+        {
+            Create("c dog", "cat");
+            _textView.MoveCaretTo(1);
+            _buffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
+            _buffer.Process(KeyNotationUtil.StringToKeyInput("<Esc>"));
+            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// When there are no matches then no active IWordCompletion should be created and 
+        /// it should continue in insert mode
+        /// </summary>
+        [Test]
+        public void WordCompletion_NoMatches()
+        {
+            Create("c dog");
+            _textView.MoveCaretTo(1);
+            _buffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
+            Assert.AreEqual("c dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            Assert.IsTrue(_buffer.InsertMode.ActiveWordCompletionSession.IsNone());
         }
     }
 }

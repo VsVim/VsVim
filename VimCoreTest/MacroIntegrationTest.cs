@@ -97,6 +97,23 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// When the word completion command is run and there are no completions this shouldn't
+        /// register as an error and macro processing should continue
+        /// </summary>
+        [Test]
+        public void RunLastMacro_WordCompletionWithNoCompletion()
+        {
+            Create("z ");
+            _textView.MoveCaretTo(1);
+            TestRegister.UpdateValue(
+                KeyNotationUtil.StringToKeyInput("i"),
+                KeyNotationUtil.StringToKeyInput("<C-n>"),
+                KeyNotationUtil.StringToKeyInput("s"));
+            _buffer.Process("@c");
+            Assert.AreEqual("zs ", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
         /// Any command which produces an error should cause the macro to stop playback.  One
         /// such command is trying to move right past the end of a line in insert mode
         /// </summary>
@@ -228,5 +245,6 @@ namespace VimCore.UnitTest
             Assert.AreEqual("cat", _textView.GetLine(0).GetText());
             Assert.AreEqual("dog", _textView.GetLine(1).GetText());
         }
+
     }
 }

@@ -172,6 +172,7 @@ namespace Vim.UnitTest.Mock
             mock.SetupGet(x => x.TextSnapshot).Returns(() => textView.TextSnapshot);
             mock.SetupGet(x => x.Name).Returns(name);
             mock.SetupGet(x => x.LocalSettings).Returns(settings);
+            mock.SetupGet(x => x.GlobalSettings).Returns(settings.GlobalSettings);
             mock.SetupGet(x => x.MarkMap).Returns(vim.MarkMap);
             mock.SetupGet(x => x.RegisterMap).Returns(vim.RegisterMap);
             mock.SetupGet(x => x.JumpList).Returns(jumpList);

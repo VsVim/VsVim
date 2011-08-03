@@ -29,7 +29,7 @@ namespace VsVim.UnitTest.Utils
     /// the test cases which use it will pick up all of the new information we gather though 
     /// and this will add even more value to our unit tests
     /// </summary>
-    internal sealed class VisualStudioSimulation
+    internal sealed class VsSimulation
     {
         #region KeyProcessor
 
@@ -333,7 +333,7 @@ namespace VsVim.UnitTest.Utils
         private readonly Mock<IDisplayWindowBroker> _displayWindowBroker;
         private readonly Mock<IExternalEditorManager> _externalEditorManager;
 
-        internal VisualStudioSimulation(IVimBufferCoordinator bufferCoordinator, bool simulateResharper)
+        internal VsSimulation(IVimBufferCoordinator bufferCoordinator, bool simulateResharper)
         {
             _wpfTextView = (IWpfTextView)bufferCoordinator.VimBuffer.TextView;
             _factory = new MockRepository(MockBehavior.Strict);
