@@ -116,6 +116,8 @@ type internal InsertMode
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
+    member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
+
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
 
     member x.CurrentSnapshot = _textView.TextSnapshot
@@ -343,6 +345,18 @@ type internal InsertMode
 
     /// Start a word completion session in the given direction at the current caret point
     member x.StartWordCompletionSession isForward = 
+
+        // If the caret is currently in virtual space we need to fill in that space with
+        // real spaces before starting a completion session.
+        if x.CaretVirtualPoint.IsInVirtualSpace then
+            let blanks = 
+                let blanks = StringUtil.repeatChar x.CaretVirtualPoint.VirtualSpaces ' '
+                _operations.NormalizeBlanks blanks
+
+            // Make sure to position the caret to the end of the newly inserted spaces
+            let position = x.CaretPoint.Position + blanks.Length
+            _textBuffer.Insert(x.CaretPoint.Position, blanks) |> ignore
+            TextViewUtil.MoveCaretToPosition _textView position
 
         // Time to start a completion.  
         let wordSpan = 
