@@ -25,8 +25,6 @@ namespace Vim.UI.Wpf.Implementation
     [Export(typeof(ICompletionSourceProvider))]
     internal sealed class WordCompletionSessionFactoryService : IWordCompletionSessionFactoryService, ICompletionSourceProvider
     {
-        private const string WordCompletionSetName = "Words";
-
         #region CompletionData
 
         /// <summary>
@@ -131,6 +129,8 @@ namespace Vim.UI.Wpf.Implementation
 
         #endregion
 
+        private const string WordCompletionSetName = "Words";
+
         /// <summary>
         /// Key used to hide the CompletionData in the ITextView
         /// </summary>
@@ -138,6 +138,13 @@ namespace Vim.UI.Wpf.Implementation
 
         private readonly ICompletionBroker _completionBroker;
         private readonly IIntellisenseSessionStackMapService _intellisenseSessionStackMapService;
+
+        /// <summary>
+        /// This is inserted into every ICompletionSession property bag which is created for
+        /// a word completion.  It's used to identify all ICompletionSession values which are 
+        /// IWordCompletionSessions
+        /// </summary>
+        internal static object WordCompletionSessionKey = new object();
 
         [ImportingConstructor]
         internal WordCompletionSessionFactoryService(ICompletionBroker completionBroker, IIntellisenseSessionStackMapService intellisenseSessionStackMapService)
@@ -168,6 +175,7 @@ namespace Vim.UI.Wpf.Implementation
                 // take care of mapping it to a specific span
                 var trackingPoint = textView.TextSnapshot.CreateTrackingPoint(wordSpan.Start, PointTrackingMode.Positive);
                 var completionSession = _completionBroker.CreateCompletionSession(textView, trackingPoint, true);
+                completionSession.Properties[WordCompletionSessionKey] = WordCompletionSessionKey;
 
                 // Start the completion.  This will cause it to get populated at which point we can go about 
                 // filtering the data
