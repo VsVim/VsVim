@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using EnvDTE;
-using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
@@ -15,7 +14,6 @@ using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Utilities;
 using Moq;
-using Vim.Extensions;
 
 namespace Vim.UnitTest.Mock
 {
@@ -92,7 +90,7 @@ namespace Vim.UnitTest.Mock
             var mock = factory.Create<IVim>(MockBehavior.Strict);
             mock.SetupGet(x => x.RegisterMap).Returns(registerMap);
             mock.SetupGet(x => x.MarkMap).Returns(map);
-            mock.SetupGet(x => x.Settings).Returns(settings);
+            mock.SetupGet(x => x.GlobalSettings).Returns(settings);
             mock.SetupGet(x => x.VimHost).Returns(host);
             mock.SetupGet(x => x.KeyMap).Returns(keyMap);
             mock.SetupGet(x => x.VimData).Returns(vimData);
@@ -164,7 +162,7 @@ namespace Vim.UnitTest.Mock
             jumpList = jumpList ?? (factory.Create<IJumpList>().Object);
             motionUtil = motionUtil ?? factory.Create<IMotionUtil>().Object;
             wordNavigator = wordNavigator ?? factory.Create<ITextStructureNavigator>().Object;
-            settings = settings ?? new LocalSettings(vim.Settings, FSharpOption<IEditorOptions>.None, FSharpOption.Create(textView));
+            settings = settings ?? new LocalSettings(vim.GlobalSettings);
             var mock = factory.Create<IVimBuffer>();
             mock.SetupGet(x => x.TextView).Returns(textView);
             mock.SetupGet(x => x.MotionUtil).Returns(motionUtil);

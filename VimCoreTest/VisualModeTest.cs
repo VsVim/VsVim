@@ -66,11 +66,9 @@ namespace VimCore.UnitTest
             _commandUtil = _factory.Create<ICommandUtil>();
             _incrementalSearch = MockObjectFactory.CreateIncrementalSearch(factory: _factory);
             var globalSettings = new GlobalSettings();
-            var localSettings = new LocalSettings(globalSettings, EditorUtil.GetEditorOptions(_textView), _textView);
             var motionUtil = VimUtil.CreateTextViewMotionUtil(
                 _textView,
-                _markMap,
-                localSettings);
+                _markMap);
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _textView,
                 "test",
@@ -82,7 +80,7 @@ namespace VimCore.UnitTest
                 _host.Object,
                 _textView,
                 _incrementalSearch.Object,
-                localSettings);
+                VimUtil.CreateLocalSettings());
             var runner = new CommandRunner(
                 _textView,
                 _map,

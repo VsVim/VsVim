@@ -7,15 +7,11 @@ namespace Vim.UI.Wpf
     internal sealed class VimBufferCreationListener : IVimBufferCreationListener
     {
         private readonly IBlockCaretFactoryService _blockCaretFactoryService;
-        private readonly IEditorOptionsFactoryService _editorOptionsFatoryService;
 
         [ImportingConstructor]
-        internal VimBufferCreationListener(
-            IBlockCaretFactoryService blockCaretFactoryService,
-            IEditorOptionsFactoryService editorOptionsFactoryService)
+        internal VimBufferCreationListener(IBlockCaretFactoryService blockCaretFactoryService)
         {
             _blockCaretFactoryService = blockCaretFactoryService;
-            _editorOptionsFatoryService = editorOptionsFactoryService;
         }
 
         public void VimBufferCreated(IVimBuffer buffer)
@@ -30,15 +26,14 @@ namespace Vim.UI.Wpf
             var caret = _blockCaretFactoryService.CreateBlockCaret(textView);
             var caretController = new BlockCaretController(buffer, caret);
 
-            buffer.LocalSettings.SettingChanged += (_, args) => OnSettingChanged(buffer, args);
+            buffer.WindowSettings.SettingChanged += (_, args) => OnSettingChanged(buffer, args);
         }
 
         private void OnSettingChanged(IVimBuffer buffer, Setting args)
         {
-            if (args.Name == LocalSettingNames.CursorLineName)
+            if (args.Name == WindowSettingNames.CursorLineName && buffer.TextView.Options != null)
             {
-                var options = _editorOptionsFatoryService.GetOptions(buffer.TextView);
-                options.SetOptionValue(DefaultWpfViewOptions.EnableHighlightCurrentLineId, buffer.LocalSettings.CursorLine);
+                buffer.TextView.Options.SetOptionValue(DefaultWpfViewOptions.EnableHighlightCurrentLineId, buffer.WindowSettings.CursorLine);
             }
         }
     }

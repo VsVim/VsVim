@@ -78,7 +78,7 @@ namespace VsVim
 
         private void MaybeLoadVimRc()
         {
-            if (!_vim.IsVimRcLoaded && String.IsNullOrEmpty(_vim.Settings.VimRcPaths))
+            if (!_vim.IsVimRcLoaded && String.IsNullOrEmpty(_vim.GlobalSettings.VimRcPaths))
             {
                 // Need to pass the LoadVimRc call a function to create an ITextView that 
                 // can be used to load the settings against.  We don't want this ITextView 
@@ -102,7 +102,7 @@ namespace VsVim
 
             // Create the IVimBuffer after loading the VimRc so that it gets the appropriate
             // settings
-            var buffer = _vim.GetOrCreateBuffer(textView);
+            var buffer = _vim.GetOrCreateVimBuffer(textView);
 
             // Save the tab size and expand tab in case we need to reset them later
             var bufferData = new BufferData
@@ -159,7 +159,7 @@ namespace VsVim
             }
 
             // Sanity check. No reason for this to be null
-            var opt = _vim.GetBuffer(textView);
+            var opt = _vim.GetVimBuffer(textView);
             if (!opt.IsSome())
             {
                 return;
@@ -180,7 +180,7 @@ namespace VsVim
                 //
                 // To work around this we store the original values and reset them here.  This event
                 // is raised after this propagation occurs so we can put them back
-                if (!_vim.Settings.UseEditorSettings)
+                if (!_vim.GlobalSettings.UseEditorSettings)
                 {
                     buffer.LocalSettings.TabStop = bufferData.TabStop;
                     buffer.LocalSettings.ExpandTab = bufferData.ExpandTab;

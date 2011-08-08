@@ -21,11 +21,13 @@ namespace VimCore.UnitTest
         [SetUp]
         public void Setup()
         {
-            _synchronizer = new EditorToSettingSynchronizer(EditorUtil.FactoryService.Vim);
-            _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(EditorUtil.CreateTextView(""));
+            _synchronizer = new EditorToSettingSynchronizer(EditorUtil.FactoryService.EditorOptionsFactory, EditorUtil.FactoryService.Vim);
+
+            var textView = EditorUtil.CreateTextView("");
+            _buffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(textView);
             _localSettings = _buffer.LocalSettings;
             _globalSettings = _localSettings.GlobalSettings;
-            _editorOptions = _localSettings.EditorOptions.Value;
+            _editorOptions = EditorUtil.FactoryService.EditorOptionsFactory.GetOptions(textView);
         }
 
         [TearDown]

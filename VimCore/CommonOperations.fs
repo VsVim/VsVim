@@ -834,7 +834,7 @@ type CommonOperationsFactory
             UndoRedoOperations = bufferData.UndoRedoOperations
             VimData = vim.VimData
             VimHost = vim.VimHost
-            WordUtil = _wordUtilFactory.GetWordUtil textView }
+            WordUtil = _wordUtilFactory.GetWordUtil textView.TextBuffer }
         CommonOperations(operationsData) :> ICommonOperations
 
     /// Get or create the ICommonOperations for the given buffer

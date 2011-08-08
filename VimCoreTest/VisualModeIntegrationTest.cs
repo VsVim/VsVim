@@ -35,7 +35,7 @@ namespace VimCore.UnitTest
             var tuple = EditorUtil.CreateTextViewAndEditorOperations(lines);
             _textView = tuple.Item1;
             var service = EditorUtil.FactoryService;
-            _buffer = service.Vim.CreateBuffer(_textView);
+            _buffer = service.Vim.CreateVimBuffer(_textView);
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             _registerMap = _buffer.RegisterMap;
             _globalSettings = _buffer.LocalSettings.GlobalSettings;

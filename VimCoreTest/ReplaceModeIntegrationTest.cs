@@ -14,7 +14,7 @@ namespace VimCore.UnitTest
         private void Create(params string[] lines)
         {
             _textView = EditorUtil.CreateTextView(lines);
-            _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
+            _buffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(_textView);
         }
 
         /// <summary>

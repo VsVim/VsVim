@@ -39,7 +39,7 @@ namespace VimCore.UnitTest
             _textView = tuple.Item1;
             _textBuffer = _textView.TextBuffer;
             var service = EditorUtil.FactoryService;
-            _buffer = service.Vim.CreateBuffer(_textView);
+            _buffer = service.Vim.CreateVimBuffer(_textView);
             _buffer.ErrorMessage +=
                 (_, message) =>
                 {

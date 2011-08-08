@@ -33,7 +33,7 @@ namespace VsVim.UnitTest
         private void Create(bool simulateResharper, params string[] lines)
         {
             _textView = EditorUtil.CreateTextView(lines);
-            _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
+            _buffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(_textView);
             _bufferCoordinator = new VimBufferCoordinator(_buffer);
             _simulation = new VsSimulation(_bufferCoordinator, simulateResharper);
         }

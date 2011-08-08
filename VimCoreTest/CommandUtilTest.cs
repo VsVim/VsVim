@@ -50,12 +50,13 @@ namespace VimCore.UnitTest
             _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice().Object);
             _markMap = new MarkMap(new TrackingLineColumnService());
             _globalSettings = new GlobalSettings();
-            _localSettings = new LocalSettings(_globalSettings, EditorUtil.GetEditorOptions(_textView), _textView);
+            _localSettings = VimUtil.CreateLocalSettings();
 
             _operations = _factory.Create<ICommonOperations>();
             _operations.Setup(x => x.EnsureCaretOnScreenAndTextExpanded());
             _operations.Setup(x => x.RaiseSearchResultMessage(It.IsAny<SearchResult>()));
-            _operations.Setup(x => x.EditorOptions).Returns(EditorUtil.FactoryService.EditorOptionsFactory.GetOptions(_textView));
+            _operations.SetupGet(x => x.EditorOperations).Returns(EditorUtil.FactoryService.EditorOperationsFactory.GetEditorOperations(_textView));
+            _operations.SetupGet(x => x.EditorOptions).Returns(EditorUtil.FactoryService.EditorOptionsFactory.GetOptions(_textView));
             _operations
                 .Setup(x => x.MoveCaretToPointAndCheckVirtualSpace(It.IsAny<SnapshotPoint>()))
                 .Callback<SnapshotPoint>(
@@ -65,17 +66,14 @@ namespace VimCore.UnitTest
                         CommonUtil.MoveCaretForVirtualEdit(_textView, _globalSettings);
                     });
 
-            var localSettings = new LocalSettings(new Vim.GlobalSettings());
             _motionUtil = VimUtil.CreateTextViewMotionUtil(
                 _textView,
-                settings: localSettings,
                 vimData: _vimData);
             _commandUtil = VimUtil.CreateCommandUtil(
                 _textView,
                 _operations.Object,
                 _motionUtil,
                 statusUtil: _statusUtil.Object,
-                localSettings: _localSettings,
                 registerMap: _registerMap,
                 markMap: _markMap,
                 vimData: _vimData,

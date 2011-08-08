@@ -203,14 +203,15 @@ type MarkMap( _tlcService : ITrackingLineColumnService ) =
                 if selection.IsEmpty then ()
                 else 
                     match TextSelectionUtil.GetOverarchingSelectedSpan selection with
-                    | None -> ()
-                    | Some(span) -> 
+                    | None ->
+                        ()
+                    | Some span -> 
                         let lastSelected = span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeExclusive) |> Some
                         let data = x.GetOrCreateBufferMarkData buffer.TextBuffer
                         let data = {data with LastSelection=lastSelected }
                         _localMap.Item(buffer.TextBuffer) <- data 
             updateLastSelection()
-    
+
             buffer.TextView.Selection.SelectionChanged 
             |> Event.add (fun _ -> updateLastSelection() )
 

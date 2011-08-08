@@ -10,7 +10,7 @@ open Microsoft.VisualStudio.Utilities
 
 type internal VimBuffer =
 
-    new : VimBufferData * IIncrementalSearch * IMotionUtil * ITextStructureNavigator -> VimBuffer
+    new : VimBufferData * IIncrementalSearch * IMotionUtil * ITextStructureNavigator * IVimWindowSettings -> VimBuffer
 
     member AddMode : IMode -> unit
 

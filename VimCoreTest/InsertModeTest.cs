@@ -99,7 +99,7 @@ namespace VimCore.UnitTest
                 !insertMode,
                 _keyboardDevice.Object,
                 _mouseDevice.Object,
-                EditorUtil.FactoryService.WordUtilFactory.GetWordUtil(_textView),
+                EditorUtil.FactoryService.WordUtilFactory.GetWordUtil(_textView.TextBuffer),
                 _wordCompletionSessionFactoryService.Object);
             _mode = _modeRaw;
         }

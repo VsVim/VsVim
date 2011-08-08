@@ -55,7 +55,8 @@ module internal Resources =
     let VisualMode_BoxSelectionNotSupported = "Box selection is not supported for this operation"
     let VisualMode_MultiSelectNotSupported = "Multiple selections is not supported for this operation"
 
-    let Vim_ViewAlreadyHasBuffer = "View is already associated with an IVimBuffer"
+    let Vim_TextBufferAlreadyHasVimTextBuffer = "ITextBuffer is already associated with an IVimTextBuffer"
+    let Vim_TextViewAlreadyHasVimBuffer = "ITextView is already associated with an IVimBuffer"
     let Vim_RecursiveMapping = "Recursive key mapping detected"
 
     let VimBuffer_AlreadyClosed = "IVimBuffer instance is already closed"

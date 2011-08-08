@@ -26,7 +26,7 @@ namespace VsVim.Implementation
 
         KeyProcessor IKeyProcessorProvider.GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
-            var buffer = _vim.GetOrCreateBuffer(wpfTextView);
+            var buffer = _vim.GetOrCreateVimBuffer(wpfTextView);
             var bufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(buffer);
             return new VsKeyProcessor(_adapter, bufferCoordinator);
         }

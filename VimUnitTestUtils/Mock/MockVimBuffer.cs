@@ -365,5 +365,16 @@ namespace Vim.UnitTest.Mock
         {
             throw new NotImplementedException();
         }
+
+
+        public IVimTextBuffer VimTextBuffer
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        public IVimWindowSettings WindowSettings
+        {
+            get { throw new NotImplementedException(); }
+        }
     }
 }

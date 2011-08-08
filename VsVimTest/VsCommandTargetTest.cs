@@ -32,7 +32,7 @@ namespace VsVim.UnitTest
         public void SetUp()
         {
             _textView = EditorUtil.CreateTextView("");
-            _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
+            _buffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(_textView);
             _bufferCoordinator = new VimBufferCoordinator(_buffer);
             _vim = _buffer.Vim;
             _factory = new MockRepository(MockBehavior.Strict);

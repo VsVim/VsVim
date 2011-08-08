@@ -5,13 +5,12 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
-using Vim.Modes;
 using Vim.UnitTest;
 
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class IncrementalSearchTest
+    public sealed class IncrementalSearchTest
     {
         private static SearchOptions s_options = SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase;
         private MockRepository _factory;
@@ -32,7 +31,7 @@ namespace VimCore.UnitTest
             _globalSettings = new Vim.GlobalSettings();
             _globalSettings.IncrementalSearch = true;
             _globalSettings.WrapScan = true;
-            _localSettings = new LocalSettings(_globalSettings, EditorUtil.GetEditorOptions(_textView), _textView);
+            _localSettings = VimUtil.CreateLocalSettings(_globalSettings);
             _nav = VimUtil.CreateTextStructureNavigator(_textView, WordKind.NormalWord);
             _factory = new MockRepository(MockBehavior.Strict);
             _vimHost = _factory.Create<IVimHost>();
@@ -43,9 +42,9 @@ namespace VimCore.UnitTest
             _vimData = new VimData();
             _operations = VimUtil.CreateCommonOperations(
                 textView: _textView,
-                localSettings: _localSettings,
                 vimHost: _vimHost.Object,
-                statusUtil: _statusUtil.Object);
+                statusUtil: _statusUtil.Object,
+                localSettings: _localSettings);
             _searchRaw = new IncrementalSearch(
                 _operations,
                 _localSettings,

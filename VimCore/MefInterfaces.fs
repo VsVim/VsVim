@@ -72,9 +72,12 @@ type ITrackingLineColumnService =
     abstract CloseAll : unit -> unit
 
 type IVimBufferFactory =
-    
-    /// Create a IVimBuffer for the given parameters
-    abstract CreateBuffer : IVim -> ITextView -> IVimBuffer
+
+    /// Create an IVimTextBuffer for the given ITextView
+    abstract CreateVimTextBuffer : ITextBuffer -> IVim -> IVimTextBuffer
+
+    /// Create an IVimBuffer for the given parameters
+    abstract CreateVimBuffer : ITextView -> IVimTextBuffer -> IVimBuffer
 
 type IVimBufferCreationListener =
 

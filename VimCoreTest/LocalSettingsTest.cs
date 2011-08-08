@@ -1,8 +1,5 @@
-﻿using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using Vim;
-using Vim.UnitTest;
 using GlobalSettings = Vim.GlobalSettings;
 
 namespace VimCore.UnitTest
@@ -14,13 +11,9 @@ namespace VimCore.UnitTest
         protected override IVimSettings Create()
         {
             var global = new Vim.GlobalSettings();
-            var view = EditorUtil.CreateTextView("foo");
-            var editorOptions = EditorUtil.FactoryService.EditorOptionsFactory.GetOptions(view);
-            return new LocalSettings(global, editorOptions, view);
+            return new LocalSettings(global);
         }
 
-        private ITextView _textView;
-        private IEditorOptions _editorOptions;
         private IVimGlobalSettings _global;
         private LocalSettings _localRaw;
         private IVimLocalSettings _local;
@@ -28,10 +21,8 @@ namespace VimCore.UnitTest
         [SetUp]
         public void SetUp()
         {
-            _textView = EditorUtil.CreateTextView("");
-            _editorOptions = EditorUtil.GetEditorOptions(_textView);
             _global = new GlobalSettings();
-            _localRaw = new LocalSettings(_global, _editorOptions, _textView);
+            _localRaw = new LocalSettings(_global);
             _local = _localRaw;
         }
 

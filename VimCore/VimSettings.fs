@@ -7,6 +7,7 @@ open Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
 open System.ComponentModel.Composition
 open Vim.GlobalSettingNames
 open Vim.LocalSettingNames
+open Vim.WindowSettingNames
 
 type internal SettingsMap
     (
@@ -236,23 +237,76 @@ type internal GlobalSettings() =
 
 type internal LocalSettings
     ( 
-        _globalSettings : IVimGlobalSettings,
-        _editorOptions : IEditorOptions option,
-        _textView : ITextView option
-    ) as this =
+        _globalSettings : IVimGlobalSettings
+    ) =
 
     static let LocalSettingInfo =
         [|
             (AutoIndentName, "ai", ToggleKind, ToggleValue(false))
-            (CursorLineName, "cul", ToggleKind, ToggleValue(false))
             (ExpandTabName, "et", ToggleKind, ToggleValue(false))
             (NumberName, "nu", ToggleKind, ToggleValue(false))
-            (ScrollName, "scr", NumberKind, NumberValue(25))
             (TabStopName, "ts", NumberKind, NumberValue(8))
             (QuoteEscapeName, "qe", StringKind, StringValue(@"\"))
         |]
 
     let _map = SettingsMap(LocalSettingInfo, false)
+
+    member x.Map = _map
+
+    static member Copy (settings : IVimLocalSettings) = 
+        let copy = LocalSettings(settings.GlobalSettings)
+        settings.AllSettings
+        |> Seq.filter (fun s -> not s.IsGlobal && not s.IsValueCalculated)
+        |> Seq.iter (fun s -> copy.Map.TrySetValue s.Name s.Value |> ignore)
+        copy :> IVimLocalSettings
+
+    interface IVimLocalSettings with 
+        // IVimSettings
+        
+        member x.AllSettings = _map.AllSettings |> Seq.append _globalSettings.AllSettings
+        member x.TrySetValue settingName value = 
+            if _map.OwnsSetting settingName then _map.TrySetValue settingName value
+            else _globalSettings.TrySetValue settingName value
+        member x.TrySetValueFromString settingName strValue = 
+            if _map.OwnsSetting settingName then _map.TrySetValueFromString settingName strValue
+            else _globalSettings.TrySetValueFromString settingName strValue
+        member x.GetSetting settingName =
+            if _map.OwnsSetting settingName then _map.GetSetting settingName
+            else _globalSettings.GetSetting settingName
+
+        member x.GlobalSettings = _globalSettings
+        member x.AutoIndent
+            with get() = _map.GetBoolValue AutoIndentName
+            and set value = _map.TrySetValue AutoIndentName (ToggleValue value) |> ignore
+        member x.ExpandTab
+            with get() = _map.GetBoolValue ExpandTabName
+            and set value = _map.TrySetValue ExpandTabName (ToggleValue value) |> ignore
+        member x.Number
+            with get() = _map.GetBoolValue NumberName
+            and set value = _map.TrySetValue NumberName (ToggleValue value) |> ignore
+        member x.TabStop
+            with get() = _map.GetNumberValue TabStopName
+            and set value = _map.TrySetValue TabStopName (NumberValue value) |> ignore
+        member x.QuoteEscape
+            with get() = _map.GetStringValue QuoteEscapeName
+            and set value = _map.TrySetValue QuoteEscapeName (StringValue value) |> ignore
+
+        [<CLIEvent>]
+        member x.SettingChanged = _map.SettingChanged
+
+type internal WindowSettings
+    ( 
+        _globalSettings : IVimGlobalSettings,
+        _textView : ITextView option
+    ) as this =
+
+    static let WindowSettingInfo =
+        [|
+            (CursorLineName, "cul", ToggleKind, ToggleValue(false))
+            (ScrollName, "scr", NumberKind, NumberValue(25))
+        |]
+
+    let _map = SettingsMap(WindowSettingInfo, false)
 
     do
         let setting = _map.GetSetting ScrollName |> Option.get
@@ -261,9 +315,8 @@ type internal LocalSettings
                 Value = CalculatedValue(this.CalculateScroll); 
                 DefaultValue = CalculatedValue(this.CalculateScroll) }
 
-    new (settings) = LocalSettings(settings, None, None)
-    new (settings, editorOptions) = LocalSettings(settings, Some editorOptions, None)
-    new (settings, editorOptions, textView : ITextView) = LocalSettings(settings, Some editorOptions, Some textView)
+    new (settings) = WindowSettings(settings, None)
+    new (settings, textView : ITextView) = WindowSettings(settings, Some textView)
 
     member x.Map = _map
 
@@ -289,21 +342,15 @@ type internal LocalSettings
                     :? System.InvalidOperationException -> defaultValue
         NumberValue(lineCount)
 
-    static member Copy (settings : IVimLocalSettings) = 
-        let copy = 
-            match settings.EditorOptions with
-            | None -> LocalSettings(settings.GlobalSettings)
-            | Some editorOptions-> LocalSettings(settings.GlobalSettings, editorOptions)
+    static member Copy (settings : IVimWindowSettings) = 
+        let copy = WindowSettings(settings.GlobalSettings)
         settings.AllSettings
         |> Seq.filter (fun s -> not s.IsGlobal && not s.IsValueCalculated)
         |> Seq.iter (fun s -> copy.Map.TrySetValue s.Name s.Value |> ignore)
-        copy :> IVimLocalSettings
+        copy :> IVimWindowSettings
 
-    interface IVimLocalSettings with 
-        // IVimSettings
-        
+    interface IVimWindowSettings with 
         member x.AllSettings = _map.AllSettings |> Seq.append _globalSettings.AllSettings
-        member x.EditorOptions = _editorOptions
         member x.TrySetValue settingName value = 
             if _map.OwnsSetting settingName then _map.TrySetValue settingName value
             else _globalSettings.TrySetValue settingName value
@@ -313,29 +360,14 @@ type internal LocalSettings
         member x.GetSetting settingName =
             if _map.OwnsSetting settingName then _map.GetSetting settingName
             else _globalSettings.GetSetting settingName
-
         member x.GlobalSettings = _globalSettings
-        member x.AutoIndent
-            with get() = _map.GetBoolValue AutoIndentName
-            and set value = _map.TrySetValue AutoIndentName (ToggleValue value) |> ignore
+
         member x.CursorLine 
             with get() = _map.GetBoolValue CursorLineName
             and set value = _map.TrySetValue CursorLineName (ToggleValue value) |> ignore
-        member x.ExpandTab
-            with get() = _map.GetBoolValue ExpandTabName
-            and set value = _map.TrySetValue ExpandTabName (ToggleValue value) |> ignore
         member x.Scroll 
             with get() = _map.GetNumberValue ScrollName
             and set value = _map.TrySetValue ScrollName (NumberValue value) |> ignore
-        member x.Number
-            with get() = _map.GetBoolValue NumberName
-            and set value = _map.TrySetValue NumberName (ToggleValue value) |> ignore
-        member x.TabStop
-            with get() = _map.GetNumberValue TabStopName
-            and set value = _map.TrySetValue TabStopName (NumberValue value) |> ignore
-        member x.QuoteEscape
-            with get() = _map.GetStringValue QuoteEscapeName
-            and set value = _map.TrySetValue QuoteEscapeName (StringValue value) |> ignore
 
         [<CLIEvent>]
         member x.SettingChanged = _map.SettingChanged
@@ -346,19 +378,16 @@ type internal LocalSettings
 type internal EditorToSettingSynchronizer
     [<ImportingConstructor>]
     (
+        _editorOptionsFactoryService : IEditorOptionsFactoryService,
         _vim : IVim
     ) =
 
-    let _globalSettings = _vim.Settings
+    let _globalSettings = _vim.GlobalSettings
     let _syncronizingSet = System.Collections.Generic.HashSet<IVimLocalSettings>()
 
     member x.VimBufferCreated (buffer : IVimBuffer) = 
-        match buffer.LocalSettings.EditorOptions with
-        | None ->
-            // The synchronization involve editor options so if they are not available
-            // then there is nothing to do
-            ()
-        | Some editorOptions -> 
+        let editorOptions = buffer.TextView.Options
+        if editorOptions <> null then
 
             let bag = DisposableBag()
             let localSettings = buffer.LocalSettings

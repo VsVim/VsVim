@@ -30,26 +30,26 @@ namespace VimCore.UnitTest
         public void RemoveBuffer2()
         {
             var view = EditorUtil.CreateTextView("foo bar");
-            var vimBuffer = _vim.CreateBuffer(view);
+            var vimBuffer = _vim.CreateVimBuffer(view);
             Assert.IsTrue(_vim.RemoveBuffer(view));
-            Assert.IsTrue(_vim.GetBuffer(view).IsNone());
+            Assert.IsTrue(_vim.GetVimBuffer(view).IsNone());
         }
 
         [Test]
-        public void CreateBuffer1()
+        public void CreateVimBuffer1()
         {
             var view = EditorUtil.CreateTextView("foo bar");
-            var vimBuffer = _vim.CreateBuffer(view);
-            Assert.IsTrue(_vim.GetBuffer(view).IsSome());
-            Assert.AreSame(view, _vim.GetBuffer(view).Value.TextView);
+            var vimBuffer = _vim.CreateVimBuffer(view);
+            Assert.IsTrue(_vim.GetVimBuffer(view).IsSome());
+            Assert.AreSame(view, _vim.GetVimBuffer(view).Value.TextView);
         }
 
         [Test,ExpectedException(typeof(ArgumentException))]
-        public void CreateBuffer2()
+        public void CreateVimBuffer2()
         {
             var view = EditorUtil.CreateTextView("foo bar");
-            var vimBuffer = _vim.CreateBuffer(view);
-            var vimBuffer2 = _vim.CreateBuffer(view);
+            var vimBuffer = _vim.CreateVimBuffer(view);
+            var vimBuffer2 = _vim.CreateVimBuffer(view);
         }
 
     }

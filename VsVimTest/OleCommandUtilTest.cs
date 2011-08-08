@@ -141,7 +141,7 @@ namespace VsVim.UnitTest
         public void TryConvert_TextInputToOleCommandData()
         {
             var textView = EditorUtil.CreateTextView("");
-            var buffer = EditorUtil.FactoryService.Vim.CreateBuffer(textView);
+            var buffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(textView);
             buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             foreach (var cur in KeyInputUtil.VimKeyInputList)
             {

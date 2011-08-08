@@ -103,8 +103,7 @@ type IWordUtil =
 type IWordUtilFactory = 
 
     /// Get the IWordUtil instance for the given ITextView
-    abstract GetWordUtil : ITextView -> IWordUtil
-
+    abstract GetWordUtil : ITextBuffer -> IWordUtil
 
 /// Used to display a word completion list to the user
 type IWordCompletionSession =
@@ -839,7 +838,6 @@ type KeyMappingResult =
     /// More input is needed to resolve this mapping
     | NeedsMoreInput
 
-
 /// Flags for the substitute command
 [<System.Flags>]
 type SubstituteFlags = 
@@ -911,7 +909,7 @@ type ModeSwitch =
     | SwitchModeWithArgument of ModeKind * ModeArgument
     | SwitchPreviousMode 
 
-// TODO: Should be suceeded or something other than Completed.  Error also completed just not
+// TODO: Should be succeeded or something other than Completed.  Error also completed just not
 // well
 [<RequireQualifiedAccess>]
 type CommandResult =   
@@ -924,12 +922,12 @@ type CommandResult =
     /// during a macro run it will cause the macro to stop executing
     | Error
 
-
 [<RequireQualifiedAccess>]
 type RunResult = 
     | Completed
     | SubstituteConfirm of SnapshotSpan * SnapshotLineRange * SubstituteData
 
+/// Represents the visual selection for any of the visual modes
 [<RequireQualifiedAccess>]
 type VisualSpan =
 
@@ -2101,12 +2099,15 @@ module GlobalSettingNames =
 module LocalSettingNames =
 
     let AutoIndentName = "autoindent"
-    let CursorLineName = "cursorline"
     let ExpandTabName = "expandtab"
     let NumberName = "number"
-    let ScrollName = "scroll"
     let TabStopName = "tabstop"
     let QuoteEscapeName = "quoteescape"
+
+module WindowSettingNames =
+
+    let CursorLineName = "cursorline"
+    let ScrollName = "scroll"
 
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property
@@ -2221,17 +2222,9 @@ and IVimGlobalSettings =
 
 /// Settings class which is local to a given IVimBuffer.  This will hide the work of merging
 /// global settings with non-global ones
-///
-/// TODO: Need to break this into local to buffer and local to window settings
 and IVimLocalSettings =
 
     abstract AutoIndent : bool with get, set
-
-    /// Whether or not to highlight the line the cursor is on
-    abstract CursorLine : bool with get, set
-
-    /// The IEditorOptions associated with the settings if one exists
-    abstract EditorOptions : IEditorOptions option
 
     /// Whether or not to expand tabs into spaces
     abstract ExpandTab : bool with get, set
@@ -2245,11 +2238,22 @@ and IVimLocalSettings =
     /// How many spaces a tab counts for 
     abstract TabStop : int with get, set
 
-    /// The scroll size 
-    abstract Scroll : int with get, set
-
     /// Which characters escape quotes for certain motion types
     abstract QuoteEscape : string with get, set
+
+    inherit IVimSettings
+
+/// Settings which are local to a given window.
+and IVimWindowSettings = 
+
+    /// Whether or not to highlight the line the cursor is on
+    abstract CursorLine : bool with get, set
+
+    /// Return the handle to the global IVimSettings instance
+    abstract GlobalSettings : IVimGlobalSettings
+
+    /// The scroll size 
+    abstract Scroll : int with get, set
 
     inherit IVimSettings
 
@@ -2366,16 +2370,18 @@ type VimBufferData = {
 
     TextView : ITextView
 
-    JumpList : IJumpList
-
-    LocalSettings : IVimLocalSettings
-
     StatusUtil : IStatusUtil
 
     UndoRedoOperations : IUndoRedoOperations
 
-    Vim : IVim
-}
+    VimTextBuffer : IVimTextBuffer
+} with
+
+    member x.JumpList = x.VimTextBuffer.JumpList
+
+    member x.LocalSettings = x.VimTextBuffer.LocalSettings
+
+    member x.Vim = x.VimTextBuffer.Vim
 
 /// Vim instance.  Global for a group of buffers
 and IVim =
@@ -2408,8 +2414,7 @@ and IVim =
     /// ISearchService for this IVim instance
     abstract SearchService : ISearchService
 
-    /// TODO: Rename GlobalSettings
-    abstract Settings : IVimGlobalSettings
+    abstract GlobalSettings : IVimGlobalSettings
 
     abstract VimData : IVimData 
 
@@ -2421,17 +2426,23 @@ and IVim =
     /// is passed in order to prevent memory leaks from captured ITextView`s
     abstract VimRcLocalSettings : IVimLocalSettings with get, set
 
-    /// Create an IVimBuffer for the given IWpfTextView
-    abstract CreateBuffer : ITextView -> IVimBuffer
+    /// Create an IVimBuffer for the given ITextView
+    abstract CreateVimBuffer : ITextView -> IVimBuffer
 
-    /// Get the IVimBuffer associated with the given view
-    abstract GetBuffer : ITextView -> IVimBuffer option
+    /// Create an IVimTextBuffer for the given ITextBuffer
+    abstract CreateVimTextBuffer : ITextBuffer -> IVimTextBuffer
 
-    /// Get the IVimBuffer associated with the given view
-    abstract GetBufferForBuffer : ITextBuffer -> IVimBuffer option
+    /// Get the IVimBuffer associated with the given ITextView
+    abstract GetVimBuffer : ITextView -> IVimBuffer option
 
-    /// Get or create an IVimBuffer for the given IWpfTextView
-    abstract GetOrCreateBuffer : ITextView -> IVimBuffer
+    /// Get the IVimTextBuffer associated with the given ITextBuffer
+    abstract GetVimTextBuffer : ITextBuffer -> IVimTextBuffer option
+
+    /// Get or create an IVimBuffer for the given ITextView
+    abstract GetOrCreateVimBuffer : ITextView -> IVimBuffer
+
+    /// Get or create an IVimTextBuffer for the given ITextBuffer
+    abstract GetOrCreateVimTextBuffer : ITextBuffer -> IVimTextBuffer
 
     /// Load the VimRc file.  If the file was previously loaded a new load will be 
     /// attempted.  Returns true if a VimRc was actually loaded
@@ -2458,6 +2469,45 @@ and SwitchModeEventArgs
     /// Previous IMode.  Expressed as an Option because the first mode switch
     /// has no previous one
     member x.PreviousMode = _previousMode
+
+/// This is the interface which represents the parts of a vim buffer which are shared amongst all
+/// of it's views
+and IVimTextBuffer = 
+
+    /// The associated ITextBuffer instance
+    abstract TextBuffer : ITextBuffer
+
+    /// The associated IVimGlobalSettings instance
+    abstract GlobalSettings : IVimGlobalSettings
+
+    /// The associated IJumpList instance
+    abstract JumpList : IJumpList
+
+    /// The associated IVimLocalSettings instance
+    abstract LocalSettings : IVimLocalSettings
+
+    /// ModeKind of the current mode of the IVimTextBuffer.  It may seem odd at first to put ModeKind
+    /// at this level but it is indeed shared amongst all views.  This can be demonstrated by opening
+    /// the same file in multiple tabs, switch to insert in one and then move to the other via the
+    /// mouse and noting it is also in Insert mode.  Actual IMode values are ITextView specific though
+    /// and only live at the ITextView level
+    abstract ModeKind : ModeKind
+
+    /// Name of the buffer.  Used for items like Marks
+    abstract Name : string
+
+    /// The associated IVim instance
+    abstract Vim : IVim
+
+    /// The ITextStructureNavigator for word values in the ITextBuffer
+    abstract WordNavigator : ITextStructureNavigator
+
+    /// Switch the current mode to the provided value
+    abstract SwitchMode : ModeKind -> ModeArgument -> unit
+
+    /// Raised when the mode is switched.  Returns the old and new mode 
+    [<CLIEvent>]
+    abstract SwitchedMode : IEvent<ModeKind * ModeArgument>
 
 /// Main interface for the Vim editor engine so to speak. 
 and IVimBuffer =
@@ -2518,11 +2568,17 @@ and IVimBuffer =
     /// Owning IVim instance
     abstract Vim : IVim
 
+    /// Associated IVimTextBuffer
+    abstract VimTextBuffer : IVimTextBuffer
+
     /// VimBufferData for the given IVimBuffer
     abstract VimBufferData : VimBufferData
 
     /// The ITextStructureNavigator for word values in the buffer
     abstract WordNavigator : ITextStructureNavigator
+
+    /// Associated IVimWindowSettings
+    abstract WindowSettings : IVimWindowSettings
 
     /// Associated IVimData instance
     abstract VimData : IVimData

@@ -13,7 +13,7 @@ type IncrementalSearchTagger (_buffer : IVimBuffer) as this =
 
     let _search = _buffer.IncrementalSearch
     let _textBuffer = _buffer.TextBuffer
-    let _globalSettings = _buffer.LocalSettings.GlobalSettings
+    let _globalSettings = _buffer.GlobalSettings
     let _eventHandlers = DisposableBag()
     let _tagsChanged = new Event<System.EventHandler<SnapshotSpanEventArgs>, SnapshotSpanEventArgs>()
     let mutable _searchSpan : ITrackingSpan option = None
@@ -97,7 +97,7 @@ type IncrementalSearchTagger (_buffer : IVimBuffer) as this =
     interface System.IDisposable with
         member x.Dispose() = _eventHandlers.DisposeAll()
 
-[<Export(typeof<ITaggerProvider>)>]
+[<Export(typeof<IViewTaggerProvider>)>]
 [<ContentType(Constants.ContentType)>]
 [<TextViewRole(PredefinedTextViewRoles.Document)>]
 [<TagType(typeof<TextMarkerTag>)>]
@@ -105,11 +105,14 @@ type internal IncrementalSearchTaggerProvider
     [<ImportingConstructor>]
     ( _vim : IVim ) = 
 
-    interface ITaggerProvider with 
-        member x.CreateTagger<'T when 'T :> ITag> (textBuffer) = 
-            match _vim.GetBufferForBuffer textBuffer with
-            | None -> null
-            | Some(buffer) ->
+    interface IViewTaggerProvider with 
+        member x.CreateTagger<'T when 'T :> ITag> (textView : ITextView, textBuffer) = 
+            match textView.TextBuffer = textBuffer, _vim.GetVimBuffer textView with
+            | false, _ ->
+                null
+            | true, None ->
+                null
+            | true, Some buffer ->
                 let tagger = new IncrementalSearchTagger(buffer)
                 tagger :> obj :?> ITagger<'T>
 
@@ -228,12 +231,13 @@ type HighlightIncrementalSearchTaggerProvider
     ( _vim : IVim ) = 
 
     interface ITaggerProvider with 
-        member x.CreateTagger<'T when 'T :> ITag> (textBuffer) = 
-            match _vim.GetBufferForBuffer textBuffer with
-            | None -> null
-            | Some buffer ->
-                let nav = buffer.IncrementalSearch.WordNavigator
-                let tagger = new HighlightIncrementalSearchTagger(textBuffer, buffer.LocalSettings.GlobalSettings, nav, _vim.SearchService, _vim.VimData)
+        member x.CreateTagger<'T when 'T :> ITag> textBuffer = 
+            match _vim.GetVimTextBuffer textBuffer with
+            | None ->
+                null
+            | Some vimTextBuffer ->
+                let nav = vimTextBuffer.WordNavigator
+                let tagger = new HighlightIncrementalSearchTagger(textBuffer, vimTextBuffer.GlobalSettings, nav, _vim.SearchService, _vim.VimData)
                 tagger :> obj :?> ITagger<'T>
 
 /// Tagger for matches as they appear during a confirm substitute
@@ -276,7 +280,7 @@ type SubstituteConfirmTagger
     interface System.IDisposable with
         member x.Dispose() = _eventHandlers.DisposeAll()
 
-[<Export(typeof<ITaggerProvider>)>]
+[<Export(typeof<IViewTaggerProvider>)>]
 [<ContentType(Constants.ContentType)>]
 [<TextViewRole(PredefinedTextViewRoles.Document)>]
 [<TagType(typeof<TextMarkerTag>)>]
@@ -284,10 +288,13 @@ type SubstituteConfirmTaggerProvider
     [<ImportingConstructor>]
     ( _vim : IVim ) = 
 
-    interface ITaggerProvider with 
-        member x.CreateTagger<'T when 'T :> ITag> (textBuffer) = 
-            match _vim.GetBufferForBuffer textBuffer with
-            | None -> null
-            | Some(buffer) ->
+    interface IViewTaggerProvider with 
+        member x.CreateTagger<'T when 'T :> ITag> ((textView : ITextView), textBuffer) = 
+            match textView.TextBuffer = textBuffer, _vim.GetVimBuffer textView with
+            | false, _ ->
+                null
+            | true, None -> 
+                null
+            | true, Some buffer ->
                 let tagger = new SubstituteConfirmTagger(textBuffer, buffer.SubstituteConfirmMode)
                 tagger :> obj :?> ITagger<'T>

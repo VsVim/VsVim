@@ -94,15 +94,14 @@ type internal WordUtilFactory
     /// service and instead manually query by a predefined key
     let _key = System.Object()
 
-    member x.CreateWordUtil (textView : ITextView) = 
-        let textBuffer = textView.TextBuffer
+    member x.CreateWordUtil (textBuffer : ITextBuffer) =
         let textStructureNavigator = _textStructureNavigatorSelectorService.GetTextStructureNavigator textBuffer
         WordUtil(textBuffer, textStructureNavigator) :> IWordUtil
 
-    member x.GetWordUtil (textView : ITextView) = 
-        let properties = textView.Properties
-        properties.GetOrCreateSingletonProperty(_key, (fun () -> x.CreateWordUtil textView))
+    member x.GetWordUtil (textBuffer : ITextBuffer) =
+        let properties = textBuffer.Properties
+        properties.GetOrCreateSingletonProperty(_key, (fun () -> x.CreateWordUtil textBuffer))
 
     interface IWordUtilFactory with
-        member x.GetWordUtil textView = x.GetWordUtil textView
+        member x.GetWordUtil textBuffer = x.GetWordUtil textBuffer
 

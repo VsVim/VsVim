@@ -85,7 +85,7 @@ namespace VsVim
             if (target == null)
             {
                 var caretPoint = textView.Caret.Position.BufferPosition;
-                var wordUtil = _wordUtilFactory.GetWordUtil(textView);
+                var wordUtil = _wordUtilFactory.GetWordUtil(textView.TextBuffer);
                 var span = wordUtil.GetFullWordSpan(WordKind.NormalWord, caretPoint);
                 target = span.IsSome()
                     ? span.Value.GetText()
