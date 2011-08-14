@@ -55,7 +55,7 @@ namespace VimCore.UnitTest
             _textBuffer.Changed += delegate { _snapshot = _textBuffer.CurrentSnapshot; };
             _globalSettings = new Vim.GlobalSettings();
             _localSettings = new LocalSettings(_globalSettings);
-            _markMap = new MarkMap(new TrackingLineColumnService());
+            _markMap = new MarkMap(new BufferTrackingService());
             _vimData = new VimData();
             _search = VimUtil.CreateSearchService(_globalSettings);
             _jumpList = VimUtil.CreateJumpList();

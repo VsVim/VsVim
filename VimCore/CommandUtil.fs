@@ -29,6 +29,7 @@ type internal CommandUtil
         _insertUtil : IInsertUtil
     ) =
 
+    let _vimTextBuffer = _bufferData.VimTextBuffer
     let _textView = _bufferData.TextView
     let _textBuffer = _textView.TextBuffer
     let _bufferGraph = _textView.BufferGraph
@@ -153,24 +154,14 @@ type internal CommandUtil
 
             let span = SnapshotSpan(startPoint, endPoint)
             VisualSpan.Character span
-        | StoredVisualSpan.Block (length, count) ->
+        | StoredVisualSpan.Block (width, height) ->
             // Need to rehydrate spans of length 'length' on 'count' lines from the 
             // current caret position
-            let column = x.CaretColumn
-            let col = 
-                SnapshotUtil.GetLines x.CurrentSnapshot x.CaretLineNumber Path.Forward
-                |> Seq.truncate count
-                |> Seq.map (fun line ->
-                    let startPoint = 
-                        if column >= line.Length then line.End 
-                        else line.Start.Add(column)
-                    let endPoint = 
-                        if startPoint.Position + length >= line.End.Position then line.End 
-                        else startPoint.Add(length)
-                    SnapshotSpan(startPoint, endPoint))
-                |> NonEmptyCollectionUtil.OfSeq
-                |> Option.get
-            VisualSpan.Block col
+            let blockSpan = {
+                StartPoint = x.CaretPoint
+                Width = width
+                Height = height }
+            VisualSpan.Block blockSpan
 
     /// Change the characters in the given span via the specified change kind
     member x.ChangeCaseSpanCore kind (editSpan : EditSpan) =
@@ -408,8 +399,8 @@ type internal CommandUtil
                 span |> SnapshotLineRangeUtil.CreateForSpan |> deleteRange
             | VisualSpan.Line range -> 
                 deleteRange range
-            | VisualSpan.Block col -> 
-                if specialCaseBlock then deleteBlock col 
+            | VisualSpan.Block blockSpan -> 
+                if specialCaseBlock then deleteBlock blockSpan.BlockSpans
                 else visualSpan.EditSpan.OverarchingSpan |> SnapshotLineRangeUtil.CreateForSpan |> deleteRange
 
         let value = RegisterValue.String (StringData.OfEditSpan editSpan, OperationKind.LineWise)
@@ -577,7 +568,7 @@ type internal CommandUtil
                 let editSpan = 
                     match visualSpan with
                     | VisualSpan.Character span ->
-                        // Just extend the SnapshotSpan to the encompasing SnapshotLineRange 
+                        // Just extend the SnapshotSpan to the encompassing SnapshotLineRange 
                         let range = SnapshotLineRangeUtil.CreateForSpan span
                         let span = range.ExtentIncludingLineBreak
                         edit.Delete(span.Span) |> ignore
@@ -586,8 +577,10 @@ type internal CommandUtil
                         // Easiest case.  It's just the range
                         edit.Delete(range.ExtentIncludingLineBreak.Span) |> ignore
                         EditSpan.Single range.ExtentIncludingLineBreak
-                    | VisualSpan.Block col -> 
-                        col
+                    | VisualSpan.Block blockSpan -> 
+                        let collection = blockSpan.BlockSpans
+
+                        collection
                         |> Seq.iter (fun span -> 
                             // Delete from the start of the span until the end of the containing
                             // line
@@ -595,14 +588,14 @@ type internal CommandUtil
                                 let line = SnapshotPointUtil.GetContainingLine span.Start
                                 SnapshotSpan(span.Start, line.End)
                             edit.Delete(span.Span) |> ignore)
-                        EditSpan.Block col
+                        EditSpan.Block collection
     
                 edit.Apply() |> ignore
     
                 // Now position the cursor back at the start of the VisualSpan
                 //
                 // Possible for a block mode to deletion to cause the start to now be in the line 
-                // break so we need to acount for the 'virtualedit' setting
+                // break so we need to account for the 'virtualedit' setting
                 let point = SnapshotPoint(x.CurrentSnapshot, visualSpan.Start.Position)
                 _operations.MoveCaretToPointAndCheckVirtualSpace point
 
@@ -1373,10 +1366,11 @@ type internal CommandUtil
 
                     EditSpan.Single range.ExtentIncludingLineBreak, OperationKind.LineWise)
 
-            | VisualSpan.Block col ->
+            | VisualSpan.Block blockSpan ->
 
                 // Cursor needs to be positioned at the start of the range for undo so
                 // move the caret now
+                let col = blockSpan.BlockSpans
                 let span = col.Head
                 TextViewUtil.MoveCaretToPoint _textView span.Start
                 x.EditWithUndoTransaciton "Put" (fun () ->
@@ -1494,6 +1488,7 @@ type internal CommandUtil
                         match argument with
                         | ModeArgument.None -> ()
                         | ModeArgument.FromVisual -> ()
+                        | ModeArgument.InitialVisualSelection _ -> ()
                         | ModeArgument.InsertWithCount _ -> ()
                         | ModeArgument.InsertWithCountAndNewLine _ -> ()
                         | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
@@ -1786,6 +1781,7 @@ type internal CommandUtil
         | NormalCommand.SplitViewHorizontally -> x.SplitViewHorizontally()
         | NormalCommand.SplitViewVertically -> x.SplitViewVertically()
         | NormalCommand.SwitchMode (modeKind, modeArgument) -> x.SwitchMode modeKind modeArgument
+        | NormalCommand.SwitchPreviousVisualMode -> x.SwitchPreviousVisualMode()
         | NormalCommand.Undo -> x.Undo count
         | NormalCommand.WriteBufferAndQuit -> x.WriteBufferAndQuit ()
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion register)
@@ -1983,7 +1979,7 @@ type internal CommandUtil
             x.ShiftLinesLeftCore range count
         | VisualSpan.Line range ->
             x.ShiftLinesLeftCore range count
-        | VisualSpan.Block col ->
+        | VisualSpan.Block blockSpan ->
             // Shifting a block span is trickier because it doesn't shift at column
             // 0 but rather shifts at the start column of every span.  It also treats
             // the caret much more different by keeping it at the start of the first
@@ -1994,7 +1990,7 @@ type internal CommandUtil
             // it needs to be undone to this location
             TextViewUtil.MoveCaretToPosition _textView targetCaretPosition
             x.EditWithUndoTransaciton "ShiftLeft" (fun () -> 
-                _operations.ShiftLineBlockRight col count
+                _operations.ShiftLineBlockRight blockSpan.BlockSpans count
                 TextViewUtil.MoveCaretToPosition _textView targetCaretPosition)
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
@@ -2015,7 +2011,7 @@ type internal CommandUtil
             x.ShiftLinesRightCore range count
         | VisualSpan.Line range ->
             x.ShiftLinesRightCore range count
-        | VisualSpan.Block col ->
+        | VisualSpan.Block blockSpan ->
             // Shifting a block span is trickier because it doesn't shift at column
             // 0 but rather shifts at the start column of every span.  It also treats
             // the caret much more different by keeping it at the start of the first
@@ -2026,7 +2022,7 @@ type internal CommandUtil
             // it needs to be undone to this location
             TextViewUtil.MoveCaretToPosition _textView targetCaretPosition
             x.EditWithUndoTransaciton "ShiftLeft" (fun () -> 
-                _operations.ShiftLineBlockRight col count
+                _operations.ShiftLineBlockRight blockSpan.BlockSpans count
 
                 TextViewUtil.MoveCaretToPosition _textView targetCaretPosition)
 
@@ -2087,6 +2083,19 @@ type internal CommandUtil
     /// Switch to the given mode
     member x.SwitchMode modeKind modeArgument = 
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (modeKind, modeArgument))
+
+    /// Switch to the previous Visual Span selection
+    member x.SwitchPreviousVisualMode () = 
+        match _vimTextBuffer.LastVisualSelection with
+        | None ->
+            // If there is no available previous visual span then raise an error
+            _statusUtil.OnError Resources.Common_NoPreviousVisualSpan 
+            CommandResult.Error
+
+        | Some visualSelection ->
+            let modeKind = visualSelection.ModeKind
+            let modeArgument = ModeArgument.InitialVisualSelection visualSelection
+            x.SwitchMode modeKind modeArgument
 
     /// Undo count operations in the ITextBuffer
     member x.Undo count = 

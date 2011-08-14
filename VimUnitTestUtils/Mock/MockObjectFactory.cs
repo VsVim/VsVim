@@ -49,12 +49,6 @@ namespace Vim.UnitTest.Mock
             return device;
         }
 
-        public static Mock<ITrackingLineColumnService> CreateTrackingLineColumnService()
-        {
-            var mock = new Mock<ITrackingLineColumnService>(MockBehavior.Strict);
-            return mock;
-        }
-
         public static Mock<IMacroRecorder> CreateMacroRecorder(MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
@@ -78,7 +72,7 @@ namespace Vim.UnitTest.Mock
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
             registerMap = registerMap ?? CreateRegisterMap().Object;
-            map = map ?? new MarkMap(new TrackingLineColumnService());
+            map = map ?? new MarkMap(new BufferTrackingService());
             settings = settings ?? new GlobalSettings();
             host = host ?? new MockVimHost();
             keyMap = keyMap ?? (new KeyMap());
@@ -163,6 +157,7 @@ namespace Vim.UnitTest.Mock
             motionUtil = motionUtil ?? factory.Create<IMotionUtil>().Object;
             wordNavigator = wordNavigator ?? factory.Create<ITextStructureNavigator>().Object;
             settings = settings ?? new LocalSettings(vim.GlobalSettings);
+            var vimTextBuffer = CreateVimTextBuffer(settings, factory);
             var mock = factory.Create<IVimBuffer>();
             mock.SetupGet(x => x.TextView).Returns(textView);
             mock.SetupGet(x => x.MotionUtil).Returns(motionUtil);
@@ -178,6 +173,19 @@ namespace Vim.UnitTest.Mock
             mock.SetupGet(x => x.VimData).Returns(vim.VimData);
             mock.SetupGet(x => x.IncrementalSearch).Returns(incrementalSearch);
             mock.SetupGet(x => x.WordNavigator).Returns(wordNavigator);
+            mock.SetupGet(x => x.VimTextBuffer).Returns(vimTextBuffer.Object);
+            return mock;
+        }
+
+
+        public static Mock<IVimTextBuffer> CreateVimTextBuffer(
+            IVimLocalSettings localSettings = null,
+            MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var mock = factory.Create<IVimTextBuffer>();
+            mock.SetupGet(x => x.LocalSettings).Returns(localSettings);
+            mock.SetupProperty(x => x.LastVisualSelection);
             return mock;
         }
 

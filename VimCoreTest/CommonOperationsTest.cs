@@ -192,7 +192,7 @@ namespace VimCore.UnitTest
         public void SetMark1()
         {
             Create("foo");
-            var map = new MarkMap(new TrackingLineColumnService());
+            var map = new MarkMap(new BufferTrackingService());
             var res = _operations.SetMark(_textBuffer.GetLine(0).Start, 'a', map);
             Assert.IsTrue(res.IsSucceeded);
             Assert.IsTrue(map.GetLocalMark(_textBuffer, 'a').IsSome());
@@ -202,7 +202,7 @@ namespace VimCore.UnitTest
         public void SetMark2()
         {
             Create("bar");
-            var map = new MarkMap(new TrackingLineColumnService());
+            var map = new MarkMap(new BufferTrackingService());
             var res = _operations.SetMark(_textBuffer.GetLine(0).Start, ';', map);
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_MarkInvalid, res.AsFailed().Item);
@@ -212,7 +212,7 @@ namespace VimCore.UnitTest
         public void JumpToMark1()
         {
             Create("foo", "bar");
-            var map = new MarkMap(new TrackingLineColumnService());
+            var map = new MarkMap(new BufferTrackingService());
             map.SetLocalMark(new SnapshotPoint(_textView.TextSnapshot, 0), 'a');
             _outlining
                 .Setup(x => x.ExpandAll(new SnapshotSpan(_textView.TextSnapshot, 0, 0), It.IsAny<Predicate<ICollapsed>>()))
@@ -229,7 +229,7 @@ namespace VimCore.UnitTest
         public void JumpToMark2()
         {
             Create("foo", "bar");
-            var map = new MarkMap(new TrackingLineColumnService());
+            var map = new MarkMap(new BufferTrackingService());
             var res = _operations.JumpToMark('b', map);
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_MarkNotSet, res.AsFailed().Item);
@@ -239,7 +239,7 @@ namespace VimCore.UnitTest
         public void JumpToMark3()
         {
             Create("foo", "bar");
-            var map = new MarkMap(new TrackingLineColumnService());
+            var map = new MarkMap(new BufferTrackingService());
             map.SetMark(new SnapshotPoint(_textView.TextSnapshot, 0), 'A');
             _host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(_textView.TextSnapshot, 0))).Returns(true);
             _jumpList.Setup(x => x.Add(_textView.GetCaretPoint())).Verifiable();
@@ -258,7 +258,7 @@ namespace VimCore.UnitTest
         {
             Create();
             var view = EditorUtil.CreateTextView("foo", "bar");
-            var map = new MarkMap(new TrackingLineColumnService());
+            var map = new MarkMap(new BufferTrackingService());
             map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'A');
             _host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(view.TextSnapshot, 0))).Returns(false);
             var res = _operations.JumpToMark('A', map);
@@ -273,7 +273,7 @@ namespace VimCore.UnitTest
             var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
             buffer.SetupGet(x => x.TextBuffer).Returns(_textView.TextBuffer);
             buffer.SetupGet(x => x.Name).Returns("foo");
-            var map = new MarkMap(new TrackingLineColumnService());
+            var map = new MarkMap(new BufferTrackingService());
             var res = _operations.JumpToMark('A', map);
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_MarkNotSet, res.AsFailed().Item);

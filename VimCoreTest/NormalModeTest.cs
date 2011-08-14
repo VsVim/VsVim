@@ -77,7 +77,7 @@ namespace VimCore.UnitTest
             _globalSettings = new Vim.GlobalSettings();
             motionUtil = motionUtil ?? VimUtil.CreateTextViewMotionUtil(
                 _textView,
-                new MarkMap(new TrackingLineColumnService()));
+                new MarkMap(new BufferTrackingService()));
             _buffer = MockObjectFactory.CreateVimBuffer(
                 _textView,
                 "test",

@@ -55,6 +55,7 @@ type internal SelectionTracker
             x.UpdateSelection()
         else 
             _anchorPoint <- selection.AnchorPoint
+            x.UpdateTextSelectionMode()
 
     /// Called when selection should no longer be tracked.  Must be paired with Start calls or
     /// we will stay attached to certain event handlers
@@ -64,15 +65,20 @@ type internal SelectionTracker
 
         _running <- false
 
-    /// Update the selection based on the current state of the view
-    member x.UpdateSelection() = 
+    /// Update the TextSelectionMode to be the appropriate value based on the Visual Kind 
+    member x.UpdateTextSelectionMode() =
         let desiredMode = 
             match _kind with
             | VisualKind.Character -> TextSelectionMode.Stream
             | VisualKind.Line -> TextSelectionMode.Stream
             | VisualKind.Block -> TextSelectionMode.Box
+
         if _textView.Selection.Mode <> desiredMode then 
             _textView.Selection.Mode <- desiredMode
+
+    /// Update the selection based on the current state of the view
+    member x.UpdateSelection() = 
+        x.UpdateTextSelectionMode()
 
         // Get the end point of the desired selection.  Typically this is 
         // just the caret.  If an incremental search is active though and 
@@ -124,7 +130,8 @@ type internal SelectionTracker
                     |> SnapshotLineUtil.GetEndIncludingLineBreak
                     |> VirtualSnapshotPointUtil.OfPoint
             _textView.Selection.Select(first, last)
-        | VisualKind.Block -> selectStandard()
+        | VisualKind.Block -> 
+            selectStandard()
 
     /// When the text is changed it invalidates the anchor point.  It needs to be forwarded to
     /// the next version of the buffer.  If it's not present then just go to point 0

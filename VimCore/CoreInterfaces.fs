@@ -874,6 +874,273 @@ type SubstituteData = {
     Flags : SubstituteFlags
 }
 
+[<StructuralEquality>]
+[<NoComparison>]
+type BlockSpan = {
+    StartPoint : SnapshotPoint
+    Width : int
+    Height : int
+}
+    with
+
+    /// In what column does this block span begin
+    member x.Column =
+        SnapshotPointUtil.GetColumn x.StartPoint
+
+    /// Get the EndPoint (exclusive) of the BlockSpan
+    member x.EndPoint = 
+        let line = 
+            let lineNumber = SnapshotPointUtil.GetLineNumber x.StartPoint
+            SnapshotUtil.GetLineOrLast x.Snasphot (lineNumber + (x.Height - 1))
+        let offset = x.Column + x.Width
+        if offset >= line.Length then
+            line.End
+        else
+            line.Start.Add offset
+
+    member x.Snasphot = 
+        x.StartPoint.Snapshot
+
+    member x.TextBuffer = 
+        x.StartPoint.Snapshot.TextBuffer
+
+    /// Get the NonEmptyCollection<SnapshotSpan> for the given block information
+    member x.BlockSpans : NonEmptyCollection<SnapshotSpan> =
+        seq {
+            let snapshot = SnapshotPointUtil.GetSnapshot x.StartPoint
+            let lineNumber = SnapshotPointUtil.GetLineNumber x.StartPoint
+            for i = lineNumber to ((x.Height - 1)+ lineNumber) do
+                match SnapshotUtil.TryGetLine snapshot i with
+                | None -> ()
+                | Some line -> yield SnapshotLineUtil.GetSpanInLine line x.Column x.Width
+        } 
+        |> NonEmptyCollectionUtil.OfSeq 
+        |> Option.get
+
+    override x.ToString() =
+        sprintf "Point: %s Width: %d Height: %d" (x.StartPoint.ToString()) x.Width x.Height
+
+[<RequireQualifiedAccess>]
+type BlockCaretLocation =
+    | TopLeft
+    | TopRight
+    | BottomLeft
+    | BottomRight
+
+/// Represents the visual selection for any of the visual modes
+[<RequireQualifiedAccess>]
+[<StructuralEquality>]
+[<NoComparison>]
+type VisualSpan =
+
+    /// A characterwise span
+    | Character of SnapshotSpan
+
+    /// A linewise span
+    | Line of SnapshotLineRange
+
+    /// A block span.  The first int in the number of lines and the second one is the 
+    /// width of the selection
+    | Block of BlockSpan
+
+    with
+
+    /// Return the Spans which make up this VisualSpan instance
+    member x.Spans = 
+        match x with 
+        | VisualSpan.Character span -> [span] |> Seq.ofList
+        | VisualSpan.Line range -> [range.ExtentIncludingLineBreak] |> Seq.ofList
+        | VisualSpan.Block blockSpan -> blockSpan.BlockSpans :> SnapshotSpan seq
+
+    /// Returns the EditSpan for this VisualSpan
+    member x.EditSpan = 
+        match x with
+        | VisualSpan.Character span -> EditSpan.Single span
+        | VisualSpan.Line range -> EditSpan.Single range.ExtentIncludingLineBreak
+        | VisualSpan.Block blockSpan -> EditSpan.Block blockSpan.BlockSpans
+
+    /// Returns the SnapshotLineRange for the VisualSpan.  For Character this will
+    /// just expand out the Span.  For Line this is an identity.  For Block it will
+    /// return the overarching span
+    member x.LineRange = 
+        match x with
+        | VisualSpan.Character span -> SnapshotLineRangeUtil.CreateForSpan span
+        | VisualSpan.Line range -> range
+        | VisualSpan.Block _ -> x.EditSpan.OverarchingSpan |> SnapshotLineRangeUtil.CreateForSpan
+
+    /// Returns the start point of the Visual Span.  This can be None in the case
+    /// of an empty Block selection.
+    member x.Start =
+        match x with
+        | Character span -> span.Start
+        | Line range ->  range.Start
+        | Block blockSpan -> blockSpan.StartPoint
+
+    /// What type of OperationKind does this VisualSpan represent
+    member x.OperationKind =
+        match x with
+        | VisualSpan.Character _ -> OperationKind.CharacterWise
+        | VisualSpan.Line _ -> OperationKind.LineWise
+        | VisualSpan.Block _ -> OperationKind.CharacterWise
+
+    /// What type of ModeKind does this VisualSpan represent
+    member x.ModeKind =
+        match x with
+        | VisualSpan.Character _ -> ModeKind.VisualCharacter
+        | VisualSpan.Line _ -> ModeKind.VisualLine
+        | VisualSpan.Block _ -> ModeKind.VisualBlock
+
+    static member Create textView visualKind =
+        let visualSelection : VisualSelection = VisualSelection.CreateForSelection textView visualKind
+        visualSelection.VisualSpan
+
+/// Represents both the VisualSpan and selection information for Visual Mode
+
+and [<RequireQualifiedAccess>] [<StructuralEquality>] [<NoComparison>] VisualSelection =
+
+    /// The bool represents whether or not the caret is at the start of the SnapshotSpan
+    | Character of SnapshotSpan * bool
+
+    /// The bool represents whether or not the caret is at the start of the line range
+    /// and the int is which column in the range the caret should be placed in
+    | Line of SnapshotLineRange * bool * int 
+
+    /// Just keep the BlockSpan and the caret information for the block
+    | Block of BlockSpan * BlockCaretLocation
+
+    with
+
+    /// Get the corresponding Visual Span
+    member x.VisualSpan = 
+        match x with
+        | Character (span, _) -> VisualSpan.Character span
+        | Line (snapshotLineRange, _, _) -> VisualSpan.Line snapshotLineRange
+        | Block (blockSpan, _) -> VisualSpan.Block blockSpan
+
+    /// Get the ModeKind for the VisualSelection
+    member x.ModeKind =
+        x.VisualSpan.ModeKind
+
+    /// Get the EditSpan for the given VisualSpan
+    member x.EditSpan =
+        x.VisualSpan.EditSpan
+
+    member x.IsCharacterForward =
+        match x with
+        | Character (_, isForward) -> isForward
+        | _ -> false
+
+    member x.IsLineForward = 
+        match x with
+        | Line (_, isForward, _) -> isForward
+        | _ -> false
+
+    /// Gets the SnapshotPoint for the caret as it should appear in the given VisualSelection
+    member x.CaretPoint = 
+        match x with
+        | Character (span, isForward) ->
+            // The caret is either positioned at the start or the end of the selected
+            // SnapshotSpan
+            if isForward && span.Length > 0 then
+                SnapshotPointUtil.SubtractOne span.End
+            else
+                span.Start
+
+        | Line (snapshotLineRange, isForward, column) ->
+            // The caret is either positioned at the start or the end of the selected range
+            // and can be on any column in either
+            let line = 
+                if isForward then
+                    snapshotLineRange.EndLine
+                else
+                    snapshotLineRange.StartLine
+
+            if column <= line.LengthIncludingLineBreak then
+                SnapshotPointUtil.Add column line.Start
+            else
+                line.End
+
+        | Block (blockSpan, blockCaretLocation) ->
+
+            let getSpanEnd (span : SnapshotSpan) =
+                if span.Length = 0 then
+                    span.End
+                else
+                    span.End.Subtract 1
+
+            match blockCaretLocation with
+            | BlockCaretLocation.TopLeft -> blockSpan.StartPoint
+            | BlockCaretLocation.TopRight -> getSpanEnd blockSpan.BlockSpans.Head
+            | BlockCaretLocation.BottomLeft -> blockSpan.BlockSpans |> SeqUtil.last |> SnapshotSpanUtil.GetStartPoint
+            | BlockCaretLocation.BottomRight -> blockSpan.BlockSpans |> SeqUtil.last |> getSpanEnd
+
+    static member CreateForSelection textView visualKind =
+        let caretPoint = TextViewUtil.GetCaretPoint textView
+        match visualKind with
+        | VisualKind.Character -> 
+
+            // This is just represented by looking at the Stream SelectionSpan and checking the position
+            // of the caret
+            let span = textView.Selection.StreamSelectionSpan.SnapshotSpan
+            let visualSpan = VisualSpan.Character span
+            let isBackward = caretPoint = span.Start
+            VisualSelection.Character (span, not isBackward)
+        | VisualKind.Line-> 
+
+            let column = SnapshotPointUtil.GetColumn caretPoint
+            let snapshotLineRange = textView.Selection.StreamSelectionSpan.SnapshotSpan |> SnapshotLineRangeUtil.CreateForSpan
+            let isForward = 
+                if snapshotLineRange.StartLine.ExtentIncludingLineBreak.Contains caretPoint then
+                    false
+                else
+                    true
+            VisualSelection.Line (snapshotLineRange, isForward, column)
+        | VisualKind.Block -> 
+
+            let caretPoint = TextViewUtil.GetCaretPoint textView
+            let spanCollection = textView.Selection.SelectedSpans
+            if spanCollection.Count = 0 then
+                // Just like we would treat Character as a single empty SnapshotSpan we do the same here
+                // for block selection
+                let blockSpan = {
+                    StartPoint = caretPoint
+                    Width = 0
+                    Height = 1 }
+                VisualSelection.Block (blockSpan, BlockCaretLocation.TopLeft)
+            else
+                let firstSpan = spanCollection.[0]
+                let lastSpan = spanCollection |> SeqUtil.last
+                let blockSpan = {
+                    StartPoint = firstSpan.Start
+                    Width = firstSpan.Length
+                    Height = spanCollection.Count }
+
+                let blockCaretLocation = 
+                    
+                    if firstSpan.Start = caretPoint then
+                        BlockCaretLocation.TopLeft
+                    elif firstSpan.Contains(caretPoint) then
+                        BlockCaretLocation.TopRight
+                    elif lastSpan.Start = caretPoint then
+                        BlockCaretLocation.BottomLeft
+                    elif lastSpan.Contains(caretPoint) then
+                        BlockCaretLocation.BottomRight
+                    else
+                        BlockCaretLocation.TopLeft
+
+                VisualSelection.Block (blockSpan, blockCaretLocation)
+
+    /// Create for the given VisualSpan.  Assumes this was a forward created VisualSpan
+    static member CreateForVisualSpan visualSpan = 
+        match visualSpan with
+        | VisualSpan.Character span -> 
+            VisualSelection.Character (span, true)
+        | VisualSpan.Line lineRange ->
+            let column = SnapshotPointUtil.GetColumn lineRange.EndLine.End
+            VisualSelection.Line (lineRange, true, column)
+        | VisualSpan.Block blockSpan ->
+            VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
+
 [<RequireQualifiedAccess>]
 type ModeArgument =
     | None
@@ -881,14 +1148,9 @@ type ModeArgument =
     /// Used for transitions from Visual Mode directly to Command mode
     | FromVisual 
 
-    /// When the given mode is to execute a single command then return to 
-    /// the previous mode.  The provided mode kind is the value which needs
-    /// to be switched to upon completion of the command
-    | OneTimeCommand of ModeKind
-
-    /// Passing the substitute to confirm to Confirm mode.  The SnapshotSpan is the first
-    /// match to process and the range is the full range to consider for a replace
-    | Substitute of SnapshotSpan * SnapshotLineRange * SubstituteData
+    /// The initial span which should be selected and the SnapshotPoint where the 
+    /// caret should be placed within the VisualSpan
+    | InitialVisualSelection of VisualSelection
 
     /// Begins insert mode with a specified count.  This means the text inserted should
     /// be repeated a total of 'count - 1' times when insert mode exits
@@ -902,6 +1164,16 @@ type ModeArgument =
     /// Begins insert mode with an existing UndoTransaction.  This is used to link 
     /// change commands with text changes.  For example C, c, etc ...
     | InsertWithTransaction of ILinkedUndoTransaction
+
+    /// When the given mode is to execute a single command then return to 
+    /// the previous mode.  The provided mode kind is the value which needs
+    /// to be switched to upon completion of the command
+    | OneTimeCommand of ModeKind
+
+    /// Passing the substitute to confirm to Confirm mode.  The SnapshotSpan is the first
+    /// match to process and the range is the full range to consider for a replace
+    | Substitute of SnapshotSpan * SnapshotLineRange * SubstituteData
+
 
 type ModeSwitch =
     | NoSwitch
@@ -926,59 +1198,6 @@ type CommandResult =
 type RunResult = 
     | Completed
     | SubstituteConfirm of SnapshotSpan * SnapshotLineRange * SubstituteData
-
-/// Represents the visual selection for any of the visual modes
-[<RequireQualifiedAccess>]
-type VisualSpan =
-
-    /// A characterwise span
-    | Character of SnapshotSpan
-
-    /// A linewise span
-    | Line of SnapshotLineRange
-
-    /// A block span
-    | Block of NonEmptyCollection<SnapshotSpan>
-
-    with
-
-    /// Return the Spans which make up this VisualSpan instance
-    member x.Spans = 
-        match x with 
-        | VisualSpan.Character span -> [span] |> Seq.ofList
-        | VisualSpan.Line range -> [range.ExtentIncludingLineBreak] |> Seq.ofList
-        | VisualSpan.Block col -> col.All
-
-    /// Returns the EditSpan for this VisualSpan
-    member x.EditSpan = 
-        match x with
-        | VisualSpan.Character span -> EditSpan.Single span
-        | VisualSpan.Line range -> EditSpan.Single range.ExtentIncludingLineBreak
-        | VisualSpan.Block col -> EditSpan.Block col
-
-    /// Returns the SnapshotLineRange for the VisualSpan.  For Character this will
-    /// just expand out the Span.  For Line this is an identity.  For Block it will
-    /// return the overarching span
-    member x.LineRange = 
-        match x with
-        | VisualSpan.Character span -> SnapshotLineRangeUtil.CreateForSpan span
-        | VisualSpan.Line range -> range
-        | VisualSpan.Block col -> col |> SnapshotSpanUtil.GetOverarchingSpan |> SnapshotLineRangeUtil.CreateForSpan
-
-    /// Returns the start point of the Visual Span.  This can be None in the case
-    /// of an empty Block selection.
-    member x.Start =
-        match x with
-        | Character span -> span.Start
-        | Line range ->  range.Start
-        | Block col -> col.Head.Start
-
-    /// What type of OperationKind does this VisualSpan represent
-    member x.OperationKind =
-        match x with
-        | VisualSpan.Character _ -> OperationKind.CharacterWise
-        | VisualSpan.Line _ -> OperationKind.LineWise
-        | VisualSpan.Block _ -> OperationKind.CharacterWise
 
 /// Information about the attributes of Command
 [<System.Flags>]
@@ -1297,6 +1516,9 @@ type NormalCommand =
 
     /// Switch modes with the specified information
     | SwitchMode of ModeKind * ModeArgument
+
+    /// Switch to the previous Visual Mode selection
+    | SwitchPreviousVisualMode
 
     /// Write out the ITextBuffer and quit
     | WriteBufferAndQuit
@@ -1629,8 +1851,8 @@ type internal IInsertUtil =
     abstract RepeatEdit : InsertCommand -> addNewLines : bool -> count : int -> unit
 
 /// Contains the stored information about a Visual Span.  This instance *will* be 
-/// stored for long periods of time and used to erpeat a Command instance across
-/// mulitiple IVimBuffer instances so it must be buffer agnostic
+/// stored for long periods of time and used to repeat a Command instance across
+/// multiple IVimBuffer instances so it must be buffer agnostic
 [<RequireQualifiedAccess>]
 type StoredVisualSpan = 
 
@@ -1685,13 +1907,8 @@ type StoredVisualSpan =
             StoredVisualSpan.Character (endLineOffset, endOffset)
         | VisualSpan.Line range ->
             StoredVisualSpan.Line range.Count
-        | VisualSpan.Block col -> 
-            let length = 
-                match SeqUtil.tryHeadOnly col with
-                | None -> 0
-                | Some span -> span.Length
-            let count = col.Count
-            StoredVisualSpan.Block (length, count)
+        | VisualSpan.Block blockSpan -> 
+            StoredVisualSpan.Block (blockSpan.Width, blockSpan.Height)
 
 /// Contains information about an executed Command.  This instance *will* be stored
 /// for long periods of time and used to repeat a Command instance across multiple
@@ -2482,6 +2699,10 @@ and IVimTextBuffer =
 
     /// The associated IJumpList instance
     abstract JumpList : IJumpList
+
+    /// The last VisualSpan selection for the IVimTextBuffer.  This is a combination of a VisualSpan
+    /// and the SnapshotPoint within the span where the caret should be positioned
+    abstract LastVisualSelection : VisualSelection option with get, set
 
     /// The associated IVimLocalSettings instance
     abstract LocalSettings : IVimLocalSettings

@@ -21,7 +21,7 @@ namespace VimCore.UnitTest
         private ITextBuffer _textBuffer;
         private ITextSelection _selection;
         private Mock<IVimHost> _host;
-        private Mock<IVimBuffer> _bufferData;
+        private Mock<IVimBuffer> _vimBuffer;
         private VisualMode _modeRaw;
         private IMode _mode;
         private IRegisterMap _map;
@@ -49,7 +49,7 @@ namespace VimCore.UnitTest
             _selection = _textView.Selection;
             _factory = new MockRepository(MockBehavior.Strict);
             _map = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
-            _markMap = new MarkMap(new TrackingLineColumnService());
+            _markMap = new MarkMap(new BufferTrackingService());
             _tracker = _factory.Create<ISelectionTracker>();
             _tracker.Setup(x => x.Start());
             _tracker.Setup(x => x.ResetCaret());
@@ -69,7 +69,7 @@ namespace VimCore.UnitTest
             var motionUtil = VimUtil.CreateTextViewMotionUtil(
                 _textView,
                 _markMap);
-            _bufferData = MockObjectFactory.CreateVimBuffer(
+            _vimBuffer = MockObjectFactory.CreateVimBuffer(
                 _textView,
                 "test",
                 MockObjectFactory.CreateVim(_map, host: _host.Object, settings: globalSettings).Object,
@@ -88,7 +88,7 @@ namespace VimCore.UnitTest
                 _commandUtil.Object,
                 (new Mock<IStatusUtil>()).Object,
                 VisualKind.Character);
-            _modeRaw = new VisualMode(_bufferData.Object, _operations.Object, kind, runner, capture, _tracker.Object);
+            _modeRaw = new VisualMode(_vimBuffer.Object, _operations.Object, kind, runner, capture, _tracker.Object);
             _mode = _modeRaw;
             _mode.OnEnter(ModeArgument.None);
         }

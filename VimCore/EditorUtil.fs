@@ -528,6 +528,23 @@ module SnapshotLineUtil =
         | None -> line.End
         | Some point -> point
 
+    /// Get the SnapshotSpan for the given column in length within the extent of the
+    /// line.  If the column or length exceeds the length of the line then an
+    /// End will be used in it's place
+    let GetSpanInLine (line : ITextSnapshotLine) column length =
+        let startPoint = 
+            if column >= line.Length then
+                line.End
+            else
+                line.Start.Add column
+        let endPoint = 
+            let offset = column + length
+            if offset >= line.Length then
+                line.End
+            else
+                line.Start.Add offset
+        SnapshotSpan(startPoint, endPoint)
+
 [<RequireQualifiedAccess>]
 type PointKind =
     /// Normal valid point within the ITextSnapshot.  Point in question is the argument
@@ -879,6 +896,17 @@ module SnapshotPointUtil =
 module VirtualSnapshotPointUtil =
     
     let OfPoint (point:SnapshotPoint) = VirtualSnapshotPoint(point)
+
+    /// Convert the SnapshotPoint into a VirtualSnapshotPoint taking into account the editors
+    /// view that SnapshotPoint values in the line break should be represented as 
+    /// VirtualSnapshotPoint values
+    let OfPointConsiderLineBreak point = 
+        let line = SnapshotPointUtil.GetContainingLine point
+        let  difference = point.Position - line.End.Position
+        if difference > 0 then
+            VirtualSnapshotPoint(line.End, difference)
+        else
+            VirtualSnapshotPoint(point)
 
     let GetPoint (point:VirtualSnapshotPoint) = point.Position
 

@@ -441,18 +441,11 @@ namespace Vim.UnitTest
         /// Change the selection to be the specified SnapshotSpan value and update the caret to be on the
         /// last included point in the SnapshotSpan.  
         /// </summary>
-        public static void SelectAndUpdateCaret(this ITextView textView, SnapshotSpan span, TextSelectionMode mode = TextSelectionMode.Stream)
+        public static void SelectAndUpdateCaret(this ITextView textView, SnapshotSpan span)
         {
-            textView.Selection.Mode = mode;
-
-            // The editor will normalize SnapshotSpan values here which extend into the line break
-            // portion of the line to not include the line break.  Must use VirtualSnapshotPoint 
-            // values to ensure the proper selection
-            var startPoint = span.Start.ToVirtualSnapshotPoint();
-            var endPoint = span.End.ToVirtualSnapshotPoint();
-            textView.Selection.Select(startPoint, endPoint);
-            var point = span.Length > 0 ? span.End.Subtract(1) : span.Start;
-            MoveCaretTo(textView, point);
+            CommonUtil.SelectAndUpdateCaret(
+                textView,
+                VisualSelection.CreateForVisualSpan(VisualSpan.NewCharacter(span)));
         }
 
         public static ITextSnapshotLine GetCaretLine(this ITextView textView)
@@ -477,6 +470,11 @@ namespace Vim.UnitTest
         public static VisualSpan GetVisualSpanBlock(this ITextView textView, int column, int length, int startLine = 0, int lineCount = 1)
         {
             return GetVisualSpanBlock(textView.TextBuffer, column, length, startLine, lineCount);
+        }
+
+        public static BlockSpan GetBlockSpan(this ITextView textView, int column, int length, int startLine = 0, int lineCount = 1)
+        {
+            return textView.TextBuffer.GetBlockSpan(column, length, startLine, lineCount);
         }
 
         public static NonEmptyCollection<SnapshotSpan> GetBlock(this ITextView textView, int column, int length, int startLine = 0, int lineCount = 1)
@@ -549,21 +547,22 @@ namespace Vim.UnitTest
             edit.Apply();
         }
 
+        public static BlockSpan GetBlockSpan(this ITextBuffer textBuffer, int column, int length, int startLine = 0, int lineCount = 1)
+        {
+            var line = textBuffer.GetLine(startLine);
+            var startPoint = line.Start.Add(column);
+            return new BlockSpan(startPoint, length, lineCount);
+        }
+
         public static NonEmptyCollection<SnapshotSpan> GetBlock(this ITextBuffer textBuffer, int column, int length, int startLine = 0, int lineCount = 1)
         {
-            var list = new List<SnapshotSpan>();
-            for (var i = 0; i < lineCount; i++)
-            {
-                list.Add(textBuffer.GetLineSpan(i + startLine, column: column, length: length));
-            }
-
-            return NonEmptyCollectionUtil.OfSeq(list).Value;
+            return GetBlockSpan(textBuffer, column, length, startLine, lineCount).BlockSpans;
         }
 
         public static VisualSpan GetVisualSpanBlock(this ITextBuffer textBuffer, int column, int length, int startLine = 0, int lineCount = 1)
         {
-            var col = GetBlock(textBuffer, column, length, startLine, lineCount);
-            return VisualSpan.NewBlock(col);
+            var blockSpanData = GetBlockSpan(textBuffer, column, length, startLine, lineCount);
+            return VisualSpan.NewBlock(blockSpanData);
         }
 
         #endregion
@@ -626,23 +625,6 @@ namespace Vim.UnitTest
             return new SnapshotSpan(point, length);
         }
 
-        /// <summary>
-        /// Convert the SnapshotPoint into a VirtualSnapshotPoint taking into account the editors
-        /// view that SnapshotPoint values in the line break should be represented as 
-        /// VirtualSnapshotPoint values
-        /// </summary>
-        public static VirtualSnapshotPoint ToVirtualSnapshotPoint(this SnapshotPoint point)
-        {
-            var line = point.GetContainingLine();
-            var difference = point.Position - line.End.Position;
-            if (difference > 0)
-            {
-                return new VirtualSnapshotPoint(line.End, difference);
-            }
-
-            return new VirtualSnapshotPoint(point);
-        }
-
         #endregion
 
         #region SnapshotSpan
@@ -675,6 +657,28 @@ namespace Vim.UnitTest
         {
             Assert.IsTrue(span.IsBlock);
             return (VisualSpan.Block)span;
+        }
+
+        #endregion
+
+        #region VisualSelection
+
+        public static VisualSelection.Character AsCharacter(this VisualSelection span)
+        {
+            Assert.IsTrue(span.IsCharacter);
+            return (VisualSelection.Character)span;
+        }
+
+        public static VisualSelection.Line AsLine(this VisualSelection span)
+        {
+            Assert.IsTrue(span.IsLine);
+            return (VisualSelection.Line)span;
+        }
+
+        public static VisualSelection.Block AsBlock(this VisualSelection span)
+        {
+            Assert.IsTrue(span.IsBlock);
+            return (VisualSelection.Block)span;
         }
 
         #endregion

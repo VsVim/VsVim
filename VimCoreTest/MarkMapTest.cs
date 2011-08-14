@@ -20,7 +20,7 @@ namespace VimCore.UnitTest
         [SetUp]
         public void Init()
         {
-            var service = new TrackingLineColumnService();
+            var service = new BufferTrackingService();
             _mapRaw = new Vim.MarkMap(service);
             _map = _mapRaw;
             _mapListener = _mapRaw;
