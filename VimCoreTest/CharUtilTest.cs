@@ -56,7 +56,7 @@ namespace VimCore.UnitTest
         [Test]
         public void AddAlpha_PastLowerBound()
         {
-            Assert.AreEqual('a', CharUtil.AlphaAdd(-1, 'A'));
+            Assert.AreEqual('a', CharUtil.AlphaAdd(-1, 'a'));
             Assert.AreEqual('A', CharUtil.AlphaAdd(-1, 'A'));
         }
     }

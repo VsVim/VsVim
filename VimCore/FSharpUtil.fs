@@ -303,7 +303,7 @@ module internal CharUtil =
             let index = (int c) - (int 'a')
             index + count 
 
-        let upperBound, lowerBound = 
+        let lowerBound, upperBound = 
             if isUpper then 
                 'A', 'Z'
             else 

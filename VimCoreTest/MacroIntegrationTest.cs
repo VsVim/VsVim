@@ -4,6 +4,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
+using System;
 
 namespace VimCore.UnitTest
 {
@@ -94,6 +95,24 @@ namespace VimCore.UnitTest
             _buffer.Process("2@c");
             Assert.AreEqual("Cat", _textView.GetLine(0).GetText());
             Assert.AreEqual("Dog", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// This is actually a macro scenario called out in the Vim documentation.  Namely the ability
+        /// to build a numbered list by using a macro
+        /// </summary>
+        [Test]
+        public void RunMacro_NumberedList()
+        {
+            Create("1. Heading");
+            _buffer.Process("qaYp");
+            _buffer.Process(KeyNotationUtil.StringToKeyInput("<C-a>"));
+            _buffer.Process("q3@a");
+            for (var i = 0; i < 5; i++)
+            {
+                var line = String.Format("{0}. Heading", i + 1);
+                Assert.AreEqual(line, _textView.GetLine(i).GetText());
+            }
         }
 
         /// <summary>

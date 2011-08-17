@@ -166,6 +166,19 @@ namespace VimCore.UnitTest
             Assert.AreEqual(5, _textView.GetCaretPoint().Position);
         }
 
+        /// <summary>
+        /// Use add to word on an alpha
+        /// </summary>
+        [Test]
+        public void AddToWord_Alpha_Simple()
+        {
+            Create("cog");
+            _localSettings.NumberFormats = "alpha";
+            _commandUtil.AddToWord(1);
+            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
         [Test]
         public void ReplaceChar1()
         {
@@ -1514,6 +1527,17 @@ namespace VimCore.UnitTest
             _localSettings.NumberFormats = "hex";
             _textView.MoveCaretTo(8);
             Assert.AreEqual(NumberValue.NewHex(0x42), GetNumberValueAtCaret());
+        }
+
+        /// <summary>
+        /// Jump past the blanks to get the alpha value
+        /// </summary>
+        [Test]
+        public void GetNumbeValueAtCaret_Alpha_Simple()
+        {
+            Create(" hello");
+            _localSettings.NumberFormats = "alpha";
+            Assert.AreEqual(NumberValue.NewAlpha('h'), GetNumberValueAtCaret());
         }
 
         /// <summary>
