@@ -25,6 +25,8 @@ type SnapshotLineRange
     member x.StartLineNumber = _startLine
     member x.StartLine = _snapshot.GetLineFromLineNumber x.StartLineNumber
     member x.Start = x.StartLine.Start
+
+    /// Number of lines in the SnapshotLineRange
     member x.Count = _count
     member x.EndLineNumber = _startLine + (_count - 1)
     member x.EndLine = _snapshot.GetLineFromLineNumber x.EndLineNumber
@@ -481,7 +483,7 @@ module SnapshotLineUtil =
 
     /// Get a SnapshotPoint representing 'offset' characters into the line or the 
     /// End point of the line
-    let GetOffsetOrEnd (line : ITextSnapshotLine) offset = 
+    let GetOffsetOrEnd offset (line : ITextSnapshotLine) = 
         if line.Start.Position + offset >= line.End.Position then line.End
         else line.Start.Add(offset)
 
@@ -617,7 +619,7 @@ module SnapshotPointUtil =
 
     /// Try and add count to the SnapshotPoint.  Will return None if this causes
     /// the point to go past the end of the Snapshot
-    let TryAdd point count = 
+    let TryAdd count point = 
         let pos = (GetPosition point) + count
         let snapshot = GetSnapshot point
         if pos > snapshot.Length then None
@@ -625,7 +627,7 @@ module SnapshotPointUtil =
 
     /// Maybe add 1 to the given point.  Will return the original point
     /// if it's the end of the Snapshot
-    let TryAddOne point = TryAdd point 1
+    let TryAddOne point = TryAdd 1 point
 
     /// Add the given count to the SnapshotPoint
     let Add count (point:SnapshotPoint) = point.Add(count)

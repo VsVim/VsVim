@@ -1150,7 +1150,7 @@ namespace VimCore.UnitTest
             _buffer.VimData.LastCommand = FSharpOption.Create(StoredCommand.NewVisualCommand(
                 VisualCommand.NewReplaceSelection(KeyInputUtil.VimKeyToKeyInput(VimKey.LowerB)),
                 VimUtil.CreateCommandData(),
-                StoredVisualSpan.OfVisualSpan(VisualSpan.NewCharacter(_textView.GetLineSpan(0, 3))),
+                StoredVisualSpan.OfVisualSpan(VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 3))),
                 CommandFlags.None));
             _textView.MoveCaretTo(1);
             _buffer.Process(".");

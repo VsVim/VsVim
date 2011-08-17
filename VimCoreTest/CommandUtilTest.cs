@@ -522,7 +522,8 @@ namespace VimCore.UnitTest
 
             Action<SnapshotSpan> action = span =>
             {
-                var visual = VisualSpan.NewCharacter(span);
+                var characterSpan = CharacterSpan.CreateForSpan(span);
+                var visual = VisualSpan.NewCharacter(characterSpan);
                 var stored = StoredVisualSpan.OfVisualSpan(visual);
                 var restored = _commandUtil.CalculateVisualSpan(stored);
                 Assert.AreEqual(visual, restored);
@@ -543,11 +544,11 @@ namespace VimCore.UnitTest
             Create("the dog", "ball");
 
             var span = new SnapshotSpan(_textView.GetPoint(3), _textView.GetLine(1).Start.Add(1));
-            var stored = StoredVisualSpan.OfVisualSpan(VisualSpan.NewCharacter(span));
+            var stored = StoredVisualSpan.OfVisualSpan(VimUtil.CreateVisualSpanCharacter(span));
             _textView.MoveCaretTo(1);
             var restored = _commandUtil.CalculateVisualSpan(stored);
             var expected = new SnapshotSpan(_textView.GetPoint(1), _textView.GetLine(1).Start.Add(1));
-            Assert.AreEqual(expected, restored.AsCharacter().Item);
+            Assert.AreEqual(expected, restored.AsCharacter().Item.Span);
         }
 
         /// <summary>
@@ -560,11 +561,11 @@ namespace VimCore.UnitTest
             Create("the dog kicked the cat", "and ball");
 
             var span = new SnapshotSpan(_textView.TextSnapshot, 3, 4);
-            var stored = StoredVisualSpan.OfVisualSpan(VisualSpan.NewCharacter(span));
+            var stored = StoredVisualSpan.OfVisualSpan(VimUtil.CreateVisualSpanCharacter(span));
             _textView.MoveCaretTo(1);
             var restored = _commandUtil.CalculateVisualSpan(stored);
             var expected = new SnapshotSpan(_textView.GetPoint(1), 4);
-            Assert.AreEqual(expected, restored.AsCharacter().Item);
+            Assert.AreEqual(expected, restored.AsCharacter().Item.Span);
         }
 
         /// <summary>
@@ -1140,7 +1141,7 @@ namespace VimCore.UnitTest
         public void PutOverSelection_Character()
         {
             Create("hello world");
-            var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 0, 5));
+            var visualSpan = VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 0, 5));
             UnnamedRegister.UpdateValue("dog");
             _operations.SetupPut(_textBuffer, "dog world");
             _commandUtil.PutOverSelection(UnnamedRegister, 1, moveCaretAfterText: false, visualSpan: visualSpan);
@@ -1155,7 +1156,7 @@ namespace VimCore.UnitTest
         public void PutOverSelection_Character_WithCaretMove()
         {
             Create("hello world");
-            var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 0, 5));
+            var visualSpan = VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 0, 5));
             UnnamedRegister.UpdateValue("dog");
             _operations.SetupPut(_textBuffer, "dog world");
             _commandUtil.PutOverSelection(UnnamedRegister, 1, moveCaretAfterText: true, visualSpan: visualSpan);
@@ -1171,7 +1172,7 @@ namespace VimCore.UnitTest
         public void PutOverSelection_Character_WithLine()
         {
             Create("dog");
-            var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 1, 1));
+            var visualSpan = VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 1, 1));
             UnnamedRegister.UpdateValue("pig", OperationKind.LineWise);
             _operations.SetupPut(_textBuffer, "d", "pig", "g");
             _commandUtil.PutOverSelection(UnnamedRegister, 1, moveCaretAfterText: false, visualSpan: visualSpan);
@@ -1252,7 +1253,7 @@ namespace VimCore.UnitTest
         public void DeleteLineSelection_Character()
         {
             Create("cat", "dog");
-            var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 1, 1));
+            var visualSpan = VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 1, 1));
             _commandUtil.DeleteLineSelection(UnnamedRegister, visualSpan);
             Assert.AreEqual("cat" + Environment.NewLine, UnnamedRegister.StringValue);
             Assert.AreEqual("dog", _textView.GetLine(0).GetText());
@@ -1301,7 +1302,7 @@ namespace VimCore.UnitTest
         {
             Create("  cat", "dog");
             _localSettings.AutoIndent = true;
-            var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 2, 2));
+            var visualSpan = VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 2, 2));
             _commandUtil.ChangeLineSelection(UnnamedRegister, visualSpan, specialCaseBlock: false);
             Assert.AreEqual("", _textView.GetLine(0).GetText());
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
@@ -1316,7 +1317,7 @@ namespace VimCore.UnitTest
         {
             Create("  cat", "dog");
             _localSettings.AutoIndent = false;
-            var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 2, 2));
+            var visualSpan = VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 2, 2));
             _commandUtil.ChangeLineSelection(UnnamedRegister, visualSpan, specialCaseBlock: false);
             Assert.AreEqual("  cat", UnnamedRegister.StringValue);
             Assert.AreEqual("", _textView.GetLine(0).GetText());
@@ -1409,7 +1410,7 @@ namespace VimCore.UnitTest
         public void ChangeSelection_Character()
         {
             Create("the dog chased the ball");
-            var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 1, 2));
+            var visualSpan = VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 1, 2));
             var result = _commandUtil.ChangeSelection(UnnamedRegister, visualSpan);
             AssertInsertWithTransaction(result);
             Assert.AreEqual("t dog chased the ball", _textView.GetLine(0).GetText());
@@ -1425,7 +1426,7 @@ namespace VimCore.UnitTest
         public void DeleteSelection_Character()
         {
             Create("the dog chased the ball");
-            var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 1, 2));
+            var visualSpan = VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 1, 2));
             _commandUtil.DeleteSelection(UnnamedRegister, visualSpan);
             Assert.AreEqual("t dog chased the ball", _textView.GetLine(0).GetText());
             Assert.AreEqual("he", UnnamedRegister.StringValue);
@@ -1440,7 +1441,7 @@ namespace VimCore.UnitTest
         public void DeleteSelection_Character_FullLine()
         {
             Create("cat", "dog");
-            var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 0, 3));
+            var visualSpan = VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 0, 3));
             _commandUtil.DeleteSelection(UnnamedRegister, visualSpan);
             Assert.AreEqual("", _textView.GetLine(0).GetText());
             Assert.AreEqual("dog", _textView.GetLine(1).GetText());
@@ -1454,7 +1455,7 @@ namespace VimCore.UnitTest
         public void DeleteSelection_Character_FullLineFromLineBreak()
         {
             Create("cat", "dog");
-            var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 0, 4));
+            var visualSpan = VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 0, 4));
             _commandUtil.DeleteSelection(UnnamedRegister, visualSpan);
             Assert.AreEqual("dog", _textView.GetLine(0).GetText());
         }

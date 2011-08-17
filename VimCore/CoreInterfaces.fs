@@ -874,51 +874,117 @@ type SubstituteData = {
     Flags : SubstituteFlags
 }
 
+/// Represents the span for a Visual Character mode selection.  If it weren't for the
+/// complications of tracking a visual character selection across edits to the buffer
+/// there would really be no need for this and we could instead just represent it as 
+/// a SnapshotSpan
 [<StructuralEquality>]
 [<NoComparison>]
-type BlockSpan = {
-    StartPoint : SnapshotPoint
-    Width : int
-    Height : int
-}
-    with
+[<Struct>]
+type CharacterSpan
+    (
+        _start : SnapshotPoint,
+        _lineCount : int,
+        _lastLineLength : int
+    ) =
+
+    member x.Snapshot = _start.Snapshot
+
+    member x.StartLine = SnapshotPointUtil.GetContainingLine x.Start
+
+    member x.Start =  _start
+
+    member x.LineCount =_lineCount
+
+    member x.LastLineLength = _lastLineLength
+
+    /// Get the EndPoint of the Character Span
+    member x.End =
+        let snapshot = x.Start.Snapshot
+        let endPoint = 
+            if x.LineCount = 1 then
+                x.Start
+                |> SnapshotPointUtil.TryAdd x.LastLineLength 
+                |> OptionUtil.getOrDefault x.StartLine.End
+            else 
+                SnapshotUtil.GetLineOrLast snapshot (x.StartLine.LineNumber + x.LineCount - 1)
+                |> SnapshotLineUtil.GetOffsetOrEnd x.LastLineLength
+
+        // Handle the case where StartPoint is in the line break.  Need to ensure
+        // StartPoint.Position < EndPoint.Position.
+        SnapshotPointUtil.OrderAscending x.Start endPoint |> snd
+
+    member x.Span = SnapshotSpan(x.Start, x.End)
+
+    member x.Length = x.Span.Length
+
+    static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<CharacterSpan>.Default.Equals(this,other)
+    static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<CharacterSpan>.Default.Equals(this,other))
+
+    static member CreateForSpan (span : SnapshotSpan) = 
+        let lineRange = SnapshotLineRangeUtil.CreateForSpan span
+        let lastLineLength = 
+            if lineRange.Count = 1 then
+                span.Length
+            else
+                let diff = span.End.Position - lineRange.EndLine.Start.Position
+                max 0 diff
+        CharacterSpan(span.Start, lineRange.Count, lastLineLength)
+
+/// Represents the span for a Visual Block mode selection
+[<StructuralEquality>]
+[<NoComparison>]
+[<Struct>]
+type BlockSpan
+    (
+        _start : SnapshotPoint,
+        _width : int,
+        _height : int
+    ) = 
+
+    member x.Start = _start
 
     /// In what column does this block span begin
-    member x.Column =
-        SnapshotPointUtil.GetColumn x.StartPoint
+    member x.Column = SnapshotPointUtil.GetColumn x.Start
+
+    member x.Width = _width
+
+    member x.Height = _height
 
     /// Get the EndPoint (exclusive) of the BlockSpan
-    member x.EndPoint = 
+    member x.End = 
         let line = 
-            let lineNumber = SnapshotPointUtil.GetLineNumber x.StartPoint
-            SnapshotUtil.GetLineOrLast x.Snasphot (lineNumber + (x.Height - 1))
-        let offset = x.Column + x.Width
+            let lineNumber = SnapshotPointUtil.GetLineNumber x.Start
+            SnapshotUtil.GetLineOrLast x.Snasphot (lineNumber + (_height - 1))
+        let offset = x.Column + _width
         if offset >= line.Length then
             line.End
         else
             line.Start.Add offset
 
-    member x.Snasphot = 
-        x.StartPoint.Snapshot
+    member x.Snasphot = x.Start.Snapshot
 
-    member x.TextBuffer = 
-        x.StartPoint.Snapshot.TextBuffer
+    member x.TextBuffer =  x.Start.Snapshot.TextBuffer
 
     /// Get the NonEmptyCollection<SnapshotSpan> for the given block information
     member x.BlockSpans : NonEmptyCollection<SnapshotSpan> =
-        seq {
-            let snapshot = SnapshotPointUtil.GetSnapshot x.StartPoint
-            let lineNumber = SnapshotPointUtil.GetLineNumber x.StartPoint
-            for i = lineNumber to ((x.Height - 1)+ lineNumber) do
-                match SnapshotUtil.TryGetLine snapshot i with
-                | None -> ()
-                | Some line -> yield SnapshotLineUtil.GetSpanInLine line x.Column x.Width
-        } 
+        let snapshot = SnapshotPointUtil.GetSnapshot x.Start
+        let lineNumber = SnapshotPointUtil.GetLineNumber x.Start
+        let list = System.Collections.Generic.List<SnapshotSpan>()
+        for i = lineNumber to ((_height - 1)+ lineNumber) do
+            match SnapshotUtil.TryGetLine snapshot i with
+            | None -> ()
+            | Some line -> list.Add (SnapshotLineUtil.GetSpanInLine line x.Column _width)
+
+        list
         |> NonEmptyCollectionUtil.OfSeq 
         |> Option.get
 
     override x.ToString() =
-        sprintf "Point: %s Width: %d Height: %d" (x.StartPoint.ToString()) x.Width x.Height
+        sprintf "Point: %s Width: %d Height: %d" (x.Start.ToString()) _width _height
+
+    static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<BlockSpan>.Default.Equals(this,other)
+    static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<BlockSpan>.Default.Equals(this,other))
 
 [<RequireQualifiedAccess>]
 type BlockCaretLocation =
@@ -934,7 +1000,7 @@ type BlockCaretLocation =
 type VisualSpan =
 
     /// A characterwise span
-    | Character of SnapshotSpan
+    | Character of CharacterSpan
 
     /// A linewise span
     | Line of SnapshotLineRange
@@ -948,14 +1014,14 @@ type VisualSpan =
     /// Return the Spans which make up this VisualSpan instance
     member x.Spans = 
         match x with 
-        | VisualSpan.Character span -> [span] |> Seq.ofList
+        | VisualSpan.Character characterSpan -> [characterSpan.Span] |> Seq.ofList
         | VisualSpan.Line range -> [range.ExtentIncludingLineBreak] |> Seq.ofList
         | VisualSpan.Block blockSpan -> blockSpan.BlockSpans :> SnapshotSpan seq
 
     /// Returns the EditSpan for this VisualSpan
     member x.EditSpan = 
         match x with
-        | VisualSpan.Character span -> EditSpan.Single span
+        | VisualSpan.Character characterSpan -> EditSpan.Single characterSpan.Span
         | VisualSpan.Line range -> EditSpan.Single range.ExtentIncludingLineBreak
         | VisualSpan.Block blockSpan -> EditSpan.Block blockSpan.BlockSpans
 
@@ -964,7 +1030,7 @@ type VisualSpan =
     /// return the overarching span
     member x.LineRange = 
         match x with
-        | VisualSpan.Character span -> SnapshotLineRangeUtil.CreateForSpan span
+        | VisualSpan.Character characterSpan -> SnapshotLineRangeUtil.CreateForSpan characterSpan.Span
         | VisualSpan.Line range -> range
         | VisualSpan.Block _ -> x.EditSpan.OverarchingSpan |> SnapshotLineRangeUtil.CreateForSpan
 
@@ -972,9 +1038,9 @@ type VisualSpan =
     /// of an empty Block selection.
     member x.Start =
         match x with
-        | Character span -> span.Start
+        | Character characterSpan -> characterSpan.Start
         | Line range ->  range.Start
-        | Block blockSpan -> blockSpan.StartPoint
+        | Block blockSpan -> blockSpan.Start
 
     /// What type of OperationKind does this VisualSpan represent
     member x.OperationKind =
@@ -995,11 +1061,10 @@ type VisualSpan =
         visualSelection.VisualSpan
 
 /// Represents both the VisualSpan and selection information for Visual Mode
-
 and [<RequireQualifiedAccess>] [<StructuralEquality>] [<NoComparison>] VisualSelection =
 
     /// The bool represents whether or not the caret is at the start of the SnapshotSpan
-    | Character of SnapshotSpan * bool
+    | Character of CharacterSpan * bool
 
     /// The bool represents whether or not the caret is at the start of the line range
     /// and the int is which column in the range the caret should be placed in
@@ -1013,7 +1078,7 @@ and [<RequireQualifiedAccess>] [<StructuralEquality>] [<NoComparison>] VisualSel
     /// Get the corresponding Visual Span
     member x.VisualSpan = 
         match x with
-        | Character (span, _) -> VisualSpan.Character span
+        | Character (characterSpan, _) -> VisualSpan.Character characterSpan
         | Line (snapshotLineRange, _, _) -> VisualSpan.Line snapshotLineRange
         | Block (blockSpan, _) -> VisualSpan.Block blockSpan
 
@@ -1038,13 +1103,13 @@ and [<RequireQualifiedAccess>] [<StructuralEquality>] [<NoComparison>] VisualSel
     /// Gets the SnapshotPoint for the caret as it should appear in the given VisualSelection
     member x.CaretPoint = 
         match x with
-        | Character (span, isForward) ->
+        | Character (characterSpan, isForward) ->
             // The caret is either positioned at the start or the end of the selected
             // SnapshotSpan
-            if isForward && span.Length > 0 then
-                SnapshotPointUtil.SubtractOne span.End
+            if isForward && characterSpan.Length > 0 then
+                SnapshotPointUtil.SubtractOne characterSpan.End
             else
-                span.Start
+                characterSpan.Start
 
         | Line (snapshotLineRange, isForward, column) ->
             // The caret is either positioned at the start or the end of the selected range
@@ -1069,7 +1134,7 @@ and [<RequireQualifiedAccess>] [<StructuralEquality>] [<NoComparison>] VisualSel
                     span.End.Subtract 1
 
             match blockCaretLocation with
-            | BlockCaretLocation.TopLeft -> blockSpan.StartPoint
+            | BlockCaretLocation.TopLeft -> blockSpan.Start
             | BlockCaretLocation.TopRight -> getSpanEnd blockSpan.BlockSpans.Head
             | BlockCaretLocation.BottomLeft -> blockSpan.BlockSpans |> SeqUtil.last |> SnapshotSpanUtil.GetStartPoint
             | BlockCaretLocation.BottomRight -> blockSpan.BlockSpans |> SeqUtil.last |> getSpanEnd
@@ -1082,9 +1147,8 @@ and [<RequireQualifiedAccess>] [<StructuralEquality>] [<NoComparison>] VisualSel
             // This is just represented by looking at the Stream SelectionSpan and checking the position
             // of the caret
             let span = textView.Selection.StreamSelectionSpan.SnapshotSpan
-            let visualSpan = VisualSpan.Character span
             let isBackward = caretPoint = span.Start
-            VisualSelection.Character (span, not isBackward)
+            VisualSelection.Character (CharacterSpan.CreateForSpan span, not isBackward)
         | VisualKind.Line-> 
 
             let column = SnapshotPointUtil.GetColumn caretPoint
@@ -1102,19 +1166,12 @@ and [<RequireQualifiedAccess>] [<StructuralEquality>] [<NoComparison>] VisualSel
             if spanCollection.Count = 0 then
                 // Just like we would treat Character as a single empty SnapshotSpan we do the same here
                 // for block selection
-                let blockSpan = {
-                    StartPoint = caretPoint
-                    Width = 0
-                    Height = 1 }
+                let blockSpan = BlockSpan(caretPoint, 0, 1)
                 VisualSelection.Block (blockSpan, BlockCaretLocation.TopLeft)
             else
                 let firstSpan = spanCollection.[0]
                 let lastSpan = spanCollection |> SeqUtil.last
-                let blockSpan = {
-                    StartPoint = firstSpan.Start
-                    Width = firstSpan.Length
-                    Height = spanCollection.Count }
-
+                let blockSpan = BlockSpan(firstSpan.Start, firstSpan.Length, spanCollection.Count)
                 let blockCaretLocation = 
                     
                     if firstSpan.Start = caretPoint then
@@ -1862,8 +1919,8 @@ type internal IInsertUtil =
 [<RequireQualifiedAccess>]
 type StoredVisualSpan = 
 
-    /// Storing a character wise span.  Only need to know how many lines down is 
-    /// the end point and what is the offset of the end point
+    /// Storing a character wise span.  Need to know the line count and the offset 
+    /// in the last line for the end
     | Character of int * int
 
     /// Storing a linewise span just stores the count of lines
@@ -1878,39 +1935,8 @@ type StoredVisualSpan =
     /// Create a StoredVisualSpan from the provided VisualSpan value
     static member OfVisualSpan visualSpan = 
         match visualSpan with
-        | VisualSpan.Character span ->
-
-            // Break the span into leading, middle and trailing edges and use
-            // those to calculate the offsets
-            let startSpan, middle, endSpan = SnapshotSpanUtil.GetLinesAndEdges span
-
-            // How many full lines in the middle
-            let middleLines = 
-                match middle with
-                | None -> 0
-                | Some range -> 
-
-                    // Deal with the special case where there is no start span because
-                    // the first line is a full line
-                    match startSpan with
-                    | None -> range.Count - 1
-                    | Some _ -> range.Count
-
-            let endLineOffset, endOffset = 
-                match endSpan with
-                | None -> 
-                    if middleLines > 0 then 
-                        // No end span but we have middle lines.  The end offset should
-                        // be at column 0 one line further down
-                        (middleLines + 1, 0)
-                    else
-                        // No middle lines or end span.  Single line guy
-                        (0, span.Length)
-                | Some endSpan ->
-                    // There is an end span.  It's 1 line further down from the middle guys
-                    // and ends at the length
-                    (middleLines + 1, SnapshotPointUtil.GetColumn endSpan.End)
-            StoredVisualSpan.Character (endLineOffset, endOffset)
+        | VisualSpan.Character characterSpan ->
+            StoredVisualSpan.Character (characterSpan.LineCount, characterSpan.LastLineLength)
         | VisualSpan.Line range ->
             StoredVisualSpan.Line range.Count
         | VisualSpan.Block blockSpan -> 

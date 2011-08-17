@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
@@ -12,6 +13,7 @@ namespace VimCore.UnitTest
     public sealed class VisualModeIntegrationTest
     {
         private IVimBuffer _buffer;
+        private IVimTextBuffer _vimTextBuffer;
         private IWpfTextView _textView;
         private ITextBuffer _textBuffer;
         private IRegisterMap _registerMap;
@@ -38,6 +40,7 @@ namespace VimCore.UnitTest
             var service = EditorUtil.FactoryService;
             _buffer = service.Vim.CreateVimBuffer(_textView);
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimTextBuffer = _buffer.VimTextBuffer;
             _registerMap = _buffer.RegisterMap;
             _globalSettings = _buffer.LocalSettings.GlobalSettings;
             Assert.IsTrue(_context.IsEmpty);
@@ -48,7 +51,8 @@ namespace VimCore.UnitTest
 
         private void EnterMode(SnapshotSpan span)
         {
-            var visualSelection = VisualSelection.NewCharacter(span, true);
+            var characterSpan = CharacterSpan.CreateForSpan(span);
+            var visualSelection = VisualSelection.NewCharacter(characterSpan, true);
             CommonUtil.SelectAndUpdateCaret(_textView, visualSelection);
             Assert.IsFalse(_context.IsEmpty);
             _context.RunAll();
@@ -153,6 +157,17 @@ namespace VimCore.UnitTest
             Assert.AreEqual("dog", _textView.GetLine(0).GetText());
         }
 
+        /// <summary>
+        /// Verify that Shift-V enters Visual Line Mode
+        /// </summary>
+        [Test]
+        public void EnterVisualLine()
+        {
+            Create("hello", "world");
+            _buffer.Process(KeyNotationUtil.StringToKeyInput("<S-v>"));
+            Assert.AreEqual(ModeKind.VisualLine, _buffer.ModeKind);
+        }
+
         [Test]
         public void Repeat1()
         {
@@ -254,13 +269,21 @@ namespace VimCore.UnitTest
             Assert.AreEqual("  wo", _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
         }
 
+        /// <summary>
+        /// Make sure that LastVisualSelection is set to the SnapshotSpan before the shift right
+        /// command is executed
+        /// </summary>
         [Test]
-        [Description("Enter Visual Line Mode")]
-        public void EnterVisualLine1()
+        public void ShiftLinesRight_LastVisualSelection()
         {
-            Create("hello", "world");
-            _buffer.Process(KeyNotationUtil.StringToKeyInput("<S-v>"));
-            Assert.AreEqual(ModeKind.VisualLine, _buffer.ModeKind);
+            Create("cat", "dog", "fish");
+            EnterMode(ModeKind.VisualCharacter, new SnapshotSpan(_textView.GetLine(0).Start, _textView.GetLine(1).Start.Add(1)));
+            _buffer.Process('>');
+            var visualSelection = VisualSelection.NewCharacter(
+                new CharacterSpan(_textView.GetLine(0).Start, 2, 1),
+                true);
+            Assert.IsTrue(_vimTextBuffer.LastVisualSelection.IsSome());
+            Assert.AreEqual(visualSelection, _vimTextBuffer.LastVisualSelection.Value);
         }
 
         [Test]
@@ -778,6 +801,22 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Ensure that after yanking and leaving Visual Mode that the proper value is
+        /// maintained for LastVisualSelection.  It should be the selection before the command
+        /// was executed
+        /// </summary>
+        [Test]
+        public void YankSelection_LastVisualSelection()
+        {
+            Create("cat", "dog", "fish");
+            var span = _textView.GetLineRange(0, 1).ExtentIncludingLineBreak;
+            EnterMode(ModeKind.VisualLine, span);
+            _buffer.Process('y');
+            Assert.IsTrue(_vimTextBuffer.LastVisualSelection.IsSome());
+            Assert.AreEqual(span, _vimTextBuffer.LastVisualSelection.Value.EditSpan.OverarchingSpan);
+        }
+
+        /// <summary>
         /// The yank line selection command should exit visual mode after the operation
         /// </summary>
         [Test]
@@ -798,7 +837,7 @@ namespace VimCore.UnitTest
         {
             Create("dogs", "cats");
 
-            var visualSpan = VisualSpan.NewCharacter(_textBuffer.GetSpan(1, 2));
+            var visualSpan = VimUtil.CreateVisualSpanCharacter(_textBuffer.GetSpan(1, 2));
             var visualSelection = VisualSelection.CreateForVisualSpan(visualSpan);
             _buffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.NewInitialVisualSelection(visualSelection));
             _context.RunAll();

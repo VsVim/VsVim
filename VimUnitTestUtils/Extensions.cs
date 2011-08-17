@@ -479,9 +479,10 @@ namespace Vim.UnitTest
         /// </summary>
         public static void SelectAndUpdateCaret(this ITextView textView, SnapshotSpan span)
         {
+            var characterSpan = CharacterSpan.CreateForSpan(span);
             CommonUtil.SelectAndUpdateCaret(
                 textView,
-                VisualSelection.CreateForVisualSpan(VisualSpan.NewCharacter(span)));
+                VisualSelection.CreateForVisualSpan(VisualSpan.NewCharacter(characterSpan)));
         }
 
         public static ITextSnapshotLine GetCaretLine(this ITextView textView)

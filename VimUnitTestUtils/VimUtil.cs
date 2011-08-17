@@ -512,5 +512,10 @@ namespace Vim.UnitTest
         {
             return StringData.NewBlock(NonEmptyCollectionUtil.OfSeq(values).Value);
         }
+
+        internal static VisualSpan CreateVisualSpanCharacter(SnapshotSpan span)
+        {
+            return VisualSpan.NewCharacter(CharacterSpan.CreateForSpan(span));
+        }
     }
 }

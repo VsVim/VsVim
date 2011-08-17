@@ -26,7 +26,9 @@ namespace VimCore.UnitTest
         public void CaretPoint_Character_Forward()
         {
             Create("cats", "dogs");
-            var visualSelection = VisualSelection.NewCharacter(_textBuffer.GetSpan(0, 2), true);
+            var visualSelection = VisualSelection.NewCharacter(
+                CharacterSpan.CreateForSpan(_textBuffer.GetSpan(0, 2)),
+                true);
             Assert.AreEqual(_textBuffer.GetPoint(1), visualSelection.CaretPoint);
         }
 
@@ -37,7 +39,9 @@ namespace VimCore.UnitTest
         public void CaretPoint_Character_Backward()
         {
             Create("cats", "dogs");
-            var visualSelection = VisualSelection.NewCharacter(_textBuffer.GetSpan(0, 2), false);
+            var visualSelection = VisualSelection.NewCharacter(
+                CharacterSpan.CreateForSpan(_textBuffer.GetSpan(0, 2)),
+                false);
             Assert.AreEqual(_textBuffer.GetPoint(0), visualSelection.CaretPoint);
         }
 
@@ -126,11 +130,11 @@ namespace VimCore.UnitTest
         public void BackAndForth_Character_SingleLine()
         {
             Create("cats", "dogs");
-            var span = _textBuffer.GetSpan(1, 2);
+            var characterSpan = CharacterSpan.CreateForSpan(_textBuffer.GetSpan(1, 2));
             var all = new[] { true, false };
             foreach (var isForward in all)
             {
-                var visualSelection = VisualSelection.NewCharacter(span, isForward);
+                var visualSelection = VisualSelection.NewCharacter(characterSpan, isForward);
                 CommonUtil.SelectAndUpdateCaret(_textView, visualSelection);
                 var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Character);
                 Assert.AreEqual(visualSelection, currentVisualSelection);
@@ -144,11 +148,11 @@ namespace VimCore.UnitTest
         public void BackAndForth_Character_MultiLine()
         {
             Create("cats", "dogs", "fish");
-            var span = new SnapshotSpan(_textView.GetLine(0).Start, _textView.GetLine(1).End);
+            var characterSpan = new CharacterSpan(_textView.GetLine(0).Start, 2, 4);
             var all = new[] { true, false };
             foreach (var isForward in all)
             {
-                var visualSelection = VisualSelection.NewCharacter(span, isForward);
+                var visualSelection = VisualSelection.NewCharacter(characterSpan, isForward);
                 CommonUtil.SelectAndUpdateCaret(_textView, visualSelection);
                 var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Character);
                 Assert.AreEqual(visualSelection, currentVisualSelection);

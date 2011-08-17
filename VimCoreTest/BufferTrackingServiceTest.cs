@@ -1,9 +1,9 @@
-﻿using Microsoft.VisualStudio.Text;
+﻿using System;
+using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
-using System;
 
 namespace VimCore.UnitTest
 {
@@ -161,6 +161,38 @@ namespace VimCore.UnitTest
             var trackingVisualSpan = _bufferTrackingService.CreateVisualSpan(visualSpan);
             textBuffer.Insert(textBuffer.GetLine(1).Start, Environment.NewLine);
             var newVisualSpan = VisualSpan.NewBlock(textBuffer.GetBlockSpan(1, 2, 2, 2));
+            Assert.IsTrue(trackingVisualSpan.VisualSpan.IsSome());
+            Assert.AreEqual(newVisualSpan, trackingVisualSpan.VisualSpan.Value);
+        }
+
+        /// <summary>
+        /// When tracking a Visual Character span an edit before the point should not move the
+        /// start of the selection to the right
+        /// </summary>
+        [Test]
+        public void VisualSpan_Character_EditBefore()
+        {
+            var textBuffer = EditorUtil.CreateTextBuffer("cat", "dog");
+            var visualSpan = VisualSpan.NewCharacter(new CharacterSpan(textBuffer.GetPoint(0), 1, 2));
+            var trackingVisualSpan = _bufferTrackingService.CreateVisualSpan(visualSpan);
+            textBuffer.Insert(0, "bat ");
+            var newVisualSpan = VisualSpan.NewCharacter(new CharacterSpan(textBuffer.GetPoint(0), 1, 2));
+            Assert.IsTrue(trackingVisualSpan.VisualSpan.IsSome());
+            Assert.AreEqual(newVisualSpan, trackingVisualSpan.VisualSpan.Value);
+        }
+
+        /// <summary>
+        /// When tracking a Visual Character span which spans multiple lines an edit before 
+        /// the point should not move the start of the selection to the right
+        /// </summary>
+        [Test]
+        public void VisualSpan_Character_EditBeforeMultiLine()
+        {
+            var textBuffer = EditorUtil.CreateTextBuffer("cat", "dog");
+            var visualSpan = VisualSpan.NewCharacter(new CharacterSpan(textBuffer.GetPoint(0), 2, 1));
+            var trackingVisualSpan = _bufferTrackingService.CreateVisualSpan(visualSpan);
+            textBuffer.Insert(0, "bat ");
+            var newVisualSpan = VisualSpan.NewCharacter(new CharacterSpan(textBuffer.GetPoint(0), 2, 1));
             Assert.IsTrue(trackingVisualSpan.VisualSpan.IsSome());
             Assert.AreEqual(newVisualSpan, trackingVisualSpan.VisualSpan.Value);
         }

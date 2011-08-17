@@ -123,6 +123,11 @@ type internal VisualMode
         member x.CanProcess (ki:KeyInput) = true
         member x.Process (ki : KeyInput) =  
 
+            // Save the VisualSelection before executing the command.  Many commands which exit
+            // visual mode such as 'y' change the selection during execution.  We want to restore
+            // to the selection before the command executed so save it now
+            let lastVisualSelection = VisualSelection.CreateForSelection _textView _visualKind
+
             let result = 
                 if ki = KeyInputUtil.EscapeKey && x.ShouldHandleEscape then
                     ProcessResult.Handled ModeSwitch.SwitchPreviousMode
@@ -178,7 +183,7 @@ type internal VisualMode
                 if not textView.IsClosed then
 
                     // Before resetting the selection save it
-                    _vimTextBuffer.LastVisualSelection <- Some (VisualSelection.CreateForSelection _textView _visualKind)
+                    _vimTextBuffer.LastVisualSelection <- Some lastVisualSelection
 
                     if not toCommandMode then
                         textView.Selection.Clear()

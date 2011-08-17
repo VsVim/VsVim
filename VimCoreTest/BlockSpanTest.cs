@@ -23,7 +23,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog");
             var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 2, 1);
-            Assert.AreEqual(_textBuffer.GetLine(0).Start.Add(2), blockSpan.EndPoint);
+            Assert.AreEqual(_textBuffer.GetLine(0).Start.Add(2), blockSpan.End);
         }
 
         /// <summary>
@@ -34,7 +34,26 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "fish");
             var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 2, 2);
-            Assert.AreEqual(_textBuffer.GetLine(1).Start.Add(2), blockSpan.EndPoint);
+            Assert.AreEqual(_textBuffer.GetLine(1).Start.Add(2), blockSpan.End);
+        }
+
+        /// <summary>
+        /// Make sure operator equality functions as expected
+        /// </summary>
+        [Test]
+        public void Equality_Operator()
+        {
+            Create("cat", "dog");
+            EqualityUtil.RunAll(
+                (left, right) => left == right,
+                (left, right) => left != right,
+                false,
+                false,
+                EqualityUnit.Create(new BlockSpan(_textBuffer.GetPoint(0), 2, 2))
+                    .WithEqualValues(new BlockSpan(_textBuffer.GetPoint(0), 2, 2))
+                    .WithNotEqualValues(
+                        new BlockSpan(_textBuffer.GetPoint(1), 2, 2),
+                        new BlockSpan(_textBuffer.GetPoint(1), 2, 3)));
         }
     }
 }

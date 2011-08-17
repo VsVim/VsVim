@@ -180,34 +180,13 @@ type internal CommandUtil
             let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
             VisualSpan.Line range
 
-        | StoredVisualSpan.Character (endLineOffset, endOffset) -> 
-            // Repeating a CharecterWise span starts from the caret position.  There
-            // are 2 cases to consider
-            //
-            //  1. Single Line: endOffset is the offset from the caret
-            //  2. Multi Line: endOffset is the offset from the last line
-            let startPoint = x.CaretPoint
-
-            /// Calculate the end point being careful not to go past the end of the buffer
-            let endPoint = 
-                if 0 = endLineOffset then
-                    let column = SnapshotPointUtil.GetColumn x.CaretPoint
-                    SnapshotLineUtil.GetOffsetOrEnd x.CaretLine (column + endOffset)
-                else
-                    let endLineNumber = x.CaretLine.LineNumber + endLineOffset
-                    match SnapshotUtil.TryGetLine x.CurrentSnapshot endLineNumber with
-                    | None -> SnapshotUtil.GetEndPoint x.CurrentSnapshot
-                    | Some endLine -> SnapshotLineUtil.GetOffsetOrEnd endLine endOffset
-
-            let span = SnapshotSpan(startPoint, endPoint)
-            VisualSpan.Character span
+        | StoredVisualSpan.Character (lineCount, lastLineLength) -> 
+            let characterSpan = CharacterSpan(x.CaretPoint, lineCount, lastLineLength)
+            VisualSpan.Character characterSpan
         | StoredVisualSpan.Block (width, height) ->
             // Need to rehydrate spans of length 'length' on 'count' lines from the 
             // current caret position
-            let blockSpan = {
-                StartPoint = x.CaretPoint
-                Width = width
-                Height = height }
+            let blockSpan = BlockSpan(x.CaretPoint, width, height)
             VisualSpan.Block blockSpan
 
     /// Change the characters in the given span via the specified change kind
@@ -277,7 +256,7 @@ type internal CommandUtil
         x.EditWithUndoTransaciton "Change" (fun () ->
 
             let span = 
-                let endPoint = SnapshotLineUtil.GetOffsetOrEnd x.CaretLine (x.CaretColumn + count)
+                let endPoint = SnapshotLineUtil.GetOffsetOrEnd (x.CaretColumn + count) x.CaretLine
                 SnapshotSpan(x.CaretPoint, endPoint)
 
             let editSpan = EditSpan.Single span
@@ -442,8 +421,8 @@ type internal CommandUtil
         // Dispatch to the appropriate type of edit
         let editSpan, commandResult = 
             match visualSpan with 
-            | VisualSpan.Character span -> 
-                span |> SnapshotLineRangeUtil.CreateForSpan |> deleteRange
+            | VisualSpan.Character characterSpan -> 
+                characterSpan.Span |> SnapshotLineRangeUtil.CreateForSpan |> deleteRange
             | VisualSpan.Line range -> 
                 deleteRange range
             | VisualSpan.Block blockSpan -> 
@@ -523,7 +502,7 @@ type internal CommandUtil
         // Check for the case where the caret is past the end of the line.  Can happen
         // when 've=onemore'
         if x.CaretPoint.Position < x.CaretLine.End.Position then
-            let endPoint = SnapshotLineUtil.GetOffsetOrEnd x.CaretLine (x.CaretColumn + count)
+            let endPoint = SnapshotLineUtil.GetOffsetOrEnd (x.CaretColumn + count) x.CaretLine
             let span = SnapshotSpan(x.CaretPoint, endPoint)
 
             // Use a transaction so we can guarantee the caret is in the correct
@@ -614,9 +593,9 @@ type internal CommandUtil
                 use edit = _textBuffer.CreateEdit()
                 let editSpan = 
                     match visualSpan with
-                    | VisualSpan.Character span ->
+                    | VisualSpan.Character characterSpan ->
                         // Just extend the SnapshotSpan to the encompassing SnapshotLineRange 
-                        let range = SnapshotLineRangeUtil.CreateForSpan span
+                        let range = SnapshotLineRangeUtil.CreateForSpan characterSpan.Span
                         let span = range.ExtentIncludingLineBreak
                         edit.Delete(span.Span) |> ignore
                         EditSpan.Single span
@@ -1462,24 +1441,24 @@ type internal CommandUtil
 
         let deletedSpan, operationKind = 
             match visualSpan with
-            | VisualSpan.Character span ->
+            | VisualSpan.Character characterSpan ->
 
                 // Cursor needs to be at the start of the span during undo and at the end
                 // of the pasted span after redo so move to the start before the undo transaction
-                TextViewUtil.MoveCaretToPoint _textView span.Start
+                TextViewUtil.MoveCaretToPoint _textView characterSpan.Start
                 x.EditWithUndoTransaciton "Put" (fun () ->
     
                     // Delete the span and move the caret back to the start of the 
                     // span in the new ITextSnapshot
-                    _textBuffer.Delete(span.Span) |> ignore
-                    TextViewUtil.MoveCaretToPosition _textView span.Start.Position
+                    _textBuffer.Delete(characterSpan.Span.Span) |> ignore
+                    TextViewUtil.MoveCaretToPosition _textView characterSpan.Start.Position
 
                     // Now do a standard put operation at the original start point in the current
                     // ITextSnapshot
-                    let point = SnapshotUtil.GetPoint x.CurrentSnapshot span.Start.Position
+                    let point = SnapshotUtil.GetPoint x.CurrentSnapshot characterSpan.Start.Position
                     x.PutCore point stringData operationKind moveCaretAfterText
 
-                    EditSpan.Single span, OperationKind.CharacterWise)
+                    EditSpan.Single characterSpan.Span, OperationKind.CharacterWise)
             | VisualSpan.Line range ->
 
                 // Cursor needs to be positioned at the start of the range for both undo so
@@ -2120,8 +2099,8 @@ type internal CommandUtil
 
         // Both Character and Line spans operate like most shifts
         match visualSpan with
-        | VisualSpan.Character span ->
-            let range = SnapshotLineRangeUtil.CreateForSpan span
+        | VisualSpan.Character characterSpan ->
+            let range = SnapshotLineRangeUtil.CreateForSpan characterSpan.Span
             x.ShiftLinesLeftCore range count
         | VisualSpan.Line range ->
             x.ShiftLinesLeftCore range count
@@ -2152,8 +2131,8 @@ type internal CommandUtil
 
         // Both Character and Line spans operate like most shifts
         match visualSpan with
-        | VisualSpan.Character span ->
-            let range = SnapshotLineRangeUtil.CreateForSpan span
+        | VisualSpan.Character characterSpan ->
+            let range = SnapshotLineRangeUtil.CreateForSpan characterSpan.Span
             x.ShiftLinesRightCore range count
         | VisualSpan.Line range ->
             x.ShiftLinesRightCore range count
@@ -2212,7 +2191,7 @@ type internal CommandUtil
                 // to the end of the line and complete the command.  Nothing should be deleted
                 TextViewUtil.MoveCaretToPoint _textView x.CaretLine.End
             else
-                let endPoint = SnapshotLineUtil.GetOffsetOrEnd x.CaretLine (x.CaretColumn + count)
+                let endPoint = SnapshotLineUtil.GetOffsetOrEnd (x.CaretColumn + count) x.CaretLine
                 let span = SnapshotSpan(x.CaretPoint, endPoint)
     
                 // Use a transaction so we can guarantee the caret is in the correct
@@ -2298,9 +2277,9 @@ type internal CommandUtil
     member x.YankLineSelection register (visualSpan : VisualSpan) = 
         let editSpan, operationKind = 
             match visualSpan with 
-            | VisualSpan.Character span ->
+            | VisualSpan.Character characterSpan ->
                 // Extend the character selection to the full lines
-                let range = SnapshotLineRangeUtil.CreateForSpan span
+                let range = SnapshotLineRangeUtil.CreateForSpan characterSpan.Span
                 EditSpan.Single range.ExtentIncludingLineBreak, OperationKind.LineWise
             | VisualSpan.Line _ ->
                 // Simple case, just use the visual span as is

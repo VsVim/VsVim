@@ -26,16 +26,16 @@ module internal CommonUtil =
             textView.Selection.Select(startPoint, endPoint);
 
         match visualSpan with
-        | VisualSpan.Character span ->
-            selectSpan span
+        | VisualSpan.Character characterSpan ->
+            selectSpan characterSpan.Span
         | VisualSpan.Line lineRange ->
             selectSpan lineRange.ExtentIncludingLineBreak
         | VisualSpan.Block blockSpan ->
             textView.Selection.Mode <- TextSelectionMode.Box;
 
             textView.Selection.Select(
-                VirtualSnapshotPoint(blockSpan.StartPoint),
-                VirtualSnapshotPoint(blockSpan.EndPoint))
+                VirtualSnapshotPoint(blockSpan.Start),
+                VirtualSnapshotPoint(blockSpan.End))
 
     /// Select the given selection and move the caret to the appropriate point
     let SelectAndUpdateCaret textView (visualSelection : VisualSelection) =

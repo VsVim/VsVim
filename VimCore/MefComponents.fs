@@ -144,8 +144,9 @@ type internal TrackingLineColumn
 [<RequireQualifiedAccess>]
 type internal TrackingVisualSpan =
 
-    /// Tracks the raw character span
-    | Character of ITrackingSpan
+    /// Tracks the origin SnapshotPoint of the character span, the number of lines it 
+    /// composes of and the length of the span on the last line
+    | Character of ITrackingLineColumn * int * int
 
     /// Tracks the origin of the SnapshotLineRange and the number of lines it should comprise
     /// of
@@ -156,43 +157,35 @@ type internal TrackingVisualSpan =
 
     with
 
-    member x.TextBuffer =
+    member x.TrackingLineColumn =
         match x with
-        | Character trackingSpan -> trackingSpan.TextBuffer
-        | Line (trackingLineColumn, _) -> trackingLineColumn.TextBuffer
-        | Block (trackingLineColumn, _, _) -> trackingLineColumn.TextBuffer
+        | Character (trackingLineColumn, _, _) -> trackingLineColumn
+        | Line (trackingLineColumn, _) -> trackingLineColumn
+        | Block (trackingLineColumn, _, _) -> trackingLineColumn
+
+    member x.TextBuffer =
+        x.TrackingLineColumn.TextBuffer
 
     /// Calculate the VisualSpan against the current ITextSnapshot
     member x.VisualSpan = 
         let snapshot = x.TextBuffer.CurrentSnapshot
 
-        match x with
-        | Character trackingSpan ->
-            TrackingSpanUtil.GetSpan snapshot trackingSpan |> Option.map VisualSpan.Character
-        | Line (trackingLineColumn, count) ->
-            match trackingLineColumn.Point with 
-            | None ->
-                // Nothing else to do
-                None
-            | Some point ->
+        match x.TrackingLineColumn.Point with
+        | None ->
+            None
+        | Some point ->
+            match x with
+            | Character (_, lineCount, lastLineLength) ->
+                let characterSpan = CharacterSpan(point, lineCount, lastLineLength)
+                VisualSpan.Character characterSpan
+            | Line (_, count) ->
                 let line = SnapshotPointUtil.GetContainingLine point
                 SnapshotLineRangeUtil.CreateForLineAndMaxCount line count 
                 |> VisualSpan.Line
-                |> Some
-
-        | Block (trackingLineColumn, width, height) ->
-
-            match trackingLineColumn.Point with
-            | None -> 
-                // Nothing else to do
-                None
-            | Some point ->
-                let blockSpan = {
-                    StartPoint = point
-                    Width = width
-                    Height = height }
+            | Block (_, width, height) ->
+                let blockSpan = BlockSpan(point, width, height)
                 VisualSpan.Block blockSpan
-                |> Some
+            |> Some
 
     member x.Close() =
         match x with
@@ -202,11 +195,16 @@ type internal TrackingVisualSpan =
 
     static member Create (bufferTrackingService : IBufferTrackingService) visualSpan =
         match visualSpan with
-        | VisualSpan.Character span ->
-            // Implemented with an ITrackingSpan.  Experimentation shows this is best represented with
-            // EdgeExclusive as edits to the end of words don't appear to be counted
-            let trackingSpan = span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeExclusive)
-            TrackingVisualSpan.Character trackingSpan
+        | VisualSpan.Character characterSpan ->
+
+            // Implemented by tracking the start point of the SnapshotSpan, the number of lines
+            // in the span and the length of the final line
+            let textBuffer = characterSpan.Snapshot.TextBuffer
+            let trackingLineColumn = 
+                let line, column = SnapshotPointUtil.GetLineColumn characterSpan.Start
+                bufferTrackingService.CreateLineColumn textBuffer line column LineColumnTrackingMode.Default
+
+            TrackingVisualSpan.Character (trackingLineColumn, characterSpan.LineCount, characterSpan.LastLineLength)
 
         | VisualSpan.Line snapshotLineRange ->
 
@@ -221,7 +219,7 @@ type internal TrackingVisualSpan =
             // Setup an ITrackLineColumn at the top left of the block selection
             let trackingLineColumn =
                 let textBuffer = blockSpan.TextBuffer
-                let lineNumber, column = SnapshotPointUtil.GetLineColumn blockSpan.StartPoint
+                let lineNumber, column = SnapshotPointUtil.GetLineColumn blockSpan.Start
 
                 bufferTrackingService.CreateLineColumn textBuffer lineNumber column LineColumnTrackingMode.Default
 
