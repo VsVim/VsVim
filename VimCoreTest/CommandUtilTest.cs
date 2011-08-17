@@ -105,6 +105,66 @@ namespace VimCore.UnitTest
             Assert.IsTrue(data.Item2.IsInsertWithTransaction);
         }
 
+        /// <summary>
+        /// Helper to call GetNumberValueAtCaret and dig into the NumberValue which we care about
+        /// </summary>
+        private NumberValue GetNumberValueAtCaret()
+        {
+            var tuple = _commandUtil.GetNumberValueAtCaret();
+            Assert.IsTrue(tuple.IsSome());
+            return tuple.Value.Item1;
+        }
+
+        /// <summary>
+        /// Make sure we can do a very simple word add here
+        /// </summary>
+        [Test]
+        public void AddToWord_Decimal_Simple()
+        {
+            Create(" 1");
+            _commandUtil.AddToWord(1);
+            Assert.AreEqual(" 2", _textView.GetLine(0).GetText());
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Add with a count
+        /// </summary>
+        [Test]
+        public void AddToWord_Decimal_WithCount()
+        {
+            Create(" 1");
+            _commandUtil.AddToWord(3);
+            Assert.AreEqual(" 4", _textView.GetLine(0).GetText());
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// When alpha is not supported we should be jumping past words to add to the numbers
+        /// </summary>
+        [Test]
+        public void AddToWord_Decimal_PastWord()
+        {
+            Create("dog 1");
+            _localSettings.NumberFormats = "";
+            _commandUtil.AddToWord(1);
+            Assert.AreEqual("dog 2", _textView.GetLine(0).GetText());
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// When alpha is not supported we should be jumping past words to add to the numbers
+        /// </summary>
+        [Test]
+        public void AddToWord_Hex_PastWord()
+        {
+            Create("dog0x1");
+            _localSettings.NumberFormats = "hex";
+            _commandUtil.AddToWord(1);
+            Assert.AreEqual("dog0x2", _textView.GetLine(0).GetText());
+            Assert.AreEqual(5, _textView.GetCaretPoint().Position);
+        }
+
         [Test]
         public void ReplaceChar1()
         {
@@ -1386,6 +1446,76 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Simple decimal value that we have to jump over whitespace to get to
+        /// </summary>
+        [Test]
+        public void GetNumberValueAtCaret_Decimal_Simple()
+        {
+            Create(" 400");
+            Assert.AreEqual(NumberValue.NewDecimal(400), GetNumberValueAtCaret());
+        }
+
+        /// <summary>
+        /// Get the decimal number from the back of the value
+        /// </summary>
+        [Test]
+        public void GetNumberValueAtCaret_Decimal_FromBack()
+        {
+            Create(" 400");
+            _textView.MoveCaretTo(3);
+            Assert.AreEqual(NumberValue.NewDecimal(400), GetNumberValueAtCaret());
+        }
+
+        /// <summary>
+        /// Get the decimal number when there are mulitple choices
+        /// </summary>
+        [Test]
+        public void GetNumberValueAtCaret_Decimal_MultipleChoices()
+        {
+            Create(" 400 42");
+            _textView.MoveCaretTo(4);
+            Assert.AreEqual(NumberValue.NewDecimal(42), GetNumberValueAtCaret());
+        }
+
+        /// <summary>
+        /// When hex is not supported and we are at the end of the hex number then we should
+        /// be looking at the trailing hex as a non-hex number
+        /// </summary>
+        [Test]
+        public void GetNumberValueAtCaret_Decimal_TrailingPortionOfHex()
+        {
+            Create(" 400 0x42");
+            _localSettings.NumberFormats = "alpha";
+            _textView.MoveCaretTo(8);
+            Assert.AreEqual(NumberValue.NewDecimal(42), GetNumberValueAtCaret());
+        }
+
+        /// <summary>
+        /// When alpha is not one of the supported formats we should be jumping past letters
+        /// to get to number values
+        /// </summary>
+        [Test]
+        public void GetNumberValueAtCaret_Decimal_GoPastWord()
+        {
+            Create("dog13");
+            _localSettings.NumberFormats = String.Empty;
+            Assert.AreEqual(NumberValue.NewDecimal(13), GetNumberValueAtCaret());
+        }
+
+        /// <summary>
+        /// Get the hex number when there are mulitple choices.  Hex should win over
+        /// decimal when both are supported
+        /// </summary>
+        [Test]
+        public void GetNumberValueAtCaret_Hex_MultipleChoices()
+        {
+            Create(" 400 0x42");
+            _localSettings.NumberFormats = "hex";
+            _textView.MoveCaretTo(8);
+            Assert.AreEqual(NumberValue.NewHex(0x42), GetNumberValueAtCaret());
+        }
+
+        /// <summary>
         /// Make sure caret starts at the begining of the line when there is no auto-indent
         /// </summary>
         [Test]
@@ -1715,6 +1845,19 @@ namespace VimCore.UnitTest
                     _textView.GetLine(2).Start
                 });
             Assert.AreEqual(0, _jumpList.CurrentIndex.Value);
+        }
+
+        /// <summary>
+        /// When alpha is not supported we should be jumping past words to subtract to the numbers
+        /// </summary>
+        [Test]
+        public void SubtractFromWord_Hex_PastWord()
+        {
+            Create("dog0x2");
+            _localSettings.NumberFormats = "hex";
+            _commandUtil.SubtractFromWord(1);
+            Assert.AreEqual("dog0x1", _textView.GetLine(0).GetText());
+            Assert.AreEqual(5, _textView.GetCaretPoint().Position);
         }
 
         /// <summary>

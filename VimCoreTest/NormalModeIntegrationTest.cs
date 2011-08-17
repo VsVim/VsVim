@@ -98,6 +98,45 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Make sure we jump across the blanks to get to the word and that the caret is 
+        /// properly positioned
+        /// </summary>
+        [Test]
+        public void AddToWord_Decimal()
+        {
+            Create(" 999");
+            _buffer.Process(KeyInputUtil.CharWithControlToKeyInput('a'));
+            Assert.AreEqual(" 1000", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Negative decimal number
+        /// </summary>
+        [Test]
+        public void AddToWord_Decimal_Negative()
+        {
+            Create(" -10");
+            _buffer.Process(KeyInputUtil.CharWithControlToKeyInput('a'));
+            Assert.AreEqual(" -9", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Add to the word on the non-first line.  Ensures we are calculating the replacement span
+        /// in the correct location
+        /// </summary>
+        [Test]
+        public void AddToWord_Hex_SecondLine()
+        {
+            Create("hello", "  0x42");
+            _textView.MoveCaretToLine(1);
+            _buffer.Process(KeyInputUtil.CharWithControlToKeyInput('a'));
+            Assert.AreEqual("  0x43", _textBuffer.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetLine(1).Start.Add(5), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
         /// Test the repeat of a repeated command.  Essentially ensure the act of repeating doesn't
         /// disturb the cached LastCommand value
         /// </summary>
@@ -2821,6 +2860,18 @@ namespace VimCore.UnitTest
             Assert.AreEqual(2, _jumpList.Jumps.Length);
             _buffer.Process(KeyInputUtil.CharWithControlToKeyInput('i'));
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Subtract a negative decimal number
+        /// </summary>
+        [Test]
+        public void SubtractFromWord_Decimal_Negative()
+        {
+            Create(" -10");
+            _buffer.Process(KeyInputUtil.CharWithControlToKeyInput('x'));
+            Assert.AreEqual(" -11", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
         }
 
         /// <summary>

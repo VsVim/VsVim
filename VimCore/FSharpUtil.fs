@@ -239,6 +239,7 @@ module internal MapUtil =
     let keys (map:Map<'TKey,'TValue>) = map |> Seq.map (fun pair -> pair.Key)
 
 module internal CharUtil =
+
     let MinValue = System.Char.MinValue
     let IsDigit x = System.Char.IsDigit(x)
     let IsWhiteSpace x = System.Char.IsWhiteSpace(x)
@@ -250,6 +251,7 @@ module internal CharUtil =
 
     /// Is this a non-blank character in Vim
     let IsNotBlank x = not (IsBlank x)
+    let IsAlpha x = (x >= 'a' && x <= 'z') || (x >= 'A' && x <= 'Z')
     let IsLetter x = System.Char.IsLetter(x)
     let IsUpper x = System.Char.IsUpper(x)
     let IsUpperLetter x = IsUpper x && IsLetter x
@@ -291,6 +293,27 @@ module internal CharUtil =
             WhiteSpace
         else
             NonWhiteSpace
+
+    /// Add 'count' to the given alpha value (a-z) and preserve case.  If the count goes
+    /// past the a-z range then a or z will be returned
+    let AlphaAdd count c =
+        let isUpper = IsUpper c
+        let number = 
+            let c = ToLower c
+            let index = (int c) - (int 'a')
+            index + count 
+
+        let upperBound, lowerBound = 
+            if isUpper then 
+                'A', 'Z'
+            else 
+                'a', 'z'
+        if number < 0 then 
+            lowerBound
+        elif number >= 26 then 
+            upperBound
+        else
+            char ((int lowerBound) + number) 
 
 module internal NullableUtil = 
 

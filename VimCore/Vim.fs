@@ -169,7 +169,7 @@ type internal VimBufferFactory
                 (ExternalEditMode(buffer) :> IMode)
             ] @ visualModeList
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
-        buffer.SwitchMode ModeKind.Normal ModeArgument.None |> ignore
+        buffer.SwitchMode vimTextBuffer.ModeKind ModeArgument.None |> ignore
         bufferRaw
 
     interface IVimBufferFactory with

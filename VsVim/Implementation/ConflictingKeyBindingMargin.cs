@@ -106,6 +106,5 @@ namespace VsVim.Implementation
         }
 
         #endregion
-
     }
 }

@@ -1081,6 +1081,9 @@ type PingData (_func : CommandData -> CommandResult) =
 [<NoComparison>]
 type NormalCommand = 
 
+    /// Add 'count' to the word close to the caret
+    | AddToWord
+
     /// Deletes the text specified by the motion and begins insert mode. Implements the "c" 
     /// command
     | ChangeMotion of MotionData
@@ -1294,6 +1297,9 @@ type NormalCommand =
 
     /// Substitute the character at the cursor
     | SubstituteCharacterAtCaret
+
+    /// Subtract 'count' from the word at the caret
+    | SubtractFromWord
 
     /// Switch modes with the specified information
     | SwitchMode of ModeKind * ModeArgument
@@ -2101,6 +2107,7 @@ module LocalSettingNames =
     let AutoIndentName = "autoindent"
     let ExpandTabName = "expandtab"
     let NumberName = "number"
+    let NumberFormatsName = "nrformats"
     let TabStopName = "tabstop"
     let QuoteEscapeName = "quoteescape"
 
@@ -2108,6 +2115,14 @@ module WindowSettingNames =
 
     let CursorLineName = "cursorline"
     let ScrollName = "scroll"
+
+/// Types of number formats supported by CTRL-A CTRL-A
+[<RequireQualifiedAccess>]
+type NumberFormat =
+    | Alpha
+    | Decimal
+    | Hex
+    | Octal
 
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property
@@ -2235,11 +2250,17 @@ and IVimLocalSettings =
     /// Whether or not to put the numbers on the left column of the display
     abstract Number : bool with get, set
 
+    /// Fromats that vim considers a number for CTRL-A and CTRL-X
+    abstract NumberFormats : string with get, set
+
     /// How many spaces a tab counts for 
     abstract TabStop : int with get, set
 
     /// Which characters escape quotes for certain motion types
     abstract QuoteEscape : string with get, set
+
+    /// Is the provided NumberFormat supported by the current options
+    abstract IsNumberFormatSupported : NumberFormat -> bool
 
     inherit IVimSettings
 

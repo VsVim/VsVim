@@ -64,6 +64,42 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region NumberValue
+
+        /// <summary>
+        /// Convert the NumberValue to the Decimal form
+        /// </summary>
+        internal static NumberValue.Decimal AsDecimal(this NumberValue numberValue)
+        {
+            return (NumberValue.Decimal)numberValue;
+        }
+
+        /// <summary>
+        /// Convert the NumberValue to the Hex form
+        /// </summary>
+        internal static NumberValue.Hex AsHex(this NumberValue numberValue)
+        {
+            return (NumberValue.Hex)numberValue;
+        }
+
+        /// <summary>
+        /// Convert the NumberValue to the Octal form
+        /// </summary>
+        internal static NumberValue.Octal AsOctal(this NumberValue numberValue)
+        {
+            return (NumberValue.Octal)numberValue;
+        }
+
+        /// <summary>
+        /// Convert the NumberValue to the Alpha form
+        /// </summary>
+        internal static NumberValue.Alpha AsAlpha(this NumberValue numberValue)
+        {
+            return (NumberValue.Alpha)numberValue;
+        }
+
+        #endregion
+
         #region ModeSwitch
 
         public static bool IsSwitchMode(this ModeSwitch mode, ModeKind kind)

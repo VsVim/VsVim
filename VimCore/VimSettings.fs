@@ -242,11 +242,12 @@ type internal LocalSettings
 
     static let LocalSettingInfo =
         [|
-            (AutoIndentName, "ai", ToggleKind, ToggleValue(false))
-            (ExpandTabName, "et", ToggleKind, ToggleValue(false))
-            (NumberName, "nu", ToggleKind, ToggleValue(false))
-            (TabStopName, "ts", NumberKind, NumberValue(8))
-            (QuoteEscapeName, "qe", StringKind, StringValue(@"\"))
+            (AutoIndentName, "ai", ToggleKind, ToggleValue false)
+            (ExpandTabName, "et", ToggleKind, ToggleValue false)
+            (NumberName, "nu", ToggleKind, ToggleValue false)
+            (NumberFormatsName, "nf", StringKind, StringValue "octal,hex")
+            (TabStopName, "ts", NumberKind, NumberValue 8)
+            (QuoteEscapeName, "qe", StringKind, StringValue @"\")
         |]
 
     let _map = SettingsMap(LocalSettingInfo, false)
@@ -259,6 +260,25 @@ type internal LocalSettings
         |> Seq.filter (fun s -> not s.IsGlobal && not s.IsValueCalculated)
         |> Seq.iter (fun s -> copy.Map.TrySetValue s.Name s.Value |> ignore)
         copy :> IVimLocalSettings
+
+    member x.IsNumberFormatSupported numberFormat =
+
+        // The format is supported if the name is in the comma delimited value
+        let isSupported format = 
+            _map.GetStringValue NumberFormatsName
+            |> StringUtil.split ','
+            |> Seq.exists (fun value -> value = format)
+
+        match numberFormat with
+        | NumberFormat.Decimal ->
+            // This is always supported independent of the option value
+            true
+        | NumberFormat.Octal ->
+            isSupported "octal"
+        | NumberFormat.Hex ->
+            isSupported "hex"
+        | NumberFormat.Alpha ->
+            isSupported "alpha"
 
     interface IVimLocalSettings with 
         // IVimSettings
@@ -284,12 +304,17 @@ type internal LocalSettings
         member x.Number
             with get() = _map.GetBoolValue NumberName
             and set value = _map.TrySetValue NumberName (ToggleValue value) |> ignore
+        member x.NumberFormats
+            with get() = _map.GetStringValue NumberFormatsName
+            and set value = _map.TrySetValue NumberFormatsName (StringValue value) |> ignore
         member x.TabStop
             with get() = _map.GetNumberValue TabStopName
             and set value = _map.TrySetValue TabStopName (NumberValue value) |> ignore
         member x.QuoteEscape
             with get() = _map.GetStringValue QuoteEscapeName
             and set value = _map.TrySetValue QuoteEscapeName (StringValue value) |> ignore
+
+        member x.IsNumberFormatSupported numberFormat = x.IsNumberFormatSupported numberFormat
 
         [<CLIEvent>]
         member x.SettingChanged = _map.SettingChanged

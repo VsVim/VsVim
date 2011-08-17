@@ -158,6 +158,19 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// When creating an IVimBuffer instance, if there is an existing IVimTextBuffer then
+        /// the mode should be taken from that
+        /// </summary>
+        [Test]
+        public void GetOrCreateVimBuffer_InitialMode()
+        {
+            var textView = EditorUtil.CreateTextView("");
+            _vim.GetOrCreateVimTextBuffer(textView.TextBuffer).SwitchMode(ModeKind.Insert, ModeArgument.None);
+            var buffer = _vim.GetOrCreateVimBuffer(textView);
+            Assert.AreEqual(ModeKind.Insert, buffer.ModeKind);
+        }
+
+        /// <summary>
         /// Make sure the result of this call is cached and that only one is ever created
         /// for a given ITextBuffer
         /// </summary>

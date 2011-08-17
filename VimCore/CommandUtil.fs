@@ -6,6 +6,25 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Outlining
+open RegexPatternUtil
+
+[<RequireQualifiedAccess>]
+[<NoComparison>]
+[<StructuralEquality>]
+type internal NumberValue = 
+    | Decimal of int
+    | Octal of int
+    | Hex of int
+    | Alpha of char
+
+    with
+
+    member x.NumberFormat = 
+        match x with
+        | Decimal _ -> NumberFormat.Decimal
+        | Octal _ -> NumberFormat.Octal
+        | Hex _ -> NumberFormat.Hex
+        | Alpha _ -> NumberFormat.Alpha
 
 /// This type houses the functionality behind a large set of the available
 /// Vim commands.
@@ -69,6 +88,34 @@ type internal CommandUtil
 
     /// The current ITextSnapshot instance for the ITextBuffer
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
+
+    /// Add count values to the specific word
+    member x.AddToWord count = 
+
+        let allowAlpha = _localSettings.IsNumberFormatSupported NumberFormat.Alpha
+        match x.GetNumberValueAtCaret() with
+        | None ->
+            _operations.Beep()
+        | Some (numberValue, span) ->
+
+            // Calculate te new value of the number 
+            let text = 
+                match numberValue with
+                | NumberValue.Alpha c -> c |> CharUtil.AlphaAdd count |> StringUtil.ofChar
+                | NumberValue.Decimal number -> sprintf "%d" (number + count)
+                | NumberValue.Octal number -> sprintf "0%o" (number + count)
+                | NumberValue.Hex number -> sprintf "0x%x" (number + count)
+
+            // Need a transaction here in order to properly position the caret.  After the
+            // add the caret needs to be positioned on the last character in the number
+            x.EditWithUndoTransaciton "Add" (fun () -> 
+
+                _textBuffer.Replace(span.Span, text) |> ignore
+
+                let position = span.Start.Position + text.Length - 1
+                TextViewUtil.MoveCaretToPosition _textView position)
+
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Calculate the new RegisterValue for the provided one for put with indent
     /// operations.
@@ -847,6 +894,103 @@ type internal CommandUtil
     member x.FormatMotion (result : MotionResult) = 
         _operations.FormatLines result.LineRange
         CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Get the number value at the caret.  This is used for the CTRL-A and CTRL-X
+    /// command so it will look forward on the current line for the first word
+    member x.GetNumberValueAtCaret() : (NumberValue * SnapshotSpan) option= 
+
+        // Calculate the forward span of the line
+        let span = 
+            let startPoint = 
+                SnapshotPointUtil.OrderAscending x.CaretPoint x.CaretLine.End
+                |> fst
+            SnapshotSpan(startPoint, x.CaretLine.End)
+
+        // Get the number match out of the line with the given regex 
+        let getNumber numberValue numberPattern parseFunc = 
+
+            // Need to calculate the index on which to start looking for the number.  Move
+            // past blanks as they don't factor in here
+            let index = 
+                span
+                |> SnapshotSpanUtil.GetPoints Path.Forward
+                |> Seq.skipWhile (fun point -> 
+                    if _localSettings.IsNumberFormatSupported(NumberFormat.Alpha) then
+                        SnapshotPointUtil.IsBlank point
+                    else
+                        point |> SnapshotPointUtil.GetChar |> CharUtil.IsDigit |> not)
+                |> SeqUtil.headOrDefault span.End
+                |> SnapshotPointUtil.GetColumn
+
+            let text = SnapshotLineUtil.GetText x.CaretLine
+            System.Text.RegularExpressions.Regex.Matches(text, numberPattern)
+            |> Seq.cast<System.Text.RegularExpressions.Match>
+            |> Seq.tryFind (fun m -> index >= m.Index && index < (m.Index + m.Length))
+            |> Option.map (fun m -> 
+                let span = SnapshotSpan(x.CurrentSnapshot, x.CaretLine.Start.Position + m.Index, m.Length)
+                let succeeded, number = parseFunc m.Value
+                if succeeded then
+                    Some (numberValue number, span)
+                else    
+                    None)
+            |> OptionUtil.collapse
+
+        // Get the point for a decimal number
+        let getDecimal () =
+            getNumber NumberValue.Decimal "(-?)\d+" (fun text -> System.Int32.TryParse(text))
+
+        // Get the point for a hex number
+        let getHex () =
+            getNumber NumberValue.Hex "(-?)0x\d+" (fun text -> 
+                let isNegative, text = 
+                    if text.[0] = '-' then
+                        true, text.Substring(3)
+                    else
+                        false, text.Substring(2)
+                let succeeded, number = System.Int32.TryParse(text, System.Globalization.NumberStyles.AllowHexSpecifier, System.Globalization.CultureInfo.CurrentCulture)
+                let number = 
+                    if succeeded && isNegative then
+                        -number
+                    else
+                        number
+                succeeded, number)
+
+        let getOctal () =
+            //getNumber = "0(0*)\d+"
+            None
+
+        let number = 
+            [ 
+                (getHex, NumberFormat.Hex)
+                (getOctal, NumberFormat.Octal)
+                (getDecimal, NumberFormat.Decimal)
+            ]
+            |> Seq.map (fun (func, numberFormat) ->
+                match _localSettings.IsNumberFormatSupported numberFormat, func() with
+                | false, _ ->
+                    None
+                | true, None ->
+                    None
+                | true, Some tuple ->
+                    Some tuple)
+            |> SeqUtil.filterToSome
+            |> SeqUtil.tryHeadOnly
+
+        match number with
+        | Some _ ->
+            number
+        | None ->
+            if _localSettings.IsNumberFormatSupported NumberFormat.Alpha then
+                // Now check for alpha by going forward to the first alpha character
+                span
+                |> SnapshotSpanUtil.GetPoints Path.Forward
+                |> Seq.skipWhile (fun point -> point |> SnapshotPointUtil.GetChar |> CharUtil.IsAlpha |> not)
+                |> Seq.map (fun point -> 
+                    let c = point.GetChar()
+                    NumberValue.Alpha c, SnapshotSpan(point, 1))
+                |> SeqUtil.tryHeadOnly
+            else
+                None
 
     /// Go to the definition of the word under the caret
     member x.GoToDefinition () =
@@ -1719,6 +1863,7 @@ type internal CommandUtil
         let register = _registerMap.GetRegister data.RegisterNameOrDefault
         let count = data.CountOrDefault
         match command with
+        | NormalCommand.AddToWord -> x.AddToWord count
         | NormalCommand.ChangeMotion motion -> x.RunWithMotion motion (x.ChangeMotion register)
         | NormalCommand.ChangeCaseCaretLine kind -> x.ChangeCaseCaretLine kind
         | NormalCommand.ChangeCaseCaretPoint kind -> x.ChangeCaseCaretPoint kind count
@@ -1779,6 +1924,7 @@ type internal CommandUtil
         | NormalCommand.ScrollCaretLineToMiddle keepCaretColumn -> x.ScrollCaretLineToMiddle keepCaretColumn
         | NormalCommand.ScrollCaretLineToBottom keepCaretColumn -> x.ScrollCaretLineToBottom keepCaretColumn
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count register
+        | NormalCommand.SubtractFromWord -> x.SubtractFromWord count
         | NormalCommand.ShiftLinesLeft -> x.ShiftLinesLeft count
         | NormalCommand.ShiftLinesRight -> x.ShiftLinesRight count
         | NormalCommand.ShiftMotionLinesLeft motion -> x.RunWithMotion motion x.ShiftMotionLinesLeft
@@ -2083,6 +2229,10 @@ type internal CommandUtil
                 // Put the deleted text into the specified register
                 let value = RegisterValue.String (StringData.OfSpan span, OperationKind.CharacterWise)
                 _registerMap.SetRegisterValue register RegisterOperation.Delete value)
+
+    /// Subtract 'count' values from the word under the caret
+    member x.SubtractFromWord count =
+        x.AddToWord -count
 
     /// Switch to the given mode
     member x.SwitchMode modeKind modeArgument = 
