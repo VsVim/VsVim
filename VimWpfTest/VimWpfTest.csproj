@@ -105,6 +105,7 @@
     <Compile Include="BlockCaretControllerTest.cs" />
     <Compile Include="BlockCaretTest.cs" />
     <Compile Include="CommandMarginControllerTest.cs" />
+    <Compile Include="DisplayWindowBrokerTest.cs" />
     <Compile Include="KeyboardDeviceImplTest.cs" />
     <Compile Include="KeyboardMapTest.cs" />
     <Compile Include="KeyProcessorTest.cs" />

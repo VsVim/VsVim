@@ -17,7 +17,7 @@ module internal TextUtil =
     let IsWordChar kind c =
         match kind with
         | WordKind.BigWord -> IsBigWordChar c
-        | WordKind.NormalWord -> IsNormalWordChar c || IsNormalWordOtherChar c
+        | WordKind.NormalWord -> IsNormalWordChar c 
 
     /// Get the word spans on the input in the given direction
     let GetWordSpans kind path input =

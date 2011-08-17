@@ -143,6 +143,11 @@ namespace Vim.UnitTest.Mock
             get { throw new NotImplementedException(); }
         }
 
+        public IVimGlobalSettings GlobalSettings
+        {
+            get { throw new NotImplementedException(); }
+        }
+
         public void RaiseSwitchedMode(IMode mode)
         {
             RaiseSwitchedMode(new SwitchModeEventArgs(FSharpOption<IMode>.None, mode));
@@ -359,6 +364,17 @@ namespace Vim.UnitTest.Mock
         public bool CanProcessAsCommand(KeyInput value)
         {
             throw new NotImplementedException();
+        }
+
+
+        public IVimTextBuffer VimTextBuffer
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        public IVimWindowSettings WindowSettings
+        {
+            get { throw new NotImplementedException(); }
         }
     }
 }

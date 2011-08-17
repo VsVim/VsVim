@@ -10,7 +10,7 @@ using Vim.UnitTest.Mock;
 namespace Vim.UI.Wpf.Test
 {
     [TestFixture]
-    public class CommandMarginControllerTest
+    public sealed class CommandMarginControllerTest
     {
         private MockVimBuffer _buffer;
         private CommandMarginControl _marginControl;

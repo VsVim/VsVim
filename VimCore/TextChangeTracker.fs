@@ -10,10 +10,9 @@ open System.ComponentModel.Composition
 /// Used to track changes to an individual IVimBuffer
 type internal TextChangeTracker
     ( 
-        _buffer : IVimBuffer,
-        _operations : ICommonOperations,
-        _keyboard : IKeyboardDevice,
-        _mouse : IMouseDevice ) as this =
+        _textView : ITextView,
+        _operations : ICommonOperations
+    ) as this =
 
     let _bag = DisposableBag()
     let _changeCompletedEvent = Event<TextChange>()
@@ -21,52 +20,45 @@ type internal TextChangeTracker
     /// Tracks the current active text change.  This will grow as the user edits
     let mutable _currentTextChange : (TextChange * ITextChange) option = None
 
-    do
-        // Listen to the events which are relevant to changes.  Make sure to undo them when 
-        // the buffer closes
+    /// Whether or not tracking is currently enabled
+    let mutable _enabled = false
 
-        // Ignore changes which do not happen on focused windows.  Doing otherwise allows
-        // random tools to break this feature.  
-        // 
-        // We also cannot process a text change while we are processing input.  Otherwise text
-        // changes which are made as part of a command will be processed as user input.  This 
-        // breaks the "." operator.  The one exception is the processing of text input which
-        // signifies a user change
-        //
-        // TODO: Maybe the above would be better served by just checking to see if we're in a
-        // repeat and logging based on that
-        _buffer.TextBuffer.Changed 
-        |> Observable.filter (fun _ -> _buffer.TextView.HasAggregateFocus || _buffer.ModeKind = ModeKind.Insert || _buffer.ModeKind = ModeKind.Replace)
-        |> Observable.filter (fun _ -> (not _buffer.IsProcessingInput) || _buffer.InsertMode.IsProcessingDirectInsert || _buffer.ReplaceMode.IsProcessingDirectInsert)
+    do
+        // Listen to text buffer change events in order to track edits.  Don't respond to changes
+        // while disabled though
+        _textView.TextBuffer.Changed
+        |> Observable.filter (fun _ -> _enabled)
         |> Observable.subscribe (fun args -> this.OnTextChanged args)
         |> _bag.Add
 
-        // Caret changes can end an edit
-        _buffer.TextView.Caret.PositionChanged
-        |> Observable.subscribe (fun _ -> this.OnCaretPositionChanged() )
-        |> _bag.Add
-
-        // Mode switches end the current edit
-        _buffer.SwitchedMode 
-        |> Observable.subscribe (fun _ -> this.ChangeCompleted())
-        |> _bag.Add
-
-        _buffer.Closed |> Event.add (fun _ -> _bag.DisposeAll())
+        _textView.Closed 
+        |> Event.add (fun _ -> _bag.DisposeAll())
 
     member x.CurrentChange = 
         match _currentTextChange with
         | None -> None
-        | Some(change,_) -> Some change
+        | Some (change,_) -> Some change
+
+    member x.Enabled 
+        with get () = _enabled
+        and set value = 
+            if _enabled <> value then
+                _currentTextChange <- None
+                _enabled <- value
 
     /// The change is completed.  Raises the changed event and resets the current text change 
     /// state
-    member x.ChangeCompleted() = 
+    member x.CompleteChange() = 
         match _currentTextChange with
         | None -> 
             ()
         | Some (change,_) -> 
             _currentTextChange <- None
             _changeCompletedEvent.Trigger change
+
+    /// Clear out the current change without completing it
+    member x.ClearChange() =
+        _currentTextChange <- None
 
     /// Convert the ITextChange value into a TextChange instance.  This will not handle any special 
     /// edit patterns and simply does a raw adjustment
@@ -116,7 +108,7 @@ type internal TextChangeTracker
             | None -> _currentTextChange <- Some (newTextChange, newBufferChange)
             | Some (oldTextChange, oldBufferChange) -> x.MergeChange oldTextChange oldBufferChange newTextChange newBufferChange 
         else
-            x.ChangeCompleted()
+            x.CompleteChange()
 
     /// Attempt to merge the change operations together
     member x.MergeChange oldTextChange (oldChange : ITextChange) newTextChange (newChange : ITextChange) =
@@ -147,26 +139,17 @@ type internal TextChangeTracker
         else
             // If we can't merge then the previous change is complete and we can switch our focus to 
             // the new TextChange value
-            x.ChangeCompleted()
+            x.CompleteChange()
             _currentTextChange <- Some (newTextChange, newChange)
 
-
-    /// This is raised when caret changes.  If this is the result of a user click then 
-    /// we need to complete the change.
-    member x.OnCaretPositionChanged () = 
-        if _mouse.IsLeftButtonPressed then 
-            x.ChangeCompleted()
-        elif _buffer.ModeKind = ModeKind.Insert then 
-            let keyMove = 
-                [ VimKey.Left; VimKey.Right; VimKey.Up; VimKey.Down ]
-                |> Seq.map (fun k -> KeyInputUtil.VimKeyToKeyInput k)
-                |> Seq.filter (fun k -> _keyboard.IsKeyDown k.Key)
-                |> SeqUtil.isNotEmpty
-            if keyMove then x.ChangeCompleted()
-
     interface ITextChangeTracker with 
-        member x.VimBuffer = _buffer
+        member x.TextView = _textView
+        member x.Enabled 
+            with get () = x.Enabled
+            and set value = x.Enabled <- value
         member x.CurrentChange = x.CurrentChange
+        member x.CompleteChange () = x.CompleteChange ()
+        member x.ClearChange () = x.ClearChange ()
         [<CLIEvent>]
         member x.ChangeCompleted = _changeCompletedEvent.Publish
 
@@ -174,15 +157,14 @@ type internal TextChangeTracker
 type internal TextChangeTrackerFactory 
     [<ImportingConstructor>]
     (
-        _keyboardDevice : IKeyboardDevice,
-        _mouseDevice : IMouseDevice,
         _commonOperationsFactory : ICommonOperationsFactory
     )  =
 
     let _key = System.Object()
     
     interface ITextChangeTrackerFactory with
-        member x.GetTextChangeTracker (vimBuffer : IVimBuffer) = 
-            vimBuffer.Properties.GetOrCreateSingletonProperty(_key, fun () -> 
-                let operations = _commonOperationsFactory.GetCommonOperations vimBuffer.VimBufferData
-                TextChangeTracker(vimBuffer, operations, _keyboardDevice, _mouseDevice) :> ITextChangeTracker )
+        member x.GetTextChangeTracker (bufferData : VimBufferData) =
+            let textView = bufferData.TextView
+            textView.Properties.GetOrCreateSingletonProperty(_key, (fun () -> 
+                let operations = _commonOperationsFactory.GetCommonOperations bufferData
+                TextChangeTracker(textView, operations) :> ITextChangeTracker))

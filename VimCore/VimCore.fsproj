@@ -89,12 +89,16 @@
     <Compile Include="IncrementalSearch.fs" />
     <Compile Include="CommandUtil.fsi" />
     <Compile Include="CommandUtil.fs" />
+    <Compile Include="InsertUtil.fsi" />
+    <Compile Include="InsertUtil.fs" />
     <Compile Include="Tagger.fsi" />
     <Compile Include="Tagger.fs" />
     <Compile Include="SelectionChangeTracker.fsi" />
     <Compile Include="SelectionChangeTracker.fs" />
     <Compile Include="FoldManager.fsi" />
     <Compile Include="FoldManager.fs" />
+    <Compile Include="VimTextBuffer.fsi" />
+    <Compile Include="VimTextBuffer.fs" />
     <Compile Include="VimBuffer.fsi" />
     <Compile Include="VimBuffer.fs" />
     <Compile Include="MotionUtil.fsi" />
@@ -125,6 +129,7 @@
     <Compile Include="StatusUtil.fs" />
     <Compile Include="TextChangeTracker.fsi" />
     <Compile Include="TextChangeTracker.fs" />
+    <Compile Include="MefComponents.fsi" />
     <Compile Include="MefComponents.fs" />
     <Compile Include="FSharpExtensions.fs" />
     <Compile Include="AssemblyInfo.fs" />
@@ -135,10 +140,6 @@
     </Reference>
     <Reference Include="Microsoft.VisualStudio.CoreUtility">
       <HintPath>..\References\Microsoft.VisualStudio.CoreUtility.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.VisualStudio.Language.Intellisense">
-      <HintPath>C:\Users\jaredpar\VsVim\References\Microsoft.VisualStudio.Language.Intellisense.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.Text.Data">

@@ -105,7 +105,7 @@ namespace VsVim.UnitTest
             Create();
             var ct = EditorUtil.GetOrCreateContentType(VsVim.Constants.CPlusPlusContentType, "code");
             var textView = EditorUtil.CreateTextView(ct, "hello world");
-            var wordUtil = EditorUtil.FactoryService.WordUtilFactory.GetWordUtil(textView);
+            var wordUtil = EditorUtil.FactoryService.WordUtilFactory.GetWordUtil(textView.TextBuffer);
             _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, "hello"));
             Assert.IsTrue(_host.GoToDefinition());

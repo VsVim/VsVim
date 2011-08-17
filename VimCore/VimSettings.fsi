@@ -12,10 +12,14 @@ type internal GlobalSettings =
 type internal LocalSettings = 
     interface IVimLocalSettings
     new : IVimGlobalSettings -> LocalSettings
-    new : IVimGlobalSettings * IEditorOptions -> LocalSettings
-    new : IVimGlobalSettings * IEditorOptions * ITextView -> LocalSettings
 
     static member Copy : IVimLocalSettings -> IVimLocalSettings
 
+type internal WindowSettings = 
+    interface IVimWindowSettings
+    new : IVimGlobalSettings -> WindowSettings
+    new : IVimGlobalSettings * ITextView -> WindowSettings
+
+    static member Copy : IVimWindowSettings -> IVimWindowSettings
 
 

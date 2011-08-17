@@ -9,26 +9,26 @@ module internal RegexPatternUtil =
     let (|MatchAll|_|) (pat:string) (input:string) = 
         let m = Regex.Match(input,pat) 
         match m.Success with
-            | false -> None
-            | true -> Some ([for g in m.Groups -> g.Value])
+        | false -> None
+        | true -> Some ([for g in m.Groups -> g.Value])
         
     let (|Match1|_|) (pat:string) (input:string) = 
         let m = Regex.Match(input,pat)
         match m.Success && m.Groups.Count=1 with
-            | false -> None
-            | true -> Some (group m 0)
+        | false -> None
+        | true -> Some (group m 0)
             
     let (|Match2|_|) (pat:string) (input:string) = 
         let m = Regex.Match(input,pat)
         match m.Success && m.Groups.Count=2 with
-            | false -> None
-            | true -> Some ((group m 0),(group m 1))
+        | false -> None
+        | true -> Some ((group m 0),(group m 1))
 
     let (|Match3|_|) (pat:string) (input:string) = 
         let m = Regex.Match(input,pat)
         match m.Success && m.Groups.Count=3 with
-            | false -> None
-            | true -> Some ((group m 0),(group m 1),(group m 2))
+        | false -> None
+        | true -> Some ((group m 0),(group m 1),(group m 2))
 
 
 /// APIs to make it easy to integrate Regex's into the Editor APIs

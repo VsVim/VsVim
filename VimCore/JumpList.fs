@@ -8,7 +8,7 @@ open System.Collections.Generic
 /// window
 type internal JumpList 
     ( 
-        _trackingLineColumnService : ITrackingLineColumnService
+        _bufferTrackingService : IBufferTrackingService
     ) =  
 
     /// The limit of items in the jump list is 100.  See ':help jumplist'
@@ -73,7 +73,7 @@ type internal JumpList
 
             match node with
             | None -> 
-                _trackingLineColumnService.Create textBuffer line column LineColumnTrackingMode.SurviveDeletes
+                _bufferTrackingService.CreateLineColumn textBuffer line column LineColumnTrackingMode.SurviveDeletes
             | Some node ->
                 _list.Remove(node) |> ignore
                 node.Value

@@ -24,7 +24,6 @@ namespace VimCore.UnitTest
         private IRegisterMap _map;
         private IVimData _vimData;
         private IVimGlobalSettings _globalSettings;
-        private IVimLocalSettings _localSettings;
         private MockRepository _factory;
         private Mock<IVimBuffer> _buffer;
         private Mock<ICommonOperations> _operations;
@@ -76,11 +75,9 @@ namespace VimCore.UnitTest
             _vimData = new VimData();
 
             _globalSettings = new Vim.GlobalSettings();
-            _localSettings = new LocalSettings(_globalSettings, EditorUtil.GetEditorOptions(_textView), _textView);
             motionUtil = motionUtil ?? VimUtil.CreateTextViewMotionUtil(
                 _textView,
-                new MarkMap(new TrackingLineColumnService()),
-                _localSettings);
+                new MarkMap(new BufferTrackingService()));
             _buffer = MockObjectFactory.CreateVimBuffer(
                 _textView,
                 "test",
@@ -88,7 +85,7 @@ namespace VimCore.UnitTest
                 _jumpList.Object,
                 incrementalSearch: _incrementalSearch.Object,
                 motionUtil: motionUtil,
-                settings: _localSettings);
+                settings: VimUtil.CreateLocalSettings(_globalSettings));
             _operations = _factory.Create<ICommonOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _operations.SetupGet(x => x.TextView).Returns(_textView);
@@ -97,7 +94,7 @@ namespace VimCore.UnitTest
                 _host.Object,
                 _textView,
                 _incrementalSearch.Object,
-                new LocalSettings(new GlobalSettings(), EditorUtil.GetEditorOptions(_textView), _textView));
+                new LocalSettings(new GlobalSettings()));
             var runner = new CommandRunner(_textView, _map, capture, _commandUtil.Object, _statusUtil.Object, VisualKind.Character);
             _modeRaw = new NormalMode(
                 _buffer.Object,

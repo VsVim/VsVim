@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Vim.UnitTest;
 using VsVim.Implementation;
 using VsVim.UnitTest.Utils;
@@ -13,7 +14,7 @@ namespace VsVim.UnitTest
     [TestFixture]
     public sealed class VsIntegrationTest
     {
-        private VisualStudioSimulation _simulation;
+        private VsSimulation _simulation;
         private ITextView _textView;
         private IVimBuffer _buffer;
         private IVimBufferCoordinator _bufferCoordinator;
@@ -32,9 +33,9 @@ namespace VsVim.UnitTest
         private void Create(bool simulateResharper, params string[] lines)
         {
             _textView = EditorUtil.CreateTextView(lines);
-            _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
+            _buffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(_textView);
             _bufferCoordinator = new VimBufferCoordinator(_buffer);
-            _simulation = new VisualStudioSimulation(_bufferCoordinator, simulateResharper);
+            _simulation = new VsSimulation(_bufferCoordinator, simulateResharper);
         }
 
         /// <summary>
@@ -80,6 +81,37 @@ namespace VsVim.UnitTest
                 _simulation.Run(VimKey.Back);
                 Assert.AreEqual(8 - (i + 1), _textView.GetCaretPoint().Position);
             }
+        }
+
+        /// <summary>
+        /// Make sure that we allow keys like down to make it directly to Insert mode when there is
+        /// an active IWordCompletionSession
+        /// </summary>
+        [Test]
+        public void WordCompletion_Down()
+        {
+            Create(false, "c dog", "cat copter");
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _textView.MoveCaretTo(1);
+            _buffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
+            _buffer.Process(KeyNotationUtil.StringToKeyInput("<Down>"));
+            Assert.AreEqual("copter dog", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// When there is an active IWordCompletionSession we want to let even direct input go directly
+        /// to insert mode.  
+        /// </summary>
+        [Test]
+        public void WordCompletion_TypeChar()
+        {
+            Create(false, "c dog", "cat");
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _textView.MoveCaretTo(1);
+            _buffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
+            _buffer.Process('s');
+            Assert.AreEqual("cats dog", _textView.GetLine(0).GetText());
+            Assert.IsTrue(_buffer.InsertMode.ActiveWordCompletionSession.IsNone());
         }
     }
 }

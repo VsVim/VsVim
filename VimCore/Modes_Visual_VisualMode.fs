@@ -17,6 +17,7 @@ type internal VisualMode
         _selectionTracker : ISelectionTracker
     ) = 
 
+    let _vimTextBuffer = _buffer.VimTextBuffer
     let _textView = _buffer.TextView
     let _textBuffer = _buffer.TextBuffer
     let _registerMap = _buffer.RegisterMap
@@ -36,8 +37,8 @@ type internal VisualMode
     member x.CreateCommandBindings() =
         let visualSeq = 
             seq {
-                yield ("c", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange, VisualCommand.ChangeSelection)
-                yield ("C", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange, VisualCommand.ChangeLineSelection true)
+                yield ("c", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextCommand, VisualCommand.ChangeSelection)
+                yield ("C", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextCommand, VisualCommand.ChangeLineSelection true)
                 yield ("d", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
                 yield ("D", CommandFlags.Repeatable, VisualCommand.DeleteLineSelection)
                 yield ("gJ", CommandFlags.Repeatable, VisualCommand.JoinSelection JoinKind.KeepEmptySpaces)
@@ -47,9 +48,9 @@ type internal VisualMode
                 yield ("J", CommandFlags.Repeatable, VisualCommand.JoinSelection JoinKind.RemoveEmptySpaces)
                 yield ("p", CommandFlags.Repeatable, VisualCommand.PutOverSelection false)
                 yield ("P", CommandFlags.Repeatable, VisualCommand.PutOverSelection false)
-                yield ("R", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange, VisualCommand.ChangeLineSelection false)
-                yield ("s", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange, VisualCommand.ChangeSelection)
-                yield ("S", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange, VisualCommand.ChangeLineSelection false)
+                yield ("R", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextCommand, VisualCommand.ChangeLineSelection false)
+                yield ("s", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextCommand, VisualCommand.ChangeSelection)
+                yield ("S", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextCommand, VisualCommand.ChangeLineSelection false)
                 yield ("u", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToLowerCase)
                 yield ("U", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToUpperCase)
                 yield ("x", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
@@ -83,6 +84,7 @@ type internal VisualMode
 
         let normalSeq = 
             seq {
+                yield ("gv", CommandFlags.Special, NormalCommand.SwitchPreviousVisualMode)
                 yield ("zE", CommandFlags.Special, NormalCommand.DeleteAllFoldsInBuffer)
                 yield ("[p", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
                 yield ("[P", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
@@ -173,17 +175,37 @@ type internal VisualMode
                 // On teardown we will get calls to Stop when the view is closed.  It's invalid to access 
                 // the selection at that point
                 let textView = _buffer.TextView
-                if not textView.IsClosed && not toCommandMode then
-                    textView.Selection.Clear()
-                    textView.Selection.Mode <- TextSelectionMode.Stream
+                if not textView.IsClosed then
+
+                    // Before resetting the selection save it
+                    _vimTextBuffer.LastVisualSelection <- Some (VisualSelection.CreateForSelection _textView _visualKind)
+
+                    if not toCommandMode then
+                        textView.Selection.Clear()
+                        textView.Selection.Mode <- TextSelectionMode.Stream
 
             result
-        member x.OnEnter _ = 
+
+        member x.OnEnter modeArgument = 
             x.EnsureCommandsBuilt()
+
+            // If we are provided an InitialVisualSpan value here go ahead and use it.  Do this before we
+            // begin selection tracking as it will properly update the resulting selection to the appropriate
+            // mode
+            match modeArgument with
+            | ModeArgument.InitialVisualSelection visualSelection ->
+                if visualSelection.ModeKind = _kind then
+                    CommonUtil.SelectAndUpdateCaret _textView visualSelection
+            | _ ->
+                ()
+
             _selectionTracker.Start()
+
+        /// Called when the Visual Mode is left.  Need to update the LastVisualSpan based on our selection
         member x.OnLeave () = 
             _runner.ResetState()
             _selectionTracker.Stop()
+
         member x.OnClose() = 
             _eventHandlers.DisposeAll()
 

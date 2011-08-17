@@ -10,7 +10,9 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
 using Microsoft.VisualStudio.Utilities;
+using Vim.UI.Wpf.Implementation;
 using Vim.UnitTest.Exports;
+using ClipboardDevice = Vim.UnitTest.Exports.ClipboardDevice;
 using IOPath = System.IO.Path;
 
 namespace Vim.UnitTest
@@ -77,6 +79,12 @@ namespace Vim.UnitTest
 
             [Import]
             public IAdhocOutlinerFactory AdhocOutlinerFactory;
+
+            [Import]
+            public ICommonOperationsFactory CommonOperationsFactory;
+
+            [Import]
+            public IWordCompletionSessionFactoryService WordCompletionSessionFactoryService;
         }
 
         #endregion
@@ -261,7 +269,9 @@ namespace Vim.UnitTest
                 typeof(MouseDevice),
                 typeof(VimHost),
                 typeof(VimErrorDetector),
-                typeof(AdhocOutlinerFactory)));
+                typeof(AdhocOutlinerFactory),
+                typeof(DisplayWindowBrokerFactoryService),
+                typeof(WordCompletionSessionFactoryService)));
 
             return list;
         }

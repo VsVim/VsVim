@@ -4,6 +4,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
+using System;
 
 namespace VimCore.UnitTest
 {
@@ -27,7 +28,7 @@ namespace VimCore.UnitTest
         private void Create(params string[] lines)
         {
             _textView = EditorUtil.CreateTextView(lines);
-            _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
+            _buffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(_textView);
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             _globalSettings = _buffer.LocalSettings.GlobalSettings;
             ((MockVimHost)_buffer.Vim.VimHost).FocusedTextView = _textView;
@@ -94,6 +95,41 @@ namespace VimCore.UnitTest
             _buffer.Process("2@c");
             Assert.AreEqual("Cat", _textView.GetLine(0).GetText());
             Assert.AreEqual("Dog", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// This is actually a macro scenario called out in the Vim documentation.  Namely the ability
+        /// to build a numbered list by using a macro
+        /// </summary>
+        [Test]
+        public void RunMacro_NumberedList()
+        {
+            Create("1. Heading");
+            _buffer.Process("qaYp");
+            _buffer.Process(KeyNotationUtil.StringToKeyInput("<C-a>"));
+            _buffer.Process("q3@a");
+            for (var i = 0; i < 5; i++)
+            {
+                var line = String.Format("{0}. Heading", i + 1);
+                Assert.AreEqual(line, _textView.GetLine(i).GetText());
+            }
+        }
+
+        /// <summary>
+        /// When the word completion command is run and there are no completions this shouldn't
+        /// register as an error and macro processing should continue
+        /// </summary>
+        [Test]
+        public void RunLastMacro_WordCompletionWithNoCompletion()
+        {
+            Create("z ");
+            _textView.MoveCaretTo(1);
+            TestRegister.UpdateValue(
+                KeyNotationUtil.StringToKeyInput("i"),
+                KeyNotationUtil.StringToKeyInput("<C-n>"),
+                KeyNotationUtil.StringToKeyInput("s"));
+            _buffer.Process("@c");
+            Assert.AreEqual("zs ", _textView.GetLine(0).GetText());
         }
 
         /// <summary>
@@ -228,5 +264,6 @@ namespace VimCore.UnitTest
             Assert.AreEqual("cat", _textView.GetLine(0).GetText());
             Assert.AreEqual("dog", _textView.GetLine(1).GetText());
         }
+
     }
 }

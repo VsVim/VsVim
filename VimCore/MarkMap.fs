@@ -10,7 +10,7 @@ type BufferMarkData =  {
     LastSelection : ITrackingSpan option
 }
 
-type MarkMap( _tlcService : ITrackingLineColumnService ) =
+type MarkMap( _bufferTrackingService : IBufferTrackingService ) =
 
     /// Set of char's for all possible local marks
     static let _localMarkSet = 
@@ -91,7 +91,7 @@ type MarkMap( _tlcService : ITrackingLineColumnService ) =
         if not (MarkMap.IsLocalMark ident) then failwith "Invalid"
         let line, column = SnapshotPointUtil.GetLineColumn point
         let textBuffer = point.Snapshot.TextBuffer
-        let trackingLineColumn = _tlcService.Create textBuffer line column LineColumnTrackingMode.Default
+        let trackingLineColumn = _bufferTrackingService.CreateLineColumn textBuffer line column LineColumnTrackingMode.Default
         let data = x.GetOrCreateBufferMarkData textBuffer
         let list = data.Marks
 
@@ -114,7 +114,7 @@ type MarkMap( _tlcService : ITrackingLineColumnService ) =
             x.SetLocalMark point ident
         else
             let line, column = SnapshotPointUtil.GetLineColumn point
-            let tlc = _tlcService.Create textBuffer line column LineColumnTrackingMode.Default
+            let tlc = _bufferTrackingService.CreateLineColumn textBuffer line column LineColumnTrackingMode.Default
 
             // Close out the old one
             _globalList 
@@ -203,14 +203,15 @@ type MarkMap( _tlcService : ITrackingLineColumnService ) =
                 if selection.IsEmpty then ()
                 else 
                     match TextSelectionUtil.GetOverarchingSelectedSpan selection with
-                    | None -> ()
-                    | Some(span) -> 
+                    | None ->
+                        ()
+                    | Some span -> 
                         let lastSelected = span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeExclusive) |> Some
                         let data = x.GetOrCreateBufferMarkData buffer.TextBuffer
                         let data = {data with LastSelection=lastSelected }
                         _localMap.Item(buffer.TextBuffer) <- data 
             updateLastSelection()
-    
+
             buffer.TextView.Selection.SelectionChanged 
             |> Event.add (fun _ -> updateLastSelection() )
 

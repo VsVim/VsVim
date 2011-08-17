@@ -17,6 +17,7 @@ namespace VimCore.UnitTest
     public sealed class NormalModeIntegrationTest : VimTestBase
     {
         private IVimBuffer _buffer;
+        private IVimTextBuffer _vimTextBuffer;
         private IWpfTextView _textView;
         private ITextBuffer _textBuffer;
         private IVimGlobalSettings _globalSettings;
@@ -39,7 +40,7 @@ namespace VimCore.UnitTest
             _textView = tuple.Item1;
             _textBuffer = _textView.TextBuffer;
             var service = EditorUtil.FactoryService;
-            _buffer = service.Vim.CreateBuffer(_textView);
+            _buffer = service.Vim.CreateVimBuffer(_textView);
             _buffer.ErrorMessage +=
                 (_, message) =>
                 {
@@ -56,6 +57,7 @@ namespace VimCore.UnitTest
                         Assert.Fail("Warning Message: " + message);
                     }
                 };
+            _vimTextBuffer = _buffer.VimTextBuffer;
             _keyMap = _buffer.Vim.KeyMap;
             _globalSettings = _buffer.LocalSettings.GlobalSettings;
             _jumpList = _buffer.JumpList;
@@ -97,6 +99,49 @@ namespace VimCore.UnitTest
             Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
         }
 
+        /// <summary>
+        /// Make sure we jump across the blanks to get to the word and that the caret is 
+        /// properly positioned
+        /// </summary>
+        [Test]
+        public void AddToWord_Decimal()
+        {
+            Create(" 999");
+            _buffer.Process(KeyInputUtil.CharWithControlToKeyInput('a'));
+            Assert.AreEqual(" 1000", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Negative decimal number
+        /// </summary>
+        [Test]
+        public void AddToWord_Decimal_Negative()
+        {
+            Create(" -10");
+            _buffer.Process(KeyInputUtil.CharWithControlToKeyInput('a'));
+            Assert.AreEqual(" -9", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Add to the word on the non-first line.  Ensures we are calculating the replacement span
+        /// in the correct location
+        /// </summary>
+        [Test]
+        public void AddToWord_Hex_SecondLine()
+        {
+            Create("hello", "  0x42");
+            _textView.MoveCaretToLine(1);
+            _buffer.Process(KeyInputUtil.CharWithControlToKeyInput('a'));
+            Assert.AreEqual("  0x43", _textBuffer.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetLine(1).Start.Add(5), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Test the repeat of a repeated command.  Essentially ensure the act of repeating doesn't
+        /// disturb the cached LastCommand value
+        /// </summary>
         [Test]
         public void RepeatCommand_Repeated()
         {
@@ -2817,6 +2862,35 @@ namespace VimCore.UnitTest
             Assert.AreEqual(2, _jumpList.Jumps.Length);
             _buffer.Process(KeyInputUtil.CharWithControlToKeyInput('i'));
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Subtract a negative decimal number
+        /// </summary>
+        [Test]
+        public void SubtractFromWord_Decimal_Negative()
+        {
+            Create(" -10");
+            _buffer.Process(KeyInputUtil.CharWithControlToKeyInput('x'));
+            Assert.AreEqual(" -11", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Make sure we handle the 'gv' command to switch to the previous visual mode
+        /// </summary>
+        [Test]
+        public void SwitchPreviousVisualMode_Line()
+        {
+            Create("cats", "dogs", "fish");
+            var visualSelection = VisualSelection.NewLine(
+                _textView.GetLineRange(0, 1),
+                true,
+                1);
+            _vimTextBuffer.LastVisualSelection = FSharpOption.Create(visualSelection);
+            _buffer.Process("gv");
+            Assert.AreEqual(ModeKind.VisualLine, _buffer.ModeKind);
+            Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Line));
         }
 
         /// <summary>

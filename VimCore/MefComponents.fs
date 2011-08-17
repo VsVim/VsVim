@@ -4,52 +4,10 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Tagging
 open Microsoft.VisualStudio.Text.Operations
-open Microsoft.VisualStudio.Language.Intellisense
 open Microsoft.VisualStudio.Text.Classification
 open Microsoft.VisualStudio.Utilities
 open System.ComponentModel.Composition
 open System.Collections.Generic
-
-type internal DisplayWindowBroker 
-    ( 
-        _textView : ITextView,
-        _completionBroker : ICompletionBroker,
-        _signatureBroker : ISignatureHelpBroker,
-        _smartTagBroker : ISmartTagBroker,
-        _quickInfoBroker : IQuickInfoBroker)  =
-    interface IDisplayWindowBroker with
-        member x.TextView = _textView
-        member x.IsCompletionActive = _completionBroker.IsCompletionActive(_textView)
-        member x.IsSignatureHelpActive = _signatureBroker.IsSignatureHelpActive(_textView)
-        member x.IsQuickInfoActive = _quickInfoBroker.IsQuickInfoActive(_textView)
-        member x.IsSmartTagSessionActive = 
-            if _smartTagBroker.IsSmartTagActive(_textView) then
-                _smartTagBroker.GetSessions(_textView) 
-                |> Seq.filter (fun x -> x.State = SmartTagState.Expanded) 
-                |> SeqUtil.isNotEmpty
-            else
-                false
-        member x.DismissDisplayWindows() =
-            if _completionBroker.IsCompletionActive(_textView) then
-                _completionBroker.DismissAllSessions(_textView)
-            if _signatureBroker.IsSignatureHelpActive(_textView) then
-                _signatureBroker.DismissAllSessions(_textView)
-            if _quickInfoBroker.IsQuickInfoActive(_textView) then
-                _quickInfoBroker.GetSessions(_textView) |> Seq.iter (fun x -> x.Dismiss())
-
-[<Export(typeof<IDisplayWindowBrokerFactoryService>)>]
-type internal DisplayWindowBrokerFactoryService
-    [<ImportingConstructor>]
-    (
-        _completionBroker : ICompletionBroker,
-        _signatureBroker : ISignatureHelpBroker,
-        _smartTagBroker : ISmartTagBroker,
-        _quickInfoBroker : IQuickInfoBroker ) = 
-
-    interface IDisplayWindowBrokerFactoryService with
-        member x.CreateDisplayWindowBroker textView = 
-            let broker = DisplayWindowBroker(textView, _completionBroker, _signatureBroker, _smartTagBroker, _quickInfoBroker)
-            broker :> IDisplayWindowBroker
 
 /// This is the type responsible for tracking a line + column across edits to the
 /// underlying ITextBuffer.  In a perfect world this would be implemented as an 
@@ -128,7 +86,7 @@ type internal TrackingLineColumn
                 // is the line number.  So changes line shortening the line don't matter for 
                 // us.
                 let getLineNumberDelta (change : ITextChange) =
-                    if change.LineCountDelta = 0 || change.OldPosition >= oldLine.Start.Position then
+                    if change.LineCountDelta = 0 || change.OldPosition > oldLine.Start.Position then
                         // If there is no line change or this change occurred after the start 
                         // of our line then there is nothing to process
                         0
@@ -181,19 +139,162 @@ type internal TrackingLineColumn
             _line <- None
             _lastValidVersion <- None
 
+/// Implementation of ITrackingVisualSpan which is used to track a VisualSpan across edits
+/// to the ITextBuffer
+[<RequireQualifiedAccess>]
+type internal TrackingVisualSpan =
+
+    /// Tracks the raw character span
+    | Character of ITrackingSpan
+
+    /// Tracks the origin of the SnapshotLineRange and the number of lines it should comprise
+    /// of
+    | Line of ITrackingLineColumn * int
+
+    /// Tracks the origin of the block selection, it's width by height
+    | Block of ITrackingLineColumn * int * int
+
+    with
+
+    member x.TextBuffer =
+        match x with
+        | Character trackingSpan -> trackingSpan.TextBuffer
+        | Line (trackingLineColumn, _) -> trackingLineColumn.TextBuffer
+        | Block (trackingLineColumn, _, _) -> trackingLineColumn.TextBuffer
+
+    /// Calculate the VisualSpan against the current ITextSnapshot
+    member x.VisualSpan = 
+        let snapshot = x.TextBuffer.CurrentSnapshot
+
+        match x with
+        | Character trackingSpan ->
+            TrackingSpanUtil.GetSpan snapshot trackingSpan |> Option.map VisualSpan.Character
+        | Line (trackingLineColumn, count) ->
+            match trackingLineColumn.Point with 
+            | None ->
+                // Nothing else to do
+                None
+            | Some point ->
+                let line = SnapshotPointUtil.GetContainingLine point
+                SnapshotLineRangeUtil.CreateForLineAndMaxCount line count 
+                |> VisualSpan.Line
+                |> Some
+
+        | Block (trackingLineColumn, width, height) ->
+
+            match trackingLineColumn.Point with
+            | None -> 
+                // Nothing else to do
+                None
+            | Some point ->
+                let blockSpan = {
+                    StartPoint = point
+                    Width = width
+                    Height = height }
+                VisualSpan.Block blockSpan
+                |> Some
+
+    member x.Close() =
+        match x with
+        | Character _ -> ()
+        | Line (trackingLineColumn, _) -> trackingLineColumn.Close()
+        | Block (trackingLineColumn, _, _) -> trackingLineColumn.Close()
+
+    static member Create (bufferTrackingService : IBufferTrackingService) visualSpan =
+        match visualSpan with
+        | VisualSpan.Character span ->
+            // Implemented with an ITrackingSpan.  Experimentation shows this is best represented with
+            // EdgeExclusive as edits to the end of words don't appear to be counted
+            let trackingSpan = span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeExclusive)
+            TrackingVisualSpan.Character trackingSpan
+
+        | VisualSpan.Line snapshotLineRange ->
+
+            // Setup an ITrackingLineColumn at the 0 column of the first line.  This actually may be doable
+            // with an ITrackingPoint but for now sticking with an ITrackinglineColumn
+            let textBuffer = snapshotLineRange.Snapshot.TextBuffer
+            let trackingLineColumn = bufferTrackingService.CreateLineColumn textBuffer snapshotLineRange.StartLineNumber 0 LineColumnTrackingMode.Default
+            TrackingVisualSpan.Line (trackingLineColumn, snapshotLineRange.Count)
+
+        | VisualSpan.Block blockSpan ->
+
+            // Setup an ITrackLineColumn at the top left of the block selection
+            let trackingLineColumn =
+                let textBuffer = blockSpan.TextBuffer
+                let lineNumber, column = SnapshotPointUtil.GetLineColumn blockSpan.StartPoint
+
+                bufferTrackingService.CreateLineColumn textBuffer lineNumber column LineColumnTrackingMode.Default
+
+            TrackingVisualSpan.Block (trackingLineColumn, blockSpan.Width, blockSpan.Height)
+
+    interface ITrackingVisualSpan with
+        member x.TextBuffer = x.TextBuffer
+        member x.VisualSpan = x.VisualSpan
+        member x.Close() = x.Close()
+
+type internal TrackingVisualSelection 
+    (
+        _trackingVisualSpan : ITrackingVisualSpan,
+        _isForward : bool,
+        _column : int,
+        _blockCaretLocation : BlockCaretLocation
+    ) =
+
+    member x.VisualSelection =
+        match _trackingVisualSpan.VisualSpan with
+        | None -> 
+            None
+        | Some visualSpan -> 
+            let visualSelection =
+                match visualSpan with
+                | VisualSpan.Character span -> VisualSelection.Character (span, _isForward)
+                | VisualSpan.Line lineRange -> VisualSelection.Line (lineRange, _isForward, _column)
+                | VisualSpan.Block blockSpan -> VisualSelection.Block (blockSpan, _blockCaretLocation)
+            Some visualSelection
+
+    member x.CaretPoint =
+        x.VisualSelection |> Option.map (fun visualSelection -> visualSelection.CaretPoint)
+
+    member x.VisualSpan = 
+        x.VisualSelection |> Option.map (fun visualSelection -> visualSelection.VisualSpan)
+
+    /// Get the caret in the given VisualSpan
+    member x.GetCaret visualSpan = 
+        x.VisualSelection |> Option.map (fun visualSelection -> visualSelection.CaretPoint)
+
+    /// Create an ITrackingVisualSelection with the provided data
+    static member Create (bufferTrackingService : IBufferTrackingService) (visualSelection : VisualSelection)=
+        let trackingVisualSpan = bufferTrackingService.CreateVisualSpan visualSelection.VisualSpan
+        let isForward, column, blockCaretLocation =
+            match visualSelection with
+            | VisualSelection.Character (_, isForward) -> isForward, 0, BlockCaretLocation.TopRight
+            | VisualSelection.Line (_, isForward, column) -> isForward, column, BlockCaretLocation.TopRight
+            | VisualSelection.Block (_, blockCaretLocation) -> true, 0, blockCaretLocation
+        TrackingVisualSelection(trackingVisualSpan, isForward, column, blockCaretLocation)
+
+    interface ITrackingVisualSelection with
+        member x.CaretPoint = x.CaretPoint
+        member x.TextBuffer = _trackingVisualSpan.TextBuffer
+        member x.VisualSelection = x.VisualSelection
+        member x.VisualSpan = x.VisualSpan
+        member x.Close() = _trackingVisualSpan.Close()
+
 type internal TrackedData = {
     List : WeakReference<TrackingLineColumn> list
     Observer : System.IDisposable 
 }
 
-[<Export(typeof<ITrackingLineColumnService>)>]
-type internal TrackingLineColumnService() = 
+/// Service responsible for tracking various parts of an ITextBuffer which can't be replicated
+/// by simply using ITrackingSpan or ITrackingPoint.
+[<Export(typeof<IBufferTrackingService>)>]
+[<Sealed>]
+type internal BufferTrackingService() = 
     
     let _map = new Dictionary<ITextBuffer, TrackedData>()
 
     /// Gets the data for the passed in buffer.  This method takes care of removing all 
     /// collected WeakReference items and updating the internal map 
-    member private x.GetData textBuffer foundFunc notFoundFunc =
+    member x.GetData textBuffer foundFunc notFoundFunc =
         let found,data = _map.TryGetValue(textBuffer)
         if not found then notFoundFunc()
         else
@@ -211,7 +312,7 @@ type internal TrackingLineColumnService() =
     /// Remove the TrackingLineColumn from the map.  If it is the only remaining 
     /// TrackingLineColumn assigned to the ITextBuffer, remove it from the map
     /// and unsubscribe from the Changed event
-    member private x.Remove (tlc:TrackingLineColumn) = 
+    member x.Remove (tlc:TrackingLineColumn) = 
         let found (data:System.IDisposable) items rawList = 
             let items = items |> Seq.filter (fun cur -> cur <> tlc)
             if items |> Seq.isEmpty then 
@@ -224,7 +325,7 @@ type internal TrackingLineColumnService() =
 
     /// Add the TrackingLineColumn to the map.  If this is the first item in the
     /// map then subscribe to the Changed event on the buffer
-    member private x.Add (tlc:TrackingLineColumn) =
+    member x.Add (tlc:TrackingLineColumn) =
         let textBuffer = tlc.TextBuffer
         let found data _ list =
             let list = [Util.CreateWeakReference tlc] @ list
@@ -235,7 +336,7 @@ type internal TrackingLineColumnService() =
             _map.Add(textBuffer,data)
         x.GetData textBuffer found notFound
 
-    member private x.OnBufferChanged (e:TextContentChangedEventArgs) = 
+    member x.OnBufferChanged (e:TextContentChangedEventArgs) = 
         let found _ (items: TrackingLineColumn seq) _ =
             items |> Seq.iter (fun tlc -> tlc.UpdateForChange e)
         x.GetData e.Before.TextBuffer found (fun () -> ())
@@ -248,8 +349,10 @@ type internal TrackingLineColumnService() =
         x.Add tlc
         tlc
 
-    interface ITrackingLineColumnService with
-        member x.Create textBuffer lineNumber column mode = x.Create textBuffer lineNumber column mode :> ITrackingLineColumn
+    interface IBufferTrackingService with
+        member x.CreateLineColumn textBuffer lineNumber column mode = x.Create textBuffer lineNumber column mode :> ITrackingLineColumn
+        member x.CreateVisualSpan visualSpan = TrackingVisualSpan.Create x visualSpan :> ITrackingVisualSpan
+        member x.CreateVisualSelection visualSelection = TrackingVisualSelection.Create x visualSelection :> ITrackingVisualSelection
         member x.CloseAll() =
             let values = _map.Values |> List.ofSeq
             values 
@@ -266,7 +369,6 @@ type internal TrackingLineColumnService() =
 type internal ChangeTracker
     [<ImportingConstructor>]
     (
-        _textChangeTrackerFactory : ITextChangeTrackerFactory,
         _vim : IVim
     ) =
 
@@ -278,35 +380,35 @@ type internal ChangeTracker
         buffer.VisualLineMode.CommandRunner.CommandRan |> Event.add handler
         buffer.VisualBlockMode.CommandRunner.CommandRan |> Event.add handler
         buffer.VisualCharacterMode.CommandRunner.CommandRan |> Event.add handler
-
-        let tracker = _textChangeTrackerFactory.GetTextChangeTracker buffer
-        tracker.ChangeCompleted |> Event.add (x.OnTextChanged buffer)
+        buffer.InsertMode.CommandRan |> Event.add handler
+        buffer.ReplaceMode.CommandRan |> Event.add handler
 
     member x.OnCommandRan buffer (data : CommandRunData) = 
         let command = data.CommandBinding
         if command.IsMovement || command.IsSpecial then
             // Movement and special commands don't participate in change tracking
             ()
-        elif command.IsRepeatable then 
-            _vimData.LastCommand <- StoredCommand.OfCommand data.Command data.CommandBinding |> Some
+        elif command.IsRepeatable then
+            let storedCommand = StoredCommand.OfCommand data.Command data.CommandBinding
+            x.StoreCommand storedCommand
         else 
             _vimData.LastCommand <- None
 
-    member x.OnTextChanged buffer data = 
-        let textChange = StoredCommand.TextChangeCommand data
-        let useCurrent() = 
-            _vimData.LastCommand <- Some textChange
-
-        let maybeLink (command : StoredCommand) = 
-            if Util.IsFlagSet command.CommandFlags CommandFlags.LinkedWithNextTextChange then
-                let change = StoredCommand.LinkedCommand (command, textChange)
-                _vimData.LastCommand <- Some change
-            else 
-                useCurrent()
-
+    /// Store the given StoredCommand as the last command executed in the IVimBuffer.  Take into
+    /// account linking with the previous command
+    member x.StoreCommand currentCommand = 
         match _vimData.LastCommand with
-        | None -> useCurrent()
-        | Some storedCommand -> maybeLink storedCommand
+        | None -> 
+            // No last command so no linking to consider
+            _vimData.LastCommand <- Some currentCommand
+        | Some lastCommand ->
+            let shouldLink = 
+                Util.IsFlagSet currentCommand.CommandFlags CommandFlags.LinkedWithPreviousCommand ||
+                Util.IsFlagSet lastCommand.CommandFlags CommandFlags.LinkedWithNextCommand 
+            if shouldLink then
+                _vimData.LastCommand <- StoredCommand.LinkedCommand (lastCommand, currentCommand) |> Some
+            else
+                _vimData.LastCommand <- Some currentCommand
 
     interface IVimBufferCreationListener with
         member x.VimBufferCreated buffer = x.OnVimBufferCreated buffer

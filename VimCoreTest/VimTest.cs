@@ -12,7 +12,7 @@ using Vim.UnitTest.Mock;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class VimTest
+    public sealed class VimTest
     {
         private MockRepository _factory;
         private Mock<IMarkMap> _markMap;
@@ -54,7 +54,7 @@ namespace VimCore.UnitTest
         public void Create_SimpleTextView()
         {
             var textView = EditorUtil.CreateTextView();
-            var ret = _vim.CreateBuffer(textView);
+            var ret = _vim.CreateVimBuffer(textView);
             Assert.IsNotNull(ret);
             Assert.AreSame(textView, ret.TextView);
         }
@@ -63,61 +63,61 @@ namespace VimCore.UnitTest
         public void Create_CreateTwiceForSameViewShouldFail()
         {
             var textView = EditorUtil.CreateTextView();
-            _vim.CreateBuffer(textView);
-            _vim.CreateBuffer(textView);
+            _vim.CreateVimBuffer(textView);
+            _vim.CreateVimBuffer(textView);
         }
 
         [Test]
-        public void GetBuffer_ReturnNoneForViewThatHasNoBuffer()
+        public void GetVimBuffer_ReturnNoneForViewThatHasNoBuffer()
         {
             var textView = EditorUtil.CreateTextView();
-            var ret = _vim.GetBuffer(textView);
+            var ret = _vim.GetVimBuffer(textView);
             Assert.IsTrue(ret.IsNone());
         }
 
         [Test]
-        public void GetBuffer_ReturnBufferForCachedCreated()
+        public void GetVimBuffer_ReturnBufferForCachedCreated()
         {
             var textView = EditorUtil.CreateTextView();
-            var bufferFromCreate = _vim.CreateBuffer(textView);
-            var bufferFromGet = _vim.GetBuffer(textView);
+            var bufferFromCreate = _vim.CreateVimBuffer(textView);
+            var bufferFromGet = _vim.GetVimBuffer(textView);
             Assert.IsTrue(bufferFromGet.IsSome());
             Assert.AreSame(bufferFromGet.Value, bufferFromCreate);
         }
 
         [Test]
-        public void GetOrCreateBuffer_CreateForNewView()
+        public void GetOrCreateVimBuffer_CreateForNewView()
         {
             var textView = EditorUtil.CreateTextView();
-            var buffer = _vim.GetOrCreateBuffer(textView);
+            var buffer = _vim.GetOrCreateVimBuffer(textView);
             Assert.AreSame(textView, buffer.TextView);
         }
 
         [Test]
-        public void GetOrCreateBuffer_SecondCallShouldReturnAlreadyCreatedVimBuffer()
+        public void GetOrCreateVimBuffer_SecondCallShouldReturnAlreadyCreatedVimBuffer()
         {
             var textView = EditorUtil.CreateTextView();
-            var buffer1 = _vim.GetOrCreateBuffer(textView);
-            var buffer2 = _vim.GetOrCreateBuffer(textView);
+            var buffer1 = _vim.GetOrCreateVimBuffer(textView);
+            var buffer2 = _vim.GetOrCreateVimBuffer(textView);
             Assert.AreSame(buffer1, buffer2);
         }
 
         [Test]
-        public void GetOrCreateBuffer_ApplyVimRcSettings()
+        public void GetOrCreateVimBuffer_ApplyVimRcSettings()
         {
             _vim.VimRcLocalSettings.AutoIndent = true;
             _vim.VimRcLocalSettings.QuoteEscape = "b";
             var textView = EditorUtil.CreateTextView();
-            var buffer = _vim.GetOrCreateBuffer(textView);
+            var buffer = _vim.GetOrCreateVimBuffer(textView);
             Assert.IsTrue(buffer.LocalSettings.AutoIndent);
             Assert.AreEqual("b", buffer.LocalSettings.QuoteEscape);
         }
 
         [Test]
-        public void GetOrCreateBuffer_ApplyActiveBufferSettings()
+        public void GetOrCreateVimBuffer_ApplyActiveBufferLocalSettings()
         {
             var textView = EditorUtil.CreateTextView();
-            var buffer = _vim.GetOrCreateBuffer(textView);
+            var buffer = _vim.GetOrCreateVimBuffer(textView);
             buffer.LocalSettings.AutoIndent = true;
             buffer.LocalSettings.QuoteEscape = "b";
 
@@ -125,13 +125,88 @@ namespace VimCore.UnitTest
             buffer.KeyInputStart += delegate
             {
                 var textView2 = EditorUtil.CreateTextView();
-                var buffer2 = _vim.GetOrCreateBuffer(textView2);
+                var buffer2 = _vim.GetOrCreateVimBuffer(textView2);
                 Assert.IsTrue(buffer2.LocalSettings.AutoIndent);
                 Assert.AreEqual("b", buffer2.LocalSettings.QuoteEscape);
                 didRun = true;
             };
             buffer.Process('a');
             Assert.IsTrue(didRun);
+        }
+
+        /// <summary>
+        /// Make sure window settings are applied from the current IVimBuffer to the newly 
+        /// created one
+        /// </summary>
+        [Test]
+        public void GetOrCreateVimBuffer_ApplyActiveBufferWindowSettings()
+        {
+            var textView = EditorUtil.CreateTextView();
+            var buffer = _vim.GetOrCreateVimBuffer(textView);
+            buffer.WindowSettings.CursorLine = true;
+
+            var didRun = false;
+            buffer.KeyInputStart += delegate
+            {
+                var textView2 = EditorUtil.CreateTextView();
+                var buffer2 = _vim.GetOrCreateVimBuffer(textView2);
+                Assert.IsTrue(buffer2.WindowSettings.CursorLine);
+                didRun = true;
+            };
+            buffer.Process('a');
+            Assert.IsTrue(didRun);
+        }
+
+        /// <summary>
+        /// When creating an IVimBuffer instance, if there is an existing IVimTextBuffer then
+        /// the mode should be taken from that
+        /// </summary>
+        [Test]
+        public void GetOrCreateVimBuffer_InitialMode()
+        {
+            var textView = EditorUtil.CreateTextView("");
+            _vim.GetOrCreateVimTextBuffer(textView.TextBuffer).SwitchMode(ModeKind.Insert, ModeArgument.None);
+            var buffer = _vim.GetOrCreateVimBuffer(textView);
+            Assert.AreEqual(ModeKind.Insert, buffer.ModeKind);
+        }
+
+        /// <summary>
+        /// Make sure the result of this call is cached and that only one is ever created
+        /// for a given ITextBuffer
+        /// </summary>
+        [Test]
+        public void GetOrCreateVimTextBuffer_Cache()
+        {
+            var textBuffer = EditorUtil.CreateTextBuffer("");
+            var vimTextBuffer = _vim.GetOrCreateVimTextBuffer(textBuffer);
+            Assert.AreSame(vimTextBuffer, _vim.GetOrCreateVimTextBuffer(textBuffer));
+        }
+
+        /// <summary>
+        /// Sanity check to ensure we create different IVimTextBuffer for different ITextBuffer 
+        /// instances
+        /// </summary>
+        [Test]
+        public void GetOrCreateVimTextBuffer_Multiple()
+        {
+            var textBuffer1 = EditorUtil.CreateTextBuffer("");
+            var textBuffer2 = EditorUtil.CreateTextBuffer("");
+            var vimTextBuffer1 = _vim.GetOrCreateVimTextBuffer(textBuffer1);
+            var vimTextBuffer2 = _vim.GetOrCreateVimTextBuffer(textBuffer2);
+            Assert.AreNotSame(vimTextBuffer1, vimTextBuffer2);
+        }
+
+        /// <summary>
+        /// The IVimTextBuffer should outlive an associated ITextView and IVimBuffer
+        /// </summary>
+        [Test]
+        public void GetOrCreateVimTextBuffer_LiveLongerThanTextView()
+        {
+            var textView = EditorUtil.CreateTextView("");
+            var buffer = _vim.GetOrCreateVimBuffer(textView);
+            Assert.AreSame(buffer.VimTextBuffer, _vim.GetOrCreateVimTextBuffer(textView.TextBuffer));
+            buffer.Close();
+            Assert.AreSame(buffer.VimTextBuffer, _vim.GetOrCreateVimTextBuffer(textView.TextBuffer));
         }
 
         [Test]
@@ -145,9 +220,9 @@ namespace VimCore.UnitTest
         public void RemoveBuffer_AssociatedTextView()
         {
             var textView = EditorUtil.CreateTextView();
-            _vim.CreateBuffer(textView);
+            _vim.CreateVimBuffer(textView);
             Assert.IsTrue(_vim.RemoveBuffer(textView));
-            var ret = _vim.GetBuffer(textView);
+            var ret = _vim.GetVimBuffer(textView);
             Assert.IsTrue(ret.IsNone());
         }
 
@@ -203,7 +278,7 @@ namespace VimCore.UnitTest
         public void ActiveBuffer2()
         {
             var textView = EditorUtil.CreateTextView();
-            var buffer = _vim.CreateBuffer(textView);
+            var buffer = _vim.CreateVimBuffer(textView);
             var didRun = false;
             buffer.KeyInputStart += delegate
             {
@@ -221,7 +296,7 @@ namespace VimCore.UnitTest
         public void ActiveBuffer3()
         {
             var textView = EditorUtil.CreateTextView();
-            var buffer = _vim.CreateBuffer(textView);
+            var buffer = _vim.CreateVimBuffer(textView);
             buffer.Process('a');
             Assert.IsTrue(_vim.ActiveBuffer.IsNone());
         }

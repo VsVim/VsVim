@@ -21,7 +21,7 @@ namespace VimCore.UnitTest
         {
             _textView = EditorUtil.CreateTextView("here we go");
             _textView.MoveCaretTo(0);
-            _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
+            _buffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(_textView);
             _buffer.SwitchMode(ModeKind.Command, ModeArgument.None);
             _keyMap = _buffer.Vim.KeyMap;
             _bufferRaw = (VimBuffer)_buffer;

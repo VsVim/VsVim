@@ -101,6 +101,9 @@
     <Compile Include="Extensions.cs" />
     <Compile Include="CommandMarginController.cs" />
     <Compile Include="Implementation\ClipboardDevice.cs" />
+    <Compile Include="Implementation\WordCompletionPresenterProvider.cs" />
+    <Compile Include="Implementation\WordCompletionSessionFactoryService.cs" />
+    <Compile Include="Implementation\DisplayWindowBroker.cs" />
     <Compile Include="Implementation\EditorFormatDefinitions.cs" />
     <Compile Include="Implementation\BlockCaret.cs" />
     <Compile Include="Implementation\BlockCaretFactoryService.cs" />
@@ -114,6 +117,7 @@
     <Compile Include="Implementation\KeyboardDeviceImpl.cs" />
     <Compile Include="Implementation\MouseDeviceImpl.cs" />
     <Compile Include="Implementation\ProtectedOperations.cs" />
+    <Compile Include="Implementation\WordCompletionSession.cs" />
     <Compile Include="IOptionsProvider.cs" />
     <Compile Include="IOptionsProviderFactory.cs" />
     <Compile Include="IProtectedOperations.cs" />

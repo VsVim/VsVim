@@ -3,23 +3,26 @@ using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
+using System;
 
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class TrackingLineColumnTest
+    public sealed class BufferTrackingServiceTest
     {
-        private TrackingLineColumnService _service;
+        private BufferTrackingService _bufferTrackingServiceRaw;
+        private IBufferTrackingService _bufferTrackingService;
 
         [SetUp]
         public void SetUp()
         {
-            _service = new TrackingLineColumnService();
+            _bufferTrackingServiceRaw = new BufferTrackingService();
+            _bufferTrackingService = _bufferTrackingServiceRaw;
         }
 
         private ITrackingLineColumn Create(ITextBuffer buffer, int line, int column)
         {
-            return _service.Create(buffer, line, column, LineColumnTrackingMode.Default);
+            return _bufferTrackingServiceRaw.Create(buffer, line, column, LineColumnTrackingMode.Default);
         }
 
         private static void AssertPoint(ITrackingLineColumn tlc, int lineNumber, int column)
@@ -126,6 +129,40 @@ namespace VimCore.UnitTest
             var tlc = Create(buffer, 0, 5);
             buffer.Replace(buffer.GetLineFromLineNumber(0).ExtentIncludingLineBreak, "");
             AssertPoint(tlc, 0, 0);
+        }
+
+        /// <summary>
+        /// Adding a line at the start of a block should shift the block down
+        /// </summary>
+        [Test]
+        public void VisualSelection_Block_AddLineAbove()
+        {
+            var textBuffer = EditorUtil.CreateTextBuffer("cats", "dogs", "fish");
+            var visualSelection = VisualSelection.NewBlock(
+                textBuffer.GetBlockSpan(1, 2, 1, 2),
+                BlockCaretLocation.BottomRight);
+            var trackingVisualSelection = _bufferTrackingService.CreateVisualSelection(visualSelection);
+            textBuffer.Insert(textBuffer.GetLine(1).Start, Environment.NewLine);
+            var newVisualSelection = VisualSelection.NewBlock(
+                textBuffer.GetBlockSpan(1, 2, 2, 2),
+                BlockCaretLocation.BottomRight);
+            Assert.IsTrue(trackingVisualSelection.VisualSelection.IsSome());
+            Assert.AreEqual(newVisualSelection, trackingVisualSelection.VisualSelection.Value);
+        }
+
+        /// <summary>
+        /// Adding a line at the start of a block should shift the block down
+        /// </summary>
+        [Test]
+        public void VisualSpan_Block_AddLineAbove()
+        {
+            var textBuffer = EditorUtil.CreateTextBuffer("cats", "dogs", "fish");
+            var visualSpan = VisualSpan.NewBlock(textBuffer.GetBlockSpan(1, 2, 1, 2));
+            var trackingVisualSpan = _bufferTrackingService.CreateVisualSpan(visualSpan);
+            textBuffer.Insert(textBuffer.GetLine(1).Start, Environment.NewLine);
+            var newVisualSpan = VisualSpan.NewBlock(textBuffer.GetBlockSpan(1, 2, 2, 2));
+            Assert.IsTrue(trackingVisualSpan.VisualSpan.IsSome());
+            Assert.AreEqual(newVisualSpan, trackingVisualSpan.VisualSpan.Value);
         }
     }
 }

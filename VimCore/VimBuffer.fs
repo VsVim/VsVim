@@ -15,6 +15,7 @@ type internal ModeMap() =
 
     member x.SwitchedEvent = _modeSwitchedEvent.Publish
     member x.Mode = Option.get _mode
+    member x.PreviousMode = _previousMode
     member x.Modes = _modeMap |> Map.toSeq |> Seq.map (fun (k,m) -> m)
     member x.SwitchMode kind arg =
         let prev = _mode
@@ -41,9 +42,6 @@ type internal ModeMap() =
         mode.OnEnter arg
         _modeSwitchedEvent.Trigger(SwitchModeEventArgs(prev, mode))
         mode
-    member x.SwitchPreviousMode () =
-        let prev = Option.get _previousMode
-        x.SwitchMode prev.ModeKind ModeArgument.None
     member x.GetMode kind = Map.find kind _modeMap
     member x.AddMode (mode : IMode) = 
         _modeMap <- Map.add (mode.ModeKind) mode _modeMap
@@ -55,16 +53,19 @@ type internal VimBuffer
         _bufferData : VimBufferData,
         _incrementalSearch : IIncrementalSearch,
         _motionUtil : IMotionUtil,
-        _wordNavigator : ITextStructureNavigator
-    ) =
+        _wordNavigator : ITextStructureNavigator,
+        _windowSettings : IVimWindowSettings
+    ) as this =
 
     let _vim = _bufferData.Vim
     let _textView = _bufferData.TextView
     let _jumpList = _bufferData.JumpList
     let _localSettings = _bufferData.LocalSettings
     let _undoRedoOperations = _bufferData.UndoRedoOperations
+    let _vimTextBuffer = _bufferData.VimTextBuffer
     let _statusUtil = _bufferData.StatusUtil
     let _properties = PropertyCollection()
+    let _bag = DisposableBag()
     let mutable _modeMap = ModeMap()
     let mutable _processingInputCount = 0
     let mutable _isClosed = false
@@ -82,6 +83,14 @@ type internal VimBuffer
     let _statusMessageEvent = new Event<_>()
     let _statusMessageLongEvent = new Event<_>()
     let _closedEvent = new Event<_>()
+
+    do 
+
+        // Listen for mode switches on the IVimTextBuffer instance.  We need to keep our 
+        // Mode in sync with this value
+        _vimTextBuffer.SwitchedMode
+        |> Observable.subscribe (fun (modeKind, modeArgument) -> this.OnVimTextBufferSwitchedMode modeKind modeArgument)
+        |> _bag.Add
 
     member x.BufferedRemapKeyInputs =
         match _remapInput with
@@ -115,36 +124,8 @@ type internal VimBuffer
 
     member x.VimBufferData = _bufferData
 
-    /// Switch to the desired mode
-    member x.SwitchMode kind arg = _modeMap.SwitchMode kind arg
-
     /// Add an IMode into the IVimBuffer instance
     member x.AddMode mode = _modeMap.AddMode mode
-
-    /// Remove an IMode from the IVimBuffer instance
-    member x.RemoveMode mode = _modeMap.RemoveMode mode
-
-    /// Returns both the mapping of the KeyInput value and the set of inputs which were
-    /// considered to get the mapping.  This does account for buffered KeyInput values
-    member x.GetKeyInputMappingCore keyInput =
-        match _remapInput, x.KeyRemapMode with
-        | Some buffered, Some remapMode -> 
-            let keyInputSet = buffered.Add keyInput
-            (_vim.KeyMap.GetKeyMapping keyInputSet remapMode), keyInputSet
-        | Some buffered, None -> 
-            let keyInputSet = buffered.Add keyInput
-            (KeyMappingResult.Mapped keyInputSet), keyInputSet
-        | None, Some remapMode -> 
-            let keyInputSet = OneKeyInput keyInput
-            _vim.KeyMap.GetKeyMapping keyInputSet remapMode, keyInputSet
-        | None, None -> 
-            let keyInputSet = OneKeyInput keyInput
-            (KeyMappingResult.Mapped keyInputSet), keyInputSet
-
-    /// Get the correct mapping of the given KeyInput value in the current state of the 
-    /// IVimBuffer.  This will consider any buffered KeyInput values 
-    member x.GetKeyInputMapping keyInput =
-        x.GetKeyInputMappingCore keyInput |> fst
 
     /// Can the KeyInput value be processed in the given the current state of the
     /// IVimBuffer
@@ -160,7 +141,7 @@ type internal VimBuffer
         // Can the given KeyInput be processed as a command or potentially a 
         // direct insert
         let canProcess keyInput = 
-            if keyInput = _vim.Settings.DisableCommand then
+            if keyInput = _vim.GlobalSettings.DisableCommand then
                 // The disable command can be processed at all times
                 true
             elif x.Mode.CanProcess keyInput then
@@ -168,7 +149,7 @@ type internal VimBuffer
             else
                 false
 
-        let keyMappingResult, keyInputSet = x.GetKeyInputMappingCore keyInput
+        let keyMappingResult, (keyInputSet : KeyInputSet) = x.GetKeyInputMappingCore keyInput
         match keyMappingResult with
         | KeyMappingResult.Mapped keyInputSet -> 
             match keyInputSet.FirstKeyInput with
@@ -207,6 +188,49 @@ type internal VimBuffer
     /// 'b' when handled by insert / replace mode
     member x.CanProcessAsCommand keyInput = x.CanProcessCore keyInput false
 
+    member x.Close () = 
+
+        if _isClosed then 
+            invalidOp Resources.VimBuffer_AlreadyClosed
+
+        try
+            x.Mode.OnLeave()
+            _modeMap.Modes |> Seq.iter (fun x -> x.OnClose())
+            _vim.RemoveBuffer _textView |> ignore
+            _undoRedoOperations.Close()
+            _closedEvent.Trigger System.EventArgs.Empty
+        finally 
+            _isClosed <- true
+
+            // Stop listening to events
+            _bag.DisposeAll()
+
+    /// Returns both the mapping of the KeyInput value and the set of inputs which were
+    /// considered to get the mapping.  This does account for buffered KeyInput values
+    member x.GetKeyInputMappingCore keyInput =
+        match _remapInput, x.KeyRemapMode with
+        | Some buffered, Some remapMode -> 
+            let keyInputSet = buffered.Add keyInput
+            (_vim.KeyMap.GetKeyMapping keyInputSet remapMode), keyInputSet
+        | Some buffered, None -> 
+            let keyInputSet = buffered.Add keyInput
+            (KeyMappingResult.Mapped keyInputSet), keyInputSet
+        | None, Some remapMode -> 
+            let keyInputSet = OneKeyInput keyInput
+            _vim.KeyMap.GetKeyMapping keyInputSet remapMode, keyInputSet
+        | None, None -> 
+            let keyInputSet = OneKeyInput keyInput
+            (KeyMappingResult.Mapped keyInputSet), keyInputSet
+
+    /// Get the correct mapping of the given KeyInput value in the current state of the 
+    /// IVimBuffer.  This will consider any buffered KeyInput values 
+    member x.GetKeyInputMapping keyInput =
+        x.GetKeyInputMappingCore keyInput |> fst
+
+    member x.OnVimTextBufferSwitchedMode modeKind modeArgument =
+        if x.Mode.ModeKind <> modeKind then
+            _modeMap.SwitchMode modeKind modeArgument |> ignore
+
     /// Actually process the input key.  Raise the change event on an actual change
     member x.Process (keyInput : KeyInput) =
 
@@ -215,7 +239,7 @@ type internal VimBuffer
             let processResult = 
                 _processingInputCount <- _processingInputCount + 1
                 try
-                    if keyInput = _vim.Settings.DisableCommand && x.Mode.ModeKind <> ModeKind.Disabled then
+                    if keyInput = _vim.GlobalSettings.DisableCommand && x.Mode.ModeKind <> ModeKind.Disabled then
                         x.SwitchMode ModeKind.Disabled ModeArgument.None |> ignore
                         ProcessResult.OfModeKind ModeKind.Disabled
                     else
@@ -226,7 +250,7 @@ type internal VimBuffer
                             | ModeSwitch.NoSwitch -> ()
                             | ModeSwitch.SwitchMode kind -> x.SwitchMode kind ModeArgument.None |> ignore
                             | ModeSwitch.SwitchModeWithArgument (kind, argument) -> x.SwitchMode kind argument |> ignore
-                            | ModeSwitch.SwitchPreviousMode -> _modeMap.SwitchPreviousMode() |> ignore
+                            | ModeSwitch.SwitchPreviousMode -> x.SwitchPreviousMode() |> ignore
                         | ProcessResult.NotHandled -> 
                             ()
                         | ProcessResult.Error ->
@@ -264,6 +288,35 @@ type internal VimBuffer
         finally 
             _keyInputEndEvent.Trigger keyInput
 
+    member x.RaiseErrorMessage msg = _errorMessageEvent.Trigger msg
+    member x.RaiseWarningMessage msg = _warningMessageEvent.Trigger msg
+    member x.RaiseStatusMessage msg = _statusMessageEvent.Trigger msg
+    member x.RaiseStatusMessageLong msgSeq = _statusMessageLongEvent.Trigger msgSeq
+
+    /// Remove an IMode from the IVimBuffer instance
+    member x.RemoveMode mode = _modeMap.RemoveMode mode
+
+    /// Switch to the desired mode
+    member x.SwitchMode modeKind modeArgument =
+
+        let mode = _modeMap.SwitchMode modeKind modeArgument
+
+        // Make sure to update the underlying IVimTextBuffer to the given mode.  Do this after
+        // we switch so that we can avoid the redundant mode switch in the event handler
+        // event which will cause us to actually switch
+        _vimTextBuffer.SwitchMode modeKind modeArgument
+
+        mode
+
+    member x.SwitchPreviousMode () =
+
+        match _modeMap.PreviousMode with
+        | None ->
+            // No previous mode so this is a no-op.
+            x.Mode
+        | Some previousMode ->
+            x.SwitchMode previousMode.ModeKind ModeArgument.None
+
     /// Simulate the KeyInput being processed.  Should not go through remapping because the caller
     /// is responsible for doing the mapping.  They are indicating the literal key was processed
     member x.SimulateProcessed keyInput = 
@@ -278,28 +331,12 @@ type internal VimBuffer
         _keyInputProcessedEvent.Trigger (keyInput, ProcessResult.Handled ModeSwitch.NoSwitch)
         _keyInputEndEvent.Trigger keyInput
 
-    member x.Close () = 
-        if _isClosed then 
-            invalidOp Resources.VimBuffer_AlreadyClosed
-        else
-            try
-                x.Mode.OnLeave()
-                _modeMap.Modes |> Seq.iter (fun x -> x.OnClose())
-                _vim.RemoveBuffer _textView |> ignore
-                _undoRedoOperations.Close()
-                _closedEvent.Trigger System.EventArgs.Empty
-            finally 
-                _isClosed <- true
-
-    member x.RaiseErrorMessage msg = _errorMessageEvent.Trigger msg
-    member x.RaiseWarningMessage msg = _warningMessageEvent.Trigger msg
-    member x.RaiseStatusMessage msg = _statusMessageEvent.Trigger msg
-    member x.RaiseStatusMessageLong msgSeq = _statusMessageLongEvent.Trigger msgSeq
                  
     interface IVimBuffer with
         member x.Vim = _vim
         member x.VimData = _vim.VimData
         member x.VimBufferData = x.VimBufferData
+        member x.VimTextBuffer = x.VimBufferData.VimTextBuffer
         member x.WordNavigator = _wordNavigator
         member x.TextView = _textView
         member x.MotionUtil = _motionUtil
@@ -325,7 +362,9 @@ type internal VimBuffer
         member x.ExternalEditMode = x.ExternalEditMode
         member x.DisabledMode = x.DisabledMode
         member x.AllModes = _modeMap.Modes
+        member x.GlobalSettings = _localSettings.GlobalSettings;
         member x.LocalSettings = _localSettings
+        member x.WindowSettings = _windowSettings
         member x.RegisterMap = _vim.RegisterMap
 
         member x.CanProcess keyInput = x.CanProcess keyInput
@@ -336,7 +375,7 @@ type internal VimBuffer
         member x.GetRegister name = _vim.RegisterMap.GetRegister name
         member x.Process keyInput = x.Process keyInput
         member x.SwitchMode kind arg = x.SwitchMode kind arg
-        member x.SwitchPreviousMode () = _modeMap.SwitchPreviousMode()
+        member x.SwitchPreviousMode() = x.SwitchPreviousMode()
         member x.SimulateProcessed keyInput = x.SimulateProcessed keyInput
 
         [<CLIEvent>]

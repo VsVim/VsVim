@@ -38,7 +38,7 @@ namespace VimCore.UnitTest
         private void Create(params string[] lines)
         {
             var textView = EditorUtil.CreateTextView(lines);
-            Create(textView, EditorUtil.GetEditorOptions(textView));
+            Create(textView);
         }
 
         private void Create(int caretPosition, params string[] lines)
@@ -47,15 +47,15 @@ namespace VimCore.UnitTest
             _textView.MoveCaretTo(caretPosition);
         }
 
-        private void Create(ITextView textView, IEditorOptions editorOptions = null)
+        private void Create(ITextView textView)
         {
             _textView = textView;
             _textBuffer = textView.TextBuffer;
             _snapshot = _textBuffer.CurrentSnapshot;
             _textBuffer.Changed += delegate { _snapshot = _textBuffer.CurrentSnapshot; };
             _globalSettings = new Vim.GlobalSettings();
-            _localSettings = new LocalSettings(_globalSettings, FSharpOption.CreateForReference(editorOptions), FSharpOption.CreateForReference(textView));
-            _markMap = new MarkMap(new TrackingLineColumnService());
+            _localSettings = new LocalSettings(_globalSettings);
+            _markMap = new MarkMap(new BufferTrackingService());
             _vimData = new VimData();
             _search = VimUtil.CreateSearchService(_globalSettings);
             _jumpList = VimUtil.CreateJumpList();

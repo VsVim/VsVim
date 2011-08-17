@@ -14,7 +14,6 @@ namespace Vim.UnitTest
     {
         internal static ICommonOperations CreateCommonOperations(
             ITextView textView,
-            IVimLocalSettings localSettings,
             IOutliningManager outlining = null,
             IStatusUtil statusUtil = null,
             ISearchService searchService = null,
@@ -23,18 +22,20 @@ namespace Vim.UnitTest
             IVimHost vimHost = null,
             IClipboardDevice clipboardDevice = null,
             IFoldManager foldManager = null,
-            IWordUtil wordUtil = null)
+            IWordUtil wordUtil = null,
+            IVimLocalSettings localSettings = null)
         {
             var editorOperations = EditorUtil.GetEditorOperations(textView);
             var editorOptions = EditorUtil.FactoryService.EditorOptionsFactory.GetOptions(textView);
-            var jumpList = new JumpList(new TrackingLineColumnService());
+            var jumpList = new JumpList(new BufferTrackingService());
             var keyMap = new KeyMap();
+            localSettings = localSettings ?? CreateLocalSettings();
             wordUtil = wordUtil ?? GetWordUtil(textView);
             statusUtil = statusUtil ?? new StatusUtil();
             foldManager = foldManager ?? new FoldManager(
-                textView, 
+                textView,
                 new FoldData(textView.TextBuffer),
-                statusUtil, 
+                statusUtil,
                 FSharpOption.Create(EditorUtil.FactoryService.OutliningManagerService.GetOutliningManager(textView)));
             searchService = searchService ?? CreateSearchService(localSettings.GlobalSettings);
             undoRedoOperations = undoRedoOperations ??
@@ -64,7 +65,6 @@ namespace Vim.UnitTest
         internal static IMotionUtil CreateTextViewMotionUtil(
             ITextView textView,
             IMarkMap markMap = null,
-            IVimLocalSettings settings = null,
             ISearchService search = null,
             ITextStructureNavigator navigator = null,
             IJumpList jumpList = null,
@@ -73,9 +73,9 @@ namespace Vim.UnitTest
             IEditorOptions editorOptions = null,
             IWordUtil wordUtil = null)
         {
-            markMap = markMap ?? new MarkMap(new TrackingLineColumnService());
-            settings = settings ?? new LocalSettings(new GlobalSettings(), FSharpOption.CreateForReference(editorOptions), FSharpOption.CreateForReference(textView));
-            search = search ?? CreateSearchService(settings.GlobalSettings);
+            var localSettings = CreateLocalSettings();
+            markMap = markMap ?? new MarkMap(new BufferTrackingService());
+            search = search ?? CreateSearchService(localSettings.GlobalSettings);
             navigator = navigator ?? CreateTextStructureNavigator(textView, WordKind.NormalWord);
             jumpList = jumpList ?? CreateJumpList();
             statusUtil = statusUtil ?? new StatusUtil();
@@ -84,7 +84,7 @@ namespace Vim.UnitTest
             return new MotionUtil(
                 textView,
                 markMap,
-                settings,
+                localSettings,
                 search,
                 navigator,
                 jumpList,
@@ -93,10 +93,19 @@ namespace Vim.UnitTest
                 vimData);
         }
 
-        internal static IJumpList CreateJumpList(ITrackingLineColumnService trackingLineColumnService = null )
+        /// <summary>
+        /// Create the IVimLocalSettings for the given ITextBuffer
+        /// </summary>
+        internal static IVimLocalSettings CreateLocalSettings(IVimGlobalSettings globalSettings = null)
         {
-            trackingLineColumnService = trackingLineColumnService ?? new TrackingLineColumnService();
-            return new JumpList(trackingLineColumnService);
+            globalSettings = globalSettings ?? new GlobalSettings();
+            return new LocalSettings(globalSettings);
+        }
+
+        internal static IJumpList CreateJumpList(IBufferTrackingService bufferTrackingService = null)
+        {
+            bufferTrackingService = bufferTrackingService ?? new BufferTrackingService();
+            return new JumpList(bufferTrackingService);
         }
 
         internal static RegisterMap CreateRegisterMap(IClipboardDevice device)
@@ -112,7 +121,6 @@ namespace Vim.UnitTest
             IRegisterMap registerMap = null,
             IMarkMap markMap = null,
             IVimData vimData = null,
-            IVimLocalSettings localSettings = null,
             IUndoRedoOperations undoRedOperations = null,
             ISmartIndentationService smartIndentationService = null,
             IFoldManager foldManager = null,
@@ -120,21 +128,20 @@ namespace Vim.UnitTest
             IMacroRecorder recorder = null,
             ISearchService searchService = null,
             ITextStructureNavigator wordNavigator = null,
-            IJumpList jumpList = null)
+            IVimLocalSettings localSettings = null)
         {
             statusUtil = statusUtil ?? new StatusUtil();
             undoRedOperations = undoRedOperations ?? VimUtil.CreateUndoRedoOperations(statusUtil);
-            localSettings = localSettings ?? new LocalSettings(new GlobalSettings());
             registerMap = registerMap ?? CreateRegisterMap(MockObjectFactory.CreateClipboardDevice().Object);
-            markMap = markMap ?? new MarkMap(new TrackingLineColumnService());
+            markMap = markMap ?? new MarkMap(new BufferTrackingService());
             vimData = vimData ?? new VimData();
-            motionUtil = motionUtil ?? CreateTextViewMotionUtil(textView, markMap: markMap, vimData: vimData, settings: localSettings);
-            operations = operations ?? CreateCommonOperations(textView, localSettings, vimData: vimData, statusUtil: statusUtil);
+            motionUtil = motionUtil ?? CreateTextViewMotionUtil(textView, markMap: markMap, vimData: vimData);
+            operations = operations ?? CreateCommonOperations(textView, vimData: vimData, statusUtil: statusUtil);
             smartIndentationService = smartIndentationService ?? CreateSmartIndentationService();
             foldManager = foldManager ?? EditorUtil.FactoryService.FoldManagerFactory.GetFoldManager(textView);
-            searchService = searchService ?? CreateSearchService(localSettings.GlobalSettings);
             wordNavigator = wordNavigator ?? CreateTextStructureNavigator(textView, WordKind.NormalWord);
-            jumpList = jumpList ?? CreateJumpList();
+            searchService = searchService ?? CreateSearchService();
+            localSettings = localSettings ?? CreateLocalSettings();
             vimHost = vimHost ?? new MockVimHost();
             var vim = MockObjectFactory.CreateVim(
                 registerMap: registerMap,
@@ -143,20 +150,61 @@ namespace Vim.UnitTest
                 vimData: vimData,
                 recorder: recorder,
                 searchService: searchService);
-            var buffer = MockObjectFactory.CreateVimBuffer(
-                textView: textView,
-                settings: localSettings,
-                motionUtil: motionUtil,
-                vim: vim.Object,
+            var vimTextBuffer = CreateVimTextBuffer(
+                textView.TextBuffer,
                 wordNavigator: wordNavigator,
-                jumpList: jumpList);
-            return new CommandUtil(
-                buffer.Object,
-                operations,
+                localSettings: localSettings,
+                vim: vim.Object);
+            var bufferData = CreateVimBufferData(
+                vimTextBuffer,
+                textView,
                 statusUtil,
-                undoRedOperations,
+                undoRedOperations);
+            var insertUtil = new InsertUtil(bufferData, operations);
+            return new CommandUtil(
+                bufferData,
+                motionUtil,
+                operations,
                 smartIndentationService,
-                foldManager);
+                foldManager,
+                wordNavigator,
+                insertUtil);
+        }
+
+        public static IVimTextBuffer CreateVimTextBuffer(
+            ITextBuffer textBuffer,
+            IVimLocalSettings localSettings = null,
+            IJumpList jumpList = null,
+            ITextStructureNavigator wordNavigator = null,
+            IVim vim = null)
+        {
+            localSettings = localSettings ?? CreateLocalSettings();
+            jumpList = jumpList ?? CreateJumpList();
+            wordNavigator = wordNavigator ?? CreateTextStructureNavigator(textBuffer, WordKind.NormalWord);
+            return new VimTextBuffer(
+                textBuffer,
+                localSettings,
+                jumpList,
+                wordNavigator,
+                new BufferTrackingService(),
+                vim);
+        }
+
+        /// <summary>
+        /// Create a new instance of VimBufferData.  Centralized here to make it easier to 
+        /// absorb API changes in the Unit Tests
+        /// </summary>
+        public static VimBufferData CreateVimBufferData(
+            IVimTextBuffer vimTextBuffer,
+            ITextView textView,
+            IStatusUtil statusUtil,
+            IUndoRedoOperations undoRedoOperations)
+        {
+            return new VimBufferData(
+                textView,
+                statusUtil,
+                undoRedoOperations,
+                vimTextBuffer);
         }
 
         internal static ISmartIndentationService CreateSmartIndentationService()
@@ -224,7 +272,7 @@ namespace Vim.UnitTest
 
         internal static IWordUtil GetWordUtil(ITextView textView)
         {
-            return EditorUtil.FactoryService.WordUtilFactory.GetWordUtil(textView);
+            return EditorUtil.FactoryService.WordUtilFactory.GetWordUtil(textView.TextBuffer);
         }
 
         internal static CommandRunData CreateCommandRunData(
@@ -406,7 +454,6 @@ namespace Vim.UnitTest
             var nav = CreateTextStructureNavigator(textView, WordKind.NormalWord);
             var operations = CreateCommonOperations(
                 textView: textView,
-                localSettings: settings,
                 outlining: outliningManager,
                 vimData: vimData,
                 searchService: search);
@@ -439,7 +486,7 @@ namespace Vim.UnitTest
 
         internal static NormalCommand CreatePing(Action<CommandData> action)
         {
-            Func<CommandData, CommandResult> func = 
+            Func<CommandData, CommandResult> func =
                 commandData =>
                 {
                     action(commandData);

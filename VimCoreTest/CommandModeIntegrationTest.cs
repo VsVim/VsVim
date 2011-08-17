@@ -27,7 +27,7 @@ namespace VimCore.UnitTest
             _host = new MockVimHost();
 
             var service = EditorUtil.FactoryService;
-            _buffer = service.Vim.CreateBuffer(_textView);
+            _buffer = service.Vim.CreateVimBuffer(_textView);
             _host = (MockVimHost)service.Vim.VimHost;
         }
 

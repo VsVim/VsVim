@@ -2160,8 +2160,6 @@ type internal MotionUtil
     /// The documentation around 'exclusive-linewise' says it applies to any 
     /// exclusive motion.  However in practice it doesn't appear to apply to 
     /// word motions
-    ///
-    /// TODO: Should assert if a column is given for a character wise motion
     member x.AdjustMotionResult motion (motionResult : MotionResult) =
 
         // Do the actual adjustment for exclusive motions.  The kind which should be 

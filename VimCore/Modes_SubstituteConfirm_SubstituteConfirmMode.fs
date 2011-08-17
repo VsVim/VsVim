@@ -195,6 +195,7 @@ type internal SubstituteConfirmMode
                 | ModeArgument.None -> None
                 | ModeArgument.OneTimeCommand(_) -> None
                 | ModeArgument.FromVisual -> None
+                | ModeArgument.InitialVisualSelection _ -> None
                 | ModeArgument.InsertWithCount _ -> None
                 | ModeArgument.InsertWithCountAndNewLine _ -> None
                 | ModeArgument.InsertWithTransaction transaction -> transaction.Complete(); None

@@ -10,15 +10,15 @@ namespace VimCore.UnitTest
     public class JumpListTest
     {
         private ITextBuffer _textBuffer;
-        private ITrackingLineColumnService _trackingLineColumnService;
+        private IBufferTrackingService _bufferTrackingService;
         private JumpList _jumpListRaw;
         private IJumpList _jumpList;
 
         public void Create(params string[] lines)
         {
             _textBuffer = EditorUtil.CreateTextBuffer(lines);
-            _trackingLineColumnService = new TrackingLineColumnService();
-            _jumpListRaw = new JumpList(_trackingLineColumnService);
+            _bufferTrackingService = new BufferTrackingService();
+            _jumpListRaw = new JumpList(_bufferTrackingService);
             _jumpList = _jumpListRaw;
         }
 

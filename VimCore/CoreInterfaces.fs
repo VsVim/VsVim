@@ -103,7 +103,35 @@ type IWordUtil =
 type IWordUtilFactory = 
 
     /// Get the IWordUtil instance for the given ITextView
-    abstract GetWordUtil : ITextView -> IWordUtil
+    abstract GetWordUtil : ITextBuffer -> IWordUtil
+
+/// Used to display a word completion list to the user
+type IWordCompletionSession =
+
+    /// Is the session dismissed
+    abstract IsDismissed : bool
+
+    /// The associated ITextView instance
+    abstract TextView : ITextView
+
+    /// Select the next word in the session
+    abstract MoveNext : unit -> bool
+
+    /// Select the previous word in the session.
+    abstract MovePrevious : unit -> bool
+
+    /// Dismiss the completion session 
+    abstract Dismiss : unit -> unit
+
+    /// Raised when the session is dismissed
+    [<CLIEvent>]
+    abstract Dismissed: IEvent<System.EventArgs>
+
+/// Factory service for creating IWordCompletionSession instances
+type IWordCompletionSessionFactoryService = 
+
+    /// Create a session with the given set of words
+    abstract CreateWordCompletionSession : textView : ITextView -> wordSpan : SnapshotSpan -> words : string seq -> isForward : bool -> IWordCompletionSession
 
 /// Wraps an ITextUndoTransaction so we can avoid all of the null checks
 type IUndoTransaction =
@@ -158,6 +186,49 @@ type IUndoRedoOperations =
 
     /// Undo the last "count" operations
     abstract Undo : count:int -> unit
+
+/// Represents the type of text change operations we recognize in the ITextBuffer.  These
+/// items are repeatable
+[<RequireQualifiedAccess>]
+type TextChange = 
+    | Insert of string
+    | Delete of int
+    | Combination of TextChange * TextChange
+
+    with 
+
+    /// Get the last / most recent change in the TextChange tree
+    member x.LastChange = 
+        match x with
+        | Insert _ -> x
+        | Delete _ -> x
+        | Combination (_, right) -> right.LastChange
+
+    /// Merge two TextChange values together.  The goal is to produce a the smallest TextChange
+    /// value possible
+    static member Merge left right =
+        match left, right with
+        | Insert leftStr, Insert rightStr -> 
+            Insert (leftStr + rightStr)
+        | Delete leftCount, Delete rightCount -> 
+            Delete (leftCount + rightCount)
+        | Insert leftStr, Delete rightCount ->
+            let diff = leftStr.Length - rightCount
+            if diff >= 0 then
+                let value = leftStr.Substring(0, diff)
+                Insert value
+            else
+                Delete (-diff)
+        | Delete _, Insert _ ->
+            // Can't reduce a left delete any further so we just create a Combination value
+            Combination (left, right)
+        | _ -> 
+            Combination (left, right)
+
+    static member Replace str =
+        let left = str |> StringUtil.length |> TextChange.Delete
+        let right = TextChange.Insert str
+        TextChange.Combination (left, right)
 
 [<System.Flags>]
 type SearchOptions = 
@@ -767,15 +838,17 @@ type KeyMappingResult =
     /// More input is needed to resolve this mapping
     | NeedsMoreInput
 
-
 /// Flags for the substitute command
 [<System.Flags>]
 type SubstituteFlags = 
     | None = 0
-    /// Replace all occurances on the line
+
+    /// Replace all occurrences on the line
     | ReplaceAll = 0x1
+
     /// Ignore case for the search pattern
     | IgnoreCase = 0x2
+
     /// Report only 
     | ReportOnly = 0x4
     | Confirm = 0x8
@@ -801,6 +874,273 @@ type SubstituteData = {
     Flags : SubstituteFlags
 }
 
+[<StructuralEquality>]
+[<NoComparison>]
+type BlockSpan = {
+    StartPoint : SnapshotPoint
+    Width : int
+    Height : int
+}
+    with
+
+    /// In what column does this block span begin
+    member x.Column =
+        SnapshotPointUtil.GetColumn x.StartPoint
+
+    /// Get the EndPoint (exclusive) of the BlockSpan
+    member x.EndPoint = 
+        let line = 
+            let lineNumber = SnapshotPointUtil.GetLineNumber x.StartPoint
+            SnapshotUtil.GetLineOrLast x.Snasphot (lineNumber + (x.Height - 1))
+        let offset = x.Column + x.Width
+        if offset >= line.Length then
+            line.End
+        else
+            line.Start.Add offset
+
+    member x.Snasphot = 
+        x.StartPoint.Snapshot
+
+    member x.TextBuffer = 
+        x.StartPoint.Snapshot.TextBuffer
+
+    /// Get the NonEmptyCollection<SnapshotSpan> for the given block information
+    member x.BlockSpans : NonEmptyCollection<SnapshotSpan> =
+        seq {
+            let snapshot = SnapshotPointUtil.GetSnapshot x.StartPoint
+            let lineNumber = SnapshotPointUtil.GetLineNumber x.StartPoint
+            for i = lineNumber to ((x.Height - 1)+ lineNumber) do
+                match SnapshotUtil.TryGetLine snapshot i with
+                | None -> ()
+                | Some line -> yield SnapshotLineUtil.GetSpanInLine line x.Column x.Width
+        } 
+        |> NonEmptyCollectionUtil.OfSeq 
+        |> Option.get
+
+    override x.ToString() =
+        sprintf "Point: %s Width: %d Height: %d" (x.StartPoint.ToString()) x.Width x.Height
+
+[<RequireQualifiedAccess>]
+type BlockCaretLocation =
+    | TopLeft
+    | TopRight
+    | BottomLeft
+    | BottomRight
+
+/// Represents the visual selection for any of the visual modes
+[<RequireQualifiedAccess>]
+[<StructuralEquality>]
+[<NoComparison>]
+type VisualSpan =
+
+    /// A characterwise span
+    | Character of SnapshotSpan
+
+    /// A linewise span
+    | Line of SnapshotLineRange
+
+    /// A block span.  The first int in the number of lines and the second one is the 
+    /// width of the selection
+    | Block of BlockSpan
+
+    with
+
+    /// Return the Spans which make up this VisualSpan instance
+    member x.Spans = 
+        match x with 
+        | VisualSpan.Character span -> [span] |> Seq.ofList
+        | VisualSpan.Line range -> [range.ExtentIncludingLineBreak] |> Seq.ofList
+        | VisualSpan.Block blockSpan -> blockSpan.BlockSpans :> SnapshotSpan seq
+
+    /// Returns the EditSpan for this VisualSpan
+    member x.EditSpan = 
+        match x with
+        | VisualSpan.Character span -> EditSpan.Single span
+        | VisualSpan.Line range -> EditSpan.Single range.ExtentIncludingLineBreak
+        | VisualSpan.Block blockSpan -> EditSpan.Block blockSpan.BlockSpans
+
+    /// Returns the SnapshotLineRange for the VisualSpan.  For Character this will
+    /// just expand out the Span.  For Line this is an identity.  For Block it will
+    /// return the overarching span
+    member x.LineRange = 
+        match x with
+        | VisualSpan.Character span -> SnapshotLineRangeUtil.CreateForSpan span
+        | VisualSpan.Line range -> range
+        | VisualSpan.Block _ -> x.EditSpan.OverarchingSpan |> SnapshotLineRangeUtil.CreateForSpan
+
+    /// Returns the start point of the Visual Span.  This can be None in the case
+    /// of an empty Block selection.
+    member x.Start =
+        match x with
+        | Character span -> span.Start
+        | Line range ->  range.Start
+        | Block blockSpan -> blockSpan.StartPoint
+
+    /// What type of OperationKind does this VisualSpan represent
+    member x.OperationKind =
+        match x with
+        | VisualSpan.Character _ -> OperationKind.CharacterWise
+        | VisualSpan.Line _ -> OperationKind.LineWise
+        | VisualSpan.Block _ -> OperationKind.CharacterWise
+
+    /// What type of ModeKind does this VisualSpan represent
+    member x.ModeKind =
+        match x with
+        | VisualSpan.Character _ -> ModeKind.VisualCharacter
+        | VisualSpan.Line _ -> ModeKind.VisualLine
+        | VisualSpan.Block _ -> ModeKind.VisualBlock
+
+    static member Create textView visualKind =
+        let visualSelection : VisualSelection = VisualSelection.CreateForSelection textView visualKind
+        visualSelection.VisualSpan
+
+/// Represents both the VisualSpan and selection information for Visual Mode
+
+and [<RequireQualifiedAccess>] [<StructuralEquality>] [<NoComparison>] VisualSelection =
+
+    /// The bool represents whether or not the caret is at the start of the SnapshotSpan
+    | Character of SnapshotSpan * bool
+
+    /// The bool represents whether or not the caret is at the start of the line range
+    /// and the int is which column in the range the caret should be placed in
+    | Line of SnapshotLineRange * bool * int 
+
+    /// Just keep the BlockSpan and the caret information for the block
+    | Block of BlockSpan * BlockCaretLocation
+
+    with
+
+    /// Get the corresponding Visual Span
+    member x.VisualSpan = 
+        match x with
+        | Character (span, _) -> VisualSpan.Character span
+        | Line (snapshotLineRange, _, _) -> VisualSpan.Line snapshotLineRange
+        | Block (blockSpan, _) -> VisualSpan.Block blockSpan
+
+    /// Get the ModeKind for the VisualSelection
+    member x.ModeKind =
+        x.VisualSpan.ModeKind
+
+    /// Get the EditSpan for the given VisualSpan
+    member x.EditSpan =
+        x.VisualSpan.EditSpan
+
+    member x.IsCharacterForward =
+        match x with
+        | Character (_, isForward) -> isForward
+        | _ -> false
+
+    member x.IsLineForward = 
+        match x with
+        | Line (_, isForward, _) -> isForward
+        | _ -> false
+
+    /// Gets the SnapshotPoint for the caret as it should appear in the given VisualSelection
+    member x.CaretPoint = 
+        match x with
+        | Character (span, isForward) ->
+            // The caret is either positioned at the start or the end of the selected
+            // SnapshotSpan
+            if isForward && span.Length > 0 then
+                SnapshotPointUtil.SubtractOne span.End
+            else
+                span.Start
+
+        | Line (snapshotLineRange, isForward, column) ->
+            // The caret is either positioned at the start or the end of the selected range
+            // and can be on any column in either
+            let line = 
+                if isForward then
+                    snapshotLineRange.EndLine
+                else
+                    snapshotLineRange.StartLine
+
+            if column <= line.LengthIncludingLineBreak then
+                SnapshotPointUtil.Add column line.Start
+            else
+                line.End
+
+        | Block (blockSpan, blockCaretLocation) ->
+
+            let getSpanEnd (span : SnapshotSpan) =
+                if span.Length = 0 then
+                    span.End
+                else
+                    span.End.Subtract 1
+
+            match blockCaretLocation with
+            | BlockCaretLocation.TopLeft -> blockSpan.StartPoint
+            | BlockCaretLocation.TopRight -> getSpanEnd blockSpan.BlockSpans.Head
+            | BlockCaretLocation.BottomLeft -> blockSpan.BlockSpans |> SeqUtil.last |> SnapshotSpanUtil.GetStartPoint
+            | BlockCaretLocation.BottomRight -> blockSpan.BlockSpans |> SeqUtil.last |> getSpanEnd
+
+    static member CreateForSelection textView visualKind =
+        let caretPoint = TextViewUtil.GetCaretPoint textView
+        match visualKind with
+        | VisualKind.Character -> 
+
+            // This is just represented by looking at the Stream SelectionSpan and checking the position
+            // of the caret
+            let span = textView.Selection.StreamSelectionSpan.SnapshotSpan
+            let visualSpan = VisualSpan.Character span
+            let isBackward = caretPoint = span.Start
+            VisualSelection.Character (span, not isBackward)
+        | VisualKind.Line-> 
+
+            let column = SnapshotPointUtil.GetColumn caretPoint
+            let snapshotLineRange = textView.Selection.StreamSelectionSpan.SnapshotSpan |> SnapshotLineRangeUtil.CreateForSpan
+            let isForward = 
+                if snapshotLineRange.StartLine.ExtentIncludingLineBreak.Contains caretPoint then
+                    false
+                else
+                    true
+            VisualSelection.Line (snapshotLineRange, isForward, column)
+        | VisualKind.Block -> 
+
+            let caretPoint = TextViewUtil.GetCaretPoint textView
+            let spanCollection = textView.Selection.SelectedSpans
+            if spanCollection.Count = 0 then
+                // Just like we would treat Character as a single empty SnapshotSpan we do the same here
+                // for block selection
+                let blockSpan = {
+                    StartPoint = caretPoint
+                    Width = 0
+                    Height = 1 }
+                VisualSelection.Block (blockSpan, BlockCaretLocation.TopLeft)
+            else
+                let firstSpan = spanCollection.[0]
+                let lastSpan = spanCollection |> SeqUtil.last
+                let blockSpan = {
+                    StartPoint = firstSpan.Start
+                    Width = firstSpan.Length
+                    Height = spanCollection.Count }
+
+                let blockCaretLocation = 
+                    
+                    if firstSpan.Start = caretPoint then
+                        BlockCaretLocation.TopLeft
+                    elif firstSpan.Contains(caretPoint) then
+                        BlockCaretLocation.TopRight
+                    elif lastSpan.Start = caretPoint then
+                        BlockCaretLocation.BottomLeft
+                    elif lastSpan.Contains(caretPoint) then
+                        BlockCaretLocation.BottomRight
+                    else
+                        BlockCaretLocation.TopLeft
+
+                VisualSelection.Block (blockSpan, blockCaretLocation)
+
+    /// Create for the given VisualSpan.  Assumes this was a forward created VisualSpan
+    static member CreateForVisualSpan visualSpan = 
+        match visualSpan with
+        | VisualSpan.Character span -> 
+            VisualSelection.Character (span, true)
+        | VisualSpan.Line lineRange ->
+            let column = SnapshotPointUtil.GetColumn lineRange.EndLine.End
+            VisualSelection.Line (lineRange, true, column)
+        | VisualSpan.Block blockSpan ->
+            VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
+
 [<RequireQualifiedAccess>]
 type ModeArgument =
     | None
@@ -808,14 +1148,9 @@ type ModeArgument =
     /// Used for transitions from Visual Mode directly to Command mode
     | FromVisual 
 
-    /// When the given mode is to execute a single command then return to 
-    /// the previous mode.  The provided mode kind is the value which needs
-    /// to be switched to upon completion of the command
-    | OneTimeCommand of ModeKind
-
-    /// Passing the substitute to confirm to Confirm mode.  The SnapshotSpan is the first
-    /// match to process and the range is the full range to consider for a replace
-    | Substitute of SnapshotSpan * SnapshotLineRange * SubstituteData
+    /// The initial span which should be selected and the SnapshotPoint where the 
+    /// caret should be placed within the VisualSpan
+    | InitialVisualSelection of VisualSelection
 
     /// Begins insert mode with a specified count.  This means the text inserted should
     /// be repeated a total of 'count - 1' times when insert mode exits
@@ -830,13 +1165,23 @@ type ModeArgument =
     /// change commands with text changes.  For example C, c, etc ...
     | InsertWithTransaction of ILinkedUndoTransaction
 
+    /// When the given mode is to execute a single command then return to 
+    /// the previous mode.  The provided mode kind is the value which needs
+    /// to be switched to upon completion of the command
+    | OneTimeCommand of ModeKind
+
+    /// Passing the substitute to confirm to Confirm mode.  The SnapshotSpan is the first
+    /// match to process and the range is the full range to consider for a replace
+    | Substitute of SnapshotSpan * SnapshotLineRange * SubstituteData
+
+
 type ModeSwitch =
     | NoSwitch
     | SwitchMode of ModeKind
     | SwitchModeWithArgument of ModeKind * ModeArgument
     | SwitchPreviousMode 
 
-// TODO: Should be suceeded or something other than Completed.  Error also completed just not
+// TODO: Should be succeeded or something other than Completed.  Error also completed just not
 // well
 [<RequireQualifiedAccess>]
 type CommandResult =   
@@ -849,63 +1194,10 @@ type CommandResult =
     /// during a macro run it will cause the macro to stop executing
     | Error
 
-
 [<RequireQualifiedAccess>]
 type RunResult = 
     | Completed
     | SubstituteConfirm of SnapshotSpan * SnapshotLineRange * SubstituteData
-
-[<RequireQualifiedAccess>]
-type VisualSpan =
-
-    /// A characterwise span
-    | Character of SnapshotSpan
-
-    /// A linewise span
-    | Line of SnapshotLineRange
-
-    /// A block span
-    | Block of NonEmptyCollection<SnapshotSpan>
-
-    with
-
-    /// Return the Spans which make up this VisualSpan instance
-    member x.Spans = 
-        match x with 
-        | VisualSpan.Character span -> [span] |> Seq.ofList
-        | VisualSpan.Line range -> [range.ExtentIncludingLineBreak] |> Seq.ofList
-        | VisualSpan.Block col -> col.All
-
-    /// Returns the EditSpan for this VisualSpan
-    member x.EditSpan = 
-        match x with
-        | VisualSpan.Character span -> EditSpan.Single span
-        | VisualSpan.Line range -> EditSpan.Single range.ExtentIncludingLineBreak
-        | VisualSpan.Block col -> EditSpan.Block col
-
-    /// Returns the SnapshotLineRange for the VisualSpan.  For Character this will
-    /// just expand out the Span.  For Line this is an identity.  For Block it will
-    /// return the overarching span
-    member x.LineRange = 
-        match x with
-        | VisualSpan.Character span -> SnapshotLineRangeUtil.CreateForSpan span
-        | VisualSpan.Line range -> range
-        | VisualSpan.Block col -> col |> SnapshotSpanUtil.GetOverarchingSpan |> SnapshotLineRangeUtil.CreateForSpan
-
-    /// Returns the start point of the Visual Span.  This can be None in the case
-    /// of an empty Block selection.
-    member x.Start =
-        match x with
-        | Character span -> span.Start
-        | Line range ->  range.Start
-        | Block col -> col.Head.Start
-
-    /// What type of OperationKind does this VisualSpan represent
-    member x.OperationKind =
-        match x with
-        | VisualSpan.Character _ -> OperationKind.CharacterWise
-        | VisualSpan.Line _ -> OperationKind.LineWise
-        | VisualSpan.Block _ -> OperationKind.CharacterWise
 
 /// Information about the attributes of Command
 [<System.Flags>]
@@ -928,21 +1220,28 @@ type CommandFlags =
 
     /// For the purposes of change repeating the command is linked with the following
     /// text change
-    | LinkedWithNextTextChange = 0x10
+    | LinkedWithNextCommand = 0x10
+
+    /// For the purposes of change repeating the command is linked with the previous
+    /// text change if it exists
+    | LinkedWithPreviousCommand = 0x20
 
     /// For Visual Mode commands which should reset the cursor to the original point
     /// after completing
-    | ResetCaret = 0x20
+    | ResetCaret = 0x40
 
     /// Vim allows for special handling of the 'd' command in normal mode such that it can
     /// have the pattern 'd#d'.  This flag is used to tag the 'd' command to allow such
     /// a pattern
-    | Delete = 0x40
+    | Delete = 0x80
 
     /// Vim allows for special handling of the 'y' command in normal mode such that it can
     /// have the pattern 'y#y'.  This flag is used to tag the 'd' command to allow such
     /// a pattern
-    | Yank = 0x80
+    | Yank = 0x100
+
+    /// Represents an insert edit action which can be linked with other insert edit actions
+    | InsertEdit = 0x200
 
 /// Data about the run of a given MotionResult
 type MotionData = {
@@ -1000,6 +1299,9 @@ type PingData (_func : CommandData -> CommandResult) =
 [<StructuralEquality>]
 [<NoComparison>]
 type NormalCommand = 
+
+    /// Add 'count' to the word close to the caret
+    | AddToWord
 
     /// Deletes the text specified by the motion and begins insert mode. Implements the "c" 
     /// command
@@ -1215,8 +1517,14 @@ type NormalCommand =
     /// Substitute the character at the cursor
     | SubstituteCharacterAtCaret
 
+    /// Subtract 'count' from the word at the caret
+    | SubtractFromWord
+
     /// Switch modes with the specified information
     | SwitchMode of ModeKind * ModeArgument
+
+    /// Switch to the previous Visual Mode selection
+    | SwitchPreviousVisualMode
 
     /// Write out the ITextBuffer and quit
     | WriteBufferAndQuit
@@ -1293,6 +1601,42 @@ type VisualCommand =
     /// Yank the selection into the specified register
     | YankSelection
 
+/// Insert mode commands that can be executed by the user
+[<RequireQualifiedAccess>]
+[<StructuralEquality>]
+[<NoComparison>]
+type InsertCommand  =
+
+    /// Back space at the current caret position
+    | Back
+
+    /// This is an insert command which is a combination of other insert commands
+    | Combined of InsertCommand * InsertCommand
+
+    /// Delete the character under the caret
+    | Delete
+
+    /// Delete all indentation on the current line
+    | DeleteAllIndent
+
+    /// Insert a new line into the ITextBuffer
+    | InsertNewLine
+
+    /// Insert a tab into the ITextBuffer
+    | InsertTab
+
+    /// Move the caret in the given direction
+    | MoveCaret of Direction
+
+    /// Shift the current line one indent width to the left
+    | ShiftLineLeft 
+
+    /// Shift the current line one indent width to the right
+    | ShiftLineRight
+
+    /// Text Change 
+    | TextChange of TextChange
+
 /// Commands which can be executed by the user
 [<RequireQualifiedAccess>]
 [<StructuralEquality>]
@@ -1304,6 +1648,9 @@ type Command =
 
     /// A Visual Mode Command
     | VisualCommand of VisualCommand * CommandData * VisualSpan
+
+    /// An Insert / Replace Mode Command
+    | InsertCommand of InsertCommand
 
 /// The result of binding to a Motion value.
 [<RequireQualifiedAccess>]
@@ -1444,6 +1791,9 @@ type CommandBinding =
     /// KeyInputSet bound to a particular VisualCommand instance
     | VisualBinding of KeyInputSet * CommandFlags * VisualCommand
 
+    /// KeyInputSet bound to an insert mode command
+    | InsertBinding of KeyInputSet * CommandFlags * InsertCommand
+
     /// KeyInputSet bound to a complex VisualCommand instance
     | ComplexVisualBinding of KeyInputSet * CommandFlags * BindDataStorage<VisualCommand>
 
@@ -1455,6 +1805,7 @@ type CommandBinding =
         | NormalBinding (value, _, _) -> value
         | MotionBinding (value, _, _) -> value
         | VisualBinding (value, _, _) -> value
+        | InsertBinding (value, _, _) -> value
         | ComplexNormalBinding (value, _, _) -> value
         | ComplexVisualBinding (value, _, _) -> value
 
@@ -1464,6 +1815,7 @@ type CommandBinding =
         | NormalBinding (_, value, _) -> value
         | MotionBinding (_, value, _) -> value
         | VisualBinding (_, value, _) -> value
+        | InsertBinding (_, value, _) -> value
         | ComplexNormalBinding (_, value, _) -> value
         | ComplexVisualBinding (_, value, _) -> value
 
@@ -1490,12 +1842,23 @@ and ICommandUtil =
     /// Run a visual command
     abstract RunVisualCommand : VisualCommand -> CommandData -> VisualSpan -> CommandResult
 
+    /// Run a insert command
+    abstract RunInsertCommand : InsertCommand -> CommandResult
+
     /// Run a command
     abstract RunCommand : Command -> CommandResult
 
+type internal IInsertUtil = 
+
+    /// Run a insert command
+    abstract RunInsertCommand : InsertCommand -> CommandResult
+
+    /// Repeat the given edit series. 
+    abstract RepeatEdit : InsertCommand -> addNewLines : bool -> count : int -> unit
+
 /// Contains the stored information about a Visual Span.  This instance *will* be 
-/// stored for long periods of time and used to erpeat a Command instance across
-/// mulitiple IVimBuffer instances so it must be buffer agnostic
+/// stored for long periods of time and used to repeat a Command instance across
+/// multiple IVimBuffer instances so it must be buffer agnostic
 [<RequireQualifiedAccess>]
 type StoredVisualSpan = 
 
@@ -1550,49 +1913,8 @@ type StoredVisualSpan =
             StoredVisualSpan.Character (endLineOffset, endOffset)
         | VisualSpan.Line range ->
             StoredVisualSpan.Line range.Count
-        | VisualSpan.Block col -> 
-            let length = 
-                match SeqUtil.tryHeadOnly col with
-                | None -> 0
-                | Some span -> span.Length
-            let count = col.Count
-            StoredVisualSpan.Block (length, count)
-
-/// Represents the type of text change operations we recognize in the ITextBuffer.  These
-/// items are repeatable
-[<RequireQualifiedAccess>]
-type TextChange = 
-    | Insert of string
-    | Delete of int
-    | Combination of TextChange * TextChange
-
-    with 
-
-    /// Merge two TextChange values together.  The goal is to produce a the smallest TextChange
-    /// value possible
-    static member Merge left right =
-        match left, right with
-        | Insert leftStr, Insert rightStr -> 
-            Insert (leftStr + rightStr)
-        | Delete leftCount, Delete rightCount -> 
-            Delete (leftCount + rightCount)
-        | Insert leftStr, Delete rightCount ->
-            let diff = leftStr.Length - rightCount
-            if diff >= 0 then
-                let value = leftStr.Substring(0, diff)
-                Insert value
-            else
-                Delete (-diff)
-        | Delete _, Insert _ ->
-            // Can't reduce a left delete any further so we just create a Combination value
-            Combination (left, right)
-        | _ -> 
-            Combination (left, right)
-
-    static member Replace str =
-        let left = str |> StringUtil.length |> TextChange.Delete
-        let right = TextChange.Insert str
-        TextChange.Combination (left, right)
+        | VisualSpan.Block blockSpan -> 
+            StoredVisualSpan.Block (blockSpan.Width, blockSpan.Height)
 
 /// Contains information about an executed Command.  This instance *will* be stored
 /// for long periods of time and used to repeat a Command instance across multiple
@@ -1607,8 +1929,8 @@ type StoredCommand =
     /// The stored information about a VisualCommand
     | VisualCommand of VisualCommand * CommandData * StoredVisualSpan * CommandFlags
 
-    /// A Text Change which occurred
-    | TextChangeCommand of TextChange
+    /// The stored information about a InsertCommand
+    | InsertCommand of InsertCommand * CommandFlags
 
     /// A Linked Command links together 2 other StoredCommand objects so they
     /// can be repeated together.
@@ -1621,8 +1943,17 @@ type StoredCommand =
         match x with 
         | NormalCommand (_, _, flags) -> flags
         | VisualCommand (_, _, _, flags) -> flags
-        | TextChangeCommand _ -> CommandFlags.None
-        | LinkedCommand _ -> CommandFlags.None
+        | InsertCommand (_, flags) -> flags
+        | LinkedCommand (_, rightCommand) -> rightCommand.CommandFlags
+
+    /// Returns the last command.  For most StoredCommand values this is just an identity 
+    /// function but for LinkedCommand values it returns the right most
+    member x.LastCommand =
+        match x with
+        | NormalCommand _ -> x
+        | VisualCommand _ -> x
+        | InsertCommand _ -> x
+        | LinkedCommand (_, right) -> right.LastCommand
 
     /// Create a StoredCommand instance from the given Command value
     static member OfCommand command (commandBinding : CommandBinding) = 
@@ -1632,6 +1963,8 @@ type StoredCommand =
         | Command.VisualCommand (command, data, visualSpan) ->
             let storedVisualSpan = StoredVisualSpan.OfVisualSpan visualSpan
             StoredCommand.VisualCommand (command, data, storedVisualSpan, commandBinding.CommandFlags)
+        | Command.InsertCommand command ->
+            StoredCommand.InsertCommand (command, commandBinding.CommandFlags)
 
 /// Flags about specific motions
 [<RequireQualifiedAccess>]
@@ -1989,12 +2322,24 @@ module GlobalSettingNames =
 module LocalSettingNames =
 
     let AutoIndentName = "autoindent"
-    let CursorLineName = "cursorline"
     let ExpandTabName = "expandtab"
     let NumberName = "number"
-    let ScrollName = "scroll"
+    let NumberFormatsName = "nrformats"
     let TabStopName = "tabstop"
     let QuoteEscapeName = "quoteescape"
+
+module WindowSettingNames =
+
+    let CursorLineName = "cursorline"
+    let ScrollName = "scroll"
+
+/// Types of number formats supported by CTRL-A CTRL-A
+[<RequireQualifiedAccess>]
+type NumberFormat =
+    | Alpha
+    | Decimal
+    | Hex
+    | Octal
 
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property
@@ -2109,17 +2454,9 @@ and IVimGlobalSettings =
 
 /// Settings class which is local to a given IVimBuffer.  This will hide the work of merging
 /// global settings with non-global ones
-///
-/// TODO: Need to break this into local to buffer and local to window settings
 and IVimLocalSettings =
 
     abstract AutoIndent : bool with get, set
-
-    /// Whether or not to highlight the line the cursor is on
-    abstract CursorLine : bool with get, set
-
-    /// The IEditorOptions associated with the settings if one exists
-    abstract EditorOptions : IEditorOptions option
 
     /// Whether or not to expand tabs into spaces
     abstract ExpandTab : bool with get, set
@@ -2130,14 +2467,31 @@ and IVimLocalSettings =
     /// Whether or not to put the numbers on the left column of the display
     abstract Number : bool with get, set
 
+    /// Fromats that vim considers a number for CTRL-A and CTRL-X
+    abstract NumberFormats : string with get, set
+
     /// How many spaces a tab counts for 
     abstract TabStop : int with get, set
 
-    /// The scroll size 
-    abstract Scroll : int with get, set
-
     /// Which characters escape quotes for certain motion types
     abstract QuoteEscape : string with get, set
+
+    /// Is the provided NumberFormat supported by the current options
+    abstract IsNumberFormatSupported : NumberFormat -> bool
+
+    inherit IVimSettings
+
+/// Settings which are local to a given window.
+and IVimWindowSettings = 
+
+    /// Whether or not to highlight the line the cursor is on
+    abstract CursorLine : bool with get, set
+
+    /// Return the handle to the global IVimSettings instance
+    abstract GlobalSettings : IVimGlobalSettings
+
+    /// The scroll size 
+    abstract Scroll : int with get, set
 
     inherit IVimSettings
 
@@ -2254,16 +2608,18 @@ type VimBufferData = {
 
     TextView : ITextView
 
-    JumpList : IJumpList
-
-    LocalSettings : IVimLocalSettings
-
     StatusUtil : IStatusUtil
 
     UndoRedoOperations : IUndoRedoOperations
 
-    Vim : IVim
-}
+    VimTextBuffer : IVimTextBuffer
+} with
+
+    member x.JumpList = x.VimTextBuffer.JumpList
+
+    member x.LocalSettings = x.VimTextBuffer.LocalSettings
+
+    member x.Vim = x.VimTextBuffer.Vim
 
 /// Vim instance.  Global for a group of buffers
 and IVim =
@@ -2296,8 +2652,7 @@ and IVim =
     /// ISearchService for this IVim instance
     abstract SearchService : ISearchService
 
-    /// TODO: Rename GlobalSettings
-    abstract Settings : IVimGlobalSettings
+    abstract GlobalSettings : IVimGlobalSettings
 
     abstract VimData : IVimData 
 
@@ -2309,17 +2664,23 @@ and IVim =
     /// is passed in order to prevent memory leaks from captured ITextView`s
     abstract VimRcLocalSettings : IVimLocalSettings with get, set
 
-    /// Create an IVimBuffer for the given IWpfTextView
-    abstract CreateBuffer : ITextView -> IVimBuffer
+    /// Create an IVimBuffer for the given ITextView
+    abstract CreateVimBuffer : ITextView -> IVimBuffer
 
-    /// Get the IVimBuffer associated with the given view
-    abstract GetBuffer : ITextView -> IVimBuffer option
+    /// Create an IVimTextBuffer for the given ITextBuffer
+    abstract CreateVimTextBuffer : ITextBuffer -> IVimTextBuffer
 
-    /// Get the IVimBuffer associated with the given view
-    abstract GetBufferForBuffer : ITextBuffer -> IVimBuffer option
+    /// Get the IVimBuffer associated with the given ITextView
+    abstract GetVimBuffer : ITextView -> IVimBuffer option
 
-    /// Get or create an IVimBuffer for the given IWpfTextView
-    abstract GetOrCreateBuffer : ITextView -> IVimBuffer
+    /// Get the IVimTextBuffer associated with the given ITextBuffer
+    abstract GetVimTextBuffer : ITextBuffer -> IVimTextBuffer option
+
+    /// Get or create an IVimBuffer for the given ITextView
+    abstract GetOrCreateVimBuffer : ITextView -> IVimBuffer
+
+    /// Get or create an IVimTextBuffer for the given ITextBuffer
+    abstract GetOrCreateVimTextBuffer : ITextBuffer -> IVimTextBuffer
 
     /// Load the VimRc file.  If the file was previously loaded a new load will be 
     /// attempted.  Returns true if a VimRc was actually loaded
@@ -2346,6 +2707,49 @@ and SwitchModeEventArgs
     /// Previous IMode.  Expressed as an Option because the first mode switch
     /// has no previous one
     member x.PreviousMode = _previousMode
+
+/// This is the interface which represents the parts of a vim buffer which are shared amongst all
+/// of it's views
+and IVimTextBuffer = 
+
+    /// The associated ITextBuffer instance
+    abstract TextBuffer : ITextBuffer
+
+    /// The associated IVimGlobalSettings instance
+    abstract GlobalSettings : IVimGlobalSettings
+
+    /// The associated IJumpList instance
+    abstract JumpList : IJumpList
+
+    /// The last VisualSpan selection for the IVimTextBuffer.  This is a combination of a VisualSpan
+    /// and the SnapshotPoint within the span where the caret should be positioned
+    abstract LastVisualSelection : VisualSelection option with get, set
+
+    /// The associated IVimLocalSettings instance
+    abstract LocalSettings : IVimLocalSettings
+
+    /// ModeKind of the current mode of the IVimTextBuffer.  It may seem odd at first to put ModeKind
+    /// at this level but it is indeed shared amongst all views.  This can be demonstrated by opening
+    /// the same file in multiple tabs, switch to insert in one and then move to the other via the
+    /// mouse and noting it is also in Insert mode.  Actual IMode values are ITextView specific though
+    /// and only live at the ITextView level
+    abstract ModeKind : ModeKind
+
+    /// Name of the buffer.  Used for items like Marks
+    abstract Name : string
+
+    /// The associated IVim instance
+    abstract Vim : IVim
+
+    /// The ITextStructureNavigator for word values in the ITextBuffer
+    abstract WordNavigator : ITextStructureNavigator
+
+    /// Switch the current mode to the provided value
+    abstract SwitchMode : ModeKind -> ModeArgument -> unit
+
+    /// Raised when the mode is switched.  Returns the old and new mode 
+    [<CLIEvent>]
+    abstract SwitchedMode : IEvent<ModeKind * ModeArgument>
 
 /// Main interface for the Vim editor engine so to speak. 
 and IVimBuffer =
@@ -2378,6 +2782,9 @@ and IVimBuffer =
     /// Name of the buffer.  Used for items like Marks
     abstract Name : string
 
+    /// Global settings for the buffer
+    abstract GlobalSettings : IVimGlobalSettings
+
     /// Local settings for the buffer
     abstract LocalSettings : IVimLocalSettings
 
@@ -2403,11 +2810,17 @@ and IVimBuffer =
     /// Owning IVim instance
     abstract Vim : IVim
 
+    /// Associated IVimTextBuffer
+    abstract VimTextBuffer : IVimTextBuffer
+
     /// VimBufferData for the given IVimBuffer
     abstract VimBufferData : VimBufferData
 
     /// The ITextStructureNavigator for word values in the buffer
     abstract WordNavigator : ITextStructureNavigator
+
+    /// Associated IVimWindowSettings
+    abstract WindowSettings : IVimWindowSettings
 
     /// Associated IVimData instance
     abstract VimData : IVimData
@@ -2583,6 +2996,9 @@ and INormalMode =
 /// This is the interface implemented by Insert and Replace mode
 and IInsertMode =
 
+    /// The active IWordCompletionSession if one is active
+    abstract ActiveWordCompletionSession : IWordCompletionSession option
+
     /// Is InsertMode currently processing a Text Input value
     abstract IsProcessingDirectInsert : bool
 
@@ -2591,6 +3007,10 @@ and IInsertMode =
     /// like 'CTRL-D' but instead commands like 'a', 'b' which directly edit the 
     /// ITextBuffer
     abstract IsDirectInsert : KeyInput -> bool
+
+    /// Raised when a command is successfully run
+    [<CLIEvent>]
+    abstract CommandRan : IEvent<CommandRunData>
 
     inherit IMode
 

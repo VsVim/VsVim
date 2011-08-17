@@ -43,7 +43,7 @@ namespace VsVim.UnitTest
             _factory = new MockRepository(MockBehavior.Loose);
             _textView = EditorUtil.CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
-            _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
+            _buffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(_textView);
 
             // Have adatper ignore by default
             _adapter = _factory.Create<IExternalEditAdapter>(MockBehavior.Strict);

@@ -33,16 +33,14 @@ namespace VimCore.UnitTest
             _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             _vimData = new VimData();
             var settings = new GlobalSettings();
-            var localSettings = new LocalSettings(settings, EditorUtil.GetEditorOptions(_textView), _textView);
             var motionUtil = VimUtil.CreateTextViewMotionUtil(
                 _textView,
-                settings: localSettings,
                 vimData: _vimData);
             var capture = new MotionCapture(
                 _host.Object,
                 _textView,
                 MockObjectFactory.CreateIncrementalSearch(factory: _factory).Object,
-                localSettings);
+                VimUtil.CreateLocalSettings(settings));
             _commandUtil = VimUtil.CreateCommandUtil(
                 _textView,
                 motionUtil: motionUtil,

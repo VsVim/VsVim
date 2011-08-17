@@ -202,7 +202,7 @@ namespace VsVim.UnitTest
 
             // Verify we actually created the IVimBuffer instance 
             _vim = container.GetExport<IVim>().Value;
-            var vimBuffer = _vim.GetOrCreateBuffer(textView);
+            var vimBuffer = _vim.GetOrCreateVimBuffer(textView);
             Assert.IsNotNull(vimBuffer);
 
             // Do one round of DoEvents since several services queue up actions to 
@@ -246,7 +246,7 @@ namespace VsVim.UnitTest
 
             // Verify we actually created the IVimBuffer instance 
             var vim = container.GetExport<IVim>().Value;
-            var vimBuffer = vim.GetOrCreateBuffer(textView);
+            var vimBuffer = vim.GetOrCreateVimBuffer(textView);
             Assert.IsNotNull(vimBuffer);
 
             var weakVimBuffer = new WeakReference(vimBuffer);
@@ -287,14 +287,17 @@ namespace VsVim.UnitTest
             vimBuffer.MarkMap.SetMark(vimBuffer.TextSnapshot.GetPoint(0), 'A');
             var weakVimBuffer = new WeakReference(vimBuffer);
             var weakTextView = new WeakReference(vimBuffer.TextView);
+            var localSettings = vimBuffer.LocalSettings;
 
             // Clean up 
             vimBuffer.TextView.Close();
             vimBuffer = null;
 
+
             RunGarbageCollector();
             Assert.IsNull(weakVimBuffer.Target);
             Assert.IsNull(weakTextView.Target);
+            Assert.IsNotNull(localSettings);
         }
 
         /// <summary>

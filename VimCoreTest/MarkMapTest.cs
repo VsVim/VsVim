@@ -20,7 +20,7 @@ namespace VimCore.UnitTest
         [SetUp]
         public void Init()
         {
-            var service = new TrackingLineColumnService();
+            var service = new BufferTrackingService();
             _mapRaw = new Vim.MarkMap(service);
             _map = _mapRaw;
             _mapListener = _mapRaw;
@@ -41,7 +41,7 @@ namespace VimCore.UnitTest
         {
             _textView = EditorUtil.CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
-            _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
+            _buffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(_textView);
             _mapListener.VimBufferCreated(_buffer);
         }
 
@@ -261,7 +261,7 @@ namespace VimCore.UnitTest
         public void BufferLifetime1()
         {
             var textView = EditorUtil.CreateTextView("foo");
-            var vimBuffer = EditorUtil.FactoryService.Vim.CreateBuffer(textView);
+            var vimBuffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(textView);
             _mapListener.VimBufferCreated(vimBuffer);
             _map.SetLocalMark(new SnapshotPoint(textView.TextSnapshot, 0), 'c');
             vimBuffer.Close();
