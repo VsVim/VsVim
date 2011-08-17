@@ -48,7 +48,7 @@ namespace VimCore.UnitTest
 
             _vimData = new VimData();
             _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice().Object);
-            _markMap = new MarkMap(new TrackingLineColumnService());
+            _markMap = new MarkMap(new BufferTrackingService());
             _globalSettings = new GlobalSettings();
             _localSettings = VimUtil.CreateLocalSettings();
 
@@ -79,7 +79,8 @@ namespace VimCore.UnitTest
                 vimData: _vimData,
                 foldManager: _foldManager,
                 smartIndentationService: _smartIdentationService.Object,
-                recorder: _recorder.Object);
+                recorder: _recorder.Object,
+                localSettings: _localSettings);
             _jumpList = _commandUtil._jumpList;
         }
 
@@ -603,11 +604,11 @@ namespace VimCore.UnitTest
         {
             Create("the", "dog", "kicked", "the", "ball");
 
-            var col = _textView.GetBlock(0, 1, 0, 2);
-            var span = VisualSpan.NewBlock(col);
-            var stored = StoredVisualSpan.OfVisualSpan(span);
+            var blockSpanData = _textView.GetBlockSpan(0, 1, 0, 2);
+            var visualSpan = VisualSpan.NewBlock(blockSpanData);
+            var stored = StoredVisualSpan.OfVisualSpan(visualSpan);
             var restored = _commandUtil.CalculateVisualSpan(stored);
-            CollectionAssert.AreEquivalent(col, restored.AsBlock().Item);
+            Assert.AreEqual(visualSpan, restored);
         }
 
         /// <summary>
@@ -618,8 +619,8 @@ namespace VimCore.UnitTest
         {
             Create("the", "dog", "kicked", "the", "ball");
 
-            var col = _textView.GetBlock(0, 1, 0, 2);
-            var span = VisualSpan.NewBlock(col);
+            var blockSpanData = _textView.GetBlockSpan(0, 1, 0, 2);
+            var span = VisualSpan.NewBlock(blockSpanData);
             var stored = StoredVisualSpan.OfVisualSpan(span);
             _textView.MoveCaretTo(1);
             var restored = _commandUtil.CalculateVisualSpan(stored);
@@ -629,7 +630,7 @@ namespace VimCore.UnitTest
                     _textView.GetLineSpan(0, 1, 1),
                     _textView.GetLineSpan(1, 1, 1)
                 },
-                restored.AsBlock().Item);
+                restored.AsBlock().Item.BlockSpans);
         }
 
         [Test]
@@ -796,7 +797,7 @@ namespace VimCore.UnitTest
             _textView.MoveCaretToLine(1);
             var span = _textView.GetVisualSpanBlock(column: 1, length: 2, startLine: 0, lineCount: 2);
             _operations
-                .Setup(x => x.ShiftLineBlockRight(span.AsBlock().item, 1))
+                .Setup(x => x.ShiftLineBlockRight(span.AsBlock().item.BlockSpans, 1))
                 .Callback(() => _textView.SetText("c  at", "d  og"))
                 .Verifiable();
             _commandUtil.ShiftLinesRightVisual(1, span);
@@ -813,7 +814,7 @@ namespace VimCore.UnitTest
             _textView.MoveCaretToLine(1);
             var span = _textView.GetVisualSpanBlock(column: 1, length: 1, startLine: 0, lineCount: 2);
             _operations
-                .Setup(x => x.ShiftLineBlockRight(span.AsBlock().item, 1))
+                .Setup(x => x.ShiftLineBlockRight(span.AsBlock().item.BlockSpans, 1))
                 .Callback(() => _textView.SetText("cat", "dog"))
                 .Verifiable();
             _commandUtil.ShiftLinesLeftVisual(1, span);
@@ -1223,7 +1224,7 @@ namespace VimCore.UnitTest
         public void PutOverSelection_Block()
         {
             Create("cat", "dog");
-            var visualSpan = VisualSpan.NewBlock(_textView.GetBlock(1, 1, 0, 2));
+            var visualSpan = VisualSpan.NewBlock(_textView.GetBlockSpan(1, 1, 0, 2));
             UnnamedRegister.UpdateValue("z");
             _operations.SetupPut(_textBuffer, "czt", "dg");
             _commandUtil.PutOverSelection(UnnamedRegister, 1, moveCaretAfterText: false, visualSpan: visualSpan);
@@ -1271,7 +1272,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "fish");
             _globalSettings.VirtualEdit = String.Empty;
-            var visualSpan = VisualSpan.NewBlock(_textView.GetBlock(1, 1, 0, 2));
+            var visualSpan = VisualSpan.NewBlock(_textView.GetBlockSpan(1, 1, 0, 2));
             _commandUtil.DeleteLineSelection(UnnamedRegister, visualSpan);
             Assert.AreEqual("c", _textView.GetLine(0).GetText());
             Assert.AreEqual("d", _textView.GetLine(1).GetText());
@@ -1336,7 +1337,7 @@ namespace VimCore.UnitTest
         {
             Create("  cat", "  dog", "bear", "fish");
             _localSettings.AutoIndent = true;
-            var visualSpan = VisualSpan.NewBlock(_textView.GetBlock(2, 1, 0, 2));
+            var visualSpan = VisualSpan.NewBlock(_textView.GetBlockSpan(2, 1, 0, 2));
             _commandUtil.ChangeLineSelection(UnnamedRegister, visualSpan, specialCaseBlock: false);
             Assert.AreEqual("", _textView.GetLine(0).GetText());
             Assert.AreEqual("bear", _textView.GetLine(1).GetText());
@@ -1352,7 +1353,7 @@ namespace VimCore.UnitTest
         {
             Create("  cat", "  dog", "bear", "fish");
             _localSettings.AutoIndent = true;
-            var visualSpan = VisualSpan.NewBlock(_textView.GetBlock(2, 1, 0, 2));
+            var visualSpan = VisualSpan.NewBlock(_textView.GetBlockSpan(2, 1, 0, 2));
             _commandUtil.ChangeLineSelection(UnnamedRegister, visualSpan, specialCaseBlock: true);
             Assert.AreEqual("  ", _textView.GetLine(0).GetText());
             Assert.AreEqual("  ", _textView.GetLine(1).GetText());

@@ -10,6 +10,6 @@ open Microsoft.VisualStudio.Utilities
 
 type internal VimTextBuffer =
 
-    new : ITextBuffer * IVimLocalSettings * IJumpList * ITextStructureNavigator * IVim -> VimTextBuffer
+    new : ITextBuffer * IVimLocalSettings * IJumpList * ITextStructureNavigator * IBufferTrackingService * IVim -> VimTextBuffer
 
     interface IVimTextBuffer

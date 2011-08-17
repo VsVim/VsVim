@@ -31,7 +31,6 @@ type IDisplayWindowBrokerFactoryService  =
 
     abstract CreateDisplayWindowBroker : ITextView -> IDisplayWindowBroker
 
-
 /// What type of tracking are we doing
 type LineColumnTrackingMode = 
 
@@ -63,12 +62,49 @@ type ITrackingLineColumn =
     /// Needs to be called when you are done with the ITrackingLineColumn
     abstract Close : unit -> unit
 
-type ITrackingLineColumnService = 
+/// Tracks a VisualSpan across edits to the underlying ITextBuffer.
+type ITrackingVisualSpan = 
+
+    /// The associated ITextBuffer instance
+    abstract TextBuffer : ITextBuffer
+
+    /// Get the VisualSpan as it relates to the current ITextSnapshot
+    abstract VisualSpan : VisualSpan option
+
+    /// Needs to be called when the consumer is finished with the ITrackingVisualSpan
+    abstract Close : unit -> unit
+
+/// Tracks a Visual Selection across edits to the underlying ITextBuffer.  This tracks both
+/// the selection area and the caret within the selection
+type ITrackingVisualSelection = 
+
+    /// The SnapshotPoint for the caret within the current ITextSnapshot
+    abstract CaretPoint : SnapshotPoint option
+
+    /// The associated ITextBuffer instance
+    abstract TextBuffer : ITextBuffer
+
+    /// Get the VisualSpan as it relates to the current ITextSnapshot
+    abstract VisualSpan : VisualSpan option
+
+    /// Get the Visual Selection as it relates to the current ITextSnapshot
+    abstract VisualSelection : VisualSelection option
+
+    /// Needs to be called when the consumer is finished with the ITrackingVisualSpan
+    abstract Close : unit -> unit
+
+type IBufferTrackingService = 
 
     /// Create an ITrackingLineColumn at the given position in the buffer.  
-    abstract Create : ITextBuffer -> line:int -> column: int -> LineColumnTrackingMode -> ITrackingLineColumn
+    abstract CreateLineColumn : ITextBuffer -> line:int -> column: int -> LineColumnTrackingMode -> ITrackingLineColumn
 
-    /// Close all of the outstanding ITrackingLineColumn instances
+    /// Create an ITrackingVisualSpan for the given VisualSpan
+    abstract CreateVisualSpan : VisualSpan -> ITrackingVisualSpan
+
+    /// Create an ITrackingVisualSelection for the given Visual Selection
+    abstract CreateVisualSelection : VisualSelection -> ITrackingVisualSelection
+
+    /// Close all of the outstanding ITrackingLineColumn and ITrackingVisualSpan instances
     abstract CloseAll : unit -> unit
 
 type IVimBufferFactory =

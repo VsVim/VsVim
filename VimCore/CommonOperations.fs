@@ -11,6 +11,37 @@ open System.Text.RegularExpressions
 
 module internal CommonUtil = 
 
+    /// Select the given VisualSpan in the ITextView
+    let Select (textView : ITextView) visualSpan =
+
+        // Select the given SnapshotSpan
+        let selectSpan (span : SnapshotSpan) = 
+
+            // The editor will normalize SnapshotSpan values here which extend into the line break
+            // portion of the line to not include the line break.  Must use VirtualSnapshotPoint 
+            // values to ensure the proper selection
+            textView.Selection.Mode <- TextSelectionMode.Stream
+            let startPoint = span.Start |> VirtualSnapshotPointUtil.OfPointConsiderLineBreak
+            let endPoint = span.End |> VirtualSnapshotPointUtil.OfPointConsiderLineBreak
+            textView.Selection.Select(startPoint, endPoint);
+
+        match visualSpan with
+        | VisualSpan.Character span ->
+            selectSpan span
+        | VisualSpan.Line lineRange ->
+            selectSpan lineRange.ExtentIncludingLineBreak
+        | VisualSpan.Block blockSpan ->
+            textView.Selection.Mode <- TextSelectionMode.Box;
+
+            textView.Selection.Select(
+                VirtualSnapshotPoint(blockSpan.StartPoint),
+                VirtualSnapshotPoint(blockSpan.EndPoint))
+
+    /// Select the given selection and move the caret to the appropriate point
+    let SelectAndUpdateCaret textView (visualSelection : VisualSelection) =
+        Select textView visualSelection.VisualSpan
+        TextViewUtil.MoveCaretToPoint textView visualSelection.CaretPoint
+
     /// Raise the error / warning messages for a given SearchResult
     let RaiseSearchResultMessage (statusUtil : IStatusUtil) searchResult =
 
@@ -33,7 +64,7 @@ module internal CommonUtil =
             statusUtil.OnError (format searchData.Pattern)
 
     /// The caret sometimes needs to be adjusted after an Up or Down movement.  Caret position
-    /// and virtual space is actually quite a predicamite for VsVim because of how Vim standard 
+    /// and virtual space is actually quite a predicament for VsVim because of how Vim standard 
     /// works.  Vim has no concept of Virtual Space and is designed to work in a fixed width
     /// font buffer.  Visual Studio has essentially the exact opposite.  Non-fixed width fonts are
     /// the most problematic because it makes the natural Vim motion of column based up and down

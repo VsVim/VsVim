@@ -56,7 +56,7 @@ namespace VimCore.UnitTest
 
         private ParseRangeResult CaptureComplete(ITextSnapshotLine line, string input, IMarkMap map = null)
         {
-            map = map ?? new MarkMap(new TrackingLineColumnService());
+            map = map ?? new MarkMap(new BufferTrackingService());
             return RangeUtil.ParseRange(line, map, ListModule.OfSeq(input));
         }
 
@@ -203,7 +203,7 @@ namespace VimCore.UnitTest
             Create("foo", "bar");
             var point1 = new SnapshotPoint(_textBuffer.CurrentSnapshot, 0);
             var point2 = _textBuffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak;
-            var map = new MarkMap(new TrackingLineColumnService());
+            var map = new MarkMap(new BufferTrackingService());
             map.SetLocalMark(point1, 'c');
             var range = Parse("'c,2", map);
             Assert.IsTrue(range.IsSucceeded);
@@ -215,7 +215,7 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar");
             var range = _textBuffer.GetLineRange(0, 1);
-            var map = new MarkMap(new TrackingLineColumnService());
+            var map = new MarkMap(new BufferTrackingService());
             map.SetLocalMark(range.Start, 'c');
             map.SetLocalMark(range.End, 'b');
             var parse = Parse("'c,'b", map);
@@ -229,7 +229,7 @@ namespace VimCore.UnitTest
             Create("foo", "bar");
             var point1 = new SnapshotPoint(_textBuffer.CurrentSnapshot, 2);
             var point2 = _textBuffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak;
-            var map = new MarkMap(new TrackingLineColumnService());
+            var map = new MarkMap(new BufferTrackingService());
             map.SetLocalMark(point1, 'c');
             var parse = Parse("'c,2", map);
             Assert.IsTrue(parse.IsSucceeded);

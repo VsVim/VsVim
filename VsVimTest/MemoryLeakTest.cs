@@ -295,7 +295,6 @@ namespace VsVim.UnitTest
 
 
             RunGarbageCollector();
-            System.Diagnostics.Debug.Fail("");
             Assert.IsNull(weakVimBuffer.Target);
             Assert.IsNull(weakTextView.Target);
             Assert.IsNotNull(localSettings);

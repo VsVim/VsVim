@@ -139,6 +139,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BlockSpanTest.cs" />
     <Compile Include="ChangeTrackerTest.cs" />
     <Compile Include="CharUtilTest.cs" />
     <Compile Include="CommandModeIntegrationTest.cs" />
@@ -206,7 +207,7 @@
     <Compile Include="SnapshotUtilTest.cs" />
     <Compile Include="TextUtilTest.cs" />
     <Compile Include="TextViewUtilTest.cs" />
-    <Compile Include="TrackingLineColumnTest.cs" />
+    <Compile Include="BufferTrackingServiceTest.cs" />
     <Compile Include="UndoRedoOperationsTest.cs" />
     <Compile Include="UndoTransactionTest.cs" />
     <Compile Include="ViewUtilTest.cs" />
@@ -215,6 +216,7 @@
     <Compile Include="VimIntegrationTests.cs" />
     <Compile Include="VimTest.cs" />
     <Compile Include="VisualModeTest.cs" />
+    <Compile Include="VisualSelectionTest.cs" />
     <Compile Include="WordUtilTest.cs" />
   </ItemGroup>
   <ItemGroup>

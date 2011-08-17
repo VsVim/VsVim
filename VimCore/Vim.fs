@@ -66,7 +66,7 @@ type internal VimBufferFactory
         _textChangeTrackerFactory : ITextChangeTrackerFactory,
         _textSearchService : ITextSearchService,
         _smartIndentationService : ISmartIndentationService,
-        _tlcService : ITrackingLineColumnService,
+        _bufferTrackingService : IBufferTrackingService,
         _undoManagerProvider : ITextBufferUndoManagerProvider,
         _statusUtilFactory : IStatusUtilFactory,
         _foldManagerFactory : IFoldManagerFactory,
@@ -78,10 +78,10 @@ type internal VimBufferFactory
     /// Create an IVimTextBuffer instance for the provided ITextBuffer
     member x.CreateVimTextBuffer textBuffer (vim : IVim) = 
         let localSettings = LocalSettings(vim.GlobalSettings) :> IVimLocalSettings
-        let jumpList = JumpList(_tlcService) :> IJumpList
+        let jumpList = JumpList(_bufferTrackingService) :> IJumpList
         let wordUtil = _wordUtilFactory.GetWordUtil textBuffer
         let wordNavigator = wordUtil.CreateTextStructureNavigator WordKind.NormalWord
-        VimTextBuffer(textBuffer, localSettings, jumpList, wordNavigator, vim)
+        VimTextBuffer(textBuffer, localSettings, jumpList, wordNavigator, _bufferTrackingService, vim)
 
     /// Create an IVimBuffer instance for the provided ITextView and IVimTextBuffer which is associated
     /// with the ITextBuffer of the ITextView
@@ -240,12 +240,12 @@ type internal Vim
     new(
         host : IVimHost,
         bufferFactoryService : IVimBufferFactory,
-        tlcService : ITrackingLineColumnService,
+        bufferTrackingService : IBufferTrackingService,
         [<ImportMany>] bufferCreationListeners : Lazy<IVimBufferCreationListener> seq,
         search : ITextSearchService,
         fileSystem : IFileSystem,
         clipboard : IClipboardDevice ) =
-        let markMap = MarkMap(tlcService)
+        let markMap = MarkMap(bufferTrackingService)
         let vimData = VimData() :> IVimData
         let globalSettings = GlobalSettings() :> IVimGlobalSettings
         let listeners = 

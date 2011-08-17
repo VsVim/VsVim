@@ -129,6 +129,7 @@
     <Compile Include="StatusUtil.fs" />
     <Compile Include="TextChangeTracker.fsi" />
     <Compile Include="TextChangeTracker.fs" />
+    <Compile Include="MefComponents.fsi" />
     <Compile Include="MefComponents.fs" />
     <Compile Include="FSharpExtensions.fs" />
     <Compile Include="AssemblyInfo.fs" />

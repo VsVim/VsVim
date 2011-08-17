@@ -24,7 +24,8 @@ type internal CommandRunner
         _capture : IMotionCapture,
         _commandUtil : ICommandUtil,
         _statusUtil : IStatusUtil,
-        _visualKind : VisualKind ) =
+        _visualKind : VisualKind
+    ) =
 
     /// Represents the empty state for processing commands.  Holds all of the default
     /// values
@@ -48,24 +49,8 @@ type internal CommandRunner
     let mutable _inBind = false
 
     /// Try and get the VisualSpan for the provided kind
-    member x.TryGetVisualSpan kind = 
-        match kind with
-        | VisualKind.Character -> 
-            let visualSpan = VisualSpan.Character (_textView.Selection.StreamSelectionSpan.SnapshotSpan)
-            Some visualSpan
-        | VisualKind.Line-> 
-            let visualSpan = VisualSpan.Line (_textView.Selection.StreamSelectionSpan.SnapshotSpan |> SnapshotLineRangeUtil.CreateForSpan)
-            Some visualSpan
-        | VisualKind.Block -> 
-            let col = _textView.Selection.SelectedSpans
-            if col.Count = 0 then
-                // Shouldn't be possible but needs to be accounted for.  If there are 0 selected 
-                // spans then what are we do with them?  Another possibility here would be to create
-                // a single empty span at the caret.  
-                None
-            else
-                let col = NonEmptyCollection(col.[0], col |> Seq.skip 1 |> List.ofSeq)
-                VisualSpan.Block col |> Some
+    member x.GetVisualSpan kind = 
+        VisualSpan.Create _textView kind
 
     /// Used to wait for the character after the " which signals the Register.  When the register
     /// is found it will be passed to completeFunc
@@ -218,13 +203,9 @@ type internal CommandRunner
                 | CommandBinding.InsertBinding (_, _, insertCommand) ->
                     BindResult.Complete (Command.InsertCommand insertCommand, commandBinding)
                 | CommandBinding.VisualBinding (_, _, visualCommand) ->
-                    match x.TryGetVisualSpan _visualKind with
-                    | None -> 
-                        _statusUtil.OnError Resources.Common_SelectionInvalid
-                        BindResult.Error
-                    | Some visualSpan -> 
-                        let visualCommand = Command.VisualCommand (visualCommand, commandData, visualSpan)
-                        BindResult.Complete (visualCommand, commandBinding)
+                    let visualSpan = x.GetVisualSpan _visualKind
+                    let visualCommand = Command.VisualCommand (visualCommand, commandData, visualSpan)
+                    BindResult.Complete (visualCommand, commandBinding)
                 | CommandBinding.MotionBinding (_, _, func) -> 
                     // Can't just call this.  It's possible there is a non-motion command with a 
                     // longer command commandInputs.  If there are any other commands which have a 
@@ -252,13 +233,9 @@ type internal CommandRunner
                     _data <- { _data with CommandFlags = Some commandBinding.CommandFlags }
                     let bindData = bindDataStorage.CreateBindData()
                     let bindData = bindData.Map (fun visualCommand -> 
-                        match x.TryGetVisualSpan _visualKind with
-                        | None ->
-                            _statusUtil.OnError Resources.Common_SelectionInvalid
-                            BindResult.Error
-                        | Some visualSpan ->
-                            let visualCommand = Command.VisualCommand (visualCommand, commandData, visualSpan)
-                            BindResult.Complete (visualCommand, commandBinding))
+                        let visualSpan = x.GetVisualSpan _visualKind
+                        let visualCommand = Command.VisualCommand (visualCommand, commandData, visualSpan)
+                        BindResult.Complete (visualCommand, commandBinding))
                     BindResult.NeedMoreInput bindData
             | None ->
                 let hasPrefixMatch = findPrefixMatches commandName |> SeqUtil.isNotEmpty

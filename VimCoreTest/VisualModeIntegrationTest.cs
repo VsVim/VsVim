@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using System.Threading;
+﻿using System.Threading;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
@@ -10,10 +9,11 @@ using Vim.UnitTest.Mock;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class VisualModeIntegrationTest
+    public sealed class VisualModeIntegrationTest
     {
         private IVimBuffer _buffer;
         private IWpfTextView _textView;
+        private ITextBuffer _textBuffer;
         private IRegisterMap _registerMap;
         private IVimGlobalSettings _globalSettings;
         private TestableSynchronizationContext _context;
@@ -34,6 +34,7 @@ namespace VimCore.UnitTest
             SynchronizationContext.SetSynchronizationContext(_context);
             var tuple = EditorUtil.CreateTextViewAndEditorOperations(lines);
             _textView = tuple.Item1;
+            _textBuffer = _textView.TextBuffer;
             var service = EditorUtil.FactoryService;
             _buffer = service.Vim.CreateVimBuffer(_textView);
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
@@ -45,27 +46,26 @@ namespace VimCore.UnitTest
             ((MockVimHost)_buffer.Vim.VimHost).FocusedTextView = _textView;
         }
 
-        private void EnterMode(SnapshotSpan span, TextSelectionMode mode = TextSelectionMode.Stream)
+        private void EnterMode(SnapshotSpan span)
         {
-            _textView.SelectAndUpdateCaret(span, mode);
+            var visualSelection = VisualSelection.NewCharacter(span, true);
+            CommonUtil.SelectAndUpdateCaret(_textView, visualSelection);
             Assert.IsFalse(_context.IsEmpty);
             _context.RunAll();
             Assert.IsTrue(_context.IsEmpty);
         }
 
-        private void EnterMode(ModeKind kind, SnapshotSpan span, TextSelectionMode mode = TextSelectionMode.Stream)
+        private void EnterMode(ModeKind kind, SnapshotSpan span)
         {
-            EnterMode(span, mode);
+            EnterMode(span);
             _buffer.SwitchMode(kind, ModeArgument.None);
         }
 
-        private void EnterBlock(NonEmptyCollection<SnapshotSpan> spans)
+        private void EnterBlock(BlockSpan blockSpan)
         {
-            _textView.MoveCaretTo(spans.Last().End.Subtract(1));
-            _textView.Selection.Mode = TextSelectionMode.Box;
-            _textView.Selection.Select(
-                new VirtualSnapshotPoint(spans.Head.Start),
-                new VirtualSnapshotPoint(spans.Last().End));
+            var visualSpan = VisualSpan.NewBlock(blockSpan);
+            var visualSelection = VisualSelection.CreateForVisualSpan(visualSpan);
+            CommonUtil.SelectAndUpdateCaret(_textView, visualSelection);
             Assert.IsFalse(_context.IsEmpty);
             _context.RunAll();
             Assert.IsTrue(_context.IsEmpty);
@@ -322,7 +322,7 @@ namespace VimCore.UnitTest
         public void Handle_D_BlockMode()
         {
             Create("dog", "cat", "tree");
-            EnterBlock(_textView.GetBlock(1, 1, 0, 2));
+            EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
             _buffer.Process("D");
             Assert.AreEqual("d", _textView.GetLine(0).GetText());
             Assert.AreEqual("c", _textView.GetLine(1).GetText());
@@ -617,7 +617,7 @@ namespace VimCore.UnitTest
         public void PutOver_Block_WithCharacterWise()
         {
             Create("dog", "cat");
-            EnterBlock(_textView.GetBlock(1, 1, 0, 2));
+            EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
             UnnamedRegister.UpdateValue("fish", OperationKind.CharacterWise);
             _buffer.Process("p");
             Assert.AreEqual("dfishg", _textView.GetLine(0).GetText());
@@ -633,7 +633,7 @@ namespace VimCore.UnitTest
         public void PutOver_Block_WithCharacterWiseAndCaretMove()
         {
             Create("dog", "cat");
-            EnterBlock(_textView.GetBlock(1, 1, 0, 2));
+            EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
             UnnamedRegister.UpdateValue("fish", OperationKind.CharacterWise);
             _buffer.Process("gp");
             Assert.AreEqual("dfishg", _textView.GetLine(0).GetText());
@@ -648,7 +648,7 @@ namespace VimCore.UnitTest
         public void PutOver_Block_WithLineWise()
         {
             Create("dog", "cat");
-            EnterBlock(_textView.GetBlock(1, 1, 0, 2));
+            EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
             UnnamedRegister.UpdateValue("fish\n", OperationKind.LineWise);
             _buffer.Process("p");
             Assert.AreEqual("dg", _textView.GetLine(0).GetText());
@@ -665,7 +665,7 @@ namespace VimCore.UnitTest
         public void PutOver_Block_WithLineWiseAndCaretMove()
         {
             Create("dog", "cat", "bear");
-            EnterBlock(_textView.GetBlock(1, 1, 0, 2));
+            EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
             UnnamedRegister.UpdateValue("fish\n", OperationKind.LineWise);
             _buffer.Process("gp");
             Assert.AreEqual("dg", _textView.GetLine(0).GetText());
@@ -682,7 +682,7 @@ namespace VimCore.UnitTest
         public void PutOver_Block_WithBlock()
         {
             Create("dog", "cat");
-            EnterBlock(_textView.GetBlock(1, 1, 0, 2));
+            EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
             UnnamedRegister.UpdateBlockValues("aa", "bb");
             _buffer.Process("p");
             Assert.AreEqual("daag", _textView.GetLine(0).GetText());
@@ -698,7 +698,7 @@ namespace VimCore.UnitTest
         public void PutOver_Block_WithBlockAndCaretMove()
         {
             Create("dog", "cat");
-            EnterBlock(_textView.GetBlock(1, 1, 0, 2));
+            EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
             UnnamedRegister.UpdateBlockValues("aa", "bb");
             _buffer.Process("gp");
             Assert.AreEqual("daag", _textView.GetLine(0).GetText());
@@ -788,6 +788,51 @@ namespace VimCore.UnitTest
             _buffer.Process("Y");
             Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
             Assert.IsTrue(_textView.Selection.IsEmpty);
+        }
+
+        /// <summary>
+        /// Enter visual mode with the InitialVisualSelection argument which is a character span
+        /// </summary>
+        [Test]
+        public void InitialVisualSelection_Character()
+        {
+            Create("dogs", "cats");
+
+            var visualSpan = VisualSpan.NewCharacter(_textBuffer.GetSpan(1, 2));
+            var visualSelection = VisualSelection.CreateForVisualSpan(visualSpan);
+            _buffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.NewInitialVisualSelection(visualSelection));
+            _context.RunAll();
+            Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Character));
+        }
+
+        /// <summary>
+        /// Enter visual mode with the InitialVisualSelection argument which is a line span
+        /// </summary>
+        [Test]
+        public void InitialVisualSelection_Line()
+        {
+            Create("dogs", "cats", "fish");
+
+            var lineRange = _textView.GetLineRange(0, 1);
+            var visualSelection = VisualSelection.NewLine(lineRange, true, 1);
+            _buffer.SwitchMode(ModeKind.VisualLine, ModeArgument.NewInitialVisualSelection(visualSelection));
+            _context.RunAll();
+            Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Line));
+        }
+
+        /// <summary>
+        /// Enter visual mode with the InitialVisualSelection argument which is a block span
+        /// </summary>
+        [Test]
+        public void InitialVisualSelection_Block()
+        {
+            Create("dogs", "cats", "fish");
+
+            var blockSpan = _textView.GetBlockSpan(1, 2, 0, 2);
+            var visualSelection = VisualSelection.NewBlock(blockSpan, BlockCaretLocation.BottomLeft);
+            _buffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.NewInitialVisualSelection(visualSelection));
+            _context.RunAll();
+            Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Block));
         }
     }
 }

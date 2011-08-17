@@ -122,6 +122,7 @@ type internal NormalMode
                 yield ("gP", CommandFlags.Repeatable, NormalCommand.PutBeforeCaret true)
                 yield ("gt", CommandFlags.Special, NormalCommand.GoToNextTab Path.Forward)
                 yield ("gT", CommandFlags.Special, NormalCommand.GoToNextTab Path.Backward)
+                yield ("gv", CommandFlags.Special, NormalCommand.SwitchPreviousVisualMode)
                 yield ("gugu", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToLowerCase)
                 yield ("guu", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToLowerCase)
                 yield ("gUgU", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToUpperCase)
@@ -300,6 +301,7 @@ type internal NormalMode
             | ModeArgument.FromVisual -> ()
             | ModeArgument.Substitute(_) -> ()
             | ModeArgument.OneTimeCommand modeKind -> _data <- { _data with OneTimeMode = Some modeKind }
+            | ModeArgument.InitialVisualSelection _ -> ()
             | ModeArgument.InsertWithCount _ -> ()
             | ModeArgument.InsertWithCountAndNewLine _ -> ()
             | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()

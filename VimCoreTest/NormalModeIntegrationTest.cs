@@ -17,6 +17,7 @@ namespace VimCore.UnitTest
     public sealed class NormalModeIntegrationTest : VimTestBase
     {
         private IVimBuffer _buffer;
+        private IVimTextBuffer _vimTextBuffer;
         private IWpfTextView _textView;
         private ITextBuffer _textBuffer;
         private IVimGlobalSettings _globalSettings;
@@ -56,6 +57,7 @@ namespace VimCore.UnitTest
                         Assert.Fail("Warning Message: " + message);
                     }
                 };
+            _vimTextBuffer = _buffer.VimTextBuffer;
             _keyMap = _buffer.Vim.KeyMap;
             _globalSettings = _buffer.LocalSettings.GlobalSettings;
             _jumpList = _buffer.JumpList;
@@ -2872,6 +2874,23 @@ namespace VimCore.UnitTest
             _buffer.Process(KeyInputUtil.CharWithControlToKeyInput('x'));
             Assert.AreEqual(" -11", _textBuffer.GetLine(0).GetText());
             Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Make sure we handle the 'gv' command to switch to the previous visual mode
+        /// </summary>
+        [Test]
+        public void SwitchPreviousVisualMode_Line()
+        {
+            Create("cats", "dogs", "fish");
+            var visualSelection = VisualSelection.NewLine(
+                _textView.GetLineRange(0, 1),
+                true,
+                1);
+            _vimTextBuffer.LastVisualSelection = FSharpOption.Create(visualSelection);
+            _buffer.Process("gv");
+            Assert.AreEqual(ModeKind.VisualLine, _buffer.ModeKind);
+            Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Line));
         }
 
         /// <summary>
