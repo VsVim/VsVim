@@ -15,6 +15,8 @@ namespace Vim.UI.Wpf
 
         internal const uint KL_NAMELENGTH = 9;
 
+        internal const uint INFINITE = 0xffffffff;
+
         /// <summary>
         /// Keyboard code for the default English QWERTY layout
         /// </summary>
@@ -36,7 +38,7 @@ namespace Vim.UI.Wpf
         internal const string LayoutTurkishF = "00001055";
 
         [DllImport("user32.dll")]
-        internal static extern int GetCaretBlinkTime();
+        internal static extern uint GetCaretBlinkTime();
 
         [DllImport("user32.dll")]
         internal static extern short VkKeyScan(char ch);
