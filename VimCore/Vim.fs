@@ -267,7 +267,7 @@ type internal Vim
 
     member x.ActiveBuffer = ListUtil.tryHeadOnly _activeBufferStack
 
-    member x.Buffers = _bufferMap.Values |> Seq.map fst |> List.ofSeq
+    member x.VimBuffers = _bufferMap.Values |> Seq.map fst |> List.ofSeq
 
     member x.FocusedBuffer = 
         match _host.GetFocusedTextView() with
@@ -289,6 +289,11 @@ type internal Vim
         match x.ActiveBuffer with
         | Some buffer -> Some buffer.WindowSettings
         | None -> _vimRcWindowSettings
+
+    /// Close all IVimBuffer instances
+    member x.CloseAllVimBuffers() =
+        x.VimBuffers
+        |> List.iter (fun vimBuffer -> vimBuffer.Close())
 
     /// Create an IVimTextBuffer for the given ITextBuffer.  If an IVimLocalSettings instance is 
     /// provided then attempt to copy them into the created IVimTextBuffer copy of the 
@@ -349,13 +354,6 @@ type internal Vim
         _bufferCreationListeners |> Seq.iter (fun x -> x.Value.VimBufferCreated buffer)
         buffer
 
-    member x.RemoveBuffer view = 
-        let found, tuple = _bufferMap.TryGetValue(view)
-        if found then 
-            let _,bag = tuple
-            bag.DisposeAll()
-        _bufferMap.Remove(view)
-
     member x.GetVimTextBuffer (textBuffer : ITextBuffer) =
         let found, vimTextBuffer = textBuffer.Properties.TryGetProperty<IVimTextBuffer>(_vimTextBufferKey)
         if found then
@@ -402,10 +400,17 @@ type internal Vim
             view.Close()
             true
 
+    member x.RemoveVimBuffer textView = 
+        let found, tuple = _bufferMap.TryGetValue(textView)
+        if found then 
+            let _,bag = tuple
+            bag.DisposeAll()
+        _bufferMap.Remove textView
+
     interface IVim with
         member x.ActiveBuffer = x.ActiveBuffer
-        member x.Buffers = x.Buffers
         member x.FocusedBuffer = x.FocusedBuffer
+        member x.VimBuffers = x.VimBuffers
         member x.VimData = _vimData
         member x.VimHost = _host
         member x.VimRcLocalSettings 
@@ -418,11 +423,12 @@ type internal Vim
         member x.IsVimRcLoaded = not (System.String.IsNullOrEmpty(_globalSettings.VimRc))
         member x.RegisterMap = _registerMap 
         member x.GlobalSettings = _globalSettings
+        member x.CloseAllVimBuffers() = x.CloseAllVimBuffers()
         member x.CreateVimBuffer textView = x.CreateVimBuffer textView (x.GetWindowSettingsForNewBuffer())
         member x.CreateVimTextBuffer textBuffer = x.CreateVimTextBuffer textBuffer (x.GetLocalSettingsForNewTextBuffer())
         member x.GetOrCreateVimBuffer textView = x.GetOrCreateVimBuffer textView
         member x.GetOrCreateVimTextBuffer textBuffer = x.GetOrCreateVimTextBuffer textBuffer
-        member x.RemoveBuffer textView = x.RemoveBuffer textView
+        member x.RemoveVimBuffer textView = x.RemoveVimBuffer textView
         member x.GetVimBuffer textView = x.GetVimBuffer textView
         member x.GetVimTextBuffer textBuffer = x.GetVimTextBuffer textBuffer
         member x.LoadVimRc createViewFunc = x.LoadVimRc createViewFunc

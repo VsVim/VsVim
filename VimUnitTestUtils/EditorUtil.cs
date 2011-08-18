@@ -98,7 +98,7 @@ namespace Vim.UnitTest
         /// The MEF composition container for the current thread.  We cache all of our compositions in this
         /// container to speed up the unit tests
         /// </summary>
-        public static CompositionContainer Container
+        public static CompositionContainer CompositionContainer
         {
             get
             {
@@ -120,7 +120,7 @@ namespace Vim.UnitTest
                 if (null == _factory)
                 {
                     _factory = new Factory();
-                    Container.ComposeParts(_factory);
+                    CompositionContainer.ComposeParts(_factory);
                 }
                 return _factory;
             }

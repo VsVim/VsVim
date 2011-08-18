@@ -94,13 +94,18 @@ namespace VimCore.UnitTest
             var prev = _buffer.SwitchPreviousMode();
             Assert.AreSame(normal.Object, prev);
             insert.Verify();
+
+            // On tear down all IVimBuffer instances are closed as well as their active
+            // IMode.  Need a setup here
+            insert.Setup(x => x.OnClose());
+            normal.Setup(x => x.OnClose());
         }
 
         /// <summary>
         /// SwitchPreviousMode should raise the SwitchedMode event
         /// </summary>
-        [Test, Description("SwitchPreviousMode should raise the SwitchedMode event")]
-        public void SwitchPreviousMode2()
+        [Test]
+        public void SwitchPreviousMode_RaiseSwitchedMode()
         {
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             var ran = false;

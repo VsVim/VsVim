@@ -11,7 +11,7 @@ namespace Vim.UnitTest.Exports
     /// </summary>
     [Export(typeof(IExtensionErrorHandler))]
     [Export(typeof(IVimErrorDetector))]
-    internal sealed class VimErrorDetector : IExtensionErrorHandler, IVimErrorDetector
+    public sealed class VimErrorDetector : IExtensionErrorHandler, IVimErrorDetector
     {
         private readonly List<Exception> _errorList = new List<Exception>();
 

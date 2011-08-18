@@ -4,6 +4,7 @@ using Microsoft.FSharp.Core;
 using NUnit.Framework;
 using Vim.UI.Wpf;
 using Vim.UI.Wpf.Implementation;
+using System.ComponentModel.Composition.Hosting;
 
 namespace Vim.UnitTest
 {
@@ -16,6 +17,8 @@ namespace Vim.UnitTest
     [TestFixture]
     public abstract class VimTestBase
     {
+        private CompositionContainer _compositionContainer;
+        private IVim _vim;
         private IVimErrorDetector _vimErrorDetector;
         private IProtectedOperations _protectedOperations;
 
@@ -28,10 +31,22 @@ namespace Vim.UnitTest
             get { return _protectedOperations; }
         }
 
+        protected IVim Vim
+        {
+            get { return _vim; }
+        }
+
+        protected CompositionContainer CompositionContainer
+        {
+            get { return _compositionContainer; }
+        }
+
         [SetUp]
         public void SetupBase()
         {
-            _vimErrorDetector = EditorUtil.FactoryService.VimErrorDetector;
+            _compositionContainer = GetOrCreateCompositionContainer();
+            _vim = _compositionContainer.GetExport<IVim>().Value;
+            _vimErrorDetector = _compositionContainer.GetExport<IVimErrorDetector>().Value;
             _vimErrorDetector.Clear();
             _protectedOperations = new ProtectedOperations(_vimErrorDetector);
         }
@@ -45,8 +60,14 @@ namespace Vim.UnitTest
                 Assert.Fail(msg);
             }
 
-            EditorUtil.FactoryService.Vim.VimData.LastCommand = FSharpOption<StoredCommand>.None;
-            EditorUtil.FactoryService.Vim.KeyMap.ClearAll();
+            _vim.VimData.LastCommand = FSharpOption<StoredCommand>.None;
+            _vim.KeyMap.ClearAll();
+            _vim.CloseAllVimBuffers();
+        }
+
+        protected virtual CompositionContainer GetOrCreateCompositionContainer()
+        {
+            return EditorUtil.CompositionContainer;
         }
     }
 }

@@ -196,7 +196,7 @@ type internal VimBuffer
         try
             x.Mode.OnLeave()
             _modeMap.Modes |> Seq.iter (fun x -> x.OnClose())
-            _vim.RemoveBuffer _textView |> ignore
+            _vim.RemoveVimBuffer _textView |> ignore
             _undoRedoOperations.Close()
             _closedEvent.Trigger System.EventArgs.Empty
         finally 
@@ -345,6 +345,7 @@ type internal VimBuffer
         member x.UndoRedoOperations = _undoRedoOperations
         member x.BufferedRemapKeyInputs = x.BufferedRemapKeyInputs 
         member x.IncrementalSearch = _incrementalSearch
+        member x.IsClosed = _isClosed
         member x.IsProcessingInput = _processingInputCount > 0
         member x.Name = _vim.VimHost.GetName _textView.TextBuffer
         member x.MarkMap = _vim.MarkMap

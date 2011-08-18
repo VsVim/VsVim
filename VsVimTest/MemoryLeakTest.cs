@@ -27,18 +27,9 @@ namespace VsVim.UnitTest
     /// a portion of them. 
     /// </summary>
     [TestFixture]
-    public sealed class MemoryLeakTest
+    public sealed class MemoryLeakTest : VimTestBase
     {
         #region Exports
-
-        [Export(typeof(IExtensionErrorHandler))]
-        private sealed class ErrorHandler : IExtensionErrorHandler
-        {
-            public void HandleError(object sender, Exception exception)
-            {
-                _errorInService = exception.ToString();
-            }
-        }
 
         [Export(typeof(SVsServiceProvider))]
         private sealed class ServiceProvider : SVsServiceProvider
@@ -147,31 +138,13 @@ namespace VsVim.UnitTest
         #endregion
 
         /// <summary>
-        /// Due to the way the MEF components are spun up errors like a missing service will
-        /// result in an exception which is swallowed by the editor layer.  To counter this
-        /// we provide an IExtensionErrorHandler to log any errors that occur on startup.
+        /// This is the CompositionContainer specifically for the memory leak test.  This
+        /// has several custom types inserted which are intended to enhance the memory leak
+        /// diagnostics.  This is the only CompositionContainer which should be used in this
+        /// test
         /// </summary>
-        private static string _errorInService;
-
-        /// <summary>
-        /// This field is used to hold the IVim instance if it's created.  This is essential
-        /// to ensuring a leak doesn't occur by a Vim global service such as the change tracker
-        /// holding ont an IVimBuffer after it's closed
-        /// </summary>
-        private IVim _vim;
-
-        [SetUp]
-        public void SetUp()
-        {
-            _errorInService = null;
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            Assert.IsNull(_errorInService, _errorInService);
-            _vim = null;
-        }
+        [ThreadStatic]
+        private static CompositionContainer _compositionContainer;
 
         private void RunGarbageCollector()
         {
@@ -184,25 +157,34 @@ namespace VsVim.UnitTest
             }
         }
 
+        protected override CompositionContainer GetOrCreateCompositionContainer()
+        {
+            if (_compositionContainer == null)
+            {
+                var list = EditorUtil.GetEditorCatalog();
+                list.Add(new AssemblyCatalog(typeof(Vim.IVim).Assembly));
+                list.Add(new AssemblyCatalog(typeof(Vim.UI.Wpf.KeyProcessor).Assembly));
+                list.Add(new AssemblyCatalog(typeof(VsVim.VsCommandTarget).Assembly));
+                list.Add(new TypeCatalog(
+                    typeof(Vim.UnitTest.Exports.VimErrorDetector),
+                    typeof(VsVim.UnitTest.MemoryLeakTest.ServiceProvider),
+                    typeof(VsVim.UnitTest.MemoryLeakTest.VsEditorAdaptersFactoryService)));
+
+                var catalog = new AggregateCatalog(list.ToArray());
+                _compositionContainer = new CompositionContainer(catalog);
+            }
+
+            return _compositionContainer;
+        }
+
         private IVimBuffer CreateVimBuffer()
         {
-            var list = EditorUtil.GetEditorCatalog();
-            list.Add(new AssemblyCatalog(typeof(Vim.IVim).Assembly));
-            list.Add(new AssemblyCatalog(typeof(Vim.UI.Wpf.KeyProcessor).Assembly));
-            list.Add(new AssemblyCatalog(typeof(VsVim.VsCommandTarget).Assembly));
-            list.Add(new TypeCatalog(
-                typeof(VsVim.UnitTest.MemoryLeakTest.ServiceProvider),
-                typeof(VsVim.UnitTest.MemoryLeakTest.VsEditorAdaptersFactoryService),
-                typeof(VsVim.UnitTest.MemoryLeakTest.ErrorHandler)));
-
-            var catalog = new AggregateCatalog(list.ToArray());
-            var container = new CompositionContainer(catalog);
+            var container = GetOrCreateCompositionContainer();
             var factory = container.GetExport<ITextEditorFactoryService>().Value;
             var textView = factory.CreateTextView();
 
             // Verify we actually created the IVimBuffer instance 
-            _vim = container.GetExport<IVim>().Value;
-            var vimBuffer = _vim.GetOrCreateVimBuffer(textView);
+            var vimBuffer = Vim.GetOrCreateVimBuffer(textView);
             Assert.IsNotNull(vimBuffer);
 
             // Do one round of DoEvents since several services queue up actions to 
@@ -215,13 +197,15 @@ namespace VsVim.UnitTest
             return vimBuffer;
         }
 
+        /// <summary>
+        /// Run a sanity check which just tests the ability for an ITextView to be created
+        /// and closed without leaking memory that doesn't involve the creation of an 
+        /// IVimBuffer
+        /// </summary>
         [Test]
-        [Description("Take VsVim out of the equation and make sure the test is functioning properly")]
         public void TextViewOnly()
         {
-            var list = EditorUtil.GetEditorCatalog();
-            var catalog = new AggregateCatalog(list.ToArray());
-            var container = new CompositionContainer(catalog);
+            var container = GetOrCreateCompositionContainer();
             var factory = container.GetExport<ITextEditorFactoryService>().Value;
             var textView = factory.CreateTextView();
             var weakReference = new WeakReference(textView);
@@ -235,12 +219,7 @@ namespace VsVim.UnitTest
         [Test]
         public void VimWpfDoesntHoldBuffer()
         {
-            var list = EditorUtil.GetEditorCatalog();
-            list.Add(new TypeCatalog(typeof(Vim.UnitTest.Exports.VimHost)));
-            list.Add(new AssemblyCatalog(typeof(Vim.IVim).Assembly));
-            list.Add(new AssemblyCatalog(typeof(Vim.UI.Wpf.KeyProcessor).Assembly));
-            var catalog = new AggregateCatalog(list.ToArray());
-            var container = new CompositionContainer(catalog);
+            var container = GetOrCreateCompositionContainer();
             var factory = container.GetExport<ITextEditorFactoryService>().Value;
             var textView = factory.CreateTextView();
 
@@ -255,7 +234,7 @@ namespace VsVim.UnitTest
             // Clean up 
             textView.Close();
             textView = null;
-            vimBuffer.Close();
+            Assert.IsTrue(vimBuffer.IsClosed);
             vimBuffer = null;
 
             RunGarbageCollector();

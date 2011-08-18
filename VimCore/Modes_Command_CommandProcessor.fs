@@ -448,7 +448,7 @@ type internal CommandProcessor
 
     /// Save all of the open IVimBuffer instances
     member x.ProcessWriteAll _ _ _ = 
-        for buffer in _vim.Buffers do
+        for buffer in _vim.VimBuffers do
             _host.Save buffer.TextBuffer |> ignore
 
     member x.ProcessWriteQuit (rest:char list) range hasBang = 
@@ -474,7 +474,7 @@ type internal CommandProcessor
         // If the ! flag is not passed then we raise an error if any of the ITextBuffer instances 
         // are dirty
         if not hasBang then
-            let anyDirty = _vim.Buffers |> Seq.exists (fun buffer -> _host.IsDirty buffer.TextBuffer)
+            let anyDirty = _vim.VimBuffers |> Seq.exists (fun buffer -> _host.IsDirty buffer.TextBuffer)
             if anyDirty then 
                 _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
             else

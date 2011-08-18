@@ -50,6 +50,23 @@ namespace VimCore.UnitTest
             _vim = _vimRaw;
         }
 
+        /// <summary>
+        /// Make sure that we can close multiple IVimBuffer instances
+        /// </summary>
+        [Test]
+        public void CloseAllVimBuffers_Multiple()
+        {
+            const int count = 5;
+            for (var i = 0; i < count; i++)
+            {
+                _vim.CreateVimBuffer(EditorUtil.CreateTextView(""));
+            }
+
+            Assert.AreEqual(count, _vim.VimBuffers.Length);
+            _vim.CloseAllVimBuffers();
+            Assert.AreEqual(0, _vim.VimBuffers.Length);
+        }
+
         [Test]
         public void Create_SimpleTextView()
         {
@@ -213,7 +230,7 @@ namespace VimCore.UnitTest
         public void RemoveBuffer_ReturnFalseForNonAssociatedTextView()
         {
             var textView = EditorUtil.CreateTextView();
-            Assert.IsFalse(_vim.RemoveBuffer(textView));
+            Assert.IsFalse(_vim.RemoveVimBuffer(textView));
         }
 
         [Test]
@@ -221,7 +238,7 @@ namespace VimCore.UnitTest
         {
             var textView = EditorUtil.CreateTextView();
             _vim.CreateVimBuffer(textView);
-            Assert.IsTrue(_vim.RemoveBuffer(textView));
+            Assert.IsTrue(_vim.RemoveVimBuffer(textView));
             var ret = _vim.GetVimBuffer(textView);
             Assert.IsTrue(ret.IsNone());
         }

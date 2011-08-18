@@ -1588,7 +1588,7 @@ namespace VimCore.UnitTest
         {
             Create("");
             var list = new List<IVimBuffer>() { _buffer.Object };
-            _vim.SetupGet(x => x.Buffers).Returns(list.ToFSharpList()).Verifiable();
+            _vim.SetupGet(x => x.VimBuffers).Returns(list.ToFSharpList()).Verifiable();
             _vimHost.Setup(x => x.Save(_textBuffer)).Returns(true).Verifiable();
             RunCommand("wa");
             _factory.Verify();
@@ -1599,7 +1599,7 @@ namespace VimCore.UnitTest
         {
             Create("");
             var list = new List<IVimBuffer>() { _buffer.Object };
-            _vim.SetupGet(x => x.Buffers).Returns(list.ToFSharpList()).Verifiable();
+            _vim.SetupGet(x => x.VimBuffers).Returns(list.ToFSharpList()).Verifiable();
             _vimHost.Setup(x => x.Save(_textBuffer)).Returns(true).Verifiable();
             RunCommand("wall");
             _factory.Verify();
@@ -1694,7 +1694,7 @@ namespace VimCore.UnitTest
             var buffer = _factory.Create<IVimBuffer>();
             buffer.SetupGet(x => x.TextBuffer).Returns(_factory.Create<ITextBuffer>().Object);
             var list = new List<IVimBuffer>() { buffer.Object };
-            _vim.SetupGet(x => x.Buffers).Returns(list.ToFSharpList()).Verifiable();
+            _vim.SetupGet(x => x.VimBuffers).Returns(list.ToFSharpList()).Verifiable();
             _vimHost.Setup(x => x.IsDirty(It.IsAny<ITextBuffer>())).Returns(false).Verifiable();
             _vimHost.Setup(x => x.Quit()).Verifiable();
             RunCommand("qall");
@@ -1711,7 +1711,7 @@ namespace VimCore.UnitTest
             var buffer = _factory.Create<IVimBuffer>();
             buffer.SetupGet(x => x.TextBuffer).Returns(_factory.Create<ITextBuffer>().Object);
             var list = new List<IVimBuffer>() { buffer.Object };
-            _vim.SetupGet(x => x.Buffers).Returns(list.ToFSharpList()).Verifiable();
+            _vim.SetupGet(x => x.VimBuffers).Returns(list.ToFSharpList()).Verifiable();
             _vimHost.Setup(x => x.IsDirty(It.IsAny<ITextBuffer>())).Returns(true).Verifiable();
             _statusUtil.Setup(x => x.OnError(Resources.Common_NoWriteSinceLastChange)).Verifiable();
             RunCommand("qall");

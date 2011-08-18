@@ -53,6 +53,11 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
+        public bool IsClosed
+        {
+            get { throw new NotImplementedException(); }
+        }
+
         public void Close()
         {
             throw new NotImplementedException();

@@ -2655,7 +2655,7 @@ and IVim =
     abstract ActiveBuffer : IVimBuffer option
 
     /// Get the set of tracked IVimBuffer instances
-    abstract Buffers : IVimBuffer list
+    abstract VimBuffers : IVimBuffer list
 
     /// Get the IVimBuffer which currently has KeyBoard focus
     abstract FocusedBuffer : IVimBuffer option
@@ -2696,6 +2696,9 @@ and IVim =
     /// Create an IVimTextBuffer for the given ITextBuffer
     abstract CreateVimTextBuffer : ITextBuffer -> IVimTextBuffer
 
+    /// Close all IVimBuffer instances in the system
+    abstract CloseAllVimBuffers : unit -> unit
+
     /// Get the IVimBuffer associated with the given ITextView
     abstract GetVimBuffer : ITextView -> IVimBuffer option
 
@@ -2717,7 +2720,7 @@ and IVim =
 
     /// Remove the IVimBuffer associated with the given view.  This will not actually close
     /// the IVimBuffer but instead just removes it's association with the given view
-    abstract RemoveBuffer : ITextView -> bool
+    abstract RemoveVimBuffer : ITextView -> bool
 
 and SwitchModeEventArgs 
     (
@@ -2792,6 +2795,9 @@ and IVimBuffer =
 
     /// Whether or not the IVimBuffer is currently processing a KeyInput value
     abstract IsProcessingInput : bool
+
+    /// Is this IVimBuffer instance closed
+    abstract IsClosed : bool
 
     /// Jump list
     abstract JumpList : IJumpList

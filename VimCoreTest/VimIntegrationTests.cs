@@ -23,7 +23,7 @@ namespace VimCore.UnitTest
         public void RemoveBuffer1()
         {
             var view = new Mock<IWpfTextView>(MockBehavior.Strict);
-            Assert.IsFalse(_vim.RemoveBuffer(view.Object));
+            Assert.IsFalse(_vim.RemoveVimBuffer(view.Object));
         }
 
         [Test]
@@ -31,7 +31,7 @@ namespace VimCore.UnitTest
         {
             var view = EditorUtil.CreateTextView("foo bar");
             var vimBuffer = _vim.CreateVimBuffer(view);
-            Assert.IsTrue(_vim.RemoveBuffer(view));
+            Assert.IsTrue(_vim.RemoveVimBuffer(view));
             Assert.IsTrue(_vim.GetVimBuffer(view).IsNone());
         }
 
