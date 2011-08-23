@@ -301,6 +301,17 @@ namespace VimCore.UnitTest
             Assert.AreEqual(1, _vimHost.BeepCount);
         }
 
+        /// <summary>
+        /// Attempting to write to a read only mark should cause the host to beep
+        /// </summary>
+        [Test]
+        public void SetMarkToCaret_ReadOnlyMark()
+        {
+            Create("hello world");
+            _commandUtil.SetMarkToCaret('<');
+            Assert.AreEqual(1, _vimHost.BeepCount);
+        }
+
         [Test]
         public void JumpToMark_Simple()
         {

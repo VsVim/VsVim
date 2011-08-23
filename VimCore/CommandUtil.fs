@@ -1990,7 +1990,9 @@ type internal CommandUtil
             CommandResult.Error
         | Some mark ->
             let line, column = SnapshotPointUtil.GetLineColumn x.CaretPoint
-            _markMap.SetMark mark _vimTextBuffer line column
+            if not (_markMap.SetMark mark _vimTextBuffer line column) then
+                // Mark set can fail if the user chooses a readonly mark like '<'
+                _operations.Beep()
             CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Scroll the lines 'count' pages in the specified direction

@@ -8,7 +8,8 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Utilities
 
-// TODO: Need to add a Close method and do actions like close the ITrackingVisualSpan
+// TODO: Need to add a Close method and do actions like close the ITrackingVisualSpan.  Or
+// add tests to verify that it goes away after close
 type internal VimTextBuffer 
     (
         _textBuffer : ITextBuffer,
@@ -77,10 +78,11 @@ type internal VimTextBuffer
 
             let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
             _textBuffer.Properties.[letter] <- trackingLineColumn
+            true
         | LocalMark.LastSelectionEnd ->
-            ()
+            false
         | LocalMark.LastSelectionStart ->
-            ()
+            false
 
     /// Switch to the desired mode
     member x.SwitchMode modeKind modeArgument =

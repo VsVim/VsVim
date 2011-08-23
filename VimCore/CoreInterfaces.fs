@@ -2740,7 +2740,7 @@ and IMarkMap =
     abstract SetGlobalMark : letter: Letter -> vimtextBuffer : IVimTextBuffer -> line : int -> column : int -> unit
 
     /// Set the mark for the given char for the IVimTextBuffer
-    abstract SetMark : mark : Mark -> vimTextBuffer : IVimTextBuffer -> line : int -> column : int -> unit
+    abstract SetMark : mark : Mark -> vimTextBuffer : IVimTextBuffer -> line : int -> column : int -> bool
 
     /// Delete all of the global marks 
     abstract ClearGlobalMarks : unit -> unit
@@ -2787,8 +2787,9 @@ and IVimTextBuffer =
     /// Get the local mark value 
     abstract GetLocalMark : localMark: LocalMark -> VirtualSnapshotPoint option
 
-    /// Set the local mark value to the specified line and column
-    abstract SetLocalMark : localMark : LocalMark -> line : int -> column : int -> unit
+    /// Set the local mark value to the specified line and column.  Returns false if the given 
+    /// mark cannot be set
+    abstract SetLocalMark : localMark : LocalMark -> line : int -> column : int -> bool
 
     /// Switch the current mode to the provided value
     abstract SwitchMode : ModeKind -> ModeArgument -> unit

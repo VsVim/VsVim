@@ -67,8 +67,11 @@ type MarkMap( _bufferTrackingService : IBufferTrackingService) =
     /// Set the given mark to the specified line and column in the context of the IVimTextBuffer
     member x.SetMark mark vimTextBuffer line column = 
         match mark with
-        | Mark.GlobalMark letter -> x.SetGlobalMark letter vimTextBuffer line column
-        | Mark.LocalMark localMark -> vimTextBuffer.SetLocalMark localMark line column
+        | Mark.GlobalMark letter -> 
+            x.SetGlobalMark letter vimTextBuffer line column
+            true
+        | Mark.LocalMark localMark -> 
+            vimTextBuffer.SetLocalMark localMark line column
 
     member x.ClearGlobalMarks () = 
 
