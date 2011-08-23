@@ -1,89 +1,62 @@
 ﻿using System.Linq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using NUnit.Framework;
 using Vim;
-using Vim.Modes;
 using Vim.Modes.Visual;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
-using GlobalSettings = Vim.GlobalSettings;
 
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class VisualModeTest
+    public sealed class VisualModeTest : VimTestBase
     {
-        private MockRepository _factory;
-        private IWpfTextView _textView;
+        private ITextView _textView;
         private ITextBuffer _textBuffer;
         private ITextSelection _selection;
-        private Mock<IVimHost> _host;
+        private MockRepository _factory;
         private Mock<IVimBuffer> _vimBuffer;
-        private VisualMode _modeRaw;
-        private IMode _mode;
-        private IRegisterMap _map;
-        private IMarkMap _markMap;
-        private Mock<IIncrementalSearch> _incrementalSearch;
         private Mock<ICommonOperations> _operations;
         private Mock<ISelectionTracker> _tracker;
-        private Mock<IFoldManager> _foldManager;
-        private Mock<IUndoRedoOperations> _undoRedoOperations;
-        private Mock<IEditorOperations> _editorOperations;
-        private Mock<IJumpList> _jumpList;
         private Mock<ICommandUtil> _commandUtil;
+        private VisualMode _modeRaw;
+        private IMode _mode;
 
-        public void Create(params string[] lines)
+        private void Create(params string[] lines)
         {
             Create2(lines: lines);
         }
 
-        public void Create2(
+        private void Create2(
             ModeKind kind = ModeKind.VisualCharacter,
             params string[] lines)
         {
             _textView = EditorUtil.CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
+            var vimTextBuffer = Vim.CreateVimTextBuffer(_textBuffer);
+            var vimBufferData = CreateVimBufferData(vimTextBuffer, _textView);
+
             _selection = _textView.Selection;
             _factory = new MockRepository(MockBehavior.Strict);
-            _map = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
-            _markMap = new MarkMap(new BufferTrackingService());
             _tracker = _factory.Create<ISelectionTracker>();
             _tracker.Setup(x => x.Start());
             _tracker.Setup(x => x.ResetCaret());
             _tracker.Setup(x => x.UpdateSelection());
-            _jumpList = _factory.Create<IJumpList>(MockBehavior.Loose);
-            _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
-            _foldManager = _factory.Create<IFoldManager>();
-            _editorOperations = _factory.Create<IEditorOperations>();
             _operations = _factory.Create<ICommonOperations>();
-            _operations.SetupGet(x => x.UndoRedoOperations).Returns(_undoRedoOperations.Object);
-            _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _operations.SetupGet(x => x.TextView).Returns(_textView);
-            _host = _factory.Create<IVimHost>(MockBehavior.Loose);
             _commandUtil = _factory.Create<ICommandUtil>();
-            _incrementalSearch = MockObjectFactory.CreateIncrementalSearch(factory: _factory);
-            var globalSettings = new GlobalSettings();
-            var motionUtil = VimUtil.CreateTextViewMotionUtil(
-                _textView,
-                _markMap);
+            var motionUtil = new MotionUtil(vimBufferData);
             _vimBuffer = MockObjectFactory.CreateVimBuffer(
                 _textView,
                 "test",
-                MockObjectFactory.CreateVim(_map, host: _host.Object, settings: globalSettings).Object,
-                incrementalSearch: _incrementalSearch.Object,
-                jumpList: _jumpList.Object,
+                jumpList: vimTextBuffer.JumpList,
                 motionUtil: motionUtil);
-            var capture = new MotionCapture(
-                _host.Object,
-                _textView,
-                _incrementalSearch.Object,
-                VimUtil.CreateLocalSettings());
+            var capture = new MotionCapture(vimBufferData, new IncrementalSearch(vimBufferData, _operations.Object));
             var runner = new CommandRunner(
                 _textView,
-                _map,
+                Vim.RegisterMap,
                 capture,
                 _commandUtil.Object,
                 (new Mock<IStatusUtil>()).Object,

@@ -13,6 +13,7 @@ open Vim.RegexPatternUtil
 type internal DefaultOperations 
     ( 
         _operations : ICommonOperations,
+        _vimTextBuffer : IVimTextBuffer,
         _textView : ITextView,
         _editorOperations : IEditorOperations,
         _jumpList : IJumpList,
@@ -119,7 +120,7 @@ type internal DefaultOperations
                 let point = SnapshotLineUtil.GetFirstNonBlankOrEnd line
                 _operations.MoveCaretToPointAndCheckVirtualSpace point)
 
-        member x.PrintMarks (markMap:IMarkMap) =    
+        member x.PrintMarks (markMap : IMarkMap) =    
             let printMark (ident:char) (point:VirtualSnapshotPoint) =
                 let textLine = point.Position.GetContainingLine()
                 let lineNum = textLine.LineNumber
@@ -128,8 +129,14 @@ type internal DefaultOperations
                 let name = _host.GetName _textView.TextBuffer
                 sprintf " %c   %5d%5d%s" ident lineNum column name
 
-            let localSeq = markMap.GetLocalMarks _textView.TextBuffer |> Seq.sortBy (fun (c,_) -> c)
-            let globalSeq = markMap.GetGlobalMarks() |> Seq.sortBy (fun (c,_) -> c)
+            let localSeq = 
+                _vimTextBuffer.LocalMarks
+                |> Seq.map (fun (localMark, point) -> (localMark.Char, point))
+                |> Seq.sortBy fst
+            let globalSeq = 
+                markMap.GlobalMarks 
+                |> Seq.map (fun (letter, point) -> (letter.Char, point))
+                |> Seq.sortBy fst
             localSeq 
             |> Seq.append globalSeq
             |> Seq.map (fun (c,p) -> printMark c p )

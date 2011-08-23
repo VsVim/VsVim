@@ -637,35 +637,8 @@ type internal CommonOperations ( _data : OperationsData ) =
                 | None ->  Result.Failed(Resources.Common_GotoDefNoWordUnderCursor) 
 
         member x.RaiseSearchResultMessage searchResult = x.RaiseSearchResultMessage searchResult
-        member x.SetMark point c (markMap : IMarkMap) = 
-            if System.Char.IsLetter(c) || c = '\'' || c = '`' then
-                markMap.SetMark point c
-                Result.Succeeded
-            else
-                Result.Failed(Resources.Common_MarkInvalid)
 
         member x.NavigateToPoint point = x.NavigateToPoint point
-                
-        member x.JumpToMark ident (map:IMarkMap) = 
-            let before = TextViewUtil.GetCaretPoint _textView
-            let jumpLocal (point:VirtualSnapshotPoint) = 
-                x.MoveCaretToPointAndEnsureVisible point.Position
-                _jumpList.Add before |> ignore
-                Result.Succeeded
-            if not (map.IsLocalMark ident) then 
-                match map.GetGlobalMark ident with
-                | None -> Result.Failed Resources.Common_MarkNotSet
-                | Some(point) -> 
-                    match x.NavigateToPoint point with
-                    | true -> 
-                        _jumpList.Add before |> ignore
-                        Result.Succeeded
-                    | false -> Result.Failed Resources.Common_MarkInvalid
-            else 
-                match map.GetLocalMark _textView.TextBuffer ident with
-                | Some(point) -> jumpLocal point
-                | None -> Result.Failed Resources.Common_MarkNotSet
-
 
         member x.ScrollLines dir count =
             for i = 1 to count do

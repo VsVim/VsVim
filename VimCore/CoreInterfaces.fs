@@ -549,12 +549,12 @@ type Motion =
 
     /// Get the motion to the specified mark.  This is typically accessed via
     /// the ` (backtick) operator and results in an exclusive motion
-    | Mark of char
+    | Mark of LocalMark
 
     /// Get the motion to the line of the specified mark.  This is typically
     /// accessed via the ' (single quote) operator and results in a 
     /// linewise motion
-    | MarkLine of char
+    | MarkLine of LocalMark
 
     /// Get the matching token from the next token on the line.  This is used to implement
     /// the % motion
@@ -1042,6 +1042,13 @@ type VisualSpan =
         | Line range ->  range.Start
         | Block blockSpan -> blockSpan.Start
 
+    /// Get the end of the Visual Span
+    member x.End = 
+        match x with
+        | VisualSpan.Character characterSpan -> characterSpan.End
+        | VisualSpan.Line lineRange -> lineRange.End
+        | VisualSpan.Block blockSpan -> blockSpan.End
+
     /// What type of OperationKind does this VisualSpan represent
     member x.OperationKind =
         match x with
@@ -1466,7 +1473,7 @@ type NormalCommand =
     | JoinLines of JoinKind
 
     /// Jump to the specified mark 
-    | JumpToMark of char
+    | JumpToMark of Mark
 
     /// Jump to the next older item in the tag list
     | JumpToOlderPosition
@@ -2138,31 +2145,6 @@ type IKeyMap =
     /// Clear the Key mappings for all modes
     abstract ClearAll : unit -> unit
 
-type IMarkMap =
-    abstract IsLocalMark : char -> bool
-    abstract GetLocalMark : ITextBuffer -> char -> VirtualSnapshotPoint option
-
-    /// Setup a local mark for the given SnapshotPoint
-    abstract SetLocalMark : SnapshotPoint -> char -> unit
-    abstract GetMark : ITextBuffer -> char -> VirtualSnapshotPoint option
-    abstract SetMark : SnapshotPoint -> char -> unit
-
-    /// Get the ITextBuffer to which this global mark points to 
-    abstract GetGlobalMarkOwner : char -> ITextBuffer option
-
-    /// Get the current value of the specified global mark
-    abstract GetGlobalMark : char -> VirtualSnapshotPoint option
-
-    /// Get all of the local marks for the buffer
-    abstract GetLocalMarks : ITextBuffer -> (char * VirtualSnapshotPoint) seq
-
-    /// Get all of the available global marks
-    abstract GetGlobalMarks : unit -> (char * VirtualSnapshotPoint) seq
-
-    /// Delete the specified local mark on the ITextBuffer
-    abstract DeleteLocalMark : ITextBuffer -> char -> bool
-    abstract DeleteAllMarks : unit -> unit
-
 /// Jump list information
 type IJumpList = 
 
@@ -2212,6 +2194,9 @@ type IIncrementalSearch =
 /// Used to record macros in a Vim 
 type IMacroRecorder =
 
+    /// The current recording 
+    abstract CurrentRecording : KeyInput list option
+
     /// Is a macro currently recording
     abstract IsRecording : bool
 
@@ -2223,9 +2208,9 @@ type IMacroRecorder =
     abstract StopRecording : unit -> unit
 
     /// Raised when a macro recording is started.  Passes the Register where the recording
-    /// will take place
+    /// will take place.  The bool is whether the record is an append or not
     [<CLIEvent>]
-    abstract RecordingStarted : IEvent<unit>
+    abstract RecordingStarted : IEvent<Register * bool>
 
     /// Raised when a macro recording is completed.
     [<CLIEvent>]
@@ -2639,6 +2624,9 @@ type VimBufferData = {
     UndoRedoOperations : IUndoRedoOperations
 
     VimTextBuffer : IVimTextBuffer
+
+    WordUtil : IWordUtil
+
 } with
 
     member x.JumpList = x.VimTextBuffer.JumpList
@@ -2737,6 +2725,26 @@ and SwitchModeEventArgs
     /// has no previous one
     member x.PreviousMode = _previousMode
 
+and IMarkMap =
+
+    /// The set of active global marks
+    abstract GlobalMarks : (Letter * VirtualSnapshotPoint) seq
+
+    /// Get the mark for the given char for the IVimTextBuffer
+    abstract GetMark : mark : Mark -> vimTextBuffer : IVimTextBuffer -> VirtualSnapshotPoint option
+
+    /// Get the current value of the specified global mark
+    abstract GetGlobalMark : letter : Letter -> VirtualSnapshotPoint option
+
+    /// Set the global mark to the given line and column in the provided IVimTextBuffer
+    abstract SetGlobalMark : letter: Letter -> vimtextBuffer : IVimTextBuffer -> line : int -> column : int -> unit
+
+    /// Set the mark for the given char for the IVimTextBuffer
+    abstract SetMark : mark : Mark -> vimTextBuffer : IVimTextBuffer -> line : int -> column : int -> unit
+
+    /// Delete all of the global marks 
+    abstract ClearGlobalMarks : unit -> unit
+
 /// This is the interface which represents the parts of a vim buffer which are shared amongst all
 /// of it's views
 and IVimTextBuffer = 
@@ -2753,6 +2761,9 @@ and IVimTextBuffer =
     /// The last VisualSpan selection for the IVimTextBuffer.  This is a combination of a VisualSpan
     /// and the SnapshotPoint within the span where the caret should be positioned
     abstract LastVisualSelection : VisualSelection option with get, set
+
+    /// The set of active local marks in the ITextBuffer
+    abstract LocalMarks : (LocalMark * VirtualSnapshotPoint) seq
 
     /// The associated IVimLocalSettings instance
     abstract LocalSettings : IVimLocalSettings
@@ -2772,6 +2783,12 @@ and IVimTextBuffer =
 
     /// The ITextStructureNavigator for word values in the ITextBuffer
     abstract WordNavigator : ITextStructureNavigator
+
+    /// Get the local mark value 
+    abstract GetLocalMark : localMark: LocalMark -> VirtualSnapshotPoint option
+
+    /// Set the local mark value to the specified line and column
+    abstract SetLocalMark : localMark : LocalMark -> line : int -> column : int -> unit
 
     /// Switch the current mode to the provided value
     abstract SwitchMode : ModeKind -> ModeArgument -> unit

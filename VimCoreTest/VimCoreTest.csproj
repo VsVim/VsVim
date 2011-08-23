@@ -167,6 +167,7 @@
     <Compile Include="SubstituteConfirmTaggerTest.cs" />
     <Compile Include="TextLineTest.cs" />
     <Compile Include="VimRegexTest.cs" />
+    <Compile Include="VimTextBufferTest.cs" />
     <Compile Include="VirtualSnapshotPointUtilTest.cs" />
     <Compile Include="MotionUtilLegacyTest.cs" />
     <Compile Include="SelectionChangeTrackerTest.cs" />

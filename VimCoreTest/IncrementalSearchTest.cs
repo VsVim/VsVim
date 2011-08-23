@@ -1,56 +1,50 @@
-﻿using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Text.Editor;
+﻿using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public sealed class IncrementalSearchTest
+    public sealed class IncrementalSearchTest : VimTestBase
     {
         private static SearchOptions s_options = SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase;
         private MockRepository _factory;
         private IVimData _vimData;
-        private ITextStructureNavigator _nav;
+        private ITextStructureNavigator _wordNavigator;
         private IVimGlobalSettings _globalSettings;
         private IVimLocalSettings _localSettings;
-        private ICommonOperations _operations;
+        private MockVimHost _vimHost;
         private Mock<IStatusUtil> _statusUtil;
-        private Mock<IVimHost> _vimHost;
         private ITextView _textView;
         private IncrementalSearch _searchRaw;
         private IIncrementalSearch _search;
 
         private void Create(params string[] lines)
         {
-            _textView = EditorUtil.CreateTextView(lines);
-            _globalSettings = new Vim.GlobalSettings();
+            _vimHost = (MockVimHost)Vim.VimHost;
+            _textView = CreateTextView(lines);
+            _globalSettings = Vim.GlobalSettings;
             _globalSettings.IncrementalSearch = true;
             _globalSettings.WrapScan = true;
-            _localSettings = VimUtil.CreateLocalSettings(_globalSettings);
-            _nav = VimUtil.CreateTextStructureNavigator(_textView, WordKind.NormalWord);
+
+            var vimTextBuffer = Vim.CreateVimTextBuffer(_textView.TextBuffer);
+            _localSettings = vimTextBuffer.LocalSettings;
+            _wordNavigator = vimTextBuffer.WordNavigator;
+
             _factory = new MockRepository(MockBehavior.Strict);
-            _vimHost = _factory.Create<IVimHost>();
-            _vimHost.Setup(x => x.EnsureVisible(_textView, It.IsAny<SnapshotPoint>()));
             _statusUtil = _factory.Create<IStatusUtil>();
             _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchBackwardWrapped));
             _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchForwardWrapped));
-            _vimData = new VimData();
-            _operations = VimUtil.CreateCommonOperations(
-                textView: _textView,
-                vimHost: _vimHost.Object,
-                statusUtil: _statusUtil.Object,
-                localSettings: _localSettings);
-            _searchRaw = new IncrementalSearch(
-                _operations,
-                _localSettings,
-                _nav,
-                _statusUtil.Object,
-                _vimData);
+
+            _vimData = Vim.VimData;
+            var vimBufferData = CreateVimBufferData(vimTextBuffer, _textView);
+            var operations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
+            _searchRaw = new IncrementalSearch(vimBufferData, operations);
             _search = _searchRaw;
         }
 
@@ -369,9 +363,8 @@ namespace VimCore.UnitTest
         {
             Create("dog cat");
             _vimData.SearchHistory = (new[] { "a", "b" }).ToHistoryList();
-            _vimHost.Setup(x => x.Beep()).Verifiable();
             _search.Begin(Path.Forward).Run(VimKey.Down);
-            _vimHost.Verify();
+            Assert.AreEqual(1, _vimHost.BeepCount);
         }
 
         /// <summary>
@@ -406,9 +399,8 @@ namespace VimCore.UnitTest
         public void HistorySearch_LeftArrow()
         {
             Create("");
-            _vimHost.Setup(x => x.Beep()).Verifiable();
             _search.DoSearch("d", enter: false).Run(VimKey.Left);
-            _vimHost.Verify();
+            Assert.AreEqual(1, _vimHost.BeepCount);
         }
 
         /// <summary>
@@ -419,9 +411,8 @@ namespace VimCore.UnitTest
         public void HistorySearch_RightArrow()
         {
             Create("");
-            _vimHost.Setup(x => x.Beep()).Verifiable();
             _search.DoSearch("d", enter: false).Run(VimKey.Right);
-            _vimHost.Verify();
+            Assert.AreEqual(1, _vimHost.BeepCount);
         }
     }
 }

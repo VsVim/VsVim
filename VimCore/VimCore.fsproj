@@ -50,6 +50,7 @@
     <Compile Include="TextUtil.fsi" />
     <Compile Include="TextUtil.fs" />
     <Compile Include="OperationKind.fs" />
+    <Compile Include="Mark.fs" />
     <Compile Include="Register.fs" />
     <Compile Include="CoreInterfaces.fs" />
     <Compile Include="CountCapture.fs" />
@@ -109,6 +110,7 @@
     <Compile Include="RegisterMap.fs" />
     <Compile Include="ExternalEdit.fs" />
     <Compile Include="DisabledMode.fs" />
+    <Compile Include="MarkMap.fsi" />
     <Compile Include="MarkMap.fs" />
     <Compile Include="MacroRecorder.fsi" />
     <Compile Include="MacroRecorder.fs" />

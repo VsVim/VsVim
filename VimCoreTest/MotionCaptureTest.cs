@@ -9,15 +9,12 @@ using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
-using GlobalSettings = Vim.GlobalSettings;
 
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class MotionCaptureTest
+    public class MotionCaptureTest : VimTestBase
     {
-        private MockRepository _factory;
-        private Mock<IVimHost> _host;
         private IVimLocalSettings _localSettings;
         private ITextView _textView;
         private IIncrementalSearch _incrementalSearch;
@@ -27,16 +24,17 @@ namespace VimCore.UnitTest
         [SetUp]
         public void SetUp()
         {
-            _textView = EditorUtil.CreateTextView();
-            _localSettings = new LocalSettings(new GlobalSettings());
-            _incrementalSearch = VimUtil.CreateIncrementalSearch(_textView, _localSettings, new VimData());
-            _factory = new MockRepository(MockBehavior.Strict);
-            _host = _factory.Create<IVimHost>();
+            _textView = CreateTextView();
+
+            var vimTextBuffer = Vim.CreateVimTextBuffer(_textView.TextBuffer);
+            var vimBufferData = CreateVimBufferData(vimTextBuffer, _textView);
+            _incrementalSearch = new IncrementalSearch(
+                vimBufferData,
+                CommonOperationsFactory.GetCommonOperations(vimBufferData));
+            _localSettings = vimTextBuffer.LocalSettings;
             _captureRaw = new MotionCapture(
-                _host.Object,
-                _textView,
-                _incrementalSearch,
-                _localSettings);
+                vimBufferData,
+                _incrementalSearch);
             _capture = _captureRaw;
         }
 
@@ -429,15 +427,15 @@ namespace VimCore.UnitTest
         [Test]
         public void Mark()
         {
-            AssertMotion("`a", Motion.NewMark('a'));
-            AssertMotion("`b", Motion.NewMark('b'));
+            AssertMotion("`a", Motion.NewMark(LocalMark.OfChar('a').Value));
+            AssertMotion("`b", Motion.NewMark(LocalMark.OfChar('b').Value));
         }
 
         [Test]
         public void MarkLine()
         {
-            AssertMotion("'a", Motion.NewMarkLine('a'));
-            AssertMotion("'b", Motion.NewMarkLine('b'));
+            AssertMotion("'a", Motion.NewMarkLine(LocalMark.OfChar('a').Value));
+            AssertMotion("'b", Motion.NewMarkLine(LocalMark.OfChar('b').Value));
         }
 
         /// <summary>

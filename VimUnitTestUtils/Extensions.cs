@@ -4,6 +4,7 @@ using System.Linq;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Utilities;
 using NUnit.Framework;
 using Vim.Extensions;
 using Vim.Modes.Command;
@@ -600,6 +601,36 @@ namespace Vim.UnitTest
         {
             var blockSpanData = GetBlockSpan(textBuffer, column, length, startLine, lineCount);
             return VisualSpan.NewBlock(blockSpanData);
+        }
+
+        #endregion
+
+        #region ITextBufferFactoryService
+
+        /// <summary>
+        /// Create an ITextBuffer with the specified lines
+        /// </summary>
+        public static ITextBuffer CreateTextBuffer(this ITextBufferFactoryService textBufferFactoryService, params string[] lines)
+        {
+            return CreateTextBuffer(textBufferFactoryService, null, lines);
+        }
+
+        /// <summary>
+        /// Create an ITextBuffer with the specified content type and lines
+        /// </summary>
+        public static ITextBuffer CreateTextBuffer(this ITextBufferFactoryService textBufferFactoryService, IContentType contentType, params string[] lines)
+        {
+            var textBuffer = contentType != null
+                ? textBufferFactoryService.CreateTextBuffer(contentType)
+                : textBufferFactoryService.CreateTextBuffer();
+
+            if (lines.Length != 0)
+            {
+                var text = lines.Aggregate((x, y) => x + Environment.NewLine + y);
+                textBuffer.Replace(new Span(0, 0), text);
+            }
+
+            return textBuffer;
         }
 
         #endregion

@@ -68,7 +68,7 @@ namespace VimCore.UnitTest
 
             var buffer = MockObjectFactory.CreateVimBuffer(
                 _textView,
-                settings: _localSettings.Object,
+                localSettings: _localSettings.Object,
                 vim: _vim.Object,
                 factory: _factory);
             _operations = _factory.Create<ICommonOperations>();

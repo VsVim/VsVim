@@ -302,9 +302,6 @@ type ICommonOperations =
     /// Joins the lines in the range
     abstract Join : SnapshotLineRange -> JoinKind -> unit
 
-    /// Jumps to a given mark in the buffer.  
-    abstract JumpToMark : char -> IMarkMap -> Result
-
     /// Move the caret to a given point on the screen
     abstract MoveCaretToPoint : SnapshotPoint -> unit
 
@@ -337,9 +334,6 @@ type ICommonOperations =
 
     /// Redo the buffer changes "count" times
     abstract Redo : count:int -> unit
-
-    /// Sets a mark at the specified point.  If this operation fails an error message will be generated
-    abstract SetMark : SnapshotPoint -> char -> IMarkMap -> Result
 
     /// Scrolls the number of lines given and keeps the caret in the view
     abstract ScrollLines : ScrollDirection -> count:int -> unit

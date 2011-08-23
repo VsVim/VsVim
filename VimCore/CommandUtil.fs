@@ -44,11 +44,11 @@ type internal CommandUtil
         _operations : ICommonOperations,
         _smartIndentationService : ISmartIndentationService,
         _foldManager : IFoldManager,
-        _wordNavigator : ITextStructureNavigator,
         _insertUtil : IInsertUtil
     ) =
 
     let _vimTextBuffer = _bufferData.VimTextBuffer
+    let _wordNavigator = _vimTextBuffer.WordNavigator
     let _textView = _bufferData.TextView
     let _textBuffer = _textView.TextBuffer
     let _bufferGraph = _textView.BufferGraph
@@ -1173,13 +1173,39 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Jump to the specified mark
-    member x.JumpToMark c =
-        match _operations.JumpToMark c _markMap with
-        | Result.Failed msg ->
-            _statusUtil.OnError msg
-            CommandResult.Error
-        | Result.Succeeded ->
+    member x.JumpToMark mark =
+        let before = x.CaretPoint
+
+        // Jump to the given point in the ITextBuffer
+        let jumpLocal (point : VirtualSnapshotPoint) = 
+            _operations.MoveCaretToPointAndEnsureVisible point.Position
+            _jumpList.Add before |> ignore
             CommandResult.Completed ModeSwitch.NoSwitch
+
+        // Called when the mark is not set
+        let markNotSet () = 
+            _statusUtil.OnError Resources.Common_MarkNotSet
+            CommandResult.Error
+
+        match mark with
+        | Mark.GlobalMark letter ->
+            let markMap = _vimTextBuffer.Vim.MarkMap
+            match markMap.GetGlobalMark letter with
+            | None ->
+                markNotSet()
+            | Some point ->
+                if point.Position.Snapshot.TextBuffer = _textBuffer then
+                    jumpLocal point
+                elif _operations.NavigateToPoint point then
+                    _jumpList.Add before |> ignore
+                    CommandResult.Completed ModeSwitch.NoSwitch
+                else
+                    _statusUtil.OnError Resources.Common_MarkNotSet
+                    CommandResult.Error
+        | Mark.LocalMark localMark ->
+            match _vimTextBuffer.GetLocalMark localMark with
+            | None -> markNotSet()
+            | Some point -> jumpLocal point
 
     /// Jumps to the specified 
     member x.JumpToTagCore () =
@@ -1957,13 +1983,14 @@ type internal CommandUtil
 
     /// Process the m[a-z] command
     member x.SetMarkToCaret c = 
-        let caretPoint = TextViewUtil.GetCaretPoint _textView
-        match _operations.SetMark caretPoint c _markMap with
-        | Result.Failed msg ->
+        match Mark.OfChar c with
+        | None ->
+            _statusUtil.OnError Resources.Common_MarkInvalid
             _operations.Beep()
-            _statusUtil.OnError msg
             CommandResult.Error
-        | Result.Succeeded ->
+        | Some mark ->
+            let line, column = SnapshotPointUtil.GetLineColumn x.CaretPoint
+            _markMap.SetMark mark _vimTextBuffer line column
             CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Scroll the lines 'count' pages in the specified direction

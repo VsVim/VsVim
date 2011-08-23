@@ -31,6 +31,7 @@ namespace VimCore.UnitTest
         private Mock<IKeyMap> _keyMap;
         private Mock<IOutliningManager> _outlining;
         private Mock<IRegisterMap> _registerMap;
+        private Mock<IVimTextBuffer> _vimTextBuffer;
         private IUndoRedoOperations _undoRedoOperations;
         private ISearchService _searchService;
 
@@ -54,6 +55,10 @@ namespace VimCore.UnitTest
             _outlining = _factory.Create<IOutliningManager>();
             _undoRedoOperations = VimUtil.CreateUndoRedoOperations(_statusUtil.Object);
             _searchService = VimUtil.CreateSearchService(_globalSettings.Object);
+            _vimTextBuffer = MockObjectFactory.CreateVimTextBuffer(
+                _textView.TextBuffer, 
+                localSettings: _localSettings.Object, 
+                factory: _factory);
 
             var vimData = new VimData();
             var data = new OperationsData(
@@ -74,6 +79,7 @@ namespace VimCore.UnitTest
                 wordUtil: VimUtil.GetWordUtil(_textView));
             _operationsRaw = new DefaultOperations(
                 new CommonOperations(data),
+                _vimTextBuffer.Object,
                 _textView,
                 _editOpts.Object,
                 _jumpList.Object,

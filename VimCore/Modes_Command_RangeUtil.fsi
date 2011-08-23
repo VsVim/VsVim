@@ -10,28 +10,29 @@ type internal ParseRangeResult =
     | NoRange 
     | Failed of string 
 
-module internal RangeUtil =
+type internal RangeUtil = 
+    new : IVimTextBuffer * ITextView -> RangeUtil
 
     /// Get the range for the currently selected line
-    val RangeForCurrentLine : ITextView -> SnapshotLineRange
+    member RangeForCurrentLine : SnapshotLineRange
 
     /// Retrieve the passed in range if valid or the range for the current line
     /// if the Range Option is empty
-    val RangeOrCurrentLine : ITextView -> SnapshotLineRange option -> SnapshotLineRange
+    member RangeOrCurrentLine : SnapshotLineRange option -> SnapshotLineRange
 
     /// Retrieve the passed in range if valid or the range for the current line
     /// if the Range Option is empty.  It will then try to apply the specified count
-    val RangeOrCurrentLineWithCount : ITextView -> SnapshotLineRange option -> int option -> SnapshotLineRange
+    member RangeOrCurrentLineWithCount : SnapshotLineRange option -> int option -> SnapshotLineRange
 
     /// Apply the count to the given range
-    val ApplyCount : int -> SnapshotLineRange -> SnapshotLineRange
+    member ApplyCount : int -> SnapshotLineRange -> SnapshotLineRange
 
     /// Apply the count if present to the given range
-    val TryApplyCount : int option -> SnapshotLineRange -> SnapshotLineRange
+    member TryApplyCount : int option -> SnapshotLineRange -> SnapshotLineRange
 
     /// Parse out a number from the input string
-    val ParseNumber : char list -> (int option * char list)
+    member ParseNumber : char list -> (int option * char list)
 
     /// Parse out a range from the input string in the context of the provided
     /// ITextSnapshotLine
-    val ParseRange : ITextSnapshotLine -> IMarkMap -> char list -> ParseRangeResult
+    member ParseRange : ITextSnapshotLine -> char list -> ParseRangeResult

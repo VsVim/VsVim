@@ -169,36 +169,6 @@ namespace Vim.UnitTest.Mock
                 .Returns(() => factory.Create<IUndoTransaction>(MockBehavior.Loose).Object);
         }
 
-        public static void AddMark(
-            this Mock<IMarkMap> map,
-            ITextBuffer buffer,
-            char mark,
-            VirtualSnapshotPoint? point = null)
-        {
-            if (point.HasValue)
-            {
-                map.Setup(x => x.GetMark(buffer, mark)).Returns(FSharpOption.Create(point.Value));
-            }
-            else
-            {
-                map.Setup(x => x.GetMark(buffer, mark)).Returns(FSharpOption<VirtualSnapshotPoint>.None);
-            }
-        }
-
-        public static void AddMark(
-            this Mock<IMarkMap> map,
-            ITextBuffer buffer,
-            char mark,
-            SnapshotPoint? point = null)
-        {
-            VirtualSnapshotPoint? virtualPoint = null;
-            if (point.HasValue)
-            {
-                virtualPoint = new VirtualSnapshotPoint(point.Value);
-            }
-            AddMark(map, buffer, mark, virtualPoint);
-        }
-
         public static Mock<IEditorOptions> MakeOptions(
             this Mock<IEditorOptionsFactoryService> optionsFactory,
             ITextBuffer buffer,

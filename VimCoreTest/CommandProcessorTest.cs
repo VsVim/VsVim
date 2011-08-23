@@ -17,15 +17,15 @@ using Vim.UnitTest.Mock;
 namespace VimCore.UnitTest
 {
     [TestFixture, RequiresSTA]
-    public class CommandProcessorTest
+    public sealed class CommandProcessorTest
     {
-        private IWpfTextView _textView;
+        private ITextView _textView;
         private ITextBuffer _textBuffer;
         private MockRepository _factory;
         private Mock<IVimBuffer> _buffer;
         private CommandProcessor _processorRaw;
         private ICommandProcessor _processor;
-        private IRegisterMap _map;
+        private IRegisterMap _registerMap;
         private IVimData _vimData;
         private Mock<IEditorOperations> _editOpts;
         private Mock<ICommonOperations> _operations;
@@ -42,7 +42,7 @@ namespace VimCore.UnitTest
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
             _textBuffer = _textView.TextBuffer;
             _factory = new MockRepository(MockBehavior.Strict);
-            _map = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
+            _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             _editOpts = _factory.Create<IEditorOperations>();
             _vimHost = _factory.Create<IVimHost>();
             _operations = _factory.Create<ICommonOperations>();
@@ -52,7 +52,7 @@ namespace VimCore.UnitTest
             _fileSystem = _factory.Create<IFileSystem>(MockBehavior.Strict);
             _foldManager = _factory.Create<IFoldManager>(MockBehavior.Strict);
             _vimData = new VimData();
-            _vim = MockObjectFactory.CreateVim(_map, host: _vimHost.Object, vimData: _vimData, factory: _factory);
+            _vim = MockObjectFactory.CreateVim(_registerMap, host: _vimHost.Object, vimData: _vimData, factory: _factory);
             _buffer = MockObjectFactory.CreateVimBuffer(
                 _textView,
                 "test",
@@ -69,7 +69,7 @@ namespace VimCore.UnitTest
 
         private Register UnnamedRegister
         {
-            get { return _map.GetRegister(RegisterName.Unnamed); }
+            get { return _registerMap.GetRegister(RegisterName.Unnamed); }
         }
 
         private RunResult RunCommand(string input)
@@ -224,7 +224,7 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar");
             RunCommand("y c");
-            Assert.AreEqual(_textView.GetLine(0).ExtentIncludingLineBreak.GetText(), _map.GetRegister('c').StringValue);
+            Assert.AreEqual(_textView.GetLine(0).ExtentIncludingLineBreak.GetText(), _registerMap.GetRegister('c').StringValue);
         }
 
         [Test]
@@ -268,10 +268,10 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar");
             _commandOperations
-                .Setup(x => x.PutLine(_map.GetRegister(RegisterName.Unnamed), It.IsAny<ITextSnapshotLine>(), false))
+                .Setup(x => x.PutLine(_registerMap.GetRegister(RegisterName.Unnamed), It.IsAny<ITextSnapshotLine>(), false))
                 .Callback<Register, ITextSnapshotLine, bool>((register, line, putBefore) => Assert.IsTrue(line.LineNumber == 0))
                 .Verifiable();
-            _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey", OperationKind.CharacterWise);
+            _registerMap.GetRegister(RegisterName.Unnamed).UpdateValue("hey", OperationKind.CharacterWise);
             RunCommand("put");
             _commandOperations.Verify();
         }
@@ -284,10 +284,10 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar");
             _commandOperations
-                .Setup(x => x.PutLine(_map.GetRegister(RegisterName.Unnamed), It.IsAny<ITextSnapshotLine>(), true))
+                .Setup(x => x.PutLine(_registerMap.GetRegister(RegisterName.Unnamed), It.IsAny<ITextSnapshotLine>(), true))
                 .Callback<Register, ITextSnapshotLine, bool>((register, line, putBefore) => Assert.IsTrue(line.LineNumber == 0))
                 .Verifiable();
-            _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey", OperationKind.CharacterWise);
+            _registerMap.GetRegister(RegisterName.Unnamed).UpdateValue("hey", OperationKind.CharacterWise);
             RunCommand("put!");
             _commandOperations.Verify();
         }

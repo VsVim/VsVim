@@ -62,37 +62,6 @@ namespace Vim.UnitTest
             return new CommonOperations(operationsData);
         }
 
-        internal static IMotionUtil CreateTextViewMotionUtil(
-            ITextView textView,
-            IMarkMap markMap = null,
-            ISearchService search = null,
-            ITextStructureNavigator navigator = null,
-            IJumpList jumpList = null,
-            IStatusUtil statusUtil = null,
-            IVimData vimData = null,
-            IEditorOptions editorOptions = null,
-            IWordUtil wordUtil = null)
-        {
-            var localSettings = CreateLocalSettings();
-            markMap = markMap ?? new MarkMap(new BufferTrackingService());
-            search = search ?? CreateSearchService(localSettings.GlobalSettings);
-            navigator = navigator ?? CreateTextStructureNavigator(textView, WordKind.NormalWord);
-            jumpList = jumpList ?? CreateJumpList();
-            statusUtil = statusUtil ?? new StatusUtil();
-            wordUtil = wordUtil ?? GetWordUtil(textView);
-            vimData = vimData ?? new VimData();
-            return new MotionUtil(
-                textView,
-                markMap,
-                localSettings,
-                search,
-                navigator,
-                jumpList,
-                statusUtil,
-                wordUtil,
-                vimData);
-        }
-
         /// <summary>
         /// Create the IVimLocalSettings for the given ITextBuffer
         /// </summary>
@@ -113,61 +82,49 @@ namespace Vim.UnitTest
             return CreateRegisterMap(device, () => null);
         }
 
-        internal static CommandUtil CreateCommandUtil(
+        public static IFoldManager CreateFoldManager(
             ITextView textView,
-            ICommonOperations operations = null,
-            IMotionUtil motionUtil = null,
             IStatusUtil statusUtil = null,
-            IRegisterMap registerMap = null,
-            IMarkMap markMap = null,
-            IVimData vimData = null,
-            IUndoRedoOperations undoRedOperations = null,
-            ISmartIndentationService smartIndentationService = null,
-            IFoldManager foldManager = null,
-            IVimHost vimHost = null,
-            IMacroRecorder recorder = null,
-            ISearchService searchService = null,
-            ITextStructureNavigator wordNavigator = null,
-            IVimLocalSettings localSettings = null)
+            IOutliningManager outliningManager = null)
         {
             statusUtil = statusUtil ?? new StatusUtil();
-            undoRedOperations = undoRedOperations ?? VimUtil.CreateUndoRedoOperations(statusUtil);
-            registerMap = registerMap ?? CreateRegisterMap(MockObjectFactory.CreateClipboardDevice().Object);
-            markMap = markMap ?? new MarkMap(new BufferTrackingService());
-            vimData = vimData ?? new VimData();
-            motionUtil = motionUtil ?? CreateTextViewMotionUtil(textView, markMap: markMap, vimData: vimData);
-            operations = operations ?? CreateCommonOperations(textView, vimData: vimData, statusUtil: statusUtil);
-            smartIndentationService = smartIndentationService ?? CreateSmartIndentationService();
-            foldManager = foldManager ?? EditorUtil.FactoryService.FoldManagerFactory.GetFoldManager(textView);
-            wordNavigator = wordNavigator ?? CreateTextStructureNavigator(textView, WordKind.NormalWord);
-            searchService = searchService ?? CreateSearchService();
-            localSettings = localSettings ?? CreateLocalSettings();
-            vimHost = vimHost ?? new MockVimHost();
-            var vim = MockObjectFactory.CreateVim(
-                registerMap: registerMap,
-                map: markMap,
-                host: vimHost,
-                vimData: vimData,
-                recorder: recorder,
-                searchService: searchService);
-            var vimTextBuffer = CreateVimTextBuffer(
-                textView.TextBuffer,
-                wordNavigator: wordNavigator,
-                localSettings: localSettings,
-                vim: vim.Object);
-            var bufferData = CreateVimBufferData(
-                vimTextBuffer,
+            var option = FSharpOption.CreateForReference(outliningManager);
+            return new FoldManager(
                 textView,
+                new FoldData(textView.TextBuffer),
                 statusUtil,
-                undoRedOperations);
-            var insertUtil = new InsertUtil(bufferData, operations);
+                option);
+        }
+
+        public static IMotionCapture CreateMotionCapture(
+            VimBufferData vimBufferData,
+            IIncrementalSearch incrementalSearch = null)
+        {
+            incrementalSearch = incrementalSearch ?? new IncrementalSearch(
+                vimBufferData,
+                EditorUtil.FactoryService.CommonOperationsFactory.GetCommonOperations(vimBufferData));
+            return new MotionCapture(vimBufferData, incrementalSearch);
+        }
+
+        public static CommandUtil CreateCommandUtil(
+            VimBufferData vimBufferData,
+            IMotionUtil motionUtil = null,
+            ICommonOperations operations = null,
+            ISmartIndentationService smartIndentationService = null,
+            IFoldManager foldManager = null,
+            InsertUtil insertUtil = null)
+        {
+            motionUtil = motionUtil ?? new MotionUtil(vimBufferData);
+            operations = operations ?? EditorUtil.FactoryService.CommonOperationsFactory.GetCommonOperations(vimBufferData);
+            smartIndentationService = smartIndentationService ?? EditorUtil.FactoryService.SmartIndentationService;
+            foldManager = foldManager ?? CreateFoldManager(vimBufferData.TextView, vimBufferData.StatusUtil);
+            insertUtil = insertUtil ?? new InsertUtil(vimBufferData, operations);
             return new CommandUtil(
-                bufferData,
+                vimBufferData,
                 motionUtil,
                 operations,
                 smartIndentationService,
                 foldManager,
-                wordNavigator,
                 insertUtil);
         }
 
@@ -188,23 +145,6 @@ namespace Vim.UnitTest
                 wordNavigator,
                 new BufferTrackingService(),
                 vim);
-        }
-
-        /// <summary>
-        /// Create a new instance of VimBufferData.  Centralized here to make it easier to 
-        /// absorb API changes in the Unit Tests
-        /// </summary>
-        public static VimBufferData CreateVimBufferData(
-            IVimTextBuffer vimTextBuffer,
-            ITextView textView,
-            IStatusUtil statusUtil,
-            IUndoRedoOperations undoRedoOperations)
-        {
-            return new VimBufferData(
-                textView,
-                statusUtil,
-                undoRedoOperations,
-                vimTextBuffer);
         }
 
         internal static ISmartIndentationService CreateSmartIndentationService()
@@ -438,31 +378,6 @@ namespace Vim.UnitTest
             range = range ?? SnapshotLineRangeUtil.CreateForSnapshot(span.Snapshot);
             var data = new SubstituteData(search, replace, flags ?? SubstituteFlags.None);
             return ModeArgument.NewSubstitute(span, range, data);
-        }
-
-        internal static IIncrementalSearch CreateIncrementalSearch(
-            ITextView textView,
-            IVimLocalSettings settings,
-            IVimData vimData,
-            ISearchService search = null,
-            IOutliningManager outliningManager = null,
-            IStatusUtil statusUtil = null)
-        {
-            vimData = vimData ?? new VimData();
-            search = search ?? CreateSearchService(settings.GlobalSettings);
-            statusUtil = statusUtil ?? new StatusUtil();
-            var nav = CreateTextStructureNavigator(textView, WordKind.NormalWord);
-            var operations = CreateCommonOperations(
-                textView: textView,
-                outlining: outliningManager,
-                vimData: vimData,
-                searchService: search);
-            return new IncrementalSearch(
-                operations,
-                settings,
-                nav,
-                statusUtil,
-                vimData);
         }
 
         internal static MotionResult CreateMotionResult(

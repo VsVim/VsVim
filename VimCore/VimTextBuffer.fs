@@ -41,6 +41,47 @@ type internal VimTextBuffer
             | None -> ()
             | Some visualSelection -> _lastVisualSelection <- Some (_bufferTrackingService.CreateVisualSelection visualSelection)
 
+    /// Get all of the local marks in the IVimTextBuffer.
+    member x.LocalMarks = 
+        LocalMark.All
+        |> Seq.map (fun localMark ->
+            match x.GetLocalMark localMark with
+            | None -> None
+            | Some point -> Some (localMark, point))
+        |> SeqUtil.filterToSome
+
+    /// Get the specified local mark value
+    member x.GetLocalMark localMark =
+        match localMark with
+        | LocalMark.Letter letter ->
+            let found, trackingLineColumn = _textBuffer.Properties.TryGetProperty<ITrackingLineColumn>(letter)
+            if found then
+                trackingLineColumn.VirtualPoint
+            else
+                None
+        | LocalMark.LastSelectionStart ->
+            x.LastVisualSelection 
+            |> Option.map (fun visualSelection -> visualSelection.VisualSpan.Start |> VirtualSnapshotPointUtil.OfPoint) 
+        | LocalMark.LastSelectionEnd ->
+            x.LastVisualSelection
+            |> Option.map (fun visualSelection -> visualSelection.VisualSpan.End |> VirtualSnapshotPointUtil.OfPoint) 
+
+    /// Set the local mark at the given line and column
+    member x.SetLocalMark localMark line column = 
+        match localMark with
+        | LocalMark.Letter letter -> 
+            // First close out the existing mark at this location if it exists
+            let found, trackingLineColumn = _textBuffer.Properties.TryGetProperty<ITrackingLineColumn>(letter)
+            if found then
+                trackingLineColumn.Close()
+
+            let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
+            _textBuffer.Properties.[letter] <- trackingLineColumn
+        | LocalMark.LastSelectionEnd ->
+            ()
+        | LocalMark.LastSelectionStart ->
+            ()
+
     /// Switch to the desired mode
     member x.SwitchMode modeKind modeArgument =
         _modeKind <- modeKind
@@ -53,11 +94,14 @@ type internal VimTextBuffer
         member x.LastVisualSelection 
             with get () = x.LastVisualSelection
             and set value = x.LastVisualSelection <- value
+        member x.LocalMarks = x.LocalMarks
         member x.LocalSettings = _localSettings
         member x.ModeKind = _modeKind
         member x.Name = _vimHost.GetName _textBuffer
         member x.Vim = _vim
         member x.WordNavigator = _wordNavigator
+        member x.GetLocalMark localMark = x.GetLocalMark localMark
+        member x.SetLocalMark localMark line column = x.SetLocalMark localMark line column
         member x.SwitchMode modeKind modeArgument = x.SwitchMode modeKind modeArgument
 
         [<CLIEvent>]

@@ -7,6 +7,6 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 
 type internal MotionUtil =
-    new : ITextView * IMarkMap * IVimLocalSettings * ISearchService * ITextStructureNavigator * IJumpList * IStatusUtil * IWordUtil * IVimData -> MotionUtil
+    new : VimBufferData -> MotionUtil
 
     interface IMotionUtil

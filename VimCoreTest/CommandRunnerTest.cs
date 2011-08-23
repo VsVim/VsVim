@@ -1,58 +1,40 @@
 ﻿using System;
 using System.Linq;
 using Microsoft.VisualStudio.Text.Editor;
-using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
-using Vim.UnitTest.Mock;
-using GlobalSettings = Vim.GlobalSettings;
 
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class CommandRunnerTest
+    public sealed class CommandRunnerTest : VimTestBase
     {
-        private MockRepository _factory;
-        private Mock<IVimHost> _host;
-        private Mock<IStatusUtil> _statusUtil;
         private ICommandUtil _commandUtil;
-        private IVimData _vimData;
         private IRegisterMap _registerMap;
+        private IVimTextBuffer _vimTextBuffer;
         private ITextView _textView;
         private CommandRunner _runnerRaw;
         private ICommandRunner _runner;
 
         private void Create(params string[] lines)
         {
-            _textView = EditorUtil.CreateTextView(lines);
-            _factory = new MockRepository(MockBehavior.Strict);
-            _host = _factory.Create<IVimHost>();
-            _statusUtil = _factory.Create<IStatusUtil>();
-            _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
-            _vimData = new VimData();
-            var settings = new GlobalSettings();
-            var motionUtil = VimUtil.CreateTextViewMotionUtil(
-                _textView,
-                vimData: _vimData);
-            var capture = new MotionCapture(
-                _host.Object,
-                _textView,
-                MockObjectFactory.CreateIncrementalSearch(factory: _factory).Object,
-                VimUtil.CreateLocalSettings(settings));
-            _commandUtil = VimUtil.CreateCommandUtil(
-                _textView,
-                motionUtil: motionUtil,
-                statusUtil: _statusUtil.Object,
-                registerMap: _registerMap,
-                vimData: _vimData);
+            _textView = CreateTextView(lines);
+            _vimTextBuffer = Vim.CreateVimTextBuffer(_textView.TextBuffer);
+            _registerMap = Vim.RegisterMap;
+            var vimBufferData = CreateVimBufferData(
+                _vimTextBuffer,
+                _textView);
+            _commandUtil = VimUtil.CreateCommandUtil(vimBufferData);
+            var motionCapture = VimUtil.CreateMotionCapture(vimBufferData);
+
             _runnerRaw = new CommandRunner(
                 _textView,
                 _registerMap,
-                capture,
+                motionCapture,
                 _commandUtil,
-                _statusUtil.Object,
+                new StatusUtil(),
                 VisualKind.Character);
             _runner = _runnerRaw;
         }

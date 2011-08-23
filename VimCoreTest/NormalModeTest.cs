@@ -3,7 +3,6 @@ using System.Linq;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using NUnit.Framework;
 using Vim;
@@ -16,24 +15,16 @@ using GlobalSettings = Vim.GlobalSettings;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class NormalModeTest
+    public sealed class NormalModeTest : VimTestBase
     {
         private NormalMode _modeRaw;
         private INormalMode _mode;
         private ITextView _textView;
-        private IRegisterMap _map;
-        private IVimData _vimData;
         private IVimGlobalSettings _globalSettings;
         private MockRepository _factory;
         private Mock<IVimBuffer> _buffer;
-        private Mock<ICommonOperations> _operations;
-        private Mock<IEditorOperations> _editorOperations;
         private Mock<IIncrementalSearch> _incrementalSearch;
-        private Mock<IJumpList> _jumpList;
-        private Mock<IStatusUtil> _statusUtil;
         private Mock<IDisplayWindowBroker> _displayWindowBroker;
-        private Mock<IFoldManager> _foldManager;
-        private Mock<IVimHost> _host;
         private Mock<ICommandUtil> _commandUtil;
         private Register _unnamedRegister;
 
@@ -56,50 +47,44 @@ namespace VimCore.UnitTest
 
         public void CreateCore(IMotionUtil motionUtil, params string[] lines)
         {
-            _textView = EditorUtil.CreateTextView(lines);
+            _textView = CreateTextView(lines);
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
-            _map = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice().Object);
-            _unnamedRegister = _map.GetRegister(RegisterName.Unnamed);
+            _unnamedRegister = Vim.RegisterMap.GetRegister(RegisterName.Unnamed);
             _factory = new MockRepository(MockBehavior.Strict);
-            _editorOperations = _factory.Create<IEditorOperations>(MockBehavior.Loose);
             _incrementalSearch = MockObjectFactory.CreateIncrementalSearch(factory: _factory);
-            _jumpList = _factory.Create<IJumpList>(MockBehavior.Strict);
-            _statusUtil = _factory.Create<IStatusUtil>(MockBehavior.Strict);
-            _foldManager = _factory.Create<IFoldManager>(MockBehavior.Strict);
-            _host = _factory.Create<IVimHost>(MockBehavior.Loose);
             _commandUtil = _factory.Create<ICommandUtil>();
             _displayWindowBroker = _factory.Create<IDisplayWindowBroker>(MockBehavior.Strict);
             _displayWindowBroker.SetupGet(x => x.IsCompletionActive).Returns(false);
             _displayWindowBroker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
             _displayWindowBroker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false);
-            _vimData = new VimData();
 
-            _globalSettings = new Vim.GlobalSettings();
-            motionUtil = motionUtil ?? VimUtil.CreateTextViewMotionUtil(
-                _textView,
-                new MarkMap(new BufferTrackingService()));
+            _globalSettings = Vim.GlobalSettings;
+
+            var vimTextBuffer = Vim.CreateVimTextBuffer(_textView.TextBuffer);
+            var vimBufferData = CreateVimBufferData(vimTextBuffer, _textView);
+            var operations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
+            motionUtil = motionUtil ?? new MotionUtil(vimBufferData);
             _buffer = MockObjectFactory.CreateVimBuffer(
                 _textView,
                 "test",
-                MockObjectFactory.CreateVim(_map, host: _host.Object, vimData: _vimData).Object,
-                _jumpList.Object,
+                vim: Vim,
+                jumpList: vimTextBuffer.JumpList,
                 incrementalSearch: _incrementalSearch.Object,
                 motionUtil: motionUtil,
-                settings: VimUtil.CreateLocalSettings(_globalSettings));
-            _operations = _factory.Create<ICommonOperations>(MockBehavior.Strict);
-            _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
-            _operations.SetupGet(x => x.TextView).Returns(_textView);
+                localSettings: VimUtil.CreateLocalSettings(_globalSettings));
 
-            var capture = new MotionCapture(
-                _host.Object,
+            var capture = new MotionCapture(vimBufferData, _incrementalSearch.Object);
+            var runner = new CommandRunner(
                 _textView,
-                _incrementalSearch.Object,
-                new LocalSettings(new GlobalSettings()));
-            var runner = new CommandRunner(_textView, _map, capture, _commandUtil.Object, _statusUtil.Object, VisualKind.Character);
+                Vim.RegisterMap, 
+                capture, 
+                _commandUtil.Object, 
+                vimBufferData.StatusUtil,
+                VisualKind.Character);
             _modeRaw = new NormalMode(
                 _buffer.Object,
-                _operations.Object,
-                _statusUtil.Object,
+                operations,
+                vimBufferData.StatusUtil,
                 _displayWindowBroker.Object,
                 runner,
                 capture);
@@ -1198,7 +1183,7 @@ namespace VimCore.UnitTest
         public void Bind_JumpToMark()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewJumpToMark('a'));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewJumpToMark(Mark.OfChar('a').Value));
             _mode.Process("'a");
         }
 
@@ -1206,7 +1191,7 @@ namespace VimCore.UnitTest
         public void Bind_JumpToMark_BackTick()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewJumpToMark('a'));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewJumpToMark(Mark.OfChar('a').Value));
             _mode.Process("`a");
         }
 

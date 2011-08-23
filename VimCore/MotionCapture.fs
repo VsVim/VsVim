@@ -6,16 +6,29 @@ open Microsoft.VisualStudio.Text.Editor;
 
 type internal MotionCapture 
     (
-        _host : IVimHost,
-        _textView : ITextView,
-        _incrementalSearch : IIncrementalSearch,
-        _settings : IVimLocalSettings
+        _vimBufferData : VimBufferData,
+        _incrementalSearch : IIncrementalSearch
     ) = 
+
+    let _textView = _vimBufferData.TextView
+    let _vimHost = _vimBufferData.Vim.VimHost
+    let _localSettings = _vimBufferData.LocalSettings
 
     /// Get a char and use the provided 'func' to create a Motion value.
     let GetChar func = 
         let data = BindData<_>.CreateForSingleChar (Some KeyRemapMode.Language) func
         BindDataStorage<_>.Simple data
+
+    /// Get a local mark and us the provided 'func' to create a Motion value
+    let GetLocalMark func = 
+        let bindFunc (keyInput : KeyInput) =
+            match LocalMark.OfChar keyInput.Char with
+            | None -> BindResult<Motion>.Error
+            | Some localMark -> BindResult<_>.Complete (func localMark)
+        let bindData = {
+            KeyRemapMode = Some KeyRemapMode.Language
+            BindFunction = bindFunc }
+        BindDataStorage<_>.Simple bindData
 
     /// Handles incremental searches (/ and ?).  Retrieve the BindData storage for
     /// the activation
@@ -340,11 +353,11 @@ type internal MotionCapture
                 yield (
                     "'",
                     MotionFlags.None,   // Cursor movement has different semantics than the motion
-                    GetChar (fun c -> Motion.MarkLine c))
+                    GetLocalMark (fun localMark -> Motion.MarkLine localMark))
                 yield (
                     "`",
                     MotionFlags.None,   // Cursor movement has different semantics than the motion
-                    GetChar (fun c -> Motion.Mark c))
+                    GetLocalMark (fun localMark -> Motion.Mark localMark))
                 yield (
                     "/",
                     MotionFlags.CursorMovement ||| MotionFlags.HandlesEscape,

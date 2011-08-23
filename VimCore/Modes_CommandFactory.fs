@@ -103,7 +103,7 @@ type internal CommandFactory
                 CommandBinding.ComplexNormalBinding (name, CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar None NormalCommand.RecordMacroStart)
         
         // Raised when macro recording starts or stops.  
-        let onMacroRecordingChanged () = 
+        let onMacroRecordingChanged _ = 
             let command = getMacroCommand()
             runner.Remove command.KeyInputSet
             runner.Add command

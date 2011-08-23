@@ -275,17 +275,19 @@ type VisualMotionResult =
 
 type internal MotionUtil 
     ( 
-        _textView : ITextView,
-        _markMap : IMarkMap,
-        _localSettings : IVimLocalSettings,
-        _search : ISearchService,
-        _navigator : ITextStructureNavigator,
-        _jumpList : IJumpList, 
-        _statusUtil : IStatusUtil,
-        _wordUtil : IWordUtil,
-        _vimData : IVimData
+        _vimBufferData : VimBufferData
     ) = 
 
+    let _vimTextBuffer = _vimBufferData.VimTextBuffer
+    let _textView = _vimBufferData.TextView
+    let _statusUtil = _vimBufferData.StatusUtil
+    let _wordUtil = _vimBufferData.WordUtil
+    let _localSettings = _vimTextBuffer.LocalSettings
+    let _markMap = _vimTextBuffer.Vim.MarkMap
+    let _jumpList = _vimTextBuffer.JumpList
+    let _vimData = _vimTextBuffer.Vim.VimData
+    let _search = _vimTextBuffer.Vim.SearchService
+    let _wordNavigator = _vimTextBuffer.WordNavigator
     let _textBuffer = _textView.TextBuffer
     let _bufferGraph = _textView.BufferGraph
     let _visualBuffer = _textView.TextViewModel.VisualBuffer
@@ -954,8 +956,8 @@ type internal MotionUtil
         | Some(data) -> Some data
         | None -> SeqUtil.tryHeadOnly all
 
-    member x.Mark c = 
-        match _markMap.GetLocalMark _textBuffer c with 
+    member x.Mark localMark = 
+        match _vimTextBuffer.GetLocalMark localMark with
         | None -> 
             None
         | Some virtualPoint ->
@@ -976,9 +978,10 @@ type internal MotionUtil
     /// Motion from the caret to the given mark within the ITextBuffer.  Because this uses
     /// absolute positions and not counts we can operate on the edit buffer and don't need
     /// to consider the visual buffer
-    member x.MarkLine c =
-        match _markMap.GetLocalMark _textBuffer c with 
-        | None -> 
+    member x.MarkLine localMark =
+
+        match _vimTextBuffer.GetLocalMark localMark with
+        | None ->
             None
         | Some virtualPoint ->
 
@@ -1818,11 +1821,12 @@ type internal MotionUtil
     member x.LineFromTopOfVisibleWindow countOpt = 
         _jumpList.Add x.CaretPoint 
 
-        let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine _textView
+        let caretPoint, caretLine = TextViewUtil.GetCaretPointAndLine _textView
         let lines = TextViewUtil.GetVisibleSnapshotLines _textView |> List.ofSeq
         let span = 
-            if lines.Length = 0 then caretLine.Extent
-            else  
+            if lines.Length = 0 then
+                caretLine.Extent
+            else
                 let count = (CommandUtil2.CountOrDefault countOpt) 
                 let count = min count lines.Length
                 let startLine = lines.Head
@@ -2057,7 +2061,7 @@ type internal MotionUtil
         // The search operation should also update the search history
         _vimData.SearchHistory.Add patternData.Pattern
 
-        let searchResult = _search.FindNextPattern patternData searchPoint _navigator count
+        let searchResult = _search.FindNextPattern patternData searchPoint _wordNavigator count
 
         // Raise the messages that go with this given result
         CommonUtil.RaiseSearchResultMessage _statusUtil searchResult
@@ -2268,8 +2272,8 @@ type internal MotionUtil
             | Motion.LineOrLastToFirstNonBlank -> x.LineOrLastToFirstNonBlank motionArgument.RawCount |> Some
             | Motion.LineUp -> x.LineUp motionArgument.Count
             | Motion.LineUpToFirstNonBlank -> x.LineUpToFirstNonBlank motionArgument.Count |> Some
-            | Motion.Mark c -> x.Mark c
-            | Motion.MarkLine c -> x.MarkLine c 
+            | Motion.Mark localMark -> x.Mark localMark
+            | Motion.MarkLine localMark -> x.MarkLine localMark
             | Motion.MatchingToken -> x.MatchingToken()
             | Motion.NextPartialWord path -> x.NextPartialWord path motionArgument.Count
             | Motion.NextWord path -> x.NextWord path motionArgument.Count

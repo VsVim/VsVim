@@ -27,6 +27,16 @@ namespace Vim.UnitTest.Mock
             NavigateToReturn = false;
         }
 
+        /// <summary>
+        /// Clear out the stored information
+        /// </summary>
+        public void Clear()
+        {
+            Buffers = FSharpList<IVimBuffer>.Empty;
+            BeepCount = 0;
+            GoToDefinitionCount = 0;
+        }
+
         void IVimHost.Beep()
         {
             BeepCount++;

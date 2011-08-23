@@ -102,32 +102,27 @@ type internal VimBufferFactory
                 if manager = null then None
                 else manager.TextBufferUndoHistory |> Some
             UndoRedoOperations(statusUtil, history, editOperations) :> IUndoRedoOperations
-        let bufferData : VimBufferData = {
+        let wordUtil = _wordUtilFactory.GetWordUtil textBuffer
+        let vimBufferData : VimBufferData = {
             TextView = textView
             StatusUtil = statusUtil
             UndoRedoOperations = undoRedoOperations
-            VimTextBuffer = vimTextBuffer }
-        let commonOperations = _commonOperationsFactory.GetCommonOperations bufferData
-        let wordUtil = _wordUtilFactory.GetWordUtil textBuffer
+            VimTextBuffer = vimTextBuffer
+            WordUtil = wordUtil }
+        let commonOperations = _commonOperationsFactory.GetCommonOperations vimBufferData
 
         let wordNav = wordUtil.CreateTextStructureNavigator WordKind.NormalWord
-        let incrementalSearch = 
-            IncrementalSearch(
-                commonOperations,
-                localSettings, 
-                wordNav, 
-                statusUtil,
-                vim.VimData) :> IIncrementalSearch
-        let capture = MotionCapture(vim.VimHost, textView, incrementalSearch, localSettings) :> IMotionCapture
+        let incrementalSearch = IncrementalSearch(vimBufferData, commonOperations) :> IIncrementalSearch
+        let capture = MotionCapture(vimBufferData, incrementalSearch) :> IMotionCapture
 
-        let textChangeTracker = _textChangeTrackerFactory.GetTextChangeTracker bufferData
-        let motionUtil = MotionUtil(textView, vim.MarkMap, localSettings, vim.SearchService, wordNav, jumpList, statusUtil, wordUtil, vim.VimData) :> IMotionUtil
+        let textChangeTracker = _textChangeTrackerFactory.GetTextChangeTracker vimBufferData
+        let motionUtil = MotionUtil(vimBufferData) :> IMotionUtil
         let foldManager = _foldManagerFactory.GetFoldManager textView
-        let insertUtil = InsertUtil(bufferData, commonOperations) :> IInsertUtil
-        let commandUtil = CommandUtil(bufferData, motionUtil, commonOperations, _smartIndentationService, foldManager, wordNav, insertUtil) :> ICommandUtil
+        let insertUtil = InsertUtil(vimBufferData, commonOperations) :> IInsertUtil
+        let commandUtil = CommandUtil(vimBufferData, motionUtil, commonOperations, _smartIndentationService, foldManager, insertUtil) :> ICommandUtil
         let windowSettings = WindowSettings(vim.GlobalSettings, textView)
 
-        let bufferRaw = VimBuffer(bufferData, incrementalSearch, motionUtil, wordNav, windowSettings)
+        let bufferRaw = VimBuffer(vimBufferData, incrementalSearch, motionUtil, wordNav, windowSettings)
         let buffer = bufferRaw :> IVimBuffer
 
         /// Create the selection change tracker so that it will begin to monitor
@@ -141,7 +136,7 @@ type internal VimBufferFactory
         let createCommandRunner kind = CommandRunner (textView, vim.RegisterMap, capture, commandUtil, statusUtil, kind) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker textView
         let bufferOptions = _editorOptionsFactoryService.GetOptions(textView.TextBuffer)
-        let commandOpts = Modes.Command.DefaultOperations(commonOperations, textView, editOperations, jumpList, localSettings, undoRedoOperations, vim.KeyMap, vim.VimData, vim.VimHost, statusUtil) :> Modes.Command.IOperations
+        let commandOpts = Modes.Command.DefaultOperations(commonOperations, vimTextBuffer, textView, editOperations, jumpList, localSettings, undoRedoOperations, vim.KeyMap, vim.VimData, vim.VimHost, statusUtil) :> Modes.Command.IOperations
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commonOperations, commandOpts, statusUtil, FileSystem() :> IFileSystem, foldManager) :> Modes.Command.ICommandProcessor
         let visualOptsFactory kind = 
             let kind = VisualKind.OfModeKind kind |> Option.get
@@ -248,11 +243,7 @@ type internal Vim
         let markMap = MarkMap(bufferTrackingService)
         let vimData = VimData() :> IVimData
         let globalSettings = GlobalSettings() :> IVimGlobalSettings
-        let listeners = 
-            [markMap :> IVimBufferCreationListener]
-            |> Seq.map (fun t -> new Lazy<IVimBufferCreationListener>(fun () -> t))
-            |> Seq.append bufferCreationListeners 
-            |> List.ofSeq
+        let listeners = bufferCreationListeners |> List.ofSeq
         Vim(
             host,
             bufferFactoryService,

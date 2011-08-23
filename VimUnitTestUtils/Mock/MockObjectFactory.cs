@@ -66,7 +66,7 @@ namespace Vim.UnitTest.Mock
             IKeyboardDevice keyboardDevice = null,
             IMouseDevice mouseDevice = null,
             IVimData vimData = null,
-            IMacroRecorder recorder = null,
+            IMacroRecorder macroRecorder = null,
             ISearchService searchService = null,
             MockRepository factory = null)
         {
@@ -76,7 +76,7 @@ namespace Vim.UnitTest.Mock
             settings = settings ?? new GlobalSettings();
             host = host ?? new MockVimHost();
             keyMap = keyMap ?? (new KeyMap());
-            recorder = recorder ?? CreateMacroRecorder(factory: factory).Object;
+            macroRecorder = macroRecorder ?? CreateMacroRecorder(factory: factory).Object;
             searchService = searchService ?? factory.Create<ISearchService>().Object;
             keyboardDevice = keyboardDevice ?? (factory.Create<IKeyboardDevice>(MockBehavior.Loose)).Object;
             mouseDevice = mouseDevice ?? (factory.Create<IMouseDevice>(MockBehavior.Loose)).Object;
@@ -88,7 +88,7 @@ namespace Vim.UnitTest.Mock
             mock.SetupGet(x => x.VimHost).Returns(host);
             mock.SetupGet(x => x.KeyMap).Returns(keyMap);
             mock.SetupGet(x => x.VimData).Returns(vimData);
-            mock.SetupGet(x => x.MacroRecorder).Returns(recorder);
+            mock.SetupGet(x => x.MacroRecorder).Returns(macroRecorder);
             mock.SetupGet(x => x.SearchService).Returns(searchService);
             return mock;
         }
@@ -144,7 +144,7 @@ namespace Vim.UnitTest.Mock
             string name = null,
             IVim vim = null,
             IJumpList jumpList = null,
-            IVimLocalSettings settings = null,
+            IVimLocalSettings localSettings = null,
             IIncrementalSearch incrementalSearch = null,
             IMotionUtil motionUtil = null,
             ITextStructureNavigator wordNavigator = null,
@@ -156,16 +156,20 @@ namespace Vim.UnitTest.Mock
             jumpList = jumpList ?? (factory.Create<IJumpList>().Object);
             motionUtil = motionUtil ?? factory.Create<IMotionUtil>().Object;
             wordNavigator = wordNavigator ?? factory.Create<ITextStructureNavigator>().Object;
-            settings = settings ?? new LocalSettings(vim.GlobalSettings);
-            var vimTextBuffer = CreateVimTextBuffer(settings, factory);
+            localSettings = localSettings ?? new LocalSettings(vim.GlobalSettings);
+            var vimTextBuffer = CreateVimTextBuffer(
+                textView.TextBuffer,
+                localSettings: localSettings,
+                vim: vim,
+                factory: factory);
             var mock = factory.Create<IVimBuffer>();
             mock.SetupGet(x => x.TextView).Returns(textView);
             mock.SetupGet(x => x.MotionUtil).Returns(motionUtil);
             mock.SetupGet(x => x.TextBuffer).Returns(() => textView.TextBuffer);
             mock.SetupGet(x => x.TextSnapshot).Returns(() => textView.TextSnapshot);
             mock.SetupGet(x => x.Name).Returns(name);
-            mock.SetupGet(x => x.LocalSettings).Returns(settings);
-            mock.SetupGet(x => x.GlobalSettings).Returns(settings.GlobalSettings);
+            mock.SetupGet(x => x.LocalSettings).Returns(localSettings);
+            mock.SetupGet(x => x.GlobalSettings).Returns(localSettings.GlobalSettings);
             mock.SetupGet(x => x.MarkMap).Returns(vim.MarkMap);
             mock.SetupGet(x => x.RegisterMap).Returns(vim.RegisterMap);
             mock.SetupGet(x => x.JumpList).Returns(jumpList);
@@ -177,16 +181,48 @@ namespace Vim.UnitTest.Mock
             return mock;
         }
 
-
+        /// <summary>
+        /// Create a Mock over IVimTextBuffer which provides the msot basic functions
+        /// </summary>
         public static Mock<IVimTextBuffer> CreateVimTextBuffer(
+            ITextBuffer textBuffer,
             IVimLocalSettings localSettings = null,
+            IVim vim = null,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
+            vim = vim ?? CreateVim(factory: factory).Object;
             var mock = factory.Create<IVimTextBuffer>();
+            mock.SetupGet(x => x.TextBuffer).Returns(textBuffer);
             mock.SetupGet(x => x.LocalSettings).Returns(localSettings);
+            mock.SetupGet(x => x.Vim).Returns(vim);
             mock.SetupProperty(x => x.LastVisualSelection);
             return mock;
+        }
+
+        /// <summary>
+        /// This is not technically a Mock but often we want to create it with mocked 
+        /// backing values
+        /// </summary>
+        /// <returns></returns>
+        public static VimBufferData CreateVimBufferData(
+            IVimTextBuffer vimTextBuffer,
+            ITextView textView,
+            IStatusUtil statusUtil = null,
+            IUndoRedoOperations undoRedoOperations = null,
+            IWordUtil wordUtil = null,
+            MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            statusUtil = statusUtil ?? factory.Create<IStatusUtil>().Object;
+            undoRedoOperations = undoRedoOperations ?? factory.Create<IUndoRedoOperations>().Object;
+            wordUtil = wordUtil ?? factory.Create<IWordUtil>().Object;
+            return new VimBufferData(
+                textView,
+                statusUtil,
+                undoRedoOperations,
+                vimTextBuffer,
+                wordUtil);
         }
 
         public static Mock<ITextCaret> CreateCaret(MockRepository factory = null)

@@ -42,10 +42,17 @@ type internal DisposableBag() =
 type internal WeakReference<'T>( _weak : System.WeakReference ) =
     member x.Target = 
         let v = _weak.Target
-        if v = null then None
+        if v = null then
+            None
         else 
             let v = v :?> 'T 
             Some v
+
+module internal WeakReferenceUtil =
+
+    let Create<'T> (value : 'T) = 
+        let weakReference = System.WeakReference(value)
+        WeakReference<'T>(weakReference)
 
 module internal ListUtil =
 
@@ -336,6 +343,12 @@ module internal OptionUtil =
         match opt with
         | None -> None
         | Some opt -> opt
+
+    /// Map an option ta a value which produces an option and then collapse the result
+    let map2 mapFunc value =
+        match value with
+        | None -> None
+        | Some value -> mapFunc value
 
     /// Combine an option with another value.  If the option has no value then the result
     /// is None.  If the option has a value the result is an Option of a tuple of the original

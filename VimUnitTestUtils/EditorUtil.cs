@@ -131,7 +131,7 @@ namespace Vim.UnitTest
         /// </summary>
         public static ITextBuffer CreateTextBuffer(params string[] lines)
         {
-            return CreateTextBuffer(null, lines);
+            return FactoryService.TextBufferFactory.CreateTextBuffer(lines);
         }
 
         /// <summary>
@@ -139,18 +139,7 @@ namespace Vim.UnitTest
         /// </summary>
         public static ITextBuffer CreateTextBuffer(IContentType contentType, params string[] lines)
         {
-            var factory = FactoryService.TextBufferFactory;
-            var buffer = contentType != null
-                ? factory.CreateTextBuffer(contentType)
-                : factory.CreateTextBuffer();
-
-            if (lines.Length != 0)
-            {
-                var text = CreateLines(lines);
-                buffer.Replace(new Span(0, 0), text);
-            }
-
-            return buffer;
+            return FactoryService.TextBufferFactory.CreateTextBuffer(contentType, lines);
         }
 
         /// <summary>

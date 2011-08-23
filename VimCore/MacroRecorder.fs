@@ -15,6 +15,8 @@ type internal MacroRecorder (_registerMap : IRegisterMap) =
     let _recordingStartedEvent = new Event<_>()
     let _recordingStoppedEvent = new Event<_>()
 
+    member x.CurrentRecording = _recordData |> Option.map snd
+
     /// Are we currently recording
     member x.IsRecording = Option.isSome _recordData
 
@@ -30,7 +32,7 @@ type internal MacroRecorder (_registerMap : IRegisterMap) =
             else List.empty
         _recordData <- Some (register, list)
         _recordKeyStroke <- false
-        _recordingStartedEvent.Trigger ()
+        _recordingStartedEvent.Trigger (register, isAppend)
 
     member x.StopRecording () = 
         Contract.Requires (Option.isSome _recordData)
@@ -73,6 +75,7 @@ type internal MacroRecorder (_registerMap : IRegisterMap) =
         member x.VimBufferCreated buffer = x.OnVimBufferCreated buffer
 
     interface IMacroRecorder with
+        member x.CurrentRecording = x.CurrentRecording
         member x.IsRecording = x.IsRecording
         member x.StartRecording register isAppend = x.StartRecording register isAppend
         member x.StopRecording () = x.StopRecording ()

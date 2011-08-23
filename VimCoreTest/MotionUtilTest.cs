@@ -3,7 +3,6 @@ using System.Linq;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using NUnit.Framework;
 using Vim;
@@ -14,20 +13,21 @@ using Vim.UnitTest.Mock;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class MotionUtilTest
+    public sealed class MotionUtilTest : VimTestBase
     {
         private ITextBuffer _textBuffer;
         private ITextView _textView;
         private ITextSnapshot _snapshot;
+        private IVimTextBuffer _vimTextBuffer;
         private IVimLocalSettings _localSettings;
         private IVimGlobalSettings _globalSettings;
         private MotionUtil _motionUtil;
         private ISearchService _search;
-        private ITextStructureNavigator _navigator;
         private IVimData _vimData;
         private IMarkMap _markMap;
-        private IJumpList _jumpList;
         private Mock<IStatusUtil> _statusUtil;
+        private LocalMark _localMarkA = LocalMark.NewLetter(Letter.A);
+        private Mark _markLocalA = Mark.NewLocalMark(LocalMark.NewLetter(Letter.A));
 
         [TearDown]
         public void TearDown()
@@ -37,7 +37,7 @@ namespace VimCore.UnitTest
 
         private void Create(params string[] lines)
         {
-            var textView = EditorUtil.CreateTextView(lines);
+            var textView = CreateTextView(lines);
             Create(textView);
         }
 
@@ -53,24 +53,17 @@ namespace VimCore.UnitTest
             _textBuffer = textView.TextBuffer;
             _snapshot = _textBuffer.CurrentSnapshot;
             _textBuffer.Changed += delegate { _snapshot = _textBuffer.CurrentSnapshot; };
-            _globalSettings = new Vim.GlobalSettings();
-            _localSettings = new LocalSettings(_globalSettings);
-            _markMap = new MarkMap(new BufferTrackingService());
-            _vimData = new VimData();
-            _search = VimUtil.CreateSearchService(_globalSettings);
-            _jumpList = VimUtil.CreateJumpList();
+
+            _vimTextBuffer = Vim.CreateVimTextBuffer(_textBuffer);
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
-            _navigator = VimUtil.CreateTextStructureNavigator(_textView, WordKind.NormalWord);
-            _motionUtil = new MotionUtil(
-                _textView,
-                _markMap,
-                _localSettings,
-                _search,
-                _navigator,
-                _jumpList,
-                _statusUtil.Object,
-                VimUtil.GetWordUtil(textView),
-                _vimData);
+            var vimBufferData = CreateVimBufferData(_vimTextBuffer, _textView, statusUtil: _statusUtil.Object);
+            _globalSettings = vimBufferData.LocalSettings.GlobalSettings;
+            _localSettings = vimBufferData.LocalSettings;
+            _markMap = vimBufferData.Vim.MarkMap;
+            _vimData = vimBufferData.Vim.VimData;
+            _search = vimBufferData.Vim.SearchService;
+            var wordNavigator = VimUtil.CreateTextStructureNavigator(_textView, WordKind.NormalWord);
+            _motionUtil = new MotionUtil(vimBufferData);
         }
 
         public void AssertData(
@@ -1170,7 +1163,7 @@ namespace VimCore.UnitTest
         [Test]
         public void LineFromTopOfVisibleWindow1()
         {
-            var buffer = EditorUtil.CreateTextBuffer("foo", "bar", "baz");
+            var buffer = CreateTextBuffer("foo", "bar", "baz");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 1);
             Create(tuple.Item1.Object);
             var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None);
@@ -1182,7 +1175,7 @@ namespace VimCore.UnitTest
         [Test]
         public void LineFromTopOfVisibleWindow2()
         {
-            var buffer = EditorUtil.CreateTextBuffer("foo", "bar", "baz", "jazz");
+            var buffer = CreateTextBuffer("foo", "bar", "baz", "jazz");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
             Create(tuple.Item1.Object);
             var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption.Create(2));
@@ -1195,7 +1188,7 @@ namespace VimCore.UnitTest
         [Description("From visible line not caret point")]
         public void LineFromTopOfVisibleWindow3()
         {
-            var buffer = EditorUtil.CreateTextBuffer("foo", "bar", "baz", "jazz");
+            var buffer = CreateTextBuffer("foo", "bar", "baz", "jazz");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2, caretPosition: buffer.GetLine(2).Start.Position);
             Create(tuple.Item1.Object);
             var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption.Create(2));
@@ -1207,7 +1200,7 @@ namespace VimCore.UnitTest
         [Test]
         public void LineFromTopOfVisibleWindow4()
         {
-            var buffer = EditorUtil.CreateTextBuffer("  foo", "bar");
+            var buffer = CreateTextBuffer("  foo", "bar");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 1, caretPosition: buffer.GetLine(1).End);
             Create(tuple.Item1.Object);
             var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None);
@@ -1217,7 +1210,7 @@ namespace VimCore.UnitTest
         [Test]
         public void LineFromTopOfVisibleWindow5()
         {
-            var buffer = EditorUtil.CreateTextBuffer("  foo", "bar");
+            var buffer = CreateTextBuffer("  foo", "bar");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 1, caretPosition: buffer.GetLine(1).End);
             Create(tuple.Item1.Object);
             _globalSettings.StartOfLine = false;
@@ -1228,7 +1221,7 @@ namespace VimCore.UnitTest
         [Test]
         public void LineFromBottomOfVisibleWindow1()
         {
-            var buffer = EditorUtil.CreateTextBuffer("a", "b", "c", "d");
+            var buffer = CreateTextBuffer("a", "b", "c", "d");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
             Create(tuple.Item1.Object);
             var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None);
@@ -1240,7 +1233,7 @@ namespace VimCore.UnitTest
         [Test]
         public void LineFromBottomOfVisibleWindow2()
         {
-            var buffer = EditorUtil.CreateTextBuffer("a", "b", "c", "d");
+            var buffer = CreateTextBuffer("a", "b", "c", "d");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
             Create(tuple.Item1.Object);
             var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption.Create(2));
@@ -1252,7 +1245,7 @@ namespace VimCore.UnitTest
         [Test]
         public void LineFromBottomOfVisibleWindow3()
         {
-            var buffer = EditorUtil.CreateTextBuffer("a", "b", "c", "d");
+            var buffer = CreateTextBuffer("a", "b", "c", "d");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2, caretPosition: buffer.GetLine(2).End);
             Create(tuple.Item1.Object);
             var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption.Create(2));
@@ -1264,7 +1257,7 @@ namespace VimCore.UnitTest
         [Test]
         public void LineFromBottomOfVisibleWindow4()
         {
-            var buffer = EditorUtil.CreateTextBuffer("a", "b", "  c", "d");
+            var buffer = CreateTextBuffer("a", "b", "  c", "d");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
             Create(tuple.Item1.Object);
             var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None);
@@ -1274,7 +1267,7 @@ namespace VimCore.UnitTest
         [Test]
         public void LineFromBottomOfVisibleWindow5()
         {
-            var buffer = EditorUtil.CreateTextBuffer("a", "b", "  c", "d");
+            var buffer = CreateTextBuffer("a", "b", "  c", "d");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
             Create(tuple.Item1.Object);
             _globalSettings.StartOfLine = false;
@@ -1285,7 +1278,7 @@ namespace VimCore.UnitTest
         [Test]
         public void LineFromMiddleOfWindow1()
         {
-            var buffer = EditorUtil.CreateTextBuffer("a", "b", "c", "d");
+            var buffer = CreateTextBuffer("a", "b", "c", "d");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
             Create(tuple.Item1.Object);
             var data = _motionUtil.LineInMiddleOfVisibleWindow();
@@ -1801,28 +1794,34 @@ namespace VimCore.UnitTest
         public void Mark_Forward()
         {
             Create("the dog chased the ball");
-            _markMap.SetMark(_textView.GetPoint(3), 'a');
-            var data = _motionUtil.Mark('a').Value;
+            _markMap.SetMark(_markLocalA, _vimTextBuffer, 0, 3);
+            var data = _motionUtil.Mark(_localMarkA).Value;
             Assert.AreEqual("the", data.Span.GetText());
             Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
             Assert.AreEqual(MotionKind.CharacterWiseExclusive, data.MotionKind);
             Assert.IsTrue(data.IsForward);
         }
 
+        /// <summary>
+        /// If a Mark is not set then the Mark motion should fail
+        /// </summary>
         [Test]
         public void Mark_DoesNotExist()
         {
             Create("the dog chased the ball");
-            Assert.IsTrue(_motionUtil.Mark('a').IsNone());
+            Assert.IsTrue(_motionUtil.Mark(_localMarkA).IsNone());
         }
 
+        /// <summary>
+        /// Ensure that a backwards mark produces a backwards span
+        /// </summary>
         [Test]
         public void Mark_Backward()
         {
             Create("the dog chased the ball");
             _textView.MoveCaretTo(3);
-            _markMap.SetMark(_textView.GetPoint(0), 'a');
-            var data = _motionUtil.Mark('a').Value;
+            _vimTextBuffer.SetLocalMark(_localMarkA, 0, 0);
+            var data = _motionUtil.Mark(_localMarkA).Value;
             Assert.AreEqual("the", data.Span.GetText());
             Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
             Assert.AreEqual(MotionKind.CharacterWiseExclusive, data.MotionKind);
@@ -1833,15 +1832,15 @@ namespace VimCore.UnitTest
         public void MarkLine_DoesNotExist()
         {
             Create("the dog chased the ball");
-            Assert.IsTrue(_motionUtil.MarkLine('a').IsNone());
+            Assert.IsTrue(_motionUtil.MarkLine(_localMarkA).IsNone());
         }
 
         [Test]
         public void MarkLine_Forward()
         {
             Create("cat", "dog", "pig", "tree");
-            _markMap.SetMark(_textView.GetLine(1).Start.Add(1), 'a');
-            var data = _motionUtil.MarkLine('a').Value;
+            _vimTextBuffer.SetLocalMark(_localMarkA, 1, 1);
+            var data = _motionUtil.MarkLine(_localMarkA).Value;
             Assert.AreEqual(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
             Assert.IsTrue(data.IsForward);
             Assert.IsTrue(data.MotionKind.IsLineWise);
@@ -1852,8 +1851,8 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "pig", "tree");
             _textView.MoveCaretTo(_textView.GetLine(1).Start.Add(1));
-            _markMap.SetMark(_textView.GetPoint(0), 'a');
-            var data = _motionUtil.MarkLine('a').Value;
+            _vimTextBuffer.SetLocalMark(_localMarkA, 0, 0);
+            var data = _motionUtil.MarkLine(_localMarkA).Value;
             Assert.AreEqual(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
             Assert.IsFalse(data.IsForward);
             Assert.IsTrue(data.MotionKind.IsLineWise);

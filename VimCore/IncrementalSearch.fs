@@ -23,16 +23,18 @@ type IncrementalSearchData = {
 
 type internal IncrementalSearch
     (
-        _operations : ICommonOperations,
-        _settings : IVimLocalSettings,
-        _navigator : ITextStructureNavigator,
-        _statusUtil : IStatusUtil,
-        _vimData : IVimData
+        _vimBufferData : VimBufferData,
+        _operations : ICommonOperations
     ) =
 
-    let _globalSettings = _settings.GlobalSettings
+    let _vimData = _vimBufferData.Vim.VimData
+    let _statusUtil = _vimBufferData.StatusUtil
+    let _vimTextBuffer = _vimBufferData.VimTextBuffer
+    let _wordNavigator = _vimTextBuffer.WordNavigator
+    let _localSettings = _vimTextBuffer.LocalSettings
+    let _globalSettings = _localSettings.GlobalSettings
     let _textView = _operations.TextView
-    let _searchService = _operations.SearchService
+    let _searchService = _vimBufferData.Vim.SearchService
     let mutable _data : IncrementalSearchData option = None
     let _currentSearchUpdated = Event<SearchResult>()
     let _currentSearchCompleted = Event<SearchResult>()
@@ -94,7 +96,7 @@ type internal IncrementalSearch
             else
                 match TrackingPointUtil.GetPoint _textView.TextSnapshot data.StartPoint with
                 | None -> SearchResult.NotFound (searchData, false)
-                | Some point -> _searchService.FindNextPattern searchData.PatternData point _navigator 1
+                | Some point -> _searchService.FindNextPattern searchData.PatternData point _wordNavigator 1
 
         // Update our state based on the SearchResult.  Only update the view if the 'incsearch'
         // option is set
@@ -132,7 +134,7 @@ type internal IncrementalSearch
 
     interface IIncrementalSearch with
         member x.InSearch = Option.isSome _data
-        member x.WordNavigator = _navigator
+        member x.WordNavigator = _wordNavigator
         member x.CurrentSearch = 
             match _data with 
             | Some(data) -> Some data.SearchData

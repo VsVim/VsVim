@@ -94,6 +94,17 @@ type internal NormalMode
                 NormalCommand.ReplaceChar ki)
         BindDataStorage.Complex func
 
+    /// Get a mark and us the provided 'func' to create a Motion value
+    member x.BindMark func = 
+        let bindFunc (keyInput : KeyInput) =
+            match Mark.OfChar keyInput.Char with
+            | None -> BindResult<NormalCommand>.Error
+            | Some localMark -> BindResult<_>.Complete (func localMark)
+        let bindData = {
+            KeyRemapMode = None
+            BindFunction = bindFunc }
+        BindDataStorage<_>.Simple bindData
+
     /// Get the information on how to handle the tilde command based on the current setting for 'tildeop'
     member x.GetTildeCommand () =
         let name = KeyInputUtil.CharToKeyInput '~' |> OneKeyInput
@@ -217,8 +228,8 @@ type internal NormalMode
         let complexSeq = 
             seq {
                 yield ("r", CommandFlags.Repeatable, x.BindReplaceChar ())
-                yield ("'", CommandFlags.Movement, BindDataStorage<_>.CreateForSingleChar None NormalCommand.JumpToMark)
-                yield ("`", CommandFlags.Movement, BindDataStorage<_>.CreateForSingleChar None NormalCommand.JumpToMark)
+                yield ("'", CommandFlags.Movement, x.BindMark NormalCommand.JumpToMark)
+                yield ("`", CommandFlags.Movement, x.BindMark NormalCommand.JumpToMark)
                 yield ("m", CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar None NormalCommand.SetMarkToCaret)
                 yield ("@", CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar None NormalCommand.RunMacro)
             } |> Seq.map (fun (str, flags, storage) -> 
