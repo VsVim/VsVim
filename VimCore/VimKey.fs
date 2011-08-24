@@ -145,6 +145,7 @@ type VimKey =
     | Dollar = 138          // $
     | Tab = 139
     | LineFeed = 140
+    | Nop = 141             // no-op.  Does nothing
 
     // The character is real it's simply an unknown quantity to Vim
     | RawCharacter = 141

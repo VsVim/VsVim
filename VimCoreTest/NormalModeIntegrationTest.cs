@@ -2293,6 +2293,18 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Ensure we can remap keys to nop and have them do nothing
+        /// </summary>
+        [Test]
+        public void Remap_Nop()
+        {
+            Create("cat");
+            _keyMap.MapWithNoRemap("$", "<nop>", KeyRemapMode.Normal);
+            _vimBuffer.Process('$');
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
         /// Ensure the commands map properly
         /// </summary>
         [Test]

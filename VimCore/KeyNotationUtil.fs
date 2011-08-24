@@ -77,6 +77,7 @@ module KeyNotationUtil =
             ("<k7>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad7)
             ("<k8>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad8)
             ("<k9>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad9)
+            ("<nop>", KeyInputUtil.VimKeyToKeyInput VimKey.Nop)
         ]
 
     let FunctionKeys = 

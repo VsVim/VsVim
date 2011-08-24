@@ -6,21 +6,11 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
 using Vim.Extensions;
-using Vim.UnitTest.Mock;
 
 namespace Vim.UnitTest
 {
     internal static class VimUtil
     {
-        /// <summary>
-        /// Create the IVimLocalSettings for the given ITextBuffer
-        /// </summary>
-        internal static IVimLocalSettings CreateLocalSettings(IVimGlobalSettings globalSettings = null)
-        {
-            globalSettings = globalSettings ?? new GlobalSettings();
-            return new LocalSettings(globalSettings);
-        }
-
         internal static RegisterMap CreateRegisterMap(IClipboardDevice device)
         {
             return CreateRegisterMap(device, () => null);

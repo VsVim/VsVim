@@ -144,6 +144,9 @@ type internal VimBuffer
             if keyInput = _vim.GlobalSettings.DisableCommand then
                 // The disable command can be processed at all times
                 true
+            elif keyInput.Key = VimKey.Nop then
+                // The nop key can be processed at all times
+                true
             elif x.Mode.CanProcess keyInput then
                 allowDirectInsert || not (isDirectInsert keyInput)
             else
@@ -243,6 +246,9 @@ type internal VimBuffer
                     if keyInput = _vim.GlobalSettings.DisableCommand && x.Mode.ModeKind <> ModeKind.Disabled then
                         x.SwitchMode ModeKind.Disabled ModeArgument.None |> ignore
                         ProcessResult.OfModeKind ModeKind.Disabled
+                    elif keyInput.Key = VimKey.Nop then
+                        // The <nop> key should have no affect
+                        ProcessResult.Handled ModeSwitch.NoSwitch
                     else
                         let result = x.Mode.Process keyInput
                         match result with

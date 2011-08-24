@@ -282,7 +282,8 @@ module KeyInputUtil =
         (VimKey.Space, Some ' ')
         (VimKey.Dollar, Some '$')
         (VimKey.Tab, Some '\t')
-        (VimKey.LineFeed, None) ]
+        (VimKey.LineFeed, None) 
+        (VimKey.Nop, None)]
 
     let VimKeyInputList  = 
         VimKeyRawData 

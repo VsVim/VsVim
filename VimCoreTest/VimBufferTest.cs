@@ -11,8 +11,8 @@ namespace VimCore.UnitTest
     public sealed class VimBufferTest : VimTestBase
     {
         private ITextView _textView;
-        private VimBuffer _bufferRaw;
-        private IVimBuffer _buffer;
+        private VimBuffer _vimBufferRaw;
+        private IVimBuffer _vimBuffer;
         private MockRepository _factory;
         private IKeyMap _keyMap;
 
@@ -21,10 +21,10 @@ namespace VimCore.UnitTest
         {
             _textView = EditorUtil.CreateTextView("here we go");
             _textView.MoveCaretTo(0);
-            _buffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(_textView);
-            _buffer.SwitchMode(ModeKind.Command, ModeArgument.None);
-            _keyMap = _buffer.Vim.KeyMap;
-            _bufferRaw = (VimBuffer)_buffer;
+            _vimBuffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(_textView);
+            _vimBuffer.SwitchMode(ModeKind.Command, ModeArgument.None);
+            _keyMap = _vimBuffer.Vim.KeyMap;
+            _vimBufferRaw = (VimBuffer)_vimBuffer;
             _factory = new MockRepository(MockBehavior.Strict);
         }
 
@@ -33,8 +33,8 @@ namespace VimCore.UnitTest
             var mode = _factory.Create<INormalMode>(behavior);
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             mode.SetupGet(x => x.KeyRemapMode).Returns(KeyRemapMode.Normal);
-            _bufferRaw.RemoveMode(_bufferRaw.NormalMode);
-            _bufferRaw.AddMode(mode.Object);
+            _vimBufferRaw.RemoveMode(_vimBufferRaw.NormalMode);
+            _vimBufferRaw.AddMode(mode.Object);
             return mode;
         }
 
@@ -42,8 +42,8 @@ namespace VimCore.UnitTest
         {
             var mode = _factory.Create<IInsertMode>(behavior);
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
-            _bufferRaw.RemoveMode(_buffer.InsertMode);
-            _bufferRaw.AddMode(mode.Object);
+            _vimBufferRaw.RemoveMode(_vimBuffer.InsertMode);
+            _vimBufferRaw.AddMode(mode.Object);
             return mode;
         }
 
@@ -54,8 +54,8 @@ namespace VimCore.UnitTest
         public void SwitchedMode_Event()
         {
             var ran = false;
-            _buffer.SwitchedMode += (s, m) => { ran = true; };
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBuffer.SwitchedMode += (s, m) => { ran = true; };
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             Assert.IsTrue(ran);
         }
 
@@ -67,9 +67,9 @@ namespace VimCore.UnitTest
         public void SwitchedMode_SameModeEvent()
         {
             var ran = false;
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            _buffer.SwitchedMode += (s, m) => { ran = true; };
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBuffer.SwitchedMode += (s, m) => { ran = true; };
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             Assert.IsTrue(ran);
         }
 
@@ -82,16 +82,16 @@ namespace VimCore.UnitTest
             var normal = CreateAndAddNormalMode();
             var insert = CreateAndAddInsertMode();
             normal.Setup(x => x.OnEnter(ModeArgument.None)).Verifiable();
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             normal.Verify();
             normal.Setup(x => x.OnLeave());
             insert.Setup(x => x.OnEnter(ModeArgument.None));
-            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             normal.Verify();
             insert.Verify();
 
             insert.Setup(x => x.OnLeave()).Verifiable();
-            var prev = _buffer.SwitchPreviousMode();
+            var prev = _vimBuffer.SwitchPreviousMode();
             Assert.AreSame(normal.Object, prev);
             insert.Verify();
 
@@ -107,10 +107,10 @@ namespace VimCore.UnitTest
         [Test]
         public void SwitchPreviousMode_RaiseSwitchedMode()
         {
-            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             var ran = false;
-            _buffer.SwitchedMode += (s, m) => { ran = true; };
-            _buffer.SwitchPreviousMode();
+            _vimBuffer.SwitchedMode += (s, m) => { ran = true; };
+            _vimBuffer.SwitchPreviousMode();
             Assert.IsTrue(ran);
         }
 
@@ -120,12 +120,12 @@ namespace VimCore.UnitTest
         [Test]
         public void KeyInputEvents_Processed()
         {
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             _textView.SetText("hello world");
 
             var ran = false;
-            _buffer.KeyInputProcessed += delegate { ran = true; };
-            _buffer.Process('l');
+            _vimBuffer.KeyInputProcessed += delegate { ran = true; };
+            _vimBuffer.Process('l');
             Assert.IsTrue(ran);
         }
 
@@ -135,20 +135,20 @@ namespace VimCore.UnitTest
         [Test]
         public void KeyInputEvents_InOrder()
         {
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             _textView.SetText("hello world");
 
             var start = false;
             var processed = false;
             var end = false;
-            _buffer.KeyInputStart +=
+            _vimBuffer.KeyInputStart +=
                 (b, keyInput) =>
                 {
                     Assert.AreEqual('l', keyInput.Char);
                     Assert.IsFalse(processed || end);
                     start = true;
                 };
-            _buffer.KeyInputProcessed +=
+            _vimBuffer.KeyInputProcessed +=
                 (b, tuple) =>
                 {
                     var keyInput = tuple.Item1;
@@ -156,14 +156,14 @@ namespace VimCore.UnitTest
                     Assert.IsTrue(start && !end);
                     processed = true;
                 };
-            _buffer.KeyInputEnd +=
+            _vimBuffer.KeyInputEnd +=
                 (b, keyInput) =>
                 {
                     Assert.AreEqual('l', keyInput.Char);
                     Assert.IsTrue(start && processed);
                     end = true;
                 };
-            _buffer.Process('l');
+            _vimBuffer.Process('l');
             Assert.IsTrue(start && processed && end);
         }
 
@@ -175,19 +175,19 @@ namespace VimCore.UnitTest
         {
             var normal = CreateAndAddNormalMode(MockBehavior.Loose);
             normal.Setup(x => x.Process(It.IsAny<KeyInput>())).Throws(new Exception());
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             _textView.SetText("hello world");
 
             var start = false;
             var end = false;
-            _buffer.KeyInputStart +=
+            _vimBuffer.KeyInputStart +=
                 (b, keyInput) =>
                 {
                     Assert.AreEqual('l', keyInput.Char);
                     Assert.IsTrue(!end);
                     start = true;
                 };
-            _buffer.KeyInputEnd +=
+            _vimBuffer.KeyInputEnd +=
                 (b, keyInput) =>
                 {
                     Assert.AreEqual('l', keyInput.Char);
@@ -197,7 +197,7 @@ namespace VimCore.UnitTest
             var caught = false;
             try
             {
-                _buffer.Process('l');
+                _vimBuffer.Process('l');
             }
             catch (Exception)
             {
@@ -213,37 +213,37 @@ namespace VimCore.UnitTest
         [Test]
         public void KeyInputEvents_BufferedInput()
         {
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            _buffer.Vim.KeyMap.MapWithNoRemap("lad", "rad", KeyRemapMode.Normal);
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBuffer.Vim.KeyMap.MapWithNoRemap("lad", "rad", KeyRemapMode.Normal);
             _textView.SetText("hello world");
 
             var start = false;
             var processed = false;
             var end = false;
             var buffered = false;
-            _buffer.KeyInputStart +=
+            _vimBuffer.KeyInputStart +=
                 (b, keyInput) =>
                 {
                     Assert.AreEqual('l', keyInput.Char);
                     Assert.IsTrue(!buffered && !end);
                     start = true;
                 };
-            _buffer.KeyInputEnd +=
+            _vimBuffer.KeyInputEnd +=
                 (b, keyInput) =>
                 {
                     Assert.AreEqual('l', keyInput.Char);
                     Assert.IsTrue(start && buffered);
                     end = true;
                 };
-            _buffer.KeyInputBuffered +=
+            _vimBuffer.KeyInputBuffered +=
                 (b, keyInput) =>
                 {
                     Assert.AreEqual('l', keyInput.Char);
                     Assert.IsTrue(start && !end);
                     buffered = true;
                 };
-            _buffer.KeyInputProcessed += delegate { processed = true; };
-            _buffer.Process('l');
+            _vimBuffer.KeyInputProcessed += delegate { processed = true; };
+            _vimBuffer.Process('l');
             Assert.IsTrue(start && buffered && end && !processed);
         }
 
@@ -254,10 +254,10 @@ namespace VimCore.UnitTest
         public void Close_ShouldCallLeaveAndClose()
         {
             var normal = CreateAndAddNormalMode(MockBehavior.Loose);
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             normal.Setup(x => x.OnLeave()).Verifiable();
             normal.Setup(x => x.OnClose()).Verifiable();
-            _buffer.Close();
+            _vimBuffer.Close();
             normal.Verify();
         }
 
@@ -270,7 +270,7 @@ namespace VimCore.UnitTest
         {
             var insert = CreateAndAddInsertMode();
             insert.Setup(x => x.OnClose()).Verifiable();
-            _buffer.Close();
+            _vimBuffer.Close();
             insert.Verify();
         }
 
@@ -282,9 +282,24 @@ namespace VimCore.UnitTest
         {
             var normal = CreateAndAddNormalMode(MockBehavior.Loose);
             normal.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.SwitchPreviousMode));
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            _buffer.Process('l');
-            Assert.AreEqual(ModeKind.Command, _buffer.ModeKind);
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBuffer.Process('l');
+            Assert.AreEqual(ModeKind.Command, _vimBuffer.ModeKind);
+        }
+
+        /// <summary>
+        /// The nop key shouldn't have any effects
+        /// </summary>
+        [Test]
+        public void Process_Nop()
+        {
+            var old = _vimBuffer.TextSnapshot;
+            foreach (var mode in _vimBuffer.AllModes)
+            {
+                _vimBuffer.SwitchMode(mode.ModeKind, ModeArgument.None);
+                Assert.IsTrue(_vimBuffer.Process(VimKey.Nop));
+                Assert.AreEqual(old, _vimBuffer.TextSnapshot);
+            }
         }
 
         /// <summary>
@@ -295,8 +310,8 @@ namespace VimCore.UnitTest
         {
             _keyMap.MapWithNoRemap("a", "l", KeyRemapMode.Normal);
             _textView.SetText("cat dog", 0);
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            _buffer.Process('a');
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBuffer.Process('a');
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
 
@@ -309,8 +324,8 @@ namespace VimCore.UnitTest
         {
             _keyMap.MapWithNoRemap("a", "dw", KeyRemapMode.Normal);
             _textView.SetText("cat dog", 0);
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            _buffer.Process('a');
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBuffer.Process('a');
             Assert.AreEqual("dog", _textView.GetLine(0).GetText());
         }
 
@@ -322,8 +337,8 @@ namespace VimCore.UnitTest
         {
             _keyMap.MapWithNoRemap("l", "dw", KeyRemapMode.Insert);
             _textView.SetText("cat dog", 0);
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            _buffer.Process('l');
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBuffer.Process('l');
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
 
@@ -336,10 +351,10 @@ namespace VimCore.UnitTest
         {
             _keyMap.MapWithNoRemap("z", "w", KeyRemapMode.OperatorPending);
             _textView.SetText("cat dog", 0);
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            _buffer.Process("d");
-            Assert.IsTrue(_buffer.NormalMode.KeyRemapMode.IsOperatorPending);
-            _buffer.Process("z");
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBuffer.Process("d");
+            Assert.IsTrue(_vimBuffer.NormalMode.KeyRemapMode.IsOperatorPending);
+            _vimBuffer.Process("z");
             Assert.AreEqual("dog", _textView.GetLine(0).GetText());
         }
 
@@ -352,14 +367,14 @@ namespace VimCore.UnitTest
             _keyMap.MapWithRemap("a", "b", KeyRemapMode.Normal);
             _keyMap.MapWithRemap("b", "a", KeyRemapMode.Normal);
             var didRun = false;
-            _buffer.ErrorMessage +=
+            _vimBuffer.ErrorMessage +=
                 (notUsed, msg) =>
                 {
                     Assert.AreEqual(Resources.Vim_RecursiveMapping, msg);
                     didRun = true;
                 };
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            _buffer.Process('a');
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBuffer.Process('a');
             Assert.IsTrue(didRun);
         }
 
@@ -372,10 +387,10 @@ namespace VimCore.UnitTest
         {
             _keyMap.MapWithNoRemap("do", "cat", KeyRemapMode.Normal);
             _textView.SetText("cat dog", 0);
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            _buffer.Process("d");
-            Assert.AreEqual('d', _buffer.BufferedRemapKeyInputs.Head.Char);
-            _buffer.Process("w");
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBuffer.Process("d");
+            Assert.AreEqual('d', _vimBuffer.BufferedRemapKeyInputs.Head.Char);
+            _vimBuffer.Process("w");
             Assert.AreEqual("dog", _textView.GetLine(0).GetText());
         }
 
@@ -388,8 +403,8 @@ namespace VimCore.UnitTest
             var keyInput = KeyInputUtil.CharToKeyInput('c');
             var normal = CreateAndAddNormalMode(MockBehavior.Loose);
             normal.Setup(x => x.CanProcess(keyInput)).Returns(true).Verifiable();
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            Assert.IsTrue(_buffer.CanProcess(keyInput));
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            Assert.IsTrue(_vimBuffer.CanProcess(keyInput));
             normal.Verify();
         }
 
@@ -403,8 +418,8 @@ namespace VimCore.UnitTest
             var keyInput = KeyInputUtil.CharToKeyInput('c');
             var normal = CreateAndAddNormalMode(MockBehavior.Loose);
             normal.Setup(x => x.CanProcess(keyInput)).Returns(true).Verifiable();
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            Assert.IsTrue(_buffer.CanProcess('a'));
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            Assert.IsTrue(_vimBuffer.CanProcess('a'));
             normal.Verify();
         }
 
@@ -418,16 +433,30 @@ namespace VimCore.UnitTest
         {
             _keyMap.MapWithRemap("la", "iexample", KeyRemapMode.Normal);
             _textView.SetText("dog cat");
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
 
             // <F4> is not a valid command
-            Assert.IsFalse(_buffer.CanProcess(VimKey.F4));
-            _buffer.Process("l");
-            Assert.IsFalse(_buffer.BufferedRemapKeyInputs.IsEmpty);
+            Assert.IsFalse(_vimBuffer.CanProcess(VimKey.F4));
+            _vimBuffer.Process("l");
+            Assert.IsFalse(_vimBuffer.BufferedRemapKeyInputs.IsEmpty);
 
             // Is is still not a valid command but when mapping is considered it will
             // expand to l<F4> and l is a valid command
-            Assert.IsTrue(_buffer.CanProcess(VimKey.F4));
+            Assert.IsTrue(_vimBuffer.CanProcess(VimKey.F4));
+        }
+
+        /// <summary>
+        /// The buffer can always process a nop key and should take no action when it's
+        /// encountered
+        /// </summary>
+        [Test]
+        public void CanProcess_Nop()
+        {
+            foreach (var mode in _vimBuffer.AllModes)
+            {
+                _vimBuffer.SwitchMode(mode.ModeKind, ModeArgument.None);
+                Assert.IsTrue(_vimBuffer.CanProcess(VimKey.Nop));
+            }
         }
 
         /// <summary>
@@ -437,8 +466,8 @@ namespace VimCore.UnitTest
         [Test]
         public void CanProcessAsCommand_Command()
         {
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            Assert.IsTrue(_buffer.CanProcessAsCommand('a'));
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            Assert.IsTrue(_vimBuffer.CanProcessAsCommand('a'));
         }
 
         /// <summary>
@@ -448,8 +477,8 @@ namespace VimCore.UnitTest
         [Test]
         public void CanProcessAsCommand_InsertMode()
         {
-            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-            Assert.IsFalse(_buffer.CanProcessAsCommand('a'));
+            _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            Assert.IsFalse(_vimBuffer.CanProcessAsCommand('a'));
         }
 
         /// <summary>
@@ -459,8 +488,8 @@ namespace VimCore.UnitTest
         [Test]
         public void CanProcessAsCommand_ReplaceMode()
         {
-            _buffer.SwitchMode(ModeKind.Replace, ModeArgument.None);
-            Assert.IsFalse(_buffer.CanProcessAsCommand('a'));
+            _vimBuffer.SwitchMode(ModeKind.Replace, ModeArgument.None);
+            Assert.IsFalse(_vimBuffer.CanProcessAsCommand('a'));
         }
 
         /// <summary>
@@ -470,8 +499,8 @@ namespace VimCore.UnitTest
         public void Closed_BufferShouldBeRemoved()
         {
             var didSee = false;
-            _buffer.Closed += delegate { didSee = true; };
-            _buffer.Close();
+            _vimBuffer.Closed += delegate { didSee = true; };
+            _vimBuffer.Close();
             Assert.IsTrue(didSee);
         }
 
@@ -482,8 +511,8 @@ namespace VimCore.UnitTest
         [ExpectedException(typeof(InvalidOperationException))]
         public void Closed_DoubleClose()
         {
-            _buffer.Close();
-            _buffer.Close();
+            _vimBuffer.Close();
+            _vimBuffer.Close();
         }
 
         /// <summary>
@@ -493,16 +522,16 @@ namespace VimCore.UnitTest
         public void IsProcessing_Basic()
         {
             var didRun = false;
-            Assert.IsFalse(_buffer.IsProcessingInput);
-            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            Assert.IsFalse(_vimBuffer.IsProcessingInput);
+            _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _textView.TextBuffer.Changed +=
                 delegate
                 {
-                    Assert.IsTrue(_buffer.IsProcessingInput);
+                    Assert.IsTrue(_vimBuffer.IsProcessingInput);
                     didRun = true;
                 };
-            _buffer.Process("h");   // Changing text will raise Changed
-            Assert.IsFalse(_buffer.IsProcessingInput);
+            _vimBuffer.Process("h");   // Changing text will raise Changed
+            Assert.IsFalse(_vimBuffer.IsProcessingInput);
             Assert.IsTrue(didRun);
         }
 
@@ -515,21 +544,21 @@ namespace VimCore.UnitTest
         {
             var didRun = false;
             var isFirst = true;
-            Assert.IsFalse(_buffer.IsProcessingInput);
-            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            Assert.IsFalse(_vimBuffer.IsProcessingInput);
+            _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _textView.TextBuffer.Changed +=
                 delegate
                 {
                     if (isFirst)
                     {
                         isFirst = false;
-                        _buffer.Process('o');
+                        _vimBuffer.Process('o');
                     }
-                    Assert.IsTrue(_buffer.IsProcessingInput);
+                    Assert.IsTrue(_vimBuffer.IsProcessingInput);
                     didRun = true;
                 };
-            _buffer.Process("h");   // Changing text will raise Changed
-            Assert.IsFalse(_buffer.IsProcessingInput);
+            _vimBuffer.Process("h");   // Changing text will raise Changed
+            Assert.IsFalse(_vimBuffer.IsProcessingInput);
             Assert.IsTrue(didRun);
         }
 
@@ -542,10 +571,10 @@ namespace VimCore.UnitTest
             var ranStart = false;
             var ranProcessed = false;
             var ranEnd = false;
-            _buffer.KeyInputStart += delegate { ranStart = true; };
-            _buffer.KeyInputProcessed += delegate { ranProcessed = true; };
-            _buffer.KeyInputEnd += delegate { ranEnd = true; };
-            _buffer.SimulateProcessed(KeyInputUtil.CharToKeyInput('c'));
+            _vimBuffer.KeyInputStart += delegate { ranStart = true; };
+            _vimBuffer.KeyInputProcessed += delegate { ranProcessed = true; };
+            _vimBuffer.KeyInputEnd += delegate { ranEnd = true; };
+            _vimBuffer.SimulateProcessed(KeyInputUtil.CharToKeyInput('c'));
             Assert.IsTrue(ranStart);
             Assert.IsTrue(ranEnd);
             Assert.IsTrue(ranProcessed);
@@ -558,16 +587,16 @@ namespace VimCore.UnitTest
         [Test]
         public void SimulateProcessed_DontMap()
         {
-            _buffer.Vim.KeyMap.MapWithNoRemap("a", "b", KeyRemapMode.Normal);
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBuffer.Vim.KeyMap.MapWithNoRemap("a", "b", KeyRemapMode.Normal);
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             var ranProcessed = false;
-            _buffer.KeyInputProcessed +=
+            _vimBuffer.KeyInputProcessed +=
                 (unused, tuple) =>
                 {
                     Assert.AreEqual(KeyInputUtil.CharToKeyInput('a'), tuple.Item1);
                     ranProcessed = true;
                 };
-            _buffer.SimulateProcessed(KeyInputUtil.CharToKeyInput('a'));
+            _vimBuffer.SimulateProcessed(KeyInputUtil.CharToKeyInput('a'));
             Assert.IsTrue(ranProcessed);
         }
 
@@ -579,12 +608,12 @@ namespace VimCore.UnitTest
         [Test]
         public void SimulateProcessed_ClearBufferedInput()
         {
-            _buffer.Vim.KeyMap.MapWithNoRemap("jj", "b", KeyRemapMode.Normal);
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            _buffer.Process('j');
-            Assert.IsFalse(_buffer.BufferedRemapKeyInputs.IsEmpty);
-            _buffer.SimulateProcessed(KeyInputUtil.CharToKeyInput('a'));
-            Assert.IsTrue(_buffer.BufferedRemapKeyInputs.IsEmpty);
+            _vimBuffer.Vim.KeyMap.MapWithNoRemap("jj", "b", KeyRemapMode.Normal);
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBuffer.Process('j');
+            Assert.IsFalse(_vimBuffer.BufferedRemapKeyInputs.IsEmpty);
+            _vimBuffer.SimulateProcessed(KeyInputUtil.CharToKeyInput('a'));
+            Assert.IsTrue(_vimBuffer.BufferedRemapKeyInputs.IsEmpty);
         }
     }
 }
