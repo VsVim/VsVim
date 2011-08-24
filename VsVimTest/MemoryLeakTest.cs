@@ -262,8 +262,8 @@ namespace VsVim.UnitTest
         public void SetGlobalMarkAndClose()
         {
             var vimBuffer = CreateVimBuffer();
-            vimBuffer.MarkMap.SetMark(Mark.OfChar('a').Value, vimBuffer.VimTextBuffer, 0, 0);
-            vimBuffer.MarkMap.SetMark(Mark.OfChar('A').Value, vimBuffer.VimTextBuffer, 0, 0);
+            vimBuffer.MarkMap.SetMark(Mark.OfChar('a').Value, vimBuffer.VimBufferData, 0, 0);
+            vimBuffer.MarkMap.SetMark(Mark.OfChar('A').Value, vimBuffer.VimBufferData, 0, 0);
             var weakVimBuffer = new WeakReference(vimBuffer);
             var weakTextView = new WeakReference(vimBuffer.TextView);
             var localSettings = vimBuffer.LocalSettings;

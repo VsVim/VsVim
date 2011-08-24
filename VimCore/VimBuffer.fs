@@ -50,20 +50,20 @@ type internal ModeMap() =
 
 type internal VimBuffer 
     (
-        _bufferData : VimBufferData,
+        _vimBufferData : VimBufferData,
         _incrementalSearch : IIncrementalSearch,
         _motionUtil : IMotionUtil,
         _wordNavigator : ITextStructureNavigator,
         _windowSettings : IVimWindowSettings
     ) as this =
 
-    let _vim = _bufferData.Vim
-    let _textView = _bufferData.TextView
-    let _jumpList = _bufferData.JumpList
-    let _localSettings = _bufferData.LocalSettings
-    let _undoRedoOperations = _bufferData.UndoRedoOperations
-    let _vimTextBuffer = _bufferData.VimTextBuffer
-    let _statusUtil = _bufferData.StatusUtil
+    let _vim = _vimBufferData.Vim
+    let _textView = _vimBufferData.TextView
+    let _jumpList = _vimBufferData.JumpList
+    let _localSettings = _vimBufferData.LocalSettings
+    let _undoRedoOperations = _vimBufferData.UndoRedoOperations
+    let _vimTextBuffer = _vimBufferData.VimTextBuffer
+    let _statusUtil = _vimBufferData.StatusUtil
     let _properties = PropertyCollection()
     let _bag = DisposableBag()
     let mutable _modeMap = ModeMap()
@@ -122,7 +122,7 @@ type internal VimBuffer
         | ModeKind.VisualLine -> Some(KeyRemapMode.Visual)
         | _ -> None
 
-    member x.VimBufferData = _bufferData
+    member x.VimBufferData = _vimBufferData
 
     /// Add an IMode into the IVimBuffer instance
     member x.AddMode mode = _modeMap.AddMode mode
@@ -198,6 +198,7 @@ type internal VimBuffer
             _modeMap.Modes |> Seq.iter (fun x -> x.OnClose())
             _vim.RemoveVimBuffer _textView |> ignore
             _undoRedoOperations.Close()
+            _jumpList.Clear()
             _closedEvent.Trigger System.EventArgs.Empty
         finally 
             _isClosed <- true

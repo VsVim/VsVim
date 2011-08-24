@@ -39,7 +39,7 @@ type internal NumberValue =
 /// amount of stored state low here I believe it counters the size of the type
 type internal CommandUtil 
     (
-        _bufferData : VimBufferData,
+        _vimBufferData : VimBufferData,
         _motionUtil : IMotionUtil,
         _operations : ICommonOperations,
         _smartIndentationService : ISmartIndentationService,
@@ -47,23 +47,23 @@ type internal CommandUtil
         _insertUtil : IInsertUtil
     ) =
 
-    let _vimTextBuffer = _bufferData.VimTextBuffer
+    let _vimTextBuffer = _vimBufferData.VimTextBuffer
     let _wordNavigator = _vimTextBuffer.WordNavigator
-    let _textView = _bufferData.TextView
+    let _textView = _vimBufferData.TextView
     let _textBuffer = _textView.TextBuffer
     let _bufferGraph = _textView.BufferGraph
-    let _statusUtil = _bufferData.StatusUtil
-    let _undoRedoOperations = _bufferData.UndoRedoOperations
-    let _localSettings = _bufferData.LocalSettings
+    let _statusUtil = _vimBufferData.StatusUtil
+    let _undoRedoOperations = _vimBufferData.UndoRedoOperations
+    let _localSettings = _vimBufferData.LocalSettings
     let _globalSettings = _localSettings.GlobalSettings
-    let _vim = _bufferData.Vim
+    let _vim = _vimBufferData.Vim
     let _vimData = _vim.VimData
     let _vimHost = _vim.VimHost
     let _markMap = _vim.MarkMap
     let _registerMap = _vim.RegisterMap
     let _searchService = _vim.SearchService
     let _macroRecorder = _vim.MacroRecorder
-    let _jumpList = _bufferData.JumpList
+    let _jumpList = _vimBufferData.JumpList
     let _editorOperations = _operations.EditorOperations
     let _options = _operations.EditorOptions
 
@@ -1160,11 +1160,10 @@ type internal CommandUtil
 
     /// Jump to the previous tag in the tag list
     member x.JumpToOlderPosition count = 
-        // If this is the first jump which starts a traversal then we should reset the head
-        // to this point and begin the traversal
-        let atStart = (_jumpList.CurrentIndex |> OptionUtil.getOrDefault 0) = 0
-        if atStart then
-            _jumpList.Add x.CaretPoint
+
+        // Begin a traversal if we are no yet traversing
+        if not _jumpList.IsTraversing then
+            _jumpList.StartTraversal()
 
         if not (_jumpList.MoveOlder count) then
             _operations.Beep()
@@ -1204,6 +1203,10 @@ type internal CommandUtil
                     CommandResult.Error
         | Mark.LocalMark localMark ->
             match _vimTextBuffer.GetLocalMark localMark with
+            | None -> markNotSet()
+            | Some point -> jumpLocal point
+        | Mark.LastJump ->
+            match _jumpList.LastJumpLocation with
             | None -> markNotSet()
             | Some point -> jumpLocal point
 
@@ -1990,7 +1993,7 @@ type internal CommandUtil
             CommandResult.Error
         | Some mark ->
             let line, column = SnapshotPointUtil.GetLineColumn x.CaretPoint
-            if not (_markMap.SetMark mark _vimTextBuffer line column) then
+            if not (_markMap.SetMark mark _vimBufferData line column) then
                 // Mark set can fail if the user chooses a readonly mark like '<'
                 _operations.Beep()
             CommandResult.Completed ModeSwitch.NoSwitch

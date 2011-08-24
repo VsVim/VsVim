@@ -2145,27 +2145,56 @@ type IKeyMap =
     /// Clear the Key mappings for all modes
     abstract ClearAll : unit -> unit
 
-/// Jump list information
+/// Jump list information associated with an IVimBuffer.  This is maintained as a forward
+/// and backwards traversable list of points with which to navigate to
+///
+/// TODO:  Technically Vim's implementation of a jump list can span across different
+/// buffers  This is limited to just a single ITextBuffer.  This is mostly due to Visual 
+/// Studio's limitations in swapping out an ITextBuffer contents for a different file.  It
+/// is possible but currently not a high priority here
 type IJumpList = 
 
-    /// Current value in the jump list.  Will be none when there are no values in the 
+    /// Associated ITextView instance
+    abstract TextView : ITextView
+
+    /// Current value in the jump list.  Will be None if we are not currently traversing the
     /// jump list
     abstract Current : SnapshotPoint option
 
-    /// Current index into the jump list
+    /// Current index into the jump list.  Will be None if we are not currently traversing
+    /// the jump list
     abstract CurrentIndex : int option
+
+    /// True if we are currently traversing the list
+    abstract IsTraversing : bool
 
     /// Get all of the jumps in the jump list.  Returns in order of most recent to oldest
     abstract Jumps : VirtualSnapshotPoint list
 
-    /// Move to the previous point in the jump list
+    /// The SnapshotPoint when the last jump occurred
+    abstract LastJumpLocation : VirtualSnapshotPoint option
+
+    /// Add a given SnapshotPoint to the jump list.  This will reset Current to point to 
+    /// the begining of the jump list
+    abstract Add : SnapshotPoint -> unit
+
+    /// Clear out all of the stored jump information.  Removes all tracking information from
+    /// the IJumpList
+    abstract Clear : unit -> unit
+
+    /// Move to the previous point in the jump list.  This will fail if we are not traversing
+    /// the list or at the end 
     abstract MoveOlder : int -> bool
 
-    /// Move to the next point in the jump list
+    /// Move to the next point in the jump list.  This will fail if we are not traversing
+    /// the list or at the start
     abstract MoveNewer : int -> bool
 
-    /// Add a given SnapshotPoint to the jump list
-    abstract Add : SnapshotPoint -> unit
+    /// Set the last jump location to the given line and column
+    abstract SetLastJumpLocation : line : int -> column : int -> unit
+
+    /// Start a traversal of the list
+    abstract StartTraversal : unit -> unit
 
 type IIncrementalSearch = 
 
@@ -2617,19 +2646,27 @@ type IVimData =
 /// Core parts of an IVimBuffer
 type VimBufferData = {
 
+    /// The IJumpList associated with the IVimBuffer
+    JumpList : IJumpList
+
+    /// The ITextView associated with the IVimBuffer
     TextView : ITextView
 
+    /// The IStatusUtil associated with the IVimBuffer
     StatusUtil : IStatusUtil
 
+    /// The IUndoRedOperations associated with the IVimBuffer
     UndoRedoOperations : IUndoRedoOperations
 
+    /// The IVimTextBuffer associated with the IVimBuffer
     VimTextBuffer : IVimTextBuffer
 
+    /// The IWordUtil associated with the IVimBuffer
     WordUtil : IWordUtil
 
 } with
 
-    member x.JumpList = x.VimTextBuffer.JumpList
+    member x.TextBuffer = x.VimTextBuffer.TextBuffer
 
     member x.LocalSettings = x.VimTextBuffer.LocalSettings
 
@@ -2731,7 +2768,7 @@ and IMarkMap =
     abstract GlobalMarks : (Letter * VirtualSnapshotPoint) seq
 
     /// Get the mark for the given char for the IVimTextBuffer
-    abstract GetMark : mark : Mark -> vimTextBuffer : IVimTextBuffer -> VirtualSnapshotPoint option
+    abstract GetMark : mark : Mark -> vimBufferData : VimBufferData -> VirtualSnapshotPoint option
 
     /// Get the current value of the specified global mark
     abstract GetGlobalMark : letter : Letter -> VirtualSnapshotPoint option
@@ -2740,7 +2777,7 @@ and IMarkMap =
     abstract SetGlobalMark : letter: Letter -> vimtextBuffer : IVimTextBuffer -> line : int -> column : int -> unit
 
     /// Set the mark for the given char for the IVimTextBuffer
-    abstract SetMark : mark : Mark -> vimTextBuffer : IVimTextBuffer -> line : int -> column : int -> bool
+    abstract SetMark : mark : Mark -> vimBufferData : VimBufferData -> line : int -> column : int -> bool
 
     /// Delete all of the global marks 
     abstract ClearGlobalMarks : unit -> unit
@@ -2754,9 +2791,6 @@ and IVimTextBuffer =
 
     /// The associated IVimGlobalSettings instance
     abstract GlobalSettings : IVimGlobalSettings
-
-    /// The associated IJumpList instance
-    abstract JumpList : IJumpList
 
     /// The last VisualSpan selection for the IVimTextBuffer.  This is a combination of a VisualSpan
     /// and the SnapshotPoint within the span where the caret should be positioned

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Projection;
@@ -1532,7 +1533,7 @@ namespace VimCore.UnitTest
         public void Handle_d_WithMarkLineMotion()
         {
             Create("dog", "cat", "bear", "tree");
-            _vimBuffer.MarkMap.SetMark(Mark.OfChar('a').Value, _vimBuffer.VimTextBuffer, 1, 0);
+            _vimTextBuffer.SetLocalMark(LocalMark.OfChar('a').Value, 1, 0);
             _vimBuffer.Process("d'a");
             Assert.AreEqual("bear", _textView.GetLine(0).GetText());
             Assert.AreEqual("tree", _textView.GetLine(1).GetText());
@@ -1542,7 +1543,7 @@ namespace VimCore.UnitTest
         public void Handle_d_WithMarkMotion()
         {
             Create("dog", "cat", "bear", "tree");
-            _vimBuffer.MarkMap.SetMark(Mark.OfChar('a').Value, _vimBuffer.VimTextBuffer, 1, 1);
+            _vimTextBuffer.SetLocalMark(LocalMark.OfChar('a').Value, 1, 1);
             _vimBuffer.Process("d`a");
             Assert.AreEqual("at", _textView.GetLine(0).GetText());
             Assert.AreEqual("bear", _textView.GetLine(1).GetText());
@@ -2070,6 +2071,68 @@ namespace VimCore.UnitTest
             _vimBuffer.VimTextBuffer.SetLocalMark(LocalMark.OfChar('b').Value, 0, 8);
             _vimBuffer.Process("y`b");
             Assert.AreEqual("the brow", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
+        }
+
+        /// <summary>
+        /// The last jump mark is a user settable item
+        /// </summary>
+        [Test]
+        public void Mark_LastJump_Set()
+        {
+            Create("cat", "fish", "dog");
+            _textView.MoveCaretToLine(1);
+            _vimBuffer.Process("m'");
+            Assert.AreEqual(_textBuffer.GetLine(1).Start, _jumpList.LastJumpLocation.Value.Position);
+        }
+
+        /// <summary>
+        /// Make sure that a jump operation to a differet mark will properly update the LastMark
+        /// selection
+        /// </summary>
+        [Test]
+        public void Mark_LastJump_AfterMarkJump()
+        {
+            Create("cat", "fish", "dog");
+            _vimBuffer.Process("mc");   // Mark the line
+            _textView.MoveCaretToLine(1);
+            _vimBuffer.Process("'c");
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.AreEqual(_textView.GetLine(1).Start, _jumpList.LastJumpLocation.Value.Position);
+        }
+
+        /// <summary>
+        /// Jumping with the '' command should set the last jump to the current location.  So doing
+        /// a '' in sequence should just jump back and forth
+        /// </summary>
+        [Test]
+        public void Mark_LastJump_BackAndForth()
+        {
+            Create("cat", "fish", "dog");
+            _vimBuffer.Process("mc");   // Mark the line
+            _textView.MoveCaretToLine(1);
+            _vimBuffer.Process("'c");
+            for (var i = 0; i < 10; i++)
+            {
+                _vimBuffer.Process("''");
+                var line = (i % 2 != 0) ? 0 : 1;
+                Assert.AreEqual(_textBuffer.GetLine(line).Start, _textView.GetCaretPoint().Position);
+            }
+        }
+
+        /// <summary>
+        /// Navigating the jump list shouldn't affect the LastJump mark
+        /// </summary>
+        [Test]
+        public void Mark_LastJump_NavigateJumpList()
+        {
+            Create("cat", "fish", "dog");
+            _vimBuffer.Process("majmbjmc'a'b'c");
+            Assert.AreEqual(_textView.GetLine(1).Start, _jumpList.LastJumpLocation.Value.Position);
+            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+            _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
+            _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
+            Assert.AreEqual(_textView.GetLine(1).Start, _jumpList.LastJumpLocation.Value.Position);
+            Assert.AreEqual(_textView.GetLine(0).Start, _textView.GetCaretPoint());
         }
 
         [Test]
@@ -2817,7 +2880,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "cat");
             _vimBuffer.Process("y*");
-            Assert.IsTrue(_jumpList.Current.IsSome(_textView.GetPoint(0)));
+            Assert.AreEqual(_textView.GetPoint(0), _jumpList.Jumps.First().Position);
             Assert.AreEqual("cat" + Environment.NewLine + "dog" + Environment.NewLine, UnnamedRegister.StringValue);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }

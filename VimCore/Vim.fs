@@ -78,10 +78,9 @@ type internal VimBufferFactory
     /// Create an IVimTextBuffer instance for the provided ITextBuffer
     member x.CreateVimTextBuffer textBuffer (vim : IVim) = 
         let localSettings = LocalSettings(vim.GlobalSettings) :> IVimLocalSettings
-        let jumpList = JumpList(_bufferTrackingService) :> IJumpList
         let wordUtil = _wordUtilFactory.GetWordUtil textBuffer
         let wordNavigator = wordUtil.CreateTextStructureNavigator WordKind.NormalWord
-        VimTextBuffer(textBuffer, localSettings, jumpList, wordNavigator, _bufferTrackingService, vim)
+        VimTextBuffer(textBuffer, localSettings, wordNavigator, _bufferTrackingService, vim)
 
     /// Create an IVimBuffer instance for the provided ITextView and IVimTextBuffer which is associated
     /// with the ITextBuffer of the ITextView
@@ -94,7 +93,7 @@ type internal VimBufferFactory
         let editOptions = _editorOptionsFactoryService.GetOptions(textView)
         let statusUtil = _statusUtilFactory.GetStatusUtil textView
         let localSettings = vimTextBuffer.LocalSettings
-        let jumpList = vimTextBuffer.JumpList
+        let jumpList = JumpList(textView, _bufferTrackingService) :> IJumpList
 
         let undoRedoOperations = 
             let history = 
@@ -104,6 +103,7 @@ type internal VimBufferFactory
             UndoRedoOperations(statusUtil, history, editOperations) :> IUndoRedoOperations
         let wordUtil = _wordUtilFactory.GetWordUtil textBuffer
         let vimBufferData : VimBufferData = {
+            JumpList = jumpList
             TextView = textView
             StatusUtil = statusUtil
             UndoRedoOperations = undoRedoOperations
@@ -137,7 +137,7 @@ type internal VimBufferFactory
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker textView
         let bufferOptions = _editorOptionsFactoryService.GetOptions(textView.TextBuffer)
         let commandOpts = Modes.Command.DefaultOperations(commonOperations, vimTextBuffer, textView, editOperations, jumpList, localSettings, undoRedoOperations, vim.KeyMap, vim.VimData, vim.VimHost, statusUtil) :> Modes.Command.IOperations
-        let commandProcessor = Modes.Command.CommandProcessor(buffer, commonOperations, commandOpts, statusUtil, FileSystem() :> IFileSystem, foldManager) :> Modes.Command.ICommandProcessor
+        let commandProcessor = Modes.Command.CommandProcessor(vimBufferData, commonOperations, commandOpts, FileSystem() :> IFileSystem, foldManager) :> Modes.Command.ICommandProcessor
         let visualOptsFactory kind = 
             let kind = VisualKind.OfModeKind kind |> Option.get
             let tracker = Modes.Visual.SelectionTracker(textView, vim.GlobalSettings, incrementalSearch, kind) :> Modes.Visual.ISelectionTracker

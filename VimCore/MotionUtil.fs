@@ -284,7 +284,7 @@ type internal MotionUtil
     let _wordUtil = _vimBufferData.WordUtil
     let _localSettings = _vimTextBuffer.LocalSettings
     let _markMap = _vimTextBuffer.Vim.MarkMap
-    let _jumpList = _vimTextBuffer.JumpList
+    let _jumpList = _vimBufferData.JumpList
     let _vimData = _vimTextBuffer.Vim.VimData
     let _search = _vimTextBuffer.Vim.SearchService
     let _wordNavigator = _vimTextBuffer.WordNavigator

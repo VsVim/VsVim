@@ -167,8 +167,15 @@ type LocalMark =
 [<StructuralEquality>]
 [<NoComparison>]
 type Mark =
+
+    /// Marks which are local to the IVimTextBuffer
     | LocalMark of LocalMark
+
+    /// Marks which are global to vim
     | GlobalMark of Letter
+
+    /// The last jump which is specific to a window
+    | LastJump 
 
     with
 
@@ -176,10 +183,13 @@ type Mark =
         match x with 
         | LocalMark localMark -> localMark.Char
         | GlobalMark letter -> letter.Char
+        | LastJump -> '\''
 
     static member OfChar c =
         if CharUtil.IsUpper c then 
             c |> CharUtil.ToLower |> Letter.OfChar |> Option.map GlobalMark
+        elif c = '\'' || c = '`' then
+            Some LastJump
         else
             LocalMark.OfChar c |> Option.map LocalMark
 

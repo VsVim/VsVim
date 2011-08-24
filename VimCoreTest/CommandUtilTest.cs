@@ -40,7 +40,6 @@ namespace VimCore.UnitTest
             _textBuffer = _textView.TextBuffer;
             _vimTextBuffer = Vim.CreateVimTextBuffer(_textBuffer);
             _localSettings = _vimTextBuffer.LocalSettings;
-            _jumpList = _vimTextBuffer.JumpList;
 
             _foldManager = FoldManagerFactory.GetFoldManager(_textView);
 
@@ -52,6 +51,7 @@ namespace VimCore.UnitTest
                 _vimTextBuffer,
                 _textView,
                 statusUtil: _statusUtil.Object);
+            _jumpList = vimBufferData.JumpList;
 
             _vimData = Vim.VimData;
             _macroRecorder = Vim.MacroRecorder;
@@ -1795,6 +1795,7 @@ namespace VimCore.UnitTest
             Create("cat", "dog", "fish");
             _jumpList.Add(_textView.GetLine(1).Start);
             _jumpList.Add(_textView.GetLine(0).Start);
+            _jumpList.StartTraversal();
             Assert.IsTrue(_jumpList.MoveOlder(1));
             _textView.MoveCaretToLine(2);
             _commandUtil.JumpToOlderPosition(1);
@@ -1813,6 +1814,7 @@ namespace VimCore.UnitTest
             _jumpList.Add(_textView.GetLine(2).Start);
             _jumpList.Add(_textView.GetLine(1).Start);
             _jumpList.Add(_textView.GetLine(0).Start);
+            _jumpList.StartTraversal();
             _jumpList.MoveOlder(1);
             _commandUtil.JumpToNewerPosition(1);
             Assert.AreEqual(3, _jumpList.Jumps.Length);

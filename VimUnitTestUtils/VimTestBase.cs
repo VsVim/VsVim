@@ -29,6 +29,7 @@ namespace Vim.UnitTest
         private ITextBufferFactoryService _textBufferFactoryService;
         private ITextEditorFactoryService _textEditorFactoryService;
         private IFoldManagerFactory _foldManagerFactory;
+        private IBufferTrackingService _bufferTrackingService;
         private IProtectedOperations _protectedOperations;
 
         /// <summary>
@@ -75,6 +76,7 @@ namespace Vim.UnitTest
             _vimErrorDetector = _compositionContainer.GetExportedValue<IVimErrorDetector>();
             _commonOperationsFactory = _compositionContainer.GetExportedValue<ICommonOperationsFactory>();
             _wordUtilFactory = _compositionContainer.GetExportedValue<IWordUtilFactory>();
+            _bufferTrackingService = _compositionContainer.GetExportedValue<IBufferTrackingService>();
             _foldManagerFactory = _compositionContainer.GetExportedValue<IFoldManagerFactory>();
             _vimErrorDetector.Clear();
             _protectedOperations = new ProtectedOperations(_vimErrorDetector);
@@ -91,6 +93,7 @@ namespace Vim.UnitTest
 
             _vim.VimData.LastCommand = FSharpOption<StoredCommand>.None;
             _vim.KeyMap.ClearAll();
+            _vim.MarkMap.ClearGlobalMarks();
             _vim.CloseAllVimBuffers();
 
             // Reset all of the global settings back to their default values.   Adds quite
@@ -158,6 +161,7 @@ namespace Vim.UnitTest
         protected VimBufferData CreateVimBufferData(
             ITextView textView,
             IStatusUtil statusUtil = null,
+            IJumpList jumpList = null,
             IUndoRedoOperations undoRedoOperations = null,
             IWordUtil wordUtil = null)
         {
@@ -165,6 +169,7 @@ namespace Vim.UnitTest
                 Vim.GetOrCreateVimTextBuffer(textView.TextBuffer),
                 textView,
                 statusUtil,
+                jumpList,
                 undoRedoOperations,
                 wordUtil);
         }
@@ -177,18 +182,31 @@ namespace Vim.UnitTest
             IVimTextBuffer vimTextBuffer,
             ITextView textView,
             IStatusUtil statusUtil = null,
+            IJumpList jumpList = null,
             IUndoRedoOperations undoRedoOperations = null,
             IWordUtil wordUtil = null)
         {
+            jumpList = jumpList ?? new JumpList(textView, _bufferTrackingService);
             statusUtil = statusUtil ?? new StatusUtil();
             undoRedoOperations = undoRedoOperations ?? CreateUndoRedoOperations(statusUtil);
             wordUtil = wordUtil ?? WordUtilFactory.GetWordUtil(vimTextBuffer.TextBuffer);
             return new VimBufferData(
+                jumpList,
                 textView,
                 statusUtil,
                 undoRedoOperations,
                 vimTextBuffer,
                 wordUtil);
+        }
+
+        /// <summary>
+        /// Create a new instance of VimBufferData.  Centralized here to make it easier to 
+        /// absorb API changes in the Unit Tests
+        /// </summary>
+        protected VimBufferData CreateVimBufferData(params string[] lines)
+        {
+            var textView = CreateTextView(lines);
+            return CreateVimBufferData(textView);
         }
 
         /// <summary>

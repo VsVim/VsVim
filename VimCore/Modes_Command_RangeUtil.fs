@@ -36,10 +36,11 @@ type internal RangeParser() =
 
 type internal RangeUtil
     (
-        _vimTextBuffer : IVimTextBuffer,
-        _textView : ITextView
+        _vimBufferData : VimBufferData
     ) =
 
+    let _vimTextBuffer = _vimBufferData.VimTextBuffer
+    let _textView = _vimBufferData.TextView
     let _markMap = _vimTextBuffer.Vim.MarkMap
     let _parser = RangeParser()
 
@@ -119,7 +120,7 @@ type internal RangeUtil
             let point = 
                 head
                 |> Mark.OfChar
-                |> OptionUtil.map2 (fun mark -> _markMap.GetMark mark _vimTextBuffer)
+                |> OptionUtil.map2 (fun mark -> _markMap.GetMark mark _vimBufferData)
             match point with
             | Some point -> 
                 let range = point.Position |> SnapshotPointUtil.GetContainingLine |> SnapshotLineRangeUtil.CreateForLine

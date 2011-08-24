@@ -128,24 +128,24 @@ type CommandAction = char list -> SnapshotLineRange option -> bool -> RunResult
 /// Type which is responsible for executing command mode commands
 type internal CommandProcessor 
     ( 
-        _buffer : IVimBuffer, 
+        _vimBufferData : VimBufferData,
         _operations : ICommonOperations,
         _commandOperations : IOperations,
-        _statusUtil : IStatusUtil,
         _fileSystem : IFileSystem,
         _foldManager : IFoldManager
     ) as this = 
 
-    let _textView = _buffer.TextView
-    let _rangeUtil = RangeUtil(_buffer.VimTextBuffer, _textView)
+    let _statusUtil = _vimBufferData.StatusUtil
+    let _textView = _vimBufferData.TextView
+    let _rangeUtil = RangeUtil(_vimBufferData)
     let _textBuffer = _textView.TextBuffer
-    let _host = _buffer.Vim.VimHost
-    let _regexFactory = VimRegexFactory(_buffer.LocalSettings.GlobalSettings)
-    let _registerMap = _buffer.RegisterMap
-    let _vim = _buffer.Vim
+    let _vimHost = _vimBufferData.Vim.VimHost
+    let _localSettings = _vimBufferData.LocalSettings
+    let _regexFactory = VimRegexFactory(_vimBufferData.LocalSettings.GlobalSettings)
+    let _vim = _vimBufferData.Vim
+    let _registerMap = _vim.RegisterMap
     let _searchService = _vim.SearchService
-    let _vimData = _buffer.VimData
-    let _localSettings = _buffer.LocalSettings
+    let _vimData = _vim.VimData
 
     let mutable _command : System.String = System.String.Empty
 
@@ -308,7 +308,7 @@ type internal CommandProcessor
         | Some data -> data.Flags
 
     /// Process the :close command
-    member x.ProcessClose _ _ hasBang = _buffer.Vim.VimHost.Close _buffer.TextView (not hasBang)
+    member x.ProcessClose _ _ hasBang = _vimHost.Close _textView (not hasBang)
 
     /// Process the :join command
     member x.ProcessJoin (rest:char list) (range:SnapshotLineRange option) hasBang =
@@ -334,13 +334,13 @@ type internal CommandProcessor
                 |> CommandParseUtil.SkipWhitespace
                 |> StringUtil.ofCharSeq
         if System.String.IsNullOrEmpty name then 
-            if not hasBang && _host.IsDirty _textBuffer then
+            if not hasBang && _vimHost.IsDirty _textBuffer then
                 _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
             else
                 let caret = 
                     let point = TextViewUtil.GetCaretPoint _textView
                     point.Snapshot.CreateTrackingPoint(point.Position, PointTrackingMode.Negative)
-                if not (_host.Reload _textBuffer) then
+                if not (_vimHost.Reload _textBuffer) then
                     _operations.Beep()
                 else
                     match TrackingPointUtil.GetPoint _textView.TextSnapshot caret with
@@ -349,10 +349,10 @@ type internal CommandProcessor
                         TextViewUtil.MoveCaretToPoint _textView point
                         TextViewUtil.EnsureCaretOnScreen _textView
 
-        elif not hasBang && _host.IsDirty _textBuffer then
+        elif not hasBang && _vimHost.IsDirty _textBuffer then
             _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
         else
-            match _host.LoadFileIntoExistingWindow name _textBuffer with
+            match _vimHost.LoadFileIntoExistingWindow name _textBuffer with
             | HostResult.Success -> ()
             | HostResult.Error(msg) -> _statusUtil.OnError(msg)
 
@@ -363,7 +363,7 @@ type internal CommandProcessor
 
     /// Parse out the Yank command
     member x.ProcessYank (rest:char list) (range: SnapshotLineRange option) _ =
-        let reg,rest = rest |> CommandParseUtil.SkipRegister _buffer.RegisterMap
+        let reg,rest = rest |> CommandParseUtil.SkipRegister _registerMap
         let count,rest = _rangeUtil.ParseNumber rest
 
         // Calculate the span to yank
@@ -388,7 +388,7 @@ type internal CommandProcessor
         let reg, rest = 
             rest
             |> CommandParseUtil.SkipWhitespace
-            |> CommandParseUtil.SkipRegister _buffer.RegisterMap
+            |> CommandParseUtil.SkipRegister _registerMap
         
         let range = _rangeUtil.RangeOrCurrentLine range
         _commandOperations.PutLine reg range.EndLine bang
@@ -406,7 +406,7 @@ type internal CommandProcessor
             range.EndLine.End
 
         let patternData = { Pattern = pattern; Path = path }
-        let result = _searchService.FindNextPattern patternData startPoint _buffer.WordNavigator 1
+        let result = _searchService.FindNextPattern patternData startPoint _vimBufferData.VimTextBuffer.WordNavigator 1
         _operations.RaiseSearchResultMessage(result)
 
         match result with
@@ -442,18 +442,18 @@ type internal CommandProcessor
         let name = rest |> StringUtil.ofCharSeq 
         let name = name.Trim()
         if StringUtil.isNullOrEmpty name then 
-            _host.Save _textBuffer |> ignore
+            _vimHost.Save _textBuffer |> ignore
         else 
             let text = _textBuffer.CurrentSnapshot.GetText()
-            _host.SaveTextAs text name |> ignore
+            _vimHost.SaveTextAs text name |> ignore
 
     /// Save all of the open IVimBuffer instances
     member x.ProcessWriteAll _ _ _ = 
         for buffer in _vim.VimBuffers do
-            _host.Save buffer.TextBuffer |> ignore
+            _vimHost.Save buffer.TextBuffer |> ignore
 
     member x.ProcessWriteQuit (rest:char list) range hasBang = 
-        let host = _buffer.Vim.VimHost
+        let host = _vimHost
         let filePath = 
             let name = rest |> Seq.skipWhile CharUtil.IsWhiteSpace |> StringUtil.ofCharSeq
             if StringUtil.isNullOrEmpty name then None else Some name
@@ -467,7 +467,7 @@ type internal CommandProcessor
         host.Close _textView false
 
     member x.ProcessQuit _ _ hasBang = 
-        _buffer.Vim.VimHost.Close _buffer.TextView (not hasBang)
+        _vimHost.Close _textView (not hasBang)
 
     /// Process the ':quitall' family of commands.
     member x.ProcessQuitAll _ _ hasBang =
@@ -475,13 +475,13 @@ type internal CommandProcessor
         // If the ! flag is not passed then we raise an error if any of the ITextBuffer instances 
         // are dirty
         if not hasBang then
-            let anyDirty = _vim.VimBuffers |> Seq.exists (fun buffer -> _host.IsDirty buffer.TextBuffer)
+            let anyDirty = _vim.VimBuffers |> Seq.exists (fun buffer -> _vimHost.IsDirty buffer.TextBuffer)
             if anyDirty then 
                 _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
             else
-                _host.Quit()
+                _vimHost.Quit()
         else
-            _host.Quit()
+            _vimHost.Quit()
 
     member x.ProcessTabNext rest _ _ =
         let count, _ = _rangeUtil.ParseNumber rest
@@ -502,11 +502,11 @@ type internal CommandProcessor
         _operations.GoToTab -1 
 
     member x.ProcessMake _ _ bang =
-        _buffer.Vim.VimHost.BuildSolution()
+        _vimHost.BuildSolution()
 
     /// Implements the :delete command
     member x.ProcessDelete (rest:char list) (range:SnapshotLineRange option) _ =
-        let reg,rest = rest |> CommandParseUtil.SkipRegister _buffer.RegisterMap
+        let reg,rest = rest |> CommandParseUtil.SkipRegister _registerMap
         let count,rest = rest |> CommandParseUtil.SkipWhitespace |> _rangeUtil.ParseNumber
         let range = 
             range
@@ -588,7 +588,7 @@ type internal CommandProcessor
 
     member x.ProcessMarks rest _ _ =
         match Seq.isEmpty rest with
-        | true -> _commandOperations.PrintMarks _buffer.MarkMap
+        | true -> _commandOperations.PrintMarks _vim.MarkMap
         | false -> _statusUtil.OnError x.BadMessage
 
     /// Parse out the :set command
@@ -621,7 +621,7 @@ type internal CommandProcessor
 
     /// Split the given view into 2
     member x.ProcessSplit _ _ _ =
-        match _buffer.Vim.VimHost.SplitViewHorizontally _buffer.TextView with
+        match _vimHost.SplitViewHorizontally _textView with
         | HostResult.Success -> ()
         | HostResult.Error msg -> _statusUtil.OnError msg
 
@@ -815,7 +815,7 @@ type internal CommandProcessor
         // to bitwise or them against the new flags
         let flags = 
             if Util.IsFlagSet flags SubstituteFlags.UsePreviousFlags then 
-                match _buffer.VimData.LastSubstituteData with
+                match _vimData.LastSubstituteData with
                 | None -> SubstituteFlags.None
                 | Some(data) -> (Util.UnsetFlag flags SubstituteFlags.UsePreviousFlags) ||| data.Flags
             else 

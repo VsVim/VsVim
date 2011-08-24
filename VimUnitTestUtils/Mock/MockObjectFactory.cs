@@ -192,6 +192,7 @@ namespace Vim.UnitTest.Mock
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
             vim = vim ?? CreateVim(factory: factory).Object;
+            localSettings = localSettings ?? CreateLocalSettings(factory: factory).Object;
             var mock = factory.Create<IVimTextBuffer>();
             mock.SetupGet(x => x.TextBuffer).Returns(textBuffer);
             mock.SetupGet(x => x.LocalSettings).Returns(localSettings);
@@ -208,6 +209,7 @@ namespace Vim.UnitTest.Mock
         public static VimBufferData CreateVimBufferData(
             IVimTextBuffer vimTextBuffer,
             ITextView textView,
+            IJumpList jumpList = null,
             IStatusUtil statusUtil = null,
             IUndoRedoOperations undoRedoOperations = null,
             IWordUtil wordUtil = null,
@@ -216,8 +218,10 @@ namespace Vim.UnitTest.Mock
             factory = factory ?? new MockRepository(MockBehavior.Strict);
             statusUtil = statusUtil ?? factory.Create<IStatusUtil>().Object;
             undoRedoOperations = undoRedoOperations ?? factory.Create<IUndoRedoOperations>().Object;
+            jumpList = jumpList ?? factory.Create<IJumpList>().Object;
             wordUtil = wordUtil ?? factory.Create<IWordUtil>().Object;
             return new VimBufferData(
+                jumpList,
                 textView,
                 statusUtil,
                 undoRedoOperations,

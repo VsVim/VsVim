@@ -14,7 +14,6 @@ type internal VimTextBuffer
     (
         _textBuffer : ITextBuffer,
         _localSettings : IVimLocalSettings,
-        _jumpList : IJumpList,
         _wordNavigator : ITextStructureNavigator,
         _bufferTrackingService : IBufferTrackingService,
         _vim : IVim
@@ -55,6 +54,7 @@ type internal VimTextBuffer
     member x.GetLocalMark localMark =
         match localMark with
         | LocalMark.Letter letter ->
+            // TODO: Need a wrapper for TryGetProperty since it can throw
             let found, trackingLineColumn = _textBuffer.Properties.TryGetProperty<ITrackingLineColumn>(letter)
             if found then
                 trackingLineColumn.VirtualPoint
@@ -92,7 +92,6 @@ type internal VimTextBuffer
     interface IVimTextBuffer with
         member x.TextBuffer = _textBuffer
         member x.GlobalSettings = _globalSettings
-        member x.JumpList = _jumpList
         member x.LastVisualSelection 
             with get () = x.LastVisualSelection
             and set value = x.LastVisualSelection <- value

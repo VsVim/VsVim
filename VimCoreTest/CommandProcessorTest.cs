@@ -17,12 +17,11 @@ using Vim.UnitTest.Mock;
 namespace VimCore.UnitTest
 {
     [TestFixture, RequiresSTA]
-    public sealed class CommandProcessorTest
+    public sealed class CommandProcessorTest : VimTestBase
     {
         private ITextView _textView;
         private ITextBuffer _textBuffer;
         private MockRepository _factory;
-        private Mock<IVimBuffer> _buffer;
         private CommandProcessor _processorRaw;
         private ICommandProcessor _processor;
         private IRegisterMap _registerMap;
@@ -38,7 +37,7 @@ namespace VimCore.UnitTest
 
         public void Create(params string[] lines)
         {
-            _textView = EditorUtil.CreateTextView(lines);
+            _textView = CreateTextView(lines);
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
             _textBuffer = _textView.TextBuffer;
             _factory = new MockRepository(MockBehavior.Strict);
@@ -53,15 +52,20 @@ namespace VimCore.UnitTest
             _foldManager = _factory.Create<IFoldManager>(MockBehavior.Strict);
             _vimData = new VimData();
             _vim = MockObjectFactory.CreateVim(_registerMap, host: _vimHost.Object, vimData: _vimData, factory: _factory);
-            _buffer = MockObjectFactory.CreateVimBuffer(
+            var localSettings = new LocalSettings(Vim.GlobalSettings);
+            var vimTextBuffer = MockObjectFactory.CreateVimTextBuffer(
+                _textBuffer,
+                vim: _vim.Object,
+                localSettings: localSettings,
+                factory: _factory);
+            var vimBufferData = CreateVimBufferData(
+                vimTextBuffer.Object,
                 _textView,
-                "test",
-                _vim.Object);
+                statusUtil: _statusUtil.Object);
             _processorRaw = new CommandProcessor(
-                _buffer.Object,
+                vimBufferData,
                 _operations.Object,
                 _commandOperations.Object,
-                _statusUtil.Object,
                 _fileSystem.Object,
                 _foldManager.Object);
             _processor = _processorRaw;
@@ -1142,7 +1146,7 @@ namespace VimCore.UnitTest
         public void Marks1()
         {
             Create("foo");
-            _commandOperations.Setup(x => x.PrintMarks(_buffer.Object.MarkMap)).Verifiable();
+            _commandOperations.Setup(x => x.PrintMarks(_vim.Object.MarkMap)).Verifiable();
             RunCommand("marks");
         }
 
@@ -1587,7 +1591,9 @@ namespace VimCore.UnitTest
         public void WriteAll_ShortName()
         {
             Create("");
-            var list = new List<IVimBuffer>() { _buffer.Object };
+            var vimBuffer = _factory.Create<IVimBuffer>();
+            vimBuffer.SetupGet(x => x.TextBuffer).Returns(_textBuffer).Verifiable();
+            var list = new List<IVimBuffer>() { vimBuffer.Object };
             _vim.SetupGet(x => x.VimBuffers).Returns(list.ToFSharpList()).Verifiable();
             _vimHost.Setup(x => x.Save(_textBuffer)).Returns(true).Verifiable();
             RunCommand("wa");
@@ -1598,7 +1604,9 @@ namespace VimCore.UnitTest
         public void WriteAll_FullName()
         {
             Create("");
-            var list = new List<IVimBuffer>() { _buffer.Object };
+            var vimBuffer = _factory.Create<IVimBuffer>();
+            vimBuffer.SetupGet(x => x.TextBuffer).Returns(_textBuffer).Verifiable();
+            var list = new List<IVimBuffer>() { vimBuffer.Object };
             _vim.SetupGet(x => x.VimBuffers).Returns(list.ToFSharpList()).Verifiable();
             _vimHost.Setup(x => x.Save(_textBuffer)).Returns(true).Verifiable();
             RunCommand("wall");

@@ -35,11 +35,11 @@ namespace VimCore.UnitTest
         [Test]
         public void SetMark_Local_Simple()
         {
-            var vimTextBuffer = CreateVimTextBuffer("dog", "cat");
-            _markMap.SetMark(_localMarkC, vimTextBuffer, 0, 1);
-            var option = _markMap.GetMark(_localMarkC, vimTextBuffer);
+            var vimBufferData = CreateVimBufferData("dog", "cat");
+            _markMap.SetMark(_localMarkC, vimBufferData, 0, 1);
+            var option = _markMap.GetMark(_localMarkC, vimBufferData);
             Assert.IsTrue(option.IsSome());
-            Assert.AreEqual(vimTextBuffer.TextBuffer.GetPoint(1), option.Value.Position);
+            Assert.AreEqual(vimBufferData.TextBuffer.GetPoint(1), option.Value.Position);
         }
 
         /// <summary>
@@ -48,9 +48,9 @@ namespace VimCore.UnitTest
         [Test]
         public void SetMark_Local_VirtualSpace()
         {
-            var vimTextBuffer = CreateVimTextBuffer("dog", "cat");
-            _markMap.SetMark(_localMarkC, vimTextBuffer, 0, 5);
-            var option = _markMap.GetMark(_localMarkC, vimTextBuffer);
+            var vimBufferData = CreateVimBufferData("dog", "cat");
+            _markMap.SetMark(_localMarkC, vimBufferData, 0, 5);
+            var option = _markMap.GetMark(_localMarkC, vimBufferData);
             Assert.IsTrue(option.IsSome());
             Assert.AreEqual(3, option.Value.Position.Position);
             Assert.AreEqual(2, option.Value.VirtualSpaces);
@@ -62,8 +62,8 @@ namespace VimCore.UnitTest
         [Test]
         public void GetMark_Local_NotSet()
         {
-            var vimTextBuffer = CreateVimTextBuffer("dog", "cat");
-            var point = _markMap.GetMark(_localMarkC, vimTextBuffer);
+            var vimBufferData = CreateVimBufferData("dog", "cat");
+            var point = _markMap.GetMark(_localMarkC, vimBufferData);
             Assert.IsTrue(point.IsNone());
         }
 
@@ -73,8 +73,8 @@ namespace VimCore.UnitTest
         [Test]
         public void GetMark_Global_NotSet()
         {
-            var vimTextBuffer = CreateVimTextBuffer("dog", "cat");
-            var point = _markMap.GetMark(_globalMarkC, vimTextBuffer);
+            var vimBufferData = CreateVimBufferData("dog", "cat");
+            var point = _markMap.GetMark(_globalMarkC, vimBufferData);
             Assert.IsTrue(point.IsNone());
         }
 
@@ -84,10 +84,10 @@ namespace VimCore.UnitTest
         [Test]
         public void Track_SimpleInsertAfter()
         {
-            var vimTextBuffer = CreateVimTextBuffer("dog", "cat");
-            _markMapRaw.SetMark(_localMarkC, vimTextBuffer, 0, 0);
-            vimTextBuffer.TextBuffer.Replace(new Span(0, 1), "b");
-            var option = _markMap.GetMark(_localMarkC, vimTextBuffer);
+            var vimBufferData = CreateVimBufferData("dog", "cat");
+            _markMapRaw.SetMark(_localMarkC, vimBufferData, 0, 0);
+            vimBufferData.TextBuffer.Replace(new Span(0, 1), "b");
+            var option = _markMap.GetMark(_localMarkC, vimBufferData);
             Assert.IsTrue(option.IsSome());
             Assert.AreEqual(0, option.Value.Position.Position);
         }
@@ -98,10 +98,10 @@ namespace VimCore.UnitTest
         [Test]
         public void Track_ReplaceInbuffer()
         {
-            var vimTextBuffer = CreateVimTextBuffer("foo");
-            _markMap.SetMark(_localMarkC, vimTextBuffer, 0, 1);
-            vimTextBuffer.TextBuffer.Replace(new Span(2, 1), "b");
-            var option = _markMap.GetMark(_localMarkC, vimTextBuffer);
+            var vimBufferData = CreateVimBufferData("foo");
+            _markMap.SetMark(_localMarkC, vimBufferData, 0, 1);
+            vimBufferData.TextBuffer.Replace(new Span(2, 1), "b");
+            var option = _markMap.GetMark(_localMarkC, vimBufferData);
             Assert.IsTrue(option.IsSome());
             Assert.AreEqual(1, option.Value.Position.Position);
         }
@@ -113,10 +113,10 @@ namespace VimCore.UnitTest
         [Test]
         public void Track_ShrinkLineBelowMark()
         {
-            var vimTextBuffer = CreateVimTextBuffer("foo");
-            _markMap.SetMark(_localMarkC, vimTextBuffer, 0, 2);
-            vimTextBuffer.TextBuffer.Delete(new Span(0, 3));
-            var option = _markMap.GetMark(_localMarkC, vimTextBuffer);
+            var vimBufferData = CreateVimBufferData("foo");
+            _markMap.SetMark(_localMarkC, vimBufferData, 0, 2);
+            vimBufferData.TextBuffer.Delete(new Span(0, 3));
+            var option = _markMap.GetMark(_localMarkC, vimBufferData);
             Assert.IsTrue(option.IsSome());
             var point = option.Value;
             Assert.IsTrue(point.IsInVirtualSpace);
@@ -130,10 +130,10 @@ namespace VimCore.UnitTest
         [Test]
         public void Track_DeleteLineAbove()
         {
-            var vimTextBuffer = CreateVimTextBuffer("foo", "bar");
-            _markMap.SetMark(_localMarkC, vimTextBuffer, 1, 0);
-            vimTextBuffer.TextBuffer.Delete(vimTextBuffer.TextBuffer.GetLine(0).ExtentIncludingLineBreak.Span);
-            var option = _markMap.GetMark(_localMarkC, vimTextBuffer);
+            var vimBufferData = CreateVimBufferData("foo", "bar");
+            _markMap.SetMark(_localMarkC, vimBufferData, 1, 0);
+            vimBufferData.TextBuffer.Delete(vimBufferData.TextBuffer.GetLine(0).ExtentIncludingLineBreak.Span);
+            var option = _markMap.GetMark(_localMarkC, vimBufferData);
             Assert.IsTrue(option.IsSome());
             var point = option.Value;
             Assert.AreEqual(0, point.Position.Position);
@@ -145,13 +145,13 @@ namespace VimCore.UnitTest
         [Test]
         public void Track_DeleteLine()
         {
-            var vimTextBuffer = CreateVimTextBuffer("cat", "dog");
-            _markMap.SetMark(_localMarkC, vimTextBuffer, 1, 0);
+            var vimBufferData = CreateVimBufferData("cat", "dog");
+            _markMap.SetMark(_localMarkC, vimBufferData, 1, 0);
             var span = new SnapshotSpan(
-                vimTextBuffer.TextBuffer.GetLine(0).End,
-                vimTextBuffer.TextBuffer.GetLine(1).EndIncludingLineBreak);
-            vimTextBuffer.TextBuffer.Delete(span.Span);
-            var option = _markMap.GetMark(_localMarkC, vimTextBuffer);
+                vimBufferData.TextBuffer.GetLine(0).End,
+                vimBufferData.TextBuffer.GetLine(1).EndIncludingLineBreak);
+            vimBufferData.TextBuffer.Delete(span.Span);
+            var option = _markMap.GetMark(_localMarkC, vimBufferData);
             Assert.IsTrue(option.IsNone());
         }
 
@@ -170,10 +170,10 @@ namespace VimCore.UnitTest
         [Test]
         public void ClearGlobalMarks_NoAffectOnLocal()
         {
-            var vimTextBuffer = CreateVimTextBuffer("hello world");
-            _markMap.SetMark(_localMarkD, vimTextBuffer, 0, 1);
+            var vimBufferData = CreateVimBufferData("hello world");
+            _markMap.SetMark(_localMarkD, vimBufferData, 0, 1);
             _markMap.ClearGlobalMarks();
-            Assert.IsTrue(_markMap.GetMark(_localMarkD, vimTextBuffer).IsSome());
+            Assert.IsTrue(_markMap.GetMark(_localMarkD, vimBufferData).IsSome());
         }
     }
 }

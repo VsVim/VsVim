@@ -1794,7 +1794,7 @@ namespace VimCore.UnitTest
         public void Mark_Forward()
         {
             Create("the dog chased the ball");
-            _markMap.SetMark(_markLocalA, _vimTextBuffer, 0, 3);
+            _vimTextBuffer.SetLocalMark(_localMarkA, 0, 3);
             var data = _motionUtil.Mark(_localMarkA).Value;
             Assert.AreEqual("the", data.Span.GetText());
             Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
