@@ -91,7 +91,7 @@ type internal CommandMode
             ProcessResult.Handled ModeSwitch.NoSwitch
 
     interface ICommandMode with
-        member x.VimBuffer = _buffer
+        member x.VimTextBuffer = _buffer.VimTextBuffer
         member x.Command = _command
         member x.CommandNames = Seq.empty
         member x.ModeKind = ModeKind.Command

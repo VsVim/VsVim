@@ -17,7 +17,6 @@ namespace VimCore.UnitTest
         private ITextBuffer _textBuffer;
         private ITextSelection _selection;
         private MockRepository _factory;
-        private Mock<IVimBuffer> _vimBuffer;
         private Mock<ICommonOperations> _operations;
         private Mock<ISelectionTracker> _tracker;
         private Mock<ICommandUtil> _commandUtil;
@@ -48,11 +47,6 @@ namespace VimCore.UnitTest
             _operations.SetupGet(x => x.TextView).Returns(_textView);
             _commandUtil = _factory.Create<ICommandUtil>();
             var motionUtil = new MotionUtil(vimBufferData);
-            _vimBuffer = MockObjectFactory.CreateVimBuffer(
-                _textView,
-                "test",
-                jumpList: vimTextBuffer.JumpList,
-                motionUtil: motionUtil);
             var capture = new MotionCapture(vimBufferData, new IncrementalSearch(vimBufferData, _operations.Object));
             var runner = new CommandRunner(
                 _textView,
@@ -61,7 +55,7 @@ namespace VimCore.UnitTest
                 _commandUtil.Object,
                 (new Mock<IStatusUtil>()).Object,
                 VisualKind.Character);
-            _modeRaw = new VisualMode(_vimBuffer.Object, _operations.Object, kind, runner, capture, _tracker.Object);
+            _modeRaw = new VisualMode(vimBufferData, _operations.Object, motionUtil, kind, runner, capture, _tracker.Object);
             _mode = _modeRaw;
             _mode.OnEnter(ModeArgument.None);
         }

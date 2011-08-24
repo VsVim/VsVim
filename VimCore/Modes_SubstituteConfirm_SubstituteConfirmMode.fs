@@ -29,13 +29,14 @@ type ConfirmAction = ConfirmData -> ModeSwitch
 
 type internal SubstituteConfirmMode
     (
-        _buffer : IVimBuffer,
+        _vimBufferData : VimBufferData,
         _operations : ICommonOperations
     ) as this = 
 
-    let _textBuffer = _buffer.TextBuffer
-    let _globalSettings = _buffer.LocalSettings.GlobalSettings
-    let _factory = VimRegexFactory(_buffer.LocalSettings.GlobalSettings)
+    let _vimTextBuffer = _vimBufferData.VimTextBuffer
+    let _textBuffer = _vimTextBuffer.TextBuffer
+    let _globalSettings = _vimTextBuffer.GlobalSettings
+    let _factory = VimRegexFactory(_globalSettings)
     let _editorOperations = _operations.EditorOperations
     let _currentMatchChanged = Event<_>()
     let mutable _commandMap : Map<KeyInput, ConfirmAction> = Map.empty
@@ -173,7 +174,7 @@ type internal SubstituteConfirmMode
         member x.CurrentMatch = x.CurrentMatch
         member x.CurrentSubstitute = x.CurrentSubstitute
         member x.ModeKind = ModeKind.SubstituteConfirm
-        member x.VimBuffer = _buffer
+        member x.VimTextBuffer = _vimTextBuffer
 
         member x.Process ki = 
 

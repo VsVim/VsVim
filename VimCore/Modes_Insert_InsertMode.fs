@@ -634,7 +634,7 @@ type internal InsertMode
 
     interface IInsertMode with 
         member x.ActiveWordCompletionSession = x.ActiveWordCompletionSession
-        member x.VimBuffer = _buffer
+        member x.VimTextBuffer = _buffer.VimTextBuffer
         member x.CommandNames =  _commandMap |> Seq.map (fun p -> p.Key) |> Seq.map OneKeyInput
         member x.ModeKind = x.ModeKind
         member x.IsProcessingDirectInsert = x.IsProcessingDirectInsert

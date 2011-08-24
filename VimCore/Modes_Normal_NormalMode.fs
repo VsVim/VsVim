@@ -14,17 +14,19 @@ type internal NormalModeData = {
 
 type internal NormalMode 
     ( 
-        _buffer : IVimBuffer, 
+        _vimBufferData : VimBufferData,
         _operations : ICommonOperations,
-        _statusUtil : IStatusUtil,
+        _motionUtil : IMotionUtil,
         _displayWindowBroker : IDisplayWindowBroker,
         _runner : ICommandRunner,
         _capture : IMotionCapture
     ) as this =
 
-    let _textView = _buffer.TextView
-    let _localSettings = _buffer.LocalSettings
-    let _globalSettings = _localSettings.GlobalSettings
+    let _vimTextBuffer = _vimBufferData.VimTextBuffer
+    let _textView = _vimBufferData.TextView
+    let _localSettings = _vimTextBuffer.LocalSettings
+    let _globalSettings = _vimTextBuffer.GlobalSettings
+    let _statusUtil = _vimBufferData.StatusUtil
 
     /// Reset state for data in Normal Mode
     let _emptyData = {
@@ -44,12 +46,12 @@ type internal NormalMode
     do
         // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
         // a derived type
-        let settings = _buffer.LocalSettings.GlobalSettings :> IVimSettings
+        let settings = _globalSettings :> IVimSettings
         settings.SettingChanged.Subscribe this.OnGlobalSettingsChanged |> _eventHandlers.Add
 
-    member this.TextView = _buffer.TextView
-    member this.TextBuffer = _buffer.TextBuffer
-    member this.CaretPoint = _buffer.TextView.Caret.Position.BufferPosition
+    member this.TextView = _vimBufferData.TextView
+    member this.TextBuffer = _vimTextBuffer.TextBuffer
+    member this.CaretPoint = this.TextView.Caret.Position.BufferPosition
     member this.IsCommandRunnerPopulated = _runner.Commands |> SeqUtil.isNotEmpty
     member this.KeyRemapMode = 
         match _runner.KeyRemapMode with
@@ -62,7 +64,7 @@ type internal NormalMode
 
     member x.EnsureCommands() = 
         if not x.IsCommandRunnerPopulated then
-            let factory = Vim.Modes.CommandFactory(_operations, _capture, _buffer.MotionUtil, _buffer.JumpList, _localSettings)
+            let factory = Vim.Modes.CommandFactory(_operations, _capture, _motionUtil, _vimTextBuffer.JumpList, _localSettings)
 
             x.CreateCommandBindings()
             |> Seq.append (factory.CreateMovementCommands())
@@ -74,7 +76,7 @@ type internal NormalMode
             _runner.Add command
 
             // Add in the macro command
-            factory.CreateMacroEditCommands _runner _buffer.Vim.MacroRecorder _eventHandlers
+            factory.CreateMacroEditCommands _runner _vimTextBuffer.Vim.MacroRecorder _eventHandlers
 
     /// Raised when a global setting is changed
     member x.OnGlobalSettingsChanged (setting : Setting) = 
@@ -275,7 +277,7 @@ type internal NormalMode
     interface INormalMode with 
         member this.KeyRemapMode = this.KeyRemapMode
         member this.IsInReplace = _data.IsInReplace
-        member this.VimBuffer = _buffer
+        member this.VimTextBuffer = _vimTextBuffer
         member this.Command = this.Command
         member this.CommandRunner = _runner
         member this.CommandNames = 

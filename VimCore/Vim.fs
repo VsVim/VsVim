@@ -149,19 +149,19 @@ type internal VimBufferFactory
             |> Seq.map (fun kind -> 
                 let tracker, opts = visualOptsFactory kind
                 let visualKind = VisualKind.OfModeKind kind |> Option.get
-                ((Modes.Visual.VisualMode(buffer, opts, kind, createCommandRunner visualKind,capture, tracker)) :> IMode) )
+                ((Modes.Visual.VisualMode(vimBufferData, opts, motionUtil, kind, createCommandRunner visualKind,capture, tracker)) :> IMode) )
             |> List.ofSeq
     
         // Normal mode values
         let modeList = 
             [
-                ((Modes.Normal.NormalMode(buffer, commonOperations, statusUtil,broker, createCommandRunner VisualKind.Character, capture)) :> IMode)
+                ((Modes.Normal.NormalMode(vimBufferData, commonOperations, motionUtil, broker, createCommandRunner VisualKind.Character, capture)) :> IMode)
                 ((Modes.Command.CommandMode(buffer, commandProcessor, commonOperations)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, false, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, true, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
-                ((Modes.SubstituteConfirm.SubstituteConfirmMode(buffer, commonOperations) :> IMode))
-                (DisabledMode(buffer) :> IMode)
-                (ExternalEditMode(buffer) :> IMode)
+                ((Modes.SubstituteConfirm.SubstituteConfirmMode(vimBufferData, commonOperations) :> IMode))
+                (DisabledMode(vimBufferData) :> IMode)
+                (ExternalEditMode(vimBufferData) :> IMode)
             ] @ visualModeList
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
         buffer.SwitchMode vimTextBuffer.ModeKind ModeArgument.None |> ignore
@@ -404,7 +404,7 @@ type internal Vim
         member x.VimBuffers = x.VimBuffers
         member x.VimData = _vimData
         member x.VimHost = _host
-        member x.VimRcLocalSettings 
+        member x.VimRcLocalSettings
             with get() = _vimRcLocalSettings
             and set value = _vimRcLocalSettings <- LocalSettings.Copy value
         member x.MacroRecorder = _recorder :> IMacroRecorder

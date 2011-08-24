@@ -1,28 +1,22 @@
 ﻿using System.Linq;
-using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.UnitTest;
-using Vim.UnitTest.Mock;
 using GlobalSettings = Vim.GlobalSettings;
 
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class DisabledModeTest
+    public sealed class DisabledModeTest : VimTestBase
     {
-        private Mock<IVimLocalSettings> _settings;
-        private Mock<IVimBuffer> _buffer;
         private DisabledMode _modeRaw;
         private IDisabledMode _mode;
 
         [SetUp]
         public void Init()
         {
-            _settings = MockObjectFactory.CreateLocalSettings();
-            _buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            _buffer.SetupGet(x => x.LocalSettings).Returns(_settings.Object);
-            _modeRaw = new DisabledMode(_buffer.Object);
+            var vimBufferData = CreateVimBufferData(CreateTextView(""));
+            _modeRaw = new DisabledMode(vimBufferData);
             _mode = _modeRaw;
         }
 

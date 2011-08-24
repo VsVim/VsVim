@@ -2999,8 +2999,8 @@ and IVimBuffer =
 /// Interface for a given Mode of Vim.  For example normal, insert, etc ...
 and IMode =
 
-    /// Owning IVimBuffer
-    abstract VimBuffer : IVimBuffer 
+    /// Associated IVimTextBuffer
+    abstract VimTextBuffer : IVimTextBuffer 
 
     /// What type of Mode is this
     abstract ModeKind : ModeKind

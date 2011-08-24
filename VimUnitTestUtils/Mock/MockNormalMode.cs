@@ -82,5 +82,11 @@ namespace Vim.UnitTest.Mock
         {
             get { throw new NotImplementedException(); }
         }
+
+
+        public IVimTextBuffer VimTextBuffer
+        {
+            get { throw new NotImplementedException(); }
+        }
     }
 }

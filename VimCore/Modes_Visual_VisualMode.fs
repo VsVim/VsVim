@@ -9,18 +9,18 @@ open Vim.Modes
 
 type internal VisualMode
     (
-        _buffer : IVimBuffer,
+        _vimBufferData : VimBufferData,
         _operations : ICommonOperations,
+        _motionUtil : IMotionUtil,
         _kind : ModeKind,
         _runner : ICommandRunner,
         _capture : IMotionCapture,
         _selectionTracker : ISelectionTracker
     ) = 
 
-    let _vimTextBuffer = _buffer.VimTextBuffer
-    let _textView = _buffer.TextView
-    let _textBuffer = _buffer.TextBuffer
-    let _registerMap = _buffer.RegisterMap
+    let _vimTextBuffer = _vimBufferData.VimTextBuffer
+    let _textView = _vimBufferData.TextView
+    let _textBuffer = _vimTextBuffer.TextBuffer
     let _eventHandlers = DisposableBag()
     let _operationKind, _visualKind = 
         match _kind with
@@ -31,7 +31,7 @@ type internal VisualMode
 
     let mutable _builtCommands = false
 
-    member x.SelectedSpan = (TextSelectionUtil.GetStreamSelectionSpan _buffer.TextView.Selection).SnapshotSpan
+    member x.SelectedSpan = (TextSelectionUtil.GetStreamSelectionSpan _textView.Selection).SnapshotSpan
 
     /// Create the CommandBinding instances for the supported command values
     member x.CreateCommandBindings() =
@@ -99,7 +99,7 @@ type internal VisualMode
 
     member x.EnsureCommandsBuilt() =
         if not _builtCommands then
-            let factory = Vim.Modes.CommandFactory(_operations, _capture, _buffer.MotionUtil, _buffer.JumpList, _buffer.LocalSettings)
+            let factory = Vim.Modes.CommandFactory(_operations, _capture, _motionUtil, _vimTextBuffer.JumpList, _vimTextBuffer.LocalSettings)
 
             // Add in the standard commands
             factory.CreateMovementCommands()
@@ -108,14 +108,14 @@ type internal VisualMode
             |> Seq.iter _runner.Add 
 
             // Add in macro editing
-            factory.CreateMacroEditCommands _runner _buffer.Vim.MacroRecorder _eventHandlers
+            factory.CreateMacroEditCommands _runner _vimTextBuffer.Vim.MacroRecorder _eventHandlers
 
             _builtCommands <- true
 
     member x.ShouldHandleEscape = not _runner.IsHandlingEscape
 
     interface IMode with
-        member x.VimBuffer = _buffer
+        member x.VimTextBuffer = _vimTextBuffer
         member x.CommandNames = 
             x.EnsureCommandsBuilt()
             _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
@@ -132,7 +132,7 @@ type internal VisualMode
                 if ki = KeyInputUtil.EscapeKey && x.ShouldHandleEscape then
                     ProcessResult.Handled ModeSwitch.SwitchPreviousMode
                 else
-                    let original = _buffer.TextSnapshot.Version.VersionNumber
+                    let original = _textBuffer.CurrentSnapshot.Version.VersionNumber
                     match _runner.Run ki with
                     | BindResult.NeedMoreInput _ -> 
                         // Commands like incremental search can move the caret and be incomplete.  Need to 
@@ -179,15 +179,14 @@ type internal VisualMode
 
                 // On teardown we will get calls to Stop when the view is closed.  It's invalid to access 
                 // the selection at that point
-                let textView = _buffer.TextView
-                if not textView.IsClosed then
+                if not _textView.IsClosed then
 
                     // Before resetting the selection save it
                     _vimTextBuffer.LastVisualSelection <- Some lastVisualSelection
 
                     if not toCommandMode then
-                        textView.Selection.Clear()
-                        textView.Selection.Mode <- TextSelectionMode.Stream
+                        _textView.Selection.Clear()
+                        _textView.Selection.Mode <- TextSelectionMode.Stream
 
             result
 

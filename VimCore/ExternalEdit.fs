@@ -2,10 +2,10 @@
 
 namespace Vim
 
-type internal ExternalEditMode( _data : IVimBuffer ) =
+type internal ExternalEditMode(_vimBufferData : VimBufferData) =
     
     interface IMode with 
-        member x.VimBuffer = _data
+        member x.VimTextBuffer = _vimBufferData.VimTextBuffer
         member x.ModeKind = ModeKind.ExternalEdit
         member x.CommandNames = Seq.empty
         member x.CanProcess ki = ki = KeyInputUtil.EscapeKey

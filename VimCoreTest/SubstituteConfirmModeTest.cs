@@ -7,7 +7,6 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
-using Vim.Modes;
 using Vim.Modes.SubstituteConfirm;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
@@ -15,12 +14,11 @@ using Vim.UnitTest.Mock;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class SubstituteConfirmModeTest
+    public sealed class SubstituteConfirmModeTest : VimTestBase
     {
         private MockRepository _factory;
         private Mock<ITextCaret> _textCaret;
         private Mock<ITextView> _textView;
-        private Mock<IVimBuffer> _buffer;
         private Mock<ICommonOperations> _operations;
         private Mock<IEditorOperations> _editorOperations;
         private ITextBuffer _textBuffer;
@@ -33,13 +31,14 @@ namespace VimCore.UnitTest
             _factory = new MockRepository(MockBehavior.Strict);
             _textCaret = _factory.Create<ITextCaret>();
             _textView = MockObjectFactory.CreateTextView(textBuffer: _textBuffer, caret: _textCaret.Object, factory: _factory);
-            _buffer = MockObjectFactory.CreateVimBuffer(textView: _textView.Object, factory: _factory);
             _editorOperations = _factory.Create<IEditorOperations>();
             _operations = _factory.Create<ICommonOperations>();
             _operations.Setup(x => x.MoveCaretToPoint(It.IsAny<SnapshotPoint>()));
             _operations.Setup(x => x.MoveCaretToPointAndEnsureVisible(It.IsAny<SnapshotPoint>()));
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
-            _modeRaw = new SubstituteConfirmMode(_buffer.Object, _operations.Object);
+
+            var vimBufferData = CreateVimBufferData(_textView.Object);
+            _modeRaw = new SubstituteConfirmMode(vimBufferData, _operations.Object);
             _mode = _modeRaw;
         }
 

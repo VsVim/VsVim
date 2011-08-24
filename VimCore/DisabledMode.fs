@@ -2,9 +2,9 @@
 
 namespace Vim
 
-type internal DisabledMode( _buffer : IVimBuffer ) =
+type internal DisabledMode(_vimBufferData : VimBufferData) =
 
-    let _localSettings = _buffer.LocalSettings
+    let _localSettings = _vimBufferData.LocalSettings
     let _globalSettings = _localSettings.GlobalSettings
     
     member private x.HelpString = 
@@ -15,7 +15,7 @@ type internal DisabledMode( _buffer : IVimBuffer ) =
             sprintf "Vim Disabled. Type %s+%s to re-enable" (ki.Key.ToString()) (ki.KeyModifiers.ToString())
 
     interface IDisabledMode with 
-        member x.VimBuffer = _buffer
+        member x.VimTextBuffer = _vimBufferData.VimTextBuffer
         member x.HelpMessage = x.HelpString
         member x.ModeKind = ModeKind.Disabled        
         member x.CommandNames = Seq.singleton _globalSettings.DisableCommand |> Seq.map OneKeyInput

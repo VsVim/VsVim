@@ -22,7 +22,6 @@ namespace VimCore.UnitTest
         private ITextView _textView;
         private IVimGlobalSettings _globalSettings;
         private MockRepository _factory;
-        private Mock<IVimBuffer> _buffer;
         private Mock<IIncrementalSearch> _incrementalSearch;
         private Mock<IDisplayWindowBroker> _displayWindowBroker;
         private Mock<ICommandUtil> _commandUtil;
@@ -64,14 +63,6 @@ namespace VimCore.UnitTest
             var vimBufferData = CreateVimBufferData(vimTextBuffer, _textView);
             var operations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
             motionUtil = motionUtil ?? new MotionUtil(vimBufferData);
-            _buffer = MockObjectFactory.CreateVimBuffer(
-                _textView,
-                "test",
-                vim: Vim,
-                jumpList: vimTextBuffer.JumpList,
-                incrementalSearch: _incrementalSearch.Object,
-                motionUtil: motionUtil,
-                localSettings: VimUtil.CreateLocalSettings(_globalSettings));
 
             var capture = new MotionCapture(vimBufferData, _incrementalSearch.Object);
             var runner = new CommandRunner(
@@ -82,9 +73,9 @@ namespace VimCore.UnitTest
                 vimBufferData.StatusUtil,
                 VisualKind.Character);
             _modeRaw = new NormalMode(
-                _buffer.Object,
+                vimBufferData,
                 operations,
-                vimBufferData.StatusUtil,
+                motionUtil,
                 _displayWindowBroker.Object,
                 runner,
                 capture);
