@@ -12,20 +12,18 @@ open Vim.RegexPatternUtil
 
 type internal DefaultOperations 
     ( 
-        _operations : ICommonOperations,
-        _vimTextBuffer : IVimTextBuffer,
-        _textView : ITextView,
-        _editorOperations : IEditorOperations,
-        _jumpList : IJumpList,
-        _settings : IVimLocalSettings,
-        _undoRedoOperations : IUndoRedoOperations,
-        _keyMap : IKeyMap,
-        _vimData : IVimData, 
-        _host : IVimHost,
-        _statusUtil : IStatusUtil
+        _vimBufferData : VimBufferData,
+        _operations : ICommonOperations
     ) =
 
+    let _vimTextBuffer = _vimBufferData.VimTextBuffer
+    let _localSettings = _vimTextBuffer.LocalSettings
+    let _statusUtil = _vimBufferData.StatusUtil
+    let _keyMap = _vimBufferData.Vim.KeyMap
+    let _textView = _vimBufferData.TextView
     let _textBuffer = _textView.TextBuffer
+    let _vimHost = _vimBufferData.Vim.VimHost
+    let _undoRedoOperations = _vimBufferData.UndoRedoOperations
 
     /// Format the setting for use in output
     let FormatSetting(setting:Setting) = 
@@ -94,14 +92,14 @@ type internal DefaultOperations
         edit.Apply() |> ignore
 
     interface IOperations with
-        member x.ShowOpenFileDialog () = _host.ShowOpenFileDialog()
+        member x.ShowOpenFileDialog () = _vimHost.ShowOpenFileDialog()
 
         /// Put the contents of the specified register at the specified line
         member x.PutLine (register : Register) (line : ITextSnapshotLine) putBefore = 
 
             // Need to get the cursor position correct for undo / redo so start an undo 
             // transaction 
-            _operations.UndoRedoOperations.EditWithUndoTransaction "PutLine" (fun () ->
+            _undoRedoOperations.EditWithUndoTransaction "PutLine" (fun () ->
 
                 // Get the point to start the Put operation at 
                 let point = 
@@ -126,7 +124,7 @@ type internal DefaultOperations
                 let lineNum = textLine.LineNumber
                 let column = point.Position.Position - textLine.Start.Position
                 let column = if point.IsInVirtualSpace then column + point.VirtualSpaces else column
-                let name = _host.GetName _textView.TextBuffer
+                let name = _vimHost.GetName _textView.TextBuffer
                 sprintf " %c   %5d%5d%s" ident lineNum column name
 
             let localSeq = 
@@ -144,40 +142,40 @@ type internal DefaultOperations
             |> _statusUtil.OnStatusLong
 
         member x.PrintModifiedSettings () = 
-            _settings.AllSettings |> Seq.filter (fun s -> not s.IsValueDefault) |> Seq.map FormatSetting |> _statusUtil.OnStatusLong
+            _localSettings.AllSettings |> Seq.filter (fun s -> not s.IsValueDefault) |> Seq.map FormatSetting |> _statusUtil.OnStatusLong
 
         member x.PrintAllSettings () = 
-            _settings.AllSettings |> Seq.map FormatSetting |> _statusUtil.OnStatusLong
+            _localSettings.AllSettings |> Seq.map FormatSetting |> _statusUtil.OnStatusLong
             
         member x.PrintSetting settingName = 
-            match _settings.GetSetting settingName with 
+            match _localSettings.GetSetting settingName with 
             | None -> _statusUtil.OnError (Resources.CommandMode_UnknownOption settingName)
             | Some(setting) -> setting |> FormatSetting |> _statusUtil.OnStatus
 
         member x.OperateSetting settingName = 
-            match _settings.GetSetting settingName with
+            match _localSettings.GetSetting settingName with
             | None -> _statusUtil.OnError (Resources.CommandMode_UnknownOption settingName)
             | Some(setting) ->
-                if setting.Kind = ToggleKind then _settings.TrySetValue settingName (ToggleValue(true)) |> ignore
+                if setting.Kind = ToggleKind then _localSettings.TrySetValue settingName (ToggleValue(true)) |> ignore
                 else setting |> FormatSetting |> _statusUtil.OnStatus
 
         member x.ResetSetting settingName =
-            match _settings.GetSetting settingName with
+            match _localSettings.GetSetting settingName with
             | None -> _statusUtil.OnError (Resources.CommandMode_UnknownOption settingName)
             | Some(setting) ->
-                if setting.Kind = ToggleKind then _settings.TrySetValue settingName (ToggleValue(false)) |> ignore
+                if setting.Kind = ToggleKind then _localSettings.TrySetValue settingName (ToggleValue(false)) |> ignore
                 else settingName |> Resources.CommandMode_InvalidArgument |> _statusUtil.OnError
             
         member x.InvertSetting settingName = 
-            match _settings.GetSetting settingName with
+            match _localSettings.GetSetting settingName with
             | None -> _statusUtil.OnError (Resources.CommandMode_UnknownOption settingName)
             | Some(setting) ->
                 match setting.Kind,setting.AggregateValue with
-                | (ToggleKind,ToggleValue(b)) -> _settings.TrySetValue settingName (ToggleValue(not b)) |> ignore
+                | (ToggleKind,ToggleValue(b)) -> _localSettings.TrySetValue settingName (ToggleValue(not b)) |> ignore
                 | _ -> settingName |> Resources.CommandMode_InvalidArgument |> _statusUtil.OnError
 
         member x.SetSettingValue settingName value = 
-            let ret = _settings.TrySetValueFromString settingName value 
+            let ret = _localSettings.TrySetValueFromString settingName value 
             if not ret then 
                 Resources.CommandMode_InvalidValue settingName value |> _statusUtil.OnError
 

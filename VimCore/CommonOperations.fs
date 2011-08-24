@@ -80,41 +80,27 @@ module internal CommonUtil =
             if point.Position >= line.End.Position && line.Length > 0 then 
                 TextViewUtil.MoveCaretToPoint textView (line.End.Subtract(1))
 
-type OperationsData = {
-    EditorOperations : IEditorOperations
-    EditorOptions : IEditorOptions
-    FoldManager : IFoldManager
-    JumpList : IJumpList
-    KeyMap : IKeyMap
-    LocalSettings : IVimLocalSettings
-    OutliningManager : IOutliningManager option
-    RegisterMap : IRegisterMap 
-    SearchService : ISearchService
-    StatusUtil : IStatusUtil
-    TextView : ITextView
-    UndoRedoOperations : IUndoRedoOperations
-    VimData : IVimData
-    VimHost : IVimHost
-    WordUtil : IWordUtil
-}
+type internal CommonOperations
+    (
+        _vimBufferData : VimBufferData,
+        _editorOperations : IEditorOperations,
+        _outliningManager : IOutliningManager option
+    ) =
 
-type internal CommonOperations ( _data : OperationsData ) =
-    let _textBuffer = _data.TextView.TextBuffer
-    let _textView = _data.TextView
-    let _operations = _data.EditorOperations
-    let _outliningManager = _data.OutliningManager
-    let _vimData = _data.VimData
-    let _host = _data.VimHost
-    let _jumpList = _data.JumpList
-    let _settings = _data.LocalSettings
-    let _options = _data.EditorOptions
-    let _undoRedoOperations = _data.UndoRedoOperations
-    let _statusUtil = _data.StatusUtil
-    let _registerMap = _data.RegisterMap
-    let _search = _data.SearchService
-    let _regexFactory = VimRegexFactory(_data.LocalSettings.GlobalSettings)
-    let _globalSettings = _settings.GlobalSettings
-    let _wordUtil = _data.WordUtil
+    let _textBuffer = _vimBufferData.TextBuffer
+    let _textView = _vimBufferData.TextView
+    let _editorOptions = _textView.Options
+    let _jumpList = _vimBufferData.JumpList
+    let _wordUtil = _vimBufferData.WordUtil
+    let _statusUtil = _vimBufferData.StatusUtil
+    let _vim = _vimBufferData.Vim
+    let _vimData = _vim.VimData
+    let _vimHost = _vim.VimHost
+    let _registerMap = _vim.RegisterMap
+    let _localSettings = _vimBufferData.LocalSettings
+    let _undoRedoOperations = _vimBufferData.UndoRedoOperations
+    let _globalSettings = _localSettings.GlobalSettings
+    let _regexFactory = VimRegexFactory(_globalSettings)
 
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
@@ -262,7 +248,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             x.MoveCaretToPointAndEnsureVisible point
 
         CommonUtil.MoveCaretForVirtualEdit _textView _globalSettings
-        _operations.ResetSelection()
+        _editorOperations.ResetSelection()
 
     /// Move the caret to the specified point but adjust the result if it's in virtual space
     /// and current settings disallow that
@@ -282,7 +268,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         if buf = _textView.TextBuffer then 
             x.MoveCaretToPointAndEnsureVisible point.Position
             true
-        else  _host.NavigateTo point 
+        else  _vimHost.NavigateTo point 
 
     /// Convert the provided whitespace into spaces.  The conversion of tabs into spaces will be 
     /// done based on the TabSize setting
@@ -299,7 +285,7 @@ type internal CommonOperations ( _data : OperationsData ) =
     member x.NormalizeBlanksToSpaces (text : string) =
         Contract.Assert(StringUtil.isBlanks text)
         let builder = System.Text.StringBuilder()
-        let tabSize = _settings.TabStop
+        let tabSize = _localSettings.TabStop
         for c in text do
             match c with 
             | ' ' -> 
@@ -318,10 +304,10 @@ type internal CommonOperations ( _data : OperationsData ) =
     /// Normalize spaces into tabs / spaces based on the ExpandTab, TabSize settings
     member x.NormalizeSpaces (text : string) = 
         Contract.Assert(Seq.forall (fun c -> c = ' ') text)
-        if _settings.ExpandTab then
+        if _localSettings.ExpandTab then
             text
         else
-            let tabSize = _settings.TabStop
+            let tabSize = _localSettings.TabStop
             let spacesCount = text.Length % tabSize
             let tabCount = (text.Length - spacesCount) / tabSize 
             let prefix = StringUtil.repeatChar tabCount '\t'
@@ -419,7 +405,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             |> Seq.takeWhile CharUtil.IsWhiteSpace
             |> List.ofSeq
         let builder = System.Text.StringBuilder()
-        let tabSize = _settings.TabStop
+        let tabSize = _localSettings.TabStop
         for c in text do
             match c with 
             | ' ' -> 
@@ -439,7 +425,7 @@ type internal CommonOperations ( _data : OperationsData ) =
 
         if range.Count > 1 then
 
-            use edit = _data.TextView.TextBuffer.CreateEdit()
+            use edit = _textBuffer.CreateEdit()
 
             let replace = 
                 match kind with
@@ -484,7 +470,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             // Simple strings can go directly in at the position.  Need to adjust the text if 
             // we are inserting at the end of the buffer
             let text = 
-                let newLine = EditUtil.NewLine _options
+                let newLine = EditUtil.NewLine _editorOptions
                 match opKind with
                 | OperationKind.LineWise -> 
                     if SnapshotPointUtil.IsEndPoint point then
@@ -545,7 +531,7 @@ type internal CommonOperations ( _data : OperationsData ) =
     
                 // Add the text to the end of the buffer.
                 if not (Seq.isEmpty appendCol) then
-                    let prefix = (EditUtil.NewLine _options) + (String.replicate column " ")
+                    let prefix = (EditUtil.NewLine _editorOptions) + (String.replicate column " ")
                     let text = Seq.fold (fun text str -> text + prefix + str) "" appendCol
                     let endPoint = SnapshotUtil.GetEndPoint originalSnapshot
                     edit.Insert(endPoint.Position, text) |> ignore
@@ -554,13 +540,13 @@ type internal CommonOperations ( _data : OperationsData ) =
 
                 // Strings are inserted line wise into the ITextBuffer.  Build up an
                 // aggregate string and insert it here
-                let text = col |> Seq.fold (fun state elem -> state + elem + (EditUtil.NewLine _options)) StringUtil.empty
+                let text = col |> Seq.fold (fun state elem -> state + elem + (EditUtil.NewLine _editorOptions)) StringUtil.empty
 
                 edit.Insert(point.Position, text) |> ignore
 
             edit.Apply() |> ignore
 
-    member x.Beep() = if not _settings.GlobalSettings.VisualBell then _host.Beep()
+    member x.Beep() = if not _localSettings.GlobalSettings.VisualBell then _vimHost.Beep()
 
     member x.DoWithOutlining func = 
         match _outliningManager with
@@ -568,7 +554,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         | Some outliningManager -> func outliningManager
 
     member x.CheckDirty func = 
-        if _host.IsDirty _textView.TextBuffer then 
+        if _vimHost.IsDirty _textView.TextBuffer then 
             _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
         else
             func()
@@ -606,7 +592,7 @@ type internal CommonOperations ( _data : OperationsData ) =
     /// expanded such that the actual caret is visible
     member x.EnsurePointOnScreenAndTextExpanded point = 
         x.EnsurePointExpanded point
-        _host.EnsureVisible _textView point
+        _vimHost.EnsureVisible _textView point
 
     /// Ensure the text is on the screen and that if it's in the middle of a collapsed region 
     /// that the collapsed region is expanded to reveal the caret
@@ -615,18 +601,17 @@ type internal CommonOperations ( _data : OperationsData ) =
         x.EnsureCaretOnScreen()
 
     interface ICommonOperations with
+        member x.VimBufferData = _vimBufferData
         member x.TextView = _textView 
-        member x.EditorOperations = _operations
-        member x.EditorOptions = _options
-        member x.SearchService = _data.SearchService
-        member x.UndoRedoOperations = _data.UndoRedoOperations
+        member x.EditorOperations = _editorOperations
+        member x.EditorOptions = _editorOptions
 
         member x.ApplyTextChange textChange addNewLines count = x.ApplyTextChange textChange addNewLines count
         member x.Beep () = x.Beep()
         member x.Join range kind = x.Join range kind
         member x.GoToDefinition () = 
             let before = TextViewUtil.GetCaretPoint _textView
-            if _host.GoToDefinition() then
+            if _vimHost.GoToDefinition() then
                 _jumpList.Add before |> ignore
                 Result.Succeeded
             else
@@ -643,8 +628,8 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.ScrollLines dir count =
             for i = 1 to count do
                 match dir with
-                | ScrollDirection.Down -> _operations.ScrollDownAndMoveCaretIfNecessary()
-                | ScrollDirection.Up -> _operations.ScrollUpAndMoveCaretIfNecessary()
+                | ScrollDirection.Down -> _editorOperations.ScrollDownAndMoveCaretIfNecessary()
+                | ScrollDirection.Up -> _editorOperations.ScrollUpAndMoveCaretIfNecessary()
                 | _ -> failwith "Invalid enum value"
 
         member x.ShiftLineBlockLeft col multiplier = x.ShiftLineBlockLeft col multiplier
@@ -654,8 +639,8 @@ type internal CommonOperations ( _data : OperationsData ) =
 
         member x.Undo count = x.Undo count
         member x.Redo count = x.Redo count
-        member x.GoToNextTab direction count = _host.GoToNextTab direction count
-        member x.GoToTab index = _host.GoToTab index
+        member x.GoToNextTab direction count = _vimHost.GoToNextTab direction count
+        member x.GoToTab index = _vimHost.GoToTab index
         member x.EnsureCaretOnScreen () = x.EnsureCaretOnScreen()
         member x.EnsureCaretOnScreenAndTextExpanded () = x.EnsureCaretOnScreenAndTextExpanded()
         member x.EnsurePointOnScreenAndTextExpanded point = x.EnsurePointOnScreenAndTextExpanded point
@@ -665,7 +650,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
         member x.NormalizeBlanks text = x.NormalizeBlanks text
         member x.NormalizeBlanksToSpaces text = x.NormalizeBlanksToSpaces text
-        member x.FormatLines range = _host.FormatLines _textView range
+        member x.FormatLines range = _vimHost.FormatLines _textView range
 
         member x.Substitute pattern replace (range:SnapshotLineRange) flags = 
 
@@ -720,7 +705,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                         else 
                             let _, span = matches |> SeqUtil.last 
                             let tracking = span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeInclusive)
-                            match TrackingSpanUtil.GetSpan _data.TextView.TextSnapshot tracking with
+                            match TrackingSpanUtil.GetSpan _textView.TextSnapshot tracking with
                             | None -> None
                             | Some(span) -> SnapshotSpanUtil.GetStartLine span |> Some
 
@@ -771,15 +756,15 @@ type internal CommonOperations ( _data : OperationsData ) =
                 _vimData.LastPatternData <- { Pattern = pattern; Path = Path.Forward }
 
         member x.GoToLocalDeclaration() = 
-            if not (_host.GoToLocalDeclaration _textView x.WordUnderCursorOrEmpty) then _host.Beep()
+            if not (_vimHost.GoToLocalDeclaration _textView x.WordUnderCursorOrEmpty) then _vimHost.Beep()
 
         member x.GoToGlobalDeclaration () = 
-            if not (_host.GoToGlobalDeclaration _textView x.WordUnderCursorOrEmpty) then _host.Beep()
+            if not (_vimHost.GoToGlobalDeclaration _textView x.WordUnderCursorOrEmpty) then _vimHost.Beep()
 
         member x.GoToFile () = 
             x.CheckDirty (fun () ->
                 let text = x.WordUnderCursorOrEmpty 
-                match _host.LoadFileIntoExistingWindow text _textBuffer with
+                match _vimHost.LoadFileIntoExistingWindow text _textBuffer with
                 | HostResult.Success -> ()
                 | HostResult.Error(_) -> _statusUtil.OnError (Resources.NormalMode_CantFindFile text))
 
@@ -787,7 +772,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         /// check for dirty since we are opening a new window
         member x.GoToFileInNewWindow () =
             let text = x.WordUnderCursorOrEmpty 
-            match _host.LoadFileIntoNewWindow text with
+            match _vimHost.LoadFileIntoNewWindow text with
             | HostResult.Success -> ()
             | HostResult.Error(_) -> _statusUtil.OnError (Resources.NormalMode_CantFindFile text)
 
@@ -798,11 +783,8 @@ type CommonOperationsFactory
     [<ImportingConstructor>]
     (
         _editorOperationsFactoryService : IEditorOperationsFactoryService,
-        _editorOptionsFactoryService : IEditorOptionsFactoryService,
         _outliningManagerService : IOutliningManagerService,
-        _undoManagerProvider : ITextBufferUndoManagerProvider,
-        _foldManagerFactory : IFoldManagerFactory,
-        _wordUtilFactory : IWordUtilFactory
+        _undoManagerProvider : ITextBufferUndoManagerProvider
     ) = 
 
     /// Use an object instance as a key.  Makes it harder for components to ignore this
@@ -810,36 +792,17 @@ type CommonOperationsFactory
     let _key = System.Object()
 
     /// Create an ICommonOperations instance for the given VimBufferData
-    member x.CreateCommonOperations (bufferData : VimBufferData) =
-        let textView = bufferData.TextView
+    member x.CreateCommonOperations (vimBufferData : VimBufferData) =
+        let textView = vimBufferData.TextView
         let editorOperations = _editorOperationsFactoryService.GetEditorOperations(textView)
-        let editorOptions = _editorOptionsFactoryService.GetOptions(textView)
 
         let outlining = 
             // This will return null in ITextBuffer instances where there is no IOutliningManager such
             // as TFS annotated buffers.
             let ret = _outliningManagerService.GetOutliningManager(textView)
             if ret = null then None else Some ret
-        let foldManager = _foldManagerFactory.GetFoldManager textView
 
-        let vim = bufferData.Vim
-        let operationsData = { 
-            EditorOperations = editorOperations
-            EditorOptions = editorOptions
-            FoldManager = foldManager
-            JumpList = bufferData.JumpList
-            KeyMap = vim.KeyMap
-            LocalSettings = bufferData.LocalSettings
-            OutliningManager = outlining
-            RegisterMap = vim.RegisterMap
-            SearchService = vim.SearchService 
-            StatusUtil = bufferData.StatusUtil
-            TextView = textView
-            UndoRedoOperations = bufferData.UndoRedoOperations
-            VimData = vim.VimData
-            VimHost = vim.VimHost
-            WordUtil = _wordUtilFactory.GetWordUtil textView.TextBuffer }
-        CommonOperations(operationsData) :> ICommonOperations
+        CommonOperations(vimBufferData, editorOperations, outlining) :> ICommonOperations
 
     /// Get or create the ICommonOperations for the given buffer
     member x.GetCommonOperations (bufferData : VimBufferData) = 

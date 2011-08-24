@@ -7,47 +7,42 @@ using Microsoft.VisualStudio.Text.Outlining;
 using Moq;
 using NUnit.Framework;
 using Vim;
-using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
+using Vim.Extensions;
 
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class CommonOperationsTest
+    public sealed class CommonOperationsTest : VimTestBase
     {
-        private IWpfTextView _textView;
+        private ITextView _textView;
         private ITextBuffer _textBuffer;
         private MockRepository _factory;
         private Mock<IEditorOperations> _editorOperations;
-        private Mock<IVimHost> _host;
+        private Mock<IVimHost> _vimHost;
         private Mock<IJumpList> _jumpList;
-        private Mock<IVimLocalSettings> _settings;
+        private Mock<IVimLocalSettings> _localSettings;
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IOutliningManager> _outlining;
         private Mock<IStatusUtil> _statusUtil;
-        private IEditorOptions _editorOptions;
         private IUndoRedoOperations _undoRedoOperations;
         private ISearchService _searchService;
-        private IRegisterMap _registerMap;
         private IVimData _vimData;
         private ICommonOperations _operations;
         private CommonOperations _operationsRaw;
 
         public void Create(params string[] lines)
         {
-            _textView = EditorUtil.CreateTextView(lines);
-            _vimData = new VimData();
-            _editorOptions = EditorUtil.FactoryService.EditorOptionsFactory.GetOptions(_textView);
+            _textView = CreateTextView(lines);
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
             _textBuffer = _textView.TextBuffer;
             _factory = new MockRepository(MockBehavior.Strict);
-            _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
-            _host = _factory.Create<IVimHost>();
-            _jumpList = _factory.Create<IJumpList>();
-            _editorOperations = _factory.Create<IEditorOperations>();
-            _editorOperations.Setup(x => x.AddAfterTextBufferChangePrimitive());
-            _editorOperations.Setup(x => x.AddBeforeTextBufferChangePrimitive());
+
+            // Create the Vim instance with our Mock'd services
+            _vimData = new VimData();
+            var registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
+            _vimHost = _factory.Create<IVimHost>();
             _globalSettings = _factory.Create<IVimGlobalSettings>();
             _globalSettings.SetupGet(x => x.Magic).Returns(true);
             _globalSettings.SetupGet(x => x.SmartCase).Returns(false);
@@ -57,38 +52,50 @@ namespace VimCore.UnitTest
             _globalSettings.SetupGet(x => x.UseEditorSettings).Returns(false);
             _globalSettings.SetupGet(x => x.VirtualEdit).Returns(String.Empty);
             _globalSettings.SetupGet(x => x.WrapScan).Returns(true);
-            _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object, _factory);
-            _settings.SetupGet(x => x.AutoIndent).Returns(false);
-            _settings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
-            _settings.SetupGet(x => x.ExpandTab).Returns(true);
-            _settings.SetupGet(x => x.TabStop).Returns(4);
+            _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
+            _searchService = VimUtil.CreateSearchService(_globalSettings.Object);
+            var vim = MockObjectFactory.CreateVim(
+                registerMap: registerMap,
+                host: _vimHost.Object,
+                settings: _globalSettings.Object,
+                searchService: _searchService,
+                factory: _factory);
+
+            // Create the IVimTextBuffer instance with our Mock'd services
+            _localSettings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object, _factory);
+            _localSettings.SetupGet(x => x.AutoIndent).Returns(false);
+            _localSettings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
+            _localSettings.SetupGet(x => x.ExpandTab).Returns(true);
+            _localSettings.SetupGet(x => x.TabStop).Returns(4);
+            var vimTextBuffer = MockObjectFactory.CreateVimTextBuffer(
+                _textBuffer,
+                localSettings: _localSettings.Object,
+                vim: vim.Object,
+                factory: _factory);
+
+            // Create the VimBufferData instance with our Mock'd services
+            _jumpList = _factory.Create<IJumpList>();
+            _statusUtil = _factory.Create<IStatusUtil>();
+            _undoRedoOperations = VimUtil.CreateUndoRedoOperations(_statusUtil.Object);
+            var vimBufferData = CreateVimBufferData(
+                vimTextBuffer.Object,
+                _textView,
+                statusUtil: _statusUtil.Object,
+                jumpList: _jumpList.Object,
+                undoRedoOperations: _undoRedoOperations);
+
+            _editorOperations = _factory.Create<IEditorOperations>();
+            _editorOperations.Setup(x => x.AddAfterTextBufferChangePrimitive());
+            _editorOperations.Setup(x => x.AddBeforeTextBufferChangePrimitive());
             _outlining = _factory.Create<IOutliningManager>();
             _outlining
                 .Setup(x => x.ExpandAll(It.IsAny<SnapshotSpan>(), It.IsAny<Predicate<ICollapsed>>()))
                 .Returns<IEnumerable<ICollapsible>>(null);
-            _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
-            _statusUtil = _factory.Create<IStatusUtil>();
-            _searchService = VimUtil.CreateSearchService(_globalSettings.Object);
-            _undoRedoOperations = VimUtil.CreateUndoRedoOperations(_statusUtil.Object);
 
-            var data = new OperationsData(
-                vimData: _vimData,
-                vimHost: _host.Object,
-                editorOperations: _editorOperations.Object,
-                textView: _textView,
-                outliningManager: FSharpOption.Create(_outlining.Object),
-                jumpList: _jumpList.Object,
-                localSettings: _settings.Object,
-                undoRedoOperations: _undoRedoOperations,
-                registerMap: _registerMap,
-                editorOptions: _editorOptions,
-                keyMap: null,
-                statusUtil: _statusUtil.Object,
-                foldManager: null,
-                searchService: _searchService,
-                wordUtil: VimUtil.GetWordUtil(_textView));
-
-            _operationsRaw = new CommonOperations(data);
+            _operationsRaw = new CommonOperations(
+                vimBufferData,
+                _editorOperations.Object,
+                FSharpOption.Create(_outlining.Object));
             _operations = _operationsRaw;
         }
 
@@ -143,7 +150,7 @@ namespace VimCore.UnitTest
         {
             Create("foo");
             _jumpList.Setup(x => x.Add(_textView.GetCaretPoint())).Verifiable();
-            _host.Setup(x => x.GoToDefinition()).Returns(true);
+            _vimHost.Setup(x => x.GoToDefinition()).Returns(true);
             var res = _operations.GoToDefinition();
             Assert.IsTrue(res.IsSucceeded);
             _jumpList.Verify();
@@ -153,7 +160,7 @@ namespace VimCore.UnitTest
         public void GoToDefinition2()
         {
             Create("foo");
-            _host.Setup(x => x.GoToDefinition()).Returns(false);
+            _vimHost.Setup(x => x.GoToDefinition()).Returns(false);
             var res = _operations.GoToDefinition();
             Assert.IsTrue(res.IsFailed);
             Assert.IsTrue(((Result.Failed)res).Item.Contains("foo"));
@@ -163,7 +170,7 @@ namespace VimCore.UnitTest
         public void GoToDefinition3()
         {
             Create("      foo");
-            _host.Setup(x => x.GoToDefinition()).Returns(false);
+            _vimHost.Setup(x => x.GoToDefinition()).Returns(false);
             var res = _operations.GoToDefinition();
             Assert.IsTrue(res.IsFailed);
         }
@@ -172,7 +179,7 @@ namespace VimCore.UnitTest
         public void GoToDefinition4()
         {
             Create("  foo");
-            _host.Setup(x => x.GoToDefinition()).Returns(false);
+            _vimHost.Setup(x => x.GoToDefinition()).Returns(false);
             var res = _operations.GoToDefinition();
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_GotoDefNoWordUnderCursor, res.AsFailed().Item);
@@ -182,7 +189,7 @@ namespace VimCore.UnitTest
         public void GoToDefinition5()
         {
             Create("foo bar baz");
-            _host.Setup(x => x.GoToDefinition()).Returns(false);
+            _vimHost.Setup(x => x.GoToDefinition()).Returns(false);
             var res = _operations.GoToDefinition();
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_GotoDefFailed("foo"), res.AsFailed().Item);
@@ -379,7 +386,7 @@ namespace VimCore.UnitTest
         public void ShiftLineRangeLeft_TabStartUsingSpaces()
         {
             Create("\tcat");
-            _settings.SetupGet(x => x.ExpandTab).Returns(true);
+            _localSettings.SetupGet(x => x.ExpandTab).Returns(true);
             _operations.ShiftLineRangeLeft(1);
             Assert.AreEqual("  cat", _textView.GetLine(0).GetText());
         }
@@ -389,7 +396,7 @@ namespace VimCore.UnitTest
         public void ShiftLineRangeLeft_MultiTabStartUsingSpaces()
         {
             Create("\t\tcat");
-            _settings.SetupGet(x => x.ExpandTab).Returns(true);
+            _localSettings.SetupGet(x => x.ExpandTab).Returns(true);
             _operations.ShiftLineRangeLeft(1);
             Assert.AreEqual("      cat", _textView.GetLine(0).GetText());
         }
@@ -398,7 +405,7 @@ namespace VimCore.UnitTest
         public void ShiftLineRangeLeft_TabStartUsingTabs()
         {
             Create("\tcat");
-            _settings.SetupGet(x => x.ExpandTab).Returns(false);
+            _localSettings.SetupGet(x => x.ExpandTab).Returns(false);
             _operations.ShiftLineRangeLeft(1);
             Assert.AreEqual("  cat", _textView.GetLine(0).GetText());
         }
@@ -407,7 +414,7 @@ namespace VimCore.UnitTest
         public void ShiftLineRangeLeft_SpaceStartUsingTabs()
         {
             Create("    cat");
-            _settings.SetupGet(x => x.ExpandTab).Returns(false);
+            _localSettings.SetupGet(x => x.ExpandTab).Returns(false);
             _operations.ShiftLineRangeLeft(1);
             Assert.AreEqual("  cat", _textView.GetLine(0).GetText());
         }
@@ -416,7 +423,7 @@ namespace VimCore.UnitTest
         public void ShiftLineRangeLeft_TabStartFollowedBySpacesUsingTabs()
         {
             Create("\t    cat");
-            _settings.SetupGet(x => x.ExpandTab).Returns(false);
+            _localSettings.SetupGet(x => x.ExpandTab).Returns(false);
             _operations.ShiftLineRangeLeft(1);
             Assert.AreEqual("\t  cat", _textView.GetLine(0).GetText());
         }
@@ -425,7 +432,7 @@ namespace VimCore.UnitTest
         public void ShiftLineRangeLeft_SpacesStartFollowedByTabFollowedBySpacesUsingTabs()
         {
             Create("    \t    cat");
-            _settings.SetupGet(x => x.ExpandTab).Returns(false);
+            _localSettings.SetupGet(x => x.ExpandTab).Returns(false);
             _operations.ShiftLineRangeLeft(1);
             Assert.AreEqual("\t\t  cat", _textView.GetLine(0).GetText());
         }
@@ -434,8 +441,8 @@ namespace VimCore.UnitTest
         public void ShiftLineRangeLeft_SpacesStartFollowedByTabFollowedBySpacesUsingTabsWithModifiedTabStop()
         {
             Create("    \t    cat");
-            _settings.SetupGet(x => x.ExpandTab).Returns(false);
-            _settings.SetupGet(x => x.TabStop).Returns(2);
+            _localSettings.SetupGet(x => x.ExpandTab).Returns(false);
+            _localSettings.SetupGet(x => x.TabStop).Returns(2);
             _operations.ShiftLineRangeLeft(1);
             Assert.AreEqual("\t\t\t\tcat", _textView.GetLine(0).GetText());
         }
@@ -443,7 +450,7 @@ namespace VimCore.UnitTest
         public void ShiftLineRangeLeft_ShortSpacesStartFollowedByTabFollowedBySpacesUsingTabs()
         {
             Create("  \t    cat");
-            _settings.SetupGet(x => x.ExpandTab).Returns(false);
+            _localSettings.SetupGet(x => x.ExpandTab).Returns(false);
             _operations.ShiftLineRangeLeft(1);
             Assert.AreEqual("\t  cat", _textView.GetLine(0).GetText());
         }
@@ -512,7 +519,7 @@ namespace VimCore.UnitTest
             Create("cat", "dog");
             _globalSettings.SetupGet(x => x.UseEditorSettings).Returns(false);
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(4);
-            _settings.SetupGet(x => x.ExpandTab).Returns(false);
+            _localSettings.SetupGet(x => x.ExpandTab).Returns(false);
             _operations.ShiftLineRangeRight(1);
             Assert.AreEqual("\tcat", _textView.GetLine(0).GetText());
         }
@@ -523,8 +530,8 @@ namespace VimCore.UnitTest
             Create("cat", "dog");
             _globalSettings.SetupGet(x => x.UseEditorSettings).Returns(false);
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
-            _settings.SetupGet(x => x.TabStop).Returns(4);
-            _settings.SetupGet(x => x.ExpandTab).Returns(false);
+            _localSettings.SetupGet(x => x.TabStop).Returns(4);
+            _localSettings.SetupGet(x => x.ExpandTab).Returns(false);
             _operations.ShiftLineRangeRight(1);
             Assert.AreEqual("  cat", _textView.GetLine(0).GetText());
         }
@@ -534,8 +541,8 @@ namespace VimCore.UnitTest
         {
             Create("  cat", "dog");
             _globalSettings.SetupGet(x => x.UseEditorSettings).Returns(false);
-            _settings.SetupGet(x => x.ExpandTab).Returns(false);
-            _settings.SetupGet(x => x.TabStop).Returns(2);
+            _localSettings.SetupGet(x => x.ExpandTab).Returns(false);
+            _localSettings.SetupGet(x => x.TabStop).Returns(2);
             _operations.ShiftLineRangeRight(1);
             Assert.AreEqual("\t\tcat", _textView.GetLine(0).GetText());
         }
@@ -781,7 +788,7 @@ namespace VimCore.UnitTest
         {
             Create(String.Empty);
             _globalSettings.Setup(x => x.VisualBell).Returns(false).Verifiable();
-            _host.Setup(x => x.Beep()).Verifiable();
+            _vimHost.Setup(x => x.Beep()).Verifiable();
             _operations.Beep();
             _factory.Verify();
         }
@@ -941,60 +948,60 @@ namespace VimCore.UnitTest
         public void GoToGlobalDeclaration1()
         {
             Create("foo bar");
-            _host.Setup(x => x.GoToGlobalDeclaration(_textView, "foo")).Returns(true).Verifiable();
+            _vimHost.Setup(x => x.GoToGlobalDeclaration(_textView, "foo")).Returns(true).Verifiable();
             _operations.GoToGlobalDeclaration();
-            _host.Verify();
+            _vimHost.Verify();
         }
 
         [Test]
         public void GoToGlobalDeclaration2()
         {
             Create("foo bar");
-            _host.Setup(x => x.GoToGlobalDeclaration(_textView, "foo")).Returns(false).Verifiable();
-            _host.Setup(x => x.Beep()).Verifiable();
+            _vimHost.Setup(x => x.GoToGlobalDeclaration(_textView, "foo")).Returns(false).Verifiable();
+            _vimHost.Setup(x => x.Beep()).Verifiable();
             _operations.GoToGlobalDeclaration();
-            _host.Verify();
+            _vimHost.Verify();
         }
 
         [Test]
         public void GoToLocalDeclaration1()
         {
             Create("foo bar");
-            _host.Setup(x => x.GoToLocalDeclaration(_textView, "foo")).Returns(true).Verifiable();
+            _vimHost.Setup(x => x.GoToLocalDeclaration(_textView, "foo")).Returns(true).Verifiable();
             _operations.GoToLocalDeclaration();
-            _host.Verify();
+            _vimHost.Verify();
         }
 
         [Test]
         public void GoToLocalDeclaration2()
         {
             Create("foo bar");
-            _host.Setup(x => x.GoToLocalDeclaration(_textView, "foo")).Returns(false).Verifiable();
-            _host.Setup(x => x.Beep()).Verifiable();
+            _vimHost.Setup(x => x.GoToLocalDeclaration(_textView, "foo")).Returns(false).Verifiable();
+            _vimHost.Setup(x => x.Beep()).Verifiable();
             _operations.GoToLocalDeclaration();
-            _host.Verify();
+            _vimHost.Verify();
         }
 
         [Test]
         public void GoToFile1()
         {
             Create("foo bar");
-            _host.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
-            _host.Setup(x => x.LoadFileIntoExistingWindow("foo", _textBuffer)).Returns(HostResult.Success).Verifiable();
+            _vimHost.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
+            _vimHost.Setup(x => x.LoadFileIntoExistingWindow("foo", _textBuffer)).Returns(HostResult.Success).Verifiable();
             _operations.GoToFile();
-            _host.Verify();
+            _vimHost.Verify();
         }
 
         [Test]
         public void GoToFile2()
         {
             Create("foo bar");
-            _host.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
-            _host.Setup(x => x.LoadFileIntoExistingWindow("foo", _textBuffer)).Returns(HostResult.NewError("")).Verifiable();
+            _vimHost.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
+            _vimHost.Setup(x => x.LoadFileIntoExistingWindow("foo", _textBuffer)).Returns(HostResult.NewError("")).Verifiable();
             _statusUtil.Setup(x => x.OnError(Resources.NormalMode_CantFindFile("foo"))).Verifiable();
             _operations.GoToFile();
             _statusUtil.Verify();
-            _host.Verify();
+            _vimHost.Verify();
         }
 
         /// <summary>

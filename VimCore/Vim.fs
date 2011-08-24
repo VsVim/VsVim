@@ -136,7 +136,7 @@ type internal VimBufferFactory
         let createCommandRunner kind = CommandRunner (textView, vim.RegisterMap, capture, commandUtil, statusUtil, kind) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker textView
         let bufferOptions = _editorOptionsFactoryService.GetOptions(textView.TextBuffer)
-        let commandOpts = Modes.Command.DefaultOperations(commonOperations, vimTextBuffer, textView, editOperations, jumpList, localSettings, undoRedoOperations, vim.KeyMap, vim.VimData, vim.VimHost, statusUtil) :> Modes.Command.IOperations
+        let commandOpts = Modes.Command.DefaultOperations(vimBufferData, commonOperations) :> Modes.Command.IOperations
         let commandProcessor = Modes.Command.CommandProcessor(vimBufferData, commonOperations, commandOpts, FileSystem() :> IFileSystem, foldManager) :> Modes.Command.ICommandProcessor
         let visualOptsFactory kind = 
             let kind = VisualKind.OfModeKind kind |> Option.get

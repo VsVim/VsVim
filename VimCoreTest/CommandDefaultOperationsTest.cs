@@ -16,79 +16,76 @@ using Vim.UnitTest.Mock;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class CommandDefaultOperationsTest
+    public sealed class CommandDefaultOperationsTest : VimTestBase
     {
         private IOperations _operations;
         private DefaultOperations _operationsRaw;
         private ITextView _textView;
         private MockRepository _factory;
-        private Mock<IEditorOperations> _editOpts;
-        private Mock<IVimHost> _host;
+        private Mock<IEditorOperations> _editorOperations;
+        private Mock<IVimHost> _vimHost;
         private Mock<IStatusUtil> _statusUtil;
         private Mock<IJumpList> _jumpList;
         private Mock<IVimLocalSettings> _localSettings;
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IKeyMap> _keyMap;
         private Mock<IOutliningManager> _outlining;
-        private Mock<IRegisterMap> _registerMap;
         private Mock<IVimTextBuffer> _vimTextBuffer;
         private IUndoRedoOperations _undoRedoOperations;
         private ISearchService _searchService;
 
         private void Create(params string[] lines)
         {
-            _textView = EditorUtil.CreateTextView(lines);
+            _textView = CreateTextView(lines);
             _factory = new MockRepository(MockBehavior.Strict);
-            _editOpts = _factory.Create<IEditorOperations>();
-            _editOpts.Setup(x => x.AddAfterTextBufferChangePrimitive());
-            _editOpts.Setup(x => x.AddBeforeTextBufferChangePrimitive());
-            _host = _factory.Create<IVimHost>();
-            _jumpList = _factory.Create<IJumpList>();
-            _registerMap = MockObjectFactory.CreateRegisterMap(factory: _factory);
+            _vimHost = _factory.Create<IVimHost>();
+            var registerMap = MockObjectFactory.CreateRegisterMap(factory: _factory);
+            _keyMap = _factory.Create<IKeyMap>();
             _globalSettings = _factory.Create<IVimGlobalSettings>();
             _globalSettings.SetupGet(x => x.Magic).Returns(true);
             _globalSettings.SetupGet(x => x.SmartCase).Returns(false);
             _globalSettings.SetupGet(x => x.IgnoreCase).Returns(true);
-            _localSettings = MockObjectFactory.CreateLocalSettings(global: _globalSettings.Object);
-            _keyMap = _factory.Create<IKeyMap>();
-            _statusUtil = _factory.Create<IStatusUtil>();
-            _outlining = _factory.Create<IOutliningManager>();
-            _undoRedoOperations = VimUtil.CreateUndoRedoOperations(_statusUtil.Object);
             _searchService = VimUtil.CreateSearchService(_globalSettings.Object);
+
+            // Initialize the Mock<IVim> with all of our Mock'd services
+            var vim = MockObjectFactory.CreateVim(
+                registerMap: registerMap.Object,
+                host: _vimHost.Object,
+                keyMap: _keyMap.Object,
+                searchService: _searchService,
+                settings: _globalSettings.Object,
+                vimData: new VimData());
+
+            _localSettings = MockObjectFactory.CreateLocalSettings(global: _globalSettings.Object);
             _vimTextBuffer = MockObjectFactory.CreateVimTextBuffer(
-                _textView.TextBuffer, 
-                localSettings: _localSettings.Object, 
+                _textView.TextBuffer,
+                localSettings: _localSettings.Object,
+                vim: vim.Object,
                 factory: _factory);
 
-            var vimData = new VimData();
-            var data = new OperationsData(
-                vimData: vimData,
-                vimHost: _host.Object,
-                textView: _textView,
-                editorOperations: _editOpts.Object,
-                outliningManager: FSharpOption.Create(_outlining.Object),
-                statusUtil: _statusUtil.Object,
-                jumpList: _jumpList.Object,
-                localSettings: _localSettings.Object,
-                keyMap: _keyMap.Object,
-                undoRedoOperations: _undoRedoOperations,
-                editorOptions: null,
-                foldManager: null,
-                registerMap: _registerMap.Object,
-                searchService: _searchService,
-                wordUtil: VimUtil.GetWordUtil(_textView));
-            _operationsRaw = new DefaultOperations(
-                new CommonOperations(data),
+            // Initialize the VimBufferData with all of our Mock'd services
+            _jumpList = _factory.Create<IJumpList>();
+            _statusUtil = _factory.Create<IStatusUtil>();
+            _undoRedoOperations = VimUtil.CreateUndoRedoOperations(_statusUtil.Object);
+            var vimBufferData = CreateVimBufferData(
                 _vimTextBuffer.Object,
                 _textView,
-                _editOpts.Object,
-                _jumpList.Object,
-                _localSettings.Object,
-                _undoRedoOperations,
-                _keyMap.Object,
-                vimData,
-                _host.Object,
-                _statusUtil.Object);
+                statusUtil: _statusUtil.Object,
+                jumpList: _jumpList.Object,
+                undoRedoOperations: _undoRedoOperations);
+
+            _outlining = _factory.Create<IOutliningManager>();
+            _editorOperations = _factory.Create<IEditorOperations>();
+            _editorOperations.Setup(x => x.AddAfterTextBufferChangePrimitive());
+            _editorOperations.Setup(x => x.AddBeforeTextBufferChangePrimitive());
+            var commonOperations = new CommonOperations(
+                vimBufferData,
+                _editorOperations.Object,
+                FSharpOption.Create(_outlining.Object));
+
+            _operationsRaw = new DefaultOperations(
+                vimBufferData,
+                commonOperations);
             _operations = _operationsRaw;
         }
 

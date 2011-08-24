@@ -243,6 +243,9 @@ type Result =
 /// caller
 type ICommonOperations =
 
+    /// Associated VimBufferData instance
+    abstract VimBufferData : VimBufferData
+
     /// Associated ITextView
     abstract TextView : ITextView 
 
@@ -251,12 +254,6 @@ type ICommonOperations =
 
     /// Associated IEditorOptions
     abstract EditorOptions : IEditorOptions
-
-    /// Associated ISearchService instance
-    abstract SearchService : ISearchService
-
-    /// Associated IUndoRedoOperations
-    abstract UndoRedoOperations : IUndoRedoOperations
 
     /// Apply the TextChange to the ITextBuffer 'count' times
     abstract ApplyTextChange : TextChange -> addNewLintes : bool -> int -> unit
