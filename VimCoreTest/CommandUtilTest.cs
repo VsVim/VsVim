@@ -22,6 +22,7 @@ namespace VimCore.UnitTest
         private Mock<ISmartIndentationService> _smartIdentationService;
         private IVimGlobalSettings _globalSettings;
         private IVimLocalSettings _localSettings;
+        private IVimWindowSettings _windowSettings;
         private IMotionUtil _motionUtil;
         private IRegisterMap _registerMap;
         private IVimData _vimData;
@@ -52,6 +53,7 @@ namespace VimCore.UnitTest
                 _textView,
                 statusUtil: _statusUtil.Object);
             _jumpList = vimBufferData.JumpList;
+            _windowSettings = vimBufferData.WindowSettings;
 
             _vimData = Vim.VimData;
             _macroRecorder = Vim.MacroRecorder;
@@ -267,6 +269,46 @@ namespace VimCore.UnitTest
                 _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption<int>.None);
             }
             Assert.AreEqual(_textView.GetLine(3).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Make sure the scroll option is used if it's one of the parameters
+        /// </summary>
+        [Test]
+        public void ScrollLines_Down_UseScrollOption()
+        {
+            Create("a", "b", "c", "d", "e");
+            _windowSettings.Scroll = 3;
+            _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption<int>.None);
+            Assert.AreEqual(3, _textView.GetCaretLine().LineNumber);
+        }
+
+        /// <summary>
+        /// If the scroll option is set to be consulted an an explicit count is given then that
+        /// count should be used and the scroll option should be set to that value
+        /// </summary>
+        [Test]
+        public void ScrollLines_Down_ScrollOptionWithCount()
+        {
+            Create("a", "b", "c", "d", "e");
+            _windowSettings.Scroll = 3;
+            _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption.Create(2));
+            Assert.AreEqual(2, _textView.GetCaretLine().LineNumber);
+            Assert.AreEqual(2, _windowSettings.Scroll);
+        }
+
+        /// <summary>
+        /// With no scroll or count then the value of 1 should be used and the scroll option
+        /// shouldn't be updated
+        /// </summary>
+        [Test]
+        public void ScrollLines_Down_NoScrollOrCount()
+        {
+            Create("a", "b", "c", "d", "e");
+            _windowSettings.Scroll = 3;
+            _commandUtil.ScrollLines(ScrollDirection.Down, false, FSharpOption<int>.None);
+            Assert.AreEqual(1, _textView.GetCaretLine().LineNumber);
+            Assert.AreEqual(3, _windowSettings.Scroll);
         }
 
         /// <summary>

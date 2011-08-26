@@ -1541,7 +1541,7 @@ type NormalCommand =
     /// Set the specified mark to the current value of the caret
     | SetMarkToCaret of char
 
-    /// Scroll the screen in the specified direction.  The bool is whether or not to use
+    /// Scroll the screen in the specified direction.  The bool is whether to use
     /// the 'scroll' option or 'count'
     | ScrollLines of ScrollDirection * bool
 
@@ -2660,6 +2660,9 @@ type VimBufferData = {
 
     /// The IVimTextBuffer associated with the IVimBuffer
     VimTextBuffer : IVimTextBuffer
+
+    /// The IVimWindowSettings associated with the ITextView 
+    WindowSettings : IVimWindowSettings
 
     /// The IWordUtil associated with the IVimBuffer
     WordUtil : IWordUtil

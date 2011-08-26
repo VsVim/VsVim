@@ -163,6 +163,7 @@ namespace Vim.UnitTest
             IStatusUtil statusUtil = null,
             IJumpList jumpList = null,
             IUndoRedoOperations undoRedoOperations = null,
+            IVimWindowSettings windowSettings = null,
             IWordUtil wordUtil = null)
         {
             return CreateVimBufferData(
@@ -171,6 +172,7 @@ namespace Vim.UnitTest
                 statusUtil,
                 jumpList,
                 undoRedoOperations,
+                windowSettings,
                 wordUtil);
         }
 
@@ -184,11 +186,13 @@ namespace Vim.UnitTest
             IStatusUtil statusUtil = null,
             IJumpList jumpList = null,
             IUndoRedoOperations undoRedoOperations = null,
+            IVimWindowSettings windowSettings = null,
             IWordUtil wordUtil = null)
         {
             jumpList = jumpList ?? new JumpList(textView, _bufferTrackingService);
             statusUtil = statusUtil ?? new StatusUtil();
             undoRedoOperations = undoRedoOperations ?? CreateUndoRedoOperations(statusUtil);
+            windowSettings = windowSettings ?? new WindowSettings(vimTextBuffer.GlobalSettings);
             wordUtil = wordUtil ?? WordUtilFactory.GetWordUtil(vimTextBuffer.TextBuffer);
             return new VimBufferData(
                 jumpList,
@@ -196,6 +200,7 @@ namespace Vim.UnitTest
                 statusUtil,
                 undoRedoOperations,
                 vimTextBuffer,
+                windowSettings,
                 wordUtil);
         }
 

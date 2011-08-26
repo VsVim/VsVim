@@ -102,12 +102,14 @@ type internal VimBufferFactory
                 else manager.TextBufferUndoHistory |> Some
             UndoRedoOperations(statusUtil, history, editOperations) :> IUndoRedoOperations
         let wordUtil = _wordUtilFactory.GetWordUtil textBuffer
+        let windowSettings = WindowSettings(vim.GlobalSettings, textView)
         let vimBufferData : VimBufferData = {
             JumpList = jumpList
             TextView = textView
             StatusUtil = statusUtil
             UndoRedoOperations = undoRedoOperations
             VimTextBuffer = vimTextBuffer
+            WindowSettings = windowSettings
             WordUtil = wordUtil }
         let commonOperations = _commonOperationsFactory.GetCommonOperations vimBufferData
 
@@ -120,7 +122,6 @@ type internal VimBufferFactory
         let foldManager = _foldManagerFactory.GetFoldManager textView
         let insertUtil = InsertUtil(vimBufferData, commonOperations) :> IInsertUtil
         let commandUtil = CommandUtil(vimBufferData, motionUtil, commonOperations, _smartIndentationService, foldManager, insertUtil) :> ICommandUtil
-        let windowSettings = WindowSettings(vim.GlobalSettings, textView)
 
         let bufferRaw = VimBuffer(vimBufferData, incrementalSearch, motionUtil, wordNav, windowSettings)
         let buffer = bufferRaw :> IVimBuffer

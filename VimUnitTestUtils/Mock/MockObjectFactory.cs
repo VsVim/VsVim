@@ -212,6 +212,7 @@ namespace Vim.UnitTest.Mock
             IJumpList jumpList = null,
             IStatusUtil statusUtil = null,
             IUndoRedoOperations undoRedoOperations = null,
+            IVimWindowSettings windowSettings = null,
             IWordUtil wordUtil = null,
             MockRepository factory = null)
         {
@@ -220,12 +221,14 @@ namespace Vim.UnitTest.Mock
             undoRedoOperations = undoRedoOperations ?? factory.Create<IUndoRedoOperations>().Object;
             jumpList = jumpList ?? factory.Create<IJumpList>().Object;
             wordUtil = wordUtil ?? factory.Create<IWordUtil>().Object;
+            windowSettings = windowSettings ?? factory.Create<IVimWindowSettings>().Object;
             return new VimBufferData(
                 jumpList,
                 textView,
                 statusUtil,
                 undoRedoOperations,
                 vimTextBuffer,
+                windowSettings,
                 wordUtil);
         }
 

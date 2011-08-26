@@ -55,6 +55,7 @@ type internal CommandUtil
     let _statusUtil = _vimBufferData.StatusUtil
     let _undoRedoOperations = _vimBufferData.UndoRedoOperations
     let _localSettings = _vimBufferData.LocalSettings
+    let _windowSettings = _vimBufferData.WindowSettings
     let _globalSettings = _localSettings.GlobalSettings
     let _vim = _vimBufferData.Vim
     let _vimData = _vim.VimData
@@ -1998,15 +1999,27 @@ type internal CommandUtil
                 _operations.Beep()
             CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Scroll the lines 'count' pages in the specified direction
-    ///
-    /// TODO: Should support the 'scroll' option here.  It should be the used value 
-    /// when a count is not specified
+    /// Scroll the window up / down a specified number of lines.  If a count is provided
+    /// that will always be used.  Else we may choose one or the value of the 'scroll' 
+    /// option
     member x.ScrollLines direction useScrollOption countOption =
+
+        // Get the number of lines that we should scroll by.  
         let count = 
             match countOption with
-            | None -> TextViewUtil.GetVisibleLineCount _textView / 2
-            | Some count -> count
+            | Some count -> 
+                // When a count is provided then we always use that count.  If this is a
+                // scroll option version though we do need to update the scroll option to
+                // this value
+                if useScrollOption then
+                    _windowSettings.Scroll <- count
+                count
+            | None ->
+                if useScrollOption then
+                    _windowSettings.Scroll
+                else
+                    1
+
         let count = if count <= 0 then 1 else count
 
         let lineNumber = 
