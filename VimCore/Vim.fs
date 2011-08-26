@@ -346,11 +346,7 @@ type internal Vim
         buffer
 
     member x.GetVimTextBuffer (textBuffer : ITextBuffer) =
-        let found, vimTextBuffer = textBuffer.Properties.TryGetProperty<IVimTextBuffer>(_vimTextBufferKey)
-        if found then
-            Some vimTextBuffer
-        else
-            None
+        PropertyCollectionUtil.GetValue<IVimTextBuffer> _vimTextBufferKey textBuffer.Properties
 
     member x.GetVimBuffer textView =
         let tuple = _bufferMap.TryGetValue textView

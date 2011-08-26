@@ -75,14 +75,10 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-
-
-
         public KeyRemapMode KeyRemapMode
         {
             get { throw new NotImplementedException(); }
         }
-
 
         public IVimTextBuffer VimTextBuffer
         {

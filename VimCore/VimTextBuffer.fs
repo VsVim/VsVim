@@ -54,12 +54,9 @@ type internal VimTextBuffer
     member x.GetLocalMark localMark =
         match localMark with
         | LocalMark.Letter letter ->
-            // TODO: Need a wrapper for TryGetProperty since it can throw
-            let found, trackingLineColumn = _textBuffer.Properties.TryGetProperty<ITrackingLineColumn>(letter)
-            if found then
-                trackingLineColumn.VirtualPoint
-            else
-                None
+            _textBuffer.Properties
+            |> PropertyCollectionUtil.GetValue<ITrackingLineColumn> letter
+            |> OptionUtil.map2 (fun trackingLineColumn -> trackingLineColumn.VirtualPoint)
         | LocalMark.LastSelectionStart ->
             x.LastVisualSelection 
             |> Option.map (fun visualSelection -> visualSelection.VisualSpan.Start |> VirtualSnapshotPointUtil.OfPoint) 
@@ -72,9 +69,9 @@ type internal VimTextBuffer
         match localMark with
         | LocalMark.Letter letter -> 
             // First close out the existing mark at this location if it exists
-            let found, trackingLineColumn = _textBuffer.Properties.TryGetProperty<ITrackingLineColumn>(letter)
-            if found then
-                trackingLineColumn.Close()
+            match PropertyCollectionUtil.GetValue<ITrackingLineColumn> letter _textBuffer.Properties with
+            | None -> ()
+            | Some trackingLineColumn -> trackingLineColumn.Close()
 
             let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
             _textBuffer.Properties.[letter] <- trackingLineColumn

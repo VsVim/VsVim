@@ -7,6 +7,7 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
+open Microsoft.VisualStudio.Utilities
 
 /// Represents a range of lines in an ITextSnapshot.  Different from a SnapshotSpan
 /// because it declaratively supports lines instead of a position range
@@ -1227,6 +1228,23 @@ module TrackingSpanUtil =
             span.GetSpan(snapshot) |> Some
         with
             | :? System.ArgumentException -> None
+
+module PropertyCollectionUtil = 
+
+    /// Get the property value for the givne key
+    let GetValue<'T> key (propertyCollection : PropertyCollection) = 
+        try
+            let succeeded, value = propertyCollection.TryGetProperty<'T>(key)
+            if succeeded then
+                Some value
+            else
+                None
+        with 
+            // If the value exists but is not convertible to the provided type then
+            // an exception will be thrown.  Collapse this into an empty option.  
+            // Helps guard against cases where other extensions override our values
+            // with ones of unexpected types
+            | _ -> None
 
 /// Abstraction useful for APIs which need to work over a single SnapshotSpan 
 /// or collection of SnapshotSpan values

@@ -144,10 +144,18 @@ namespace VsVim
 
         internal static FSharpOption<T> TryGetTypedProperty<T>(this PropertyCollection col)
         {
-            T value;
-            if (col.TryGetProperty(typeof(T), out value))
+            try
             {
-                return FSharpOption<T>.Some(value);
+                T value;
+                if (col.TryGetProperty(typeof(T), out value))
+                {
+                    return FSharpOption<T>.Some(value);
+                }
+            }
+            catch (Exception)
+            {
+                // If the Property is not of type T an exception will be thrown
+                return FSharpOption<T>.None;
             }
 
             return FSharpOption<T>.None;
