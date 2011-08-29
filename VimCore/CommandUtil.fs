@@ -684,7 +684,7 @@ type internal CommandUtil
             let line = x.CaretLine
             if line.LineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot && x.CurrentSnapshot.LineCount > 1 then
                 // The last line is an unfortunate special case here as it does not have a line break.  Hence 
-                // in order to delete the line we must delete the line break at the end of the preceeding line.  
+                // in order to delete the line we must delete the line break at the end of the preceding line.  
                 //
                 // This cannot be normalized by always deleting the line break from the previous line because
                 // it would still break for the first line.  This is an unfortunate special case we must 
@@ -2004,55 +2004,69 @@ type internal CommandUtil
     /// option
     member x.ScrollLines direction useScrollOption countOption =
 
-        // Get the number of lines that we should scroll by.  
-        let count = 
-            match countOption with
-            | Some count -> 
-                // When a count is provided then we always use that count.  If this is a
-                // scroll option version though we do need to update the scroll option to
-                // this value
-                if useScrollOption then
-                    _windowSettings.Scroll <- count
-                count
-            | None ->
-                if useScrollOption then
-                    _windowSettings.Scroll
-                else
-                    1
+        let visualLine = 
 
-        let count = if count <= 0 then 1 else count
+            // Scrolling lines needs to operate on the Visual Snapshot.  Do the calculation
+            // on the Visual Snapshot and then map back down to the edit snapshot
+            let x = TextViewUtil.GetVisualSnapshotDataOrEdit _textView
+    
+            // Get the number of lines that we should scroll by.  
+            let count = 
+                match countOption with
+                | Some count -> 
+                    // When a count is provided then we always use that count.  If this is a
+                    // scroll option version though we do need to update the scroll option to
+                    // this value
+                    if useScrollOption then
+                        _windowSettings.Scroll <- count
+                    count
+                | None ->
+                    if useScrollOption then
+                        _windowSettings.Scroll
+                    else
+                        1
+    
+            let count = if count <= 0 then 1 else count
 
-        let lineNumber = 
-            match direction with
-            | ScrollDirection.Up -> 
-                if x.CaretLine.LineNumber = 0 then 
-                    _operations.Beep()
+            let lineNumber =
+                match direction with
+                | ScrollDirection.Up -> 
+                    if x.CaretLine.LineNumber = 0 then 
+                        _operations.Beep()
+                        None
+                    elif x.CaretLine.LineNumber < count then
+                        0 |> Some
+                    else
+                        x.CaretLine.LineNumber - count |> Some
+                | ScrollDirection.Down ->
+                    if x.CaretLine.LineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot then
+                        _operations.Beep()
+                        None
+                    else
+                        x.CaretLine.LineNumber + count |> Some
+                | _ -> 
                     None
-                elif x.CaretLine.LineNumber < count then
-                    0 |> Some
-                else
-                    x.CaretLine.LineNumber - count |> Some
-            | ScrollDirection.Down ->
-                if x.CaretLine.LineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot then
-                    _operations.Beep()
-                    None
-                else
-                    x.CaretLine.LineNumber + count |> Some
-            | _ -> 
-                None
 
-        match lineNumber |> Option.map (fun number -> SnapshotUtil.GetLineOrLast x.CurrentSnapshot number) with
+            lineNumber |> Option.map (fun number -> SnapshotUtil.GetLineOrLast x.CurrentSnapshot number)
+
+        match visualLine with
         | None ->
             ()
-        | Some line -> 
-            let point = 
-                let column = SnapshotPointUtil.GetColumn x.CaretPoint
-                if column < line.Length then
-                    line.Start.Add(column)
-                else
-                    line.Start
-            TextViewUtil.MoveCaretToPoint _textView point
-            _operations.EnsureCaretOnScreen()
+        | Some visualLine ->
+            // Map the ITextSnapshotLine from the Visual to Edit snapshot
+            match BufferGraphUtil.MapPointDownToSnapshot _bufferGraph visualLine.Start PointTrackingMode.Positive x.CurrentSnapshot PositionAffinity.Predecessor with
+            | None ->
+                ()
+            | Some point ->
+                let line = SnapshotPointUtil.GetContainingLine point
+                let point = 
+                    let column = SnapshotPointUtil.GetColumn x.CaretPoint
+                    if column < line.Length then
+                        line.Start.Add(column)
+                    else
+                        line.Start
+                TextViewUtil.MoveCaretToPoint _textView point
+                _operations.EnsureCaretOnScreen()
 
         CommandResult.Completed ModeSwitch.NoSwitch
 

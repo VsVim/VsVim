@@ -312,6 +312,18 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Make sure that scroll lines down handles a fold as a single line
+        /// </summary>
+        [Test]
+        public void ScrollLines_Down_OverFold()
+        {
+            Create("a", "b", "c", "d", "e");
+            _foldManager.CreateFold(_textBuffer.GetLineRange(1, 2));
+            _commandUtil.ScrollLines(ScrollDirection.Down, false, FSharpOption.Create(2));
+            Assert.AreEqual(3, _textView.GetCaretLine().LineNumber);
+        }
+
+        /// <summary>
         /// Should be beeping at the first line in the ITextBuffer
         /// </summary>
         [Test]
