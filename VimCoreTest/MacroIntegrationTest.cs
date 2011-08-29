@@ -1,18 +1,18 @@
-﻿using Microsoft.VisualStudio.Text.Editor;
+﻿using System;
+using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
-using System;
 
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class MacroIntegrationTest
+    public sealed class MacroIntegrationTest : VimTestBase
     {
-        private IVimBuffer _buffer;
-        private IWpfTextView _textView;
+        private IVimBuffer _vimBuffer;
+        private ITextView _textView;
         private IVimGlobalSettings _globalSettings;
 
         internal char TestRegisterChar
@@ -22,16 +22,16 @@ namespace VimCore.UnitTest
 
         internal Register TestRegister
         {
-            get { return _buffer.RegisterMap.GetRegister(TestRegisterChar); }
+            get { return _vimBuffer.RegisterMap.GetRegister(TestRegisterChar); }
         }
 
         private void Create(params string[] lines)
         {
-            _textView = EditorUtil.CreateTextView(lines);
-            _buffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(_textView);
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            _globalSettings = _buffer.LocalSettings.GlobalSettings;
-            ((MockVimHost)_buffer.Vim.VimHost).FocusedTextView = _textView;
+            _textView = CreateTextView(lines);
+            _vimBuffer = Vim.CreateVimBuffer(_textView);
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _globalSettings = _vimBuffer.LocalSettings.GlobalSettings;
+            ((MockVimHost)_vimBuffer.Vim.VimHost).FocusedTextView = _textView;
         }
 
         /// <summary>
@@ -53,8 +53,8 @@ namespace VimCore.UnitTest
         {
             Create("world");
             TestRegister.UpdateValue("ihello ");
-            _buffer.Process("@c");
-            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            _vimBuffer.Process("@c");
+            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
             Assert.AreEqual("hello world", _textView.GetLine(0).GetText());
         }
 
@@ -66,8 +66,8 @@ namespace VimCore.UnitTest
         {
             Create("world");
             TestRegister.UpdateValue("ihello ", VimKey.Escape);
-            _buffer.Process("@c");
-            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
+            _vimBuffer.Process("@c");
+            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
             Assert.AreEqual("hello world", _textView.GetLine(0).GetText());
         }
 
@@ -79,9 +79,9 @@ namespace VimCore.UnitTest
         {
             Create("hello world again");
             TestRegister.UpdateValue(".");
-            _buffer.Process("dw@c");
+            _vimBuffer.Process("dw@c");
             Assert.AreEqual("again", _textView.GetLine(0).GetText());
-            Assert.IsTrue(_buffer.VimData.LastMacroRun.IsSome('c'));
+            Assert.IsTrue(_vimBuffer.VimData.LastMacroRun.IsSome('c'));
         }
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "bear");
             TestRegister.UpdateValue("~", VimKey.Left, VimKey.Down);
-            _buffer.Process("2@c");
+            _vimBuffer.Process("2@c");
             Assert.AreEqual("Cat", _textView.GetLine(0).GetText());
             Assert.AreEqual("Dog", _textView.GetLine(1).GetText());
         }
@@ -105,9 +105,9 @@ namespace VimCore.UnitTest
         public void RunMacro_NumberedList()
         {
             Create("1. Heading");
-            _buffer.Process("qaYp");
-            _buffer.Process(KeyNotationUtil.StringToKeyInput("<C-a>"));
-            _buffer.Process("q3@a");
+            _vimBuffer.Process("qaYp");
+            _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-a>"));
+            _vimBuffer.Process("q3@a");
             for (var i = 0; i < 5; i++)
             {
                 var line = String.Format("{0}. Heading", i + 1);
@@ -128,7 +128,7 @@ namespace VimCore.UnitTest
                 KeyNotationUtil.StringToKeyInput("i"),
                 KeyNotationUtil.StringToKeyInput("<C-n>"),
                 KeyNotationUtil.StringToKeyInput("s"));
-            _buffer.Process("@c");
+            _vimBuffer.Process("@c");
             Assert.AreEqual("zs ", _textView.GetLine(0).GetText());
         }
 
@@ -144,12 +144,12 @@ namespace VimCore.UnitTest
             TestRegister.UpdateValue("llidone", VimKey.Escape);
 
             // Works because 'll' can get to the end of the line
-            _buffer.Process("@c");
+            _vimBuffer.Process("@c");
             Assert.AreEqual("cadonet", _textView.GetLine(0).GetText());
 
             // Fails since the second 'l' fails
             _textView.MoveCaretToLine(1, 2);
-            _buffer.Process("@c");
+            _vimBuffer.Process("@c");
             Assert.AreEqual("cat", _textView.GetLine(1).GetText());
         }
 
@@ -162,7 +162,7 @@ namespace VimCore.UnitTest
             Create("cat", "dog");
             _globalSettings.VirtualEdit = string.Empty; // Ensure not 've=onemore'
             TestRegister.UpdateValue("l@c");
-            _buffer.Process("@c");
+            _vimBuffer.Process("@c");
             Assert.AreEqual(2, _textView.GetCaretPoint().Position);
         }
 
@@ -176,7 +176,7 @@ namespace VimCore.UnitTest
         {
             Create("dog cat tree", "dog cat tree");
             TestRegister.UpdateValue("lkdw");
-            _buffer.Process("@c");
+            _vimBuffer.Process("@c");
             Assert.AreEqual("dog cat tree", _textView.GetLine(0).GetText());
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
@@ -188,14 +188,14 @@ namespace VimCore.UnitTest
         public void Record_InsertTextAndEscape()
         {
             Create("");
-            _buffer.Process("qcidog");
-            _buffer.Process(VimKey.Escape);
-            _buffer.Process("q");
-            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
+            _vimBuffer.Process("qcidog");
+            _vimBuffer.Process(VimKey.Escape);
+            _vimBuffer.Process("q");
+            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
             _textView.MoveCaretTo(0);
-            _buffer.Process("@c");
+            _vimBuffer.Process("@c");
             Assert.AreEqual("dogdog", _textView.GetLine(0).GetText());
-            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
+            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
             Assert.AreEqual(2, _textView.GetCaretPoint().Position);
         }
 
@@ -208,16 +208,36 @@ namespace VimCore.UnitTest
         {
             Create("");
             TestRegister.UpdateValue("iw");
-            _buffer.Process("qCin");
-            _buffer.Process(VimKey.Escape);
-            _buffer.Process("q");
-            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
+            _vimBuffer.Process("qCin");
+            _vimBuffer.Process(VimKey.Escape);
+            _vimBuffer.Process("q");
+            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
             _textView.SetText("");
             _textView.MoveCaretTo(0);
-            _buffer.Process("@c");
+            _vimBuffer.Process("@c");
             Assert.AreEqual("win", _textView.GetLine(0).GetText());
-            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
+            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
             Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Ensure that KeyInput which comes through CustomProcess is properly recorded
+        /// </summary>
+        [Test]
+        public void Record_CustomProcess()
+        {
+            Create("");
+            _vimBuffer.Process("qc");
+            _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _vimBuffer.Process("ab");
+            _vimBuffer.InsertMode.CustomProcess(KeyInputUtil.CharToKeyInput('c'), () => true);
+            _vimBuffer.Process(VimKey.Escape);
+            _vimBuffer.Process("q");
+
+            // Tricky comparing the values since it embeds an <Esc> into the string.  Just
+            // compare the printable items and assert the length is correct
+            Assert.AreEqual("abc", TestRegister.StringValue.Substring(0, 3));
+            Assert.AreEqual(4, TestRegister.StringValue.Length);
         }
 
         /// <summary>
@@ -229,10 +249,10 @@ namespace VimCore.UnitTest
         {
             Create("hello world", "kick tree");
             TestRegister.UpdateValue("dwra");
-            _buffer.Process("@c");
+            _vimBuffer.Process("@c");
             Assert.AreEqual("aorld", _textView.GetLine(0).GetText());
             _textView.MoveCaretToLine(1);
-            _buffer.Process(".");
+            _vimBuffer.Process(".");
             Assert.AreEqual("aick tree", _textView.GetLine(1).GetText());
         }
 
@@ -245,8 +265,8 @@ namespace VimCore.UnitTest
         {
             Create("");
             TestRegister.UpdateValue("iwin");
-            _buffer.VimData.LastMacroRun = FSharpOption.Create('c');
-            _buffer.Process("@@");
+            _vimBuffer.VimData.LastMacroRun = FSharpOption.Create('c');
+            _vimBuffer.Process("@@");
             Assert.AreEqual("win", _textView.GetLine(0).GetText());
         }
 
@@ -258,8 +278,8 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "bear");
             TestRegister.UpdateValue("~", VimKey.Left, VimKey.Down);
-            _buffer.Process("2@c");
-            _buffer.Process("u");
+            _vimBuffer.Process("2@c");
+            _vimBuffer.Process("u");
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
             Assert.AreEqual("cat", _textView.GetLine(0).GetText());
             Assert.AreEqual("dog", _textView.GetLine(1).GetText());

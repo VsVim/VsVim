@@ -171,6 +171,12 @@ namespace Vim.UnitTest
             return (Command.NormalCommand)command;
         }
 
+        public static Command.InsertCommand AsInsertCommand(this Command command)
+        {
+            Assert.IsTrue(command.IsInsertCommand);
+            return (Command.InsertCommand)command;
+        }
+
         #endregion
 
         #region IMotionCapture
@@ -365,9 +371,17 @@ namespace Vim.UnitTest
             return buffer.CanProcessAsCommand(keyInput);
         }
 
-        public static bool Process(this IVimBuffer buf, VimKey key)
+        /// <summary>
+        /// Process the VimKey values in sequence
+        /// </summary>
+        public static bool Process(this IVimBuffer buf, params VimKey[] keys)
         {
-            return buf.Process(KeyInputUtil.VimKeyToKeyInput(key)).IsAnyHandled;
+            var ret = false;
+            foreach (var key in keys)
+            {
+                ret = buf.Process(KeyInputUtil.VimKeyToKeyInput(key)).IsAnyHandled;
+            }
+            return ret;
         }
 
         public static bool Process(this IVimBuffer buf, char c)

@@ -196,6 +196,7 @@ namespace Vim.UnitTest.Mock
             var mock = factory.Create<IVimTextBuffer>();
             mock.SetupGet(x => x.TextBuffer).Returns(textBuffer);
             mock.SetupGet(x => x.LocalSettings).Returns(localSettings);
+            mock.SetupGet(x => x.GlobalSettings).Returns(localSettings.GlobalSettings);
             mock.SetupGet(x => x.Vim).Returns(vim);
             mock.SetupProperty(x => x.LastVisualSelection);
             return mock;

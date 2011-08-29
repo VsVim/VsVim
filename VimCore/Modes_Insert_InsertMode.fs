@@ -7,8 +7,6 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
 open System
 
-type CommandFunction = unit -> ProcessResult
-
 /// Data relating to a particular Insert mode session
 type InsertSessionData = {
 
@@ -26,9 +24,14 @@ type InsertSessionData = {
     ActiveWordCompletionSession : IWordCompletionSession option
 }
 
+[<RequireQualifiedAccess>]
+type RawInsertCommand =
+    | InsertCommand of KeyInputSet * InsertCommand * CommandFlags
+    | CustomCommand of (unit -> ProcessResult)
+
 type internal InsertMode
     ( 
-        _buffer : IVimBuffer, 
+        _vimBuffer : IVimBuffer, 
         _operations : ICommonOperations,
         _broker : IDisplayWindowBroker, 
         _editorOptions : IEditorOptions,
@@ -43,12 +46,12 @@ type internal InsertMode
     ) as this =
 
     let _bag = DisposableBag()
-    let _textView = _buffer.TextView
-    let _textBuffer = _buffer.TextBuffer
-    let _globalSettings = _buffer.GlobalSettings
+    let _textView = _vimBuffer.TextView
+    let _textBuffer = _vimBuffer.TextBuffer
+    let _globalSettings = _vimBuffer.GlobalSettings
     let _editorOperations = _operations.EditorOperations
     let _commandRanEvent = Event<_>()
-    let mutable _commandMap : Map<KeyInput, CommandFunction> = Map.empty
+    let mutable _commandMap : Map<KeyInput, RawInsertCommand> = Map.empty
     let mutable _processDirectInsertCount = 0
     let _emptySessionData = {
         Transaction = None
@@ -76,22 +79,21 @@ type internal InsertMode
         ]
 
     do
-        let oldCommands : (string * CommandFunction) list = 
+        let oldCommands : (string * RawInsertCommand) list = 
             [
-                ("<Esc>", this.ProcessEscape)
-                ("<Insert>", this.ProcessInsert)
-                ("<C-o>", this.ProcessNormalModeOneCommand)
-                ("<C-p>", this.ProcessWordCompletionPrevious)
-                ("<C-n>", this.ProcessWordCompletionNext)
+                ("<Esc>", RawInsertCommand.CustomCommand this.ProcessEscape)
+                ("<Insert>", RawInsertCommand.CustomCommand this.ProcessInsert)
+                ("<C-o>", RawInsertCommand.CustomCommand this.ProcessNormalModeOneCommand)
+                ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
+                ("<C-n>", RawInsertCommand.CustomCommand this.ProcessWordCompletionNext)
             ]
 
-        let mappedCommands : (string * CommandFunction) list = 
+        let mappedCommands : (string * RawInsertCommand) list = 
             s_commands
             |> Seq.map (fun (name, command, commandFlags) ->
-                let func () = 
-                    let keyInputSet = KeyNotationUtil.StringToKeyInputSet name
-                    this.RunInsertCommand command keyInputSet commandFlags
-                (name, func))
+                let keyInputSet = KeyNotationUtil.StringToKeyInputSet name
+                let rawInsertCommand = RawInsertCommand.InsertCommand (keyInputSet, command, commandFlags)
+                (name, rawInsertCommand))
             |> List.ofSeq
 
         let both = Seq.append oldCommands mappedCommands
@@ -127,7 +129,7 @@ type internal InsertMode
     member x.ModeKind = if _isReplace then ModeKind.Replace else ModeKind.Insert
 
     /// Is this the currently active mode?
-    member x.IsActive = x.ModeKind = _buffer.ModeKind
+    member x.IsActive = x.ModeKind = _vimBuffer.ModeKind
 
     /// Cancel the active IWordCompletionSession if there is such a session 
     /// active
@@ -179,6 +181,45 @@ type internal InsertMode
             | None -> None
             | Some span -> SnapshotSpan(span.Start, x.CaretPoint) |> Some
 
+    /// Custom process the given KeyInput value.  The actual processing of the command, for this
+    /// execution only, is left to the provided function.  The main work of this function is to 
+    /// set the command up for repeat, macro execution and do any other book keeping which would
+    /// occur if this command was processed normally
+    member x.CustomProcess keyInput customProcessFunc =
+
+        let succeeded = 
+            match Map.tryFind keyInput _commandMap with
+            | None -> 
+                // No explicit command.  Treat this like it was a direct input command.  Insert it 
+                // and rely on the text change tracker to build up repeat data
+                customProcessFunc()
+    
+            | Some rawInsertCommand ->
+                match rawInsertCommand with
+                | RawInsertCommand.CustomCommand _ -> 
+                    // Treat the custom command just like direct input.  We don't do any special tracking
+                    // for this
+                    customProcessFunc()
+                | RawInsertCommand.InsertCommand (_, insertCommand, commandFlags) ->
+    
+                    /// This is the function which actually does the processing.  
+                    let func _ =
+                        if customProcessFunc() then
+                            CommandResult.Completed ModeSwitch.NoSwitch
+                        else
+                            CommandResult.Error
+    
+                    let keyInputSet = KeyInputSet.OneKeyInput keyInput
+                    let processResult = x.RunInsertCommandCore insertCommand keyInputSet commandFlags func
+                    processResult.IsHandledSuccess
+
+        if succeeded then
+            // Let the IVimBuffer know that we processed the given KeyInput.  This will add the KeyInput
+            // value to the current macro if one is being keyInputSet recorder
+            _vimBuffer.SimulateProcessed keyInput
+
+        succeeded
+
     /// Get the word completions for the given word text in the ITextBuffer
     member x.GetWordCompletions (wordSpan : SnapshotSpan) =
 
@@ -207,7 +248,7 @@ type internal InsertMode
         let filterText = wordSpan.GetText()
         let filterFunc =
 
-            // Is this actually a word we're intereset in.  Need to clear out new lines, 
+            // Is this actually a word we're interest in.  Need to clear out new lines, 
             // comment characters, etc ... 
             let isWord text =
                 if StringUtil.isNullOrEmpty text then 
@@ -382,6 +423,12 @@ type internal InsertMode
     /// Run the insert command with the given information
     member x.RunInsertCommand command keyInputSet commandFlags = 
 
+        x.RunInsertCommandCore command keyInputSet commandFlags _insertUtil.RunInsertCommand
+
+    /// Both custom processing and actual processing have the same begin and end processing.  They only
+    /// differ in the actual running of the command.  Here we put the common code
+    member x.RunInsertCommandCore (command : InsertCommand) (keyInputSet : KeyInputSet) commandFlags runFunc : ProcessResult = 
+
         // Dismiss the completion when running an explicit insert commend
         x.CancelWordCompletionSession()
 
@@ -389,7 +436,7 @@ type internal InsertMode
         // text change
         _textChangeTracker.CompleteChange()
 
-        let result = _insertUtil.RunInsertCommand command
+        let result = runFunc command
 
         // Clear up any text changes this command caused.  They shouldn't raise as a text change
         // event as repeat needs to go through the command
@@ -454,8 +501,8 @@ type internal InsertMode
             None
         | Some textChange ->
             match textChange.LastChange with
-            | TextChange.Insert text -> func text
             | TextChange.Delete _ -> None
+            | TextChange.Insert text -> func text
             | TextChange.Combination _ -> None
 
     /// Called when we need to process a key stroke and an IWordCompletionSession
@@ -498,8 +545,10 @@ type internal InsertMode
                 result
             | None ->
                 match Map.tryFind keyInput _commandMap with
-                | Some func -> 
-                    func()
+                | Some rawInsertCommand ->
+                    match rawInsertCommand with
+                    | RawInsertCommand.CustomCommand func -> func()
+                    | RawInsertCommand.InsertCommand (keyInputSet, insertCommand, commandFlags) -> x.RunInsertCommand insertCommand keyInputSet commandFlags
                 | None -> 
                     if x.IsDirectInsert keyInput then 
                         x.ProcessDirectInsert keyInput
@@ -518,7 +567,7 @@ type internal InsertMode
     member x.OnCaretPositionChanged () = 
         if _mouse.IsLeftButtonPressed then 
             _textChangeTracker.CompleteChange()
-        elif _buffer.ModeKind = ModeKind.Insert then 
+        elif _vimBuffer.ModeKind = ModeKind.Insert then 
             let keyMove = 
                 [ VimKey.Left; VimKey.Right; VimKey.Up; VimKey.Down ]
                 |> Seq.map (fun k -> KeyInputUtil.VimKeyToKeyInput k)
@@ -584,12 +633,12 @@ type internal InsertMode
         // with the next change then clear it out now.  This is needed to implement functions
         // like 'dw' followed by insert, <Esc> and immediately by '.'.  It should simply 
         // move the caret left
-        match _buffer.VimData.LastCommand with
+        match _vimBuffer.VimData.LastCommand with
         | None ->
             ()
         | Some lastCommand ->
             if not (Util.IsFlagSet lastCommand.CommandFlags CommandFlags.LinkedWithNextCommand) then
-                _buffer.VimData.LastCommand <- None
+                _vimBuffer.VimData.LastCommand <- None
 
         _sessionData <- {
             Transaction = transaction
@@ -634,11 +683,12 @@ type internal InsertMode
 
     interface IInsertMode with 
         member x.ActiveWordCompletionSession = x.ActiveWordCompletionSession
-        member x.VimTextBuffer = _buffer.VimTextBuffer
+        member x.VimTextBuffer = _vimBuffer.VimTextBuffer
         member x.CommandNames =  _commandMap |> Seq.map (fun p -> p.Key) |> Seq.map OneKeyInput
         member x.ModeKind = x.ModeKind
         member x.IsProcessingDirectInsert = x.IsProcessingDirectInsert
         member x.CanProcess ki = x.CanProcess ki
+        member x.CustomProcess keyInput customProcessFunc = x.CustomProcess keyInput customProcessFunc
         member x.IsDirectInsert ki = x.IsDirectInsert ki
         member x.Process ki = x.Process ki
         member x.OnEnter arg = x.OnEnter arg

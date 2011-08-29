@@ -116,7 +116,7 @@ type internal CommonOperations
         let rec applyChange textChange = 
             match textChange with
             | TextChange.Insert text -> 
-                // Insert the same text 'count - 1' times at the cursor
+                // Insert the same text 'count' times at the cursor
                 let text = 
                     if addNewLines then
                         System.Environment.NewLine + text
@@ -131,7 +131,7 @@ type internal CommonOperations
                 // text so the next edit will occur after.
                 TextViewUtil.MoveCaretToPosition _textView (caretPoint.Position + text.Length)
             | TextChange.Delete deleteCount -> 
-                // Delete '(count - 1) * deleteCount' more characters
+                // Delete 'count * deleteCount' more characters
                 let caretPoint = TextViewUtil.GetCaretPoint _textView
                 let count = deleteCount
                 let count = min (_textView.TextSnapshot.Length - caretPoint.Position) count

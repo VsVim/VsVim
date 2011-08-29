@@ -106,6 +106,12 @@ namespace Vim.UnitTest
                 }
             }
 
+            // Reset all of the register values to empty
+            foreach (var name in _vim.RegisterMap.RegisterNames)
+            {
+                _vim.RegisterMap.GetRegister(name).UpdateValue("");
+            }
+
             // Don't let recording persist across tests
             if (_vim.MacroRecorder.IsRecording)
             {

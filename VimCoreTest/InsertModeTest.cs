@@ -24,6 +24,7 @@ namespace VimCore.UnitTest
         private IInsertMode _mode;
         private ITextView _textView;
         private ITextBuffer _textBuffer;
+        private CommandRunData _lastCommandRan;
         private Mock<ICommonOperations> _operations;
         private Mock<IDisplayWindowBroker> _broker;
         private Mock<IVimGlobalSettings> _globalSettings;
@@ -35,6 +36,7 @@ namespace VimCore.UnitTest
         private Mock<IKeyboardDevice> _keyboardDevice;
         private Mock<IMouseDevice> _mouseDevice;
         private Mock<IVim> _vim;
+        private Mock<IVimBuffer> _vimBuffer;
         private Mock<IWordCompletionSessionFactoryService> _wordCompletionSessionFactoryService;
         private Mock<IWordCompletionSession> _activeWordCompletionSession;
 
@@ -42,6 +44,12 @@ namespace VimCore.UnitTest
         public void SetUp()
         {
             Create(insertMode: true);
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _lastCommandRan = null;
         }
 
         private void Create(params string[] lines)
@@ -66,7 +74,7 @@ namespace VimCore.UnitTest
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
             _wordCompletionSessionFactoryService = _factory.Create<IWordCompletionSessionFactoryService>();
 
-            var buffer = MockObjectFactory.CreateVimBuffer(
+            _vimBuffer = MockObjectFactory.CreateVimBuffer(
                 _textView,
                 localSettings: _localSettings.Object,
                 vim: _vim.Object,
@@ -89,7 +97,7 @@ namespace VimCore.UnitTest
             _keyboardDevice.Setup(x => x.IsKeyDown(It.IsAny<VimKey>())).Returns(false);
 
             _modeRaw = new Vim.Modes.Insert.InsertMode(
-                buffer.Object,
+                _vimBuffer.Object,
                 _operations.Object,
                 _broker.Object,
                 _editorOptions.Object,
@@ -102,6 +110,7 @@ namespace VimCore.UnitTest
                 EditorUtil.FactoryService.WordUtilFactory.GetWordUtil(_textView.TextBuffer),
                 _wordCompletionSessionFactoryService.Object);
             _mode = _modeRaw;
+            _mode.CommandRan += (sender, e) => { _lastCommandRan = e; };
         }
 
         private void SetupMoveCaretLeft()
@@ -154,6 +163,52 @@ namespace VimCore.UnitTest
             Create("");
             SetupActiveWordCompletionSession();
             Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput('a')));
+        }
+
+        /// <summary>
+        /// When CustomProcess receives an InsertComand key input value it needs to record it as
+        /// the last command
+        /// </summary>
+        [Test]
+        public void CustomProcess_Back_Suceeded()
+        {
+            Create("");
+            var didRun = false;
+            var keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Back);
+            _vimBuffer.Setup(x => x.SimulateProcessed(keyInput)).Verifiable();
+            _mode.CustomProcess(
+                keyInput,
+                () =>
+                {
+                    didRun = true;
+                    return true;
+                });
+            _vimBuffer.Verify();
+            Assert.IsTrue(didRun);
+
+            // Make sure the Back command was raised as if it ran.
+            Assert.IsTrue(_modeRaw._sessionData.CombinedEditCommand.IsSome());
+            Assert.IsTrue(_modeRaw._sessionData.CombinedEditCommand.Value.IsBack);
+        }
+
+        /// <summary>
+        /// When the custom process func fails then it should be as if the function wasn't ever
+        /// called
+        /// </summary>
+        [Test]
+        public void CustomProcess_Back_Failed()
+        {
+            Create("");
+            var didRun = false;
+            _mode.CustomProcess(
+                KeyInputUtil.VimKeyToKeyInput(VimKey.Back),
+                () =>
+                {
+                    didRun = true;
+                    return false;
+                });
+            Assert.IsTrue(didRun);
+            Assert.IsNull(_lastCommandRan);
         }
 
         /// <summary>

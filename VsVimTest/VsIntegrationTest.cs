@@ -12,11 +12,11 @@ namespace VsVim.UnitTest
     /// Used to simulate integration scenarios with Visual Studio
     /// </summary>
     [TestFixture]
-    public sealed class VsIntegrationTest
+    public sealed class VsIntegrationTest : VimTestBase
     {
         private VsSimulation _simulation;
         private ITextView _textView;
-        private IVimBuffer _buffer;
+        private IVimBuffer _vimBuffer;
         private IVimBufferCoordinator _bufferCoordinator;
 
         /// <summary>
@@ -32,9 +32,9 @@ namespace VsVim.UnitTest
         /// </summary>
         private void Create(bool simulateResharper, params string[] lines)
         {
-            _textView = EditorUtil.CreateTextView(lines);
-            _buffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(_textView);
-            _bufferCoordinator = new VimBufferCoordinator(_buffer);
+            _textView = CreateTextView(lines);
+            _vimBuffer = Vim.CreateVimBuffer(_textView);
+            _bufferCoordinator = new VimBufferCoordinator(_vimBuffer);
             _simulation = new VsSimulation(_bufferCoordinator, simulateResharper);
         }
 
@@ -46,7 +46,7 @@ namespace VsVim.UnitTest
         {
             Create("hello world");
             _textView.MoveCaretTo(0);
-            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _simulation.Run('x');
             Assert.AreEqual("xhello world", _textView.GetLine(0).GetText());
         }
@@ -60,7 +60,7 @@ namespace VsVim.UnitTest
         {
             Create(true, "method();", "next");
             _textView.MoveCaretTo(7);
-            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _simulation.Run(VimKey.Back);
             Assert.AreEqual("method;", _textView.GetLine(0).GetText());
         }
@@ -74,13 +74,31 @@ namespace VsVim.UnitTest
         public void Reshaprer_Back_AcrossEntireLine()
         {
             Create(true, "hello();", "world");
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             _textView.MoveCaretTo(8);
             for (int i = 0; i < 8; i++)
             {
                 _simulation.Run(VimKey.Back);
                 Assert.AreEqual(8 - (i + 1), _textView.GetCaretPoint().Position);
             }
+        }
+
+        /// <summary>
+        /// Ensure the repeating of the Back command is done properly for Resharper.  We special case
+        /// the initial handling of the command.  But this shouldn't affect the repeat as it should
+        /// be using CustomProcess under the hood
+        /// </summary>
+        [Test]
+        public void Resharper_Back_Repeat()
+        {
+            Create(true, "dog toy", "fish chips");
+            _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _textView.MoveCaretToLine(1, 5);
+            _vimBuffer.Process(VimKey.Back, VimKey.Escape);
+            _textView.MoveCaretTo(4);
+            _vimBuffer.Process(".");
+            Assert.AreEqual("dogtoy", _textView.GetLine(0).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
         }
 
         /// <summary>
@@ -91,10 +109,10 @@ namespace VsVim.UnitTest
         public void WordCompletion_Down()
         {
             Create(false, "c dog", "cat copter");
-            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _textView.MoveCaretTo(1);
-            _buffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
-            _buffer.Process(KeyNotationUtil.StringToKeyInput("<Down>"));
+            _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
+            _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Down>"));
             Assert.AreEqual("copter dog", _textView.GetLine(0).GetText());
         }
 
@@ -106,12 +124,12 @@ namespace VsVim.UnitTest
         public void WordCompletion_TypeChar()
         {
             Create(false, "c dog", "cat");
-            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _textView.MoveCaretTo(1);
-            _buffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
-            _buffer.Process('s');
+            _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
+            _vimBuffer.Process('s');
             Assert.AreEqual("cats dog", _textView.GetLine(0).GetText());
-            Assert.IsTrue(_buffer.InsertMode.ActiveWordCompletionSession.IsNone());
+            Assert.IsTrue(_vimBuffer.InsertMode.ActiveWordCompletionSession.IsNone());
         }
     }
 }

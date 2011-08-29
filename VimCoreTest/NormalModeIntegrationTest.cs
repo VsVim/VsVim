@@ -2056,10 +2056,10 @@ namespace VimCore.UnitTest
             Create("the brown dog");
             var span = new SnapshotSpan(_textView.GetPoint(4), _textView.GetPoint(9));
             Assert.AreEqual("brown", span.GetText());
-            _textView.Selection.Select(span);
-            _textView.Selection.Clear();
+            var visualSelection = VisualSelection.NewCharacter(CharacterSpan.CreateForSpan(span), true);
+            _vimTextBuffer.LastVisualSelection = FSharpOption.Create(visualSelection);
             _vimBuffer.Process("y`>");
-            Assert.AreEqual("the brow", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
+            Assert.AreEqual("the brown", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
         }
 
         [Test]

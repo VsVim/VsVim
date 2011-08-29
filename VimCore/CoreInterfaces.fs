@@ -191,8 +191,8 @@ type IUndoRedoOperations =
 /// items are repeatable
 [<RequireQualifiedAccess>]
 type TextChange = 
-    | Insert of string
     | Delete of int
+    | Insert of string
     | Combination of TextChange * TextChange
 
     with 
@@ -200,8 +200,8 @@ type TextChange =
     /// Get the last / most recent change in the TextChange tree
     member x.LastChange = 
         match x with
-        | Insert _ -> x
         | Delete _ -> x
+        | Insert _ -> x
         | Combination (_, right) -> right.LastChange
 
     /// Merge two TextChange values together.  The goal is to produce a the smallest TextChange
@@ -1671,7 +1671,7 @@ type VisualCommand =
 [<NoComparison>]
 type InsertCommand  =
 
-    /// Back space at the current caret position
+    /// Backspace at the current caret position
     | Back
 
     /// This is an insert command which is a combination of other insert commands
@@ -2276,6 +2276,13 @@ type ProcessResult =
         match x with
         | Handled _ -> true
         | Error -> true
+        | NotHandled -> false
+
+    /// Is this a successfully handled value?
+    member x.IsHandledSuccess =
+        match x with
+        | Handled _ -> true
+        | Error -> false
         | NotHandled -> false
 
     static member OfModeKind kind = 
@@ -3098,6 +3105,17 @@ and IInsertMode =
     /// Raised when a command is successfully run
     [<CLIEvent>]
     abstract CommandRan : IEvent<CommandRunData>
+
+    /// Custom process the given KeyInput value.  This is a hook for host components to custom
+    /// process a KeyInput value.  The call back will be used to execute the custom processing
+    /// the first time.  Subsequent repeats and macro execution will not call the callback
+    /// but will go through normal processing.  The callback should return true if the processing
+    /// succeeded.  If it succeeded then the KeyInPut will be considered processed and stored
+    /// for future repeats and macro edits.  If it failed then the KeyInput will be ignored
+    /// altogether
+    ///
+    /// Note: The provided KeyInput won't go through any key remapping
+    abstract CustomProcess : keyInput : KeyInput -> customProcessFunc : (unit -> bool) -> bool
 
     inherit IMode
 
