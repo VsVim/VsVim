@@ -7,7 +7,7 @@ using GlobalSettings = Vim.GlobalSettings;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class GlobalSettingsTest : SettingsCommonTest
+    public sealed class GlobalSettingsTest : SettingsCommonTest
     {
         protected override string ToggleSettingName { get { return GlobalSettingNames.IgnoreCaseName; } }
         protected override IVimSettings Create()
@@ -68,6 +68,42 @@ namespace VimCore.UnitTest
             var global = CreateGlobal();
             global.VirtualEdit = "onemore,blah";
             Assert.IsTrue(global.IsVirtualEditOneMore);
+        }
+
+        /// <summary>
+        /// Ensure the IsBackspaceStart properly parsers start from the option
+        /// </summary>
+        [Test]
+        public void IsBackspaceStart()
+        {
+            var globalSettings = CreateGlobal();
+            Assert.IsFalse(globalSettings.IsBackspaceStart);
+            globalSettings.Backspace = "eol,start";
+            Assert.IsTrue(globalSettings.IsBackspaceStart);
+        }
+
+        /// <summary>
+        /// Ensure the IsBackspaceEol properly parsers eol from the option
+        /// </summary>
+        [Test]
+        public void IsBackspaceEol()
+        {
+            var globalSettings = CreateGlobal();
+            Assert.IsFalse(globalSettings.IsBackspaceEol);
+            globalSettings.Backspace = "eol,Eol";
+            Assert.IsTrue(globalSettings.IsBackspaceEol);
+        }
+
+        /// <summary>
+        /// Ensure the IsBackspaceIndent properly parsers start from the option
+        /// </summary>
+        [Test]
+        public void IsBackspaceIndent()
+        {
+            var globalSettings = CreateGlobal();
+            Assert.IsFalse(globalSettings.IsBackspaceIndent);
+            globalSettings.Backspace = "indent,start";
+            Assert.IsTrue(globalSettings.IsBackspaceIndent);
         }
 
         /// <summary>

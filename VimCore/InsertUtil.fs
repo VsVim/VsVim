@@ -8,16 +8,17 @@ open Microsoft.VisualStudio.Text.Outlining
 /// This type houses the functionality for many of the insert mode commands
 type internal InsertUtil
     (
-        _bufferData : VimBufferData,
+        _vimBufferData : VimBufferData,
         _operations : ICommonOperations
     ) =
 
-    let _textView = _bufferData.TextView
+    let _textView = _vimBufferData.TextView
     let _textBuffer = _textView.TextBuffer
-    let _localSettings = _bufferData.LocalSettings
+    let _localSettings = _vimBufferData.LocalSettings
     let _globalSettings = _localSettings.GlobalSettings
-    let _undoRedoOperations = _bufferData.UndoRedoOperations
+    let _undoRedoOperations = _vimBufferData.UndoRedoOperations
     let _editorOperations = _operations.EditorOperations
+    let _wordUtil = _vimBufferData.WordUtil
 
     /// The column of the caret
     member x.CaretColumn = SnapshotPointUtil.GetColumn x.CaretPoint
@@ -49,6 +50,8 @@ type internal InsertUtil
         _undoRedoOperations.EditWithUndoTransaction name action
 
     /// Delete the character before the cursor
+    ///
+    /// TODO: This needs to respect the 'backspace' option
     member x.Back () = 
         _editorOperations.Backspace() |> ignore
         CommandResult.Completed ModeSwitch.NoSwitch
@@ -71,6 +74,51 @@ type internal InsertUtil
             SnapshotSpan(x.CaretLine.Start, endPoint)
 
         _textBuffer.Delete(indentSpan.Span) |> ignore
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Delete the word before the cursor
+    ///
+    /// TODO: This needs to respect the IsBackspaceStart subption. 
+    member x.DeleteWordBeforeCursor () =
+
+        // Called when the caret is positioned at the start of the line.  The line break 
+        // should be deleted and the caret positioned at the end of the previous line
+        let deleteLineBreak () = 
+            if x.CaretLineNumber = 0 || not _globalSettings.IsBackspaceEol then
+                _operations.Beep()
+            else
+                x.EditWithUndoTransaciton "Delete Word Before Cursor" (fun () ->
+                    let line = SnapshotUtil.GetLine x.CurrentSnapshot (x.CaretLineNumber - 1)
+                    let span = Span.FromBounds(line.End.Position, line.EndIncludingLineBreak.Position)
+                    _textBuffer.Delete span |> ignore
+                    TextViewUtil.MoveCaretToPosition _textView line.End.Position)
+
+        // To delete the word we need to first categorize the type of delete we are doing. This
+        // is judged by the content of the caret
+        if x.CaretPoint = x.CaretLine.Start then
+            deleteLineBreak()
+        else
+            // Need to find the start of the previous word and delete from that to the original 
+            // caret point
+            let start = 
+
+                // Jump past any blanks before the caret
+                let searchEndPoint = 
+                    SnapshotSpan(x.CaretLine.Start, x.CaretPoint)
+                    |> SnapshotSpanUtil.GetPoints Path.Backward
+                    |> Seq.skipWhile SnapshotPointUtil.IsBlank
+                    |> SeqUtil.headOrDefault x.CaretLine.Start
+
+                match _wordUtil.GetFullWordSpan WordKind.NormalWord searchEndPoint with
+                | None -> searchEndPoint
+                | Some span -> span.Start
+
+            // Delete the span and position the caret at it's original start
+            x.EditWithUndoTransaciton "Delete Word Before Cursor" (fun () ->
+                let span = SnapshotSpan(start, x.CaretPoint)
+                _textBuffer.Delete span.Span |> ignore
+                TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -166,6 +214,7 @@ type internal InsertUtil
         | InsertCommand.Combined (left, right) -> x.Combined left right
         | InsertCommand.Delete -> x.Delete()
         | InsertCommand.DeleteAllIndent -> x.DeleteAllIndent() 
+        | InsertCommand.DeleteWordBeforeCursor -> x.DeleteWordBeforeCursor()
         | InsertCommand.InsertNewLine -> x.InsertNewLine()
         | InsertCommand.InsertTab -> x.InsertTab()
         | InsertCommand.MoveCaret direction -> x.MoveCaret direction
