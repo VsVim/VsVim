@@ -124,7 +124,8 @@ type internal InsertUtil
 
     /// Insert a new line into the ITextBuffer
     member x.InsertNewLine() =
-        _textBuffer.Insert(x.CaretPoint.Position, System.Environment.NewLine) |> ignore
+        let newLineText = _operations.GetNewLineText x.CaretPoint
+        _textBuffer.Insert(x.CaretPoint.Position, newLineText) |> ignore
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Insert a single tab into the ITextBuffer.  If 'expandtab' is enabled then insert

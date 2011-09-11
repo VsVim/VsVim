@@ -273,6 +273,9 @@ type ICommonOperations =
     /// Format the specified line range
     abstract FormatLines : SnapshotLineRange -> unit
 
+    /// Get the new line text which should be used for new lines at the given SnapshotPoint
+    abstract GetNewLineText : SnapshotPoint -> string
+
     /// Attempt to GoToDefinition on the current state of the buffer.  If this operation fails, an error message will 
     /// be generated as appropriate
     abstract GoToDefinition : unit -> Result

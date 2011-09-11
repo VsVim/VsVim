@@ -369,7 +369,8 @@ type internal CommandUtil
             // Update the register now that the operation is complete.  Register value is odd here
             // because we really didn't delete linewise but it's required to be a linewise 
             // operation.  
-            let value = range.Extent.GetText() + System.Environment.NewLine
+            let newLineText = _operations.GetNewLineText x.CaretPoint
+            let value = range.Extent.GetText() + newLineText
             let value = RegisterValue.OfString value OperationKind.LineWise
             _registerMap.SetRegisterValue register RegisterOperation.Delete value)
 
@@ -709,7 +710,8 @@ type internal CommandUtil
             // we require that line wise values end in breaks for consistency
             let stringData = 
                 if includesLastLine then
-                    (span.GetText()) + System.Environment.NewLine |> EditUtil.RemoveBeginingNewLine |> StringData.Simple
+                    let newLineText = _operations.GetNewLineText x.CaretPoint
+                    (span.GetText()) + newLineText |> EditUtil.RemoveBeginingNewLine |> StringData.Simple
                 else
                     StringData.OfSpan span
 
@@ -1116,7 +1118,8 @@ type internal CommandUtil
         // REPEAT TODO: Need to file a bug to get the caret position correct here for redo
         _undoRedoOperations.EditWithUndoTransaction "InsertLineAbove" (fun() -> 
             let line = x.CaretLine
-            _textBuffer.Replace(new Span(line.Start.Position,0), System.Environment.NewLine) |> ignore)
+            let newLineText = _operations.GetNewLineText x.CaretPoint
+            _textBuffer.Replace(new Span(line.Start.Position,0), newLineText) |> ignore)
 
         // Position the caret for the edit
         let line = SnapshotUtil.GetLine x.CurrentSnapshot savedCaretLine.LineNumber
@@ -1141,7 +1144,8 @@ type internal CommandUtil
         let savedCaretLine = x.CaretLine
         _undoRedoOperations.EditWithUndoTransaction  "InsertLineBelow" (fun () -> 
             let span = new SnapshotSpan(savedCaretLine.EndIncludingLineBreak, 0)
-            _textBuffer.Replace(span.Span, System.Environment.NewLine) |> ignore
+            let newLineText = _operations.GetNewLineText x.CaretPoint
+            _textBuffer.Replace(span.Span, newLineText) |> ignore
 
             TextViewUtil.MoveCaretToPosition _textView savedCaretPoint.Position)
 

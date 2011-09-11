@@ -7,9 +7,9 @@ using Microsoft.VisualStudio.Text.Outlining;
 using Moq;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
-using Vim.Extensions;
 
 namespace VimCore.UnitTest
 {
@@ -143,6 +143,72 @@ namespace VimCore.UnitTest
             _operations.Join(_textView.GetLineRange(0, 1), JoinKind.RemoveEmptySpaces);
             Assert.AreEqual("cat ", _textView.GetLine(0).GetText());
             Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// Verify that we properly return the new line text for the first line
+        /// </summary>
+        [Test]
+        public void GetNewLineText_FirstLine()
+        {
+            Create("cat", "dog");
+            Assert.AreEqual(Environment.NewLine, _operations.GetNewLineText(_textBuffer.GetPoint(0)));
+        }
+
+        /// <summary>
+        /// Verify that we properly return the new line text for the first line when using a non
+        /// default new line ending
+        /// </summary>
+        [Test]
+        public void GetNewLineText_FirstLine_LineFeed()
+        {
+            Create("cat", "dog");
+            _textBuffer.Replace(new Span(0, 0), "cat\ndog");
+            Assert.AreEqual("\n", _operations.GetNewLineText(_textBuffer.GetPoint(0)));
+        }
+
+        /// <summary>
+        /// Verify that we properly return the new line text for middle lines
+        /// </summary>
+        [Test]
+        public void GetNewLineText_MiddleLine()
+        {
+            Create("cat", "dog", "bear");
+            Assert.AreEqual(Environment.NewLine, _operations.GetNewLineText(_textBuffer.GetLine(1).Start));
+        }
+
+        /// <summary>
+        /// Verify that we properly return the new line text for middle lines when using a non
+        /// default new line ending
+        /// </summary>
+        [Test]
+        public void GetNewLineText_MiddleLine_LineFeed()
+        {
+            Create("");
+            _textBuffer.Replace(new Span(0, 0), "cat\ndog\nbear");
+            Assert.AreEqual("\n", _operations.GetNewLineText(_textBuffer.GetLine(1).Start));
+        }
+
+        /// <summary>
+        /// Verify that we properly return the new line text for end lines
+        /// </summary>
+        [Test]
+        public void GetNewLineText_EndLine()
+        {
+            Create("cat", "dog", "bear");
+            Assert.AreEqual(Environment.NewLine, _operations.GetNewLineText(_textBuffer.GetLine(2).Start));
+        }
+
+        /// <summary>
+        /// Verify that we properly return the new line text for middle lines when using a non
+        /// default new line ending
+        /// </summary>
+        [Test]
+        public void GetNewLineText_EndLine_LineFeed()
+        {
+            Create("");
+            _textBuffer.Replace(new Span(0, 0), "cat\ndog\nbear");
+            Assert.AreEqual("\n", _operations.GetNewLineText(_textBuffer.GetLine(2).Start));
         }
 
         [Test]

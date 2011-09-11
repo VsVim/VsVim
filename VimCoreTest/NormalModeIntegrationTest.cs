@@ -2201,6 +2201,22 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Make sure that we use the proper line ending when inserting a new line vs. simply choosing 
+        /// to use Environment.NewLine
+        /// </summary>
+        [Test]
+        public void InsertLineBelowCaret_AlternateNewLine()
+        {
+            Create("");
+            _textBuffer.Replace(new Span(0, 0), "cat\ndog");
+            _textView.MoveCaretTo(0);
+            _vimBuffer.Process("o");
+            Assert.AreEqual("cat\n", _textBuffer.GetLine(0).ExtentIncludingLineBreak.GetText());
+            Assert.AreEqual("\n", _textBuffer.GetLine(1).ExtentIncludingLineBreak.GetText());
+            Assert.AreEqual("dog", _textBuffer.GetLine(2).ExtentIncludingLineBreak.GetText());
+        }
+
+        /// <summary>
         /// Make sure the text is repeated
         /// </summary>
         [Test]
