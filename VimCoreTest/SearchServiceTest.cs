@@ -8,10 +8,10 @@ using Vim.UnitTest;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public sealed class SearchServiceTest
+    public sealed class SearchServiceTest : VimTestBase
     {
         private ITextBuffer _textBuffer;
-        private ITextStructureNavigator _navigator;
+        private ITextStructureNavigator _wordNavigator;
         private IVimGlobalSettings _globalSettings;
         private ITextSearchService _textSearch;
         private SearchService _searchRaw;
@@ -19,9 +19,9 @@ namespace VimCore.UnitTest
 
         public void Create(params string[] lines)
         {
-            _textBuffer = EditorUtil.CreateTextBuffer(lines);
-            _navigator = VimUtil.CreateTextStructureNavigator(_textBuffer, WordKind.NormalWord);
-            _globalSettings = new Vim.GlobalSettings();
+            _textBuffer = CreateTextBuffer(lines);
+            _wordNavigator = WordUtilFactory.GetWordUtil(_textBuffer).CreateTextStructureNavigator(WordKind.NormalWord);
+            _globalSettings = Vim.GlobalSettings;
             _globalSettings.Magic = true;
             _globalSettings.IgnoreCase = true;
             _globalSettings.SmartCase = false;
@@ -34,7 +34,7 @@ namespace VimCore.UnitTest
         private FindOptions CreateFindOptions(string pattern, SearchKind kind, SearchOptions options)
         {
             var searchData = new SearchData(pattern, kind, options);
-            var findData = _searchRaw.ConvertToFindData(searchData, _textBuffer.CurrentSnapshot, _navigator);
+            var findData = _searchRaw.ConvertToFindData(searchData, _textBuffer.CurrentSnapshot, _wordNavigator);
             Assert.IsTrue(findData.IsSome());
             return findData.Value.FindOptions;
         }
@@ -42,7 +42,7 @@ namespace VimCore.UnitTest
         private SearchResult FindNextPattern(string pattern, Path path, SnapshotPoint point, int count)
         {
             var patternData = new PatternData(pattern, path);
-            return _search.FindNextPattern(patternData, point, _navigator, count);
+            return _search.FindNextPattern(patternData, point, _wordNavigator, count);
         }
 
         [Test]
@@ -136,6 +136,30 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Make sure the conversion to FindOptions respects the case specifier over normal options
+        /// </summary>
+        [Test]
+        public void CreateFindOptions_RespectCaseSensitiveSpecifier()
+        {
+            Create("");
+            _globalSettings.IgnoreCase = true;
+            var options = CreateFindOptions(@"d\Cog", SearchKind.Forward, SearchOptions.ConsiderIgnoreCase);
+            Assert.AreEqual(FindOptions.UseRegularExpressions | FindOptions.MatchCase, options);
+        }
+
+        /// <summary>
+        /// Make sure the conversion to FindOptions respects the case specifier over normal options
+        /// </summary>
+        [Test]
+        public void CreateFindOptions_RespectCaseInsensitiveSpecifier()
+        {
+            Create("");
+            _globalSettings.IgnoreCase = false;
+            var options = CreateFindOptions(@"d\cog", SearchKind.Forward, SearchOptions.ConsiderIgnoreCase);
+            Assert.AreEqual(FindOptions.UseRegularExpressions, options);
+        }
+
+        /// <summary>
         /// Needs to respect the 'ignorecase' option if 'ConsiderIgnoreCase' is specified
         /// </summary>
         [Test]
@@ -144,7 +168,7 @@ namespace VimCore.UnitTest
             Create("cat dog FISH");
             _globalSettings.IgnoreCase = true;
             var data = VimUtil.CreateSearchData("fish", options: SearchOptions.ConsiderIgnoreCase);
-            var result = _search.FindNext(data, _textBuffer.GetPoint(0), _navigator);
+            var result = _search.FindNext(data, _textBuffer.GetPoint(0), _wordNavigator);
             Assert.IsTrue(result.IsFound);
         }
 
@@ -157,7 +181,7 @@ namespace VimCore.UnitTest
             Create("cat dog FISH");
             _globalSettings.IgnoreCase = false;
             var data = VimUtil.CreateSearchData("fish", options: SearchOptions.ConsiderIgnoreCase);
-            var result = _search.FindNext(data, _textBuffer.GetPoint(0), _navigator);
+            var result = _search.FindNext(data, _textBuffer.GetPoint(0), _wordNavigator);
             Assert.IsTrue(result.IsNotFound);
         }
 
@@ -169,7 +193,7 @@ namespace VimCore.UnitTest
         {
             Create(@"cat bthe thedog");
             var data = VimUtil.CreateSearchData(@"\<the");
-            var result = _search.FindNext(data, _textBuffer.GetPoint(0), _navigator);
+            var result = _search.FindNext(data, _textBuffer.GetPoint(0), _wordNavigator);
             Assert.AreEqual(9, result.AsFound().Item2.Start.Position);
         }
 
@@ -182,7 +206,7 @@ namespace VimCore.UnitTest
         {
             Create("");
             var data = VimUtil.CreateSearchData("f(");
-            var result = _search.FindNext(data, _textBuffer.GetPoint(0), _navigator);
+            var result = _search.FindNext(data, _textBuffer.GetPoint(0), _wordNavigator);
             Assert.IsTrue(result.IsNotFound);
         }
 
@@ -194,7 +218,7 @@ namespace VimCore.UnitTest
         {
             Create("");
             var searchData = new SearchData(@"\V", SearchKind.ForwardWithWrap, SearchOptions.None);
-            var result = _search.FindNext(searchData, _textBuffer.GetPoint(0), _navigator);
+            var result = _search.FindNext(searchData, _textBuffer.GetPoint(0), _wordNavigator);
             Assert.IsTrue(result.IsNotFound);
         }
 
@@ -206,7 +230,7 @@ namespace VimCore.UnitTest
         {
             Create(" cat dog cat");
             var data = VimUtil.CreateSearchData("cat");
-            var result = _search.FindNextMultiple(data, _textBuffer.GetPoint(0), _navigator, 2);
+            var result = _search.FindNextMultiple(data, _textBuffer.GetPoint(0), _wordNavigator, 2);
             Assert.AreEqual(9, result.AsFound().Item2.Start.Position);
         }
 

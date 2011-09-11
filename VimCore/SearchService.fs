@@ -19,25 +19,25 @@ type internal SearchService
         // First get the text and possible text based options for the pattern.  We special
         // case a search of whole words that is not a regex for efficiency reasons
         let pattern = searchData.Pattern
-        let text, textOptions = 
+        let text, textOptions, hadCaseSpecifier = 
             let useRegex () =
                 match _factory.Create pattern with
                 | None -> 
-                    None, FindOptions.None
+                    None, FindOptions.None, false
                 | Some regex ->
                     let options = FindOptions.UseRegularExpressions
-                    let options = 
+                    let options, hadCaseSpecifier = 
                         match regex.CaseSpecifier with
-                        | CaseSpecifier.None -> options
-                        | CaseSpecifier.IgnoreCase -> options
-                        | CaseSpecifier.OrdinalCase -> options ||| FindOptions.MatchCase
-                    Some regex.RegexPattern, options
+                        | CaseSpecifier.None -> options, false
+                        | CaseSpecifier.IgnoreCase -> options, true
+                        | CaseSpecifier.OrdinalCase -> options ||| FindOptions.MatchCase, true
+                    Some regex.RegexPattern, options, hadCaseSpecifier
             match PatternUtil.GetUnderlyingWholeWord pattern with
             | None -> 
                 useRegex ()
             | Some word ->
                 // If possible we'd like to avoid the overhead of a regular expression here.  In general
-                // if the pattern is jusnt letters and numbers then we can do a non-regex search on the 
+                // if the pattern is just letters and numbers then we can do a non-regex search on the 
                 // buffer.  
                 let isSimplePattern = Seq.forall (fun c -> CharUtil.IsLetterOrDigit c || CharUtil.IsBlank c) word
 
@@ -59,12 +59,15 @@ type internal SearchService
                 if isBugPattern || not isSimplePattern then
                     useRegex()
                 else
-                    Some word, FindOptions.WholeWord
+                    Some word, FindOptions.WholeWord, false
 
         // Get the options related to case
         let caseOptions = 
             let searchOptions = searchData.Options
-            if Util.IsFlagSet searchOptions SearchOptions.ConsiderIgnoreCase && _globalSettings.IgnoreCase then
+            if hadCaseSpecifier then
+                // Case specifiers beat out any other options
+                FindOptions.None
+            elif Util.IsFlagSet searchOptions SearchOptions.ConsiderIgnoreCase && _globalSettings.IgnoreCase then
                 let hasUpper () = pattern |> Seq.filter CharUtil.IsLetter |> Seq.filter CharUtil.IsUpper |> SeqUtil.isNotEmpty
                 if Util.IsFlagSet searchOptions SearchOptions.ConsiderSmartCase && _globalSettings.SmartCase && hasUpper() then FindOptions.MatchCase
                 else FindOptions.None

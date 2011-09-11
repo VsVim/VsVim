@@ -127,9 +127,9 @@ namespace Vim.UI.Wpf
                     {
                         var mode = _buffer.NormalMode;
                         var search = _buffer.IncrementalSearch;
-                        if (search.InSearch && search.CurrentSearch.IsSome())
+                        if (search.InSearch && search.CurrentSearchData.IsSome())
                         {
-                            var data = search.CurrentSearch.Value;
+                            var data = search.CurrentSearchData.Value;
                             var prefix = data.Kind.IsAnyForward ? "/" : "?";
                             _margin.StatusLine = prefix + data.Pattern;
                         }

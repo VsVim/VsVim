@@ -7,13 +7,13 @@ using Vim.UnitTest;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class VimRegexTest
+    public sealed class VimRegexTest
     {
         private static readonly string[] LowerCaseLetters = TestConstants.LowerCaseLetters.Select(x => x.ToString()).ToArray();
         private static readonly string[] UpperCaseLetters = TestConstants.UpperCaseLetters.Select(x => x.ToString()).ToArray();
         private static readonly string[] Digits = TestConstants.Digits.Select(x => x.ToString()).ToArray();
         private IVimGlobalSettings _settings;
-        private VimRegexFactory _factory;
+        private VimRegexFactory _regexFactory;
 
         [SetUp]
         public void Setup()
@@ -21,7 +21,7 @@ namespace VimCore.UnitTest
             _settings = new Vim.GlobalSettings();
             _settings.IgnoreCase = true;
             _settings.SmartCase = false;
-            _factory = new VimRegexFactory(_settings);
+            _regexFactory = new VimRegexFactory(_settings);
         }
 
         private void VerifyMatches(string pattern, params string[] inputArray)
@@ -31,7 +31,7 @@ namespace VimCore.UnitTest
 
         private void VerifyMatches(VimRegexOptions options, string pattern, params string[] inputArray)
         {
-            var opt = _factory.CreateWithOptions(pattern, options);
+            var opt = _regexFactory.CreateWithOptions(pattern, options);
             Assert.IsTrue(opt.IsSome());
             var regex = opt.Value;
             foreach (var cur in inputArray)
@@ -42,7 +42,7 @@ namespace VimCore.UnitTest
 
         private void VerifyNotRegex(string pattern)
         {
-            Assert.IsTrue(_factory.Create(pattern).IsNone());
+            Assert.IsTrue(_regexFactory.Create(pattern).IsNone());
         }
 
         private void VerifyNotMatches(string pattern, params string[] inputArray)
@@ -52,7 +52,7 @@ namespace VimCore.UnitTest
 
         private void VerifyNotMatches(VimRegexOptions options, string pattern, params string[] inputArray)
         {
-            var opt = _factory.CreateWithOptions(pattern, options);
+            var opt = _regexFactory.CreateWithOptions(pattern, options);
             Assert.IsTrue(opt.IsSome());
             var regex = opt.Value;
             foreach (var cur in inputArray)
@@ -63,7 +63,7 @@ namespace VimCore.UnitTest
 
         private void VerifyMatchIs(string pattern, string input, string toMatch)
         {
-            var regex = _factory.Create(pattern);
+            var regex = _regexFactory.Create(pattern);
             Assert.IsTrue(regex.IsSome());
             var match = regex.Value.Regex.Match(input);
             Assert.IsTrue(match.Success);
@@ -72,20 +72,23 @@ namespace VimCore.UnitTest
 
         private void VerifyReplace(string pattern, string input, string replace, string result)
         {
-            var regex = _factory.Create(pattern);
+            var regex = _regexFactory.Create(pattern);
             Assert.IsTrue(regex.IsSome());
             Assert.AreEqual(result, regex.Value.ReplaceAll(input, replace, _settings.Magic));
         }
 
         [Test]
-        public void LettersCase1()
+        public void Case_Simple()
         {
             VerifyMatches("a", "a", "A");
             VerifyMatches("b", "b", "b");
         }
 
+        /// <summary>
+        /// Make sure the parsing respects the 'ignorecase' option
+        /// </summary>
         [Test]
-        public void LettersCase2()
+        public void Case_RespectIgnoreCase()
         {
             _settings.IgnoreCase = false;
             VerifyMatches("a", "a");
@@ -95,7 +98,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void LettersCase3()
+        public void Case_SensitiveSpecifier()
         {
             VerifyMatches(@"\Ca", "a");
             VerifyMatches(@"\Cb", "b");
@@ -103,9 +106,23 @@ namespace VimCore.UnitTest
             VerifyNotMatches(@"\Cb", "B");
         }
 
+        /// <summary>
+        /// Make sure we support the \C specifier anywhere in the search string
+        /// </summary>
         [Test]
-        [Description(@"The \C modifier takes precedence over ignorecase option")]
-        public void LettersCase4()
+        public void Case_SensitiveSpecifierInMiddleOfString()
+        {
+            var regex = _regexFactory.Create(@"d\Cog").Value;
+            Assert.IsTrue(regex.CaseSpecifier.IsOrdinalCase);
+            Assert.AreEqual(@"d\Cog", regex.VimPattern);
+            Assert.AreEqual("dog", regex.RegexPattern);
+        }
+
+        /// <summary>
+        /// The \C modifier takes precedence over ignorecase option
+        /// </summary>
+        [Test]
+        public void Case_SensitiveSpecifierBeatsIgonreCase()
         {
             _settings.IgnoreCase = true;
             VerifyMatches(@"\Ca", "a");
@@ -115,33 +132,51 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void LettersCase5()
+        public void Case_InsensitiveSpecifier()
         {
             VerifyMatches(@"\ca", "a", "A");
             VerifyMatches(@"\cb", "b", "B");
         }
 
+        /// <summary>
+        /// Make sure we support the \c specifier anywhere in the search string
+        /// </summary>
         [Test]
-        [Description(@"The \c modifier takes precedence over the ignore case option")]
-        public void LettersCase6()
+        public void Case_InsensitiveSpecifierInMiddleOfString()
+        {
+            var regex = _regexFactory.Create(@"D\cOG").Value;
+            Assert.IsTrue(regex.CaseSpecifier.IsIgnoreCase);
+            Assert.AreEqual(@"D\cOG", regex.VimPattern);
+            Assert.AreEqual("DOG", regex.RegexPattern);
+        }
+
+        /// <summary>
+        /// The \c modifier takes precedence over the ignore case option
+        /// </summary>
+        [Test]
+        public void Case_InsensitiveSpecifierBeatsIgnoreCase()
         {
             _settings.IgnoreCase = false;
             VerifyMatches(@"\ca", "a", "A");
             VerifyMatches(@"\cb", "b", "B");
         }
 
+        /// <summary>
+        /// SmartCase should match both if only lower
+        /// </summary>
         [Test]
-        [Description(@"SmartCase should match both if only lower")]
-        public void LettersCase7()
+        public void SmartCase_Simple()
         {
             _settings.SmartCase = true;
             VerifyMatches("a", "A", "a");
             VerifyMatches("b", "b", "B");
         }
 
+        /// <summary>
+        /// SmartCase is case sensitive if any are upper
+        /// </summary>
         [Test]
-        [Description(@"SmartCase is case sensitive if any are upper")]
-        public void LettersCase8()
+        public void SmartCase_WithUpper()
         {
             _settings.SmartCase = true;
             VerifyMatches("A", "A");
@@ -150,18 +185,22 @@ namespace VimCore.UnitTest
             VerifyNotMatches("B", "b");
         }
 
+        /// <summary>
+        /// The \c modifier beats smart case as well
+        /// </summary>
         [Test]
-        [Description(@"The \c modifier beats smart case as well")]
-        public void LettersCase9()
+        public void SmartCase_InsensitiveSpecifierWins()
         {
             _settings.SmartCase = true;
             VerifyMatches(@"\cFoo", "foo", "FOO", "fOO");
             VerifyMatches(@"\cBar", "BAR", "bar");
         }
 
+        /// <summary>
+        /// The \C modifier beats smart case as well
+        /// </summary>
         [Test]
-        [Description(@"The \C modifier beats smart case as well")]
-        public void LettersCase10()
+        public void SmartCase_SensitiveSpecifierWins()
         {
             _settings.SmartCase = true;
             VerifyMatches(@"\CFOO", "FOO");
@@ -548,7 +587,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Grouping4()
         {
-            var regex = _factory.Create(@"\(");
+            var regex = _regexFactory.Create(@"\(");
             Assert.IsTrue(regex.IsNone());
         }
 

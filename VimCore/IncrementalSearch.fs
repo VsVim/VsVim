@@ -40,6 +40,16 @@ type internal IncrementalSearch
     let _currentSearchCompleted = Event<SearchResult>()
     let _currentSearchCancelled = Event<SearchData>()
 
+    member x.CurrentSearchData =
+        match _data with
+        | Some data -> Some data.SearchData
+        | None -> None
+
+    member x.CurrentSearchResult =
+        match _data with
+        | Some data -> Some data.SearchResult
+        | None -> None
+
     /// There is a big gap between the behavior and documentation of key mapping for an 
     /// incremental search operation.  The documentation properly documents the language
     /// mapping in "help language-mapping" and 'help imsearch'.  But it doesn't document
@@ -135,10 +145,8 @@ type internal IncrementalSearch
     interface IIncrementalSearch with
         member x.InSearch = Option.isSome _data
         member x.WordNavigator = _wordNavigator
-        member x.CurrentSearch = 
-            match _data with 
-            | Some(data) -> Some data.SearchData
-            | None -> None
+        member x.CurrentSearchData = x.CurrentSearchData
+        member x.CurrentSearchResult = x.CurrentSearchResult
         member x.Begin kind = x.Begin kind
         [<CLIEvent>]
         member x.CurrentSearchUpdated = _currentSearchUpdated.Publish

@@ -1986,6 +1986,32 @@ namespace VimCore.UnitTest
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
+        /// <summary>
+        /// Make sure we respect the \c marker over the 'ignorecase' option even if it appears
+        /// at the end of the string
+        /// </summary>
+        [Test]
+        public void IncrementalSearch_CaseInsensitiveAtEndOfSearhString()
+        {
+            Create("cat dog bear");
+            _vimBuffer.Process("/DOG");
+            Assert.IsTrue(_vimBuffer.IncrementalSearch.CurrentSearchResult.Value.IsNotFound);
+            _vimBuffer.Process(@"\c", enter: true);
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Make sure we respect the \c marker over the 'ignorecase' option even if it appears
+        /// in the middle of the string
+        /// </summary>
+        [Test]
+        public void IncrementalSearch_CaseInsensitiveInMiddleOfSearhString()
+        {
+            Create("cat dog bear");
+            _vimBuffer.Process(@"/D\cOG", enter: true);
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
+
         [Test]
         public void IncrementalSearch_CaseSensitive()
         {

@@ -321,7 +321,7 @@ namespace Vim.UI.Wpf.Test
             _buffer.ModeKindImpl = ModeKind.Normal;
             var data = new SearchData("cat", SearchKind.Forward, SearchOptions.None);
             _search.SetupGet(x => x.InSearch).Returns(true).Verifiable();
-            _search.SetupGet(x => x.CurrentSearch).Returns(FSharpOption.Create(data)).Verifiable();
+            _search.SetupGet(x => x.CurrentSearchData).Returns(FSharpOption.Create(data)).Verifiable();
             SimulatKeystroke();
             Assert.AreEqual("/cat", _marginControl.StatusLine);
             _factory.Verify();
@@ -335,7 +335,7 @@ namespace Vim.UI.Wpf.Test
             _buffer.ModeKindImpl = ModeKind.Normal;
             var data = new SearchData("cat", SearchKind.Backward, SearchOptions.None);
             _search.SetupGet(x => x.InSearch).Returns(true).Verifiable();
-            _search.SetupGet(x => x.CurrentSearch).Returns(FSharpOption.Create(data)).Verifiable();
+            _search.SetupGet(x => x.CurrentSearchData).Returns(FSharpOption.Create(data)).Verifiable();
             SimulatKeystroke();
             Assert.AreEqual("?cat", _marginControl.StatusLine);
             _factory.Verify();
