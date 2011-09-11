@@ -76,9 +76,33 @@ namespace Vim.UI.Wpf
             return GetOrCreateKeyboardMap().TryGetKeyInput(key, modifierKeys, out keyInput);
         }
 
+        /// <summary>
+        /// Try and convert the VimKey to a WPF key.  Note this is not a lossy conversion.  If any
+        /// ModifierKeys would be necessary to produce the VimKey then the conversion will fail
+        /// </summary>
+        public static bool TryConvertToKeyOnly(VimKey vimKey, out Key key)
+        {
+            ModifierKeys modifierKeys;
+            return TryConvertToKey(vimKey, out key, out modifierKeys) && modifierKeys == ModifierKeys.None;
+        }
+
+        /// <summary>
+        /// Try and convert the VimKey to a WPF key.  Note this is a lossy conversion as modifiers
+        /// will be dropped.  So for example UpperN will still map to Key.N but the fidelity of
+        /// shift will be lost
+        /// </summary>
         public static bool TryConvertToKey(VimKey vimKey, out Key key)
         {
-            return GetOrCreateKeyboardMap().TryGetKey(vimKey, out key);
+            ModifierKeys modifierKeys;
+            return TryConvertToKey(vimKey, out key, out modifierKeys);
+        }
+
+        /// <summary>
+        /// Try and convert the VimKey to a WPF key and the associated modifiers
+        /// </summary>
+        public static bool TryConvertToKey(VimKey vimKey, out Key key, out ModifierKeys modifierKeys)
+        {
+            return GetOrCreateKeyboardMap().TryGetKey(vimKey, out key, out modifierKeys);
         }
     }
 }

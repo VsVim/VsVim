@@ -12,7 +12,7 @@ namespace Vim.UI.Wpf.Implementation
         public bool IsKeyDown(VimKey vimKey)
         {
             Key key;
-            return KeyUtil.TryConvertToKey(vimKey, out key)
+            return KeyUtil.TryConvertToKeyOnly(vimKey, out key)
                 && IsKeyDown(key);
         }
 

@@ -160,7 +160,7 @@ namespace Vim.UI.Wpf.Test
                 // a modifier on top of a key.  If they are put into the map a symptom will be the modifier
                 // showing up on a plain key
                 Key key;
-                if (KeyUtil.TryConvertToKey(current.Key, out key))
+                if (KeyUtil.TryConvertToKeyOnly(current.Key, out key))
                 {
                     KeyInput keyInput;
                     Assert.IsTrue(KeyUtil.TryConvertToKeyInput(key, ModifierKeys.None, out keyInput));

@@ -47,6 +47,27 @@ namespace VsVim.UnitTest
             Assert.AreEqual(kind, command.EditCommandKind);
         }
 
+        /// <summary>
+        /// Verify we can convert the given VimKey to the specified command id
+        /// </summary>
+        private void VerifyConvert(VimKey vimKey, VSConstants.VSStd2KCmdID cmd)
+        {
+            var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
+            Guid commandGroup;
+            OleCommandData oleCommandData;
+            Assert.IsTrue(OleCommandUtil.TryConvert(keyInput, out commandGroup, out oleCommandData));
+            Assert.AreEqual(VSConstants.VSStd2K, commandGroup);
+            Assert.AreEqual(new OleCommandData(cmd), oleCommandData);
+        }
+
+        /// <summary>
+        /// Verify the given VimKey converts to the provided command id and vice versa 
+        /// </summary>
+        private void VerifyBothWays(VSConstants.VSStd2KCmdID cmd, VimKey vimKey, EditCommandKind kind = EditCommandKind.UserInput)
+        {
+            VerifyConvert(cmd, vimKey, kind);
+        }
+
         // [Test, Description("Make sure we don't puke on missing data"),Ignore]
         public void TypeCharNoData()
         {
@@ -199,6 +220,15 @@ namespace VsVim.UnitTest
             VerifyConvert(VSConstants.VSStd2KCmdID.BOL, VimKey.Home, EditCommandKind.UserInput);
             VerifyConvert(VSConstants.VSStd2KCmdID.BOL_EXT, VimKey.Home, EditCommandKind.UserInput);
             VerifyConvert(VSConstants.VSStd2KCmdID.BOL_EXT_COL, VimKey.Home, EditCommandKind.UserInput);
+        }
+
+        /// <summary>
+        /// Verify we can convert the Insert key in both directions
+        /// </summary>
+        [Test]
+        public void TryConvert_Insert()
+        {
+            VerifyBothWays(VSConstants.VSStd2KCmdID.TOGGLE_OVERTYPE_MODE, VimKey.Insert);
         }
     }
 }

@@ -112,9 +112,7 @@ namespace VsVim.UnitTest.Utils
             {
                 if (keyInput.Key == VimKey.Back)
                 {
-                    var span = new SnapshotSpan(_textView.GetCaretPoint().Subtract(1), 1);
-                    _textView.Selection.Select(span, false);
-                    _editorOperatins.Delete();
+                    _editorOperatins.Backspace();
                     return true;
                 }
 
@@ -226,6 +224,7 @@ namespace VsVim.UnitTest.Utils
 
         #region DefaultInputController
 
+
         /// <summary>
         /// Manages the routing of events to multiple KeyProcessor implementations
         /// </summary>
@@ -291,6 +290,44 @@ namespace VsVim.UnitTest.Utils
 
         #endregion
 
+        #region DefaultKeyboardDevice
+
+        private sealed class DefaultKeyboardDevice : KeyboardDevice
+        {
+            /// <summary>
+            /// Set of KeyModifiers which should be registered as down
+            /// </summary>
+            internal KeyModifiers DownKeyModifiers;
+
+            internal DefaultKeyboardDevice(InputManager inputManager)
+                : base(inputManager)
+            {
+
+            }
+
+            protected override KeyStates GetKeyStatesFromSystem(Key key)
+            {
+                if (Key.LeftCtrl == key || Key.RightCtrl == key)
+                {
+                    return 0 != (DownKeyModifiers & KeyModifiers.Control) ? KeyStates.Down : KeyStates.None;
+                }
+
+                if (Key.LeftAlt == key || Key.RightAlt == key)
+                {
+                    return 0 != (DownKeyModifiers & KeyModifiers.Alt) ? KeyStates.Down : KeyStates.None;
+                }
+
+                if (Key.LeftShift == key || Key.RightShift == key)
+                {
+                    return 0 != (DownKeyModifiers & KeyModifiers.Shift) ? KeyStates.Down : KeyStates.None;
+                }
+
+                return KeyStates.None;
+            }
+        }
+
+        #endregion
+
         #region CommandKey
 
         /// <summary>
@@ -328,6 +365,7 @@ namespace VsVim.UnitTest.Utils
 
         private readonly IWpfTextView _wpfTextView;
         private readonly DefaultInputController _defaultInputController;
+        private readonly DefaultKeyboardDevice _defaultKeyboardDevice;
         private readonly MockRepository _factory;
         private readonly Mock<IVsAdapter> _vsAdapter;
         private readonly Mock<IDisplayWindowBroker> _displayWindowBroker;
@@ -342,16 +380,26 @@ namespace VsVim.UnitTest.Utils
             // this via an exposed property
             _vsAdapter = _factory.Create<IVsAdapter>();
             _vsAdapter.SetupGet(x => x.InAutomationFunction).Returns(false);
+            _vsAdapter.Setup(x => x.IsReadOnly(It.IsAny<ITextBuffer>())).Returns(false);
             _vsAdapter.Setup(x => x.IsIncrementalSearchActive(_wpfTextView)).Returns(false);
 
             _externalEditorManager = _factory.Create<IExternalEditorManager>();
             _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(simulateResharper);
 
             _displayWindowBroker = _factory.Create<IDisplayWindowBroker>();
+            _displayWindowBroker.SetupGet(x => x.IsCompletionActive).Returns(false);
+            _displayWindowBroker.SetupGet(x => x.IsQuickInfoActive).Returns(false);
+            _displayWindowBroker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
+            _displayWindowBroker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false);
 
             _defaultCommandTarget = new DefaultCommandTarget(
                 bufferCoordinator.VimBuffer.TextView,
                 EditorUtil.GetEditorOperations(bufferCoordinator.VimBuffer.TextView));
+
+            // Visual Studio hides the default IOleCommandTarget inside of the IWpfTextView property
+            // bag.  The default KeyProcessor implementation looks here for IOleCommandTarget to 
+            // process text input
+            _wpfTextView.Properties[typeof(IOleCommandTarget)] = _defaultCommandTarget;
 
             // Create the VsCommandTarget.  It's next is the final and default Visual Studio 
             // command target
@@ -385,14 +433,18 @@ namespace VsVim.UnitTest.Utils
             keyProcessors.Add(new VsKeyProcessor(_vsAdapter.Object, bufferCoordinator));
             keyProcessors.Add(new SimulationKeyProcessor(bufferCoordinator.VimBuffer.TextView));
             _defaultInputController = new DefaultInputController(bufferCoordinator.VimBuffer.TextView, keyProcessors);
+            _defaultKeyboardDevice = new DefaultKeyboardDevice(InputManager.Current);
         }
 
         /// <summary>
         /// Run the specified VimKey against the buffer
         /// </summary>
-        internal void Run(VimKey key)
+        internal void Run(params VimKey[] keys)
         {
-            Run(KeyInputUtil.VimKeyToKeyInput(key));
+            foreach (var key in keys)
+            {
+                Run(KeyInputUtil.VimKeyToKeyInput(key));
+            }
         }
 
         /// <summary>
@@ -434,6 +486,16 @@ namespace VsVim.UnitTest.Utils
             var oleCommandData = OleCommandData.Empty;
             try
             {
+                // It appears that Visual Studio will not use IOleCommandTarget to process alpha
+                // characters when they are combined with the control key unless they are mapped
+                // to a command.  Instead it will just push the input to the window directly.
+                //
+                // TODO: Need to investigate why this is the case.  
+                if (Char.IsLetter(keyInput.Char) && keyInput.KeyModifiers == KeyModifiers.Control)
+                {
+                    return false;
+                }
+
                 Guid commandGroup;
                 if (!OleCommandUtil.TryConvert(keyInput, out commandGroup, out oleCommandData))
                 {
@@ -540,47 +602,59 @@ namespace VsVim.UnitTest.Utils
             Castle.DynamicProxy.Generators.AttributesToAvoidReplicating.Add(typeof(UIPermissionAttribute));
             var presentationSource = _factory.Create<PresentationSource>();
 
-            // Right now we don't support any modifiers
-            if (keyInput.KeyModifiers != KeyModifiers.None)
+            // Normalize upper case letters here to lower and add the shift key modifier if
+            // necessary
+            if (Char.IsUpper(keyInput.Char))
             {
-                throw new Exception("Bad input");
+                var lowerKeyInput = KeyInputUtil.CharToKeyInput(Char.ToLower(keyInput.Char));
+                keyInput = KeyInputUtil.ChangeKeyModifiers(lowerKeyInput, keyInput.KeyModifiers | KeyModifiers.Shift);
             }
 
             Key key;
-            if (!KeyUtil.TryConvertToKey(keyInput.Key, out key))
+            if (!KeyUtil.TryConvertToKeyOnly(keyInput.Key, out key))
             {
                 throw new Exception("Couldn't get the WPF key for the given KeyInput");
             }
 
-            // First raise the KeyDown event
-            var keyDownEventArgs = new KeyEventArgs(
-                Keyboard.PrimaryDevice,
-                presentationSource.Object,
-                0,
-                key);
-            keyDownEventArgs.RoutedEvent = UIElement.KeyDownEvent;
-            _defaultInputController.HandleKeyDown(this, keyDownEventArgs);
-
-            // If the event is handled then return
-            if (keyDownEventArgs.Handled)
+            // Update the KeyModifiers while this is being processed by our key processor
+            try
             {
-                return;
+                _defaultKeyboardDevice.DownKeyModifiers = keyInput.KeyModifiers;
+
+                // First raise the KeyDown event
+                var keyDownEventArgs = new KeyEventArgs(
+                    _defaultKeyboardDevice,
+                    presentationSource.Object,
+                    0,
+                    key);
+                keyDownEventArgs.RoutedEvent = UIElement.KeyDownEvent;
+                _defaultInputController.HandleKeyDown(this, keyDownEventArgs);
+
+                // If the event is handled then return
+                if (keyDownEventArgs.Handled)
+                {
+                    return;
+                }
+
+                // Now raise the TextInput event
+                var textInputEventArgs = new TextCompositionEventArgs(
+                    _defaultKeyboardDevice,
+                    new TextComposition(InputManager.Current, _wpfTextView.VisualElement, keyInput.Char.ToString()));
+                textInputEventArgs.RoutedEvent = UIElement.TextInputEvent;
+                _defaultInputController.HandleTextInput(this, textInputEventArgs);
+
+                var keyUpEventArgs = new KeyEventArgs(
+                    _defaultKeyboardDevice,
+                    presentationSource.Object,
+                    0,
+                    key);
+                keyUpEventArgs.RoutedEvent = UIElement.KeyUpEvent;
+                _defaultInputController.HandleKeyUp(this, keyUpEventArgs);
             }
-
-            // Now raise the TextInput event
-            var textInputEventArgs = new TextCompositionEventArgs(
-                Keyboard.PrimaryDevice,
-                new TextComposition(InputManager.Current, _wpfTextView.VisualElement, keyInput.Char.ToString()));
-            textInputEventArgs.RoutedEvent = UIElement.TextInputEvent;
-            _defaultInputController.HandleTextInput(this, textInputEventArgs);
-
-            var keyUpEventArgs = new KeyEventArgs(
-                Keyboard.PrimaryDevice,
-                presentationSource.Object,
-                0,
-                key);
-            keyUpEventArgs.RoutedEvent = UIElement.KeyUpEvent;
-            _defaultInputController.HandleKeyUp(this, keyUpEventArgs);
+            finally
+            {
+                _defaultKeyboardDevice.DownKeyModifiers = KeyModifiers.None;
+            }
         }
     }
 }

@@ -161,6 +161,12 @@ namespace VsVim
                     ki = KeyInputUtil.VimKeyToKeyInput(VimKey.End);
                     kind = EditCommandKind.UserInput;
                     break;
+                case VSConstants.VSStd2KCmdID.TOGGLE_OVERTYPE_MODE:
+                    // The <Insert> key is expressed in the toggle overtype mode flag.  In general
+                    // over write mode is referred to as overtype in the code / documentation
+                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Insert);
+                    kind = EditCommandKind.UserInput;
+                    break;
                 default:
                     ki = null;
                     kind = EditCommandKind.UserInput;
@@ -272,6 +278,9 @@ namespace VsVim
                     break;
                 case VimKey.PageDown:
                     oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.PAGEDN);
+                    break;
+                case VimKey.Insert:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.TOGGLE_OVERTYPE_MODE);
                     break;
                 default:
                     if (keyInput.RawChar.IsSome())
