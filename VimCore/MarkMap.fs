@@ -61,9 +61,19 @@ type MarkMap( _bufferTrackingService : IBufferTrackingService) =
     /// Get the given mark in the context of the given IVimTextBuffer
     member x.GetMark mark (vimBufferData : VimBufferData) =
         match mark with
-        | Mark.GlobalMark letter -> x.GetGlobalMark letter
-        | Mark.LocalMark localMark -> vimBufferData.VimTextBuffer.GetLocalMark localMark
-        | Mark.LastJump -> vimBufferData.JumpList.LastJumpLocation
+        | Mark.GlobalMark letter -> 
+
+            // A global mark can exist in any ITextBuffer, make sure we only return the global mark if it
+            // exists in this ITextBuffer
+            x.GetGlobalMark letter |> OptionUtil.map2 (fun point -> 
+                if point.Position.Snapshot.TextBuffer = vimBufferData.TextBuffer then
+                    Some point
+                else 
+                    None)
+        | Mark.LocalMark localMark -> 
+            vimBufferData.VimTextBuffer.GetLocalMark localMark
+        | Mark.LastJump -> 
+            vimBufferData.JumpList.LastJumpLocation
 
     /// Set the given mark to the specified line and column in the context of the IVimTextBuffer
     member x.SetMark mark (vimBufferData : VimBufferData) line column = 

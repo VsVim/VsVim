@@ -79,6 +79,23 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// The GetMark function should always return the VirtualSnapshotPoint in the context of the 
+        /// provided IVimBuffer.  If the Global mark exists in another ITextBuffer it should not
+        /// be returned
+        /// </summary>
+        [Test]
+        public void GetMark_Global_CrossBuffer()
+        {
+            var vimBufferData1 = CreateVimBufferData("dog", "cat");
+            var vimBufferData2 = CreateVimBufferData("dog", "cat");
+            _markMap.SetGlobalMark(Letter.A, vimBufferData1.VimTextBuffer, 1, 0);
+            var option = _markMap.GetMark(Mark.NewGlobalMark(Letter.A), vimBufferData1);
+            Assert.IsTrue(option.IsSome());
+            option = _markMap.GetMark(Mark.NewGlobalMark(Letter.A), vimBufferData2);
+            Assert.IsTrue(option.IsNone());
+        }
+
+        /// <summary>
         /// Simple insertion after shouldn't invalidate the mark
         /// </summary>
         [Test]
