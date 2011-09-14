@@ -1,13 +1,10 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using Moq;
 using NUnit.Framework;
 using Vim;
-using Vim.Extensions;
 using Vim.Modes.Command;
 using Vim.UnitTest;
 
@@ -30,14 +27,15 @@ namespace VimCore.UnitTest
             _rangeUtil = new RangeUtil(vimBufferData);
         }
 
-        private ParseRangeResult Parse(string input, int contextLine = 0)
+        private ParseRangeResult Parse(string input)
         {
-            return CaptureComplete(_textBuffer.GetLine(contextLine), input);
+            return CaptureComplete(input);
         }
 
         private void ParseLineRange(string input, int startLine, int endLine, int contextLine = 0)
         {
-            var ret = Parse(input, contextLine: contextLine);
+            _textView.MoveCaretToLine(contextLine);
+            var ret = Parse(input);
             Assert.IsTrue(ret.IsSucceeded);
             Assert.AreEqual(0, ret.AsSucceeded().Item2.Count());
             var range = ret.AsSucceeded().Item1;
@@ -54,22 +52,9 @@ namespace VimCore.UnitTest
             Assert.AreEqual(line, range.StartLineNumber);
         }
 
-        private ParseRangeResult CaptureComplete(ITextSnapshotLine line, string input)
+        private ParseRangeResult CaptureComplete(string input)
         {
-            return _rangeUtil.ParseRange(line, ListModule.OfSeq(input));
-        }
-
-        [Test]
-        public void NoRange1()
-        {
-            Create(string.Empty);
-            Action<string> del = input =>
-                {
-                    Assert.IsTrue(Parse(input).IsNoRange);
-                };
-            del(String.Empty);
-            del("j");
-            del("join");
+            return _rangeUtil.ParseRange(ListModule.OfSeq(input));
         }
 
         [Test]
@@ -246,21 +231,11 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void ParseMark5()
-        {
-            Create("foo bar", "baz");
-            var range = Parse("'");
-            Assert.IsTrue(range.IsFailed);
-            Assert.AreEqual(Resources.Range_MarkMissingIdentifier, range.AsFailed().Item);
-        }
-
-        [Test]
         public void ParseMark6()
         {
             Create("foo bar", "baz");
             var range = Parse("'c,2");
             Assert.IsTrue(range.IsFailed);
-            Assert.AreEqual(Resources.Range_MarkNotValidInFile, range.AsFailed().Item);
         }
 
         [Test]
@@ -277,13 +252,6 @@ namespace VimCore.UnitTest
             ParseSingleLine("1+", 1);
         }
 
-        [Test, Description("Line number out of range should go to end of file")]
-        public void Plus3()
-        {
-            Create("foo", "bar", "baz");
-            ParseSingleLine("1+400", 2);
-        }
-
         [Test]
         public void Plus4()
         {
@@ -295,7 +263,7 @@ namespace VimCore.UnitTest
         public void Minus1()
         {
             Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
-            ParseSingleLine("1-42", 0);
+            ParseSingleLine("1-1", 0);
         }
 
         [Test]

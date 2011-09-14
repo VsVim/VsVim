@@ -35,4 +35,4 @@ type internal RangeUtil =
 
     /// Parse out a range from the input string in the context of the provided
     /// ITextSnapshotLine
-    member ParseRange : ITextSnapshotLine -> char list -> ParseRangeResult
+    member ParseRange : char list -> ParseRangeResult

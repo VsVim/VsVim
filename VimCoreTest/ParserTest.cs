@@ -62,5 +62,42 @@ namespace VimCore.UnitTest
             Assert.IsTrue(lineRange.IsSingleLine);
             Assert.IsTrue(lineRange.AsSingleLine().Item.IsNumber(42));
         }
+
+        /// <summary>
+        /// Make sure we can parse out a range of the current line and itself
+        /// </summary>
+        [Test]
+        public void Parse_LineRange_RangeOfCurrentLine()
+        {
+            var lineRange = ParseLineRange(".,.");
+            Assert.IsTrue(lineRange.AsRange().Item1.IsCurrentLine);
+            Assert.IsTrue(lineRange.AsRange().Item2.IsCurrentLine);
+            Assert.IsFalse(lineRange.AsRange().item3);
+        }
+
+        /// <summary>
+        /// Make sure we can parse out a range of numbers
+        /// </summary>
+        [Test]
+        public void Parse_LineRange_RangeOfNumbers()
+        {
+            var lineRange = ParseLineRange("1,2");
+            Assert.IsTrue(lineRange.AsRange().Item1.IsNumber(1));
+            Assert.IsTrue(lineRange.AsRange().Item2.IsNumber(2));
+            Assert.IsFalse(lineRange.AsRange().item3);
+        }
+
+        /// <summary>
+        /// Make sure we can parse out a range of numbers with the adjust caret 
+        /// option specified
+        /// </summary>
+        [Test]
+        public void Parse_LineRange_RangeOfNumbersWithAdjustCaret()
+        {
+            var lineRange = ParseLineRange("1;2");
+            Assert.IsTrue(lineRange.AsRange().Item1.IsNumber(1));
+            Assert.IsTrue(lineRange.AsRange().Item2.IsNumber(2));
+            Assert.IsTrue(lineRange.AsRange().item3);
+        }
     }
 }

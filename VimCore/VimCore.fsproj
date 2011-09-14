@@ -69,6 +69,8 @@
     <Compile Include="Interpreter_Expression.fs" />
     <Compile Include="Interpreter_Parser.fsi" />
     <Compile Include="Interpreter_Parser.fs" />
+    <Compile Include="Interpreter_Interpreter.fsi" />
+    <Compile Include="Interpreter_Interpreter.fs" />
     <Compile Include="Modes_CommandFactory.fsi" />
     <Compile Include="Modes_CommandFactory.fs" />
     <Compile Include="Modes_Command_Interfaces.fs" />

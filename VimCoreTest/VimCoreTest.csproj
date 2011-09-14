@@ -154,6 +154,7 @@
     <Compile Include="EditorToSettingSynchronizerTest.cs" />
     <Compile Include="FoldManagerTest.cs" />
     <Compile Include="InsertUtilTest.cs" />
+    <Compile Include="InterpreterTest.cs" />
     <Compile Include="ParserTest.cs" />
     <Compile Include="ReplaceModeIntegrationTest.cs" />
     <Compile Include="MacroIntegrationTest.cs" />

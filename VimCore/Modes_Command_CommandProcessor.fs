@@ -938,7 +938,7 @@ type internal CommandProcessor
             moveToLine line
             RunResult.Completed
         else
-            match _rangeUtil.ParseRange x.CaretLine command with
+            match _rangeUtil.ParseRange command with
             | ParseRangeResult.Succeeded (range, inputs) -> 
                 x.RunCommandWithRange inputs (Some range)
             | ParseRangeResult.NoRange -> 

@@ -37,6 +37,10 @@ type LineSpecifier =
     /// LineSpecifier with the given line adjustment
     | LineSpecifierWithAdjustment of LineSpecifier * int
 
+    /// Adjust the current line with the adjustment.  Current depends on whether this is
+    /// the first or second specifier in a range
+    | AdjustmentOnCurrent of int
+
 /// A line range in the file 
 [<RequireQualifiedAccess>]
 type LineRange = 

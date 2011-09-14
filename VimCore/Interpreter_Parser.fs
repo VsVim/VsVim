@@ -33,6 +33,10 @@ type Parser
         | None -> false
         | Some c -> c = value
 
+    /// TODO: Hack used to implement ParseRange.  Delete once we don't use that method anymore
+    member x.RemainingText =
+        _text.Substring(_index)
+
     member x.IncrementIndex() =
         _index <- _index + 1
 
@@ -183,6 +187,12 @@ type Parser
                         Some (LineSpecifier.PreviousLineWithPattern pattern)
                     else
                         None
+            elif x.IsCurrentCharValue '+' then
+                x.IncrementIndex()
+                x.ParseNumber() |> Option.map LineSpecifier.AdjustmentOnCurrent
+            elif x.IsCurrentCharValue '-' then
+                x.IncrementIndex()
+                x.ParseNumber() |> Option.map (fun number -> LineSpecifier.AdjustmentOnCurrent -number)
             else 
                 match x.ParseNumber() with
                 | None -> None
@@ -216,6 +226,7 @@ type Parser
     /// range expression
     member x.ParseLineRange () =
         if x.IsCurrentCharValue '%' then
+            x.IncrementIndex()
             LineRange.EntireBuffer |> Some
         else
             match x.ParseLineSpecifier() with
@@ -223,9 +234,11 @@ type Parser
                 None
             | Some left ->
                 if x.IsCurrentCharValue ',' then
+                    x.IncrementIndex()
                     x.ParseLineSpecifier()
                     |> Option.map (fun right -> LineRange.Range (left, right, false))
                 elif x.IsCurrentCharValue ';' then
+                    x.IncrementIndex()
                     x.ParseLineSpecifier()
                     |> Option.map (fun right -> LineRange.Range (left, right, true))
                 else
@@ -249,6 +262,15 @@ type Parser
             match x.ParseWord() |> OptionUtil.getOrDefault "" with
             | "close" -> noRange x.ParseClose
             | _ -> ParseResult.Failed Resources.Parser_Error
+
+    // TODO: Delete.  This is just a transition hack to allow us to use the new interpreter and parser
+    // to replace RangeUtil.ParseRange
+    static member ParseRange rangeText = 
+        let parser = Parser(rangeText)
+        let lineRange = parser.ParseLineRange()
+        match lineRange with 
+        | None -> ParseResult.Failed Resources.Parser_Error
+        | Some lineRange -> ParseResult.Succeeded (lineRange, parser.RemainingText) 
 
     static member ParseExpression (expressionText : string) : ParseResult<Expression> = 
         ParseResult.Failed Resources.Parser_Error
