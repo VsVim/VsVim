@@ -16,7 +16,7 @@ namespace VimCore.UnitTest
         {
             _vimBufferData = CreateVimBufferData(lines);
             _textBuffer = _vimBufferData.TextBuffer;
-            _interpreter = new Interpreter(_vimBufferData);
+            _interpreter = new Interpreter(_vimBufferData, CommonOperationsFactory.GetCommonOperations(_vimBufferData));
         }
 
         /// <summary>

@@ -22,6 +22,14 @@ namespace VimCore.UnitTest
             return option.Value;
         }
 
+        private LineSpecifier ParseLineSpecifier(string text)
+        {
+            var parser = new Parser(text);
+            var option = parser.ParseLineSpecifier();
+            Assert.IsTrue(option.IsSome());
+            return option.Value;
+        }
+
         /// <summary>
         /// Make sure we can parse out the close command
         /// </summary>
@@ -98,6 +106,26 @@ namespace VimCore.UnitTest
             Assert.IsTrue(lineRange.AsRange().Item1.IsNumber(1));
             Assert.IsTrue(lineRange.AsRange().Item2.IsNumber(2));
             Assert.IsTrue(lineRange.AsRange().item3);
+        }
+
+        /// <summary>
+        /// Ensure we can parse out a simple next pattern
+        /// </summary>
+        [Test]
+        public void Parse_LineSpecifier_NextPattern()
+        {
+            var lineSpecifier = ParseLineSpecifier("/dog/");
+            Assert.AreEqual("dog", lineSpecifier.AsNextLineWithPattern().Item);
+        }
+
+        /// <summary>
+        /// Ensure we can parse out a simple previous pattern
+        /// </summary>
+        [Test]
+        public void Parse_LineSpecifier_PreviousPattern()
+        {
+            var lineSpecifier = ParseLineSpecifier("?dog?");
+            Assert.AreEqual("dog", lineSpecifier.AsPreviousLineWithPattern().Item);
         }
     }
 }

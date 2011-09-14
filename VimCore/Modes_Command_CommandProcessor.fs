@@ -2,6 +2,7 @@
 
 namespace Vim.Modes.Command
 open Vim
+open Vim.Interpreter
 open Vim.Modes
 open Microsoft.VisualStudio.Text
 open System.Text.RegularExpressions
@@ -137,7 +138,7 @@ type internal CommandProcessor
 
     let _statusUtil = _vimBufferData.StatusUtil
     let _textView = _vimBufferData.TextView
-    let _rangeUtil = RangeUtil(_vimBufferData)
+    let _rangeUtil = RangeUtil(_vimBufferData, _operations)
     let _textBuffer = _textView.TextBuffer
     let _vimHost = _vimBufferData.Vim.VimHost
     let _localSettings = _vimBufferData.LocalSettings
@@ -146,6 +147,7 @@ type internal CommandProcessor
     let _registerMap = _vim.RegisterMap
     let _searchService = _vim.SearchService
     let _vimData = _vim.VimData
+    let _interpreter = Interpreter.Interpreter(_vimBufferData, _operations)
 
     let mutable _command : System.String = System.String.Empty
 
@@ -308,7 +310,8 @@ type internal CommandProcessor
         | Some data -> data.Flags
 
     /// Process the :close command
-    member x.ProcessClose _ _ hasBang = _vimHost.Close _textView (not hasBang)
+    member x.ProcessClose _ _ hasBang = 
+        _interpreter.RunLineCommand (LineCommand.Close hasBang)
 
     /// Process the :join command
     member x.ProcessJoin (rest:char list) (range:SnapshotLineRange option) hasBang =

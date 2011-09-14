@@ -33,12 +33,12 @@ type Parser
         | None -> false
         | Some c -> c = value
 
-    /// TODO: Hack used to implement ParseRange.  Delete once we don't use that method anymore
     member x.RemainingText =
         _text.Substring(_index)
 
     member x.IncrementIndex() =
-        _index <- _index + 1
+        if _index < _text.Length then
+            _index <- _index + 1
 
     /// Move past the white space in the expression text
     member x.SkipBlanks () = 
@@ -132,10 +132,30 @@ type Parser
             x.IncrementIndex()
             Some c
 
-    /// Parse a {pattern} out of the text. 
-    member x.ParsePattern() = 
-        // TODO: Implement
-        None
+    /// Parse a {pattern} out of the text.  The text will be consumed until the unescaped value 
+    /// 'delimiter' is provided
+    member x.ParsePattern delimiter = 
+        let mark = _index
+        let rec inner () = 
+            match x.CurrentChar with
+            | None -> 
+                // Hit the end without finding 'delimiter' so there is no pattern
+                _index <- mark
+                None 
+            | Some c -> 
+                if c = delimiter then 
+                    let text = _text.Substring(mark, _index - mark)
+                    x.IncrementIndex()
+                    Some text
+                elif c = '\\' then
+                    x.IncrementIndex()
+                    x.IncrementIndex()
+                    inner()
+                else
+                    x.IncrementIndex()
+                    inner()
+
+        inner ()
 
     /// Parse out a LineSpecifier from the text.
     ///
@@ -166,27 +186,21 @@ type Parser
                 elif x.IsCurrentCharValue '&' then
                     Some LineSpecifier.NextLineWithPreviousSubstitutePattern
                 else
-                    match x.ParsePattern() with
+                    match x.ParsePattern '/' with
                     | None ->
                         None
                     | Some pattern -> 
-                        if x.IsCurrentCharValue '/' then
-                            x.IncrementIndex()
-                            Some (LineSpecifier.NextLineWithPattern pattern)
-                        else
-                            None
+                        Some (LineSpecifier.NextLineWithPattern pattern)
+
             elif x.IsCurrentCharValue '?' then
                 // It's the ? previous search pattern
                 x.IncrementIndex()
-                match x.ParsePattern() with
+                match x.ParsePattern '?' with
                 | None -> 
                     None
                 | Some pattern ->
-                    if x.IsCurrentCharValue '?' then
-                        x.IncrementIndex()
-                        Some (LineSpecifier.PreviousLineWithPattern pattern)
-                    else
-                        None
+                    Some (LineSpecifier.PreviousLineWithPattern pattern)
+
             elif x.IsCurrentCharValue '+' then
                 x.IncrementIndex()
                 x.ParseNumber() |> Option.map LineSpecifier.AdjustmentOnCurrent

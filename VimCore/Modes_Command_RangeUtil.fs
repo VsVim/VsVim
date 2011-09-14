@@ -13,13 +13,14 @@ type internal ParseRangeResult =
 
 type internal RangeUtil
     (
-        _vimBufferData : VimBufferData
+        _vimBufferData : VimBufferData,
+        _commonOperations : ICommonOperations
     ) =
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
     let _textView = _vimBufferData.TextView
     let _markMap = _vimTextBuffer.Vim.MarkMap
-    let _interpreter = Interpreter(_vimBufferData)
+    let _interpreter = Interpreter(_vimBufferData, _commonOperations)
 
     member x.RangeForCurrentLine = _textView |> TextViewUtil.GetCaretLine |> SnapshotLineRangeUtil.CreateForLine
 

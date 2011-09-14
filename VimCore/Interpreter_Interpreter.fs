@@ -7,10 +7,12 @@ open Microsoft.VisualStudio.Text
 [<Class>]
 type Interpreter
     (
-        _vimBufferData : VimBufferData
+        _vimBufferData : VimBufferData,
+        _commonOperations : ICommonOperations
     ) =
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
+    let _vimHost = _vimBufferData.Vim.VimHost
     let _textBuffer = _vimBufferData.TextBuffer
     let _textView = _vimBufferData.TextView
     let _markMap = _vimTextBuffer.Vim.MarkMap
@@ -113,5 +115,25 @@ type Interpreter
                 | None -> None
                 | Some rightLine -> SnapshotLineRangeUtil.CreateForLineRange leftLine rightLine |> Some
 
+    /// Run the close command
+    member x.RunClose hasBang = 
+        _vimHost.Close _textView (not hasBang)
+
+    /// Jump to the last line
+    member x.RunJumpToLastLine() =
+        let line = SnapshotUtil.GetLastLine x.CurrentSnapshot
+        _commonOperations.MoveCaretToPointAndEnsureVisible line.Start
+
+    /// Jump to the specified line number
+    member x.RunJumpToLine number = 
+        let line = SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
+        _commonOperations.MoveCaretToPointAndEnsureVisible line.Start
+
+    /// Run the specified LineCommand
+    member x.RunLineCommand lineCommand = 
+        match lineCommand with
+        | LineCommand.Close hasBang -> x.RunClose hasBang
+        | LineCommand.JumpToLastLine -> x.RunJumpToLastLine()
+        | LineCommand.JumpToLine number -> x.RunJumpToLine number
 
 

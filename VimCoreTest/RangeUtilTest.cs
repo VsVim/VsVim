@@ -24,7 +24,7 @@ namespace VimCore.UnitTest
             _textBuffer = _textView.TextBuffer;
             var vimBufferData = CreateVimBufferData(_textView);
             _vimTextBuffer = vimBufferData.VimTextBuffer;
-            _rangeUtil = new RangeUtil(vimBufferData);
+            _rangeUtil = new RangeUtil(vimBufferData, CommonOperationsFactory.GetCommonOperations(vimBufferData));
         }
 
         private ParseRangeResult Parse(string input)

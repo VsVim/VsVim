@@ -77,6 +77,22 @@ namespace Vim.UnitTest
             return lineSpecifier.IsNumber && lineSpecifier.AsNumber().Item == number;
         }
 
+        /// <summary>
+        /// LineSpecifier as NextLineWithPattern
+        /// </summary>
+        public static LineSpecifier.NextLineWithPattern AsNextLineWithPattern(this LineSpecifier lineSpecifier)
+        {
+            return (LineSpecifier.NextLineWithPattern)lineSpecifier;
+        }
+
+        /// <summary>
+        /// LineSpecifier as PreviousLineWithPattern
+        /// </summary>
+        public static LineSpecifier.PreviousLineWithPattern AsPreviousLineWithPattern(this LineSpecifier lineSpecifier)
+        {
+            return (LineSpecifier.PreviousLineWithPattern)lineSpecifier;
+        }
+
         #endregion
 
         #region ParseResult

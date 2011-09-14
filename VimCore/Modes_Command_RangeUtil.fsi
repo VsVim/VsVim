@@ -11,7 +11,7 @@ type internal ParseRangeResult =
     | Failed of string 
 
 type internal RangeUtil = 
-    new : VimBufferData -> RangeUtil
+    new : VimBufferData * ICommonOperations -> RangeUtil
 
     /// Get the range for the currently selected line
     member RangeForCurrentLine : SnapshotLineRange
