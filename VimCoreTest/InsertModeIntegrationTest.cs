@@ -16,6 +16,8 @@ namespace VimCore.UnitTest
         private IVimBuffer _vimBuffer;
         private IWpfTextView _textView;
         private ITextBuffer _textBuffer;
+        private IVimGlobalSettings _globalSettings;
+        private IVimLocalSettings _localSettings;
         private Register _register;
 
         private void Create(params string[] lines)
@@ -32,6 +34,8 @@ namespace VimCore.UnitTest
             _vimBuffer = service.Vim.CreateVimBuffer(_textView);
             _vimBuffer.SwitchMode(ModeKind.Insert, argument);
             _register = Vim.RegisterMap.GetRegister('c');
+            _globalSettings = Vim.GlobalSettings;
+            _localSettings = _vimBuffer.LocalSettings;
         }
 
         /// <summary>
@@ -90,7 +94,7 @@ namespace VimCore.UnitTest
             Create("world", "");
             _vimBuffer.InsertMode.CustomProcess(
                 KeyInputUtil.VimKeyToKeyInput(VimKey.Back),
-                ()=>
+                () =>
                 {
                     _textBuffer.Insert(0, "hello ");
                     return true;
@@ -155,6 +159,26 @@ namespace VimCore.UnitTest
             _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('d'));
             Assert.AreEqual("hello", _textView.GetLine(0).GetText());
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Verify that inserting tab with a count and inserting tab "count" times is an exchangable
+        /// operation
+        /// </summary>
+        [Test]
+        public void Insert_Tab()
+        {
+            Create("int Member", "int Member");
+            _localSettings.ExpandTab = false;
+            _localSettings.TabStop = 8;
+            _globalSettings.ShiftWidth = 4;
+            _vimBuffer.Process(VimKey.Escape);
+            _textView.MoveCaretToLine(0, 3);
+            _vimBuffer.Process(VimKey.LowerI, VimKey.Tab, VimKey.Tab, VimKey.Escape);
+            Assert.AreEqual("int\t\t Member", _textBuffer.GetLine(0).GetText());
+            _textView.MoveCaretToLine(1, 3);
+            _vimBuffer.Process(VimKey.Number2, VimKey.LowerI, VimKey.Tab, VimKey.Escape);
+            Assert.AreEqual("int\t\t Member", _textBuffer.GetLine(1).GetText());
         }
 
         /// <summary>
@@ -232,6 +256,25 @@ namespace VimCore.UnitTest
             _vimBuffer.Process(":imap a b", enter: true);
             _vimBuffer.Process(".");
             Assert.AreEqual("abc", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// Verify that we properly repeat an insert which is a tab count 
+        /// </summary>
+        [Test]
+        public void Repeat_Insert_TabCount()
+        {
+            Create("int Member", "int Member");
+            _localSettings.ExpandTab = false;
+            _localSettings.TabStop = 8;
+            _globalSettings.ShiftWidth = 4;
+            _vimBuffer.Process(VimKey.Escape);
+            _textView.MoveCaretToLine(0, 3);
+            _vimBuffer.Process(VimKey.Number3, VimKey.LowerI, VimKey.Tab, VimKey.Escape);
+            Assert.AreEqual("int\t\t\t Member", _textBuffer.GetLine(0).GetText());
+            _textView.MoveCaretToLine(1, 3);
+            _vimBuffer.Process('.');
+            Assert.AreEqual("int\t\t\t Member", _textBuffer.GetLine(1).GetText());
         }
 
         /// <summary>

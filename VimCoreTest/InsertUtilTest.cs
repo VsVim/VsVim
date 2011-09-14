@@ -37,6 +37,76 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Run the command from the begining of a word
+        /// </summary>
+        [Test]
+        public void DeleteWordBeforeCursor_Simple()
+        {
+            Create("dog bear cat");
+            _globalSettings.Backspace = "start";
+            _textView.MoveCaretTo(9);
+            _insertUtilRaw.DeleteWordBeforeCursor();
+            Assert.AreEqual("dog cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Run the command from the middle of a word
+        /// </summary>
+        [Test]
+        public void DeleteWordBeforeCursor_MiddleOfWord()
+        {
+            Create("dog bear cat");
+            _globalSettings.Backspace = "start";
+            _textView.MoveCaretTo(10);
+            _insertUtilRaw.DeleteWordBeforeCursor();
+            Assert.AreEqual("dog bear at", _textView.GetLine(0).GetText());
+            Assert.AreEqual(9, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Before the first word this should delete the indent on the line
+        /// </summary>
+        [Test]
+        public void DeleteWordBeforeCursor_BeforeFirstWord()
+        {
+            Create("   dog cat");
+            _globalSettings.Backspace = "start";
+            _textView.MoveCaretTo(3);
+            _insertUtilRaw.DeleteWordBeforeCursor();
+            Assert.AreEqual("dog cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Don't delete a line break if the eol suboption isn't set 
+        /// </summary>
+        [Test]
+        public void DeleteWordBeforeCursor_LineNoOption()
+        {
+            Create("dog", "cat");
+            _globalSettings.Backspace = "start";
+            _textView.MoveCaretToLine(1);
+            _insertUtilRaw.DeleteWordBeforeCursor();
+            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// If the eol option is set then delete the line break and move the caret back a line
+        /// </summary>
+        [Test]
+        public void DeleteWordBeforeCursor_LineWithOption()
+        {
+            Create("dog", "cat");
+            _globalSettings.Backspace = "start,eol";
+            _textView.MoveCaretToLine(1);
+            _insertUtilRaw.DeleteWordBeforeCursor();
+            Assert.AreEqual("dogcat", _textView.GetLine(0).GetText());
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
         /// Make sure the caret position is correct when inserting in the middle of a word
         /// </summary>
         [Test]

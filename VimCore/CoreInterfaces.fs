@@ -1304,7 +1304,8 @@ type CommandFlags =
     /// a pattern
     | Yank = 0x100
 
-    /// Represents an insert edit action which can be linked with other insert edit actions
+    /// Represents an insert edit action which can be linked with other insert edit actions and
+    /// hence acts with them in a repeat
     | InsertEdit = 0x200
 
 /// Data about the run of a given MotionResult
@@ -1682,6 +1683,9 @@ type InsertCommand  =
 
     /// Delete all indentation on the current line
     | DeleteAllIndent
+
+    /// Delete the word before the cursor
+    | DeleteWordBeforeCursor
 
     /// Insert a new line into the ITextBuffer
     | InsertNewLine
@@ -2203,7 +2207,11 @@ type IIncrementalSearch =
 
     /// When in the middle of a search this will return the SearchData for 
     /// the search
-    abstract CurrentSearch : SearchData option
+    abstract CurrentSearchData : SearchData option
+
+    /// When in the middle of a search this will return the SearchResult for the 
+    /// search
+    abstract CurrentSearchResult : SearchResult option
 
     /// The ITextStructureNavigator used for finding 'word' values in the ITextBuffer
     abstract WordNavigator : ITextStructureNavigator
@@ -2344,6 +2352,7 @@ type Setting = {
 
 module GlobalSettingNames = 
 
+    let BackspaceName = "backspace"
     let CaretOpacityName = "vsvimcaret"
     let HighlightSearchName = "hlsearch"
     let HistoryName = "history"
@@ -2415,6 +2424,10 @@ type IVimSettings =
 
 and IVimGlobalSettings = 
 
+    /// The multi-value option for determining backspace behavior.  Valid values include 
+    /// indent, eol, start.  Usually accessed through the IsBackSpace helpers
+    abstract Backspace : string with get, set
+
     /// Opacity of the caret.  This must be an integer between values 0 and 100 which
     /// will be converted into a double for the opacity of the caret
     abstract CaretOpacity : int with get, set
@@ -2434,6 +2447,15 @@ and IVimGlobalSettings =
     /// Whether or not incremental searches should be highlighted and focused 
     /// in the ITextBuffer
     abstract IncrementalSearch : bool with get, set
+
+    /// Is the 'indent' option inside of Backspace set
+    abstract IsBackspaceIndent : bool with get
+
+    /// Is the 'eol' option inside of Backspace set
+    abstract IsBackspaceEol : bool with get
+
+    /// Is the 'start' option inside of Backspace set
+    abstract IsBackspaceStart : bool with get
 
     /// Is the 'onemore' option inside of VirtualEdit set
     abstract IsVirtualEditOneMore : bool with get

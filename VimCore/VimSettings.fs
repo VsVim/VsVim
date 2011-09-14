@@ -9,6 +9,10 @@ open Vim.GlobalSettingNames
 open Vim.LocalSettingNames
 open Vim.WindowSettingNames
 
+// TODO: We need to add verification for setting options which can contain
+// a finite list of values.  For example backspace, virtualedit, etc ...  Setting
+// them to an invalid value should produce an error
+
 type internal SettingsMap
     (
         _rawData : (string*string*SettingKind*SettingValue) seq,
@@ -117,6 +121,7 @@ type internal GlobalSettings() =
 
     static let GlobalSettings = 
         [|
+            (BackspaceName, "bs", StringKind, StringValue "")
             (CaretOpacityName, CaretOpacityName, NumberKind, NumberValue(65))
             (HighlightSearchName, "hls", ToggleKind, ToggleValue(false))
             (HistoryName, "hi", NumberKind, NumberValue(Constants.DefaultHistoryLength))
@@ -143,6 +148,11 @@ type internal GlobalSettings() =
 
     let _map = SettingsMap(GlobalSettings, true)
 
+    let IsCommaSubOptionPresent optionName suboptionName =
+        _map.GetStringValue optionName
+        |> StringUtil.split ','
+        |> Seq.exists (fun x -> StringUtil.isEqual suboptionName x)
+
     static member DisableCommand = DisableCommandLet
 
     interface IVimGlobalSettings with
@@ -154,6 +164,9 @@ type internal GlobalSettings() =
         member x.GetSetting settingName = _map.GetSetting settingName
 
         // IVimGlobalSettings 
+        member x.Backspace 
+            with get() = _map.GetStringValue BackspaceName
+            and set value = _map.TrySetValue BackspaceName (StringValue value) |> ignore
         member x.CaretOpacity
             with get() = _map.GetNumberValue CaretOpacityName
             and set value = _map.TrySetValue CaretOpacityName (NumberValue(value)) |> ignore
@@ -228,9 +241,10 @@ type internal GlobalSettings() =
             with get() = _map.GetBoolValue WrapScanName
             and set value = _map.TrySetValue WrapScanName (ToggleValue(value)) |> ignore
         member x.DisableCommand = DisableCommandLet
-        member x.IsVirtualEditOneMore = 
-            let value = _map.GetStringValue VirtualEditName
-            StringUtil.split ',' value |> Seq.exists (fun x -> StringUtil.isEqual "onemore" x)
+        member x.IsBackspaceEol = IsCommaSubOptionPresent BackspaceName "eol"
+        member x.IsBackspaceIndent = IsCommaSubOptionPresent BackspaceName "indent"
+        member x.IsBackspaceStart = IsCommaSubOptionPresent BackspaceName "start"
+        member x.IsVirtualEditOneMore = IsCommaSubOptionPresent VirtualEditName "onemore"
 
         [<CLIEvent>]
         member x.SettingChanged = _map.SettingChanged

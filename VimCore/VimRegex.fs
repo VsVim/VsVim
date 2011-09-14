@@ -160,8 +160,8 @@ type Data = {
     member x.IncrementIndex count = { x with Index = x.Index + count }
     member x.DecrementIndex count = { x with Index = x.Index - count }
     member x.CharAtIndex = StringUtil.charAtOption x.Index x.Pattern
-    member x.AppendString (str:string) = { x with Builder = x.Builder.Append(str) }
-    member x.AppendChar (c:char) = { x with Builder = x.Builder.Append(c) }
+    member x.AppendString (str : string) = { x with Builder = x.Builder.Append(str) }
+    member x.AppendChar (c : char) = { x with Builder = x.Builder.Append(c) }
     member x.AppendEscapedChar c = c |> StringUtil.ofChar |> Regex.Escape |> x.AppendString
     member x.BeginGrouping() = 
         let data = x.AppendChar '['
@@ -170,7 +170,8 @@ type Data = {
 [<Sealed>]
 type VimRegexFactory
     (
-        _settings : IVimGlobalSettings ) =
+        _settings : IVimGlobalSettings
+    ) =
 
     member x.Create pattern = x.CreateWithOptions pattern VimRegexOptions.Compiled
 

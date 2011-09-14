@@ -1986,6 +1986,32 @@ namespace VimCore.UnitTest
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
+        /// <summary>
+        /// Make sure we respect the \c marker over the 'ignorecase' option even if it appears
+        /// at the end of the string
+        /// </summary>
+        [Test]
+        public void IncrementalSearch_CaseInsensitiveAtEndOfSearhString()
+        {
+            Create("cat dog bear");
+            _vimBuffer.Process("/DOG");
+            Assert.IsTrue(_vimBuffer.IncrementalSearch.CurrentSearchResult.Value.IsNotFound);
+            _vimBuffer.Process(@"\c", enter: true);
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Make sure we respect the \c marker over the 'ignorecase' option even if it appears
+        /// in the middle of the string
+        /// </summary>
+        [Test]
+        public void IncrementalSearch_CaseInsensitiveInMiddleOfSearhString()
+        {
+            Create("cat dog bear");
+            _vimBuffer.Process(@"/D\cOG", enter: true);
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
+
         [Test]
         public void IncrementalSearch_CaseSensitive()
         {
@@ -2172,6 +2198,22 @@ namespace VimCore.UnitTest
             Assert.AreEqual("cat", _textView.GetLine(2).GetText());
             Assert.AreEqual("bear", _textView.GetLine(3).GetText());
             Assert.AreEqual(_textView.GetLine(2).Start.Add(2), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Make sure that we use the proper line ending when inserting a new line vs. simply choosing 
+        /// to use Environment.NewLine
+        /// </summary>
+        [Test]
+        public void InsertLineBelowCaret_AlternateNewLine()
+        {
+            Create("");
+            _textBuffer.Replace(new Span(0, 0), "cat\ndog");
+            _textView.MoveCaretTo(0);
+            _vimBuffer.Process("o");
+            Assert.AreEqual("cat\n", _textBuffer.GetLine(0).ExtentIncludingLineBreak.GetText());
+            Assert.AreEqual("\n", _textBuffer.GetLine(1).ExtentIncludingLineBreak.GetText());
+            Assert.AreEqual("dog", _textBuffer.GetLine(2).ExtentIncludingLineBreak.GetText());
         }
 
         /// <summary>

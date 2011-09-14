@@ -94,9 +94,9 @@ namespace VsVim.UnitTest
             Create(true, "dog toy", "fish chips");
             _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _textView.MoveCaretToLine(1, 5);
-            _vimBuffer.Process(VimKey.Back, VimKey.Escape);
+            _simulation.Run(VimKey.Back, VimKey.Escape);
             _textView.MoveCaretTo(4);
-            _vimBuffer.Process(".");
+            _simulation.Run(".");
             Assert.AreEqual("dogtoy", _textView.GetLine(0).GetText());
             Assert.AreEqual(2, _textView.GetCaretPoint().Position);
         }
@@ -111,8 +111,8 @@ namespace VsVim.UnitTest
             Create(false, "c dog", "cat copter");
             _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _textView.MoveCaretTo(1);
-            _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
-            _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Down>"));
+            _simulation.Run(KeyNotationUtil.StringToKeyInput("<C-n>"));
+            _simulation.Run(KeyNotationUtil.StringToKeyInput("<Down>"));
             Assert.AreEqual("copter dog", _textView.GetLine(0).GetText());
         }
 
@@ -126,10 +126,23 @@ namespace VsVim.UnitTest
             Create(false, "c dog", "cat");
             _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _textView.MoveCaretTo(1);
-            _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
-            _vimBuffer.Process('s');
+            _simulation.Run(KeyNotationUtil.StringToKeyInput("<C-n>"));
+            _simulation.Run('s');
             Assert.AreEqual("cats dog", _textView.GetLine(0).GetText());
             Assert.IsTrue(_vimBuffer.InsertMode.ActiveWordCompletionSession.IsNone());
+        }
+
+        /// <summary>
+        /// Make sure the Insert key correctly toggles to insert mode then replace
+        /// </summary>
+        [Test]
+        public void SwitchMode_InsertKey()
+        {
+            Create(false, "");
+            _simulation.Run(VimKey.Insert);
+            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+            _simulation.Run(VimKey.Insert);
+            Assert.AreEqual(ModeKind.Replace, _vimBuffer.ModeKind);
         }
     }
 }

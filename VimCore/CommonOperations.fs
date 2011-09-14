@@ -119,7 +119,8 @@ type internal CommonOperations
                 // Insert the same text 'count' times at the cursor
                 let text = 
                     if addNewLines then
-                        System.Environment.NewLine + text
+                        let newLine = x.GetNewLineText x.CaretPoint
+                        newLine + text
                     else 
                         text
 
@@ -149,6 +150,30 @@ type internal CommonOperations
 
             for i = 1 to count do
                 applyChange textChange)
+
+    /// Get the new line text which should be used for inserts at the provided point.  This is done
+    /// by looking at the current line and potentially the line above and simply re-using it's
+    /// value
+    member x.GetNewLineText point = 
+        if not (_editorOptions.GetReplicateNewLineCharacter()) then
+
+            // If we're not supposed to replicate the current new line character then just go ahead
+            // and use the default new line character (so odd they call it character when it's 
+            // by default 2 characters)
+            _editorOptions.GetNewLineCharacter()
+        else
+            let line = SnapshotPointUtil.GetContainingLine point
+            let line = 
+                // If this is the last line there is no line break.  Use the line above
+                let snapshot = point.Snapshot
+                if line.LineNumber = SnapshotUtil.GetLastLineNumber snapshot && line.LineNumber > 0 then
+                    SnapshotUtil.GetLine snapshot (line.LineNumber - 1)
+                else
+                    line
+            if line.LineBreakLength > 0 then
+                line.GetLineBreakText()
+            else
+                _editorOptions.GetNewLineCharacter()
 
     /// Move the caret to the specified point and ensure it's visible and the surrounding 
     /// text is expanded
@@ -609,6 +634,7 @@ type internal CommonOperations
         member x.ApplyTextChange textChange addNewLines count = x.ApplyTextChange textChange addNewLines count
         member x.Beep () = x.Beep()
         member x.Join range kind = x.Join range kind
+        member x.GetNewLineText point = x.GetNewLineText point
         member x.GoToDefinition () = 
             let before = TextViewUtil.GetCaretPoint _textView
             if _vimHost.GoToDefinition() then

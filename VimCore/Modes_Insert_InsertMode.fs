@@ -72,10 +72,12 @@ type internal InsertMode
             ("<Right>", InsertCommand.MoveCaret Direction.Right, CommandFlags.Movement)
             ("<Tab>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<Up>", InsertCommand.MoveCaret Direction.Up, CommandFlags.Movement)
+            ("<C-h>", InsertCommand.Back, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-d>", InsertCommand.ShiftLineLeft, CommandFlags.Repeatable)
             ("<C-m>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-t>", InsertCommand.ShiftLineRight, CommandFlags.Repeatable)
+            ("<C-w>", InsertCommand.DeleteWordBeforeCursor, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
         ]
 
     do

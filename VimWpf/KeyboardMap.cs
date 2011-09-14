@@ -127,10 +127,14 @@ namespace Vim.UI.Wpf
             return false;
         }
 
-        internal bool TryGetKey(VimKey vimKey, out Key key)
+        /// <summary>
+        /// Try and get the WPF key for the given VimKey value
+        /// </summary>
+        internal bool TryGetKey(VimKey vimKey, out Key key, out ModifierKeys modifierKeys)
         {
+            var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
             int virtualKeyCode;
-            if (!TryVimKeyToVirtualKey(vimKey, out virtualKeyCode))
+            if (!TryGetVirtualKeyAndModifiers(_keyboardId, keyInput, out virtualKeyCode, out modifierKeys))
             {
                 key = Key.None;
                 return false;
@@ -155,7 +159,7 @@ namespace Vim.UI.Wpf
         internal static bool IsMappedByCharacter(VimKey vimKey)
         {
             int virtualKey;
-            return !TryVimKeyToVirtualKey(vimKey, out virtualKey);
+            return !TrySpecialVimKeyToVirtualKey(vimKey, out virtualKey);
         }
 
         private static KeyModifiers ConvertToKeyModifiers(ModifierKeys keys)
@@ -220,7 +224,7 @@ namespace Vim.UI.Wpf
         /// </summary>
         private static bool TryGetVirtualKeyAndModifiers(IntPtr hkl, KeyInput keyInput, out int virtualKeyCode, out ModifierKeys modKeys)
         {
-            if (TryVimKeyToVirtualKey(keyInput.Key, out virtualKeyCode))
+            if (TrySpecialVimKeyToVirtualKey(keyInput.Key, out virtualKeyCode))
             {
                 Debug.Assert(!IsMappedByCharacter(keyInput.Key));
                 modKeys = ModifierKeys.None;
@@ -235,13 +239,15 @@ namespace Vim.UI.Wpf
         }
 
         /// <summary>
+        /// Get the virtual key code for the provided VimKey.  This will only work for Vim keys which
+        /// are meant for very specific keys.  It doesn't work for alphas
         ///
         /// All constant values derived from the list at the following 
         /// location
         ///   http://msdn.microsoft.com/en-us/library/ms645540(VS.85).aspx
-        /// 
+        ///
         /// </summary>
-        private static bool TryVimKeyToVirtualKey(VimKey vimKey, out int virtualKeyCode)
+        private static bool TrySpecialVimKeyToVirtualKey(VimKey vimKey, out int virtualKeyCode)
         {
             var found = true;
             switch (vimKey)
@@ -299,6 +305,10 @@ namespace Vim.UI.Wpf
             return found;
         }
 
+        /// <summary>
+        /// Map the given char to a virtual key code and the associated necessary modifier keys for
+        /// the provided keyboard layout
+        /// </summary>
         private static bool TryMapCharToVirtualKeyAndModifiers(IntPtr hkl, char c, out int virtualKeyCode, out ModifierKeys modKeys)
         {
             var res = NativeMethods.VkKeyScanEx(c, hkl);
