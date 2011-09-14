@@ -77,3 +77,6 @@ module internal Resources =
     let Internal_ErrorMappingToVisual = "Error mapping to the visual buffer defaulting to edit buffer"
     let Internal_ErrorMappingBackToEdit = "Error mapping data back to the edit buffer"
 
+    let Parser_Error = "Parse error"
+    let Parser_NoRangeAllowed = "No range allowed"
+

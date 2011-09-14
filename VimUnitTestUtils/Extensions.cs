@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using NUnit.Framework;
 using Vim.Extensions;
+using Vim.Interpreter;
 using Vim.Modes.Command;
 
 namespace Vim.UnitTest
@@ -22,6 +23,70 @@ namespace Vim.UnitTest
         {
             Assert.IsTrue(result.IsCompleted);
             return (CommandResult.Completed)result;
+        }
+
+        #endregion
+
+        #region LineCommand
+
+        /// <summary>
+        /// LineCommand as Close
+        /// </summary>
+        public static LineCommand.Close AsClose(this LineCommand lineCommand)
+        {
+            return (LineCommand.Close)lineCommand;
+        }
+
+        #endregion
+
+        #region LineRange
+
+        /// <summary>
+        /// LineRange as SingleLine
+        /// </summary>
+        public static LineRange.SingleLine AsSingleLine(this LineRange lineRange)
+        {
+            return (LineRange.SingleLine)lineRange;
+        }
+
+        /// <summary>
+        /// LineRange as Range
+        /// </summary>
+        public static LineRange.Range AsRange(this LineRange lineRange)
+        {
+            return (LineRange.Range)lineRange;
+        }
+
+        #endregion
+
+        #region LineSpecifier
+
+        /// <summary>
+        /// LineSpecifier as Number
+        /// </summary>
+        public static LineSpecifier.Number AsNumber(this LineSpecifier lineSpecifier)
+        {
+            return (LineSpecifier.Number)lineSpecifier;
+        }
+
+        /// <summary>
+        /// Is thise a Number with the specified value
+        /// </summary>
+        public static bool IsNumber(this LineSpecifier lineSpecifier, int number)
+        {
+            return lineSpecifier.IsNumber && lineSpecifier.AsNumber().Item == number;
+        }
+
+        #endregion
+
+        #region ParseResult
+
+        /// <summary>
+        /// Get the suceeded version of the ParseResult
+        /// </summary>
+        public static ParseResult<T>.Succeeded AsSucceeded<T>(this ParseResult<T> parseResult)
+        {
+            return (ParseResult<T>.Succeeded)parseResult;
         }
 
         #endregion
