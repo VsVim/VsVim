@@ -56,14 +56,59 @@ type LineRange =
     /// the LineSpecifier values)
     | Range of LineSpecifier * LineSpecifier * bool
 
+/// Represents the values for '++opt' which can occur on commands like :edit
 [<RequireQualifiedAccess>]
-type Expression =
+type FileOption =
+    | FileFormat of string
+    | Encoding of string
+    | Binary 
+    | NoBinary
+    | Bad
+    | Edit
+
+/// Represents te values or the '+cmd' which can occur on commads like :edit
+[<RequireQualifiedAccess>]
+type CommandOption =
+    | StartAtLastLine
+    | StartAtLine of int
+    | StartAtPattern of string
+    | ExecuteLineCommand of LineCommand
+
+and [<RequireQualifiedAccess>] Expression =
 
     /// A variable expression with the provided name
     | Variable of string
 
-[<RequireQualifiedAccess>]
-type LineCommand =
+and [<RequireQualifiedAccess>] LineCommand =
+
+    /// The :close command.  The bool value represents whether or not the 
+    /// bang modifier was added
+    | Close of bool
+
+    /// The :edit command.  The values range as follows
+    ///  - ! option present
+    ///  - The provided ++opt
+    ///  - The provided +cmd 
+    ///  - The provided file to edit 
+    | Edit of bool * FileOption list * CommandOption option * string option
+
+    /// The :delete command 
+    | Delete of LineRange option * RegisterName option * int option 
+
+    /// Display the contents of registers.  Unless a specific register name is 
+    /// given all registers will be displayed
+    | DisplayRegisters of RegisterName option
+
+    /// Display the specified marks.  If no Mark values are provided then display 
+    /// all marks
+    | DisplayMarks of Mark list
+
+    /// Fold the selected LineRange
+    | Fold of LineRange option
+
+    /// Join the lines in the specified range.  Optionally provides a count of lines to 
+    /// start the join after the line range
+    | Join of LineRange option * int option
 
     /// Jump to the specified line number 
     | JumpToLine of int
@@ -71,8 +116,28 @@ type LineCommand =
     /// Jump to the last line of the ITextBuffer
     | JumpToLastLine
 
-    /// The :close command.  The bool value represents whether or not the 
-    /// bang modifier was added
-    | Close of bool
+    /// Make command.  The options are as follows
+    ///   - The ! option
+    ///   - All of the text after the !
+    | Make of bool * string
 
+    /// The :substitute command.  The argument order is range, search, replace,
+    /// substitute flags and count
+    | Substitute of LineRange option * string * string * SubstituteFlags * int option
+
+    /// The variant of the :substitute command which repeats the last :subsitute with
+    /// different flags and count
+    | SubstituteRepeatLast of LineRange option * SubstituteFlags * int option
+
+    /// The variant of the :substitute command which repeats the last :subsitute with
+    /// different flags, count and using the last search as the pattern
+    | SubstituteRepeatLastWithSearch of LineRange option * SubstituteFlags * int option
+
+    /// Quit the current window after writing out it's contents.  The values range as 
+    /// follows
+    ///  - Range of lines to write.  All if no option present
+    ///  - ! option present
+    ///  - The provided ++opt
+    ///  - The provided +cmd
+    | QuitWithWrite of LineRange option * bool * FileOption list * string option 
 

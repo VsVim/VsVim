@@ -1,4 +1,6 @@
-﻿using NUnit.Framework;
+﻿using System;
+using NUnit.Framework;
+using Vim;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Vim.UnitTest;
@@ -48,6 +50,16 @@ namespace VimCore.UnitTest
             var command = ParseLineCommand("close!");
             Assert.IsTrue(command.IsClose);
             Assert.IsTrue(command.AsClose().Item);
+        }
+
+        /// <summary>
+        /// Make sure that we detect the trailing characters in the close command
+        /// </summary>
+        [Test]
+        public void Parse_LineCommand_Close_Trailing()
+        {
+            var parseResult = Parser.ParseLineCommand("close foo");
+            Assert.IsTrue(parseResult.IsFailed(Resources.CommandMode_TrailingCharacters));
         }
 
         /// <summary>
@@ -126,6 +138,32 @@ namespace VimCore.UnitTest
         {
             var lineSpecifier = ParseLineSpecifier("?dog?");
             Assert.AreEqual("dog", lineSpecifier.AsPreviousLineWithPattern().Item);
+        }
+
+        /// <summary>
+        /// When we pass in a full command name to try expand it shouldn't have any effect
+        /// </summary>
+        [Test]
+        public void TryExpand_Full()
+        {
+            var parser = new Parser("");
+            Assert.AreEqual("close", parser.TryExpand("close"));
+        }
+
+        /// <summary>
+        /// Make sure the abbreviation can be expanded
+        /// </summary>
+        [Test]
+        public void TryExpand_Abbrevation()
+        {
+            var parser = new Parser("");
+            foreach (var tuple in Parser.s_LineCommandNamePair)
+            {
+                if (!String.IsNullOrEmpty(tuple.Item2))
+                {
+                    Assert.AreEqual(tuple.Item1, parser.TryExpand(tuple.Item2));
+                }
+            }
         }
     }
 }

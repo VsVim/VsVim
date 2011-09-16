@@ -105,6 +105,22 @@ namespace Vim.UnitTest
             return (ParseResult<T>.Succeeded)parseResult;
         }
 
+        /// <summary>
+        /// Get the failed version of the ParseResult
+        /// </summary>
+        public static ParseResult<T>.Failed AsFailed<T>(this ParseResult<T> parseResult)
+        {
+            return (ParseResult<T>.Failed)parseResult;
+        }
+
+        /// <summary>
+        /// Is this a failed ParseResult with the given error message?
+        /// </summary>
+        public static bool IsFailed<T>(this ParseResult<T> parseResult, string message)
+        {
+            return parseResult.IsFailed && message == parseResult.AsFailed().Item;
+        }
+
         #endregion
 
         #region ModeSwitch

@@ -18,5 +18,5 @@ type Interpreter =
     member GetLineRange : lineRange : LineRange -> SnapshotLineRange option
 
     /// Run the LineCommand
-    member RunLineCommand : lineCommand : LineCommand -> unit
+    member RunLineCommand : lineCommand : LineCommand -> RunResult
 

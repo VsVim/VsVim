@@ -79,4 +79,6 @@ module internal Resources =
 
     let Parser_Error = "Parse error"
     let Parser_NoRangeAllowed = "No range allowed"
+    let Parser_NoMarksMatching x = sprintf "No marks matching \"%c\"" x
+
 

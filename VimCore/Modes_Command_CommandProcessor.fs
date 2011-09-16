@@ -169,7 +169,6 @@ type internal CommandProcessor
                 RunResult.Completed
 
         let normalSeq = seq {
-            yield ("close", "clo", this.ProcessClose |> wrap)
             yield ("delete","d", this.ProcessDelete |> wrap)
             yield ("edit", "e", this.ProcessEdit |> wrap)
             yield ("exit", "exi", this.ProcessWriteQuit |> wrap)
@@ -308,10 +307,6 @@ type internal CommandProcessor
         match _vimData.LastSubstituteData with
         | None -> SubstituteFlags.None
         | Some data -> data.Flags
-
-    /// Process the :close command
-    member x.ProcessClose _ _ hasBang = 
-        _interpreter.RunLineCommand (LineCommand.Close hasBang)
 
     /// Process the :join command
     member x.ProcessJoin (rest:char list) (range:SnapshotLineRange option) hasBang =
@@ -916,39 +911,13 @@ type internal CommandProcessor
     /// Parse out the range of the string and run the corresponding command
     member x.ParseAndRunInput (command : char list) =
 
-        let moveToLine line = 
-            let point = SnapshotLineUtil.GetFirstNonBlankOrStart line
-            _operations.MoveCaretToPointAndEnsureVisible point
-
-        if Seq.forall CharUtil.IsDigit command then
-            // Dandle the ':[line number]' command.  It's a bit special in that it's really a command 
-            // with no name and it allows the user to specify an invalid line number.
-            let number, rest = _rangeUtil.ParseNumber command
-            match number, List.isEmpty rest with
-            | Some number, true -> 
-                // We have a valid number and no other input so move the caret to that line number
-                // and ensure that it's visible on the screen.  This input is given in terms of 
-                // Vim line numbers so convert appropriately
-                let number = Util.VimLineToTssLine number
-                let line = SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
-                moveToLine line
-            | _ ->
-                // Anything else is an error
-                _statusUtil.OnError (Resources.CommandMode_CannotRun (StringUtil.ofCharList command))
+        let text = StringUtil.ofCharList command
+        match Parser.ParseLineCommand text with
+        | ParseResult.Failed msg -> 
+            _statusUtil.OnError msg
             RunResult.Completed
-        elif command.Length = 1 && List.head command = '$' then
-            let line = SnapshotUtil.GetLastLine x.CurrentSnapshot
-            moveToLine line
-            RunResult.Completed
-        else
-            match _rangeUtil.ParseRange command with
-            | ParseRangeResult.Succeeded (range, inputs) -> 
-                x.RunCommandWithRange inputs (Some range)
-            | ParseRangeResult.NoRange -> 
-                x.RunCommandWithRange command None
-            | ParseRangeResult.Failed msg -> 
-                _statusUtil.OnError msg
-                RunResult.Completed
+        | ParseResult.Succeeded lineCommand -> 
+            _interpreter.RunLineCommand lineCommand
 
     /// Run the specified command.  This function can be called recursively
     member x.RunCommand (input: char list)=
