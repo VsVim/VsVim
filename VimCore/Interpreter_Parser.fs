@@ -508,6 +508,40 @@ type Parser
         let arguments = x.ParseToEndOfLine()
         LineCommand.Make (hasBang, arguments) |> ParseResult.Succeeded
 
+    /// Parse out the :put command.  The presence of a bang indicates that we need
+    /// to put before instead of after
+    member x.ParsePut lineRange =
+        let hasBang = x.ParseBang()
+        x.SkipBlanks()
+        let registerName = x.ParseRegisterName()
+
+        if hasBang then
+            LineCommand.PutBefore (lineRange, registerName) |> ParseResult.Succeeded
+        else
+            LineCommand.PutAfter (lineRange, registerName) |> ParseResult.Succeeded
+
+    /// Parse out the :retab command
+    member x.ParseRetab lineRange =
+        let hasBang = x.ParseBang()
+        x.SkipBlanks()
+        let newTabStop = x.ParseNumber()
+        LineCommand.Retab (lineRange, hasBang, newTabStop) |> ParseResult.Succeeded
+
+    /// Parse out the :set command and all of it's variants
+    member x.ParseSet () = 
+        // TODO: Implement
+        ParseResult.Failed Resources.Parser_Error
+
+    /// Parse out the :qal and :quitall commands
+    member x.ParseQuitAll () =
+        let hasBang = x.ParseBang()
+        LineCommand.QuitAll hasBang |> ParseResult.Succeeded
+
+    /// Parse out the :quit command.
+    member x.ParseQuit () = 
+        let hasBang = x.ParseBang()
+        LineCommand.Quit hasBang |> ParseResult.Succeeded
+
     /// Parse out the :display and :registers command.  Just takes a single argument 
     /// which is the register name
     member x.ParseDisplayRegisters () = 
@@ -570,6 +604,14 @@ type Parser
                 | "join" -> x.ParseJoin lineRange 
                 | "make" -> noRange x.ParseMake 
                 | "marks" -> noRange x.ParseDisplayMarks
+                | "nohlsearch" -> noRange (fun () -> LineCommand.NoHlSearch |> ParseResult.Succeeded)
+                | "put" -> x.ParsePut lineRange
+                | "quit" -> noRange x.ParseQuit
+                | "qall" -> noRange x.ParseQuitAll
+                | "quitall" -> noRange x.ParseQuitAll
+                | "redo" -> noRange (fun () -> LineCommand.Redo |> ParseResult.Succeeded)
+                | "retab" -> x.ParseRetab lineRange
+                | "set" -> noRange x.ParseSet
                 | "registers" -> noRange x.ParseDisplayRegisters 
                 | "substitute" -> x.ParseSubstitute lineRange
                 | "wq" -> x.ParseQuitAndWrite lineRange

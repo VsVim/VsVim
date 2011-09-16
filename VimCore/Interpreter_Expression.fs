@@ -66,6 +66,12 @@ type FileOption =
     | Bad
     | Edit
 
+[<RequireQualifiedAccess>]
+type SettingDisplay =
+    | AllButTerminal
+    | AllTerminal
+    | Changed
+
 /// Represents te values or the '+cmd' which can occur on commads like :edit
 [<RequireQualifiedAccess>]
 type CommandOption =
@@ -103,6 +109,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// all marks
     | DisplayMarks of Mark list
 
+    /// Display the settings dictated by the SettingDisplay option
+    | DisplaySettings of SettingDisplay
+
     /// Fold the selected LineRange
     | Fold of LineRange option
 
@@ -121,6 +130,26 @@ and [<RequireQualifiedAccess>] LineCommand =
     ///   - All of the text after the !
     | Make of bool * string
 
+    /// Temporarily disable the 'hlsearch' option
+    | NoHlSearch
+
+    /// Put the contents of the given register after the line identified by the
+    /// LineRange (defaults to current)
+    | PutAfter of LineRange option * RegisterName option
+
+    /// Put the contents of the given register before the line identified by the
+    /// LineRange (defaults to current)
+    | PutBefore of LineRange option * RegisterName option
+
+    /// Redo the last item on the undo stack
+    | Redo
+
+    /// Retab the specified LineRange.  The options are as follows
+    ///  - The LineRange to change (defaults to entire buffer)
+    ///  - True to replace both tabs and spaces, false for just spaces
+    ///  - new tabstop value
+    | Retab of LineRange option * bool * int option
+
     /// The :substitute command.  The argument order is range, search, replace,
     /// substitute flags and count
     | Substitute of LineRange option * string * string * SubstituteFlags * int option
@@ -132,6 +161,14 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// The variant of the :substitute command which repeats the last :subsitute with
     /// different flags, count and using the last search as the pattern
     | SubstituteRepeatLastWithSearch of LineRange option * SubstituteFlags * int option
+
+    /// Quit the curren window without writing it's content.  If the boolean option
+    /// is present (for !) then don't warn about a dirty window
+    | Quit of bool
+
+    /// Quit all windows without writing their content and exit Vim.  If the boolean
+    /// option is present then don't warn about writing a dirty window
+    | QuitAll of bool
 
     /// Quit the current window after writing out it's contents.  The values range as 
     /// follows
