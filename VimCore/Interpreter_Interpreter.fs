@@ -17,6 +17,7 @@ type Interpreter
     let _textBuffer = _vimBufferData.TextBuffer
     let _textView = _vimBufferData.TextView
     let _markMap = _vimTextBuffer.Vim.MarkMap
+    let _keyMap = _vimTextBuffer.Vim.KeyMap
     let _statusUtil = _vimBufferData.StatusUtil
     let _regexFactory = VimRegexFactory(_vimBufferData.LocalSettings.GlobalSettings)
     let _registerMap = _vimBufferData.Vim.RegisterMap
@@ -126,9 +127,46 @@ type Interpreter
         | None -> SnapshotLineRangeUtil.CreateForLine x.CaretLine |> Some
         | Some lineRange -> x.GetLineRange lineRange
 
+    /// Clear out the key map for the given modes
+    member x.RunClearKeyMap keyRemapModes = 
+        keyRemapModes
+        |> Seq.iter _keyMap.Clear
+        RunResult.Completed
+
     /// Run the close command
     member x.RunClose hasBang = 
         _vimHost.Close _textView (not hasBang)
+        RunResult.Completed
+
+    /// Edit the specified file
+    member x.RunEdit hasBang fileOptions commandOption filePath =
+        if not (List.isEmpty fileOptions) then
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
+        elif Option.isSome commandOption then
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++cmd]")
+        elif System.String.IsNullOrEmpty filePath then 
+            if not hasBang && _vimHost.IsDirty _textBuffer then
+                _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
+            else
+                let caret = 
+                    let point = TextViewUtil.GetCaretPoint _textView
+                    point.Snapshot.CreateTrackingPoint(point.Position, PointTrackingMode.Negative)
+                if not (_vimHost.Reload _textBuffer) then
+                    _commonOperations.Beep()
+                else
+                    match TrackingPointUtil.GetPoint _textView.TextSnapshot caret with
+                    | None -> ()
+                    | Some(point) -> 
+                        TextViewUtil.MoveCaretToPoint _textView point
+                        TextViewUtil.EnsureCaretOnScreen _textView
+
+        elif not hasBang && _vimHost.IsDirty _textBuffer then
+            _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
+        else
+            match _vimHost.LoadFileIntoExistingWindow filePath _textBuffer with
+            | HostResult.Success -> ()
+            | HostResult.Error(msg) -> _statusUtil.OnError(msg)
+
         RunResult.Completed
 
     /// Run the delete command.  Delete the specified range of text and set it to 
@@ -141,6 +179,45 @@ type Interpreter
         let value = RegisterValue.String (StringData.OfSpan span, OperationKind.LineWise)
         _registerMap.SetRegisterValue register RegisterOperation.Delete value
 
+        RunResult.Completed
+
+    /// Display the given map modes
+    member x.RunDisplayKeyMap keyRemapModes keyNotationOption = 
+        // TODO: implement
+        RunResult.Completed
+
+    /// Display the registers.  If a particular name is specified only display that register
+    member x.RunDisplayRegisters registerName =
+
+        let names = 
+            match registerName with
+            | None -> 
+
+                // If no names are used then we display all named and numbered registers 
+                RegisterName.All
+                |> Seq.filter (fun name ->
+                    match name with
+                    | RegisterName.Numbered _ -> true
+                    | RegisterName.Named named -> not named.IsAppend
+                    | _ -> false)
+            | Some registerName ->
+                // Convert the remaining items to registers.  Should work with any valid 
+                // name not just named and numbers
+                [registerName] |> Seq.ofList
+
+        // Build up the status string messages
+        let lines = 
+            names 
+            |> Seq.map (fun name -> 
+                let register = _registerMap.GetRegister name
+                match register.Name.Char, StringUtil.isNullOrEmpty register.StringValue with
+                | None, _ -> None
+                | Some c, true -> None
+                | Some c, false -> Some (c, register.StringValue))
+            |> SeqUtil.filterToSome
+            |> Seq.map (fun (name, value) -> sprintf "\"%c   %s" name value)
+        let lines = Seq.append (Seq.singleton Resources.CommandMode_RegisterBanner) lines
+        _statusUtil.OnStatusLong lines
         RunResult.Completed
 
     /// Jump to the last line
@@ -252,8 +329,12 @@ type Interpreter
                 func lineRange
 
         match lineCommand with
+        | LineCommand.ClearKeyMap keyRemapModes -> x.RunClearKeyMap keyRemapModes
         | LineCommand.Close hasBang -> x.RunClose hasBang
+        | LineCommand.Edit (hasBang, fileOptions, commandOption, filePath) -> x.RunEdit hasBang fileOptions commandOption filePath
         | LineCommand.Delete (lineRange, registerName, count) -> runWithLineRangeAndEndCount lineRange count (fun lineRange -> x.RunDelete lineRange (getRegister registerName))
+        | LineCommand.DisplayKeyMap (keyRemapModes, keyNotationOption) -> x.RunDisplayKeyMap keyRemapModes keyNotationOption
+        | LineCommand.DisplayRegisters registerName -> x.RunDisplayRegisters registerName
         | LineCommand.JumpToLastLine -> x.RunJumpToLastLine()
         | LineCommand.JumpToLine number -> x.RunJumpToLine number
         | LineCommand.Substitute (lineRange, pattern, replace, flags, count) -> runWithLineRangeAndEndCount lineRange count (fun lineRange -> x.RunSubstitute lineRange pattern replace flags)

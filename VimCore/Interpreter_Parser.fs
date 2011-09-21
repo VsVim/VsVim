@@ -402,10 +402,7 @@ type Parser
         let commandOption = x.ParseCommandOption()
 
         x.SkipBlanks()
-        let fileName =
-            match x.CurrentChar with
-            | None -> None
-            | Some _ -> x.ParseToEndOfLine() |> Some
+        let fileName = x.ParseToEndOfLine()
 
         LineCommand.Edit (hasBang, fileOptionList, commandOption, fileName)
 

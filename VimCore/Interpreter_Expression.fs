@@ -134,7 +134,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     ///  - The provided ++opt
     ///  - The provided +cmd 
     ///  - The provided file to edit 
-    | Edit of bool * FileOption list * CommandOption option * string option
+    | Edit of bool * FileOption list * CommandOption option * string
 
     /// The :delete command 
     | Delete of LineRange option * RegisterName option * int option 

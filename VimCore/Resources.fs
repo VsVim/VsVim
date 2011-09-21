@@ -83,4 +83,6 @@ module internal Resources =
     let Parser_NoBangAllowed = "No ! allowed"
     let Parser_InvalidArgument = "Invalid Argument"
 
+    let Interpreter_OptionNotSupported x = sprintf "Option is not supported: '%s'" x
+
 
