@@ -127,18 +127,45 @@ namespace Vim.UI.Wpf.Implementation
             _view.Caret.PositionChanged += OnCaretEvent;
             _view.Closed += OnTextViewClosed;
 
-            var caretBlinkTime = NativeMethods.GetCaretBlinkTime();
-            var caretBlinkTimeSpan = new TimeSpan(0, 0, 0, 0, caretBlinkTime);
+            var caretBlinkTime = GetCaretBlinkTime();
+            var caretBlinkTimeSpan = new TimeSpan(0, 0, 0, 0, caretBlinkTime ?? Int32.MaxValue);
             _blinkTimer = new DispatcherTimer(
                 caretBlinkTimeSpan,
                 DispatcherPriority.Normal,
                 _protectedOperations.GetProtectedEventHandler(OnCaretBlinkTimer),
                 Dispatcher.CurrentDispatcher);
+            _blinkTimer.IsEnabled = caretBlinkTime != null;
         }
 
         internal BlockCaret(IWpfTextView view, string adornmentLayerName, IEditorFormatMap formatMap, IProtectedOperations protectedOperations) :
             this(view, formatMap, view.GetAdornmentLayer(adornmentLayerName), protectedOperations)
         {
+
+        }
+
+        /// <summary>
+        /// Get the number of miliseconds for the caret blink time.  Null is returned if the 
+        /// caret should not blink
+        /// </summary>
+        private int? GetCaretBlinkTime()
+        {
+            var blinkTime = NativeMethods.GetCaretBlinkTime();
+
+            // The API returns INFINITE if the caret simply should not blink.  Additionally it returns
+            // 0 on error which we will just treat as infinite
+            if (blinkTime == NativeMethods.INFINITE || blinkTime == 0)
+            {
+                return null;
+            }
+
+            try
+            {
+                return checked((int) blinkTime);
+            }
+            catch (Exception)
+            {
+                return Int32.MaxValue;
+            }
         }
 
         private void OnCaretEvent(object sender, EventArgs e)
@@ -313,8 +340,11 @@ namespace Vim.UI.Wpf.Implementation
                 MoveCaretImageToCaret();
 
                 // Restart the timer so the block caret doesn't immediately disappear
-                _blinkTimer.IsEnabled = false;
-                _blinkTimer.IsEnabled = true;
+                if (_blinkTimer.IsEnabled)
+                {
+                    _blinkTimer.IsEnabled = false;
+                    _blinkTimer.IsEnabled = true;
+                }
             }
             else
             {
