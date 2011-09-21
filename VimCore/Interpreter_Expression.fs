@@ -122,6 +122,9 @@ and [<RequireQualifiedAccess>] Expression =
 
 and [<RequireQualifiedAccess>] LineCommand =
 
+    /// Clear out the keyboard map for the given modes
+    | ClearKeyMap of KeyRemapMode list
+
     /// The :close command.  The bool value represents whether or not the 
     /// bang modifier was added
     | Close of bool
@@ -143,6 +146,10 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Display the specified marks.  If no Mark values are provided then display 
     /// all marks
     | DisplayMarks of Mark list
+
+    /// Display the keymap for the given modes.  Restrict the display to the provided
+    /// key notation if it's provided
+    | DisplayKeyMap of KeyRemapMode list * string option
 
     /// Fold the selected LineRange
     | Fold of LineRange option
@@ -173,6 +180,10 @@ and [<RequireQualifiedAccess>] LineCommand =
     ///   - The ! option
     ///   - All of the text after the !
     | Make of bool * string
+
+    /// Map the key notation in the given modes.  The bool is whether or not the right
+    /// notation can allow remapping
+    | MapKeys of string * string * KeyRemapMode list * bool
 
     /// Temporarily disable the 'hlsearch' option
     | NoHlSearch
@@ -246,6 +257,9 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// Undo the last change
     | Undo
+
+    /// Unmap the key notation in the given modes
+    | UnmapKeys of string * KeyRemapMode list
 
     /// Yank the line range into the given register with the specified count
     | Yank of LineRange option * RegisterName option * int option
