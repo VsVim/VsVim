@@ -66,11 +66,46 @@ type FileOption =
     | Bad
     | Edit
 
+/// The set command can take a number of arguments.  This represents the allowed values
 [<RequireQualifiedAccess>]
-type SettingDisplay =
-    | AllButTerminal
-    | AllTerminal
-    | Changed
+type SetArgument  =
+
+    /// The 'all' argument. 
+    | DisplayAllButTerminal
+    
+    // Display the specific setting
+    | DisplaySetting of string 
+
+    /// The 'termcap' argument
+    | DisplayAllTerminal
+
+    /// The 'all&' argument.  Resets all setting to their default value
+    | ResetAllToDefault
+
+    /// Use the setting.  Produced when an setting name is used without arguments.  The behavior 
+    /// depends on the type of the setting once it's bound
+    | UseSetting of string
+
+    /// Toggle the setting value.  How the toggle works depends on the type of the setting
+    | ToggleSetting of string
+
+    /// Invert the setting
+    | InvertSetting of string
+
+    /// Reset the setting to it's default value
+    | ResetSetting of string
+
+    /// Set the setting to the specified value
+    | AssignSetting of string * string
+
+    /// Add the value to the setting
+    | AddSetting of string * string
+
+    /// Multiply the value of the setting with the value
+    | MultiplySetting of string * string 
+
+    /// Subtracte the value of the setting with the value
+    | SubtractSetting of string * string
 
 /// Represents te values or the '+cmd' which can occur on commads like :edit
 [<RequireQualifiedAccess>]
@@ -109,11 +144,20 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// all marks
     | DisplayMarks of Mark list
 
-    /// Display the settings dictated by the SettingDisplay option
-    | DisplaySettings of SettingDisplay
-
     /// Fold the selected LineRange
     | Fold of LineRange option
+
+    /// Go to the first tab 
+    | GotoFirstTab
+
+    /// Go to the last tab
+    | GotoLastTab
+
+    /// Go to the next tab
+    | GotoNextTab of int option
+
+    /// Go to the previous tab
+    | GotoPreviousTab of int option
 
     /// Join the lines in the specified range.  Optionally provides a count of lines to 
     /// start the join after the line range
@@ -141,27 +185,6 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// LineRange (defaults to current)
     | PutBefore of LineRange option * RegisterName option
 
-    /// Redo the last item on the undo stack
-    | Redo
-
-    /// Retab the specified LineRange.  The options are as follows
-    ///  - The LineRange to change (defaults to entire buffer)
-    ///  - True to replace both tabs and spaces, false for just spaces
-    ///  - new tabstop value
-    | Retab of LineRange option * bool * int option
-
-    /// The :substitute command.  The argument order is range, search, replace,
-    /// substitute flags and count
-    | Substitute of LineRange option * string * string * SubstituteFlags * int option
-
-    /// The variant of the :substitute command which repeats the last :subsitute with
-    /// different flags and count
-    | SubstituteRepeatLast of LineRange option * SubstituteFlags * int option
-
-    /// The variant of the :substitute command which repeats the last :subsitute with
-    /// different flags, count and using the last search as the pattern
-    | SubstituteRepeatLastWithSearch of LineRange option * SubstituteFlags * int option
-
     /// Quit the curren window without writing it's content.  If the boolean option
     /// is present (for !) then don't warn about a dirty window
     | Quit of bool
@@ -177,4 +200,53 @@ and [<RequireQualifiedAccess>] LineCommand =
     ///  - The provided ++opt
     ///  - The provided +cmd
     | QuitWithWrite of LineRange option * bool * FileOption list * string option 
+
+    /// Redo the last item on the undo stack
+    | Redo
+
+    /// Retab the specified LineRange.  The options are as follows
+    ///  - The LineRange to change (defaults to entire buffer)
+    ///  - True to replace both tabs and spaces, false for just spaces
+    ///  - new tabstop value
+    | Retab of LineRange option * bool * int option
+
+    /// Process the 'set' command
+    | Set of SetArgument list
+
+    /// Process the '/' and '?' commands
+    | Search of Path * string
+
+    /// Process the '<' shift left command
+    | ShiftLeft of LineRange option * int option
+
+    /// Process the '>' shift right command
+    | ShiftRight of LineRange option * int option
+
+    /// Process the 'source' command.  
+    | Source of bool * string
+
+    /// Process the 'split' command.  The values range as follows
+    ///  - Height of the window if specified.  Expressed as a range.  The actual documentation
+    ///    doesn't specify a range can be used here but usage indicates it can
+    ///  - The provided ++opt
+    ///  - The provided +cmd
+    | Split of LineRange option * FileOption list * CommandOption option
+
+    /// The :substitute command.  The argument order is range, search, replace,
+    /// substitute flags and count
+    | Substitute of LineRange option * string * string * SubstituteFlags * int option
+
+    /// The variant of the :substitute command which repeats the last :subsitute with
+    /// different flags and count
+    | SubstituteRepeatLast of LineRange option * SubstituteFlags * int option
+
+    /// The variant of the :substitute command which repeats the last :subsitute with
+    /// different flags, count and using the last search as the pattern
+    | SubstituteRepeatLastWithSearch of LineRange option * SubstituteFlags * int option
+
+    /// Undo the last change
+    | Undo
+
+    /// Yank the line range into the given register with the specified count
+    | Yank of LineRange option * RegisterName option * int option
 

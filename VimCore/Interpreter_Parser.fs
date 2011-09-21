@@ -70,6 +70,9 @@ type Parser
         else
             Some _text.[_index]
 
+    /// Is the parser at the end of the line
+    member x.IsAtEndOfLine = _index = _text.Length
+
     member x.IsCurrentChar predicate = 
         match x.CurrentChar with
         | None -> false
@@ -79,10 +82,6 @@ type Parser
         match x.CurrentChar with
         | None -> false
         | Some c -> c = value
-
-    /// Does the text begin with the provided value
-    member x.IsCurrentString value = 
-        _text.Substring(_index).StartsWith(value)
 
     member x.RemainingText =
         _text.Substring(_index)
@@ -114,6 +113,21 @@ type Parser
         |> Seq.filter (fun (name, abbreviation) -> isAbbreviation name abbreviation)
         |> Seq.map fst
         |> SeqUtil.headOrDefault name
+
+    /// Try and parse out the given word from the text.  If the next word matches the
+    /// given string then the parser moves past that word and returns true.  Else the 
+    /// index is unchanged and false is returned
+    member x.TryParseWord word = 
+        let mark = _index
+        match x.ParseWord() with
+        | None ->
+            false
+        | Some foundWord -> 
+            if foundWord = word then
+                true
+            else
+                _index <- mark
+                false
 
     /// Parse out the '!'.  Returns true if a ! was found and consumed
     /// actually skipped
@@ -440,7 +454,7 @@ type Parser
 
     /// Parse out the substitute command.  This should be called with the index just after
     /// the end of the :substitute word
-    member x.ParseSubstitute lineRange = 
+    member x.ParseSubstitute lineRange processFlags = 
         x.SkipBlanks()
 
         // Is this valid as a search string delimiter
@@ -468,12 +482,69 @@ type Parser
                 | Some replace ->
                     x.SkipBlanks()
                     let flags = x.ParseSubstituteFlags()
+                    let flags = processFlags flags
                     x.SkipBlanks()
                     let count = x.ParseNumber()
                     let command = LineCommand.Substitute (lineRange, pattern, replace, flags, count)
                     ParseResult.Succeeded command
         else
             ParseResult.Failed Resources.Parser_Error
+
+    /// Parse out the :smagic command
+    member x.ParseSubstituteMagic lineRange = 
+        x.ParseSubstitute lineRange (fun flags ->
+            let flags = Util.UnsetFlag flags SubstituteFlags.Nomagic
+            flags ||| SubstituteFlags.Magic)
+
+    /// Parse out the :snomagic command
+    member x.ParseSubstituteNoMagic lineRange = 
+        x.ParseSubstitute lineRange (fun flags ->
+            let flags = Util.UnsetFlag flags SubstituteFlags.Magic
+            flags ||| SubstituteFlags.Nomagic)
+
+    /// Parse out the '&' command
+    member x.ParseSubstituteRepeatLast lineRange = 
+        let flags = x.ParseSubstituteFlags()
+        x.SkipBlanks()
+        let count = x.ParseNumber()
+        LineCommand.SubstituteRepeatLast (lineRange, flags, count) |> ParseResult.Succeeded
+
+    /// Parse out the '~' command
+    member x.ParseSubstituteRepeatLastWithSearch lineRange = 
+        let flags = x.ParseSubstituteFlags()
+        x.SkipBlanks()
+        let count = x.ParseNumber()
+        LineCommand.SubstituteRepeatLastWithSearch (lineRange, flags, count) |> ParseResult.Succeeded
+
+
+    /// Parse out the search commands
+    member x.ParseSearch path =
+        let pattern = x.ParseToEndOfLine()
+        LineCommand.Search (path, pattern) |> ParseResult.Succeeded
+
+    /// Parse out the shift left pattern
+    member x.ParseShiftLeft lineRange = 
+        x.SkipBlanks()
+        let count = x.ParseNumber()
+        LineCommand.ShiftLeft (lineRange, count) |> ParseResult.Succeeded
+
+    /// Parse out the shift right pattern
+    member x.ParseShiftRight lineRange = 
+        x.SkipBlanks()
+        let count = x.ParseNumber()
+        LineCommand.ShiftRight (lineRange, count) |> ParseResult.Succeeded
+
+    /// Parse out the 'tabnext' command
+    member x.ParseTabNext() =   
+        x.SkipBlanks()
+        let count = x.ParseNumber()
+        ParseResult.Succeeded (LineCommand.GotoNextTab count)
+
+    /// Parse out the 'tabprevious' command
+    member x.ParseTabPrevious() =   
+        x.SkipBlanks()
+        let count = x.ParseNumber()
+        ParseResult.Succeeded (LineCommand.GotoPreviousTab count)
 
     /// Parse out the quit and write command.  This includes 'wq', 'xit' and 'exit' commands.
     member x.ParseQuitAndWrite lineRange = 
@@ -489,6 +560,16 @@ type Parser
             | Some _ -> x.ParseToEndOfLine() |> Some
 
         LineCommand.QuitWithWrite (lineRange, hasBang, fileOptionList, fileName) |> ParseResult.Succeeded
+
+    /// Parse out the yank command
+    member x.ParseYank lineRange =
+        x.SkipBlanks()
+        let registerName = x.ParseRegisterName()
+
+        x.SkipBlanks()
+        let count = x.ParseNumber()
+
+        LineCommand.Yank (lineRange, registerName, count) |> ParseResult.Succeeded
 
     /// Parse out the fold command
     member x.ParseFold lineRange =
@@ -529,8 +610,91 @@ type Parser
 
     /// Parse out the :set command and all of it's variants
     member x.ParseSet () = 
-        // TODO: Implement
-        ParseResult.Failed Resources.Parser_Error
+
+        // Parse out an individual option and add it to the 'withArgument' continuation
+        let rec parseOption withArgument = 
+            x.SkipBlanks()
+
+            // Parse out the next argument and use 'argument' as the value of the current
+            // argument
+            let parseNext argument = parseOption (fun list -> argument :: list)
+
+            // Parse out an operator.  Parse out the value and use the specified setting name
+            // and argument function as the argument
+            let parseOperator name argumentFunc = 
+                x.IncrementIndex()
+                match x.ParseWord() with
+                | None -> ParseResult.Failed Resources.Parser_Error
+                | Some value -> parseNext (argumentFunc (name, value))
+
+            // Parse out a compound operator.  This is used for '+=' and such.  This will be called
+            // with the index pointed at the first character
+            let parseCompoundOperator name argumentFunc = 
+                x.IncrementIndex()
+                if x.IsCurrentCharValue '=' then
+                    x.IncrementIndex()
+                    parseOperator name argumentFunc
+                else
+                    ParseResult.Failed Resources.Parser_Error
+
+            if x.IsAtEndOfLine then
+                let list = withArgument []
+                ParseResult.Succeeded (LineCommand.Set list)
+            elif x.TryParseWord "all" then
+                if x.IsCurrentCharValue '&' then
+                    x.IncrementIndex()
+                    parseNext SetArgument.ResetAllToDefault
+                else
+                    parseNext SetArgument.DisplayAllButTerminal
+            elif x.TryParseWord "termcap" then
+                parseNext SetArgument.DisplayAllTerminal
+            else
+                match x.ParseWord() with
+                | None ->
+                     ParseResult.Failed Resources.Parser_Error                   
+                | Some name ->
+                    if name.StartsWith("no", System.StringComparison.Ordinal) then
+                        let option = name.Substring(2)
+                        parseNext (SetArgument.ToggleSetting option)
+                    elif name.StartsWith("inv", System.StringComparison.Ordinal) then
+                        let option = name.Substring(3)
+                        parseNext (SetArgument.InvertSetting option)
+                    else
+
+                        // Need to look at the next character to decide what type of 
+                        // argument this is
+                        match x.CurrentChar with
+                        | None -> 
+                            parseNext (SetArgument.DisplaySetting name)
+                        | Some c ->
+                            match c with 
+                            | '!' -> parseNext (SetArgument.InvertSetting name)
+                            | ':' -> parseOperator name SetArgument.AssignSetting
+                            | '=' -> parseOperator name SetArgument.AssignSetting
+                            | '+' -> parseCompoundOperator name SetArgument.AddSetting
+                            | '^' -> parseCompoundOperator name SetArgument.MultiplySetting
+                            | '-' -> parseCompoundOperator name SetArgument.SubtractSetting
+                            | _ -> ParseResult.Failed Resources.Parser_Error
+
+        parseOption (fun x -> x)
+
+    /// Parse out the :source command.  It can have an optional '!' following it then a file
+    /// name 
+    member x.ParseSource() =
+        let hasBang = x.ParseBang()
+        x.SkipBlanks()
+        let fileName = x.ParseToEndOfLine()
+        ParseResult.Succeeded (LineCommand.Source (hasBang, fileName))
+
+    /// Parse out the :split commnad
+    member x.ParseSplit lineRange =
+        x.SkipBlanks()
+        let fileOptionList = x.ParseFileOptions()
+
+        x.SkipBlanks()
+        let commandOption = x.ParseCommandOption()
+
+        ParseResult.Succeeded (LineCommand.Split (lineRange, fileOptionList, commandOption))
 
     /// Parse out the :qal and :quitall commands
     member x.ParseQuitAll () =
@@ -586,12 +750,17 @@ type Parser
                 | None -> x.ParseClose()
                 | Some _ -> ParseResult.Failed Resources.Parser_NoRangeAllowed
 
-            // Get the command name and make sure to expand it to ti's possible full
+            // Get the command name and make sure to expand it to it's possible full
             // name
             let name = 
-                x.ParseWord()
-                |> OptionUtil.getOrDefault ""
-                |> x.TryExpand
+                if x.IsCurrentChar CharUtil.IsAlpha then
+                    x.ParseWord()
+                    |> OptionUtil.getOrDefault ""
+                    |> x.TryExpand
+                else
+                    match x.CurrentChar with
+                    | None -> ""
+                    | Some c -> StringUtil.ofChar c
 
             let parseResult = 
                 match name with
@@ -612,10 +781,28 @@ type Parser
                 | "redo" -> noRange (fun () -> LineCommand.Redo |> ParseResult.Succeeded)
                 | "retab" -> x.ParseRetab lineRange
                 | "set" -> noRange x.ParseSet
+                | "source" -> noRange x.ParseSource
+                | "split" -> x.ParseSplit lineRange
                 | "registers" -> noRange x.ParseDisplayRegisters 
-                | "substitute" -> x.ParseSubstitute lineRange
+                | "substitute" -> x.ParseSubstitute lineRange (fun x -> x)
+                | "smagic" -> x.ParseSubstituteMagic lineRange
+                | "snomagic" -> x.ParseSubstituteNoMagic lineRange
+                | "tabfirst" -> noRange (fun () -> ParseResult.Succeeded LineCommand.GotoFirstTab)
+                | "tabrewind" -> noRange (fun () -> ParseResult.Succeeded LineCommand.GotoFirstTab)
+                | "tablast" -> noRange (fun () -> ParseResult.Succeeded LineCommand.GotoLastTab)
+                | "tabnext" -> noRange x.ParseTabNext 
+                | "tabNext" -> noRange x.ParseTabPrevious
+                | "tabprevious" -> noRange x.ParseTabPrevious
+                | "undo" -> noRange (fun () -> LineCommand.Undo |> ParseResult.Succeeded)
                 | "wq" -> x.ParseQuitAndWrite lineRange
                 | "xit" -> x.ParseQuitAndWrite lineRange
+                | "yank" -> x.ParseYank lineRange
+                | "/" -> noRange (x.ParseSearch Path.Forward)
+                | "?" -> noRange (x.ParseSearch Path.Backward)
+                | "<" -> x.ParseShiftLeft lineRange
+                | ">" -> x.ParseShiftRight lineRange
+                | "&" -> x.ParseSubstituteRepeatLast lineRange
+                | "~" -> x.ParseSubstituteRepeatLastWithSearch lineRange
                 | _ -> ParseResult.Failed Resources.Parser_Error
 
             match parseResult with
