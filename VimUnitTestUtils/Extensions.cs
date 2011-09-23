@@ -702,6 +702,14 @@ namespace Vim.UnitTest
 
         #region SnapshotPoint
 
+        /// <summary>
+        /// Get the column hat this SnapshotPoint occupies
+        /// </summary>
+        public static int GetColumn(this SnapshotPoint point)
+        {
+            return SnapshotPointUtil.GetColumn(point);
+        }
+
         public static SnapshotSpan GetSpan(this SnapshotPoint point, int length)
         {
             return new SnapshotSpan(point, length);

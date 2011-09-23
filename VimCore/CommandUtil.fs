@@ -1602,6 +1602,64 @@ type internal CommandUtil
     /// Repeat the last executed command against the current buffer
     member x.RepeatLastCommand (repeatData : CommandData) = 
 
+        // Chain the running of the next command on the basis of the success of 
+        // the previous command
+        let chainCommand commandResult runNextCommand = 
+
+            // Running linked commands will throw away the ModeSwitch value.  This can contain
+            // an open IUndoTransaction.  This must be completed here or it will break undo in the 
+            // ITextBuffer
+            let maybeCloseTransaction modeSwitch = 
+                match modeSwitch with
+                | ModeSwitch.SwitchModeWithArgument (_, argument) ->
+                    match argument with
+                    | ModeArgument.None -> ()
+                    | ModeArgument.FromVisual -> ()
+                    | ModeArgument.InitialVisualSelection _ -> ()
+                    | ModeArgument.InsertWithCount _ -> ()
+                    | ModeArgument.InsertWithCountAndNewLine _ -> ()
+                    | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
+                    | ModeArgument.OneTimeCommand _ -> ()
+                    | ModeArgument.Substitute _ -> ()
+                | _ -> ()
+    
+            match commandResult with
+            | CommandResult.Error ->
+                commandResult
+            | CommandResult.Completed modeSwitch ->
+                maybeCloseTransaction modeSwitch
+                runNextCommand ()
+
+        // Repeating an insert command is a bit different than repeating a normal command because
+        // of the way the caret position is handled.  Every insert command ends with a move left
+        // on the caret.  When repeating this move left is only done once though.
+        let repeatInsert command count = 
+            let command, doMoveLeft = 
+                match command with
+                | InsertCommand.Combined (leftCommand, rightCommand) ->
+                    if leftCommand = InsertCommand.MoveCaret Direction.Left then
+                        rightCommand, true
+                    else
+                        command, false
+                | _ -> command, false
+
+            // Run the commands in sequence.  Only continue onto the second if the first 
+            // command succeeds.  We do want any actions performed in the linked commands
+            // to remain linked so do this inside of an edit transaction
+            let commandResult = x.EditWithUndoTransaciton "LinkedCommand" (fun () ->
+                let rec func count commandResult = 
+                    if count = 0 then
+                        commandResult
+                    else
+                        chainCommand commandResult (fun () -> func (count - 1) (_insertUtil.RunInsertCommand command))
+
+                func (count - 1) (_insertUtil.RunInsertCommand command))
+
+            if doMoveLeft then
+                chainCommand commandResult (fun () -> _insertUtil.RunInsertCommand (InsertCommand.MoveCaret Direction.Left))
+            else
+                commandResult
+
         // Function to actually repeat the last change 
         let rec repeat (command : StoredCommand) (repeatData : CommandData option) = 
 
@@ -1627,42 +1685,20 @@ type internal CommandUtil
                 x.RunVisualCommand command data visualSpan
             | StoredCommand.InsertCommand (command, _) ->
 
-                (*
                 let count = 
                     match repeatData with
                     | Some repeatData -> repeatData.CountOrDefault
-                    | None -> 1 *)
+                    | None -> 1 
 
-                x.RunInsertCommand command
+                repeatInsert command count
             | StoredCommand.LinkedCommand (command1, command2) -> 
-
-                // Running linked commands will throw away the ModeSwitch value.  This can contain
-                // an open IUndoTransaction.  This must be completed here or it will break undo in the 
-                // ITextBuffer
-                let maybeCloseTransaction modeSwitch = 
-                    match modeSwitch with
-                    | ModeSwitch.SwitchModeWithArgument (_, argument) ->
-                        match argument with
-                        | ModeArgument.None -> ()
-                        | ModeArgument.FromVisual -> ()
-                        | ModeArgument.InitialVisualSelection _ -> ()
-                        | ModeArgument.InsertWithCount _ -> ()
-                        | ModeArgument.InsertWithCountAndNewLine _ -> ()
-                        | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
-                        | ModeArgument.OneTimeCommand _ -> ()
-                        | ModeArgument.Substitute _ -> ()
-                    | _ -> ()
 
                 // Run the commands in sequence.  Only continue onto the second if the first 
                 // command succeeds.  We do want any actions performed in the linked commands
                 // to remain linked so do this inside of an edit transaction
                 x.EditWithUndoTransaciton "LinkedCommand" (fun () ->
-                    match repeat command1 repeatData with
-                    | CommandResult.Error -> 
-                        CommandResult.Error
-                    | CommandResult.Completed modeSwitch ->
-                        maybeCloseTransaction modeSwitch
-                        repeat command2 None)
+                    let commandResult = repeat command1 repeatData
+                    chainCommand commandResult (fun () -> repeat command2 None))
 
         if _inRepeatLastChange then
             _statusUtil.OnError Resources.NormalMode_RecursiveRepeatDetected
