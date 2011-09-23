@@ -278,6 +278,40 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Repeat a simple text insertion with a count
+        /// </summary>
+        [Test]
+        public void Repeat_InsertWithCount()
+        {
+            Create("", "");
+            _vimBuffer.Process('h');
+            _vimBuffer.Process(VimKey.Escape);
+            Assert.AreEqual("h", _textView.GetLine(0).GetText());
+            _textView.MoveCaretToLine(1);
+            _vimBuffer.Process("3.");
+            Assert.AreEqual("hhh", _textView.GetLine(1).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().GetColumn());
+        }
+
+        /// <summary>
+        /// Repeat a simple text insertion with a count.  Focus on making sure the caret position
+        /// is correct.  Added text ensures the end of line doesn't save us by moving the caret
+        /// backwards
+        /// </summary>
+        [Test]
+        public void Repeat_InsertWithCountOverOtherText()
+        {
+            Create("", "a");
+            _vimBuffer.Process('h');
+            _vimBuffer.Process(VimKey.Escape);
+            Assert.AreEqual("h", _textView.GetLine(0).GetText());
+            _textView.MoveCaretToLine(1);
+            _vimBuffer.Process("3.");
+            Assert.AreEqual("hhha", _textView.GetLine(1).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().GetColumn());
+        }
+
+        /// <summary>
         /// Ensure when the mode is entered with a count that the escape will cause the
         /// deleted text to be repeated
         /// </summary>

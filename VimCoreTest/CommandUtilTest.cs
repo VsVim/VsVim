@@ -402,31 +402,28 @@ namespace VimCore.UnitTest
         /// Repeat a simple text insert
         /// </summary>
         [Test]
-        [Ignore("Need to look at this since the architecture changed")]
         public void RepeatLastCommand_InsertText()
         {
             Create("");
             var textChange = TextChange.NewInsert("h");
             var command = InsertCommand.NewTextChange(textChange);
             _vimData.LastCommand = FSharpOption.Create(StoredCommand.NewInsertCommand(command, CommandFlags.Repeatable));
-            // _operations.Setup(x => x.ApplyTextChange(textChange, false, 1)).Verifiable();
             _commandUtil.RepeatLastCommand(VimUtil.CreateCommandData());
-            _factory.Verify();
+            Assert.AreEqual("h", _textBuffer.GetLine(0).GetText());
         }
 
         /// <summary>
         /// Repeat a simple text insert with a new count
         /// </summary>
         [Test]
-        [Ignore("Need to look at this since the architecture changed")]
         public void RepeatLastCommand_InsertTextNewCount()
         {
             Create("");
-            var change = TextChange.NewInsert("h");
-            // _vimData.LastCommand = FSharpOption.Create(StoredCommand.NewTextChangeCommand(change));
-            // _operations.Setup(x => x.ApplyTextChange(change, false, 3)).Verifiable();
+            var textChange = TextChange.NewInsert("h");
+            var command = InsertCommand.NewTextChange(textChange);
+            _vimData.LastCommand = FSharpOption.Create(StoredCommand.NewInsertCommand(command, CommandFlags.Repeatable));
             _commandUtil.RepeatLastCommand(VimUtil.CreateCommandData(count: 3));
-            _factory.Verify();
+            Assert.AreEqual("hhh", _textBuffer.GetLine(0).GetText());
         }
 
         /// <summary>

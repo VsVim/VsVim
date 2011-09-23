@@ -373,7 +373,7 @@ type internal ChangeTracker
     let _vimData = _vim.VimData
 
     member x.OnVimBufferCreated (buffer : IVimBuffer) =
-        let handler = x.OnCommandRan buffer
+        let handler = x.OnCommandRan
         buffer.NormalMode.CommandRunner.CommandRan |> Event.add handler
         buffer.VisualLineMode.CommandRunner.CommandRan |> Event.add handler
         buffer.VisualBlockMode.CommandRunner.CommandRan |> Event.add handler
@@ -381,7 +381,7 @@ type internal ChangeTracker
         buffer.InsertMode.CommandRan |> Event.add handler
         buffer.ReplaceMode.CommandRan |> Event.add handler
 
-    member x.OnCommandRan buffer (data : CommandRunData) = 
+    member x.OnCommandRan (data : CommandRunData) = 
         let command = data.CommandBinding
         if command.IsMovement || command.IsSpecial then
             // Movement and special commands don't participate in change tracking

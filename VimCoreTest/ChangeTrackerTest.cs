@@ -10,7 +10,7 @@ using Vim.UnitTest.Mock;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class ChangeTrackerTest
+    public sealed class ChangeTrackerTest : VimTestBase
     {
         private MockRepository _factory;
         private ChangeTracker _tracker;
@@ -21,9 +21,9 @@ namespace VimCore.UnitTest
         private Mock<INormalMode> _normalMode;
         private IVimData _vimData;
 
-        private void CreateForText(params string[] lines)
+        private void Create(params string[] lines)
         {
-            _textBuffer = EditorUtil.CreateTextBuffer(lines);
+            _textBuffer = CreateTextBuffer(lines);
             _textView = MockObjectFactory.CreateTextView(_textBuffer);
             _textView.SetupGet(x => x.HasAggregateFocus).Returns(true);
 
@@ -45,17 +45,19 @@ namespace VimCore.UnitTest
             _tracker.OnVimBufferCreated(_buffer.Object);
         }
 
+        /// <summary>
+        /// Make sure a commands which are marked as LinkWithNextCommand do link with the next command
+        /// </summary>
         [Test]
-        [Ignore("Need to rewrite this since we changed the tracking architecture")]
-        public void LinkedWithTextChange_Simple()
+        public void LinkedWithNextChange_Simple()
         {
-            CreateForText("hello");
-            var data = VimUtil.CreateCommandRunData(flags: CommandFlags.LinkedWithNextCommand | CommandFlags.Repeatable);
-            _runner.Raise(x => x.CommandRan += null, (object) null, data);
-            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
-            // _textChangeTracker.Raise(x => x.ChangeCompleted += null, (object) null, TextChange.NewInsert("foo"));
-            var last = _vimData.LastCommand;
-            Assert.IsTrue(last.IsSome(x => x.IsLinkedCommand));
+            Create("hello");
+            var runData1 = VimUtil.CreateCommandRunData(flags: CommandFlags.LinkedWithNextCommand | CommandFlags.Repeatable);
+            var runData2 = VimUtil.CreateCommandRunData(flags: CommandFlags.Repeatable, command: Command.NewInsertCommand(InsertCommand.NewTextChange(TextChange.NewInsert("foo"))));
+            _runner.Raise(x => x.CommandRan += null, (object) null, runData1);
+            _runner.Raise(x => x.CommandRan += null, (object) null, runData2);
+            var lastCommnad = _vimData.LastCommand;
+            Assert.IsTrue(lastCommnad.IsSome(x => x.IsLinkedCommand));
         }
 
         /// <summary>
@@ -64,7 +66,7 @@ namespace VimCore.UnitTest
         [Test]
         public void OnCommand_NotRepetable()
         {
-            CreateForText("hello");
+            Create("hello");
             var data = VimUtil.CreateCommandRunData(flags: CommandFlags.None);
             _runner.Raise(x => x.CommandRan += null, (object) null, data);
             Assert.IsTrue(_vimData.LastCommand.IsNone());
@@ -76,7 +78,7 @@ namespace VimCore.UnitTest
         [Test]
         public void OnCommand_Repeatable()
         {
-            CreateForText("hello");
+            Create("hello");
             var data = VimUtil.CreateCommandRunData(flags: CommandFlags.Repeatable);
             _runner.Raise(x => x.CommandRan += null, (object) null, data);
             Assert.IsTrue(_vimData.LastCommand.IsSome(x => x.IsNormalCommand));
@@ -88,7 +90,7 @@ namespace VimCore.UnitTest
         [Test]
         public void OnCommand_DontTrackMovement()
         {
-            CreateForText("hello");
+            Create("hello");
             var data = VimUtil.CreateCommandRunData(flags: CommandFlags.Movement);
             _runner.Raise(x => x.CommandRan += null, (object) null, data);
             Assert.IsTrue(_vimData.LastCommand.IsNone());
@@ -100,37 +102,10 @@ namespace VimCore.UnitTest
         [Test]
         public void OnCommand_DontTrackSpecial()
         {
-            CreateForText("hello");
+            Create("hello");
             var data = VimUtil.CreateCommandRunData(flags: CommandFlags.Special);
             _runner.Raise(x => x.CommandRan += null, (object) null, data);
             Assert.IsTrue(_vimData.LastCommand.IsNone());
         }
-
-        /// <summary>
-        /// Track text changes 
-        /// </summary>
-        [Test]
-        [Ignore("Need to rewrite this since we changed the tracking architecture")]
-        public void OnTextChange_Standard()
-        {
-            CreateForText("hello");
-            // _textChangeTracker.Raise(x => x.ChangeCompleted += null, (object) null, TextChange.NewInsert("foo"));
-            // Assert.IsTrue(_vimData.LastCommand.IsSome(x => x.IsTextChangeCommand));
-        }
-
-        /// <summary>
-        /// A text change should override a normal command change
-        /// </summary>
-        [Test]
-        [Ignore("Need to rewrite this since we changed the tracking architecture")]
-        public void OnTextChange2()
-        {
-            CreateForText("hello");
-            var data = VimUtil.CreateCommandRunData(flags: CommandFlags.Repeatable);
-            _runner.Raise(x => x.CommandRan += null, (object) null, data);
-            // _textChangeTracker.Raise(x => x.ChangeCompleted += null, (object) null, TextChange.NewInsert("foo"));
-            // Assert.IsTrue(_vimData.LastCommand.IsSome(x => x.IsTextChangeCommand));
-        }
-
     }
 }

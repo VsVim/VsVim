@@ -197,21 +197,17 @@ namespace VimCore.UnitTest
             Assert.AreEqual(new SnapshotSpan(point1, point2), range.AsSucceeded().Item1.ExtentIncludingLineBreak);
         }
 
-        [Test]
-        [Ignore("just need to fix up")]
         public void ParseMark2()
         {
             Create("foo", "bar");
             var range = _textBuffer.GetLineRange(0, 1);
 
-            /*
-            map.SetLocalMark(range.Start, 'c');
-            map.SetLocalMark(range.End, 'b');
+            _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.C), 0, 0);
+            _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.B), 1, 0);
 
-            var parse = Parse("'c,'b", map);
+            var parse = Parse("'c,'b");
             Assert.IsTrue(parse.IsSucceeded);
             Assert.AreEqual(range, parse.AsSucceeded().Item1);
-            */
         }
 
         [Test, Description("Marks are the same as line numbers")]
