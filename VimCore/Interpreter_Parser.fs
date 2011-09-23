@@ -767,7 +767,7 @@ type Parser
                         // argument this is
                         match x.CurrentChar with
                         | None -> 
-                            parseNext (SetArgument.DisplaySetting name)
+                            parseNext (SetArgument.UseSetting name)
                         | Some c ->
                             match c with 
                             | '!' -> parseNext (SetArgument.InvertSetting name)

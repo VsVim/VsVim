@@ -85,5 +85,7 @@ module internal Resources =
 
     let Interpreter_OptionNotSupported x = sprintf "Option is not supported: '%s'" x
     let Interpreter_UnableToMapKeys lhs rhs = sprintf "Unable to map keys: %s %s" lhs rhs
+    let Interpreter_UnknownOption msg = sprintf "Unknown option: %s" msg
+    let Interpreter_InvalidArgument msg = sprintf "Invalid argument: %s" msg 
 
 

@@ -73,9 +73,6 @@ type SetArgument  =
     /// The 'all' argument. 
     | DisplayAllButTerminal
     
-    // Display the specific setting
-    | DisplaySetting of string 
-
     /// The 'termcap' argument
     | DisplayAllTerminal
 

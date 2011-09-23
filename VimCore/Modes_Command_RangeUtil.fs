@@ -15,13 +15,14 @@ type internal RangeUtil
     (
         _vimBufferData : VimBufferData,
         _commonOperations : ICommonOperations,
-        _foldManager : IFoldManager
+        _foldManager : IFoldManager,
+        _fileSystem : IFileSystem
     ) =
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
     let _textView = _vimBufferData.TextView
     let _markMap = _vimTextBuffer.Vim.MarkMap
-    let _interpreter = Interpreter(_vimBufferData, _commonOperations, _foldManager)
+    let _interpreter = Interpreter(_vimBufferData, _commonOperations, _foldManager, _fileSystem)
 
     member x.RangeForCurrentLine = _textView |> TextViewUtil.GetCaretLine |> SnapshotLineRangeUtil.CreateForLine
 

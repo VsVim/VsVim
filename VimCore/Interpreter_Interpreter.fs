@@ -10,7 +10,8 @@ type Interpreter
     (
         _vimBufferData : VimBufferData,
         _commonOperations : ICommonOperations,
-        _foldManager : IFoldManager
+        _foldManager : IFoldManager,
+        _fileSystem : IFileSystem
     ) =
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
@@ -195,7 +196,87 @@ type Interpreter
 
     /// Display the given map modes
     member x.RunDisplayKeyMap keyRemapModes keyNotationOption = 
-        // TODO: implement
+        // Get the printable info for the set of modes
+        let getModeLine modes =
+            if ListUtil.contains KeyRemapMode.Normal modes 
+                && ListUtil.contains KeyRemapMode.OperatorPending modes
+                && ListUtil.contains KeyRemapMode.Visual modes then
+                " "
+            elif ListUtil.contains KeyRemapMode.Command modes 
+                && ListUtil.contains KeyRemapMode.Insert modes then
+                "!"
+            elif ListUtil.contains KeyRemapMode.Visual modes 
+                && ListUtil.contains KeyRemapMode.Select modes then
+                "v"
+            elif List.length modes <> 1 then 
+                "?"
+            else 
+                match List.head modes with
+                | KeyRemapMode.Normal -> "n"
+                | KeyRemapMode.Visual -> "x"
+                | KeyRemapMode.Select -> "s"
+                | KeyRemapMode.OperatorPending -> "o"
+                | KeyRemapMode.Command -> "c"
+                | KeyRemapMode.Language -> "l"
+                | KeyRemapMode.Insert -> "i"
+
+        // Get the printable format for the KeyInputSet 
+        let getKeyInputSetLine (keyInputSet:KeyInputSet) = 
+
+            let inner (ki:KeyInput) = 
+
+                let ki = ki |> KeyInputUtil.GetAlternateTarget |> OptionUtil.getOrDefault ki
+
+                // Build up the prefix for the specified modifiers
+                let rec getPrefix modifiers = 
+                    if Util.IsFlagSet modifiers KeyModifiers.Alt then
+                        "M-" + getPrefix (Util.UnsetFlag modifiers KeyModifiers.Alt)
+                    elif Util.IsFlagSet modifiers KeyModifiers.Control then
+                        "C-" + getPrefix (Util.UnsetFlag modifiers KeyModifiers.Control)
+                    elif Util.IsFlagSet modifiers KeyModifiers.Shift then
+                        "S-" + getPrefix (Util.UnsetFlag modifiers KeyModifiers.Shift)
+                    else 
+                        ""
+
+                // Get the actual printable output for the raw KeyInput.  For a KeyInput with
+                // a char this is straight forward.  Non-char KeyInput need to be special cased
+                // though
+                let prefix,output = 
+                    match (KeyNotationUtil.TryGetSpecialKeyName ki),ki.Char with
+                    | Some(name,extraModifiers), _ -> 
+                        (getPrefix extraModifiers, name)
+                    | None, c -> 
+                        let c = 
+                            if CharUtil.IsLetter c && ki.KeyModifiers <> KeyModifiers.None then CharUtil.ToUpper c 
+                            else c
+                        (getPrefix ki.KeyModifiers, StringUtil.ofChar c)
+
+                if String.length prefix = 0 then 
+                    if String.length output = 1 then output
+                    else sprintf "<%s>" output
+                else
+                    sprintf "<%s%s>" prefix output 
+
+            keyInputSet.KeyInputs |> Seq.map inner |> String.concat ""
+
+        // Get the printable line for the provided mode, left and right side
+        let getLine modes lhs rhs = 
+            sprintf "%-5s%s %s" (getModeLine modes) (getKeyInputSetLine lhs) (getKeyInputSetLine rhs)
+
+        let lines = 
+            keyRemapModes
+            |> Seq.map (fun mode -> 
+                mode
+                |> _keyMap.GetKeyMappingsForMode 
+                |> Seq.map (fun (lhs,rhs) -> (mode,lhs,rhs)))
+            |> Seq.concat
+            |> Seq.groupBy (fun (mode,lhs,rhs) -> lhs)
+            |> Seq.map (fun (lhs, all) ->
+                let modes = all |> Seq.map (fun (mode, _, _) -> mode) |> List.ofSeq
+                let rhs = all |> Seq.map (fun (_, _, rhs) -> rhs) |> Seq.head
+                getLine modes lhs rhs)
+
+        _statusUtil.OnStatusLong lines
         RunResult.Completed
 
     /// Display the registers.  If a particular name is specified only display that register
@@ -525,32 +606,145 @@ type Interpreter
 
     /// Run the :set command.  Process each of the arguments 
     member x.RunSet setArguments =
-        // TODO: implement
-        Contract.Requires false
+
+        // Get the setting for the specified name
+        let withSetting name msg func =
+            match _localSettings.GetSetting name with
+            | None -> _statusUtil.OnError (Resources.Interpreter_UnknownOption msg)
+            | Some setting -> func setting
+
+        // Display the specified setting 
+        let getSettingDisplay setting = 
+    
+            match setting.Kind, setting.AggregateValue with
+            | SettingKind.ToggleKind, SettingValue.ToggleValue(b) -> 
+                if b then setting.Name
+                else sprintf "no%s" setting.Name
+            | SettingKind.StringKind, SettingValue.StringValue(s) -> 
+                sprintf "%s=\"%s\"" setting.Name s
+            | SettingKind.NumberKind, SettingValue.NumberValue(n) ->
+                sprintf "%s=%d" setting.Name n
+            | _ -> "Invalid value"
+
+
+        let addSetting name value = 
+            // TODO: implement
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "+=")
+
+        let multiplySetting name value =
+            // TODO: implement
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "^=")
+
+        let subtractSetting name value =
+            // TODO: implement
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "-=")
+
+        // Assign the given value to the setting with the specified name
+        let assignSetting name value = 
+            let msg = sprintf "%s=%s" name value
+            withSetting name msg (fun setting ->
+                if not (_localSettings.TrySetValueFromString setting.Name value) then
+                    _statusUtil.OnError (Resources.Interpreter_InvalidArgument msg))
+
+        // Display all of the setings but terminal
+        let displayAllButTerminal() = 
+
+            // TODO: need to filter out terminal 
+            _localSettings.AllSettings 
+            |> Seq.filter (fun s -> not s.IsValueDefault) 
+            |> Seq.map getSettingDisplay 
+            |> _statusUtil.OnStatusLong
+
+        // Display the terminal options
+        let displayAllTerminal() = 
+            // TODO: Implement
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "term")
+
+        // Use the specifiec setting
+        let useSetting name =
+            // TODO: Implement
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "no arguments")
+
+        // Invert the setting of the specified name
+        let invertSetting name = 
+            let msg = "!" + name
+            withSetting name msg (fun setting -> 
+                match setting.Kind, setting.AggregateValue with
+                | ToggleKind,ToggleValue(b) -> _localSettings.TrySetValue setting.Name (ToggleValue(not b)) |> ignore
+                | _ -> msg |> Resources.CommandMode_InvalidArgument |> _statusUtil.OnError)
+
+        // Reset all settings to their default settings
+        let resetAllToDefault () =
+            // TODO: Implement
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "all&")
+
+        // Reset setting to it's default value
+        let resetSetting name = 
+            // TODO: Implement
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "&")
+
+        // Toggle the specified value
+        let toggleSetting name = 
+            // TODO: Implement
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "toggle")
+
+        // Process each of the SetArgument values in the order in which they
+        // are declared
+        setArguments
+        |> List.iter (fun setArgument ->
+            match setArgument with
+            | SetArgument.AddSetting (name, value) -> addSetting name value
+            | SetArgument.AssignSetting (name, value) -> assignSetting name value
+            | SetArgument.DisplayAllButTerminal -> displayAllButTerminal()
+            | SetArgument.DisplayAllTerminal -> displayAllTerminal()
+            | SetArgument.InvertSetting name -> invertSetting name
+            | SetArgument.MultiplySetting (name, value) -> multiplySetting name value
+            | SetArgument.ResetAllToDefault -> resetAllToDefault()
+            | SetArgument.ResetSetting name -> resetSetting name
+            | SetArgument.SubtractSetting (name, value) -> subtractSetting name value
+            | SetArgument.ToggleSetting name -> toggleSetting name
+            | SetArgument.UseSetting name -> useSetting name)
+
         RunResult.Completed
 
     /// Shift the given line range to the left
     member x.RunShiftLeft lineRange = 
-        // TODO: implement
-        Contract.Requires false
+        _commonOperations.ShiftLineRangeLeft lineRange 1
         RunResult.Completed
 
     /// Shift the given line range to the right
     member x.RunShiftRight lineRange = 
-        // TODO: implement
-        Contract.Requires false
+        _commonOperations.ShiftLineRangeRight lineRange 1
         RunResult.Completed
 
     /// Run the :source command
     member x.RunSource hasBang filePath =
-        // TODO: implement
-        Contract.Requires false
+        if hasBang then
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "!")
+        else
+            match _fileSystem.ReadAllLines filePath with
+            | None -> 
+                _statusUtil.OnError (Resources.CommandMode_CouldNotOpenFile filePath)
+            | Some lines ->
+                lines 
+                |> Seq.iter (fun line ->
+                    match Parser.ParseLineCommand line with
+                    | ParseResult.Failed msg -> _statusUtil.OnError msg
+                    | ParseResult.Succeeded lineCommand -> x.RunLineCommand lineCommand |> ignore)
+
         RunResult.Completed
 
     /// Split the window
     member x.RunSplit lineRange fileOptions commandOption = 
-        // TODO: implement
-        Contract.Requires false
+        if not (List.isEmpty fileOptions) then
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
+        elif Option.isSome commandOption then
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++cmd]")
+        else
+            match _vimHost.SplitViewHorizontally _textView with
+            | HostResult.Success -> ()
+            | HostResult.Error msg -> _statusUtil.OnError msg
+
         RunResult.Completed
 
     /// Run the substitute command. 
@@ -628,18 +822,29 @@ type Interpreter
 
     /// Run the undo command
     member x.RunUndo() =
-        // TODO: implement
-        Contract.Requires false
+        _commonOperations.Redo 1
         RunResult.Completed
 
+    /// Unmap the specified key notation in all of the listed modes
     member x.RunUnmapKeys keyNotation keyRemapModes =
-        // TODO: implement
-        Contract.Requires false
+        let allSucceeded =
+            keyRemapModes
+            |> Seq.map (fun keyRemapMode -> _keyMap.Unmap keyNotation keyRemapMode)
+            |> Seq.filter (fun x -> not x)
+            |> Seq.isEmpty
+
+        if not allSucceeded then 
+            _statusUtil.OnError Resources.CommandMode_NoSuchMapping
+
         RunResult.Completed
 
-    member x.RunYank lineRange register =
-        // TODO: implement
-        Contract.Requires false
+    /// Yank the specified line range into the register.  This is done in a 
+    /// linewise fashion
+    member x.RunYank (lineRange : SnapshotLineRange) register =
+        let stringData = StringData.OfSpan lineRange.ExtentIncludingLineBreak
+        let value = RegisterValue.String (stringData, OperationKind.LineWise)
+        _registerMap.SetRegisterValue register RegisterOperation.Yank value
+
         RunResult.Completed
 
     /// Run the specified LineCommand

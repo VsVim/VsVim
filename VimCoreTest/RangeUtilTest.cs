@@ -27,7 +27,8 @@ namespace VimCore.UnitTest
             _rangeUtil = new RangeUtil(
                 vimBufferData, 
                 CommonOperationsFactory.GetCommonOperations(vimBufferData),
-                FoldManagerFactory.GetFoldManager(_textView));
+                FoldManagerFactory.GetFoldManager(_textView),
+                new FileSystem());
         }
 
         private ParseRangeResult Parse(string input)

@@ -19,7 +19,8 @@ namespace VimCore.UnitTest
             _interpreter = new Interpreter(
                 _vimBufferData,
                 CommonOperationsFactory.GetCommonOperations(_vimBufferData),
-                FoldManagerFactory.GetFoldManager(_vimBufferData.TextView));
+                FoldManagerFactory.GetFoldManager(_vimBufferData.TextView),
+                new FileSystem());
         }
 
         /// <summary>

@@ -138,7 +138,7 @@ type internal CommandProcessor
 
     let _statusUtil = _vimBufferData.StatusUtil
     let _textView = _vimBufferData.TextView
-    let _rangeUtil = RangeUtil(_vimBufferData, _operations, _foldManager)
+    let _rangeUtil = RangeUtil(_vimBufferData, _operations, _foldManager, _fileSystem)
     let _textBuffer = _textView.TextBuffer
     let _vimHost = _vimBufferData.Vim.VimHost
     let _localSettings = _vimBufferData.LocalSettings
@@ -147,7 +147,7 @@ type internal CommandProcessor
     let _registerMap = _vim.RegisterMap
     let _searchService = _vim.SearchService
     let _vimData = _vim.VimData
-    let _interpreter = Interpreter.Interpreter(_vimBufferData, _operations, _foldManager)
+    let _interpreter = Interpreter.Interpreter(_vimBufferData, _operations, _foldManager, _fileSystem)
 
     let mutable _command : System.String = System.String.Empty
 
