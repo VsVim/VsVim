@@ -49,6 +49,9 @@ type IVimHost =
     /// Loads the new file into a new existing window
     abstract LoadFileIntoNewWindow : filePath : string -> HostResult
 
+    /// Run the host specific make operation
+    abstract Make : jumpToFirstError : bool -> arguments : string -> HostResult
+
     /// Move to the view above the current one
     abstract MoveViewUp : ITextView -> unit
 
@@ -80,9 +83,6 @@ type IVimHost =
 
     /// Close the provided view
     abstract Close : ITextView -> checkDirty:bool -> unit
-
-    /// Builds the solution
-    abstract BuildSolution : unit -> unit
 
     /// Split the views horizontally
     abstract SplitViewHorizontally : ITextView -> HostResult

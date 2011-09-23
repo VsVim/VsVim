@@ -296,9 +296,10 @@ namespace VsVim
             targetView.ShowInFront();
         }
 
-        public override void BuildSolution()
+        public override HostResult Make(bool jumpToFirstError, string arguments)
         {
             SafeExecuteCommand("Build.BuildSolution");
+            return HostResult.Success;
         }
 
         /// <summary>

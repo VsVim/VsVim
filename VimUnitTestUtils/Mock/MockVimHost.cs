@@ -84,7 +84,7 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        void IVimHost.BuildSolution()
+        HostResult IVimHost.Make(bool jumpToFirstError, string arguments)
         {
             throw new NotImplementedException();
         }

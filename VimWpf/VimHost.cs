@@ -31,8 +31,6 @@ namespace Vim.UI.Wpf
             SystemSounds.Beep.Play();
         }
 
-        public abstract void BuildSolution();
-
         public virtual void Close(ITextView textView, bool checkDirty)
         {
             textView.Close();
@@ -144,6 +142,8 @@ namespace Vim.UI.Wpf
 
         public abstract HostResult LoadFileIntoNewWindow(string filePath);
 
+        public abstract HostResult Make(bool jumpToFirstError, string arguments);
+
         public abstract void MoveViewDown(ITextView value);
 
         public abstract void MoveViewUp(ITextView value);
@@ -205,11 +205,6 @@ namespace Vim.UI.Wpf
         void IVimHost.Beep()
         {
             Beep();
-        }
-
-        void IVimHost.BuildSolution()
-        {
-            BuildSolution();
         }
 
         void IVimHost.Close(ITextView value, bool checkDirty)
@@ -275,6 +270,11 @@ namespace Vim.UI.Wpf
         HostResult IVimHost.LoadFileIntoNewWindow(string filePath)
         {
             return LoadFileIntoNewWindow(filePath);
+        }
+
+        HostResult IVimHost.Make(bool jumpToFirstError, string arguments)
+        {
+            return Make(jumpToFirstError, arguments);
         }
 
         void IVimHost.MoveViewDown(ITextView value)

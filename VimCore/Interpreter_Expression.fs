@@ -155,20 +155,20 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Fold of LineRange option
 
     /// Go to the first tab 
-    | GotoFirstTab
+    | GoToFirstTab
 
     /// Go to the last tab
-    | GotoLastTab
+    | GoToLastTab
 
     /// Go to the next tab
-    | GotoNextTab of int option
+    | GoToNextTab of int option
 
     /// Go to the previous tab
-    | GotoPreviousTab of int option
+    | GoToPreviousTab of int option
 
     /// Join the lines in the specified range.  Optionally provides a count of lines to 
     /// start the join after the line range
-    | Join of LineRange option * int option
+    | Join of LineRange option * JoinKind * int option
 
     /// Jump to the specified line number 
     | JumpToLine of int
@@ -186,7 +186,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | MapKeys of string * string * KeyRemapMode list * bool
 
     /// Temporarily disable the 'hlsearch' option
-    | NoHlSearch
+    | NoHighlightSearch
 
     /// Put the contents of the given register after the line identified by the
     /// LineRange (defaults to current)

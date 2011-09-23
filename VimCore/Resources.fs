@@ -84,5 +84,6 @@ module internal Resources =
     let Parser_InvalidArgument = "Invalid Argument"
 
     let Interpreter_OptionNotSupported x = sprintf "Option is not supported: '%s'" x
+    let Interpreter_UnableToMapKeys lhs rhs = sprintf "Unable to map keys: %s %s" lhs rhs
 
 

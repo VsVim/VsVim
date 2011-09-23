@@ -638,13 +638,13 @@ type Parser
     member x.ParseTabNext() =   
         x.SkipBlanks()
         let count = x.ParseNumber()
-        ParseResult.Succeeded (LineCommand.GotoNextTab count)
+        ParseResult.Succeeded (LineCommand.GoToNextTab count)
 
     /// Parse out the 'tabprevious' command
     member x.ParseTabPrevious() =   
         x.SkipBlanks()
         let count = x.ParseNumber()
-        ParseResult.Succeeded (LineCommand.GotoPreviousTab count)
+        ParseResult.Succeeded (LineCommand.GoToPreviousTab count)
 
     /// Parse out the quit and write command.  This includes 'wq', 'xit' and 'exit' commands.
     member x.ParseQuitAndWrite lineRange = 
@@ -677,9 +677,11 @@ type Parser
 
     /// Parse out the join command
     member x.ParseJoin lineRange =  
+        let hasBang = x.ParseBang()
         x.SkipBlanks()
         let count = x.ParseNumber()
-        LineCommand.Join (lineRange, count) |> ParseResult.Succeeded
+        let joinKind = if hasBang then JoinKind.KeepEmptySpaces else JoinKind.RemoveEmptySpaces
+        LineCommand.Join (lineRange, joinKind, count) |> ParseResult.Succeeded
 
     /// Parse out the :make command.  The arguments here other than ! are undefined.  Just
     /// get the text blob and let the interpreter / host deal with it 
@@ -890,7 +892,7 @@ type Parser
                 | "nmapclear" -> noRange (x.ParseMapClear false [KeyRemapMode.Normal])
                 | "nnoremap"-> noRange (x.ParseMapKeysNoRemap false [KeyRemapMode.Normal])
                 | "nunmap" -> noRange (x.ParseMapUnmap false [KeyRemapMode.Normal])
-                | "nohlsearch" -> noRange (fun () -> LineCommand.NoHlSearch |> ParseResult.Succeeded)
+                | "nohlsearch" -> noRange (fun () -> LineCommand.NoHighlightSearch |> ParseResult.Succeeded)
                 | "noremap"-> noRange (x.ParseMapKeysNoRemap false [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
                 | "omap"-> noRange (x.ParseMapKeys false [KeyRemapMode.OperatorPending])
                 | "omapclear" -> noRange (x.ParseMapClear false [KeyRemapMode.OperatorPending])
@@ -913,9 +915,9 @@ type Parser
                 | "snomagic" -> x.ParseSubstituteNoMagic lineRange
                 | "snoremap"-> noRange (x.ParseMapKeysNoRemap false [KeyRemapMode.Select])
                 | "sunmap" -> noRange (x.ParseMapUnmap false [KeyRemapMode.Select])
-                | "tabfirst" -> noRange (fun () -> ParseResult.Succeeded LineCommand.GotoFirstTab)
-                | "tabrewind" -> noRange (fun () -> ParseResult.Succeeded LineCommand.GotoFirstTab)
-                | "tablast" -> noRange (fun () -> ParseResult.Succeeded LineCommand.GotoLastTab)
+                | "tabfirst" -> noRange (fun () -> ParseResult.Succeeded LineCommand.GoToFirstTab)
+                | "tabrewind" -> noRange (fun () -> ParseResult.Succeeded LineCommand.GoToFirstTab)
+                | "tablast" -> noRange (fun () -> ParseResult.Succeeded LineCommand.GoToLastTab)
                 | "tabnext" -> noRange x.ParseTabNext 
                 | "tabNext" -> noRange x.ParseTabPrevious
                 | "tabprevious" -> noRange x.ParseTabPrevious
