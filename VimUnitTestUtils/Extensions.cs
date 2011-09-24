@@ -37,6 +37,14 @@ namespace Vim.UnitTest
             return (LineCommand.Close)lineCommand;
         }
 
+        /// <summary>
+        /// LineCommand as Delete
+        /// </summary>
+        public static LineCommand.Delete AsDelete(this LineCommand lineCommand)
+        {
+            return (LineCommand.Delete)lineCommand;
+        }
+
         #endregion
 
         #region LineRange

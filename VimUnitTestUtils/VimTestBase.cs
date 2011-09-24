@@ -66,6 +66,11 @@ namespace Vim.UnitTest
             get { return _foldManagerFactory; }
         }
 
+        protected IBufferTrackingService BufferTrackingService
+        {
+            get { return _bufferTrackingService; }
+        }
+
         [SetUp]
         public void SetupBase()
         {

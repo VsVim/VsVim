@@ -173,17 +173,16 @@ type Parser
         else
             false
 
-
-    /// Parse out a single word from the text.  This will simply take the current cursor
-    /// position and move while IsLetter is true.  This will return None if the resulting
-    /// string is blank.  This will not skip any blanks
-    member x.ParseWord () = 
-        if x.IsCurrentChar CharUtil.IsNotBlank then
+    /// Parse out the text until the given predicate returns false or the end
+    /// of the line is reached.  None is return if the current char when
+    /// called doesn't match the predicate
+    member x.ParseWhile predicate =
+        if x.IsCurrentChar predicate then
             let startIndex = _index
             x.IncrementIndex()
             let length = 
                 let rec inner () = 
-                    if x.IsCurrentChar CharUtil.IsNotBlank then
+                    if x.IsCurrentChar predicate then
                         x.IncrementIndex()
                         inner ()
                 inner()
@@ -192,6 +191,11 @@ type Parser
             Some text
         else
             None
+
+    /// Parse out a single word from the text.  This will simply take the current cursor
+    /// position and move while IsLetter is true.  This will return None if the resulting
+    /// string is blank.  This will not skip any blanks
+    member x.ParseWord () = x.ParseWhile CharUtil.IsNotBlank
 
     /// Parse out a key notation argument
     member x.ParseKeyNotation() = 
@@ -212,6 +216,7 @@ type Parser
     /// Parse out core portion of key mappings.
     member x.ParseMapKeysCore keyRemapModes allowRemap =
 
+        x.SkipBlanks()
         match x.ParseKeyNotation() with
         | None -> 
             LineCommand.DisplayKeyMap (keyRemapModes, None) |> ParseResult.Succeeded
@@ -334,17 +339,24 @@ type Parser
         // TODO: Need to implement parsing out FileOption list
         List.empty
 
-    /// Parse out a register value from the text
+    /// Parse out a register value from the text.  This will not parse out numbered register
     member x.ParseRegisterName () = 
 
-        let name = 
-            x.CurrentChar
-            |> OptionUtil.map2 RegisterName.OfChar
+        if x.IsCurrentChar CharUtil.IsDigit then
+            // Don't parse out numbered registers  Many commands can be followed by both
+            // registers and counts.  Numbered registers are disallowed because they cause
+            // an ambiguity with count
+            None
+        else
 
-        if Option.isSome name then
-            x.IncrementIndex()
-
-        name
+            let name = 
+                x.CurrentChar
+                |> OptionUtil.map2 RegisterName.OfChar
+    
+            if Option.isSome name then
+                x.IncrementIndex()
+    
+            name
 
     /// Used to parse out the flags for substitute commands.  Will not modify the 
     /// stream if there are no flags
@@ -404,13 +416,22 @@ type Parser
         x.SkipBlanks()
         let fileName = x.ParseToEndOfLine()
 
-        LineCommand.Edit (hasBang, fileOptionList, commandOption, fileName)
+        LineCommand.Edit (hasBang, fileOptionList, commandOption, fileName) |> ParseResult.Succeeded
 
     /// Parse out the :[digit] command
-    member x.ParseJumpToLine () =
-        match x.ParseNumber() with
-        | None -> ParseResult.Failed Resources.Parser_Error
-        | Some number -> ParseResult.Succeeded (LineCommand.JumpToLine number)
+    member x.ParseJumpToLine lineRange =
+
+        match lineRange with
+        | LineRange.SingleLine lineSpecifier ->
+            match lineSpecifier with
+            | LineSpecifier.Number number -> 
+                ParseResult.Succeeded (LineCommand.JumpToLine number)
+            | LineSpecifier.LastLine ->
+                ParseResult.Succeeded LineCommand.JumpToLastLine
+            | _ ->
+                ParseResult.Failed Resources.Parser_Error
+        | _ ->
+            ParseResult.Failed Resources.Parser_Error
 
     /// Parse out the :$ command
     member x.ParseJumpToLastLine() =
@@ -840,120 +861,116 @@ type Parser
     /// Parse out a single expression
     member x.ParseSingleCommand () = 
 
-        if x.IsCurrentChar CharUtil.IsDigit then
-            x.ParseJumpToLine()
-        elif x.IsCurrentCharValue '$' then
-            x.ParseJumpToLastLine()
-        else
-            let lineRange = x.ParseLineRange()
+        let lineRange = x.ParseLineRange()
 
-            let noRange parseFunc = 
-                match lineRange with
-                | None -> x.ParseClose()
-                | Some _ -> ParseResult.Failed Resources.Parser_NoRangeAllowed
+        let noRange parseFunc = 
+            match lineRange with
+            | None -> parseFunc()
+            | Some _ -> ParseResult.Failed Resources.Parser_NoRangeAllowed
 
-            // Get the command name and make sure to expand it to it's possible full
-            // name
-            let name = 
-                if x.IsCurrentChar CharUtil.IsAlpha then
-                    x.ParseWord()
-                    |> OptionUtil.getOrDefault ""
-                    |> x.TryExpand
-                else
-                    match x.CurrentChar with
-                    | None -> ""
-                    | Some c -> StringUtil.ofChar c
+        // Get the command name and make sure to expand it to it's possible full
+        // name
+        let name = 
+            if x.IsCurrentChar CharUtil.IsAlpha then
+                x.ParseWhile CharUtil.IsAlpha
+                |> OptionUtil.getOrDefault ""
+                |> x.TryExpand
+            else
+                match x.CurrentChar with
+                | None -> ""
+                | Some c -> StringUtil.ofChar c
 
-            let parseResult = 
-                match name with
-                | "close" -> noRange x.ParseClose
-                | "cmap"-> noRange (x.ParseMapKeys false [KeyRemapMode.Command])
-                | "cmapclear" -> noRange (x.ParseMapClear false [KeyRemapMode.Command])
-                | "cnoremap"-> noRange (x.ParseMapKeysNoRemap false [KeyRemapMode.Command])
-                | "cunmap" -> noRange (x.ParseMapUnmap false [KeyRemapMode.Command])
-                | "delete" -> x.ParseDelete lineRange
-                | "display" -> noRange x.ParseDisplayRegisters 
-                | "edit" -> noRange x.ParseEdit
-                | "exit" -> x.ParseQuitAndWrite lineRange
-                | "fold" -> x.ParseFold lineRange
-                | "iunmap" -> noRange (x.ParseMapUnmap false [KeyRemapMode.Insert])
-                | "imap"-> noRange (x.ParseMapKeys false [KeyRemapMode.Insert])
-                | "imapclear" -> noRange (x.ParseMapClear false [KeyRemapMode.Insert])
-                | "inoremap"-> noRange (x.ParseMapKeysNoRemap false [KeyRemapMode.Insert])
-                | "join" -> x.ParseJoin lineRange 
-                | "lmap"-> noRange (x.ParseMapKeys false [KeyRemapMode.Language])
-                | "lunmap" -> noRange (x.ParseMapUnmap false [KeyRemapMode.Language])
-                | "lnoremap"-> noRange (x.ParseMapKeysNoRemap false [KeyRemapMode.Language])
-                | "make" -> noRange x.ParseMake 
-                | "marks" -> noRange x.ParseDisplayMarks
-                | "map"-> noRange (x.ParseMapKeys true [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
-                | "mapclear" -> noRange (x.ParseMapClear true [KeyRemapMode.Normal; KeyRemapMode.Visual; KeyRemapMode.Command; KeyRemapMode.OperatorPending])
-                | "nmap"-> noRange (x.ParseMapKeys false [KeyRemapMode.Normal])
-                | "nmapclear" -> noRange (x.ParseMapClear false [KeyRemapMode.Normal])
-                | "nnoremap"-> noRange (x.ParseMapKeysNoRemap false [KeyRemapMode.Normal])
-                | "nunmap" -> noRange (x.ParseMapUnmap false [KeyRemapMode.Normal])
-                | "nohlsearch" -> noRange (fun () -> LineCommand.NoHighlightSearch |> ParseResult.Succeeded)
-                | "noremap"-> noRange (x.ParseMapKeysNoRemap false [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
-                | "omap"-> noRange (x.ParseMapKeys false [KeyRemapMode.OperatorPending])
-                | "omapclear" -> noRange (x.ParseMapClear false [KeyRemapMode.OperatorPending])
-                | "onoremap"-> noRange (x.ParseMapKeysNoRemap false [KeyRemapMode.OperatorPending])
-                | "ounmap" -> noRange (x.ParseMapUnmap false [KeyRemapMode.OperatorPending])
-                | "put" -> x.ParsePut lineRange
-                | "quit" -> noRange x.ParseQuit
-                | "qall" -> noRange x.ParseQuitAll
-                | "quitall" -> noRange x.ParseQuitAll
-                | "redo" -> noRange (fun () -> LineCommand.Redo |> ParseResult.Succeeded)
-                | "retab" -> x.ParseRetab lineRange
-                | "set" -> noRange x.ParseSet
-                | "source" -> noRange x.ParseSource
-                | "split" -> x.ParseSplit lineRange
-                | "registers" -> noRange x.ParseDisplayRegisters 
-                | "substitute" -> x.ParseSubstitute lineRange (fun x -> x)
-                | "smagic" -> x.ParseSubstituteMagic lineRange
-                | "smap"-> noRange (x.ParseMapKeys false [KeyRemapMode.Select])
-                | "smapclear" -> noRange (x.ParseMapClear false [KeyRemapMode.Select])
-                | "snomagic" -> x.ParseSubstituteNoMagic lineRange
-                | "snoremap"-> noRange (x.ParseMapKeysNoRemap false [KeyRemapMode.Select])
-                | "sunmap" -> noRange (x.ParseMapUnmap false [KeyRemapMode.Select])
-                | "tabfirst" -> noRange (fun () -> ParseResult.Succeeded LineCommand.GoToFirstTab)
-                | "tabrewind" -> noRange (fun () -> ParseResult.Succeeded LineCommand.GoToFirstTab)
-                | "tablast" -> noRange (fun () -> ParseResult.Succeeded LineCommand.GoToLastTab)
-                | "tabnext" -> noRange x.ParseTabNext 
-                | "tabNext" -> noRange x.ParseTabPrevious
-                | "tabprevious" -> noRange x.ParseTabPrevious
-                | "undo" -> noRange (fun () -> LineCommand.Undo |> ParseResult.Succeeded)
-                | "unmap" -> noRange (x.ParseMapUnmap true [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
-                | "vmap"-> noRange (x.ParseMapKeys false [KeyRemapMode.Visual;KeyRemapMode.Select])
-                | "vmapclear" -> noRange (x.ParseMapClear false [KeyRemapMode.Visual; KeyRemapMode.Select])
-                | "vnoremap"-> noRange (x.ParseMapKeysNoRemap false [KeyRemapMode.Visual;KeyRemapMode.Select])
-                | "vunmap" -> noRange (x.ParseMapUnmap false [KeyRemapMode.Visual;KeyRemapMode.Select])
-                | "wq" -> x.ParseQuitAndWrite lineRange
-                | "xit" -> x.ParseQuitAndWrite lineRange
-                | "xmap"-> noRange (x.ParseMapKeys false [KeyRemapMode.Visual])
-                | "xmapclear" -> noRange (x.ParseMapClear false [KeyRemapMode.Visual])
-                | "xnoremap"-> noRange (x.ParseMapKeysNoRemap false [KeyRemapMode.Visual])
-                | "xunmap" -> noRange (x.ParseMapUnmap false [KeyRemapMode.Visual])
-                | "yank" -> x.ParseYank lineRange
-                | "/" -> noRange (x.ParseSearch Path.Forward)
-                | "?" -> noRange (x.ParseSearch Path.Backward)
-                | "<" -> x.ParseShiftLeft lineRange
-                | ">" -> x.ParseShiftRight lineRange
-                | "&" -> x.ParseSubstituteRepeatLast lineRange
-                | "~" -> x.ParseSubstituteRepeatLastWithSearch lineRange
-                | _ -> ParseResult.Failed Resources.Parser_Error
+        let parseResult = 
+            match name with
+            | "close" -> noRange x.ParseClose
+            | "cmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Command])
+            | "cmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Command])
+            | "cnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Command])
+            | "cunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Command])
+            | "delete" -> x.ParseDelete lineRange
+            | "display" -> noRange x.ParseDisplayRegisters 
+            | "edit" -> noRange x.ParseEdit
+            | "exit" -> x.ParseQuitAndWrite lineRange
+            | "fold" -> x.ParseFold lineRange
+            | "iunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Insert])
+            | "imap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Insert])
+            | "imapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Insert])
+            | "inoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Insert])
+            | "join" -> x.ParseJoin lineRange 
+            | "lmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Language])
+            | "lunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Language])
+            | "lnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Language])
+            | "make" -> noRange x.ParseMake 
+            | "marks" -> noRange x.ParseDisplayMarks
+            | "map"-> noRange (fun () -> x.ParseMapKeys true [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
+            | "mapclear" -> noRange (fun () -> x.ParseMapClear true [KeyRemapMode.Normal; KeyRemapMode.Visual; KeyRemapMode.Command; KeyRemapMode.OperatorPending])
+            | "nmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Normal])
+            | "nmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Normal])
+            | "nnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Normal])
+            | "nunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Normal])
+            | "nohlsearch" -> noRange (fun () -> LineCommand.NoHighlightSearch |> ParseResult.Succeeded)
+            | "noremap"-> noRange (fun () -> x.ParseMapKeysNoRemap true [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
+            | "omap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.OperatorPending])
+            | "omapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.OperatorPending])
+            | "onoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.OperatorPending])
+            | "ounmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.OperatorPending])
+            | "put" -> x.ParsePut lineRange
+            | "quit" -> noRange x.ParseQuit
+            | "qall" -> noRange x.ParseQuitAll
+            | "quitall" -> noRange x.ParseQuitAll
+            | "redo" -> noRange (fun () -> LineCommand.Redo |> ParseResult.Succeeded)
+            | "retab" -> x.ParseRetab lineRange
+            | "set" -> noRange x.ParseSet
+            | "source" -> noRange x.ParseSource
+            | "split" -> x.ParseSplit lineRange
+            | "registers" -> noRange x.ParseDisplayRegisters 
+            | "substitute" -> x.ParseSubstitute lineRange (fun x -> x)
+            | "smagic" -> x.ParseSubstituteMagic lineRange
+            | "smap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Select])
+            | "smapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Select])
+            | "snomagic" -> x.ParseSubstituteNoMagic lineRange
+            | "snoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Select])
+            | "sunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Select])
+            | "tabfirst" -> noRange (fun () -> ParseResult.Succeeded LineCommand.GoToFirstTab)
+            | "tabrewind" -> noRange (fun () -> ParseResult.Succeeded LineCommand.GoToFirstTab)
+            | "tablast" -> noRange (fun () -> ParseResult.Succeeded LineCommand.GoToLastTab)
+            | "tabnext" -> noRange x.ParseTabNext 
+            | "tabNext" -> noRange x.ParseTabPrevious
+            | "tabprevious" -> noRange x.ParseTabPrevious
+            | "undo" -> noRange (fun () -> LineCommand.Undo |> ParseResult.Succeeded)
+            | "unmap" -> noRange (fun () -> x.ParseMapUnmap true [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
+            | "vmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Visual;KeyRemapMode.Select])
+            | "vmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Visual; KeyRemapMode.Select])
+            | "vnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Visual;KeyRemapMode.Select])
+            | "vunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Visual;KeyRemapMode.Select])
+            | "wq" -> x.ParseQuitAndWrite lineRange
+            | "xit" -> x.ParseQuitAndWrite lineRange
+            | "xmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Visual])
+            | "xmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Visual])
+            | "xnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Visual])
+            | "xunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Visual])
+            | "yank" -> x.ParseYank lineRange
+            | "/" -> noRange (fun () -> x.ParseSearch Path.Forward)
+            | "?" -> noRange (fun () -> x.ParseSearch Path.Backward)
+            | "<" -> x.ParseShiftLeft lineRange
+            | ">" -> x.ParseShiftRight lineRange
+            | "&" -> x.ParseSubstituteRepeatLast lineRange
+            | "~" -> x.ParseSubstituteRepeatLastWithSearch lineRange
+            | "" -> match lineRange with | Some lineRange -> x.ParseJumpToLine lineRange | None -> ParseResult.Failed Resources.Parser_Error
+            | _ -> ParseResult.Failed Resources.Parser_Error
 
-            match parseResult with
-            | ParseResult.Failed _ ->
-                // If there is already a failure don't look any deeper.
+        match parseResult with
+        | ParseResult.Failed _ ->
+            // If there is already a failure don't look any deeper.
+            parseResult
+        | ParseResult.Succeeded _ ->
+            x.SkipBlanks()
+
+            // If there are still characters then it's illegal trailing characters
+            if Option.isSome x.CurrentChar then
+                ParseResult.Failed Resources.CommandMode_TrailingCharacters
+            else
                 parseResult
-            | ParseResult.Succeeded _ ->
-                x.SkipBlanks()
-
-                // If there are still characters then it's illegal trailing characters
-                if Option.isSome x.CurrentChar then
-                    ParseResult.Failed Resources.CommandMode_TrailingCharacters
-                else
-                    parseResult
 
     // TODO: Delete.  This is just a transition hack to allow us to use the new interpreter and parser
     // to replace RangeUtil.ParseRange

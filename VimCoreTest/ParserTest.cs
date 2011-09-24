@@ -33,6 +33,16 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Make sure we can handle the count argument of :delete
+        /// </summary>
+        [Test]
+        public void Parse_Delete_WithCount()
+        {
+            var lineCommand = ParseLineCommand("delete 2");
+            Assert.AreEqual(2, lineCommand.AsDelete().Item3.Value);
+        }
+
+        /// <summary>
         /// Make sure we can parse out the close command
         /// </summary>
         [Test]

@@ -384,8 +384,14 @@ type Interpreter
 
     /// Jump to the specified line number
     member x.RunJumpToLine number = 
-        let line = SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
-        _commonOperations.MoveCaretToPointAndEnsureVisible line.Start
+        let number = Util.VimLineToTssLine number
+
+        // Make sure we jump to the first non-blank on this line
+        let point = 
+            SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
+            |> SnapshotLineUtil.GetFirstNonBlankOrEnd
+
+        _commonOperations.MoveCaretToPointAndEnsureVisible point
         RunResult.Completed
 
     /// Run the host make command 
@@ -882,12 +888,20 @@ type Interpreter
         // Special case join here a bit.  The count must be at least 2 where as most
         // times count is 1 
         let runJoin lineRange count joinKind = 
-            let count = 
-                match count with 
-                | None -> 2
-                | Some 1 -> 2
-                | Some count -> count
-            runWithLineRangeAndEndCount lineRange (Some count) (x.RunJoin joinKind)
+
+            match lineRange with 
+            | None ->
+                // Count is the only thing important when there is no explicit range is the
+                // count.  It is special cased when there is no line range
+                let count = 
+                    match count with 
+                    | None -> 2
+                    | Some 1 -> 2
+                    | Some count -> count
+                let lineRange = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
+                x.RunJoin joinKind lineRange
+            | Some _ ->
+                runWithLineRangeAndEndCount lineRange count (x.RunJoin joinKind)
 
         match lineCommand with
         | LineCommand.ClearKeyMap keyRemapModes -> x.RunClearKeyMap keyRemapModes
