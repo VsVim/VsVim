@@ -418,7 +418,7 @@ type internal InsertMode
             // data 
             wordCompletionSession.Dismissed
             |> Event.add (fun _ -> x.CancelWordCompletionSession())
-    
+
             _sessionData <- { _sessionData with ActiveWordCompletionSession = Some wordCompletionSession }
         ProcessResult.Handled ModeSwitch.NoSwitch
 
