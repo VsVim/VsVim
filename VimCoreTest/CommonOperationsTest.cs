@@ -106,8 +106,12 @@ namespace VimCore.UnitTest
             _operationsRaw = null;
         }
 
+        /// <summary>
+        /// Ensure that a join of 2 lines which don't have any blanks will produce lines which
+        /// are separated by a single space
+        /// </summary>
         [Test]
-        public void Join1()
+        public void Join_RemoveSpaces_NoBlanks()
         {
             Create("foo", "bar");
             _operations.Join(_textView.GetLineRange(0, 1), JoinKind.RemoveEmptySpaces);
@@ -115,9 +119,12 @@ namespace VimCore.UnitTest
             Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
         }
 
+        /// <summary>
+        /// Ensure that we properly remove the leading spaces at the start of the next line if
+        /// we are removing spaces
+        /// </summary>
         [Test]
-        [Description("Eat spaces at the start of the next line")]
-        public void Join2()
+        public void Join_RemoveSpaces_BlanksStartOfSecondLine()
         {
             Create("foo", "   bar");
             _operations.Join(_textView.GetLineRange(0, 1), JoinKind.RemoveEmptySpaces);
@@ -125,9 +132,23 @@ namespace VimCore.UnitTest
             Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
         }
 
+        /// <summary>
+        /// Don't touch the spaces when we join without editing them
+        /// </summary>
         [Test]
-        [Description("Join more than 2 lines")]
-        public void Join3()
+        public void Join_KeepSpaces_BlanksStartOfSecondLine()
+        {
+            Create("foo", "   bar");
+            _operations.Join(_textView.GetLineRange(0, 1), JoinKind.KeepEmptySpaces);
+            Assert.AreEqual("foo   bar", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
+        }
+
+        /// <summary>
+        /// Do a join of 3 lines
+        /// </summary>
+        [Test]
+        public void Join_RemoveSpaces_ThreeLines()
         {
             Create("foo", "bar", "baz");
             _operations.Join(_textView.GetLineRange(0, 2), JoinKind.RemoveEmptySpaces);
@@ -135,9 +156,11 @@ namespace VimCore.UnitTest
             Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
         }
 
+        /// <summary>
+        /// Ensure we can properly join an empty line
+        /// </summary>
         [Test]
-        [Description("Join an empty line")]
-        public void Join4()
+        public void Join_RemoveSpaces_EmptyLine()
         {
             Create("cat", "", "dog", "tree", "rabbit");
             _operations.Join(_textView.GetLineRange(0, 1), JoinKind.RemoveEmptySpaces);

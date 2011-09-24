@@ -127,6 +127,7 @@ type internal GlobalSettings() =
             (HistoryName, "hi", NumberKind, NumberValue(Constants.DefaultHistoryLength))
             (IncrementalSearchName, "is", ToggleKind, ToggleValue(false))
             (IgnoreCaseName,"ic", ToggleKind, ToggleValue(false))
+            (JoinSpacesName, "js", ToggleKind, ToggleValue(true))
             (MagicName, MagicName, ToggleKind, ToggleValue(true))
             (ParagraphsName, "para", StringKind, StringValue("IPLPPPQPP TPHPLIPpLpItpplpipbp"))
             (ShiftWidthName, "sw", NumberKind, NumberValue(4))
@@ -192,6 +193,9 @@ type internal GlobalSettings() =
             | "exclusive" -> true
             | "inclusive" -> true
             | _ -> false
+        member x.JoinSpaces 
+            with get() = _map.GetBoolValue JoinSpacesName
+            and set value = _map.TrySetValue JoinSpacesName (ToggleValue value) |> ignore
         member x.Magic
             with get() = _map.GetBoolValue MagicName
             and set value = _map.TrySetValue MagicName (ToggleValue(value)) |> ignore

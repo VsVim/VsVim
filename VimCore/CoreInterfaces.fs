@@ -2358,6 +2358,7 @@ module GlobalSettingNames =
     let HistoryName = "history"
     let IgnoreCaseName = "ignorecase"
     let IncrementalSearchName = "incsearch"
+    let JoinSpacesName = "joinspaces"
     let MagicName = "magic"
     let ParagraphsName = "paragraphs"
     let ScrollOffsetName = "scrolloff"
@@ -2468,6 +2469,10 @@ and IVimGlobalSettings =
     /// Is the Selection setting set to a value which permits the selection
     /// to extend past the line
     abstract IsSelectionPastLine : bool with get
+
+    /// Whether or not to insert two spaces after certain constructs in a 
+    /// join operation
+    abstract JoinSpaces : bool with get, set
 
     /// The nrooff macros that separate paragraphs
     abstract Paragraphs : string with get, set

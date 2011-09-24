@@ -446,41 +446,62 @@ type internal CommonOperations
                 builder.Append(' ') |> ignore
         builder.ToString(), text.Length
 
-    member x.Join (range:SnapshotLineRange) kind = 
+    /// Join the lines in the specified line range together. 
+    member x.Join (lineRange : SnapshotLineRange) joinKind = 
 
-        if range.Count > 1 then
+        if lineRange.Count > 1 then
 
             use edit = _textBuffer.CreateEdit()
 
-            let replace = 
-                match kind with
-                | JoinKind.KeepEmptySpaces -> ""
-                | JoinKind.RemoveEmptySpaces -> " "
+            // Get the collection of ITextSnapshotLine instances that we need to perform 
+            // the edit one.  The last line doesn't need anything done to it. 
+            let lines = lineRange.Lines |> Seq.take (lineRange.Count - 1)
 
-            // First delete line breaks on all but the last line 
-            range.Lines
-            |> Seq.take (range.Count - 1)
-            |> Seq.iter (fun line -> 
+            match joinKind with
+            | JoinKind.KeepEmptySpaces ->
 
-                // Delete the line break span
-                let span = line |> SnapshotLineUtil.GetLineBreakSpan |> SnapshotSpanUtil.GetSpan
-                edit.Replace(span, replace) |> ignore )
+                // Simplest implementation.  Just delete relevant line breaks from the 
+                // ITextBuffer
+                for line in lines do
+                    let span = Span(line.End.Position, line.LineBreakLength)
+                    edit.Delete span |> ignore
 
-            // Remove the empty spaces from the start of all but the first line 
-            // if the option was specified
-            match kind with
-            | JoinKind.KeepEmptySpaces -> ()
-            | JoinKind.RemoveEmptySpaces ->
-                range.Lines 
-                |> Seq.skip 1
-                |> Seq.iter (fun line ->
-                        let count =
-                            line.Extent 
-                            |> SnapshotSpanUtil.GetText
-                            |> Seq.takeWhile CharUtil.IsWhiteSpace
-                            |> Seq.length
-                        if count > 0 then
-                            edit.Delete(line.Start.Position,count) |> ignore )
+            | JoinKind.RemoveEmptySpaces -> 
+
+                for line in lines do
+
+                    // Getting the next line is safe here.  By excluding the last line above we've
+                    // guaranteed there is at least one more line below us
+                    let nextLine = SnapshotUtil.GetLine lineRange.Snapshot (line.LineNumber + 1)
+
+                    let nextLineStartsWithCloseParen = SnapshotPointUtil.IsChar ')' nextLine.Start
+
+                    let replaceText =
+                        match SnapshotLineUtil.GetLastIncludedPoint line with
+                        | None ->
+                            if nextLineStartsWithCloseParen then 
+                                "" 
+                            else 
+                                " "
+                        | Some point ->
+                            let c = SnapshotPointUtil.GetChar point
+                            if CharUtil.IsBlank c || nextLineStartsWithCloseParen then
+                                // When the line ends with a blank then we don't insert any new spaces
+                                // for the EOL
+                                ""
+                            elif (c = '.' || c = '!' || c = '?') && _globalSettings.JoinSpaces then
+                                "  "
+                            else
+                                " "
+
+                    let span = Span(line.End.Position, line.LineBreakLength)
+                    edit.Replace(span, replaceText) |> ignore
+
+                    // Also need to delete any blanks at the start of the next line
+                    let blanksEnd = SnapshotLineUtil.GetFirstNonBlankOrEnd nextLine
+                    if blanksEnd <> nextLine.Start then
+                        let span = Span.FromBounds(nextLine.Start.Position, blanksEnd.Position)
+                        edit.Delete(span) |> ignore
 
             // Now position the caret on the new snapshot
             edit.Apply() |> ignore

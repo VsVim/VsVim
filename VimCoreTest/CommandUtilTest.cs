@@ -977,7 +977,6 @@ namespace VimCore.UnitTest
         /// the last character in the second to last line joined
         /// </summary>
         [Test]
-        [Ignore("Implementation of JoinLines is busted.  It doesn't properly handle white space as stated after J documentation")]
         public void JoinLines_CaretWithBlankAtEnd()
         {
             Create("a ", "b", "c");
