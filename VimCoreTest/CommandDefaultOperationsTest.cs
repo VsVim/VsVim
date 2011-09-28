@@ -95,24 +95,6 @@ namespace VimCore.UnitTest
             _operations = null;
         }
 
-
-        private void AssertPrintMap(string input, string output)
-        {
-            var keyInputSet = KeyNotationUtil.StringToKeyInputSet(input);
-            _keyMap
-                .Setup(x => x.GetKeyMappingsForMode(KeyRemapMode.Normal))
-                .Returns(new[] { Tuple.Create(keyInputSet, keyInputSet) })
-                .Verifiable();
-
-            var expected = String.Format("n    {0} {0}", output);
-            _statusUtil
-                .Setup(x => x.OnStatusLong(It.IsAny<IEnumerable<string>>()))
-                .Callback<IEnumerable<string>>(x => Assert.AreEqual(expected, x.Single()))
-                .Verifiable();
-            _operations.PrintKeyMap((new[] { KeyRemapMode.Normal }).ToFSharpList());
-            _factory.Verify();
-        }
-
         [Test]
         public void OperateSetting1()
         {
@@ -397,52 +379,6 @@ namespace VimCore.UnitTest
             _keyMap.Setup(x => x.Unmap("h", KeyRemapMode.Insert)).Returns(true).Verifiable();
             _operations.UnmapKeys("h", Enumerable.Repeat(KeyRemapMode.Insert, 1));
             _keyMap.Verify();
-        }
-
-        [Test]
-        public void PrintKeyMap_LowerAlpha()
-        {
-            Create("foo");
-            AssertPrintMap("a", "a");
-            AssertPrintMap("b", "b");
-        }
-
-        [Test]
-        public void PrintKeyMap_UpperAplha()
-        {
-            Create("foo");
-            AssertPrintMap("A", "A");
-            AssertPrintMap("<S-a>", "A");
-            AssertPrintMap("<S-A>", "A");
-        }
-
-        [Test]
-        public void PrintKeyMap_AlphaWithControl()
-        {
-            Create("foo");
-            AssertPrintMap("<c-a>", "<C-A>");
-            AssertPrintMap("<c-S-a>", "<C-A>");
-        }
-
-        [Test]
-        public void PrintKeyMap_SpecialKey()
-        {
-            Create("foo");
-            AssertPrintMap("<Esc>", "<Esc>");
-            AssertPrintMap("<c-[>", "<Esc>");
-            AssertPrintMap("<c-@>", "<Nul>");
-            AssertPrintMap("<Tab>", "<Tab>");
-            AssertPrintMap("<c-i>", "<Tab>");
-            AssertPrintMap("<c-h>", "<C-H>");
-            AssertPrintMap("<BS>", "<BS>");
-            AssertPrintMap("<NL>", "<NL>");
-            AssertPrintMap("<c-j>", "<NL>");
-            AssertPrintMap("<c-l>", "<C-L>");
-            AssertPrintMap("<FF>", "<FF>");
-            AssertPrintMap("<c-m>", "<CR>");
-            AssertPrintMap("<CR>", "<CR>");
-            AssertPrintMap("<Return>", "<CR>");
-            AssertPrintMap("<Enter>", "<CR>");
         }
     }
 }

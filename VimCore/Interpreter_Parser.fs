@@ -195,13 +195,11 @@ type Parser
     /// Parse out a single word from the text.  This will simply take the current cursor
     /// position and move while IsLetter is true.  This will return None if the resulting
     /// string is blank.  This will not skip any blanks
-    member x.ParseWord () = x.ParseWhile CharUtil.IsNotBlank
+    member x.ParseWord() = x.ParseWhile CharUtil.IsLetterOrDigit
 
-    /// Parse out a key notation argument
-    member x.ParseKeyNotation() = 
-        // TODO: Right now this lines up with parse word since they both go with non-blanks.  Keeping
-        // separate as I believe ParseWord will need to evolve to be more specific
-        x.ParseWord()
+    /// Parse out a key notation argument.  Different than a word because it can accept items
+    /// which are not letters such as numbers, <, >, etc ...
+    member x.ParseKeyNotation() = x.ParseWhile CharUtil.IsNotBlank
 
     /// Parse out the mapclear variants. 
     member x.ParseMapClear allowBang keyRemapModes =
@@ -624,19 +622,11 @@ type Parser
             flags ||| SubstituteFlags.Nomagic)
 
     /// Parse out the '&' command
-    member x.ParseSubstituteRepeatLast lineRange = 
-        let flags = x.ParseSubstituteFlags()
+    member x.ParseSubstituteRepeat lineRange extraFlags = 
+        let flags = x.ParseSubstituteFlags() ||| extraFlags
         x.SkipBlanks()
         let count = x.ParseNumber()
-        LineCommand.SubstituteRepeatLast (lineRange, flags, count) |> ParseResult.Succeeded
-
-    /// Parse out the '~' command
-    member x.ParseSubstituteRepeatLastWithSearch lineRange = 
-        let flags = x.ParseSubstituteFlags()
-        x.SkipBlanks()
-        let count = x.ParseNumber()
-        LineCommand.SubstituteRepeatLastWithSearch (lineRange, flags, count) |> ParseResult.Succeeded
-
+        LineCommand.SubstituteRepeat (lineRange, flags, count) |> ParseResult.Succeeded
 
     /// Parse out the search commands
     member x.ParseSearch path =
@@ -755,7 +745,6 @@ type Parser
             let parseCompoundOperator name argumentFunc = 
                 x.IncrementIndex()
                 if x.IsCurrentCharValue '=' then
-                    x.IncrementIndex()
                     parseOperator name argumentFunc
                 else
                     ParseResult.Failed Resources.Parser_Error
@@ -778,7 +767,7 @@ type Parser
                 | Some name ->
                     if name.StartsWith("no", System.StringComparison.Ordinal) then
                         let option = name.Substring(2)
-                        parseNext (SetArgument.ToggleSetting option)
+                        parseNext (SetArgument.ToggleOffSetting option)
                     elif name.StartsWith("inv", System.StringComparison.Ordinal) then
                         let option = name.Substring(3)
                         parseNext (SetArgument.InvertSetting option)
@@ -791,7 +780,8 @@ type Parser
                             parseNext (SetArgument.UseSetting name)
                         | Some c ->
                             match c with 
-                            | '!' -> parseNext (SetArgument.InvertSetting name)
+                            | '?' -> x.IncrementIndex(); parseNext (SetArgument.DisplaySetting name)
+                            | '!' -> x.IncrementIndex(); parseNext (SetArgument.InvertSetting name)
                             | ':' -> parseOperator name SetArgument.AssignSetting
                             | '=' -> parseOperator name SetArgument.AssignSetting
                             | '+' -> parseCompoundOperator name SetArgument.AddSetting
@@ -954,8 +944,8 @@ type Parser
             | "?" -> noRange (fun () -> x.ParseSearch Path.Backward)
             | "<" -> x.ParseShiftLeft lineRange
             | ">" -> x.ParseShiftRight lineRange
-            | "&" -> x.ParseSubstituteRepeatLast lineRange
-            | "~" -> x.ParseSubstituteRepeatLastWithSearch lineRange
+            | "&" -> x.ParseSubstituteRepeat lineRange SubstituteFlags.None
+            | "~" -> x.ParseSubstituteRepeat lineRange SubstituteFlags.UsePreviousSearchPattern
             | "" -> match lineRange with | Some lineRange -> x.ParseJumpToLine lineRange | None -> ParseResult.Failed Resources.Parser_Error
             | _ -> ParseResult.Failed Resources.Parser_Error
 

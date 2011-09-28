@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
@@ -30,6 +31,70 @@ namespace VimCore.UnitTest
             var option = parser.ParseLineSpecifier();
             Assert.IsTrue(option.IsSome());
             return option.Value;
+        }
+
+        /// <summary>
+        /// Assert that parsing the given line command produces the specific error
+        /// </summary>
+        private void AssertParseLineCommandError(string command, string error)
+        {
+            var parseResult = Parser.ParseLineCommand(command);
+            Assert.IsTrue(parseResult.IsFailed);
+            Assert.AreEqual(error, parseResult.AsFailed().Item);
+        }
+
+        private void AssertMap(string command, string lhs, string rhs, params KeyRemapMode[] keyRemapModes)
+        {
+            AssertMapCore(command, lhs, rhs, false, keyRemapModes);
+        }
+
+        private void AssertMapWithRemap(string command, string lhs, string rhs, params KeyRemapMode[] keyRemapModes)
+        {
+            AssertMapCore(command, lhs, rhs, true, keyRemapModes);
+        }
+
+        private void AssertMapCore(string command, string lhs, string rhs, bool allowRemap, params KeyRemapMode[] keyRemapModes)
+        {
+            var map = ParseLineCommand(command).AsMapKeys();
+            Assert.AreEqual(lhs, map.Item1);
+            Assert.AreEqual(rhs, map.Item2);
+            CollectionAssert.AreEqual(keyRemapModes, map.Item3.ToArray());
+            Assert.AreEqual(allowRemap, map.Item4);
+        }
+
+        /// <summary>
+        /// Assert the given command parser out to a substitute with the specified values
+        /// </summary>
+        private void AssertSubstitute(string command, string pattern, string replace, SubstituteFlags? flags = null, int? count = null)
+        {
+            var subCommand = ParseLineCommand(command).AsSubstitute();
+            Assert.AreEqual(pattern, subCommand.Item2);
+            Assert.AreEqual(replace, subCommand.Item3);
+
+            // Verify flags if it was passed
+            if (flags.HasValue)
+            {
+                Assert.AreEqual(flags.Value, subCommand.Item4);
+            }
+
+            // Verify count if it was passed
+            if (count.HasValue)
+            {
+                Assert.AreEqual(count.Value, subCommand.Item5.Value);
+            }
+        }
+
+        /// <summary>
+        /// Assert the given command parses out to a substitute repeat with the specified values
+        /// </summary>
+        private void AssertSubstituteRepeat(string command, SubstituteFlags flags, int? count = null)
+        {
+            var subCommand = ParseLineCommand(command).AsSubstituteRepeat();
+            Assert.AreEqual(flags, subCommand.Item2);
+            if (count.HasValue)
+            {
+                Assert.AreEqual(count.Value, subCommand.Item3.Value);
+            }
         }
 
         /// <summary>
@@ -148,6 +213,390 @@ namespace VimCore.UnitTest
         {
             var lineSpecifier = ParseLineSpecifier("?dog?");
             Assert.AreEqual("dog", lineSpecifier.AsPreviousLineWithPattern().Item);
+        }
+
+        [Test]
+        public void Parse_Map_Default()
+        {
+            var modes = new KeyRemapMode[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Select, KeyRemapMode.OperatorPending };
+            AssertMap("noremap l h", "l", "h", modes);
+            AssertMap("nore l h", "l", "h", modes);
+            AssertMap("no l h", "l", "h", modes);
+        }
+
+        [Test]
+        public void Parse_Map_DefaultWithBang()
+        {
+            var modes = new KeyRemapMode[] { KeyRemapMode.Insert, KeyRemapMode.Command };
+            AssertMap("noremap! l h", "l", "h", modes);
+            AssertMap("nore! l h", "l", "h", modes);
+            AssertMap("no! l h", "l", "h", modes);
+        }
+
+        [Test]
+        public void Parse_Map_Normal()
+        {
+            AssertMap("nnoremap l h", "l", "h", KeyRemapMode.Normal);
+            AssertMap("nnor l h", "l", "h", KeyRemapMode.Normal);
+            AssertMap("nn l h", "l", "h", KeyRemapMode.Normal);
+        }
+
+        [Test]
+        public void Parse_Map_VirtualAndSelect()
+        {
+            AssertMap("vnoremap a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
+            AssertMap("vnor a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
+            AssertMap("vn a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
+        }
+
+        [Test]
+        public void Parse_Map_Visual()
+        {
+            AssertMap("xnoremap b c", "b", "c", KeyRemapMode.Visual);
+        }
+
+        [Test]
+        public void Parse_Map_Select()
+        {
+            AssertMap("snoremap a b", "a", "b", KeyRemapMode.Select);
+        }
+
+        [Test]
+        public void Parse_Map_OperatorPending()
+        {
+            AssertMap("onoremap a b", "a", "b", KeyRemapMode.OperatorPending);
+        }
+
+        [Test]
+        public void Parse_Map_Insert()
+        {
+            AssertMap("inoremap a b", "a", "b", KeyRemapMode.Insert);
+        }
+
+        [Test]
+        public void Parse_MapWithRemap_Standard()
+        {
+            AssertMapWithRemap("map a bc", "a", "bc", KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Select, KeyRemapMode.OperatorPending);
+        }
+
+        [Test]
+        public void Parse_MapWithRemap_Normal()
+        {
+            AssertMapWithRemap("nmap a b", "a", "b", KeyRemapMode.Normal);
+        }
+
+        [Test]
+        public void Parse_MapWithRemap_Many()
+        {
+            AssertMapWithRemap("vmap a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
+            AssertMapWithRemap("vm a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
+            AssertMapWithRemap("xmap a b", "a", "b", KeyRemapMode.Visual);
+            AssertMapWithRemap("xm a b", "a", "b", KeyRemapMode.Visual);
+            AssertMapWithRemap("smap a b", "a", "b", KeyRemapMode.Select);
+            AssertMapWithRemap("omap a b", "a", "b", KeyRemapMode.OperatorPending);
+            AssertMapWithRemap("om a b", "a", "b", KeyRemapMode.OperatorPending);
+            AssertMapWithRemap("imap a b", "a", "b", KeyRemapMode.Insert);
+            AssertMapWithRemap("im a b", "a", "b", KeyRemapMode.Insert);
+            AssertMapWithRemap("cmap a b", "a", "b", KeyRemapMode.Command);
+            AssertMapWithRemap("cm a b", "a", "b", KeyRemapMode.Command);
+            AssertMapWithRemap("lmap a b", "a", "b", KeyRemapMode.Language);
+            AssertMapWithRemap("lm a b", "a", "b", KeyRemapMode.Language);
+            AssertMapWithRemap("map! a b", "a", "b", KeyRemapMode.Insert, KeyRemapMode.Command);
+        }
+
+        /// <summary>
+        /// Make sure we can parse out the short version of the ":set" command
+        /// </summary>
+        [Test]
+        public void Parse_Set_ShortName()
+        {
+            var command = ParseLineCommand("se");
+            Assert.IsTrue(command.IsSet);
+        }
+
+        /// <summary>
+        /// Make sure we can parse out the 'all' modifier on the ":set" command
+        /// </summary>
+        [Test]
+        public void Parse_Set_All()
+        {
+            var command = ParseLineCommand("set all").AsSet();
+            Assert.IsTrue(command.Item.Single().IsDisplayAllButTerminal);
+        }
+
+        /// <summary>
+        /// Make sure we can parse out the display setting argument to ":set"
+        /// </summary>
+        [Test]
+        public void Parse_Set_DisplaySetting()
+        {
+            var command = ParseLineCommand("set example?").AsSet();
+            var option = command.Item.Single().AsDisplaySetting();
+            Assert.AreEqual("example", option.Item);
+        }
+
+        /// <summary>
+        /// Make sure we can parse out the use setting argument to ":set"
+        /// </summary>
+        [Test]
+        public void Parse_Set_UseSetting()
+        {
+            var command = ParseLineCommand("set example").AsSet();
+            var option = command.Item.Single().AsUseSetting();
+            Assert.AreEqual("example", option.Item);
+        }
+
+        /// <summary>
+        /// Make sure we can parse out the toggle setting argument to ":set"
+        /// </summary>
+        [Test]
+        public void Parse_Set_ToggleOffSetting()
+        {
+            var command = ParseLineCommand("set noexample").AsSet();
+            var option = command.Item.Single().AsToggleOffSetting();
+            Assert.AreEqual("example", option.Item);
+        }
+
+        /// <summary>
+        /// Make sure we can parse out the invert setting argument to ":set"
+        /// </summary>
+        [Test]
+        public void Parse_Set_InvertSetting()
+        {
+            var command = ParseLineCommand("set example!").AsSet();
+            var option = command.Item.Single().AsInvertSetting();
+            Assert.AreEqual("example", option.Item);
+        }
+
+        /// <summary>
+        /// Make sure we can parse out the invert setting argument to ":set" using the alternate
+        /// syntax
+        /// </summary>
+        [Test]
+        public void Parse_Set_InvertSetting_AlternateSyntax()
+        {
+            var command = ParseLineCommand("set invexample").AsSet();
+            var option = command.Item.Single().AsInvertSetting();
+            Assert.AreEqual("example", option.Item);
+        }
+
+        /// <summary>
+        /// Make sure we can parse out the assign setting argument to ":set"
+        /// </summary>
+        [Test]
+        public void Parse_Set_AssignSetting()
+        {
+            var command = ParseLineCommand("set x=y").AsSet();
+            var option = command.Item.Single().AsAssignSetting();
+            Assert.AreEqual("x", option.Item1);
+            Assert.AreEqual("y", option.Item2);
+        }
+
+        /// <summary>
+        /// Make sure we can parse out the assign setting argument to ":set" using the alternate 
+        /// syntax
+        /// </summary>
+        [Test]
+        public void Parse_Set_AssignSetting_AlternateSyntax()
+        {
+            var command = ParseLineCommand("set x:y").AsSet();
+            var option = command.Item.Single().AsAssignSetting();
+            Assert.AreEqual("x", option.Item1);
+            Assert.AreEqual("y", option.Item2);
+        }
+
+        /// <summary>
+        /// Make sure we can parse out the add setting argument to ":set"
+        /// </summary>
+        [Test]
+        public void Parse_Set_AddSetting()
+        {
+            var command = ParseLineCommand("set x+=y").AsSet();
+            var option = command.Item.Single().AsAddSetting();
+            Assert.AreEqual("x", option.Item1);
+            Assert.AreEqual("y", option.Item2);
+        }
+
+        /// <summary>
+        /// Make sure we can parse out the subtract setting argument to ":set"
+        /// </summary>
+        [Test]
+        public void Parse_Set_SubtractSetting()
+        {
+            var command = ParseLineCommand("set x-=y").AsSet();
+            var option = command.Item.Single().AsSubtractSetting();
+            Assert.AreEqual("x", option.Item1);
+            Assert.AreEqual("y", option.Item2);
+        }
+
+        /// <summary>
+        /// Make sure we can parse out the multiply setting argument to ":set"
+        /// </summary>
+        [Test]
+        public void Parse_Set_MultiplySetting()
+        {
+            var command = ParseLineCommand("set x^=y").AsSet();
+            var option = command.Item.Single().AsMultiplySetting();
+            Assert.AreEqual("x", option.Item1);
+            Assert.AreEqual("y", option.Item2);
+        }
+
+        [Test]
+        public void Parse_Shift_Left()
+        {
+            var command = ParseLineCommand("<");
+            Assert.IsTrue(command.IsShiftLeft);
+        }
+
+        [Test]
+        public void Parse_Shift_Right()
+        {
+            var command = ParseLineCommand(">");
+            Assert.IsTrue(command.IsShiftRight);
+        }
+
+        /// <summary>
+        /// Parse out a source command with the specified name and no bang flag
+        /// </summary>
+        [Test]
+        public void Parse_Source_Simple()
+        {
+            var command = ParseLineCommand("source test.txt").AsSource();
+            Assert.IsFalse(command.Item1);
+            Assert.AreEqual("test.txt", command.Item2);
+        }
+
+        /// <summary>
+        /// Parse out a source command with the specified name and bang flag
+        /// </summary>
+        [Test]
+        public void Parse_Source_WithBang()
+        {
+            var command = ParseLineCommand("source! test.txt").AsSource();
+            Assert.IsTrue(command.Item1);
+            Assert.AreEqual("test.txt", command.Item2);
+        }
+
+        /// <summary>
+        /// Verify the substitute commands.  Simple replaces with no options
+        /// </summary>
+        [Test]
+        public void Substitute_Simple()
+        {
+            AssertSubstitute("s/f/b", "f", "b", SubstituteFlags.None);
+            AssertSubstitute("s/foo/bar", "foo", "bar", SubstituteFlags.None);
+            AssertSubstitute("s/foo/bar/", "foo", "bar", SubstituteFlags.None);
+            AssertSubstitute("s/foo//", "foo", "", SubstituteFlags.None);
+            AssertSubstitute("s/foo", "foo", "", SubstituteFlags.None);
+        }
+
+        /// <summary>
+        /// Simple substitute commands which provide specific flags
+        /// </summary>
+        [Test]
+        public void Parse_Substitute_WithFlags()
+        {
+            AssertSubstitute("s/foo/bar/g", "foo", "bar", SubstituteFlags.ReplaceAll);
+            AssertSubstitute("s/foo/bar/i", "foo", "bar", SubstituteFlags.IgnoreCase);
+            AssertSubstitute("s/foo/bar/gi", "foo", "bar", SubstituteFlags.ReplaceAll | SubstituteFlags.IgnoreCase);
+            AssertSubstitute("s/foo/bar/ig", "foo", "bar", SubstituteFlags.ReplaceAll | SubstituteFlags.IgnoreCase);
+            AssertSubstitute("s/foo/bar/n", "foo", "bar", SubstituteFlags.ReportOnly);
+            AssertSubstitute("s/foo/bar/e", "foo", "bar", SubstituteFlags.SuppressError);
+            AssertSubstitute("s/foo/bar/I", "foo", "bar", SubstituteFlags.OrdinalCase);
+            AssertSubstitute("s/foo/bar/&", "foo", "bar", SubstituteFlags.UsePreviousFlags);
+            AssertSubstitute("s/foo/bar/&g", "foo", "bar", SubstituteFlags.ReplaceAll | SubstituteFlags.UsePreviousFlags);
+            AssertSubstitute("s/foo/bar/c", "foo", "bar", SubstituteFlags.Confirm);
+            AssertSubstitute("s/foo/bar/p", "foo", "bar", SubstituteFlags.PrintLast);
+            AssertSubstitute("s/foo/bar/#", "foo", "bar", SubstituteFlags.PrintLastWithNumber);
+            AssertSubstitute("s/foo/bar/l", "foo", "bar", SubstituteFlags.PrintLastWithList);
+        }
+
+        /// <summary>
+        /// Simple substitute with count
+        /// </summary>
+        [Test]
+        public void Parse_Substitute_WithCount()
+        {
+            AssertSubstitute("s/a/b 2", "a", "b", SubstituteFlags.None, 2);
+            AssertSubstitute("s/a/b/g 2", "a", "b", SubstituteFlags.ReplaceAll, 2);
+        }
+
+        /// <summary>
+        /// The & flag can only appear as the first flag.  In any other position it's a parser error
+        /// </summary>
+        [Test]
+        public void Parse_Substitute_BadUsePreviousFlags()
+        {
+            AssertParseLineCommandError("s/a/b/g&", Resources.CommandMode_TrailingCharacters);
+        }
+
+        /// <summary>
+        /// Can't have a space between flag values
+        /// </summary>
+        [Test]
+        public void Parse_Substitute_BadSpaceBetweenFlags()
+        {
+            AssertParseLineCommandError("s/a/b/g &", Resources.CommandMode_TrailingCharacters);
+        }
+
+        [Test]
+        public void Parse_SubstituteRepeat_WithCount()
+        {
+            AssertSubstituteRepeat("& 3", SubstituteFlags.None, 3);
+        }
+
+        /// <summary>
+        /// Parse the snomagic form of substitute
+        /// </summary>
+        [Test]
+        public void Parse_Substitute_NoMagic()
+        {
+            AssertSubstitute("snomagic/a/b", "a", "b", SubstituteFlags.Nomagic);
+            AssertSubstitute("snomagic/a/b/g", "a", "b", SubstituteFlags.Nomagic | SubstituteFlags.ReplaceAll);
+        }
+
+        /// <summary>
+        /// Parse the smagic form of substitute
+        /// </summary>
+        [Test]
+        public void Parse_Substitute_Magic()
+        {
+            AssertSubstitute("smagic/a/b", "a", "b", SubstituteFlags.Magic);
+            AssertSubstitute("smagic/a/b/g", "a", "b", SubstituteFlags.ReplaceAll | SubstituteFlags.Magic);
+        }
+
+        [Test]
+        public void Parse_SubstituteRepeat_Simple()
+        {
+            AssertSubstituteRepeat("s", SubstituteFlags.None);
+            AssertSubstituteRepeat("s g", SubstituteFlags.ReplaceAll);
+            AssertSubstituteRepeat("& g", SubstituteFlags.ReplaceAll);
+            AssertSubstituteRepeat("&&", SubstituteFlags.UsePreviousFlags);
+            AssertSubstituteRepeat("&r", SubstituteFlags.UsePreviousFlags | SubstituteFlags.UsePreviousSearchPattern);
+            AssertSubstituteRepeat("&&g", SubstituteFlags.ReplaceAll | SubstituteFlags.UsePreviousFlags);
+            AssertSubstituteRepeat("~", SubstituteFlags.UsePreviousSearchPattern);
+            AssertSubstituteRepeat("~ g", SubstituteFlags.UsePreviousSearchPattern | SubstituteFlags.ReplaceAll);
+            AssertSubstituteRepeat("~ g 3", SubstituteFlags.UsePreviousSearchPattern | SubstituteFlags.ReplaceAll, 3);
+        }
+
+        /// <summary>
+        /// Parse the snomagic form of substitute repeat
+        /// </summary>
+        [Test]
+        public void Parse_SubstituteRepeat_NoMagic()
+        {
+            AssertSubstituteRepeat("snomagic", SubstituteFlags.Nomagic);
+            AssertSubstituteRepeat("snomagic g", SubstituteFlags.Nomagic | SubstituteFlags.ReplaceAll);
+        }
+
+        /// <summary>
+        /// Parse the smagic form of substitute repeat
+        /// </summary>
+        [Test]
+        public void Parse_SubstituteRepeat_Magic()
+        {
+            AssertSubstituteRepeat("smagic", SubstituteFlags.Magic);
+            AssertSubstituteRepeat("smagic g", SubstituteFlags.ReplaceAll | SubstituteFlags.Magic);
         }
 
         /// <summary>

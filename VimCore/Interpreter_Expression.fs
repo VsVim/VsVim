@@ -76,6 +76,9 @@ type SetArgument  =
     /// The 'termcap' argument
     | DisplayAllTerminal
 
+    /// Display the specified setting
+    | DisplaySetting of string
+
     /// The 'all&' argument.  Resets all setting to their default value
     | ResetAllToDefault
 
@@ -83,8 +86,8 @@ type SetArgument  =
     /// depends on the type of the setting once it's bound
     | UseSetting of string
 
-    /// Toggle the setting value.  How the toggle works depends on the type of the setting
-    | ToggleSetting of string
+    /// Toggle the setting value off.  How the toggle works depends on the type of the setting
+    | ToggleOffSetting of string
 
     /// Invert the setting
     | InvertSetting of string
@@ -240,17 +243,13 @@ and [<RequireQualifiedAccess>] LineCommand =
     ///  - The provided +cmd
     | Split of LineRange option * FileOption list * CommandOption option
 
-    /// The :substitute command.  The argument order is range, search, replace,
+    /// The :substitute command.  The argument order is range, pattern, replace,
     /// substitute flags and count
     | Substitute of LineRange option * string * string * SubstituteFlags * int option
 
     /// The variant of the :substitute command which repeats the last :subsitute with
     /// different flags and count
-    | SubstituteRepeatLast of LineRange option * SubstituteFlags * int option
-
-    /// The variant of the :substitute command which repeats the last :subsitute with
-    /// different flags, count and using the last search as the pattern
-    | SubstituteRepeatLastWithSearch of LineRange option * SubstituteFlags * int option
+    | SubstituteRepeat of LineRange option * SubstituteFlags * int option
 
     /// Undo the last change
     | Undo

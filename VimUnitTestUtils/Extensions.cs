@@ -45,7 +45,116 @@ namespace Vim.UnitTest
             return (LineCommand.Delete)lineCommand;
         }
 
+        /// <summary>
+        /// LineCommand as Set
+        /// </summary>
+        public static LineCommand.Set AsSet(this LineCommand lineCommand)
+        {
+            return (LineCommand.Set)lineCommand;
+        }
+
+        /// <summary>
+        /// LineCommand as Source
+        /// </summary>
+        public static LineCommand.Source AsSource(this LineCommand lineCommand)
+        {
+            return (LineCommand.Source)lineCommand;
+        }
+
+        /// <summary>
+        /// LineCommand as Substitute
+        /// </summary>
+        public static LineCommand.Substitute AsSubstitute(this LineCommand lineCommand)
+        {
+            return (LineCommand.Substitute)lineCommand;
+        }
+
+        /// <summary>
+        /// LineCommand as SubstituteRepeat
+        /// </summary>
+        public static LineCommand.SubstituteRepeat AsSubstituteRepeat(this LineCommand lineCommand)
+        {
+            return (LineCommand.SubstituteRepeat)lineCommand;
+        }
+
+        /// <summary>
+        /// LineCommand as MapKeys
+        /// </summary>
+        public static LineCommand.MapKeys AsMapKeys(this LineCommand lineCommand)
+        {
+            return (LineCommand.MapKeys)lineCommand;
+        }
+
         #endregion
+
+        #region SetArgument
+
+        /// <summary>
+        /// SetArgument as SetArgument
+        /// </summary>
+        public static SetArgument.DisplaySetting AsDisplaySetting(this SetArgument setArgument)
+        {
+            return (SetArgument.DisplaySetting)setArgument;
+        }
+
+        /// <summary>
+        /// SetArgument as UseSetting
+        /// </summary>
+        public static SetArgument.UseSetting AsUseSetting(this SetArgument setArgument)
+        {
+            return (SetArgument.UseSetting)setArgument;
+        }
+
+        /// <summary>
+        /// SetArgument as ToggleOffSetting
+        /// </summary>
+        public static SetArgument.ToggleOffSetting AsToggleOffSetting(this SetArgument setArgument)
+        {
+            return (SetArgument.ToggleOffSetting)setArgument;
+        }
+
+        /// <summary>
+        /// SetArgument as InvertSetting
+        /// </summary>
+        public static SetArgument.InvertSetting AsInvertSetting(this SetArgument setArgument)
+        {
+            return (SetArgument.InvertSetting)setArgument;
+        }
+
+        /// <summary>
+        /// SetArgument as AssignSetting
+        /// </summary>
+        public static SetArgument.AssignSetting AsAssignSetting(this SetArgument setArgument)
+        {
+            return (SetArgument.AssignSetting)setArgument;
+        }
+
+        /// <summary>
+        /// SetArgument as AddSetting
+        /// </summary>
+        public static SetArgument.AddSetting AsAddSetting(this SetArgument setArgument)
+        {
+            return (SetArgument.AddSetting)setArgument;
+        }
+
+        /// <summary>
+        /// SetArgument as MultiplySetting
+        /// </summary>
+        public static SetArgument.MultiplySetting AsMultiplySetting(this SetArgument setArgument)
+        {
+            return (SetArgument.MultiplySetting)setArgument;
+        }
+
+        /// <summary>
+        /// SetArgument as SubtractSetting
+        /// </summary>
+        public static SetArgument.SubtractSetting AsSubtractSetting(this SetArgument setArgument)
+        {
+            return (SetArgument.SubtractSetting)setArgument;
+        }
+
+        #endregion
+
 
         #region LineRange
 

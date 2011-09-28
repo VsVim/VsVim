@@ -652,14 +652,24 @@ type Interpreter
                 if not (_localSettings.TrySetValueFromString setting.Name value) then
                     _statusUtil.OnError (Resources.Interpreter_InvalidArgument msg))
 
-        // Display all of the setings but terminal
-        let displayAllButTerminal() = 
+        // Display all of the setings which don't have the default value
+        let displayAllNonDefault() = 
 
             // TODO: need to filter out terminal 
             _localSettings.AllSettings 
             |> Seq.filter (fun s -> not s.IsValueDefault) 
             |> Seq.map getSettingDisplay 
             |> _statusUtil.OnStatusLong
+
+        // Display all of the setings but terminal
+        let displayAllButTerminal() = 
+            // TODO: Implement
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "all")
+
+        // Display the inidividual setting
+        let displaySetting name = 
+            // TODO: Implement
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "display single setting")
 
         // Display the terminal options
         let displayAllTerminal() = 
@@ -689,27 +699,36 @@ type Interpreter
             // TODO: Implement
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "&")
 
-        // Toggle the specified value
-        let toggleSetting name = 
-            // TODO: Implement
-            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "toggle")
+        // Toggle the specified value off
+        let toggleOffSetting name = 
+            let msg = "no" + name
+            withSetting name msg (fun setting -> 
+                match setting.Kind with
+                | SettingKind.NumberKind -> _statusUtil.OnError (Resources.Interpreter_InvalidArgument msg)
+                | SettingKind.StringKind -> _statusUtil.OnError (Resources.Interpreter_InvalidArgument msg)
+                | SettingKind.ToggleKind -> _localSettings.TrySetValue setting.Name (SettingValue.ToggleValue false) |> ignore)
 
-        // Process each of the SetArgument values in the order in which they
-        // are declared
-        setArguments
-        |> List.iter (fun setArgument ->
-            match setArgument with
-            | SetArgument.AddSetting (name, value) -> addSetting name value
-            | SetArgument.AssignSetting (name, value) -> assignSetting name value
-            | SetArgument.DisplayAllButTerminal -> displayAllButTerminal()
-            | SetArgument.DisplayAllTerminal -> displayAllTerminal()
-            | SetArgument.InvertSetting name -> invertSetting name
-            | SetArgument.MultiplySetting (name, value) -> multiplySetting name value
-            | SetArgument.ResetAllToDefault -> resetAllToDefault()
-            | SetArgument.ResetSetting name -> resetSetting name
-            | SetArgument.SubtractSetting (name, value) -> subtractSetting name value
-            | SetArgument.ToggleSetting name -> toggleSetting name
-            | SetArgument.UseSetting name -> useSetting name)
+        match setArguments with
+        | [] -> 
+            displayAllNonDefault()
+        | _ ->
+            // Process each of the SetArgument values in the order in which they
+            // are declared
+            setArguments
+            |> List.iter (fun setArgument ->
+                match setArgument with
+                | SetArgument.AddSetting (name, value) -> addSetting name value
+                | SetArgument.AssignSetting (name, value) -> assignSetting name value
+                | SetArgument.DisplayAllButTerminal -> displayAllButTerminal()
+                | SetArgument.DisplayAllTerminal -> displayAllTerminal()
+                | SetArgument.DisplaySetting name -> displaySetting name
+                | SetArgument.InvertSetting name -> invertSetting name
+                | SetArgument.MultiplySetting (name, value) -> multiplySetting name value
+                | SetArgument.ResetAllToDefault -> resetAllToDefault()
+                | SetArgument.ResetSetting name -> resetSetting name
+                | SetArgument.SubtractSetting (name, value) -> subtractSetting name value
+                | SetArgument.ToggleOffSetting name -> toggleOffSetting name
+                | SetArgument.UseSetting name -> useSetting name)
 
         RunResult.Completed
 
@@ -814,17 +833,6 @@ type Interpreter
             | None -> "", ""
             | Some substituteData -> substituteData.SearchPattern, substituteData.Substitute
         x.RunSubstitute lineRange pattern replace flags 
-
-    /// Run substitute using the last search pattern and replace from the last substitute
-    member x.RunSubstituteRepeatLastWithSearch lineRange flags = 
-        let pattern = _vimData.LastPatternData.Pattern
-
-        let replace =
-            _vimData.LastSubstituteData
-            |> Option.map (fun substituteData -> substituteData.SearchPattern)
-            |> OptionUtil.getOrDefault ""
-
-        x.RunSubstitute lineRange pattern replace flags
 
     /// Run the undo command
     member x.RunUndo() =
@@ -936,8 +944,7 @@ type Interpreter
         | LineCommand.Source (hasBang, filePath) -> x.RunSource hasBang filePath
         | LineCommand.Split (lineRange, fileOptions, commandOptions) -> runWithLineRange lineRange (fun lineRange -> x.RunSplit lineRange fileOptions commandOptions)
         | LineCommand.Substitute (lineRange, pattern, replace, flags, count) -> runWithLineRangeAndEndCount lineRange count (fun lineRange -> x.RunSubstitute lineRange pattern replace flags)
-        | LineCommand.SubstituteRepeatLast (lineRange, substituteFlags, count) -> runWithLineRangeAndEndCount lineRange count (fun lineRange -> x.RunSubstituteRepeatLast lineRange substituteFlags)
-        | LineCommand.SubstituteRepeatLastWithSearch (lineRange, substituteFlags, count) -> runWithLineRangeAndEndCount lineRange count (fun lineRange -> x.RunSubstituteRepeatLastWithSearch lineRange substituteFlags)
+        | LineCommand.SubstituteRepeat (lineRange, substituteFlags, count) -> runWithLineRangeAndEndCount lineRange count (fun lineRange -> x.RunSubstituteRepeatLast lineRange substituteFlags)
         | LineCommand.Undo -> x.RunUndo()
         | LineCommand.UnmapKeys (keyNotation, keyRemapModes) -> x.RunUnmapKeys keyNotation keyRemapModes
         | LineCommand.Yank (lineRange, registerName, count) -> runWithLineRangeAndEndCount lineRange count (fun lineRange -> x.RunYank lineRange (getRegister registerName))

@@ -16,7 +16,7 @@ using Vim.UnitTest.Mock;
 
 namespace VimCore.UnitTest
 {
-    [TestFixture, RequiresSTA]
+    [TestFixture]
     public sealed class CommandProcessorTest : VimTestBase
     {
         private ITextView _textView;
@@ -95,38 +95,21 @@ namespace VimCore.UnitTest
         {
             _commandOperations.Setup(x => x.RemapKeys(lhs, rhs, modes, allowRemap)).Verifiable();
             RunCommand(input);
-            _operations.Verify();
+            _commandOperations.Verify();
         }
 
         private void TestMapClear(string input, params KeyRemapMode[] modes)
         {
             _commandOperations.Setup(x => x.ClearKeyMapModes(modes)).Verifiable();
             RunCommand(input);
-            _operations.Verify();
+            _commandOperations.Verify();
         }
 
         private void TestUnmap(string input, string lhs, params KeyRemapMode[] modes)
         {
             _commandOperations.Setup(x => x.UnmapKeys(lhs, modes)).Verifiable();
             RunCommand(input);
-            _operations.Verify();
-        }
-
-        private void TestPrintMap(string input, params KeyRemapMode[] modes)
-        {
-            _commandOperations
-                .Setup(x => x.PrintKeyMap(It.IsAny<FSharpList<KeyRemapMode>>()))
-                .Callback<FSharpList<KeyRemapMode>>(
-                    list =>
-                    {
-                        foreach (var mode in modes)
-                        {
-                            Assert.IsTrue(list.Contains(mode));
-                        }
-                    })
-                .Verifiable();
-            RunCommand(input);
-            _factory.Verify();
+            _commandOperations.Verify();
         }
 
         /// <summary>
@@ -262,107 +245,6 @@ namespace VimCore.UnitTest
             Create("cat", "dog", "rabbit", "tree");
             RunCommand("2y 1");
             Assert.AreEqual("dog" + Environment.NewLine, UnnamedRegister.StringValue);
-        }
-
-        /// <summary>
-        /// Ensure the Put command is linewise even if the register is marked as characterwise
-        /// </summary>
-        [Test]
-        public void Put_ShouldBeLinewise()
-        {
-            Create("foo", "bar");
-            _commandOperations
-                .Setup(x => x.PutLine(_registerMap.GetRegister(RegisterName.Unnamed), It.IsAny<ITextSnapshotLine>(), false))
-                .Callback<Register, ITextSnapshotLine, bool>((register, line, putBefore) => Assert.IsTrue(line.LineNumber == 0))
-                .Verifiable();
-            _registerMap.GetRegister(RegisterName.Unnamed).UpdateValue("hey", OperationKind.CharacterWise);
-            RunCommand("put");
-            _commandOperations.Verify();
-        }
-
-        /// <summary>
-        /// Ensure that when the ! is present that the appropriate option is passed along
-        /// </summary>
-        [Test]
-        public void Put_BangShouldPutTextBefore()
-        {
-            Create("foo", "bar");
-            _commandOperations
-                .Setup(x => x.PutLine(_registerMap.GetRegister(RegisterName.Unnamed), It.IsAny<ITextSnapshotLine>(), true))
-                .Callback<Register, ITextSnapshotLine, bool>((register, line, putBefore) => Assert.IsTrue(line.LineNumber == 0))
-                .Verifiable();
-            _registerMap.GetRegister(RegisterName.Unnamed).UpdateValue("hey", OperationKind.CharacterWise);
-            RunCommand("put!");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void ShiftLeft1()
-        {
-            Create("     foo", "bar", "baz");
-            var range = _textView.GetLineRange(0);
-            _operations
-                .Setup(x => x.ShiftLineRangeLeft(range, 1))
-                .Verifiable();
-            RunCommand("<");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftLeft2()
-        {
-            Create("     foo", "     bar", "baz");
-            var range = _textView.GetLineRange(0, 1);
-            _operations
-                .Setup(x => x.ShiftLineRangeLeft(range, 1))
-                .Verifiable();
-            RunCommand("1,2<");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftLeft3()
-        {
-            Create("     foo", "     bar", "baz");
-            var range = _textView.GetLineRange(0, 1);
-            _operations
-                .Setup(x => x.ShiftLineRangeLeft(range, 1))
-                .Verifiable();
-            RunCommand("< 2");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftRight1()
-        {
-            Create("foo", "bar", "baz");
-            _operations
-                .Setup(x => x.ShiftLineRangeRight(_textView.GetLineRange(0, 0), 1))
-                .Verifiable();
-            RunCommand(">");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftRight2()
-        {
-            Create("foo", "bar", "baz");
-            _operations
-                .Setup(x => x.ShiftLineRangeRight(_textView.GetLineRange(0, 1), 1))
-                .Verifiable();
-            RunCommand("1,2>");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftRight3()
-        {
-            Create("foo", "bar", "baz");
-            _operations
-                .Setup(x => x.ShiftLineRangeRight(_textView.GetLineRange(0, 1), 1))
-                .Verifiable();
-            RunCommand("> 2");
-            _operations.Verify();
         }
 
         /// <summary>
@@ -1082,40 +964,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Redo3()
-        {
-            Create("foo");
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_CannotRun("real"))).Verifiable();
-            RunCommand("real");
-            _factory.Verify();
-        }
-
-        /// <summary>
-        /// By default the retab command should affect the entire ITextBuffer and not include
-        /// space strings
-        /// </summary>
-        [Test]
-        public void Retab_Default()
-        {
-            Create("cat", "dog");
-            _commandOperations.Setup(x => x.RetabLineRange(_textBuffer.GetLineRange(0, 1), false)).Verifiable();
-            RunCommand("retab");
-            _factory.Verify();
-        }
-
-        /// <summary>
-        /// The ! operator should force the command to include spaces
-        /// </summary>
-        [Test]
-        public void Retab_WithBang()
-        {
-            Create("cat", "dog");
-            _commandOperations.Setup(x => x.RetabLineRange(_textBuffer.GetLineRange(0, 1), true)).Verifiable();
-            RunCommand("retab!");
-            _factory.Verify();
-        }
-
-        [Test]
         public void Undo1()
         {
             Create("foo");
@@ -1139,23 +987,6 @@ namespace VimCore.UnitTest
             Create("foo");
             _statusUtil.Setup(x => x.OnError(Resources.CommandMode_CannotRun("unreal"))).Verifiable();
             RunCommand("unreal");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Marks1()
-        {
-            Create("foo");
-            _commandOperations.Setup(x => x.PrintMarks(_vim.Object.MarkMap)).Verifiable();
-            RunCommand("marks");
-        }
-
-        [Test]
-        public void Marks2()
-        {
-            Create("foo");
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_CannotRun("marksaoeu"))).Verifiable();
-            RunCommand("marksaoeu");
             _factory.Verify();
         }
 
@@ -1223,297 +1054,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Set1()
-        {
-            Create("bar");
-            _commandOperations.Setup(x => x.PrintModifiedSettings()).Verifiable();
-            RunCommand("se");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Set2()
-        {
-            Create("bar");
-            _commandOperations.Setup(x => x.PrintModifiedSettings()).Verifiable();
-            RunCommand("set");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Set3()
-        {
-            Create("bar");
-            _commandOperations.Setup(x => x.PrintAllSettings()).Verifiable();
-            RunCommand("se all");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Set4()
-        {
-            Create("bar");
-            _commandOperations.Setup(x => x.PrintAllSettings()).Verifiable();
-            RunCommand("set all");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Set5()
-        {
-            Create("bar");
-            _commandOperations.Setup(x => x.PrintSetting("foo")).Verifiable();
-            RunCommand("set foo?");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Set6()
-        {
-            Create("bar");
-            _commandOperations.Setup(x => x.OperateSetting("foo")).Verifiable();
-            RunCommand("set foo");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Set7()
-        {
-            Create("bor");
-            _commandOperations.Setup(x => x.ResetSetting("foo")).Verifiable();
-            RunCommand("set nofoo");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Set8()
-        {
-            Create("bar");
-            _commandOperations.Setup(x => x.InvertSetting("foo")).Verifiable();
-            RunCommand("set foo!");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Set9()
-        {
-            Create("bar");
-            _commandOperations.Setup(x => x.InvertSetting("foo")).Verifiable();
-            RunCommand("set invfoo");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Set10()
-        {
-            Create("bar");
-            _commandOperations.Setup(x => x.SetSettingValue("foo", "bar")).Verifiable();
-            RunCommand("set foo=bar");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Set11()
-        {
-            Create("baa");
-            _commandOperations.Setup(x => x.SetSettingValue("foo", "true")).Verifiable();
-            RunCommand("set foo=true");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Set12()
-        {
-            Create("baa");
-            _commandOperations.Setup(x => x.SetSettingValue("foo", "true")).Verifiable();
-            RunCommand("set foo:true");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Source1()
-        {
-            Create("boo");
-            _fileSystem.Setup(x => x.ReadAllLines(It.IsAny<string>())).Returns(FSharpOption<string[]>.None).Verifiable();
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_CouldNotOpenFile(String.Empty))).Verifiable();
-            RunCommand("source");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Source2()
-        {
-            Create("bar");
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_NotSupported_SourceNormal)).Verifiable();
-            RunCommand("source! boo");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Source3()
-        {
-            var text = new string[] { "set noignorecase" };
-            _fileSystem.Setup(x => x.ReadAllLines("blah.txt")).Returns(FSharpOption.Create(text)).Verifiable();
-            _commandOperations.Setup(x => x.ResetSetting("ignorecase")).Verifiable();
-            RunCommand("source blah.txt");
-            _commandOperations.Verify();
-            _fileSystem.Verify();
-        }
-
-        [Test]
-        public void Source4()
-        {
-            var text = new string[] { "set noignorecase", "set nofoo" };
-            _fileSystem.Setup(x => x.ReadAllLines("blah.txt")).Returns(FSharpOption.Create(text)).Verifiable();
-            _commandOperations.Setup(x => x.ResetSetting("ignorecase")).Verifiable();
-            _commandOperations.Setup(x => x.ResetSetting("foo")).Verifiable();
-            RunCommand("source blah.txt");
-            _operations.Verify();
-        }
-
-        [Test, Description("RunCommand should strip off the : prefix")]
-        public void RunCommand1()
-        {
-            var list = ListModule.OfSeq(":set nofoo");
-            _commandOperations.Setup(x => x.ResetSetting("foo")).Verifiable();
-            _processor.RunCommand(list);
-            _operations.Verify();
-        }
-
-        [Test]
-        public void RunCommand2()
-        {
-            var command = "\"foo bar";
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_CannotRun(command))).Verifiable();
-            _processor.RunCommand(ListModule.OfSeq(command));
-            _factory.Verify();
-        }
-
-        [Test]
-        public void RunCommand3()
-        {
-            var command = " \"foo bar";
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_CannotRun(command))).Verifiable();
-            _processor.RunCommand(ListModule.OfSeq(command));
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Remap_noremap()
-        {
-            Create("");
-            var modes = new KeyRemapMode[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Select, KeyRemapMode.OperatorPending };
-            TestNoRemap("noremap l h", "l", "h", modes);
-            TestNoRemap("nore l h", "l", "h", modes);
-            TestNoRemap("no l h", "l", "h", modes);
-        }
-
-        [Test]
-        public void Remap_noremap2()
-        {
-            Create("");
-            var modes = new KeyRemapMode[] { KeyRemapMode.Insert, KeyRemapMode.Command };
-            TestNoRemap("noremap! l h", "l", "h", modes);
-            TestNoRemap("nore! l h", "l", "h", modes);
-            TestNoRemap("no! l h", "l", "h", modes);
-        }
-
-        [Test]
-        public void Remap_nnoremap()
-        {
-            Create("");
-            TestNoRemap("nnoremap l h", "l", "h", KeyRemapMode.Normal);
-            TestNoRemap("nnor l h", "l", "h", KeyRemapMode.Normal);
-            TestNoRemap("nn l h", "l", "h", KeyRemapMode.Normal);
-        }
-
-        [Test]
-        public void Remap_vnoremap()
-        {
-            Create("");
-            TestNoRemap("vnoremap a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
-            TestNoRemap("vnor a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
-            TestNoRemap("vn a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
-        }
-
-        [Test]
-        public void Remap_xnoremap()
-        {
-            Create("");
-            TestNoRemap("xnoremap b c", "b", "c", KeyRemapMode.Visual);
-        }
-
-        [Test]
-        public void Remap_snoremap()
-        {
-            Create("");
-            TestNoRemap("snoremap a b", "a", "b", KeyRemapMode.Select);
-        }
-
-        [Test]
-        public void Remap_onoremap()
-        {
-            Create("");
-            TestNoRemap("onoremap a b", "a", "b", KeyRemapMode.OperatorPending);
-        }
-
-        [Test]
-        public void Remap_inoremap()
-        {
-            Create("");
-            TestNoRemap("inoremap a b", "a", "b", KeyRemapMode.Insert);
-        }
-
-        [Test]
-        public void Remap_map1()
-        {
-            Create("");
-            TestRemap("map a bc", "a", "bc", KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Select, KeyRemapMode.OperatorPending);
-        }
-
-        [Test]
-        public void Remap_nmap1()
-        {
-            Create("");
-            TestRemap("nmap a b", "a", "b", KeyRemapMode.Normal);
-        }
-
-        [Test]
-        public void Remap_many1()
-        {
-            Create("");
-            TestRemap("vmap a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
-            TestRemap("vm a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
-            TestRemap("xmap a b", "a", "b", KeyRemapMode.Visual);
-            TestRemap("xm a b", "a", "b", KeyRemapMode.Visual);
-            TestRemap("smap a b", "a", "b", KeyRemapMode.Select);
-            TestRemap("omap a b", "a", "b", KeyRemapMode.OperatorPending);
-            TestRemap("om a b", "a", "b", KeyRemapMode.OperatorPending);
-            TestRemap("imap a b", "a", "b", KeyRemapMode.Insert);
-            TestRemap("im a b", "a", "b", KeyRemapMode.Insert);
-            TestRemap("cmap a b", "a", "b", KeyRemapMode.Command);
-            TestRemap("cm a b", "a", "b", KeyRemapMode.Command);
-            TestRemap("lmap a b", "a", "b", KeyRemapMode.Language);
-            TestRemap("lm a b", "a", "b", KeyRemapMode.Language);
-            TestRemap("map! a b", "a", "b", KeyRemapMode.Insert, KeyRemapMode.Command);
-        }
-
-        [Test]
-        public void MapClear_Many1()
-        {
-            Create("");
-            TestMapClear("mapc", KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Command, KeyRemapMode.OperatorPending);
-            TestMapClear("nmapc", KeyRemapMode.Normal);
-            TestMapClear("vmapc", KeyRemapMode.Visual, KeyRemapMode.Select);
-            TestMapClear("xmapc", KeyRemapMode.Visual);
-            TestMapClear("smapc", KeyRemapMode.Select);
-            TestMapClear("omapc", KeyRemapMode.OperatorPending);
-            TestMapClear("mapc!", KeyRemapMode.Insert, KeyRemapMode.Command);
-            TestMapClear("imapc", KeyRemapMode.Insert);
-            TestMapClear("cmapc", KeyRemapMode.Command);
-        }
-
-        [Test]
         public void Unmap_Many1()
         {
             Create("");
@@ -1531,20 +1071,6 @@ namespace VimCore.UnitTest
             TestUnmap("lunmap a ", "a", KeyRemapMode.Language);
             TestUnmap("lunm a ", "a", KeyRemapMode.Language);
             TestUnmap("unmap! a ", "a", KeyRemapMode.Insert, KeyRemapMode.Command);
-        }
-
-        [Test]
-        public void PrintKeyMap_Map()
-        {
-            Create("");
-
-            TestPrintMap("map", KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.OperatorPending);
-            TestPrintMap("imap", KeyRemapMode.Insert);
-            TestPrintMap("cmap", KeyRemapMode.Command);
-            TestPrintMap("smap", KeyRemapMode.Select);
-            TestPrintMap("nmap", KeyRemapMode.Normal);
-            TestPrintMap("vmap", KeyRemapMode.Visual, KeyRemapMode.Select);
-            TestPrintMap("xmap", KeyRemapMode.Visual);
         }
 
         /// <summary>

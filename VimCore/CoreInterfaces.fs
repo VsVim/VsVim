@@ -813,6 +813,16 @@ type KeyRemapMode =
 
     with 
 
+    static member All = 
+        seq {
+            yield Normal
+            yield Visual 
+            yield Select
+            yield OperatorPending
+            yield Insert
+            yield Command
+            yield Language }
+
     override x.ToString() =
         match x with 
         | Normal -> "Normal"
