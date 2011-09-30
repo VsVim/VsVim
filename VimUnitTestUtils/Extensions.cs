@@ -85,6 +85,30 @@ namespace Vim.UnitTest
             return (LineCommand.MapKeys)lineCommand;
         }
 
+        /// <summary>
+        /// LineCommand as UnmapKeys
+        /// </summary>
+        public static LineCommand.UnmapKeys AsUnmapKeys(this LineCommand lineCommand)
+        {
+            return (LineCommand.UnmapKeys)lineCommand;
+        }
+
+        /// <summary>
+        /// LineCommand as Write
+        /// </summary>
+        public static LineCommand.Write AsWrite(this LineCommand lineCommand)
+        {
+            return (LineCommand.Write)lineCommand;
+        }
+
+        /// <summary>
+        /// LineCommand as WriteAll
+        /// </summary>
+        public static LineCommand.WriteAll AsWriteAll(this LineCommand lineCommand)
+        {
+            return (LineCommand.WriteAll)lineCommand;
+        }
+
         #endregion
 
         #region SetArgument

@@ -20,6 +20,11 @@ namespace Vim.UnitTest.Mock
         public ITextView FocusedTextView { get; set; }
         public FSharpList<IVimBuffer> Buffers { get; set; }
 
+        /// <summary>
+        /// Data from the last GoToNextTab call
+        /// </summary>
+        public Tuple<Path, int> GoToNextTabData { get; set; }
+
         public MockVimHost()
         {
             GoToDefinitionReturn = true;
@@ -134,10 +139,9 @@ namespace Vim.UnitTest.Mock
             return true;
         }
 
-
         void IVimHost.GoToNextTab(Path value, int count)
         {
-            throw new NotImplementedException();
+            GoToNextTabData = Tuple.Create(value, count);
         }
 
         void IVimHost.GoToTab(int index)

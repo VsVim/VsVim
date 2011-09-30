@@ -62,6 +62,13 @@ namespace VimCore.UnitTest
             Assert.AreEqual(allowRemap, map.Item4);
         }
 
+        private void AssertUnmap(string command, string keyNotation, params KeyRemapMode[] keyRemapModes)
+        {
+            var map = ParseLineCommand(command).AsUnmapKeys();
+            Assert.AreEqual(keyNotation, map.Item1);
+            CollectionAssert.AreEqual(keyRemapModes, map.Item2.ToArray());
+        }
+
         /// <summary>
         /// Assert the given command parser out to a substitute with the specified values
         /// </summary>
@@ -481,7 +488,7 @@ namespace VimCore.UnitTest
         /// Verify the substitute commands.  Simple replaces with no options
         /// </summary>
         [Test]
-        public void Substitute_Simple()
+        public void Parse_Substitute_Simple()
         {
             AssertSubstitute("s/f/b", "f", "b", SubstituteFlags.None);
             AssertSubstitute("s/foo/bar", "foo", "bar", SubstituteFlags.None);
@@ -491,12 +498,36 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Support alternate separators in the substitute command
+        /// </summary>
+        [Test]
+        public void Parse_Substitute_AlternateSeparators()
+        {
+            AssertSubstitute("s,f,b", "f", "b", SubstituteFlags.None);
+            AssertSubstitute("s&f&b", "f", "b", SubstituteFlags.None);
+            AssertSubstitute("s,foo,bar", "foo", "bar", SubstituteFlags.None);
+            AssertSubstitute("s,foo,bar,", "foo", "bar", SubstituteFlags.None);
+            AssertSubstitute("s,foo,,", "foo", "", SubstituteFlags.None);
+            AssertSubstitute("s,foo", "foo", "", SubstituteFlags.None);
+        }
+
+        /// <summary>
+        /// Make sure that we handle escaped separators properly
+        /// </summary>
+        [Test]
+        public void Parse_Substitute_EscapedSeparator()
+        {
+            AssertSubstitute(@"s/and\/or/then", "and/or", "then", SubstituteFlags.None);
+        }
+
+        /// <summary>
         /// Simple substitute commands which provide specific flags
         /// </summary>
         [Test]
         public void Parse_Substitute_WithFlags()
         {
             AssertSubstitute("s/foo/bar/g", "foo", "bar", SubstituteFlags.ReplaceAll);
+            AssertSubstitute("s/foo/bar/ g", "foo", "bar", SubstituteFlags.ReplaceAll);
             AssertSubstitute("s/foo/bar/i", "foo", "bar", SubstituteFlags.IgnoreCase);
             AssertSubstitute("s/foo/bar/gi", "foo", "bar", SubstituteFlags.ReplaceAll | SubstituteFlags.IgnoreCase);
             AssertSubstitute("s/foo/bar/ig", "foo", "bar", SubstituteFlags.ReplaceAll | SubstituteFlags.IgnoreCase);
@@ -509,6 +540,7 @@ namespace VimCore.UnitTest
             AssertSubstitute("s/foo/bar/p", "foo", "bar", SubstituteFlags.PrintLast);
             AssertSubstitute("s/foo/bar/#", "foo", "bar", SubstituteFlags.PrintLastWithNumber);
             AssertSubstitute("s/foo/bar/l", "foo", "bar", SubstituteFlags.PrintLastWithList);
+            AssertSubstitute("s/foo/bar/ l", "foo", "bar", SubstituteFlags.PrintLastWithList);
         }
 
         /// <summary>
@@ -519,6 +551,13 @@ namespace VimCore.UnitTest
         {
             AssertSubstitute("s/a/b 2", "a", "b", SubstituteFlags.None, 2);
             AssertSubstitute("s/a/b/g 2", "a", "b", SubstituteFlags.ReplaceAll, 2);
+        }
+
+        [Test]
+        public void Parse_Substitute_Backslashes()
+        {
+            AssertSubstitute(@"s/a/\\\\", "a", @"\\\\", SubstituteFlags.None);
+            AssertSubstitute(@"s/a/\\\\/", "a", @"\\\\", SubstituteFlags.None);
         }
 
         /// <summary>
@@ -597,6 +636,66 @@ namespace VimCore.UnitTest
         {
             AssertSubstituteRepeat("smagic", SubstituteFlags.Magic);
             AssertSubstituteRepeat("smagic g", SubstituteFlags.ReplaceAll | SubstituteFlags.Magic);
+        }
+
+        /// <summary>
+        /// Parse out the unmapping of keys
+        /// </summary>
+        [Test]
+        public void Parse_UnmapKeys_Simple()
+        {
+            AssertUnmap("vunmap a ", "a", KeyRemapMode.Visual, KeyRemapMode.Select);
+            AssertUnmap("vunm a ", "a", KeyRemapMode.Visual, KeyRemapMode.Select);
+            AssertUnmap("xunmap a", "a", KeyRemapMode.Visual);
+            AssertUnmap("xunm a ", "a", KeyRemapMode.Visual);
+            AssertUnmap("sunmap a ", "a", KeyRemapMode.Select);
+            AssertUnmap("ounmap a ", "a", KeyRemapMode.OperatorPending);
+            AssertUnmap("ounm a ", "a", KeyRemapMode.OperatorPending);
+            AssertUnmap("iunmap a ", "a", KeyRemapMode.Insert);
+            AssertUnmap("iunm a", "a", KeyRemapMode.Insert);
+            AssertUnmap("cunmap a ", "a", KeyRemapMode.Command);
+            AssertUnmap("cunm a ", "a", KeyRemapMode.Command);
+            AssertUnmap("lunmap a ", "a", KeyRemapMode.Language);
+            AssertUnmap("lunm a ", "a", KeyRemapMode.Language);
+            AssertUnmap("unmap! a ", "a", KeyRemapMode.Insert, KeyRemapMode.Command);
+        }
+
+        [Test]
+        public void Parse_Write_Simple()
+        {
+            var write = ParseLineCommand("w").AsWrite();
+            Assert.IsTrue(write.Item1.IsNone());
+            Assert.IsFalse(write.Item2);
+            Assert.AreEqual("", write.Item5);
+        }
+
+        /// <summary>
+        /// Parse out the write command given a file option
+        /// </summary>
+        [Test]
+        public void Parse_Write_ToFile()
+        {
+            var write = ParseLineCommand("w example.txt").AsWrite();
+            Assert.IsTrue(write.Item1.IsNone());
+            Assert.IsFalse(write.Item2);
+            Assert.AreEqual("example.txt", write.Item5);
+        }
+
+        [Test]
+        public void Parse_WriteAll_Simple()
+        {
+            var writeAll = ParseLineCommand("wall").AsWriteAll();
+            Assert.IsFalse(writeAll.Item);
+        }
+
+        /// <summary>
+        /// Parse out the :wall command with the ! option
+        /// </summary>
+        [Test]
+        public void Parse_WriteAll_WithBang()
+        {
+            var writeAll = ParseLineCommand("wall!").AsWriteAll();
+            Assert.IsTrue(writeAll.Item);
         }
 
         /// <summary>

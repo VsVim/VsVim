@@ -257,6 +257,16 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Unmap the key notation in the given modes
     | UnmapKeys of string * KeyRemapMode list
 
+    /// Write the 
+    ///  - The line range to write out
+    ///  - Whether or not a ! was provided
+    ///  - The provided ++opt
+    ///  - The provided +cmd
+    ///  - The file name to write to
+    | Write of LineRange option * bool * FileOption list * CommandOption option * string
+
+    /// Write out all changed buffers
+    | WriteAll of bool
+
     /// Yank the line range into the given register with the specified count
     | Yank of LineRange option * RegisterName option * int option
-

@@ -5,6 +5,7 @@ using Vim.Interpreter;
 using Vim.UnitTest;
 using System;
 using System.Linq;
+using Vim.Extensions;
 
 namespace VimCore.UnitTest
 {
@@ -276,6 +277,73 @@ namespace VimCore.UnitTest
             _localSettings.ExpandTab = true;
             ParseAndRun(@"set et!");
             Assert.IsFalse(_localSettings.ExpandTab);
+        }
+
+        /// <summary>
+        /// When an empty string is provided for the pattern string then the pattern from the last
+        /// substitute
+        /// </summary>
+        [Test]
+        public void Substitute_EmptySearchUsesLastSearch()
+        {
+            Create("cat tree");
+            Vim.VimData.LastSubstituteData = FSharpOption.Create(new SubstituteData(
+                "cat",
+                "rat",
+                SubstituteFlags.None));
+            ParseAndRun("s//dog/");
+            Assert.AreEqual("dog tree", _textBuffer.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void TabNext_NoCount()
+        {
+            Create("");
+            ParseAndRun("tabn");
+            Assert.AreEqual(Path.Forward, VimHost.GoToNextTabData.Item1);
+            Assert.AreEqual(1, VimHost.GoToNextTabData.Item2);
+        }
+
+        /// <summary>
+        /// :tabn with a count
+        /// </summary>
+        [Test]
+        public void TabNext_WithCount()
+        {
+            Create("");
+            ParseAndRun("tabn 3");
+            Assert.AreEqual(Path.Forward, VimHost.GoToNextTabData.Item1);
+            Assert.AreEqual(3, VimHost.GoToNextTabData.Item2);
+        }
+
+        [Test]
+        public void TabPrevious_NoCount()
+        {
+            Create("");
+            ParseAndRun("tabp");
+            Assert.AreEqual(Path.Backward, VimHost.GoToNextTabData.Item1);
+            Assert.AreEqual(1, VimHost.GoToNextTabData.Item2);
+        }
+
+        [Test]
+        public void TabPrevious_NoCount_AltName()
+        {
+            Create("");
+            ParseAndRun("tabN");
+            Assert.AreEqual(Path.Backward, VimHost.GoToNextTabData.Item1);
+            Assert.AreEqual(1, VimHost.GoToNextTabData.Item2);
+        }
+
+        /// <summary>
+        /// :tabp with a count
+        /// </summary>
+        [Test]
+        public void TabPrevious_WithCount()
+        {
+            Create("");
+            ParseAndRun("tabp 3");
+            Assert.AreEqual(Path.Backward, VimHost.GoToNextTabData.Item1);
+            Assert.AreEqual(3, VimHost.GoToNextTabData.Item2);
         }
     }
 }

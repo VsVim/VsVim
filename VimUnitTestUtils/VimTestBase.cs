@@ -46,6 +46,11 @@ namespace Vim.UnitTest
             get { return _vim; }
         }
 
+        protected MockVimHost VimHost
+        {
+            get { return (MockVimHost)_vim.VimHost; }
+        }
+
         protected CompositionContainer CompositionContainer
         {
             get { return _compositionContainer; }

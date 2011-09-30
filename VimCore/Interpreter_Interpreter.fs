@@ -836,7 +836,7 @@ type Interpreter
 
     /// Run the undo command
     member x.RunUndo() =
-        _commonOperations.Redo 1
+        _commonOperations.Undo 1
         RunResult.Completed
 
     /// Unmap the specified key notation in all of the listed modes
