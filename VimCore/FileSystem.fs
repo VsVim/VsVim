@@ -1,4 +1,4 @@
-﻿#light
+#light
 
 namespace Vim
 open System.IO
@@ -37,7 +37,8 @@ type internal FileSystem() =
 
     member x.GetVimRcDirectories() = 
         let getEnvVarValue var = 
-            match System.Environment.ExpandEnvironmentVariable(var) with
+            match System.Environment.ExpandEnvironmentVariables(var) with
+            | var1 when System.String.Equals(var1,var,System.StringComparison.InvariantCultureIgnoreCase) -> None
             | null -> None
             | value -> Some(value)
 
