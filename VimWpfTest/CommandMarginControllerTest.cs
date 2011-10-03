@@ -7,6 +7,7 @@ using Vim.Extensions;
 using Vim.UI.Wpf.Properties;
 using Vim.UnitTest.Mock;
 using Microsoft.VisualStudio.Text.Classification;
+using System.Windows;
 
 namespace Vim.UI.Wpf.Test
 {
@@ -29,10 +30,14 @@ namespace Vim.UI.Wpf.Test
             _buffer.VimImpl = MockObjectFactory.CreateVim(factory: _factory).Object;
             _marginControl = new CommandMarginControl();
             _marginControl.StatusLine = String.Empty;
+
+            var editorFormatMap = _factory.Create<IEditorFormatMap>(MockBehavior.Loose);
+            editorFormatMap.Setup(x => x.GetProperties(It.IsAny<string>())).Returns(new ResourceDictionary());
+
             _controller = new CommandMarginController(
                 _buffer,
                 _marginControl,
-                _factory.Create<IEditorFormatMap>(MockBehavior.Loose).Object,
+                editorFormatMap.Object,
                 new List<Lazy<IOptionsProviderFactory>>());
         }
 
