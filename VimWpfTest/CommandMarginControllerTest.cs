@@ -6,6 +6,7 @@ using NUnit.Framework;
 using Vim.Extensions;
 using Vim.UI.Wpf.Properties;
 using Vim.UnitTest.Mock;
+using Microsoft.VisualStudio.Text.Classification;
 
 namespace Vim.UI.Wpf.Test
 {
@@ -31,6 +32,7 @@ namespace Vim.UI.Wpf.Test
             _controller = new CommandMarginController(
                 _buffer,
                 _marginControl,
+                _factory.Create<IEditorFormatMap>(MockBehavior.Loose).Object,
                 new List<Lazy<IOptionsProviderFactory>>());
         }
 

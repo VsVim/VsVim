@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Windows;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Classification;
 
 namespace Vim.UI.Wpf
 {
@@ -12,10 +13,10 @@ namespace Vim.UI.Wpf
         private readonly CommandMarginControl _margin = new CommandMarginControl();
         private readonly CommandMarginController _controller;
 
-        public CommandMargin(IVimBuffer buffer, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactories)
+        public CommandMargin(IVimBuffer buffer, IEditorFormatMap editorFormatMap, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactories)
         {
             _margin.StatusLine = "Welcome to Vim";
-            _controller = new CommandMarginController(buffer, _margin, optionsProviderFactories);
+            _controller = new CommandMarginController(buffer, _margin, editorFormatMap, optionsProviderFactories);
         }
 
         public FrameworkElement VisualElement

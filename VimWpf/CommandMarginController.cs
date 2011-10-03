@@ -5,6 +5,8 @@ using System.Linq;
 using System.Windows;
 using Vim.Extensions;
 using Vim.UI.Wpf.Properties;
+using Microsoft.VisualStudio.Text.Classification;
+using System.Windows.Media;
 
 namespace Vim.UI.Wpf
 {
@@ -12,15 +14,17 @@ namespace Vim.UI.Wpf
     {
         private readonly IVimBuffer _buffer;
         private readonly CommandMarginControl _margin;
+        private readonly IEditorFormatMap _editorFormatMap;
         private readonly ReadOnlyCollection<Lazy<IOptionsProviderFactory>> _optionsProviderFactory;
         private bool _inKeyInputEvent;
         private string _message;
         private IMode _modeSwitch;
 
-        internal CommandMarginController(IVimBuffer buffer, CommandMarginControl control, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactory)
+        internal CommandMarginController(IVimBuffer buffer, CommandMarginControl control, IEditorFormatMap editorFormatMap, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactory)
         {
             _buffer = buffer;
             _margin = control;
+            _editorFormatMap = editorFormatMap;
             _optionsProviderFactory = optionsProviderFactory.ToList().AsReadOnly();
 
             _buffer.SwitchedMode += OnSwitchMode;
@@ -33,7 +37,9 @@ namespace Vim.UI.Wpf
             _buffer.Vim.MacroRecorder.RecordingStarted += delegate { UpdateForRecordingChanged(); };
             _buffer.Vim.MacroRecorder.RecordingStopped += delegate { UpdateForRecordingChanged(); };
             _margin.OptionsClicked += OnOptionsClicked;
+            _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
             UpdateForRecordingChanged();
+            UpdateTextColor();
         }
 
         private void KeyInputEventComplete()
@@ -161,6 +167,24 @@ namespace Vim.UI.Wpf
             _margin.StatusLine = String.Format(Resources.SubstituteConfirmBannerFormat, replace);
         }
 
+        /// <summary>
+        /// Update the color of the editor portion of the command window to be the user
+        /// defined values
+        /// </summary>
+        private void UpdateTextColor()
+        {
+            var propertyMap = _editorFormatMap.GetProperties(EditorFormatDefinitionNames.CommandMargin);
+            if (propertyMap.Contains(EditorFormatDefinition.ForegroundBrushId))
+            {
+                _margin.TextForeground = (Brush)propertyMap[EditorFormatDefinition.ForegroundBrushId];
+            }
+
+            if (propertyMap.Contains(EditorFormatDefinition.BackgroundColorId))
+            {
+                _margin.TextBackground = (Brush)propertyMap[EditorFormatDefinition.BackgroundBrushId];
+            }
+        }
+
         #region Event Handlers
 
         private void OnSwitchMode(object sender, SwitchModeEventArgs args)
@@ -228,6 +252,11 @@ namespace Vim.UI.Wpf
             {
                 MessageBox.Show("No options provider available");
             }
+        }
+
+        private void OnFormatMappingChanged(object sender, FormatItemsEventArgs e)
+        {
+            UpdateTextColor();
         }
 
         #endregion

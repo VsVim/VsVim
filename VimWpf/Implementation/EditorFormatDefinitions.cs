@@ -5,14 +5,6 @@ using Microsoft.VisualStudio.Utilities;
 
 namespace Vim.UI.Wpf.Implementation
 {
-    internal static class EditorFormatDefinitionNames
-    {
-        /// <summary>
-        /// Color of the block caret
-        /// </summary>
-        internal const string BlockCaret = "vsvim_blockcaret";
-    }
-
     [Export(typeof(EditorFormatDefinition))]
     [Name(Constants.IncrementalSearchTagName)]
     [UserVisible(true)]
@@ -49,5 +41,16 @@ namespace Vim.UI.Wpf.Implementation
         }
     }
 
-
+    [Export(typeof(EditorFormatDefinition))]
+    [Name(EditorFormatDefinitionNames.CommandMargin)]
+    [UserVisible(true)]
+    internal sealed class CommandMarginDefinition : EditorFormatDefinition
+    {
+        internal CommandMarginDefinition()
+        {
+            this.DisplayName = "VsVim Command Window";
+            this.ForegroundColor = Colors.Black;
+            this.BackgroundColor = Colors.White;
+        }
+    }
 }
