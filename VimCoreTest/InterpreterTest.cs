@@ -12,6 +12,7 @@ namespace VimCore.UnitTest
     public sealed class InterpreterTest : VimTestBase
     {
         private VimBufferData _vimBufferData;
+        private IVimTextBuffer _vimTextBuffer;
         private ITextBuffer _textBuffer;
         private Interpreter _interpreter;
         private TestableStatusUtil _statusUtil;
@@ -26,6 +27,7 @@ namespace VimCore.UnitTest
             _vimBufferData = CreateVimBufferData(
                 CreateTextView(lines),
                 statusUtil: _statusUtil);
+            _vimTextBuffer = _vimBufferData.VimTextBuffer;
             _localSettings = _vimBufferData.LocalSettings;
             _globalSettings = _localSettings.GlobalSettings;
             _textBuffer = _vimBufferData.TextBuffer;
@@ -48,6 +50,20 @@ namespace VimCore.UnitTest
             _interpreter.RunLineCommand(parseResult.AsSucceeded().Item);
         }
 
+        private LineRange ParseLineRange(string lineRangeText)
+        {
+            var parseResult = Parser.ParseRange(lineRangeText);
+            Assert.IsTrue(parseResult.IsSucceeded);
+            Assert.AreEqual("", parseResult.AsSucceeded().Item.Item2);
+            return parseResult.AsSucceeded().Item.Item1;
+        }
+
+        private SnapshotLineRange ParseAndGetLineRange(string lineRangeText)
+        {
+            var lineRange = ParseLineRange(lineRangeText);
+            return _interpreter.GetLineRange(lineRange).Value;
+        }
+
         /// <summary>
         /// Handle the case where the adjustment simply occurs on the current line 
         /// </summary>
@@ -57,6 +73,197 @@ namespace VimCore.UnitTest
             Create("cat", "dog", "bear");
             var range = _interpreter.GetLine(LineSpecifier.NewAdjustmentOnCurrent(1));
             Assert.AreEqual(_textBuffer.GetLine(1).LineNumber, range.Value.LineNumber);
+        }
+
+        [Test]
+        public void LineRange_FullFile()
+        {
+            Create("foo", "bar");
+            var lineRange = ParseAndGetLineRange("%");
+            var tss = _textBuffer.CurrentSnapshot;
+            Assert.AreEqual(new SnapshotSpan(tss, 0, tss.Length), lineRange.ExtentIncludingLineBreak);
+        }
+
+        [Test]
+        public void LineRange_CurrentLine()
+        {
+            Create("foo", "bar");
+            var lineRange = ParseAndGetLineRange(".");
+            Assert.AreEqual(_textBuffer.GetLineRange(0), lineRange);
+        }
+
+        [Test]
+        public void LineRange_CurrentLineWithCurrentLine()
+        {
+            Create("foo", "bar");
+            var lineRange = ParseAndGetLineRange(".,.");
+            Assert.AreEqual(_textBuffer.GetLineRange(0), lineRange);
+        }
+
+        [Test]
+        public void LineRange_LineNumberRange()
+        {
+            Create("a", "b", "c");
+            var lineRange = ParseAndGetLineRange("1,2");
+            Assert.AreEqual(_textBuffer.GetLineRange(0, 1), lineRange);
+        }
+
+        [Test]
+        public void LineRange_SingleLine1()
+        {
+            Create("foo", "bar");
+            var lineRange = ParseAndGetLineRange("1");
+            Assert.AreEqual(0, lineRange.StartLineNumber);
+            Assert.AreEqual(1, lineRange.Count);
+        }
+
+        [Test]
+        public void LineRange_MarkWithLineNumber()
+        {
+            Create("foo", "bar", "tree");
+            _vimTextBuffer.SetLocalMark(LocalMark.OfChar('c').Value, 0, 1);
+            var lineRange = ParseAndGetLineRange("'c,2");
+            Assert.AreEqual(_textBuffer.GetLineRange(0, 1), lineRange);
+        }
+
+        [Test]
+        public void LineRange_MarkWithMark()
+        {
+            Create("foo", "bar");
+
+            _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.C), 0, 0);
+            _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.B), 1, 0);
+
+            var lineRange = ParseAndGetLineRange("'c,'b");
+            Assert.AreEqual(_textBuffer.GetLineRange(0, 1), lineRange);
+        }
+
+        /// <summary>
+        /// Combine a global mark with a line number
+        /// </summary>
+        [Test]
+        public void LineRange_GlobalMarkAndLineNumber()
+        {
+            Create("foo bar", "bar", "baz");
+            Vim.MarkMap.SetGlobalMark(Letter.A, _vimTextBuffer, 0, 2);
+            var lineRange = ParseAndGetLineRange("'A,2");
+            Assert.AreEqual(_textBuffer.GetLineRange(0, 1), lineRange);
+        }
+
+        /// <summary>
+        /// Can't get the range for a mark that doesn't exist
+        /// </summary>
+        [Test]
+        public void LineRange_BadMark()
+        {
+            Create("foo bar", "baz");
+            var lineRange = _interpreter.GetLineRange(ParseLineRange("'c,2"));
+            Assert.IsTrue(lineRange.IsNone());
+        }
+
+        [Test]
+        public void LineRange_LineNumberWithPlus()
+        {
+            Create("foo", "bar", "baz", "jaz");
+            var lineRange = ParseAndGetLineRange("1+2");
+            Assert.AreEqual(2, lineRange.StartLineNumber);
+            Assert.AreEqual(1, lineRange.Count);
+        }
+
+        /// <summary>
+        /// Make sure that we treat a plus with no trailing value as a + 1
+        /// </summary>
+        [Test]
+        public void LineRange_LineNumberWithPlusAndNoValue()
+        {
+            Create("foo", "bar", "baz");
+            var lineRange = ParseAndGetLineRange("1+");
+            Assert.AreEqual(1, lineRange.StartLineNumber);
+            Assert.AreEqual(1, lineRange.Count);
+        }
+
+        /// <summary>
+        /// Test the + with a range
+        /// </summary>
+        [Test]
+        public void LineRange_LineNumberWithPlusInRange()
+        {
+            Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
+            var lineRange = ParseAndGetLineRange("1+1,3");
+            Assert.AreEqual(1, lineRange.StartLineNumber);
+            Assert.AreEqual(2, lineRange.EndLineNumber);
+        }
+
+        [Test]
+        public void LineRange_LineNumberWithMinus()
+        {
+            Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
+            var lineRange = ParseAndGetLineRange("1-1");
+            Assert.AreEqual(_textBuffer.GetLineRange(0), lineRange);
+        }
+
+        [Test]
+        public void LineRange_LineNumberWithMinusAndNoValue()
+        {
+            Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
+            var lineRange = ParseAndGetLineRange("2-");
+            Assert.AreEqual(_textBuffer.GetLineRange(0), lineRange);
+        }
+
+        [Test]
+        public void LineRange_LineNumberWithMinus2()
+        {
+            Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
+            var lineRange = ParseAndGetLineRange("5-3");
+            Assert.AreEqual(_textBuffer.GetLineRange(1), lineRange);
+        }
+
+        [Test]
+        public void LineRange_LineNumberWithMinusInRange()
+        {
+            Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
+            var lineRange = ParseAndGetLineRange("1,5-2");
+            Assert.AreEqual(_textBuffer.GetLineRange(0, 2), lineRange);
+        }
+
+        [Test]
+        public void LineRange_LastLine()
+        {
+            Create("cat", "tree", "dog");
+            var lineRange = ParseAndGetLineRange("$");
+            Assert.AreEqual(_textBuffer.GetLineRange(2), lineRange);
+        }
+
+        [Test]
+        public void LineRange_LastLine_OneLineBuffer()
+        {
+            Create("cat");
+            var lineRange = ParseAndGetLineRange("$");
+            Assert.AreEqual(_textBuffer.GetLineRange(0), lineRange);
+        }
+
+        [Test]
+        public void LineRange_CurrentToEnd()
+        {
+            Create("cat", "tree", "dog");
+            var lineRange = ParseAndGetLineRange(".,$");
+            Assert.AreEqual(_textBuffer.GetLineRange(0, 2), lineRange);
+        }
+
+        [Test]
+        public void LineRange_RightSideIncrementsLeft()
+        {
+            Create("cat", "dog", "bear", "frog", "tree");
+            var lineRange = ParseAndGetLineRange(".,+2");
+            Assert.AreEqual(_textBuffer.GetLineRange(0, 2), lineRange);
+        }
+
+        [Test]
+        public void LineRange_LeftSideIncrementsCurrent()
+        {
+            Create("cat", "dog", "bear", "frog", "tree");
+            var lineRange = ParseAndGetLineRange(".,+2");
+            Assert.AreEqual(_textBuffer.GetLineRange(0, 2), lineRange);
         }
 
         /// <summary>

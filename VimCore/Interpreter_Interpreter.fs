@@ -378,9 +378,8 @@ type Interpreter
 
     /// Jump to the last line
     member x.RunJumpToLastLine() =
-        let line = SnapshotUtil.GetLastLine x.CurrentSnapshot
-        _commonOperations.MoveCaretToPointAndEnsureVisible line.Start
-        RunResult.Completed
+        let lineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot
+        x.RunJumpToLine (lineNumber + 1)
 
     /// Jump to the specified line number
     member x.RunJumpToLine number = 
@@ -586,12 +585,13 @@ type Interpreter
         RunResult.Completed
 
     /// Run the search command in the given direction
-    member x.RunSearch path pattern = 
+    member x.RunSearch (lineRange : SnapshotLineRange) path pattern = 
         let pattern = 
             if StringUtil.isNullOrEmpty pattern then _vimData.LastPatternData.Pattern
             else pattern
 
-        let startPoint = x.CaretPoint
+        // Searches start after the end of the specified line range
+        let startPoint = lineRange.End
         let patternData = { Pattern = pattern; Path = path }
         let result = _searchService.FindNextPattern patternData startPoint _vimBufferData.VimTextBuffer.WordNavigator 1
         _commonOperations.RaiseSearchResultMessage(result)
@@ -678,8 +678,11 @@ type Interpreter
 
         // Use the specifiec setting
         let useSetting name =
-            // TODO: Implement
-            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "no arguments")
+            withSetting name name (fun setting ->
+                match setting.Kind with
+                | SettingKind.ToggleKind -> _localSettings.TrySetValue setting.Name (SettingValue.ToggleValue true) |> ignore
+                | SettingKind.NumberKind -> displaySetting name
+                | SettingKind.StringKind -> displaySetting name)
 
         // Invert the setting of the specified name
         let invertSetting name = 
@@ -958,7 +961,7 @@ type Interpreter
         | LineCommand.QuitWithWrite (lineRange, hasBang, fileOptions, filePath) -> x.RunQuitWithWrite lineRange hasBang fileOptions filePath
         | LineCommand.Redo -> x.RunRedo()
         | LineCommand.Retab (lineRange, hasBang, tabStop) -> x.RunRetab lineRange hasBang tabStop
-        | LineCommand.Search (path, pattern) -> x.RunSearch path pattern
+        | LineCommand.Search (lineRange, path, pattern) -> runWithLineRange lineRange (fun lineRange -> x.RunSearch lineRange path pattern)
         | LineCommand.Set argumentList -> x.RunSet argumentList
         | LineCommand.ShiftLeft (lineRange, count) -> runWithLineRangeAndEndCount lineRange count x.RunShiftLeft
         | LineCommand.ShiftRight (lineRange, count) -> runWithLineRangeAndEndCount lineRange count x.RunShiftRight

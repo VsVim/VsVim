@@ -225,7 +225,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Set of SetArgument list
 
     /// Process the '/' and '?' commands
-    | Search of Path * string
+    | Search of LineRange option * Path * string
 
     /// Process the '<' shift left command
     | ShiftLeft of LineRange option * int option

@@ -468,11 +468,16 @@ type Parser
                 elif c = '\\' then
                     x.IncrementIndex()
 
-                    // Append the char after the '\' unconditionally
                     match x.CurrentChar with
                     | None ->
                         ()
                     | Some c ->
+                        if c <> delimiter then
+                            // If the next char is not the delimeter then we have to assume the '\'
+                            // is part of an escape for the pattern itself (\(, \1, etc ..) and we
+                            // need to leave it in.  
+                            builder.Append('\\') |> ignore
+
                         builder.Append(c) |> ignore
                         x.IncrementIndex()
 
@@ -655,9 +660,9 @@ type Parser
         x.ParseSubstituteRepeatCore lineRange (fun flags -> flags ||| extraFlags)
 
     /// Parse out the search commands
-    member x.ParseSearch path =
+    member x.ParseSearch lineRange path =
         let pattern = x.ParseToEndOfLine()
-        LineCommand.Search (path, pattern) |> ParseResult.Succeeded
+        LineCommand.Search (lineRange, path, pattern) |> ParseResult.Succeeded
 
     /// Parse out the shift left pattern
     member x.ParseShiftLeft lineRange = 
@@ -989,8 +994,8 @@ type Parser
             | "xnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Visual])
             | "xunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Visual])
             | "yank" -> x.ParseYank lineRange
-            | "/" -> noRange (fun () -> x.ParseSearch Path.Forward)
-            | "?" -> noRange (fun () -> x.ParseSearch Path.Backward)
+            | "/" -> x.ParseSearch lineRange Path.Forward
+            | "?" -> x.ParseSearch lineRange Path.Backward
             | "<" -> x.ParseShiftLeft lineRange
             | ">" -> x.ParseShiftRight lineRange
             | "&" -> x.ParseSubstituteRepeat lineRange SubstituteFlags.None

@@ -561,11 +561,14 @@ namespace VimCore.UnitTest
             AssertSubstitute("s/a/b/g 2", "a", "b", SubstituteFlags.ReplaceAll, 2);
         }
 
+        /// <summary>
+        /// The backslashes need to be preserved for the regex engine
+        /// </summary>
         [Test]
         public void Parse_Substitute_Backslashes()
         {
-            AssertSubstitute(@"s/a/\\\\", "a", @"\\", SubstituteFlags.None);
-            AssertSubstitute(@"s/a/\\\\/", "a", @"\\", SubstituteFlags.None);
+            AssertSubstitute(@"s/a/\\\\", "a", @"\\\\", SubstituteFlags.None);
+            AssertSubstitute(@"s/a/\\\\/", "a", @"\\\\", SubstituteFlags.None);
         }
 
         /// <summary>

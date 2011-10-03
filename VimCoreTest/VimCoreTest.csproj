@@ -205,7 +205,6 @@
     <Compile Include="MotionCaptureTest.cs" />
     <Compile Include="NormalModeTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RangeUtilTest.cs" />
     <Compile Include="SelectionTrackerTest.cs" />
     <Compile Include="SettingsCommonTest.cs" />
     <Compile Include="SnapshotUtilTest.cs" />

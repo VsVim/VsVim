@@ -435,20 +435,6 @@ namespace Vim.UnitTest
 
         #endregion
 
-        #region ParseRangeResult
-
-        internal static ParseRangeResult.Succeeded AsSucceeded(this ParseRangeResult res)
-        {
-            return (ParseRangeResult.Succeeded)res;
-        }
-
-        internal static ParseRangeResult.Failed AsFailed(this ParseRangeResult res)
-        {
-            return (ParseRangeResult.Failed)res;
-        }
-
-        #endregion
-
         #region IKeyMap
 
         public static IEnumerable<KeyInput> GetKeyMapping(this IKeyMap keyMap, char c, KeyRemapMode mode)
