@@ -252,6 +252,7 @@ type Parser
     member x.ParseMapUnmap allowBang keyRemapModes =
 
         let inner modes = 
+            x.SkipBlanks()
             match x.ParseKeyNotation() with
             | None -> ParseResult.Failed Resources.Parser_InvalidArgument
             | Some keyNotation -> LineCommand.UnmapKeys (keyNotation, modes) |> ParseResult.Succeeded
@@ -360,9 +361,10 @@ type Parser
     /// stream if there are no flags
     member x.ParseSubstituteFlags () =
 
-        let rec inner flags = 
+        let rec inner flags isFirst = 
             match x.CurrentChar with
-            | None -> flags
+            | None ->
+                flags
             | Some c ->
                 let newFlag = 
                     match c with 
@@ -378,15 +380,19 @@ type Parser
                     | '#' -> Some SubstituteFlags.PrintLastWithNumber
                     | '&' -> Some SubstituteFlags.UsePreviousFlags
                     | _  -> None
-                match newFlag with
-                | None -> 
+                match newFlag, isFirst with
+                | None, _ -> 
                     // No more flags so we are done
                     flags
-                | Some newFlag -> 
+                | Some SubstituteFlags.UsePreviousFlags, false ->
+                    // The '&' flag is only legal in the first position.  After that
+                    // it terminates the flag notation
+                    flags
+                | Some newFlag, _ -> 
                     x.IncrementIndex()
-                    inner (flags ||| newFlag)
+                    inner (flags ||| newFlag) false
 
-        inner SubstituteFlags.None
+        inner SubstituteFlags.None true
 
     /// Parse out the :close command
     member x.ParseClose() = 
@@ -445,26 +451,34 @@ type Parser
             Some c
 
     /// Parse a {pattern} out of the text.  The text will be consumed until the unescaped value 
-    /// 'delimiter' is provided.   This method should be called with the index one past the start
-    /// delimiter of the pattern
+    /// 'delimiter' is provided or the end of the input is reached.  The method will return a tuple
+    /// of the pattern and a bool.  The bool will represent whether or not the delimiter was found.
+    /// If the delimeter is found then it will be consumed
     member x.ParsePattern delimiter = 
-        let mark = _index
+        let builder = System.Text.StringBuilder()
         let rec inner () = 
             match x.CurrentChar with
             | None -> 
-                // Hit the end without finding 'delimiter' so there is no pattern
-                _index <- mark
-                None 
+                // Hit the end without finding 'delimiter'. 
+                builder.ToString(), false
             | Some c -> 
                 if c = delimiter then 
-                    let text = _text.Substring(mark, _index - mark)
                     x.IncrementIndex()
-                    Some text
+                    builder.ToString(), true
                 elif c = '\\' then
                     x.IncrementIndex()
-                    x.IncrementIndex()
+
+                    // Append the char after the '\' unconditionally
+                    match x.CurrentChar with
+                    | None ->
+                        ()
+                    | Some c ->
+                        builder.Append(c) |> ignore
+                        x.IncrementIndex()
+
                     inner()
                 else
+                    builder.Append(c) |> ignore
                     x.IncrementIndex()
                     inner()
 
@@ -499,20 +513,21 @@ type Parser
                 elif x.IsCurrentCharValue '&' then
                     Some LineSpecifier.NextLineWithPreviousSubstitutePattern
                 else
-                    match x.ParsePattern '/' with
-                    | None ->
-                        None
-                    | Some pattern -> 
+                    // Parse out the pattern.  The closing delimeter is required her
+                    let pattern, foundDelimeter = x.ParsePattern '/'
+                    if foundDelimeter then
                         Some (LineSpecifier.NextLineWithPattern pattern)
+                    else
+                        None
 
             elif x.IsCurrentCharValue '?' then
                 // It's the ? previous search pattern
                 x.IncrementIndex()
-                match x.ParsePattern '?' with
-                | None -> 
-                    None
-                | Some pattern ->
+                let pattern, foundDelimeter = x.ParsePattern '?'
+                if foundDelimeter then
                     Some (LineSpecifier.PreviousLineWithPattern pattern)
+                else
+                    None
 
             elif x.IsCurrentCharValue '+' then
                 x.IncrementIndex()
@@ -593,21 +608,23 @@ type Parser
             // of substitute 
             let delimiter = Option.get x.CurrentChar
             x.IncrementIndex()
-            match x.ParsePattern delimiter with
-            | None -> ParseResult.Failed Resources.Parser_Error
-            | Some pattern ->
-                match x.ParsePattern delimiter with
-                | None -> ParseResult.Failed Resources.Parser_Error
-                | Some replace ->
-                    x.SkipBlanks()
-                    let flags = x.ParseSubstituteFlags()
-                    let flags = processFlags flags
-                    x.SkipBlanks()
-                    let count = x.ParseNumber()
-                    let command = LineCommand.Substitute (lineRange, pattern, replace, flags, count)
-                    ParseResult.Succeeded command
+            let pattern, foundDelimeter = x.ParsePattern delimiter
+            if not foundDelimeter then
+                // When there is no trailing delimeter then the replace string is empty
+                let command = LineCommand.Substitute (lineRange, pattern, "", SubstituteFlags.None, None)
+                ParseResult.Succeeded command
+            else
+                let replace, _ = x.ParsePattern delimiter
+                x.SkipBlanks()
+                let flags = x.ParseSubstituteFlags()
+                let flags = processFlags flags
+                x.SkipBlanks()
+                let count = x.ParseNumber()
+                let command = LineCommand.Substitute (lineRange, pattern, replace, flags, count)
+                ParseResult.Succeeded command
         else
-            ParseResult.Failed Resources.Parser_Error
+            // Without a delimiter it's the repeat variety of the substitute command
+            x.ParseSubstituteRepeatCore lineRange processFlags
 
     /// Parse out the :smagic command
     member x.ParseSubstituteMagic lineRange = 
@@ -621,12 +638,21 @@ type Parser
             let flags = Util.UnsetFlag flags SubstituteFlags.Magic
             flags ||| SubstituteFlags.Nomagic)
 
-    /// Parse out the '&' command
-    member x.ParseSubstituteRepeat lineRange extraFlags = 
-        let flags = x.ParseSubstituteFlags() ||| extraFlags
+    /// Parse out the options to the repeat variety of the substitute command
+    member x.ParseSubstituteRepeatCore lineRange processFlags =
+        x.SkipBlanks()
+        let flags = x.ParseSubstituteFlags() |> processFlags
+
+        // Pares out the optional trailing count
         x.SkipBlanks()
         let count = x.ParseNumber()
-        LineCommand.SubstituteRepeat (lineRange, flags, count) |> ParseResult.Succeeded
+        let command = LineCommand.SubstituteRepeat (lineRange, flags, count)
+        ParseResult.Succeeded command
+
+    /// Parse out the repeat variety of the substitute command which is initiated
+    /// by the '&' character.
+    member x.ParseSubstituteRepeat lineRange extraFlags = 
+        x.ParseSubstituteRepeatCore lineRange (fun flags -> flags ||| extraFlags)
 
     /// Parse out the search commands
     member x.ParseSearch path =
@@ -671,6 +697,24 @@ type Parser
             | Some _ -> x.ParseToEndOfLine() |> Some
 
         LineCommand.QuitWithWrite (lineRange, hasBang, fileOptionList, fileName) |> ParseResult.Succeeded
+
+    member x.ParseWrite lineRange = 
+        let hasBang = x.ParseBang()
+        x.SkipBlanks()
+        let fileOptionList = x.ParseFileOptions()
+
+        // Pares out the final fine name if it's provided
+        x.SkipBlanks()
+        let fileName =
+            match x.CurrentChar with
+            | None -> None
+            | Some _ -> x.ParseToEndOfLine() |> Some
+
+        ParseResult.Succeeded (LineCommand.Write (lineRange, hasBang, fileOptionList, fileName))
+
+    member x.ParseWriteAll() =
+        let hasBang = x.ParseBang()
+        ParseResult.Succeeded (LineCommand.WriteAll hasBang)
 
     /// Parse out the yank command
     member x.ParseYank lineRange =
@@ -867,8 +911,11 @@ type Parser
                 |> x.TryExpand
             else
                 match x.CurrentChar with
-                | None -> ""
-                | Some c -> StringUtil.ofChar c
+                | None -> 
+                    ""
+                | Some c -> 
+                    x.IncrementIndex()
+                    StringUtil.ofChar c
 
         let parseResult = 
             match name with
@@ -933,6 +980,8 @@ type Parser
             | "vmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Visual; KeyRemapMode.Select])
             | "vnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Visual;KeyRemapMode.Select])
             | "vunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Visual;KeyRemapMode.Select])
+            | "wall" -> noRange x.ParseWriteAll
+            | "write" -> x.ParseWrite lineRange
             | "wq" -> x.ParseQuitAndWrite lineRange
             | "xit" -> x.ParseQuitAndWrite lineRange
             | "xmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Visual])

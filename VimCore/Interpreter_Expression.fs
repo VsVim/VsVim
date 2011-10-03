@@ -261,9 +261,8 @@ and [<RequireQualifiedAccess>] LineCommand =
     ///  - The line range to write out
     ///  - Whether or not a ! was provided
     ///  - The provided ++opt
-    ///  - The provided +cmd
     ///  - The file name to write to
-    | Write of LineRange option * bool * FileOption list * CommandOption option * string
+    | Write of LineRange option * bool * FileOption list * string option
 
     /// Write out all changed buffers
     | WriteAll of bool

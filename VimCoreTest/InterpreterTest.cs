@@ -295,6 +295,17 @@ namespace VimCore.UnitTest
             Assert.AreEqual("dog tree", _textBuffer.GetLine(0).GetText());
         }
 
+        /// <summary>
+        /// Make sure that back slashes are properly handled in the replace 
+        /// </summary>
+        [Test]
+        public void Substitute_Backslashes()
+        {
+            Create("cat");
+            ParseAndRun(@"s/a/\\\\");
+            Assert.AreEqual(@"c\\t", _textBuffer.GetLine(0).GetText());
+        }
+
         [Test]
         public void TabNext_NoCount()
         {

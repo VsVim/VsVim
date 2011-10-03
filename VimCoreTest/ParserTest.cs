@@ -544,20 +544,28 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Without a trailing delimiter a count won't ever be considered
+        /// </summary>
+        [Test]
+        public void Parse_Substitute_CountMustHaveFinalDelimiter()
+        {
+            AssertSubstitute("s/a/b 2", "a", "b 2", SubstituteFlags.None);
+        }
+
+        /// <summary>
         /// Simple substitute with count
         /// </summary>
         [Test]
         public void Parse_Substitute_WithCount()
         {
-            AssertSubstitute("s/a/b 2", "a", "b", SubstituteFlags.None, 2);
             AssertSubstitute("s/a/b/g 2", "a", "b", SubstituteFlags.ReplaceAll, 2);
         }
 
         [Test]
         public void Parse_Substitute_Backslashes()
         {
-            AssertSubstitute(@"s/a/\\\\", "a", @"\\\\", SubstituteFlags.None);
-            AssertSubstitute(@"s/a/\\\\/", "a", @"\\\\", SubstituteFlags.None);
+            AssertSubstitute(@"s/a/\\\\", "a", @"\\", SubstituteFlags.None);
+            AssertSubstitute(@"s/a/\\\\/", "a", @"\\", SubstituteFlags.None);
         }
 
         /// <summary>
@@ -611,7 +619,7 @@ namespace VimCore.UnitTest
             AssertSubstituteRepeat("s g", SubstituteFlags.ReplaceAll);
             AssertSubstituteRepeat("& g", SubstituteFlags.ReplaceAll);
             AssertSubstituteRepeat("&&", SubstituteFlags.UsePreviousFlags);
-            AssertSubstituteRepeat("&r", SubstituteFlags.UsePreviousFlags | SubstituteFlags.UsePreviousSearchPattern);
+            AssertSubstituteRepeat("&r", SubstituteFlags.UsePreviousSearchPattern);
             AssertSubstituteRepeat("&&g", SubstituteFlags.ReplaceAll | SubstituteFlags.UsePreviousFlags);
             AssertSubstituteRepeat("~", SubstituteFlags.UsePreviousSearchPattern);
             AssertSubstituteRepeat("~ g", SubstituteFlags.UsePreviousSearchPattern | SubstituteFlags.ReplaceAll);
@@ -666,7 +674,7 @@ namespace VimCore.UnitTest
             var write = ParseLineCommand("w").AsWrite();
             Assert.IsTrue(write.Item1.IsNone());
             Assert.IsFalse(write.Item2);
-            Assert.AreEqual("", write.Item5);
+            Assert.IsTrue(write.Item4.IsNone());
         }
 
         /// <summary>
@@ -678,7 +686,7 @@ namespace VimCore.UnitTest
             var write = ParseLineCommand("w example.txt").AsWrite();
             Assert.IsTrue(write.Item1.IsNone());
             Assert.IsFalse(write.Item2);
-            Assert.AreEqual("example.txt", write.Item5);
+            Assert.AreEqual("example.txt", write.Item4.Value);
         }
 
         [Test]
