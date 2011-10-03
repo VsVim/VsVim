@@ -129,6 +129,11 @@ namespace Vim.UnitTest.Mock
             return false;
         }
 
+        bool IVimHost.IsReadOnly(ITextBuffer value)
+        {
+            return false;
+        }
+
         HostResult IVimHost.LoadFileIntoExistingWindow(string filePath, ITextBuffer textBuffer)
         {
             return HostResult.Success;

@@ -43,6 +43,9 @@ type IVimHost =
     /// Is the ITextBuffer in a dirty state?
     abstract IsDirty : textBuffer : ITextBuffer -> bool
 
+    /// Is the ITextBuffer readonly
+    abstract IsReadOnly : textBuffer : ITextBuffer -> bool
+
     /// Loads the new file into the existing window
     abstract LoadFileIntoExistingWindow : filePath : string -> textBuffer : ITextBuffer -> HostResult
 

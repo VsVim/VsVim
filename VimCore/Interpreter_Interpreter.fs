@@ -368,7 +368,7 @@ type Interpreter
     /// Go to the previous "count" tab 
     member x.RunGoToPreviousTab count = 
         let count = x.GetCountOrDefault count
-        _commonOperations.GoToNextTab Path.Forward count
+        _commonOperations.GoToNextTab Path.Backward count
         RunResult.Completed
 
     /// Join the lines in the specified range
@@ -852,6 +852,27 @@ type Interpreter
 
         RunResult.Completed
 
+    member x.RunWrite lineRange hasBang fileOptionList filePath =
+        if not (List.isEmpty fileOptionList) then
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
+        elif Option.isSome filePath then
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[filePath]")
+        else
+            if not hasBang && _vimHost.IsReadOnly _textBuffer then
+                _statusUtil.OnError Resources.Interpreter_ReadOnlyOptionIsSet
+            else
+                _vimHost.Save _textBuffer |> ignore
+        RunResult.Completed
+
+    /// Run the 'wall' command
+    member x.RunWriteAll hasBang = 
+        for vimBuffer in _vim.VimBuffers do
+            if not hasBang && _vimHost.IsReadOnly vimBuffer.TextBuffer then
+                _statusUtil.OnError Resources.Interpreter_ReadOnlyOptionIsSet
+            else
+                _vimHost.Save vimBuffer.TextBuffer |> ignore
+        RunResult.Completed
+
     /// Yank the specified line range into the register.  This is done in a 
     /// linewise fashion
     member x.RunYank (lineRange : SnapshotLineRange) register =
@@ -947,6 +968,8 @@ type Interpreter
         | LineCommand.SubstituteRepeat (lineRange, substituteFlags, count) -> runWithLineRangeAndEndCount lineRange count (fun lineRange -> x.RunSubstituteRepeatLast lineRange substituteFlags)
         | LineCommand.Undo -> x.RunUndo()
         | LineCommand.UnmapKeys (keyNotation, keyRemapModes) -> x.RunUnmapKeys keyNotation keyRemapModes
+        | LineCommand.Write (lineRange, hasBang, fileOptionList, filePath) -> runWithLineRange lineRange (fun lineRange -> x.RunWrite lineRange hasBang fileOptionList filePath)
+        | LineCommand.WriteAll hasBang -> x.RunWriteAll hasBang
         | LineCommand.Yank (lineRange, registerName, count) -> runWithLineRangeAndEndCount lineRange count (fun lineRange -> x.RunYank lineRange (getRegister registerName))
 
 

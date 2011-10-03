@@ -138,6 +138,15 @@ namespace Vim.UI.Wpf
             return document.IsDirty;
         }
 
+        /// <summary>
+        /// Default to seeing if the entire text buffer area is read only
+        /// </summary>
+        public virtual bool IsReadOnly(ITextBuffer textBuffer)
+        {
+            var span = new Span(0, textBuffer.CurrentSnapshot.Length);
+            return textBuffer.IsReadOnly(span);
+        }
+
         public abstract HostResult LoadFileIntoExistingWindow(string filePath, ITextBuffer textbuffer);
 
         public abstract HostResult LoadFileIntoNewWindow(string filePath);
@@ -260,6 +269,11 @@ namespace Vim.UI.Wpf
         bool IVimHost.IsDirty(ITextBuffer textBuffer)
         {
             return IsDirty(textBuffer);
+        }
+
+        bool IVimHost.IsReadOnly(ITextBuffer textBuffer)
+        {
+            return IsReadOnly(textBuffer);
         }
 
         HostResult IVimHost.LoadFileIntoExistingWindow(string filePath, ITextBuffer textBuffer)

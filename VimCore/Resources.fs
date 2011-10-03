@@ -87,5 +87,6 @@ module internal Resources =
     let Interpreter_UnableToMapKeys lhs rhs = sprintf "Unable to map keys: %s %s" lhs rhs
     let Interpreter_UnknownOption msg = sprintf "Unknown option: %s" msg
     let Interpreter_InvalidArgument msg = sprintf "Invalid argument: %s" msg 
+    let Interpreter_ReadOnlyOptionIsSet = "'readonly' option is set (add ! to override)"
 
 
