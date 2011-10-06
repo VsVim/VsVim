@@ -31,7 +31,7 @@ namespace VsVim.ExternalEdit
         /// loop.
         /// </summary>
         [ImportMany(typeof(ITaggerProvider))]
-        internal List<Lazy<ITaggerProvider, ITaggerMetadata>> TaggerProviders { get; set; }
+        internal List<Lazy<ITaggerProvider>> TaggerProviders { get; set; }
 
         /// <summary>
         /// Is R# installed
@@ -73,29 +73,6 @@ namespace VsVim.ExternalEdit
         }
 
         /// <summary>
-        /// Determine if this ITaggerProvider would be a match for our ITextBuffer based on the 
-        /// metadata.  Mainly just check and see if it has the appropriate content type and 
-        /// supports ITag
-        /// </summary>
-        private static bool IsMatch(ITextBuffer textBuffer, ITaggerMetadata metadata)
-        {
-            if (!textBuffer.ContentType.IsOfAnyType(metadata.ContentTypes))
-            {
-                return false;
-            }
-
-            foreach (var tag in metadata.TagTypes)
-            {
-                if (typeof(ITag).IsAssignableFrom(tag))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>
         /// Get the R# tagger for the ITextBuffer if it exists
         /// </summary>
         private Result<ITagger<ITag>> GetResharperTagger(ITextBuffer textBuffer)
@@ -109,13 +86,16 @@ namespace VsVim.ExternalEdit
                 return Result.Error;
             }
 
+            // R# exposes it's ITaggerProvider instances for the "text" content type.  As much as
+            // I would like to query to make sure they always support the content type we don't
+            // have access to the metadata and have to hard code "text" here
+            if (!textBuffer.ContentType.IsOfType("text"))
+            {
+                return Result.Error;
+            }
+
             foreach (var pair in TaggerProviders)
             {
-                if (!IsMatch(textBuffer, pair.Metadata))
-                {
-                    continue;
-                }
-
                 var provider = pair.Value;
                 var name = provider.GetType().Name;
                 if (name == ResharperTaggerName)
