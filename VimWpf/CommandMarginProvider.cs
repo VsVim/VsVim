@@ -5,6 +5,7 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
+using Microsoft.VisualStudio.Text.Classification;
 
 namespace Vim.UI.Wpf
 {
@@ -20,20 +21,24 @@ namespace Vim.UI.Wpf
     {
         private readonly IVim _vim;
         private readonly ReadOnlyCollection<Lazy<IOptionsProviderFactory>> _optionsProviderFactories;
+        private readonly IEditorFormatMapService _editorFormatMapService;
 
         [ImportingConstructor]
         internal CommandMarginProvider(
             IVim vim, 
+            IEditorFormatMapService editorFormatMapService, 
             [ImportMany] IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactories)
         {
             _vim = vim;
+            _editorFormatMapService = editorFormatMapService;
             _optionsProviderFactories = optionsProviderFactories.ToList().AsReadOnly();
         }
 
         public IWpfTextViewMargin CreateMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
         {
             var buffer = _vim.GetOrCreateVimBuffer(wpfTextViewHost.TextView);
-            return new CommandMargin(buffer,_optionsProviderFactories);
+            var editorFormatMap = _editorFormatMapService.GetEditorFormatMap(wpfTextViewHost.TextView);
+            return new CommandMargin(buffer, editorFormatMap, _optionsProviderFactories);
         }
     }
 }

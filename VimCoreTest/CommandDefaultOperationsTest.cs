@@ -81,7 +81,8 @@ namespace VimCore.UnitTest
             var commonOperations = new CommonOperations(
                 vimBufferData,
                 _editorOperations.Object,
-                FSharpOption.Create(_outlining.Object));
+                FSharpOption.Create(_outlining.Object),
+                SmartIndentationService);
 
             _operationsRaw = new DefaultOperations(
                 vimBufferData,

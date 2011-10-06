@@ -98,6 +98,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BlockCaretController.cs" />
+    <Compile Include="EditorFormatDefinitionNames.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="CommandMarginController.cs" />
     <Compile Include="Implementation\ClipboardDevice.cs" />

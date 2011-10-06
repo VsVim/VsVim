@@ -1,26 +1,25 @@
 ﻿using NUnit.Framework;
 using Vim;
 using Vim.UnitTest;
+using System;
+using NUnit.Mocks;
+using Moq;
+using Microsoft.VisualStudio.Text.Editor;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public sealed class VimBufferFactoryIntegrationTest
+    public sealed class VimBufferFactoryIntegrationTest : VimTestBase
     {
         private IVim _vim;
-        private IVimBufferFactory _factory;
+        private IVimBufferFactory _vimBufferFactory;
 
         [SetUp]
         public void SetUp()
         {
-            _factory = EditorUtil.FactoryService.VimBufferFactory;
-            _vim = EditorUtil.FactoryService.Vim;
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-
+            _vimBufferFactory = VimBufferFactory;
+            _vim = Vim;
         }
 
         /// <summary>
@@ -29,9 +28,9 @@ namespace VimCore.UnitTest
         [Test]
         public void CreateVimBuffer_Simple()
         {
-            var textView = EditorUtil.CreateTextView("");
-            var vimTextBuffer = _factory.CreateVimTextBuffer(textView.TextBuffer, _vim);
-            var buffer = _factory.CreateVimBuffer(textView, vimTextBuffer);
+            var textView = CreateTextView("");
+            var vimTextBuffer = _vimBufferFactory.CreateVimTextBuffer(textView.TextBuffer, _vim);
+            var buffer = _vimBufferFactory.CreateVimBuffer(textView, vimTextBuffer);
             Assert.IsNotNull(buffer);
             Assert.AreEqual(ModeKind.Normal, buffer.ModeKind);
             Assert.AreSame(vimTextBuffer, buffer.VimTextBuffer);
@@ -44,11 +43,45 @@ namespace VimCore.UnitTest
         [Test]
         public void CreateVimBuffer_Stateless()
         {
-            var textView = EditorUtil.CreateTextView("");
-            var vimTextBuffer = _factory.CreateVimTextBuffer(textView.TextBuffer, _vim);
-            var buffer1 = _factory.CreateVimBuffer(textView, vimTextBuffer);
-            var buffer2 = _factory.CreateVimBuffer(textView, vimTextBuffer);
+            var textView = CreateTextView("");
+            var vimTextBuffer = _vimBufferFactory.CreateVimTextBuffer(textView.TextBuffer, _vim);
+            var buffer1 = _vimBufferFactory.CreateVimBuffer(textView, vimTextBuffer);
+            var buffer2 = _vimBufferFactory.CreateVimBuffer(textView, vimTextBuffer);
             Assert.AreNotSame(buffer1, buffer2);
+        }
+
+        /// <summary>
+        /// Create the IVimBuffer for an uninitialized ITextView instance.  This should create an 
+        /// IVimBuffer in the uninitialized state 
+        /// </summary>
+        [Test]
+        public void CreateVimBuffer_UninitializedTextView()
+        {
+            var textBuffer = CreateTextBuffer("");
+            var textView = MockObjectFactory.CreateTextView(textBuffer);
+            textView.SetupGet(x => x.TextViewLines).Returns((ITextViewLineCollection)null);
+            var vimTextBuffer = _vimBufferFactory.CreateVimTextBuffer(textBuffer, _vim);
+            var vimBuffer = _vimBufferFactory.CreateVimBuffer(textView.Object, vimTextBuffer);
+            Assert.AreEqual(ModeKind.Uninitialized, vimBuffer.ModeKind);
+        }
+
+        /// <summary>
+        /// Once an ITextView state is initialized the IVimBuffer should move to the appropriate state
+        /// </summary>
+        [Test]
+        public void CreateVimBuffer_TextViewDelayInitialize()
+        {
+            var textBuffer = CreateTextBuffer("");
+            var textView = MockObjectFactory.CreateTextView(textBuffer);
+            textView.SetupGet(x => x.TextViewLines).Returns((ITextViewLineCollection)null);
+            var vimTextBuffer = _vimBufferFactory.CreateVimTextBuffer(textBuffer, _vim);
+            var vimBuffer = _vimBufferFactory.CreateVimBuffer(textView.Object, vimTextBuffer);
+            Assert.AreEqual(ModeKind.Uninitialized, vimBuffer.ModeKind);
+
+            textView.SetupGet(x => x.TextViewLines).Returns(new Mock<ITextViewLineCollection>().Object);
+            textView.Raise(x => x.LayoutChanged += null, (TextViewLayoutChangedEventArgs)null);
+
+            Assert.AreEqual(ModeKind.Normal, vimBuffer.ModeKind);
         }
     }
 }

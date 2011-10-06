@@ -1,4 +1,4 @@
-﻿#light
+#light
 
 namespace Vim
 open System.IO
@@ -8,7 +8,7 @@ open System.ComponentModel.Composition
 type internal FileSystem() =
 
     /// The environment variables considered when loading a .vimrc
-    let _environmentVariables = ["HOME"; "VIM"; "USERPROFILE"]
+    let _environmentVariables = ["%HOME%"; "%HOMEDRIVE%%HOMEPATH%"; "%VIM%"; "%USERPROFILE%"]
 
     let _fileNames = [".vsvimrc"; "_vsvimrc"; ".vimrc"; "_vimrc" ]
 
@@ -37,7 +37,8 @@ type internal FileSystem() =
 
     member x.GetVimRcDirectories() = 
         let getEnvVarValue var = 
-            match System.Environment.GetEnvironmentVariable(var) with
+            match System.Environment.ExpandEnvironmentVariables(var) with
+            | var1 when System.String.Equals(var1,var,System.StringComparison.InvariantCultureIgnoreCase) -> None
             | null -> None
             | value -> Some(value)
 

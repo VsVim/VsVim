@@ -34,13 +34,18 @@
             IsReadOnly="True"
             FontWeight="Bold"
             Visibility="{Binding Path=IsRecording}"
+            Foreground="{Binding Path=TextForeground}"
+            Background="{Binding Path=TextBackground}"
             />
 
         <TextBox 
             Grid.Row="0"
             Grid.Column="1"
             Text="{Binding Path=StatusLine}" 
-            IsReadOnly="True" />
+            IsReadOnly="True"
+            Foreground="{Binding Path=TextForeground}"
+            Background="{Binding Path=TextBackground}"
+            />
 
         <Button
             Grid.Row="0"

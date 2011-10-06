@@ -19,9 +19,9 @@ namespace VimCore.UnitTest
         [SetUp]
         public void Setup()
         {
-            _textView = EditorUtil.CreateTextView("here we go");
+            _textView = CreateTextView("here we go");
             _textView.MoveCaretTo(0);
-            _vimBuffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(_textView);
+            _vimBuffer = Vim.CreateVimBuffer(_textView);
             _vimBuffer.SwitchMode(ModeKind.Command, ModeArgument.None);
             _keyMap = _vimBuffer.Vim.KeyMap;
             _vimBufferRaw = (VimBuffer)_vimBuffer;
