@@ -65,7 +65,6 @@ type internal VimBufferFactory
         _wordUtilFactory : IWordUtilFactory,
         _textChangeTrackerFactory : ITextChangeTrackerFactory,
         _textSearchService : ITextSearchService,
-        _smartIndentationService : ISmartIndentationService,
         _bufferTrackingService : IBufferTrackingService,
         _undoManagerProvider : ITextBufferUndoManagerProvider,
         _statusUtilFactory : IStatusUtilFactory,
@@ -145,7 +144,7 @@ type internal VimBufferFactory
         let motionUtil = MotionUtil(vimBufferData) :> IMotionUtil
         let foldManager = _foldManagerFactory.GetFoldManager textView
         let insertUtil = InsertUtil(vimBufferData, commonOperations) :> IInsertUtil
-        let commandUtil = CommandUtil(vimBufferData, motionUtil, commonOperations, _smartIndentationService, foldManager, insertUtil) :> ICommandUtil
+        let commandUtil = CommandUtil(vimBufferData, motionUtil, commonOperations, foldManager, insertUtil) :> ICommandUtil
 
         let bufferRaw = VimBuffer(vimBufferData, incrementalSearch, motionUtil, wordNav, windowSettings)
         let buffer = bufferRaw :> IVimBuffer

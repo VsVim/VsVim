@@ -26,6 +26,7 @@ namespace VimCore.UnitTest
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IOutliningManager> _outlining;
         private Mock<IStatusUtil> _statusUtil;
+        private Mock<ISmartIndentationService> _smartIndentationService;
         private IUndoRedoOperations _undoRedoOperations;
         private ISearchService _searchService;
         private IVimData _vimData;
@@ -84,6 +85,7 @@ namespace VimCore.UnitTest
                 jumpList: _jumpList.Object,
                 undoRedoOperations: _undoRedoOperations);
 
+            _smartIndentationService = _factory.Create<ISmartIndentationService>();
             _editorOperations = _factory.Create<IEditorOperations>();
             _editorOperations.Setup(x => x.AddAfterTextBufferChangePrimitive());
             _editorOperations.Setup(x => x.AddBeforeTextBufferChangePrimitive());
@@ -95,7 +97,8 @@ namespace VimCore.UnitTest
             _operationsRaw = new CommonOperations(
                 vimBufferData,
                 _editorOperations.Object,
-                FSharpOption.Create(_outlining.Object));
+                FSharpOption.Create(_outlining.Object),
+                _smartIndentationService.Object);
             _operations = _operationsRaw;
         }
 
@@ -1137,5 +1140,31 @@ namespace VimCore.UnitTest
             _statusUtil.Verify();
         }
 
+        /// <summary>
+        /// Make sure that editor indent trumps 'autoindent'
+        /// </summary>
+        [Test]
+        public void GetNewLineIndent_EditorTrumpsAutoIndent()
+        {
+            Create("cat", "dog", "");
+            _globalSettings.SetupGet(x => x.UseEditorIndent).Returns(true);
+            _smartIndentationService.Setup(x => x.GetDesiredIndentation(_textView, It.IsAny<ITextSnapshotLine>())).Returns(8);
+            var indent = _operations.GetNewLineIndent(_textView.GetLine(1), _textView.GetLine(2));
+            Assert.AreEqual(8, indent.Value);
+        }
+
+        /// <summary>
+        /// Use Vim settings if the 'useeditorindent' setting is not present
+        /// </summary>
+        [Test]
+        public void GetNewLineIndent_RevertToVimIndentIfEditorIndentFails()
+        {
+            Create("  cat", "  dog", "");
+            _globalSettings.SetupGet(x => x.UseEditorIndent).Returns(false);
+            _localSettings.SetupGet(x => x.AutoIndent).Returns(true);
+            _smartIndentationService.Setup(x => x.GetDesiredIndentation(_textView, It.IsAny<ITextSnapshotLine>())).Returns((int?)null);
+            var indent = _operations.GetNewLineIndent(_textView.GetLine(1), _textView.GetLine(2));
+            Assert.AreEqual(2, indent.Value);
+        }
     }
 }

@@ -84,7 +84,8 @@ type internal CommonOperations
     (
         _vimBufferData : VimBufferData,
         _editorOperations : IEditorOperations,
-        _outliningManager : IOutliningManager option
+        _outliningManager : IOutliningManager option,
+        _smartIndentationService : ISmartIndentationService
     ) =
 
     let _textBuffer = _vimBufferData.TextBuffer
@@ -280,6 +281,24 @@ type internal CommonOperations
     member x.MoveCaretToPointAndCheckVirtualSpace point =
         TextViewUtil.MoveCaretToPoint _textView point
         CommonUtil.MoveCaretForVirtualEdit _textView _globalSettings
+
+    /// Move the caret to the proper indentation on a newly created line.  The context line 
+    /// is provided to calculate an indentation off of
+    member x.GetNewLineIndent  (contextLine : ITextSnapshotLine) (newLine : ITextSnapshotLine) =
+        let doVimIndent() = 
+            if _localSettings.AutoIndent then
+                contextLine |> SnapshotLineUtil.GetIndent |> SnapshotPointUtil.GetColumn |> Some
+            else
+                None
+
+        if _localSettings.GlobalSettings.UseEditorIndent then
+            let indent = _smartIndentationService.GetDesiredIndentation(_textView, newLine)
+            if indent.HasValue then 
+                indent.Value |> Some
+            else
+               doVimIndent()
+        else 
+            doVimIndent()
 
     /// Return the full word under the cursor or an empty string
     member x.WordUnderCursorOrEmpty =
@@ -656,6 +675,7 @@ type internal CommonOperations
         member x.Beep () = x.Beep()
         member x.Join range kind = x.Join range kind
         member x.GetNewLineText point = x.GetNewLineText point
+        member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
         member x.GoToDefinition () = 
             let before = TextViewUtil.GetCaretPoint _textView
             if _vimHost.GoToDefinition() then
@@ -831,7 +851,8 @@ type CommonOperationsFactory
     (
         _editorOperationsFactoryService : IEditorOperationsFactoryService,
         _outliningManagerService : IOutliningManagerService,
-        _undoManagerProvider : ITextBufferUndoManagerProvider
+        _undoManagerProvider : ITextBufferUndoManagerProvider,
+        _smartIndentationService : ISmartIndentationService
     ) = 
 
     /// Use an object instance as a key.  Makes it harder for components to ignore this
@@ -849,7 +870,7 @@ type CommonOperationsFactory
             let ret = _outliningManagerService.GetOutliningManager(textView)
             if ret = null then None else Some ret
 
-        CommonOperations(vimBufferData, editorOperations, outlining) :> ICommonOperations
+        CommonOperations(vimBufferData, editorOperations, outlining, _smartIndentationService) :> ICommonOperations
 
     /// Get or create the ICommonOperations for the given buffer
     member x.GetCommonOperations (bufferData : VimBufferData) = 

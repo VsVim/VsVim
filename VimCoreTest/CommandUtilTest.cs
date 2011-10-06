@@ -19,7 +19,6 @@ namespace VimCore.UnitTest
         private MockVimHost _vimHost;
         private IMacroRecorder _macroRecorder;
         private Mock<IStatusUtil> _statusUtil;
-        private Mock<ISmartIndentationService> _smartIdentationService;
         private IVimGlobalSettings _globalSettings;
         private IVimLocalSettings _localSettings;
         private IVimWindowSettings _windowSettings;
@@ -46,7 +45,6 @@ namespace VimCore.UnitTest
 
             _factory = new MockRepository(MockBehavior.Loose);
             _statusUtil = _factory.Create<IStatusUtil>();
-            _smartIdentationService = _factory.Create<ISmartIndentationService>();
 
             var vimBufferData = CreateVimBufferData(
                 _vimTextBuffer,
@@ -66,7 +64,6 @@ namespace VimCore.UnitTest
                 vimBufferData,
                 _motionUtil,
                 operations,
-                _smartIdentationService.Object,
                 _foldManager,
                 new InsertUtil(vimBufferData, operations));
         }
@@ -1673,33 +1670,6 @@ namespace VimCore.UnitTest
             Assert.AreEqual(0, line.LineBreakLength);
             Assert.AreEqual("baz", line.GetText());
             Assert.AreEqual("baz", line.GetTextIncludingLineBreak());
-        }
-
-        /// <summary>
-        /// Make sure that editor indent trumps 'autoindent'
-        /// </summary>
-        [Test]
-        public void InsertLineBelow_PreferEditorIndent()
-        {
-            Create("cat", "dog");
-            _globalSettings.UseEditorIndent = true;
-            _smartIdentationService.Setup(x => x.GetDesiredIndentation(_textView, It.IsAny<ITextSnapshotLine>())).Returns(8);
-            _commandUtil.InsertLineBelow(1);
-            Assert.AreEqual(8, _textView.Caret.Position.VirtualSpaces);
-        }
-
-        /// <summary>
-        /// Use Vim settings if the 'useeditorindent' setting is not present
-        /// </summary>
-        [Test]
-        public void InsertLineBelow_RevertToVimIndentIfEditorIndentFails()
-        {
-            Create("  cat", "  dog");
-            _globalSettings.UseEditorIndent = false;
-            _localSettings.AutoIndent = true;
-            _smartIdentationService.Setup(x => x.GetDesiredIndentation(_textView, It.IsAny<ITextSnapshotLine>())).Returns((int?)null);
-            _commandUtil.InsertLineBelow(1);
-            Assert.AreEqual(2, _textView.Caret.Position.VirtualSpaces);
         }
 
         /// <summary>

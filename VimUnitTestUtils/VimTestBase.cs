@@ -31,6 +31,7 @@ namespace Vim.UnitTest
         private ITextEditorFactoryService _textEditorFactoryService;
         private IFoldManagerFactory _foldManagerFactory;
         private IBufferTrackingService _bufferTrackingService;
+        private ISmartIndentationService _smartIndentationService;
         private IProtectedOperations _protectedOperations;
 
         /// <summary>
@@ -72,6 +73,11 @@ namespace Vim.UnitTest
             get { return _foldManagerFactory; }
         }
 
+        protected ISmartIndentationService SmartIndentationService
+        {
+            get { return _smartIndentationService; }
+        }
+
         [SetUp]
         public void SetupBase()
         {
@@ -85,6 +91,7 @@ namespace Vim.UnitTest
             _wordUtilFactory = _compositionContainer.GetExportedValue<IWordUtilFactory>();
             _bufferTrackingService = _compositionContainer.GetExportedValue<IBufferTrackingService>();
             _foldManagerFactory = _compositionContainer.GetExportedValue<IFoldManagerFactory>();
+            _smartIndentationService = _compositionContainer.GetExportedValue<ISmartIndentationService>();
             _vimErrorDetector.Clear();
             _protectedOperations = new ProtectedOperations(_vimErrorDetector);
         }

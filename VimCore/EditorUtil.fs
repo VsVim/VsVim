@@ -469,6 +469,16 @@ module SnapshotLineUtil =
         |> SeqUtil.tryHeadOnly
         |> OptionUtil.getOrDefault (GetEnd line)
 
+    /// Get the indentation span of the ITextSnapshotLine
+    let GetIndentSpan line = 
+        let point = GetIndent line
+        SnapshotSpan(line.Start, point)
+
+    /// Get the indentation text of the ITextSnapshotLine
+    let GetIndentText line = 
+        let span = GetIndentSpan line
+        span.GetText()
+
     /// Get the text of the ITextSnapshotLine 
     let GetText (line : ITextSnapshotLine) = line.GetText()
 

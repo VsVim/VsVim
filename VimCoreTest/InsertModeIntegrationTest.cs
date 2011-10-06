@@ -182,6 +182,40 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Make sure that indentation is still done even when enter occurs with a non-standard mapping
+        /// of enter
+        /// </summary>
+        [Test]
+        public void Insert_NewLine_IndentWithAltMapping()
+        {
+            Create("  hello", "world");
+            _globalSettings.UseEditorIndent = false;
+            _localSettings.AutoIndent = true;
+            Vim.KeyMap.MapWithNoRemap("<c-e>", "<Enter>", KeyRemapMode.Insert);
+            _textView.MoveCaretTo(5);
+            _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('e'));
+            Assert.AreEqual("  hel", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  lo", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// At the end of the line the caret should just move into virtual space.  No need for actual
+        /// white space to be inserted
+        /// </summary>
+        [Test]
+        public void Insert_NewLine_AtEndOfLine()
+        {
+            Create("  hello", "world");
+            _globalSettings.UseEditorIndent = false;
+            _localSettings.AutoIndent = true;
+            _textView.MoveCaretTo(_textView.GetLine(0).End);
+            _vimBuffer.Process(VimKey.Enter);
+            Assert.AreEqual("  hello", _textView.GetLine(0).GetText());
+            Assert.AreEqual("", _textView.GetLine(1).GetText());
+            Assert.AreEqual(2, _textView.GetCaretVirtualPoint().VirtualSpaces);
+        }
+
+        /// <summary>
         /// Make sure that in the case where there is buffered input and we fail at the mapping 
         /// that both values are inserted into the ITextBuffer
         /// </summary>
