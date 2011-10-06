@@ -7,8 +7,22 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Utilities
 
+/// Implementation of the uninitialized mode.  This is designed to handle the ITextView
+/// while it's in an uninitalized state.  It shouldn't touch the ITextView in any way.  
+/// This is why it doesn't even contain a reference to it
+type UninitializedMode(_vimTextBuffer : IVimTextBuffer) =
+    interface IMode with
+        member x.VimTextBuffer = _vimTextBuffer
+        member x.ModeKind = ModeKind.Uninitialized
+        member x.CommandNames = Seq.empty
+        member x.CanProcess _ = false
+        member x.Process _ = ProcessResult.NotHandled
+        member x.OnEnter _ = ()
+        member x.OnLeave() = ()
+        member x.OnClose() = ()
+
 type internal ModeMap() = 
-    let mutable _modeMap : Map<ModeKind,IMode> = Map.empty
+    let mutable _modeMap : Map<ModeKind, IMode> = Map.empty
     let mutable _mode : IMode option = None
     let mutable _previousMode : IMode option = None
     let _modeSwitchedEvent = new Event<_>()
@@ -85,12 +99,18 @@ type internal VimBuffer
     let _closedEvent = new Event<_>()
 
     do 
-
         // Listen for mode switches on the IVimTextBuffer instance.  We need to keep our 
         // Mode in sync with this value
         _vimTextBuffer.SwitchedMode
         |> Observable.subscribe (fun (modeKind, modeArgument) -> this.OnVimTextBufferSwitchedMode modeKind modeArgument)
         |> _bag.Add
+
+        // Setup the initial uninitialized IMode value.  Note we don't want to change the 
+        // IVimTextBuffer mode here.  This is a mode which is meant to support IVimBuffer values
+        // until they can be fully initialized
+        let uninitializedMode = UninitializedMode(_vimTextBuffer) :> IMode
+        _modeMap.AddMode uninitializedMode
+        _modeMap.SwitchMode ModeKind.Uninitialized ModeArgument.None |> ignore
 
     member x.BufferedRemapKeyInputs =
         match _remapInput with
