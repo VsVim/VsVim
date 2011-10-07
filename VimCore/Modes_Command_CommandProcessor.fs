@@ -131,7 +131,6 @@ type internal CommandProcessor
     ( 
         _vimBuffer : IVimBuffer,
         _operations : ICommonOperations,
-        _commandOperations : IOperations,
         _fileSystem : IFileSystem,
         _foldManager : IFoldManager
     ) =

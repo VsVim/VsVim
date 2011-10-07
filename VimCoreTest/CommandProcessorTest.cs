@@ -28,7 +28,6 @@ namespace VimCore.UnitTest
         private IVimData _vimData;
         private Mock<IEditorOperations> _editOpts;
         private Mock<ICommonOperations> _operations;
-        private Mock<IOperations> _commandOperations;
         private Mock<IStatusUtil> _statusUtil;
         private Mock<IFileSystem> _fileSystem;
         private Mock<IFoldManager> _foldManager;
@@ -47,7 +46,6 @@ namespace VimCore.UnitTest
             _vimHost.Setup(x => x.IsDirty(It.IsAny<ITextBuffer>())).Returns(false);
             _operations = _factory.Create<ICommonOperations>();
             _operations.SetupGet(x => x.EditorOperations).Returns(_editOpts.Object);
-            _commandOperations = _factory.Create<IOperations>();
             _statusUtil = _factory.Create<IStatusUtil>();
             _fileSystem = _factory.Create<IFileSystem>(MockBehavior.Strict);
             _foldManager = _factory.Create<IFoldManager>(MockBehavior.Strict);
@@ -67,7 +65,6 @@ namespace VimCore.UnitTest
             _processorRaw = new CommandProcessor(
                 vimBuffer,
                 _operations.Object,
-                _commandOperations.Object,
                 _fileSystem.Object,
                 _foldManager.Object);
             _processor = _processorRaw;
@@ -81,37 +78,6 @@ namespace VimCore.UnitTest
         private RunResult RunCommand(string input)
         {
             return _processor.RunCommand(Microsoft.FSharp.Collections.ListModule.OfSeq(input));
-        }
-
-        private void TestNoRemap(string input, string lhs, string rhs, params KeyRemapMode[] modes)
-        {
-            TestMapCore(input, lhs, rhs, false, modes);
-        }
-
-        private void TestRemap(string input, string lhs, string rhs, params KeyRemapMode[] modes)
-        {
-            TestMapCore(input, lhs, rhs, true, modes);
-        }
-
-        private void TestMapCore(string input, string lhs, string rhs, bool allowRemap, params KeyRemapMode[] modes)
-        {
-            _commandOperations.Setup(x => x.RemapKeys(lhs, rhs, modes, allowRemap)).Verifiable();
-            RunCommand(input);
-            _commandOperations.Verify();
-        }
-
-        private void TestMapClear(string input, params KeyRemapMode[] modes)
-        {
-            _commandOperations.Setup(x => x.ClearKeyMapModes(modes)).Verifiable();
-            RunCommand(input);
-            _commandOperations.Verify();
-        }
-
-        private void TestUnmap(string input, string lhs, params KeyRemapMode[] modes)
-        {
-            _commandOperations.Setup(x => x.UnmapKeys(lhs, modes)).Verifiable();
-            RunCommand(input);
-            _commandOperations.Verify();
         }
 
         /// <summary>
