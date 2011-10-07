@@ -23,6 +23,7 @@ namespace Vim.UnitTest
     {
         private CompositionContainer _compositionContainer;
         private IVim _vim;
+        private IVimBufferFactory _vimBufferFactory;
         private ICommonOperationsFactory _commonOperationsFactory;
         private IVimErrorDetector _vimErrorDetector;
         private IWordUtilFactory _wordUtilFactory;
@@ -44,6 +45,11 @@ namespace Vim.UnitTest
         protected IVim Vim
         {
             get { return _vim; }
+        }
+
+        protected IVimBufferFactory VimBufferFactory
+        {
+            get { return _vimBufferFactory; }
         }
 
         protected MockVimHost VimHost
@@ -81,6 +87,7 @@ namespace Vim.UnitTest
         {
             _compositionContainer = GetOrCreateCompositionContainer();
             _vim = _compositionContainer.GetExportedValue<IVim>();
+            _vimBufferFactory = _compositionContainer.GetExportedValue<IVimBufferFactory>();
             _textBufferFactoryService = _compositionContainer.GetExportedValue<ITextBufferFactoryService>();
             _textEditorFactoryService = _compositionContainer.GetExportedValue<ITextEditorFactoryService>();
             _vimErrorDetector = _compositionContainer.GetExportedValue<IVimErrorDetector>();
@@ -237,6 +244,14 @@ namespace Vim.UnitTest
         {
             var textView = CreateTextView(lines);
             return _vim.CreateVimBuffer(textView);
+        }
+
+        /// <summary>
+        /// Create an IVimBuffer instance with the given VimBufferData value
+        /// </summary>
+        protected IVimBuffer CreateVimBuffer(VimBufferData vimBufferData)
+        {
+            return _vimBufferFactory.CreateVimBuffer(vimBufferData);
         }
 
         protected virtual CompositionContainer GetOrCreateCompositionContainer()

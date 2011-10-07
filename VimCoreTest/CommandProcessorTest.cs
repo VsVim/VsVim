@@ -63,8 +63,9 @@ namespace VimCore.UnitTest
                 vimTextBuffer.Object,
                 _textView,
                 statusUtil: _statusUtil.Object);
+            var vimBuffer = CreateVimBuffer(vimBufferData);
             _processorRaw = new CommandProcessor(
-                vimBufferData,
+                vimBuffer,
                 _operations.Object,
                 _commandOperations.Object,
                 _fileSystem.Object,

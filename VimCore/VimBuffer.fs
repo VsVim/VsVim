@@ -66,6 +66,7 @@ type internal VimBuffer
     let _statusUtil = _vimBufferData.StatusUtil
     let _properties = PropertyCollection()
     let _bag = DisposableBag()
+    let mutable _currentDirectory : string option = None
     let mutable _modeMap = ModeMap()
     let mutable _processingInputCount = 0
     let mutable _isClosed = false
@@ -340,6 +341,9 @@ type internal VimBuffer
 
                  
     interface IVimBuffer with
+        member x.CurrentDirectory 
+            with get() = _currentDirectory
+            and set value = _currentDirectory <- value
         member x.Vim = _vim
         member x.VimData = _vim.VimData
         member x.VimBufferData = x.VimBufferData

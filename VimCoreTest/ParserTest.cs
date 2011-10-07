@@ -105,20 +105,72 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
-        /// Make sure we can handle the count argument of :delete
+        /// Change directory with an empty path
         /// </summary>
         [Test]
-        public void Parse_Delete_WithCount()
+        public void Parse_ChangeDirectory_Empty()
         {
-            var lineCommand = ParseLineCommand("delete 2");
-            Assert.AreEqual(2, lineCommand.AsDelete().Item3.Value);
+            var command = ParseLineCommand("cd").AsChangeDirectory();
+            Assert.IsTrue(command.Item.IsNone());
+        }
+
+        /// <summary>
+        /// Change directory with a path
+        /// </summary>
+        [Test]
+        public void Parse_ChangeDirectory_Path()
+        {
+            var command = ParseLineCommand("cd test.txt").AsChangeDirectory();
+            Assert.AreEqual("test.txt", command.Item.Value);
+        }
+
+        /// <summary>
+        /// Change directory with a path and a bang.  The bang is ignored but legal in 
+        /// the grammar
+        /// </summary>
+        [Test]
+        public void Parse_ChangeDirectory_PathAndBang()
+        {
+            var command = ParseLineCommand("cd! test.txt").AsChangeDirectory();
+            Assert.AreEqual("test.txt", command.Item.Value);
+        }
+
+        /// <summary>
+        /// ChangeLocal directory with an empty path
+        /// </summary>
+        [Test]
+        public void Parse_ChangeLocalDirectory_Empty()
+        {
+            var command = ParseLineCommand("lcd").AsChangeLocalDirectory();
+            Assert.IsTrue(command.Item.IsNone());
+        }
+
+        /// <summary>
+        /// ChangeLocal directory with a path
+        /// </summary>
+        [Test]
+        public void Parse_ChangeLocalDirectory_Path()
+        {
+            var command = ParseLineCommand("lcd test.txt").AsChangeLocalDirectory();
+            Assert.AreEqual("test.txt", command.Item.Value);
+        }
+
+        /// <summary>
+        /// ChangeLocal directory with a path and a bang.  The bang is ignored but legal in 
+        /// the grammar
+        /// </summary>
+        [Test]
+        public void Parse_ChangeLocalDirectory_PathAndBang()
+        {
+            var command = ParseLineCommand("lcd! test.txt").AsChangeLocalDirectory();
+            Assert.AreEqual("test.txt", command.Item.Value);
         }
 
         /// <summary>
         /// Make sure we can parse out the close command
         /// </summary>
         [Test]
-        public void Parse_LineCommand_Close_NoBang()
+        public void Parse_Close_NoBang()
         {
             var command = ParseLineCommand("close");
             Assert.IsTrue(command.IsClose);
@@ -127,7 +179,7 @@ namespace VimCore.UnitTest
         /// Make sure we can parse out the close wit bang
         /// </summary>
         [Test]
-        public void Parse_LineCommand_Close_WithBang()
+        public void Parse_Close_WithBang()
         {
             var command = ParseLineCommand("close!");
             Assert.IsTrue(command.IsClose);
@@ -138,10 +190,20 @@ namespace VimCore.UnitTest
         /// Make sure that we detect the trailing characters in the close command
         /// </summary>
         [Test]
-        public void Parse_LineCommand_Close_Trailing()
+        public void Parse_Close_Trailing()
         {
             var parseResult = Parser.ParseLineCommand("close foo");
             Assert.IsTrue(parseResult.IsFailed(Resources.CommandMode_TrailingCharacters));
+        }
+
+        /// <summary>
+        /// Make sure we can handle the count argument of :delete
+        /// </summary>
+        [Test]
+        public void Parse_Delete_WithCount()
+        {
+            var lineCommand = ParseLineCommand("delete 2");
+            Assert.AreEqual(2, lineCommand.AsDelete().Item3.Value);
         }
 
         /// <summary>
@@ -309,6 +371,13 @@ namespace VimCore.UnitTest
             AssertMapWithRemap("lmap a b", "a", "b", KeyRemapMode.Language);
             AssertMapWithRemap("lm a b", "a", "b", KeyRemapMode.Language);
             AssertMapWithRemap("map! a b", "a", "b", KeyRemapMode.Insert, KeyRemapMode.Command);
+        }
+
+        [Test]
+        public void Parse_PrintCurrentDirectory()
+        {
+            var command = ParseLineCommand("pwd");
+            Assert.IsTrue(command.IsPrintCurrentDirectory);
         }
 
         /// <summary>

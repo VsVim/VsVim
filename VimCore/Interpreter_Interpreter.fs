@@ -8,12 +8,13 @@ open Vim.VimHostExtensions
 [<Class>]
 type Interpreter
     (
-        _vimBufferData : VimBufferData,
+        _vimBuffer : IVimBuffer,
         _commonOperations : ICommonOperations,
         _foldManager : IFoldManager,
         _fileSystem : IFileSystem
     ) =
 
+    let _vimBufferData = _vimBuffer.VimBufferData
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
     let _vim = _vimBufferData.Vim
     let _vimHost = _vim.VimHost
@@ -46,6 +47,12 @@ type Interpreter
 
     /// The SnapshotPoint and ITextSnapshotLine for the caret
     member x.CaretPointAndLine = TextViewUtil.GetCaretPointAndLine _textView
+
+    /// The current directory for the given IVimBuffer
+    member x.CurrentDirectory = 
+        match _vimBuffer.CurrentDirectory with
+        | None -> _vimData.CurrentDirectory
+        | Some currentDirectory -> currentDirectory
 
     /// The current ITextSnapshot instance for the ITextBuffer
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
@@ -139,6 +146,43 @@ type Interpreter
         match count with
         | Some count -> count
         | None -> 1
+
+    /// Change the directory to the given value
+    member x.RunChangeDirectory directoryPath = 
+        match directoryPath with
+        | None -> 
+            // On non-Unix systems the :cd commandshould print out the directory when
+            // cd is given no options
+            _statusUtil.OnStatus x.CurrentDirectory
+        | Some directoryPath ->
+            if not (System.IO.Path.IsPathRooted directoryPath) then
+                _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "Relative paths")
+            elif not (System.IO.Directory.Exists directoryPath) then
+                // Not a fan of this function but we need to emulate the Vim behavior here
+                _statusUtil.OnError (Resources.Interpreter_CantFindDirectory directoryPath)
+            else
+                // Setting the global directory will clear out the local directory for the window
+                _vimBuffer.CurrentDirectory <- None
+                _vimData.CurrentDirectory <- directoryPath
+        RunResult.Completed
+
+    /// Change the local directory to the given value
+    member x.RunChangeLocalDirectory directoryPath = 
+        match directoryPath with
+        | None -> 
+            // On non-Unix systems the :cd commandshould print out the directory when
+            // cd is given no options
+            _statusUtil.OnStatus x.CurrentDirectory
+        | Some directoryPath ->
+            if not (System.IO.Path.IsPathRooted directoryPath) then
+                _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "Relative paths")
+            elif not (System.IO.Directory.Exists directoryPath) then
+                // Not a fan of this function but we need to emulate the Vim behavior here
+                _statusUtil.OnError (Resources.Interpreter_CantFindDirectory directoryPath)
+            else
+                // Setting the global directory will clear out the local directory for the window
+                _vimBuffer.CurrentDirectory <- Some directoryPath
+        RunResult.Completed
 
     /// Clear out the key map for the given modes
     member x.RunClearKeyMap keyRemapModes = 
@@ -424,6 +468,11 @@ type Interpreter
     /// Run the 'nohlsearch' command.  Temporarily disables highlighitng in the buffer
     member x.RunNoHighlightSearch() = 
         _vimData.RaiseHighlightSearchOneTimeDisable()
+        RunResult.Completed
+
+    /// Print out the current directory
+    member x.RunPrintCurrentDirectory() =
+        _statusUtil.OnStatus x.CurrentDirectory
         RunResult.Completed
 
     /// Put the register after the last line in the given range
@@ -938,6 +987,8 @@ type Interpreter
                 runWithLineRangeAndEndCount lineRange count (x.RunJoin joinKind)
 
         match lineCommand with
+        | LineCommand.ChangeDirectory path -> x.RunChangeDirectory path
+        | LineCommand.ChangeLocalDirectory path -> x.RunChangeLocalDirectory path
         | LineCommand.ClearKeyMap keyRemapModes -> x.RunClearKeyMap keyRemapModes
         | LineCommand.Close hasBang -> x.RunClose hasBang
         | LineCommand.Edit (hasBang, fileOptions, commandOption, filePath) -> x.RunEdit hasBang fileOptions commandOption filePath
@@ -956,6 +1007,7 @@ type Interpreter
         | LineCommand.Make (hasBang, arguments) -> x.RunMake hasBang arguments
         | LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap) -> x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap
         | LineCommand.NoHighlightSearch -> x.RunNoHighlightSearch()
+        | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()
         | LineCommand.PutAfter (lineRange, registerName) -> runWithLineRange lineRange (fun lineRange -> x.RunPut lineRange (getRegister registerName) true)
         | LineCommand.PutBefore (lineRange, registerName) -> runWithLineRange lineRange (fun lineRange -> x.RunPut lineRange (getRegister registerName) false)
         | LineCommand.Quit hasBang -> x.RunQuit hasBang

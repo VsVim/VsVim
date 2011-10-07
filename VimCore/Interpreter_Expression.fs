@@ -122,6 +122,12 @@ and [<RequireQualifiedAccess>] Expression =
 
 and [<RequireQualifiedAccess>] LineCommand =
 
+    /// Change the current directory to the given value
+    | ChangeDirectory of string option
+
+    /// Change the current directory for the local window
+    | ChangeLocalDirectory of string option
+
     /// Clear out the keyboard map for the given modes
     | ClearKeyMap of KeyRemapMode list
 
@@ -187,6 +193,9 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// Temporarily disable the 'hlsearch' option
     | NoHighlightSearch
+
+    /// Print out the current directory
+    | PrintCurrentDirectory
 
     /// Put the contents of the given register after the line identified by the
     /// LineRange (defaults to current)

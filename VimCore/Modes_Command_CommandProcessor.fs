@@ -129,15 +129,16 @@ type CommandAction = char list -> SnapshotLineRange option -> bool -> RunResult
 /// Type which is responsible for executing command mode commands
 type internal CommandProcessor 
     ( 
-        _vimBufferData : VimBufferData,
+        _vimBuffer : IVimBuffer,
         _operations : ICommonOperations,
         _commandOperations : IOperations,
         _fileSystem : IFileSystem,
         _foldManager : IFoldManager
     ) =
 
+    let _vimBufferData = _vimBuffer.VimBufferData
     let _statusUtil = _vimBufferData.StatusUtil
-    let _interpreter = Interpreter.Interpreter(_vimBufferData, _operations, _foldManager, _fileSystem)
+    let _interpreter = Interpreter.Interpreter(_vimBuffer, _operations, _foldManager, _fileSystem)
 
     let mutable _command : System.String = System.String.Empty
 

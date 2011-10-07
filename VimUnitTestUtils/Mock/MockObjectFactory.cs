@@ -161,6 +161,7 @@ namespace Vim.UnitTest.Mock
                 textView.TextBuffer,
                 localSettings: localSettings,
                 vim: vim,
+                wordNavigator: wordNavigator,
                 factory: factory);
             var mock = factory.Create<IVimBuffer>();
             mock.SetupGet(x => x.TextView).Returns(textView);
@@ -188,17 +189,22 @@ namespace Vim.UnitTest.Mock
             ITextBuffer textBuffer,
             IVimLocalSettings localSettings = null,
             IVim vim = null,
+            ITextStructureNavigator wordNavigator = null,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
             vim = vim ?? CreateVim(factory: factory).Object;
             localSettings = localSettings ?? CreateLocalSettings(factory: factory).Object;
+            wordNavigator = wordNavigator ?? factory.Create<ITextStructureNavigator>().Object;
             var mock = factory.Create<IVimTextBuffer>();
             mock.SetupGet(x => x.TextBuffer).Returns(textBuffer);
             mock.SetupGet(x => x.LocalSettings).Returns(localSettings);
             mock.SetupGet(x => x.GlobalSettings).Returns(localSettings.GlobalSettings);
             mock.SetupGet(x => x.Vim).Returns(vim);
+            mock.SetupGet(x => x.WordNavigator).Returns(wordNavigator);
+            mock.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             mock.SetupProperty(x => x.LastVisualSelection);
+            mock.Setup(x => x.SwitchMode(It.IsAny<ModeKind>(), It.IsAny<ModeArgument>()));
             return mock;
         }
 

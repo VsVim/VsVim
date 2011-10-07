@@ -110,10 +110,13 @@ type IBufferTrackingService =
 type IVimBufferFactory =
 
     /// Create an IVimTextBuffer for the given ITextView
-    abstract CreateVimTextBuffer : ITextBuffer -> IVim -> IVimTextBuffer
+    abstract CreateVimTextBuffer : textBuffer : ITextBuffer -> vim : IVim -> IVimTextBuffer
+
+    /// Create a VimBufferData value for the given values
+    abstract CreateVimBufferData : vimTextBuffer : IVimTextBuffer -> textView : ITextView -> VimBufferData
 
     /// Create an IVimBuffer for the given parameters
-    abstract CreateVimBuffer : ITextView -> IVimTextBuffer -> IVimBuffer
+    abstract CreateVimBuffer : vimBufferData : VimBufferData -> IVimBuffer
 
 type IVimBufferCreationListener =
 

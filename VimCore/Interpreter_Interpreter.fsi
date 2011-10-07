@@ -8,7 +8,7 @@ open Microsoft.VisualStudio.Text
 [<Class>]
 type Interpreter =
 
-    new : vimBufferData : VimBufferData * commonOperations : ICommonOperations * foldManager : IFoldManager * fileSystem : IFileSystem-> Interpreter
+    new : vimBuffer : IVimBuffer * commonOperations : ICommonOperations * foldManager : IFoldManager * fileSystem : IFileSystem-> Interpreter
 
     /// Get the ITextSnapshotLine for the provided LineSpecifier if it's 
     /// applicable

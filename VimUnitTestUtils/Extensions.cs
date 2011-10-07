@@ -30,6 +30,22 @@ namespace Vim.UnitTest
         #region LineCommand
 
         /// <summary>
+        /// LineCommand as ChangeDirectory
+        /// </summary>
+        public static LineCommand.ChangeDirectory AsChangeDirectory(this LineCommand lineCommand)
+        {
+            return (LineCommand.ChangeDirectory)lineCommand;
+        }
+
+        /// <summary>
+        /// LineCommand as ChangeLocalDirectory
+        /// </summary>
+        public static LineCommand.ChangeLocalDirectory AsChangeLocalDirectory(this LineCommand lineCommand)
+        {
+            return (LineCommand.ChangeLocalDirectory)lineCommand;
+        }
+
+        /// <summary>
         /// LineCommand as Close
         /// </summary>
         public static LineCommand.Close AsClose(this LineCommand lineCommand)
@@ -178,7 +194,6 @@ namespace Vim.UnitTest
         }
 
         #endregion
-
 
         #region LineRange
 
@@ -553,6 +568,16 @@ namespace Vim.UnitTest
             }
 
             return last;
+        }
+
+        #endregion
+
+        #region IVimBufferFactory
+
+        public static IVimBuffer CreateVimBuffer(this IVimBufferFactory vimBufferFactory, ITextView textView, IVimTextBuffer vimTextBuffer)
+        {
+            var vimBufferData = vimBufferFactory.CreateVimBufferData(vimTextBuffer, textView);
+            return vimBufferFactory.CreateVimBuffer(vimBufferData);
         }
 
         #endregion

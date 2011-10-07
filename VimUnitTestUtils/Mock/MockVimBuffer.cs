@@ -381,5 +381,18 @@ namespace Vim.UnitTest.Mock
         {
             get { throw new NotImplementedException(); }
         }
+
+
+        public FSharpOption<string> CurrentDirectory
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
     }
 }

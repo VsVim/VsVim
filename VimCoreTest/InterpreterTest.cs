@@ -12,8 +12,10 @@ namespace VimCore.UnitTest
     public sealed class InterpreterTest : VimTestBase
     {
         private VimBufferData _vimBufferData;
+        private IVimBuffer _vimBuffer;
         private IVimTextBuffer _vimTextBuffer;
         private ITextBuffer _textBuffer;
+        private IVimData _vimData;
         private Interpreter _interpreter;
         private TestableStatusUtil _statusUtil;
         private IVimGlobalSettings _globalSettings;
@@ -21,18 +23,36 @@ namespace VimCore.UnitTest
         private IRegisterMap _registerMap;
         private IKeyMap _keyMap;
 
+        /// <summary>
+        /// A valid directory in the file system
+        /// </summary>
+        private static string ValidDirectoryPath
+        {
+            get { return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile); }
+        }
+
+        /// <summary>
+        /// An invalid directory in the file system
+        /// </summary>
+        private static string InvalidDirectoryPath
+        {
+            get { return @"q:\invalid\path"; }
+        }
+
         private void Create(params string[] lines)
         {
             _statusUtil = new TestableStatusUtil();
+            _vimData = Vim.VimData;
             _vimBufferData = CreateVimBufferData(
                 CreateTextView(lines),
                 statusUtil: _statusUtil);
+            _vimBuffer = CreateVimBuffer(_vimBufferData);
             _vimTextBuffer = _vimBufferData.VimTextBuffer;
             _localSettings = _vimBufferData.LocalSettings;
             _globalSettings = _localSettings.GlobalSettings;
             _textBuffer = _vimBufferData.TextBuffer;
             _interpreter = new Interpreter(
-                _vimBufferData,
+                _vimBuffer,
                 CommonOperationsFactory.GetCommonOperations(_vimBufferData),
                 FoldManagerFactory.GetFoldManager(_vimBufferData.TextView),
                 new FileSystem());
@@ -148,6 +168,43 @@ namespace VimCore.UnitTest
             Vim.MarkMap.SetGlobalMark(Letter.A, _vimTextBuffer, 0, 2);
             var lineRange = ParseAndGetLineRange("'A,2");
             Assert.AreEqual(_textBuffer.GetLineRange(0, 1), lineRange);
+        }
+
+        /// <summary>
+        /// Change the directory to a valid directory
+        /// </summary>
+        [Test]
+        public void ChangeDirectory_Valid()
+        {
+            Create("");
+            ParseAndRun("cd " + ValidDirectoryPath);
+            Assert.AreEqual(ValidDirectoryPath, _vimData.CurrentDirectory);
+        }
+
+        /// <summary>
+        /// Change the global directory should invalidate the local directory
+        /// </summary>
+        [Test]
+        public void ChangeDirectory_InvalidateLocal()
+        {
+            Create("");
+            _vimBuffer.CurrentDirectory = FSharpOption.Create(@"c:\");
+            ParseAndRun("cd " + ValidDirectoryPath);
+            Assert.AreEqual(ValidDirectoryPath, _vimData.CurrentDirectory);
+            Assert.IsTrue(_vimBuffer.CurrentDirectory.IsNone());
+        }
+
+        /// <summary>
+        /// Change the local directory to a valid directory
+        /// </summary>
+        [Test]
+        public void ChangeLocalDirectory_Valid()
+        {
+            Create("");
+            _vimData.CurrentDirectory = @"c:\";
+            ParseAndRun("lcd " + ValidDirectoryPath);
+            Assert.AreEqual(@"c:\", _vimData.CurrentDirectory);
+            Assert.AreEqual(ValidDirectoryPath, _vimBuffer.CurrentDirectory.Value);
         }
 
         /// <summary>
@@ -348,6 +405,27 @@ namespace VimCore.UnitTest
             assertPrintMap("<CR>", "<CR>");
             assertPrintMap("<Return>", "<CR>");
             assertPrintMap("<Enter>", "<CR>");
+        }
+
+        [Test]
+        public void PrintCurrentDirectory_Global()
+        {
+            Create();
+            ParseAndRun("pwd");
+            Assert.AreEqual(_vimData.CurrentDirectory, _statusUtil.LastStatus);
+        }
+
+        /// <summary>
+        /// The print current directory command should prefer the window directory
+        /// over the global one
+        /// </summary>
+        [Test]
+        public void PrintCurrentDirectory_Local()
+        {
+            Create();
+            _vimBuffer.CurrentDirectory = FSharpOption.Create(@"c:\");
+            ParseAndRun("pwd");
+            Assert.AreEqual(@"c:\", _statusUtil.LastStatus);
         }
 
         /// <summary>

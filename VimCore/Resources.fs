@@ -83,6 +83,7 @@ module internal Resources =
     let Parser_NoBangAllowed = "No ! allowed"
     let Parser_InvalidArgument = "Invalid Argument"
 
+    let Interpreter_CantFindDirectory x = sprintf "Can't find directory \"%s\" in cdpath" x
     let Interpreter_OptionNotSupported x = sprintf "Option is not supported: '%s'" x
     let Interpreter_UnableToMapKeys lhs rhs = sprintf "Unable to map keys: %s %s" lhs rhs
     let Interpreter_UnknownOption msg = sprintf "Unknown option: %s" msg

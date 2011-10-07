@@ -151,6 +151,7 @@
     <Compile Include="CommandRunnerTest.cs" />
     <Compile Include="CommandDefaultOperationsTest.cs" />
     <Compile Include="CommandUtilTest.cs" />
+    <Compile Include="VimDataTest.cs" />
     <Compile Include="EditorToSettingSynchronizerTest.cs" />
     <Compile Include="FoldManagerTest.cs" />
     <Compile Include="InsertUtilTest.cs" />

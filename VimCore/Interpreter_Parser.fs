@@ -18,6 +18,8 @@ type Parser
 
     /// The set of supported line commands paired with their abbreviation
     static let s_LineCommandNamePair = [
+        ("cd", "cd")
+        ("chdir", "chd")
         ("close", "clo")
         ("delete","d")
         ("edit", "e")
@@ -25,9 +27,12 @@ type Parser
         ("display","di")
         ("fold", "fo")
         ("join", "j")
+        ("lcd", "lc")
+        ("lchdir", "lch")
         ("make", "mak")
         ("marks", "")
         ("nohlsearch", "noh")
+        ("pwd", "pw")
         ("put", "pu")
         ("quit", "q")
         ("qall", "qa")
@@ -393,6 +398,31 @@ type Parser
                     inner (flags ||| newFlag) false
 
         inner SubstituteFlags.None true
+
+    /// Parse out the change directory command.  The path here is optional
+    member x.ParseChangeDirectory() =
+        // Bang is allowed but has no effect
+        x.ParseBang() |> ignore
+        x.SkipBlanks()
+        let path = 
+            if x.IsAtEndOfLine then
+                None
+            else
+                x.ParseToEndOfLine() |> Some
+        ParseResult.Succeeded (LineCommand.ChangeDirectory path)
+
+    /// Parse out the change local directory command.  The path here is optional
+    member x.ParseChangeLocalDirectory() =
+        // Bang is allowed but has no effect
+        x.ParseBang() |> ignore
+
+        x.SkipBlanks()
+        let path = 
+            if x.IsAtEndOfLine then
+                None
+            else
+                x.ParseToEndOfLine() |> Some
+        ParseResult.Succeeded (LineCommand.ChangeLocalDirectory path)
 
     /// Parse out the :close command
     member x.ParseClose() = 
@@ -924,6 +954,8 @@ type Parser
 
         let parseResult = 
             match name with
+            | "cd" -> noRange x.ParseChangeDirectory
+            | "chdir" -> noRange x.ParseChangeDirectory
             | "close" -> noRange x.ParseClose
             | "cmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Command])
             | "cmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Command])
@@ -939,6 +971,8 @@ type Parser
             | "imapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Insert])
             | "inoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Insert])
             | "join" -> x.ParseJoin lineRange 
+            | "lcd" -> noRange x.ParseChangeLocalDirectory
+            | "lchdir" -> noRange x.ParseChangeLocalDirectory
             | "lmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Language])
             | "lunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Language])
             | "lnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Language])
@@ -957,6 +991,7 @@ type Parser
             | "onoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.OperatorPending])
             | "ounmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.OperatorPending])
             | "put" -> x.ParsePut lineRange
+            | "pwd" -> noRange (fun () -> ParseResult.Succeeded LineCommand.PrintCurrentDirectory)
             | "quit" -> noRange x.ParseQuit
             | "qall" -> noRange x.ParseQuitAll
             | "quitall" -> noRange x.ParseQuitAll

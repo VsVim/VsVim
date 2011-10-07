@@ -2648,6 +2648,9 @@ type internal IHistoryClient<'TData, 'TResult> =
 /// Represents shared state which is available to all IVimBuffer instances.
 type IVimData = 
 
+    /// The current directory Vim is positioned in
+    abstract CurrentDirectory : string with get, set
+
     /// The history of the : command list
     abstract CommandHistory : HistoryList with get, set
 
@@ -2670,6 +2673,9 @@ type IVimData =
 
     /// Data for the last substitute command performed
     abstract LastSubstituteData : SubstituteData option with get, set
+
+    /// The previous value of the current directory Vim is positioned in
+    abstract PreviousCurrentDirectory : string
 
     /// Raise the highlight search one time disabled event
     abstract RaiseHighlightSearchOneTimeDisable : unit -> unit
@@ -2884,6 +2890,12 @@ and IVimBuffer =
     /// is buffered until it is completed or the ambiguity is removed.  
     abstract BufferedRemapKeyInputs : KeyInput list
 
+    /// The current directory for this particular window
+    abstract CurrentDirectory : string option with get, set
+
+    /// Global settings for the buffer
+    abstract GlobalSettings : IVimGlobalSettings
+
     /// IIncrementalSearch instance associated with this IVimBuffer
     abstract IncrementalSearch : IIncrementalSearch
 
@@ -2896,6 +2908,9 @@ and IVimBuffer =
     /// Jump list
     abstract JumpList : IJumpList
 
+    /// Local settings for the buffer
+    abstract LocalSettings : IVimLocalSettings
+
     /// Associated IMarkMap
     abstract MarkMap : IMarkMap
 
@@ -2907,12 +2922,6 @@ and IVimBuffer =
 
     /// Name of the buffer.  Used for items like Marks
     abstract Name : string
-
-    /// Global settings for the buffer
-    abstract GlobalSettings : IVimGlobalSettings
-
-    /// Local settings for the buffer
-    abstract LocalSettings : IVimLocalSettings
 
     /// Register map for IVim.  Global to all IVimBuffer instances but provided here
     /// for convenience

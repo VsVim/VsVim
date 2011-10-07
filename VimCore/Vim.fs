@@ -11,6 +11,8 @@ open Vim.Modes
 
 type internal VimData() =
 
+    let mutable _currentDirectory = System.Environment.CurrentDirectory
+    let mutable _previousCurrentDirecotry = _currentDirectory
     let mutable _commandHistory = HistoryList()
     let mutable _searchHistory = HistoryList()
     let mutable _lastSubstituteData : SubstituteData option = None
@@ -22,6 +24,11 @@ type internal VimData() =
     let _highlightSearchOneTimeDisabled = Event<unit>()
 
     interface IVimData with 
+        member x.CurrentDirectory
+            with get () = _currentDirectory
+            and set value = 
+                _previousCurrentDirecotry <- _currentDirectory
+                _currentDirectory <- value
         member x.CommandHistory
             with get () = _commandHistory
             and set value = _commandHistory <- value
@@ -39,6 +46,7 @@ type internal VimData() =
             and set value = 
                 _lastPatternData <- value
                 _lastPatternDataChanged.Trigger value
+        member x.PreviousCurrentDirectory = _previousCurrentDirecotry
         member x.LastCharSearch 
             with get () = _lastCharSearch
             and set value = _lastCharSearch <- value
@@ -82,15 +90,14 @@ type internal VimBufferFactory
         let wordNavigator = wordUtil.CreateTextStructureNavigator WordKind.NormalWord
         VimTextBuffer(textBuffer, localSettings, wordNavigator, _bufferTrackingService, vim)
 
-    /// Create an IVimBuffer instance for the provided ITextView and IVimTextBuffer which is associated
-    /// with the ITextBuffer of the ITextView
-    member x.CreateVimBuffer (textView : ITextView) (vimTextBuffer : IVimTextBuffer) =
+    /// Create a VimBufferData instance for the given ITextView and IVimTextBuffer.  This is mainly
+    /// used for testing purposes
+    member x.CreateVimBufferData (vimTextBuffer : IVimTextBuffer) (textView : ITextView) =
         Contract.Requires (vimTextBuffer.TextBuffer = textView.TextBuffer)
 
         let vim = vimTextBuffer.Vim
         let textBuffer = textView.TextBuffer
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(textView)
-        let editOptions = _editorOptionsFactoryService.GetOptions(textView)
         let statusUtil = _statusUtilFactory.GetStatusUtil textView
         let localSettings = vimTextBuffer.LocalSettings
         let jumpList = JumpList(textView, _bufferTrackingService) :> IJumpList
@@ -103,7 +110,7 @@ type internal VimBufferFactory
             UndoRedoOperations(statusUtil, history, editOperations) :> IUndoRedoOperations
         let wordUtil = _wordUtilFactory.GetWordUtil textBuffer
         let windowSettings = WindowSettings(vim.GlobalSettings, textView)
-        let vimBufferData : VimBufferData = {
+        {
             JumpList = jumpList
             TextView = textView
             StatusUtil = statusUtil
@@ -111,7 +118,12 @@ type internal VimBufferFactory
             VimTextBuffer = vimTextBuffer
             WindowSettings = windowSettings
             WordUtil = wordUtil }
+
+    /// Create an IVimBuffer instance for the provided VimBufferData
+    member x.CreateVimBuffer (vimBufferData : VimBufferData) = 
+        let textView = vimBufferData.TextView
         let commonOperations = _commonOperationsFactory.GetCommonOperations vimBufferData
+        let wordUtil = vimBufferData.WordUtil
 
         let wordNav = wordUtil.CreateTextStructureNavigator WordKind.NormalWord
         let incrementalSearch = IncrementalSearch(vimBufferData, commonOperations) :> IIncrementalSearch
@@ -123,7 +135,7 @@ type internal VimBufferFactory
         let insertUtil = InsertUtil(vimBufferData, commonOperations) :> IInsertUtil
         let commandUtil = CommandUtil(vimBufferData, motionUtil, commonOperations, _smartIndentationService, foldManager, insertUtil) :> ICommandUtil
 
-        let bufferRaw = VimBuffer(vimBufferData, incrementalSearch, motionUtil, wordNav, windowSettings)
+        let bufferRaw = VimBuffer(vimBufferData, incrementalSearch, motionUtil, wordNav, vimBufferData.WindowSettings)
         let buffer = bufferRaw :> IVimBuffer
 
         /// Create the selection change tracker so that it will begin to monitor
@@ -134,11 +146,12 @@ type internal VimBufferFactory
         /// creation events.
         let selectionChangeTracker = SelectionChangeTracker(buffer)
 
-        let createCommandRunner kind = CommandRunner (textView, vim.RegisterMap, capture, commandUtil, statusUtil, kind) :>ICommandRunner
+        let vim = vimBufferData.Vim
+        let createCommandRunner kind = CommandRunner (textView, vim.RegisterMap, capture, commandUtil, vimBufferData.StatusUtil, kind) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker textView
         let bufferOptions = _editorOptionsFactoryService.GetOptions(textView.TextBuffer)
         let commandOpts = Modes.Command.DefaultOperations(vimBufferData, commonOperations) :> Modes.Command.IOperations
-        let commandProcessor = Modes.Command.CommandProcessor(vimBufferData, commonOperations, commandOpts, FileSystem() :> IFileSystem, foldManager) :> Modes.Command.ICommandProcessor
+        let commandProcessor = Modes.Command.CommandProcessor(buffer, commonOperations, commandOpts, FileSystem() :> IFileSystem, foldManager) :> Modes.Command.ICommandProcessor
         let visualOptsFactory kind = 
             let kind = VisualKind.OfModeKind kind |> Option.get
             let tracker = Modes.Visual.SelectionTracker(textView, vim.GlobalSettings, incrementalSearch, kind) :> Modes.Visual.ISelectionTracker
@@ -154,6 +167,8 @@ type internal VimBufferFactory
             |> List.ofSeq
     
         // Normal mode values
+        let editOptions = _editorOptionsFactoryService.GetOptions(textView)
+        let undoRedoOperations = vimBufferData.UndoRedoOperations
         let modeList = 
             [
                 ((Modes.Normal.NormalMode(vimBufferData, commonOperations, motionUtil, broker, createCommandRunner VisualKind.Character, capture)) :> IMode)
@@ -165,12 +180,13 @@ type internal VimBufferFactory
                 (ExternalEditMode(vimBufferData) :> IMode)
             ] @ visualModeList
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
-        buffer.SwitchMode vimTextBuffer.ModeKind ModeArgument.None |> ignore
+        buffer.SwitchMode vimBufferData.VimTextBuffer.ModeKind ModeArgument.None |> ignore
         bufferRaw
 
     interface IVimBufferFactory with
         member x.CreateVimTextBuffer textBuffer vim = x.CreateVimTextBuffer textBuffer vim :> IVimTextBuffer
-        member x.CreateVimBuffer textView vimTextBuffer = x.CreateVimBuffer textView vimTextBuffer :> IVimBuffer
+        member x.CreateVimBufferData vimTextBuffer textView = x.CreateVimBufferData vimTextBuffer textView 
+        member x.CreateVimBuffer vimBufferData = x.CreateVimBuffer vimBufferData :> IVimBuffer
 
 /// Default implementation of IVim 
 [<Export(typeof<IVim>)>]
@@ -316,7 +332,8 @@ type internal Vim
             invalidArg "textView" Resources.Vim_TextViewAlreadyHasVimBuffer
 
         let vimTextBuffer = x.GetOrCreateVimTextBuffer textView.TextBuffer
-        let buffer = _bufferFactoryService.CreateVimBuffer textView vimTextBuffer
+        let vimBufferData = _bufferFactoryService.CreateVimBufferData vimTextBuffer textView
+        let buffer = _bufferFactoryService.CreateVimBuffer vimBufferData
 
         // Apply the specified window settings
         match windowSettings with
