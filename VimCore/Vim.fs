@@ -95,28 +95,6 @@ type internal VimBufferFactory
     member x.CreateVimBufferData (vimTextBuffer : IVimTextBuffer) (textView : ITextView) =
         Contract.Requires (vimTextBuffer.TextBuffer = textView.TextBuffer)
 
-        /// Setup the initial mode for an IVimBuffer.  The mode should be the current mode of the
-        /// underlying IVimTextBuffer.  This should be as easy as switching the mode on startup 
-        /// but this is complicated by the initialization of ITextView instances.  They can, and 
-        /// often are, passed to CreateVimBuffer in an uninitialized state.  In that state certain
-        /// operations like Select can't be done.  Hence we have to delay the mode switch until 
-        /// the ITextView is fully initialized.  Put all of that logic here.
-        let rec setupInitialMode (vimBuffer : IVimBuffer) = 
-            if textView.TextViewLines = null then
-                // It's not initialized.  Need to wait for the ITextView to get initialized. Setup 
-                // the event listener so we can setup the true mode.  Make sure to unhook from the 
-                // event to avoid memory leaks
-                let bag = DisposableBag()
-
-                textView.LayoutChanged
-                |> Observable.subscribe (fun _ -> 
-                    setupInitialMode vimBuffer
-                    bag.DisposeAll())
-                |> bag.Add
-            elif vimBuffer.ModeKind = ModeKind.Uninitialized then
-                // The ITextView is uninitialized and no one has forced the IVimBuffer out of
-                // the uninitialized state.  Do the switch now to the correct mode
-                vimBuffer.SwitchMode vimTextBuffer.ModeKind ModeArgument.None |> ignore
 
         let vim = vimTextBuffer.Vim
         let textBuffer = textView.TextBuffer
@@ -147,6 +125,29 @@ type internal VimBufferFactory
         let textView = vimBufferData.TextView
         let commonOperations = _commonOperationsFactory.GetCommonOperations vimBufferData
         let wordUtil = vimBufferData.WordUtil
+
+        /// Setup the initial mode for an IVimBuffer.  The mode should be the current mode of the
+        /// underlying IVimTextBuffer.  This should be as easy as switching the mode on startup 
+        /// but this is complicated by the initialization of ITextView instances.  They can, and 
+        /// often are, passed to CreateVimBuffer in an uninitialized state.  In that state certain
+        /// operations like Select can't be done.  Hence we have to delay the mode switch until 
+        /// the ITextView is fully initialized.  Put all of that logic here.
+        let rec setupInitialMode (vimBuffer : IVimBuffer) = 
+            if textView.TextViewLines = null then
+                // It's not initialized.  Need to wait for the ITextView to get initialized. Setup 
+                // the event listener so we can setup the true mode.  Make sure to unhook from the 
+                // event to avoid memory leaks
+                let bag = DisposableBag()
+
+                textView.LayoutChanged
+                |> Observable.subscribe (fun _ -> 
+                    setupInitialMode vimBuffer
+                    bag.DisposeAll())
+                |> bag.Add
+            elif vimBuffer.ModeKind = ModeKind.Uninitialized then
+                // The ITextView is uninitialized and no one has forced the IVimBuffer out of
+                // the uninitialized state.  Do the switch now to the correct mode
+                vimBuffer.SwitchMode vimBufferData.VimTextBuffer.ModeKind ModeArgument.None |> ignore
 
         let wordNav = wordUtil.CreateTextStructureNavigator WordKind.NormalWord
         let incrementalSearch = IncrementalSearch(vimBufferData, commonOperations) :> IIncrementalSearch
