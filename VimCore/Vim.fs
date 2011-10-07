@@ -73,7 +73,6 @@ type internal VimBufferFactory
         _wordUtilFactory : IWordUtilFactory,
         _textChangeTrackerFactory : ITextChangeTrackerFactory,
         _textSearchService : ITextSearchService,
-        _smartIndentationService : ISmartIndentationService,
         _bufferTrackingService : IBufferTrackingService,
         _undoManagerProvider : ITextBufferUndoManagerProvider,
         _statusUtilFactory : IStatusUtilFactory,
@@ -82,6 +81,7 @@ type internal VimBufferFactory
         _mouseDevice : IMouseDevice,
         _wordCompletionSessionFactoryService : IWordCompletionSessionFactoryService
     ) = 
+
 
     /// Create an IVimTextBuffer instance for the provided ITextBuffer
     member x.CreateVimTextBuffer textBuffer (vim : IVim) = 
@@ -94,6 +94,29 @@ type internal VimBufferFactory
     /// used for testing purposes
     member x.CreateVimBufferData (vimTextBuffer : IVimTextBuffer) (textView : ITextView) =
         Contract.Requires (vimTextBuffer.TextBuffer = textView.TextBuffer)
+
+        /// Setup the initial mode for an IVimBuffer.  The mode should be the current mode of the
+        /// underlying IVimTextBuffer.  This should be as easy as switching the mode on startup 
+        /// but this is complicated by the initialization of ITextView instances.  They can, and 
+        /// often are, passed to CreateVimBuffer in an uninitialized state.  In that state certain
+        /// operations like Select can't be done.  Hence we have to delay the mode switch until 
+        /// the ITextView is fully initialized.  Put all of that logic here.
+        let rec setupInitialMode (vimBuffer : IVimBuffer) = 
+            if textView.TextViewLines = null then
+                // It's not initialized.  Need to wait for the ITextView to get initialized. Setup 
+                // the event listener so we can setup the true mode.  Make sure to unhook from the 
+                // event to avoid memory leaks
+                let bag = DisposableBag()
+
+                textView.LayoutChanged
+                |> Observable.subscribe (fun _ -> 
+                    setupInitialMode vimBuffer
+                    bag.DisposeAll())
+                |> bag.Add
+            elif vimBuffer.ModeKind = ModeKind.Uninitialized then
+                // The ITextView is uninitialized and no one has forced the IVimBuffer out of
+                // the uninitialized state.  Do the switch now to the correct mode
+                vimBuffer.SwitchMode vimTextBuffer.ModeKind ModeArgument.None |> ignore
 
         let vim = vimTextBuffer.Vim
         let textBuffer = textView.TextBuffer
@@ -133,7 +156,7 @@ type internal VimBufferFactory
         let motionUtil = MotionUtil(vimBufferData) :> IMotionUtil
         let foldManager = _foldManagerFactory.GetFoldManager textView
         let insertUtil = InsertUtil(vimBufferData, commonOperations) :> IInsertUtil
-        let commandUtil = CommandUtil(vimBufferData, motionUtil, commonOperations, _smartIndentationService, foldManager, insertUtil) :> ICommandUtil
+        let commandUtil = CommandUtil(vimBufferData, motionUtil, commonOperations, foldManager, insertUtil) :> ICommandUtil
 
         let bufferRaw = VimBuffer(vimBufferData, incrementalSearch, motionUtil, wordNav, vimBufferData.WindowSettings)
         let buffer = bufferRaw :> IVimBuffer
@@ -165,7 +188,7 @@ type internal VimBufferFactory
                 let visualKind = VisualKind.OfModeKind kind |> Option.get
                 ((Modes.Visual.VisualMode(vimBufferData, opts, motionUtil, kind, createCommandRunner visualKind,capture, tracker)) :> IMode) )
             |> List.ofSeq
-    
+
         // Normal mode values
         let editOptions = _editorOptionsFactoryService.GetOptions(textView)
         let undoRedoOperations = vimBufferData.UndoRedoOperations
@@ -180,7 +203,7 @@ type internal VimBufferFactory
                 (ExternalEditMode(vimBufferData) :> IMode)
             ] @ visualModeList
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
-        buffer.SwitchMode vimBufferData.VimTextBuffer.ModeKind ModeArgument.None |> ignore
+        setupInitialMode buffer
         bufferRaw
 
     interface IVimBufferFactory with

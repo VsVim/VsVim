@@ -26,6 +26,7 @@ namespace VimCore.UnitTest
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IOutliningManager> _outlining;
         private Mock<IStatusUtil> _statusUtil;
+        private Mock<ISmartIndentationService> _smartIndentationService;
         private IUndoRedoOperations _undoRedoOperations;
         private ISearchService _searchService;
         private IVimData _vimData;
@@ -84,6 +85,7 @@ namespace VimCore.UnitTest
                 jumpList: _jumpList.Object,
                 undoRedoOperations: _undoRedoOperations);
 
+            _smartIndentationService = _factory.Create<ISmartIndentationService>();
             _editorOperations = _factory.Create<IEditorOperations>();
             _editorOperations.Setup(x => x.AddAfterTextBufferChangePrimitive());
             _editorOperations.Setup(x => x.AddBeforeTextBufferChangePrimitive());
@@ -95,7 +97,8 @@ namespace VimCore.UnitTest
             _operationsRaw = new CommonOperations(
                 vimBufferData,
                 _editorOperations.Object,
-                FSharpOption.Create(_outlining.Object));
+                FSharpOption.Create(_outlining.Object),
+                _smartIndentationService.Object);
             _operations = _operationsRaw;
         }
 
@@ -106,8 +109,12 @@ namespace VimCore.UnitTest
             _operationsRaw = null;
         }
 
+        /// <summary>
+        /// Ensure that a join of 2 lines which don't have any blanks will produce lines which
+        /// are separated by a single space
+        /// </summary>
         [Test]
-        public void Join1()
+        public void Join_RemoveSpaces_NoBlanks()
         {
             Create("foo", "bar");
             _operations.Join(_textView.GetLineRange(0, 1), JoinKind.RemoveEmptySpaces);
@@ -115,9 +122,12 @@ namespace VimCore.UnitTest
             Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
         }
 
+        /// <summary>
+        /// Ensure that we properly remove the leading spaces at the start of the next line if
+        /// we are removing spaces
+        /// </summary>
         [Test]
-        [Description("Eat spaces at the start of the next line")]
-        public void Join2()
+        public void Join_RemoveSpaces_BlanksStartOfSecondLine()
         {
             Create("foo", "   bar");
             _operations.Join(_textView.GetLineRange(0, 1), JoinKind.RemoveEmptySpaces);
@@ -125,9 +135,23 @@ namespace VimCore.UnitTest
             Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
         }
 
+        /// <summary>
+        /// Don't touch the spaces when we join without editing them
+        /// </summary>
         [Test]
-        [Description("Join more than 2 lines")]
-        public void Join3()
+        public void Join_KeepSpaces_BlanksStartOfSecondLine()
+        {
+            Create("foo", "   bar");
+            _operations.Join(_textView.GetLineRange(0, 1), JoinKind.KeepEmptySpaces);
+            Assert.AreEqual("foo   bar", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
+        }
+
+        /// <summary>
+        /// Do a join of 3 lines
+        /// </summary>
+        [Test]
+        public void Join_RemoveSpaces_ThreeLines()
         {
             Create("foo", "bar", "baz");
             _operations.Join(_textView.GetLineRange(0, 2), JoinKind.RemoveEmptySpaces);
@@ -135,9 +159,11 @@ namespace VimCore.UnitTest
             Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
         }
 
+        /// <summary>
+        /// Ensure we can properly join an empty line
+        /// </summary>
         [Test]
-        [Description("Join an empty line")]
-        public void Join4()
+        public void Join_RemoveSpaces_EmptyLine()
         {
             Create("cat", "", "dog", "tree", "rabbit");
             _operations.Join(_textView.GetLineRange(0, 1), JoinKind.RemoveEmptySpaces);
@@ -1114,5 +1140,31 @@ namespace VimCore.UnitTest
             _statusUtil.Verify();
         }
 
+        /// <summary>
+        /// Make sure that editor indent trumps 'autoindent'
+        /// </summary>
+        [Test]
+        public void GetNewLineIndent_EditorTrumpsAutoIndent()
+        {
+            Create("cat", "dog", "");
+            _globalSettings.SetupGet(x => x.UseEditorIndent).Returns(true);
+            _smartIndentationService.Setup(x => x.GetDesiredIndentation(_textView, It.IsAny<ITextSnapshotLine>())).Returns(8);
+            var indent = _operations.GetNewLineIndent(_textView.GetLine(1), _textView.GetLine(2));
+            Assert.AreEqual(8, indent.Value);
+        }
+
+        /// <summary>
+        /// Use Vim settings if the 'useeditorindent' setting is not present
+        /// </summary>
+        [Test]
+        public void GetNewLineIndent_RevertToVimIndentIfEditorIndentFails()
+        {
+            Create("  cat", "  dog", "");
+            _globalSettings.SetupGet(x => x.UseEditorIndent).Returns(false);
+            _localSettings.SetupGet(x => x.AutoIndent).Returns(true);
+            _smartIndentationService.Setup(x => x.GetDesiredIndentation(_textView, It.IsAny<ITextSnapshotLine>())).Returns((int?)null);
+            var indent = _operations.GetNewLineIndent(_textView.GetLine(1), _textView.GetLine(2));
+            Assert.AreEqual(2, indent.Value);
+        }
     }
 }

@@ -279,6 +279,10 @@ type ICommonOperations =
     /// Get the new line text which should be used for new lines at the given SnapshotPoint
     abstract GetNewLineText : SnapshotPoint -> string
 
+    /// Get the indentation for a newly created ITextSnasphotLine.  The context line is
+    /// is provided to calcualte the indentation off of 
+    abstract GetNewLineIndent : contextLine : ITextSnapshotLine -> newLine : ITextSnapshotLine -> int option
+
     /// Attempt to GoToDefinition on the current state of the buffer.  If this operation fails, an error message will 
     /// be generated as appropriate
     abstract GoToDefinition : unit -> Result

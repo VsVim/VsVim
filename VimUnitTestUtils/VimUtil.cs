@@ -44,20 +44,17 @@ namespace Vim.UnitTest
             VimBufferData vimBufferData,
             IMotionUtil motionUtil = null,
             ICommonOperations operations = null,
-            ISmartIndentationService smartIndentationService = null,
             IFoldManager foldManager = null,
             InsertUtil insertUtil = null)
         {
             motionUtil = motionUtil ?? new MotionUtil(vimBufferData);
             operations = operations ?? EditorUtil.FactoryService.CommonOperationsFactory.GetCommonOperations(vimBufferData);
-            smartIndentationService = smartIndentationService ?? EditorUtil.FactoryService.SmartIndentationService;
             foldManager = foldManager ?? CreateFoldManager(vimBufferData.TextView, vimBufferData.StatusUtil);
             insertUtil = insertUtil ?? new InsertUtil(vimBufferData, operations);
             return new CommandUtil(
                 vimBufferData,
                 motionUtil,
                 operations,
-                smartIndentationService,
                 foldManager,
                 insertUtil);
         }

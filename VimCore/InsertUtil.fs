@@ -49,6 +49,21 @@ type internal InsertUtil
     member x.EditWithUndoTransaciton<'T> (name : string) (action : unit -> 'T) : 'T = 
         _undoRedoOperations.EditWithUndoTransaction name action
 
+    /// Used for the several commands which make an edit here and need the edit to be linked
+    /// with the next insert mode change.  
+    member x.EditWithLinkedChange name action =
+        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
+
+        try
+            x.EditWithUndoTransaciton name action
+        with
+            | _ ->
+                // If the above throws we can't leave the transaction open else it will
+                // break undo / redo in the ITextBuffer.  Close it here and
+                // re-raise the exception
+                transaction.Dispose()
+                reraise()
+
     /// Delete the character before the cursor
     ///
     /// TODO: This needs to respect the 'backspace' option
@@ -122,10 +137,31 @@ type internal InsertUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Insert a new line into the ITextBuffer
+    /// Insert a new line into the ITextBuffer.  Make sure to indent the text
     member x.InsertNewLine() =
         let newLineText = _operations.GetNewLineText x.CaretPoint
-        _textBuffer.Insert(x.CaretPoint.Position, newLineText) |> ignore
+        x.EditWithLinkedChange "New Line" (fun () -> 
+            let contextLine = x.CaretLine
+            _textBuffer.Insert(x.CaretPoint.Position, newLineText) |> ignore
+
+            // Now we need to position the caret within the new line
+            let newLine = SnapshotUtil.GetLine x.CurrentSnapshot (contextLine.LineNumber + 1)
+            match _operations.GetNewLineIndent contextLine newLine with
+            | None -> 
+                // Nothing to do
+                ()
+            | Some indent ->
+                // If there is actual text on this new line (enter in the middle of the
+                // line) then we need to insert white space.  Else we just put the caret
+                // into virtual space
+                let indentText = StringUtil.repeat indent " " |> _operations.NormalizeBlanks
+                if indentText.Length > 0 && newLine.Length > 0 then
+                    _textBuffer.Insert(newLine.Start.Position, indentText) |> ignore
+                    TextViewUtil.MoveCaretToPosition _textView (newLine.Start.Position + indentText.Length)
+                else
+                    let virtualPoint = VirtualSnapshotPoint(newLine.Start, indent)
+                    TextViewUtil.MoveCaretToVirtualPoint _textView virtualPoint)
+
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Insert a single tab into the ITextBuffer.  If 'expandtab' is enabled then insert
@@ -230,9 +266,7 @@ type internal InsertUtil
     /// both normal and visual mode shifts because it will round up the blanks to
     /// a 'shiftwidth' before indenting
     member x.ShiftLineLeft () =
-        let indentSpan = 
-            let endPoint = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
-            SnapshotSpan(x.CaretLine.Start, endPoint)
+        let indentSpan = SnapshotLineUtil.GetIndentSpan x.CaretLine
 
         if indentSpan.Length > 0 || x.CaretVirtualPoint.IsInVirtualSpace then
             let spaces = 

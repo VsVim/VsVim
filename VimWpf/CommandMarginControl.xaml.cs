@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace Vim.UI.Wpf
 {
@@ -20,6 +21,18 @@ namespace Vim.UI.Wpf
             typeof(Visibility),
             typeof(CommandMarginControl));
 
+        public static readonly DependencyProperty TextForegroundProperty = DependencyProperty.Register(
+            "TextForeground",
+            typeof(Brush),
+            typeof(CommandMarginControl),
+            new PropertyMetadata(Brushes.Black));
+
+        public static readonly DependencyProperty TextBackgroundProperty = DependencyProperty.Register(
+            "TextBackground",
+            typeof(Brush),
+            typeof(CommandMarginControl),
+            new PropertyMetadata(Brushes.White));
+
         /// <summary>
         /// The primary status line for Vim
         /// </summary>
@@ -33,6 +46,18 @@ namespace Vim.UI.Wpf
         {
             get { return (Visibility) GetValue(IsRecordingProperty); }
             set { SetValue(IsRecordingProperty, value); }
+        }
+
+        public Brush TextForeground
+        {
+            get { return (Brush)GetValue(TextForegroundProperty); }
+            set { SetValue(TextForegroundProperty, value); }
+        }
+
+        public Brush TextBackground
+        {
+            get { return (Brush)GetValue(TextBackgroundProperty); }
+            set { SetValue(TextBackgroundProperty, value); }
         }
 
         public event EventHandler OptionsClicked;

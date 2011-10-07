@@ -84,7 +84,8 @@ type internal CommonOperations
     (
         _vimBufferData : VimBufferData,
         _editorOperations : IEditorOperations,
-        _outliningManager : IOutliningManager option
+        _outliningManager : IOutliningManager option,
+        _smartIndentationService : ISmartIndentationService
     ) =
 
     let _textBuffer = _vimBufferData.TextBuffer
@@ -281,6 +282,24 @@ type internal CommonOperations
         TextViewUtil.MoveCaretToPoint _textView point
         CommonUtil.MoveCaretForVirtualEdit _textView _globalSettings
 
+    /// Move the caret to the proper indentation on a newly created line.  The context line 
+    /// is provided to calculate an indentation off of
+    member x.GetNewLineIndent  (contextLine : ITextSnapshotLine) (newLine : ITextSnapshotLine) =
+        let doVimIndent() = 
+            if _localSettings.AutoIndent then
+                contextLine |> SnapshotLineUtil.GetIndent |> SnapshotPointUtil.GetColumn |> Some
+            else
+                None
+
+        if _localSettings.GlobalSettings.UseEditorIndent then
+            let indent = _smartIndentationService.GetDesiredIndentation(_textView, newLine)
+            if indent.HasValue then 
+                indent.Value |> Some
+            else
+               doVimIndent()
+        else 
+            doVimIndent()
+
     /// Return the full word under the cursor or an empty string
     member x.WordUnderCursorOrEmpty =
         let point =  TextViewUtil.GetCaretPoint _textView
@@ -446,41 +465,62 @@ type internal CommonOperations
                 builder.Append(' ') |> ignore
         builder.ToString(), text.Length
 
-    member x.Join (range:SnapshotLineRange) kind = 
+    /// Join the lines in the specified line range together. 
+    member x.Join (lineRange : SnapshotLineRange) joinKind = 
 
-        if range.Count > 1 then
+        if lineRange.Count > 1 then
 
             use edit = _textBuffer.CreateEdit()
 
-            let replace = 
-                match kind with
-                | JoinKind.KeepEmptySpaces -> ""
-                | JoinKind.RemoveEmptySpaces -> " "
+            // Get the collection of ITextSnapshotLine instances that we need to perform 
+            // the edit one.  The last line doesn't need anything done to it. 
+            let lines = lineRange.Lines |> Seq.take (lineRange.Count - 1)
 
-            // First delete line breaks on all but the last line 
-            range.Lines
-            |> Seq.take (range.Count - 1)
-            |> Seq.iter (fun line -> 
+            match joinKind with
+            | JoinKind.KeepEmptySpaces ->
 
-                // Delete the line break span
-                let span = line |> SnapshotLineUtil.GetLineBreakSpan |> SnapshotSpanUtil.GetSpan
-                edit.Replace(span, replace) |> ignore )
+                // Simplest implementation.  Just delete relevant line breaks from the 
+                // ITextBuffer
+                for line in lines do
+                    let span = Span(line.End.Position, line.LineBreakLength)
+                    edit.Delete span |> ignore
 
-            // Remove the empty spaces from the start of all but the first line 
-            // if the option was specified
-            match kind with
-            | JoinKind.KeepEmptySpaces -> ()
-            | JoinKind.RemoveEmptySpaces ->
-                range.Lines 
-                |> Seq.skip 1
-                |> Seq.iter (fun line ->
-                        let count =
-                            line.Extent 
-                            |> SnapshotSpanUtil.GetText
-                            |> Seq.takeWhile CharUtil.IsWhiteSpace
-                            |> Seq.length
-                        if count > 0 then
-                            edit.Delete(line.Start.Position,count) |> ignore )
+            | JoinKind.RemoveEmptySpaces -> 
+
+                for line in lines do
+
+                    // Getting the next line is safe here.  By excluding the last line above we've
+                    // guaranteed there is at least one more line below us
+                    let nextLine = SnapshotUtil.GetLine lineRange.Snapshot (line.LineNumber + 1)
+
+                    let nextLineStartsWithCloseParen = SnapshotPointUtil.IsChar ')' nextLine.Start
+
+                    let replaceText =
+                        match SnapshotLineUtil.GetLastIncludedPoint line with
+                        | None ->
+                            if nextLineStartsWithCloseParen then 
+                                "" 
+                            else 
+                                " "
+                        | Some point ->
+                            let c = SnapshotPointUtil.GetChar point
+                            if CharUtil.IsBlank c || nextLineStartsWithCloseParen then
+                                // When the line ends with a blank then we don't insert any new spaces
+                                // for the EOL
+                                ""
+                            elif (c = '.' || c = '!' || c = '?') && _globalSettings.JoinSpaces then
+                                "  "
+                            else
+                                " "
+
+                    let span = Span(line.End.Position, line.LineBreakLength)
+                    edit.Replace(span, replaceText) |> ignore
+
+                    // Also need to delete any blanks at the start of the next line
+                    let blanksEnd = SnapshotLineUtil.GetFirstNonBlankOrEnd nextLine
+                    if blanksEnd <> nextLine.Start then
+                        let span = Span.FromBounds(nextLine.Start.Position, blanksEnd.Position)
+                        edit.Delete(span) |> ignore
 
             // Now position the caret on the new snapshot
             edit.Apply() |> ignore
@@ -635,6 +675,7 @@ type internal CommonOperations
         member x.Beep () = x.Beep()
         member x.Join range kind = x.Join range kind
         member x.GetNewLineText point = x.GetNewLineText point
+        member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
         member x.GoToDefinition () = 
             let before = TextViewUtil.GetCaretPoint _textView
             if _vimHost.GoToDefinition() then
@@ -810,7 +851,8 @@ type CommonOperationsFactory
     (
         _editorOperationsFactoryService : IEditorOperationsFactoryService,
         _outliningManagerService : IOutliningManagerService,
-        _undoManagerProvider : ITextBufferUndoManagerProvider
+        _undoManagerProvider : ITextBufferUndoManagerProvider,
+        _smartIndentationService : ISmartIndentationService
     ) = 
 
     /// Use an object instance as a key.  Makes it harder for components to ignore this
@@ -828,7 +870,7 @@ type CommonOperationsFactory
             let ret = _outliningManagerService.GetOutliningManager(textView)
             if ret = null then None else Some ret
 
-        CommonOperations(vimBufferData, editorOperations, outlining) :> ICommonOperations
+        CommonOperations(vimBufferData, editorOperations, outlining, _smartIndentationService) :> ICommonOperations
 
     /// Get or create the ICommonOperations for the given buffer
     member x.GetCommonOperations (bufferData : VimBufferData) = 

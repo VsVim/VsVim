@@ -251,21 +251,69 @@ namespace Vim.UnitTest.Mock
             return factory.Create<ITextSelection>();
         }
 
+        public static Mock<ITextViewRoleSet> CreateTextViewRoleSet(MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var textViewRoleSet = factory.Create<ITextViewRoleSet>();
+            textViewRoleSet.Setup(x => x.Contains(It.IsAny<string>())).Returns(false);
+            return textViewRoleSet;
+        }
+
+        public static Mock<IEditorOptions> CreateEditorOptions(MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var mock = factory.Create<IEditorOptions>();
+            return mock;
+        }
+
+        public static Mock<IBufferGraph> CreateBufferGraph(MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            return factory.Create<IBufferGraph>();
+        }
+
+        public static Mock<ITextViewModel> CreateTextViewModel(
+            ITextBuffer textBuffer,
+            MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var textViewModel = factory.Create<ITextViewModel>();
+            textViewModel.SetupGet(x => x.DataBuffer).Returns(textBuffer);
+            textViewModel.SetupGet(x => x.VisualBuffer).Returns(textBuffer);
+            textViewModel.SetupGet(x => x.EditBuffer).Returns(textBuffer);
+            return textViewModel;
+        }
+
         public static Mock<ITextView> CreateTextView(
             ITextBuffer textBuffer = null,
             ITextCaret caret = null,
             ITextSelection selection = null,
+            ITextViewRoleSet textViewRoleSet = null,
+            ITextViewModel textViewModel = null,
+            IEditorOptions editorOptions = null,
+            IBufferGraph bufferGraph = null,
+            PropertyCollection propertyCollection = null,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
             textBuffer = textBuffer ?? CreateTextBuffer(100, factory: factory).Object;
             caret = caret ?? CreateCaret(factory: factory).Object;
             selection = selection ?? CreateSelection(factory: factory).Object;
+            propertyCollection = propertyCollection ?? new PropertyCollection();
+            textViewRoleSet = textViewRoleSet ?? CreateTextViewRoleSet(factory: factory).Object;
+            editorOptions = editorOptions ?? CreateEditorOptions(factory: factory).Object;
+            bufferGraph = bufferGraph ?? CreateBufferGraph(factory: factory).Object;
+            textViewModel = textViewModel ?? CreateTextViewModel(textBuffer: textBuffer, factory: factory).Object;
             var view = factory.Create<ITextView>();
             view.SetupGet(x => x.Caret).Returns(caret);
             view.SetupGet(x => x.Selection).Returns(selection);
             view.SetupGet(x => x.TextBuffer).Returns(textBuffer);
             view.SetupGet(x => x.TextSnapshot).Returns(() => textBuffer.CurrentSnapshot);
+            view.SetupGet(x => x.Properties).Returns(propertyCollection);
+            view.SetupGet(x => x.Roles).Returns(textViewRoleSet);
+            view.SetupGet(x => x.Options).Returns(editorOptions);
+            view.SetupGet(x => x.BufferGraph).Returns(bufferGraph);
+            view.SetupGet(x => x.TextViewModel).Returns(textViewModel);
             return view;
         }
 

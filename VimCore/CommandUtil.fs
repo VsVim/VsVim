@@ -42,7 +42,6 @@ type internal CommandUtil
         _vimBufferData : VimBufferData,
         _motionUtil : IMotionUtil,
         _operations : ICommonOperations,
-        _smartIndentationService : ISmartIndentationService,
         _foldManager : IFoldManager,
         _insertUtil : IInsertUtil
     ) =
@@ -125,9 +124,8 @@ type internal CommandUtil
 
         // Get the indent string to apply to the lines which are indented
         let indent = 
-            x.CaretLine.GetText()
-            |> Seq.takeWhile CharUtil.IsBlank
-            |> StringUtil.ofCharSeq
+            x.CaretLine
+            |> SnapshotLineUtil.GetIndentText
             |> _operations.NormalizeBlanks
 
         // Adjust the indentation on a given line of text to have the indentation
@@ -1247,25 +1245,14 @@ type internal CommandUtil
             // Put the caret at column 0
             TextViewUtil.MoveCaretToPosition _textView deletedLine.Start.Position
 
-    /// Move the caret to the indentation point applicable for a new line in the ITextBuffer
-    member x.MoveCaretToNewLineIndent oldLine (newLine : ITextSnapshotLine) =
-        let doVimIndent() = 
-            if _localSettings.AutoIndent then
-                let indent = oldLine |> SnapshotLineUtil.GetIndent |> SnapshotPointUtil.GetColumn
-                let point = new VirtualSnapshotPoint(newLine, indent)
-                TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore 
-            else
-                TextViewUtil.MoveCaretToPoint _textView newLine.Start |> ignore
-
-        if _localSettings.GlobalSettings.UseEditorIndent then
-            let indent = _smartIndentationService.GetDesiredIndentation(_textView, newLine)
-            if indent.HasValue then 
-                let point = new VirtualSnapshotPoint(newLine, indent.Value)
-                TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore
-            else
-               doVimIndent()
-        else 
-            doVimIndent()
+    /// Move the caret to the proper indent on the newly created line
+    member x.MoveCaretToNewLineIndent contextLine newLine = 
+        match _operations.GetNewLineIndent contextLine newLine with
+        | None -> 
+            TextViewUtil.MoveCaretToPoint _textView newLine.Start 
+        | Some indent ->
+            let virtualPoint = VirtualSnapshotPoint(newLine.Start, indent)
+            TextViewUtil.MoveCaretToVirtualPoint _textView virtualPoint
 
     /// The Join commands (Visual and Normal) have identical cursor positioning behavior and 
     /// it's non-trivial so it's factored out to a function here.  In short the caret should be

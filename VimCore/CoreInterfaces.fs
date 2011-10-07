@@ -631,7 +631,13 @@ type ModeKind =
     | SubstituteConfirm = 8
     | ExternalEdit = 9
 
-    // Mode when Vim is disabled via the user
+    /// Initial mode for an IVimBuffer.  It will maintain this mode until the underyling
+    /// ITextView completes it's initialization and allows the IVimBuffer to properly 
+    /// transition to the mode matching it's underlying IVimTextBuffer
+    | Uninitialized = 10
+
+    /// Mode when Vim is disabled.  It won't interact with events it otherwise would such
+    /// as selection changes
     | Disabled = 42
 
 [<RequireQualifiedAccess>]
@@ -2368,6 +2374,7 @@ module GlobalSettingNames =
     let HistoryName = "history"
     let IgnoreCaseName = "ignorecase"
     let IncrementalSearchName = "incsearch"
+    let JoinSpacesName = "joinspaces"
     let MagicName = "magic"
     let ParagraphsName = "paragraphs"
     let ScrollOffsetName = "scrolloff"
@@ -2478,6 +2485,10 @@ and IVimGlobalSettings =
     /// Is the Selection setting set to a value which permits the selection
     /// to extend past the line
     abstract IsSelectionPastLine : bool with get
+
+    /// Whether or not to insert two spaces after certain constructs in a 
+    /// join operation
+    abstract JoinSpaces : bool with get, set
 
     /// The nrooff macros that separate paragraphs
     abstract Paragraphs : string with get, set
