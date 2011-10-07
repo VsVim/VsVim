@@ -44,6 +44,7 @@ namespace VimCore.UnitTest
             _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             _editOpts = _factory.Create<IEditorOperations>();
             _vimHost = _factory.Create<IVimHost>();
+            _vimHost.Setup(x => x.IsDirty(It.IsAny<ITextBuffer>())).Returns(false);
             _operations = _factory.Create<ICommonOperations>();
             _operations.SetupGet(x => x.EditorOperations).Returns(_editOpts.Object);
             _commandOperations = _factory.Create<IOperations>();
@@ -388,7 +389,7 @@ namespace VimCore.UnitTest
         {
             Create("");
             _vimHost.Setup(x => x.Save(_textView.TextBuffer)).Returns(true).Verifiable();
-            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
             RunCommand("wq");
             _factory.Verify();
         }
@@ -398,7 +399,7 @@ namespace VimCore.UnitTest
         {
             Create("");
             _vimHost.Setup(x => x.Save(_textView.TextBuffer)).Returns(true).Verifiable();
-            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
             RunCommand("wq!");
             _factory.Verify();
         }
@@ -408,7 +409,7 @@ namespace VimCore.UnitTest
         {
             Create("bar");
             _vimHost.Setup(x => x.SaveTextAs("bar", "foo.txt")).Returns(true).Verifiable();
-            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
             RunCommand("wq foo.txt");
             _factory.Verify();
         }
@@ -418,7 +419,7 @@ namespace VimCore.UnitTest
         {
             Create("dog", "cat", "bear");
             _vimHost.Setup(x => x.SaveTextAs(It.IsAny<string>(), "foo.txt")).Returns(true).Verifiable();
-            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
             RunCommand("1,2wq foo.txt");
             _factory.Verify();
         }
@@ -427,7 +428,7 @@ namespace VimCore.UnitTest
         public void Quit1()
         {
             Create("");
-            _vimHost.Setup(x => x.Close(_textView, true)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
             RunCommand("quit");
             _factory.Verify();
         }
@@ -436,7 +437,7 @@ namespace VimCore.UnitTest
         public void Quit2()
         {
             Create("");
-            _vimHost.Setup(x => x.Close(_textView, true)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
             RunCommand("q");
             _factory.Verify();
         }
@@ -445,7 +446,7 @@ namespace VimCore.UnitTest
         public void Quit3()
         {
             Create("");
-            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
             RunCommand("q!");
             _factory.Verify();
         }
@@ -518,7 +519,7 @@ namespace VimCore.UnitTest
         public void Close1()
         {
             Create("");
-            _vimHost.Setup(x => x.Close(_textView, true)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
             RunCommand(":close");
             _factory.Verify();
         }
@@ -527,7 +528,7 @@ namespace VimCore.UnitTest
         public void Close2()
         {
             Create("");
-            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
             RunCommand(":close!");
             _factory.Verify();
         }
@@ -536,7 +537,7 @@ namespace VimCore.UnitTest
         public void Close3()
         {
             Create("");
-            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
             RunCommand(":clo!");
             _factory.Verify();
         }

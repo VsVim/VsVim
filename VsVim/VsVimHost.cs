@@ -230,9 +230,14 @@ namespace VsVim
             }
         }
 
-        public override void Close(ITextView textView, bool checkDirty)
+        public override void Close(ITextView textView)
         {
-            _textManager.CloseView(textView, checkDirty);
+            _textManager.CloseView(textView, false);
+        }
+
+        public override bool IsReadOnly(ITextBuffer textBuffer)
+        {
+            return _adapter.IsReadOnly(textBuffer);
         }
 
         /// <summary>

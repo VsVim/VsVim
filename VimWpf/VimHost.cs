@@ -31,7 +31,7 @@ namespace Vim.UI.Wpf
             SystemSounds.Beep.Play();
         }
 
-        public virtual void Close(ITextView textView, bool checkDirty)
+        public virtual void Close(ITextView textView)
         {
             textView.Close();
         }
@@ -216,9 +216,9 @@ namespace Vim.UI.Wpf
             Beep();
         }
 
-        void IVimHost.Close(ITextView value, bool checkDirty)
+        void IVimHost.Close(ITextView value)
         {
-            Close(value, checkDirty);
+            Close(value);
         }
 
         void IVimHost.EnsureVisible(ITextView textView, SnapshotPoint point)

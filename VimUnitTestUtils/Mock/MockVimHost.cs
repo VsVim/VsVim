@@ -69,7 +69,7 @@ namespace Vim.UnitTest.Mock
             ShowOpenFileDialogCount++;
         }
 
-        void IVimHost.Close(ITextView textView, bool checkDirty)
+        void IVimHost.Close(ITextView textView)
         {
             throw new NotImplementedException();
         }

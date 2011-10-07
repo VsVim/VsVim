@@ -148,7 +148,10 @@ type Interpreter
 
     /// Run the close command
     member x.RunClose hasBang = 
-        _vimHost.Close _textView (not hasBang)
+        if not hasBang && _vimHost.IsDirty _textView.TextBuffer then
+            _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
+        else
+            _vimHost.Close _textView
         RunResult.Completed
 
     /// Edit the specified file
@@ -455,8 +458,7 @@ type Interpreter
 
     /// Run the quit command
     member x.RunQuit hasBang =
-        _vimHost.Close _textView (not hasBang)
-        RunResult.Completed
+        x.RunClose hasBang
 
     /// Run the quit all command
     member x.RunQuitAll hasBang =
@@ -498,7 +500,7 @@ type Interpreter
                 | Some lineRange ->
                     inner (Some lineRange)
 
-            _vimHost.Close _textView false
+            x.RunClose false |> ignore
 
         RunResult.Completed
 

@@ -85,7 +85,7 @@ type IVimHost =
     abstract SaveTextAs : text:string -> filePath:string -> bool 
 
     /// Close the provided view
-    abstract Close : ITextView -> checkDirty:bool -> unit
+    abstract Close : ITextView -> unit
 
     /// Split the views horizontally
     abstract SplitViewHorizontally : ITextView -> HostResult

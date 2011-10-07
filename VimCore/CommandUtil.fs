@@ -2339,7 +2339,7 @@ type internal CommandUtil
                 true
 
         if result then
-            _vimHost.Close _textView false
+            _vimHost.Close _textView 
             CommandResult.Completed ModeSwitch.NoSwitch
         else
             CommandResult.Error
