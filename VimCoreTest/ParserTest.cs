@@ -342,6 +342,55 @@ namespace VimCore.UnitTest
             AssertMap("inoremap a b", "a", "b", KeyRemapMode.Insert);
         }
 
+        /// <summary>
+        /// Make sure the map commands can handle the special argument
+        /// </summary>
+        [Test]
+        public void Parse_Map_Arguments()
+        {
+            Action<string, MapArgument> action = 
+                (commandText, mapArgument) =>
+                {
+                    var command = ParseLineCommand(commandText).AsMapKeys();
+                    var mapArguments = command.Item5;
+                    Assert.AreEqual(1, mapArguments.Length);
+                    Assert.AreEqual(mapArgument, mapArguments.Head);
+                };
+            action("map <buffer> a b", MapArgument.Buffer);
+            action("map <silent> a b", MapArgument.Silent);
+            action("imap <silent> a b", MapArgument.Silent);
+            action("nmap <silent> a b", MapArgument.Silent);
+        }
+
+        /// <summary>
+        /// Make sure we can parse out all of the map special argument values
+        /// </summary>
+        [Test]
+        public void ParseMapArguments_All()
+        {
+            var all = new [] { "buffer", "silent", "expr", "unique", "special" };
+            foreach (var cur in all)
+            {
+                var parser = new Parser("<" + cur + ">");
+                var list = parser.ParseMapArguments();
+                Assert.AreEqual(1, list.Length);
+            }
+        }
+
+        /// <summary>
+        /// Make sure we can parse out several items in a row and in the correct order
+        /// </summary>
+        [Test]
+        public void ParseMapArguments_Multiple()
+        {
+            var text = "<buffer> <silent>";
+            var parser = new Parser(text);
+            var list = parser.ParseMapArguments().ToList();
+            CollectionAssert.AreEquivalent(
+                new[] { MapArgument.Buffer, MapArgument.Silent },
+                list);
+        }
+
         [Test]
         public void Parse_MapWithRemap_Standard()
         {

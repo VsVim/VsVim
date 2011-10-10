@@ -209,18 +209,23 @@ type Parser
 
     /// Parse out the mapclear variants. 
     member x.ParseMapClear allowBang keyRemapModes =
-        if x.ParseBang() then
+        let hasBang = x.ParseBang()
+        x.SkipBlanks()
+        let mapArgumentList = x.ParseMapArguments()
+
+        if hasBang then
             if allowBang then
-                LineCommand.ClearKeyMap ([KeyRemapMode.Insert; KeyRemapMode.Command]) |> ParseResult.Succeeded
+                LineCommand.ClearKeyMap ([KeyRemapMode.Insert; KeyRemapMode.Command], mapArgumentList) |> ParseResult.Succeeded
             else
                 ParseResult.Failed Resources.Parser_NoBangAllowed
         else
-            LineCommand.ClearKeyMap keyRemapModes |> ParseResult.Succeeded
+            LineCommand.ClearKeyMap (keyRemapModes, mapArgumentList) |> ParseResult.Succeeded
 
     /// Parse out core portion of key mappings.
     member x.ParseMapKeysCore keyRemapModes allowRemap =
 
         x.SkipBlanks()
+        let mapArgumentList = x.ParseMapArguments()
         match x.ParseKeyNotation() with
         | None -> 
             LineCommand.DisplayKeyMap (keyRemapModes, None) |> ParseResult.Succeeded
@@ -230,7 +235,7 @@ type Parser
             | None ->
                 LineCommand.DisplayKeyMap (keyRemapModes, Some leftKeyNotation) |> ParseResult.Succeeded
             | Some rightKeyNotation ->
-                LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap) |> ParseResult.Succeeded
+                LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap, mapArgumentList) |> ParseResult.Succeeded
 
     /// Parse out the :map commands
     member x.ParseMapKeys allowBang keyRemapModes =
@@ -259,9 +264,10 @@ type Parser
 
         let inner modes = 
             x.SkipBlanks()
+            let mapArgumentList = x.ParseMapArguments()
             match x.ParseKeyNotation() with
             | None -> ParseResult.Failed Resources.Parser_InvalidArgument
-            | Some keyNotation -> LineCommand.UnmapKeys (keyNotation, modes) |> ParseResult.Succeeded
+            | Some keyNotation -> LineCommand.UnmapKeys (keyNotation, modes, mapArgumentList) |> ParseResult.Succeeded
 
         if x.ParseBang() then
             if allowBang then
@@ -343,6 +349,46 @@ type Parser
 
         // TODO: Need to implement parsing out FileOption list
         List.empty
+
+    /// Parse out the arguments which can be applied to the various map commands.  If the 
+    /// argument isn't there then the index into the line will remain unchanged
+    member x.ParseMapArguments() = 
+
+        let rec inner withResult = 
+            let mark = _index 
+
+            // Finish without changinging anything.
+            let finish() =
+                _index <- mark
+                withResult []
+
+            // The argument is mostly parsed out.  Need the closing '>' and the jump to
+            // the next element in the list
+            let completeArgument mapArgument = 
+                if x.IsCurrentCharValue '>' then
+                    // Skip the '>' and any trailing blanks.  The method was called with
+                    // the index pointing past white space and it should end that way
+                    x.IncrementIndex()
+                    x.SkipBlanks()
+                    inner (fun tail -> withResult (mapArgument :: tail))
+                else
+                    finish()
+
+            if x.IsCurrentCharValue '<' then
+                x.IncrementIndex()
+                match x.ParseWord() with
+                | None -> finish()
+                | Some "buffer" -> completeArgument MapArgument.Buffer
+                | Some "silent" -> completeArgument MapArgument.Silent
+                | Some "special" -> completeArgument MapArgument.Special
+                | Some "script" -> completeArgument MapArgument.Script
+                | Some "expr" -> completeArgument MapArgument.Expr 
+                | Some "unique" -> completeArgument MapArgument.Unique
+                | Some _ -> finish()
+            else
+                finish()
+
+        inner (fun x -> x)
 
     /// Parse out a register value from the text.  This will not parse out numbered register
     member x.ParseRegisterName () = 

@@ -66,6 +66,16 @@ type FileOption =
     | Bad
     | Edit
 
+/// Arguments which can be passed to the mapping functions
+[<RequireQualifiedAccess>]
+type MapArgument = 
+    | Buffer
+    | Silent
+    | Special
+    | Script
+    | Expr
+    | Unique
+
 /// The set command can take a number of arguments.  This represents the allowed values
 [<RequireQualifiedAccess>]
 type SetArgument  =
@@ -129,7 +139,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | ChangeLocalDirectory of string option
 
     /// Clear out the keyboard map for the given modes
-    | ClearKeyMap of KeyRemapMode list
+    | ClearKeyMap of KeyRemapMode list * MapArgument list
 
     /// The :close command.  The bool value represents whether or not the 
     /// bang modifier was added
@@ -189,7 +199,7 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// Map the key notation in the given modes.  The bool is whether or not the right
     /// notation can allow remapping
-    | MapKeys of string * string * KeyRemapMode list * bool
+    | MapKeys of string * string * KeyRemapMode list * bool * MapArgument list
 
     /// Temporarily disable the 'hlsearch' option
     | NoHighlightSearch
@@ -272,7 +282,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Undo
 
     /// Unmap the key notation in the given modes
-    | UnmapKeys of string * KeyRemapMode list
+    | UnmapKeys of string * KeyRemapMode list * MapArgument list
 
     /// Write the 
     ///  - The line range to write out

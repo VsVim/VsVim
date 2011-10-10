@@ -190,9 +190,12 @@ type Interpreter
         RunResult.Completed
 
     /// Clear out the key map for the given modes
-    member x.RunClearKeyMap keyRemapModes = 
-        keyRemapModes
-        |> Seq.iter _keyMap.Clear
+    member x.RunClearKeyMap keyRemapModes mapArgumentList = 
+        if not (List.isEmpty mapArgumentList) then
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "map special arguments")
+        else
+            keyRemapModes
+            |> Seq.iter _keyMap.Clear
         RunResult.Completed
 
     /// Run the close command
@@ -453,20 +456,23 @@ type Interpreter
         RunResult.Completed
 
     /// Run the map keys command
-    member x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap =
+    member x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList =
 
-        // Get the appropriate mapping function based on whether or not remapping is 
-        // allowed
-        let mapFunc = if allowRemap then _keyMap.MapWithRemap else _keyMap.MapWithNoRemap
-
-        // Perform the mapping for each mode and record if there is an error
-        let anyErrors = 
-            keyRemapModes
-            |> Seq.map (fun keyRemapMode -> mapFunc leftKeyNotation rightKeyNotation keyRemapMode)
-            |> Seq.exists (fun x -> not x)
-
-        if anyErrors then
-            _statusUtil.OnError (Resources.Interpreter_UnableToMapKeys leftKeyNotation rightKeyNotation)
+        if not (List.isEmpty mapArgumentList) then
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "map special arguments")
+        else
+            // Get the appropriate mapping function based on whether or not remapping is 
+            // allowed
+            let mapFunc = if allowRemap then _keyMap.MapWithRemap else _keyMap.MapWithNoRemap
+    
+            // Perform the mapping for each mode and record if there is an error
+            let anyErrors = 
+                keyRemapModes
+                |> Seq.map (fun keyRemapMode -> mapFunc leftKeyNotation rightKeyNotation keyRemapMode)
+                |> Seq.exists (fun x -> not x)
+    
+            if anyErrors then
+                _statusUtil.OnError (Resources.Interpreter_UnableToMapKeys leftKeyNotation rightKeyNotation)
 
         RunResult.Completed
 
@@ -932,15 +938,18 @@ type Interpreter
         RunResult.Completed
 
     /// Unmap the specified key notation in all of the listed modes
-    member x.RunUnmapKeys keyNotation keyRemapModes =
-        let allSucceeded =
-            keyRemapModes
-            |> Seq.map (fun keyRemapMode -> _keyMap.Unmap keyNotation keyRemapMode)
-            |> Seq.filter (fun x -> not x)
-            |> Seq.isEmpty
-
-        if not allSucceeded then 
-            _statusUtil.OnError Resources.CommandMode_NoSuchMapping
+    member x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList =
+        if not (List.isEmpty mapArgumentList) then
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "map special arguments")
+        else
+            let allSucceeded =
+                keyRemapModes
+                |> Seq.map (fun keyRemapMode -> _keyMap.Unmap keyNotation keyRemapMode)
+                |> Seq.filter (fun x -> not x)
+                |> Seq.isEmpty
+    
+            if not allSucceeded then 
+                _statusUtil.OnError Resources.CommandMode_NoSuchMapping
 
         RunResult.Completed
 
@@ -1027,7 +1036,7 @@ type Interpreter
         match lineCommand with
         | LineCommand.ChangeDirectory path -> x.RunChangeDirectory path
         | LineCommand.ChangeLocalDirectory path -> x.RunChangeLocalDirectory path
-        | LineCommand.ClearKeyMap keyRemapModes -> x.RunClearKeyMap keyRemapModes
+        | LineCommand.ClearKeyMap (keyRemapModes, mapArgumentList) -> x.RunClearKeyMap keyRemapModes mapArgumentList
         | LineCommand.Close hasBang -> x.RunClose hasBang
         | LineCommand.Edit (hasBang, fileOptions, commandOption, filePath) -> x.RunEdit hasBang fileOptions commandOption filePath
         | LineCommand.Delete (lineRange, registerName, count) -> runWithLineRangeAndEndCount lineRange count (fun lineRange -> x.RunDelete lineRange (getRegister registerName))
@@ -1043,7 +1052,7 @@ type Interpreter
         | LineCommand.JumpToLastLine -> x.RunJumpToLastLine()
         | LineCommand.JumpToLine number -> x.RunJumpToLine number
         | LineCommand.Make (hasBang, arguments) -> x.RunMake hasBang arguments
-        | LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap) -> x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap
+        | LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap, mapArgumentList) -> x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList
         | LineCommand.NoHighlightSearch -> x.RunNoHighlightSearch()
         | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()
         | LineCommand.PutAfter (lineRange, registerName) -> runWithLineRange lineRange (fun lineRange -> x.RunPut lineRange (getRegister registerName) true)
@@ -1064,7 +1073,7 @@ type Interpreter
         | LineCommand.Substitute (lineRange, pattern, replace, flags, count) -> runWithLineRangeAndEndCount lineRange count (fun lineRange -> x.RunSubstitute lineRange pattern replace flags)
         | LineCommand.SubstituteRepeat (lineRange, substituteFlags, count) -> runWithLineRangeAndEndCount lineRange count (fun lineRange -> x.RunSubstituteRepeatLast lineRange substituteFlags)
         | LineCommand.Undo -> x.RunUndo()
-        | LineCommand.UnmapKeys (keyNotation, keyRemapModes) -> x.RunUnmapKeys keyNotation keyRemapModes
+        | LineCommand.UnmapKeys (keyNotation, keyRemapModes, mapArgumentList) -> x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList
         | LineCommand.Write (lineRange, hasBang, fileOptionList, filePath) -> runWithLineRange lineRange (fun lineRange -> x.RunWrite lineRange hasBang fileOptionList filePath)
         | LineCommand.WriteAll hasBang -> x.RunWriteAll hasBang
         | LineCommand.Yank (lineRange, registerName, count) -> runWithLineRangeAndEndCount lineRange count (fun lineRange -> x.RunYank lineRange (getRegister registerName))
