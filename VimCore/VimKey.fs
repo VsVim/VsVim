@@ -148,7 +148,7 @@ type VimKey =
     | Nop = 141             // no-op.  Does nothing
 
     // The character is real it's simply an unknown quantity to Vim
-    | RawCharacter = 141
+    | RawCharacter = 142
 
 module VimKeyUtil =
 

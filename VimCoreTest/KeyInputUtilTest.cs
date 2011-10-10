@@ -3,6 +3,7 @@ using System.Linq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
+using System.Collections.Generic;
 
 namespace VimCore.UnitTest
 {
@@ -10,7 +11,7 @@ namespace VimCore.UnitTest
     /// Summary description for InputUtilTest
     /// </summary>
     [TestFixture]
-    public class KeyInputUtilTest
+    public sealed class KeyInputUtilTest
     {
         public const string CharsLettersLower = "abcdefghijklmnopqrstuvwxyz";
         public const string CharsLettersUpper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -134,6 +135,23 @@ namespace VimCore.UnitTest
         public void VimKeyToKeyInput1()
         {
             KeyInputUtil.VimKeyToKeyInput(VimKey.None);
+        }
+
+        /// <summary>
+        /// Verify that all values of the VimKey enumeration are different.  This is a large enum 
+        /// and it's possible for integrations and simple programming errors to lead to duplicate
+        /// values
+        /// </summary>
+        [Test]
+        public void VimKey_AllValuesDifferent()
+        {
+            HashSet<VimKey> set = new HashSet<VimKey>();
+            var all = Enum.GetValues(typeof(VimKey)).Cast<VimKey>().ToList();
+            foreach (var value in all)
+            {
+                Assert.IsTrue(set.Add(value));
+            }
+            Assert.AreEqual(all.Count, set.Count);
         }
 
         [Test]
