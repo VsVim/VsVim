@@ -80,7 +80,7 @@ type IFileSystem =
     abstract LoadVimRc : unit -> (string * string[]) option
 
     /// Attempt to read all of the lines from the given file 
-    abstract ReadAllLines : path:string -> string[] option
+    abstract ReadAllLines : filePath : string -> string[] option
 
 /// Utility functions relating to Word values in an ITextBuffer
 type IWordUtil = 

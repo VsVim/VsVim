@@ -62,6 +62,22 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// LineCommand as ReadCommand
+        /// </summary>
+        public static LineCommand.ReadCommand AsReadCommand(this LineCommand lineCommand)
+        {
+            return (LineCommand.ReadCommand)lineCommand;
+        }
+
+        /// <summary>
+        /// LineCommand as ReadFile
+        /// </summary>
+        public static LineCommand.ReadFile AsReadFile(this LineCommand lineCommand)
+        {
+            return (LineCommand.ReadFile)lineCommand;
+        }
+
+        /// <summary>
         /// LineCommand as Set
         /// </summary>
         public static LineCommand.Set AsSet(this LineCommand lineCommand)

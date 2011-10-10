@@ -57,6 +57,11 @@ type Interpreter
     /// The current ITextSnapshot instance for the ITextBuffer
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
+    /// Execute the external command and return the lines of output
+    member x.ExecuteCommand (command : string) : string[] option = 
+        // TODO: Implement
+        None
+
     /// Get the ITextSnapshotLine specified by the given LineSpecifier
     member x.GetLineCore lineSpecifier currentLine = 
 
@@ -553,6 +558,39 @@ type Interpreter
 
         RunResult.Completed
 
+    /// Run the core parts of the read command
+    member x.RunReadCore (lineRange : SnapshotLineRange) (lines : string[]) = 
+        let point = lineRange.EndIncludingLineBreak
+        let lineBreak = _commonOperations.GetNewLineText point
+        let text = 
+            let builder = System.Text.StringBuilder()
+            for line in lines do
+                builder.Append(line) |> ignore
+                builder.Append(lineBreak) |> ignore
+            builder.ToString()
+        _textBuffer.Insert(point.Position, text) |> ignore
+
+    /// Run the read command command
+    member x.RunReadCommand lineRange command = 
+        match x.ExecuteCommand command with
+        | None ->
+            _statusUtil.OnError (Resources.Interpreter_CantRunCommand command)
+        | Some lines ->
+            x.RunReadCore lineRange lines
+        RunResult.Completed
+
+    /// Run the read file command.
+    member x.RunReadFile (lineRange : SnapshotLineRange) fileOptionList filePath =
+        if not (List.isEmpty fileOptionList) then
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
+        else
+            match _fileSystem.ReadAllLines filePath with
+            | None ->
+                _statusUtil.OnError (Resources.Interpreter_CantOpenFile filePath)
+            | Some lines ->
+                x.RunReadCore lineRange lines
+        RunResult.Completed
+
     /// Run a single redo operation
     member x.RunRedo() = 
         _commonOperations.Redo 1
@@ -1013,6 +1051,8 @@ type Interpreter
         | LineCommand.Quit hasBang -> x.RunQuit hasBang
         | LineCommand.QuitAll hasBang -> x.RunQuitAll hasBang
         | LineCommand.QuitWithWrite (lineRange, hasBang, fileOptions, filePath) -> x.RunQuitWithWrite lineRange hasBang fileOptions filePath
+        | LineCommand.ReadCommand (lineRange, command) -> runWithLineRange lineRange (fun lineRange -> x.RunReadCommand lineRange command)
+        | LineCommand.ReadFile (lineRange, fileOptionList, filePath) -> runWithLineRange lineRange (fun lineRange -> x.RunReadFile lineRange fileOptionList filePath)
         | LineCommand.Redo -> x.RunRedo()
         | LineCommand.Retab (lineRange, hasBang, tabStop) -> x.RunRetab lineRange hasBang tabStop
         | LineCommand.Search (lineRange, path, pattern) -> runWithLineRange lineRange (fun lineRange -> x.RunSearch lineRange path pattern)

@@ -221,6 +221,14 @@ and [<RequireQualifiedAccess>] LineCommand =
     ///  - The provided +cmd
     | QuitWithWrite of LineRange option * bool * FileOption list * string option 
 
+    /// Read the contents of the specified file and put it after the specified
+    /// line range or the caret
+    | ReadFile of LineRange option * FileOption list * string
+
+    /// Read the contens of the specified command and put it after the specified
+    /// line range or the caret
+    | ReadCommand of LineRange option * string
+
     /// Redo the last item on the undo stack
     | Redo
 

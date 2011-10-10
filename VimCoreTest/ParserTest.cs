@@ -380,6 +380,20 @@ namespace VimCore.UnitTest
             Assert.IsTrue(command.IsPrintCurrentDirectory);
         }
 
+        [Test]
+        public void Parse_ReadCommand_Simple()
+        {
+            var command = ParseLineCommand("read !echo bar").AsReadCommand();
+            Assert.AreEqual("echo bar", command.Item2);
+        }
+
+        [Test]
+        public void Parse_ReadFile_Simple()
+        {
+            var command = ParseLineCommand("read test.txt").AsReadFile();
+            Assert.AreEqual("test.txt", command.Item3);
+        }
+
         /// <summary>
         /// Make sure we can parse out the short version of the ":set" command
         /// </summary>

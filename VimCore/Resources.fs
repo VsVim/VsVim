@@ -89,5 +89,7 @@ module internal Resources =
     let Interpreter_UnknownOption msg = sprintf "Unknown option: %s" msg
     let Interpreter_InvalidArgument msg = sprintf "Invalid argument: %s" msg 
     let Interpreter_ReadOnlyOptionIsSet = "'readonly' option is set (add ! to override)"
+    let Interpreter_CantOpenFile filePath = sprintf "Can't open file %s" filePath
+    let Interpreter_CantRunCommand command = sprintf "Can't run command %s" command
 
 

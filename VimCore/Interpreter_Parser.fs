@@ -37,6 +37,7 @@ type Parser
         ("quit", "q")
         ("qall", "qa")
         ("quitall", "quita")
+        ("read", "r")
         ("redo", "red")
         ("registers", "reg")
         ("retab", "ret")
@@ -793,6 +794,28 @@ type Parser
         else
             LineCommand.PutAfter (lineRange, registerName) |> ParseResult.Succeeded
 
+    /// Parse out the :read command
+    member x.ParseRead lineRange = 
+        x.SkipBlanks()
+        let fileOptionList = x.ParseFileOptions()
+        match fileOptionList with
+        | [] ->
+            // Can still be the file or command variety.  The ! or lack there of will
+            // differentiate it at this point
+            x.SkipBlanks()
+            if x.IsCurrentCharValue '!' then
+                x.IncrementIndex()
+                let command = x.ParseToEndOfLine()
+                LineCommand.ReadCommand (lineRange, command) |> ParseResult.Succeeded
+            else
+                let filePath = x.ParseToEndOfLine()
+                LineCommand.ReadFile (lineRange, [], filePath) |> ParseResult.Succeeded
+        | _ ->
+            // Can only be the file variety.
+            x.SkipBlanks()
+            let filePath = x.ParseToEndOfLine()
+            LineCommand.ReadFile (lineRange, fileOptionList, filePath) |> ParseResult.Succeeded
+
     /// Parse out the :retab command
     member x.ParseRetab lineRange =
         let hasBang = x.ParseBang()
@@ -995,6 +1018,7 @@ type Parser
             | "quit" -> noRange x.ParseQuit
             | "qall" -> noRange x.ParseQuitAll
             | "quitall" -> noRange x.ParseQuitAll
+            | "read" -> x.ParseRead lineRange
             | "redo" -> noRange (fun () -> LineCommand.Redo |> ParseResult.Succeeded)
             | "retab" -> x.ParseRetab lineRange
             | "set" -> noRange x.ParseSet
