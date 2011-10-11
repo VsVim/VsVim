@@ -20,7 +20,7 @@ namespace Vim.UI.Wpf.Implementation
     /// starting a word completion session
     /// </summary>
     [Name("Word Completion Session Factory Service")]
-    [ContentType(Constants.ContentType)]
+    [ContentType(Constants.AnyContentType)]
     [Export(typeof(IWordCompletionSessionFactoryService))]
     [Export(typeof(ICompletionSourceProvider))]
     internal sealed class WordCompletionSessionFactoryService : IWordCompletionSessionFactoryService, ICompletionSourceProvider

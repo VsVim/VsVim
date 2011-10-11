@@ -129,7 +129,7 @@ namespace Vim.UnitTest.Exports
     /// </summary>
     [Export(typeof(IAdhocOutlinerFactory))]
     [Export(typeof(ITaggerProvider))]
-    [ContentType(Constants.ContentType)]
+    [ContentType(Constants.AnyContentType)]
     [TextViewRole(PredefinedTextViewRoles.Document)]
     [TagType(typeof(OutliningRegionTag))]
     internal sealed class AdhocOutlinerFactory : IAdhocOutlinerFactory, ITaggerProvider
