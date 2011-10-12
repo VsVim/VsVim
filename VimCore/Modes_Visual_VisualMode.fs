@@ -138,7 +138,7 @@ type internal VisualMode
                         // Commands like incremental search can move the caret and be incomplete.  Need to 
                         // update the selection while waiting for the next key
                         _selectionTracker.UpdateSelection()
-                        ProcessResult.Handled ModeSwitch.NoSwitch
+                        ProcessResult.HandledNeedMoreInput
                     | BindResult.Complete commandRanData ->
 
                         if Util.IsFlagSet commandRanData.CommandBinding.CommandFlags CommandFlags.ResetCaret then
@@ -153,6 +153,7 @@ type internal VisualMode
                             | ModeSwitch.SwitchMode(_) -> ()
                             | ModeSwitch.SwitchModeWithArgument(_,_) -> ()
                             | ModeSwitch.SwitchPreviousMode -> ()
+                            | ModeSwitch.SwitchModeOneTimeCommand _ -> ()
 
                         ProcessResult.OfCommandResult commandRanData.CommandResult
                     | BindResult.Error ->
@@ -170,12 +171,15 @@ type internal VisualMode
                         false
                     | ProcessResult.Error ->
                         false
+                    | ProcessResult.HandledNeedMoreInput ->
+                        false
                     | ProcessResult.Handled switch ->
                         match switch with 
                         | ModeSwitch.NoSwitch -> false
-                        | ModeSwitch.SwitchMode kind -> kind = ModeKind.Command
-                        | ModeSwitch.SwitchModeWithArgument (kind, _) -> kind = ModeKind.Command
+                        | ModeSwitch.SwitchMode modeKind -> modeKind = ModeKind.Command
+                        | ModeSwitch.SwitchModeWithArgument (modeKind, _) -> modeKind = ModeKind.Command
                         | ModeSwitch.SwitchPreviousMode -> false
+                        | ModeSwitch.SwitchModeOneTimeCommand -> false
 
                 // On teardown we will get calls to Stop when the view is closed.  It's invalid to access 
                 // the selection at that point

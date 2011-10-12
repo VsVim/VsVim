@@ -346,7 +346,7 @@ type internal InsertMode
     /// Enter normal mode for a single command.  
     member x.ProcessNormalModeOneCommand () =
 
-        let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Normal, ModeArgument.OneTimeCommand x.ModeKind)
+        let switch = ModeSwitch.SwitchModeOneTimeCommand
         ProcessResult.Handled switch
 
     /// Process the CTRL-N key stroke which calls for the previous word completion

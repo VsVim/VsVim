@@ -1235,11 +1235,6 @@ type ModeArgument =
     /// change commands with text changes.  For example C, c, etc ...
     | InsertWithTransaction of ILinkedUndoTransaction
 
-    /// When the given mode is to execute a single command then return to 
-    /// the previous mode.  The provided mode kind is the value which needs
-    /// to be switched to upon completion of the command
-    | OneTimeCommand of ModeKind
-
     /// Passing the substitute to confirm to Confirm mode.  The SnapshotSpan is the first
     /// match to process and the range is the full range to consider for a replace
     | Substitute of SnapshotSpan * SnapshotLineRange * SubstituteData
@@ -1250,6 +1245,10 @@ type ModeSwitch =
     | SwitchMode of ModeKind
     | SwitchModeWithArgument of ModeKind * ModeArgument
     | SwitchPreviousMode 
+
+    /// Switch to the given mode for a single command.  After the command is processed switch
+    /// back to the original mode
+    | SwitchModeOneTimeCommand
 
 // TODO: Should be succeeded or something other than Completed.  Error also completed just not
 // well
@@ -2265,6 +2264,10 @@ type ProcessResult =
     /// The input was processed and provided the given ModeSwitch
     | Handled of ModeSwitch
 
+    /// The input was processed but more input is needed in order to complete
+    /// an operation
+    | HandledNeedMoreInput
+
     /// The operation did not handle the input
     | NotHandled
 
@@ -2280,6 +2283,9 @@ type ProcessResult =
             | ModeSwitch.SwitchMode _ -> true
             | ModeSwitch.SwitchModeWithArgument _ -> true
             | ModeSwitch.SwitchPreviousMode -> true
+            | ModeSwitch.SwitchModeOneTimeCommand _ -> true
+        | HandledNeedMoreInput ->
+            false
         | NotHandled -> 
             false
         | Error -> 
@@ -2289,6 +2295,7 @@ type ProcessResult =
     member x.IsAnyHandled = 
         match x with
         | Handled _ -> true
+        | HandledNeedMoreInput -> true
         | Error -> true
         | NotHandled -> false
 
@@ -2296,6 +2303,7 @@ type ProcessResult =
     member x.IsHandledSuccess =
         match x with
         | Handled _ -> true
+        | HandledNeedMoreInput -> true
         | Error -> false
         | NotHandled -> false
 
@@ -2303,6 +2311,7 @@ type ProcessResult =
         let switch = ModeSwitch.SwitchMode kind
         Handled switch
 
+    /// Create a ProcessResult from the given CommandResult value
     static member OfCommandResult commandResult = 
         match commandResult with
         | CommandResult.Completed modeSwitch -> Handled modeSwitch
@@ -2909,6 +2918,10 @@ and IVimBuffer =
     /// Name of the buffer.  Used for items like Marks
     abstract Name : string
 
+    /// If we are in the middle of processing a "one time command" (<c-o>) then this will
+    /// hold the ModeKind which will be swiched back to after it's completed
+    abstract InOneTimeCommand : ModeKind option
+
     /// Global settings for the buffer
     abstract GlobalSettings : IVimGlobalSettings
 
@@ -3114,9 +3127,6 @@ and INormalMode =
 
     /// Is normal mode in the middle of a character replace operation
     abstract IsInReplace : bool
-
-    /// If we are a one-time normal mode, the mode kind we will return to
-    abstract OneTimeMode : ModeKind option
 
     inherit IMode
 

@@ -439,11 +439,14 @@ namespace VimCore.UnitTest
             _factory.Verify();
         }
 
+        /// <summary>
+        /// The CTRL-O command should bind to a one time command for normal mode
+        /// </summary>
         [Test]
-        public void NormalModeOneTimeCommand1()
+        public void OneTimeCommand()
         {
             var res = _mode.Process(KeyNotationUtil.StringToKeyInput("<C-o>"));
-            Assert.IsTrue(res.IsSwitchModeWithArgument(ModeKind.Normal, ModeArgument.NewOneTimeCommand(ModeKind.Insert)));
+            Assert.IsTrue(res.IsSwitchModeOneTimeCommand());
         }
 
         [Test]

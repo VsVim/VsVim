@@ -123,8 +123,8 @@
   <data name="InsertBanner" xml:space="preserve">
     <value>-- INSERT --</value>
   </data>
-  <data name="PendingInsertBanner" xml:space="preserve">
-    <value>-- (insert) --</value>
+  <data name="NormalOneTimeCommandBanner" xml:space="preserve">
+    <value>-- ({0}) --</value>
   </data>
   <data name="ReplaceBanner" xml:space="preserve">
     <value>-- REPLACE --</value>
@@ -133,12 +133,21 @@
     <value>replace with {0} (y/n/a/q/l/^E/^Y)?</value>
   </data>
   <data name="VisualBlockBanner" xml:space="preserve">
-    <value>-- VISUALBLOCK --</value>
+    <value>-- VISUAL BLOCK --</value>
+  </data>
+  <data name="VisualBlockOneTimeCommandBanner" xml:space="preserve">
+    <value>-- ({0}) VISUAL BLOCK --</value>
   </data>
   <data name="VisualCharacterBanner" xml:space="preserve">
     <value>-- VISUAL --</value>
   </data>
+  <data name="VisualCharacterOneTimeCommandBanner" xml:space="preserve">
+    <value>-- ({0}) VISUAL --</value>
+  </data>
   <data name="VisualLineBanner" xml:space="preserve">
     <value>-- VISUAL LINE--</value>
+  </data>
+  <data name="VisualLineOneTimeCommandBanner" xml:space="preserve">
+    <value>-- ({0}) VISUAL LINE --</value>
   </data>
 </root>

@@ -43,6 +43,11 @@ namespace Vim.UnitTest
             return (ProcessResult.Handled)res;
         }
 
+        public static bool IsSwitchModeOneTimeCommand(this ProcessResult result)
+        {
+            return result.IsHandled && result.AsHandled().Item.IsSwitchModeOneTimeCommand;
+        }
+
         public static bool IsSwitchMode(this ProcessResult result, ModeKind kind)
         {
             return result.IsHandled && result.AsHandled().Item.IsSwitchMode(kind);

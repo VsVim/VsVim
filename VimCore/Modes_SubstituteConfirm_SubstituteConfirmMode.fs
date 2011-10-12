@@ -194,7 +194,6 @@ type internal SubstituteConfirmMode
             x.ConfirmData <- 
                 match arg with
                 | ModeArgument.None -> None
-                | ModeArgument.OneTimeCommand(_) -> None
                 | ModeArgument.FromVisual -> None
                 | ModeArgument.InitialVisualSelection _ -> None
                 | ModeArgument.InsertWithCount _ -> None

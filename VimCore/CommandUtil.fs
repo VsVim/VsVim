@@ -1606,7 +1606,6 @@ type internal CommandUtil
                     | ModeArgument.InsertWithCount _ -> ()
                     | ModeArgument.InsertWithCountAndNewLine _ -> ()
                     | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
-                    | ModeArgument.OneTimeCommand _ -> ()
                     | ModeArgument.Substitute _ -> ()
                 | _ -> ()
     
@@ -1860,6 +1859,7 @@ type internal CommandUtil
                                 // in an error then we should stop processing the macro
                                 match buffer.Process keyInput with
                                 | ProcessResult.Handled _ -> inner tail
+                                | ProcessResult.HandledNeedMoreInput -> inner tail
                                 | ProcessResult.NotHandled -> false
                                 | ProcessResult.Error -> false
 

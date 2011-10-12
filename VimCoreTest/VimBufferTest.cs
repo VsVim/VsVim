@@ -4,6 +4,7 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.UnitTest;
+using Vim.Extensions;
 
 namespace VimCore.UnitTest
 {
@@ -43,6 +44,15 @@ namespace VimCore.UnitTest
             var mode = _factory.Create<IInsertMode>(behavior);
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
             _vimBufferRaw.RemoveMode(_vimBuffer.InsertMode);
+            _vimBufferRaw.AddMode(mode.Object);
+            return mode;
+        }
+
+        private Mock<IVisualMode> CreateAndAddVisualLineMode(MockBehavior behavior = MockBehavior.Strict)
+        {
+            var mode = _factory.Create<IVisualMode>(behavior);
+            mode.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualLine);
+            _vimBufferRaw.RemoveMode(_vimBuffer.VisualLineMode);
             _vimBufferRaw.AddMode(mode.Object);
             return mode;
         }
@@ -112,6 +122,20 @@ namespace VimCore.UnitTest
             _vimBuffer.SwitchedMode += (s, m) => { ran = true; };
             _vimBuffer.SwitchPreviousMode();
             Assert.IsTrue(ran);
+        }
+
+        /// <summary>
+        /// When a mode returns the SwitchModeOneTimeCommand value it should cause the 
+        /// InOneTimeCommand value to be set
+        /// </summary>
+        [Test]
+        public void SwitchModeOneTimeCommand_SetProperty()
+        {
+            var mode = CreateAndAddInsertMode(MockBehavior.Loose);
+            mode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.SwitchModeOneTimeCommand));
+            _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _vimBuffer.Process('c');
+            Assert.IsTrue(_vimBuffer.InOneTimeCommand.IsSome(ModeKind.Insert));
         }
 
         /// <summary>
@@ -300,6 +324,69 @@ namespace VimCore.UnitTest
                 Assert.IsTrue(_vimBuffer.Process(VimKey.Nop));
                 Assert.AreEqual(old, _vimBuffer.TextSnapshot);
             }
+        }
+
+        /// <summary>
+        /// When we are InOneTimeCommand the HandledNeedMoreInput should not cause us to 
+        /// do anything with respect to one time command
+        /// </summary>
+        [Test]
+        public void Process_OneTimeCommand_NeedMoreInputDoesNothing()
+        {
+            var mode = CreateAndAddNormalMode(MockBehavior.Loose);
+            mode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.HandledNeedMoreInput);
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBufferRaw.InOneTimeCommand = FSharpOption.Create(ModeKind.Replace);
+            _vimBuffer.Process('c');
+            Assert.IsTrue(_vimBufferRaw.InOneTimeCommand.IsSome(ModeKind.Replace));
+        }
+
+        /// <summary>
+        /// Escape should go back to the original mode even if the current IMode doesn't
+        /// support the escape key when we are in a one time command
+        /// </summary>
+        [Test]
+        public void Process_OneTimeCommand_Escape()
+        {
+            var mode = CreateAndAddNormalMode(MockBehavior.Loose);
+            mode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.Error);
+            mode.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(false);
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBufferRaw.InOneTimeCommand = FSharpOption.Create(ModeKind.Replace);
+            _vimBuffer.Process(VimKey.Escape);
+            Assert.AreEqual(ModeKind.Replace, _vimBuffer.ModeKind);
+            Assert.IsTrue(_vimBufferRaw.InOneTimeCommand.IsNone());
+        }
+
+        /// <summary>
+        /// When a command is completed in visual mode we shouldn't exit.  Else commands like
+        /// 'l' would cause it to exit which is not the Vim behavior
+        /// </summary>
+        [Test]
+        public void Process_OneTimeCommand_VisualMode_Handled()
+        {
+            var mode = CreateAndAddVisualLineMode(MockBehavior.Loose);
+            mode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
+            _vimBuffer.SwitchMode(ModeKind.VisualLine, ModeArgument.None);
+            _vimBufferRaw.InOneTimeCommand = FSharpOption.Create(ModeKind.Replace);
+            _vimBuffer.Process('l');
+            Assert.AreEqual(ModeKind.VisualLine, _vimBuffer.ModeKind);
+            Assert.IsTrue(_vimBufferRaw.InOneTimeCommand.Is(ModeKind.Replace));
+        }
+
+        /// <summary>
+        /// Switch previous mode should still cause it to go back to the original though
+        /// </summary>
+        [Test]
+        public void Process_OneTimeCommand_VisualMode_SwitchPreviousMode()
+        {
+            var mode = CreateAndAddVisualLineMode(MockBehavior.Loose);
+            mode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.SwitchPreviousMode));
+            _vimBuffer.SwitchMode(ModeKind.VisualLine, ModeArgument.None);
+            _vimBufferRaw.InOneTimeCommand = FSharpOption.Create(ModeKind.Replace);
+            _vimBuffer.Process('l');
+            Assert.AreEqual(ModeKind.Replace, _vimBuffer.ModeKind);
+            Assert.IsTrue(_vimBufferRaw.InOneTimeCommand.IsNone());
         }
 
         /// <summary>

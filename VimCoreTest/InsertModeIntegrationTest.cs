@@ -243,6 +243,64 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Make sure executing the one time command correctly sets the buffer state
+        /// </summary>
+        [Test]
+        public void OneTimeCommand_BufferState()
+        {
+            Create("");
+            _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
+            Assert.IsTrue(_vimBuffer.InOneTimeCommand.Is(ModeKind.Insert));
+        }
+
+        /// <summary>
+        /// Execute a one time command of delete word
+        /// </summary>
+        [Test]
+        public void OneTimeCommand_DeleteWord()
+        {
+            Create("hello world");
+            _textView.MoveCaretTo(0);
+            _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
+            _vimBuffer.Process("dw");
+            Assert.AreEqual("world", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+            Assert.IsTrue(_vimBuffer.InOneTimeCommand.IsNone());
+        }
+
+        /// <summary>
+        /// Execute a one time command of delete word
+        /// </summary>
+        [Test]
+        public void OneTimeCommand_CommandMode_Put()
+        {
+            Create("hello world");
+            Vim.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("the dog");
+            _textView.MoveCaretTo(0);
+            _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
+            _vimBuffer.Process(":put", enter: true);
+            Assert.AreEqual("hello world", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("the dog", _textBuffer.GetLine(1).GetText());
+            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+            Assert.IsTrue(_vimBuffer.InOneTimeCommand.IsNone());
+        }
+
+        /// <summary>
+        /// Normal mode usually doesn't handle the Escape key but it must during a 
+        /// one time command
+        /// </summary>
+        [Test]
+        public void OneTimeCommand_Normal_Escape()
+        {
+            Create("");
+            _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
+            _vimBuffer.Process(VimKey.Escape);
+            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+            Assert.IsTrue(_vimBuffer.InOneTimeCommand.IsNone());
+        }
+
+        /// <summary>
         /// Ensure the single backspace is repeated properly.  It is tricky because it has to both 
         /// backspace and then jump a caret space to the left.
         /// </summary>
