@@ -483,6 +483,12 @@ type internal CommandUtil
         _foldManager.CloseFold x.CaretPoint count
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Close all of the folds in the buffer
+    member x.CloseAllFolds() = 
+        let span = SnapshotUtil.GetExtent x.CurrentSnapshot
+        _foldManager.CloseAllFolds span
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Close all folds under the caret
     member x.CloseAllFoldsUnderCaret () =
         let span = SnapshotSpan(x.CaretPoint, 0)
@@ -1309,6 +1315,12 @@ type internal CommandUtil
         _foldManager.OpenFold x.CaretPoint count
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Open all of the folds in the buffer
+    member x.OpenAllFolds() =
+        let span = SnapshotUtil.GetExtent x.CurrentSnapshot
+        _foldManager.OpenAllFolds span
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Open all of the folds under the caret 
     member x.OpenAllFoldsUnderCaret () =
         let span = SnapshotSpan(x.CaretPoint, 1)
@@ -1901,13 +1913,14 @@ type internal CommandUtil
         | NormalCommand.ChangeCaseMotion (kind, motion) -> x.RunWithMotion motion (x.ChangeCaseMotion kind)
         | NormalCommand.ChangeLines -> x.ChangeLines count register
         | NormalCommand.ChangeTillEndOfLine -> x.ChangeTillEndOfLine count register
-        | NormalCommand.CloseAllFoldsUnderCaret -> x.CloseAllFoldsUnderCaret ()
+        | NormalCommand.CloseAllFolds -> x.CloseAllFolds()
+        | NormalCommand.CloseAllFoldsUnderCaret -> x.CloseAllFoldsUnderCaret()
         | NormalCommand.CloseFoldUnderCaret -> x.CloseFoldUnderCaret count
-        | NormalCommand.DeleteAllFoldsInBuffer -> x.DeleteAllFoldsInBuffer ()
-        | NormalCommand.DeleteAllFoldsUnderCaret -> x.DeleteAllFoldsUnderCaret ()
+        | NormalCommand.DeleteAllFoldsInBuffer -> x.DeleteAllFoldsInBuffer()
+        | NormalCommand.DeleteAllFoldsUnderCaret -> x.DeleteAllFoldsUnderCaret()
         | NormalCommand.DeleteCharacterAtCaret -> x.DeleteCharacterAtCaret count register
         | NormalCommand.DeleteCharacterBeforeCaret -> x.DeleteCharacterBeforeCaret count register
-        | NormalCommand.DeleteFoldUnderCaret -> x.DeleteFoldUnderCaret ()
+        | NormalCommand.DeleteFoldUnderCaret -> x.DeleteFoldUnderCaret()
         | NormalCommand.DeleteLines -> x.DeleteLines count register
         | NormalCommand.DeleteMotion motion -> x.RunWithMotion motion (x.DeleteMotion register)
         | NormalCommand.DeleteTillEndOfLine -> x.DeleteTillEndOfLine count register
@@ -1915,10 +1928,10 @@ type internal CommandUtil
         | NormalCommand.FoldMotion motion -> x.RunWithMotion motion x.FoldMotion
         | NormalCommand.FormatLines -> x.FormatLines count
         | NormalCommand.FormatMotion motion -> x.RunWithMotion motion x.FormatMotion 
-        | NormalCommand.GoToDefinition -> x.GoToDefinition ()
+        | NormalCommand.GoToDefinition -> x.GoToDefinition()
         | NormalCommand.GoToFileUnderCaret useNewWindow -> x.GoToFileUnderCaret useNewWindow
-        | NormalCommand.GoToGlobalDeclaration -> x.GoToGlobalDeclaration ()
-        | NormalCommand.GoToLocalDeclaration -> x.GoToLocalDeclaration ()
+        | NormalCommand.GoToGlobalDeclaration -> x.GoToGlobalDeclaration()
+        | NormalCommand.GoToLocalDeclaration -> x.GoToLocalDeclaration()
         | NormalCommand.GoToNextTab path -> x.GoToNextTab path data.Count
         | NormalCommand.GoToView direction -> x.GoToView direction
         | NormalCommand.InsertAfterCaret -> x.InsertAfterCaret count
@@ -1933,7 +1946,8 @@ type internal CommandUtil
         | NormalCommand.JumpToOlderPosition -> x.JumpToOlderPosition count
         | NormalCommand.JumpToNewerPosition -> x.JumpToNewerPosition count
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
-        | NormalCommand.OpenAllFoldsUnderCaret -> x.OpenAllFoldsUnderCaret ()
+        | NormalCommand.OpenAllFolds -> x.OpenAllFolds()
+        | NormalCommand.OpenAllFoldsUnderCaret -> x.OpenAllFoldsUnderCaret()
         | NormalCommand.OpenFoldUnderCaret -> x.OpenFoldUnderCaret data.CountOrDefault
         | NormalCommand.Ping pingData -> x.Ping pingData data
         | NormalCommand.PutAfterCaret moveCaretAfterText -> x.PutAfterCaret register count moveCaretAfterText
@@ -1941,7 +1955,7 @@ type internal CommandUtil
         | NormalCommand.PutBeforeCaret moveCaretBeforeText -> x.PutBeforeCaret register count moveCaretBeforeText
         | NormalCommand.PutBeforeCaretWithIndent -> x.PutBeforeCaretWithIndent register count
         | NormalCommand.RecordMacroStart c -> x.RecordMacroStart c
-        | NormalCommand.RecordMacroStop -> x.RecordMacroStop ()
+        | NormalCommand.RecordMacroStop -> x.RecordMacroStop()
         | NormalCommand.Redo -> x.Redo count
         | NormalCommand.RepeatLastCommand -> x.RepeatLastCommand data
         | NormalCommand.RepeatLastSubstitute useSameFlags -> x.RepeatLastSubstitute useSameFlags
@@ -1965,7 +1979,7 @@ type internal CommandUtil
         | NormalCommand.SwitchMode (modeKind, modeArgument) -> x.SwitchMode modeKind modeArgument
         | NormalCommand.SwitchPreviousVisualMode -> x.SwitchPreviousVisualMode()
         | NormalCommand.Undo -> x.Undo count
-        | NormalCommand.WriteBufferAndQuit -> x.WriteBufferAndQuit ()
+        | NormalCommand.WriteBufferAndQuit -> x.WriteBufferAndQuit()
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion register)
         | NormalCommand.YankLines -> x.YankLines count register
 

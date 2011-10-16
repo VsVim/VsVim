@@ -86,6 +86,8 @@ type internal VisualMode
             seq {
                 yield ("gv", CommandFlags.Special, NormalCommand.SwitchPreviousVisualMode)
                 yield ("zE", CommandFlags.Special, NormalCommand.DeleteAllFoldsInBuffer)
+                yield ("zM", CommandFlags.Special, NormalCommand.CloseAllFolds)
+                yield ("zR", CommandFlags.Special, NormalCommand.OpenAllFolds)
                 yield ("[p", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
                 yield ("[P", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
                 yield ("]p", CommandFlags.Repeatable, NormalCommand.PutAfterCaretWithIndent)

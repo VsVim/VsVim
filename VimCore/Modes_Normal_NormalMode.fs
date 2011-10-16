@@ -168,6 +168,8 @@ type internal NormalMode
                 yield ("zD", CommandFlags.Special, NormalCommand.DeleteAllFoldsUnderCaret)
                 yield ("zE", CommandFlags.Special, NormalCommand.DeleteAllFoldsInBuffer)
                 yield ("zF", CommandFlags.Special, NormalCommand.FoldLines)
+                yield ("zM", CommandFlags.Special, NormalCommand.CloseAllFolds)
+                yield ("zR", CommandFlags.Special, NormalCommand.OpenAllFolds)
                 yield ("ZZ", CommandFlags.Special, NormalCommand.WriteBufferAndQuit)
                 yield ("<Insert>", CommandFlags.None, NormalCommand.InsertBeforeCaret)
                 yield ("<C-a>", CommandFlags.Repeatable, NormalCommand.AddToWord)

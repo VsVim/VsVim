@@ -243,6 +243,36 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// The Escape should end a multiple key mapping and exit insert mode
+        /// </summary>
+        [Test]
+        public void KeyRemap_TwoKeys_EscapeToEndSequence()
+        {
+            Create("hello world", "");
+            _textView.MoveCaretToLine(1);
+            _vimBuffer.Vim.KeyMap.MapWithNoRemap(";;", "<Esc>", KeyRemapMode.Insert);
+            _vimBuffer.Process(';');
+            _vimBuffer.Process(VimKey.Escape);
+            Assert.AreEqual(";", _textBuffer.GetLine(1).GetText());
+            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
+        }
+
+        /// <summary>
+        /// The CTRL-[ should end a multiple key mapping the same as normal Escape
+        /// </summary>
+        [Test]
+        public void KeyRemap_TwoKeys_AlternateEscapeToEndSequence()
+        {
+            Create("hello world", "");
+            _textView.MoveCaretToLine(1);
+            _vimBuffer.Vim.KeyMap.MapWithNoRemap(";;", "<Esc>", KeyRemapMode.Insert);
+            _vimBuffer.Process(';');
+            _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('['));
+            Assert.AreEqual(";", _textBuffer.GetLine(1).GetText());
+            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
+        }
+
+        /// <summary>
         /// Make sure executing the one time command correctly sets the buffer state
         /// </summary>
         [Test]

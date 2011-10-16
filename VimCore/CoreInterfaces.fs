@@ -1393,6 +1393,9 @@ type NormalCommand =
     /// and start Insert Mode
     | ChangeTillEndOfLine
 
+    /// Close all folds in the buffer
+    | CloseAllFolds
+
     /// Close all folds under the caret
     | CloseAllFoldsUnderCaret
 
@@ -1492,6 +1495,9 @@ type NormalCommand =
 
     /// Undo count operations in the ITextBuffer
     | Undo
+
+    /// Open all folds in the buffer
+    | OpenAllFolds
 
     /// Open all of the folds under the caret
     | OpenAllFoldsUnderCaret
