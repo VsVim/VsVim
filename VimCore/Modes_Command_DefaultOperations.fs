@@ -133,7 +133,7 @@ type internal DefaultOperations
                 |> Seq.sortBy fst
             let globalSeq = 
                 markMap.GlobalMarks 
-                |> Seq.map (fun (letter, point) -> (letter.Char, point))
+                |> Seq.map (fun (letter, point) -> (CharUtil.ToUpper letter.Char, point))
                 |> Seq.sortBy fst
             localSeq 
             |> Seq.append globalSeq

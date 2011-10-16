@@ -4,59 +4,74 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open System.Collections.Generic
 
-type GlobalMarkData = {
-    VimTextBuffer : IVimTextBuffer
-    TrackingLineColumn : ITrackingLineColumn 
-}
+type MarkMap(_bufferTrackingService : IBufferTrackingService) =
 
-type MarkMap( _bufferTrackingService : IBufferTrackingService) =
+    /// This is a map from letter to key.  The key is the key into the property collection
+    /// of the ITextBuffer which holds the ITrackingLineColumn for the global mark.  We
+    /// don't use just the plain old Letter here because that's used for local marks
+    let _letterToKeyMap = 
+        Letter.All
+        |> Seq.map (fun letter -> letter, obj())
+        |> Map.ofSeq
 
-    /// This is the map containing the letters to the global mark positions.  The
-    /// MarkMap table lives much longer than the individual marks so we hold them
-    /// in a WeakReference<T> to prevent holding the ITextBuffer in memory
-    let mutable _globalMarkMap : Map<Letter, WeakReference<GlobalMarkData>> = Map.empty
-
-    member x.GlobalMarksCore =
-        _globalMarkMap
-        |> Seq.map (fun keyValuePair -> 
-            match keyValuePair.Value.Target with
-            | None -> None
-            | Some trackingLineColumn -> Some (keyValuePair.Key, trackingLineColumn))
-        |> SeqUtil.filterToSome
-
-    member x.GlobalMarks =
-        x.GlobalMarksCore
-        |> Seq.map (fun (letter, globalMarkData) ->
-            match globalMarkData.TrackingLineColumn.VirtualPoint with
-            | None -> None
-            | Some point -> Some (letter, point))
-        |> SeqUtil.filterToSome
+    /// This is the map from Letter to the ITextBuffer where the global mark
+    /// is stored.  The MarkMap table lives much longer than the individual marks 
+    /// so we hold them in a WeakReference<T> to prevent holding the ITextBuffer 
+    /// in memory.
+    let mutable _globalMarkMap : Map<Letter, WeakReference<ITextBuffer>> = Map.empty
 
     /// Get the core information about the global mark represented by the letter
-    member x.GetGlobalMarkCore letter =
+    member x.GetGlobalMarkData letter =
         match Map.tryFind letter _globalMarkMap with
         | None -> None
-        | Some weakReference -> weakReference.Target
+        | Some weakReference -> 
+            match weakReference.Target with
+            | None -> None
+            | Some textBuffer -> 
+                let key = Map.find letter _letterToKeyMap
+                match PropertyCollectionUtil.GetValue<ITrackingLineColumn> key textBuffer.Properties with
+                | None -> None
+                | Some trackingLineColumn -> Some (letter, trackingLineColumn, key)
+
+    /// Delete a global mark if it exists
+    member x.DeleteGlobalMark letter = 
+        match x.GetGlobalMarkData letter with
+        | None -> ()
+        | Some (_, trackingLineColumn, key) ->
+            trackingLineColumn.TextBuffer.Properties.RemoveProperty(key) |> ignore
+            trackingLineColumn.Close()
+        _globalMarkMap <- Map.remove letter _globalMarkMap
+
+    /// Get all of the global mark letters and their associated VirtualSnapshotPoint
+    member x.GlobalMarks =
+        _globalMarkMap
+        |> Seq.map (fun keyValuePair -> keyValuePair.Key)
+        |> Seq.map (fun letter ->
+            match x.GetGlobalMarkData letter with
+            | None -> None
+            | Some (_, trackingLineColumn, _) -> 
+                match trackingLineColumn.VirtualPoint with
+                | None -> None
+                | Some virtualPoint -> Some (letter, virtualPoint))
+        |> SeqUtil.filterToSome
 
     /// Get the global mark location
     member x.GetGlobalMark letter = 
-        match x.GetGlobalMarkCore letter with
+        match x.GetGlobalMarkData letter with
         | None -> None
-        | Some globalMarkData -> globalMarkData.TrackingLineColumn.VirtualPoint
+        | Some (_, trackingLineColumn, _) -> trackingLineColumn.VirtualPoint
 
     /// Set the global mark to the value in question
     member x.SetGlobalMark letter (vimTextBuffer : IVimTextBuffer) line column =
         // First clear out the existing mark if it exists.  
-        match x.GetGlobalMarkCore letter with 
-        | None -> ()
-        | Some globalMarkData -> globalMarkData.TrackingLineColumn.Close()
+        x.DeleteGlobalMark letter
 
         let trackingLineColumn = _bufferTrackingService.CreateLineColumn vimTextBuffer.TextBuffer line column LineColumnTrackingMode.Default
-        let globalMarkData = {
-            VimTextBuffer = vimTextBuffer
-            TrackingLineColumn = trackingLineColumn } |> WeakReferenceUtil.Create
+        let key = Map.find letter _letterToKeyMap
+        vimTextBuffer.TextBuffer.Properties.AddProperty(key, trackingLineColumn)
 
-        _globalMarkMap <- Map.add letter globalMarkData _globalMarkMap
+        let value = WeakReferenceUtil.Create vimTextBuffer.TextBuffer
+        _globalMarkMap <- Map.add letter value _globalMarkMap
 
     /// Get the given mark in the context of the given IVimTextBuffer
     member x.GetMark mark (vimBufferData : VimBufferData) =
@@ -91,8 +106,8 @@ type MarkMap( _bufferTrackingService : IBufferTrackingService) =
     member x.ClearGlobalMarks () = 
 
         // Close all of the ITrackingLineColumn instances
-        x.GlobalMarksCore
-        |> Seq.iter (fun (_, globalMarkData) -> globalMarkData.TrackingLineColumn.Close())
+        Letter.All
+        |> Seq.iter x.DeleteGlobalMark
 
         _globalMarkMap <- Map.empty
 
