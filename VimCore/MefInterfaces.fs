@@ -280,6 +280,9 @@ type ICommonOperations =
     /// is provided to calcualte the indentation off of 
     abstract GetNewLineIndent : contextLine : ITextSnapshotLine -> newLine : ITextSnapshotLine -> int option
 
+    /// Get the standard ReplaceData for the given SnapshotPoint
+    abstract GetReplaceData : point : SnapshotPoint -> ReplaceData
+
     /// Attempt to GoToDefinition on the current state of the buffer.  If this operation fails, an error message will 
     /// be generated as appropriate
     abstract GoToDefinition : unit -> Result

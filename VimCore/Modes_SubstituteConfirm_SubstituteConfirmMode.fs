@@ -35,6 +35,7 @@ type internal SubstituteConfirmMode
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
     let _textBuffer = _vimTextBuffer.TextBuffer
+    let _textView = _vimBufferData.TextView
     let _globalSettings = _vimTextBuffer.GlobalSettings
     let _factory = VimRegexFactory(_globalSettings)
     let _editorOperations = _operations.EditorOperations
@@ -62,9 +63,15 @@ type internal SubstituteConfirmMode
             _editorOperations.PageDown(false)
             ModeSwitch.NoSwitch)
 
+    member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
+
+    member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
+
+    member x.CaretLine = TextViewUtil.GetCaretLine _textView
+
     member this.CurrentMatch = 
         match _confirmData with
-        | Some(data) -> Some data.CurrentMatch
+        | Some data -> Some data.CurrentMatch
         | None -> None
 
     member this.ConfirmData 
@@ -85,7 +92,9 @@ type internal SubstituteConfirmMode
     member this.CurrentSubstitute =
         match _confirmData with
         | None -> None
-        | Some data -> data.Regex.ReplaceOne (data.CurrentMatch.GetText()) (data.SubstituteText) _globalSettings.Magic |> Some
+        | Some data -> 
+            let replaceData = _operations.GetReplaceData this.CaretPoint
+            data.Regex.Replace (data.CurrentMatch.GetText()) (data.SubstituteText) replaceData |> Some
 
     member this.EndOperation () = 
         this.ConfirmData <- None
@@ -128,7 +137,8 @@ type internal SubstituteConfirmMode
                 doSearch line.EndIncludingLineBreak
 
     member this.ReplaceCurrent (data:ConfirmData) =
-        let text = data.Regex.Replace (data.CurrentMatch.GetText()) data.SubstituteText _globalSettings.Magic 1 
+        let replaceData = _operations.GetReplaceData this.CaretPoint
+        let text = data.Regex.Replace (data.CurrentMatch.GetText()) data.SubstituteText replaceData
         _textBuffer.Replace(data.CurrentMatch.Span, text) |> ignore
 
     /// Substitute the current match and move to the next
@@ -155,14 +165,15 @@ type internal SubstituteConfirmMode
             let first = SnapshotSpan(data.CurrentMatch.Start, line.EndIncludingLineBreak)
             Seq.append (Seq.singleton first) rest
 
+        let replaceData = _operations.GetReplaceData this.CaretPoint
         let doReplace = 
             if data.IsReplaceAll then data.Regex.ReplaceAll
-            else data.Regex.ReplaceOne
+            else data.Regex.Replace
 
         let edit = _textBuffer.CreateEdit()
         lineSpans 
         |> Seq.iter (fun span ->
-            let text = doReplace (span.GetText()) data.SubstituteText _globalSettings.Magic
+            let text = doReplace (span.GetText()) data.SubstituteText replaceData
             edit.Replace(span.Span, text) |> ignore)
         if edit.HasEffectiveChanges then edit.Apply() |> ignore else edit.Cancel()
 

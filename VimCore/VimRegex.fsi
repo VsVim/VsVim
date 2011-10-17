@@ -40,6 +40,20 @@ type CaseSpecifier =
     /// Pattern contained the \C modifier
     | OrdinalCase 
 
+/// Data for a replace operation
+type ReplaceData = {
+
+    /// When the '\r' replace sequence is used what should the replace string be.  This
+    /// is usually contextual to the point in the IVimBuffer
+    NewLine : string
+
+    /// Whether or not magic should apply
+    Magic : bool
+
+    /// The 'count' times it should be replaced.  Not considered in a replace all
+    Count : int
+}
+
 /// Represents a Vim style regular expression 
 [<Sealed>]
 type VimRegex =
@@ -61,14 +75,11 @@ type VimRegex =
 
     /// Matches the regex against the specified input and does the replacement 
     /// as specified "count" times
-    member Replace : input:string -> replacement:string -> magic : bool -> count:int -> string 
-
-    /// Replace a single occurance inside the given string
-    member ReplaceOne : input:string -> replacement:string -> magic : bool -> string 
+    member Replace : input : string -> replacement : string -> replaceData : ReplaceData -> string 
 
     /// Matches the regex against the specified input and does the replacement 
     /// as specified.  If there is currently no regex then None will be returned
-    member ReplaceAll : input:string -> replacement:string -> magic : bool -> string 
+    member ReplaceAll : input:string -> replacement:string -> replaceData : ReplaceData -> string 
 
 [<Sealed>]
 type VimRegexFactory = 

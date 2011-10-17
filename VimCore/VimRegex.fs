@@ -19,10 +19,25 @@ type CaseSpecifier =
     | IgnoreCase
     | OrdinalCase 
 
+/// Data for a replace operation
+type ReplaceData = {
+
+    /// When the '\r' replace sequence is used what should the replace string be.  This
+    /// is usually contextual to the point in the IVimBuffer
+    NewLine : string
+
+    /// Whether or not magic should apply
+    Magic : bool
+
+    /// The 'count' times it should be replaced.  Not considered in a replace all
+    Count : int
+}
+
+
 module VimRegexUtils = 
     let Escape c = c |> StringUtil.ofChar |> Regex.Escape 
 
-    let ConvertReplacementString (replacement : string) magic = 
+    let ConvertReplacementString (replacement : string) (replaceData : ReplaceData) = 
         let builder = StringBuilder()
         let appendChar (c:char) = builder.Append(c) |> ignore
         let appendString (str:string) = builder.Append(str) |> ignore
@@ -33,10 +48,14 @@ module VimRegexUtils =
                 if CharUtil.IsDigit c then 
                     appendChar '$'
                     appendChar c
-                elif c = '&' && not magic then
+                elif c = '&' && not replaceData.Magic then
                     appendString "$0"
                 elif c = '\\' then
                     appendChar '\\'
+                elif c = 'r' then
+                    appendString replaceData.NewLine
+                elif c = 't' then
+                    appendChar '\t'
                 else 
                     Escape c |> appendString
                 inner (index + 2)
@@ -45,7 +64,7 @@ module VimRegexUtils =
             | None -> 
                 builder.ToString()
             | Some '&' -> 
-                if magic then
+                if replaceData.Magic then
                     // This is a special character in the replacement string and should 
                     // match the entire matched string
                     appendString "$0"
@@ -106,14 +125,12 @@ type VimRegex
     member x.RegexPattern = _regexPattern
     member x.Regex = _regex
     member x.IsMatch input = _regex.IsMatch(input)
-    member x.ReplaceAll (input : string) (replacement : string) magic = 
-        let replacement = VimRegexUtils.ConvertReplacementString replacement magic
-        _regex.Replace(input, replacement) 
-    member x.Replace (input:string) (replacement:string) magic (count:int) = 
-        let replacement = VimRegexUtils.ConvertReplacementString replacement magic
-        _regex.Replace(input, replacement, count) 
-    member x.ReplaceOne (input:string) (replacement:string) magic =
-        x.Replace input replacement magic 1
+    member x.ReplaceAll (input : string) (replacement : string) (replaceData : ReplaceData) = 
+        let replacement = VimRegexUtils.ConvertReplacementString replacement replaceData
+        _regex.Replace(input, replacement)
+    member x.Replace (input:string) (replacement:string) (replaceData : ReplaceData) =
+        let replacement = VimRegexUtils.ConvertReplacementString replacement replaceData
+        _regex.Replace(input, replacement, replaceData.Count) 
 
 [<RequireQualifiedAccess>]
 type MagicKind = 

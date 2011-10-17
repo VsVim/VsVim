@@ -125,7 +125,7 @@ type internal CommandRunner
     ///
     /// This makes the function feel a bit hacky but sadly it's just a special case in Vim which requires a 
     /// corresponding special case here
-    member x.BindMotion (commandBinding : CommandBinding) commandData motionFunc keyInput =
+    member x.BindMotion (commandBinding : CommandBinding) (commandData : CommandData) motionFunc keyInput =
 
         // Convert the motion information into a BindResult.Complete value
         let convertMotion motion motionCount =
@@ -182,7 +182,7 @@ type internal CommandRunner
                 let short = command.KeyInputSet.KeyInputs |> Seq.ofList |> Seq.take count
                 SeqUtil.contentsEqual commandInputsSeq short)
 
-        let commandData = { Count = count; RegisterName = registerName }
+        let commandData = { RegisterName = registerName; Count = count }
         let register = commandData.GetRegister _registerMap
 
         let rec inner (commandName : KeyInputSet) previousCommandName currentInput = 
