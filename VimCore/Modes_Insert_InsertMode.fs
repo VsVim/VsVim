@@ -179,7 +179,12 @@ type internal InsertMode
             let previousPoint = SnapshotPointUtil.SubtractOne x.CaretPoint
             _wordUtil.GetFullWordSpan WordKind.NormalWord previousPoint
         else
-            match _wordUtil.GetFullWordSpan WordKind.NormalWord x.CaretPoint with
+            // Calculate the word span based on the information before the caret. 
+            let point = 
+                SnapshotPointUtil.TryGetPreviousPointOnLine x.CaretPoint 1
+                |> OptionUtil.getOrDefault x.CaretPoint
+
+            match _wordUtil.GetFullWordSpan WordKind.NormalWord point with
             | None -> None
             | Some span -> SnapshotSpan(span.Start, x.CaretPoint) |> Some
 
@@ -251,9 +256,12 @@ type internal InsertMode
         let filterFunc =
 
             // Is this actually a word we're interest in.  Need to clear out new lines, 
-            // comment characters, etc ... 
+            // comment characters, one character items, etc ... 
             let isWord text =
                 if StringUtil.isNullOrEmpty text then 
+                    false
+                elif text.Length = 1 then
+                    // One character items don't get included in the list
                     false
                 else
                     TextUtil.IsWordChar WordKind.NormalWord (text.[0])
