@@ -6,6 +6,7 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Outlining
+open Microsoft.VisualStudio.Text.Formatting
 open RegexPatternUtil
 
 [<RequireQualifiedAccess>]
@@ -2043,71 +2044,62 @@ type internal CommandUtil
     /// Scroll the window up / down a specified number of lines.  If a count is provided
     /// that will always be used.  Else we may choose one or the value of the 'scroll' 
     /// option
-    member x.ScrollLines direction useScrollOption countOption =
+    member x.ScrollLines scrollDirection useScrollOption countOption =
 
-        let visualLine = 
+        // Scrolling lines needs to scroll against the visual buffer vs the edit buffer so 
+        // that we treated folded lines as a single line.  Normally this would mean we need
+        // to jump into the Visual Snapshot.  Here we don't though because we end using
+        // IViewScroller to scroll and it does it's count based on Visual Lines vs. real lines
+        // in the edit buffer
 
-            // Scrolling lines needs to operate on the Visual Snapshot.  Do the calculation
-            // on the Visual Snapshot and then map back down to the edit snapshot
-            let x = TextViewUtil.GetVisualSnapshotDataOrEdit _textView
-    
-            // Get the number of lines that we should scroll by.  
-            let count = 
-                match countOption with
-                | Some count -> 
-                    // When a count is provided then we always use that count.  If this is a
-                    // scroll option version though we do need to update the scroll option to
-                    // this value
-                    if useScrollOption then
-                        _windowSettings.Scroll <- count
-                    count
-                | None ->
-                    if useScrollOption then
-                        _windowSettings.Scroll
-                    else
-                        1
-    
-            let count = if count <= 0 then 1 else count
-
-            let lineNumber =
-                match direction with
-                | ScrollDirection.Up -> 
-                    if x.CaretLine.LineNumber = 0 then 
-                        _operations.Beep()
-                        None
-                    elif x.CaretLine.LineNumber < count then
-                        0 |> Some
-                    else
-                        x.CaretLine.LineNumber - count |> Some
-                | ScrollDirection.Down ->
-                    if x.CaretLine.LineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot then
-                        _operations.Beep()
-                        None
-                    else
-                        x.CaretLine.LineNumber + count |> Some
-                | _ -> 
-                    None
-
-            lineNumber |> Option.map (fun number -> SnapshotUtil.GetLineOrLast x.CurrentSnapshot number)
-
-        match visualLine with
-        | None ->
-            ()
-        | Some visualLine ->
-            // Map the ITextSnapshotLine from the Visual to Edit snapshot
-            match BufferGraphUtil.MapPointDownToSnapshot _bufferGraph visualLine.Start PointTrackingMode.Positive x.CurrentSnapshot PositionAffinity.Predecessor with
+        // Get the number of lines that we should scroll by.  
+        let count = 
+            match countOption with
+            | Some count -> 
+                // When a count is provided then we always use that count.  If this is a
+                // scroll option version though we do need to update the scroll option to
+                // this value
+                if useScrollOption then
+                    _windowSettings.Scroll <- count
+                count
             | None ->
-                ()
-            | Some point ->
-                let line = SnapshotPointUtil.GetContainingLine point
-                let point = 
-                    let column = SnapshotPointUtil.GetColumn x.CaretPoint
-                    if column < line.Length then
-                        line.Start.Add(column)
-                    else
-                        line.Start
-                TextViewUtil.MoveCaretToPoint _textView point
-                _operations.EnsureCaretOnScreen()
+                if useScrollOption then
+                    _windowSettings.Scroll
+                else
+                    1
+
+        let count = if count <= 0 then 1 else count
+
+        // After scrolling we need to ensure the caret is on screen.  Essentially if the caret isn't
+        // visible then put at it the top / bottom line depending on whether we are scrolling up
+        // or down
+        let updateCaret (getLineFunc : ITextViewLineCollection -> ITextViewLine) = 
+            try 
+                let containingLine = _textView.Caret.ContainingTextViewLine
+                if containingLine.VisibilityState <> VisibilityState.FullyVisible then
+                    let textViewLine = getLineFunc _textView.TextViewLines
+                    let snapshotLine = SnapshotPointUtil.GetContainingLine textViewLine.Start
+                    TextViewUtil.MoveCaretToPoint _textView snapshotLine.Start
+
+            with 
+                // Asking for ITextViewLine information can fail if we're in a layout.  
+                | _ -> ()
+
+        match scrollDirection with
+        | ScrollDirection.Up -> 
+            if x.CaretLine.LineNumber = 0 then 
+                _operations.Beep()
+            else
+                _textView.ViewScroller.ScrollViewportVerticallyByLines(scrollDirection, count)
+                updateCaret (fun textViewLines -> textViewLines.LastVisibleLine)
+        | ScrollDirection.Down ->
+            if x.CaretLine.LineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot then
+                _operations.Beep()
+            else
+                _textView.ViewScroller.ScrollViewportVerticallyByLines(scrollDirection, count)
+                updateCaret (fun textViewLines -> textViewLines.FirstVisibleLine)
+        | _ -> 
+            ()
 
         CommandResult.Completed ModeSwitch.NoSwitch
 

@@ -159,7 +159,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Create an ITextView instance with the given lines
         /// </summary>
-        protected ITextView CreateTextView(params string[] lines)
+        protected IWpfTextView CreateTextView(params string[] lines)
         {
             var textBuffer = CreateTextBuffer(lines);
             return _textEditorFactoryService.CreateTextView(textBuffer);
