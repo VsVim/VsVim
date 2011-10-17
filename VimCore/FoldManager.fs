@@ -233,7 +233,7 @@ type internal FoldTagger(_foldData : IFoldData) as this =
         member x.TagsChanged = _tagsChanged.Publish
 
 [<Export(typeof<ITaggerProvider>)>]
-[<ContentType(Constants.ContentType)>]
+[<ContentType(Constants.AnyContentType)>]
 [<TextViewRole(PredefinedTextViewRoles.Document)>]
 [<TagType(typeof<OutliningRegionTag>)>]
 type FoldTaggerProvider

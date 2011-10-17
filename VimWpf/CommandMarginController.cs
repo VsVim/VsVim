@@ -82,12 +82,26 @@ namespace Vim.UI.Wpf
 
         private void UpdateForSwitchMode(IMode mode)
         {
+            /// Calculate the argument string if we are in one time command mode
+            string oneTimeArgument = null;
+            if (_buffer.InOneTimeCommand.IsSome())
+            {
+                if (_buffer.InOneTimeCommand.Is(ModeKind.Insert))
+                {
+                    oneTimeArgument = "insert";
+                }
+                else if (_buffer.InOneTimeCommand.Is(ModeKind.Replace))
+                {
+                    oneTimeArgument = "replace";
+                }
+            }
+
             switch (mode.ModeKind)
             {
                 case ModeKind.Normal:
-                    _margin.StatusLine = _buffer.NormalMode.OneTimeMode.Is(ModeKind.Insert)
-                        ? Resources.PendingInsertBanner
-                        : String.Empty;
+                    _margin.StatusLine = String.IsNullOrEmpty(oneTimeArgument)
+                        ? String.Empty
+                        : String.Format(Resources.NormalOneTimeCommandBanner, oneTimeArgument);
                     break;
                 case ModeKind.Command:
                     _margin.StatusLine = ":" + _buffer.CommandMode.Command;
@@ -99,13 +113,19 @@ namespace Vim.UI.Wpf
                     _margin.StatusLine = Resources.ReplaceBanner;
                     break;
                 case ModeKind.VisualBlock:
-                    _margin.StatusLine = Resources.VisualBlockBanner;
+                    _margin.StatusLine = String.IsNullOrEmpty(oneTimeArgument)
+                        ? Resources.VisualBlockBanner
+                        : String.Format(Resources.VisualBlockOneTimeCommandBanner, oneTimeArgument);
                     break;
                 case ModeKind.VisualCharacter:
-                    _margin.StatusLine = Resources.VisualCharacterBanner;
+                    _margin.StatusLine = String.IsNullOrEmpty(oneTimeArgument)
+                        ? Resources.VisualCharacterBanner
+                        : String.Format(Resources.VisualCharacterOneTimeCommandBanner, oneTimeArgument);
                     break;
                 case ModeKind.VisualLine:
-                    _margin.StatusLine = Resources.VisualLineBanner;
+                    _margin.StatusLine = String.IsNullOrEmpty(oneTimeArgument)
+                        ? Resources.VisualLineBanner
+                        : String.Format(Resources.VisualLineOneTimeCommandBanner, oneTimeArgument);
                     break;
                 case ModeKind.ExternalEdit:
                     _margin.StatusLine = Resources.ExternalEditBanner;

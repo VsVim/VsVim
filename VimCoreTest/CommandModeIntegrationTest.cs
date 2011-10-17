@@ -188,6 +188,30 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Convert a set of spaces into tabs with the '\t' replacement
+        /// </summary>
+        [Test]
+        public void Substitute_TabsForSpaces()
+        {
+            Create("    ");
+            RunCommand(@"s/  /\t");
+            Assert.AreEqual("\t  ", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// Convert spaces into new lines with the '\r' replacement
+        /// </summary>
+        [Test]
+        public void Substitute_SpacesToNewLine()
+        {
+            Create("dog chases cat");
+            RunCommand(@"s/ /\r/g");
+            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("chases", _textView.GetLine(1).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(2).GetText());
+        }
+
+        /// <summary>
         /// Using the search forward feature which hits a match.  Search should start after the range
         /// so the first match will be after it 
         /// </summary>

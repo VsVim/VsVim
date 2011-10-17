@@ -78,7 +78,7 @@ type internal CommandMode
         | BindResult.Complete result ->
             match result with 
             | RunResult.Completed -> 
-                ProcessResult.OfModeKind ModeKind.Normal
+                ProcessResult.Handled ModeSwitch.SwitchPreviousMode
             | RunResult.SubstituteConfirm (span, range, data) -> 
                 let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.SubstituteConfirm, ModeArgument.Substitute (span, range, data))
                 ProcessResult.Handled switch
@@ -88,7 +88,7 @@ type internal CommandMode
             ProcessResult.OfModeKind ModeKind.Normal
         | BindResult.NeedMoreInput bindData ->
             _bindData <- Some bindData
-            ProcessResult.Handled ModeSwitch.NoSwitch
+            ProcessResult.HandledNeedMoreInput
 
     interface ICommandMode with
         member x.VimTextBuffer = _buffer.VimTextBuffer
@@ -101,7 +101,6 @@ type internal CommandMode
             _command <- 
                 match arg with
                 | ModeArgument.None -> StringUtil.empty
-                | ModeArgument.OneTimeCommand _ -> StringUtil.empty
                 | ModeArgument.FromVisual -> FromVisualModeString
                 | ModeArgument.Substitute _ -> StringUtil.empty
                 | ModeArgument.InitialVisualSelection _ -> StringUtil.empty

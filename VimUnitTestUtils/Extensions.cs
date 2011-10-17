@@ -9,6 +9,7 @@ using NUnit.Framework;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Vim.Modes.Command;
+using System.Windows;
 
 namespace Vim.UnitTest
 {
@@ -310,6 +311,11 @@ namespace Vim.UnitTest
         public static ProcessResult.Handled AsHandled(this ProcessResult res)
         {
             return (ProcessResult.Handled)res;
+        }
+
+        public static bool IsSwitchModeOneTimeCommand(this ProcessResult result)
+        {
+            return result.IsHandled && result.AsHandled().Item.IsSwitchModeOneTimeCommand;
         }
 
         public static bool IsSwitchMode(this ProcessResult result, ModeKind kind)
@@ -797,6 +803,24 @@ namespace Vim.UnitTest
         public static NonEmptyCollection<SnapshotSpan> GetBlock(this ITextView textView, int column, int length, int startLine = 0, int lineCount = 1)
         {
             return GetBlock(textView.TextBuffer, column, length, startLine, lineCount);
+        }
+
+        #endregion
+
+        #region IWpfTextView
+
+        /// <summary>
+        /// Make only a single line visible in the IWpfTextView.  This is really useful when testing
+        /// actions like scrolling
+        /// </summary>
+        /// <param name="textView"></param>
+        public static void MakeOneLineVisible(this IWpfTextView wpfTextView)
+        {
+            var oldSize = wpfTextView.VisualElement.RenderSize;
+            var size = new Size(
+                oldSize.Width,
+                wpfTextView.TextViewLines.FirstVisibleLine.Height);
+            wpfTextView.VisualElement.RenderSize = size;
         }
 
         #endregion

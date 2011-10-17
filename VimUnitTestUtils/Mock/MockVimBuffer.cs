@@ -32,6 +32,7 @@ namespace Vim.UnitTest.Mock
         public PropertyCollection PropertiesImpl;
         public IVimData VimDataImpl;
         public IVim VimImpl;
+        public FSharpOption<ModeKind> InOneTimeCommandImpl;
 
         public PropertyCollection Properties
         {
@@ -382,7 +383,6 @@ namespace Vim.UnitTest.Mock
             get { throw new NotImplementedException(); }
         }
 
-
         public FSharpOption<string> CurrentDirectory
         {
             get
@@ -393,6 +393,11 @@ namespace Vim.UnitTest.Mock
             {
                 throw new NotImplementedException();
             }
+        }
+
+        public FSharpOption<ModeKind> InOneTimeCommand
+        {
+            get { return InOneTimeCommandImpl; }
         }
     }
 }

@@ -9,11 +9,11 @@ open Microsoft.VisualStudio.Utilities
 open System.ComponentModel.Composition
 
 /// Tagger for incremental searches
-type IncrementalSearchTagger (_buffer : IVimBuffer) as this =
+type IncrementalSearchTagger (_vimBuffer : IVimBuffer) as this =
 
-    let _search = _buffer.IncrementalSearch
-    let _textBuffer = _buffer.TextBuffer
-    let _globalSettings = _buffer.GlobalSettings
+    let _search = _vimBuffer.IncrementalSearch
+    let _textBuffer = _vimBuffer.TextBuffer
+    let _globalSettings = _vimBuffer.GlobalSettings
     let _eventHandlers = DisposableBag()
     let _tagsChanged = new Event<System.EventHandler<SnapshotSpanEventArgs>, SnapshotSpanEventArgs>()
     let mutable _searchSpan : ITrackingSpan option = None
@@ -58,7 +58,7 @@ type IncrementalSearchTagger (_buffer : IVimBuffer) as this =
 
         // We need to pay attention to the current IVimBuffer mode.  If it's any visual mode then we don't want
         // to highlight any spans.
-        _buffer.SwitchedMode
+        _vimBuffer.SwitchedMode
         |> Observable.subscribe (fun _ -> raiseAllChanged())
         |> _eventHandlers.Add
 
@@ -73,7 +73,7 @@ type IncrementalSearchTagger (_buffer : IVimBuffer) as this =
 
     member x.GetTags (col : NormalizedSnapshotSpanCollection) =
 
-        if col.Count = 0 || VisualKind.IsAnyVisual _buffer.ModeKind || not _globalSettings.IncrementalSearch then 
+        if col.Count = 0 || VisualKind.IsAnyVisual _vimBuffer.ModeKind || not _globalSettings.IncrementalSearch then 
             // If any of these are true then we shouldn't be displaying any tags
             Seq.empty
         else
@@ -98,7 +98,7 @@ type IncrementalSearchTagger (_buffer : IVimBuffer) as this =
         member x.Dispose() = _eventHandlers.DisposeAll()
 
 [<Export(typeof<IViewTaggerProvider>)>]
-[<ContentType(Constants.ContentType)>]
+[<ContentType(Constants.AnyContentType)>]
 [<TextViewRole(PredefinedTextViewRoles.Document)>]
 [<TagType(typeof<TextMarkerTag>)>]
 type internal IncrementalSearchTaggerProvider
@@ -112,8 +112,8 @@ type internal IncrementalSearchTaggerProvider
                 null
             | true, None ->
                 null
-            | true, Some buffer ->
-                let tagger = new IncrementalSearchTagger(buffer)
+            | true, Some vimBuffer ->
+                let tagger = new IncrementalSearchTagger(vimBuffer)
                 tagger :> obj :?> ITagger<'T>
 
 /// Tagger for completed incremental searches
@@ -223,7 +223,7 @@ type HighlightIncrementalSearchTagger
         member x.Dispose() = _eventHandlers.DisposeAll()
 
 [<Export(typeof<ITaggerProvider>)>]
-[<ContentType(Constants.ContentType)>]
+[<ContentType(Constants.AnyContentType)>]
 [<TextViewRole(PredefinedTextViewRoles.Document)>]
 [<TagType(typeof<TextMarkerTag>)>]
 type HighlightIncrementalSearchTaggerProvider
@@ -281,7 +281,7 @@ type SubstituteConfirmTagger
         member x.Dispose() = _eventHandlers.DisposeAll()
 
 [<Export(typeof<IViewTaggerProvider>)>]
-[<ContentType(Constants.ContentType)>]
+[<ContentType(Constants.AnyContentType)>]
 [<TextViewRole(PredefinedTextViewRoles.Document)>]
 [<TagType(typeof<TextMarkerTag>)>]
 type SubstituteConfirmTaggerProvider

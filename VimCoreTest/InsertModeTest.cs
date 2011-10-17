@@ -17,7 +17,7 @@ namespace VimCore.UnitTest
     /// Tests to verify the operation of Insert / Replace Mode
     /// </summary>
     [TestFixture]
-    public sealed class InsertModeTest
+    public sealed class InsertModeTest : VimTestBase
     {
         private MockRepository _factory;
         private Vim.Modes.Insert.InsertMode _modeRaw;
@@ -27,8 +27,6 @@ namespace VimCore.UnitTest
         private CommandRunData _lastCommandRan;
         private Mock<ICommonOperations> _operations;
         private Mock<IDisplayWindowBroker> _broker;
-        private Mock<IVimGlobalSettings> _globalSettings;
-        private Mock<IVimLocalSettings> _localSettings;
         private Mock<IEditorOptions> _editorOptions;
         private Mock<IUndoRedoOperations> _undoRedoOperations;
         private Mock<ITextChangeTracker> _textChangeTracker;
@@ -61,24 +59,22 @@ namespace VimCore.UnitTest
         {
             _factory = new MockRepository(MockBehavior.Strict);
             _factory.DefaultValue = DefaultValue.Mock;
-            _textView = EditorUtil.CreateTextView(lines);
+            _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
             _vim = _factory.Create<IVim>(MockBehavior.Loose);
             _editorOptions = _factory.Create<IEditorOptions>(MockBehavior.Loose);
-            _globalSettings = _factory.Create<IVimGlobalSettings>();
-            _globalSettings.SetupGet(x => x.IgnoreCase).Returns(true);
-            _localSettings = _factory.Create<IVimLocalSettings>();
-            _localSettings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
             _textChangeTracker = _factory.Create<ITextChangeTracker>(MockBehavior.Loose);
             _textChangeTracker.SetupGet(x => x.CurrentChange).Returns(FSharpOption<TextChange>.None);
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
             _wordCompletionSessionFactoryService = _factory.Create<IWordCompletionSessionFactoryService>();
 
+            var localSettings = new LocalSettings(Vim.GlobalSettings);
             _vimBuffer = MockObjectFactory.CreateVimBuffer(
                 _textView,
-                localSettings: _localSettings.Object,
+                localSettings: localSettings,
                 vim: _vim.Object,
                 factory: _factory);
+            _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
             _operations = _factory.Create<ICommonOperations>();
             _operations.SetupGet(x => x.EditorOperations).Returns(EditorUtil.FactoryService.EditorOperationsFactory.GetEditorOperations(_textView));
             _broker = _factory.Create<IDisplayWindowBroker>();
@@ -235,6 +231,33 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// When the caret is on a closing paren and after a word the completion should be for the
+        /// word and not for the paren
+        /// </summary>
+        [Test]
+        public void GetWordCompletionSpan_OnParen()
+        {
+            Create("m(arg)");
+            _textView.MoveCaretTo(5);
+            Assert.AreEqual(')', _textView.GetCaretPoint().GetChar());
+            Assert.AreEqual("arg", _modeRaw.GetWordCompletionSpan().Value.GetText());
+        }
+
+        /// <summary>
+        /// This is a sanity check to make sure we don't try anything like jumping backwards.  The 
+        /// test should be for the character immediately preceding the caret position.  Here it's 
+        /// a blank and there should be nothing returned
+        /// </summary>
+        [Test]
+        public void GetWordCompletionSpan_OnParenWithBlankBefore()
+        {
+            Create("m(arg )");
+            _textView.MoveCaretTo(6);
+            Assert.AreEqual(')', _textView.GetCaretPoint().GetChar());
+            Assert.IsTrue(_modeRaw.GetWordCompletionSpan().IsNone());
+        }
+
+        /// <summary>
         /// When provided an empty SnapshotSpan the words should be returned in order from the given
         /// point
         /// </summary>
@@ -285,6 +308,19 @@ namespace VimCore.UnitTest
             var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.GetLine(1).Start, 1));
             CollectionAssert.AreEquivalent(
                 new[] { "cat", "caturday", "crook" },
+                words.ToList());
+        }
+
+        /// <summary>
+        /// Don't include any one length values in the return because Vim doesn't include them
+        /// </summary>
+        [Test]
+        public void GetWordCompletions_ExcludeOneLengthValues()
+        {
+            Create("c cat dog // tree && copter a b c");
+            var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 0, 1));
+            CollectionAssert.AreEquivalent(
+                new[] { "cat", "copter" },
                 words.ToList());
         }
 
@@ -439,11 +475,14 @@ namespace VimCore.UnitTest
             _factory.Verify();
         }
 
+        /// <summary>
+        /// The CTRL-O command should bind to a one time command for normal mode
+        /// </summary>
         [Test]
-        public void NormalModeOneTimeCommand1()
+        public void OneTimeCommand()
         {
             var res = _mode.Process(KeyNotationUtil.StringToKeyInput("<C-o>"));
-            Assert.IsTrue(res.IsSwitchModeWithArgument(ModeKind.Normal, ModeArgument.NewOneTimeCommand(ModeKind.Insert)));
+            Assert.IsTrue(res.IsSwitchModeOneTimeCommand());
         }
 
         [Test]

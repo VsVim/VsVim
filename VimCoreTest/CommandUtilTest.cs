@@ -25,7 +25,7 @@ namespace VimCore.UnitTest
         private IMotionUtil _motionUtil;
         private IRegisterMap _registerMap;
         private IVimData _vimData;
-        private ITextView _textView;
+        private IWpfTextView _textView;
         private ITextBuffer _textBuffer;
         private IVimTextBuffer _vimTextBuffer;
         private IJumpList _jumpList;
@@ -261,6 +261,7 @@ namespace VimCore.UnitTest
         public void ScrollLines_Down_ToBottom()
         {
             Create("a", "b", "c", "d");
+            _textView.MakeOneLineVisible();
             for (var i = 0; i < 5; i++)
             {
                 _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption<int>.None);
@@ -275,6 +276,7 @@ namespace VimCore.UnitTest
         public void ScrollLines_Down_UseScrollOption()
         {
             Create("a", "b", "c", "d", "e");
+            _textView.MakeOneLineVisible();
             _windowSettings.Scroll = 3;
             _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption<int>.None);
             Assert.AreEqual(3, _textView.GetCaretLine().LineNumber);
@@ -288,6 +290,7 @@ namespace VimCore.UnitTest
         public void ScrollLines_Down_ScrollOptionWithCount()
         {
             Create("a", "b", "c", "d", "e");
+            _textView.MakeOneLineVisible();
             _windowSettings.Scroll = 3;
             _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption.Create(2));
             Assert.AreEqual(2, _textView.GetCaretLine().LineNumber);
@@ -302,6 +305,7 @@ namespace VimCore.UnitTest
         public void ScrollLines_Down_NoScrollOrCount()
         {
             Create("a", "b", "c", "d", "e");
+            _textView.MakeOneLineVisible();
             _windowSettings.Scroll = 3;
             _commandUtil.ScrollLines(ScrollDirection.Down, false, FSharpOption<int>.None);
             Assert.AreEqual(1, _textView.GetCaretLine().LineNumber);
@@ -315,6 +319,7 @@ namespace VimCore.UnitTest
         public void ScrollLines_Down_OverFold()
         {
             Create("a", "b", "c", "d", "e");
+            _textView.MakeOneLineVisible();
             _foldManager.CreateFold(_textBuffer.GetLineRange(1, 2));
             _commandUtil.ScrollLines(ScrollDirection.Down, false, FSharpOption.Create(2));
             Assert.AreEqual(3, _textView.GetCaretLine().LineNumber);

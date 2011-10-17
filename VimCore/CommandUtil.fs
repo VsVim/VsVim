@@ -6,6 +6,7 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Outlining
+open Microsoft.VisualStudio.Text.Formatting
 open RegexPatternUtil
 
 [<RequireQualifiedAccess>]
@@ -481,6 +482,12 @@ type internal CommandUtil
     /// Close 'count' folds under the caret
     member x.CloseFoldUnderCaret count =
         _foldManager.CloseFold x.CaretPoint count
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Close all of the folds in the buffer
+    member x.CloseAllFolds() = 
+        let span = SnapshotUtil.GetExtent x.CurrentSnapshot
+        _foldManager.CloseAllFolds span
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Close all folds under the caret
@@ -1309,6 +1316,12 @@ type internal CommandUtil
         _foldManager.OpenFold x.CaretPoint count
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Open all of the folds in the buffer
+    member x.OpenAllFolds() =
+        let span = SnapshotUtil.GetExtent x.CurrentSnapshot
+        _foldManager.OpenAllFolds span
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Open all of the folds under the caret 
     member x.OpenAllFoldsUnderCaret () =
         let span = SnapshotSpan(x.CaretPoint, 1)
@@ -1606,7 +1619,6 @@ type internal CommandUtil
                     | ModeArgument.InsertWithCount _ -> ()
                     | ModeArgument.InsertWithCountAndNewLine _ -> ()
                     | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
-                    | ModeArgument.OneTimeCommand _ -> ()
                     | ModeArgument.Substitute _ -> ()
                 | _ -> ()
     
@@ -1860,6 +1872,7 @@ type internal CommandUtil
                                 // in an error then we should stop processing the macro
                                 match buffer.Process keyInput with
                                 | ProcessResult.Handled _ -> inner tail
+                                | ProcessResult.HandledNeedMoreInput -> inner tail
                                 | ProcessResult.NotHandled -> false
                                 | ProcessResult.Error -> false
 
@@ -1901,13 +1914,14 @@ type internal CommandUtil
         | NormalCommand.ChangeCaseMotion (kind, motion) -> x.RunWithMotion motion (x.ChangeCaseMotion kind)
         | NormalCommand.ChangeLines -> x.ChangeLines count register
         | NormalCommand.ChangeTillEndOfLine -> x.ChangeTillEndOfLine count register
-        | NormalCommand.CloseAllFoldsUnderCaret -> x.CloseAllFoldsUnderCaret ()
+        | NormalCommand.CloseAllFolds -> x.CloseAllFolds()
+        | NormalCommand.CloseAllFoldsUnderCaret -> x.CloseAllFoldsUnderCaret()
         | NormalCommand.CloseFoldUnderCaret -> x.CloseFoldUnderCaret count
-        | NormalCommand.DeleteAllFoldsInBuffer -> x.DeleteAllFoldsInBuffer ()
-        | NormalCommand.DeleteAllFoldsUnderCaret -> x.DeleteAllFoldsUnderCaret ()
+        | NormalCommand.DeleteAllFoldsInBuffer -> x.DeleteAllFoldsInBuffer()
+        | NormalCommand.DeleteAllFoldsUnderCaret -> x.DeleteAllFoldsUnderCaret()
         | NormalCommand.DeleteCharacterAtCaret -> x.DeleteCharacterAtCaret count register
         | NormalCommand.DeleteCharacterBeforeCaret -> x.DeleteCharacterBeforeCaret count register
-        | NormalCommand.DeleteFoldUnderCaret -> x.DeleteFoldUnderCaret ()
+        | NormalCommand.DeleteFoldUnderCaret -> x.DeleteFoldUnderCaret()
         | NormalCommand.DeleteLines -> x.DeleteLines count register
         | NormalCommand.DeleteMotion motion -> x.RunWithMotion motion (x.DeleteMotion register)
         | NormalCommand.DeleteTillEndOfLine -> x.DeleteTillEndOfLine count register
@@ -1915,10 +1929,10 @@ type internal CommandUtil
         | NormalCommand.FoldMotion motion -> x.RunWithMotion motion x.FoldMotion
         | NormalCommand.FormatLines -> x.FormatLines count
         | NormalCommand.FormatMotion motion -> x.RunWithMotion motion x.FormatMotion 
-        | NormalCommand.GoToDefinition -> x.GoToDefinition ()
+        | NormalCommand.GoToDefinition -> x.GoToDefinition()
         | NormalCommand.GoToFileUnderCaret useNewWindow -> x.GoToFileUnderCaret useNewWindow
-        | NormalCommand.GoToGlobalDeclaration -> x.GoToGlobalDeclaration ()
-        | NormalCommand.GoToLocalDeclaration -> x.GoToLocalDeclaration ()
+        | NormalCommand.GoToGlobalDeclaration -> x.GoToGlobalDeclaration()
+        | NormalCommand.GoToLocalDeclaration -> x.GoToLocalDeclaration()
         | NormalCommand.GoToNextTab path -> x.GoToNextTab path data.Count
         | NormalCommand.GoToView direction -> x.GoToView direction
         | NormalCommand.InsertAfterCaret -> x.InsertAfterCaret count
@@ -1933,7 +1947,8 @@ type internal CommandUtil
         | NormalCommand.JumpToOlderPosition -> x.JumpToOlderPosition count
         | NormalCommand.JumpToNewerPosition -> x.JumpToNewerPosition count
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
-        | NormalCommand.OpenAllFoldsUnderCaret -> x.OpenAllFoldsUnderCaret ()
+        | NormalCommand.OpenAllFolds -> x.OpenAllFolds()
+        | NormalCommand.OpenAllFoldsUnderCaret -> x.OpenAllFoldsUnderCaret()
         | NormalCommand.OpenFoldUnderCaret -> x.OpenFoldUnderCaret data.CountOrDefault
         | NormalCommand.Ping pingData -> x.Ping pingData data
         | NormalCommand.PutAfterCaret moveCaretAfterText -> x.PutAfterCaret register count moveCaretAfterText
@@ -1941,7 +1956,7 @@ type internal CommandUtil
         | NormalCommand.PutBeforeCaret moveCaretBeforeText -> x.PutBeforeCaret register count moveCaretBeforeText
         | NormalCommand.PutBeforeCaretWithIndent -> x.PutBeforeCaretWithIndent register count
         | NormalCommand.RecordMacroStart c -> x.RecordMacroStart c
-        | NormalCommand.RecordMacroStop -> x.RecordMacroStop ()
+        | NormalCommand.RecordMacroStop -> x.RecordMacroStop()
         | NormalCommand.Redo -> x.Redo count
         | NormalCommand.RepeatLastCommand -> x.RepeatLastCommand data
         | NormalCommand.RepeatLastSubstitute useSameFlags -> x.RepeatLastSubstitute useSameFlags
@@ -1965,7 +1980,7 @@ type internal CommandUtil
         | NormalCommand.SwitchMode (modeKind, modeArgument) -> x.SwitchMode modeKind modeArgument
         | NormalCommand.SwitchPreviousVisualMode -> x.SwitchPreviousVisualMode()
         | NormalCommand.Undo -> x.Undo count
-        | NormalCommand.WriteBufferAndQuit -> x.WriteBufferAndQuit ()
+        | NormalCommand.WriteBufferAndQuit -> x.WriteBufferAndQuit()
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion register)
         | NormalCommand.YankLines -> x.YankLines count register
 
@@ -2029,71 +2044,62 @@ type internal CommandUtil
     /// Scroll the window up / down a specified number of lines.  If a count is provided
     /// that will always be used.  Else we may choose one or the value of the 'scroll' 
     /// option
-    member x.ScrollLines direction useScrollOption countOption =
+    member x.ScrollLines scrollDirection useScrollOption countOption =
 
-        let visualLine = 
+        // Scrolling lines needs to scroll against the visual buffer vs the edit buffer so 
+        // that we treated folded lines as a single line.  Normally this would mean we need
+        // to jump into the Visual Snapshot.  Here we don't though because we end using
+        // IViewScroller to scroll and it does it's count based on Visual Lines vs. real lines
+        // in the edit buffer
 
-            // Scrolling lines needs to operate on the Visual Snapshot.  Do the calculation
-            // on the Visual Snapshot and then map back down to the edit snapshot
-            let x = TextViewUtil.GetVisualSnapshotDataOrEdit _textView
-    
-            // Get the number of lines that we should scroll by.  
-            let count = 
-                match countOption with
-                | Some count -> 
-                    // When a count is provided then we always use that count.  If this is a
-                    // scroll option version though we do need to update the scroll option to
-                    // this value
-                    if useScrollOption then
-                        _windowSettings.Scroll <- count
-                    count
-                | None ->
-                    if useScrollOption then
-                        _windowSettings.Scroll
-                    else
-                        1
-    
-            let count = if count <= 0 then 1 else count
-
-            let lineNumber =
-                match direction with
-                | ScrollDirection.Up -> 
-                    if x.CaretLine.LineNumber = 0 then 
-                        _operations.Beep()
-                        None
-                    elif x.CaretLine.LineNumber < count then
-                        0 |> Some
-                    else
-                        x.CaretLine.LineNumber - count |> Some
-                | ScrollDirection.Down ->
-                    if x.CaretLine.LineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot then
-                        _operations.Beep()
-                        None
-                    else
-                        x.CaretLine.LineNumber + count |> Some
-                | _ -> 
-                    None
-
-            lineNumber |> Option.map (fun number -> SnapshotUtil.GetLineOrLast x.CurrentSnapshot number)
-
-        match visualLine with
-        | None ->
-            ()
-        | Some visualLine ->
-            // Map the ITextSnapshotLine from the Visual to Edit snapshot
-            match BufferGraphUtil.MapPointDownToSnapshot _bufferGraph visualLine.Start PointTrackingMode.Positive x.CurrentSnapshot PositionAffinity.Predecessor with
+        // Get the number of lines that we should scroll by.  
+        let count = 
+            match countOption with
+            | Some count -> 
+                // When a count is provided then we always use that count.  If this is a
+                // scroll option version though we do need to update the scroll option to
+                // this value
+                if useScrollOption then
+                    _windowSettings.Scroll <- count
+                count
             | None ->
-                ()
-            | Some point ->
-                let line = SnapshotPointUtil.GetContainingLine point
-                let point = 
-                    let column = SnapshotPointUtil.GetColumn x.CaretPoint
-                    if column < line.Length then
-                        line.Start.Add(column)
-                    else
-                        line.Start
-                TextViewUtil.MoveCaretToPoint _textView point
-                _operations.EnsureCaretOnScreen()
+                if useScrollOption then
+                    _windowSettings.Scroll
+                else
+                    1
+
+        let count = if count <= 0 then 1 else count
+
+        // After scrolling we need to ensure the caret is on screen.  Essentially if the caret isn't
+        // visible then put at it the top / bottom line depending on whether we are scrolling up
+        // or down
+        let updateCaret (getLineFunc : ITextViewLineCollection -> ITextViewLine) = 
+            try 
+                let containingLine = _textView.Caret.ContainingTextViewLine
+                if containingLine.VisibilityState <> VisibilityState.FullyVisible then
+                    let textViewLine = getLineFunc _textView.TextViewLines
+                    let snapshotLine = SnapshotPointUtil.GetContainingLine textViewLine.Start
+                    TextViewUtil.MoveCaretToPoint _textView snapshotLine.Start
+
+            with 
+                // Asking for ITextViewLine information can fail if we're in a layout.  
+                | _ -> ()
+
+        match scrollDirection with
+        | ScrollDirection.Up -> 
+            if x.CaretLine.LineNumber = 0 then 
+                _operations.Beep()
+            else
+                _textView.ViewScroller.ScrollViewportVerticallyByLines(scrollDirection, count)
+                updateCaret (fun textViewLines -> textViewLines.LastVisibleLine)
+        | ScrollDirection.Down ->
+            if x.CaretLine.LineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot then
+                _operations.Beep()
+            else
+                _textView.ViewScroller.ScrollViewportVerticallyByLines(scrollDirection, count)
+                updateCaret (fun textViewLines -> textViewLines.FirstVisibleLine)
+        | _ -> 
+            ()
 
         CommandResult.Completed ModeSwitch.NoSwitch
 

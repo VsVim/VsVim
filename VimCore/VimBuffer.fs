@@ -85,6 +85,11 @@ type internal VimBuffer
     let mutable _processingInputCount = 0
     let mutable _isClosed = false
 
+    /// Are we in the middle of executing a single action in a given mode after which we
+    /// return back to insert mode.  When Some the value can only be Insert or Replace as 
+    /// they are the only modes to issue the command
+    let mutable _inOneTimeCommand : ModeKind option = None
+
     /// This is the buffered input when a remap request needs more than one 
     /// element
     let mutable _remapInput : KeyInputSet option = None
@@ -117,6 +122,10 @@ type internal VimBuffer
         match _remapInput with
         | None -> List.empty
         | Some (keyInputSet) -> keyInputSet.KeyInputs
+
+    member x.InOneTimeCommand 
+        with get() = _inOneTimeCommand
+        and set value = _inOneTimeCommand <- value
     
     /// Get the current mode
     member x.Mode = _modeMap.Mode
@@ -167,6 +176,11 @@ type internal VimBuffer
                 true
             elif keyInput.Key = VimKey.Nop then
                 // The nop key can be processed at all times
+                true
+            elif keyInput.Key = VimKey.Escape && Option.isSome _inOneTimeCommand then
+                // Inside a one command state Escape is valid and returns us to the original
+                // mode.  This check is necessary because certain modes like Normal don't handle
+                // Escape themselves but Escape should force us back to Insert even here
                 true
             elif x.Mode.CanProcess keyInput then
                 allowDirectInsert || not (isDirectInsert keyInput)
@@ -272,17 +286,51 @@ type internal VimBuffer
                         ProcessResult.Handled ModeSwitch.NoSwitch
                     else
                         let result = x.Mode.Process keyInput
+
+                        // Certain types of commands can always cause the current mode to be exited for
+                        // the previous one time command mode.  Handle them here
+                        let maybeLeaveOneCommand() = 
+                            match _inOneTimeCommand with
+                            | Some modeKind ->
+                                _inOneTimeCommand <- None
+                                x.SwitchMode modeKind ModeArgument.None |> ignore
+                            | None ->
+                                ()
+
                         match result with
                         | ProcessResult.Handled modeSwitch ->
                             match modeSwitch with
-                            | ModeSwitch.NoSwitch -> ()
-                            | ModeSwitch.SwitchMode kind -> x.SwitchMode kind ModeArgument.None |> ignore
-                            | ModeSwitch.SwitchModeWithArgument (kind, argument) -> x.SwitchMode kind argument |> ignore
-                            | ModeSwitch.SwitchPreviousMode -> x.SwitchPreviousMode() |> ignore
+                            | ModeSwitch.NoSwitch -> 
+                                // A completed command ends one command mode for all modes but visual.  We
+                                // stay in Visual Mode until it actually exists.  Else the simplest movement
+                                // command like 'l' would cause it to exit immediately
+                                if not (VisualKind.IsAnyVisual x.Mode.ModeKind) then
+                                    maybeLeaveOneCommand()
+                            | ModeSwitch.SwitchMode kind -> 
+                                // An explicit mode switch doesn't affect one command mode
+                                x.SwitchMode kind ModeArgument.None |> ignore
+                            | ModeSwitch.SwitchModeWithArgument (kind, argument) -> 
+                                // An explicit mode switch doesn't affect one command mode
+                                x.SwitchMode kind argument |> ignore
+                            | ModeSwitch.SwitchPreviousMode -> 
+                                // The previous mode is interpreted as Insert when we are in the middle
+                                // of a one command
+                                match _inOneTimeCommand with
+                                | Some modeKind ->
+                                    _inOneTimeCommand <-None
+                                    x.SwitchMode modeKind ModeArgument.None |> ignore
+                                | None ->
+                                    x.SwitchPreviousMode() |> ignore
+                            | ModeSwitch.SwitchModeOneTimeCommand ->
+                                // Begins one command mode and immediately switches to the target mode
+                                _inOneTimeCommand <- Some x.Mode.ModeKind
+                                x.SwitchMode ModeKind.Normal ModeArgument.None |> ignore
+                        | ProcessResult.HandledNeedMoreInput ->
+                            ()
                         | ProcessResult.NotHandled -> 
-                            ()
+                            maybeLeaveOneCommand()
                         | ProcessResult.Error ->
-                            ()
+                            maybeLeaveOneCommand()
                         result
                 finally
                     _processingInputCount <- _processingInputCount - 1
@@ -376,6 +424,7 @@ type internal VimBuffer
         member x.UndoRedoOperations = _undoRedoOperations
         member x.BufferedRemapKeyInputs = x.BufferedRemapKeyInputs 
         member x.IncrementalSearch = _incrementalSearch
+        member x.InOneTimeCommand = x.InOneTimeCommand
         member x.IsClosed = _isClosed
         member x.IsProcessingInput = _processingInputCount > 0
         member x.Name = _vim.VimHost.GetName _textView.TextBuffer

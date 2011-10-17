@@ -3,6 +3,7 @@ using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
+using System;
 
 namespace VimCore.UnitTest
 {
@@ -12,16 +13,16 @@ namespace VimCore.UnitTest
         private static readonly string[] LowerCaseLetters = TestConstants.LowerCaseLetters.Select(x => x.ToString()).ToArray();
         private static readonly string[] UpperCaseLetters = TestConstants.UpperCaseLetters.Select(x => x.ToString()).ToArray();
         private static readonly string[] Digits = TestConstants.Digits.Select(x => x.ToString()).ToArray();
-        private IVimGlobalSettings _settings;
+        private IVimGlobalSettings _globalSettings;
         private VimRegexFactory _regexFactory;
 
         [SetUp]
         public void Setup()
         {
-            _settings = new Vim.GlobalSettings();
-            _settings.IgnoreCase = true;
-            _settings.SmartCase = false;
-            _regexFactory = new VimRegexFactory(_settings);
+            _globalSettings = new Vim.GlobalSettings();
+            _globalSettings.IgnoreCase = true;
+            _globalSettings.SmartCase = false;
+            _regexFactory = new VimRegexFactory(_globalSettings);
         }
 
         private void VerifyMatches(string pattern, params string[] inputArray)
@@ -74,7 +75,9 @@ namespace VimCore.UnitTest
         {
             var regex = _regexFactory.Create(pattern);
             Assert.IsTrue(regex.IsSome());
-            Assert.AreEqual(result, regex.Value.ReplaceAll(input, replace, _settings.Magic));
+
+            var replaceData = new ReplaceData(Environment.NewLine, _globalSettings.Magic, 1);
+            Assert.AreEqual(result, regex.Value.ReplaceAll(input, replace, replaceData));
         }
 
         [Test]
@@ -90,7 +93,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Case_RespectIgnoreCase()
         {
-            _settings.IgnoreCase = false;
+            _globalSettings.IgnoreCase = false;
             VerifyMatches("a", "a");
             VerifyNotMatches("a", "A");
             VerifyMatches("b", "b");
@@ -124,7 +127,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Case_SensitiveSpecifierBeatsIgonreCase()
         {
-            _settings.IgnoreCase = true;
+            _globalSettings.IgnoreCase = true;
             VerifyMatches(@"\Ca", "a");
             VerifyMatches(@"\Cb", "b");
             VerifyNotMatches(@"\Ca", "A");
@@ -156,7 +159,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Case_InsensitiveSpecifierBeatsIgnoreCase()
         {
-            _settings.IgnoreCase = false;
+            _globalSettings.IgnoreCase = false;
             VerifyMatches(@"\ca", "a", "A");
             VerifyMatches(@"\cb", "b", "B");
         }
@@ -167,7 +170,7 @@ namespace VimCore.UnitTest
         [Test]
         public void SmartCase_Simple()
         {
-            _settings.SmartCase = true;
+            _globalSettings.SmartCase = true;
             VerifyMatches("a", "A", "a");
             VerifyMatches("b", "b", "B");
         }
@@ -178,7 +181,7 @@ namespace VimCore.UnitTest
         [Test]
         public void SmartCase_WithUpper()
         {
-            _settings.SmartCase = true;
+            _globalSettings.SmartCase = true;
             VerifyMatches("A", "A");
             VerifyNotMatches("A", "a");
             VerifyMatches("B", "B");
@@ -191,7 +194,7 @@ namespace VimCore.UnitTest
         [Test]
         public void SmartCase_InsensitiveSpecifierWins()
         {
-            _settings.SmartCase = true;
+            _globalSettings.SmartCase = true;
             VerifyMatches(@"\cFoo", "foo", "FOO", "fOO");
             VerifyMatches(@"\cBar", "BAR", "bar");
         }
@@ -202,7 +205,7 @@ namespace VimCore.UnitTest
         [Test]
         public void SmartCase_SensitiveSpecifierWins()
         {
-            _settings.SmartCase = true;
+            _globalSettings.SmartCase = true;
             VerifyMatches(@"\CFOO", "FOO");
             VerifyNotMatches(@"\CFOO", "foo");
             VerifyMatches(@"\CBAR", "BAR");
@@ -213,7 +216,7 @@ namespace VimCore.UnitTest
         [Description("Verify the magic option")]
         public void Magic1()
         {
-            _settings.Magic = true;
+            _globalSettings.Magic = true;
             VerifyMatches(".", "a", "b", "c");
         }
 
@@ -221,7 +224,7 @@ namespace VimCore.UnitTest
         [Description("Verify the nomagic option")]
         public void Magic2()
         {
-            _settings.Magic = false;
+            _globalSettings.Magic = false;
             VerifyNotMatches(".", "a", "b", "c");
             VerifyMatches(@"\.", "a", "b", "c");
         }
@@ -230,7 +233,7 @@ namespace VimCore.UnitTest
         [Description("Verify the magic prefix ")]
         public void Magic3()
         {
-            _settings.Magic = false;
+            _globalSettings.Magic = false;
             VerifyMatches(@"\m.", "a", "b", "c");
         }
 
@@ -238,7 +241,7 @@ namespace VimCore.UnitTest
         [Description("Verify the nomagic prefix")]
         public void Magic4()
         {
-            _settings.Magic = true;
+            _globalSettings.Magic = true;
             VerifyNotMatches(@"\M.", "a", "b", "c");
             VerifyMatches(@"\M\.", "a", "b", "c");
         }
@@ -246,14 +249,14 @@ namespace VimCore.UnitTest
         [Test]
         public void Magic5()
         {
-            _settings.Magic = false;
+            _globalSettings.Magic = false;
             VerifyMatches(@"a\m.", "ab", "ac");
         }
 
         [Test]
         public void Magic6()
         {
-            _settings.Magic = true;
+            _globalSettings.Magic = true;
             VerifyNotMatches(@"a\M.", "ab", "ac");
             VerifyMatches(@"a\M.", "a.");
         }
@@ -261,14 +264,14 @@ namespace VimCore.UnitTest
         [Test]
         public void VeryMagic1()
         {
-            _settings.Magic = false;
+            _globalSettings.Magic = false;
             VerifyMatches(@"\v.", "a", "b");
         }
 
         [Test]
         public void VeryMagic2()
         {
-            _settings.Magic = true;
+            _globalSettings.Magic = true;
             VerifyNotMatches(@"\V.", "a", "b");
             VerifyMatches(@"\V\.", "a", "b");
         }
@@ -276,7 +279,7 @@ namespace VimCore.UnitTest
         [Test]
         public void VeryNoMagicDotIsNotSpecial()
         {
-            _settings.Magic = true;
+            _globalSettings.Magic = true;
             VerifyNotMatches(@"\V.", "a");
             VerifyMatches(@"\V.", ".");
         }
@@ -687,7 +690,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Replace_Ampersand()
         {
-            _settings.Magic = true;
+            _globalSettings.Magic = true;
             VerifyReplace("a", "cat", @"o&", "coat");
             VerifyReplace(@"a\+", "caat", @"o&", "coaat");
         }
@@ -699,7 +702,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Replace_Ampersand_NoMagic()
         {
-            _settings.Magic = false;
+            _globalSettings.Magic = false;
             VerifyReplace("a", "cat", @"o&", "co&t");
             VerifyReplace(@"a\+", "caat", @"o&", "co&t");
         }
@@ -710,7 +713,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Replace_EscapedAmpersand()
         {
-            _settings.Magic = true;
+            _globalSettings.Magic = true;
             VerifyReplace("a", "cat", @"o\&", "co&t");
             VerifyReplace(@"a\+", "caat", @"o\&", "co&t");
         }
@@ -724,6 +727,25 @@ namespace VimCore.UnitTest
         {
             VerifyReplace("a", "cat", @"o\0", "coat");
             VerifyReplace(@"a\+", "caat", @"o\0", "coaat");
+        }
+
+        /// <summary>
+        /// The '\t' replacement string should insert a tab
+        /// </summary>
+        [Test]
+        public void Replace_Escaped_T()
+        {
+            VerifyReplace("a", "a", @"\t", "\t");
+            VerifyReplace("  ", "    ", @"\t", "\t\t");
+        }
+
+        /// <summary>
+        /// The '\r' replacement should insert a carriage return
+        /// </summary>
+        [Test]
+        public void Replace_Escaped_R()
+        {
+            VerifyReplace("a", "a", @"\r", Environment.NewLine);
         }
 
         [Test]
@@ -740,10 +762,10 @@ namespace VimCore.UnitTest
         [Description("Options take precedent over case options")]
         public void CreateWithOptions2()
         {
-            _settings.IgnoreCase = false;
+            _globalSettings.IgnoreCase = false;
             VerifyMatches(VimRegexOptions.IgnoreCase, @"foo", "FOO");
             VerifyMatches(VimRegexOptions.IgnoreCase, @"foo", "fOo");
-            _settings.IgnoreCase = true;
+            _globalSettings.IgnoreCase = true;
             VerifyNotMatches(VimRegexOptions.OrdinalCase, @"foo", "FOO");
             VerifyNotMatches(VimRegexOptions.OrdinalCase, @"foo", "fOo");
         }
@@ -752,7 +774,7 @@ namespace VimCore.UnitTest
         [Description("Magic options take precedent over nomagic settings")]
         public void CreateWithOptions3()
         {
-            _settings.Magic = false;
+            _globalSettings.Magic = false;
             VerifyMatches(VimRegexOptions.Magic, @".", "a");
         }
 
@@ -760,7 +782,7 @@ namespace VimCore.UnitTest
         [Description(@"Magic option is superceeded by the \M specifier")]
         public void CreateWithOptions4()
         {
-            _settings.Magic = false;
+            _globalSettings.Magic = false;
             VerifyNotMatches(VimRegexOptions.Magic, @"\M.", "a");
         }
 
@@ -768,7 +790,7 @@ namespace VimCore.UnitTest
         [Description("Nomagic options take precedent over magic settings")]
         public void CreateWithOptions5()
         {
-            _settings.Magic = true;
+            _globalSettings.Magic = true;
             VerifyNotMatches(VimRegexOptions.NoMagic, @".", "a");
         }
 
@@ -894,7 +916,7 @@ namespace VimCore.UnitTest
         [Test]
         public void AtomLowerLetters()
         {
-            _settings.IgnoreCase = false;
+            _globalSettings.IgnoreCase = false;
             VerifyMatches(@"\l", LowerCaseLetters);
             VerifyNotMatches(@"\l", UpperCaseLetters);
             VerifyNotMatches(@"\l", Digits);
@@ -903,7 +925,7 @@ namespace VimCore.UnitTest
         [Test]
         public void AtomNonLowerLetters()
         {
-            _settings.IgnoreCase = false;
+            _globalSettings.IgnoreCase = false;
             VerifyNotMatches(@"\L", LowerCaseLetters);
             VerifyMatches(@"\L", UpperCaseLetters);
             VerifyMatches(@"\L", "_");
@@ -913,7 +935,7 @@ namespace VimCore.UnitTest
         [Test]
         public void AtomUpperLetters()
         {
-            _settings.IgnoreCase = false;
+            _globalSettings.IgnoreCase = false;
             VerifyMatches(@"\u", UpperCaseLetters);
             VerifyNotMatches(@"\u", LowerCaseLetters);
             VerifyNotMatches(@"\u", Digits);
@@ -922,7 +944,7 @@ namespace VimCore.UnitTest
         [Test]
         public void AtomNonUpperLetters()
         {
-            _settings.IgnoreCase = false;
+            _globalSettings.IgnoreCase = false;
             VerifyNotMatches(@"\U", UpperCaseLetters);
             VerifyMatches(@"\U", LowerCaseLetters);
             VerifyMatches(@"\U", "_");
@@ -932,7 +954,7 @@ namespace VimCore.UnitTest
         [Test]
         public void AtomPlus()
         {
-            _settings.Magic = true;
+            _globalSettings.Magic = true;
             VerifyMatches(@"a\+", "a", "aa");
             VerifyNotMatches(@"a\+", "b");
             VerifyMatchIs(@"\va+", "aa", "aa");
@@ -941,7 +963,7 @@ namespace VimCore.UnitTest
         [Test]
         public void AtomCount()
         {
-            _settings.Magic = true;
+            _globalSettings.Magic = true;
             VerifyMatchIs(@"a\{1}", "aaa", "a");
             VerifyMatchIs(@"a\{1,2}", "aaa", "aa");
             VerifyMatchIs(@"a\{1,3}", "aaa", "aaa");
@@ -952,7 +974,7 @@ namespace VimCore.UnitTest
         [Test]
         public void AtomStar_Magic()
         {
-            _settings.Magic = true;
+            _globalSettings.Magic = true;
             VerifyMatchIs(@"a*", "aa", "aa");
             VerifyMatchIs(@"a\*", "a*", "a*");
         }
@@ -960,7 +982,7 @@ namespace VimCore.UnitTest
         [Test]
         public void AtomStar_NoMagic()
         {
-            _settings.Magic = false;
+            _globalSettings.Magic = false;
             VerifyMatchIs(@"a*", "a*", "a*");
             VerifyMatchIs(@"a\*", "aaa", "aaa");
         }
@@ -968,7 +990,7 @@ namespace VimCore.UnitTest
         [Test]
         public void AtomGroup_GroupAllBut()
         {
-            _settings.Magic = true;
+            _globalSettings.Magic = true;
             VerifyMatchIs(@"[^""]*b", "acbd", "acb");
             VerifyMatchIs(@"""[^""]*", @"b""cd", @"""cd");
         }
@@ -976,7 +998,7 @@ namespace VimCore.UnitTest
         [Test]
         public void AtomWhitespace_NoMagic()
         {
-            _settings.Magic = false;
+            _globalSettings.Magic = false;
             VerifyMatchIs(@"\s", " ", " ");
             VerifyMatchIs(@"hello\sworld", "hello world", "hello world");
             VerifyMatchIs(@"hello\s\*world", "hello   world", "hello   world");
@@ -985,7 +1007,7 @@ namespace VimCore.UnitTest
         [Test]
         public void AtomWhitespace_Magic()
         {
-            _settings.Magic = true;
+            _globalSettings.Magic = true;
             VerifyMatchIs(@"\s", " ", " ");
             VerifyMatchIs(@"hello\sworld", "hello world", "hello world");
             VerifyMatchIs(@"hello\s*world", "hello   world", "hello   world");
@@ -994,14 +1016,14 @@ namespace VimCore.UnitTest
         [Test]
         public void AtomWhitespace_MultipleWithStarQualifier()
         {
-            _settings.Magic = true;
+            _globalSettings.Magic = true;
             VerifyMatchIs(@"TCHAR\s\s*buff", "TCHAR buff", "TCHAR buff");
         }
 
         [Test]
         public void AtomNonWhitespace_NoMagic()
         {
-            _settings.Magic = false;
+            _globalSettings.Magic = false;
             VerifyMatchIs(@"\S", "a", "a");
             VerifyMatchIs(@"hello\Sworld", "hello!world", "hello!world");
         }
@@ -1009,7 +1031,7 @@ namespace VimCore.UnitTest
         [Test]
         public void AtomNonWhitespace_Magic()
         {
-            _settings.Magic = true;
+            _globalSettings.Magic = true;
             VerifyMatchIs(@"\S", "a", "a");
             VerifyMatchIs(@"hello\Sworld", "hello!world", "hello!world");
         }

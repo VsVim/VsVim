@@ -300,6 +300,14 @@ type internal CommonOperations
         else 
             doVimIndent()
 
+    /// Get the standard ReplaceData for the given SnapshotPoint in the ITextBuffer
+    member x.GetReplaceData point = 
+        let newLineText = x.GetNewLineText point
+        {
+            NewLine = newLineText
+            Magic = _globalSettings.Magic
+            Count = 1 }
+
     /// Return the full word under the cursor or an empty string
     member x.WordUnderCursorOrEmpty =
         let point =  TextViewUtil.GetCaretPoint _textView
@@ -676,6 +684,7 @@ type internal CommonOperations
         member x.Join range kind = x.Join range kind
         member x.GetNewLineText point = x.GetNewLineText point
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
+        member x.GetReplaceData point = x.GetReplaceData point
         member x.GoToDefinition () = 
             let before = TextViewUtil.GetCaretPoint _textView
             if _vimHost.GoToDefinition() then
@@ -726,7 +735,8 @@ type internal CommonOperations
                 use edit = _textView.TextBuffer.CreateEdit()
 
                 let replaceOne (span:SnapshotSpan) (c:Capture) = 
-                    let newText =  regex.Replace c.Value replace _globalSettings.Magic 1
+                    let replaceData = x.GetReplaceData x.CaretPoint
+                    let newText =  regex.Replace c.Value replace replaceData
                     let offset = span.Start.Position
                     edit.Replace(Span(c.Index+offset, c.Length), newText) |> ignore
                 let getMatches (span:SnapshotSpan) = 

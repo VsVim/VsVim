@@ -1395,26 +1395,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void OneTimeCommand1()
-        {
-            Create(string.Empty);
-            _commandUtil.SetupCommandMotion<NormalCommand.MoveCaretToMotion>();
-            _mode.OnEnter(ModeArgument.NewOneTimeCommand(ModeKind.Insert));
-            var res = _mode.Process("h");
-            Assert.IsTrue(res.IsSwitchMode(ModeKind.Insert));
-        }
-
-        [Test]
-        public void OneTimeCommand2()
-        {
-            Create(string.Empty);
-            _commandUtil.SetupCommandMotion<NormalCommand.MoveCaretToMotion>();
-            _mode.OnEnter(ModeArgument.NewOneTimeCommand(ModeKind.Command));
-            var res = _mode.Process("h");
-            Assert.IsTrue(res.IsSwitchMode(ModeKind.Command));
-        }
-
-        [Test]
         public void Bind_ReplaceAtCaret()
         {
             Create(string.Empty);

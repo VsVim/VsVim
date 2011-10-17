@@ -9,7 +9,6 @@ open Microsoft.VisualStudio.Text.Editor
 type internal NormalModeData = {
     Command : string
     IsInReplace : bool
-    OneTimeMode : ModeKind option 
 }
 
 type internal NormalMode 
@@ -32,7 +31,6 @@ type internal NormalMode
     let _emptyData = {
         Command = StringUtil.empty
         IsInReplace = false
-        OneTimeMode = None
     }
 
     /// Set of all char's Vim is interested in 
@@ -170,6 +168,8 @@ type internal NormalMode
                 yield ("zD", CommandFlags.Special, NormalCommand.DeleteAllFoldsUnderCaret)
                 yield ("zE", CommandFlags.Special, NormalCommand.DeleteAllFoldsInBuffer)
                 yield ("zF", CommandFlags.Special, NormalCommand.FoldLines)
+                yield ("zM", CommandFlags.Special, NormalCommand.CloseAllFolds)
+                yield ("zR", CommandFlags.Special, NormalCommand.OpenAllFolds)
                 yield ("ZZ", CommandFlags.Special, NormalCommand.WriteBufferAndQuit)
                 yield ("<Insert>", CommandFlags.None, NormalCommand.InsertBeforeCaret)
                 yield ("<C-a>", CommandFlags.Repeatable, NormalCommand.AddToWord)
@@ -247,32 +247,18 @@ type internal NormalMode
         let command = _data.Command + ki.Char.ToString()
         _data <- { _data with Command = command }
 
-        let run () = 
-            match _runner.Run ki with
-            | BindResult.NeedMoreInput _ -> 
-                ProcessResult.Handled ModeSwitch.NoSwitch
-            | BindResult.Complete commandData -> 
-    
-                // If we are in the one time mode then switch back to the previous
-                // mode
-                let result = 
-                    match _data.OneTimeMode with
-                    | None -> ProcessResult.OfCommandResult commandData.CommandResult
-                    | Some modeKind -> ProcessResult.OfModeKind modeKind
-    
-                this.Reset()
-                result
-            | BindResult.Error -> 
-                this.Reset()
-                ProcessResult.Handled ModeSwitch.NoSwitch
-            | BindResult.Cancelled -> 
-                this.Reset()
-                ProcessResult.Handled ModeSwitch.NoSwitch
-
-        match ki = KeyInputUtil.EscapeKey, _data.OneTimeMode with
-        | true, Some modeKind -> ProcessResult.OfModeKind modeKind
-        | true, None -> run ()
-        | false, _ -> run ()
+        match _runner.Run ki with
+        | BindResult.NeedMoreInput _ -> 
+            ProcessResult.HandledNeedMoreInput
+        | BindResult.Complete commandData -> 
+            this.Reset()
+            ProcessResult.OfCommandResult commandData.CommandResult
+        | BindResult.Error -> 
+            this.Reset()
+            ProcessResult.Handled ModeSwitch.NoSwitch
+        | BindResult.Cancelled -> 
+            this.Reset()
+            ProcessResult.Handled ModeSwitch.NoSwitch
 
     interface INormalMode with 
         member this.KeyRemapMode = this.KeyRemapMode
@@ -285,7 +271,6 @@ type internal NormalMode
             _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
 
         member this.ModeKind = ModeKind.Normal
-        member this.OneTimeMode = _data.OneTimeMode
 
         member this.CanProcess (ki : KeyInput) =
             let doesCommandStartWith ki =
@@ -300,7 +285,6 @@ type internal NormalMode
             elif _runner.IsWaitingForMoreInput then  true
             elif doesCommandStartWith ki then true
             elif Option.isSome ki.RawChar && KeyModifiers.None = ki.KeyModifiers && Set.contains ki.Char _coreCharSet then true
-            elif Option.isSome _data.OneTimeMode && ki = KeyInputUtil.EscapeKey then true
             else false
 
         member this.Process ki = this.ProcessCore ki
@@ -313,7 +297,6 @@ type internal NormalMode
             | ModeArgument.None -> ()
             | ModeArgument.FromVisual -> ()
             | ModeArgument.Substitute(_) -> ()
-            | ModeArgument.OneTimeCommand modeKind -> _data <- { _data with OneTimeMode = Some modeKind }
             | ModeArgument.InitialVisualSelection _ -> ()
             | ModeArgument.InsertWithCount _ -> ()
             | ModeArgument.InsertWithCountAndNewLine _ -> ()

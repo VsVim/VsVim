@@ -4,9 +4,17 @@ namespace Vim
 
 module Constants =
 
-    /// Content type which Vim applies to
+    /// Content type which Vim hosts should create an IVimBuffer for
     [<Literal>]
     let ContentType = "text"
+
+    /// The decision of the content types on which an IVimBuffer should be created is a decision
+    /// which is left up to the host.  The core Vim services such as tagging need to apply to any
+    /// situation in which an IVimBuffer is created.  Hence they must apply to the most general
+    /// content type which is "any".  The value "text" is insufficient in those circumstances because
+    /// it won't apply to projection buffers
+    [<Literal>]
+    let AnyContentType = "any"
 
     [<Literal>]
     let DefaultHistoryLength = 20
