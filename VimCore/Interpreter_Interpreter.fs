@@ -6,6 +6,64 @@ open Vim.VimHostExtensions
 
 [<Sealed>]
 [<Class>]
+type ExpressionInterpreter
+    (
+        _statusUtil : IStatusUtil
+    ) =
+
+    /// Get the value as a number
+    member x.GetValueAsNumber value = 
+
+        // TODO: Need to actually support these cases
+        let invalid msg = 
+            _statusUtil.OnError msg
+            None
+
+        match value with 
+        | Value.Dictionary _ -> invalid ""
+        | Value.Float _ -> invalid ""
+        | Value.FunctionRef _ -> invalid ""
+        | Value.List _ -> invalid ""
+        | Value.Number number -> Some number
+        | Value.String _ -> invalid ""
+        | Value.Error -> None
+
+    /// Get the value of the specified expression 
+    member x.RunExpression (expr : Expression) : Value =
+        match expr with
+        | Expression.ConstantValue value -> value
+        | Expression.Binary (binaryKind, leftExpr, rightExpr) -> x.RunBinaryExpression binaryKind leftExpr rightExpr
+
+    /// Run the binary expression
+    member x.RunBinaryExpression binaryKind (leftExpr : Expression) (rightExpr : Expression) = 
+
+        let notSupported() =
+            _statusUtil.OnError "Binary operation not supported at this time"
+            Value.Error
+
+        let runAdd (leftValue : Value) (rightValue : Value) = 
+            if leftValue.ValueType = ValueType.List && rightValue.ValueType = ValueType.List then
+                // it's a list concatenation
+                notSupported()
+            else
+                let leftNumber = x.GetValueAsNumber leftValue
+                let rightNumber = x.GetValueAsNumber rightValue
+                match leftNumber, rightNumber with
+                | Some left, Some right -> left + right |> Value.Number
+                | _ -> Value.Error
+
+        let leftValue = x.RunExpression leftExpr
+        let rightValue = x.RunExpression rightExpr
+        match binaryKind with
+        | BinaryKind.Add -> runAdd leftValue rightValue
+        | BinaryKind.Concatenate -> notSupported()
+        | BinaryKind.Divide -> notSupported()
+        | BinaryKind.Modulo -> notSupported()
+        | BinaryKind.Multiply -> notSupported()
+        | BinaryKind.Subtract -> notSupported()
+
+[<Sealed>]
+[<Class>]
 type Interpreter
     (
         _vimBuffer : IVimBuffer,
@@ -206,37 +264,6 @@ type Interpreter
             _vimHost.Close _textView
         RunResult.Completed
 
-    /// Edit the specified file
-    member x.RunEdit hasBang fileOptions commandOption filePath =
-        if not (List.isEmpty fileOptions) then
-            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
-        elif Option.isSome commandOption then
-            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++cmd]")
-        elif System.String.IsNullOrEmpty filePath then 
-            if not hasBang && _vimHost.IsDirty _textBuffer then
-                _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
-            else
-                let caret = 
-                    let point = TextViewUtil.GetCaretPoint _textView
-                    point.Snapshot.CreateTrackingPoint(point.Position, PointTrackingMode.Negative)
-                if not (_vimHost.Reload _textBuffer) then
-                    _commonOperations.Beep()
-                else
-                    match TrackingPointUtil.GetPoint _textView.TextSnapshot caret with
-                    | None -> ()
-                    | Some(point) -> 
-                        TextViewUtil.MoveCaretToPoint _textView point
-                        TextViewUtil.EnsureCaretOnScreen _textView
-
-        elif not hasBang && _vimHost.IsDirty _textBuffer then
-            _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
-        else
-            match _vimHost.LoadFileIntoExistingWindow filePath _textBuffer with
-            | HostResult.Success -> ()
-            | HostResult.Error(msg) -> _statusUtil.OnError(msg)
-
-        RunResult.Completed
-
     /// Run the delete command.  Delete the specified range of text and set it to 
     /// the given Register
     member x.RunDelete (lineRange : SnapshotLineRange) register = 
@@ -395,6 +422,42 @@ type Interpreter
             |> Seq.append ( "mark line  col file/text"  |> Seq.singleton)
             |> _statusUtil.OnStatusLong
         RunResult.Completed
+
+    /// Edit the specified file
+    member x.RunEdit hasBang fileOptions commandOption filePath =
+        if not (List.isEmpty fileOptions) then
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
+        elif Option.isSome commandOption then
+            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++cmd]")
+        elif System.String.IsNullOrEmpty filePath then 
+            if not hasBang && _vimHost.IsDirty _textBuffer then
+                _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
+            else
+                let caret = 
+                    let point = TextViewUtil.GetCaretPoint _textView
+                    point.Snapshot.CreateTrackingPoint(point.Position, PointTrackingMode.Negative)
+                if not (_vimHost.Reload _textBuffer) then
+                    _commonOperations.Beep()
+                else
+                    match TrackingPointUtil.GetPoint _textView.TextSnapshot caret with
+                    | None -> ()
+                    | Some(point) -> 
+                        TextViewUtil.MoveCaretToPoint _textView point
+                        TextViewUtil.EnsureCaretOnScreen _textView
+
+        elif not hasBang && _vimHost.IsDirty _textBuffer then
+            _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
+        else
+            match _vimHost.LoadFileIntoExistingWindow filePath _textBuffer with
+            | HostResult.Success -> ()
+            | HostResult.Error(msg) -> _statusUtil.OnError(msg)
+
+        RunResult.Completed
+
+    /// Get the value of the specified expression 
+    member x.RunExpression expr =
+        let expressionInterpreter = ExpressionInterpreter(_statusUtil)
+        expressionInterpreter.RunExpression expr
 
     /// Fold the specified line range
     member x.RunFold lineRange = 

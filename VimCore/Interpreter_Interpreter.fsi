@@ -20,3 +20,6 @@ type Interpreter =
     /// Run the LineCommand
     member RunLineCommand : lineCommand : LineCommand -> RunResult
 
+    /// Run the Expression
+    member RunExpression : expression : Expression -> Value
+

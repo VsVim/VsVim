@@ -3,6 +3,38 @@
 namespace Vim.Interpreter
 open Vim
 
+[<RequireQualifiedAccess>]
+type ValueType =
+    | Number
+    | Float
+    | String
+    | FunctionRef
+    | List
+    | Dictionary
+    | Error
+
+[<RequireQualifiedAccess>]
+type Value =
+    | Number of int
+    | Float of float
+    | String of string
+    | FunctionRef of string
+    | List of Value list
+    | Dictionary of Map<string, Value>
+    | Error
+
+    with
+
+    member x.ValueType = 
+        match x with
+        | Number _ -> ValueType.Number
+        | Float _ -> ValueType.Float
+        | String _ -> ValueType.String
+        | FunctionRef _ -> ValueType.FunctionRef
+        | List _ -> ValueType.List
+        | Dictionary _ -> ValueType.Dictionary
+        | Error -> ValueType.Error
+
 /// A single line specifier in a range 
 [<RequireQualifiedAccess>]
 type LineSpecifier = 
@@ -117,6 +149,15 @@ type SetArgument  =
     /// Subtracte the value of the setting with the value
     | SubtractSetting of string * string
 
+[<RequireQualifiedAccess>]
+type BinaryKind = 
+    | Add
+    | Concatenate
+    | Divide
+    | Multiply
+    | Modulo
+    | Subtract
+
 /// Represents te values or the '+cmd' which can occur on commads like :edit
 [<RequireQualifiedAccess>]
 type CommandOption =
@@ -127,8 +168,11 @@ type CommandOption =
 
 and [<RequireQualifiedAccess>] Expression =
 
-    /// A variable expression with the provided name
-    | Variable of string
+    /// Binary expression
+    | Binary of BinaryKind * Expression * Expression
+
+    /// A constant value
+    | ConstantValue of Value 
 
 and [<RequireQualifiedAccess>] LineCommand =
 

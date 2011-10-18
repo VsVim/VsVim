@@ -296,6 +296,26 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region Value
+
+        /// <summary>
+        /// Number version of a value
+        /// </summary>
+        public static Value.Number AsNumber(this Value value)
+        {
+            return (Value.Number)value;
+        }
+
+        /// <summary>
+        /// String version of a value
+        /// </summary>
+        public static Value.String AsString(this Value value)
+        {
+            return (Value.String)value;
+        }
+
+        #endregion
+
         #region ModeSwitch
 
         public static ModeSwitch.SwitchModeWithArgument AsSwitchModeWithArgument(this ModeSwitch mode)

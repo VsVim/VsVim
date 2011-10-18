@@ -10,6 +10,8 @@ type ParseResult<'T> =
 
 type ParseLineCommand = LineRange option -> ParseResult<LineCommand>
 
+// TODO: Look at every case of ParseResult.Failed and ensure we are using the appropriate error
+// message
 [<Sealed>]
 type Parser
     (
@@ -111,6 +113,13 @@ type Parser
         else
             Some _text.[_index]
 
+    member x.PeekChar count = 
+        let index = _index + count
+        if _index <= _text.Length then
+            _text.[_index] |> Some
+        else
+            None
+
     /// Is the parser at the end of the line
     member x.IsAtEndOfLine = _index = _text.Length
 
@@ -121,6 +130,11 @@ type Parser
 
     member x.IsCurrentCharValue value =
         match x.CurrentChar with
+        | None -> false
+        | Some c -> c = value
+
+    member x.IsPeekCharValue count value = 
+        match x.PeekChar count with
         | None -> false
         | Some c -> c = value
 
@@ -221,6 +235,23 @@ type Parser
         else
             LineCommand.ClearKeyMap (keyRemapModes, mapArgumentList) |> ParseResult.Succeeded
 
+    /// Parse out a number from the stream
+    /// TODO: Floating point and octal
+    member x.ParseNumberConstant() =
+        let number = 
+            if x.IsCurrentCharValue '0' && x.IsPeekCharValue 1 'x' then
+                x.IncrementIndex()
+                x.IncrementIndex()
+
+                // It's a hexdecimal number.
+                x.ParseNumberCore 16
+            else
+                x.ParseNumberCore 10
+
+        match number with
+        | None -> ParseResult.Failed "Invalid Number"
+        | Some number -> number |> Value.Number |> Expression.ConstantValue |> ParseResult.Succeeded
+
     /// Parse out core portion of key mappings.
     member x.ParseMapKeysCore keyRemapModes allowRemap =
 
@@ -277,8 +308,12 @@ type Parser
         else
             inner keyRemapModes
 
+    /// Parse out a decimal number from the input
+    member x.ParseNumber() =
+        x.ParseNumberCore 10
+
     /// Parse out a number from the current text
-    member x.ParseNumber () = 
+    member x.ParseNumberCore radix = 
 
         // If c is a digit char then return back the digit
         let toDigit c = 
@@ -298,7 +333,7 @@ type Parser
             | None -> 
                 value
             | Some number ->
-                let value = (value * 10) + number
+                let value = (value * radix) + number
                 x.IncrementIndex()
                 inner value
 
@@ -1121,6 +1156,80 @@ type Parser
             else
                 parseResult
 
+    /// Parse out a single expression
+    member x.ParseSingleExpression() =
+        match x.CurrentChar with
+        | None -> ParseResult.Failed "No data"
+        | Some c ->
+            match c with
+            | '\'' -> 
+                x.IncrementIndex()
+                x.ParseStringLiteral()
+            | '"' ->
+                x.IncrementIndex()
+                x.ParseStringConstant()
+            | _ -> 
+                if CharUtil.IsDigit c then
+                    x.ParseNumberConstant()
+                else
+                    ParseResult.Failed "Invalid expression"
+
+    /// Parse out a string constant expression.  This is reserved for strings which are
+    /// surrounded by double quotes
+    member x.ParseStringConstant() =
+        // TODO: :help expr-string.  Lots of rules here to get right
+        ParseResult.Failed ""
+
+    /// Parse out a string literal expression.  This is used for strings which are surrounded 
+    /// by single quotes.
+    member x.ParseStringLiteral() = 
+        let builder = System.Text.StringBuilder()
+        let rec inner () =
+            match x.CurrentChar with
+            | None ->
+                ParseResult.Failed "Unterminated string constant"
+            | Some '\'' ->
+                if x.IsPeekCharValue 1 ''' then
+                    x.IncrementIndex()
+                    x.IncrementIndex()
+                    builder.Append(''') |> ignore
+                    inner()
+                else
+                    builder.ToString() |> Value.String |> Expression.ConstantValue |> ParseResult.Succeeded
+            | Some c ->
+                x.IncrementIndex()
+                builder.Append(c) |> ignore
+                inner()
+
+        inner()
+
+    /// Parse out a complete expression from the text.  
+    member x.ParseExpressionCore() =
+        let parseResult = x.ParseSingleExpression()
+        match parseResult with
+        | ParseResult.Failed _ -> parseResult
+        | ParseResult.Succeeded expr ->
+            x.SkipBlanks()
+
+            // Parsee out a binary expression
+            let parseBinary binaryKind =
+                x.IncrementIndex()
+                x.SkipBlanks()
+                let rightResult = x.ParseSingleExpression()
+                match rightResult with
+                | ParseResult.Failed _ -> parseResult
+                | ParseResult.Succeeded rightExpr -> Expression.Binary (binaryKind, expr, rightExpr) |> ParseResult.Succeeded
+
+            match x.CurrentChar with
+            | None -> parseResult
+            | Some '+' -> parseBinary BinaryKind.Add
+            | Some '/' -> parseBinary BinaryKind.Divide
+            | Some '*' -> parseBinary BinaryKind.Multiply
+            | Some '.' -> parseBinary BinaryKind.Concatenate
+            | Some '-' -> parseBinary BinaryKind.Subtract
+            | Some '%' -> parseBinary BinaryKind.Modulo
+            | Some _ -> parseResult
+
     // TODO: Delete.  This is just a transition hack to allow us to use the new interpreter and parser
     // to replace RangeUtil.ParseRange
     static member ParseRange rangeText = 
@@ -1131,7 +1240,8 @@ type Parser
         | Some lineRange -> ParseResult.Succeeded (lineRange, parser.RemainingText) 
 
     static member ParseExpression (expressionText : string) : ParseResult<Expression> = 
-        ParseResult.Failed Resources.Parser_Error
+        let parser = Parser(expressionText)
+        parser.ParseExpressionCore()
 
     static member ParseLineCommand (commandText : string) = 
         let parser = Parser(commandText)
