@@ -422,12 +422,15 @@ type internal InsertMode
         if not (List.isEmpty wordList) then
             let wordCompletionSession = _wordCompletionSessionFactoryService.CreateWordCompletionSession _textView wordSpan wordList true
 
-            // When the completion session is dismissed we want to clean out the session 
-            // data 
-            wordCompletionSession.Dismissed
-            |> Event.add (fun _ -> x.CancelWordCompletionSession())
+            if not wordCompletionSession.IsDismissed then
 
-            _sessionData <- { _sessionData with ActiveWordCompletionSession = Some wordCompletionSession }
+                // When the completion session is dismissed we want to clean out the session 
+                // data 
+                wordCompletionSession.Dismissed
+                |> Event.add (fun _ -> x.CancelWordCompletionSession())
+
+                _sessionData <- { _sessionData with ActiveWordCompletionSession = Some wordCompletionSession }
+
         ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Run the insert command with the given information
