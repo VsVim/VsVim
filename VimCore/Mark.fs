@@ -193,4 +193,3 @@ type Mark =
         else
             LocalMark.OfChar c |> Option.map LocalMark
 
-    

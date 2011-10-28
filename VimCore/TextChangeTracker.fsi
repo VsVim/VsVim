@@ -13,4 +13,3 @@ open System.ComponentModel.Composition
 type internal TextChangeTracker =
     interface ITextChangeTracker
 
-    
