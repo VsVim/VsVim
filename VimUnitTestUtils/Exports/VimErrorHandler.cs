@@ -14,16 +14,52 @@ namespace Vim.UnitTest.Exports
     [Export(typeof(IExtensionErrorHandler))]
     [Export(typeof(IVimErrorDetector))]
     [Export(typeof(IWpfTextViewCreationListener))]
+    [Export(typeof(IVimBufferCreationListener))]
     [ContentType("any")]
     [TextViewRole(PredefinedTextViewRoles.Document)]
-    public sealed class VimErrorDetector : IVimErrorDetector, IWpfTextViewCreationListener
+    public sealed class VimErrorDetector : IVimErrorDetector, IWpfTextViewCreationListener, IVimBufferCreationListener
     {
         private readonly List<Exception> _errorList = new List<Exception>();
         private readonly List<ITextView> _activeTextViewList = new List<ITextView>();
+        private readonly List<IVimBuffer> _activeVimBufferList = new List<IVimBuffer>();
 
         internal VimErrorDetector()
         {
 
+        }
+
+        private void CheckForOrphanedItems()
+        {
+            CheckForOrphanedLinkedUndoTransaction();
+            CheckForOrphanedUndoHistory();
+        }
+
+        private void CheckForOrphanedLinkedUndoTransaction()
+        {
+            foreach (var vimBuffer in _activeVimBufferList)
+            {
+                CheckForOrphanedLinkedUndoTransaction(vimBuffer);
+            }
+        }
+
+        /// <summary>
+        /// Make sure that the IVimBuffer doesn't have an open linked undo transaction when
+        /// it closes.  This leads to every Visual Studio transaction after this point being
+        /// linked to a single Vim undo.
+        /// </summary>
+        private void CheckForOrphanedLinkedUndoTransaction(IVimBuffer vimBuffer)
+        {
+            if (vimBuffer.UndoRedoOperations.InLinkedUndoTransaction)
+            {
+                // It's expected that insert and replace mode will often have a linked
+                // undo transaction open.  It's common for a command like 'cw' to transition
+                // to insert mode so that the following edit is linked to the 'c' portion
+                // for an undo
+                if (vimBuffer.ModeKind != ModeKind.Insert && vimBuffer.ModeKind != ModeKind.Replace)
+                {
+                    _errorList.Add(new Exception("Failed to close a linked undo transaction"));
+                }
+            }
         }
 
         private void CheckForOrphanedUndoHistory()
@@ -54,13 +90,13 @@ namespace Vim.UnitTest.Exports
 
         bool IVimErrorDetector.HasErrors()
         {
-            CheckForOrphanedUndoHistory();
+            CheckForOrphanedItems();
             return _errorList.Count > 0;
         }
 
         IEnumerable<Exception> IVimErrorDetector.GetErrors()
         {
-            CheckForOrphanedUndoHistory();
+            CheckForOrphanedItems();
             return _errorList;
         }
 
@@ -68,6 +104,7 @@ namespace Vim.UnitTest.Exports
         {
             _errorList.Clear();
             _activeTextViewList.Clear();
+            _activeVimBufferList.Clear();
         }
 
         void IWpfTextViewCreationListener.TextViewCreated(IWpfTextView textView)
@@ -78,6 +115,17 @@ namespace Vim.UnitTest.Exports
                 {
                     _activeTextViewList.Remove(textView);
                     CheckForOrphanedUndoHistory(textView);
+                };
+        }
+
+        void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
+        {
+            _activeVimBufferList.Add(vimBuffer);
+            vimBuffer.Closed +=
+                (sender, e) =>
+                {
+                    _activeVimBufferList.Remove(vimBuffer);
+                    CheckForOrphanedLinkedUndoTransaction(vimBuffer);
                 };
         }
     }

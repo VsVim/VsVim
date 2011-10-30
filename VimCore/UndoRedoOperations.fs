@@ -54,7 +54,7 @@ type LinkedUndoTransaction
         _undoRedoOperations : UndoRedoOperations
     ) = 
 
-    member x.Complete () = _undoRedoOperations.LinkedTransactionClosed()
+    member x.Complete () = _undoRedoOperations.LinkedUndoTransactionClosed()
 
     interface ILinkedUndoTransaction with
         member x.Complete() = x.Complete()
@@ -70,7 +70,7 @@ type LinkedUndoTransaction
 and UndoRedoOperations 
     (
         _statusUtil : IStatusUtil,
-        _history : ITextUndoHistory option,
+        _textUndoHistory : ITextUndoHistory option,
         _editorOperations : IEditorOperations 
     ) as this =
 
@@ -81,11 +81,11 @@ and UndoRedoOperations
     let _bag = DisposableBag()
 
     do
-        match _history with 
+        match _textUndoHistory with 
         | None ->
             ()
-        | Some history -> 
-            history.UndoTransactionCompleted
+        | Some textUndoHistory -> 
+            textUndoHistory.UndoTransactionCompleted
             |> Observable.filter (fun args ->
                 
                 // We are only concerned with added transactions as they affect the actual undo
@@ -101,9 +101,13 @@ and UndoRedoOperations
             |> Observable.subscribe (fun _ -> this.OnUndoTransactionCompleted())
             |> _bag.Add
 
-            history.UndoRedoHappened
+            textUndoHistory.UndoRedoHappened
             |> Observable.subscribe (fun _ -> this.OnUndoRedoHappened())
             |> _bag.Add
+
+
+    /// Are we in the middle of a linked undo transaction
+    member x.InLinkedUndoTransaction = _openLinkedTransactionCount > 0
 
     /// Closing simply means we need to detach from our event handlers so memory can
     /// be reclaimed.  IVimBuffer operates at an ITextView level but here we are 
@@ -126,15 +130,31 @@ and UndoRedoOperations
                 | UndoRedoData.Linked _ -> UndoRedoData.Normal count, list
             head :: tail 
 
+    /// If undo / redo is called when a linked undo transaction is open then we need to take
+    /// action.  Tear down the vim undo / redo stacks and revert back to Visual Studio undo
+    /// behavior
+    ///
+    /// Note: Any time this occurs is assuredly a bug in code.  It's important we clean up any
+    /// instances of this.  Normally we'd not have compensating code here and instead would opt
+    /// to say we should be fixing the bug instead.  However the results of the bug are very 
+    /// bad.  All work, potentially hours of it, which is made after the bug occurs will be undone
+    /// after the very next single undo operation. 
+    member x.CheckForBrokenUndoRedoChain() =
+        if _openLinkedTransactionCount > 0 then
+            _openLinkedTransactionCount <- 0 
+            _undoStack <- List.empty
+            _redoStack <- List.empty
+            _statusUtil.OnError Resources.Common_UndoChainBroken
+
     member x.CreateUndoTransaction name = 
-        match _history with
+        match _textUndoHistory with
         | None -> 
-            // Don't support either if the history is not present.  While we have an instance
+            // Don't support either if the textUndoHistory is not present.  While we have an instance
             // of IEditorOperations it will still fail because internally it's trying to access
             // the same ITextUndorHistory which is null
             new UndoTransaction(None, None) :> IUndoTransaction
-        | Some(history) ->
-            let transaction = history.CreateTransaction(name)
+        | Some textUndoHistory ->
+            let transaction = textUndoHistory.CreateTransaction(name)
             new UndoTransaction(Some transaction, Some _editorOperations) :> IUndoTransaction
 
     /// Create a linked undo transaction.
@@ -159,7 +179,7 @@ and UndoRedoOperations
                     | [] ->
                         // Happens when the user asks to undo / redo and there is nothing on the 
                         // stack.  The 'CanUndo' property is worthless here because it just returns
-                        // 'true'.  Let the undo fail and alert the user
+                        // 'true'.  Fall back to Visual Studio undo here.
                         1, [], None
                     | head :: tail ->
                         match head with
@@ -202,26 +222,31 @@ and UndoRedoOperations
     /// Do 'count' undo operations from the perspective of VsVim.  This is different than the actual
     /// number of undo operations we actually have to perform because of ILinkedUndoTransaction items
     member x.Undo count =
-        match _history with
+        x.CheckForBrokenUndoRedoChain()
+        match _textUndoHistory with
         | None -> 
             _statusUtil.OnError Resources.Internal_UndoRedoNotSupported
-        | Some history ->
-            let undoStack, redoStack = x.UndoRedoCommon (fun count -> history.Undo count) _undoStack _redoStack count Resources.Internal_CannotUndo
+        | Some textUndoHistory ->
+            let undoStack, redoStack = x.UndoRedoCommon (fun count -> textUndoHistory.Undo count) _undoStack _redoStack count Resources.Internal_CannotUndo
             _undoStack <- undoStack
             _redoStack <- redoStack
 
     /// Do 'count' redo transactions from the perspective of VsVim.  This is different than the actual
     /// number of redo operations we actually have to perform because of the ILinkedUndoTransaction items
     member x.Redo count =
-        match _history with
+        x.CheckForBrokenUndoRedoChain()
+        match _textUndoHistory with
         | None -> _statusUtil.OnError Resources.Internal_UndoRedoNotSupported
-        | Some(history) ->
-            let redoStack, undoStack = x.UndoRedoCommon (fun count -> history.Redo count) _redoStack _undoStack count Resources.Internal_CannotRedo
+        | Some textUndoHistory ->
+            let redoStack, undoStack = x.UndoRedoCommon (fun count -> textUndoHistory.Redo count) _redoStack _undoStack count Resources.Internal_CannotRedo
             _undoStack <- undoStack
             _redoStack <- redoStack
 
-    member x.LinkedTransactionClosed() =
-        _openLinkedTransactionCount <- _openLinkedTransactionCount - 1
+    member x.LinkedUndoTransactionClosed() =
+
+        // Need to guard against an ILinkedUndoTransaction which is later closed.
+        if _openLinkedTransactionCount > 0 then
+            _openLinkedTransactionCount <- _openLinkedTransactionCount - 1
 
     member x.EditWithUndoTransaction name action = 
         use undoTransaction = x.CreateUndoTransaction name
@@ -268,6 +293,7 @@ and UndoRedoOperations
             _redoStack <- List.empty
 
     interface IUndoRedoOperations with
+        member x.InLinkedUndoTransaction = x.InLinkedUndoTransaction
         member x.StatusUtil = _statusUtil
         member x.Close() = x.Close()
         member x.CreateUndoTransaction name = x.CreateUndoTransaction name

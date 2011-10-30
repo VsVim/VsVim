@@ -164,6 +164,9 @@ type ILinkedUndoTransaction =
 /// Wraps all of the undo and redo operations
 type IUndoRedoOperations = 
 
+    /// Is there an open linked undo transaction
+    abstract InLinkedUndoTransaction : bool
+
     /// StatusUtil instance that is used to report errors
     abstract StatusUtil : IStatusUtil
 
