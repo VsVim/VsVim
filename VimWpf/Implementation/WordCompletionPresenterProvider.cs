@@ -413,7 +413,7 @@ namespace Vim.UI.Wpf.Implementation
         /// wrap
         /// </summary>
         [ImportMany]
-        internal List<Lazy<IIntellisensePresenterProvider, IOrderableContentTypeMetadata>> Providers;
+        internal List<IIntellisensePresenterProvider> Providers;
 
         IIntellisensePresenter IIntellisensePresenterProvider.TryCreateIntellisensePresenter(IIntellisenseSession session)
         {
@@ -424,7 +424,7 @@ namespace Vim.UI.Wpf.Implementation
                 return null;
             }
 
-            foreach (var provider in Orderer.Order(Providers).Select(x => x.Value))
+            foreach (var provider in Providers)
             {
                 if (provider == this)
                 {
