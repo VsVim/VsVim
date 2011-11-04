@@ -272,7 +272,6 @@ namespace VsVim.UnitTest
             vimBuffer.TextView.Close();
             vimBuffer = null;
 
-
             RunGarbageCollector();
             Assert.IsNull(weakVimBuffer.Target);
             Assert.IsNull(weakTextView.Target);

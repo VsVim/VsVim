@@ -308,6 +308,39 @@ type internal CommonOperations
             Magic = _globalSettings.Magic
             Count = 1 }
 
+    member x.GoToDefinition() =
+        let before = TextViewUtil.GetCaretPoint _textView
+        if _vimHost.GoToDefinition() then
+            _jumpList.Add before |> ignore
+            Result.Succeeded
+        else
+            match _wordUtil.GetFullWordSpan WordKind.BigWord _textView.Caret.Position.BufferPosition with
+            | Some(span) -> 
+                let msg = Resources.Common_GotoDefFailed (span.GetText())
+                Result.Failed(msg)
+            | None ->  Result.Failed(Resources.Common_GotoDefNoWordUnderCursor) 
+
+    member x.GoToLocalDeclaration() = 
+        if not (_vimHost.GoToLocalDeclaration _textView x.WordUnderCursorOrEmpty) then _vimHost.Beep()
+
+    member x.GoToGlobalDeclaration () = 
+        if not (_vimHost.GoToGlobalDeclaration _textView x.WordUnderCursorOrEmpty) then _vimHost.Beep()
+
+    member x.GoToFile () = 
+        x.CheckDirty (fun () ->
+            let text = x.WordUnderCursorOrEmpty 
+            match _vimHost.LoadFileIntoExistingWindow text _textBuffer with
+            | HostResult.Success -> ()
+            | HostResult.Error(_) -> _statusUtil.OnError (Resources.NormalMode_CantFindFile text))
+
+    /// Look for a word under the cursor and go to the specified file in a new window.  No need to 
+    /// check for dirty since we are opening a new window
+    member x.GoToFileInNewWindow () =
+        let text = x.WordUnderCursorOrEmpty 
+        match _vimHost.LoadFileIntoNewWindow text with
+        | HostResult.Success -> ()
+        | HostResult.Error(_) -> _statusUtil.OnError (Resources.NormalMode_CantFindFile text)
+
     /// Return the full word under the cursor or an empty string
     member x.WordUnderCursorOrEmpty =
         let point =  TextViewUtil.GetCaretPoint _textView
@@ -373,6 +406,13 @@ type internal CommonOperations
         text
         |> x.NormalizeBlanksToSpaces
         |> x.NormalizeSpaces
+
+    member x.ScrollLines dir count =
+        for i = 1 to count do
+            match dir with
+            | ScrollDirection.Down -> _editorOperations.ScrollDownAndMoveCaretIfNecessary()
+            | ScrollDirection.Up -> _editorOperations.ScrollUpAndMoveCaretIfNecessary()
+            | _ -> failwith "Invalid enum value"
 
     /// Shifts a block of lines to the left
     member x.ShiftLineBlockLeft (col: SnapshotSpan seq) multiplier =
@@ -447,6 +487,111 @@ type internal CommonOperations
             let ws = x.NormalizeSpaces (ws + shiftText)
             edit.Replace(line.Start.Position, originalLength, ws) |> ignore)
         edit.Apply() |> ignore
+
+    member x.Substitute pattern replace (range : SnapshotLineRange) flags = 
+
+        /// Actually do the replace with the given regex
+        let doReplace (regex:VimRegex) = 
+            use edit = _textView.TextBuffer.CreateEdit()
+
+            let replaceOne (span:SnapshotSpan) (c:Capture) = 
+                let replaceData = x.GetReplaceData x.CaretPoint
+                let newText =  regex.Replace c.Value replace replaceData
+                let offset = span.Start.Position
+                edit.Replace(Span(c.Index+offset, c.Length), newText) |> ignore
+            let getMatches (span:SnapshotSpan) = 
+                if Util.IsFlagSet flags SubstituteFlags.ReplaceAll then
+                    regex.Regex.Matches(span.GetText()) |> Seq.cast<Match>
+                else
+                    regex.Regex.Match(span.GetText()) |> Seq.singleton
+            let matches = 
+                range.Lines
+                |> Seq.map (fun line -> line.ExtentIncludingLineBreak)
+                |> Seq.map (fun span -> getMatches span |> Seq.map (fun m -> (m,span)) )
+                |> Seq.concat 
+                |> Seq.filter (fun (m,_) -> m.Success)
+
+            if not (Util.IsFlagSet flags SubstituteFlags.ReportOnly) then
+                // Actually do the edits
+                matches |> Seq.iter (fun (m,span) -> replaceOne span m)
+
+            // Update the status for the substitute operation
+            let printMessage () = 
+
+                // Get the replace message for multiple lines
+                let replaceMessage = 
+                    let replaceCount = matches |> Seq.length
+                    let lineCount = 
+                        matches 
+                        |> Seq.map (fun (_,s) -> s.Start.GetContainingLine().LineNumber)
+                        |> Seq.distinct
+                        |> Seq.length
+                    if replaceCount > 1 then Resources.Common_SubstituteComplete replaceCount lineCount |> Some
+                    else None
+
+                let printReplaceMessage () =
+                    match replaceMessage with 
+                    | None -> ()
+                    | Some(msg) -> _statusUtil.OnStatus msg
+
+                // Find the last line in the replace sequence.  This is printed out to the 
+                // user and needs to represent the current state of the line, not the previous
+                let lastLine = 
+                    if Seq.isEmpty matches then 
+                        None
+                    else 
+                        let _, span = matches |> SeqUtil.last 
+                        let tracking = span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeInclusive)
+                        match TrackingSpanUtil.GetSpan _textView.TextSnapshot tracking with
+                        | None -> None
+                        | Some(span) -> SnapshotSpanUtil.GetStartLine span |> Some
+
+                // Now consider the options 
+                match lastLine with 
+                | None -> printReplaceMessage()
+                | Some(line) ->
+
+                    let printBoth msg = 
+                        match replaceMessage with
+                        | None -> _statusUtil.OnStatus msg
+                        | Some(replaceMessage) -> _statusUtil.OnStatusLong [replaceMessage; msg]
+
+                    if Util.IsFlagSet flags SubstituteFlags.PrintLast then
+                        printBoth (line.GetText())
+                    elif Util.IsFlagSet flags SubstituteFlags.PrintLastWithNumber then
+                        sprintf "  %d %s" (line.LineNumber+1) (line.GetText()) |> printBoth 
+                    elif Util.IsFlagSet flags SubstituteFlags.PrintLastWithList then
+                        sprintf "%s$" (line.GetText()) |> printBoth 
+                    else printReplaceMessage()
+
+            if edit.HasEffectiveChanges then
+                edit.Apply() |> ignore                                
+                printMessage()
+            elif Util.IsFlagSet flags SubstituteFlags.ReportOnly then
+                edit.Cancel()
+                printMessage ()
+            elif Util.IsFlagSet flags SubstituteFlags.SuppressError then
+                edit.Cancel()
+            else 
+                edit.Cancel()
+                _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
+
+        match _regexFactory.CreateForSubstituteFlags pattern flags with
+        | None -> 
+            _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
+        | Some (regex) -> 
+            doReplace regex
+
+            // Make sure to update the saved state.  Note that there are 2 patterns stored 
+            // across buffers.
+            //
+            // 1. Last substituted pattern
+            // 2. Last searched for pattern.
+            //
+            // A substitute command should update both of them 
+            _vimData.LastSubstituteData <- Some { SearchPattern=pattern; Substitute=replace; Flags=flags}
+            _vimData.LastPatternData <- { Pattern = pattern; Path = Path.Forward }
+
 
     /// Convert the provided whitespace into spaces.  The conversion of 
     /// tabs into spaces will be done based on the TabSize setting
@@ -681,179 +826,38 @@ type internal CommonOperations
 
         member x.ApplyTextChange textChange addNewLines count = x.ApplyTextChange textChange addNewLines count
         member x.Beep () = x.Beep()
-        member x.Join range kind = x.Join range kind
-        member x.GetNewLineText point = x.GetNewLineText point
-        member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
-        member x.GetReplaceData point = x.GetReplaceData point
-        member x.GoToDefinition () = 
-            let before = TextViewUtil.GetCaretPoint _textView
-            if _vimHost.GoToDefinition() then
-                _jumpList.Add before |> ignore
-                Result.Succeeded
-            else
-                match _wordUtil.GetFullWordSpan WordKind.BigWord _textView.Caret.Position.BufferPosition with
-                | Some(span) -> 
-                    let msg = Resources.Common_GotoDefFailed (span.GetText())
-                    Result.Failed(msg)
-                | None ->  Result.Failed(Resources.Common_GotoDefNoWordUnderCursor) 
-
-        member x.RaiseSearchResultMessage searchResult = x.RaiseSearchResultMessage searchResult
-
-        member x.NavigateToPoint point = x.NavigateToPoint point
-
-        member x.ScrollLines dir count =
-            for i = 1 to count do
-                match dir with
-                | ScrollDirection.Down -> _editorOperations.ScrollDownAndMoveCaretIfNecessary()
-                | ScrollDirection.Up -> _editorOperations.ScrollUpAndMoveCaretIfNecessary()
-                | _ -> failwith "Invalid enum value"
-
-        member x.ShiftLineBlockLeft col multiplier = x.ShiftLineBlockLeft col multiplier
-        member x.ShiftLineBlockRight col multiplier = x.ShiftLineBlockRight col multiplier
-        member x.ShiftLineRangeLeft range multiplier = x.ShiftLineRangeLeft range multiplier
-        member x.ShiftLineRangeRight range multiplier = x.ShiftLineRangeRight range multiplier
-
-        member x.Undo count = x.Undo count
-        member x.Redo count = x.Redo count
-        member x.GoToNextTab direction count = _vimHost.GoToNextTab direction count
-        member x.GoToTab index = _vimHost.GoToTab index
         member x.EnsureCaretOnScreen () = x.EnsureCaretOnScreen()
         member x.EnsureCaretOnScreenAndTextExpanded () = x.EnsureCaretOnScreenAndTextExpanded()
         member x.EnsurePointOnScreenAndTextExpanded point = x.EnsurePointOnScreenAndTextExpanded point
+        member x.FormatLines range = _vimHost.FormatLines _textView range
+        member x.GetNewLineText point = x.GetNewLineText point
+        member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
+        member x.GetReplaceData point = x.GetReplaceData point
+        member x.GoToLocalDeclaration() = x.GoToLocalDeclaration()
+        member x.GoToGlobalDeclaration () = x.GoToGlobalDeclaration()
+        member x.GoToFile () = x.GoToFile()
+        member x.GoToFileInNewWindow () = x.GoToFileInNewWindow()
+        member x.GoToDefinition () = x.GoToDefinition()
+        member x.GoToNextTab direction count = _vimHost.GoToNextTab direction count
+        member x.GoToTab index = _vimHost.GoToTab index
+        member x.Join range kind = x.Join range kind
         member x.MoveCaretToPoint point =  TextViewUtil.MoveCaretToPoint _textView point 
         member x.MoveCaretToPointAndEnsureVisible point = x.MoveCaretToPointAndEnsureVisible point
         member x.MoveCaretToPointAndCheckVirtualSpace point = x.MoveCaretToPointAndCheckVirtualSpace point
         member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
+        member x.NavigateToPoint point = x.NavigateToPoint point
         member x.NormalizeBlanks text = x.NormalizeBlanks text
         member x.NormalizeBlanksToSpaces text = x.NormalizeBlanksToSpaces text
-        member x.FormatLines range = _vimHost.FormatLines _textView range
-
-        member x.Substitute pattern replace (range:SnapshotLineRange) flags = 
-
-            /// Actually do the replace with the given regex
-            let doReplace (regex:VimRegex) = 
-                use edit = _textView.TextBuffer.CreateEdit()
-
-                let replaceOne (span:SnapshotSpan) (c:Capture) = 
-                    let replaceData = x.GetReplaceData x.CaretPoint
-                    let newText =  regex.Replace c.Value replace replaceData
-                    let offset = span.Start.Position
-                    edit.Replace(Span(c.Index+offset, c.Length), newText) |> ignore
-                let getMatches (span:SnapshotSpan) = 
-                    if Util.IsFlagSet flags SubstituteFlags.ReplaceAll then
-                        regex.Regex.Matches(span.GetText()) |> Seq.cast<Match>
-                    else
-                        regex.Regex.Match(span.GetText()) |> Seq.singleton
-                let matches = 
-                    range.Lines
-                    |> Seq.map (fun line -> line.ExtentIncludingLineBreak)
-                    |> Seq.map (fun span -> getMatches span |> Seq.map (fun m -> (m,span)) )
-                    |> Seq.concat 
-                    |> Seq.filter (fun (m,_) -> m.Success)
-
-                if not (Util.IsFlagSet flags SubstituteFlags.ReportOnly) then
-                    // Actually do the edits
-                    matches |> Seq.iter (fun (m,span) -> replaceOne span m)
-
-                // Update the status for the substitute operation
-                let printMessage () = 
-
-                    // Get the replace message for multiple lines
-                    let replaceMessage = 
-                        let replaceCount = matches |> Seq.length
-                        let lineCount = 
-                            matches 
-                            |> Seq.map (fun (_,s) -> s.Start.GetContainingLine().LineNumber)
-                            |> Seq.distinct
-                            |> Seq.length
-                        if replaceCount > 1 then Resources.Common_SubstituteComplete replaceCount lineCount |> Some
-                        else None
-
-                    let printReplaceMessage () =
-                        match replaceMessage with 
-                        | None -> ()
-                        | Some(msg) -> _statusUtil.OnStatus msg
-
-                    // Find the last line in the replace sequence.  This is printed out to the 
-                    // user and needs to represent the current state of the line, not the previous
-                    let lastLine = 
-                        if Seq.isEmpty matches then 
-                            None
-                        else 
-                            let _, span = matches |> SeqUtil.last 
-                            let tracking = span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeInclusive)
-                            match TrackingSpanUtil.GetSpan _textView.TextSnapshot tracking with
-                            | None -> None
-                            | Some(span) -> SnapshotSpanUtil.GetStartLine span |> Some
-
-                    // Now consider the options 
-                    match lastLine with 
-                    | None -> printReplaceMessage()
-                    | Some(line) ->
-
-                        let printBoth msg = 
-                            match replaceMessage with
-                            | None -> _statusUtil.OnStatus msg
-                            | Some(replaceMessage) -> _statusUtil.OnStatusLong [replaceMessage; msg]
-
-                        if Util.IsFlagSet flags SubstituteFlags.PrintLast then
-                            printBoth (line.GetText())
-                        elif Util.IsFlagSet flags SubstituteFlags.PrintLastWithNumber then
-                            sprintf "  %d %s" (line.LineNumber+1) (line.GetText()) |> printBoth 
-                        elif Util.IsFlagSet flags SubstituteFlags.PrintLastWithList then
-                            sprintf "%s$" (line.GetText()) |> printBoth 
-                        else printReplaceMessage()
-
-                if edit.HasEffectiveChanges then
-                    edit.Apply() |> ignore                                
-                    printMessage()
-                elif Util.IsFlagSet flags SubstituteFlags.ReportOnly then
-                    edit.Cancel()
-                    printMessage ()
-                elif Util.IsFlagSet flags SubstituteFlags.SuppressError then
-                    edit.Cancel()
-                else 
-                    edit.Cancel()
-                    _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
-
-            match _regexFactory.CreateForSubstituteFlags pattern flags with
-            | None -> 
-                _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
-            | Some (regex) -> 
-                doReplace regex
-
-                // Make sure to update the saved state.  Note that there are 2 patterns stored 
-                // across buffers.
-                //
-                // 1. Last substituted pattern
-                // 2. Last searched for pattern.
-                //
-                // A substitute command should update both of them 
-                _vimData.LastSubstituteData <- Some { SearchPattern=pattern; Substitute=replace; Flags=flags}
-                _vimData.LastPatternData <- { Pattern = pattern; Path = Path.Forward }
-
-        member x.GoToLocalDeclaration() = 
-            if not (_vimHost.GoToLocalDeclaration _textView x.WordUnderCursorOrEmpty) then _vimHost.Beep()
-
-        member x.GoToGlobalDeclaration () = 
-            if not (_vimHost.GoToGlobalDeclaration _textView x.WordUnderCursorOrEmpty) then _vimHost.Beep()
-
-        member x.GoToFile () = 
-            x.CheckDirty (fun () ->
-                let text = x.WordUnderCursorOrEmpty 
-                match _vimHost.LoadFileIntoExistingWindow text _textBuffer with
-                | HostResult.Success -> ()
-                | HostResult.Error(_) -> _statusUtil.OnError (Resources.NormalMode_CantFindFile text))
-
-        /// Look for a word under the cursor and go to the specified file in a new window.  No need to 
-        /// check for dirty since we are opening a new window
-        member x.GoToFileInNewWindow () =
-            let text = x.WordUnderCursorOrEmpty 
-            match _vimHost.LoadFileIntoNewWindow text with
-            | HostResult.Success -> ()
-            | HostResult.Error(_) -> _statusUtil.OnError (Resources.NormalMode_CantFindFile text)
-
         member x.Put point stringData opKind = x.Put point stringData opKind
+        member x.RaiseSearchResultMessage searchResult = x.RaiseSearchResultMessage searchResult
+        member x.Redo count = x.Redo count
+        member x.ScrollLines dir count = x.ScrollLines dir count
+        member x.ShiftLineBlockLeft col multiplier = x.ShiftLineBlockLeft col multiplier
+        member x.ShiftLineBlockRight col multiplier = x.ShiftLineBlockRight col multiplier
+        member x.ShiftLineRangeLeft range multiplier = x.ShiftLineRangeLeft range multiplier
+        member x.ShiftLineRangeRight range multiplier = x.ShiftLineRangeRight range multiplier
+        member x.Substitute pattern replace range flags = x.Substitute pattern replace range flags
+        member x.Undo count = x.Undo count
 
 [<Export(typeof<ICommonOperationsFactory>)>]
 type CommonOperationsFactory
