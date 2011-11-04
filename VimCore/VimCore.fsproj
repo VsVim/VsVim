@@ -39,8 +39,8 @@
     <Compile Include="Constants.fs" />
     <Compile Include="FSharpUtil.fs" />
     <Compile Include="SearchKind.fs" />
-    <Compile Include="EditorUtil.fs" />
     <Compile Include="Util.fs" />
+    <Compile Include="EditorUtil.fs" />
     <Compile Include="WordKind.fs" />
     <Compile Include="VimKey.fs" />
     <Compile Include="KeyInput.fsi" />

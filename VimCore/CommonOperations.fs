@@ -11,6 +11,28 @@ open System.Text.RegularExpressions
 
 module internal CommonUtil = 
 
+    /// Get the point from which an incremental search should begin given
+    /// a context point.  They don't begin at the point but rather before
+    /// or after the point depending on the direction.  Return true if 
+    /// a wrap was needed to get the start point
+    let GetSearchPointAndWrap path point = 
+        match path with
+        | Path.Forward ->
+            match SnapshotPointUtil.TryAddOne point with 
+            | Some point -> point, false
+            | None -> SnapshotPoint(point.Snapshot, 0), true
+        | Path.Backward ->
+            match SnapshotPointUtil.TrySubtractOne point with
+            | Some point -> point, false
+            | None -> SnapshotUtil.GetEndPoint point.Snapshot, true
+
+    /// Get the point from which an incremental search should begin given
+    /// a context point.  They don't begin at the point but rather before
+    /// or after the point depending on the direction
+    let GetSearchPoint path point = 
+        let point, _ = GetSearchPointAndWrap path point
+        point
+
     /// Select the given VisualSpan in the ITextView
     let Select (textView : ITextView) visualSpan =
 
@@ -40,7 +62,7 @@ module internal CommonUtil =
     /// Select the given selection and move the caret to the appropriate point
     let SelectAndUpdateCaret textView (visualSelection : VisualSelection) =
         Select textView visualSelection.VisualSpan
-        TextViewUtil.MoveCaretToPoint textView visualSelection.CaretPoint
+        TextViewUtil.MoveCaretToPointRaw textView visualSelection.CaretPoint MoveCaretFlags.EnsureOnScreen
 
     /// Raise the error / warning messages for a given SearchResult
     let RaiseSearchResultMessage (statusUtil : IStatusUtil) searchResult =

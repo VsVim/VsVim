@@ -8,6 +8,10 @@ open Microsoft.VisualStudio.Text.Outlining
 
 module internal CommonUtil =
 
+    val GetSearchPointAndWrap : Path -> SnapshotPoint -> SnapshotPoint * bool
+
+    val GetSearchPoint : Path -> SnapshotPoint -> SnapshotPoint
+
     /// Select the given VisualSpan in the ITextView.
     val Select : ITextView -> VisualSpan -> unit
 
