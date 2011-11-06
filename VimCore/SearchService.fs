@@ -160,7 +160,7 @@ type internal SearchService
         // the caret and before should start before. This prevents the text 
         // under the caret from being the first match
         let snapshot = SnapshotPointUtil.GetSnapshot startPoint
-        let startPoint, didStartWrap = Util.GetSearchPointAndWrap patternData.Path startPoint
+        let startPoint, didStartWrap = CommonUtil.GetSearchPointAndWrap patternData.Path startPoint
 
         // Go ahead and run the search
         let searchData = SearchData.OfPatternData patternData _globalSettings.WrapScan

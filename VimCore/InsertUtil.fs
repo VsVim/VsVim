@@ -140,7 +140,7 @@ type internal InsertUtil
     /// Insert a new line into the ITextBuffer.  Make sure to indent the text
     member x.InsertNewLine() =
         let newLineText = _operations.GetNewLineText x.CaretPoint
-        x.EditWithLinkedChange "New Line" (fun () -> 
+        x.EditWithUndoTransaciton "New Line" (fun () -> 
             let contextLine = x.CaretLine
             _textBuffer.Insert(x.CaretPoint.Position, newLineText) |> ignore
 

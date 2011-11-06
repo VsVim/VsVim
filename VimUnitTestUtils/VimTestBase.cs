@@ -9,6 +9,7 @@ using NUnit.Framework;
 using Vim.UI.Wpf;
 using Vim.UI.Wpf.Implementation;
 using Vim.UnitTest.Mock;
+using System.Collections.Generic;
 
 namespace Vim.UnitTest
 {
@@ -88,6 +89,11 @@ namespace Vim.UnitTest
             get { return _smartIndentationService; }
         }
 
+        protected virtual bool TrackTextViewHistory
+        {
+            get { return true; }
+        }
+
         [SetUp]
         public void SetupBase()
         {
@@ -114,8 +120,12 @@ namespace Vim.UnitTest
                 var msg = String.Format("Extension Exception: {0}", _vimErrorDetector.GetErrors().First().Message);
                 Assert.Fail(msg);
             }
+            _vimErrorDetector.Clear();
 
+            _vim.VimData.SearchHistory.Clear();
+            _vim.VimData.CommandHistory.Clear();
             _vim.VimData.LastCommand = FSharpOption<StoredCommand>.None;
+
             _vim.KeyMap.ClearAll();
             _vim.MarkMap.ClearGlobalMarks();
             _vim.CloseAllVimBuffers();

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Utilities;
 
 namespace Vim.UnitTest.Exports
 {
@@ -11,13 +13,74 @@ namespace Vim.UnitTest.Exports
     /// </summary>
     [Export(typeof(IExtensionErrorHandler))]
     [Export(typeof(IVimErrorDetector))]
-    public sealed class VimErrorDetector : IExtensionErrorHandler, IVimErrorDetector
+    [Export(typeof(IWpfTextViewCreationListener))]
+    [Export(typeof(IVimBufferCreationListener))]
+    [ContentType("any")]
+    [TextViewRole(PredefinedTextViewRoles.Document)]
+    public sealed class VimErrorDetector : IVimErrorDetector, IWpfTextViewCreationListener, IVimBufferCreationListener
     {
         private readonly List<Exception> _errorList = new List<Exception>();
+        private readonly List<ITextView> _activeTextViewList = new List<ITextView>();
+        private readonly List<IVimBuffer> _activeVimBufferList = new List<IVimBuffer>();
 
         internal VimErrorDetector()
         {
 
+        }
+
+        private void CheckForOrphanedItems()
+        {
+            CheckForOrphanedLinkedUndoTransaction();
+            CheckForOrphanedUndoHistory();
+        }
+
+        private void CheckForOrphanedLinkedUndoTransaction()
+        {
+            foreach (var vimBuffer in _activeVimBufferList)
+            {
+                CheckForOrphanedLinkedUndoTransaction(vimBuffer);
+            }
+        }
+
+        /// <summary>
+        /// Make sure that the IVimBuffer doesn't have an open linked undo transaction when
+        /// it closes.  This leads to every Visual Studio transaction after this point being
+        /// linked to a single Vim undo.
+        /// </summary>
+        private void CheckForOrphanedLinkedUndoTransaction(IVimBuffer vimBuffer)
+        {
+            if (vimBuffer.UndoRedoOperations.InLinkedUndoTransaction)
+            {
+                // It's expected that insert and replace mode will often have a linked
+                // undo transaction open.  It's common for a command like 'cw' to transition
+                // to insert mode so that the following edit is linked to the 'c' portion
+                // for an undo
+                if (vimBuffer.ModeKind != ModeKind.Insert && vimBuffer.ModeKind != ModeKind.Replace)
+                {
+                    _errorList.Add(new Exception("Failed to close a linked undo transaction"));
+                }
+            }
+        }
+
+        private void CheckForOrphanedUndoHistory()
+        {
+            foreach (var textView in _activeTextViewList)
+            {
+                CheckForOrphanedUndoHistory(textView);
+            }
+        }
+
+        /// <summary>
+        /// Make sure that on tear down we don't have a current transaction.  Having one indicates
+        /// we didn't close it and hence are killing undo in the ITextBuffer
+        /// </summary>
+        private void CheckForOrphanedUndoHistory(ITextView textView)
+        {
+            var history = EditorUtil.GetUndoHistory(textView.TextBuffer);
+            if (history.CurrentTransaction != null)
+            {
+                _errorList.Add(new Exception("Failed to close an undo transaction"));
+            }
         }
 
         void IExtensionErrorHandler.HandleError(object sender, Exception exception)
@@ -27,17 +90,43 @@ namespace Vim.UnitTest.Exports
 
         bool IVimErrorDetector.HasErrors()
         {
+            CheckForOrphanedItems();
             return _errorList.Count > 0;
         }
 
         IEnumerable<Exception> IVimErrorDetector.GetErrors()
         {
+            CheckForOrphanedItems();
             return _errorList;
         }
 
         void IVimErrorDetector.Clear()
         {
             _errorList.Clear();
+            _activeTextViewList.Clear();
+            _activeVimBufferList.Clear();
+        }
+
+        void IWpfTextViewCreationListener.TextViewCreated(IWpfTextView textView)
+        {
+            _activeTextViewList.Add(textView);
+            textView.Closed +=
+                (sender, e) =>
+                {
+                    _activeTextViewList.Remove(textView);
+                    CheckForOrphanedUndoHistory(textView);
+                };
+        }
+
+        void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
+        {
+            _activeVimBufferList.Add(vimBuffer);
+            vimBuffer.Closed +=
+                (sender, e) =>
+                {
+                    _activeVimBufferList.Remove(vimBuffer);
+                    CheckForOrphanedLinkedUndoTransaction(vimBuffer);
+                };
         }
     }
 }

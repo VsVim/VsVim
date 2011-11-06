@@ -1062,6 +1062,13 @@ type SnapshotData = {
     CurrentSnapshot : ITextSnapshot
 }
 
+[<System.Flags>]
+type MoveCaretFlags =
+    | None = 0x0
+    | EnsureOnScreen = 0x1
+    | ClearSelection = 0x2
+    | All = 0xffffffff
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module TextViewUtil =
@@ -1114,23 +1121,49 @@ module TextViewUtil =
         let caret = GetCaret textView
         caret.EnsureVisible()
 
-    /// Move the caret to the given point and ensure it is on screen.  Will not expand any outlining regions
-    let MoveCaretToPoint textView (point:SnapshotPoint) = 
+    /// Clear out the selection
+    let ClearSelection (textView : ITextView) =
+        textView.Selection.Clear()
+
+    let private MoveCaretToCommon textView flags = 
+        if Util.IsFlagSet flags MoveCaretFlags.ClearSelection then
+            ClearSelection textView
+
+        if Util.IsFlagSet flags MoveCaretFlags.EnsureOnScreen then
+            EnsureCaretOnScreen textView
+
+    /// Move the caret to the given point
+    let MoveCaretToPointRaw textView (point : SnapshotPoint) flags = 
         let caret = GetCaret textView
         caret.MoveTo(point) |> ignore
-        EnsureCaretOnScreen textView 
+        MoveCaretToCommon textView flags
+
+    /// Move the caret to the given point, ensure it is on screen and clear out the previous 
+    /// selection.  Will not expand any outlining regions
+    let MoveCaretToPoint textView point =
+        MoveCaretToPointRaw textView point MoveCaretFlags.All
 
     /// Move the caret to the given point and ensure it is on screen.  Will not expand any outlining regions
-    let MoveCaretToVirtualPoint textView (point:VirtualSnapshotPoint) = 
+    let MoveCaretToVirtualPointRaw textView (point : VirtualSnapshotPoint) flags = 
         let caret = GetCaret textView
         caret.MoveTo(point) |> ignore
-        EnsureCaretOnScreen textView 
+        MoveCaretToCommon textView flags
 
-    /// Move the caret to the given position and ensure it is on screen.  Will not expand any outlining regions
-    let MoveCaretToPosition textView (pos:int) = 
-        let tss = GetSnapshot textView
-        let point = SnapshotPoint(tss, pos)
-        MoveCaretToPoint textView point 
+    /// Move the caret to the given point, ensure it is on screen and clear out the previous 
+    /// selection.  Will not expand any outlining regions
+    let MoveCaretToVirtualPoint textView point = 
+        MoveCaretToVirtualPointRaw textView point MoveCaretFlags.All
+
+    /// Move the caret to the given point and ensure it is on screen.  Will not expand any outlining regions
+    let MoveCaretToPositionRaw textView (position : int) flags = 
+        let snapshot = GetSnapshot textView
+        let point = SnapshotPoint(snapshot, position)
+        MoveCaretToPointRaw textView point flags
+
+    /// Move the caret to the given point, ensure it is on screen and clear out the previous 
+    /// selection.  Will not expand any outlining regions
+    let MoveCaretToPosition textView position = 
+        MoveCaretToPositionRaw textView position MoveCaretFlags.All
 
     /// Get the SnapshotData value for the edit buffer.  Unlike the SnapshotData for the Visual Buffer this 
     /// can always be retrieved because the caret point is presented in terms of the edit buffer

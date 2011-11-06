@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
+using Microsoft.FSharp.Control;
 
 namespace Vim.UI.Wpf.Implementation
 {
@@ -129,6 +130,53 @@ namespace Vim.UI.Wpf.Implementation
 
         #endregion
 
+        #region DismissedWordCompletionSession
+
+        /// <summary>
+        /// An IWordCompletionSession which starts out dismissed.
+        /// </summary>
+        private sealed class DismissedWordCompletionSession : IWordCompletionSession
+        {
+            private readonly ITextView _textView;
+
+            internal DismissedWordCompletionSession(ITextView textView)
+            {
+                _textView = textView;
+            }
+
+            void IWordCompletionSession.Dismiss()
+            {
+            }
+
+            event FSharpHandler<EventArgs> IWordCompletionSession.Dismissed
+            {
+                add { }
+                remove { }
+            }
+
+            bool IWordCompletionSession.IsDismissed
+            {
+                get { return true; }
+            }
+
+            bool IWordCompletionSession.MoveNext()
+            {
+                return false;
+            }
+
+            bool IWordCompletionSession.MovePrevious()
+            {
+                return false;
+            }
+
+            ITextView IWordCompletionSession.TextView
+            {
+                get { return _textView; }
+            }
+        }
+
+        #endregion
+
         private const string WordCompletionSetName = "Words";
 
         /// <summary>
@@ -180,6 +228,14 @@ namespace Vim.UI.Wpf.Implementation
                 // Start the completion.  This will cause it to get populated at which point we can go about 
                 // filtering the data
                 completionSession.Start();
+
+                // It's possible for the Start method to dismiss the ICompletionSession.  This happens when there
+                // is an initialization error such as being unable to find a CompletionSet.  If this occurs we
+                // just return the equivalent IWordCompletionSession (one which is dismissed)
+                if (completionSession.IsDismissed)
+                {
+                    return new DismissedWordCompletionSession(textView);
+                }
 
                 // Now move the word completion set to the fron
                 var wordCompletionSet = completionSession.CompletionSets.FirstOrDefault(x => x.Moniker == WordCompletionSetName);

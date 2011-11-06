@@ -75,21 +75,6 @@ namespace VimCore.UnitTest
             Assert.IsTrue(_textView.VisualSnapshot != _textView.TextSnapshot);
         }
 
-        [TearDown]
-        public void TearDown()
-        {
-            _keyMap.ClearAll();
-            _vimBuffer.Close();
-
-            // Make sure that on tear down we don't have a current transaction.  Having one indicates
-            // we didn't close it and hence are killing undo in the ITextBuffer
-            var history = EditorUtil.GetUndoHistory(_textView.TextBuffer);
-            Assert.IsNull(history.CurrentTransaction);
-
-            _vimData.SearchHistory.Clear();
-            _vimData.CommandHistory.Clear();
-        }
-
         [Test]
         public void dd_OnLastLine()
         {

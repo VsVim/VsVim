@@ -25,28 +25,6 @@ module internal Util =
         let weakRef = System.WeakReference(value)
         WeakReference<'T>(weakRef)
 
-    /// Get the point from which an incremental search should begin given
-    /// a context point.  They don't begin at the point but rather before
-    /// or after the point depending on the direction.  Return true if 
-    /// a wrap was needed to get the start point
-    let GetSearchPointAndWrap path point = 
-        match path with
-        | Path.Forward ->
-            match SnapshotPointUtil.TryAddOne point with 
-            | Some point -> point, false
-            | None -> SnapshotPoint(point.Snapshot, 0), true
-        | Path.Backward ->
-            match SnapshotPointUtil.TrySubtractOne point with
-            | Some point -> point, false
-            | None -> SnapshotUtil.GetEndPoint point.Snapshot, true
-
-    /// Get the point from which an incremental search should begin given
-    /// a context point.  They don't begin at the point but rather before
-    /// or after the point depending on the direction
-    let GetSearchPoint path point = 
-        let point, _ = GetSearchPointAndWrap path point
-        point
-
     /// Vim is fairly odd in that it considers the top line of the file to be both line numbers
     /// 1 and 0.  The next line is 2.  The editor is a zero based index though so we need
     /// to take that into account

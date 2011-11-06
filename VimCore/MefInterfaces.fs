@@ -121,7 +121,7 @@ type IVimBufferFactory =
 type IVimBufferCreationListener =
 
     /// Called whenever an IVimBuffer is created
-    abstract VimBufferCreated : IVimBuffer -> unit
+    abstract VimBufferCreated : vimBuffer : IVimBuffer -> unit
 
 /// Supports the creation and deletion of folds within a ITextBuffer.  Most components
 /// should talk to IFoldManager directly

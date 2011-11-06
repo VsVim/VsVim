@@ -42,7 +42,7 @@ type internal CommandUtil
     (
         _vimBufferData : VimBufferData,
         _motionUtil : IMotionUtil,
-        _operations : ICommonOperations,
+        _commonOperations : ICommonOperations,
         _foldManager : IFoldManager,
         _insertUtil : IInsertUtil
     ) =
@@ -65,8 +65,8 @@ type internal CommandUtil
     let _searchService = _vim.SearchService
     let _macroRecorder = _vim.MacroRecorder
     let _jumpList = _vimBufferData.JumpList
-    let _editorOperations = _operations.EditorOperations
-    let _options = _operations.EditorOptions
+    let _editorOperations = _commonOperations.EditorOperations
+    let _options = _commonOperations.EditorOptions
 
     let mutable _inRepeatLastChange = false
 
@@ -97,7 +97,7 @@ type internal CommandUtil
         let allowAlpha = _localSettings.IsNumberFormatSupported NumberFormat.Alpha
         match x.GetNumberValueAtCaret() with
         | None ->
-            _operations.Beep()
+            _commonOperations.Beep()
         | Some (numberValue, span) ->
 
             // Calculate te new value of the number 
@@ -127,7 +127,7 @@ type internal CommandUtil
         let indent = 
             x.CaretLine
             |> SnapshotLineUtil.GetIndentText
-            |> _operations.NormalizeBlanks
+            |> _commonOperations.NormalizeBlanks
 
         // Adjust the indentation on a given line of text to have the indentation
         // previously calculated
@@ -264,7 +264,7 @@ type internal CommandUtil
 
             // Move the caret but make sure to respect the 'virtualedit' option
             let point = SnapshotPoint(x.CurrentSnapshot, span.End.Position)
-            _operations.MoveCaretToPointAndCheckVirtualSpace point)
+            _commonOperations.MoveCaretToPointAndCheckVirtualSpace point)
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -368,7 +368,7 @@ type internal CommandUtil
             // Update the register now that the operation is complete.  Register value is odd here
             // because we really didn't delete linewise but it's required to be a linewise 
             // operation.  
-            let newLineText = _operations.GetNewLineText x.CaretPoint
+            let newLineText = _commonOperations.GetNewLineText x.CaretPoint
             let value = range.Extent.GetText() + newLineText
             let value = RegisterValue.OfString value OperationKind.LineWise
             _registerMap.SetRegisterValue register RegisterOperation.Delete value)
@@ -450,7 +450,7 @@ type internal CommandUtil
             // Move the caret back to it's original position.  Don't consider virtual
             // space here since we're switching to insert mode
             let point = SnapshotPoint(x.CurrentSnapshot, caretPosition)
-            _operations.MoveCaretToPoint point)
+            _commonOperations.MoveCaretToPoint point)
 
     /// Delete the selected text in Visual Mode and begin insert mode with a linked
     /// transaction. 
@@ -521,7 +521,7 @@ type internal CommandUtil
                 // Need to respect the virtual edit setting here as we could have 
                 // deleted the last character on the line
                 let point = SnapshotPoint(snapshot, position)
-                _operations.MoveCaretToPointAndCheckVirtualSpace point)
+                _commonOperations.MoveCaretToPointAndCheckVirtualSpace point)
 
             // Put the deleted text into the specified register
             let value = RegisterValue.String (StringData.OfSpan span, OperationKind.CharacterWise)
@@ -630,7 +630,7 @@ type internal CommandUtil
                 // Possible for a block mode to deletion to cause the start to now be in the line 
                 // break so we need to account for the 'virtualedit' setting
                 let point = SnapshotPoint(x.CurrentSnapshot, visualSpan.Start.Position)
-                _operations.MoveCaretToPointAndCheckVirtualSpace point
+                _commonOperations.MoveCaretToPointAndCheckVirtualSpace point
 
                 editSpan)
 
@@ -715,7 +715,7 @@ type internal CommandUtil
             // we require that line wise values end in breaks for consistency
             let stringData = 
                 if includesLastLine then
-                    let newLineText = _operations.GetNewLineText x.CaretPoint
+                    let newLineText = _commonOperations.GetNewLineText x.CaretPoint
                     (span.GetText()) + newLineText |> EditUtil.RemoveBeginingNewLine |> StringData.Simple
                 else
                     StringData.OfSpan span
@@ -759,7 +759,7 @@ type internal CommandUtil
 
             // Get the point on the current ITextSnapshot
             let point = SnapshotPoint(x.CurrentSnapshot, span.Start.Position)
-            _operations.MoveCaretToPointAndCheckVirtualSpace point)
+            _commonOperations.MoveCaretToPointAndCheckVirtualSpace point)
 
         // Update the register with the result so long as something was actually deleted
         // from the buffer
@@ -782,7 +782,7 @@ type internal CommandUtil
 
             // Move the caret back to the original position in the ITextBuffer.
             let point = SnapshotPoint(x.CurrentSnapshot, caretPosition)
-            _operations.MoveCaretToPointAndCheckVirtualSpace point)
+            _commonOperations.MoveCaretToPointAndCheckVirtualSpace point)
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -856,7 +856,7 @@ type internal CommandUtil
     /// Format the 'count' lines in the buffer
     member x.FormatLines count =
         let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
-        _operations.FormatLines range
+        _commonOperations.FormatLines range
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Format the selected lines
@@ -866,13 +866,13 @@ type internal CommandUtil
         x.EditWithUndoTransaciton "Format" (fun () ->
             visualSpan.Spans
             |> Seq.map SnapshotLineRangeUtil.CreateForSpan
-            |> Seq.iter _operations.FormatLines)
+            |> Seq.iter _commonOperations.FormatLines)
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Format the lines in the Motion 
     member x.FormatMotion (result : MotionResult) = 
-        _operations.FormatLines result.LineRange
+        _commonOperations.FormatLines result.LineRange
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Get the number value at the caret.  This is used for the CTRL-A and CTRL-X
@@ -974,7 +974,7 @@ type internal CommandUtil
 
     /// Go to the definition of the word under the caret
     member x.GoToDefinition () =
-        match _operations.GoToDefinition() with
+        match _commonOperations.GoToDefinition() with
         | Result.Succeeded -> ()
         | Result.Failed(msg) -> _statusUtil.OnError msg
 
@@ -982,19 +982,19 @@ type internal CommandUtil
 
     /// GoTo the file name under the cursor and possibly use a new window
     member x.GoToFileUnderCaret useNewWindow =
-        if useNewWindow then _operations.GoToFileInNewWindow()
-        else _operations.GoToFile()
+        if useNewWindow then _commonOperations.GoToFileInNewWindow()
+        else _commonOperations.GoToFile()
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Go to the global declaration of the word under the caret
     member x.GoToGlobalDeclaration () =
-        _operations.GoToGlobalDeclaration()
+        _commonOperations.GoToGlobalDeclaration()
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Go to the local declaration of the word under the caret
     member x.GoToLocalDeclaration () =
-        _operations.GoToLocalDeclaration()
+        _commonOperations.GoToLocalDeclaration()
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Go to the next tab in the specified direction
@@ -1002,11 +1002,11 @@ type internal CommandUtil
         match path with
         | Path.Forward ->
             match countOption with
-            | Some count -> _operations.GoToTab count
-            | None -> _operations.GoToNextTab path 1
+            | Some count -> _commonOperations.GoToTab count
+            | None -> _commonOperations.GoToNextTab path 1
         | Path.Backward ->
             let count = countOption |> OptionUtil.getOrDefault 1
-            _operations.GoToNextTab Path.Backward count
+            _commonOperations.GoToNextTab Path.Backward count
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1031,13 +1031,13 @@ type internal CommandUtil
         | None -> 
             // If the count exceeds the length of the buffer then the operation should not 
             // complete and a beep should be issued
-            _operations.Beep()
+            _commonOperations.Beep()
         | Some range -> 
             // The caret should be positioned one after the second to last line in the 
             // join.  It should have it's original position during an undo so don't
             // move the caret until we're inside the transaction
             x.EditWithUndoTransaciton "Join" (fun () -> 
-                _operations.Join range kind
+                _commonOperations.Join range kind
                 x.MoveCaretFollowingJoin range)
 
         CommandResult.Completed ModeSwitch.NoSwitch
@@ -1060,14 +1060,14 @@ type internal CommandUtil
 
         if range.Count = 1 then
             // Can't join a single line
-            _operations.Beep()
+            _commonOperations.Beep()
 
             CommandResult.Completed ModeSwitch.NoSwitch
         else 
             // The caret before the join should be positioned at the start of the VisualSpan
             TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
             x.EditWithUndoTransaciton "Join" (fun () -> 
-                _operations.Join range kind
+                _commonOperations.Join range kind
                 x.MoveCaretFollowingJoin range)
 
             CommandResult.Completed ModeSwitch.SwitchPreviousMode
@@ -1123,7 +1123,7 @@ type internal CommandUtil
         // REPEAT TODO: Need to file a bug to get the caret position correct here for redo
         _undoRedoOperations.EditWithUndoTransaction "InsertLineAbove" (fun() -> 
             let line = x.CaretLine
-            let newLineText = _operations.GetNewLineText x.CaretPoint
+            let newLineText = _commonOperations.GetNewLineText x.CaretPoint
             _textBuffer.Replace(new Span(line.Start.Position,0), newLineText) |> ignore)
 
         // Position the caret for the edit
@@ -1149,7 +1149,7 @@ type internal CommandUtil
         let savedCaretLine = x.CaretLine
         _undoRedoOperations.EditWithUndoTransaction  "InsertLineBelow" (fun () -> 
             let span = new SnapshotSpan(savedCaretLine.EndIncludingLineBreak, 0)
-            let newLineText = _operations.GetNewLineText x.CaretPoint
+            let newLineText = _commonOperations.GetNewLineText x.CaretPoint
             _textBuffer.Replace(span.Span, newLineText) |> ignore
 
             TextViewUtil.MoveCaretToPosition _textView savedCaretPoint.Position)
@@ -1163,7 +1163,7 @@ type internal CommandUtil
     /// Jump to the next tag in the tag list
     member x.JumpToNewerPosition count = 
         if not (_jumpList.MoveNewer count) then
-            _operations.Beep()
+            _commonOperations.Beep()
         else
             x.JumpToTagCore ()
         CommandResult.Completed ModeSwitch.NoSwitch
@@ -1176,7 +1176,7 @@ type internal CommandUtil
             _jumpList.StartTraversal()
 
         if not (_jumpList.MoveOlder count) then
-            _operations.Beep()
+            _commonOperations.Beep()
         else
             x.JumpToTagCore ()
         CommandResult.Completed ModeSwitch.NoSwitch
@@ -1187,7 +1187,7 @@ type internal CommandUtil
 
         // Jump to the given point in the ITextBuffer
         let jumpLocal (point : VirtualSnapshotPoint) = 
-            _operations.MoveCaretToPointAndEnsureVisible point.Position
+            _commonOperations.MoveCaretToPointAndEnsureVisible point.Position
             _jumpList.Add before |> ignore
             CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1205,7 +1205,7 @@ type internal CommandUtil
             | Some point ->
                 if point.Position.Snapshot.TextBuffer = _textBuffer then
                     jumpLocal point
-                elif _operations.NavigateToPoint point then
+                elif _commonOperations.NavigateToPoint point then
                     _jumpList.Add before |> ignore
                     CommandResult.Completed ModeSwitch.NoSwitch
                 else
@@ -1223,8 +1223,8 @@ type internal CommandUtil
     /// Jumps to the specified 
     member x.JumpToTagCore () =
         match _jumpList.Current with
-        | None -> _operations.Beep()
-        | Some point -> _operations.MoveCaretToPointAndEnsureVisible point
+        | None -> _commonOperations.Beep()
+        | Some point -> _commonOperations.MoveCaretToPointAndEnsureVisible point
 
     /// Move the caret to start of a line which is deleted.  Needs to preserve the original 
     /// indent if 'autoindent' is set.
@@ -1254,7 +1254,7 @@ type internal CommandUtil
 
     /// Move the caret to the proper indent on the newly created line
     member x.MoveCaretToNewLineIndent contextLine newLine = 
-        match _operations.GetNewLineIndent contextLine newLine with
+        match _commonOperations.GetNewLineIndent contextLine newLine with
         | None -> 
             TextViewUtil.MoveCaretToPoint _textView newLine.Start 
         | Some indent ->
@@ -1285,18 +1285,18 @@ type internal CommandUtil
         match _motionUtil.GetMotion motion argument with
         | None -> 
             // If the motion couldn't be gotten then just beep
-            _operations.Beep()
+            _commonOperations.Beep()
             CommandResult.Error
         | Some result -> 
 
             let point = x.CaretPoint
-            _operations.MoveCaretToMotionResult result
+            _commonOperations.MoveCaretToMotionResult result
 
             // Beep if the motion doesn't actually move the caret.  This is currently done to 
             // satisfy 'l' and 'h' at the end and start of lines respectively.  It may not be 
             // needed for every empty motion but so far I can't find a reason why not
             if point = x.CaretPoint then 
-                _operations.Beep()
+                _commonOperations.Beep()
                 CommandResult.Error
             else
                 CommandResult.Completed ModeSwitch.NoSwitch
@@ -1402,7 +1402,7 @@ type internal CommandUtil
         // it before the transaction.
         x.EditWithUndoTransaciton "Put" (fun () -> 
 
-            _operations.Put point stringData operationKind
+            _commonOperations.Put point stringData operationKind
 
             // Edit is complete.  Position the caret against the updated text.  First though
             // get the original insertion point in the new ITextSnapshot
@@ -1438,7 +1438,7 @@ type internal CommandUtil
                             // Position at the original insertion point
                             SnapshotUtil.GetPoint x.CurrentSnapshot oldPoint.Position
 
-                _operations.MoveCaretToPointAndCheckVirtualSpace point
+                _commonOperations.MoveCaretToPointAndCheckVirtualSpace point
             | OperationKind.LineWise ->
 
                 // Get the line on which we will be positioning the caret
@@ -1463,7 +1463,7 @@ type internal CommandUtil
 
                 // Get the indent point of the line.  That's what the caret needs to be moved to
                 let point = SnapshotLineUtil.GetIndent line
-                _operations.MoveCaretToPointAndCheckVirtualSpace point)
+                _commonOperations.MoveCaretToPointAndCheckVirtualSpace point)
 
     /// Put the contents of the specified register over the selection.  This is used for all
     /// visual mode put commands. 
@@ -1582,7 +1582,7 @@ type internal CommandUtil
         match name with 
         | None ->
             // Beep on an invalid macro register
-            _operations.Beep()
+            _commonOperations.Beep()
         | Some name ->
             let register = _registerMap.GetRegister name
             _macroRecorder.StartRecording register isAppend
@@ -1596,7 +1596,7 @@ type internal CommandUtil
 
     /// Undo count operations in the ITextBuffer
     member x.Redo count = 
-        _operations.Redo count
+        _commonOperations.Redo count
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Repeat the last executed command against the current buffer
@@ -1707,7 +1707,7 @@ type internal CommandUtil
                 _inRepeatLastChange <- true
                 match _vimData.LastCommand with
                 | None -> 
-                    _operations.Beep()
+                    _commonOperations.Beep()
                     CommandResult.Completed ModeSwitch.NoSwitch
                 | Some command ->
                     repeat command (Some repeatData)
@@ -1718,7 +1718,7 @@ type internal CommandUtil
     member x.RepeatLastSubstitute useSameFlags = 
         match _vimData.LastSubstituteData with
         | None ->
-            _operations.Beep()
+            _commonOperations.Beep()
         | Some data ->
             let range = SnapshotLineRangeUtil.CreateForLine x.CaretLine
             let flags = 
@@ -1726,7 +1726,7 @@ type internal CommandUtil
                     data.Flags
                 else
                     SubstituteFlags.None
-            _operations.Substitute data.SearchPattern data.Substitute range flags
+            _commonOperations.Substitute data.SearchPattern data.Substitute range flags
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1743,7 +1743,7 @@ type internal CommandUtil
             if (point.Position + count) > point.GetContainingLine().End.Position then
                 // If the replace operation exceeds the line length then the operation
                 // can't succeed
-                _operations.Beep()
+                _commonOperations.Beep()
                 false
             else
                 // Do the replace in an undo transaction since we are explicitly positioning
@@ -1765,7 +1765,7 @@ type internal CommandUtil
 
         // If the replace failed then we should beep the console
         if not succeeded then
-            _operations.Beep()
+            _commonOperations.Beep()
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1831,7 +1831,7 @@ type internal CommandUtil
 
         match name with
         | None ->
-            _operations.Beep()
+            _commonOperations.Beep()
         | Some name ->
             let register = _registerMap.GetRegister name
             let list = register.RegisterValue.KeyInputList
@@ -2022,7 +2022,7 @@ type internal CommandUtil
     member x.RunWithMotion (motion : MotionData) func = 
         match _motionUtil.GetMotion motion.Motion motion.MotionArgument with
         | None -> 
-            _operations.Beep()
+            _commonOperations.Beep()
             CommandResult.Error
         | Some data ->
             func data
@@ -2032,13 +2032,13 @@ type internal CommandUtil
         match Mark.OfChar c with
         | None ->
             _statusUtil.OnError Resources.Common_MarkInvalid
-            _operations.Beep()
+            _commonOperations.Beep()
             CommandResult.Error
         | Some mark ->
             let line, column = SnapshotPointUtil.GetLineColumn x.CaretPoint
             if not (_markMap.SetMark mark _vimBufferData line column) then
                 // Mark set can fail if the user chooses a readonly mark like '<'
-                _operations.Beep()
+                _commonOperations.Beep()
             CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Scroll the window up / down a specified number of lines.  If a count is provided
@@ -2088,13 +2088,13 @@ type internal CommandUtil
         match scrollDirection with
         | ScrollDirection.Up -> 
             if x.CaretLine.LineNumber = 0 then 
-                _operations.Beep()
+                _commonOperations.Beep()
             else
                 _textView.ViewScroller.ScrollViewportVerticallyByLines(scrollDirection, count)
                 updateCaret (fun textViewLines -> textViewLines.LastVisibleLine)
         | ScrollDirection.Down ->
             if x.CaretLine.LineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot then
-                _operations.Beep()
+                _commonOperations.Beep()
             else
                 _textView.ViewScroller.ScrollViewportVerticallyByLines(scrollDirection, count)
                 updateCaret (fun textViewLines -> textViewLines.FirstVisibleLine)
@@ -2109,7 +2109,7 @@ type internal CommandUtil
             match direction with
             | ScrollDirection.Up -> _editorOperations.PageUp(false)
             | ScrollDirection.Down -> _editorOperations.PageDown(false)
-            | _ -> _operations.Beep()
+            | _ -> _commonOperations.Beep()
 
         for i = 1 to count do
             doScroll()
@@ -2127,23 +2127,23 @@ type internal CommandUtil
 
     /// Scroll the line containing the caret to the top of the ITextView.  
     member x.ScrollCaretLineToTop keepCaretColumn = 
-        _operations.EditorOperations.ScrollLineTop()
+        _commonOperations.EditorOperations.ScrollLineTop()
         if not keepCaretColumn then
-            _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
+            _commonOperations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Scroll the line containing the caret to the middle of the ITextView.  
     member x.ScrollCaretLineToMiddle keepCaretColumn = 
-        _operations.EditorOperations.ScrollLineCenter()
+        _commonOperations.EditorOperations.ScrollLineCenter()
         if not keepCaretColumn then
-            _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
+            _commonOperations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Scroll the line containing the caret to the bottom of the ITextView.  
     member x.ScrollCaretLineToBottom keepCaretColumn = 
-        _operations.EditorOperations.ScrollLineBottom()
+        _commonOperations.EditorOperations.ScrollLineBottom()
         if not keepCaretColumn then
-            _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
+            _commonOperations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Shift the given line range left by the specified value.  The caret will be 
@@ -2152,7 +2152,7 @@ type internal CommandUtil
 
         // Use a transaction so the caret will be properly moved for undo / redo
         x.EditWithUndoTransaciton "ShiftLeft" (fun () ->
-            _operations.ShiftLineRangeLeft range multiplier
+            _commonOperations.ShiftLineRangeLeft range multiplier
 
             // Now move the caret to the first non-whitespace character on the first
             // line 
@@ -2169,7 +2169,7 @@ type internal CommandUtil
 
         // Use a transaction so the caret will be properly moved for undo / redo
         x.EditWithUndoTransaciton "ShiftRight" (fun () ->
-            _operations.ShiftLineRangeRight range multiplier
+            _commonOperations.ShiftLineRangeRight range multiplier
 
             // Now move the caret to the first non-whitespace character on the first
             // line 
@@ -2207,7 +2207,7 @@ type internal CommandUtil
             // it needs to be undone to this location
             TextViewUtil.MoveCaretToPosition _textView targetCaretPosition
             x.EditWithUndoTransaciton "ShiftLeft" (fun () -> 
-                _operations.ShiftLineBlockRight blockSpan.BlockSpans count
+                _commonOperations.ShiftLineBlockRight blockSpan.BlockSpans count
                 TextViewUtil.MoveCaretToPosition _textView targetCaretPosition)
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
@@ -2239,7 +2239,7 @@ type internal CommandUtil
             // it needs to be undone to this location
             TextViewUtil.MoveCaretToPosition _textView targetCaretPosition
             x.EditWithUndoTransaciton "ShiftLeft" (fun () -> 
-                _operations.ShiftLineBlockRight blockSpan.BlockSpans count
+                _commonOperations.ShiftLineBlockRight blockSpan.BlockSpans count
 
                 TextViewUtil.MoveCaretToPosition _textView targetCaretPosition)
 
@@ -2259,7 +2259,7 @@ type internal CommandUtil
     member x.SplitViewHorizontally () = 
         match _vimHost.SplitViewHorizontally _textView with
         | HostResult.Success -> ()
-        | HostResult.Error _ -> _operations.Beep()
+        | HostResult.Error _ -> _commonOperations.Beep()
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -2267,7 +2267,7 @@ type internal CommandUtil
     member x.SplitViewVertically () =
         match _vimHost.SplitViewVertically _textView with
         | HostResult.Success -> ()
-        | HostResult.Error _ -> _operations.Beep()
+        | HostResult.Error _ -> _commonOperations.Beep()
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -2320,7 +2320,7 @@ type internal CommandUtil
 
     /// Undo count operations in the ITextBuffer
     member x.Undo count = 
-        _operations.Undo count
+        _commonOperations.Undo count
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Write out the ITextBuffer and quit

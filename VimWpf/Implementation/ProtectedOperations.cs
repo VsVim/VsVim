@@ -35,7 +35,7 @@ namespace Vim.UI.Wpf.Implementation
         /// </summary>
         internal ProtectedOperations()
         {
-
+            _errorHandlers = new List<Lazy<IExtensionErrorHandler>>();
         }
 
         /// <summary>
@@ -97,7 +97,6 @@ namespace Vim.UI.Wpf.Implementation
                 }
             }
         }
-
 
         void IProtectedOperations.BeginInvoke(Action action)
         {
