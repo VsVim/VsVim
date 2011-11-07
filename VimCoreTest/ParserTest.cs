@@ -348,7 +348,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Parse_Map_Arguments()
         {
-            Action<string, MapArgument> action = 
+            Action<string, KeyMapArgument> action = 
                 (commandText, mapArgument) =>
                 {
                     var command = ParseLineCommand(commandText).AsMapKeys();
@@ -356,10 +356,10 @@ namespace VimCore.UnitTest
                     Assert.AreEqual(1, mapArguments.Length);
                     Assert.AreEqual(mapArgument, mapArguments.Head);
                 };
-            action("map <buffer> a b", MapArgument.Buffer);
-            action("map <silent> a b", MapArgument.Silent);
-            action("imap <silent> a b", MapArgument.Silent);
-            action("nmap <silent> a b", MapArgument.Silent);
+            action("map <buffer> a b", KeyMapArgument.Buffer);
+            action("map <silent> a b", KeyMapArgument.Silent);
+            action("imap <silent> a b", KeyMapArgument.Silent);
+            action("nmap <silent> a b", KeyMapArgument.Silent);
         }
 
         /// <summary>
@@ -387,7 +387,7 @@ namespace VimCore.UnitTest
             var parser = new Parser(text);
             var list = parser.ParseMapArguments().ToList();
             CollectionAssert.AreEquivalent(
-                new[] { MapArgument.Buffer, MapArgument.Silent },
+                new[] { KeyMapArgument.Buffer, KeyMapArgument.Silent },
                 list);
         }
 

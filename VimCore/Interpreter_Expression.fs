@@ -100,7 +100,7 @@ type FileOption =
 
 /// Arguments which can be passed to the mapping functions
 [<RequireQualifiedAccess>]
-type MapArgument = 
+type KeyMapArgument = 
     | Buffer
     | Silent
     | Special
@@ -183,11 +183,15 @@ and [<RequireQualifiedAccess>] LineCommand =
     | ChangeLocalDirectory of string option
 
     /// Clear out the keyboard map for the given modes
-    | ClearKeyMap of KeyRemapMode list * MapArgument list
+    | ClearKeyMap of KeyRemapMode list * KeyMapArgument list
 
     /// The :close command.  The bool value represents whether or not the 
     /// bang modifier was added
     | Close of bool
+
+    /// Copy the specific line range to the given position.  The first line range is the 
+    /// source and the second is the desitination
+    | CopyTo of LineRange option * LineRange
 
     /// The :edit command.  The values range as follows
     ///  - ! option present
@@ -243,7 +247,7 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// Map the key notation in the given modes.  The bool is whether or not the right
     /// notation can allow remapping
-    | MapKeys of string * string * KeyRemapMode list * bool * MapArgument list
+    | MapKeys of string * string * KeyRemapMode list * bool * KeyMapArgument list
 
     /// Temporarily disable the 'hlsearch' option
     | NoHighlightSearch
@@ -326,7 +330,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Undo
 
     /// Unmap the key notation in the given modes
-    | UnmapKeys of string * KeyRemapMode list * MapArgument list
+    | UnmapKeys of string * KeyRemapMode list * KeyMapArgument list
 
     /// Write the 
     ///  - The line range to write out

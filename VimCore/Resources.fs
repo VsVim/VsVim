@@ -15,6 +15,7 @@ module internal Resources =
     let Common_BulkEdit = "VsVim Bulk Edit"
     let Common_GotoDefNoWordUnderCursor = "No word under cursor to go to the definition of"
     let Common_GotoDefFailed word = sprintf "Could not navigate to definition of %s" word
+    let Common_InvalidAddress = "Invalid addresss"
     let Common_InvalidLineNumber = "Invalid Line Number"
     let Common_MarkInvalid = "Argument must be a letter or forward / back quote"
     let Common_MarkNotSet = "Mark not set"

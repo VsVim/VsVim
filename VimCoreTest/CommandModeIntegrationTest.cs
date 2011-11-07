@@ -33,6 +33,62 @@ namespace VimCore.UnitTest
             _vimBuffer.Process(command, enter: true);
         }
 
+        /// <summary>
+        /// Copying a line to a given line should put it at that given line
+        /// </summary>
+        [Test]
+        public void CopyTo_Line()
+        {
+            Create("cat", "dog", "bear");
+            RunCommand("co 1");
+            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(2).GetText());
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Copying a line to a given line should put it at that given line
+        /// </summary>
+        [Test]
+        public void CopyTo_Line2()
+        {
+            Create("cat", "dog", "bear");
+            RunCommand("co 2");
+            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(2).GetText());
+            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Check the copy command via the 't' synonym
+        /// </summary>
+        [Test]
+        public void CopyTo_ViaSynonym()
+        {
+            Create("cat", "dog", "bear");
+            RunCommand("t 2");
+            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(2).GetText());
+            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Copying a line to a range should cause it to copy to the first line 
+        /// in the range
+        /// </summary>
+        [Test]
+        public void CopyTo_LineRange()
+        {
+            Create("cat", "dog", "bear");
+            RunCommand("co 1,2");
+            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(2).GetText());
+        }
+
         [Test]
         public void SwitchTo()
         {

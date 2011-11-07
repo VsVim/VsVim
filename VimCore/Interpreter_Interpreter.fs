@@ -247,6 +247,30 @@ type Interpreter
                 _vimBuffer.CurrentDirectory <- Some directoryPath
         RunResult.Completed
 
+    /// Copy the text from the source address to the destination address
+    member x.RunCopyTo destLineRange (sourceLineRange : SnapshotLineRange) =
+        // The :copy command allows the specification of a full range but for the destination
+        // it will only be valid for single line specifiers.  
+        let destLine = 
+            match destLineRange with 
+            | LineRange.EntireBuffer -> None
+            | LineRange.Range (left, _ , _) -> x.GetLine left
+            | LineRange.SingleLine line -> x.GetLine line
+
+        match destLine with
+        | None -> _statusUtil.OnError Resources.Common_InvalidAddress
+        | Some destLine -> 
+
+            // Use an undo transaction so that the caret move and insert is a single
+            // operation
+            _undoRedoOperations.EditWithUndoTransaction "CopyTo" (fun () ->
+
+                let destPosition = destLine.EndIncludingLineBreak.Position
+                _textBuffer.Insert(destPosition, sourceLineRange.GetTextIncludingLineBreak()) |> ignore
+                TextViewUtil.MoveCaretToPosition _textView destPosition)
+
+        RunResult.Completed
+
     /// Clear out the key map for the given modes
     member x.RunClearKeyMap keyRemapModes mapArgumentList = 
         if not (List.isEmpty mapArgumentList) then
@@ -1099,6 +1123,7 @@ type Interpreter
         match lineCommand with
         | LineCommand.ChangeDirectory path -> x.RunChangeDirectory path
         | LineCommand.ChangeLocalDirectory path -> x.RunChangeLocalDirectory path
+        | LineCommand.CopyTo (sourceLineRange, destLineRange) -> runWithLineRange sourceLineRange (x.RunCopyTo destLineRange)
         | LineCommand.ClearKeyMap (keyRemapModes, mapArgumentList) -> x.RunClearKeyMap keyRemapModes mapArgumentList
         | LineCommand.Close hasBang -> x.RunClose hasBang
         | LineCommand.Edit (hasBang, fileOptions, commandOption, filePath) -> x.RunEdit hasBang fileOptions commandOption filePath

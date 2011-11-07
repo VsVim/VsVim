@@ -23,6 +23,7 @@ type Parser
         ("cd", "cd")
         ("chdir", "chd")
         ("close", "clo")
+        ("copy", "co")
         ("delete","d")
         ("edit", "e")
         ("exit", "exi")
@@ -49,6 +50,7 @@ type Parser
         ("substitute", "s")
         ("smagic", "sm")
         ("snomagic", "sno")
+        ("t", "t")
         ("tabfirst", "tabfir")
         ("tablast", "tabl")
         ("tabnext", "tabn")
@@ -413,12 +415,12 @@ type Parser
                 x.IncrementIndex()
                 match x.ParseWord() with
                 | None -> finish()
-                | Some "buffer" -> completeArgument MapArgument.Buffer
-                | Some "silent" -> completeArgument MapArgument.Silent
-                | Some "special" -> completeArgument MapArgument.Special
-                | Some "script" -> completeArgument MapArgument.Script
-                | Some "expr" -> completeArgument MapArgument.Expr 
-                | Some "unique" -> completeArgument MapArgument.Unique
+                | Some "buffer" -> completeArgument KeyMapArgument.Buffer
+                | Some "silent" -> completeArgument KeyMapArgument.Silent
+                | Some "special" -> completeArgument KeyMapArgument.Special
+                | Some "script" -> completeArgument KeyMapArgument.Script
+                | Some "expr" -> completeArgument KeyMapArgument.Expr 
+                | Some "unique" -> completeArgument KeyMapArgument.Unique
                 | Some _ -> finish()
             else
                 finish()
@@ -510,6 +512,14 @@ type Parser
     member x.ParseClose() = 
         let isBang = x.ParseBang()
         LineCommand.Close isBang |> ParseResult.Succeeded
+
+    /// Parse out the :copy command.  It has a single required argument that is the destination
+    /// address
+    member x.ParseCopyTo sourceLineRange = 
+        x.SkipBlanks()
+        match x.ParseLineRange() with
+        | None -> ParseResult.Failed Resources.Common_InvalidAddress
+        | Some destLineRange -> LineCommand.CopyTo (sourceLineRange, destLineRange) |> ParseResult.Succeeded
 
     /// Parse out the :delete command
     member x.ParseDelete lineRange = 
@@ -1064,6 +1074,7 @@ type Parser
             | "cmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Command])
             | "cmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Command])
             | "cnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Command])
+            | "copy" -> x.ParseCopyTo lineRange 
             | "cunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Command])
             | "delete" -> x.ParseDelete lineRange
             | "display" -> noRange x.ParseDisplayRegisters 
@@ -1102,10 +1113,10 @@ type Parser
             | "read" -> x.ParseRead lineRange
             | "redo" -> noRange (fun () -> LineCommand.Redo |> ParseResult.Succeeded)
             | "retab" -> x.ParseRetab lineRange
+            | "registers" -> noRange x.ParseDisplayRegisters 
             | "set" -> noRange x.ParseSet
             | "source" -> noRange x.ParseSource
             | "split" -> x.ParseSplit lineRange
-            | "registers" -> noRange x.ParseDisplayRegisters 
             | "substitute" -> x.ParseSubstitute lineRange (fun x -> x)
             | "smagic" -> x.ParseSubstituteMagic lineRange
             | "smap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Select])
@@ -1113,6 +1124,7 @@ type Parser
             | "snomagic" -> x.ParseSubstituteNoMagic lineRange
             | "snoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Select])
             | "sunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Select])
+            | "t" -> x.ParseCopyTo lineRange 
             | "tabfirst" -> noRange (fun () -> ParseResult.Succeeded LineCommand.GoToFirstTab)
             | "tabrewind" -> noRange (fun () -> ParseResult.Succeeded LineCommand.GoToFirstTab)
             | "tablast" -> noRange (fun () -> ParseResult.Succeeded LineCommand.GoToLastTab)
@@ -1230,8 +1242,6 @@ type Parser
             | Some '%' -> parseBinary BinaryKind.Modulo
             | Some _ -> parseResult
 
-    // TODO: Delete.  This is just a transition hack to allow us to use the new interpreter and parser
-    // to replace RangeUtil.ParseRange
     static member ParseRange rangeText = 
         let parser = Parser(rangeText)
         let lineRange = parser.ParseLineRange()
