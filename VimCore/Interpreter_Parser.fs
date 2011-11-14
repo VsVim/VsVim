@@ -10,6 +10,22 @@ type ParseResult<'T> =
 
 type ParseLineCommand = LineRange option -> ParseResult<LineCommand>
 
+type ParserBuilder() =
+
+    member x.Bind (parseResult, rest) = 
+        match parseResult with
+        | ParseResult.Failed _ -> parseResult
+        | ParseResult.Succeeded value -> rest value
+
+    member x.Return value =
+        ParseResult.Succeeded value
+
+    member x.ReturnFrom value = 
+        value
+
+    member x.Zero () = 
+        ParseResult.Failed Resources.Parser_Error
+
 // TODO: Look at every case of ParseResult.Failed and ensure we are using the appropriate error
 // message
 [<Sealed>]
@@ -17,6 +33,8 @@ type Parser
     (
         _text : string
     ) = 
+
+    let _parserBuilder = ParserBuilder()
 
     /// The set of supported line commands paired with their abbreviation
     static let s_LineCommandNamePair = [
@@ -1217,30 +1235,30 @@ type Parser
 
     /// Parse out a complete expression from the text.  
     member x.ParseExpressionCore() =
-        let parseResult = x.ParseSingleExpression()
-        match parseResult with
-        | ParseResult.Failed _ -> parseResult
-        | ParseResult.Succeeded expr ->
+        _parserBuilder {
+            let! expr = x.ParseSingleExpression()
             x.SkipBlanks()
 
             // Parsee out a binary expression
             let parseBinary binaryKind =
                 x.IncrementIndex()
                 x.SkipBlanks()
-                let rightResult = x.ParseSingleExpression()
-                match rightResult with
-                | ParseResult.Failed _ -> parseResult
-                | ParseResult.Succeeded rightExpr -> Expression.Binary (binaryKind, expr, rightExpr) |> ParseResult.Succeeded
+
+                _parserBuilder {
+                    let! rightExpr = x.ParseSingleExpression()
+                    return Expression.Binary (binaryKind, expr, rightExpr)
+                }
 
             match x.CurrentChar with
-            | None -> parseResult
-            | Some '+' -> parseBinary BinaryKind.Add
-            | Some '/' -> parseBinary BinaryKind.Divide
-            | Some '*' -> parseBinary BinaryKind.Multiply
-            | Some '.' -> parseBinary BinaryKind.Concatenate
-            | Some '-' -> parseBinary BinaryKind.Subtract
-            | Some '%' -> parseBinary BinaryKind.Modulo
-            | Some _ -> parseResult
+            | None -> return expr
+            | Some '+' -> return! parseBinary BinaryKind.Add
+            | Some '/' -> return! parseBinary BinaryKind.Divide
+            | Some '*' -> return! parseBinary BinaryKind.Multiply
+            | Some '.' -> return! parseBinary BinaryKind.Concatenate
+            | Some '-' -> return! parseBinary BinaryKind.Subtract
+            | Some '%' -> return! parseBinary BinaryKind.Modulo
+            | Some _ -> return expr
+        }
 
     static member ParseRange rangeText = 
         let parser = Parser(rangeText)
