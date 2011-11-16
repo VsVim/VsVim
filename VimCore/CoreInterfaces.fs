@@ -3085,10 +3085,6 @@ and IVimBuffer =
     [<CLIEvent>]
     abstract StatusMessage : IEvent<string>
 
-    /// Raised when a long status message is encountered
-    [<CLIEvent>]
-    abstract StatusMessageLong : IEvent<string seq>
-
     /// Raised when the IVimBuffer is being closed
     [<CLIEvent>]
     abstract Closed : IEvent<System.EventArgs>

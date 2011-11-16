@@ -31,7 +31,6 @@ namespace Vim.UI.Wpf
             _buffer.KeyInputStart += OnKeyInputStart;
             _buffer.KeyInputEnd += OnKeyInputEnd;
             _buffer.StatusMessage += OnStatusMessage;
-            _buffer.StatusMessageLong += OnStatusMessageLong;
             _buffer.ErrorMessage += OnErrorMessage;
             _buffer.WarningMessage += OnWarningMessage;
             _buffer.Vim.MacroRecorder.RecordingStarted += delegate { UpdateForRecordingChanged(); };
@@ -231,23 +230,6 @@ namespace Vim.UI.Wpf
 
         private void OnStatusMessage(object sender, string message)
         {
-            MessageEvent(message);
-        }
-
-        /// <summary>
-        /// Called after a StatusMessageLong event and we need to display the result to 
-        /// the user.  This is displayed in a line fashion so normalize out the newline 
-        /// values
-        /// </summary>
-        private void OnStatusMessageLong(object sender, IEnumerable<string> lines)
-        {
-            // TODO: Right now we're arbitrarily limiting the line length to 100 characters. Really 
-            // it should be limited to the available line length. 
-            
-            // TODO: Should remove all new line characters not just Environment.NewLine
-            var message = lines
-                .Select(x => x.Replace(Environment.NewLine, " "))
-                .Aggregate((x, y) => x + Environment.NewLine + y);
             MessageEvent(message);
         }
 

@@ -151,11 +151,13 @@ namespace VimCore.UnitTest
         public void Substitute5()
         {
             Create("cat bat", "dag");
-            List<string> list = null;
-            _buffer.StatusMessageLong += (_, e) => { list = e.ToList(); };
-            RunCommand("s/a/b/pg");
-            Assert.AreEqual(Resources.Common_SubstituteComplete(2, 1), list[0]);
-            Assert.AreEqual("cbt bbt", list[1]);
+            string msg = null;
+            _buffer.StatusMessage += (_, e) => { msg = e; };
+            RunCommand("%s/a/b/pg");
+
+            var lines = msg.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+            Assert.AreEqual(Resources.Common_SubstituteComplete(2, 1), lines[0]);
+            Assert.AreEqual("cbt bbt", lines[1]);
         }
 
         [Test]

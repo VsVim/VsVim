@@ -100,7 +100,6 @@ type internal VimBuffer
     let _errorMessageEvent = new Event<_>()
     let _warningMessageEvent = new Event<_>()
     let _statusMessageEvent = new Event<_>()
-    let _statusMessageLongEvent = new Event<_>()
     let _closedEvent = new Event<_>()
 
     do 
@@ -366,7 +365,6 @@ type internal VimBuffer
     member x.RaiseErrorMessage msg = _errorMessageEvent.Trigger msg
     member x.RaiseWarningMessage msg = _warningMessageEvent.Trigger msg
     member x.RaiseStatusMessage msg = _statusMessageEvent.Trigger msg
-    member x.RaiseStatusMessageLong msgSeq = _statusMessageLongEvent.Trigger msgSeq
 
     /// Remove an IMode from the IVimBuffer instance
     member x.RemoveMode mode = _modeMap.RemoveMode mode
@@ -471,8 +469,6 @@ type internal VimBuffer
         member x.WarningMessage = _warningMessageEvent.Publish
         [<CLIEvent>]
         member x.StatusMessage = _statusMessageEvent.Publish
-        [<CLIEvent>]
-        member x.StatusMessageLong = _statusMessageLongEvent.Publish
         [<CLIEvent>]
         member x.Closed = _closedEvent.Publish
 
