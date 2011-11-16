@@ -1266,7 +1266,10 @@ module TrackingPointUtil =
 
 module TrackingSpanUtil =
 
-    let GetSpan (snapshot:ITextSnapshot) (span:ITrackingSpan) =
+    let Create (span : SnapshotSpan) spanTrackingMode =
+        span.Snapshot.CreateTrackingSpan(span.Span, spanTrackingMode)
+
+    let GetSpan (snapshot : ITextSnapshot) (span : ITrackingSpan) =
         try 
             span.GetSpan(snapshot) |> Some
         with

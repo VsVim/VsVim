@@ -44,9 +44,18 @@ type IAsyncTaggerSource<'TData, 'TTag when 'TTag :> ITag> =
 
 type TagCache<'TTag when 'TTag :> ITag> = {
 
+    /// The SnapshotSpan this TagCache is against
     Span : SnapshotSpan
 
+    /// The tracking SnapshotSpan 
+    TrackingSpan : ITrackingSpan
+
+    /// The ITagList which is cached for the given Span
     TagList : ITagSpan<'TTag> list
+
+    /// In the time between when an edit occurs and when the background tagger catches
+    /// back up we use tracking spans to fake our spans.
+    TrackingTagList : (ITrackingSpan * 'TTag) list option
 }
 
 /// Data about a background request for tags
@@ -58,6 +67,12 @@ type AsyncBackgroundRequest = {
 
     Task : Task
 }
+
+[<RequireQualifiedAccess>]
+type TagResult<'TTag when 'TTag :> ITag> =
+    | None
+    | Partial of ITagSpan<'TTag> list
+    | Complete of ITagSpan<'TTag> list
 
 type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
     (
@@ -108,13 +123,20 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
 
                 // Next step is to hit the cache
                 match x.GetTagsFromCache span with
-                | Some tagList -> tagList
-                | None -> 
+                | TagResult.None -> 
 
-                    // No choice now but to grab the tags from a background thread.  Schedule it
-                    // now and return an empty list to the caller
+                    // Nothing was in the cache.  Kick off a background request to get it
+                    // and return and empty list for now
                     x.GetTagsInBackground span
                     List.empty
+                | TagResult.Partial tagList ->
+
+                    // Tag list was partially avaliable.  Kick off a request to get the
+                    // complete data and return what we have for now
+                    x.GetTagsInBackground span
+                    tagList
+                | TagResult.Complete tagList ->
+                    tagList
 
         // Now filter the set of returned ITagSpan values to those which are part of the 
         // requested NormalizedSnapshotSpanCollection.  The cache lookups don't dig down and 
@@ -123,18 +145,73 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
         tagList
         |> Seq.filter (fun tagSpan -> tagSpan.Span.IntersectsWith(span))
 
-    /// Get the tags from the cache.
+    /// Get the tags from the cache.  
     member x.GetTagsFromCache (span : SnapshotSpan) = 
+
+        // Map the existing tags to the provided ITextSnapshot.
+        let mapTagsToSnapshot (tagCache : TagCache<'TTag>) snapshot = 
+
+            // First get the list of ITrackingSpan values for the set of cached ITagSpan
+            // values
+            let trackingTagList = 
+                match tagCache.TrackingTagList with 
+                | Some trackingTagList -> trackingTagList
+                | None ->
+
+                    // Create the list.  Initiate an ITrackingSpan for every SnapshotSpan present
+                    let list = 
+                        tagCache.TagList
+                        |> List.map (fun tagSpan ->
+                            let trackingSpan = TrackingSpanUtil.Create tagSpan.Span SpanTrackingMode.EdgeExclusive
+                            (trackingSpan, tagSpan.Tag))
+
+                    _tagCache <- { tagCache with TrackingTagList = Some list } |> Some
+                    list
+
+            trackingTagList
+            |> Seq.map (fun (trackingSpan, tag) ->
+                match TrackingSpanUtil.GetSpan span.Snapshot trackingSpan with
+                | None -> None
+                | Some tagSpan -> TagSpan<'TTag>(tagSpan, tag) :> ITagSpan<'TTag> |> Some)
+            |> SeqUtil.filterToSome
+            |> List.ofSeq
+
         match _tagCache with
-        | None -> None
+        | None -> TagResult.None
         | Some tagCache ->
             let cachedSpan = tagCache.Span
-            if cachedSpan.Snapshot = span.Snapshot && cachedSpan.Contains(span) then
-                Some tagCache.TagList
+            if cachedSpan.Snapshot <> span.Snapshot then
+
+                // If this SnapshotSpan is coming from a different snapshot which is ahead of 
+                // our current one we need to take special steps.  If we simply return nothing
+                // and go to the background the tags will flicker on screen.  
+                //
+                // To work around this we try to map the tags to the requested ITextSnapshot. If
+                // it succeeds then we use the mapped values and simultaneously kick off a background
+                // request for the correct ones
+                if cachedSpan.Snapshot.Version.VersionNumber < span.Snapshot.Version.VersionNumber then
+                    match TrackingSpanUtil.GetSpan span.Snapshot tagCache.TrackingSpan with
+                    | None -> TagResult.None
+                    | Some mappedSpan ->
+                        if mappedSpan.IntersectsWith(span) then
+                            // Mapping gave us at least partial information.  Will work for the transition
+                            // period
+                            mapTagsToSnapshot tagCache span.Snapshot |> TagResult.Partial
+                        else
+                            TagResult.None
+                else
+                    TagResult.None
+            elif cachedSpan.Contains(span) then
+
+                TagResult.Complete tagCache.TagList
+            elif cachedSpan.IntersectsWith(span) then
+
+                // The requested span is at least partially within the cached region.  Return 
+                // the data that is available and schedule a background request to get the 
+                // rest
+                TagResult.Partial tagCache.TagList
             else
-                // TODO: Map the cache to the requested snapshot and kick off a 
-                // background request
-                None
+                TagResult.None
 
     /// Get the tags for the specified SnapshotSpan in a background task
     member x.GetTagsInBackground (span : SnapshotSpan) = 
@@ -244,7 +321,9 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
                 // caller our tags have changed
                 _tagCache <- { 
                     Span = span
-                    TagList = tagList } |> Some
+                    TrackingSpan = TrackingSpanUtil.Create span SpanTrackingMode.EdgeInclusive
+                    TagList = tagList 
+                    TrackingTagList = None} |> Some
                 _asyncBackgroundRequest <- None
 
                 // This is called directly on the message pump.  Protect against Dispose and event

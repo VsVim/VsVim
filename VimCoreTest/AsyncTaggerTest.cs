@@ -173,7 +173,9 @@ namespace VimCore.UnitTest
         {
             return new TagCache<TextMarkerTag>(
                 source,
-                tagSpans.Select(CreateTagSpan).ToFSharpList());
+                TrackingSpanUtil.Create(source, SpanTrackingMode.EdgeInclusive),
+                tagSpans.Select(CreateTagSpan).ToFSharpList(),
+                null);
         }
 
         private List<ITagSpan<TextMarkerTag>> GetTagsFull(SnapshotSpan span)
@@ -363,6 +365,39 @@ namespace VimCore.UnitTest
             var tags = GetTagsFull(_textBuffer.GetExtent());
             Assert.AreEqual(0, tags.Count);
             Assert.IsTrue(didRun);
+        }
+
+        /// <summary>
+        /// Even if the cache doesn't completely match the information in the cache we should at
+        /// least the partial information we have and schedule the rest
+        /// </summary>
+        [Test]
+        public void GetTags_PartialMatchInCache()
+        {
+            Create("cat", "dog", "bat");
+            _asyncTagger.TagCache = FSharpOption.Create(CreateTagCache(
+                _textBuffer.GetLine(0).ExtentIncludingLineBreak,
+                _textBuffer.GetSpan(0, 1)));
+            var tags = _asyncTagger.GetTags(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak).ToList();
+            Assert.AreEqual(1, tags.Count);
+            Assert.IsTrue(_asyncTagger.AsyncBackgroundRequest.IsSome());
+        }
+
+        /// <summary>
+        /// If there is a forward edit we should still return cache data as best as possible promptly
+        /// and schedule a background task for the correct data
+        /// </summary>
+        [Test]
+        public void GetTags_ForwardEdit()
+        {
+            Create("cat", "dog", "bat");
+            _asyncTagger.TagCache = FSharpOption.Create(CreateTagCache(
+                _textBuffer.GetLine(0).ExtentIncludingLineBreak,
+                _textBuffer.GetSpan(0, 1)));
+            _textBuffer.Replace(new Span(0, 3), "cot");
+            var tags = _asyncTagger.GetTags(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak).ToList();
+            Assert.AreEqual(1, tags.Count);
+            Assert.IsTrue(_asyncTagger.AsyncBackgroundRequest.IsSome());
         }
 
         /// <summary>
