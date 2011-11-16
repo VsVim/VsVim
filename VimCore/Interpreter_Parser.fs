@@ -10,11 +10,16 @@ type ParseResult<'T> =
 
 type ParseLineCommand = LineRange option -> ParseResult<LineCommand>
 
-type ParserBuilder() =
+type ParserBuilder
+    (
+        _errorMessage : string
+    ) = 
+
+    new () = ParserBuilder(Resources.Parser_Error)
 
     member x.Bind (parseResult, rest) = 
         match parseResult with
-        | ParseResult.Failed _ -> parseResult
+        | ParseResult.Failed msg -> ParseResult.Failed msg
         | ParseResult.Succeeded value -> rest value
 
     member x.Return value =
@@ -24,7 +29,7 @@ type ParserBuilder() =
         value
 
     member x.Zero () = 
-        ParseResult.Failed Resources.Parser_Error
+        ParseResult.Failed _errorMessage
 
 // TODO: Look at every case of ParseResult.Failed and ensure we are using the appropriate error
 // message
@@ -43,10 +48,11 @@ type Parser
         ("close", "clo")
         ("copy", "co")
         ("delete","d")
+        ("display","di")
         ("edit", "e")
         ("exit", "exi")
-        ("display","di")
         ("fold", "fo")
+        ("global", "g")
         ("join", "j")
         ("lcd", "lc")
         ("lchdir", "lch")
@@ -54,6 +60,8 @@ type Parser
         ("marks", "")
         ("nohlsearch", "noh")
         ("pwd", "pw")
+        ("print", "p")
+        ("Print", "P")
         ("put", "pu")
         ("quit", "q")
         ("qall", "qa")
@@ -76,6 +84,7 @@ type Parser
         ("tabprevious", "tabp")
         ("tabrewind", "tabr")
         ("undo", "u")
+        ("vglobal", "v")
         ("write","w")
         ("wq", "")
         ("wall", "wa")
@@ -207,7 +216,12 @@ type Parser
     /// Parse out the '!'.  Returns true if a ! was found and consumed
     /// actually skipped
     member x.ParseBang () = 
-        if x.IsCurrentChar (fun c -> c = '!') then
+        x.ParseCharValue '!'
+
+    /// Parse out the next char.  If it matches the specified value then the index will
+    /// be incremented and true will be returned.  Else false will be
+    member x.ParseCharValue c = 
+        if x.IsCurrentCharValue c then
             x.IncrementIndex()
             true
         else
@@ -544,8 +558,8 @@ type Parser
         x.SkipBlanks()
         let name = x.ParseRegisterName()
         x.SkipBlanks()
-        let count = x.ParseNumber()
-        LineCommand.Delete (lineRange, name, count) |> ParseResult.Succeeded
+        let lineRange = LineRange.WithEndCount (lineRange, x.ParseNumber())
+        LineCommand.Delete (Some lineRange, name) |> ParseResult.Succeeded
 
     /// Parse out the :edit command
     member x.ParseEdit () = 
@@ -731,6 +745,27 @@ type Parser
                 else
                     LineRange.SingleLine left |> Some
 
+    /// Parse out the valid ex-flags
+    member x.ParseLineCommandFlags() = 
+        let rec inner flags = 
+
+            let withFlag flag =
+                x.IncrementIndex()
+                inner (flag ||| flags)
+
+            match x.CurrentChar with
+            | None -> ParseResult.Succeeded flags
+            | Some 'l' -> withFlag LineCommandFlags.List
+            | Some '#' -> withFlag LineCommandFlags.AddLineNumber
+            | Some 'p' -> withFlag LineCommandFlags.Print
+            | Some c ->
+                if CharUtil.IsBlank c then
+                    ParseResult.Succeeded flags
+                else 
+                    ParseResult.Failed Resources.Parser_InvalidArgument
+
+        inner LineCommandFlags.None
+
     /// Parse out the substitute command.  This should be called with the index just after
     /// the end of the :substitute word
     member x.ParseSubstitute lineRange processFlags = 
@@ -807,14 +842,14 @@ type Parser
     /// Parse out the shift left pattern
     member x.ParseShiftLeft lineRange = 
         x.SkipBlanks()
-        let count = x.ParseNumber()
-        LineCommand.ShiftLeft (lineRange, count) |> ParseResult.Succeeded
+        let lineRange = LineRange.WithEndCount (lineRange, x.ParseNumber())
+        LineCommand.ShiftLeft (Some lineRange) |> ParseResult.Succeeded
 
     /// Parse out the shift right pattern
     member x.ParseShiftRight lineRange = 
         x.SkipBlanks()
-        let count = x.ParseNumber()
-        LineCommand.ShiftRight (lineRange, count) |> ParseResult.Succeeded
+        let lineRange = LineRange.WithEndCount (lineRange, x.ParseNumber())
+        LineCommand.ShiftRight (Some lineRange) |> ParseResult.Succeeded
 
     /// Parse out the 'tabnext' command
     member x.ParseTabNext() =   
@@ -875,13 +910,28 @@ type Parser
     member x.ParseFold lineRange =
         LineCommand.Fold lineRange |> ParseResult.Succeeded
 
+    /// Parse out the :global command
+    member x.ParseGlobal lineRange =
+        let hasBang = x.ParseBang()
+        x.ParseGlobalCore lineRange hasBang
+
+    /// Parse out the core global information. 
+    member x.ParseGlobalCore lineRange matchPattern =
+        ParserBuilder(Resources.Parser_InvalidArgument) {
+            if x.ParseCharValue '/' then
+                let pattern, foundDelimiter = x.ParsePattern '/'
+                if foundDelimiter then 
+                    return! x.ParseSingleCommand()
+                else 
+                    return LineCommand.Print (None, LineCommandFlags.None) }
+
     /// Parse out the join command
     member x.ParseJoin lineRange =  
         let hasBang = x.ParseBang()
         x.SkipBlanks()
-        let count = x.ParseNumber()
+        let lineRange = LineRange.Join (lineRange, x.ParseNumber())
         let joinKind = if hasBang then JoinKind.KeepEmptySpaces else JoinKind.RemoveEmptySpaces
-        LineCommand.Join (lineRange, joinKind, count) |> ParseResult.Succeeded
+        LineCommand.Join (Some lineRange, joinKind) |> ParseResult.Succeeded
 
     /// Parse out the :make command.  The arguments here other than ! are undefined.  Just
     /// get the text blob and let the interpreter / host deal with it 
@@ -902,6 +952,14 @@ type Parser
             LineCommand.PutBefore (lineRange, registerName) |> ParseResult.Succeeded
         else
             LineCommand.PutAfter (lineRange, registerName) |> ParseResult.Succeeded
+
+    member x.ParsePrint lineRange : ParseResult<LineCommand> = 
+        x.SkipBlanks()
+        let lineRange = LineRange.WithEndCount (lineRange, x.ParseNumber())
+        x.SkipBlanks()
+        _parserBuilder { 
+            let! flags = x.ParseLineCommandFlags()
+            return LineCommand.Print (Some lineRange, flags) }
 
     /// Parse out the :read command
     member x.ParseRead lineRange = 
@@ -930,6 +988,14 @@ type Parser
         let hasBang = x.ParseBang()
         x.SkipBlanks()
         let newTabStop = x.ParseNumber()
+
+        // The default range for most commands is the current line.  This command instead 
+        // defaults to the entire snapshot
+        let lineRange = 
+            match lineRange with
+            | Some lineRange -> lineRange
+            | None -> LineRange.EntireBuffer
+
         LineCommand.Retab (lineRange, hasBang, newTabStop) |> ParseResult.Succeeded
 
     /// Parse out the :set command and all of it's variants
@@ -1099,6 +1165,7 @@ type Parser
             | "edit" -> noRange x.ParseEdit
             | "exit" -> x.ParseQuitAndWrite lineRange
             | "fold" -> x.ParseFold lineRange
+            | "global" -> x.ParseGlobal lineRange
             | "iunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Insert])
             | "imap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Insert])
             | "imapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Insert])
@@ -1124,6 +1191,7 @@ type Parser
             | "onoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.OperatorPending])
             | "ounmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.OperatorPending])
             | "put" -> x.ParsePut lineRange
+            | "print" -> x.ParsePrint lineRange
             | "pwd" -> noRange (fun () -> ParseResult.Succeeded LineCommand.PrintCurrentDirectory)
             | "quit" -> noRange x.ParseQuit
             | "qall" -> noRange x.ParseQuitAll
@@ -1151,6 +1219,7 @@ type Parser
             | "tabprevious" -> noRange x.ParseTabPrevious
             | "undo" -> noRange (fun () -> LineCommand.Undo |> ParseResult.Succeeded)
             | "unmap" -> noRange (fun () -> x.ParseMapUnmap true [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
+            | "vglobal" -> x.ParseGlobalCore lineRange false
             | "vmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Visual;KeyRemapMode.Select])
             | "vmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Visual; KeyRemapMode.Select])
             | "vnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Visual;KeyRemapMode.Select])

@@ -203,7 +203,8 @@ namespace VimCore.UnitTest
         public void Parse_Delete_WithCount()
         {
             var lineCommand = ParseLineCommand("delete 2");
-            Assert.AreEqual(2, lineCommand.AsDelete().Item3.Value);
+            var lineRange = lineCommand.AsDelete().Item1.Value;
+            Assert.AreEqual(2, lineRange.AsWithEndCount().Item2.Value);
         }
 
         /// <summary>

@@ -88,6 +88,13 @@ type LineRange =
     /// the LineSpecifier values)
     | Range of LineSpecifier * LineSpecifier * bool
 
+    /// The range is an end count on top of another LineRange value.  It's possible for the 
+    /// end count to exist in the abscence a range
+    | WithEndCount of LineRange option * int option
+
+    /// The LineRange value for Join is heavily special cased
+    | Join of LineRange option * int option
+
 /// Represents the values for '++opt' which can occur on commands like :edit
 [<RequireQualifiedAccess>]
 type FileOption =
@@ -107,6 +114,14 @@ type KeyMapArgument =
     | Script
     | Expr
     | Unique
+
+/// The ex-flags value
+[<RequireQualifiedAccess>]
+type LineCommandFlags = 
+    | None = 0
+    | List = 0x1
+    | AddLineNumber = 0x2
+    | Print = 0x4
 
 /// The set command can take a number of arguments.  This represents the allowed values
 [<RequireQualifiedAccess>]
@@ -193,15 +208,8 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// source and the second is the desitination
     | CopyTo of LineRange option * LineRange
 
-    /// The :edit command.  The values range as follows
-    ///  - ! option present
-    ///  - The provided ++opt
-    ///  - The provided +cmd 
-    ///  - The provided file to edit 
-    | Edit of bool * FileOption list * CommandOption option * string
-
-    /// The :delete command 
-    | Delete of LineRange option * RegisterName option * int option 
+    /// The :delete command
+    | Delete of LineRange option * RegisterName option
 
     /// Display the contents of registers.  Unless a specific register name is 
     /// given all registers will be displayed
@@ -215,8 +223,20 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// key notation if it's provided
     | DisplayKeyMap of KeyRemapMode list * string option
 
+    /// The :edit command.  The values range as follows
+    ///  - ! option present
+    ///  - The provided ++opt
+    ///  - The provided +cmd 
+    ///  - The provided file to edit 
+    | Edit of bool * FileOption list * CommandOption option * string
+
     /// Fold the selected LineRange
     | Fold of LineRange option
+
+    /// Run the given command against all lines in the specified range (default is the 
+    /// entire buffer) which match the predicate pattern.  If the bool provided is false
+    /// then it will be run on the lines which don't match the pattern
+    | Global of LineRange option * string * bool * LineCommand
 
     /// Go to the first tab 
     | GoToFirstTab
@@ -232,7 +252,7 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// Join the lines in the specified range.  Optionally provides a count of lines to 
     /// start the join after the line range
-    | Join of LineRange option * JoinKind * int option
+    | Join of LineRange option * JoinKind
 
     /// Jump to the specified line number 
     | JumpToLine of int
@@ -251,6 +271,9 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// Temporarily disable the 'hlsearch' option
     | NoHighlightSearch
+
+    /// Print out the specified line range 
+    | Print of LineRange option * LineCommandFlags
 
     /// Print out the current directory
     | PrintCurrentDirectory
@@ -294,7 +317,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     ///  - The LineRange to change (defaults to entire buffer)
     ///  - True to replace both tabs and spaces, false for just spaces
     ///  - new tabstop value
-    | Retab of LineRange option * bool * int option
+    | Retab of LineRange * bool * int option
 
     /// Process the 'set' command
     | Set of SetArgument list
@@ -303,10 +326,10 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Search of LineRange option * Path * string
 
     /// Process the '<' shift left command
-    | ShiftLeft of LineRange option * int option
+    | ShiftLeft of LineRange option
 
     /// Process the '>' shift right command
-    | ShiftRight of LineRange option * int option
+    | ShiftRight of LineRange option
 
     /// Process the 'source' command.  
     | Source of bool * string

@@ -230,6 +230,14 @@ namespace Vim.UnitTest
             return (LineRange.Range)lineRange;
         }
 
+        /// <summary>
+        /// LineRange as WithEndCount
+        /// </summary>
+        public static LineRange.WithEndCount AsWithEndCount(this LineRange lineRange)
+        {
+            return (LineRange.WithEndCount)lineRange;
+        }
+
         #endregion
 
         #region LineSpecifier

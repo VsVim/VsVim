@@ -90,31 +90,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void SwitchTo()
-        {
-            Create("");
-            _vimBuffer.Process(':');
-            Assert.AreEqual(ModeKind.Command, _vimBuffer.ModeKind);
-        }
-
-        [Test]
-        public void SwitchOut()
-        {
-            Create("");
-            RunCommand("e foo");
-            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
-        }
-
-        [Test]
-        public void SwitchOutFromBackspace()
-        {
-            Create("");
-            _vimBuffer.Process(':');
-            _vimBuffer.Process(VimKey.Back);
-            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
-        }
-
-        [Test]
         public void JumpLine1()
         {
             Create("a", "b", "c", "d");
@@ -316,5 +291,31 @@ namespace VimCore.UnitTest
             RunCommand("1,2/pig");
             Assert.IsTrue(didHit);
         }
+
+        [Test]
+        public void SwitchTo()
+        {
+            Create("");
+            _vimBuffer.Process(':');
+            Assert.AreEqual(ModeKind.Command, _vimBuffer.ModeKind);
+        }
+
+        [Test]
+        public void SwitchOut()
+        {
+            Create("");
+            RunCommand("e foo");
+            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
+        }
+
+        [Test]
+        public void SwitchOutFromBackspace()
+        {
+            Create("");
+            _vimBuffer.Process(':');
+            _vimBuffer.Process(VimKey.Back);
+            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
+        }
+
     }
 }
