@@ -6,6 +6,7 @@ namespace Vim.UnitTest
 {
     public sealed class TestableSynchronizationContext : SynchronizationContext
     {
+        private SynchronizationContext _oldSynchronizationContext;
         private List<Action> _list = new List<Action>();
         public bool IsEmpty
         {
@@ -24,6 +25,21 @@ namespace Vim.UnitTest
                 cur();
             }
             _list.Clear();
+        }
+
+        public void Install()
+        {
+            _oldSynchronizationContext = SynchronizationContext.Current;
+            SynchronizationContext.SetSynchronizationContext(this);
+        }
+
+        public void Uninstall()
+        {
+            if (_oldSynchronizationContext != null)
+            {
+                SynchronizationContext.SetSynchronizationContext(_oldSynchronizationContext);
+                _oldSynchronizationContext = null;
+            }
         }
     }
 }

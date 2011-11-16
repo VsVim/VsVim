@@ -139,6 +139,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AsyncTaggerTest.cs" />
     <Compile Include="BlockSpanTest.cs" />
     <Compile Include="ChangeTrackerTest.cs" />
     <Compile Include="CharacterSpanTest.cs" />
@@ -186,7 +187,7 @@
     <Compile Include="SnapshotPointUtilTest.cs" />
     <Compile Include="DisabledModeTest.cs" />
     <Compile Include="GlobalSettingsTest.cs" />
-    <Compile Include="HighlightIncrementalSearchTaggerTest.cs" />
+    <Compile Include="HighlightSearchTaggerSource.cs" />
     <Compile Include="IEditorOperationsTest.cs" />
     <Compile Include="IncrementalSearchTest.cs" />
     <Compile Include="JumpListTest.cs" />

@@ -191,6 +191,7 @@
     <Compile Include="Extensions.cs" />
     <Compile Include="FuncUtil.cs" />
     <Compile Include="MatchUtil.cs" />
+    <Compile Include="Mock\ITagSpan.cs" />
     <Compile Include="Mock\MockClipboardDevice.cs" />
     <Compile Include="Mock\Extensions.cs" />
     <Compile Include="Mock\MockEnumLineMarkers.cs" />

@@ -183,14 +183,6 @@ namespace Vim.UnitTest.Mock
             }
         }
 
-        public void RaiseStatusMessageLong(params string[] lines)
-        {
-            if (StatusMessageLong != null)
-            {
-                StatusMessageLong(this, lines);
-            }
-        }
-
         public void RaiseErrorMessage(string message)
         {
             if (ErrorMessage != null)
@@ -232,8 +224,6 @@ namespace Vim.UnitTest.Mock
         }
 
         public event Microsoft.FSharp.Control.FSharpHandler<string> StatusMessage;
-
-        public event Microsoft.FSharp.Control.FSharpHandler<IEnumerable<string>> StatusMessageLong;
 
         public event Microsoft.FSharp.Control.FSharpHandler<string> ErrorMessage;
 

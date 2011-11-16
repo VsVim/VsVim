@@ -7,11 +7,11 @@ open Microsoft.VisualStudio.Text.Editor
 
 type internal SearchService 
     (
-        _search : ITextSearchService,
+        _textSearchService : ITextSearchService,
         _globalSettings : IVimGlobalSettings
     ) = 
 
-    let _factory = VimRegexFactory(_globalSettings)
+    let _regexFactory = VimRegexFactory(_globalSettings)
 
     /// Convert the Vim SearchData to the editor FindData structure
     member x.ConvertToFindData (searchData : SearchData) snapshot wordNavigator =
@@ -21,7 +21,7 @@ type internal SearchService
         let pattern = searchData.Pattern
         let text, textOptions, hadCaseSpecifier = 
             let useRegex () =
-                match _factory.Create pattern with
+                match _regexFactory.Create pattern with
                 | None -> 
                     None, FindOptions.None, false
                 | Some regex ->
@@ -103,7 +103,7 @@ type internal SearchService
 
                 let result = 
                     try
-                        _search.FindNext(position, true, findData) |> NullableUtil.toOption
+                        _textSearchService.FindNext(position, true, findData) |> NullableUtil.toOption
                     with 
                     | :? System.InvalidOperationException ->
                         // Happens when we provide an invalid regular expression.  Just return None

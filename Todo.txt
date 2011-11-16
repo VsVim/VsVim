@@ -1,6 +1,2 @@
-X - Move 'n' and 'N' to motions, *, etc ...
-- :s and :tag need to update the motion list 
-X - Need to raise warning and error for search motions in the MoveCaretForMotionResult function
-- Which also means MotionData needs this information to 
-- Implement the :jumps command
-- Need to Close all of the ITrackingLineCOlumn when the JumpList -> Buffer closes
+- Need to mark ISearchService as free threaded
+- Need to mark the IWordNavigator implementation as free threaded

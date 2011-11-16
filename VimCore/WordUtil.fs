@@ -17,6 +17,7 @@ type internal WordUtil
     /// in the middle of a word the span of the entire word will be returned
     ///
     /// TODO: Need to consider folded regions
+    /// Note: This can be called from a background thread via ITextSearchService
     member x.GetWords kind path point = 
 
         let snapshot = SnapshotPointUtil.GetSnapshot point

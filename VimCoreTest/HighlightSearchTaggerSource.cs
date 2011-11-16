@@ -1,18 +1,21 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Vim.UnitTest;
 using GlobalSettings = Vim.GlobalSettings;
 
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class HighlightIncrementalSearchTaggerTest
+    public class HighlightSearchTaggerSourceTest
     {
-        private HighlightIncrementalSearchTagger _taggerRaw;
-        private ITagger<TextMarkerTag> _tagger;
+        private HighlightSearchTaggerSource _asyncTaggerSourceRaw;
+        private IAsyncTaggerSource<SearchData, TextMarkerTag> _asyncTaggerSource;
         private ITextBuffer _textBuffer;
         private ISearchService _searchService;
         private IVimGlobalSettings _globalSettings;
@@ -26,32 +29,27 @@ namespace VimCore.UnitTest
             _globalSettings.HighlightSearch = true;
             _vimData = new VimData();
             _searchService = VimUtil.CreateSearchService();
-            _taggerRaw = new HighlightIncrementalSearchTagger(
+            _asyncTaggerSourceRaw = new HighlightSearchTaggerSource(
                 _textBuffer,
                 _globalSettings,
                 VimUtil.CreateTextStructureNavigator(_textBuffer, WordKind.NormalWord),
                 _searchService,
                 _vimData);
-            _tagger = _taggerRaw;
+            _asyncTaggerSource = _asyncTaggerSourceRaw;
         }
 
         [TearDown]
         public void TearDown()
         {
-            _taggerRaw = null;
+            _asyncTaggerSourceRaw = null;
         }
 
-        /// <summary>
-        /// Do nothing if highlight is disabled
-        /// </summary>
-        [Test]
-        public void GetTags_HighlightDisabled()
+        private List<ITagSpan<TextMarkerTag>> GetTags(SnapshotSpan span)
         {
-            Create("dog cat");
-            _vimData.LastPatternData = VimUtil.CreatePatternData("dog");
-            _globalSettings.HighlightSearch = false;
-            var ret = _taggerRaw.GetTags(_textBuffer.CurrentSnapshot.GetTaggerExtent());
-            Assert.AreEqual(0, ret.Count());
+            return _asyncTaggerSource.GetTagsInBackground(
+                _asyncTaggerSourceRaw.GetDataForSpan(),
+                span,
+                CancellationToken.None).ToList();
         }
 
         /// <summary>
@@ -62,7 +60,7 @@ namespace VimCore.UnitTest
         {
             Create("dog cat");
             _vimData.LastPatternData = VimUtil.CreatePatternData("");
-            var ret = _taggerRaw.GetTags(_textBuffer.CurrentSnapshot.GetTaggerExtent());
+            var ret = GetTags(_textBuffer.GetExtent());
             Assert.AreEqual(0, ret.Count());
         }
 
@@ -74,7 +72,7 @@ namespace VimCore.UnitTest
         {
             Create("foo is the bar");
             _vimData.LastPatternData = VimUtil.CreatePatternData("foo");
-            var ret = _taggerRaw.GetTags(_textBuffer.CurrentSnapshot.GetTaggerExtent());
+            var ret = GetTags(_textBuffer.GetExtent());
             Assert.AreEqual(1, ret.Count());
             Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3), ret.Single().Span);
         }
@@ -86,8 +84,8 @@ namespace VimCore.UnitTest
         public void GetTags_OneTimeDisabled()
         {
             Create("foo is the bar");
-            _taggerRaw._oneTimeDisabled = true;
-            var ret = _taggerRaw.GetTags(_textBuffer.CurrentSnapshot.GetTaggerExtent());
+            _asyncTaggerSourceRaw._oneTimeDisabled = true;
+            var ret = GetTags(_textBuffer.GetExtent());
             Assert.AreEqual(0, ret.Count());
         }
 
@@ -99,7 +97,7 @@ namespace VimCore.UnitTest
         {
             Create("foo is the bar");
             _vimData.LastPatternData = VimUtil.CreatePatternData("foo");
-            var ret = _taggerRaw.GetTags(new NormalizedSnapshotSpanCollection(new SnapshotSpan(_textBuffer.CurrentSnapshot, 4, 3)));
+            var ret = GetTags(new SnapshotSpan(_textBuffer.CurrentSnapshot, 4, 3));
             Assert.AreEqual(0, ret.Count());
         }
 
@@ -111,7 +109,7 @@ namespace VimCore.UnitTest
         {
             Create("foo is the bar");
             _vimData.LastPatternData = VimUtil.CreatePatternData("foo");
-            var ret = _taggerRaw.GetTags(new NormalizedSnapshotSpanCollection(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 2)));
+            var ret = GetTags(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 2));
             Assert.AreEqual(1, ret.Count());
             Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3), ret.Single().Span);
         }
@@ -125,10 +123,38 @@ namespace VimCore.UnitTest
         {
             Create("cat");
             _vimData.LastPatternData = VimUtil.CreatePatternData(@"\|i\>");
-            var ret = _taggerRaw.GetTags(new NormalizedSnapshotSpanCollection(_textBuffer.GetExtent()));
+            var ret = GetTags(_textBuffer.GetExtent());
             CollectionAssert.AreEquivalent(
                 new [] {"c", "a", "t"},
                 ret.Select(x => x.Span.GetText()).ToList());
+        }
+
+        /// <summary>
+        /// We can promptly say nothing when highlight is disabled
+        /// </summary>
+        [Test]
+        public void GetTagsPrompt_HighlightDisabled()
+        {
+            Create("dog cat");
+            _vimData.LastPatternData = VimUtil.CreatePatternData("dog");
+            _globalSettings.HighlightSearch = false;
+            var ret = _asyncTaggerSource.GetTagsPrompt(_textBuffer.GetExtent());
+            Assert.IsTrue(ret.IsSome());
+            Assert.AreEqual(0, ret.Value.Length);
+        }
+
+        /// <summary>
+        /// We can promptly say nothing when in One Time disabled
+        /// </summary>
+        [Test]
+        public void GetTagsPrompt_OneTimeDisabled()
+        {
+            Create("dog cat");
+            _vimData.LastPatternData = VimUtil.CreatePatternData("dog");
+            _asyncTaggerSourceRaw._oneTimeDisabled = true;
+            var ret = _asyncTaggerSource.GetTagsPrompt(_textBuffer.GetExtent());
+            Assert.IsTrue(ret.IsSome());
+            Assert.AreEqual(0, ret.Value.Length);
         }
 
         /// <summary>
@@ -139,12 +165,12 @@ namespace VimCore.UnitTest
         public void Handle_OneTimeDisabledEvent()
         {
             Create("");
-            Assert.IsFalse(_taggerRaw._oneTimeDisabled);
+            Assert.IsFalse(_asyncTaggerSourceRaw._oneTimeDisabled);
             var raised = false;
-            _tagger.TagsChanged += delegate { raised = true; };
+            _asyncTaggerSource.TagsChanged += delegate { raised = true; };
             _vimData.RaiseHighlightSearchOneTimeDisable();
             Assert.IsTrue(raised);
-            Assert.IsTrue(_taggerRaw._oneTimeDisabled);
+            Assert.IsTrue(_asyncTaggerSourceRaw._oneTimeDisabled);
         }
 
         /// <summary>
@@ -154,9 +180,9 @@ namespace VimCore.UnitTest
         public void SettingSet()
         {
             Create("");
-            _taggerRaw._oneTimeDisabled = true;
+            _asyncTaggerSourceRaw._oneTimeDisabled = true;
             _globalSettings.HighlightSearch = true;
-            Assert.IsFalse(_taggerRaw._oneTimeDisabled);
+            Assert.IsFalse(_asyncTaggerSourceRaw._oneTimeDisabled);
         }
 
         /// <summary>
@@ -166,9 +192,9 @@ namespace VimCore.UnitTest
         public void LastSearchDataSet()
         {
             Create("");
-            _taggerRaw._oneTimeDisabled = true;
+            _asyncTaggerSourceRaw._oneTimeDisabled = true;
             _vimData.LastPatternData = VimUtil.CreatePatternData("dog");
-            Assert.IsFalse(_taggerRaw._oneTimeDisabled);
+            Assert.IsFalse(_asyncTaggerSourceRaw._oneTimeDisabled);
         }
     }
 }

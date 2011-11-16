@@ -73,7 +73,6 @@ type internal SettingsMap
             |> Map.toSeq 
             |> Seq.map (fun (_,value) -> value) 
             |> Seq.tryFind (fun setting -> setting.Abbreviation = settingName)
-            
 
     /// Get a boolean setting value.  Will throw if the setting name does not exist
     member x.GetBoolValue settingName = 

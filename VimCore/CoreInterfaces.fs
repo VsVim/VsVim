@@ -296,7 +296,9 @@ type SearchResult =
         | SearchResult.Found (searchData, _, _) -> searchData
         | SearchResult.NotFound (searchData, _) -> searchData
 
-/// Global information about searches within Vim
+/// Global information about searches within Vim.  
+///
+/// This interface is usable from any thread
 type ISearchService = 
 
     /// Find the next occurrence of the pattern in the buffer starting at the 

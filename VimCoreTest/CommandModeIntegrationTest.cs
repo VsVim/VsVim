@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
@@ -156,8 +154,7 @@ namespace VimCore.UnitTest
             RunCommand("%s/a/b/pg");
 
             var lines = msg.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
-            Assert.AreEqual(Resources.Common_SubstituteComplete(2, 1), lines[0]);
-            Assert.AreEqual("cbt bbt", lines[1]);
+            Assert.AreEqual(Resources.Common_SubstituteComplete(3, 2), lines[0]);
         }
 
         [Test]
