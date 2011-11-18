@@ -364,26 +364,19 @@ module SnapshotSpanUtil =
     let CreateEmpty point = SnapshotSpan(point, 0)
 
     /// Create a span from the given point with the specified length
-    let CreateWithLength (startPoint:SnapshotPoint) (length:int) = SnapshotSpan(startPoint, length)
+    let CreateWithLength (startPoint : SnapshotPoint) (length : int) = SnapshotSpan(startPoint, length)
 
-    /// Create a span which is just a combination the provided spans.  It will be the 
-    /// overarching span
-    let CreateCombined seq = 
-        let inner state span = 
-            match state with
-            | None -> Some span
-            | Some(state) ->
-                let startPos = min (GetStartPosition state) (GetStartPosition span)
-                let endPos = max (GetEndPosition state) (GetEndPosition span)
-                SnapshotSpan((GetSnapshot state), startPos,endPos) |> Some
-        seq |> Seq.fold inner None
-
-    /// Creates a combined span.  In the case the provided enumeration is empty will 
-    /// return an empty span for the Snapshot 
-    let CreateCombinedOrEmpty snapshot seq = 
-        seq
-        |> CreateCombined 
-        |> OptionUtil.getOrDefault (SnapshotUtil.GetStartPoint snapshot |> CreateEmpty)
+    /// Create a span which is the overarching span of the two provided SnapshotSpan values
+    let CreateOverarching (leftSpan : SnapshotSpan) (rightSpan : SnapshotSpan) = 
+        Contract.Requires (leftSpan.Snapshot = rightSpan.Snapshot)
+        let snapshot = leftSpan.Snapshot
+        let startPoint = 
+            let position = min leftSpan.Start.Position rightSpan.Start.Position
+            SnapshotPoint(snapshot, position)
+        let endPoint = 
+            let position = max leftSpan.End.Position rightSpan.End.Position
+            SnapshotPoint(snapshot, position)
+        SnapshotSpan(startPoint, endPoint)
 
     /// Create a span form the given start point to the end of the snapshot
     let CreateFromProvidedStartToEnd (startPoint:SnapshotPoint) =
@@ -406,7 +399,7 @@ module NormalizedSnapshotSpanCollectionUtil =
     let GetLast (col:NormalizedSnapshotSpanCollection) = col.[col.Count-1]
 
     /// Get the inclusive span 
-    let GetCombinedSpan col =
+    let GetOverarchingSpan col =
         let first = GetFirst col
         let last = GetLast col
         SnapshotSpan(first.Start,last.End) 
@@ -979,7 +972,7 @@ module SnapshotLineRangeUtil =
 
     /// Create a line range for the combined span 
     let CreateForNormalizedSnapshotSpanCollection col = 
-        col |> NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan |> CreateForSpan
+        col |> NormalizedSnapshotSpanCollectionUtil.GetOverarchingSpan |> CreateForSpan
 
     /// Create a line range for the start line and extending count total lines
     let CreateForLineNumberAndCount (snapshot:ITextSnapshot) lineNumber count = 

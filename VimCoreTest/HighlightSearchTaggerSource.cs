@@ -167,7 +167,7 @@ namespace VimCore.UnitTest
             Create("");
             Assert.IsFalse(_asyncTaggerSourceRaw._oneTimeDisabled);
             var raised = false;
-            _asyncTaggerSource.TagsChanged += delegate { raised = true; };
+            _asyncTaggerSource.Changed += delegate { raised = true; };
             _vimData.RaiseHighlightSearchOneTimeDisable();
             Assert.IsTrue(raised);
             Assert.IsTrue(_asyncTaggerSourceRaw._oneTimeDisabled);

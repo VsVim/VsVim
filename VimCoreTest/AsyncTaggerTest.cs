@@ -24,7 +24,7 @@ namespace VimCore.UnitTest
         {
             private ITextBuffer _textBuffer;
             private int _threadId;
-            private event FSharpHandler<FSharpOption<SnapshotSpan>> _tagsChanged;
+            private event FSharpHandler<Unit> _changed;
             private List<ITagSpan<TextMarkerTag>> _promptTags;
             private List<ITagSpan<TextMarkerTag>> _backgroundTags;
             private Action<string, SnapshotSpan> _backgroundCallback;
@@ -59,11 +59,11 @@ namespace VimCore.UnitTest
                 _backgroundCallback = action;
             }
 
-            internal void RaiseTagsChanged(SnapshotSpan? span)
+            internal void RaiseChanged(SnapshotSpan? span)
             {
-                if (_tagsChanged != null)
+                if (_changed != null)
                 {
-                    _tagsChanged(this, FSharpOption.CreateForNullable(span));
+                    _changed(this, null);
                 }
             }
 
@@ -105,10 +105,10 @@ namespace VimCore.UnitTest
                 return FSharpOption<FSharpList<ITagSpan<TextMarkerTag>>>.None;
             }
 
-            event FSharpHandler<FSharpOption<SnapshotSpan>> IAsyncTaggerSource<string, TextMarkerTag>.TagsChanged
+            event FSharpHandler<Unit> IAsyncTaggerSource<string, TextMarkerTag>.Changed
             {
-                add { _tagsChanged += value; }
-                remove { _tagsChanged -= value; }
+                add { _changed += value; }
+                remove { _changed -= value; }
             }
 
             ITextSnapshot IAsyncTaggerSource<string, TextMarkerTag>.TextSnapshot
@@ -411,7 +411,7 @@ namespace VimCore.UnitTest
             _asyncTagger.TagCache = FSharpOption.Create(CreateTagCache(
                 _textBuffer.GetExtent(),
                 _textBuffer.GetSpan(0, 1)));
-            _asyncTaggerSource.RaiseTagsChanged(null);
+            _asyncTaggerSource.RaiseChanged(null);
             Assert.IsTrue(_asyncTagger.TagCache.IsNone());
         }
 
@@ -428,7 +428,7 @@ namespace VimCore.UnitTest
                 _textBuffer.GetExtent(),
                 cancellationTokenSource,
                 new Task(() => { })));
-            _asyncTaggerSource.RaiseTagsChanged(null);
+            _asyncTaggerSource.RaiseChanged(null);
             Assert.IsTrue(_asyncTagger.AsyncBackgroundRequest.IsNone());
             Assert.IsTrue(cancellationTokenSource.IsCancellationRequested);
         }
@@ -446,7 +446,7 @@ namespace VimCore.UnitTest
                 didRun = true;
             };
 
-            _asyncTaggerSource.RaiseTagsChanged(null);
+            _asyncTaggerSource.RaiseChanged(null);
             Assert.IsTrue(didRun);
         }
     }

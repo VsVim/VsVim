@@ -195,56 +195,6 @@ type internal FoldManager
         member x.OpenFold point count = x.OpenFold point count
         member x.OpenAllFolds span = x.OpenAllFolds span
 
-/// Fold tagger for the IOutliningRegion tags created by folds.  Note that folds work
-/// on an ITextBuffer level and not an ITextView level.  Hence this works directly with
-/// IFoldManagerData instead of IFoldManager
-type internal FoldTagger(_foldData : IFoldData) as this =
-
-    let _textBuffer = _foldData.TextBuffer
-    let _tagsChanged = new Event<System.EventHandler<SnapshotSpanEventArgs>, SnapshotSpanEventArgs>()
-
-    do 
-        let handle _ = _tagsChanged.Trigger(this, new SnapshotSpanEventArgs(SnapshotUtil.GetExtent _textBuffer.CurrentSnapshot))
-        _foldData.FoldsUpdated |> Event.add handle
-
-    member x.GetTags (col : NormalizedSnapshotSpanCollection) =
-
-        // Get the description for the given SnapshotSpan.  This is the text displayed for
-        // the folded lines.
-        let getDescription span = 
-            let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
-            sprintf "%d lines ---" ((endLine.LineNumber - startLine.LineNumber) + 1)
-
-        if col.Count = 0 then
-            Seq.empty
-        else 
-            let snapshot = (col.Item(0)).Snapshot
-            _foldData.Folds
-            |> Seq.filter ( fun span -> span.Snapshot = snapshot )
-            |> Seq.map (fun span ->
-                let description = getDescription span
-                let hint = span.GetText()
-                let tag = OutliningRegionTag(true, true, description, hint)
-                TagSpan<OutliningRegionTag>(span, tag) :> ITagSpan<OutliningRegionTag> )
-
-    interface ITagger<OutliningRegionTag> with
-        member x.GetTags col = x.GetTags col
-        [<CLIEvent>]
-        member x.TagsChanged = _tagsChanged.Publish
-
-[<Export(typeof<ITaggerProvider>)>]
-[<ContentType(Constants.AnyContentType)>]
-[<TextViewRole(PredefinedTextViewRoles.Document)>]
-[<TagType(typeof<OutliningRegionTag>)>]
-type FoldTaggerProvider
-    [<ImportingConstructor>]
-    (_factory : IFoldManagerFactory) = 
-
-    interface ITaggerProvider with 
-        member x.CreateTagger<'T when 'T :> ITag> textBuffer =
-            let foldData = _factory.GetFoldData textBuffer
-            let tagger = FoldTagger(foldData)
-            tagger :> obj :?> ITagger<'T>
 
 [<Export(typeof<IFoldManagerFactory>)>]
 type FoldManagerFactory

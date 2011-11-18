@@ -38,9 +38,10 @@ type IAsyncTaggerSource<'TData, 'TTag when 'TTag :> ITag> =
     /// called on a background thread and should respect the provided CancellationToken
     abstract GetTagsInBackground : data : 'TData -> span : SnapshotSpan -> cancellationToken : CancellationToken -> ITagSpan<'TTag> list
 
-    /// Raised by the source when the tags have changed for the given SnapshotSpan
+    /// Raised by the source when the underlying source has changed.  All previously
+    /// provided data should be considered incorrect after this event
     [<CLIEvent>]
-    abstract TagsChanged : IEvent<SnapshotSpan option>
+    abstract Changed : IEvent<unit>
 
 type TagCache<'TTag when 'TTag :> ITag> = {
 
@@ -96,8 +97,8 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
     let mutable _tagCache : TagCache<'TTag> option = None
 
     do 
-        _asyncTaggerSource.TagsChanged 
-        |> Observable.subscribe this.OnTagsChanged
+        _asyncTaggerSource.Changed 
+        |> Observable.subscribe this.OnAsyncSourceChanged
         |> _eventHandlers.Add
 
     member x.TagCache 
@@ -111,7 +112,7 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
     /// Get the tags for the specified NormalizedSnapshotSpanCollection.  Use the cache if 
     /// possible and possibly go to the background if necessary
     member x.GetTags (col : NormalizedSnapshotSpanCollection) = 
-        let span = NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan col
+        let span = NormalizedSnapshotSpanCollectionUtil.GetOverarchingSpan col
 
         let tagList = 
 
@@ -289,24 +290,20 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
     member x.RaiseTagsChanged span =
         _tagsChanged.Trigger(x, SnapshotSpanEventArgs(span))
 
-    /// Called when the IAsyncTaggerSource raises a TagsChanged event.  Clear out the 
+    /// Called when the IAsyncTaggerSource raises a Changed event.  Clear out the 
     /// cache, pass on the event to the ITagger and wait for the next request
-    member x.OnTagsChanged span =   
+    member x.OnAsyncSourceChanged() =   
 
-        // Calculate the span we should raise as the changed Snapshotspan.  It needs 
-        // to be the combined span which changed in the source and that for which 
-        // we have given out tag information for
+        // Calculate the SnapshotSpan we will use for TagsChanged.  This is simply
+        // the SnapshotSpan of the TagCache.  This is the set of all values which 
+        // we've provided for the current ITextSnapshot.  It's the only thing that
+        // could have changed
         let span = 
-            match span, _tagCache |> Option.map (fun tagCache -> tagCache.Span) with
-            | None, None -> SnapshotSpan(_asyncTaggerSource.TextSnapshot, 0, 0)
-            | Some span, None -> span
-            | None, Some span -> span
-            | Some left, Some right ->
-                let startPoint = SnapshotPointUtil.OrderAscending left.Start right.Start |> fst
-                let endPoint = SnapshotPointUtil.OrderAscending left.End right.End |> snd
-                SnapshotSpan(startPoint, endPoint)
+            match _tagCache with
+            | None -> SnapshotSpan(_asyncTaggerSource.TextSnapshot, 0, 0)
+            | Some tagCache -> tagCache.Span
 
-        // Clear out the cache.  The underlying source was invalidated
+        // Clear out the cache.  It's no longer valid.
         _tagCache <- None
         x.CancelAsyncBackgroundRequest()
         x.RaiseTagsChanged span
@@ -342,23 +339,104 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
     interface System.IDisposable with
         member x.Dispose() = x.Dispose()
 
+type IBasicTaggerSource<'TTag when 'TTag :> ITag> = 
+
+    /// The current Snapshot.  
+    abstract TextSnapshot : ITextSnapshot
+
+    /// Get the ITagSpan<'TTag> values in the specified SnapshotSpan
+    abstract GetTags : span : SnapshotSpan  -> ITagSpan<'TTag> list
+
+    /// Raised by the source when the underlying source has changed.  All previously
+    /// provided data should be considered incorrect after this event
+    [<CLIEvent>]
+    abstract Changed : IEvent<unit>
+
+type BasicTagger<'TTag when 'TTag :> ITag>
+    (
+        _basicTaggerSource : IBasicTaggerSource<'TTag>
+    ) as this = 
+
+    let mutable _cachedRequestSpan : SnapshotSpan option = None
+
+    let _tagsChanged = new Event<System.EventHandler<SnapshotSpanEventArgs>, SnapshotSpanEventArgs>()
+    let _eventHandlers = DisposableBag()
+
+    do 
+        _basicTaggerSource.Changed
+        |> Observable.subscribe this.OnBasicTaggerSourceChanged
+        |> _eventHandlers.Add
+
+    member x.CachedRequestSpan 
+        with get() = _cachedRequestSpan
+        and set value = _cachedRequestSpan <- value
+
+    member x.Dispose() =
+        _eventHandlers.DisposeAll()
+
+        match _basicTaggerSource with
+        | :? System.IDisposable as disposable -> disposable.Dispose()
+        | _ -> ()
+
+    /// The simple taggers when changed need to provide an initial SnapshotSpan 
+    /// for the TagsChanged event.  It's important that this SnapshotSpan be kept as
+    /// small as possible.  If it's incorrectly large it can have a negative performance
+    /// impact on the editor.  In particular
+    ///
+    /// 1. The value is directly provided in ITagAggregator<T>::TagsChanged.  This value
+    ///    is acted on directly by many editor components.  Providing a large range 
+    ///    unnecessarily increases their work load.
+    /// 2. It can cause a ripple effect in Visual Studio 2010 RTM.  The SnapshotSpan 
+    ///    returned will be immediately be the vale passed to GetTags for every other
+    ///    ITagger<T> in the system (TextMarkerVisualManager issue). 
+    ///
+    /// In order to provide the minimum possible valid SnapshotSpan the simple taggers
+    /// cache the overarching SnapshotSpan for the latest ITextSnapshot of all requests
+    /// to which they are given.
+    member x.AdjustRequestSpan (requestSpan : SnapshotSpan) =
+        _cachedRequestSpan <- 
+            match _cachedRequestSpan with 
+            | None -> Some requestSpan
+            | Some cachedRequestSpan -> 
+                if cachedRequestSpan.Snapshot = requestSpan.Snapshot then
+                    SnapshotSpanUtil.CreateOverarching cachedRequestSpan requestSpan |> Some
+                else
+                    Some requestSpan
+
+    member x.GetTags (col : NormalizedSnapshotSpanCollection) =
+        let span = NormalizedSnapshotSpanCollectionUtil.GetOverarchingSpan col
+        x.AdjustRequestSpan span
+        _basicTaggerSource.GetTags span
+
+    member x.OnBasicTaggerSourceChanged() =
+        let span = 
+            match _cachedRequestSpan with
+            | None -> SnapshotSpan(_basicTaggerSource.TextSnapshot, 0, 0)
+            | Some cachedRequestSpan -> cachedRequestSpan
+
+        let args = SnapshotSpanEventArgs(span)
+        _tagsChanged.Trigger(this, args)
+
+    interface ITagger<'TTag> with
+        member x.GetTags col = x.GetTags col |> Seq.ofList
+        [<CLIEvent>]
+        member x.TagsChanged = _tagsChanged.Publish
+
+    interface System.IDisposable with
+        member x.Dispose() = x.Dispose()
+
 /// Tagger for incremental searches
-type IncrementalSearchTagger (_vimBuffer : IVimBuffer) as this =
+type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) =
 
     let _search = _vimBuffer.IncrementalSearch
     let _textBuffer = _vimBuffer.TextBuffer
     let _globalSettings = _vimBuffer.GlobalSettings
     let _eventHandlers = DisposableBag()
-    let _tagsChanged = new Event<System.EventHandler<SnapshotSpanEventArgs>, SnapshotSpanEventArgs>()
+    let _changed = new Event<unit>()
     let mutable _searchSpan : ITrackingSpan option = None
 
     do 
-        let raiseAllChanged () = 
-            // Don't bother calculating the range of changed spans.  Simply raise the event for the entire 
-            // buffer.  The editor will only call back for visible spans
-            let snapshot = _textBuffer.CurrentSnapshot
-            let extent = SnapshotUtil.GetExtent snapshot
-            _tagsChanged.Trigger (this, SnapshotSpanEventArgs(extent))
+        let raiseChanged () = _changed.Trigger()
 
         let updateCurrentWithResult result = 
             _searchSpan <-
@@ -373,27 +451,27 @@ type IncrementalSearchTagger (_vimBuffer : IVimBuffer) as this =
         |> Observable.subscribe (fun result ->
 
             updateCurrentWithResult result
-            raiseAllChanged())
+            raiseChanged())
         |> _eventHandlers.Add
 
         // When the search is completed there is nothing left for us to tag.
         _search.CurrentSearchCompleted 
         |> Observable.subscribe (fun result ->
             _searchSpan <- None
-            raiseAllChanged())
+            raiseChanged())
         |> _eventHandlers.Add
 
         // When the search is cancelled there is nothing left for us to tag.
         _search.CurrentSearchCancelled
         |> Observable.subscribe (fun result ->
             _searchSpan <- None
-            raiseAllChanged())
+            raiseChanged())
         |> _eventHandlers.Add
 
         // We need to pay attention to the current IVimBuffer mode.  If it's any visual mode then we don't want
         // to highlight any spans.
         _vimBuffer.SwitchedMode
-        |> Observable.subscribe (fun _ -> raiseAllChanged())
+        |> Observable.subscribe (fun _ -> raiseChanged())
         |> _eventHandlers.Add
 
         // When the 'incsearch' setting is changed it impacts our tag display
@@ -402,31 +480,32 @@ type IncrementalSearchTagger (_vimBuffer : IVimBuffer) as this =
         // a derived type
         (_globalSettings :> IVimSettings).SettingChanged 
         |> Observable.filter (fun args -> StringUtil.isEqual args.Name GlobalSettingNames.IncrementalSearchName)
-        |> Observable.subscribe (fun _ -> raiseAllChanged())
+        |> Observable.subscribe (fun _ -> raiseChanged())
         |> _eventHandlers.Add
 
-    member x.GetTags (col : NormalizedSnapshotSpanCollection) =
+    member x.GetTags span =
 
-        if col.Count = 0 || VisualKind.IsAnyVisual _vimBuffer.ModeKind || not _globalSettings.IncrementalSearch then 
+        if VisualKind.IsAnyVisual _vimBuffer.ModeKind || not _globalSettings.IncrementalSearch then 
             // If any of these are true then we shouldn't be displaying any tags
-            Seq.empty
+            List.empty
         else
-            let snapshot = col.[0].Snapshot
+            let snapshot = SnapshotSpanUtil.GetSnapshot span
             match _searchSpan |> Option.map (TrackingSpanUtil.GetSpan snapshot) |> OptionUtil.collapse with
             | None -> 
                 // No search span or the search span doesn't map into the current ITextSnapshot so there
                 // is nothing to return
-                Seq.empty
+                List.empty
             | Some span -> 
                 // We have a span so return the tag
                 let tag = TextMarkerTag(Constants.IncrementalSearchTagName)
                 let tagSpan = TagSpan(span, tag) :> ITagSpan<TextMarkerTag>
-                [ tagSpan ] |> Seq.ofList
+                [ tagSpan ]
 
-    interface ITagger<TextMarkerTag> with
-        member x.GetTags col = x.GetTags col
+    interface IBasicTaggerSource<TextMarkerTag> with
+        member x.TextSnapshot = _textBuffer.CurrentSnapshot
+        member x.GetTags span = x.GetTags span
         [<CLIEvent>]
-        member x.TagsChanged = _tagsChanged.Publish
+        member x.Changed = _changed.Publish
 
     interface System.IDisposable with
         member x.Dispose() = _eventHandlers.DisposeAll()
@@ -447,7 +526,8 @@ type internal IncrementalSearchTaggerProvider
             | true, None ->
                 null
             | true, Some vimBuffer ->
-                let tagger = new IncrementalSearchTagger(vimBuffer)
+                let taggerSource = new IncrementalSearchTaggerSource(vimBuffer)
+                let tagger = new BasicTagger<TextMarkerTag>(taggerSource)
                 tagger :> obj :?> ITagger<'T>
 
 /// Tagger for completed incremental searches
@@ -460,7 +540,7 @@ type HighlightSearchTaggerSource
         _vimData : IVimData
     ) =
 
-    let _tagsChanged = new Event<SnapshotSpan option>()
+    let _changed = new Event<unit>()
     let _eventHandlers = DisposableBag()
 
     /// Users can temporarily disable highlight search with the ':noh' command.  This is true while 
@@ -468,14 +548,12 @@ type HighlightSearchTaggerSource
     let mutable _oneTimeDisabled = false
 
     do 
-        let raiseAllChanged () = 
-
-            // We have no specific knowledge about what changed hence use none
-            _tagsChanged.Trigger None
+        let raiseChanged () = 
+            _changed.Trigger()
 
         let resetDisabledAndRaiseAllChanged () =
             _oneTimeDisabled <- false
-            raiseAllChanged()
+            raiseChanged()
 
         // When the 'LastSearchData' property changes we want to reset the 'oneTimeDisabled' flag and 
         // begin highlighting again
@@ -487,7 +565,7 @@ type HighlightSearchTaggerSource
         _vimData.HighlightSearchOneTimeDisabled
         |> Observable.subscribe (fun _ ->
             _oneTimeDisabled <- true
-            raiseAllChanged())
+            raiseChanged())
         |> _eventHandlers.Add
 
         // When the setting is changed it also resets the one time disabled flag
@@ -500,7 +578,6 @@ type HighlightSearchTaggerSource
 
     /// Get the search information for a background 
     member x.GetDataForSpan() =
-
         // Build up the search information.  Don't need to wrap here as we just want
         // to consider the SnapshotSpan going forward
         let searchData = SearchData.OfPatternData _vimData.LastPatternData false
@@ -561,7 +638,7 @@ type HighlightSearchTaggerSource
         member x.GetTagsPrompt _ = x.GetTagsPrompt()
         member x.GetTagsInBackground searchData span cancellationToken = HighlightSearchTaggerSource.GetTagsInBackground _search _wordNav searchData span cancellationToken
         [<CLIEvent>]
-        member x.TagsChanged = _tagsChanged.Publish
+        member x.Changed = _changed.Publish
 
     interface System.IDisposable with
         member x.Dispose() = _eventHandlers.DisposeAll()
@@ -586,41 +663,38 @@ type HighlightIncrementalSearchTaggerProvider
                 asyncTagger :> obj :?> ITagger<'T>
 
 /// Tagger for matches as they appear during a confirm substitute
-type SubstituteConfirmTagger
+type SubstituteConfirmTaggerSource
     ( 
         _textBuffer : ITextBuffer,
-        _mode : ISubstituteConfirmMode) as this =
+        _mode : ISubstituteConfirmMode
+    ) =
 
-    let _tagsChanged = new Event<System.EventHandler<SnapshotSpanEventArgs>, SnapshotSpanEventArgs>()
+    let _changed = new Event<unit>()
     let _eventHandlers = DisposableBag()
     let mutable _currentMatch : SnapshotSpan option = None
 
     do 
-        let raiseAllChanged () = 
-            // Don't bother calculating the range of changed spans.  Simply raise the event for the entire 
-            // buffer.  The editor will only call back for visible spans
-            let snapshot = _textBuffer.CurrentSnapshot
-            let allSpan = SnapshotSpan(snapshot, 0, snapshot.Length)
-            _tagsChanged.Trigger (this,SnapshotSpanEventArgs(allSpan))
+        let raiseChanged () = _changed.Trigger()
 
         _mode.CurrentMatchChanged
         |> Observable.subscribe (fun data -> 
             _currentMatch <- data
-            raiseAllChanged())
+            raiseChanged())
         |> _eventHandlers.Add
 
-    member x.GetTags (col:NormalizedSnapshotSpanCollection) = 
+    member x.GetTags span = 
         match _currentMatch with
-        | Some(currentMatch) -> 
+        | Some currentMatch -> 
             let tag = TextMarkerTag(Constants.HighlightIncrementalSearchTagName)
-            let span = TagSpan(currentMatch, tag) :> ITagSpan<TextMarkerTag>
-            span |> Seq.singleton
-        | None -> Seq.empty
+            let tagSpan = TagSpan(currentMatch, tag) :> ITagSpan<TextMarkerTag>
+            [ tagSpan ]
+        | None -> List.empty
 
-    interface ITagger<TextMarkerTag> with
-        member x.GetTags col = x.GetTags col
+    interface IBasicTaggerSource<TextMarkerTag> with
+        member x.TextSnapshot = _textBuffer.CurrentSnapshot
+        member x.GetTags span = x.GetTags span
         [<CLIEvent>]
-        member x.TagsChanged = _tagsChanged.Publish
+        member x.Changed = _changed.Publish
 
     interface System.IDisposable with
         member x.Dispose() = _eventHandlers.DisposeAll()
@@ -641,5 +715,59 @@ type SubstituteConfirmTaggerProvider
             | true, None -> 
                 null
             | true, Some buffer ->
-                let tagger = new SubstituteConfirmTagger(textBuffer, buffer.SubstituteConfirmMode)
+                let taggerSource = new SubstituteConfirmTaggerSource(textBuffer, buffer.SubstituteConfirmMode)
+                let tagger = new BasicTagger<TextMarkerTag>(taggerSource)
                 tagger :> obj :?> ITagger<'T>
+
+/// Fold tagger for the IOutliningRegion tags created by folds.  Note that folds work
+/// on an ITextBuffer level and not an ITextView level.  Hence this works directly with
+/// IFoldManagerData instead of IFoldManager
+type internal FoldTaggerSource(_foldData : IFoldData) =
+
+    let _textBuffer = _foldData.TextBuffer
+    let _changed = new Event<unit>()
+
+    do 
+        _foldData.FoldsUpdated 
+        |> Event.add (fun _ -> _changed.Trigger())
+
+    member x.GetTags span =
+
+        // Get the description for the given SnapshotSpan.  This is the text displayed for
+        // the folded lines.
+        let getDescription span = 
+            let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
+            sprintf "%d lines ---" ((endLine.LineNumber - startLine.LineNumber) + 1)
+
+        let snapshot = SnapshotSpanUtil.GetSnapshot span
+        _foldData.Folds
+        |> Seq.filter ( fun span -> span.Snapshot = snapshot )
+        |> Seq.map (fun span ->
+            let description = getDescription span
+            let hint = span.GetText()
+            let tag = OutliningRegionTag(true, true, description, hint)
+            TagSpan<OutliningRegionTag>(span, tag) :> ITagSpan<OutliningRegionTag> )
+        |> List.ofSeq
+
+    interface IBasicTaggerSource<OutliningRegionTag> with
+        member x.TextSnapshot = _textBuffer.CurrentSnapshot
+        member x.GetTags span = x.GetTags span
+        [<CLIEvent>]
+        member x.Changed = _changed.Publish
+
+[<Export(typeof<ITaggerProvider>)>]
+[<ContentType(Constants.AnyContentType)>]
+[<TextViewRole(PredefinedTextViewRoles.Document)>]
+[<TagType(typeof<OutliningRegionTag>)>]
+type FoldTaggerProvider
+    [<ImportingConstructor>]
+    (_factory : IFoldManagerFactory) = 
+
+    interface ITaggerProvider with 
+        member x.CreateTagger<'T when 'T :> ITag> textBuffer =
+            let foldData = _factory.GetFoldData textBuffer
+            let taggerSource = FoldTaggerSource(foldData)
+            let tagger = new BasicTagger<OutliningRegionTag>(taggerSource)
+            tagger :> obj :?> ITagger<'T>
+
+
