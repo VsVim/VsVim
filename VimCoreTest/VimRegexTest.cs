@@ -1,9 +1,10 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
+using Microsoft.FSharp.Core;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
-using System;
 
 namespace VimCore.UnitTest
 {
@@ -14,7 +15,6 @@ namespace VimCore.UnitTest
         private static readonly string[] UpperCaseLetters = TestConstants.UpperCaseLetters.Select(x => x.ToString()).ToArray();
         private static readonly string[] Digits = TestConstants.Digits.Select(x => x.ToString()).ToArray();
         private IVimGlobalSettings _globalSettings;
-        private VimRegexFactory _regexFactory;
 
         [SetUp]
         public void Setup()
@@ -22,17 +22,21 @@ namespace VimCore.UnitTest
             _globalSettings = new Vim.GlobalSettings();
             _globalSettings.IgnoreCase = true;
             _globalSettings.SmartCase = false;
-            _regexFactory = new VimRegexFactory(_globalSettings);
+        }
+
+        private FSharpOption<VimRegex> Create(string pattern)
+        {
+            return VimRegexFactory.CreateForSettings(pattern, _globalSettings);
         }
 
         private void VerifyMatches(string pattern, params string[] inputArray)
         {
-            VerifyMatches(VimRegexOptions.None, pattern, inputArray);
+            VerifyMatches(VimRegexOptions.Default, pattern, inputArray);
         }
 
         private void VerifyMatches(VimRegexOptions options, string pattern, params string[] inputArray)
         {
-            var opt = _regexFactory.CreateWithOptions(pattern, options);
+            var opt = VimRegexFactory.Create(pattern, options);
             Assert.IsTrue(opt.IsSome());
             var regex = opt.Value;
             foreach (var cur in inputArray)
@@ -43,17 +47,17 @@ namespace VimCore.UnitTest
 
         private void VerifyNotRegex(string pattern)
         {
-            Assert.IsTrue(_regexFactory.Create(pattern).IsNone());
+            Assert.IsTrue(Create(pattern).IsNone());
         }
 
         private void VerifyNotMatches(string pattern, params string[] inputArray)
         {
-            VerifyNotMatches(VimRegexOptions.None, pattern, inputArray);
+            VerifyNotMatches(VimRegexOptions.Default, pattern, inputArray);
         }
 
         private void VerifyNotMatches(VimRegexOptions options, string pattern, params string[] inputArray)
         {
-            var opt = _regexFactory.CreateWithOptions(pattern, options);
+            var opt = VimRegexFactory.Create(pattern, options);
             Assert.IsTrue(opt.IsSome());
             var regex = opt.Value;
             foreach (var cur in inputArray)
@@ -64,7 +68,7 @@ namespace VimCore.UnitTest
 
         private void VerifyMatchIs(string pattern, string input, string toMatch)
         {
-            var regex = _regexFactory.Create(pattern);
+            var regex = Create(pattern);
             Assert.IsTrue(regex.IsSome());
             var match = regex.Value.Regex.Match(input);
             Assert.IsTrue(match.Success);
@@ -73,27 +77,32 @@ namespace VimCore.UnitTest
 
         private void VerifyReplace(string pattern, string input, string replace, string result)
         {
-            var regex = _regexFactory.Create(pattern);
+            VerifyReplace(VimRegexOptions.Default, pattern, input, replace, result);
+        }
+
+        private void VerifyReplace(VimRegexOptions options, string pattern, string input, string replace, string result)
+        {
+            var regex = VimRegexFactory.Create(pattern, options);
             Assert.IsTrue(regex.IsSome());
 
-            var replaceData = new ReplaceData(Environment.NewLine, _globalSettings.Magic, 1);
+            var noMagic = VimRegexOptions.NoMagic == (options & VimRegexOptions.NoMagic);
+            var replaceData = new ReplaceData(Environment.NewLine, !noMagic, 1);
             Assert.AreEqual(result, regex.Value.ReplaceAll(input, replace, replaceData));
         }
 
         [Test]
         public void Case_Simple()
         {
-            VerifyMatches("a", "a", "A");
+            VerifyMatches(VimRegexOptions.IgnoreCase, "a", "a", "A");
             VerifyMatches("b", "b", "b");
         }
 
         /// <summary>
-        /// Make sure the parsing respects the 'ignorecase' option
+        /// Make sure the parsing is case sensitive by default
         /// </summary>
         [Test]
         public void Case_RespectIgnoreCase()
         {
-            _globalSettings.IgnoreCase = false;
             VerifyMatches("a", "a");
             VerifyNotMatches("a", "A");
             VerifyMatches("b", "b");
@@ -115,7 +124,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Case_SensitiveSpecifierInMiddleOfString()
         {
-            var regex = _regexFactory.Create(@"d\Cog").Value;
+            var regex = Create(@"d\Cog").Value;
             Assert.IsTrue(regex.CaseSpecifier.IsOrdinalCase);
             Assert.AreEqual(@"d\Cog", regex.VimPattern);
             Assert.AreEqual("dog", regex.RegexPattern);
@@ -127,11 +136,10 @@ namespace VimCore.UnitTest
         [Test]
         public void Case_SensitiveSpecifierBeatsIgonreCase()
         {
-            _globalSettings.IgnoreCase = true;
-            VerifyMatches(@"\Ca", "a");
-            VerifyMatches(@"\Cb", "b");
-            VerifyNotMatches(@"\Ca", "A");
-            VerifyNotMatches(@"\Cb", "B");
+            VerifyMatches(VimRegexOptions.IgnoreCase, @"\Ca", "a");
+            VerifyMatches(VimRegexOptions.IgnoreCase, @"\Cb", "b");
+            VerifyNotMatches(VimRegexOptions.IgnoreCase, @"\Ca", "A");
+            VerifyNotMatches(VimRegexOptions.IgnoreCase, @"\Cb", "B");
         }
 
         [Test]
@@ -147,7 +155,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Case_InsensitiveSpecifierInMiddleOfString()
         {
-            var regex = _regexFactory.Create(@"D\cOG").Value;
+            var regex = Create(@"D\cOG").Value;
             Assert.IsTrue(regex.CaseSpecifier.IsIgnoreCase);
             Assert.AreEqual(@"D\cOG", regex.VimPattern);
             Assert.AreEqual("DOG", regex.RegexPattern);
@@ -157,9 +165,8 @@ namespace VimCore.UnitTest
         /// The \c modifier takes precedence over the ignore case option
         /// </summary>
         [Test]
-        public void Case_InsensitiveSpecifierBeatsIgnoreCase()
+        public void Case_InsensitiveSpecifierBeatsDefault()
         {
-            _globalSettings.IgnoreCase = false;
             VerifyMatches(@"\ca", "a", "A");
             VerifyMatches(@"\cb", "b", "B");
         }
@@ -170,9 +177,8 @@ namespace VimCore.UnitTest
         [Test]
         public void SmartCase_Simple()
         {
-            _globalSettings.SmartCase = true;
-            VerifyMatches("a", "A", "a");
-            VerifyMatches("b", "b", "B");
+            VerifyMatches(VimRegexOptions.SmartCase | VimRegexOptions.IgnoreCase, "a", "A", "a");
+            VerifyMatches(VimRegexOptions.SmartCase | VimRegexOptions.IgnoreCase, "b", "b", "B");
         }
 
         /// <summary>
@@ -181,11 +187,10 @@ namespace VimCore.UnitTest
         [Test]
         public void SmartCase_WithUpper()
         {
-            _globalSettings.SmartCase = true;
-            VerifyMatches("A", "A");
-            VerifyNotMatches("A", "a");
-            VerifyMatches("B", "B");
-            VerifyNotMatches("B", "b");
+            VerifyMatches(VimRegexOptions.SmartCase, "A", "A");
+            VerifyNotMatches(VimRegexOptions.SmartCase, "A", "a");
+            VerifyMatches(VimRegexOptions.SmartCase, "B", "B");
+            VerifyNotMatches(VimRegexOptions.SmartCase, "B", "b");
         }
 
         /// <summary>
@@ -194,9 +199,8 @@ namespace VimCore.UnitTest
         [Test]
         public void SmartCase_InsensitiveSpecifierWins()
         {
-            _globalSettings.SmartCase = true;
-            VerifyMatches(@"\cFoo", "foo", "FOO", "fOO");
-            VerifyMatches(@"\cBar", "BAR", "bar");
+            VerifyMatches(VimRegexOptions.SmartCase, @"\cFoo", "foo", "FOO", "fOO");
+            VerifyMatches(VimRegexOptions.SmartCase, @"\cBar", "BAR", "bar");
         }
 
         /// <summary>
@@ -205,58 +209,61 @@ namespace VimCore.UnitTest
         [Test]
         public void SmartCase_SensitiveSpecifierWins()
         {
-            _globalSettings.SmartCase = true;
-            VerifyMatches(@"\CFOO", "FOO");
-            VerifyNotMatches(@"\CFOO", "foo");
-            VerifyMatches(@"\CBAR", "BAR");
-            VerifyNotMatches(@"\CBAR", "bar");
+            var options = VimRegexOptions.SmartCase | VimRegexOptions.IgnoreCase;
+            VerifyMatches(options, @"\CFOO", "FOO");
+            VerifyNotMatches(options, @"\CFOO", "foo");
+            VerifyMatches(options, @"\CBAR", "BAR");
+            VerifyNotMatches(options, @"\CBAR", "bar");
         }
 
         [Test]
-        [Description("Verify the magic option")]
-        public void Magic1()
+        public void CreateRegexOptions_NoMagic()
         {
-            _globalSettings.Magic = true;
+            _globalSettings.Magic = false;
+            var options = VimRegexFactory.CreateRegexOptions(_globalSettings);
+            Assert.AreEqual(VimRegexOptions.NoMagic, options & VimRegexOptions.NoMagic);
+        }
+
+        /// <summary>
+        /// Magic should the default setting
+        /// </summary>
+        [Test]
+        public void Magic_ShouldBeDefault()
+        {
             VerifyMatches(".", "a", "b", "c");
         }
 
+        /// <summary>
+        /// The \m should override the NoMagic option on the regex
+        /// </summary>
         [Test]
-        [Description("Verify the nomagic option")]
-        public void Magic2()
+        public void Magic_MagicSpecifierHasPrecedence()
         {
-            _globalSettings.Magic = false;
-            VerifyNotMatches(".", "a", "b", "c");
-            VerifyMatches(@"\.", "a", "b", "c");
+            VerifyMatches(VimRegexOptions.NoMagic, @"\m.", "a", "b", "c");
         }
 
+        /// <summary>
+        /// The \M should oveerride the default VimRegexOptions
+        /// </summary>
         [Test]
-        [Description("Verify the magic prefix ")]
-        public void Magic3()
+        public void Magic_NoMagicSpecifierHasPrecedence()
         {
-            _globalSettings.Magic = false;
-            VerifyMatches(@"\m.", "a", "b", "c");
-        }
-
-        [Test]
-        [Description("Verify the nomagic prefix")]
-        public void Magic4()
-        {
-            _globalSettings.Magic = true;
             VerifyNotMatches(@"\M.", "a", "b", "c");
             VerifyMatches(@"\M\.", "a", "b", "c");
         }
 
+        /// <summary>
+        /// The \M should oveerride the default VimRegexOptions
+        /// </summary>
         [Test]
-        public void Magic5()
+        public void Magic_MagicSpecifierInMiddle()
         {
-            _globalSettings.Magic = false;
-            VerifyMatches(@"a\m.", "ab", "ac");
+            VerifyMatches(VimRegexOptions.NoMagic, @"a\m.", "ab", "ac");
         }
 
         [Test]
-        public void Magic6()
+        public void Magic_NoMagicSpecifierInMiddle()
         {
-            _globalSettings.Magic = true;
             VerifyNotMatches(@"a\M.", "ab", "ac");
             VerifyMatches(@"a\M.", "a.");
         }
@@ -264,14 +271,12 @@ namespace VimCore.UnitTest
         [Test]
         public void VeryMagic1()
         {
-            _globalSettings.Magic = false;
-            VerifyMatches(@"\v.", "a", "b");
+            VerifyMatches(VimRegexOptions.NoMagic, @"\v.", "a", "b");
         }
 
         [Test]
         public void VeryMagic2()
         {
-            _globalSettings.Magic = true;
             VerifyNotMatches(@"\V.", "a", "b");
             VerifyMatches(@"\V\.", "a", "b");
         }
@@ -279,7 +284,6 @@ namespace VimCore.UnitTest
         [Test]
         public void VeryNoMagicDotIsNotSpecial()
         {
-            _globalSettings.Magic = true;
             VerifyNotMatches(@"\V.", "a");
             VerifyMatches(@"\V.", ".");
         }
@@ -590,7 +594,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Grouping4()
         {
-            var regex = _regexFactory.Create(@"\(");
+            var regex = Create(@"\(");
             Assert.IsTrue(regex.IsNone());
         }
 
@@ -690,7 +694,6 @@ namespace VimCore.UnitTest
         [Test]
         public void Replace_Ampersand()
         {
-            _globalSettings.Magic = true;
             VerifyReplace("a", "cat", @"o&", "coat");
             VerifyReplace(@"a\+", "caat", @"o&", "coaat");
         }
@@ -702,9 +705,8 @@ namespace VimCore.UnitTest
         [Test]
         public void Replace_Ampersand_NoMagic()
         {
-            _globalSettings.Magic = false;
-            VerifyReplace("a", "cat", @"o&", "co&t");
-            VerifyReplace(@"a\+", "caat", @"o&", "co&t");
+            VerifyReplace(VimRegexOptions.NoMagic, "a", "cat", @"o&", "co&t");
+            VerifyReplace(VimRegexOptions.NoMagic, @"a\+", "caat", @"o&", "co&t");
         }
 
         /// <summary>
@@ -713,7 +715,6 @@ namespace VimCore.UnitTest
         [Test]
         public void Replace_EscapedAmpersand()
         {
-            _globalSettings.Magic = true;
             VerifyReplace("a", "cat", @"o\&", "co&t");
             VerifyReplace(@"a\+", "caat", @"o\&", "co&t");
         }
@@ -746,59 +747,6 @@ namespace VimCore.UnitTest
         public void Replace_Escaped_R()
         {
             VerifyReplace("a", "a", @"\r", Environment.NewLine);
-        }
-
-        [Test]
-        [Description("Options take precedent over embedded case")]
-        public void CreateWithOptions1()
-        {
-            VerifyMatches(VimRegexOptions.IgnoreCase, @"\Cfoo", "FOO");
-            VerifyMatches(VimRegexOptions.IgnoreCase, @"\Cfoo", "fOo");
-            VerifyNotMatches(VimRegexOptions.OrdinalCase, @"\cfoo", "FOO");
-            VerifyNotMatches(VimRegexOptions.OrdinalCase, @"\cfoo", "fOo");
-        }
-
-        [Test]
-        [Description("Options take precedent over case options")]
-        public void CreateWithOptions2()
-        {
-            _globalSettings.IgnoreCase = false;
-            VerifyMatches(VimRegexOptions.IgnoreCase, @"foo", "FOO");
-            VerifyMatches(VimRegexOptions.IgnoreCase, @"foo", "fOo");
-            _globalSettings.IgnoreCase = true;
-            VerifyNotMatches(VimRegexOptions.OrdinalCase, @"foo", "FOO");
-            VerifyNotMatches(VimRegexOptions.OrdinalCase, @"foo", "fOo");
-        }
-
-        [Test]
-        [Description("Magic options take precedent over nomagic settings")]
-        public void CreateWithOptions3()
-        {
-            _globalSettings.Magic = false;
-            VerifyMatches(VimRegexOptions.Magic, @".", "a");
-        }
-
-        [Test]
-        [Description(@"Magic option is superceeded by the \M specifier")]
-        public void CreateWithOptions4()
-        {
-            _globalSettings.Magic = false;
-            VerifyNotMatches(VimRegexOptions.Magic, @"\M.", "a");
-        }
-
-        [Test]
-        [Description("Nomagic options take precedent over magic settings")]
-        public void CreateWithOptions5()
-        {
-            _globalSettings.Magic = true;
-            VerifyNotMatches(VimRegexOptions.NoMagic, @".", "a");
-        }
-
-        [Test]
-        [Description(@"Nomagic options is superceeded by the \m specifier")]
-        public void CreateWithOptions6()
-        {
-            VerifyMatches(VimRegexOptions.NoMagic, @"\m.", "a", "b");
         }
 
         [Test]

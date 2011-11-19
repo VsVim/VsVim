@@ -11,8 +11,6 @@ type internal SearchService
         _globalSettings : IVimGlobalSettings
     ) = 
 
-    let _regexFactory = VimRegexFactory(_globalSettings)
-
     /// Convert the Vim SearchData to the editor FindData structure
     member x.ConvertToFindData (searchData : SearchData) snapshot wordNavigator =
 
@@ -21,7 +19,7 @@ type internal SearchService
         let pattern = searchData.Pattern
         let text, textOptions, hadCaseSpecifier = 
             let useRegex () =
-                match _regexFactory.Create pattern with
+                match VimRegexFactory.CreateForSettings pattern _globalSettings with
                 | None -> 
                     None, FindOptions.None, false
                 | Some regex ->

@@ -141,7 +141,6 @@ type internal CommandProcessor
     let _textBuffer = _textView.TextBuffer
     let _vimHost = _vimBufferData.Vim.VimHost
     let _localSettings = _vimBufferData.LocalSettings
-    let _regexFactory = VimRegexFactory(_vimBufferData.LocalSettings.GlobalSettings)
     let _vim = _vimBufferData.Vim
     let _registerMap = _vim.RegisterMap
     let _searchService = _vim.SearchService
@@ -793,7 +792,7 @@ type internal CommandProcessor
         // Called to initialize the data and move to a confirm style substitution.  Have to find the first match
         // before passing off to confirm
         let setupConfirmSubstitute (range:SnapshotLineRange) (data:SubstituteData) =
-            let regex = _regexFactory.CreateForSubstituteFlags data.SearchPattern data.Flags
+            let regex = VimRegexFactory.CreateForSubstituteFlags data.SearchPattern data.Flags
             match regex with
             | None -> 
                 _statusUtil.OnError (Resources.Common_PatternNotFound data.SearchPattern)

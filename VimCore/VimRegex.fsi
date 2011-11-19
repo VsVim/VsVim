@@ -3,29 +3,29 @@
 namespace Vim
 open System.Text.RegularExpressions
 
-/// Options which can be passed to a vim regex.  These override anything 
-/// which is found embedded in the regex.  For example IgnoreCase will 
-/// override an embedded \C in the pattern or a noignorecase option
+/// Options which can be passed to a vim regex.  These can be overriden by
+/// any embedded specifiers in the pattern.  For example IgnoreCase can
+/// be overridden with a \C in the pattern.  
+///
+/// The defaults here are the same as Vim.  case specific + magic
 [<System.Flags>]
 type VimRegexOptions = 
-    | None = 0
-    | Compiled = 0x1
+    | Default = 0
+
+    | NotCompiled = 0x1
 
     /// Causes the regex to ignore case.  This will override any embedded \C 
     /// modifier in the pattern or a noignore case option 
     | IgnoreCase = 0x2
 
-    /// Causes the regex to consider case.  This will override any embedded \c 
-    /// modifier in the pattern or a noignore case option 
-    | OrdinalCase = 0x4
-
-    /// Causes the regex to begin in magic mode.  This can be disabled later in
-    /// the regex with a \M specifier
-    | Magic = 0x8
+    /// The case sensitivity is based on the pattern being provided.  If there
+    /// are any upper case characters in the pattern it is case sensitive.  Else
+    /// it falls back to the IgnoreCase option
+    | SmartCase = 0x4
 
     /// Causes the regex to begin in nomagic mode.  This can be disabled later in
     /// the regex with a \m specifier
-    | NoMagic = 0x10
+    | NoMagic = 0x8
 
 /// Case specifier found in the rege (\c, \C or nothing)
 [<RequireQualifiedAccess>]
@@ -81,16 +81,16 @@ type VimRegex =
     /// as specified.  If there is currently no regex then None will be returned
     member ReplaceAll : input:string -> replacement:string -> replaceData : ReplaceData -> string 
 
-[<Sealed>]
-type VimRegexFactory = 
+module VimRegexFactory = 
 
-    new : IVimGlobalSettings -> VimRegexFactory
+    val Create : pattern : string -> options : VimRegexOptions -> VimRegex option
 
-    member Create : pattern : string -> VimRegex option
+    val CreateForSettings : pattern : string -> globalSettings : IVimGlobalSettings -> VimRegex option
 
-    member CreateForSubstituteFlags : pattern : string -> SubstituteFlags -> VimRegex option
+    val CreateForSubstituteFlags : pattern : string -> SubstituteFlags -> VimRegex option
 
-    member CreateWithOptions : pattern : string -> options : VimRegexOptions -> VimRegex option
+    val CreateRegexOptions : globalSettings : IVimGlobalSettings -> VimRegexOptions
+
 
 
 

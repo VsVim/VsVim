@@ -123,7 +123,6 @@ type internal CommonOperations
     let _localSettings = _vimBufferData.LocalSettings
     let _undoRedoOperations = _vimBufferData.UndoRedoOperations
     let _globalSettings = _localSettings.GlobalSettings
-    let _regexFactory = VimRegexFactory(_globalSettings)
 
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
@@ -598,7 +597,7 @@ type internal CommonOperations
                 edit.Cancel()
                 _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
 
-        match _regexFactory.CreateForSubstituteFlags pattern flags with
+        match VimRegexFactory.CreateForSubstituteFlags pattern flags with
         | None -> 
             _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
         | Some (regex) -> 
