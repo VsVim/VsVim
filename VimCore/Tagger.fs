@@ -36,6 +36,7 @@ type IAsyncTaggerSource<'TData, 'TTag when 'TTag :> ITag> =
 
     /// Return the applicable tags for the given SnapshotSpan instance.  This will be
     /// called on a background thread and should respect the provided CancellationToken
+    [<UsedInBackgroundThread>]
     abstract GetTagsInBackground : data : 'TData -> span : SnapshotSpan -> cancellationToken : CancellationToken -> ITagSpan<'TTag> list
 
     /// Raised by the source when the underlying source has changed.  All previously
@@ -595,6 +596,7 @@ type HighlightSearchTaggerSource
             // There is a search pattern and we can't provide the data promptly
             None
 
+    [<UsedInBackgroundThread>]
     static member GetTagsInBackground (searchService : ISearchService) wordNavigator searchData span (cancellationToken : CancellationToken) = 
 
         let withSpan (span : SnapshotSpan) =  

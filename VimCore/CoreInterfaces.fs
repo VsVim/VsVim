@@ -299,6 +299,7 @@ type SearchResult =
 /// Global information about searches within Vim.  
 ///
 /// This interface is usable from any thread
+[<UsedInBackgroundThread()>]
 type ISearchService = 
 
     /// Find the next occurrence of the pattern in the buffer starting at the 

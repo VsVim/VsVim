@@ -5,7 +5,6 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open System.ComponentModel.Composition
 
-/// TODO: Need to move the MotionUtil functions for word into this type
 [<Sealed>]
 type internal WordUtil 
     (
@@ -16,9 +15,10 @@ type internal WordUtil
     /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
     /// in the middle of a word the span of the entire word will be returned
     ///
-    /// TODO: Need to consider folded regions
-    /// Note: This can be called from a background thread via ITextSearchService
-    member x.GetWords kind path point = 
+    /// This can be called from a background thread via ITextSearchService.  The member is 
+    /// static to promote safety
+    [<UsedInBackgroundThread()>]
+    static member GetWordsCore kind path point = 
 
         let snapshot = SnapshotPointUtil.GetSnapshot point
         let line = SnapshotPointUtil.GetContainingLine point
@@ -45,8 +45,12 @@ type internal WordUtil
             | Path.Backward -> span.Start.Position < point.Position)
 
     /// Get the SnapshotSpan for the full word span which crosses the given SanpshotPoint
-    member x.GetFullWordSpan wordKind point = 
-        let word = x.GetWords wordKind Path.Forward point |> SeqUtil.tryHeadOnly
+    ///
+    /// This can be called from a background thread via ITextSearchService.  The member is 
+    /// static to promote safety
+    [<UsedInBackgroundThread()>]
+    static member GetFullWordSpanCore wordKind point = 
+        let word = WordUtil.GetWordsCore wordKind Path.Forward point |> SeqUtil.tryHeadOnly
         match word with 
         | None -> 
             // No more words forward then no word at the given SnapshotPoint
@@ -59,15 +63,24 @@ type internal WordUtil
             else 
                 None
 
+    member x.GetWords kind path point = 
+        WordUtil.GetWordsCore kind path point
+
+    /// Get the SnapshotSpan for the full word span which crosses the given SanpshotPoint
+    member x.GetFullWordSpan wordKind point = 
+        WordUtil.GetFullWordSpanCore wordKind point
+
     /// Create an ITextStructure navigator for the ITextBuffer where the GetWordExtent function 
     /// considers word values of the given WordKind.  Use the base ITextStructureNavigator of the
     /// ITextBuffer for the rest of the functions
+    ///
+    /// Note: This interface can be invoked from any thread via ITextSearhService
     member x.CreateTextStructureNavigator wordKind = 
         let this = x
         { new ITextStructureNavigator with 
             member x.ContentType = _textStructureNavigator.ContentType
             member x.GetExtentOfWord point = 
-                match this.GetFullWordSpan wordKind point with
+                match WordUtil.GetFullWordSpanCore wordKind point with
                 | Some span -> TextExtent(span, true)
                 | None -> TextExtent(SnapshotSpan(point,1),false)
             member x.GetSpanOfEnclosing span = _textStructureNavigator.GetSpanOfEnclosing(span)
