@@ -123,12 +123,30 @@ type internal CommonOperations
     let _localSettings = _vimBufferData.LocalSettings
     let _undoRedoOperations = _vimBufferData.UndoRedoOperations
     let _globalSettings = _localSettings.GlobalSettings
+    let _eventHandlers = new DisposableBag()
+
+    /// When maintaining the caret column for motion moves this represents the desired 
+    /// column to jump to if there is enough space on the line
+    let mutable _maintainCaretColumn : int option = None
+
+    do
+        _textView.Caret.PositionChanged
+        |> Observable.subscribe (fun _ -> _maintainCaretColumn <- None)
+        |> _eventHandlers.Add
+
+        _textView.Closed
+        |> Observable.subscribe (fun _ -> _eventHandlers.DisposeAll())
+        |> _eventHandlers.Add
 
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
+
+    member x.MaintainCaretColumn 
+        with get() = _maintainCaretColumn
+        and set value = _maintainCaretColumn <- value
 
     /// Apply the TextChange to the ITextBuffer 'count' times as a single operation.
     member x.ApplyTextChange textChange addNewLines count =
@@ -221,7 +239,19 @@ type internal CommonOperations
     /// Move the caret to the position dictated by the given MotionResult value
     member x.MoveCaretToMotionResult (result : MotionResult) =
 
+        let shouldMaintainCaretColumn = Util.IsFlagSet result.MotionResultFlags MotionResultFlags.MaintainCaretColumn
+        let savedCaretColumn = _maintainCaretColumn
         let point = 
+
+            // Get the column we should be moving to if the motion specified a column.  Need
+            // to consider that we could be maintaining the sticky column going up or down.
+            let getCaretColumn column = 
+                if shouldMaintainCaretColumn then
+                    match _maintainCaretColumn with
+                    | None -> column
+                    | Some maintainColumn -> max column maintainColumn
+                else
+                    column
 
             if not result.IsForward then
                 match result.CaretColumn with
@@ -232,6 +262,7 @@ type internal CommonOperations
                     // This is only valid going forward so pretend there isn't a column
                     result.Span.Start
                 | CaretColumn.InLastLine column -> 
+                    let column = getCaretColumn column
                     let line = SnapshotSpanUtil.GetStartLine result.Span
                     if column > line.Length then
                         line.End
@@ -277,10 +308,11 @@ type internal CommonOperations
                     match column with
                     | CaretColumn.None -> 
                         line.End
-                    | CaretColumn.InLastLine col ->
-                        let endCol = line |> SnapshotLineUtil.GetEnd |> SnapshotPointUtil.GetColumn
-                        if col < endCol then 
-                            line.Start.Add(col)
+                    | CaretColumn.InLastLine column ->
+                        let column = getCaretColumn column
+                        let endColumn = line |> SnapshotLineUtil.GetEnd |> SnapshotPointUtil.GetColumn
+                        if column < endColumn then 
+                            line.Start.Add(column)
                         else 
                             line.End
                     | CaretColumn.AfterLastLine ->
@@ -296,6 +328,17 @@ type internal CommonOperations
 
         CommonUtil.MoveCaretForVirtualEdit _textView _globalSettings
         _editorOperations.ResetSelection()
+
+        // Update the caret column after we move the caret.  The actual movement of the caret
+        // will reset the CaretColumn value so this must come after
+        match shouldMaintainCaretColumn, result.CaretColumn with
+        | true, CaretColumn.InLastLine column ->
+            let column = 
+                match savedCaretColumn with
+                | None -> column
+                | Some savedColumn -> max column savedColumn
+            _maintainCaretColumn <- Some column
+        | _ -> ()
 
     /// Move the caret to the specified point but adjust the result if it's in virtual space
     /// and current settings disallow that

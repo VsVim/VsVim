@@ -208,6 +208,48 @@ namespace VimCore.UnitTest
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
+        /// <summary>
+        /// Simple maintain of the caret column going down
+        /// </summary>
+        [Test]
+        public void MaintainCaretColumn_Down()
+        {
+            Create("the dog chased the ball", "hello", "the cat climbed the tree");
+            _textView.MoveCaretTo(8);
+            _vimBuffer.Process('j');
+            Assert.AreEqual(_textView.GetPointInLine(1, 4), _textView.GetCaretPoint());
+            _vimBuffer.Process('j');
+            Assert.AreEqual(_textView.GetPointInLine(2, 8), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Simple maintain of the caret column going up
+        /// </summary>
+        [Test]
+        public void MaintainCaretColumn_Up()
+        {
+            Create("the dog chased the ball", "hello", "the cat climbed the tree");
+            _textView.MoveCaretTo(_textView.GetPointInLine(2, 8));
+            _vimBuffer.Process('k');
+            Assert.AreEqual(_textView.GetPointInLine(1, 4), _textView.GetCaretPoint());
+            _vimBuffer.Process('k');
+            Assert.AreEqual(_textView.GetPointInLine(0, 8), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// The column should not be maintained once the caret goes any other direction
+        /// </summary>
+        [Test]
+        public void MaintainCaretColumn_ResetOnMove()
+        {
+            Create("the dog chased the ball", "hello", "the cat climbed the tree");
+            _textView.MoveCaretTo(_textView.GetPointInLine(2, 8));
+            _vimBuffer.Process("kh");
+            Assert.AreEqual(_textView.GetPointInLine(1, 3), _textView.GetCaretPoint());
+            _vimBuffer.Process('k');
+            Assert.AreEqual(_textView.GetPointInLine(0, 3), _textView.GetCaretPoint());
+        }
+
         [Test]
         [Description("[[ motion should put the caret on the target character")]
         public void Motion_Section1()

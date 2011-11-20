@@ -45,6 +45,7 @@ namespace VimCore.UnitTest
             _globalSettings.SetupGet(x => x.Magic).Returns(true);
             _globalSettings.SetupGet(x => x.SmartCase).Returns(false);
             _globalSettings.SetupGet(x => x.IgnoreCase).Returns(true);
+            _globalSettings.SetupGet(x => x.WrapScan).Returns(false);
             _searchService = VimUtil.CreateSearchService(_globalSettings.Object);
 
             // Initialize the Mock<IVim> with all of our Mock'd services

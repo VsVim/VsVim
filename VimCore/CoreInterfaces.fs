@@ -350,6 +350,10 @@ type MotionResultFlags =
     /// This motion was promoted under rule #2 to a line wise motion
     | ExclusiveLineWise = 0x8
 
+    /// This motion when used as a movement should maintain the caret column
+    /// setting.
+    | MaintainCaretColumn = 0x10
+
 /// Information about the type of the motion this was.
 [<RequireQualifiedAccess>]
 type MotionKind =

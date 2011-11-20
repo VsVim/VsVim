@@ -663,6 +663,51 @@ namespace VimCore.UnitTest
             Assert.AreEqual("dog", _textView.GetLine(1).GetText());
         }
 
+        /// <summary>
+        /// Make sure the caret column is maintained when specified going down
+        /// </summary>
+        [Test]
+        public void MaintainCaretColumn_Down()
+        {
+            Create("the dog chased the ball", "hello", "the cat climbed the tree");
+            var motionResult = VimUtil.CreateMotionResult(
+                _textView.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                motionKind: MotionKind.NewLineWise(CaretColumn.NewInLastLine(2)),
+                flags: MotionResultFlags.MaintainCaretColumn);
+            _editorOperations.Setup(x => x.ResetSelection());
+            _operations.MoveCaretToMotionResult(motionResult);
+            Assert.AreEqual(2, _operationsRaw.MaintainCaretColumn.Value);
+        }
+
+        /// <summary>
+        /// Don't maintain the caret column if the maintain flag is not specified
+        /// </summary>
+        [Test]
+        public void MaintainCaretColumn_IgnoreIfFlagNotSpecified()
+        {
+            Create("the dog chased the ball", "hello", "the cat climbed the tree");
+            var motionResult = VimUtil.CreateMotionResult(
+                _textView.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                motionKind: MotionKind.NewLineWise(CaretColumn.NewInLastLine(2)),
+                flags: MotionResultFlags.None);
+            _editorOperations.Setup(x => x.ResetSelection());
+            _operations.MoveCaretToMotionResult(motionResult);
+            Assert.IsTrue(_operationsRaw.MaintainCaretColumn.IsNone());
+        }
+
+        /// <summary>
+        /// Any caret movement should reset the maintain caret column flag.  Only maintain
+        /// it when we are controlling the movement
+        /// </summary>
+        [Test]
+        public void MaintainCaretColumn_ResetOnCaretMove()
+        {
+            Create("the dog chased the ball", "hello", "the cat climbed the tree");
+            _operationsRaw.MaintainCaretColumn = FSharpOption.Create(2);
+            _textView.MoveCaretTo(4);
+            Assert.IsTrue(_operationsRaw.MaintainCaretColumn.IsNone());
+        }
+
         [Test]
         [Description("Inclusive motions need to put the caret on End-1 in most cases.  See e as an example of why")]
         public void MoveCaretToMotionResult1()

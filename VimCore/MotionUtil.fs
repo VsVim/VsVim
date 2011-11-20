@@ -1743,7 +1743,7 @@ type internal MotionUtil
                     Span = span 
                     IsForward = false 
                     MotionKind = MotionKind.LineWise column
-                    MotionResultFlags = MotionResultFlags.None } |> Some)
+                    MotionResultFlags = MotionResultFlags.MaintainCaretColumn } |> Some)
 
     /// Move a single line down from the current line.  Should fail if we are currenly 
     /// on the last line of the ITextBuffer
@@ -1759,7 +1759,7 @@ type internal MotionUtil
                     Span = span 
                     IsForward = true 
                     MotionKind = MotionKind.LineWise column
-                    MotionResultFlags = MotionResultFlags.None } |> Some)
+                    MotionResultFlags = MotionResultFlags.MaintainCaretColumn } |> Some)
 
     /// Implements the 'gg' motion.  
     ///
