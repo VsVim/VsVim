@@ -113,10 +113,10 @@ type IVimBufferFactory =
     abstract CreateVimTextBuffer : textBuffer : ITextBuffer -> vim : IVim -> IVimTextBuffer
 
     /// Create a VimBufferData value for the given values
-    abstract CreateVimBufferData : vimTextBuffer : IVimTextBuffer -> textView : ITextView -> VimBufferData
+    abstract CreateVimBufferData : vimTextBuffer : IVimTextBuffer -> textView : ITextView -> IVimBufferData
 
     /// Create an IVimBuffer for the given parameters
-    abstract CreateVimBuffer : vimBufferData : VimBufferData -> IVimBuffer
+    abstract CreateVimBuffer : vimBufferData : IVimBufferData -> IVimBuffer
 
 type IVimBufferCreationListener =
 
@@ -228,7 +228,7 @@ type ITextChangeTracker =
 type ITextChangeTrackerFactory =
 
     /// Get the ITextChangeTracker associated with the given vim buffer information
-    abstract GetTextChangeTracker : VimBufferData -> ITextChangeTracker
+    abstract GetTextChangeTracker : IVimBufferData -> ITextChangeTracker
 
 /// Provides access to the system clipboard 
 type IClipboardDevice =
@@ -247,7 +247,7 @@ type Result =
 type ICommonOperations =
 
     /// Associated VimBufferData instance
-    abstract VimBufferData : VimBufferData
+    abstract VimBufferData : IVimBufferData
 
     /// Associated ITextView
     abstract TextView : ITextView 
@@ -370,4 +370,4 @@ type ICommonOperations =
 type ICommonOperationsFactory =
 
     /// Get the ICommonOperations instance for this IVimBuffer
-    abstract GetCommonOperations : VimBufferData -> ICommonOperations
+    abstract GetCommonOperations : IVimBufferData -> ICommonOperations

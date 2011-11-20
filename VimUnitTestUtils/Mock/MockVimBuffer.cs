@@ -349,7 +349,7 @@ namespace Vim.UnitTest.Mock
         }
 
 
-        public VimBufferData VimBufferData
+        public IVimBufferData VimBufferData
         {
             get { throw new NotImplementedException(); }
         }

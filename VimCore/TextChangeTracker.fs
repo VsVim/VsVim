@@ -163,7 +163,7 @@ type internal TextChangeTrackerFactory
     let _key = System.Object()
     
     interface ITextChangeTrackerFactory with
-        member x.GetTextChangeTracker (bufferData : VimBufferData) =
+        member x.GetTextChangeTracker (bufferData : IVimBufferData) =
             let textView = bufferData.TextView
             textView.Properties.GetOrCreateSingletonProperty(_key, (fun () -> 
                 let operations = _commonOperationsFactory.GetCommonOperations bufferData

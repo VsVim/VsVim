@@ -198,7 +198,7 @@ namespace Vim.UnitTest
         /// Create a new instance of VimBufferData.  Centralized here to make it easier to 
         /// absorb API changes in the Unit Tests
         /// </summary>
-        protected VimBufferData CreateVimBufferData(
+        protected IVimBufferData CreateVimBufferData(
             ITextView textView,
             IStatusUtil statusUtil = null,
             IJumpList jumpList = null,
@@ -220,7 +220,7 @@ namespace Vim.UnitTest
         /// Create a new instance of VimBufferData.  Centralized here to make it easier to 
         /// absorb API changes in the Unit Tests
         /// </summary>
-        protected VimBufferData CreateVimBufferData(
+        protected IVimBufferData CreateVimBufferData(
             IVimTextBuffer vimTextBuffer,
             ITextView textView,
             IStatusUtil statusUtil = null,
@@ -235,12 +235,12 @@ namespace Vim.UnitTest
             windowSettings = windowSettings ?? new WindowSettings(vimTextBuffer.GlobalSettings);
             wordUtil = wordUtil ?? WordUtilFactory.GetWordUtil(vimTextBuffer.TextBuffer);
             return new VimBufferData(
-                jumpList,
+                vimTextBuffer,
                 textView,
+                windowSettings,
+                jumpList,
                 statusUtil,
                 undoRedoOperations,
-                vimTextBuffer,
-                windowSettings,
                 wordUtil);
         }
 
@@ -248,7 +248,7 @@ namespace Vim.UnitTest
         /// Create a new instance of VimBufferData.  Centralized here to make it easier to 
         /// absorb API changes in the Unit Tests
         /// </summary>
-        protected VimBufferData CreateVimBufferData(params string[] lines)
+        protected IVimBufferData CreateVimBufferData(params string[] lines)
         {
             var textView = CreateTextView(lines);
             return CreateVimBufferData(textView);
@@ -266,7 +266,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Create an IVimBuffer instance with the given VimBufferData value
         /// </summary>
-        protected IVimBuffer CreateVimBuffer(VimBufferData vimBufferData)
+        protected IVimBuffer CreateVimBuffer(IVimBufferData vimBufferData)
         {
             return _vimBufferFactory.CreateVimBuffer(vimBufferData);
         }

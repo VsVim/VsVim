@@ -40,7 +40,7 @@ type internal NumberValue =
 /// amount of stored state low here I believe it counters the size of the type
 type internal CommandUtil 
     (
-        _vimBufferData : VimBufferData,
+        _vimBufferData : IVimBufferData,
         _motionUtil : IMotionUtil,
         _commonOperations : ICommonOperations,
         _foldManager : IFoldManager,

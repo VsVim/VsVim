@@ -31,7 +31,7 @@ namespace Vim.UnitTest
         }
 
         public static IMotionCapture CreateMotionCapture(
-            VimBufferData vimBufferData,
+            IVimBufferData vimBufferData,
             IIncrementalSearch incrementalSearch = null)
         {
             incrementalSearch = incrementalSearch ?? new IncrementalSearch(
@@ -41,7 +41,7 @@ namespace Vim.UnitTest
         }
 
         public static CommandUtil CreateCommandUtil(
-            VimBufferData vimBufferData,
+            IVimBufferData vimBufferData,
             IMotionUtil motionUtil = null,
             ICommonOperations operations = null,
             IFoldManager foldManager = null,

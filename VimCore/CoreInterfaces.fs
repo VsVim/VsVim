@@ -2717,37 +2717,41 @@ type IVimData =
     [<CLIEvent>]
     abstract HighlightSearchOneTimeDisabled : IEvent<unit>
 
-/// Core parts of an IVimBuffer
-type VimBufferData = {
+/// Core parts of an IVimBuffer.  Used for components which make up an IVimBuffer but
+/// need the same data provided by IVimBuffer.
+type IVimBufferData =
+
+    /// The current directory for this particular window
+    abstract CurrentDirectory : string option with get, set
 
     /// The IJumpList associated with the IVimBuffer
-    JumpList : IJumpList
+    abstract JumpList : IJumpList
 
     /// The ITextView associated with the IVimBuffer
-    TextView : ITextView
+    abstract TextView : ITextView
+
+    /// The ITextBuffer associated with the IVimBuffer
+    abstract TextBuffer : ITextBuffer
 
     /// The IStatusUtil associated with the IVimBuffer
-    StatusUtil : IStatusUtil
+    abstract StatusUtil : IStatusUtil
 
     /// The IUndoRedOperations associated with the IVimBuffer
-    UndoRedoOperations : IUndoRedoOperations
+    abstract UndoRedoOperations : IUndoRedoOperations
 
     /// The IVimTextBuffer associated with the IVimBuffer
-    VimTextBuffer : IVimTextBuffer
+    abstract VimTextBuffer : IVimTextBuffer
 
     /// The IVimWindowSettings associated with the ITextView 
-    WindowSettings : IVimWindowSettings
+    abstract WindowSettings : IVimWindowSettings
 
     /// The IWordUtil associated with the IVimBuffer
-    WordUtil : IWordUtil
+    abstract WordUtil : IWordUtil
 
-} with
+    /// The IVimLocalSettings associated with the ITextBuffer
+    abstract LocalSettings : IVimLocalSettings
 
-    member x.TextBuffer = x.VimTextBuffer.TextBuffer
-
-    member x.LocalSettings = x.VimTextBuffer.LocalSettings
-
-    member x.Vim = x.VimTextBuffer.Vim
+    abstract Vim : IVim
 
 /// Vim instance.  Global for a group of buffers
 and IVim =
@@ -2845,7 +2849,7 @@ and IMarkMap =
     abstract GlobalMarks : (Letter * VirtualSnapshotPoint) seq
 
     /// Get the mark for the given char for the IVimTextBuffer
-    abstract GetMark : mark : Mark -> vimBufferData : VimBufferData -> VirtualSnapshotPoint option
+    abstract GetMark : mark : Mark -> vimBufferData : IVimBufferData -> VirtualSnapshotPoint option
 
     /// Get the current value of the specified global mark
     abstract GetGlobalMark : letter : Letter -> VirtualSnapshotPoint option
@@ -2854,7 +2858,7 @@ and IMarkMap =
     abstract SetGlobalMark : letter: Letter -> vimtextBuffer : IVimTextBuffer -> line : int -> column : int -> unit
 
     /// Set the mark for the given char for the IVimTextBuffer
-    abstract SetMark : mark : Mark -> vimBufferData : VimBufferData -> line : int -> column : int -> bool
+    abstract SetMark : mark : Mark -> vimBufferData : IVimBufferData -> line : int -> column : int -> bool
 
     /// Delete all of the global marks 
     abstract ClearGlobalMarks : unit -> unit
@@ -2982,7 +2986,7 @@ and IVimBuffer =
     abstract VimTextBuffer : IVimTextBuffer
 
     /// VimBufferData for the given IVimBuffer
-    abstract VimBufferData : VimBufferData
+    abstract VimBufferData : IVimBufferData
 
     /// The ITextStructureNavigator for word values in the buffer
     abstract WordNavigator : ITextStructureNavigator

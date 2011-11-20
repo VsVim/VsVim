@@ -95,7 +95,6 @@ type internal VimBufferFactory
     member x.CreateVimBufferData (vimTextBuffer : IVimTextBuffer) (textView : ITextView) =
         Contract.Requires (vimTextBuffer.TextBuffer = textView.TextBuffer)
 
-
         let vim = vimTextBuffer.Vim
         let textBuffer = textView.TextBuffer
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(textView)
@@ -111,17 +110,10 @@ type internal VimBufferFactory
             UndoRedoOperations(statusUtil, history, editOperations) :> IUndoRedoOperations
         let wordUtil = _wordUtilFactory.GetWordUtil textBuffer
         let windowSettings = WindowSettings(vim.GlobalSettings, textView)
-        {
-            JumpList = jumpList
-            TextView = textView
-            StatusUtil = statusUtil
-            UndoRedoOperations = undoRedoOperations
-            VimTextBuffer = vimTextBuffer
-            WindowSettings = windowSettings
-            WordUtil = wordUtil }
+        VimBufferData(vimTextBuffer,textView, windowSettings, jumpList, statusUtil, undoRedoOperations, wordUtil) :> IVimBufferData
 
     /// Create an IVimBuffer instance for the provided VimBufferData
-    member x.CreateVimBuffer (vimBufferData : VimBufferData) = 
+    member x.CreateVimBuffer (vimBufferData : IVimBufferData) = 
         let textView = vimBufferData.TextView
         let commonOperations = _commonOperationsFactory.GetCommonOperations vimBufferData
         let wordUtil = vimBufferData.WordUtil

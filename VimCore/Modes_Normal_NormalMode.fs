@@ -13,7 +13,7 @@ type internal NormalModeData = {
 
 type internal NormalMode 
     ( 
-        _vimBufferData : VimBufferData,
+        _vimBufferData : IVimBufferData,
         _operations : ICommonOperations,
         _motionUtil : IMotionUtil,
         _displayWindowBroker : IDisplayWindowBroker,

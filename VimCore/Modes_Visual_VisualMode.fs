@@ -9,7 +9,7 @@ open Vim.Modes
 
 type internal VisualMode
     (
-        _vimBufferData : VimBufferData,
+        _vimBufferData : IVimBufferData,
         _operations : ICommonOperations,
         _motionUtil : IMotionUtil,
         _kind : ModeKind,

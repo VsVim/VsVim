@@ -272,10 +272,9 @@ type VisualMotionResult =
     /// Edit snapshot
     | FailedNoMapToEditSnapshot
 
-
 type internal MotionUtil 
     ( 
-        _vimBufferData : VimBufferData
+        _vimBufferData : IVimBufferData
     ) = 
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer

@@ -11,7 +11,7 @@ namespace VimCore.UnitTest
 {
     public sealed class InterpreterTest : VimTestBase
     {
-        private VimBufferData _vimBufferData;
+        private IVimBufferData _vimBufferData;
         private IVimBuffer _vimBuffer;
         private IVimTextBuffer _vimTextBuffer;
         private ITextBuffer _textBuffer;

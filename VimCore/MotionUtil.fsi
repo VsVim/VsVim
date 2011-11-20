@@ -7,6 +7,6 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 
 type internal MotionUtil =
-    new : VimBufferData -> MotionUtil
+    new : IVimBufferData -> MotionUtil
 
     interface IMotionUtil

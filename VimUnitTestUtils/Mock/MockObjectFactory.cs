@@ -213,7 +213,7 @@ namespace Vim.UnitTest.Mock
         /// backing values
         /// </summary>
         /// <returns></returns>
-        public static VimBufferData CreateVimBufferData(
+        public static IVimBufferData CreateVimBufferData(
             IVimTextBuffer vimTextBuffer,
             ITextView textView,
             IJumpList jumpList = null,
@@ -230,12 +230,12 @@ namespace Vim.UnitTest.Mock
             wordUtil = wordUtil ?? factory.Create<IWordUtil>().Object;
             windowSettings = windowSettings ?? factory.Create<IVimWindowSettings>().Object;
             return new VimBufferData(
-                jumpList,
+                vimTextBuffer,
                 textView,
+                windowSettings,
+                jumpList,
                 statusUtil,
                 undoRedoOperations,
-                vimTextBuffer,
-                windowSettings,
                 wordUtil);
         }
 

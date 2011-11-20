@@ -6,7 +6,7 @@ open Microsoft.VisualStudio.Text.Editor;
 
 type internal MotionCapture 
     (
-        _vimBufferData : VimBufferData,
+        _vimBufferData : IVimBufferData,
         _incrementalSearch : IIncrementalSearch
     ) = 
 
