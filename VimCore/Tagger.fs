@@ -405,9 +405,22 @@ type BasicTagger<'TTag when 'TTag :> ITag>
                     Some requestSpan
 
     member x.GetTags (col : NormalizedSnapshotSpanCollection) =
+
+        // Adjust the requested SnapshotSpan to be the overarching SnapshotSpan of the 
+        // request.  
         let span = NormalizedSnapshotSpanCollectionUtil.GetOverarchingSpan col
         x.AdjustRequestSpan span
-        _basicTaggerSource.GetTags span
+
+        // Even though it's easier don't do a GetTags request for the overarching SnapshotSpan
+        // of the request.  It's possible for the overarching SnapshotSpan to have an order
+        // magnitudes more lines than the items in the collection.  This is very possible when
+        // large folded regions or on screen.  Instead just request the individual ones
+        if col.Count = 1 then
+            _basicTaggerSource.GetTags col.[0] |> Seq.ofList
+        else
+            col
+            |> Seq.map _basicTaggerSource.GetTags
+            |> Seq.concat
 
     member x.OnBasicTaggerSourceChanged() =
         let span = 
@@ -419,7 +432,7 @@ type BasicTagger<'TTag when 'TTag :> ITag>
         _tagsChanged.Trigger(this, args)
 
     interface ITagger<'TTag> with
-        member x.GetTags col = x.GetTags col |> Seq.ofList
+        member x.GetTags col = x.GetTags col
         [<CLIEvent>]
         member x.TagsChanged = _tagsChanged.Publish
 
