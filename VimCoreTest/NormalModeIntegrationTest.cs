@@ -8,6 +8,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
+using Vim.UnitTest.Exports;
 
 namespace VimCore.UnitTest
 {
@@ -27,6 +28,7 @@ namespace VimCore.UnitTest
         private IVimData _vimData;
         private IFoldManager _foldManager;
         private MockVimHost _vimHost;
+        private TestableClipboardDevice _clipboardDevice;
         private bool _assertOnErrorMessage = true;
         private bool _assertOnWarningMessage = true;
 
@@ -66,6 +68,7 @@ namespace VimCore.UnitTest
             _vimHost.BeepCount = 0;
             _vimData = service.Vim.VimData;
             _foldManager = EditorUtil.FactoryService.FoldManagerFactory.GetFoldManager(_textView);
+            _clipboardDevice = (TestableClipboardDevice)CompositionContainer.GetExportedValue<IClipboardDevice>();
 
             // Many of the operations operate on both the visual and edit / text snapshot
             // simultaneously.  Ensure that our setup code is producing a proper IElisionSnapshot
@@ -1621,6 +1624,36 @@ namespace VimCore.UnitTest
             Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
             _vimBuffer.Process(VimKey.Escape);
             Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
+        }
+
+        /// <summary>
+        /// When pasting from the clipboard where the text doesn't end in a new line it
+        /// should be treated as characterwise paste
+        /// </summary>
+        [Test]
+        public void PutAfter_ClipboardWithoutNewLine()
+        {
+            Create("hello world", "again");
+            _textView.MoveCaretTo(5);
+            _clipboardDevice.Text = "big ";
+            _vimBuffer.Process("\"+p");
+            Assert.AreEqual("hello big world", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// When pasting from the clipboard where the text does end in a new line it 
+        /// should be treated as a linewise paste
+        /// </summary>
+        [Test]
+        public void PutAfter_ClipboardWithNewLine()
+        {
+            Create("hello world", "again");
+            _textView.MoveCaretTo(5);
+            _clipboardDevice.Text = "big " + Environment.NewLine;
+            _vimBuffer.Process("\"+p");
+            Assert.AreEqual("hello world", _textView.GetLine(0).GetText());
+            Assert.AreEqual("big ", _textView.GetLine(1).GetText());
+            Assert.AreEqual("again", _textView.GetLine(2).GetText());
         }
 
         /// <summary>

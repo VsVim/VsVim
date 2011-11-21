@@ -3,10 +3,20 @@
 namespace Vim
 
 /// IRegisterValueBacking implementation for the clipboard 
-type ClipboardRegisterValueBacking ( _device : IClipboardDevice ) =
+type ClipboardRegisterValueBacking (_device : IClipboardDevice) =
+
+    member x.RegisterValue = 
+        let text = _device.Text
+        let operationKind = 
+            if EditUtil.GetLineBreakLengthAtEnd text > 0 then
+                OperationKind.LineWise
+            else
+                OperationKind.CharacterWise
+        RegisterValue.OfString text operationKind
+
     interface IRegisterValueBacking with
         member x.RegisterValue 
-            with get () = RegisterValue.OfString _device.Text OperationKind.LineWise
+            with get () = x.RegisterValue
             and set value = _device.Text <- value.StringValue
 
 /// IRegisterValueBacking implementation for append registers.  All of the lower

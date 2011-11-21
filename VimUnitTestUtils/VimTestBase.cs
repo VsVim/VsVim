@@ -9,7 +9,7 @@ using NUnit.Framework;
 using Vim.UI.Wpf;
 using Vim.UI.Wpf.Implementation;
 using Vim.UnitTest.Mock;
-using System.Collections.Generic;
+using Vim.UnitTest.Exports;
 
 namespace Vim.UnitTest
 {
