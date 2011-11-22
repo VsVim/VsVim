@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using NUnit.Framework;
 using Vim;
@@ -12,10 +13,11 @@ using GlobalSettings = Vim.GlobalSettings;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class HighlightSearchTaggerSourceTest
+    public class HighlightSearchTaggerSourceTest : VimTestBase
     {
         private HighlightSearchTaggerSource _asyncTaggerSourceRaw;
         private IAsyncTaggerSource<SearchData, TextMarkerTag> _asyncTaggerSource;
+        private ITextView _textView;
         private ITextBuffer _textBuffer;
         private ISearchService _searchService;
         private IVimGlobalSettings _globalSettings;
@@ -23,18 +25,20 @@ namespace VimCore.UnitTest
 
         private void Create(params string[] lines)
         {
-            _textBuffer = EditorUtil.CreateTextBuffer(lines);
+            _textView = CreateTextView(lines);
+            _textBuffer = _textView.TextBuffer;
             _globalSettings = new GlobalSettings();
             _globalSettings.IgnoreCase = true;
             _globalSettings.HighlightSearch = true;
-            _vimData = new VimData();
             _searchService = VimUtil.CreateSearchService();
+            _vimData = Vim.VimData;
             _asyncTaggerSourceRaw = new HighlightSearchTaggerSource(
-                _textBuffer,
+                _textView,
                 _globalSettings,
                 VimUtil.CreateTextStructureNavigator(_textBuffer, WordKind.NormalWord),
                 _searchService,
-                _vimData);
+                _vimData,
+                Vim.VimHost);
             _asyncTaggerSource = _asyncTaggerSourceRaw;
         }
 
@@ -75,18 +79,6 @@ namespace VimCore.UnitTest
             var ret = GetTags(_textBuffer.GetExtent());
             Assert.AreEqual(1, ret.Count());
             Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3), ret.Single().Span);
-        }
-
-        /// <summary>
-        /// Make sure nothing is returned when we are in one time disabled mode
-        /// </summary>
-        [Test]
-        public void GetTags_OneTimeDisabled()
-        {
-            Create("foo is the bar");
-            _asyncTaggerSourceRaw._oneTimeDisabled = true;
-            var ret = GetTags(_textBuffer.GetExtent());
-            Assert.AreEqual(0, ret.Count());
         }
 
         /// <summary>
@@ -158,11 +150,26 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
-        /// The one time disabled event should cause a TagsChaged event and the one time disabled
+        /// If the ITextView is not considered visible then we shouldn't be returning any
+        /// tags
+        /// </summary>
+        [Test]
+        public void GetTagsPrompt_NotVisible()
+        {
+            Create("dog cat");
+            _vimData.LastPatternData = VimUtil.CreatePatternData("dog");
+            _asyncTaggerSourceRaw._isVisible = false;
+            var ret = _asyncTaggerSource.GetTagsPrompt(_textBuffer.GetExtent());
+            Assert.IsTrue(ret.IsSome());
+            Assert.AreEqual(0, ret.Value.Length);
+        }
+
+        /// <summary>
+        /// The one time disabled event should cause a Changed event and the one time disabled
         /// flag to be set
         /// </summary>
         [Test]
-        public void Handle_OneTimeDisabledEvent()
+        public void Changed_OneTimeDisabledEvent()
         {
             Create("");
             Assert.IsFalse(_asyncTaggerSourceRaw._oneTimeDisabled);
@@ -171,6 +178,22 @@ namespace VimCore.UnitTest
             _vimData.RaiseHighlightSearchOneTimeDisable();
             Assert.IsTrue(raised);
             Assert.IsTrue(_asyncTaggerSourceRaw._oneTimeDisabled);
+        }
+
+        /// <summary>
+        /// If the visibility of the ITextView changes it should cause a Changed event to be raised
+        /// </summary>
+        [Test]
+        public void Changed_IsVisibleChanged()
+        {
+            Create("");
+            Assert.IsTrue(_asyncTaggerSourceRaw._isVisible);
+            var raised = false;
+            _asyncTaggerSource.Changed += delegate { raised = true; };
+            VimHost.IsTextViewVisible = false;
+            VimHost.RaiseIsVisibleChanged(_textView);
+            Assert.IsFalse(_asyncTaggerSourceRaw._isVisible);
+            Assert.IsTrue(raised);
         }
 
         /// <summary>

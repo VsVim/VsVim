@@ -9,7 +9,6 @@ using NUnit.Framework;
 using Vim.UI.Wpf;
 using Vim.UI.Wpf.Implementation;
 using Vim.UnitTest.Mock;
-using Vim.UnitTest.Exports;
 
 namespace Vim.UnitTest
 {
@@ -77,6 +76,11 @@ namespace Vim.UnitTest
         protected ISmartIndentationService SmartIndentationService
         {
             get { return _smartIndentationService; }
+        }
+
+        protected MockVimHost VimHost
+        {
+            get { return (MockVimHost)Vim.VimHost; }
         }
 
         protected virtual bool TrackTextViewHistory

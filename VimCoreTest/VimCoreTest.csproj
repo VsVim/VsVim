@@ -189,7 +189,7 @@
     <Compile Include="SnapshotPointUtilTest.cs" />
     <Compile Include="DisabledModeTest.cs" />
     <Compile Include="GlobalSettingsTest.cs" />
-    <Compile Include="HighlightSearchTaggerSource.cs" />
+    <Compile Include="HighlightSearchTaggerSourceTest.cs" />
     <Compile Include="IEditorOperationsTest.cs" />
     <Compile Include="IncrementalSearchTest.cs" />
     <Compile Include="JumpListTest.cs" />

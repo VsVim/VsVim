@@ -547,19 +547,28 @@ type internal IncrementalSearchTaggerProvider
 /// Tagger for completed incremental searches
 type HighlightSearchTaggerSource
     ( 
-        _textBuffer : ITextBuffer,
-        _settings : IVimGlobalSettings,
+        _textView : ITextView,
+        _globalSettings : IVimGlobalSettings,
         _wordNav : ITextStructureNavigator,
         _search : ISearchService,
-        _vimData : IVimData
+        _vimData : IVimData,
+        _vimHost : IVimHost
     ) =
 
+    let _textBuffer = _textView.TextBuffer
     let _changed = new Event<unit>()
     let _eventHandlers = DisposableBag()
 
     /// Users can temporarily disable highlight search with the ':noh' command.  This is true while 
     /// we are in that mode
     let mutable _oneTimeDisabled = false
+
+    /// Whether or not the ITextView is visible.  There is one setting which controls the tags for
+    /// all ITextView's in the system.  It's very wasteful to raise tags changed when we are not 
+    /// visible.  Many components call immediately back into GetTags even if the ITextView is not
+    /// visible.  Even for an async tagger this can kill perf by the sheer work done in the 
+    /// background.
+    let mutable _isVisible = true
 
     do 
         let raiseChanged () = 
@@ -585,9 +594,18 @@ type HighlightSearchTaggerSource
         // When the setting is changed it also resets the one time disabled flag
         // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
         // a derived type
-        (_settings :> IVimSettings).SettingChanged 
+        (_globalSettings :> IVimSettings).SettingChanged 
         |> Observable.filter (fun args -> StringUtil.isEqual args.Name GlobalSettingNames.HighlightSearchName)
         |> Observable.subscribe (fun _ -> resetDisabledAndRaiseAllChanged())
+        |> _eventHandlers.Add
+
+        _vimHost.IsVisibleChanged
+        |> Observable.filter (fun textView -> textView = _textView)
+        |> Observable.subscribe (fun _ -> 
+            let isVisible = _vimHost.IsVisible _textView
+            if _isVisible <> isVisible then
+                _isVisible <- isVisible
+                raiseChanged())
         |> _eventHandlers.Add
 
     /// Get the search information for a background 
@@ -599,10 +617,12 @@ type HighlightSearchTaggerSource
 
     member x.GetTagsPrompt() = 
         let searchData = x.GetDataForSpan()
-        if StringUtil.isNullOrEmpty searchData.Pattern then
+        if not _isVisible then
+            Some List.empty
+        elif StringUtil.isNullOrEmpty searchData.Pattern then
             // Nothing to give if there is no pattern
             Some List.empty
-        elif not _settings.HighlightSearch || _oneTimeDisabled then
+        elif not _globalSettings.HighlightSearch || _oneTimeDisabled then
             // Nothing to give if we are disabled
             Some List.empty
         else
@@ -658,7 +678,7 @@ type HighlightSearchTaggerSource
     interface System.IDisposable with
         member x.Dispose() = _eventHandlers.DisposeAll()
 
-[<Export(typeof<ITaggerProvider>)>]
+[<Export(typeof<IViewTaggerProvider>)>]
 [<ContentType(Constants.AnyContentType)>]
 [<TextViewRole(PredefinedTextViewRoles.Document)>]
 [<TagType(typeof<TextMarkerTag>)>]
@@ -666,14 +686,16 @@ type HighlightIncrementalSearchTaggerProvider
     [<ImportingConstructor>]
     ( _vim : IVim ) = 
 
-    interface ITaggerProvider with 
-        member x.CreateTagger<'T when 'T :> ITag> textBuffer = 
-            match _vim.GetVimTextBuffer textBuffer with
-            | None ->
+    interface IViewTaggerProvider with 
+        member x.CreateTagger<'T when 'T :> ITag> ((textView : ITextView), textBuffer) = 
+            match textView.TextBuffer = textBuffer, _vim.GetVimBuffer textView with
+            | false, _ ->
                 null
-            | Some vimTextBuffer ->
+            | true, None -> 
+                null
+            | true, Some vimTextBuffer ->
                 let wordNavigator = vimTextBuffer.WordNavigator
-                let asyncTaggerSource = new HighlightSearchTaggerSource(textBuffer, vimTextBuffer.GlobalSettings, wordNavigator, _vim.SearchService, _vim.VimData)
+                let asyncTaggerSource = new HighlightSearchTaggerSource(textView, vimTextBuffer.GlobalSettings, wordNavigator, _vim.SearchService, _vim.VimData, _vim.VimHost)
                 let asyncTagger = new AsyncTagger<SearchData, TextMarkerTag>(asyncTaggerSource)
                 asyncTagger :> obj :?> ITagger<'T>
 

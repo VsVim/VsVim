@@ -43,6 +43,9 @@ type IVimHost =
     /// Is the ITextBuffer in a dirty state?
     abstract IsDirty : textBuffer : ITextBuffer -> bool
 
+    /// Is the ITextView visible to the user
+    abstract IsVisible : textView : ITextView -> bool
+
     /// Loads the new file into the existing window
     abstract LoadFileIntoExistingWindow : filePath : string -> textBuffer : ITextBuffer -> HostResult
 
@@ -89,6 +92,10 @@ type IVimHost =
 
     /// Split the views horizontally
     abstract SplitViewVertically: ITextView -> HostResult
+
+    /// Raised when the visibility of an ITextView changes
+    [<CLIEvent>]
+    abstract IsVisibleChanged : IEvent<ITextView>
 
 module internal VimHostExtensions =
     type IVimHost with 
