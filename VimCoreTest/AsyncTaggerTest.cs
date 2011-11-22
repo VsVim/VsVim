@@ -171,11 +171,9 @@ namespace VimCore.UnitTest
 
         private TagCache<TextMarkerTag> CreateTagCache(SnapshotSpan source, params SnapshotSpan[] tagSpans)
         {
-            return new TagCache<TextMarkerTag>(
+            return TagCache<TextMarkerTag>.NewBackgroundCache(
                 source,
-                TrackingSpanUtil.Create(source, SpanTrackingMode.EdgeInclusive),
-                tagSpans.Select(CreateTagSpan).ToFSharpList(),
-                null);
+                tagSpans.Select(CreateTagSpan).ToFSharpList());
         }
 
         private List<ITagSpan<TextMarkerTag>> GetTagsFull(SnapshotSpan span)
@@ -214,7 +212,7 @@ namespace VimCore.UnitTest
             Assert.AreEqual(1, tags.Count);
             Assert.AreEqual(_textBuffer.GetSpan(0, 1), tags[0].Span);
             Assert.IsTrue(_synchronizationContext.IsEmpty);
-            Assert.IsTrue(_asyncTagger.TagCache.IsNone());
+            Assert.IsTrue(_asyncTagger.TagCache.IsNone);
         }
 
         /// <summary>
@@ -225,9 +223,9 @@ namespace VimCore.UnitTest
         public void GetTags_UseCache()
         {
             Create("hello world");
-            _asyncTagger.TagCache = FSharpOption.Create(CreateTagCache(
+            _asyncTagger.TagCache = CreateTagCache(
                 _textBuffer.GetExtent(),
-                _textBuffer.GetSpan(0, 1)));
+                _textBuffer.GetSpan(0, 1));
             var tags = _asyncTagger.GetTags(EntireBufferSpan).ToList();
             Assert.AreEqual(1, tags.Count);
             Assert.AreEqual(_textBuffer.GetSpan(0, 1), tags[0].Span);
@@ -375,9 +373,9 @@ namespace VimCore.UnitTest
         public void GetTags_PartialMatchInCache()
         {
             Create("cat", "dog", "bat");
-            _asyncTagger.TagCache = FSharpOption.Create(CreateTagCache(
+            _asyncTagger.TagCache = CreateTagCache(
                 _textBuffer.GetLine(0).ExtentIncludingLineBreak,
-                _textBuffer.GetSpan(0, 1)));
+                _textBuffer.GetSpan(0, 1));
             var tags = _asyncTagger.GetTags(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak).ToList();
             Assert.AreEqual(1, tags.Count);
             Assert.IsTrue(_asyncTagger.AsyncBackgroundRequest.IsSome());
@@ -391,9 +389,9 @@ namespace VimCore.UnitTest
         public void GetTags_ForwardEdit()
         {
             Create("cat", "dog", "bat");
-            _asyncTagger.TagCache = FSharpOption.Create(CreateTagCache(
+            _asyncTagger.TagCache = CreateTagCache(
                 _textBuffer.GetLine(0).ExtentIncludingLineBreak,
-                _textBuffer.GetSpan(0, 1)));
+                _textBuffer.GetSpan(0, 1));
             _textBuffer.Replace(new Span(0, 3), "cot");
             var tags = _asyncTagger.GetTags(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak).ToList();
             Assert.AreEqual(1, tags.Count);
@@ -401,18 +399,31 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Make sure that a prompt call updates the request span
+        /// </summary>
+        [Test]
+        public void GetTags_PromptUpdateRequestSpan()
+        {
+            Create("hello world", "cat chased the dog");
+            var span = _textBuffer.GetSpan(0, 6);
+            _asyncTaggerSource.SetPromptTags(_textBuffer.GetSpan(0, 1));
+            _asyncTagger.GetTags(span);
+            Assert.AreEqual(span, _asyncTagger.CachedRequestSpan.Value);
+        }
+
+        /// <summary>
         /// If the IAsyncTaggerSource raises a TagsChanged event then the tagger must clear 
         /// out it's cache.  Anything it's stored up until this point is now invalid
         /// </summary>
         [Test]
-        public void OnTagsChanged_ClearCache()
+        public void OnChanged_ClearCache()
         {
             Create("hello world");
-            _asyncTagger.TagCache = FSharpOption.Create(CreateTagCache(
+            _asyncTagger.TagCache = CreateTagCache(
                 _textBuffer.GetExtent(),
-                _textBuffer.GetSpan(0, 1)));
+                _textBuffer.GetSpan(0, 1));
             _asyncTaggerSource.RaiseChanged(null);
-            Assert.IsTrue(_asyncTagger.TagCache.IsNone());
+            Assert.IsTrue(_asyncTagger.TagCache.IsNone);
         }
 
         /// <summary>
@@ -420,7 +431,7 @@ namespace VimCore.UnitTest
         /// requests are invalid
         /// </summary>
         [Test]
-        public void OnTagsChanged_ClearBackgroundRequest()
+        public void OnChanged_ClearBackgroundRequest()
         {
             Create("hello world");
             var cancellationTokenSource = new CancellationTokenSource();
@@ -437,7 +448,26 @@ namespace VimCore.UnitTest
         /// When the IAsyncTaggerSource raises it's event the tagger must as well
         /// </summary>
         [Test]
-        public void OnTagsChanged_RaiseEvent()
+        public void OnChanged_RaiseEvent()
+        {
+            Create("hello world");
+            _asyncTagger.CachedRequestSpan = FSharpOption.Create(_textBuffer.GetLine(0).Extent);
+            var didRun = false;
+            _asyncTaggerInterface.TagsChanged += delegate
+            {
+                didRun = true;
+            };
+
+            _asyncTaggerSource.RaiseChanged(null);
+            Assert.IsTrue(didRun);
+        }
+
+        /// <summary>
+        /// If we've not recieved a GetTags request then don't raise a TagsChanged event when
+        /// we get a Changed event.  
+        /// </summary>
+        [Test]
+        public void OnChanged_DontRaiseEventIfNoRequests()
         {
             Create("hello world");
             var didRun = false;
@@ -447,7 +477,7 @@ namespace VimCore.UnitTest
             };
 
             _asyncTaggerSource.RaiseChanged(null);
-            Assert.IsTrue(didRun);
+            Assert.IsFalse(didRun);
         }
     }
 }
