@@ -32,8 +32,49 @@ type ReplaceData = {
     Count : int
 }
 
-
 module VimRegexUtils = 
+
+    /// Profiling reveals that one of the biggest expenses of fast editing with :hlsearch
+    /// enabled in large files is the creation of the regex.  With editting we never change
+    /// the regex but waste up to 25% of the CPU cycles recreating it over and over 
+    /// again.  Cache the most recent few Regex values here to remove the needless work.
+    ///
+    /// Note: This is shared amongst threads but not protected by a lock.  We don't want
+    /// any contention issues here.
+    let mutable _sharedRegexCache : (string * RegexOptions * Regex) list = List.empty
+
+    let GetRegexFromCache pattern options = 
+        let list = _sharedRegexCache
+        list
+        |> Seq.ofList
+        |> Seq.tryFind (fun (cachedPattern, cachedOptions, _) -> pattern = cachedPattern && cachedOptions = options)
+        |> Option.map (fun (_, _, regex) -> regex)
+
+    let SaveRegexToCache pattern options regex = 
+        let list = _sharedRegexCache
+        let list = 
+            let maxLength = 10
+            if list.Length > maxLength then
+    
+                // Truncate the list to 5.  Don't want to be constantly copying the list
+                // so cut it in half every time we need to reclaim values
+                list |> Seq.truncate (maxLength / 2) |> List.ofSeq
+            else
+                list
+        _sharedRegexCache <- (pattern, options, regex) :: list
+
+    /// Create a regex.  Returns None if the regex has invalid characters
+    let TryCreateRegex pattern options =
+        match GetRegexFromCache pattern options with
+        | Some regex -> Some regex
+        | None ->
+            try
+                let r = new Regex(pattern, options)
+                SaveRegexToCache pattern options r
+                Some r
+            with 
+                | :? System.ArgumentException -> None
+
     let Escape c = c |> StringUtil.ofChar |> Regex.Escape 
 
     let ConvertReplacementString (replacement : string) (replaceData : ReplaceData) = 
@@ -84,13 +125,6 @@ module VimRegexUtils =
 
         inner 0
 
-    /// Create a regex.  Returns None if the regex has invalid characters
-    let TryCreateRegex pattern options =
-        try
-            let r = new Regex(pattern, options)
-            Some r
-        with 
-            | :? System.ArgumentException -> None
 
 /// Represents a Vim style regular expression 
 [<Sealed>]
