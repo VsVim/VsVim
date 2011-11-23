@@ -22,8 +22,8 @@ namespace VimCore.UnitTest
 
         private sealed class TestableAsyncTaggerSource : IAsyncTaggerSource<string, TextMarkerTag>
         {
-            private ITextBuffer _textBuffer;
-            private int _threadId;
+            private readonly ITextBuffer _textBuffer;
+            private readonly int _threadId;
             private event FSharpHandler<Unit> _changed;
             private List<ITagSpan<TextMarkerTag>> _promptTags;
             private List<ITagSpan<TextMarkerTag>> _backgroundTags;
@@ -68,6 +68,11 @@ namespace VimCore.UnitTest
             }
 
             #region IAsyncTaggerSource
+
+            FSharpOption<int> IAsyncTaggerSource<string, TextMarkerTag>.Delay
+            {
+                get { return FSharpOption<int>.None; }
+            }
 
             string IAsyncTaggerSource<string, TextMarkerTag>.GetDataForSpan(SnapshotSpan value)
             {

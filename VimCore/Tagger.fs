@@ -11,6 +11,7 @@ open System.Threading
 open System.Threading.Tasks
 
 module TaggerUtil = 
+
     /// The simple taggers when changed need to provide an initial SnapshotSpan 
     /// for the TagsChanged event.  It's important that this SnapshotSpan be kept as
     /// small as possible.  If it's incorrectly large it can have a negative performance
@@ -41,6 +42,10 @@ type IAsyncTaggerSource<'TData, 'TTag when 'TTag :> ITag> =
 
     inherit System.IDisposable
 
+    /// Delay in milliseconds which should occur between the call to GetTags and the kicking off
+    /// of a background task
+    abstract Delay : int option
+
     /// The current Snapshot.  
     ///
     /// Called from the main thread only
@@ -69,6 +74,22 @@ type IAsyncTaggerSource<'TData, 'TTag when 'TTag :> ITag> =
     [<CLIEvent>]
     abstract Changed : IEvent<unit>
 
+type BackgroundCacheData<'TTag when 'TTag :> ITag> = { 
+
+    Span : SnapshotSpan
+
+    TagList : ITagSpan<'TTag> list
+}
+
+type TrackingCacheData<'TTag when 'TTag :> ITag> = {
+
+    Snapshot : ITextSnapshot
+
+    TrackingSpan : ITrackingSpan
+
+    TagList : (ITrackingSpan * 'TTag) list
+}
+
 /// Caches information about the tag values we've given out
 [<RequireQualifiedAccess>]
 type TagCache<'TTag when 'TTag :> ITag> =
@@ -78,12 +99,16 @@ type TagCache<'TTag when 'TTag :> ITag> =
 
     /// Cache of a GetTagsInBackground call.  Maintains the requested SnapshotSpan and the
     /// set of returned ITagSpan<'TTag> values
-    | BackgroundCache of SnapshotSpan * ITagSpan<'TTag> list
+    | BackgroundCache of BackgroundCacheData<'TTag>
 
     /// In the time between kicking off a background request due to an edit and the edit
     /// completing we track the previous BackgroundCache via an ITrackingSpan.  This provides
     /// a manner of visibility until the request completes
-    | TrackingCache of ITextSnapshot * ITrackingSpan * (ITrackingSpan * 'TTag) list
+    | TrackingCache of TrackingCacheData<'TTag>
+
+    /// During an extentded request post edit we may have both tracking and final data.  This
+    /// holds that stage
+    | TrackingAndBackgroundCache of TrackingCacheData<'TTag> * BackgroundCacheData<'TTag>
 
 /// Data about a background request for tags
 type AsyncBackgroundRequest = {
@@ -154,7 +179,7 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
             // creating Task<T> instances if possible.  
             match x.GetTagsPrompt span with
             | Some tagList -> tagList
-            | None -> 
+            | None ->
 
                 // Next step is to hit the cache
                 match x.GetTagsFromCache span with
@@ -194,22 +219,21 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
         // Update the cache to the given ITextSnapshot
         x.MaybeUpdateTagCacheToSnapshot span.Snapshot
 
-        match _tagCache with 
-        | TagCache.None ->
-            TagResult.None
-        | TagCache.BackgroundCache (cachedSpan, tagList) ->
+        let getFromBackgroundCacheData (backgroundCacheData : BackgroundCacheData<'TTag>) =
+            let cachedSpan = backgroundCacheData.Span
             if cachedSpan.Contains(span) then
-                TagResult.Complete tagList
+                TagResult.Complete backgroundCacheData.TagList
             elif cachedSpan.IntersectsWith(span) then
 
                 // The requested span is at least partially within the cached region.  Return 
                 // the data that is available and schedule a background request to get the 
                 // rest
-                TagResult.Partial tagList
+                TagResult.Partial backgroundCacheData.TagList
             else
                 TagResult.None
-        | TagCache.TrackingCache (cachedSnapshot, trackingSpan, trackingTagList) ->
 
+        let getFromTrackingCacheData (trackingCacheData : TrackingCacheData<'TTag>) =
+            let cachedSnapshot = trackingCacheData.Snapshot
             if cachedSnapshot.Version.VersionNumber <= span.Snapshot.Version.VersionNumber then
 
                 // If this SnapshotSpan is coming from a different snapshot which is ahead of 
@@ -219,13 +243,13 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
                 // To work around this we try to map the tags to the requested ITextSnapshot. If
                 // it succeeds then we use the mapped values and simultaneously kick off a background
                 // request for the correct ones
-                match TrackingSpanUtil.GetSpan span.Snapshot trackingSpan with
+                match TrackingSpanUtil.GetSpan span.Snapshot trackingCacheData.TrackingSpan with
                 | None -> TagResult.None
                 | Some mappedSpan ->
                     if mappedSpan.IntersectsWith(span) then
                         // Mapping gave us at least partial information.  Will work for the transition
                         // period
-                        trackingTagList
+                        trackingCacheData.TagList
                         |> Seq.map (fun (trackingSpan, tag) ->
                             match TrackingSpanUtil.GetSpan span.Snapshot trackingSpan with
                             | None -> None
@@ -238,13 +262,29 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
             else
                 TagResult.None
 
+        match _tagCache with 
+        | TagCache.None ->
+            TagResult.None
+        | TagCache.BackgroundCache backgroundCacheData ->
+            getFromBackgroundCacheData backgroundCacheData
+        | TagCache.TrackingCache trackingCacheData ->
+            getFromTrackingCacheData trackingCacheData
+        | TagCache.TrackingAndBackgroundCache (trackingCacheData, backgroundCacheData) ->
+            let tagResult = getFromBackgroundCacheData backgroundCacheData
+            match tagResult with
+            | TagResult.Complete _ -> tagResult
+            | TagResult.Partial _ -> 
+                // TODO: Should merge with tracking data
+                tagResult
+            | TagResult.None -> getFromTrackingCacheData trackingCacheData
+
     /// Get the tags for the specified SnapshotSpan in a background task
     member x.GetTagsInBackground (span : SnapshotSpan) = 
 
         let startRequest (synchronizationContext : SynchronizationContext) = 
             // We proactively look for more than the requested SnapshotSpan of data.  Extend the
             // line count by the expected value
-            let span =
+            let lineRange =
                 let startLine, endLine = SnapshotSpanUtil.GetStartAndEndLine span
                 let startLine = 
                     let number = max 0 (startLine.LineNumber - LineAdjustment)
@@ -254,9 +294,10 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
                     let number = endLine.LineNumber + LineAdjustment
                     SnapshotUtil.GetLineOrLast span.Snapshot number
 
-                SnapshotSpan(startLine.Start, endLine.EndIncludingLineBreak)
+                SnapshotLineRangeUtil.CreateForLineRange startLine endLine
 
             // Create the data which is needed by the 
+            let span = lineRange.ExtentIncludingLineBreak
             let data = _asyncTaggerSource.GetDataForSpan span
             let cancellationTokenSource = new CancellationTokenSource()
             let cancellationToken = cancellationTokenSource.Token
@@ -264,15 +305,18 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
             // Function which finally gets the tags.  This is run on a background thread and can
             // throw as the implementor is encouraged to use CancellationToken::ThrowIfCancelled
             let getTags () = 
+                let onComplete tagList = synchronizationContext.Post((fun _ -> x.OnTagsInBackgroundComplete cancellationTokenSource span tagList), null)
+                let onProgress span tagList = synchronizationContext.Post((fun _ -> x.OnTagsInBackgroundProgress cancellationTokenSource span tagList), null)
+                x.GetTagsInBackgroundCore data lineRange cancellationToken onComplete
 
-                let tagList = 
-                    try
-                        _asyncTaggerSource.GetTagsInBackground data span cancellationToken
-                    with
-                        _ -> List.Empty
-                synchronizationContext.Post((fun _ -> x.OnTagsInBackgroundComplete cancellationTokenSource span tagList), null)
+            let task = 
+                match _asyncTaggerSource.Delay with
+                | None -> new Task(getTags, cancellationToken)
+                | Some delay ->
+                    let parent = new Task((fun () -> Thread.Sleep(delay)), cancellationToken)
+                    parent.ContinueWith(System.Action<Task>(fun _ -> getTags()), cancellationToken) |> ignore
+                    parent
 
-            let task = new Task(getTags, cancellationToken)
             let asyncBackgroundRequest = {
                 Span = span
                 CancellationTokenSource = cancellationTokenSource
@@ -296,13 +340,26 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
                    x.CancelAsyncBackgroundRequest()
                    startRequest synchronizationContext
 
+    member x.GetTagsInBackgroundCore data (lineRange : SnapshotLineRange) (cancellationToken : CancellationToken) onComplete =
+        let getTags span = 
+            try
+                _asyncTaggerSource.GetTagsInBackground data span cancellationToken
+            with 
+                _ -> List.empty
+
+        let tagList = getTags lineRange.ExtentIncludingLineBreak
+        onComplete tagList
+
     /// Cancel the pending AsyncBackgoundRequest if one is currently running
     member x.CancelAsyncBackgroundRequest() =
         match _asyncBackgroundRequest with 
         | None -> ()
         | Some asyncBackgroundRequest ->
+
+            // Use a try / with to protect the Cancel from throwing and taking down the process
             try
-                asyncBackgroundRequest.CancellationTokenSource.Cancel()
+                if not asyncBackgroundRequest.CancellationTokenSource.IsCancellationRequested then
+                    asyncBackgroundRequest.CancellationTokenSource.Cancel()
             with 
                 _ -> ()
             _asyncBackgroundRequest <- None
@@ -313,12 +370,13 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
     /// Potentially update the TagCache to the given ITextSnapshot
     member x.MaybeUpdateTagCacheToSnapshot (snapshot : ITextSnapshot) = 
         match _tagCache with
-        | TagCache.BackgroundCache (cacheSpan, tagList) -> 
+        | TagCache.BackgroundCache backgroundCacheData ->
+            let cacheSpan = backgroundCacheData.Span
             if cacheSpan.Snapshot.Version.VersionNumber < snapshot.Version.VersionNumber then
 
                 // Create the list.  Initiate an ITrackingSpan for every SnapshotSpan present
                 let trackingList = 
-                    tagList
+                    backgroundCacheData.TagList
                     |> List.map (fun tagSpan ->
                         let trackingSpan = TrackingSpanUtil.Create tagSpan.Span SpanTrackingMode.EdgeExclusive
                         (trackingSpan, tagSpan.Tag))
@@ -354,24 +412,50 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
         | None -> ()
         | Some cachedRequestSpan -> x.RaiseTagsChanged cachedRequestSpan
 
-    /// Called on the main thread when the request for tags completes.
-    member x.OnTagsInBackgroundComplete cancellationTokenSource span tagList = 
+    /// Is the async operation with the specified CancellationTokenSource the active 
+    /// background request
+    member x.IsActiveBackgroundRequest cancellationTokenSource =
         match _asyncBackgroundRequest with
-        | None -> ()
-        | Some asyncBackgroundRequest ->
-            if asyncBackgroundRequest.CancellationTokenSource = cancellationTokenSource then
-                // This is the active request that completed.  Update the cache and notify the
-                // caller our tags have changed
-                _tagCache <- TagCache.BackgroundCache (span, tagList)
-                _asyncBackgroundRequest <- None
+        | None -> false
+        | Some asyncBackgroundRequest -> asyncBackgroundRequest.CancellationTokenSource = cancellationTokenSource
 
-                // This is called directly on the message pump.  Protect against Dispose and event
-                // raising from taking down the process
-                try 
-                    x.RaiseTagsChanged span
-                    asyncBackgroundRequest.CancellationTokenSource.Dispose()
-                with 
-                    _ -> ()
+    /// Called on the main thread when the request for tags reaches some level of progress.  When 
+    /// the provided SnapshotSpan is extremely large the work will be broken up in chunks and 
+    /// returned as such through this function
+    ///
+    /// Called on the main thread
+    member x.OnTagsInBackgroundProgress cancellationTokenSource span tagList = 
+        if x.IsActiveBackgroundRequest cancellationTokenSource then
+
+            // Update the TagCache based on the progress dat
+            _tagCache <- 
+                match _tagCache with
+                | TagCache.None -> TagCache.BackgroundCache { Span = span; TagList = tagList }
+                | TagCache.TrackingCache trackingCacheData ->
+                    // Currently tracking.  Merge in the new background data with 
+                    // the active tracking data.  It will be cleared out on completion
+                    let backgroundCacheData = { Span = span; TagList = tagList }
+                    TagCache.TrackingAndBackgroundCache (trackingCacheData, backgroundCacheData)
+                | TagCache.TrackingAndBackgroundCache (trackingCacheData, backgroundCacheData) ->
+                    // Need to merge the backgorund caching data.  
+                    let backgroundCacheData = { 
+                        Span = SnapshotSpanUtil.CreateOverarching backgroundCacheData.Span span 
+                        TagList = List.append backgroundCacheData.TagList tagList }
+                    TagCache.TrackingAndBackgroundCache (trackingCacheData, backgroundCacheData)
+
+    /// Called when the background request is completed
+    ///
+    /// Called on the main thread
+    member x.OnTagsInBackgroundComplete cancellationTokenSource span tagList = 
+        if x.IsActiveBackgroundRequest cancellationTokenSource then
+
+            x.CancelAsyncBackgroundRequest()
+
+            // This is the active request that completed.  Update the cache and notify the
+            // caller our tags have changed
+            _tagCache <- TagCache.BackgroundCache (span, tagList)
+
+            x.RaiseTagsChanged span
 
     interface ITagger<'TTag> with
         member x.GetTags col = x.GetTags col
@@ -686,6 +770,7 @@ type HighlightSearchTaggerSource
         |> List.ofSeq
 
     interface IAsyncTaggerSource<SearchData, TextMarkerTag> with
+        member x.Delay = Some 100
         member x.TextSnapshot = _textBuffer.CurrentSnapshot
         member x.GetDataForSpan _ = x.GetDataForSpan()
         member x.GetTagsPrompt _ = x.GetTagsPrompt()
