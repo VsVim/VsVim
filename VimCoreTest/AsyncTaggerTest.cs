@@ -7,6 +7,7 @@ using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Control;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using NUnit.Framework;
 using Vim;
@@ -36,6 +37,7 @@ namespace VimCore.UnitTest
 
             internal string DataForSpan { get; set; }
             internal bool IsDisposed { get; set; }
+            internal ITextView TextView { get; set; }
 
             internal TestableAsyncTaggerSource(ITextBuffer textBuffer)
             {
@@ -72,6 +74,11 @@ namespace VimCore.UnitTest
             FSharpOption<int> IAsyncTaggerSource<string, TextMarkerTag>.Delay
             {
                 get { return FSharpOption<int>.None; }
+            }
+
+            FSharpOption<ITextView> IAsyncTaggerSource<string, TextMarkerTag>.TextView
+            {
+                get { return FSharpOption.CreateForReference(TextView); }
             }
 
             string IAsyncTaggerSource<string, TextMarkerTag>.GetDataForSpan(SnapshotSpan value)
@@ -176,9 +183,10 @@ namespace VimCore.UnitTest
 
         private TagCache<TextMarkerTag> CreateTagCache(SnapshotSpan source, params SnapshotSpan[] tagSpans)
         {
-            return TagCache<TextMarkerTag>.NewBackgroundCache(
+            var backgroundCacheData = new BackgroundCacheData<TextMarkerTag>(
                 source,
                 tagSpans.Select(CreateTagSpan).ToFSharpList());
+            return TagCache<TextMarkerTag>.NewBackgroundCache(backgroundCacheData);
         }
 
         private List<ITagSpan<TextMarkerTag>> GetTagsFull(SnapshotSpan span)

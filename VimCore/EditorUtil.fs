@@ -1096,18 +1096,25 @@ module TextViewUtil =
             | _ -> 50
 
     /// Returns a sequence of ITextSnapshotLine values representing the visible lines in the buffer
-    let GetVisibleSnapshotLines (textView : ITextView) =
+    let GetVisibleSnapshotLineRange (textView : ITextView) =
         if textView.InLayout then
-            Seq.empty
+            None
         else 
-            let lines = textView.TextViewLines
-            let startNumber = lines.FirstVisibleLine.Start.GetContainingLine().LineNumber
-            let endNumber = lines.LastVisibleLine.End.GetContainingLine().LineNumber
             let snapshot = textView.TextSnapshot
-            seq {
-                for i = startNumber to endNumber do
-                    yield SnapshotUtil.GetLine snapshot i
-            }
+            let lines = textView.TextViewLines
+            let startLine = 
+                let number = lines.FirstVisibleLine.Start.GetContainingLine().LineNumber
+                SnapshotUtil.GetLineOrFirst snapshot number
+            let endLine = 
+                let number = lines.LastVisibleLine.End.GetContainingLine().LineNumber
+                SnapshotUtil.GetLineOrLast snapshot number
+            SnapshotLineRangeUtil.CreateForLineRange startLine endLine |> Some
+
+    /// Returns a sequence of ITextSnapshotLine values representing the visible lines in the buffer
+    let GetVisibleSnapshotLines (textView : ITextView) =
+        match GetVisibleSnapshotLineRange textView with
+        | None -> Seq.empty
+        | Some lineRange -> lineRange.Lines
 
     /// Ensure the caret is currently on the visible screen
     let EnsureCaretOnScreen textView = 
