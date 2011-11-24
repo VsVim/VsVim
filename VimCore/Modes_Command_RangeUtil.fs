@@ -48,7 +48,7 @@ type internal RangeUtil
 
     member x.ApplyCount count (range:SnapshotLineRange) =
         let count = if count <= 1 then 1 else count
-        SnapshotLineRangeUtil.CreateForLineAndMaxCount range.EndLine count
+        SnapshotLineRangeUtil.CreateForLineAndMaxCount range.LastLine count
 
     member x.TryApplyCount count range =
         match count with 
@@ -73,8 +73,8 @@ type internal RangeUtil
             if left.StartLineNumber < right.StartLineNumber then left.StartLine
             else right.StartLine
         let endLine =
-            if left.EndLineNumber > right.EndLineNumber then left.EndLine
-            else right.EndLine
+            if left.LastLineNumber > right.LastLineNumber then left.LastLine
+            else right.LastLine
         SnapshotLineRangeUtil.CreateForLineRange startLine endLine
 
     member x.ParseNumber (input : char list) =
@@ -155,7 +155,7 @@ type internal RangeUtil
                         let number = max 0 (range.StartLineNumber - count)
                         range.Snapshot.GetLineFromLineNumber(number) |> SnapshotLineRangeUtil.CreateForLine 
                     else 
-                        let endLineNumber = max 0 (range.EndLineNumber - count)
+                        let endLineNumber = max 0 (range.LastLineNumber - count)
                         if endLineNumber = range.StartLineNumber then 
                             SnapshotLineRangeUtil.CreateForLine range.StartLine
                         elif endLineNumber < range.StartLineNumber then

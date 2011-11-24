@@ -25,7 +25,7 @@ namespace VimCore.UnitTest
             Assert.AreEqual("hello", range.Extent.GetText());
             Assert.AreEqual(1, range.Count);
             Assert.AreEqual(0, range.StartLineNumber);
-            Assert.AreEqual(0, range.EndLineNumber);
+            Assert.AreEqual(0, range.LastLineNumber);
         }
 
         [Test]
@@ -36,7 +36,7 @@ namespace VimCore.UnitTest
             Assert.AreEqual("hello", range.Extent.GetText());
             Assert.AreEqual(1, range.Count);
             Assert.AreEqual(0, range.StartLineNumber);
-            Assert.AreEqual(0, range.EndLineNumber);
+            Assert.AreEqual(0, range.LastLineNumber);
         }
 
         [Test]
@@ -47,7 +47,7 @@ namespace VimCore.UnitTest
             Assert.AreEqual("hello" + Environment.NewLine + "world", range.Extent.GetText());
             Assert.AreEqual(2, range.Count);
             Assert.AreEqual(0, range.StartLineNumber);
-            Assert.AreEqual(1, range.EndLineNumber);
+            Assert.AreEqual(1, range.LastLineNumber);
         }
 
         [Test]
@@ -67,7 +67,7 @@ namespace VimCore.UnitTest
             Assert.AreEqual("hello", range.Extent.GetText());
             Assert.AreEqual(1, range.Count);
             Assert.AreEqual(0, range.StartLineNumber);
-            Assert.AreEqual(0, range.EndLineNumber);
+            Assert.AreEqual(0, range.LastLineNumber);
         }
 
         [Test]
@@ -78,7 +78,7 @@ namespace VimCore.UnitTest
             Assert.AreEqual("hello" + Environment.NewLine + "world", range.Extent.GetText());
             Assert.AreEqual(2, range.Count);
             Assert.AreEqual(0, range.StartLineNumber);
-            Assert.AreEqual(1, range.EndLineNumber);
+            Assert.AreEqual(1, range.LastLineNumber);
         }
 
         [Test]
@@ -89,7 +89,7 @@ namespace VimCore.UnitTest
             var range = SnapshotLineRangeUtil.CreateForLineAndMaxCount(_buffer.GetLine(0), 1);
             Assert.AreEqual(1, range.Count);
             Assert.AreEqual(0, range.StartLineNumber);
-            Assert.AreEqual(0, range.EndLineNumber);
+            Assert.AreEqual(0, range.LastLineNumber);
         }
 
         [Test]
@@ -100,7 +100,7 @@ namespace VimCore.UnitTest
             var range = SnapshotLineRangeUtil.CreateForLineAndMaxCount(_buffer.GetLine(0), 100);
             Assert.AreEqual(2, range.Count);
             Assert.AreEqual(0, range.StartLineNumber);
-            Assert.AreEqual(1, range.EndLineNumber);
+            Assert.AreEqual(1, range.LastLineNumber);
         }
 
         [Test]
@@ -111,7 +111,7 @@ namespace VimCore.UnitTest
             var range = SnapshotLineRangeUtil.CreateForLineAndMaxCount(_buffer.GetLine(0), 2);
             Assert.AreEqual(2, range.Count);
             Assert.AreEqual(0, range.StartLineNumber);
-            Assert.AreEqual(1, range.EndLineNumber);
+            Assert.AreEqual(1, range.LastLineNumber);
         }
     }
 }

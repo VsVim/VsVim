@@ -214,7 +214,7 @@ type internal SubstituteConfirmMode
                     | None -> None
                     | Some regex ->
                         let isReplaceAll = Util.IsFlagSet data.Flags SubstituteFlags.ReplaceAll
-                        let data = { Regex=regex; SubstituteText=data.Substitute; CurrentMatch =span; LastLineNumber=range.EndLineNumber; IsReplaceAll=isReplaceAll}
+                        let data = { Regex=regex; SubstituteText=data.Substitute; CurrentMatch = span; LastLineNumber = range.LastLineNumber; IsReplaceAll=isReplaceAll}
                         Some data
 
         member x.OnLeave () = 

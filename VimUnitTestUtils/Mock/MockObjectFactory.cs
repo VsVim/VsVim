@@ -559,7 +559,7 @@ namespace Vim.UnitTest.Mock
             }
 
             mock.SetupGet(x => x.FirstVisibleLine).Returns(CreateTextViewLine(range.StartLine, factory).Object);
-            mock.SetupGet(x => x.LastVisibleLine).Returns(CreateTextViewLine(range.EndLine, factory).Object);
+            mock.SetupGet(x => x.LastVisibleLine).Returns(CreateTextViewLine(range.LastLine, factory).Object);
             mock.SetupGet(x => x.Count).Returns(range.Count);
             return mock;
         }

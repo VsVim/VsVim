@@ -20,23 +20,23 @@ type LineRange
     ) =
 
     member x.StartLineNumber = _startLine
-    member x.EndLineNumber = _startLine + (_count - 1)
+    member x.LastLineNumber = _startLine + (_count - 1)
     member x.Count = _count
     member x.LineNumbers = 
         let startLineNumber = x.StartLineNumber
-        let endLineNumber = x.EndLineNumber
+        let lastLineNumber = x.LastLineNumber
         seq { 
-            for i in startLineNumber .. endLineNumber do yield i 
+            for i in startLineNumber .. lastLineNumber do yield i 
         }
 
     member x.ContainsLineNumber lineNumber = 
-        lineNumber >= _startLine && lineNumber <= x.EndLineNumber
+        lineNumber >= _startLine && lineNumber <= x.LastLineNumber
 
     member x.Intersects (lineRange : LineRange) =
         x.ContainsLineNumber lineRange.StartLineNumber || 
-        x.ContainsLineNumber x.EndLineNumber ||
-        x.EndLineNumber + 1 = lineRange.StartLineNumber ||
-        x.StartLineNumber = lineRange.EndLineNumber + 1
+        x.ContainsLineNumber x.LastLineNumber ||
+        x.LastLineNumber + 1 = lineRange.StartLineNumber ||
+        x.StartLineNumber = lineRange.LastLineNumber + 1
 
     // Equality Functions
     override x.GetHashCode() = _startLine ^^^ _count
@@ -53,17 +53,17 @@ type LineRange
     static member op_Inequality(this,other) = 
         not (System.Collections.Generic.EqualityComparer<LineRange>.Default.Equals(this,other))
 
-    static member CreateFromBounds startLineNumber endLineNumber =
-        let count = (endLineNumber - startLineNumber) + 1
+    static member CreateFromBounds startLineNumber lastLineNumber =
+        let count = (lastLineNumber - startLineNumber) + 1
         LineRange(startLineNumber, count)
 
     static member CreateOverarching (leftLineRange : LineRange) (rightLineRange : LineRange) =
         let startLineNumber = min leftLineRange.StartLineNumber rightLineRange.StartLineNumber
-        let endLineNumber = max leftLineRange.EndLineNumber rightLineRange.EndLineNumber
-        LineRange.CreateFromBounds startLineNumber endLineNumber
+        let lastLineNumber = max leftLineRange.LastLineNumber rightLineRange.LastLineNumber
+        LineRange.CreateFromBounds startLineNumber lastLineNumber
 
     // Overrides
-    override x.ToString() = sprintf "%d - %d" _startLine x.EndLineNumber
+    override x.ToString() = sprintf "%d - %d" _startLine x.LastLineNumber
 
 /// Represents a range of lines in an ITextSnapshot.  Different from a SnapshotSpan
 /// because it declaratively supports lines instead of a position range
@@ -87,19 +87,19 @@ type SnapshotLineRange
 
     /// Number of lines in the SnapshotLineRange
     member x.Count = _count
-    member x.EndLineNumber = _startLine + (_count - 1)
-    member x.EndLine = _snapshot.GetLineFromLineNumber x.EndLineNumber
-    member x.End = x.EndLine.End
-    member x.EndIncludingLineBreak = x.EndLine.EndIncludingLineBreak
+    member x.LastLineNumber = _startLine + (_count - 1)
+    member x.LastLine = _snapshot.GetLineFromLineNumber x.LastLineNumber
+    member x.End = x.LastLine.End
+    member x.EndIncludingLineBreak = x.LastLine.EndIncludingLineBreak
     member x.Extent=
         let startLine = x.StartLine
-        let endLine = x.EndLine
-        SnapshotSpan(startLine.Start, endLine.End)
+        let lastLine = x.LastLine
+        SnapshotSpan(startLine.Start, lastLine.End)
     member x.ExtentIncludingLineBreak = 
         let startLine = x.StartLine
-        let endLine = x.EndLine
-        SnapshotSpan(startLine.Start, endLine.EndIncludingLineBreak)
-    member x.Lines = seq { for i in _startLine .. x.EndLineNumber do yield _snapshot.GetLineFromLineNumber(i) }
+        let lastLine = x.LastLine
+        SnapshotSpan(startLine.Start, lastLine.EndIncludingLineBreak)
+    member x.Lines = seq { for i in _startLine .. x.LastLineNumber do yield _snapshot.GetLineFromLineNumber(i) }
     member x.GetText() = x.Extent.GetText()
     member x.GetTextIncludingLineBreak() = x.ExtentIncludingLineBreak.GetText()
 
@@ -121,7 +121,7 @@ type SnapshotLineRange
         not (System.Collections.Generic.EqualityComparer<SnapshotLineRange>.Default.Equals(this,other))
 
     // Overrides
-    override x.ToString() = sprintf "%d - %d : %s" _startLine x.EndLineNumber (x.Extent.ToString()) 
+    override x.ToString() = sprintf "[%d - %d] : %s" _startLine x.LastLineNumber (x.Extent.ToString()) 
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic

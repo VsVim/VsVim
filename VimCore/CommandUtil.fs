@@ -1048,7 +1048,7 @@ type internal CommandUtil
 
         // Extend the range to at least 2 lines if possible
         let range = 
-            if range.Count = 1 && range.EndLineNumber = SnapshotUtil.GetLastLineNumber range.Snapshot then
+            if range.Count = 1 && range.LastLineNumber = SnapshotUtil.GetLastLineNumber range.Snapshot then
                 // Can't extend
                 range
             elif range.Count = 1 then

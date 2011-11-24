@@ -42,7 +42,7 @@ namespace VimCore.UnitTest
             Assert.AreEqual(0, ret.AsSucceeded().Item2.Count());
             var range = ret.AsSucceeded().Item1;
             Assert.AreEqual(startLine, range.StartLineNumber);
-            Assert.AreEqual(endLine, range.EndLineNumber);
+            Assert.AreEqual(endLine, range.LastLineNumber);
         }
 
         private void ParseSingleLine(string input, int line)

@@ -373,10 +373,10 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
             let getTagsByChunk (lineRange : SnapshotLineRange) =
                 let snapshot = lineRange.Snapshot
                 let mutable i = lineRange.StartLineNumber
-                while i < lineRange.EndLineNumber do
+                while i < lineRange.LastLineNumber do
                     cancellationToken.ThrowIfCancellationRequested()
 
-                    let endLineNumber = min lineRange.EndLineNumber (i + chunkCount)
+                    let endLineNumber = min lineRange.LastLineNumber (i + chunkCount)
                     let chunkLineRange = SnapshotLineRangeUtil.CreateForLineNumberRange snapshot i endLineNumber
                     getTags chunkLineRange
 
@@ -399,7 +399,7 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
                     getTagsByChunk lineRange
     
                 // Now do the lines below
-                if visibleLineRange.EndLineNumber < lineRange.EndLineNumber then
+                if visibleLineRange.LastLineNumber < lineRange.LastLineNumber then
                     let lineRange = 
                         let span = SnapshotSpan(visibleLineRange.EndIncludingLineBreak, lineRange.EndIncludingLineBreak)
                         SnapshotLineRangeUtil.CreateForSpan span

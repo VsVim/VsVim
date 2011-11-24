@@ -390,7 +390,7 @@ type internal CommandProcessor
             |> CommandParseUtil.SkipRegister _registerMap
         
         let range = _rangeUtil.RangeOrCurrentLine range
-        _commandOperations.PutLine reg range.EndLine bang
+        _commandOperations.PutLine reg range.LastLine bang
 
     /// Process the search pattern command
     member x.ProcessSearchPattern path (rest : char list) range _ =
@@ -402,7 +402,7 @@ type internal CommandProcessor
         // The search should begin after the last line in the specified range
         let startPoint = 
             let range = _rangeUtil.RangeOrCurrentLine range
-            range.EndLine.End
+            range.LastLine.End
 
         let patternData = { Pattern = pattern; Path = path }
         let result = _searchService.FindNextPattern patternData startPoint _vimBufferData.VimTextBuffer.WordNavigator 1

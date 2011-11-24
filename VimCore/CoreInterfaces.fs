@@ -943,7 +943,7 @@ type CharacterSpan
             if lineRange.Count = 1 then
                 span.Length
             else
-                let diff = span.End.Position - lineRange.EndLine.Start.Position
+                let diff = span.End.Position - lineRange.LastLine.Start.Position
                 max 0 diff
         CharacterSpan(span.Start, lineRange.Count, lastLineLength)
 
@@ -1139,7 +1139,7 @@ and [<RequireQualifiedAccess>] [<StructuralEquality>] [<NoComparison>] VisualSel
             // and can be on any column in either
             let line = 
                 if isForward then
-                    snapshotLineRange.EndLine
+                    snapshotLineRange.LastLine
                 else
                     snapshotLineRange.StartLine
 
@@ -1216,7 +1216,7 @@ and [<RequireQualifiedAccess>] [<StructuralEquality>] [<NoComparison>] VisualSel
         | VisualSpan.Character span -> 
             VisualSelection.Character (span, true)
         | VisualSpan.Line lineRange ->
-            let column = SnapshotPointUtil.GetColumn lineRange.EndLine.End
+            let column = SnapshotPointUtil.GetColumn lineRange.LastLine.End
             VisualSelection.Line (lineRange, true, column)
         | VisualSpan.Block blockSpan ->
             VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
