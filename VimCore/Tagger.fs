@@ -537,6 +537,13 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
             // The request is complete.  Reset the active request information
             x.CancelAsyncBackgroundRequest()
 
+            // Update the tag cache to indicate we are no longer doing any tracking edits
+            _tagCache <- 
+                match _tagCache with
+                | TagCache.None -> _tagCache
+                | TagCache.BackgroundCache _ -> _tagCache
+                | TagCache.TrackingAndBackgroundCache (_, backgroundCacheData) -> TagCache.BackgroundCache backgroundCacheData
+                | TagCache.TrackingCache _ -> TagCache.None
 
     interface ITagger<'TTag> with
         member x.GetTags col = x.GetTags col
