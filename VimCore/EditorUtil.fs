@@ -96,9 +96,10 @@ type SnapshotLineRange
     member x.Count = _count
     member x.LastLineNumber = _startLine + (_count - 1)
     member x.LastLine = _snapshot.GetLineFromLineNumber x.LastLineNumber
+    member x.LineRange = LineRange.CreateFromBounds x.StartLineNumber x.LastLineNumber
     member x.End = x.LastLine.End
     member x.EndIncludingLineBreak = x.LastLine.EndIncludingLineBreak
-    member x.Extent=
+    member x.Extent =
         let startLine = x.StartLine
         let lastLine = x.LastLine
         SnapshotSpan(startLine.Start, lastLine.End)
@@ -1056,10 +1057,10 @@ module SnapshotLineRangeUtil =
         SnapshotLineRange(startLine.Snapshot, startLine.LineNumber, count)
 
     /// Create a line range for the provided start and end line 
-    let CreateForLineNumberRange (snapshot:ITextSnapshot) startNumber endNumber = 
+    let CreateForLineNumberRange (snapshot:ITextSnapshot) startNumber lastNumber = 
         let startLine = snapshot.GetLineFromLineNumber(startNumber)
-        let endLine = snapshot.GetLineFromLineNumber(endNumber)
-        CreateForLineRange startLine endLine
+        let lastLine = snapshot.GetLineFromLineNumber(lastNumber)
+        CreateForLineRange startLine lastLine
 
 module BufferGraphUtil = 
 

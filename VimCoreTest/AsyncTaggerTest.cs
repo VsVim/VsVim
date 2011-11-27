@@ -222,7 +222,7 @@ namespace VimCore.UnitTest
             return new AsyncBackgroundRequest(
                 SnapshotLineRangeUtil.CreateForSpan(span),
                 cancellationTokenSource,
-                new ConcurrentQueue<SnapshotLineRange>(),
+                new SingleItemQueue<SnapshotLineRange>(),
                 task);
         }
 

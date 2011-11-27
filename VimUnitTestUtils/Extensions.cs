@@ -18,22 +18,70 @@ namespace Vim.UnitTest
     /// </summary>
     public static class Extensions
     {
-        #region LineRangeVisited
+        #region LineRangeVisitedNode
 
         /// <summary>
         /// LineRangeVisited as the Contiguous value
         /// </summary>
-        internal static LineRangeVisited.Contiguous AsContiguous(this LineRangeVisited lineRangeVisited)
+        internal static LineRangeVisitedNode.Contiguous AsContiguous(this LineRangeVisitedNode lineRangeVisited)
         {
-            return (LineRangeVisited.Contiguous)lineRangeVisited;
+            return (LineRangeVisitedNode.Contiguous)lineRangeVisited;
         }
 
         /// <summary>
         /// LineRangeVisited as the Discontiguous value
         /// </summary>
-        internal static LineRangeVisited.Discontiguous AsDiscontiguous(this LineRangeVisited lineRangeVisited)
+        internal static LineRangeVisitedNode.Discontiguous AsDiscontiguous(this LineRangeVisitedNode lineRangeVisited)
         {
-            return (LineRangeVisited.Discontiguous)lineRangeVisited;
+            return (LineRangeVisitedNode.Discontiguous)lineRangeVisited;
+        }
+
+        /// <summary>
+        /// Validate tha the LineRangeVisited structure holds the contracts we'd like to guarantee for
+        /// it
+        /// </summary>
+        internal static void AssertValid(this LineRangeVisitedNode lineRangeVisited)
+        {
+            if (lineRangeVisited.IsContiguous)
+            {
+                return;
+            }
+
+            var discontiguous = lineRangeVisited.AsDiscontiguous();
+            var left = discontiguous.Item1;
+            var right = discontiguous.Item2;
+            if (left.IsContiguous && right.IsContiguous && left.LineRange.Intersects(right.LineRange))
+            {
+                Assert.Fail("A discontiguous region of two contiguous regions shouldn't intersect (or they could be collapsed");
+            }
+
+            if (left.LastLineNumber > right.StartLineNumber)
+            {
+                Assert.Fail("Left should be before right");
+            }
+
+            if (left.StartLineNumber > right.LastLineNumber)
+            {
+                Assert.Fail("Left should be before right");
+            }
+
+            AssertValid(left);
+            AssertValid(right);
+        }
+
+        /// <summary>
+        /// Count the number of contiguous ranges which is backing the LineRangeVisited.  Useful for 
+        /// guaranteeing that we are collapsing properly
+        /// </summary>
+        internal static int CountLineRanges(LineRangeVisitedNode lineRangeVisited)
+        {
+            if (lineRangeVisited.IsContiguous)
+            {
+                return 1;
+            }
+
+            var discontiguous = lineRangeVisited.AsDiscontiguous();
+            return CountLineRanges(discontiguous.Item1) + CountLineRanges(discontiguous.Item2);
         }
 
         #endregion
