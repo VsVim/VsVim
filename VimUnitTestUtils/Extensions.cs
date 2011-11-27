@@ -18,6 +18,26 @@ namespace Vim.UnitTest
     /// </summary>
     public static class Extensions
     {
+        #region LineRangeVisited
+
+        /// <summary>
+        /// LineRangeVisited as the Contiguous value
+        /// </summary>
+        internal static LineRangeVisited.Contiguous AsContiguous(this LineRangeVisited lineRangeVisited)
+        {
+            return (LineRangeVisited.Contiguous)lineRangeVisited;
+        }
+
+        /// <summary>
+        /// LineRangeVisited as the Discontiguous value
+        /// </summary>
+        internal static LineRangeVisited.Discontiguous AsDiscontiguous(this LineRangeVisited lineRangeVisited)
+        {
+            return (LineRangeVisited.Discontiguous)lineRangeVisited;
+        }
+
+        #endregion
+
         #region CommandResult
 
         public static CommandResult.Completed AsCompleted(this CommandResult result)

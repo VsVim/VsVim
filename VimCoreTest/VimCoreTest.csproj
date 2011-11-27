@@ -156,6 +156,8 @@
     <Compile Include="EditorToSettingSynchronizerTest.cs" />
     <Compile Include="FoldManagerTest.cs" />
     <Compile Include="InsertUtilTest.cs" />
+    <Compile Include="LineRangeTest.cs" />
+    <Compile Include="LineRangeVisitedTest.cs" />
     <Compile Include="ReplaceModeIntegrationTest.cs" />
     <Compile Include="MacroIntegrationTest.cs" />
     <Compile Include="IncrementalSearchTaggerSourceTest.cs" />

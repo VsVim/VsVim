@@ -32,9 +32,13 @@ type LineRange
     member x.ContainsLineNumber lineNumber = 
         lineNumber >= _startLine && lineNumber <= x.LastLineNumber
 
+    member x.Contains (lineRange : LineRange) = 
+        x.StartLineNumber <= lineRange.StartLineNumber &&
+        x.LastLineNumber >= lineRange.LastLineNumber 
+
     member x.Intersects (lineRange : LineRange) =
         x.ContainsLineNumber lineRange.StartLineNumber || 
-        x.ContainsLineNumber x.LastLineNumber ||
+        x.ContainsLineNumber lineRange.LastLineNumber ||
         x.LastLineNumber + 1 = lineRange.StartLineNumber ||
         x.StartLineNumber = lineRange.LastLineNumber + 1
 
@@ -54,6 +58,9 @@ type LineRange
         not (System.Collections.Generic.EqualityComparer<LineRange>.Default.Equals(this,other))
 
     static member CreateFromBounds startLineNumber lastLineNumber =
+        if lastLineNumber < startLineNumber then
+            invalidArg "lastLineNumber" Resources.Common_InvalidLineNumber
+
         let count = (lastLineNumber - startLineNumber) + 1
         LineRange(startLineNumber, count)
 
@@ -1153,7 +1160,7 @@ module TextViewUtil =
             // that inside of Vim but need to be careful
             | _ -> 50
 
-    /// Returns a sequence of ITextSnapshotLine values representing the visible lines in the buffer
+    /// Return the overaching SnapshotLineRange for the visible lines in the ITextView
     let GetVisibleSnapshotLineRange (textView : ITextView) =
         if textView.InLayout then
             None

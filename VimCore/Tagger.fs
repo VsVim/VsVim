@@ -7,8 +7,152 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Utilities
 open System.ComponentModel.Composition
+open System.Collections.Concurrent
+open System.Diagnostics
 open System.Threading
 open System.Threading.Tasks
+
+/// Maintains the LineRange which was visited.  It's an effecient way of tracking discontiguous 
+/// LineRange values which were visited as it will collapse them into larger LineRange values 
+/// as contiguous regions are added
+[<DebuggerDisplay("{ToString()}")>]
+[<RequireQualifiedAccess>]
+type LineRangeVisited =
+
+    /// Single contiguous region visited
+    | Contiguous of LineRange
+
+    /// Two discontiguous regions which were visited.  The left will always
+    /// occur numerically before the right
+    | Discontiguous of LineRangeVisited * LineRangeVisited
+
+    with
+
+    member x.StartLineNumber =  
+        match x with
+        | Contiguous lineRange -> lineRange.StartLineNumber
+        | Discontiguous (left, _) -> left.StartLineNumber
+
+    member x.LastLineNumber = 
+        match x with
+        | Contiguous lineRange -> lineRange.LastLineNumber
+        | Discontiguous (_, right) -> right.LastLineNumber
+
+    /// The overarching LineRange of the visited LineRange values
+    member x.LineRange = 
+        LineRange.CreateFromBounds x.StartLineNumber x.LastLineNumber
+
+    /// The set of contiguous LineRange values which have been visited (in order)
+    member x.LineRanges = 
+        let found = System.Collections.Generic.List<LineRange>()
+        let rec inner visited = 
+            match visited with
+            | Contiguous lineRange -> found.Add lineRange
+            | Discontiguous (left, right) -> 
+                inner left
+                inner right
+        inner x
+        found |> List.ofSeq
+
+    /// Does the structure contain the provided LineRange
+    member x.Contains (lineRange : LineRange) = 
+        match x with
+        | Contiguous other -> other.Contains lineRange
+        | Discontiguous (left, right) ->
+            if lineRange.StartLineNumber < right.StartLineNumber then
+                left.Contains lineRange
+            else
+                right.Contains lineRange
+
+    member x.AddLineRange (lineRange : LineRange) = 
+        match x with 
+        | Contiguous other ->
+            if lineRange.Intersects other then
+                LineRange.CreateOverarching lineRange other |> Contiguous
+            elif lineRange.StartLineNumber < other.StartLineNumber then
+                Discontiguous ((Contiguous lineRange), x)
+            else
+                Discontiguous (x, (Contiguous lineRange))
+        | Discontiguous (left, right) ->
+
+            // See if the add created an oppurtunity for a collapse
+            let collapse left right =
+                match left, right with
+                | Contiguous leftLineRange, Contiguous rightLineRange ->
+                    if leftLineRange.Intersects rightLineRange then
+                        LineRange.CreateOverarching leftLineRange rightLineRange |> Contiguous
+                    else
+                        Discontiguous (left, right)
+                | _ -> Discontiguous (left, right)
+
+            // The normal way of adding is to look at the set of LineRange values which
+            // are represented in the LineRangeVisited structure.  Then collapse them down
+            // one at a time
+            let addNormal () = 
+                let lineRanges = lineRange :: x.LineRanges
+                LineRangeVisited.OfSeq lineRanges |> Option.get
+
+            if lineRange.Intersects left.LineRange && lineRange.Intersects right.LineRange then
+                // If it intersects the left and the right then we need to do the normal
+                // method of adding
+                addNormal()
+            else
+                match left, right with
+                | Contiguous leftLineRange, Contiguous rightLineRange ->
+                    if lineRange.Intersects leftLineRange then
+                        let left = left.AddLineRange lineRange
+                        collapse left right
+                    elif lineRange.Intersects rightLineRange then
+                        let right = right.AddLineRange lineRange
+                        collapse left right
+                    else
+                        addNormal()
+                | _ -> addNormal()
+
+    /// Create a LineRangeVisited structure from the sequence of LineRange values.  They
+    /// do not need to be ordered.  If the provided Sequence is empty then None will be 
+    /// returned
+    static member OfSeq (lineRanges : seq<LineRange>) : LineRangeVisited option =
+
+        // First get it into a sorted LineRange list
+        let lineRanges =
+            lineRanges
+            |> Seq.sortBy (fun lineRange -> lineRange.StartLineNumber)
+            |> List.ofSeq
+
+        // Now that we are sorted collapse down consequetive LineRange values which intersect
+        // into ones that don't
+        let lineRanges = 
+
+            let rec collapseHead (lineRange : LineRange) rest = 
+                match rest with
+                | [] -> lineRange, []
+                | head :: tail ->
+                    if lineRange.Intersects head then
+                        collapseHead (LineRange.CreateOverarching lineRange head) tail
+                    else
+                        lineRange, rest
+
+            let rec inner rest withRange = 
+                match rest with
+                | [] -> withRange []
+                | head :: tail ->
+                    let head, tail = collapseHead head tail
+                    let withRange = fun next -> withRange (head :: next)
+                    inner tail withRange
+
+            inner lineRanges (fun x -> x)
+
+        lineRanges 
+        |> Seq.fold (fun visited lineRange ->
+            match visited with
+            | None -> Contiguous lineRange |> Some
+            | Some visited -> Discontiguous (visited, Contiguous lineRange) |> Some) None
+
+    override x.ToString() = 
+        match x with 
+        | Contiguous lineRange -> sprintf "C %s" (lineRange.ToString())
+        | Discontiguous (left, right) -> sprintf "D (%s %s)" (left.ToString()) (right.ToString())
 
 module TaggerUtil = 
 
@@ -118,12 +262,18 @@ type TagCache<'TTag when 'TTag :> ITag> =
 /// Data about a background request for tags
 type AsyncBackgroundRequest = {
 
-    Span : SnapshotSpan
+    LineRange : SnapshotLineRange
 
     CancellationTokenSource : CancellationTokenSource
 
+    PriorityLineRangeQueue : ConcurrentQueue<SnapshotLineRange>
+
     Task : Task
 }
+
+    with
+
+    member x.Span = x.LineRange.ExtentIncludingLineBreak
 
 [<RequireQualifiedAccess>]
 type TagResult<'TTag when 'TTag :> ITag> =
@@ -159,6 +309,16 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
         _asyncTaggerSource.Changed 
         |> Observable.subscribe this.OnAsyncSourceChanged
         |> _eventHandlers.Add
+
+        // If there is an ITextView associated with the IAsyncTaggerSource then we want to 
+        // listen to LayoutChanges.  If the layout changes while we are getting tags we want
+        // to prioritize the visible lines
+        match _asyncTaggerSource.TextView with
+        | None -> ()
+        | Some textView ->
+            textView.LayoutChanged
+            |> Observable.subscribe this.OnLayoutChanged
+            |> _eventHandlers.Add 
 
     member x.CachedRequestSpan 
         with get() = _cachedRequestSpan
@@ -301,19 +461,24 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
 
                 SnapshotLineRangeUtil.CreateForLineRange startLine endLine
 
-            // Create the data which is needed by the 
-            let visibleLineRange = OptionUtil.map2 TextViewUtil.GetVisibleSnapshotLineRange _asyncTaggerSource.TextView
+            // Create the data which is needed by the background request
             let span = lineRange.ExtentIncludingLineBreak
             let data = _asyncTaggerSource.GetDataForSpan span
             let cancellationTokenSource = new CancellationTokenSource()
             let cancellationToken = cancellationTokenSource.Token
 
+            // Create the priority queue for visible lines
+            let priorityLineRangeQueue = new ConcurrentQueue<SnapshotLineRange>()
+            match OptionUtil.map2 TextViewUtil.GetVisibleSnapshotLineRange _asyncTaggerSource.TextView with
+            | None -> ()
+            | Some visibleLineRange -> priorityLineRangeQueue.Enqueue visibleLineRange
+
             // Function which finally gets the tags.  This is run on a background thread and can
             // throw as the implementor is encouraged to use CancellationToken::ThrowIfCancelled
             let getTags () = 
                 let onComplete () = synchronizationContext.Post((fun _ -> x.OnTagsInBackgroundComplete cancellationTokenSource), null)
-                let onProgress span tagList = synchronizationContext.Post((fun _ -> x.OnTagsInBackgroundProgress cancellationTokenSource span tagList), null)
-                x.GetTagsInBackgroundCore data lineRange visibleLineRange cancellationToken onComplete onProgress
+                let onProgress lineRange tagList = synchronizationContext.Post((fun _ -> x.OnTagsInBackgroundProgress cancellationTokenSource lineRange tagList), null)
+                x.GetTagsInBackgroundCore data lineRange priorityLineRangeQueue cancellationToken onComplete onProgress
 
             let task = 
                 match _asyncTaggerSource.Delay with
@@ -324,8 +489,9 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
                     parent
 
             let asyncBackgroundRequest = {
-                Span = span
+                LineRange = lineRange
                 CancellationTokenSource = cancellationTokenSource
+                PriorityLineRangeQueue = priorityLineRangeQueue
                 Task = task }
             _asyncBackgroundRequest <- Some asyncBackgroundRequest
 
@@ -346,7 +512,7 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
                    x.CancelAsyncBackgroundRequest()
                    startRequest synchronizationContext
 
-    member x.GetTagsInBackgroundCore data (lineRange : SnapshotLineRange) (visibleLineRange : SnapshotLineRange option) (cancellationToken : CancellationToken) onComplete onProgress =
+    member x.GetTagsInBackgroundCore data (lineRange : SnapshotLineRange) (priorityQueue : ConcurrentQueue<SnapshotLineRange>) (cancellationToken : CancellationToken) onComplete onProgress =
 
         try
             // This number was chosen virtually at random.  In extremely large files it's legal
@@ -367,8 +533,8 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
                         _asyncTaggerSource.GetTagsInBackground data span cancellationToken
                     with 
                         _ -> List.empty
-                onProgress span tagList
-    
+                onProgress lineRange tagList
+
             // Get the tags in the specified range in chunks
             let getTagsByChunk (lineRange : SnapshotLineRange) =
                 let snapshot = lineRange.Snapshot
@@ -376,37 +542,26 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
                 while i < lineRange.LastLineNumber do
                     cancellationToken.ThrowIfCancellationRequested()
 
-                    let endLineNumber = min lineRange.LastLineNumber (i + chunkCount)
-                    let chunkLineRange = SnapshotLineRangeUtil.CreateForLineNumberRange snapshot i endLineNumber
-                    getTags chunkLineRange
+                    let isFound, priorityLineRange = priorityQueue.TryDequeue()
+                    if isFound then
+                        /// TODO: Need to avoid duplicate work here using a LineRangeVisited structure
+                        getTags priorityLineRange
+                    else
 
-                    i <- i + chunkCount
+                        let endLineNumber = min lineRange.LastLineNumber (i + chunkCount)
+                        let chunkLineRange = SnapshotLineRangeUtil.CreateForLineNumberRange snapshot i endLineNumber
+                        getTags chunkLineRange
+    
+                        i <- i + chunkCount
+
 
             // It's common in Visual Studio RTM for the entire SnapshotSpan of the ITextSnapshot
             // to be requested due to a bug.  In very large files this can cause a significant delay
             // in showing tags.  So we prioritize the visible lines and then move on to ones which
             // are not visible
-            match lineRange.Count > (chunkCount * 2), visibleLineRange with
-            | true, Some visibleLineRange ->
-    
-                getTags visibleLineRange
-    
-                // Now do the lines above
-                if lineRange.StartLineNumber < visibleLineRange.StartLineNumber then
-                    let lineRange = 
-                        let span = SnapshotSpan(lineRange.Start, visibleLineRange.Start)
-                        SnapshotLineRangeUtil.CreateForSpan span
-                    getTagsByChunk lineRange
-    
-                // Now do the lines below
-                if visibleLineRange.LastLineNumber < lineRange.LastLineNumber then
-                    let lineRange = 
-                        let span = SnapshotSpan(visibleLineRange.EndIncludingLineBreak, lineRange.EndIncludingLineBreak)
-                        SnapshotLineRangeUtil.CreateForSpan span
-                    getTagsByChunk lineRange
-    
-            | _ -> 
-                // Normal SnapshotSpan.  Do it all at once
+            if lineRange.Count > (chunkCount * 2) then
+                getTagsByChunk lineRange
+            else 
                 getTags lineRange
         with
             // Handle cancellation exceptions and everything else.  Don't want an errant 
@@ -485,6 +640,18 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
         | None -> ()
         | Some cachedRequestSpan -> x.RaiseTagsChanged cachedRequestSpan
 
+    /// If the Layout changes while we are in the middle of getting tags we want to 
+    /// prioritize the new set of visible lines.
+    member x.OnLayoutChanged _ =
+        match _asyncBackgroundRequest with
+        | None -> ()
+        | Some asyncBackgroundRequest ->
+            match OptionUtil.map2 TextViewUtil.GetVisibleSnapshotLineRange _asyncTaggerSource.TextView with
+            | None -> ()
+            | Some visibleLineRange ->
+                if asyncBackgroundRequest.LineRange.ExtentIncludingLineBreak.IntersectsWith visibleLineRange.ExtentIncludingLineBreak then
+                    asyncBackgroundRequest.PriorityLineRangeQueue.Enqueue visibleLineRange
+
     /// Is the async operation with the specified CancellationTokenSource the active 
     /// background request
     member x.IsActiveBackgroundRequest cancellationTokenSource =
@@ -497,9 +664,10 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
     /// request
     ///
     /// Called on the main thread
-    member x.OnTagsInBackgroundProgress cancellationTokenSource span tagList = 
+    member x.OnTagsInBackgroundProgress cancellationTokenSource (lineRange : SnapshotLineRange) tagList = 
         if x.IsActiveBackgroundRequest cancellationTokenSource then
 
+            let span = lineRange.ExtentIncludingLineBreak
             let newData = { Span = span; TagList = tagList }
 
             // Merge the existing background tracking data with the new data

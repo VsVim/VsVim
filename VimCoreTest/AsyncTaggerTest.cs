@@ -13,6 +13,7 @@ using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
+using System.Collections.Concurrent;
 
 namespace VimCore.UnitTest
 {
@@ -212,6 +213,19 @@ namespace VimCore.UnitTest
             return tags;
         }
 
+        private AsyncBackgroundRequest CreateAsyncBackgroundRequest(
+            SnapshotSpan span,
+            CancellationTokenSource cancellationTokenSource,
+            Task task = null)
+        {
+            task = task ?? new Task(() => { });
+            return new AsyncBackgroundRequest(
+                SnapshotLineRangeUtil.CreateForSpan(span),
+                cancellationTokenSource,
+                new ConcurrentQueue<SnapshotLineRange>(),
+                task);
+        }
+
         /// <summary>
         /// First choice should be to go through the prompt code.  This shouldn't create
         /// any cache
@@ -303,7 +317,7 @@ namespace VimCore.UnitTest
             Create("cat", "dog", "bear");
 
             var cancellationTokenSource = new CancellationTokenSource();
-            _asyncTagger.AsyncBackgroundRequest = FSharpOption.Create(new AsyncBackgroundRequest(
+            _asyncTagger.AsyncBackgroundRequest = FSharpOption.Create(CreateAsyncBackgroundRequest(
                 _textBuffer.GetExtent(),
                 cancellationTokenSource,
                 new Task(() => { })));
@@ -322,7 +336,7 @@ namespace VimCore.UnitTest
             Create("cat", "dog", "bear");
 
             var cancellationTokenSource = new CancellationTokenSource();
-            _asyncTagger.AsyncBackgroundRequest = FSharpOption.Create(new AsyncBackgroundRequest(
+            _asyncTagger.AsyncBackgroundRequest = FSharpOption.Create(CreateAsyncBackgroundRequest(
                 _textBuffer.GetLine(0).Extent,
                 cancellationTokenSource,
                 new Task(() => { })));
@@ -344,7 +358,7 @@ namespace VimCore.UnitTest
             Create("cat", "dog", "bear");
 
             var cancellationTokenSource = new CancellationTokenSource();
-            _asyncTagger.AsyncBackgroundRequest = FSharpOption.Create(new AsyncBackgroundRequest(
+            _asyncTagger.AsyncBackgroundRequest = FSharpOption.Create(CreateAsyncBackgroundRequest(
                 _textBuffer.GetExtent(),
                 cancellationTokenSource,
                 new Task(() => { })));
@@ -448,7 +462,7 @@ namespace VimCore.UnitTest
         {
             Create("hello world");
             var cancellationTokenSource = new CancellationTokenSource();
-            _asyncTagger.AsyncBackgroundRequest = FSharpOption.Create(new AsyncBackgroundRequest(
+            _asyncTagger.AsyncBackgroundRequest = FSharpOption.Create(CreateAsyncBackgroundRequest(
                 _textBuffer.GetExtent(),
                 cancellationTokenSource,
                 new Task(() => { })));
