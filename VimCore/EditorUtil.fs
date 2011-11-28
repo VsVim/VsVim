@@ -1344,7 +1344,7 @@ module TrackingSpanUtil =
 module PropertyCollectionUtil = 
 
     /// Get the property value for the givne key
-    let GetValue<'T> key (propertyCollection : PropertyCollection) = 
+    let GetValue<'T> (key : obj) (propertyCollection : PropertyCollection) = 
         try
             let succeeded, value = propertyCollection.TryGetProperty<'T>(key)
             if succeeded then

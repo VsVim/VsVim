@@ -714,6 +714,63 @@ type BasicTagger<'TTag when 'TTag :> ITag>
     interface System.IDisposable with
         member x.Dispose() = x.Dispose()
 
+/// It's possible, and very likely, for an ITagger<T> to be requested multiple times for the 
+/// same scenario via the ITaggerProvider.  This happens when extensions spin up custom 
+/// ITagAggregator instances or simple manually query for a new ITagger.  Having multiple taggers
+/// for the same data is often very unnecessary.  Produces a lot of duplicate work.  For example
+/// consider having multiple :hlsearch taggers for the same ITextView.  
+///
+/// CountedTagger helps solve this by using a ref counted solution over the raw ITagger.  It allows
+/// for only one ITagger to be created for the same scenario
+type CountedTagger<'TTag when 'TTag :> ITag>
+    (
+        _tagger : ITagger<'TTag>,
+        _key : obj,
+        _propertyCollection : PropertyCollection
+    ) = 
+
+    member x.Tagger = _tagger
+
+    member x.Dispose() = 
+        match PropertyCollectionUtil.GetValue<int* ITagger<'TTag>> _key _propertyCollection with 
+        | None -> 
+            // Should never happen.  Indicates major programming problem as we now 
+            // aren't properly ref tracking the underlying ITagger.
+            Contract.Assert false
+        | Some (count, tagger) ->
+            if count = 1 then
+                match _tagger with
+                | :? System.IDisposable as disposable -> disposable.Dispose()
+                | _ -> ()
+
+                _propertyCollection.RemoveProperty _key |> ignore
+            else
+                _propertyCollection.[_key] <- (count - 1, tagger)
+
+    interface ITagger<'TTag> with
+        member x.GetTags col = _tagger.GetTags col
+        [<CLIEvent>]
+        member x.TagsChanged = _tagger.TagsChanged
+
+    interface System.IDisposable with
+        member x.Dispose() = x.Dispose()
+
+    static member Create (key : obj) propertyCollection (createTagger : unit -> ITagger<'TTag>) = 
+        let rawTagger = 
+            match PropertyCollectionUtil.GetValue<int * ITagger<'TTag>> key propertyCollection with
+            | None ->
+                // Initial creation
+                let rawTagger = createTagger()
+                propertyCollection.[key] <- (1, rawTagger)
+                rawTagger
+            | Some (count, rawTagger) ->
+                // Re-use the existing ITagger
+                let count = count + 1
+                propertyCollection.[key] <- (count, rawTagger)
+                rawTagger
+
+        new CountedTagger<'TTag>(rawTagger, key, propertyCollection) :> ITagger<'TTag>
+
 /// Tagger for incremental searches
 type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) =
 
@@ -963,6 +1020,8 @@ type HighlightIncrementalSearchTaggerProvider
     [<ImportingConstructor>]
     ( _vim : IVim ) = 
 
+    let _key = obj()
+
     interface IViewTaggerProvider with 
         member x.CreateTagger<'T when 'T :> ITag> ((textView : ITextView), textBuffer) = 
             match textView.TextBuffer = textBuffer, _vim.GetVimBuffer textView with
@@ -971,10 +1030,11 @@ type HighlightIncrementalSearchTaggerProvider
             | true, None -> 
                 null
             | true, Some vimTextBuffer ->
-                let wordNavigator = vimTextBuffer.WordNavigator
-                let asyncTaggerSource = new HighlightSearchTaggerSource(textView, vimTextBuffer.GlobalSettings, wordNavigator, _vim.SearchService, _vim.VimData, _vim.VimHost)
-                let asyncTagger = new AsyncTagger<SearchData, TextMarkerTag>(asyncTaggerSource)
-                asyncTagger :> obj :?> ITagger<'T>
+                CountedTagger.Create _key textView.Properties (fun () ->
+                    let wordNavigator = vimTextBuffer.WordNavigator
+                    let asyncTaggerSource = new HighlightSearchTaggerSource(textView, vimTextBuffer.GlobalSettings, wordNavigator, _vim.SearchService, _vim.VimData, _vim.VimHost)
+                    let asyncTagger = new AsyncTagger<SearchData, TextMarkerTag>(asyncTaggerSource)
+                    asyncTagger :> obj :?> ITagger<'T>)
 
 /// Tagger for matches as they appear during a confirm substitute
 type SubstituteConfirmTaggerSource
@@ -1077,11 +1137,14 @@ type FoldTaggerProvider
     [<ImportingConstructor>]
     (_factory : IFoldManagerFactory) = 
 
+    let _key = obj()
+
     interface ITaggerProvider with 
         member x.CreateTagger<'T when 'T :> ITag> textBuffer =
-            let foldData = _factory.GetFoldData textBuffer
-            let taggerSource = FoldTaggerSource(foldData)
-            let tagger = new BasicTagger<OutliningRegionTag>(taggerSource)
-            tagger :> obj :?> ITagger<'T>
+            CountedTagger.Create _key textBuffer.Properties (fun () ->
+                let foldData = _factory.GetFoldData textBuffer
+                let taggerSource = FoldTaggerSource(foldData)
+                let tagger = new BasicTagger<OutliningRegionTag>(taggerSource)
+                tagger :> obj :?> ITagger<'T>)
 
 
