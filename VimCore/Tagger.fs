@@ -566,7 +566,9 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
             match OptionUtil.map2 TextViewUtil.GetVisibleSnapshotLineRange _asyncTaggerSource.TextView with
             | None -> ()
             | Some visibleLineRange ->
-                if asyncBackgroundRequest.LineRange.ExtentIncludingLineBreak.IntersectsWith visibleLineRange.ExtentIncludingLineBreak then
+                let left = asyncBackgroundRequest.LineRange.ExtentIncludingLineBreak
+                let right = visibleLineRange.ExtentIncludingLineBreak
+                if left.Snapshot = right.Snapshot && left.IntersectsWith right then
                     asyncBackgroundRequest.PriorityLineRangeQueue.Enqueue visibleLineRange
 
     /// Is the async operation with the specified CancellationTokenSource the active 
