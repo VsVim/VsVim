@@ -98,14 +98,38 @@ type BackgroundCacheData<'TTag when 'TTag :> ITag> = {
     TagList : ITagSpan<'TTag> list
 }
 
-type TrackingCacheData<'TTag when 'TTag :> ITag> = {
+    with
 
-    Snapshot : ITextSnapshot
+    member x.Snapshot = x.Span.Snapshot
+
+type TrackingCacheData<'TTag when 'TTag :> ITag> = {
 
     TrackingSpan : ITrackingSpan
 
     TrackingList : (ITrackingSpan * 'TTag) list
 }
+
+    with
+
+    member x.Merge snapshot (trackingCacheData : TrackingCacheData<'TTag>) =
+        let trackingSpan = 
+            let left = TrackingSpanUtil.GetSpan snapshot x.TrackingSpan
+            let right = TrackingSpanUtil.GetSpan snapshot trackingCacheData.TrackingSpan
+            let span = 
+                match left, right with
+                | Some left, Some right -> SnapshotSpanUtil.CreateOverarching left right
+                | Some left, None -> left
+                | None, Some right -> right
+                | _ -> SnapshotSpan(snapshot, 0, 0)
+            TrackingSpanUtil.Create span SpanTrackingMode.EdgeInclusive
+
+        let tagList = 
+            x.TrackingList
+            |> Seq.append trackingCacheData.TrackingList
+            |> Seq.distinctBy (fun (trackingSpan, tag) -> TrackingSpanUtil.GetSpan snapshot trackingSpan)
+            |> List.ofSeq
+
+        { TrackingSpan = trackingSpan; TrackingList = tagList }
 
 /// Caches information about the tag values we've given out
 [<RequireQualifiedAccess>]
@@ -148,6 +172,14 @@ type TagResult<'TTag when 'TTag :> ITag> =
     | None
     | Partial of ITagSpan<'TTag> list
     | Complete of ITagSpan<'TTag> list
+
+    with 
+
+    member x.TagList =
+        match x with
+        | None -> List.empty
+        | Partial tagList -> tagList
+        | Complete tagList -> tagList
 
 type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
     (
@@ -269,34 +301,30 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
                 TagResult.None
 
         let getFromTrackingCacheData (trackingCacheData : TrackingCacheData<'TTag>) =
-            let cachedSnapshot = trackingCacheData.Snapshot
-            if cachedSnapshot.Version.VersionNumber <= span.Snapshot.Version.VersionNumber then
 
-                // If this SnapshotSpan is coming from a different snapshot which is ahead of 
-                // our current one we need to take special steps.  If we simply return nothing
-                // and go to the background the tags will flicker on screen.  
-                //
-                // To work around this we try to map the tags to the requested ITextSnapshot. If
-                // it succeeds then we use the mapped values and simultaneously kick off a background
-                // request for the correct ones
-                match TrackingSpanUtil.GetSpan span.Snapshot trackingCacheData.TrackingSpan with
-                | None -> TagResult.None
-                | Some mappedSpan ->
-                    if mappedSpan.IntersectsWith(span) then
-                        // Mapping gave us at least partial information.  Will work for the transition
-                        // period
-                        trackingCacheData.TrackingList
-                        |> Seq.map (fun (trackingSpan, tag) ->
-                            match TrackingSpanUtil.GetSpan span.Snapshot trackingSpan with
-                            | None -> None
-                            | Some tagSpan -> TagSpan<'TTag>(tagSpan, tag) :> ITagSpan<'TTag> |> Some)
-                        |> SeqUtil.filterToSome
-                        |> List.ofSeq
-                        |> TagResult.Partial
-                    else
-                        TagResult.None
-            else
-                TagResult.None
+            // If this SnapshotSpan is coming from a different snapshot which is ahead of 
+            // our current one we need to take special steps.  If we simply return nothing
+            // and go to the background the tags will flicker on screen.  
+            //
+            // To work around this we try to map the tags to the requested ITextSnapshot. If
+            // it succeeds then we use the mapped values and simultaneously kick off a background
+            // request for the correct ones
+            match TrackingSpanUtil.GetSpan span.Snapshot trackingCacheData.TrackingSpan with
+            | None -> TagResult.None
+            | Some mappedSpan ->
+                if mappedSpan.IntersectsWith(span) then
+                    // Mapping gave us at least partial information.  Will work for the transition
+                    // period
+                    trackingCacheData.TrackingList
+                    |> Seq.map (fun (trackingSpan, tag) ->
+                        match TrackingSpanUtil.GetSpan span.Snapshot trackingSpan with
+                        | None -> None
+                        | Some tagSpan -> TagSpan<'TTag>(tagSpan, tag) :> ITagSpan<'TTag> |> Some)
+                    |> SeqUtil.filterToSome
+                    |> List.ofSeq
+                    |> TagResult.Partial
+                else
+                    TagResult.None
 
         match _tagCache with 
         | TagCache.None ->
@@ -306,12 +334,17 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
         | TagCache.TrackingCache trackingCacheData ->
             getFromTrackingCacheData trackingCacheData
         | TagCache.TrackingAndBackgroundCache (trackingCacheData, backgroundCacheData) ->
+
+            // We are in the middle of processing a background request.  We have both the
+            // tracking data and the partial background data.  During the transition we should
+            // pull first from background and then from tracking 
             let tagResult = getFromBackgroundCacheData backgroundCacheData
             match tagResult with
             | TagResult.Complete _ -> tagResult
-            | TagResult.Partial _ -> 
-                // TODO: Should merge with tracking data
-                tagResult
+            | TagResult.Partial backgroundTagList -> 
+                // Merge tracking and background daat. 
+                let trackingResult = getFromTrackingCacheData trackingCacheData
+                List.append backgroundTagList trackingResult.TagList |> TagResult.Partial
             | TagResult.None -> getFromTrackingCacheData trackingCacheData
 
     /// Get the tags for the specified SnapshotSpan in a background task
@@ -460,28 +493,41 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
 
     /// Potentially update the TagCache to the given ITextSnapshot
     member x.MaybeUpdateTagCacheToSnapshot (snapshot : ITextSnapshot) = 
+
+        let createTrackingCacheData (backgroundCacheData : BackgroundCacheData<'TTag>) =
+            let cacheSpan = backgroundCacheData.Span
+
+            // Create the list.  Initiate an ITrackingSpan for every SnapshotSpan present
+            let trackingList = 
+                backgroundCacheData.TagList
+                |> List.map (fun tagSpan ->
+                    let trackingSpan = TrackingSpanUtil.Create tagSpan.Span SpanTrackingMode.EdgeExclusive
+                    (trackingSpan, tagSpan.Tag))
+
+            let trackingSpan = TrackingSpanUtil.Create cacheSpan SpanTrackingMode.EdgeInclusive
+            let trackingCacheData = {
+                TrackingSpan = trackingSpan
+                TrackingList = trackingList 
+            }
+
+            trackingCacheData
+
         match _tagCache with
         | TagCache.BackgroundCache backgroundCacheData ->
-            let cacheSpan = backgroundCacheData.Span
-            if cacheSpan.Snapshot.Version.VersionNumber < snapshot.Version.VersionNumber then
 
-                // Create the list.  Initiate an ITrackingSpan for every SnapshotSpan present
-                let trackingList = 
-                    backgroundCacheData.TagList
-                    |> List.map (fun tagSpan ->
-                        let trackingSpan = TrackingSpanUtil.Create tagSpan.Span SpanTrackingMode.EdgeExclusive
-                        (trackingSpan, tagSpan.Tag))
-
-                let trackingSpan = TrackingSpanUtil.Create cacheSpan SpanTrackingMode.EdgeInclusive
-                let trackingCacheData = {
-                    Snapshot = cacheSpan.Snapshot
-                    TrackingSpan = trackingSpan
-                    TrackingList = trackingList 
-                }
+            // Change the background cache to a tracking one if an edit occurred
+            if backgroundCacheData.Snapshot.Version.VersionNumber < snapshot.Version.VersionNumber then
+                let trackingCacheData = createTrackingCacheData backgroundCacheData
                 _tagCache <- TagCache.TrackingCache trackingCacheData
-        | TagCache.TrackingAndBackgroundCache _ ->
-            // Already tracking, no more work to do
-            ()
+
+        | TagCache.TrackingAndBackgroundCache (trackingCacheData, backgroundCacheData) ->
+
+            // Merge the background cache into the tracking cache
+            if backgroundCacheData.Snapshot.Version.VersionNumber < snapshot.Version.VersionNumber then
+                let newTrackingCacheData = createTrackingCacheData backgroundCacheData
+                let mergedTrackingCacheData = trackingCacheData.Merge snapshot newTrackingCacheData
+                _tagCache <- TagCache.TrackingCache mergedTrackingCacheData
+
         | TagCache.TrackingCache _ ->
             // Already tracking, no more work to do
             ()

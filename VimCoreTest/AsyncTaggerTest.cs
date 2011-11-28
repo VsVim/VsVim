@@ -13,7 +13,6 @@ using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
-using System.Collections.Concurrent;
 
 namespace VimCore.UnitTest
 {
@@ -182,11 +181,29 @@ namespace VimCore.UnitTest
             return new TagSpan<TextMarkerTag>(span, new TextMarkerTag("my tag"));
         }
 
-        private TagCache<TextMarkerTag> CreateTagCache(SnapshotSpan source, params SnapshotSpan[] tagSpans)
+        private BackgroundCacheData<TextMarkerTag> CreateBackgroundCacheData(SnapshotSpan source, params SnapshotSpan[] tagSpans)
         {
-            var backgroundCacheData = new BackgroundCacheData<TextMarkerTag>(
+            return new BackgroundCacheData<TextMarkerTag>(
                 source,
                 tagSpans.Select(CreateTagSpan).ToFSharpList());
+        }
+
+        private TrackingCacheData<TextMarkerTag> CreateTrackingCacheData(SnapshotSpan source, params SnapshotSpan[] tagSpans)
+        {
+            var snapshot = source.Snapshot;
+            var trackingSpan = snapshot.CreateTrackingSpan(source, SpanTrackingMode.EdgeInclusive);
+            var tag = new TextMarkerTag("my tag");
+            var all = tagSpans
+                .Select(span => Tuple.Create(snapshot.CreateTrackingSpan(span, SpanTrackingMode.EdgeInclusive), tag))
+                .ToFSharpList();
+            return new TrackingCacheData<TextMarkerTag>(
+                trackingSpan,
+                all);
+        }
+
+        private TagCache<TextMarkerTag> CreateTagCache(SnapshotSpan source, params SnapshotSpan[] tagSpans)
+        {
+            var backgroundCacheData = CreateBackgroundCacheData(source, tagSpans);
             return TagCache<TextMarkerTag>.NewBackgroundCache(backgroundCacheData);
         }
 
@@ -436,6 +453,23 @@ namespace VimCore.UnitTest
             _asyncTaggerSource.SetPromptTags(_textBuffer.GetSpan(0, 1));
             _asyncTagger.GetTags(span);
             Assert.AreEqual(span, _asyncTagger.CachedRequestSpan.Value);
+        }
+
+        /// <summary>
+        /// If we have tags which are mixed between background and tracking we need to pull 
+        /// from both sources
+        /// </summary>
+        [Test]
+        public void GetTags_BackgroundAndTracking()
+        {
+            Create("cat", "dog", "bear", "pig");
+            var backgroundData = CreateBackgroundCacheData(_textBuffer.GetLine(0).Extent, _textBuffer.GetLineSpan(0, 1));
+            var trackingData = CreateTrackingCacheData(_textBuffer.GetLine(1).Extent, _textBuffer.GetLineSpan(1, 1));
+            _asyncTagger.TagCache = TagCache<TextMarkerTag>.NewTrackingAndBackgroundCache(
+                trackingData,
+                backgroundData);
+            var tags = _asyncTagger.GetTags(_textBuffer.GetLineRange(0, 2).ExtentIncludingLineBreak);
+            Assert.AreEqual(2, tags.Count());
         }
 
         /// <summary>
