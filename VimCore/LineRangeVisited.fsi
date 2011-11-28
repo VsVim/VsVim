@@ -11,3 +11,5 @@ type LineRangeVisited =
 
     /// Get the LineRange inside the provided LineRange which is not yet visited
     member GetUnvisited : lineRange : LineRange -> LineRange option
+
+    static member OfSeq : lineRanges : LineRange seq -> LineRangeVisited

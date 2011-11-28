@@ -10,6 +10,9 @@ open System.ComponentModel.Composition
 open System.Threading
 open System.Threading.Tasks
 
+/// Structure for passing a single value between threads in a queue like
+/// fashion.  Later values will replace earlier ones.
+[<UsedInBackgroundThread>]
 type SingleItemQueue<'T>() = 
     let _value : ('T option) ref = ref None
 
@@ -185,14 +188,17 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
             |> Observable.subscribe this.OnLayoutChanged
             |> _eventHandlers.Add 
 
+    /// The SnapshotSpan for which we have given out tags
     member x.CachedRequestSpan 
         with get() = _cachedRequestSpan
         and set value = _cachedRequestSpan <- value
 
+    /// The cache of ITag<'TTag> values
     member x.TagCache 
         with get() = _tagCache
         and set value = _tagCache <- value
 
+    /// If there is a background request active this holds the information about it 
     member x.AsyncBackgroundRequest 
         with get() = _asyncBackgroundRequest
         and set value = _asyncBackgroundRequest <- value
@@ -312,22 +318,14 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
     member x.GetTagsInBackground (span : SnapshotSpan) = 
 
         let startRequest (synchronizationContext : SynchronizationContext) = 
-            // We proactively look for more than the requested SnapshotSpan of data.  Extend the
-            // line count by the expected value
-            let lineRange =
-                let startLine, endLine = SnapshotSpanUtil.GetStartAndEndLine span
-                let startLine = 
-                    let number = max 0 (startLine.LineNumber - LineAdjustment)
-                    SnapshotUtil.GetLine span.Snapshot number
 
-                let endLine = 
-                    let number = endLine.LineNumber + LineAdjustment
-                    SnapshotUtil.GetLineOrLast span.Snapshot number
-
-                SnapshotLineRangeUtil.CreateForLineRange startLine endLine
+            /// Our caching and partitioning of data is all done on a line range
+            /// basis.  Just expand the requested SnapshotSpan to the encompassing
+            /// SnaphotlineRange
+            let lineRange = SnapshotLineRangeUtil.CreateForSpan span
+            let span = lineRange.ExtentIncludingLineBreak
 
             // Create the data which is needed by the background request
-            let span = lineRange.ExtentIncludingLineBreak
             let data = _asyncTaggerSource.GetDataForSpan span
             let cancellationTokenSource = new CancellationTokenSource()
             let cancellationToken = cancellationTokenSource.Token
@@ -345,6 +343,8 @@ type AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
                 let onProgress lineRange tagList = synchronizationContext.Post((fun _ -> x.OnTagsInBackgroundProgress cancellationTokenSource lineRange tagList), null)
                 x.GetTagsInBackgroundCore data lineRange priorityLineRangeQueue cancellationToken onComplete onProgress
 
+            // Create the Task which will handle the actual gathering of data.  If there is a delay
+            // specified use it
             let task = 
                 match _asyncTaggerSource.Delay with
                 | None -> new Task(getTags, cancellationToken)
