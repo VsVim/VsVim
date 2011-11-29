@@ -181,6 +181,11 @@ namespace VimCore.UnitTest
             return new TagSpan<TextMarkerTag>(span, new TextMarkerTag("my tag"));
         }
 
+        private static FSharpList<ITagSpan<TextMarkerTag>> CreateTagSpans(params SnapshotSpan[] tagSpans)
+        {
+            return tagSpans.Select(CreateTagSpan).ToFSharpList();
+        }
+
         private BackgroundCacheData<TextMarkerTag> CreateBackgroundCacheData(SnapshotSpan source, params SnapshotSpan[] tagSpans)
         {
             return new BackgroundCacheData<TextMarkerTag>(
@@ -220,7 +225,6 @@ namespace VimCore.UnitTest
             var tags = _asyncTagger.GetTags(new NormalizedSnapshotSpanCollection(span)).ToList();
             if (_asyncTagger.AsyncBackgroundRequest.IsSome())
             {
-                Assert.AreEqual(0, tags.Count);
                 _asyncTagger.AsyncBackgroundRequest.Value.Task.Wait();
                 _synchronizationContext.RunAll();
                 tags = _asyncTagger.GetTags(new NormalizedSnapshotSpanCollection(span)).ToList();
@@ -241,6 +245,76 @@ namespace VimCore.UnitTest
                 cancellationTokenSource,
                 new SingleItemQueue<SnapshotLineRange>(),
                 task);
+        }
+
+        private void SetTagCache(TrackingCacheData<TextMarkerTag> trackingCacheData)
+        {
+            _asyncTagger.TagCache = TagCache<TextMarkerTag>.NewTrackingCache(trackingCacheData);
+        }
+
+        /// <summary>
+        /// If the tracking data is empty and we have now tags then it didn't chaneg
+        /// </summary>
+        [Test]
+        public void DidTagsChange_EmptyTrackingData()
+        {
+            Create("cat", "dog", "bear");
+            var span = _textBuffer.GetLine(0).ExtentIncludingLineBreak;
+            SetTagCache(CreateTrackingCacheData(span));
+            Assert.IsTrue(_asyncTagger.DidTagsChange(span, CreateTagSpans(_textBuffer.GetSpan(0, 1))));
+        }
+
+        /// <summary>
+        /// If the tracking data is empty and there are no new tags for the same SnapshotSpan then
+        /// nothing changed
+        /// </summary>
+        [Test]
+        public void DidTagsChange_EmptyTrackingData_NoNewTags()
+        {
+            Create("cat", "dog", "bear");
+            var span = _textBuffer.GetLine(0).ExtentIncludingLineBreak;
+            SetTagCache(CreateTrackingCacheData(span));
+            Assert.IsFalse(_asyncTagger.DidTagsChange(span, CreateTagSpans()));
+        }
+
+        /// <summary>
+        /// They didn't change if we can map forward to the same values
+        /// </summary>
+        [Test]
+        public void DidTagsChange_MapsToSame()
+        {
+            Create("cat", "dog", "bear", "tree");
+            var span = _textBuffer.GetLine(0).ExtentIncludingLineBreak;
+            SetTagCache(CreateTrackingCacheData(span, _textBuffer.GetSpan(1, 3)));
+            _textBuffer.Replace(_textBuffer.GetLine(2).Extent, "fish");
+            Assert.IsFalse(_asyncTagger.DidTagsChange(span, CreateTagSpans(_textBuffer.GetSpan(1, 3))));
+        }
+
+        /// <summary>
+        /// They changed if the edit moved them to different places
+        /// </summary>
+        [Test]
+        public void DidTagsChange_MapsToDifferent()
+        {
+            Create("cat", "dog", "bear", "tree");
+            var span = _textBuffer.GetLine(0).ExtentIncludingLineBreak;
+            SetTagCache(CreateTrackingCacheData(span, _textBuffer.GetSpan(1, 3)));
+            _textBuffer.Insert(0, "big ");
+            Assert.IsTrue(_asyncTagger.DidTagsChange(span, CreateTagSpans(_textBuffer.GetSpan(1, 4))));
+        }
+
+        /// <summary>
+        /// They changed if they are simply different
+        /// </summary>
+        [Test]
+        public void DidTagsChange_Different()
+        {
+            Create("cat", "dog", "bear", "tree");
+            var span = _textBuffer.GetLine(0).ExtentIncludingLineBreak;
+            SetTagCache(CreateTrackingCacheData(span, _textBuffer.GetSpan(1, 3)));
+            Assert.IsTrue(_asyncTagger.DidTagsChange(span, CreateTagSpans(
+                _textBuffer.GetSpan(1, 3), 
+                _textBuffer.GetSpan(5, 7))));
         }
 
         /// <summary>
@@ -539,6 +613,79 @@ namespace VimCore.UnitTest
 
             _asyncTaggerSource.RaiseChanged(null);
             Assert.IsFalse(didRun);
+        }
+
+        /// <summary>
+        /// When the initial background request completes make sure that a TagsChanged is raised for the
+        /// expected SnapshotSpan
+        /// </summary>
+        [Test]
+        public void TagsChanged_BackgroundComplete()
+        {
+            Create("cat", "dog", "bear");
+            SnapshotSpan? tagsChanged = null;
+            var requestSpan = _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak;
+            _asyncTaggerInterface.TagsChanged += (sender, e) => { tagsChanged = e.Span; };
+            _asyncTaggerSource.SetBackgroundTags(_textBuffer.GetSpan(0, 1));
+            GetTagsFull(requestSpan);
+            Assert.IsTrue(tagsChanged.HasValue);
+            Assert.AreEqual(requestSpan, tagsChanged);
+        }
+
+        /// <summary>
+        /// During an edit we map the previous good data via ITrackingSpan instances while the next background
+        /// request completes.  So by the time a background request completes we've already provided tags for 
+        /// the span we are looking at.  If the simple ITrackingSpan mappings were correct then don't raise
+        /// TagsChanged again for the same SnapshotSpan.  Doing so causes needless work and results in items
+        /// like screen flickering
+        /// </summary>
+        [Test]
+        public void TagsChanged_TrackingPredictedBackgroundResult()
+        {
+            Create("cat", "dog", "bear", "tree");
+
+            SnapshotSpan? tagsChanged = null;
+            _asyncTaggerInterface.TagsChanged += (sender, e) => { tagsChanged = e.Span; };
+
+            // Setup the previous background cache
+            _asyncTagger.TagCache = TagCache<TextMarkerTag>.NewTrackingCache(CreateTrackingCacheData(
+                _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                _textBuffer.GetSpan(0, 1)));
+
+            // Make an edit so that we are truly mapping forward then request tags for the same
+            // area
+            _textBuffer.Replace(_textBuffer.GetLine(2).Extent.Span, "fish");
+            _asyncTaggerSource.SetBackgroundTags(_textBuffer.GetSpan(0, 1));
+            GetTagsFull(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak);
+
+            Assert.IsFalse(tagsChanged.HasValue);
+        }
+
+        /// <summary>
+        /// An edit followed by different tags should raise the TagsChanged event
+        /// </summary>
+        [Test]
+        public void TagsChanged_TrackingDidNotPredictBackgroundResult()
+        {
+            Create("cat", "dog", "bear", "tree");
+
+            SnapshotSpan? tagsChanged = null;
+            _asyncTaggerInterface.TagsChanged += (sender, e) => { tagsChanged = e.Span; };
+
+            // Setup the previous background cache
+            _asyncTagger.TagCache = TagCache<TextMarkerTag>.NewTrackingCache(CreateTrackingCacheData(
+                _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                _textBuffer.GetSpan(0, 1)));
+
+            // Make an edit so that we are truly mapping forward then request tags for the same
+            // area
+            _textBuffer.Replace(_textBuffer.GetLine(2).Extent.Span, "fish");
+            _asyncTaggerSource.SetBackgroundTags(_textBuffer.GetSpan(1, 1));
+            var requestSpan = _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak;
+            GetTagsFull(requestSpan);
+
+            Assert.IsTrue(tagsChanged.HasValue);
+            Assert.AreEqual(requestSpan, tagsChanged.Value);
         }
     }
 }
