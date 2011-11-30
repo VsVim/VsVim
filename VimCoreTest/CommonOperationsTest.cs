@@ -13,6 +13,8 @@ using Vim.UnitTest.Mock;
 
 namespace VimCore.UnitTest
 {
+    // TODO: Need to remove several of the mock's here.  No reason to mock IVimLocalSettings and 
+    // a couple others.
     [TestFixture]
     public sealed class CommonOperationsTest : VimTestBase
     {
@@ -169,6 +171,50 @@ namespace VimCore.UnitTest
             _operations.Join(_textView.GetLineRange(0, 1), JoinKind.RemoveEmptySpaces);
             Assert.AreEqual("cat ", _textView.GetLine(0).GetText());
             Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// No tabs is just a column offset
+        /// </summary>
+        [Test]
+        public void GetSpacesToColumn_NoTabs()
+        {
+            Create("hello world");
+            Assert.AreEqual(2, _operationsRaw.GetSpacesToColumn(_textBuffer.GetLine(0), 2));
+        }
+
+        /// <summary>
+        /// Tabs count as tabstop spaces
+        /// </summary>
+        [Test]
+        public void GetSpacesToColumn_Tabs()
+        {
+            Create("\thello world");
+            _localSettings.SetupGet(x => x.TabStop).Returns(4);
+            Assert.AreEqual(5, _operationsRaw.GetSpacesToColumn(_textBuffer.GetLine(0), 2));
+        }
+
+        /// <summary>
+        /// Without any tabs this should be a straight offset
+        /// </summary>
+        [Test]
+        public void GetPointForSpaces_NoTabs()
+        {
+            Create("hello world");
+            var point = _operationsRaw.GetPointForSpaces(_textBuffer.GetLine(0), 2);
+            Assert.AreEqual(_textBuffer.GetPoint(2), point);
+        }
+
+        /// <summary>
+        /// Count the tabs as a 'tabstop' value when calculating the Point
+        /// </summary>
+        [Test]
+        public void GetPointForSpaces_Tabs()
+        {
+            Create("\thello world");
+            _localSettings.SetupGet(x => x.TabStop).Returns(4);
+            var point = _operationsRaw.GetPointForSpaces(_textBuffer.GetLine(0), 5);
+            Assert.AreEqual(_textBuffer.GetPoint(2), point);
         }
 
         /// <summary>

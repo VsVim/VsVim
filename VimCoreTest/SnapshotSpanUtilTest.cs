@@ -156,39 +156,39 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void GetEndLine1()
+        public void GetLastLine1()
         {
             Create("a", "b", "c");
             var span = _buffer.GetLine(0).ExtentIncludingLineBreak;
-            var endLine = SnapshotSpanUtil.GetEndLine(span);
+            var endLine = SnapshotSpanUtil.GetLastLine(span);
             Assert.AreEqual(0, endLine.LineNumber);
         }
 
         [Test]
-        public void GetEndLine2()
+        public void GetLastLine2()
         {
             Create("a", "b", "c");
             var span = _buffer.GetLine(2).ExtentIncludingLineBreak;
-            var endLine = SnapshotSpanUtil.GetEndLine(span);
+            var endLine = SnapshotSpanUtil.GetLastLine(span);
             Assert.AreEqual(2, endLine.LineNumber);
         }
 
         [Test]
-        public void GetEndLine3()
+        public void GetLastLine3()
         {
             Create("", "b", "c");
             var span = _buffer.GetLine(0).ExtentIncludingLineBreak;
-            var endLine = SnapshotSpanUtil.GetEndLine(span);
+            var endLine = SnapshotSpanUtil.GetLastLine(span);
             Assert.AreEqual(0, endLine.LineNumber);
         }
 
         [Test]
         [Description("0 length end of buffer line")]
-        public void GetEndLine4()
+        public void GetLastLine4()
         {
             Create("a", "");
             var span = new SnapshotSpan(_buffer.CurrentSnapshot, 0, _buffer.CurrentSnapshot.Length);
-            var endLine = SnapshotSpanUtil.GetEndLine(span);
+            var endLine = SnapshotSpanUtil.GetLastLine(span);
             Assert.AreEqual(1, endLine.LineNumber);
         }
 

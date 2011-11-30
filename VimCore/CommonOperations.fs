@@ -127,11 +127,14 @@ type internal CommonOperations
 
     /// When maintaining the caret column for motion moves this represents the desired 
     /// column to jump to if there is enough space on the line
-    let mutable _maintainCaretColumn : int option = None
+    ///
+    /// This number is kept as a count of spaces.  Tabs need to be adjusted for when applying
+    /// this setting to a motion
+    let mutable _maintainCaretColumnSpaces : int option = None
 
     do
         _textView.Caret.PositionChanged
-        |> Observable.subscribe (fun _ -> _maintainCaretColumn <- None)
+        |> Observable.subscribe (fun _ -> _maintainCaretColumnSpaces <- None)
         |> _eventHandlers.Add
 
         _textView.Closed
@@ -145,8 +148,8 @@ type internal CommonOperations
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
 
     member x.MaintainCaretColumn 
-        with get() = _maintainCaretColumn
-        and set value = _maintainCaretColumn <- value
+        with get() = _maintainCaretColumnSpaces
+        and set value = _maintainCaretColumnSpaces <- value
 
     /// Apply the TextChange to the ITextBuffer 'count' times as a single operation.
     member x.ApplyTextChange textChange addNewLines count =
@@ -190,6 +193,43 @@ type internal CommonOperations
 
             for i = 1 to count do
                 applyChange textChange)
+
+    /// Get the spaces for the given character
+    member x.GetSpacesForCharAtPoint point = 
+        let c = SnapshotPointUtil.GetChar point
+        if c = '\t' then
+            _localSettings.TabStop
+        else
+            1
+
+    /// Get the count of spaces to get to the specified absolute column offset.  This will count
+    /// tabs as counting for 'tabstop' spaces
+    member x.GetSpacesToColumn line column = 
+        SnapshotLineUtil.GetSpanInLine line 0 column
+        |> SnapshotSpanUtil.GetPoints Path.Forward
+        |> Seq.map x.GetSpacesForCharAtPoint
+        |> Seq.sum
+
+    // Get the point in the given line which is count "spaces" into the line.  Returns End if 
+    // it goes beyond the last point in the string
+    member x.GetPointForSpaces line spacesCount = 
+        let snapshot = SnapshotLineUtil.GetSnapshot line
+        let endPosition = line |> SnapshotLineUtil.GetEnd |> SnapshotPointUtil.GetPosition
+        let rec inner position spacesCount = 
+            if position = endPosition then
+                endPosition
+            elif spacesCount = 0 then 
+                position
+            else 
+                let point = SnapshotPoint(snapshot, position)
+                let spacesCount = spacesCount - (x.GetSpacesForCharAtPoint point)
+                if spacesCount < 0 then
+                    position
+                else
+                    inner (position + 1) spacesCount
+
+        let position = inner line.Start.Position spacesCount
+        SnapshotPoint(snapshot, position)
 
     /// Get the new line text which should be used for inserts at the provided point.  This is done
     /// by looking at the current line and potentially the line above and simply re-using it's
@@ -240,19 +280,43 @@ type internal CommonOperations
     member x.MoveCaretToMotionResult (result : MotionResult) =
 
         let shouldMaintainCaretColumn = Util.IsFlagSet result.MotionResultFlags MotionResultFlags.MaintainCaretColumn
-        let savedCaretColumn = _maintainCaretColumn
+        match shouldMaintainCaretColumn, result.CaretColumn with
+        | true, CaretColumn.InLastLine column ->
+
+            // First calculate the column in terms of spaces for the maintained caret.
+            let caretColumnSpaces = 
+                let motionCaretColumnSpaces = x.GetSpacesToColumn x.CaretLine column
+                match _maintainCaretColumnSpaces with
+                | None -> motionCaretColumnSpaces
+                | Some maintainCaretColumnSpaces -> max maintainCaretColumnSpaces motionCaretColumnSpaces
+
+            // The CaretColumn union is expressed in a position offset not a space offset 
+            // which can differ with tabs.  Recalculate as appropriate.  
+            let caretColumn = 
+                let lastLine = result.DirectionLastLine
+                let column = x.GetPointForSpaces lastLine caretColumnSpaces |> SnapshotPointUtil.GetColumn
+                CaretColumn.InLastLine column
+            let result = 
+                let motionKind = MotionKind.LineWise caretColumn
+                { result with MotionKind = motionKind }
+
+            // Complete the motion with the updated value then reset the maintain caret.  Need
+            // to do the save after the caret move since the move will clear out the saved value
+            x.MoveCaretToMotionResultCore result
+            _maintainCaretColumnSpaces <- Some caretColumnSpaces
+
+        | _ -> 
+            // Not maintaining caret column so just do a normal movement
+            x.MoveCaretToMotionResultCore result
+
+    /// Move the caret to the position dictated by the given MotionResult value
+    member x.MoveCaretToMotionResultCore (result : MotionResult) =
+
+        let shouldMaintainCaretColumn = Util.IsFlagSet result.MotionResultFlags MotionResultFlags.MaintainCaretColumn
+        let savedCaretColumnSpaces = _maintainCaretColumnSpaces
         let point = 
 
-            // Get the column we should be moving to if the motion specified a column.  Need
-            // to consider that we could be maintaining the sticky column going up or down.
-            let getCaretColumn column = 
-                if shouldMaintainCaretColumn then
-                    match _maintainCaretColumn with
-                    | None -> column
-                    | Some maintainColumn -> max column maintainColumn
-                else
-                    column
-
+            let line = result.DirectionLastLine
             if not result.IsForward then
                 match result.CaretColumn with
                 | CaretColumn.None -> 
@@ -262,16 +326,8 @@ type internal CommonOperations
                     // This is only valid going forward so pretend there isn't a column
                     result.Span.Start
                 | CaretColumn.InLastLine column -> 
-                    let column = getCaretColumn column
-                    let line = SnapshotSpanUtil.GetStartLine result.Span
-                    if column > line.Length then
-                        line.End
-                    else
-                        line.Start.Add column
+                    SnapshotLineUtil.GetOffsetOrEnd column line
             else
-
-                // Reduce the Span to the line we care about 
-                let line = SnapshotSpanUtil.GetEndLine result.Span
 
                 // Get the point when moving the caret after the last line in the SnapshotSpan
                 let getAfterLastLine() = 
@@ -309,12 +365,7 @@ type internal CommonOperations
                     | CaretColumn.None -> 
                         line.End
                     | CaretColumn.InLastLine column ->
-                        let column = getCaretColumn column
-                        let endColumn = line |> SnapshotLineUtil.GetEnd |> SnapshotPointUtil.GetColumn
-                        if column < endColumn then 
-                            line.Start.Add(column)
-                        else 
-                            line.End
+                        SnapshotLineUtil.GetOffsetOrEnd column line
                     | CaretColumn.AfterLastLine ->
                         getAfterLastLine()
 
@@ -328,17 +379,6 @@ type internal CommonOperations
 
         CommonUtil.MoveCaretForVirtualEdit _textView _globalSettings
         _editorOperations.ResetSelection()
-
-        // Update the caret column after we move the caret.  The actual movement of the caret
-        // will reset the CaretColumn value so this must come after
-        match shouldMaintainCaretColumn, result.CaretColumn with
-        | true, CaretColumn.InLastLine column ->
-            let column = 
-                match savedCaretColumn with
-                | None -> column
-                | Some savedColumn -> max column savedColumn
-            _maintainCaretColumn <- Some column
-        | _ -> ()
 
     /// Move the caret to the specified point but adjust the result if it's in virtual space
     /// and current settings disallow that

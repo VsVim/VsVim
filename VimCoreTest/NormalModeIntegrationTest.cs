@@ -7,8 +7,8 @@ using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
-using Vim.UnitTest.Mock;
 using Vim.UnitTest.Exports;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.UnitTest
 {
@@ -23,6 +23,7 @@ namespace VimCore.UnitTest
         private IWpfTextView _textView;
         private ITextBuffer _textBuffer;
         private IVimGlobalSettings _globalSettings;
+        private IVimLocalSettings _localSettings;
         private IJumpList _jumpList;
         private IKeyMap _keyMap;
         private IVimData _vimData;
@@ -62,7 +63,8 @@ namespace VimCore.UnitTest
                 };
             _vimTextBuffer = _vimBuffer.VimTextBuffer;
             _keyMap = _vimBuffer.Vim.KeyMap;
-            _globalSettings = _vimBuffer.LocalSettings.GlobalSettings;
+            _localSettings = _vimBuffer.LocalSettings;
+            _globalSettings = _localSettings.GlobalSettings;
             _jumpList = _vimBuffer.JumpList;
             _vimHost = (MockVimHost)_vimBuffer.Vim.VimHost;
             _vimHost.BeepCount = 0;
@@ -76,16 +78,6 @@ namespace VimCore.UnitTest
             // the two
             Assert.IsTrue(_textView.VisualSnapshot is IElisionSnapshot);
             Assert.IsTrue(_textView.VisualSnapshot != _textView.TextSnapshot);
-        }
-
-        [Test]
-        public void dd_OnLastLine()
-        {
-            Create("foo", "bar");
-            _textView.MoveCaretTo(_textView.GetLine(1).Start);
-            _vimBuffer.Process("dd");
-            Assert.AreEqual("foo", _textView.TextSnapshot.GetText());
-            Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
         }
 
         /// <summary>
@@ -251,6 +243,55 @@ namespace VimCore.UnitTest
             Assert.AreEqual(_textView.GetPointInLine(1, 3), _textView.GetCaretPoint());
             _vimBuffer.Process('k');
             Assert.AreEqual(_textView.GetPointInLine(0, 3), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Make sure the caret column is properly maintained when we have to account for mixed
+        /// tabs and spaces on the preceeding line
+        /// </summary>
+        [Test]
+        public void MaintainCaretColumn_MixedTabsAndSpaces()
+        {
+            Create("    alpha", "\tbrought", "tac", "    dog");
+            _localSettings.TabStop = 4;
+            _textView.MoveCaretTo(4);
+            foreach (var c in "abcd")
+            {
+                Assert.AreEqual(c.ToString(), _textView.GetCaretPoint().GetChar().ToString());
+                _vimBuffer.Process('j');
+            }
+        }
+
+        /// <summary>
+        /// When spaces don't divide evenly into tabs the transition into a tab
+        /// should land on the tab
+        /// </summary>
+        [Test]
+        public void MaintainCaretColumn_SpacesDoNotDivideToTabs()
+        {
+            Create("    alpha", "\tbrought", "cat");
+            _localSettings.TabStop = 4;
+            _textView.MoveCaretTo(2);
+            Assert.AreEqual(' ', _textView.GetCaretPoint().GetChar());
+            _vimBuffer.Process('j');
+            Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+            _vimBuffer.Process('j');
+            Assert.AreEqual(_textBuffer.GetPointInLine(2, 2), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// When spaces overlap a tab stop length we need to modulus and apply the 
+        /// remaining spaces
+        /// </summary>
+        [Test]
+        public void MaintainCaretColumn_SpacesOverlapTabs()
+        {
+            Create("    alpha", "\tbrought", "cat");
+            _localSettings.TabStop = 2;
+            _textView.MoveCaretTo(4);
+            Assert.AreEqual('a', _textView.GetCaretPoint().GetChar());
+            _vimBuffer.Process('j');
+            Assert.AreEqual(_textBuffer.GetPointInLine(1, 3), _textView.GetCaretPoint());
         }
 
         [Test]
@@ -2685,6 +2726,19 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Make sure deleting the last line changes the line count in the buffer
+        /// </summary>
+        [Test]
+        public void DeleteLines_OnLastLine()
+        {
+            Create("foo", "bar");
+            _textView.MoveCaretTo(_textView.GetLine(1).Start);
+            _vimBuffer.Process("dd");
+            Assert.AreEqual("foo", _textView.TextSnapshot.GetText());
+            Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
+        }
+
+        /// <summary>
         /// Delete lines with the special d#d count syntax
         /// </summary>
         [Test]
@@ -2695,7 +2749,6 @@ namespace VimCore.UnitTest
             Assert.AreEqual("bear", _textBuffer.GetLine(0).GetText());
             Assert.AreEqual(2, _textBuffer.CurrentSnapshot.LineCount);
         }
-
 
         /// <summary>
         /// Delete lines with both counts and make sure the counts are multiplied together

@@ -322,6 +322,10 @@ type CaretColumn =
 
     /// Caret should be placed in the specified column on the last line in 
     /// the MotionResult
+    ///
+    /// This column should be specified in terms of a character offset in the ITextBuffer
+    /// and shouldn't consider items like how wide a tab is.  A tab should be a single
+    /// character
     | InLastLine of int
 
     /// Caret should be placed at the start of the line after the last line
@@ -416,6 +420,13 @@ type MotionResult = {
 
     /// The Span as a SnapshotLineRange value 
     member x.LineRange = SnapshotLineRangeUtil.CreateForSpan x.Span
+
+    /// The Start or Last line depending on whether tho motion is forward or not
+    member x.DirectionLastLine = 
+        if x.IsForward then
+            SnapshotSpanUtil.GetLastLine x.Span
+        else
+            SnapshotSpanUtil.GetStartLine x.Span
 
 /// Context on how the motion is being used.  Several motions (]] for example)
 /// change behavior based on how they are being used

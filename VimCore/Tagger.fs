@@ -1152,8 +1152,8 @@ type internal FoldTaggerSource(_foldData : IFoldData) =
         // Get the description for the given SnapshotSpan.  This is the text displayed for
         // the folded lines.
         let getDescription span = 
-            let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
-            sprintf "%d lines ---" ((endLine.LineNumber - startLine.LineNumber) + 1)
+            let startLine, lastLine = SnapshotSpanUtil.GetStartAndLastLine span
+            sprintf "%d lines ---" ((lastLine.LineNumber - startLine.LineNumber) + 1)
 
         let snapshot = SnapshotSpanUtil.GetSnapshot span
         _foldData.Folds

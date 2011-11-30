@@ -320,15 +320,11 @@ type internal MotionUtil
         if not _globalSettings.StartOfLine then 
             motionData 
         else
-            let endLine = 
-                if motionData.IsForward then
-                    SnapshotSpanUtil.GetEndLine motionData.Span
-                else
-                    SnapshotSpanUtil.GetStartLine motionData.Span
+            let lastLine = motionData.DirectionLastLine
 
             // TODO: Is GetFirstNonBlankOrStart correct here?  Should it be using the
             // End version?
-            let point = SnapshotLineUtil.GetFirstNonBlankOrStart endLine
+            let point = SnapshotLineUtil.GetFirstNonBlankOrStart lastLine
             let column = SnapshotPointUtil.GetColumn point |> CaretColumn.InLastLine
             { motionData with MotionKind = MotionKind.LineWise column }
 

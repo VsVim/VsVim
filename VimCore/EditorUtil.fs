@@ -277,7 +277,7 @@ module SnapshotSpanUtil =
     /// Get the end line in the SnapshotSpan.  Remember that End is not a part of the Span
     /// but instead the first point after the Span.  This is important when the Span is 
     /// ITextSnapshotLine.ExtentIncludingLineBreak as it is in Visual Mode
-    let GetEndLine (span:SnapshotSpan) = 
+    let GetLastLine (span : SnapshotSpan) = 
         let doNormal() = 
             if span.Length > 0 then span.End.Subtract(1).GetContainingLine()
             else GetStartLine span
@@ -291,17 +291,17 @@ module SnapshotSpanUtil =
 
     /// Get the start and end line of the SnapshotSpan.  Remember that End is not a part of
     /// the span but instead the first point after the span
-    let GetStartAndEndLine span = GetStartLine span,GetEndLine span
+    let GetStartAndLastLine span = GetStartLine span, GetLastLine span
 
     /// Get the number of lines in this SnapshotSpan
     let GetLineCount span = 
-        let startLine,endLine = GetStartAndEndLine span
-        (endLine.LineNumber - startLine.LineNumber) + 1
+        let startLine, lastLine = GetStartAndLastLine span
+        (lastLine.LineNumber - startLine.LineNumber) + 1
 
     /// Is this a multiline SnapshotSpan
     let IsMultiline span = 
-        let startLine,endLine = GetStartAndEndLine span
-        startLine.LineNumber < endLine.LineNumber
+        let startLine, lastLine = GetStartAndLastLine span
+        startLine.LineNumber < lastLine.LineNumber
 
     /// Gets the last point which is actually included in the span.  This is different than
     /// EndPoint which is the first point after the span
@@ -325,27 +325,27 @@ module SnapshotSpanUtil =
     /// Extend the SnapshotSpan count lines downwards.  If the count exceeds the end of the
     /// Snapshot it will extend to the end
     let ExtendDown span lineCount = 
-        let startLine,endLine = GetStartAndEndLine span
-        let endLine = SnapshotUtil.GetLineOrLast span.Snapshot (endLine.LineNumber+lineCount)
-        SnapshotSpan(startLine.Start, endLine.End)
+        let startLine, lastLine = GetStartAndLastLine span
+        let endLine = SnapshotUtil.GetLineOrLast span.Snapshot (lastLine.LineNumber+lineCount)
+        SnapshotSpan(startLine.Start, lastLine.End)
 
     /// Extend the SnapshotSpan count lines downwards.  If the count exceeds the end of the
     /// Snapshot it will extend to the end.  The resulting Span will include the line break
     /// of the last line
     let ExtendDownIncludingLineBreak span lineCount = 
         let span = ExtendDown span lineCount
-        let endLine = GetEndLine span
-        SnapshotSpan(span.Start, endLine.EndIncludingLineBreak)
+        let lastLine = GetLastLine span
+        SnapshotSpan(span.Start, lastLine.EndIncludingLineBreak)
 
     /// Extend the SnapshotSpan to be the full line at both the start and end points
     let ExtendToFullLine span =
-        let startLine,endLine = GetStartAndEndLine span
-        SnapshotSpan(startLine.Start, endLine.End)
+        let startLine, lastLine = GetStartAndLastLine span
+        SnapshotSpan(startLine.Start, lastLine.End)
 
     /// Extend the SnapshotSpan to be the full line at both the start and end points
     let ExtendToFullLineIncludingLineBreak span =
-        let startLine,endLine = GetStartAndEndLine span
-        SnapshotSpan(startLine.Start, endLine.EndIncludingLineBreak)
+        let startLine, lastLine = GetStartAndLastLine span
+        SnapshotSpan(startLine.Start, lastLine.EndIncludingLineBreak)
 
     /// Reduces the SnapshotSpan to the subspan of the first line
     let ReduceToStartLine span = 
@@ -357,7 +357,7 @@ module SnapshotSpanUtil =
     /// Reduces the SnapshotSpan to the subspan of the last line
     let ReduceToEndLine span = 
         if IsMultiline span then 
-            let line = GetEndLine span
+            let line = GetLastLine span
             SnapshotSpan(line.Start, span.End)
         else span
 
@@ -485,6 +485,9 @@ module VirtualSnapshotSpanUtil =
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module SnapshotLineUtil =
+
+    /// ITextSnapshot the ITextSnapshotLine is associated with
+    let GetSnapshot (line : ITextSnapshotLine) = line.Snapshot
 
     /// Length of the line
     let GetLength (line:ITextSnapshotLine) = line.Length
@@ -1032,8 +1035,8 @@ module SnapshotLineRangeUtil =
 
     /// Create a line range which covers the start and end line of the provided span
     let CreateForSpan span = 
-        let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
-        let count = (endLine.LineNumber - startLine.LineNumber) + 1
+        let startLine, lastLine = SnapshotSpanUtil.GetStartAndLastLine span
+        let count = (lastLine.LineNumber - startLine.LineNumber) + 1
         SnapshotLineRange(span.Snapshot, startLine.LineNumber, count)
 
     /// Create a line range for the combined span 
