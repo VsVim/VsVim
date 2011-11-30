@@ -391,7 +391,7 @@ type internal CommonOperations
     member x.GetNewLineIndent  (contextLine : ITextSnapshotLine) (newLine : ITextSnapshotLine) =
         let doVimIndent() = 
             if _localSettings.AutoIndent then
-                contextLine |> SnapshotLineUtil.GetIndent |> SnapshotPointUtil.GetColumn |> Some
+                contextLine |> SnapshotLineUtil.GetIndentPoint |> SnapshotPointUtil.GetColumn |> Some
             else
                 None
 
@@ -937,6 +937,7 @@ type internal CommonOperations
         member x.GetNewLineText point = x.GetNewLineText point
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
         member x.GetReplaceData point = x.GetReplaceData point
+        member x.GetSpacesToColumn line column = x.GetSpacesToColumn line column
         member x.GoToLocalDeclaration() = x.GoToLocalDeclaration()
         member x.GoToGlobalDeclaration () = x.GoToGlobalDeclaration()
         member x.GoToFile () = x.GoToFile()

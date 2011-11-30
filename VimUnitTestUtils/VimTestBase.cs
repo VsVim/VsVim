@@ -33,6 +33,7 @@ namespace Vim.UnitTest
         private IBufferTrackingService _bufferTrackingService;
         private ISmartIndentationService _smartIndentationService;
         private IProtectedOperations _protectedOperations;
+        private IEditorOperationsFactoryService _editorOperationsFactoryService;
 
         /// <summary>
         /// An IProtectedOperations value which will be properly checked in the context of this
@@ -78,6 +79,11 @@ namespace Vim.UnitTest
             get { return _smartIndentationService; }
         }
 
+        protected IEditorOperationsFactoryService EditorOperationsFactoryService
+        {
+            get { return _editorOperationsFactoryService; }
+        }
+
         protected MockVimHost VimHost
         {
             get { return (MockVimHost)Vim.VimHost; }
@@ -102,6 +108,7 @@ namespace Vim.UnitTest
             _bufferTrackingService = _compositionContainer.GetExportedValue<IBufferTrackingService>();
             _foldManagerFactory = _compositionContainer.GetExportedValue<IFoldManagerFactory>();
             _smartIndentationService = _compositionContainer.GetExportedValue<ISmartIndentationService>();
+            _editorOperationsFactoryService = _compositionContainer.GetExportedValue<IEditorOperationsFactoryService>();
             _vimErrorDetector.Clear();
             _protectedOperations = new ProtectedOperations(_vimErrorDetector);
         }

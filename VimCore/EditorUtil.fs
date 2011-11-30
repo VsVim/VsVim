@@ -524,16 +524,16 @@ module SnapshotLineUtil =
         SnapshotSpan(point,length)
 
     /// Get the indent point of the ITextSnapshotLine
-    let GetIndent line =
+    let GetIndentPoint line =
         line 
         |> GetPoints Path.Forward
-        |> Seq.skipWhile (fun point -> point.GetChar() |> CharUtil.IsWhiteSpace)
+        |> Seq.skipWhile (fun point -> point.GetChar() |> CharUtil.IsBlank)
         |> SeqUtil.tryHeadOnly
         |> OptionUtil.getOrDefault (GetEnd line)
 
     /// Get the indentation span of the ITextSnapshotLine
     let GetIndentSpan line = 
-        let point = GetIndent line
+        let point = GetIndentPoint line
         SnapshotSpan(line.Start, point)
 
     /// Get the indentation text of the ITextSnapshotLine
@@ -1147,7 +1147,7 @@ module TextViewUtil =
 
     let GetCaretLine textView = GetCaretPoint textView |> SnapshotPointUtil.GetContainingLine
 
-    let GetCaretLineIndent textView = textView |> GetCaretLine |> SnapshotLineUtil.GetIndent
+    let GetCaretLineIndent textView = textView |> GetCaretLine |> SnapshotLineUtil.GetIndentPoint
 
     let GetCaretLineRange textView count = 
         let line = GetCaretLine textView
