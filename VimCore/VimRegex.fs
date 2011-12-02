@@ -184,6 +184,9 @@ type Data = {
     /// Is this the first character inside of a grouping [] construct
     IsStartOfGrouping : bool
 
+    /// Is this in the middle of a range? 
+    IsRangeOpen : bool
+
     /// The original options 
     Options : VimRegexOptions
 }
@@ -191,13 +194,24 @@ type Data = {
     member x.IsEndOfPattern = x.Index >= x.Pattern.Length
     member x.IncrementIndex count = { x with Index = x.Index + count }
     member x.DecrementIndex count = { x with Index = x.Index - count }
+    member x.Break() = { x with IsBroken = true; }
     member x.CharAtIndex = StringUtil.charAtOption x.Index x.Pattern
-    member x.AppendString (str : string) = { x with Builder = x.Builder.Append(str) }
-    member x.AppendChar (c : char) = { x with Builder = x.Builder.Append(c) }
+    member x.AppendString (str : string) = 
+        x.Builder.Append(str) |> ignore
+        x
+    member x.AppendChar (c : char) = 
+        x.Builder.Append(c) |> ignore
+        x
     member x.AppendEscapedChar c = c |> StringUtil.ofChar |> Regex.Escape |> x.AppendString
     member x.BeginGrouping() = 
         let data = x.AppendChar '['
         { data with IsStartOfGrouping = true }
+    member x.BeginRange() =
+        let data = x.AppendChar '{'
+        { data with IsRangeOpen = true }
+    member x.EndRange() =
+        let data = x.AppendChar '}'
+        { data with IsRangeOpen = false }
 
 module VimRegexFactory =
 
@@ -215,7 +229,7 @@ module VimRegexFactory =
             else
                 regexOptions ||| RegexOptions.IgnoreCase
 
-        if data.IsBroken then 
+        if data.IsBroken || data.IsRangeOpen then 
             None
         else 
             let bclPattern = data.Builder.ToString()
@@ -226,7 +240,7 @@ module VimRegexFactory =
 
     /// Convert the given character as a special character.  Interpretation
     /// may depend on the type of magic that is currently being employed
-    let ConvertCharAsSpecial (data:Data) c = 
+    let ConvertCharAsSpecial (data : Data) c = 
         match c with
         | '.' -> data.AppendChar '.'
         | '+' -> data.AppendChar '+'
@@ -235,8 +249,8 @@ module VimRegexFactory =
         | '*' -> data.AppendChar '*'
         | '(' -> data.AppendChar '('
         | ')' -> data.AppendChar ')'
-        | '{' -> data.AppendChar '{'
-        | '}' -> data.AppendChar '}'
+        | '{' -> if data.IsRangeOpen then data.Break() else data.BeginRange()
+        | '}' -> if data.IsRangeOpen then data.EndRange() else data.AppendChar '}'
         | '|' -> data.AppendChar '|'
         | '^' -> if data.IsStartOfPattern || data.IsStartOfGrouping then data.AppendChar '^' else data.AppendEscapedChar '^'
         | '$' -> if data.IsEndOfPattern then data.AppendChar '$' else data.AppendEscapedChar '$'
@@ -269,7 +283,7 @@ module VimRegexFactory =
         match c with 
         | '*' -> data.AppendChar '*'
         | '.' -> data.AppendChar '.'
-        | '}' -> data.AppendChar '}'
+        | '}' -> if data.IsRangeOpen then data.EndRange() else data.AppendChar '}'
         | '^' -> ConvertCharAsSpecial data c
         | '$' -> ConvertCharAsSpecial data c
         | '[' -> ConvertCharAsSpecial data c
@@ -277,7 +291,7 @@ module VimRegexFactory =
         | _ -> data.AppendEscapedChar c
 
     /// Convert the given char in the nomagic setting
-    let ConvertCharAsNoMagic (data:Data) c =
+    let ConvertCharAsNoMagic (data : Data) c =
         match c with 
         | '^' -> ConvertCharAsSpecial data c 
         | '$' -> ConvertCharAsSpecial data c
@@ -286,7 +300,7 @@ module VimRegexFactory =
     /// Convert the given escaped char in the magic and no magic settings.  The 
     /// differences here are minimal so it's convenient to put them in one method
     /// here
-    let ConvertEscapedCharAsMagicAndNoMagic (data:Data) c =
+    let ConvertEscapedCharAsMagicAndNoMagic (data : Data) c =
         let isMagic = data.MagicKind = MagicKind.Magic
         match c with 
         | '.' -> if isMagic then data.AppendEscapedChar c else ConvertCharAsSpecial data c
@@ -322,14 +336,14 @@ module VimRegexFactory =
         | 'X' -> ConvertCharAsSpecial data c
         | '_' -> 
             match data.CharAtIndex with
-            | None -> { data with IsBroken = true }
+            | None -> data.Break()
             | Some(c) -> 
                 let data = data.IncrementIndex 1
                 match c with 
                 | '^' -> data.AppendChar '^'
                 | '$' -> data.AppendChar '$'
                 | '.' -> data.AppendString @"(.|\n)"
-                | _ -> { data with IsBroken = true }
+                | _ -> data.Break()
         | _ -> data.AppendEscapedChar c
 
     /// Process an escaped character.  Look first for global options such as ignore 
@@ -353,16 +367,18 @@ module VimRegexFactory =
             { data with IsStartOfPattern = false }
 
     /// Convert a normal unescaped char based on the 
-    let ProcessNormalChar (data:Data) c = 
+    let ProcessNormalChar (data : Data) c = 
         let data = 
             match data.MagicKind with
             | MagicKind.Magic -> ConvertCharAsMagic data c
             | MagicKind.NoMagic -> ConvertCharAsNoMagic data c
             | MagicKind.VeryMagic -> 
-                if CharUtil.IsLetter c || CharUtil.IsDigit c || c = '_' then data.AppendChar c
-                else ConvertCharAsSpecial data c
+                if CharUtil.IsLetter c || CharUtil.IsDigit c || c = '_' then 
+                    data.AppendChar c
+                else
+                    ConvertCharAsSpecial data c
             | MagicKind.VeryNoMagic -> data.AppendEscapedChar c
-        {data with IsStartOfPattern=false}
+        {data with IsStartOfPattern = false}
 
     let Convert (data : Data) = 
         let rec inner (data : Data) : (string * CaseSpecifier * Regex) option =
@@ -419,6 +435,7 @@ module VimRegexFactory =
             MatchCase = matchCase
             CaseSpecifier = CaseSpecifier.None
             IsBroken = false 
+            IsRangeOpen = false
             IsStartOfPattern = true
             IsStartOfGrouping = false
             Options = options }

@@ -983,5 +983,73 @@ namespace VimCore.UnitTest
             VerifyMatchIs(@"\S", "a", "a");
             VerifyMatchIs(@"hello\Sworld", "hello!world", "hello!world");
         }
+
+        /// <summary>
+        /// The '{' should match as a literal even when magic is on 
+        /// </summary>
+        [Test]
+        public void AtomOpenCurly_Magic()
+        {
+            _globalSettings.Magic = true;
+            VerifyMatches(@"{", "{");
+            VerifyMatches(@"{hello}", "{hello}");
+        }
+
+        /// <summary>
+        /// The '{' should register as a count open when very magic is on
+        /// </summary>
+        [Test]
+        public void AtomOpenCurly_VeryMagic()
+        {
+            _globalSettings.Magic = true;
+            VerifyMatches(@"\va{1,3}", "a", "aaa", "aa");
+        }
+
+        /// <summary>
+        /// Make sure a few items are not actually regexs
+        /// </summary>
+        [Test]
+        public void AtomOpenCurly_Bad()
+        {
+            VerifyNotRegex(@"\{");
+            VerifyNotRegex(@"\v{");
+            VerifyNotRegex(@"\{1");
+        }
+
+        /// <summary>
+        /// The '}' should register as a literal even when very magic is on. 
+        /// </summary>
+        [Test]
+        public void AtomCloseCurly_VeryMagic()
+        {
+            _globalSettings.Magic = true;
+            VerifyMatches(@"}", "}");
+            VerifyMatches(@"\v}", "}");
+            VerifyMatches(@"{hello}", "{hello}");
+        }
+
+        /// <summary>
+        /// The "\{}" is an exact match count
+        /// </summary>
+        [Test]
+        public void Count_Exact()
+        {
+            VerifyMatches(@"a\{2}", "aa", "aaa");
+            VerifyMatches(@"\va{2}", "aa", "aaa");
+            VerifyNotMatches(@"a\{2}", "a");
+            VerifyMatchIs(@"a\{2}", "baad", "aa");
+        }
+
+        /// <summary>
+        /// The "\{,}" is a range
+        /// </summary>
+        [Test]
+        public void Count_Range()
+        {
+            VerifyMatches(@"a\{2,3}", "aa", "aaa");
+            VerifyMatches(@"\va{2,3}", "aa", "aaa");
+            VerifyNotMatches(@"a\{2,3}", "a");
+            VerifyMatchIs(@"a\{2,3}", "baaad", "aaa");
+        }
     }
 }
