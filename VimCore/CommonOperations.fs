@@ -210,6 +210,12 @@ type internal CommonOperations
         |> Seq.map x.GetSpacesForCharAtPoint
         |> Seq.sum
 
+    /// Get the count of spaces to get to the specified point in it's line when tabs are expanded
+    member x.GetSpacesToPoint point = 
+        let line = SnapshotPointUtil.GetContainingLine point
+        let column = point.Position - line.Start.Position 
+        x.GetSpacesToColumn line column
+
     // Get the point in the given line which is count "spaces" into the line.  Returns End if 
     // it goes beyond the last point in the string
     member x.GetPointForSpaces line spacesCount = 
@@ -937,7 +943,7 @@ type internal CommonOperations
         member x.GetNewLineText point = x.GetNewLineText point
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
         member x.GetReplaceData point = x.GetReplaceData point
-        member x.GetSpacesToColumn line column = x.GetSpacesToColumn line column
+        member x.GetSpacesToPoint point = x.GetSpacesToPoint point
         member x.GoToLocalDeclaration() = x.GoToLocalDeclaration()
         member x.GoToGlobalDeclaration () = x.GoToGlobalDeclaration()
         member x.GoToFile () = x.GoToFile()

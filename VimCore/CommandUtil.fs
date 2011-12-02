@@ -1237,16 +1237,15 @@ type internal CommandUtil
         if _localSettings.AutoIndent then
             // Caret needs to be positioned at the indentation point of the previous line.  Don't
             // create actual whitespace, put the caret instead into virtual space
-            let column = 
+            let point = 
                 deletedLine.Start
                 |> SnapshotPointUtil.GetContainingLine
                 |> SnapshotLineUtil.GetIndentPoint
-                |> SnapshotPointUtil.GetColumn
 
             // We are moving the caret into virtual space here.  Hence we need to do this in terms 
             // of spaces and not absolute character column.  Basically we have to expand tabs to the
             // appropriate number of spaces
-            let column = _commonOperations.GetSpacesToColumn deletedLine column
+            let column = _commonOperations.GetSpacesToPoint point
 
             if column = 0 then 
                 TextViewUtil.MoveCaretToPosition _textView deletedLine.Start.Position

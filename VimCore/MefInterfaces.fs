@@ -284,8 +284,8 @@ type ICommonOperations =
     abstract GetReplaceData : point : SnapshotPoint -> ReplaceData
 
     /// Get the number of spaces (when tabs are expanded) that is necessary to get to the 
-    /// specified column
-    abstract GetSpacesToColumn : line : ITextSnapshotLine -> column : int -> int
+    /// specified point on it's line
+    abstract GetSpacesToPoint : point : SnapshotPoint -> int
 
     /// Attempt to GoToDefinition on the current state of the buffer.  If this operation fails, an error message will 
     /// be generated as appropriate
