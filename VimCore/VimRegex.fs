@@ -313,6 +313,7 @@ module VimRegexFactory =
         | '(' -> ConvertCharAsSpecial data c 
         | ')' -> ConvertCharAsSpecial data c 
         | '{' -> ConvertCharAsSpecial data c
+        | '}' -> if data.IsRangeOpen then data.EndRange() else data.AppendEscapedChar c
         | '|' -> ConvertCharAsSpecial data c
         | '[' -> if isMagic then data.AppendEscapedChar c else ConvertCharAsSpecial data c
         | ']' -> ConvertCharAsSpecial data c
@@ -337,7 +338,7 @@ module VimRegexFactory =
         | '_' -> 
             match data.CharAtIndex with
             | None -> data.Break()
-            | Some(c) -> 
+            | Some c -> 
                 let data = data.IncrementIndex 1
                 match c with 
                 | '^' -> data.AppendChar '^'

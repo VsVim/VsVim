@@ -1051,5 +1051,15 @@ namespace VimCore.UnitTest
             VerifyNotMatches(@"a\{2,3}", "a");
             VerifyMatchIs(@"a\{2,3}", "baaad", "aaa");
         }
+
+        /// <summary>
+        /// It's Ok for the final } to be escaped with a \ as well
+        /// </summary>
+        [Test]
+        public void Count_ExtraBackslash()
+        {
+            VerifyMatches(@"a\{2\}", "aa");
+            VerifyNotMatches(@"a\{2\}", "a");
+        }
     }
 }

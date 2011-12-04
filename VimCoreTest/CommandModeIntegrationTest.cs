@@ -183,7 +183,6 @@ namespace VimCore.UnitTest
         /// Verify we handle escaped back slashes correctly
         /// </summary>
         [Test]
-        [Ignore("Need to investigate. Likely broken with regex change")]
         public void Substitute_WithBackslashes()
         {
             Create(@"\\\\abc\\\\def");
