@@ -272,12 +272,12 @@ namespace Vim.UnitTest
 
         internal static ModeArgument CreateSubstituteArgument(
             SnapshotSpan span,
-            SnapshotLineRange range = null,
+            SnapshotLineRange? range = null,
             SubstituteData data = null)
         {
             range = range ?? SnapshotLineRangeUtil.CreateForSnapshot(span.Snapshot);
             data = data ?? new SubstituteData("a", "b", SubstituteFlags.None);
-            return ModeArgument.NewSubstitute(span, range, data);
+            return ModeArgument.NewSubstitute(span, range.Value, data);
         }
 
         internal static ModeArgument CreateSubstituteArgument(
@@ -285,11 +285,11 @@ namespace Vim.UnitTest
             string search,
             string replace,
             SubstituteFlags? flags = null,
-            SnapshotLineRange range = null)
+            SnapshotLineRange? range = null)
         {
             range = range ?? SnapshotLineRangeUtil.CreateForSnapshot(span.Snapshot);
             var data = new SubstituteData(search, replace, flags ?? SubstituteFlags.None);
-            return ModeArgument.NewSubstitute(span, range, data);
+            return ModeArgument.NewSubstitute(span, range.Value, data);
         }
 
         internal static MotionResult CreateMotionResult(
