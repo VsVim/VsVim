@@ -157,16 +157,7 @@ module SnapshotSpanUtil =
     /// but instead the first point after the Span.  This is important when the Span is 
     /// ITextSnapshotLine.ExtentIncludingLineBreak as it is in Visual Mode
     let GetLastLine (span : SnapshotSpan) = 
-        let doNormal() = 
-            if span.Length > 0 then span.End.Subtract(1).GetContainingLine()
-            else GetStartLine span
-
-        let snapshot = span.Snapshot
-        if SnapshotUtil.GetEndPoint snapshot = span.End then 
-            let line = span.End.GetContainingLine()
-            if line.Length = 0 then line
-            else doNormal()
-        else doNormal()
+        EditorUtils.Extensions.GetLastLine(span);
 
     /// Get the start and end line of the SnapshotSpan.  Remember that End is not a part of
     /// the span but instead the first point after the span
@@ -1042,18 +1033,7 @@ module TextViewUtil =
 
     /// Return the overaching SnapshotLineRange for the visible lines in the ITextView
     let GetVisibleSnapshotLineRange (textView : ITextView) =
-        if textView.InLayout then
-            None
-        else 
-            let snapshot = textView.TextSnapshot
-            let lines = textView.TextViewLines
-            let startLine = 
-                let number = lines.FirstVisibleLine.Start.GetContainingLine().LineNumber
-                SnapshotUtil.GetLineOrFirst snapshot number
-            let endLine = 
-                let number = lines.LastVisibleLine.End.GetContainingLine().LineNumber
-                SnapshotUtil.GetLineOrLast snapshot number
-            SnapshotLineRangeUtil.CreateForLineRange startLine endLine |> Some
+        Extensions.GetVisibleSnapshotLineRange(textView)
 
     /// Returns a sequence of ITextSnapshotLine values representing the visible lines in the buffer
     let GetVisibleSnapshotLines (textView : ITextView) =

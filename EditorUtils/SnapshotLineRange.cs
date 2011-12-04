@@ -161,6 +161,13 @@ namespace EditorUtils
             return new SnapshotLineRange(snapshotLine.Snapshot, snapshotLine.LineNumber, 1);
         }
 
+        public static SnapshotLineRange CreateForSpan(SnapshotSpan span)
+        {
+            var startLine = span.GetStartLine();
+            var lastLine = span.GetLastLine();
+            return CreateForLineRange(startLine, lastLine);
+        }
+
         /// <summary>
         /// Create a range for the provided ITextSnapshotLine and with at most count 
         /// length.  If count pushes the range past the end of the buffer then the 
@@ -178,8 +185,23 @@ namespace EditorUtils
         /// </summary>
         public static SnapshotLineRange CreateForLineRange(ITextSnapshotLine startLine, ITextSnapshotLine lastLine)
         {
+            Contract.Requires(startLine.Snapshot == lastLine.Snapshot);
             var count = (lastLine.LineNumber - startLine.LineNumber) + 1;
             return new SnapshotLineRange(startLine.Snapshot, startLine.LineNumber, count);
+        }
+
+        /// <summary>
+        /// Create a SnapshotLineRange which includes the 2 lines
+        /// </summary>
+        public static SnapshotLineRange? CreateForLineNumberRange(ITextSnapshot snapshot, int startLine, int lastLine)
+        {
+            Contract.Requires(startLine <= lastLine);
+            if (startLine >= snapshot.LineCount || lastLine >= snapshot.LineCount)
+            {
+                return null;
+            }
+
+            return new SnapshotLineRange(snapshot, startLine, (lastLine - startLine) + 1);
         }
     }
 }

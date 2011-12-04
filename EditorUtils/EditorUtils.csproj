@@ -56,11 +56,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Contract.cs" />
+    <Compile Include="Extensions.cs" />
+    <Compile Include="IAsyncTaggerSource.cs" />
+    <Compile Include="Implementation\Tagging\AsyncTagger.cs" />
+    <Compile Include="Implementation\Tagging\TaggerUtil.cs" />
+    <Compile Include="Implementation\Utilities\EqualityUtility.cs" />
+    <Compile Include="Implementation\Utilities\SingleItemQueue.cs" />
     <Compile Include="LineRange.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Resources.cs" />
     <Compile Include="SnapshotLineRange.cs" />
+    <Compile Include="UsedInBackgroundThreadAttribute.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
