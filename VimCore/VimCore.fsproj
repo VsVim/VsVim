@@ -167,6 +167,13 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\VimInterfaces\VimInterfaces.csproj">
+      <Name>VimInterfaces</Name>
+      <Project>{fb418222-c105-4942-8eeb-832ddcffd89d}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
 	     Other similar extension points exist, see Microsoft.Common.targets.
 	<Target Name="BeforeBuild">

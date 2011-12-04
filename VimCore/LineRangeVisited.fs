@@ -14,7 +14,7 @@ type LineRangeVisited() =
         | _ -> 
             let startLine = _list.[0].StartLineNumber
             let lastLine = _list.[_list.Count - 1].LastLineNumber
-            LineRange.CreateFromBounds startLine lastLine |> Some
+            LineRange.CreateFromBounds(startLine, lastLine) |> Some
 
     member x.OrganizeLineRanges() =
         _list.Sort (fun (x : LineRange) (y : LineRange) -> x.StartLineNumber.CompareTo(y.StartLineNumber))
@@ -25,7 +25,7 @@ type LineRangeVisited() =
             let current = _list.[i]
             let next = _list.[i + 1]
             if current.Intersects next then
-                _list.[i] <- LineRange.CreateOverarching current next
+                _list.[i] <- LineRange.CreateOverarching(current, next)
                 _list.RemoveAt (i + 1)
             else
                 i <- i + 1
@@ -52,11 +52,11 @@ type LineRangeVisited() =
             elif found.StartLineNumber <= lineRange.StartLineNumber then
                 // The found range starts before and intersects.  The unvisited section 
                 // is the range below
-                LineRange.CreateFromBounds (found.LastLineNumber + 1) lineRange.LastLineNumber |> Some
+                LineRange.CreateFromBounds((found.LastLineNumber + 1), lineRange.LastLineNumber) |> Some
             elif found.StartLineNumber > lineRange.StartLineNumber then
                 // The found range starts below and intersects.  The unvisited section 
                 // is the line range above
-                LineRange.CreateFromBounds lineRange.StartLineNumber (found.StartLineNumber - 1) |> Some
+                LineRange.CreateFromBounds(lineRange.StartLineNumber, (found.StartLineNumber - 1)) |> Some
             else
                 Some lineRange
 

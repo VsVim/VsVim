@@ -22,6 +22,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimWpfTest", "VimWpfTest\Vi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimUnitTestUtils", "VimUnitTestUtils\VimUnitTestUtils.csproj", "{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimInterfaces", "VimInterfaces\VimInterfaces.csproj", "{FB418222-C105-4942-8EEB-832DDCFFD89D}"
+EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = VsVim.vsmdi
@@ -107,6 +109,16 @@ Global
 		{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}.Release|Mixed Platforms.Build.0 = Release|x86
 		{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}.Release|x86.ActiveCfg = Release|x86
 		{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}.Release|x86.Build.0 = Release|x86
+		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

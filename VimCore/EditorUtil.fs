@@ -9,69 +9,6 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Utilities
 
-/// Represents a simple range of lines
-[<Struct>]
-[<CustomEquality>]
-[<NoComparison>]
-type LineRange
-    (
-        _startLine : int,
-        _count : int
-    ) =
-
-    member x.StartLineNumber = _startLine
-    member x.LastLineNumber = _startLine + (_count - 1)
-    member x.Count = _count
-    member x.LineNumbers = 
-        let startLineNumber = x.StartLineNumber
-        let lastLineNumber = x.LastLineNumber
-        seq { 
-            for i in startLineNumber .. lastLineNumber do yield i 
-        }
-
-    member x.ContainsLineNumber lineNumber = 
-        lineNumber >= _startLine && lineNumber <= x.LastLineNumber
-
-    member x.Contains (lineRange : LineRange) = 
-        x.StartLineNumber <= lineRange.StartLineNumber &&
-        x.LastLineNumber >= lineRange.LastLineNumber 
-
-    member x.Intersects (lineRange : LineRange) =
-        x.ContainsLineNumber lineRange.StartLineNumber || 
-        x.ContainsLineNumber lineRange.LastLineNumber ||
-        x.LastLineNumber + 1 = lineRange.StartLineNumber ||
-        x.StartLineNumber = lineRange.LastLineNumber + 1
-
-    // Equality Functions
-    override x.GetHashCode() = _startLine ^^^ _count
-    override x.Equals (other : obj) = 
-        match other with
-        | :? LineRange as other -> x.Equals(other)
-        | _ -> false
-    member x.Equals (other : LineRange) = 
-        other.StartLineNumber = _startLine && other.Count = _count
-    interface System.IEquatable<LineRange> with
-        member x.Equals other = x.Equals other
-    static member op_Equality(this,other) = 
-        System.Collections.Generic.EqualityComparer<LineRange>.Default.Equals(this,other)
-    static member op_Inequality(this,other) = 
-        not (System.Collections.Generic.EqualityComparer<LineRange>.Default.Equals(this,other))
-
-    static member CreateFromBounds startLineNumber lastLineNumber =
-        if lastLineNumber < startLineNumber then
-            invalidArg "lastLineNumber" Resources.Common_InvalidLineNumber
-
-        let count = (lastLineNumber - startLineNumber) + 1
-        LineRange(startLineNumber, count)
-
-    static member CreateOverarching (leftLineRange : LineRange) (rightLineRange : LineRange) =
-        let startLineNumber = min leftLineRange.StartLineNumber rightLineRange.StartLineNumber
-        let lastLineNumber = max leftLineRange.LastLineNumber rightLineRange.LastLineNumber
-        LineRange.CreateFromBounds startLineNumber lastLineNumber
-
-    // Overrides
-    override x.ToString() = sprintf "%d - %d" _startLine x.LastLineNumber
-
 /// Represents a range of lines in an ITextSnapshot.  Different from a SnapshotSpan
 /// because it declaratively supports lines instead of a position range
 type SnapshotLineRange 
@@ -96,7 +33,7 @@ type SnapshotLineRange
     member x.Count = _count
     member x.LastLineNumber = _startLine + (_count - 1)
     member x.LastLine = _snapshot.GetLineFromLineNumber x.LastLineNumber
-    member x.LineRange = LineRange.CreateFromBounds x.StartLineNumber x.LastLineNumber
+    member x.LineRange = LineRange.CreateFromBounds(x.StartLineNumber, x.LastLineNumber)
     member x.End = x.LastLine.End
     member x.EndIncludingLineBreak = x.LastLine.EndIncludingLineBreak
     member x.Extent =
