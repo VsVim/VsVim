@@ -94,11 +94,6 @@ namespace Vim.UnitTest
             get { return _editorOperationsFactoryService; }
         }
 
-        protected MockVimHost VimHost
-        {
-            get { return (MockVimHost)Vim.VimHost; }
-        }
-
         protected virtual bool TrackTextViewHistory
         {
             get { return true; }

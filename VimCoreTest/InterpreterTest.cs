@@ -70,7 +70,7 @@ namespace VimCore.UnitTest
             _interpreter.RunLineCommand(parseResult.AsSucceeded().Item);
         }
 
-        private LineRange ParseLineRange(string lineRangeText)
+        private global::Vim.Interpreter.LineRange ParseLineRange(string lineRangeText)
         {
             var parseResult = Parser.ParseRange(lineRangeText);
             Assert.IsTrue(parseResult.IsSucceeded);
@@ -248,7 +248,7 @@ namespace VimCore.UnitTest
             Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
             var lineRange = ParseAndGetLineRange("1+1,3");
             Assert.AreEqual(1, lineRange.StartLineNumber);
-            Assert.AreEqual(2, lineRange.EndLineNumber);
+            Assert.AreEqual(2, lineRange.LastLineNumber);
         }
 
         [Test]

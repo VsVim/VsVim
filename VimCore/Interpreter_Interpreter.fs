@@ -82,10 +82,10 @@ type Interpreter
     let _markMap = _vim.MarkMap
     let _keyMap = _vim.KeyMap
     let _statusUtil = _vimBufferData.StatusUtil
-    let _regexFactory = VimRegexFactory(_vimBufferData.LocalSettings.GlobalSettings)
     let _registerMap = _vimBufferData.Vim.RegisterMap
     let _undoRedoOperations = _vimBufferData.UndoRedoOperations
     let _localSettings = _vimBufferData.LocalSettings
+    let _globalSettings = _localSettings.GlobalSettings
     let _searchService = _vim.SearchService
 
     /// The column of the caret
@@ -175,7 +175,7 @@ type Interpreter
         x.GetLineCore lineSpecifier x.CaretLine
 
     /// Get the specified LineRange in the IVimBuffer
-    member x.GetLineRange lineRange =
+    member x.GetLineRange (lineRange : Vim.Interpreter.LineRange) =
         match lineRange with
         | LineRange.EntireBuffer -> 
             SnapshotLineRangeUtil.CreateForSnapshot x.CurrentSnapshot |> Some
@@ -205,7 +205,7 @@ type Interpreter
             | Some count -> 
                 match x.GetLineRangeOrCurrent lineRange with
                 | None -> None
-                | Some lineRange -> SnapshotLineRangeUtil.CreateForLineAndMaxCount lineRange.EndLine count |> Some
+                | Some lineRange -> SnapshotLineRangeUtil.CreateForLineAndMaxCount lineRange.LastLine count |> Some
 
         | LineRange.Join (lineRange, count)->
             match lineRange with 
@@ -517,7 +517,8 @@ type Interpreter
 
     /// Run the global command.  
     member x.RunGlobal (lineRange : SnapshotLineRange) pattern matchPattern lineCommand =
-        match _regexFactory.Create pattern with
+        let options = VimRegexFactory.CreateRegexOptions _globalSettings
+        match VimRegexFactory.Create pattern options with
         | None -> _statusUtil.OnError Resources.Interpreter_Error
         | Some regex ->
 
@@ -638,7 +639,7 @@ type Interpreter
 
             // Get the point to start the Put operation at 
             let line = 
-                if putAfter then lineRange.EndLine
+                if putAfter then lineRange.LastLine
                 else lineRange.StartLine
 
             let point = 
@@ -990,7 +991,7 @@ type Interpreter
         // Called to initialize the data and move to a confirm style substitution.  Have to find the first match
         // before passing off to confirm
         let setupConfirmSubstitute (range : SnapshotLineRange) (data : SubstituteData) =
-            let regex = _regexFactory.CreateForSubstituteFlags data.SearchPattern data.Flags
+            let regex = VimRegexFactory.CreateForSubstituteFlags data.SearchPattern data.Flags
             match regex with
             | None -> 
                 _statusUtil.OnError (Resources.Common_PatternNotFound data.SearchPattern)

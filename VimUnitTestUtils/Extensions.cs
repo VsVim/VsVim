@@ -11,6 +11,7 @@ using NUnit.Framework;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Vim.Modes.Command;
+using InterpreterLineRange = Vim.Interpreter.LineRange;
 
 namespace Vim.UnitTest
 {
@@ -218,25 +219,25 @@ namespace Vim.UnitTest
         /// <summary>
         /// LineRange as SingleLine
         /// </summary>
-        public static LineRange.SingleLine AsSingleLine(this LineRange lineRange)
+        public static InterpreterLineRange.SingleLine AsSingleLine(this InterpreterLineRange lineRange)
         {
-            return (LineRange.SingleLine)lineRange;
+            return (InterpreterLineRange.SingleLine)lineRange;
         }
 
         /// <summary>
         /// LineRange as Range
         /// </summary>
-        public static LineRange.Range AsRange(this LineRange lineRange)
+        public static InterpreterLineRange.Range AsRange(this InterpreterLineRange lineRange)
         {
-            return (LineRange.Range)lineRange;
+            return (InterpreterLineRange.Range)lineRange;
         }
 
         /// <summary>
         /// LineRange as WithEndCount
         /// </summary>
-        public static LineRange.WithEndCount AsWithEndCount(this LineRange lineRange)
+        public static InterpreterLineRange.WithEndCount AsWithEndCount(this InterpreterLineRange lineRange)
         {
-            return (LineRange.WithEndCount)lineRange;
+            return (InterpreterLineRange.WithEndCount)lineRange;
         }
 
         #endregion

@@ -17,7 +17,7 @@ namespace VimCore.UnitTest
             return parseResult.AsSucceeded().Item;
         }
 
-        private LineRange ParseLineRange(string text)
+        private global::Vim.Interpreter.LineRange ParseLineRange(string text)
         {
             var parser = new Parser(text);
             var option = parser.ParseLineRange();

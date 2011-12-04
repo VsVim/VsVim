@@ -5,6 +5,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
+using System.Collections.Generic;
 
 namespace VimCore.UnitTest
 {
@@ -169,18 +170,6 @@ namespace VimCore.UnitTest
             _vimBuffer.StatusMessage += (_, e) => { message = e; };
             RunCommand("s/a/b/p");
             Assert.AreEqual("cbt bat", message);
-        }
-
-        [Test]
-        [Description("Testing the print option")]
-        public void Substitute5()
-        {
-            Create("cat bat", "dag");
-            List<string> list = null;
-            _vimBuffer.StatusMessageLong += (_, e) => { list = e.ToList(); };
-            RunCommand("s/a/b/pg");
-            Assert.AreEqual(Resources.Common_SubstituteComplete(2, 1), list[0]);
-            Assert.AreEqual("cbt bbt", list[1]);
         }
 
         [Test]
