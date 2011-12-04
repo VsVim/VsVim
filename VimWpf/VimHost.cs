@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Media;
 using System.Windows;
+using Microsoft.FSharp.Control;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -17,6 +18,7 @@ namespace Vim.UI.Wpf
         private readonly ITextDocumentFactoryService _textDocumentFactoryService;
         private readonly IEditorOperationsFactoryService _editorOperationsFactoryService;
         private readonly List<ITextView> _textViewList = new List<ITextView>();
+        private event FSharpHandler<ITextView> _isVisibleChanged;
 
         protected VimHost(
             ITextDocumentFactoryService textDocumentFactoryService,
@@ -147,6 +149,22 @@ namespace Vim.UI.Wpf
             return textBuffer.IsReadOnly(span);
         }
 
+        /// <summary>
+        /// Determine if the ITextView is visible.  Use the Wpf UIElement::IsVisible property
+        /// to validate.  If this is not backed by an IWpfTextView then this will default to
+        /// true
+        /// </summary>
+        public virtual bool IsVisible(ITextView textView)
+        {
+            var wpfTextView = textView as IWpfTextView;
+            if (wpfTextView != null)
+            {
+                return wpfTextView.VisualElement.IsVisible;
+            }
+
+            return true;
+        }
+
         public abstract HostResult LoadFileIntoExistingWindow(string filePath, ITextBuffer textbuffer);
 
         public abstract HostResult LoadFileIntoNewWindow(string filePath);
@@ -200,14 +218,35 @@ namespace Vim.UI.Wpf
 
         public abstract HostResult SplitViewVertically(ITextView value);
 
+        protected void RaiseIsVisibleChanged(ITextView textView)
+        {
+            if (_isVisibleChanged != null)
+            {
+                _isVisibleChanged(this, textView);
+            }
+        }
+
+        #region IWpfTextViewCreationListener
+
         /// <summary>
         /// Need to track the open ITextView values
         /// </summary>
         void IWpfTextViewCreationListener.TextViewCreated(IWpfTextView textView)
         {
             _textViewList.Add(textView);
-            textView.Closed += delegate { _textViewList.Remove(textView); };
+
+            DependencyPropertyChangedEventHandler isVisibleHandler = delegate {
+                RaiseIsVisibleChanged(textView);
+            };
+            textView.VisualElement.IsVisibleChanged += isVisibleHandler;
+
+            textView.Closed += delegate { 
+                _textViewList.Remove(textView); 
+                textView.VisualElement.IsVisibleChanged -= isVisibleHandler;
+            };
         }
+
+        #endregion
 
         #region IVimHost
 
@@ -351,6 +390,18 @@ namespace Vim.UI.Wpf
             return SplitViewVertically(value);
         }
 
+        bool IVimHost.IsVisible(ITextView textView)
+        {
+            return IsVisible(textView);
+        }
+
+        event FSharpHandler<ITextView> IVimHost.IsVisibleChanged
+        {
+            add { _isVisibleChanged += value; }
+            remove { _isVisibleChanged -= value; }
+        }
+
         #endregion
+
     }
 }

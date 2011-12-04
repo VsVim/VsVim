@@ -123,13 +123,33 @@ type internal CommonOperations
     let _localSettings = _vimBufferData.LocalSettings
     let _undoRedoOperations = _vimBufferData.UndoRedoOperations
     let _globalSettings = _localSettings.GlobalSettings
-    let _regexFactory = VimRegexFactory(_globalSettings)
+    let _eventHandlers = new DisposableBag()
+
+    /// When maintaining the caret column for motion moves this represents the desired 
+    /// column to jump to if there is enough space on the line
+    ///
+    /// This number is kept as a count of spaces.  Tabs need to be adjusted for when applying
+    /// this setting to a motion
+    let mutable _maintainCaretColumnSpaces : int option = None
+
+    do
+        _textView.Caret.PositionChanged
+        |> Observable.subscribe (fun _ -> _maintainCaretColumnSpaces <- None)
+        |> _eventHandlers.Add
+
+        _textView.Closed
+        |> Observable.subscribe (fun _ -> _eventHandlers.DisposeAll())
+        |> _eventHandlers.Add
 
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
+
+    member x.MaintainCaretColumn 
+        with get() = _maintainCaretColumnSpaces
+        and set value = _maintainCaretColumnSpaces <- value
 
     /// Apply the TextChange to the ITextBuffer 'count' times as a single operation.
     member x.ApplyTextChange textChange addNewLines count =
@@ -173,6 +193,49 @@ type internal CommonOperations
 
             for i = 1 to count do
                 applyChange textChange)
+
+    /// Get the spaces for the given character
+    member x.GetSpacesForCharAtPoint point = 
+        let c = SnapshotPointUtil.GetChar point
+        if c = '\t' then
+            _localSettings.TabStop
+        else
+            1
+
+    /// Get the count of spaces to get to the specified absolute column offset.  This will count
+    /// tabs as counting for 'tabstop' spaces
+    member x.GetSpacesToColumn line column = 
+        SnapshotLineUtil.GetSpanInLine line 0 column
+        |> SnapshotSpanUtil.GetPoints Path.Forward
+        |> Seq.map x.GetSpacesForCharAtPoint
+        |> Seq.sum
+
+    /// Get the count of spaces to get to the specified point in it's line when tabs are expanded
+    member x.GetSpacesToPoint point = 
+        let line = SnapshotPointUtil.GetContainingLine point
+        let column = point.Position - line.Start.Position 
+        x.GetSpacesToColumn line column
+
+    // Get the point in the given line which is count "spaces" into the line.  Returns End if 
+    // it goes beyond the last point in the string
+    member x.GetPointForSpaces line spacesCount = 
+        let snapshot = SnapshotLineUtil.GetSnapshot line
+        let endPosition = line |> SnapshotLineUtil.GetEnd |> SnapshotPointUtil.GetPosition
+        let rec inner position spacesCount = 
+            if position = endPosition then
+                endPosition
+            elif spacesCount = 0 then 
+                position
+            else 
+                let point = SnapshotPoint(snapshot, position)
+                let spacesCount = spacesCount - (x.GetSpacesForCharAtPoint point)
+                if spacesCount < 0 then
+                    position
+                else
+                    inner (position + 1) spacesCount
+
+        let position = inner line.Start.Position spacesCount
+        SnapshotPoint(snapshot, position)
 
     /// Get the new line text which should be used for inserts at the provided point.  This is done
     /// by looking at the current line and potentially the line above and simply re-using it's
@@ -222,8 +285,44 @@ type internal CommonOperations
     /// Move the caret to the position dictated by the given MotionResult value
     member x.MoveCaretToMotionResult (result : MotionResult) =
 
+        let shouldMaintainCaretColumn = Util.IsFlagSet result.MotionResultFlags MotionResultFlags.MaintainCaretColumn
+        match shouldMaintainCaretColumn, result.CaretColumn with
+        | true, CaretColumn.InLastLine column ->
+
+            // First calculate the column in terms of spaces for the maintained caret.
+            let caretColumnSpaces = 
+                let motionCaretColumnSpaces = x.GetSpacesToColumn x.CaretLine column
+                match _maintainCaretColumnSpaces with
+                | None -> motionCaretColumnSpaces
+                | Some maintainCaretColumnSpaces -> max maintainCaretColumnSpaces motionCaretColumnSpaces
+
+            // The CaretColumn union is expressed in a position offset not a space offset 
+            // which can differ with tabs.  Recalculate as appropriate.  
+            let caretColumn = 
+                let lastLine = result.DirectionLastLine
+                let column = x.GetPointForSpaces lastLine caretColumnSpaces |> SnapshotPointUtil.GetColumn
+                CaretColumn.InLastLine column
+            let result = 
+                let motionKind = MotionKind.LineWise caretColumn
+                { result with MotionKind = motionKind }
+
+            // Complete the motion with the updated value then reset the maintain caret.  Need
+            // to do the save after the caret move since the move will clear out the saved value
+            x.MoveCaretToMotionResultCore result
+            _maintainCaretColumnSpaces <- Some caretColumnSpaces
+
+        | _ -> 
+            // Not maintaining caret column so just do a normal movement
+            x.MoveCaretToMotionResultCore result
+
+    /// Move the caret to the position dictated by the given MotionResult value
+    member x.MoveCaretToMotionResultCore (result : MotionResult) =
+
+        let shouldMaintainCaretColumn = Util.IsFlagSet result.MotionResultFlags MotionResultFlags.MaintainCaretColumn
+        let savedCaretColumnSpaces = _maintainCaretColumnSpaces
         let point = 
 
+            let line = result.DirectionLastLine
             if not result.IsForward then
                 match result.CaretColumn with
                 | CaretColumn.None -> 
@@ -233,15 +332,8 @@ type internal CommonOperations
                     // This is only valid going forward so pretend there isn't a column
                     result.Span.Start
                 | CaretColumn.InLastLine column -> 
-                    let line = SnapshotSpanUtil.GetStartLine result.Span
-                    if column > line.Length then
-                        line.End
-                    else
-                        line.Start.Add column
+                    SnapshotLineUtil.GetOffsetOrEnd column line
             else
-
-                // Reduce the Span to the line we care about 
-                let line = SnapshotSpanUtil.GetEndLine result.Span
 
                 // Get the point when moving the caret after the last line in the SnapshotSpan
                 let getAfterLastLine() = 
@@ -278,12 +370,8 @@ type internal CommonOperations
                     match column with
                     | CaretColumn.None -> 
                         line.End
-                    | CaretColumn.InLastLine col ->
-                        let endCol = line |> SnapshotLineUtil.GetEnd |> SnapshotPointUtil.GetColumn
-                        if col < endCol then 
-                            line.Start.Add(col)
-                        else 
-                            line.End
+                    | CaretColumn.InLastLine column ->
+                        SnapshotLineUtil.GetOffsetOrEnd column line
                     | CaretColumn.AfterLastLine ->
                         getAfterLastLine()
 
@@ -309,7 +397,7 @@ type internal CommonOperations
     member x.GetNewLineIndent  (contextLine : ITextSnapshotLine) (newLine : ITextSnapshotLine) =
         let doVimIndent() = 
             if _localSettings.AutoIndent then
-                contextLine |> SnapshotLineUtil.GetIndent |> SnapshotPointUtil.GetColumn |> Some
+                contextLine |> SnapshotLineUtil.GetIndentPoint |> SnapshotPointUtil.GetColumn |> Some
             else
                 None
 
@@ -598,7 +686,7 @@ type internal CommonOperations
                 edit.Cancel()
                 _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
 
-        match _regexFactory.CreateForSubstituteFlags pattern flags with
+        match VimRegexFactory.CreateForSubstituteFlags pattern flags with
         | None -> 
             _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
         | Some (regex) -> 
@@ -855,6 +943,7 @@ type internal CommonOperations
         member x.GetNewLineText point = x.GetNewLineText point
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
         member x.GetReplaceData point = x.GetReplaceData point
+        member x.GetSpacesToPoint point = x.GetSpacesToPoint point
         member x.GoToLocalDeclaration() = x.GoToLocalDeclaration()
         member x.GoToGlobalDeclaration () = x.GoToGlobalDeclaration()
         member x.GoToFile () = x.GoToFile()

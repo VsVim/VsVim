@@ -1,5 +1,7 @@
 ﻿using System;
 using Microsoft.FSharp.Collections;
+using Microsoft.FSharp.Control;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
@@ -8,6 +10,8 @@ namespace Vim.UnitTest.Mock
 {
     public class MockVimHost : IVimHost
     {
+        private event FSharpHandler<ITextView> _isVisibleChanged;
+
         public int BeepCount { get; set; }
         public int GoToDefinitionCount { get; set; }
         public bool GoToFileReturn { get; set; }
@@ -19,6 +23,7 @@ namespace Vim.UnitTest.Mock
         public int ShowOpenFileDialogCount { get; set; }
         public ITextView FocusedTextView { get; set; }
         public FSharpList<IVimBuffer> Buffers { get; set; }
+        public bool? IsTextViewVisible { get; set; }
 
         /// <summary>
         /// Data from the last GoToNextTab call
@@ -32,6 +37,14 @@ namespace Vim.UnitTest.Mock
             NavigateToReturn = false;
         }
 
+        public void RaiseIsVisibleChanged(ITextView textView)
+        {
+            if (_isVisibleChanged != null)
+            {
+                _isVisibleChanged(this, textView);
+            }
+        }
+
         /// <summary>
         /// Clear out the stored information
         /// </summary>
@@ -40,6 +53,8 @@ namespace Vim.UnitTest.Mock
             Buffers = FSharpList<IVimBuffer>.Empty;
             BeepCount = 0;
             GoToDefinitionCount = 0;
+            IsTextViewVisible = null;
+            _isVisibleChanged = null;
         }
 
         void IVimHost.Beep()
@@ -174,7 +189,7 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        public Microsoft.FSharp.Core.FSharpOption<ITextView> GetFocusedTextView()
+        FSharpOption<ITextView> IVimHost.GetFocusedTextView()
         {
             return FSharpOption.CreateForReference(FocusedTextView);
         }
@@ -182,6 +197,22 @@ namespace Vim.UnitTest.Mock
         void IVimHost.Quit()
         {
             throw new NotImplementedException();
+        }
+
+        bool IVimHost.IsVisible(ITextView textView)
+        {
+            if (IsTextViewVisible.HasValue)
+            {
+                return IsTextViewVisible.Value;
+            }
+
+            return true;
+        }
+
+        event FSharpHandler<ITextView> IVimHost.IsVisibleChanged
+        {
+            add { _isVisibleChanged += value; }
+            remove { _isVisibleChanged -= value; }
         }
     }
 }

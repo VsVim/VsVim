@@ -141,7 +141,6 @@ type internal CommandProcessor
 
     let mutable _command : System.String = System.String.Empty
 
-
     /// Parse out the range of the string and run the corresponding command
     member x.ParseAndRunInput (command : char list) =
 

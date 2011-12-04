@@ -3,7 +3,7 @@
 namespace Vim.UnitTest.Exports
 {
     [Export(typeof(IClipboardDevice))]
-    internal sealed class ClipboardDevice : IClipboardDevice
+    public sealed class TestableClipboardDevice : IClipboardDevice
     {
         public string Text { get; set; }
     }

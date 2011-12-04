@@ -196,42 +196,42 @@ namespace Vim.UI.Wpf.Test
         }
 
         [Test]
-        public void StatusMessageLong1()
+        public void StatusMessage5()
         {
-            _vimBuffer.RaiseStatusMessageLong("foo", "bar");
+            _vimBuffer.RaiseStatusMessage("foo" + Environment.NewLine + "bar");
             Assert.AreEqual("foo" + Environment.NewLine + "bar", _marginControl.StatusLine);
         }
 
         [Test]
         [Description("Don't update in the middle of an KeyInput event")]
-        public void StatusMessageLong2()
+        public void StatusMessage6()
         {
             var ki = KeyInputUtil.CharToKeyInput('c');
             _vimBuffer.RaiseKeyInputStart(ki);
-            _vimBuffer.RaiseStatusMessageLong("foo", "bar");
+            _vimBuffer.RaiseStatusMessage("foo" + Environment.NewLine + "bar");
             Assert.AreEqual(String.Empty, _marginControl.StatusLine);
         }
 
         [Test]
         [Description("Don't update in the middle of an KeyInput event")]
-        public void StatusMessageLong3()
+        public void StatusMessage7()
         {
             var ki = KeyInputUtil.CharToKeyInput('c');
             _vimBuffer.RaiseKeyInputStart(ki);
-            _vimBuffer.RaiseStatusMessageLong("foo", "bar");
+            _vimBuffer.RaiseStatusMessage("foo" + Environment.NewLine + "bar");
             _vimBuffer.RaiseKeyInputEnd(ki);
             Assert.AreEqual("foo" + Environment.NewLine + "bar", _marginControl.StatusLine);
         }
 
         [Test]
         [Description("StatusMessageLong wins over SwitchMode")]
-        public void StatusMessageLong4()
+        public void StatusMessage8()
         {
             var mode = new Mock<IMode>();
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
             var ki = KeyInputUtil.CharToKeyInput('c');
             _vimBuffer.RaiseKeyInputStart(ki);
-            _vimBuffer.RaiseStatusMessageLong("foo", "bar");
+            _vimBuffer.RaiseStatusMessage("foo" + Environment.NewLine + "bar");
             _vimBuffer.RaiseSwitchedMode(mode.Object);
             _vimBuffer.RaiseKeyInputEnd(ki);
             Assert.AreEqual("foo" + Environment.NewLine + "bar", _marginControl.StatusLine);

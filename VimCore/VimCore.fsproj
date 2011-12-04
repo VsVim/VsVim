@@ -41,6 +41,8 @@
     <Compile Include="SearchKind.fs" />
     <Compile Include="Util.fs" />
     <Compile Include="EditorUtil.fs" />
+    <Compile Include="LineRangeVisited.fsi" />
+    <Compile Include="LineRangeVisited.fs" />
     <Compile Include="WordKind.fs" />
     <Compile Include="VimKey.fs" />
     <Compile Include="KeyInput.fsi" />

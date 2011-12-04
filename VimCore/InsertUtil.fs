@@ -172,7 +172,18 @@ type internal InsertUtil
 
             let text = 
                 if _localSettings.ExpandTab then
-                    StringUtil.repeatChar _localSettings.TabStop ' '
+                    // When inserting spaces we need to consider the number of spaces to the caret.
+                    // If it's a multiple of the tab stop then we insert a full tab.  Else we insert
+                    // what it takes to get to the multiple
+                    let count = 
+                        let spaces = _operations.GetSpacesToPoint x.CaretPoint
+                        let remainder = spaces % _localSettings.TabStop
+                        if remainder = 0 then
+                            _localSettings.TabStop
+                        else
+                            _localSettings.TabStop - remainder
+
+                    StringUtil.repeatChar count ' '
                 else
                     "\t"
 

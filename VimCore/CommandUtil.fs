@@ -1048,7 +1048,7 @@ type internal CommandUtil
 
         // Extend the range to at least 2 lines if possible
         let range = 
-            if range.Count = 1 && range.EndLineNumber = SnapshotUtil.GetLastLineNumber range.Snapshot then
+            if range.Count = 1 && range.LastLineNumber = SnapshotUtil.GetLastLineNumber range.Snapshot then
                 // Can't extend
                 range
             elif range.Count = 1 then
@@ -1237,11 +1237,16 @@ type internal CommandUtil
         if _localSettings.AutoIndent then
             // Caret needs to be positioned at the indentation point of the previous line.  Don't
             // create actual whitespace, put the caret instead into virtual space
-            let column = 
+            let point = 
                 deletedLine.Start
                 |> SnapshotPointUtil.GetContainingLine
-                |> SnapshotLineUtil.GetIndent
-                |> SnapshotPointUtil.GetColumn
+                |> SnapshotLineUtil.GetIndentPoint
+
+            // We are moving the caret into virtual space here.  Hence we need to do this in terms 
+            // of spaces and not absolute character column.  Basically we have to expand tabs to the
+            // appropriate number of spaces
+            let column = _commonOperations.GetSpacesToPoint point
+
             if column = 0 then 
                 TextViewUtil.MoveCaretToPosition _textView deletedLine.Start.Position
             else
@@ -1462,7 +1467,7 @@ type internal CommandUtil
                         SnapshotUtil.GetLine x.CurrentSnapshot number
 
                 // Get the indent point of the line.  That's what the caret needs to be moved to
-                let point = SnapshotLineUtil.GetIndent line
+                let point = SnapshotLineUtil.GetIndentPoint line
                 _commonOperations.MoveCaretToPointAndCheckVirtualSpace point)
 
     /// Put the contents of the specified register over the selection.  This is used for all

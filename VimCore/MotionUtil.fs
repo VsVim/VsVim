@@ -319,15 +319,11 @@ type internal MotionUtil
         if not _globalSettings.StartOfLine then 
             motionData 
         else
-            let endLine = 
-                if motionData.IsForward then
-                    SnapshotSpanUtil.GetEndLine motionData.Span
-                else
-                    SnapshotSpanUtil.GetStartLine motionData.Span
+            let lastLine = motionData.DirectionLastLine
 
             // TODO: Is GetFirstNonBlankOrStart correct here?  Should it be using the
             // End version?
-            let point = SnapshotLineUtil.GetFirstNonBlankOrStart endLine
+            let point = SnapshotLineUtil.GetFirstNonBlankOrStart lastLine
             let column = SnapshotPointUtil.GetColumn point |> CaretColumn.InLastLine
             { motionData with MotionKind = MotionKind.LineWise column }
 
@@ -1742,7 +1738,7 @@ type internal MotionUtil
                     Span = span 
                     IsForward = false 
                     MotionKind = MotionKind.LineWise column
-                    MotionResultFlags = MotionResultFlags.None } |> Some)
+                    MotionResultFlags = MotionResultFlags.MaintainCaretColumn } |> Some)
 
     /// Move a single line down from the current line.  Should fail if we are currenly 
     /// on the last line of the ITextBuffer
@@ -1758,7 +1754,7 @@ type internal MotionUtil
                     Span = span 
                     IsForward = true 
                     MotionKind = MotionKind.LineWise column
-                    MotionResultFlags = MotionResultFlags.None } |> Some)
+                    MotionResultFlags = MotionResultFlags.MaintainCaretColumn } |> Some)
 
     /// Implements the 'gg' motion.  
     ///

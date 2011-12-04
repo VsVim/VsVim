@@ -24,7 +24,5 @@ type internal VimBuffer =
 
     member RaiseStatusMessage : string -> unit
 
-    member RaiseStatusMessageLong : string seq -> unit
-
     interface IVimBuffer
 

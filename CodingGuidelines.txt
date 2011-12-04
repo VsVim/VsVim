@@ -1,5 +1,8 @@
 
 F# 
+ - Terminology
+    - Last is inclusive
+    - End is not inclusive
  - Util classes should contain Create methods to create 
  - Revisit: Util classes should have Get for conversions 
  - Should be Of for type conversions in util classes

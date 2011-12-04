@@ -6,12 +6,11 @@ open System.Text.RegularExpressions
 
 [<System.Flags>]
 type VimRegexOptions = 
-    | None = 0
-    | Compiled = 0x1
+    | Default = 0
+    | NotCompiled = 0x1
     | IgnoreCase = 0x2
-    | OrdinalCase = 0x4
-    | Magic = 0x8
-    | NoMagic = 0x10
+    | SmartCase = 0x4
+    | NoMagic = 0x8
 
 [<RequireQualifiedAccess>]
 type CaseSpecifier =
@@ -33,8 +32,49 @@ type ReplaceData = {
     Count : int
 }
 
-
 module VimRegexUtils = 
+
+    /// Profiling reveals that one of the biggest expenses of fast editing with :hlsearch
+    /// enabled in large files is the creation of the regex.  With editting we never change
+    /// the regex but waste up to 25% of the CPU cycles recreating it over and over 
+    /// again.  Cache the most recent few Regex values here to remove the needless work.
+    ///
+    /// Note: This is shared amongst threads but not protected by a lock.  We don't want
+    /// any contention issues here.
+    let mutable _sharedRegexCache : (string * RegexOptions * Regex) list = List.empty
+
+    let GetRegexFromCache pattern options = 
+        let list = _sharedRegexCache
+        list
+        |> Seq.ofList
+        |> Seq.tryFind (fun (cachedPattern, cachedOptions, _) -> pattern = cachedPattern && cachedOptions = options)
+        |> Option.map (fun (_, _, regex) -> regex)
+
+    let SaveRegexToCache pattern options regex = 
+        let list = _sharedRegexCache
+        let list = 
+            let maxLength = 10
+            if list.Length > maxLength then
+    
+                // Truncate the list to 5.  Don't want to be constantly copying the list
+                // so cut it in half every time we need to reclaim values
+                list |> Seq.truncate (maxLength / 2) |> List.ofSeq
+            else
+                list
+        _sharedRegexCache <- (pattern, options, regex) :: list
+
+    /// Create a regex.  Returns None if the regex has invalid characters
+    let TryCreateRegex pattern options =
+        match GetRegexFromCache pattern options with
+        | Some regex -> Some regex
+        | None ->
+            try
+                let r = new Regex(pattern, options)
+                SaveRegexToCache pattern options r
+                Some r
+            with 
+                | :? System.ArgumentException -> None
+
     let Escape c = c |> StringUtil.ofChar |> Regex.Escape 
 
     let ConvertReplacementString (replacement : string) (replaceData : ReplaceData) = 
@@ -85,31 +125,6 @@ module VimRegexUtils =
 
         inner 0
 
-    let VimToBclList = 
-        [
-            (VimRegexOptions.Compiled, RegexOptions.Compiled)
-            (VimRegexOptions.IgnoreCase, RegexOptions.IgnoreCase)
-            (VimRegexOptions.OrdinalCase, RegexOptions.None)
-        ]
-
-    let ConvertToRegexOptions options = 
-        
-        let rec inner options ret = 
-            match List.tryFind (fun (vim,_) -> Util.IsFlagSet vim options) VimToBclList with
-            | None -> ret
-            | Some(vim,bcl) ->
-                let ret = bcl ||| ret
-                let options = Util.UnsetFlag options vim
-                inner options ret 
-        inner options RegexOptions.None
-
-    /// Create a regex.  Returns None if the regex has invalid characters
-    let TryCreateRegex pattern options =
-        try
-            let r = new Regex(pattern, options)
-            Some r
-        with 
-            | :? System.ArgumentException -> None
 
 /// Represents a Vim style regular expression 
 [<Sealed>]
@@ -169,6 +184,9 @@ type Data = {
     /// Is this the first character inside of a grouping [] construct
     IsStartOfGrouping : bool
 
+    /// Is this in the middle of a range? 
+    IsRangeOpen : bool
+
     /// The original options 
     Options : VimRegexOptions
 }
@@ -176,219 +194,53 @@ type Data = {
     member x.IsEndOfPattern = x.Index >= x.Pattern.Length
     member x.IncrementIndex count = { x with Index = x.Index + count }
     member x.DecrementIndex count = { x with Index = x.Index - count }
+    member x.Break() = { x with IsBroken = true; }
     member x.CharAtIndex = StringUtil.charAtOption x.Index x.Pattern
-    member x.AppendString (str : string) = { x with Builder = x.Builder.Append(str) }
-    member x.AppendChar (c : char) = { x with Builder = x.Builder.Append(c) }
+    member x.AppendString (str : string) = 
+        x.Builder.Append(str) |> ignore
+        x
+    member x.AppendChar (c : char) = 
+        x.Builder.Append(c) |> ignore
+        x
     member x.AppendEscapedChar c = c |> StringUtil.ofChar |> Regex.Escape |> x.AppendString
     member x.BeginGrouping() = 
         let data = x.AppendChar '['
         { data with IsStartOfGrouping = true }
+    member x.BeginRange() =
+        let data = x.AppendChar '{'
+        { data with IsRangeOpen = true }
+    member x.EndRange() =
+        let data = x.AppendChar '}'
+        { data with IsRangeOpen = false }
 
-[<Sealed>]
-type VimRegexFactory
-    (
-        _settings : IVimGlobalSettings
-    ) =
-
-    member x.Create pattern = x.CreateWithOptions pattern VimRegexOptions.Compiled
-
-    member x.CreateForSubstituteFlags pattern (flags:SubstituteFlags) =
-
-        // Get the case options
-        let options = 
-            if Util.IsFlagSet flags SubstituteFlags.IgnoreCase then VimRegexOptions.IgnoreCase
-            elif Util.IsFlagSet flags SubstituteFlags.OrdinalCase then VimRegexOptions.OrdinalCase 
-            else VimRegexOptions.None
-
-        // Get the magic options
-        let options = 
-            if Util.IsFlagSet flags SubstituteFlags.Magic then options ||| VimRegexOptions.Magic
-            elif Util.IsFlagSet flags SubstituteFlags.Nomagic then options ||| VimRegexOptions.NoMagic
-            else options
-
-        let options = VimRegexOptions.Compiled ||| options
-        x.CreateWithOptions pattern options 
-
-    member x.CreateWithOptions pattern options = 
-        let kind = if _settings.Magic then MagicKind.Magic else MagicKind.NoMagic
-        let kind = 
-            if Util.IsFlagSet options VimRegexOptions.Magic then MagicKind.Magic
-            elif Util.IsFlagSet options VimRegexOptions.NoMagic then MagicKind.NoMagic
-            else kind
-        let data = { 
-            Pattern = pattern
-            Index = 0
-            Builder = new StringBuilder()
-            MagicKind = kind
-            MatchCase = not _settings.IgnoreCase
-            CaseSpecifier = CaseSpecifier.None
-            IsBroken = false 
-            IsStartOfPattern = true
-            IsStartOfGrouping = false
-            Options = options }
-
-        // Check for smart case here
-        let data = 
-            let isUpperLetter x = CharUtil.IsLetter x && CharUtil.IsUpper x
-            if _settings.SmartCase && data.Pattern |> Seq.filter isUpperLetter |> SeqUtil.isNotEmpty then 
-                { data with MatchCase = true }
-            else 
-                data
-
-        match x.Convert data with
-        | None -> None
-        | Some (bclPattern, caseSpecifier, regex) -> VimRegex(pattern, caseSpecifier, bclPattern, regex) |> Some
+module VimRegexFactory =
 
     // Create the actual BCL regex 
-    member x.CreateRegex (data : Data) =
-        let options = VimRegexUtils.ConvertToRegexOptions data.Options
+    let CreateRegex (data : Data) =
 
-        // Now factor case into the options.  The VimRegexOptions take precedence
-        // over anything which is embedded into the string 
-        let options = 
-            if Util.IsFlagSet data.Options VimRegexOptions.IgnoreCase then options
-            elif Util.IsFlagSet data.Options VimRegexOptions.OrdinalCase then options
-            elif data.MatchCase then options
-            else options ||| RegexOptions.IgnoreCase
+        let regexOptions = 
+            let regexOptions = 
+                if Util.IsFlagSet data.Options VimRegexOptions.NotCompiled then 
+                    RegexOptions.None
+                else 
+                    RegexOptions.Compiled
+            if data.MatchCase then
+                regexOptions
+            else
+                regexOptions ||| RegexOptions.IgnoreCase
 
-        if data.IsBroken then 
+        if data.IsBroken || data.IsRangeOpen then 
             None
         else 
             let bclPattern = data.Builder.ToString()
-            let regex = VimRegexUtils.TryCreateRegex bclPattern options 
+            let regex = VimRegexUtils.TryCreateRegex bclPattern regexOptions
             match regex with
             | None -> None
             | Some regex -> Some (bclPattern, data.CaseSpecifier, regex)
 
-    member x.Convert (data : Data) = 
-        let rec inner (data : Data) : (string * CaseSpecifier * Regex) option =
-            if data.IsBroken then 
-                None
-            else
-                match data.CharAtIndex with
-                | None -> 
-                    x.CreateRegex data 
-                | Some '\\' -> 
-                    let wasStartOfGrouping = data.IsStartOfGrouping
-                    let data = data.IncrementIndex 1
-                    let data = 
-                        match data.CharAtIndex with 
-                        | None -> x.ProcessNormalChar data '\\'
-                        | Some c -> x.ProcessEscapedChar (data.IncrementIndex 1) c
-
-                    // If we were at the start of a grouping before processing this 
-                    // char then we no longer are afterwards
-                    let data = 
-                        if wasStartOfGrouping then { data with IsStartOfGrouping = false }
-                        else data 
-                    inner data
-                | Some c -> 
-                    x.ProcessNormalChar (data.IncrementIndex 1) c |> inner
-        inner data
-
-    /// Process an escaped character.  Look first for global options such as ignore 
-    /// case or magic and then go for magic specific characters
-    member x.ProcessEscapedChar data c  =
-        let escape = VimRegexUtils.Escape
-        match c with 
-        | 'C' -> {data with MatchCase = true; CaseSpecifier = CaseSpecifier.OrdinalCase }
-        | 'c' -> {data with MatchCase = false; CaseSpecifier = CaseSpecifier.IgnoreCase }
-        | 'm' -> {data with MagicKind = MagicKind.Magic }
-        | 'M' -> {data with MagicKind = MagicKind.NoMagic }
-        | 'v' -> {data with MagicKind = MagicKind.VeryMagic }
-        | 'V' -> {data with MagicKind = MagicKind.VeryNoMagic }
-        | _ ->
-            let data = 
-                match data.MagicKind with
-                | MagicKind.Magic -> x.ConvertEscapedCharAsMagicAndNoMagic data c 
-                | MagicKind.NoMagic -> x.ConvertEscapedCharAsMagicAndNoMagic data c
-                | MagicKind.VeryMagic -> data.AppendEscapedChar c
-                | MagicKind.VeryNoMagic -> x.ConvertCharAsSpecial data c
-            { data with IsStartOfPattern = false }
-
-    /// Convert a normal unescaped char based on the 
-    member x.ProcessNormalChar (data:Data) c = 
-        let data = 
-            match data.MagicKind with
-            | MagicKind.Magic -> x.ConvertCharAsMagic data c
-            | MagicKind.NoMagic -> x.ConvertCharAsNoMagic data c
-            | MagicKind.VeryMagic -> 
-                if CharUtil.IsLetter c || CharUtil.IsDigit c || c = '_' then data.AppendChar c
-                else x.ConvertCharAsSpecial data c
-            | MagicKind.VeryNoMagic -> data.AppendEscapedChar c
-        {data with IsStartOfPattern=false}
-
-    /// Convert the given char in the magic setting 
-    member x.ConvertCharAsMagic (data:Data) c =
-        match c with 
-        | '*' -> data.AppendChar '*'
-        | '.' -> data.AppendChar '.'
-        | '}' -> data.AppendChar '}'
-        | '^' -> x.ConvertCharAsSpecial data c
-        | '$' -> x.ConvertCharAsSpecial data c
-        | '[' -> x.ConvertCharAsSpecial data c
-        | ']' -> x.ConvertCharAsSpecial data c
-        | _ -> data.AppendEscapedChar c
-
-    /// Convert the given char in the nomagic setting
-    member x.ConvertCharAsNoMagic (data:Data) c =
-        match c with 
-        | '^' -> x.ConvertCharAsSpecial data c 
-        | '$' -> x.ConvertCharAsSpecial data c
-        | _ -> data.AppendEscapedChar c
-
-    /// Convert the given escaped char in the magic and no magic settings.  The 
-    /// differences here are minimal so it's convenient to put them in one method
-    /// here
-    member x.ConvertEscapedCharAsMagicAndNoMagic (data:Data) c =
-        let isMagic = data.MagicKind = MagicKind.Magic
-        match c with 
-        | '.' -> if isMagic then data.AppendEscapedChar c else x.ConvertCharAsSpecial data c
-        | '*' -> if isMagic then data.AppendEscapedChar c else x.ConvertCharAsSpecial data c 
-        | '+' -> x.ConvertCharAsSpecial data c
-        | '?' -> x.ConvertCharAsSpecial data c 
-        | '=' -> x.ConvertCharAsSpecial data c
-        | '<' -> x.ConvertCharAsSpecial data c
-        | '>' -> x.ConvertCharAsSpecial data c
-        | '(' -> x.ConvertCharAsSpecial data c 
-        | ')' -> x.ConvertCharAsSpecial data c 
-        | '{' -> x.ConvertCharAsSpecial data c
-        | '|' -> x.ConvertCharAsSpecial data c
-        | '[' -> if isMagic then data.AppendEscapedChar c else x.ConvertCharAsSpecial data c
-        | ']' -> x.ConvertCharAsSpecial data c
-        | 'a' -> x.ConvertCharAsSpecial data c
-        | 'A' -> x.ConvertCharAsSpecial data c
-        | 'd' -> x.ConvertCharAsSpecial data c
-        | 'D' -> x.ConvertCharAsSpecial data c
-        | 'h' -> x.ConvertCharAsSpecial data c
-        | 'H' -> x.ConvertCharAsSpecial data c
-        | 'l' -> x.ConvertCharAsSpecial data c
-        | 'L' -> x.ConvertCharAsSpecial data c
-        | 'o' -> x.ConvertCharAsSpecial data c
-        | 'O' -> x.ConvertCharAsSpecial data c
-        | 's' -> x.ConvertCharAsSpecial data c 
-        | 'S' -> x.ConvertCharAsSpecial data c 
-        | 'u' -> x.ConvertCharAsSpecial data c
-        | 'U' -> x.ConvertCharAsSpecial data c
-        | 'w' -> x.ConvertCharAsSpecial data c
-        | 'W' -> x.ConvertCharAsSpecial data c
-        | 'x' -> x.ConvertCharAsSpecial data c
-        | 'X' -> x.ConvertCharAsSpecial data c
-        | '_' -> 
-            match data.CharAtIndex with
-            | None -> { data with IsBroken = true }
-            | Some(c) -> 
-                let data = data.IncrementIndex 1
-                match c with 
-                | '^' -> data.AppendChar '^'
-                | '$' -> data.AppendChar '$'
-                | '.' -> data.AppendString @"(.|\n)"
-                | _ -> { data with IsBroken = true }
-        | _ -> data.AppendEscapedChar c
-
     /// Convert the given character as a special character.  Interpretation
     /// may depend on the type of magic that is currently being employed
-    member x.ConvertCharAsSpecial (data:Data) c = 
+    let ConvertCharAsSpecial (data : Data) c = 
         match c with
         | '.' -> data.AppendChar '.'
         | '+' -> data.AppendChar '+'
@@ -397,8 +249,8 @@ type VimRegexFactory
         | '*' -> data.AppendChar '*'
         | '(' -> data.AppendChar '('
         | ')' -> data.AppendChar ')'
-        | '{' -> data.AppendChar '{'
-        | '}' -> data.AppendChar '}'
+        | '{' -> if data.IsRangeOpen then data.Break() else data.BeginRange()
+        | '}' -> if data.IsRangeOpen then data.EndRange() else data.AppendChar '}'
         | '|' -> data.AppendChar '|'
         | '^' -> if data.IsStartOfPattern || data.IsStartOfGrouping then data.AppendChar '^' else data.AppendEscapedChar '^'
         | '$' -> if data.IsEndOfPattern then data.AppendChar '$' else data.AppendEscapedChar '$'
@@ -425,4 +277,207 @@ type VimRegexFactory
         | 'u' -> data.AppendString @"[A-Z]"
         | 'U' -> data.AppendString @"[^A-Z]"
         | _ -> data.AppendEscapedChar c
+
+    /// Convert the given char in the magic setting 
+    let ConvertCharAsMagic (data:Data) c =
+        match c with 
+        | '*' -> data.AppendChar '*'
+        | '.' -> data.AppendChar '.'
+        | '}' -> if data.IsRangeOpen then data.EndRange() else data.AppendChar '}'
+        | '^' -> ConvertCharAsSpecial data c
+        | '$' -> ConvertCharAsSpecial data c
+        | '[' -> ConvertCharAsSpecial data c
+        | ']' -> ConvertCharAsSpecial data c
+        | _ -> data.AppendEscapedChar c
+
+    /// Convert the given char in the nomagic setting
+    let ConvertCharAsNoMagic (data : Data) c =
+        match c with 
+        | '^' -> ConvertCharAsSpecial data c 
+        | '$' -> ConvertCharAsSpecial data c
+        | _ -> data.AppendEscapedChar c
+
+    /// Convert the given escaped char in the magic and no magic settings.  The 
+    /// differences here are minimal so it's convenient to put them in one method
+    /// here
+    let ConvertEscapedCharAsMagicAndNoMagic (data : Data) c =
+        let isMagic = data.MagicKind = MagicKind.Magic
+        match c with 
+        | '.' -> if isMagic then data.AppendEscapedChar c else ConvertCharAsSpecial data c
+        | '*' -> if isMagic then data.AppendEscapedChar c else ConvertCharAsSpecial data c 
+        | '+' -> ConvertCharAsSpecial data c
+        | '?' -> ConvertCharAsSpecial data c 
+        | '=' -> ConvertCharAsSpecial data c
+        | '<' -> ConvertCharAsSpecial data c
+        | '>' -> ConvertCharAsSpecial data c
+        | '(' -> ConvertCharAsSpecial data c 
+        | ')' -> ConvertCharAsSpecial data c 
+        | '{' -> ConvertCharAsSpecial data c
+        | '}' -> if data.IsRangeOpen then data.EndRange() else data.AppendEscapedChar c
+        | '|' -> ConvertCharAsSpecial data c
+        | '[' -> if isMagic then data.AppendEscapedChar c else ConvertCharAsSpecial data c
+        | ']' -> ConvertCharAsSpecial data c
+        | 'a' -> ConvertCharAsSpecial data c
+        | 'A' -> ConvertCharAsSpecial data c
+        | 'd' -> ConvertCharAsSpecial data c
+        | 'D' -> ConvertCharAsSpecial data c
+        | 'h' -> ConvertCharAsSpecial data c
+        | 'H' -> ConvertCharAsSpecial data c
+        | 'l' -> ConvertCharAsSpecial data c
+        | 'L' -> ConvertCharAsSpecial data c
+        | 'o' -> ConvertCharAsSpecial data c
+        | 'O' -> ConvertCharAsSpecial data c
+        | 's' -> ConvertCharAsSpecial data c 
+        | 'S' -> ConvertCharAsSpecial data c 
+        | 'u' -> ConvertCharAsSpecial data c
+        | 'U' -> ConvertCharAsSpecial data c
+        | 'w' -> ConvertCharAsSpecial data c
+        | 'W' -> ConvertCharAsSpecial data c
+        | 'x' -> ConvertCharAsSpecial data c
+        | 'X' -> ConvertCharAsSpecial data c
+        | '_' -> 
+            match data.CharAtIndex with
+            | None -> data.Break()
+            | Some c -> 
+                let data = data.IncrementIndex 1
+                match c with 
+                | '^' -> data.AppendChar '^'
+                | '$' -> data.AppendChar '$'
+                | '.' -> data.AppendString @"(.|\n)"
+                | _ -> data.Break()
+        | _ -> data.AppendEscapedChar c
+
+    /// Process an escaped character.  Look first for global options such as ignore 
+    /// case or magic and then go for magic specific characters
+    let ProcessEscapedChar data c  =
+        let escape = VimRegexUtils.Escape
+        match c with 
+        | 'C' -> {data with MatchCase = true; CaseSpecifier = CaseSpecifier.OrdinalCase }
+        | 'c' -> {data with MatchCase = false; CaseSpecifier = CaseSpecifier.IgnoreCase }
+        | 'm' -> {data with MagicKind = MagicKind.Magic }
+        | 'M' -> {data with MagicKind = MagicKind.NoMagic }
+        | 'v' -> {data with MagicKind = MagicKind.VeryMagic }
+        | 'V' -> {data with MagicKind = MagicKind.VeryNoMagic }
+        | _ ->
+            let data = 
+                match data.MagicKind with
+                | MagicKind.Magic -> ConvertEscapedCharAsMagicAndNoMagic data c 
+                | MagicKind.NoMagic -> ConvertEscapedCharAsMagicAndNoMagic data c
+                | MagicKind.VeryMagic -> data.AppendEscapedChar c
+                | MagicKind.VeryNoMagic -> ConvertCharAsSpecial data c
+            { data with IsStartOfPattern = false }
+
+    /// Convert a normal unescaped char based on the 
+    let ProcessNormalChar (data : Data) c = 
+        let data = 
+            match data.MagicKind with
+            | MagicKind.Magic -> ConvertCharAsMagic data c
+            | MagicKind.NoMagic -> ConvertCharAsNoMagic data c
+            | MagicKind.VeryMagic -> 
+                if CharUtil.IsLetter c || CharUtil.IsDigit c || c = '_' then 
+                    data.AppendChar c
+                else
+                    ConvertCharAsSpecial data c
+            | MagicKind.VeryNoMagic -> data.AppendEscapedChar c
+        {data with IsStartOfPattern = false}
+
+    let Convert (data : Data) = 
+        let rec inner (data : Data) : (string * CaseSpecifier * Regex) option =
+            if data.IsBroken then 
+                None
+            else
+                match data.CharAtIndex with
+                | None -> 
+                    CreateRegex data 
+                | Some '\\' -> 
+                    let wasStartOfGrouping = data.IsStartOfGrouping
+                    let data = data.IncrementIndex 1
+                    let data = 
+                        match data.CharAtIndex with 
+                        | None -> ProcessNormalChar data '\\'
+                        | Some c -> ProcessEscapedChar (data.IncrementIndex 1) c
+
+                    // If we were at the start of a grouping before processing this 
+                    // char then we no longer are afterwards
+                    let data = 
+                        if wasStartOfGrouping then { data with IsStartOfGrouping = false }
+                        else data 
+                    inner data
+                | Some c -> 
+                    ProcessNormalChar (data.IncrementIndex 1) c |> inner
+        inner data
+
+    let Create pattern options = 
+
+        // Calculate the initial value for whether or not we display case
+        let matchCase = 
+            let ignoreCase = Util.IsFlagSet options VimRegexOptions.IgnoreCase
+            let smartCase = Util.IsFlagSet options VimRegexOptions.SmartCase
+            if smartCase then
+                let isUpperLetter x = CharUtil.IsLetter x && CharUtil.IsUpper x
+                if pattern |> Seq.exists isUpperLetter then
+                    true
+                else
+                    not ignoreCase
+            else
+                not ignoreCase
+
+        let magicKind = 
+            if Util.IsFlagSet options VimRegexOptions.NoMagic then 
+                MagicKind.NoMagic
+            else
+                MagicKind.Magic
+
+        let data = { 
+            Pattern = pattern
+            Index = 0
+            Builder = new StringBuilder()
+            MagicKind = magicKind
+            MatchCase = matchCase
+            CaseSpecifier = CaseSpecifier.None
+            IsBroken = false 
+            IsRangeOpen = false
+            IsStartOfPattern = true
+            IsStartOfGrouping = false
+            Options = options }
+
+        match Convert data with
+        | None -> None
+        | Some (bclPattern, caseSpecifier, regex) -> VimRegex(pattern, caseSpecifier, bclPattern, regex) |> Some
+
+    let CreateRegexOptions (globalSettings : IVimGlobalSettings) =
+        let options = VimRegexOptions.Default
+        let options =
+            if globalSettings.Magic then options
+            else VimRegexOptions.NoMagic
+
+        let options = 
+            if globalSettings.IgnoreCase then options ||| VimRegexOptions.IgnoreCase
+            else options
+
+        let options = 
+            if globalSettings.SmartCase then options ||| VimRegexOptions.SmartCase
+            else options
+
+        options
+
+    let CreateForSubstituteFlags pattern (flags : SubstituteFlags) =
+
+        let options = VimRegexOptions.Default
+
+        // Get the case options
+        let options = 
+            if Util.IsFlagSet flags SubstituteFlags.IgnoreCase then options ||| VimRegexOptions.IgnoreCase
+            else options
+
+        // Get the magic options
+        let options = 
+            if Util.IsFlagSet flags SubstituteFlags.Magic then options 
+            else options ||| VimRegexOptions.NoMagic
+
+        Create pattern options 
+
+    let CreateForSettings pattern globalSettings =
+        let options = CreateRegexOptions globalSettings
+        Create pattern options
 

@@ -158,6 +158,19 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// The 'e' motion should select up to and including the end of the word
+        ///
+        /// https://github.com/jaredpar/VsVim/issues/568
+        /// </summary>
+        [Test]
+        public void Delete_EndOfWordMotion()
+        {
+            Create("ThisIsALongWord. ThisIsAnotherLongWord!");
+            _buffer.Process("vex");
+            Assert.AreEqual(". ThisIsAnotherLongWord!", _textBuffer.GetLine(0).GetText());
+        }
+
+        /// <summary>
         /// Verify that Shift-V enters Visual Line Mode
         /// </summary>
         [Test]

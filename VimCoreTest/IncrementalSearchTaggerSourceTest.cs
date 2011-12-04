@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using NUnit.Framework;
@@ -10,31 +9,30 @@ using Vim.UnitTest;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public sealed class IncrementalSearchTaggerTest
+    public sealed class IncrementalSearchTaggerSourceTest : VimTestBase
     {
-        private IVimBuffer _buffer;
+        private IVimBuffer _vimBuffer;
         private ITextView _textView;
         private IIncrementalSearch _search;
         private IVimGlobalSettings _globalSettings;
-        private IncrementalSearchTagger _taggerRaw;
-        private ITagger<TextMarkerTag> _tagger;
+        private IncrementalSearchTaggerSource _taggerSourceRaw;
+        private IBasicTaggerSource<TextMarkerTag> _taggerSource;
 
         public void Create(params string[] lines)
         {
-            _textView = EditorUtil.CreateTextView(lines);
-            _buffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(_textView);
-            _globalSettings = _buffer.LocalSettings.GlobalSettings;
+            _vimBuffer = CreateVimBuffer(lines);
+            _textView = _vimBuffer.TextView;
+            _globalSettings = _vimBuffer.LocalSettings.GlobalSettings;
             _globalSettings.IncrementalSearch = true;
             _globalSettings.WrapScan = true;
-            _search = _buffer.IncrementalSearch;
-            _taggerRaw = new IncrementalSearchTagger(_buffer);
-            _tagger = _taggerRaw;
+            _search = _vimBuffer.IncrementalSearch;
+            _taggerSourceRaw = new IncrementalSearchTaggerSource(_vimBuffer);
+            _taggerSource = _taggerSourceRaw;
         }
 
         private IEnumerable<ITagSpan<TextMarkerTag>> GetTags()
         {
-            var span = _buffer.TextSnapshot.GetExtent();
-            return _tagger.GetTags(new NormalizedSnapshotSpanCollection(span));
+            return _taggerSource.GetTags(_textView.TextSnapshot.GetExtent());
         }
 
         /// <summary>
@@ -42,12 +40,12 @@ namespace VimCore.UnitTest
         /// visual modes
         /// </summary>
         [Test]
-        public void SwitchModeShouldRaiseTagsChanged()
+        public void Changed_RaiseOnSwitchMode()
         {
             Create();
             var didRaise = false;
-            _tagger.TagsChanged += delegate { didRaise = true; };
-            _buffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.None);
+            _taggerSource.Changed += delegate { didRaise = true; };
+            _vimBuffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.None);
             Assert.IsTrue(didRaise);
         }
 
@@ -81,7 +79,7 @@ namespace VimCore.UnitTest
         public void GetTags_NoneInVisualMode()
         {
             Create("dog cat bar");
-            _buffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
+            _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
             _search.DoSearch("dog", enter: false);
             Assert.AreEqual(0, GetTags().Count());
         }

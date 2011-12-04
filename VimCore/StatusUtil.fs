@@ -9,22 +9,22 @@ open Microsoft.VisualStudio.Text.Classification
 open System.ComponentModel.Composition
 
 type internal StatusUtil() = 
-    let mutable _buffer : VimBuffer option = None
+    let mutable _vimBuffer : VimBuffer option = None
 
     member x.VimBuffer 
-        with get () = _buffer
-        and set value = _buffer <- value
+        with get () = _vimBuffer
+        and set value = _vimBuffer <- value
 
     member x.DoWithBuffer func = 
-        match _buffer with
+        match _vimBuffer with
         | None -> ()
-        | Some(buffer) -> func buffer
+        | Some buffer -> func buffer
 
     interface IStatusUtil with
         member x.OnStatus msg = x.DoWithBuffer (fun buffer -> buffer.RaiseStatusMessage msg)
         member x.OnError msg = x.DoWithBuffer (fun buffer -> buffer.RaiseErrorMessage msg)
         member x.OnWarning msg = x.DoWithBuffer (fun buffer -> buffer.RaiseWarningMessage msg)
-        member x.OnStatusLong msgSeq = x.DoWithBuffer (fun buffer -> buffer.RaiseStatusMessageLong msgSeq)
+        member x.OnStatusLong msgSeq = x.DoWithBuffer (fun buffer -> msgSeq |> StringUtil.combineWith System.Environment.NewLine |> buffer.RaiseStatusMessage)
 
 [<Export(typeof<IStatusUtilFactory>)>]
 [<Export(typeof<IVimBufferCreationListener>)>]

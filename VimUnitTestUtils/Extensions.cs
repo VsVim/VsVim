@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 using NUnit.Framework;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Vim.Modes.Command;
-using System.Windows;
 
 namespace Vim.UnitTest
 {
@@ -705,6 +706,19 @@ namespace Vim.UnitTest
         {
             var name = RegisterNameUtil.CharToRegister(c).Value;
             return buffer.RegisterMap.GetRegister(name);
+        }
+
+        #endregion
+
+        #region ITagger<T>
+
+        /// <summary>
+        /// Get the ITagSpan values for the given SnapshotSpan
+        /// </summary>
+        public static IEnumerable<ITagSpan<T>> GetTags<T>(this ITagger<T> tagger, SnapshotSpan span)
+            where T : ITag
+        {
+            return tagger.GetTags(new NormalizedSnapshotSpanCollection(span));
         }
 
         #endregion

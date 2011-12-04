@@ -37,7 +37,6 @@ type internal SubstituteConfirmMode
     let _textBuffer = _vimTextBuffer.TextBuffer
     let _textView = _vimBufferData.TextView
     let _globalSettings = _vimTextBuffer.GlobalSettings
-    let _factory = VimRegexFactory(_globalSettings)
     let _editorOperations = _operations.EditorOperations
     let _currentMatchChanged = Event<_>()
     let mutable _commandMap : Map<KeyInput, ConfirmAction> = Map.empty
@@ -211,11 +210,11 @@ type internal SubstituteConfirmMode
                 | ModeArgument.InsertWithCountAndNewLine _ -> None
                 | ModeArgument.InsertWithTransaction transaction -> transaction.Complete(); None
                 | ModeArgument.Substitute(span, range, data) ->
-                    match _factory.CreateForSubstituteFlags data.SearchPattern data.Flags with
+                    match VimRegexFactory.CreateForSubstituteFlags data.SearchPattern data.Flags with
                     | None -> None
                     | Some regex ->
                         let isReplaceAll = Util.IsFlagSet data.Flags SubstituteFlags.ReplaceAll
-                        let data = { Regex=regex; SubstituteText=data.Substitute; CurrentMatch =span; LastLineNumber=range.EndLineNumber; IsReplaceAll=isReplaceAll}
+                        let data = { Regex=regex; SubstituteText=data.Substitute; CurrentMatch = span; LastLineNumber = range.LastLineNumber; IsReplaceAll=isReplaceAll}
                         Some data
 
         member x.OnLeave () = 

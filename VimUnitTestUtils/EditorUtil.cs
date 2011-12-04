@@ -12,7 +12,7 @@ using Microsoft.VisualStudio.Text.Outlining;
 using Microsoft.VisualStudio.Utilities;
 using Vim.UI.Wpf.Implementation;
 using Vim.UnitTest.Exports;
-using ClipboardDevice = Vim.UnitTest.Exports.ClipboardDevice;
+using ClipboardDevice = Vim.UnitTest.Exports.TestableClipboardDevice;
 using IOPath = System.IO.Path;
 
 namespace Vim.UnitTest
@@ -254,7 +254,7 @@ namespace Vim.UnitTest
             // Other Exports needed to construct VsVim
             list.Add(new TypeCatalog(
                 typeof(ClipboardDevice),
-                typeof(KeyboardDevice),
+                typeof(TestableKeyboardDevice),
                 typeof(MouseDevice),
                 typeof(VimHost),
                 typeof(VimErrorDetector),

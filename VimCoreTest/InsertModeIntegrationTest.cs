@@ -400,6 +400,24 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// When repeating a tab the repeat needs to be wary of maintainin the 'tabstop' modulus
+        /// of the new line
+        /// </summary>
+        [Test]
+        public void Repeat_Insert_TabNonEvenOffset()
+        {
+            Create("hello world", "static LPTSTR pValue");
+            _localSettings.ExpandTab = true;
+            _localSettings.TabStop = 4;
+            _vimBuffer.Process(VimKey.Escape);
+            _vimBuffer.Process(VimKey.LowerC, VimKey.LowerW, VimKey.Tab, VimKey.Escape);
+            Assert.AreEqual("     world", _textView.GetLine(0).GetText());
+            _textView.MoveCaretTo(_textBuffer.GetPointInLine(1, 13));
+            _vimBuffer.Process('.');
+            Assert.AreEqual("static LPTSTR   pValue", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
         /// Repeat a simple text insertion with a count
         /// </summary>
         [Test]

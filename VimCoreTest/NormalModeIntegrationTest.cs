@@ -7,6 +7,7 @@ using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
+using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
 
 namespace VimCore.UnitTest
@@ -22,11 +23,13 @@ namespace VimCore.UnitTest
         private IWpfTextView _textView;
         private ITextBuffer _textBuffer;
         private IVimGlobalSettings _globalSettings;
+        private IVimLocalSettings _localSettings;
         private IJumpList _jumpList;
         private IKeyMap _keyMap;
         private IVimData _vimData;
         private IFoldManager _foldManager;
         private MockVimHost _vimHost;
+        private TestableClipboardDevice _clipboardDevice;
         private bool _assertOnErrorMessage = true;
         private bool _assertOnWarningMessage = true;
 
@@ -60,12 +63,14 @@ namespace VimCore.UnitTest
                 };
             _vimTextBuffer = _vimBuffer.VimTextBuffer;
             _keyMap = _vimBuffer.Vim.KeyMap;
-            _globalSettings = _vimBuffer.LocalSettings.GlobalSettings;
+            _localSettings = _vimBuffer.LocalSettings;
+            _globalSettings = _localSettings.GlobalSettings;
             _jumpList = _vimBuffer.JumpList;
             _vimHost = (MockVimHost)_vimBuffer.Vim.VimHost;
             _vimHost.BeepCount = 0;
             _vimData = service.Vim.VimData;
             _foldManager = EditorUtil.FactoryService.FoldManagerFactory.GetFoldManager(_textView);
+            _clipboardDevice = (TestableClipboardDevice)CompositionContainer.GetExportedValue<IClipboardDevice>();
 
             // Many of the operations operate on both the visual and edit / text snapshot
             // simultaneously.  Ensure that our setup code is producing a proper IElisionSnapshot
@@ -73,16 +78,6 @@ namespace VimCore.UnitTest
             // the two
             Assert.IsTrue(_textView.VisualSnapshot is IElisionSnapshot);
             Assert.IsTrue(_textView.VisualSnapshot != _textView.TextSnapshot);
-        }
-
-        [Test]
-        public void dd_OnLastLine()
-        {
-            Create("foo", "bar");
-            _textView.MoveCaretTo(_textView.GetLine(1).Start);
-            _vimBuffer.Process("dd");
-            Assert.AreEqual("foo", _textView.TextSnapshot.GetText());
-            Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
         }
 
         /// <summary>
@@ -122,6 +117,120 @@ namespace VimCore.UnitTest
             _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('a'));
             Assert.AreEqual("  0x43", _textBuffer.GetLine(1).GetText());
             Assert.AreEqual(_textView.GetLine(1).Start.Add(5), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Caret should maintain position but the text should be deleted.  The caret 
+        /// exists in virtual space
+        /// </summary>
+        [Test]
+        public void ChangeLines_AutoIndentShouldPreserveOnSingle()
+        {
+            Create("  dog", "  cat", "  tree");
+            _vimBuffer.LocalSettings.AutoIndent = true;
+            _vimBuffer.Process("cc");
+            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+            Assert.AreEqual(2, _textView.GetCaretVirtualPoint().VirtualSpaces);
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void ChangeLines_NoAutoIndentShouldRemoveAllOnSingle()
+        {
+            Create("  dog", "  cat");
+            _vimBuffer.LocalSettings.AutoIndent = false;
+            _vimBuffer.Process("cc");
+            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// Caret position should be preserved in virtual space
+        /// </summary>
+        [Test]
+        public void ChangeLines_AutoIndentShouldPreserveOnMultiple()
+        {
+            Create("  dog", "  cat", "  tree");
+            _vimBuffer.LocalSettings.AutoIndent = true;
+            _vimBuffer.Process("2cc");
+            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+            Assert.AreEqual(2, _textView.GetCaretVirtualPoint().VirtualSpaces);
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// Caret point should be preserved in virtual space
+        /// </summary>
+        [Test]
+        public void ChangeLines_AutoIndentShouldPreserveFirstOneOnMultiple()
+        {
+            Create("    dog", "  cat", "  tree");
+            _vimBuffer.LocalSettings.AutoIndent = true;
+            _vimBuffer.Process("2cc");
+            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+            Assert.AreEqual(4, _textView.GetCaretVirtualPoint().VirtualSpaces);
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
+        }
+
+        [Test]
+        public void ChangeLines_NoAutoIndentShouldRemoveAllOnMultiple()
+        {
+            Create("  dog", "  cat", "  tree");
+            _vimBuffer.LocalSettings.AutoIndent = false;
+            _vimBuffer.Process("2cc");
+            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// When 'autoindent' is on we need to keep tabs and spaces at the start of the line
+        /// </summary>
+        [Test]
+        public void ChangeLines_AutoIndent_KeepTabsAndSpaces()
+        {
+            Create("\t  dog", "\t  cat");
+            _localSettings.AutoIndent = true;
+            _localSettings.TabStop = 4;
+            _localSettings.ExpandTab = false;
+            _vimBuffer.Process("ccb");
+            Assert.AreEqual("\t  b", _textView.GetLine(0).GetText());
+            Assert.AreEqual("\t  cat", _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetPoint(4), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// When 'autoindent' is on we need to keep tabs at the start of the line
+        /// </summary>
+        [Test]
+        public void ChangeLines_AutoIndent_KeepTabs()
+        {
+            Create("\tdog", "\tcat");
+            _localSettings.AutoIndent = true;
+            _localSettings.TabStop = 4;
+            _localSettings.ExpandTab = false;
+            _vimBuffer.Process("ccb");
+            Assert.AreEqual("\tb", _textView.GetLine(0).GetText());
+            Assert.AreEqual("\tcat", _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetPoint(2), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// When there are tabs involved the virtual space position of the caret after a 
+        /// 'cc' operation should be (tabs * tabWidth + spaces)
+        /// </summary>
+        [Test]
+        public void ChangeLines_AutoIndent_VirtualSpace()
+        {
+            Create("\t  dog", "\t cat");
+            _localSettings.AutoIndent = true;
+            _localSettings.TabStop = 4;
+            _vimBuffer.Process("cc");
+            Assert.AreEqual(6, _textView.GetCaretVirtualPoint().VirtualSpaces);
         }
 
         /// <summary>
@@ -206,6 +315,97 @@ namespace VimCore.UnitTest
             Create("dog", "cat", "jazz", "band");
             _vimBuffer.Process(KeyInputUtil.EnterKey);
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Simple maintain of the caret column going down
+        /// </summary>
+        [Test]
+        public void MaintainCaretColumn_Down()
+        {
+            Create("the dog chased the ball", "hello", "the cat climbed the tree");
+            _textView.MoveCaretTo(8);
+            _vimBuffer.Process('j');
+            Assert.AreEqual(_textView.GetPointInLine(1, 4), _textView.GetCaretPoint());
+            _vimBuffer.Process('j');
+            Assert.AreEqual(_textView.GetPointInLine(2, 8), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Simple maintain of the caret column going up
+        /// </summary>
+        [Test]
+        public void MaintainCaretColumn_Up()
+        {
+            Create("the dog chased the ball", "hello", "the cat climbed the tree");
+            _textView.MoveCaretTo(_textView.GetPointInLine(2, 8));
+            _vimBuffer.Process('k');
+            Assert.AreEqual(_textView.GetPointInLine(1, 4), _textView.GetCaretPoint());
+            _vimBuffer.Process('k');
+            Assert.AreEqual(_textView.GetPointInLine(0, 8), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// The column should not be maintained once the caret goes any other direction
+        /// </summary>
+        [Test]
+        public void MaintainCaretColumn_ResetOnMove()
+        {
+            Create("the dog chased the ball", "hello", "the cat climbed the tree");
+            _textView.MoveCaretTo(_textView.GetPointInLine(2, 8));
+            _vimBuffer.Process("kh");
+            Assert.AreEqual(_textView.GetPointInLine(1, 3), _textView.GetCaretPoint());
+            _vimBuffer.Process('k');
+            Assert.AreEqual(_textView.GetPointInLine(0, 3), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Make sure the caret column is properly maintained when we have to account for mixed
+        /// tabs and spaces on the preceeding line
+        /// </summary>
+        [Test]
+        public void MaintainCaretColumn_MixedTabsAndSpaces()
+        {
+            Create("    alpha", "\tbrought", "tac", "    dog");
+            _localSettings.TabStop = 4;
+            _textView.MoveCaretTo(4);
+            foreach (var c in "abcd")
+            {
+                Assert.AreEqual(c.ToString(), _textView.GetCaretPoint().GetChar().ToString());
+                _vimBuffer.Process('j');
+            }
+        }
+
+        /// <summary>
+        /// When spaces don't divide evenly into tabs the transition into a tab
+        /// should land on the tab
+        /// </summary>
+        [Test]
+        public void MaintainCaretColumn_SpacesDoNotDivideToTabs()
+        {
+            Create("    alpha", "\tbrought", "cat");
+            _localSettings.TabStop = 4;
+            _textView.MoveCaretTo(2);
+            Assert.AreEqual(' ', _textView.GetCaretPoint().GetChar());
+            _vimBuffer.Process('j');
+            Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+            _vimBuffer.Process('j');
+            Assert.AreEqual(_textBuffer.GetPointInLine(2, 2), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// When spaces overlap a tab stop length we need to modulus and apply the 
+        /// remaining spaces
+        /// </summary>
+        [Test]
+        public void MaintainCaretColumn_SpacesOverlapTabs()
+        {
+            Create("    alpha", "\tbrought", "cat");
+            _localSettings.TabStop = 2;
+            _textView.MoveCaretTo(4);
+            Assert.AreEqual('a', _textView.GetCaretPoint().GetChar());
+            _vimBuffer.Process('j');
+            Assert.AreEqual(_textBuffer.GetPointInLine(1, 3), _textView.GetCaretPoint());
         }
 
         [Test]
@@ -1426,73 +1626,6 @@ namespace VimCore.UnitTest
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
-        /// <summary>
-        /// Caret should maintain position but the text should be deleted.  The caret 
-        /// exists in virtual space
-        /// </summary>
-        [Test]
-        public void Handle_cc_AutoIndentShouldPreserveOnSingle()
-        {
-            Create("  dog", "  cat", "  tree");
-            _vimBuffer.LocalSettings.AutoIndent = true;
-            _vimBuffer.Process("cc");
-            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
-            Assert.AreEqual(2, _textView.GetCaretVirtualPoint().VirtualSpaces);
-            Assert.AreEqual("", _textView.GetLine(0).GetText());
-        }
-
-        [Test]
-        public void Handle_cc_NoAutoIndentShouldRemoveAllOnSingle()
-        {
-            Create("  dog", "  cat");
-            _vimBuffer.LocalSettings.AutoIndent = false;
-            _vimBuffer.Process("cc");
-            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
-            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-            Assert.AreEqual("", _textView.GetLine(0).GetText());
-        }
-
-        /// <summary>
-        /// Caret position should be preserved in virtual space
-        /// </summary>
-        [Test]
-        public void Handle_cc_AutoIndentShouldPreserveOnMultiple()
-        {
-            Create("  dog", "  cat", "  tree");
-            _vimBuffer.LocalSettings.AutoIndent = true;
-            _vimBuffer.Process("2cc");
-            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
-            Assert.AreEqual(2, _textView.GetCaretVirtualPoint().VirtualSpaces);
-            Assert.AreEqual("", _textView.GetLine(0).GetText());
-            Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
-        }
-
-        /// <summary>
-        /// Caret point should be preserved in virtual space
-        /// </summary>
-        [Test]
-        public void Handle_cc_AutoIndentShouldPreserveFirstOneOnMultiple()
-        {
-            Create("    dog", "  cat", "  tree");
-            _vimBuffer.LocalSettings.AutoIndent = true;
-            _vimBuffer.Process("2cc");
-            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
-            Assert.AreEqual(4, _textView.GetCaretVirtualPoint().VirtualSpaces);
-            Assert.AreEqual("", _textView.GetLine(0).GetText());
-            Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
-        }
-
-        [Test]
-        public void Handle_cc_NoAutoIndentShouldRemoveAllOnMultiple()
-        {
-            Create("  dog", "  cat", "  tree");
-            _vimBuffer.LocalSettings.AutoIndent = false;
-            _vimBuffer.Process("2cc");
-            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
-            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-            Assert.AreEqual("", _textView.GetLine(0).GetText());
-            Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
-        }
 
         [Test]
         public void Handle_cb_DeleteWhitespaceAtEndOfSpan()
@@ -1579,6 +1712,36 @@ namespace VimCore.UnitTest
             Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
             _vimBuffer.Process(VimKey.Escape);
             Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
+        }
+
+        /// <summary>
+        /// When pasting from the clipboard where the text doesn't end in a new line it
+        /// should be treated as characterwise paste
+        /// </summary>
+        [Test]
+        public void PutAfter_ClipboardWithoutNewLine()
+        {
+            Create("hello world", "again");
+            _textView.MoveCaretTo(5);
+            _clipboardDevice.Text = "big ";
+            _vimBuffer.Process("\"+p");
+            Assert.AreEqual("hello big world", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// When pasting from the clipboard where the text does end in a new line it 
+        /// should be treated as a linewise paste
+        /// </summary>
+        [Test]
+        public void PutAfter_ClipboardWithNewLine()
+        {
+            Create("hello world", "again");
+            _textView.MoveCaretTo(5);
+            _clipboardDevice.Text = "big " + Environment.NewLine;
+            _vimBuffer.Process("\"+p");
+            Assert.AreEqual("hello world", _textView.GetLine(0).GetText());
+            Assert.AreEqual("big ", _textView.GetLine(1).GetText());
+            Assert.AreEqual("again", _textView.GetLine(2).GetText());
         }
 
         /// <summary>
@@ -2610,6 +2773,19 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// Make sure deleting the last line changes the line count in the buffer
+        /// </summary>
+        [Test]
+        public void DeleteLines_OnLastLine()
+        {
+            Create("foo", "bar");
+            _textView.MoveCaretTo(_textView.GetLine(1).Start);
+            _vimBuffer.Process("dd");
+            Assert.AreEqual("foo", _textView.TextSnapshot.GetText());
+            Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
+        }
+
+        /// <summary>
         /// Delete lines with the special d#d count syntax
         /// </summary>
         [Test]
@@ -2620,7 +2796,6 @@ namespace VimCore.UnitTest
             Assert.AreEqual("bear", _textBuffer.GetLine(0).GetText());
             Assert.AreEqual(2, _textBuffer.CurrentSnapshot.LineCount);
         }
-
 
         /// <summary>
         /// Delete lines with both counts and make sure the counts are multiplied together

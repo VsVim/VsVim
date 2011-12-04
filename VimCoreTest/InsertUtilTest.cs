@@ -117,8 +117,24 @@ namespace VimCore.UnitTest
             _localSettings.ExpandTab = true;
             _localSettings.TabStop = 3;
             _insertUtilRaw.InsertTab();
-            Assert.AreEqual("he   llo", _textView.GetLine(0).GetText());
-            Assert.AreEqual(5, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("he llo", _textView.GetLine(0).GetText());
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Make sure that when a tab is inserted with 'et' on a 'non-tabstop' multiple that
+        /// we move it to the 'tabstop' offset
+        /// </summary>
+        [Test]
+        public void InsertTab_MiddleOfText_NonEvenOffset()
+        {
+            Create("static LPTSTRpValue");
+            _textView.MoveCaretTo(13);
+            _localSettings.ExpandTab = true;
+            _localSettings.TabStop = 4;
+            _insertUtilRaw.InsertTab();
+            Assert.AreEqual("static LPTSTR   pValue", _textView.GetLine(0).GetText());
+            Assert.AreEqual(16, _textView.GetCaretPoint().Position);
         }
 
         /// <summary>

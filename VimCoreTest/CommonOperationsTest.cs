@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
 using Moq;
 using NUnit.Framework;
@@ -13,13 +12,14 @@ using Vim.UnitTest.Mock;
 
 namespace VimCore.UnitTest
 {
+    // TODO: Need to remove several of the mock's here.  No reason to mock IVimLocalSettings and 
+    // a couple others.
     [TestFixture]
     public sealed class CommonOperationsTest : VimTestBase
     {
         private ITextView _textView;
         private ITextBuffer _textBuffer;
         private MockRepository _factory;
-        private Mock<IEditorOperations> _editorOperations;
         private Mock<IVimHost> _vimHost;
         private Mock<IJumpList> _jumpList;
         private Mock<IVimLocalSettings> _localSettings;
@@ -86,9 +86,6 @@ namespace VimCore.UnitTest
                 undoRedoOperations: _undoRedoOperations);
 
             _smartIndentationService = _factory.Create<ISmartIndentationService>();
-            _editorOperations = _factory.Create<IEditorOperations>();
-            _editorOperations.Setup(x => x.AddAfterTextBufferChangePrimitive());
-            _editorOperations.Setup(x => x.AddBeforeTextBufferChangePrimitive());
             _outlining = _factory.Create<IOutliningManager>();
             _outlining
                 .Setup(x => x.ExpandAll(It.IsAny<SnapshotSpan>(), It.IsAny<Predicate<ICollapsed>>()))
@@ -96,7 +93,7 @@ namespace VimCore.UnitTest
 
             _operationsRaw = new CommonOperations(
                 vimBufferData,
-                _editorOperations.Object,
+                EditorOperationsFactoryService.GetEditorOperations(_textView),
                 FSharpOption.Create(_outlining.Object),
                 _smartIndentationService.Object);
             _operations = _operationsRaw;
@@ -169,6 +166,50 @@ namespace VimCore.UnitTest
             _operations.Join(_textView.GetLineRange(0, 1), JoinKind.RemoveEmptySpaces);
             Assert.AreEqual("cat ", _textView.GetLine(0).GetText());
             Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// No tabs is just a column offset
+        /// </summary>
+        [Test]
+        public void GetSpacesToColumn_NoTabs()
+        {
+            Create("hello world");
+            Assert.AreEqual(2, _operationsRaw.GetSpacesToColumn(_textBuffer.GetLine(0), 2));
+        }
+
+        /// <summary>
+        /// Tabs count as tabstop spaces
+        /// </summary>
+        [Test]
+        public void GetSpacesToColumn_Tabs()
+        {
+            Create("\thello world");
+            _localSettings.SetupGet(x => x.TabStop).Returns(4);
+            Assert.AreEqual(5, _operationsRaw.GetSpacesToColumn(_textBuffer.GetLine(0), 2));
+        }
+
+        /// <summary>
+        /// Without any tabs this should be a straight offset
+        /// </summary>
+        [Test]
+        public void GetPointForSpaces_NoTabs()
+        {
+            Create("hello world");
+            var point = _operationsRaw.GetPointForSpaces(_textBuffer.GetLine(0), 2);
+            Assert.AreEqual(_textBuffer.GetPoint(2), point);
+        }
+
+        /// <summary>
+        /// Count the tabs as a 'tabstop' value when calculating the Point
+        /// </summary>
+        [Test]
+        public void GetPointForSpaces_Tabs()
+        {
+            Create("\thello world");
+            _localSettings.SetupGet(x => x.TabStop).Returns(4);
+            var point = _operationsRaw.GetPointForSpaces(_textBuffer.GetLine(0), 5);
+            Assert.AreEqual(_textBuffer.GetPoint(2), point);
         }
 
         /// <summary>
@@ -663,12 +704,32 @@ namespace VimCore.UnitTest
             Assert.AreEqual("dog", _textView.GetLine(1).GetText());
         }
 
+        /// <summary>
+        /// Make sure the caret column is maintained when specified going down
+        /// </summary>
         [Test]
-        [Description("Inclusive motions need to put the caret on End-1 in most cases.  See e as an example of why")]
-        public void MoveCaretToMotionResult1()
+        public void MaintainCaretColumn_Down()
         {
-            Create("foo", "bar", "baz");
-            _editorOperations.Setup(x => x.ResetSelection());
+            Create("the dog chased the ball", "hello", "the cat climbed the tree");
+            var motionResult = VimUtil.CreateMotionResult(
+                _textView.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                motionKind: MotionKind.NewLineWise(CaretColumn.NewInLastLine(2)),
+                flags: MotionResultFlags.MaintainCaretColumn);
+            _operations.MoveCaretToMotionResult(motionResult);
+            Assert.AreEqual(2, _operationsRaw.MaintainCaretColumn.Value);
+        }
+
+        /// <summary>
+        /// Don't maintain the caret column if the maintain flag is not specified
+        /// </summary>
+        [Test]
+        public void MaintainCaretColumn_IgnoreIfFlagNotSpecified()
+        {
+            Create("the dog chased the ball", "hello", "the cat climbed the tree");
+            var motionResult = VimUtil.CreateMotionResult(
+                _textView.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                motionKind: MotionKind.NewLineWise(CaretColumn.NewInLastLine(2)),
+                flags: MotionResultFlags.None);
             var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 1, 2),
                 true,
@@ -681,7 +742,6 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionResult2()
         {
             Create("foo", "bar", "baz");
-            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 1),
                 true,
@@ -694,7 +754,6 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionResult3()
         {
             Create("foo", "bar", "baz");
-            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 0),
                 true,
@@ -707,7 +766,6 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionResult4()
         {
             Create("foo", "bar", "baz");
-            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3),
                 false,
@@ -720,7 +778,6 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionResult6()
         {
             Create("foo", "bar", "baz");
-            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 1),
                 true,
@@ -734,7 +791,6 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionResult7()
         {
             Create("foo", "bar", "");
-            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, _textBuffer.CurrentSnapshot.Length),
                 true,
@@ -748,7 +804,6 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionResult8()
         {
             Create("foo", "bar", "");
-            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 true,
@@ -762,7 +817,6 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionResult9()
         {
             Create("foo", "bar", "");
-            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 true,
@@ -776,7 +830,6 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionResult10()
         {
             Create("foo", "bar", "");
-            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 true,
@@ -790,7 +843,6 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionResult11()
         {
             Create("dog", "cat", "bear");
-            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 false,
@@ -804,7 +856,6 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionResult12()
         {
             Create("dog", "cat", "bear");
-            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
                 false,
@@ -818,7 +869,6 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionResult14()
         {
             Create("dog", "cat", "bear");
-            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
                 false,
@@ -832,7 +882,6 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionResult_ReverseLineWiseWithColumn()
         {
             Create(" dog", "cat", "bear");
-            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionResult(
                 span: _textView.GetLineRange(0, 1).ExtentIncludingLineBreak,
                 isForward: false,
@@ -849,7 +898,6 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionResult_CaretAfterLastLine()
         {
             Create("dog", "cat", "bear");
-            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0).ExtentIncludingLineBreak,
                 true,
@@ -866,7 +914,6 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionResult_InVirtualSpaceWithNoVirtualEdit()
         {
             Create("foo", "bar", "baz");
-            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 1, 2),
                 true,

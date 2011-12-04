@@ -296,7 +296,10 @@ type SearchResult =
         | SearchResult.Found (searchData, _, _) -> searchData
         | SearchResult.NotFound (searchData, _) -> searchData
 
-/// Global information about searches within Vim
+/// Global information about searches within Vim.  
+///
+/// This interface is usable from any thread
+[<UsedInBackgroundThread()>]
 type ISearchService = 
 
     /// Find the next occurrence of the pattern in the buffer starting at the 
@@ -319,6 +322,10 @@ type CaretColumn =
 
     /// Caret should be placed in the specified column on the last line in 
     /// the MotionResult
+    ///
+    /// This column should be specified in terms of a character offset in the ITextBuffer
+    /// and shouldn't consider items like how wide a tab is.  A tab should be a single
+    /// character
     | InLastLine of int
 
     /// Caret should be placed at the start of the line after the last line
@@ -346,6 +353,10 @@ type MotionResultFlags =
 
     /// This motion was promoted under rule #2 to a line wise motion
     | ExclusiveLineWise = 0x8
+
+    /// This motion when used as a movement should maintain the caret column
+    /// setting.
+    | MaintainCaretColumn = 0x10
 
 /// Information about the type of the motion this was.
 [<RequireQualifiedAccess>]
@@ -409,6 +420,13 @@ type MotionResult = {
 
     /// The Span as a SnapshotLineRange value 
     member x.LineRange = SnapshotLineRangeUtil.CreateForSpan x.Span
+
+    /// The Start or Last line depending on whether tho motion is forward or not
+    member x.DirectionLastLine = 
+        if x.IsForward then
+            SnapshotSpanUtil.GetLastLine x.Span
+        else
+            SnapshotSpanUtil.GetStartLine x.Span
 
 /// Context on how the motion is being used.  Several motions (]] for example)
 /// change behavior based on how they are being used
@@ -946,7 +964,7 @@ type CharacterSpan
             if lineRange.Count = 1 then
                 span.Length
             else
-                let diff = span.End.Position - lineRange.EndLine.Start.Position
+                let diff = span.End.Position - lineRange.LastLine.Start.Position
                 max 0 diff
         CharacterSpan(span.Start, lineRange.Count, lastLineLength)
 
@@ -1142,7 +1160,7 @@ and [<RequireQualifiedAccess>] [<StructuralEquality>] [<NoComparison>] VisualSel
             // and can be on any column in either
             let line = 
                 if isForward then
-                    snapshotLineRange.EndLine
+                    snapshotLineRange.LastLine
                 else
                     snapshotLineRange.StartLine
 
@@ -1219,7 +1237,7 @@ and [<RequireQualifiedAccess>] [<StructuralEquality>] [<NoComparison>] VisualSel
         | VisualSpan.Character span -> 
             VisualSelection.Character (span, true)
         | VisualSpan.Line lineRange ->
-            let column = SnapshotPointUtil.GetColumn lineRange.EndLine.End
+            let column = SnapshotPointUtil.GetColumn lineRange.LastLine.End
             VisualSelection.Line (lineRange, true, column)
         | VisualSpan.Block blockSpan ->
             VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
@@ -3107,10 +3125,6 @@ and IVimBuffer =
     /// Raised when a status message is encountered
     [<CLIEvent>]
     abstract StatusMessage : IEvent<string>
-
-    /// Raised when a long status message is encountered
-    [<CLIEvent>]
-    abstract StatusMessageLong : IEvent<string seq>
 
     /// Raised when the IVimBuffer is being closed
     [<CLIEvent>]
