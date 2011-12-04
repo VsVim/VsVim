@@ -12,6 +12,7 @@ using Vim.Extensions;
 using Vim.Interpreter;
 using Vim.Modes.Command;
 using InterpreterLineRange = Vim.Interpreter.LineRange;
+using EditorUtils;
 
 namespace Vim.UnitTest
 {

@@ -1,4 +1,5 @@
 ﻿using System;
+using EditorUtils;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Control;
 using Microsoft.FSharp.Core;

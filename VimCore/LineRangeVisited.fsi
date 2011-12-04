@@ -1,4 +1,5 @@
 ﻿namespace Vim
+open EditorUtils
 
 [<Class>]
 type LineRangeVisited =

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.Text;
 
-namespace Vim
+namespace EditorUtils
 {
     /// <summary>
     /// Represents a range of lines in an ITextSnapshot.  Different from a SnapshotSpan
@@ -84,12 +84,12 @@ namespace Vim
         {
             if (startLine >= snapshot.LineCount)
             {
-                throw new ArgumentException("startLine", InterfaceResources.InvalidLineNumber);
+                throw new ArgumentException("startLine", Resources.InvalidLineNumber);
             }
 
             if (startLine + (count + 1) >= snapshot.LineCount || count < 1)
             {
-                throw new ArgumentException("count", InterfaceResources.InvalidLineNumber);
+                throw new ArgumentException("count", Resources.InvalidLineNumber);
             }
 
             _snapshot = snapshot;

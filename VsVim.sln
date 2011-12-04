@@ -22,7 +22,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimWpfTest", "VimWpfTest\Vi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimUnitTestUtils", "VimUnitTestUtils\VimUnitTestUtils.csproj", "{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimInterfaces", "VimInterfaces\VimInterfaces.csproj", "{FB418222-C105-4942-8EEB-832DDCFFD89D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EditorUtils", "EditorUtils\EditorUtils.csproj", "{FB418222-C105-4942-8EEB-832DDCFFD89D}"
 EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution

@@ -1,4 +1,5 @@
 ﻿namespace Vim
+open EditorUtils
 open System.Diagnostics
 
 type LineRangeVisited() = 

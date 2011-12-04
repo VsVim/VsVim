@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Vim
+namespace EditorUtils
 {
     /// <summary>
     /// A simple line range 

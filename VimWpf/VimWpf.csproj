@@ -131,9 +131,9 @@
       <Project>{06BE08E7-8626-40BD-877B-8D2DCA6BA451}</Project>
       <Name>VimCore</Name>
     </ProjectReference>
-    <ProjectReference Include="..\VimInterfaces\VimInterfaces.csproj">
+    <ProjectReference Include="..\EditorUtils\EditorUtils.csproj">
       <Project>{FB418222-C105-4942-8EEB-832DDCFFD89D}</Project>
-      <Name>VimInterfaces</Name>
+      <Name>EditorUtils</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

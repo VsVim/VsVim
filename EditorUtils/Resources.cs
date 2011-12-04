@@ -1,7 +1,7 @@
 ﻿
-namespace Vim
+namespace EditorUtils
 {
-    internal static class InterfaceResources
+    internal static class Resources
     {
         internal static string InvalidLineNumber = "Invalid Line Number";
     }

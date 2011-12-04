@@ -1,11 +1,12 @@
-﻿using Microsoft.VisualStudio.Text;
+﻿using System;
+using System.Linq;
+using EditorUtils;
+using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Vim.Interpreter;
 using Vim.UnitTest;
-using System;
-using System.Linq;
-using Vim.Extensions;
 
 namespace VimCore.UnitTest
 {

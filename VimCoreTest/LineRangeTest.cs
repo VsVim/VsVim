@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using Vim;
+using EditorUtils;
 
 namespace VimCore.UnitTest
 {

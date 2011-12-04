@@ -1,7 +1,8 @@
 ﻿#light
 namespace Vim.Interpreter
-open Vim
+open EditorUtils
 open Microsoft.VisualStudio.Text
+open Vim
 open Vim.VimHostExtensions
 
 [<Sealed>]

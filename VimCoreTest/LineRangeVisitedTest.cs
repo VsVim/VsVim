@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using EditorUtils;
+using NUnit.Framework;
 using Vim;
 
 namespace VimCore.UnitTest

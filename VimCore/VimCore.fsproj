@@ -168,8 +168,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\VimInterfaces\VimInterfaces.csproj">
-      <Name>VimInterfaces</Name>
+    <ProjectReference Include="..\EditorUtils\EditorUtils.csproj">
+      <Name>EditorUtils</Name>
       <Project>{fb418222-c105-4942-8eeb-832ddcffd89d}</Project>
       <Private>True</Private>
     </ProjectReference>

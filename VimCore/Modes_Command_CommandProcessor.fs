@@ -1,6 +1,7 @@
 ﻿#light
 
 namespace Vim.Modes.Command
+open EditorUtils
 open Vim
 open Vim.Interpreter
 open Vim.Modes

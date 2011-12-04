@@ -18,6 +18,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
 using VsVim.Properties;
+using EditorUtils;
 
 namespace VsVim
 {

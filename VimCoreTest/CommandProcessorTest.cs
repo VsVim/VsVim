@@ -13,6 +13,7 @@ using Vim.Extensions;
 using Vim.Modes.Command;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
+using EditorUtils;
 
 namespace VimCore.UnitTest
 {
