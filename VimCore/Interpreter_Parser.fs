@@ -791,7 +791,7 @@ type Parser
             let pattern, foundDelimeter = x.ParsePattern delimiter
             if not foundDelimeter then
                 // When there is no trailing delimeter then the replace string is empty
-                let command = LineCommand.Substitute (lineRange, pattern, "", SubstituteFlags.None, None)
+                let command = LineCommand.Substitute (lineRange, pattern, "", SubstituteFlags.None)
                 ParseResult.Succeeded command
             else
                 let replace, _ = x.ParsePattern delimiter
@@ -800,7 +800,8 @@ type Parser
                 let flags = processFlags flags
                 x.SkipBlanks()
                 let count = x.ParseNumber()
-                let command = LineCommand.Substitute (lineRange, pattern, replace, flags, count)
+                let lineRange = LineRange.WithEndCount (lineRange, count)
+                let command = LineCommand.Substitute (Some lineRange, pattern, replace, flags)
                 ParseResult.Succeeded command
         else
             // Without a delimiter it's the repeat variety of the substitute command
@@ -823,10 +824,11 @@ type Parser
         x.SkipBlanks()
         let flags = x.ParseSubstituteFlags() |> processFlags
 
-        // Pares out the optional trailing count
+        // Parses out the optional trailing count
         x.SkipBlanks()
         let count = x.ParseNumber()
-        let command = LineCommand.SubstituteRepeat (lineRange, flags, count)
+        let lineRange = LineRange.WithEndCount (lineRange, count)
+        let command = LineCommand.SubstituteRepeat (Some lineRange, flags)
         ParseResult.Succeeded command
 
     /// Parse out the repeat variety of the substitute command which is initiated

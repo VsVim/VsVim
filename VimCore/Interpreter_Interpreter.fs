@@ -1116,9 +1116,9 @@ type Interpreter
         | LineCommand.Global (lineRange, _, _ , _) -> lineRange
         | LineCommand.GoToFirstTab -> None
         | LineCommand.GoToLastTab -> None
-        | LineCommand.GoToNextTab count -> None
-        | LineCommand.GoToPreviousTab count -> None
-        | LineCommand.Join (lineRange, joinKind) -> lineRange
+        | LineCommand.GoToNextTab _ -> None
+        | LineCommand.GoToPreviousTab _ -> None
+        | LineCommand.Join (lineRange, _) -> lineRange
         | LineCommand.JumpToLastLine -> None
         | LineCommand.JumpToLine _ -> None
         | LineCommand.Make _ -> None
@@ -1141,8 +1141,8 @@ type Interpreter
         | LineCommand.ShiftRight lineRange -> lineRange
         | LineCommand.Source _ -> None
         | LineCommand.Split (lineRange, _, _) -> lineRange
-        | LineCommand.Substitute (lineRange, _, _, _, _) -> lineRange
-        | LineCommand.SubstituteRepeat (lineRange, _, _) -> lineRange
+        | LineCommand.Substitute (lineRange, _, _, _) -> lineRange
+        | LineCommand.SubstituteRepeat (lineRange, _) -> lineRange
         | LineCommand.Undo -> None
         | LineCommand.UnmapKeys _ -> None
         | LineCommand.Write (lineRange, _, _, _) -> lineRange
@@ -1200,8 +1200,8 @@ type Interpreter
             | LineCommand.ShiftRight _ -> x.RunShiftRight lineRange
             | LineCommand.Source (hasBang, filePath) -> x.RunSource hasBang filePath
             | LineCommand.Split (_, fileOptions, commandOptions) -> x.RunSplit lineRange fileOptions commandOptions
-            | LineCommand.Substitute (_, pattern, replace, flags, _) -> x.RunSubstitute lineRange pattern replace flags
-            | LineCommand.SubstituteRepeat (_, substituteFlags, _) -> x.RunSubstituteRepeatLast lineRange substituteFlags
+            | LineCommand.Substitute (_, pattern, replace, flags) -> x.RunSubstitute lineRange pattern replace flags
+            | LineCommand.SubstituteRepeat (_, substituteFlags) -> x.RunSubstituteRepeatLast lineRange substituteFlags
             | LineCommand.Undo -> x.RunUndo()
             | LineCommand.UnmapKeys (keyNotation, keyRemapModes, mapArgumentList) -> x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList
             | LineCommand.Write (_, hasBang, fileOptionList, filePath) -> x.RunWrite lineRange hasBang fileOptionList filePath

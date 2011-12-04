@@ -72,7 +72,7 @@ namespace VimCore.UnitTest
         /// <summary>
         /// Assert the given command parser out to a substitute with the specified values
         /// </summary>
-        private void AssertSubstitute(string command, string pattern, string replace, SubstituteFlags? flags = null, int? count = null)
+        private void AssertSubstitute(string command, string pattern, string replace, SubstituteFlags? flags = null)
         {
             var subCommand = ParseLineCommand(command).AsSubstitute();
             Assert.AreEqual(pattern, subCommand.Item2);
@@ -83,25 +83,15 @@ namespace VimCore.UnitTest
             {
                 Assert.AreEqual(flags.Value, subCommand.Item4);
             }
-
-            // Verify count if it was passed
-            if (count.HasValue)
-            {
-                Assert.AreEqual(count.Value, subCommand.Item5.Value);
-            }
         }
 
         /// <summary>
         /// Assert the given command parses out to a substitute repeat with the specified values
         /// </summary>
-        private void AssertSubstituteRepeat(string command, SubstituteFlags flags, int? count = null)
+        private void AssertSubstituteRepeat(string command, SubstituteFlags flags)
         {
             var subCommand = ParseLineCommand(command).AsSubstituteRepeat();
             Assert.AreEqual(flags, subCommand.Item2);
-            if (count.HasValue)
-            {
-                Assert.AreEqual(count.Value, subCommand.Item3.Value);
-            }
         }
 
         /// <summary>
@@ -691,7 +681,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Parse_Substitute_WithCount()
         {
-            AssertSubstitute("s/a/b/g 2", "a", "b", SubstituteFlags.ReplaceAll, 2);
+            AssertSubstitute("s/a/b/g 2", "a", "b", SubstituteFlags.ReplaceAll);
         }
 
         /// <summary>
@@ -725,7 +715,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Parse_SubstituteRepeat_WithCount()
         {
-            AssertSubstituteRepeat("& 3", SubstituteFlags.None, 3);
+            AssertSubstituteRepeat("& 3", SubstituteFlags.None);
         }
 
         /// <summary>
@@ -759,7 +749,7 @@ namespace VimCore.UnitTest
             AssertSubstituteRepeat("&&g", SubstituteFlags.ReplaceAll | SubstituteFlags.UsePreviousFlags);
             AssertSubstituteRepeat("~", SubstituteFlags.UsePreviousSearchPattern);
             AssertSubstituteRepeat("~ g", SubstituteFlags.UsePreviousSearchPattern | SubstituteFlags.ReplaceAll);
-            AssertSubstituteRepeat("~ g 3", SubstituteFlags.UsePreviousSearchPattern | SubstituteFlags.ReplaceAll, 3);
+            AssertSubstituteRepeat("~ g 3", SubstituteFlags.UsePreviousSearchPattern | SubstituteFlags.ReplaceAll);
         }
 
         /// <summary>

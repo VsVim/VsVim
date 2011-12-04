@@ -343,11 +343,11 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// The :substitute command.  The argument order is range, pattern, replace,
     /// substitute flags and count
-    | Substitute of LineRange option * string * string * SubstituteFlags * int option
+    | Substitute of LineRange option * string * string * SubstituteFlags
 
     /// The variant of the :substitute command which repeats the last :subsitute with
     /// different flags and count
-    | SubstituteRepeat of LineRange option * SubstituteFlags * int option
+    | SubstituteRepeat of LineRange option * SubstituteFlags
 
     /// Undo the last change
     | Undo

@@ -182,15 +182,6 @@ namespace VimCore.UnitTest
             Assert.AreEqual(_textView.GetLine(0).ExtentIncludingLineBreak.GetText(), _registerMap.GetRegister('c').StringValue);
         }
 
-        [Test]
-        public void Yank4()
-        {
-            Create("foo", "bar");
-            RunCommand("y 2");
-            var text = _textView.GetLineRange(0, 1).ExtentIncludingLineBreak.GetText();
-            Assert.AreEqual(text, UnnamedRegister.StringValue);
-        }
-
         /// <summary>
         /// Ensure that an invalid line number still registers an error with commands line yank vs. chosing
         /// the last line in the ITextBuffer as it does for jump commands
