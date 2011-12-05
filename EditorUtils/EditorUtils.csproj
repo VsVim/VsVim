@@ -52,6 +52,7 @@
       <HintPath>..\References\Microsoft.VisualStudio.Text.UI.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
   </ItemGroup>
@@ -59,10 +60,16 @@
     <Compile Include="Contract.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="IAsyncTaggerSource.cs" />
+    <Compile Include="IBasicTaggerSource.cs" />
     <Compile Include="Implementation\Tagging\AsyncTagger.cs" />
+    <Compile Include="Implementation\Tagging\BasicTagger.cs" />
+    <Compile Include="Implementation\Tagging\CountedTagger.cs" />
+    <Compile Include="Implementation\Tagging\TaggerFactory.cs" />
     <Compile Include="Implementation\Tagging\TaggerUtil.cs" />
     <Compile Include="Implementation\Utilities\EqualityUtility.cs" />
+    <Compile Include="Implementation\Utilities\LineRangeVisited.cs" />
     <Compile Include="Implementation\Utilities\SingleItemQueue.cs" />
+    <Compile Include="ITaggerFactory.cs" />
     <Compile Include="LineRange.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Resources.cs" />

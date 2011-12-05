@@ -134,7 +134,7 @@ namespace EditorUtils.Implementation.Tagging
         internal struct TagLookupResult
         {
             internal readonly TagLookupResultKind Kind;
-            internal readonly IEnumerable<ITagSpan<TTag>> TagList;
+            internal readonly ReadOnlyCollection<ITagSpan<TTag>> TagList;
 
             internal bool IsComplete
             {
@@ -146,7 +146,7 @@ namespace EditorUtils.Implementation.Tagging
                 get { return Kind == TagLookupResultKind.Partial; }
             }
 
-            private TagLookupResult(TagLookupResultKind kind, IEnumerable<ITagSpan<TTag>> tagList)
+            private TagLookupResult(TagLookupResultKind kind, ReadOnlyCollection<ITagSpan<TTag>> tagList)
             {
                 Kind = kind;
                 TagList = tagList;
@@ -154,15 +154,15 @@ namespace EditorUtils.Implementation.Tagging
 
             internal static TagLookupResult Empty
             {
-                get { return new TagLookupResult(TagLookupResultKind.None, new ITagSpan<TTag>[] { }); }
+                get { return new TagLookupResult(TagLookupResultKind.None, EmptyTagList); }
             }
 
-            internal static TagLookupResult CreateComplete(IEnumerable<ITagSpan<TTag>> tagList)
+            internal static TagLookupResult CreateComplete(ReadOnlyCollection<ITagSpan<TTag>> tagList)
             {
                 return new TagLookupResult(TagLookupResultKind.Complete, tagList);
             }
 
-            internal static TagLookupResult CreatePartial(IEnumerable<ITagSpan<TTag>> tagList)
+            internal static TagLookupResult CreatePartial(ReadOnlyCollection<ITagSpan<TTag>> tagList)
             {
                 return new TagLookupResult(TagLookupResultKind.Partial, tagList);
             }
@@ -366,7 +366,7 @@ namespace EditorUtils.Implementation.Tagging
                 if (_tagCache.TrackingCacheData.HasValue)
                 {
                     var tagLookupResult2 = GetTagsFromCache(span, _tagCache.TrackingCacheData.Value);
-                    return TagLookupResult.CreatePartial(tagLookupResult.TagList.Concat(tagLookupResult2.TagList));
+                    return TagLookupResult.CreatePartial(tagLookupResult.TagList.Concat(tagLookupResult2.TagList).ToReadOnlyCollection());
                 }
 
                 return tagLookupResult;
@@ -433,11 +433,11 @@ namespace EditorUtils.Implementation.Tagging
                         {
                             var itemSpan = tuple.Item1.GetSpanSafe(snapshot);
                             return itemSpan.HasValue
-                                ? new TagSpan<TTag>(itemSpan.Value, tuple.Item2)
+                                ? (ITagSpan<TTag>)new TagSpan<TTag>(itemSpan.Value, tuple.Item2)
                                 : null;
                         })
                     .Where(tagSpan => tagSpan != null)
-                    .ToList();
+                    .ToReadOnlyCollection();
                 return TagLookupResult.CreatePartial(tagList);
             }
 
@@ -558,9 +558,9 @@ namespace EditorUtils.Implementation.Tagging
                         if (unvisited.HasValue)
                         {
                             var tagList = EmptyTagList;
-                            tagLineRange = SnapshotLineRange.CreateForLineNumberRange(tagLineRange.Snapshot, unvisited.Value.StartLineNumber, unvisited.Value.LastLineNumber);
                             try
                             {
+                                tagLineRange = SnapshotLineRange.CreateForLineNumberRange(tagLineRange.Snapshot, unvisited.Value.StartLineNumber, unvisited.Value.LastLineNumber).Value;
                                 tagList = _asyncTaggerSource.GetTagsInBackground(data, tagLineRange.ExtentIncludingLineBreak, cancellationToken);
                             }
                             catch
@@ -716,7 +716,7 @@ namespace EditorUtils.Implementation.Tagging
             if (visibleLineRange.HasValue)
             {
                 if (visibleLineRange.Value.Snapshot == asyncBackgroundRequest.Snapshot &&
-                    visibleLineRange.Value.Intersects(asyncBackgroundRequest.LineRange))
+                    visibleLineRange.Value.ExtentIncludingLineBreak.IntersectsWith(asyncBackgroundRequest.LineRange.ExtentIncludingLineBreak))
                 {
                     asyncBackgroundRequest.PriorityLineRangeQueue.Enqueue(visibleLineRange.Value);
                 }

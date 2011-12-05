@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Utilities;
 
 namespace EditorUtils
 {
@@ -75,6 +76,27 @@ namespace EditorUtils
             var startLine = lines.FirstVisibleLine.Start.GetContainingLine().LineNumber;
             var lastLine = lines.LastVisibleLine.End.GetContainingLine().LineNumber;
             return SnapshotLineRange.CreateForLineNumberRange(textView.TextSnapshot, startLine, lastLine);
+        }
+
+        #endregion
+
+        #region PropertyCollection
+
+        public static bool TryGetPropertySafe<TProperty>(this PropertyCollection propertyCollection, object key, out TProperty value)
+        {
+            try
+            {
+                return propertyCollection.TryGetProperty<TProperty>(key, out value);
+            }
+            catch (Exception)
+            {
+                // If the value exists but is not convertible to the provided type then
+                // an exception will be thrown.  Collapse this into an empty option.  
+                // Helps guard against cases where other extensions override our values
+                // with ones of unexpected types
+                value = default(TProperty);
+                return false;
+            }
         }
 
         #endregion
