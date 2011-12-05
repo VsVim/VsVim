@@ -33,12 +33,18 @@ namespace Vim.UI.Wpf
             _buffer.StatusMessage += OnStatusMessage;
             _buffer.ErrorMessage += OnErrorMessage;
             _buffer.WarningMessage += OnWarningMessage;
-            _buffer.Vim.MacroRecorder.RecordingStarted += delegate { UpdateForRecordingChanged(); };
-            _buffer.Vim.MacroRecorder.RecordingStopped += delegate { UpdateForRecordingChanged(); };
+            _buffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
+            _buffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
             _margin.OptionsClicked += OnOptionsClicked;
             _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
             UpdateForRecordingChanged();
             UpdateTextColor();
+        }
+
+        internal void Disconnect()
+        {
+            _buffer.Vim.MacroRecorder.RecordingStarted -= OnRecordingStarted;
+            _buffer.Vim.MacroRecorder.RecordingStopped -= OnRecordingStopped;
         }
 
         private void KeyInputEventComplete()
@@ -259,6 +265,16 @@ namespace Vim.UI.Wpf
         private void OnFormatMappingChanged(object sender, FormatItemsEventArgs e)
         {
             UpdateTextColor();
+        }
+
+        private void OnRecordingStarted(object sender, Tuple<Register, bool> e)
+        {
+            UpdateForRecordingChanged();
+        }
+
+        private void OnRecordingStopped(object sender, EventArgs e)
+        {
+            UpdateForRecordingChanged();
         }
 
         #endregion
