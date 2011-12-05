@@ -216,6 +216,27 @@ namespace VsVim.UnitTest
             Assert.IsNull(weakReference.Target);
         }
 
+        /// <summary>
+        /// Run a sanity check which just tests the ability for an ITextViewHost to be created
+        /// and closed without leaking memory that doesn't involve the creation of an
+        /// IVimBuffer
+        /// </summary>
+        [Test]
+        public void TextViewHostOnly()
+        {
+            var container = GetOrCreateCompositionContainer();
+            var factory = container.GetExport<ITextEditorFactoryService>().Value;
+            var textView = factory.CreateTextView();
+            var textViewHost = factory.CreateTextViewHost(textView, setFocus: true);
+            var weakReference = new WeakReference(textViewHost);
+            textViewHost.Close();
+            textView = null;
+            textViewHost = null;
+
+            RunGarbageCollector();
+            Assert.IsNull(weakReference.Target);
+        }
+
         [Test]
         public void VimWpfDoesntHoldBuffer()
         {
