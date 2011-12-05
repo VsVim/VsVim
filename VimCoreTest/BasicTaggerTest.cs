@@ -1,13 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
-using Microsoft.FSharp.Collections;
-using Microsoft.FSharp.Control;
-using Microsoft.FSharp.Core;
+using EditorUtils;
+using EditorUtils.Implementation.Tagging;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using NUnit.Framework;
-using Vim;
-using Vim.Extensions;
 using Vim.UnitTest;
 
 namespace VimCore.UnitTest
@@ -21,7 +20,7 @@ namespace VimCore.UnitTest
         {
             private readonly ITextBuffer _textBuffer;
             private List<ITagSpan<TextMarkerTag>> _tags;
-            private FSharpHandler<Unit> _changed;
+            private EventHandler _changed;
 
             internal TestableBasicTaggerSource(ITextBuffer textBuffer)
             {
@@ -40,21 +39,21 @@ namespace VimCore.UnitTest
             {
                 if (_changed != null)
                 {
-                    _changed(this, null);
+                    _changed(this, EventArgs.Empty);
                 }
             }
 
             #region IBasicTaggerSource<TextMarkerTag>
 
-            event FSharpHandler<Unit> IBasicTaggerSource<TextMarkerTag>.Changed
+            event EventHandler IBasicTaggerSource<TextMarkerTag>.Changed
             {
                 add { _changed += value; }
                 remove { _changed -= value; }
             }
 
-            FSharpList<ITagSpan<TextMarkerTag>> IBasicTaggerSource<TextMarkerTag>.GetTags(SnapshotSpan span)
+            ReadOnlyCollection<ITagSpan<TextMarkerTag>> IBasicTaggerSource<TextMarkerTag>.GetTags(SnapshotSpan span)
             {
-                return _tags.ToFSharpList();
+                return _tags.ToReadOnlyCollection();
             }
 
             ITextSnapshot IBasicTaggerSource<TextMarkerTag>.TextSnapshot
@@ -146,7 +145,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog");
             var span = _textBuffer.GetSpan(0, 2);
-            _basicTagger.CachedRequestSpan = FSharpOption.Create(span);
+            _basicTagger.CachedRequestSpan = span;
 
             var didRun = false;
             _basicTaggerInterface.TagsChanged += (e, args) =>

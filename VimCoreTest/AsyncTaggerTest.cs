@@ -1,19 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.FSharp.Collections;
-using Microsoft.FSharp.Control;
-using Microsoft.FSharp.Core;
+using EditorUtils;
+using EditorUtils.Implementation.Tagging;
+using EditorUtils.Implementation.Utilities;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using NUnit.Framework;
 using Vim;
-using Vim.Extensions;
 using Vim.UnitTest;
-using EditorUtils;
+using AsyncTaggerType = EditorUtils.Implementation.Tagging.AsyncTagger<string, Microsoft.VisualStudio.Text.Tagging.TextMarkerTag>;
 
 namespace VimCore.UnitTest
 {
@@ -22,11 +22,11 @@ namespace VimCore.UnitTest
     {
         #region TestableAsyncTaggerSource
 
-        private sealed class TestableAsyncTaggerSource : IAsyncTaggerSource<string, TextMarkerTag>
+        private sealed class TestableAsyncTaggerSource : IAsyncTaggerSource<string, TextMarkerTag>, IDisposable
         {
             private readonly ITextBuffer _textBuffer;
             private readonly int _threadId;
-            private event FSharpHandler<Unit> _changed;
+            private event EventHandler _changed;
             private List<ITagSpan<TextMarkerTag>> _promptTags;
             private List<ITagSpan<TextMarkerTag>> _backgroundTags;
             private Action<string, SnapshotSpan> _backgroundCallback;
@@ -66,20 +66,20 @@ namespace VimCore.UnitTest
             {
                 if (_changed != null)
                 {
-                    _changed(this, null);
+                    _changed(this, EventArgs.Empty);
                 }
             }
 
             #region IAsyncTaggerSource
 
-            FSharpOption<int> IAsyncTaggerSource<string, TextMarkerTag>.Delay
+            int? IAsyncTaggerSource<string, TextMarkerTag>.Delay
             {
-                get { return FSharpOption<int>.None; }
+                get { return null; }
             }
 
-            FSharpOption<ITextView> IAsyncTaggerSource<string, TextMarkerTag>.TextView
+            ITextView IAsyncTaggerSource<string, TextMarkerTag>.TextViewOptional
             {
-                get { return FSharpOption.CreateForReference(TextView); }
+                get { return TextView; }
             }
 
             string IAsyncTaggerSource<string, TextMarkerTag>.GetDataForSpan(SnapshotSpan value)
@@ -88,7 +88,7 @@ namespace VimCore.UnitTest
                 return DataForSpan;
             }
 
-            FSharpList<ITagSpan<TextMarkerTag>> IAsyncTaggerSource<string, TextMarkerTag>.GetTagsInBackground(string value, SnapshotSpan span, CancellationToken cancellationToken)
+            ReadOnlyCollection<ITagSpan<TextMarkerTag>> IAsyncTaggerSource<string, TextMarkerTag>.GetTagsInBackground(string value, SnapshotSpan span, CancellationToken cancellationToken)
             {
                 Assert.IsFalse(InMainThread);
 
@@ -101,24 +101,26 @@ namespace VimCore.UnitTest
 
                 if (_backgroundTags != null)
                 {
-                    return _backgroundTags.ToFSharpList();
+                    return _backgroundTags.ToReadOnlyCollection();
                 }
 
                 throw new Exception("Couldn't get background tags");
             }
 
-            FSharpOption<FSharpList<ITagSpan<TextMarkerTag>>> IAsyncTaggerSource<string, TextMarkerTag>.GetTagsPrompt(SnapshotSpan value)
+            bool IAsyncTaggerSource<string, TextMarkerTag>.TryGetTagsPrompt(SnapshotSpan span, out IEnumerable<ITagSpan<TextMarkerTag>> tagList)
             {
                 Assert.IsTrue(InMainThread);
                 if (_promptTags != null)
                 {
-                    return FSharpOption.Create(_promptTags.ToFSharpList());
+                    tagList = _promptTags;
+                    return true;
                 }
 
-                return FSharpOption<FSharpList<ITagSpan<TextMarkerTag>>>.None;
+                tagList = null;
+                return false;
             }
 
-            event FSharpHandler<Unit> IAsyncTaggerSource<string, TextMarkerTag>.Changed
+            event EventHandler IAsyncTaggerSource<string, TextMarkerTag>.Changed
             {
                 add { _changed += value; }
                 remove { _changed -= value; }
@@ -182,35 +184,35 @@ namespace VimCore.UnitTest
             return new TagSpan<TextMarkerTag>(span, new TextMarkerTag("my tag"));
         }
 
-        private static FSharpList<ITagSpan<TextMarkerTag>> CreateTagSpans(params SnapshotSpan[] tagSpans)
+        private static ReadOnlyCollection<ITagSpan<TextMarkerTag>> CreateTagSpans(params SnapshotSpan[] tagSpans)
         {
-            return tagSpans.Select(CreateTagSpan).ToFSharpList();
+            return tagSpans.Select(CreateTagSpan).ToReadOnlyCollection();
         }
 
-        private BackgroundCacheData<TextMarkerTag> CreateBackgroundCacheData(SnapshotSpan source, params SnapshotSpan[] tagSpans)
+        private AsyncTaggerType.BackgroundCacheData CreateBackgroundCacheData(SnapshotSpan source, params SnapshotSpan[] tagSpans)
         {
-            return new BackgroundCacheData<TextMarkerTag>(
+            return new AsyncTaggerType.BackgroundCacheData(
                 source,
-                tagSpans.Select(CreateTagSpan).ToFSharpList());
+                tagSpans.Select(CreateTagSpan).ToReadOnlyCollection());
         }
 
-        private TrackingCacheData<TextMarkerTag> CreateTrackingCacheData(SnapshotSpan source, params SnapshotSpan[] tagSpans)
+        private AsyncTaggerType.TrackingCacheData CreateTrackingCacheData(SnapshotSpan source, params SnapshotSpan[] tagSpans)
         {
             var snapshot = source.Snapshot;
             var trackingSpan = snapshot.CreateTrackingSpan(source, SpanTrackingMode.EdgeInclusive);
             var tag = new TextMarkerTag("my tag");
             var all = tagSpans
                 .Select(span => Tuple.Create(snapshot.CreateTrackingSpan(span, SpanTrackingMode.EdgeInclusive), tag))
-                .ToFSharpList();
-            return new TrackingCacheData<TextMarkerTag>(
+                .ToReadOnlyCollection();
+            return new AsyncTaggerType.TrackingCacheData(
                 trackingSpan,
                 all);
         }
 
-        private TagCache<TextMarkerTag> CreateTagCache(SnapshotSpan source, params SnapshotSpan[] tagSpans)
+        private AsyncTaggerType.TagCache CreateTagCache(SnapshotSpan source, params SnapshotSpan[] tagSpans)
         {
             var backgroundCacheData = CreateBackgroundCacheData(source, tagSpans);
-            return TagCache<TextMarkerTag>.NewBackgroundCache(backgroundCacheData);
+            return new AsyncTaggerType.TagCache(backgroundCacheData, null);
         }
 
         private List<ITagSpan<TextMarkerTag>> GetTagsFull(SnapshotSpan span)
@@ -221,12 +223,12 @@ namespace VimCore.UnitTest
 
         private List<ITagSpan<TextMarkerTag>> GetTagsFull(SnapshotSpan span, out bool wasAsync)
         {
-            Assert.IsTrue(_asyncTagger.AsyncBackgroundRequest.IsNone());
+            Assert.IsFalse(_asyncTagger.AsyncBackgroundRequestData.HasValue);
             wasAsync = false;
             var tags = _asyncTagger.GetTags(new NormalizedSnapshotSpanCollection(span)).ToList();
-            if (_asyncTagger.AsyncBackgroundRequest.IsSome())
+            if (_asyncTagger.AsyncBackgroundRequestData.HasValue)
             {
-                _asyncTagger.AsyncBackgroundRequest.Value.Task.Wait();
+                _asyncTagger.AsyncBackgroundRequestData.Value.Task.Wait();
                 _synchronizationContext.RunAll();
                 tags = _asyncTagger.GetTags(new NormalizedSnapshotSpanCollection(span)).ToList();
                 wasAsync = true;
@@ -235,22 +237,22 @@ namespace VimCore.UnitTest
             return tags;
         }
 
-        private AsyncBackgroundRequest CreateAsyncBackgroundRequest(
+        private AsyncTaggerType.AsyncBackgroundRequest CreateAsyncBackgroundRequest(
             SnapshotSpan span,
             CancellationTokenSource cancellationTokenSource,
             Task task = null)
         {
             task = task ?? new Task(() => { });
-            return new AsyncBackgroundRequest(
+            return new AsyncTaggerType.AsyncBackgroundRequest(
                 SnapshotLineRangeUtil.CreateForSpan(span),
                 cancellationTokenSource,
                 new SingleItemQueue<SnapshotLineRange>(),
                 task);
         }
 
-        private void SetTagCache(TrackingCacheData<TextMarkerTag> trackingCacheData)
+        private void SetTagCache(AsyncTaggerType.TrackingCacheData trackingCacheData)
         {
-            _asyncTagger.TagCache = TagCache<TextMarkerTag>.NewTrackingCache(trackingCacheData);
+            _asyncTagger.TagCacheData = new AsyncTaggerType.TagCache(null, trackingCacheData);
         }
 
         /// <summary>
@@ -288,7 +290,7 @@ namespace VimCore.UnitTest
             var span = _textBuffer.GetLine(0).ExtentIncludingLineBreak;
             SetTagCache(CreateTrackingCacheData(span, _textBuffer.GetSpan(1, 3)));
             _textBuffer.Replace(_textBuffer.GetLine(2).Extent, "fish");
-            Assert.IsFalse(_asyncTagger.DidTagsChange(span, CreateTagSpans(_textBuffer.GetSpan(1, 3))));
+            Assert.IsFalse(_asyncTagger.DidTagsChange(_textBuffer.GetLine(0).ExtentIncludingLineBreak, CreateTagSpans(_textBuffer.GetSpan(1, 3))));
         }
 
         /// <summary>
@@ -331,7 +333,7 @@ namespace VimCore.UnitTest
             Assert.AreEqual(1, tags.Count);
             Assert.AreEqual(_textBuffer.GetSpan(0, 1), tags[0].Span);
             Assert.IsTrue(_synchronizationContext.IsEmpty);
-            Assert.IsTrue(_asyncTagger.TagCache.IsNone);
+            Assert.IsTrue(_asyncTagger.TagCacheData.IsEmpty);
         }
 
         /// <summary>
@@ -342,7 +344,7 @@ namespace VimCore.UnitTest
         public void GetTags_UseCache()
         {
             Create("hello world");
-            _asyncTagger.TagCache = CreateTagCache(
+            _asyncTagger.TagCacheData = CreateTagCache(
                 _textBuffer.GetExtent(),
                 _textBuffer.GetSpan(0, 1));
             var tags = _asyncTagger.GetTags(EntireBufferSpan).ToList();
@@ -360,7 +362,7 @@ namespace VimCore.UnitTest
             Create("hello world");
             var tags = _asyncTagger.GetTags(EntireBufferSpan).ToList();
             Assert.AreEqual(0, tags.Count);
-            Assert.IsTrue(_asyncTagger.AsyncBackgroundRequest.IsSome());
+            Assert.IsTrue(_asyncTagger.AsyncBackgroundRequestData.HasValue);
         }
 
         /// <summary>
@@ -409,14 +411,14 @@ namespace VimCore.UnitTest
             Create("cat", "dog", "bear");
 
             var cancellationTokenSource = new CancellationTokenSource();
-            _asyncTagger.AsyncBackgroundRequest = FSharpOption.Create(CreateAsyncBackgroundRequest(
+            _asyncTagger.AsyncBackgroundRequestData = CreateAsyncBackgroundRequest(
                 _textBuffer.GetExtent(),
                 cancellationTokenSource,
-                new Task(() => { })));
+                new Task(() => { }));
 
             var tags = _asyncTagger.GetTags(_textBuffer.GetLine(0).Extent).ToList();
             Assert.AreEqual(0, tags.Count);
-            Assert.AreSame(cancellationTokenSource, _asyncTagger.AsyncBackgroundRequest.Value.CancellationTokenSource);
+            Assert.AreSame(cancellationTokenSource, _asyncTagger.AsyncBackgroundRequestData.Value.CancellationTokenSource);
         }
 
         /// <summary>
@@ -428,16 +430,16 @@ namespace VimCore.UnitTest
             Create("cat", "dog", "bear");
 
             var cancellationTokenSource = new CancellationTokenSource();
-            _asyncTagger.AsyncBackgroundRequest = FSharpOption.Create(CreateAsyncBackgroundRequest(
+            _asyncTagger.AsyncBackgroundRequestData = CreateAsyncBackgroundRequest(
                 _textBuffer.GetLine(0).Extent,
                 cancellationTokenSource,
-                new Task(() => { })));
+                new Task(() => { }));
 
             var tags = _asyncTagger.GetTags(_textBuffer.GetExtent()).ToList();
             Assert.AreEqual(0, tags.Count);
-            Assert.AreNotSame(cancellationTokenSource, _asyncTagger.AsyncBackgroundRequest.Value.CancellationTokenSource);
+            Assert.AreNotSame(cancellationTokenSource, _asyncTagger.AsyncBackgroundRequestData.Value.CancellationTokenSource);
             Assert.IsTrue(cancellationTokenSource.IsCancellationRequested);
-            Assert.AreEqual(_textBuffer.GetExtent(), _asyncTagger.AsyncBackgroundRequest.Value.Span);
+            Assert.AreEqual(_textBuffer.GetExtent(), _asyncTagger.AsyncBackgroundRequestData.Value.Span);
         }
 
         /// <summary>
@@ -450,17 +452,17 @@ namespace VimCore.UnitTest
             Create("cat", "dog", "bear");
 
             var cancellationTokenSource = new CancellationTokenSource();
-            _asyncTagger.AsyncBackgroundRequest = FSharpOption.Create(CreateAsyncBackgroundRequest(
+            _asyncTagger.AsyncBackgroundRequestData = CreateAsyncBackgroundRequest(
                 _textBuffer.GetExtent(),
                 cancellationTokenSource,
-                new Task(() => { })));
+                new Task(() => { }));
 
             _textBuffer.Replace(new Span(0, 3), "bat");
             var tags = _asyncTagger.GetTags(_textBuffer.GetExtent()).ToList();
             Assert.AreEqual(0, tags.Count);
-            Assert.AreNotSame(cancellationTokenSource, _asyncTagger.AsyncBackgroundRequest.Value.CancellationTokenSource);
+            Assert.AreNotSame(cancellationTokenSource, _asyncTagger.AsyncBackgroundRequestData.Value.CancellationTokenSource);
             Assert.IsTrue(cancellationTokenSource.IsCancellationRequested);
-            Assert.AreEqual(_textBuffer.GetExtent(), _asyncTagger.AsyncBackgroundRequest.Value.Span);
+            Assert.AreEqual(_textBuffer.GetExtent(), _asyncTagger.AsyncBackgroundRequestData.Value.Span);
         }
 
         /// <summary>
@@ -492,12 +494,12 @@ namespace VimCore.UnitTest
         public void GetTags_PartialMatchInCache()
         {
             Create("cat", "dog", "bat");
-            _asyncTagger.TagCache = CreateTagCache(
+            _asyncTagger.TagCacheData = CreateTagCache(
                 _textBuffer.GetLine(0).ExtentIncludingLineBreak,
                 _textBuffer.GetSpan(0, 1));
             var tags = _asyncTagger.GetTags(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak).ToList();
             Assert.AreEqual(1, tags.Count);
-            Assert.IsTrue(_asyncTagger.AsyncBackgroundRequest.IsSome());
+            Assert.IsTrue(_asyncTagger.AsyncBackgroundRequestData.HasValue);
         }
 
         /// <summary>
@@ -508,13 +510,13 @@ namespace VimCore.UnitTest
         public void GetTags_ForwardEdit()
         {
             Create("cat", "dog", "bat");
-            _asyncTagger.TagCache = CreateTagCache(
+            _asyncTagger.TagCacheData = CreateTagCache(
                 _textBuffer.GetLine(0).ExtentIncludingLineBreak,
                 _textBuffer.GetSpan(0, 1));
             _textBuffer.Replace(new Span(0, 3), "cot");
             var tags = _asyncTagger.GetTags(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak).ToList();
             Assert.AreEqual(1, tags.Count);
-            Assert.IsTrue(_asyncTagger.AsyncBackgroundRequest.IsSome());
+            Assert.IsTrue(_asyncTagger.AsyncBackgroundRequestData.HasValue);
         }
 
         /// <summary>
@@ -540,9 +542,7 @@ namespace VimCore.UnitTest
             Create("cat", "dog", "bear", "pig");
             var backgroundData = CreateBackgroundCacheData(_textBuffer.GetLine(0).Extent, _textBuffer.GetLineSpan(0, 1));
             var trackingData = CreateTrackingCacheData(_textBuffer.GetLine(1).Extent, _textBuffer.GetLineSpan(1, 1));
-            _asyncTagger.TagCache = TagCache<TextMarkerTag>.NewTrackingAndBackgroundCache(
-                trackingData,
-                backgroundData);
+            _asyncTagger.TagCacheData = new AsyncTaggerType.TagCache(backgroundData, trackingData);
             var tags = _asyncTagger.GetTags(_textBuffer.GetLineRange(0, 2).ExtentIncludingLineBreak);
             Assert.AreEqual(2, tags.Count());
         }
@@ -555,11 +555,11 @@ namespace VimCore.UnitTest
         public void OnChanged_ClearCache()
         {
             Create("hello world");
-            _asyncTagger.TagCache = CreateTagCache(
+            _asyncTagger.TagCacheData = CreateTagCache(
                 _textBuffer.GetExtent(),
                 _textBuffer.GetSpan(0, 1));
             _asyncTaggerSource.RaiseChanged(null);
-            Assert.IsTrue(_asyncTagger.TagCache.IsNone);
+            Assert.IsTrue(_asyncTagger.TagCacheData.IsEmpty);
         }
 
         /// <summary>
@@ -571,12 +571,12 @@ namespace VimCore.UnitTest
         {
             Create("hello world");
             var cancellationTokenSource = new CancellationTokenSource();
-            _asyncTagger.AsyncBackgroundRequest = FSharpOption.Create(CreateAsyncBackgroundRequest(
+            _asyncTagger.AsyncBackgroundRequestData = CreateAsyncBackgroundRequest(
                 _textBuffer.GetExtent(),
                 cancellationTokenSource,
-                new Task(() => { })));
+                new Task(() => { }));
             _asyncTaggerSource.RaiseChanged(null);
-            Assert.IsTrue(_asyncTagger.AsyncBackgroundRequest.IsNone());
+            Assert.IsFalse(_asyncTagger.AsyncBackgroundRequestData.HasValue);
             Assert.IsTrue(cancellationTokenSource.IsCancellationRequested);
         }
 
@@ -587,7 +587,7 @@ namespace VimCore.UnitTest
         public void OnChanged_RaiseEvent()
         {
             Create("hello world");
-            _asyncTagger.CachedRequestSpan = FSharpOption.Create(_textBuffer.GetLine(0).Extent);
+            _asyncTagger.CachedRequestSpan = _textBuffer.GetLine(0).Extent;
             var didRun = false;
             _asyncTaggerInterface.TagsChanged += delegate
             {
@@ -649,7 +649,7 @@ namespace VimCore.UnitTest
             _asyncTaggerInterface.TagsChanged += (sender, e) => { tagsChanged = e.Span; };
 
             // Setup the previous background cache
-            _asyncTagger.TagCache = TagCache<TextMarkerTag>.NewTrackingCache(CreateTrackingCacheData(
+            _asyncTagger.TagCacheData = new AsyncTaggerType.TagCache(null, CreateTrackingCacheData(
                 _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
                 _textBuffer.GetSpan(0, 1)));
 
@@ -674,7 +674,7 @@ namespace VimCore.UnitTest
             _asyncTaggerInterface.TagsChanged += (sender, e) => { tagsChanged = e.Span; };
 
             // Setup the previous background cache
-            _asyncTagger.TagCache = TagCache<TextMarkerTag>.NewTrackingCache(CreateTrackingCacheData(
+            _asyncTagger.TagCacheData = new AsyncTaggerType.TagCache(null, CreateTrackingCacheData(
                 _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
                 _textBuffer.GetSpan(0, 1)));
 

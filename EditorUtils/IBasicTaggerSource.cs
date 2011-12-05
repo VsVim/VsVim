@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.Text.Tagging;
 
 namespace EditorUtils
 {
-    public interface IBasicTaggerSource<TTag> : IDisposable
+    public interface IBasicTaggerSource<TTag>
         where TTag : ITag
     {
         /// <summary>

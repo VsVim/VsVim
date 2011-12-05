@@ -72,7 +72,7 @@
     <Compile Include="ITaggerFactory.cs" />
     <Compile Include="LineRange.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Resources.cs" />
+    <Compile Include="EditorUtilsResources.cs" />
     <Compile Include="SnapshotLineRange.cs" />
     <Compile Include="UsedInBackgroundThreadAttribute.cs" />
   </ItemGroup>

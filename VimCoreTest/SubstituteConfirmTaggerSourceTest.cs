@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using EditorUtils;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
@@ -6,7 +7,6 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
-using Vim.Modes.SubstituteConfirm;
 using Vim.UnitTest;
 
 namespace VimCore.UnitTest

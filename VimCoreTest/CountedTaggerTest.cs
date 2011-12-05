@@ -1,11 +1,9 @@
 ﻿using System;
-using Microsoft.FSharp.Core;
+using EditorUtils.Implementation.Tagging;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 using Moq;
 using NUnit.Framework;
-using Vim;
-using Vim.Extensions;
 using Vim.UnitTest;
 
 namespace VimCore.UnitTest
@@ -25,17 +23,7 @@ namespace VimCore.UnitTest
             _propertyCollection = new PropertyCollection();
         }
 
-        private FSharpFunc<Unit, ITagger<TextMarkerTag>> CreateFunc(Func<ITagger<TextMarkerTag>> func)
-        {
-            return func.ToFSharpFunc();
-        }
-
         private CountedTagger<TextMarkerTag> Create(object key, PropertyCollection propertyCollection, Func<ITagger<TextMarkerTag>> func)
-        {
-            return Create(key, propertyCollection, func.ToFSharpFunc());
-        }
-
-        private CountedTagger<TextMarkerTag> Create(object key, PropertyCollection propertyCollection, FSharpFunc<Unit, ITagger<TextMarkerTag>> func)
         {
             var result = CountedTagger<TextMarkerTag>.Create(key, propertyCollection, func);
             return (CountedTagger<TextMarkerTag>)result;
@@ -48,13 +36,14 @@ namespace VimCore.UnitTest
         public void Create_DoCreate()
         {
             var didRun = false;
-            var func = CreateFunc(
+            var result = CountedTagger<TextMarkerTag>.Create(
+               _key, 
+               _propertyCollection, 
                 () =>
                 {
                     didRun = true;
                     return _factory.Create<ITagger<TextMarkerTag>>().Object;
                 });
-            var result = CountedTagger<TextMarkerTag>.Create(_key, _propertyCollection, func);
             Assert.IsTrue(didRun);
         }
 
@@ -65,12 +54,12 @@ namespace VimCore.UnitTest
         public void Create_GetFromCache()
         {
             var runCount = 0;
-            var func = CreateFunc(
+            Func<ITagger<TextMarkerTag>> func =
                 () =>
                 {
                     runCount++;
                     return _factory.Create<ITagger<TextMarkerTag>>().Object;
-                });
+                };
             var result1 = Create(_key, _propertyCollection, func);
             var result2 = Create(_key, _propertyCollection, func);
             Assert.AreEqual(1, runCount);

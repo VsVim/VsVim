@@ -1,12 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using NUnit.Framework;
 using Vim;
-using Vim.Extensions;
 using Vim.UnitTest;
 using GlobalSettings = Vim.GlobalSettings;
 
@@ -46,6 +46,13 @@ namespace VimCore.UnitTest
         public void TearDown()
         {
             _asyncTaggerSourceRaw = null;
+        }
+
+        private List<ITagSpan<TextMarkerTag>> TryGetTagsPrompt(SnapshotSpan span)
+        {
+            IEnumerable<ITagSpan<TextMarkerTag>> tagList;
+            Assert.IsTrue(_asyncTaggerSource.TryGetTagsPrompt(span, out tagList));
+            return tagList.ToList();
         }
 
         private List<ITagSpan<TextMarkerTag>> GetTags(SnapshotSpan span)
@@ -125,28 +132,26 @@ namespace VimCore.UnitTest
         /// We can promptly say nothing when highlight is disabled
         /// </summary>
         [Test]
-        public void GetTagsPrompt_HighlightDisabled()
+        public void TryGetTagsPrompt_HighlightDisabled()
         {
             Create("dog cat");
             _vimData.LastPatternData = VimUtil.CreatePatternData("dog");
             _globalSettings.HighlightSearch = false;
-            var ret = _asyncTaggerSource.GetTagsPrompt(_textBuffer.GetExtent());
-            Assert.IsTrue(ret.IsSome());
-            Assert.AreEqual(0, ret.Value.Length);
+            var ret = TryGetTagsPrompt(_textBuffer.GetExtent());
+            Assert.AreEqual(0, ret.Count);
         }
 
         /// <summary>
         /// We can promptly say nothing when in One Time disabled
         /// </summary>
         [Test]
-        public void GetTagsPrompt_OneTimeDisabled()
+        public void TryGetTagsPrompt_OneTimeDisabled()
         {
             Create("dog cat");
             _vimData.LastPatternData = VimUtil.CreatePatternData("dog");
             _asyncTaggerSourceRaw._oneTimeDisabled = true;
-            var ret = _asyncTaggerSource.GetTagsPrompt(_textBuffer.GetExtent());
-            Assert.IsTrue(ret.IsSome());
-            Assert.AreEqual(0, ret.Value.Length);
+            var ret = TryGetTagsPrompt(_textBuffer.GetExtent());
+            Assert.AreEqual(0, ret.Count);
         }
 
         /// <summary>
@@ -159,9 +164,8 @@ namespace VimCore.UnitTest
             Create("dog cat");
             _vimData.LastPatternData = VimUtil.CreatePatternData("dog");
             _asyncTaggerSourceRaw._isVisible = false;
-            var ret = _asyncTaggerSource.GetTagsPrompt(_textBuffer.GetExtent());
-            Assert.IsTrue(ret.IsSome());
-            Assert.AreEqual(0, ret.Value.Length);
+            var ret = TryGetTagsPrompt(_textBuffer.GetExtent());
+            Assert.AreEqual(0, ret.Count);
         }
 
         /// <summary>

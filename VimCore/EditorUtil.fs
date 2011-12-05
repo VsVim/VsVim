@@ -1038,8 +1038,8 @@ module TextViewUtil =
     /// Returns a sequence of ITextSnapshotLine values representing the visible lines in the buffer
     let GetVisibleSnapshotLines (textView : ITextView) =
         match GetVisibleSnapshotLineRange textView with
-        | None -> Seq.empty
-        | Some lineRange -> lineRange.Lines
+        | NullableUtil.HasValue lineRange -> lineRange.Lines
+        | NullableUtil.Null -> Seq.empty
 
     /// Ensure the caret is currently on the visible screen
     let EnsureCaretOnScreen textView = 

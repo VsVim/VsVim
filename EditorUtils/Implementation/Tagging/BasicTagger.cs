@@ -16,6 +16,7 @@ namespace EditorUtils.Implementation.Tagging
         internal SnapshotSpan? CachedRequestSpan
         {
             get { return _cachedRequestSpan; }
+            set { _cachedRequestSpan = value; }
         }
 
         internal BasicTagger(IBasicTaggerSource<TTag> basicTaggerSource)
@@ -28,7 +29,11 @@ namespace EditorUtils.Implementation.Tagging
         private void Dispose()
         {
             _basicTaggerSource.Changed -= OnBasicTaggerSourceChanged;
-            _basicTaggerSource.Dispose();
+            var disposable = _basicTaggerSource as IDisposable;
+            if (disposable != null)
+            {
+                disposable.Dispose();
+            }
         }
 
         private void AdjustRequestSpan(SnapshotSpan requestSpan)

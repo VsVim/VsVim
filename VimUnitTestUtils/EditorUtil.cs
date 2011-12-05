@@ -14,6 +14,7 @@ using Vim.UI.Wpf.Implementation;
 using Vim.UnitTest.Exports;
 using ClipboardDevice = Vim.UnitTest.Exports.TestableClipboardDevice;
 using IOPath = System.IO.Path;
+using EditorUtils;
 
 namespace Vim.UnitTest
 {
@@ -250,6 +251,7 @@ namespace Vim.UnitTest
 
             // IBlockCaret needs to be satisfied for integration tests
             list.Add(new AssemblyCatalog(typeof(IVim).Assembly));
+            list.Add(new AssemblyCatalog(typeof(ITaggerFactory).Assembly));
 
             // Other Exports needed to construct VsVim
             list.Add(new TypeCatalog(

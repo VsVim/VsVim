@@ -8,6 +8,8 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Utilities
 open System.ComponentModel.Composition
+open System.Collections.ObjectModel
+open System.Threading
 
 /// Tagger for incremental searches
 type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) as this =
@@ -71,19 +73,19 @@ type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) as this =
 
         if VisualKind.IsAnyVisual _vimBuffer.ModeKind || not _globalSettings.IncrementalSearch then 
             // If any of these are true then we shouldn't be displaying any tags
-            List.empty
+            ReadOnlyCollectionUtil.Empty
         else
             let snapshot = SnapshotSpanUtil.GetSnapshot span
             match _searchSpan |> Option.map (TrackingSpanUtil.GetSpan snapshot) |> OptionUtil.collapse with
             | None -> 
                 // No search span or the search span doesn't map into the current ITextSnapshot so there
                 // is nothing to return
-                List.empty
+                ReadOnlyCollectionUtil.Empty
             | Some span -> 
                 // We have a span so return the tag
                 let tag = TextMarkerTag(Constants.IncrementalSearchTagName)
                 let tagSpan = TagSpan(span, tag) :> ITagSpan<TextMarkerTag>
-                [ tagSpan ]
+                ReadOnlyCollectionUtil.Single tagSpan
 
     interface IBasicTaggerSource<TextMarkerTag> with
         member x.TextSnapshot = _textBuffer.CurrentSnapshot
@@ -100,7 +102,10 @@ type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) as this =
 [<TagType(typeof<TextMarkerTag>)>]
 type internal IncrementalSearchTaggerProvider
     [<ImportingConstructor>]
-    ( _vim : IVim ) = 
+    (
+        _vim : IVim,
+        _taggerFactory : ITaggerFactory
+    ) = 
 
     interface IViewTaggerProvider with 
         member x.CreateTagger<'T when 'T :> ITag> (textView : ITextView, textBuffer) = 
@@ -111,7 +116,7 @@ type internal IncrementalSearchTaggerProvider
                 null
             | true, Some vimBuffer ->
                 let taggerSource = new IncrementalSearchTaggerSource(vimBuffer)
-                let tagger = new BasicTagger<TextMarkerTag>(taggerSource)
+                let tagger = _taggerFactory.CreateBasicTagger taggerSource
                 tagger :> obj :?> ITagger<'T>
 
 /// Tagger for completed incremental searches
@@ -123,10 +128,10 @@ type HighlightSearchTaggerSource
         _search : ISearchService,
         _vimData : IVimData,
         _vimHost : IVimHost
-    ) =
+    ) as this =
 
     let _textBuffer = _textView.TextBuffer
-    let _changed = new Event<unit>()
+    let _changed = new DelegateEvent<System.EventHandler>()
     let _eventHandlers = DisposableBag()
 
     /// Users can temporarily disable highlight search with the ':noh' command.  This is true while 
@@ -142,7 +147,7 @@ type HighlightSearchTaggerSource
 
     do 
         let raiseChanged () = 
-            _changed.Trigger()
+            _changed.Trigger([| this; System.EventArgs.Empty |])
 
         let resetDisabledAndRaiseAllChanged () =
             _oneTimeDisabled <- false
@@ -235,15 +240,22 @@ type HighlightSearchTaggerSource
         let tag = TextMarkerTag(Constants.HighlightIncrementalSearchTagName)
         withSpan span
         |> Seq.map (fun span -> TagSpan(span,tag) :> ITagSpan<TextMarkerTag> )
-        |> List.ofSeq
+        |> ReadOnlyCollectionUtil.OfSeq
 
     interface IAsyncTaggerSource<SearchData, TextMarkerTag> with
-        member x.Delay = Some 100
+        member x.Delay = NullableUtil.Create 100
         member x.TextSnapshot = _textBuffer.CurrentSnapshot
-        member x.TextView = Some _textView
+        member x.TextViewOptional = _textView
         member x.GetDataForSpan _ = x.GetDataForSpan()
-        member x.GetTagsPrompt _ = x.GetTagsPrompt()
-        member x.GetTagsInBackground searchData span cancellationToken = HighlightSearchTaggerSource.GetTagsInBackground _search _wordNav searchData span cancellationToken
+        member x.GetTagsInBackground(searchData, span, cancellationToken) = HighlightSearchTaggerSource.GetTagsInBackground _search _wordNav searchData span cancellationToken
+        member x.TryGetTagsPrompt(_, value : byref<ITagSpan<TextMarkerTag> seq>) =
+            match x.GetTagsPrompt() with
+            | None -> 
+                value <- Seq.empty
+                false
+            | Some tagList ->
+                value <- tagList
+                true
         [<CLIEvent>]
         member x.Changed = _changed.Publish
 
@@ -256,7 +268,10 @@ type HighlightSearchTaggerSource
 [<TagType(typeof<TextMarkerTag>)>]
 type HighlightIncrementalSearchTaggerProvider
     [<ImportingConstructor>]
-    ( _vim : IVim ) = 
+    ( 
+        _vim : IVim,
+        _taggerFactory : ITaggerFactory
+    ) = 
 
     let _key = obj()
 
@@ -268,25 +283,25 @@ type HighlightIncrementalSearchTaggerProvider
             | true, None -> 
                 null
             | true, Some vimTextBuffer ->
-                CountedTagger.Create _key textView.Properties (fun () ->
+                let tagger = _taggerFactory.CreateAsyncTaggerCounted(_key, textView.Properties, fun () ->
                     let wordNavigator = vimTextBuffer.WordNavigator
-                    let asyncTaggerSource = new HighlightSearchTaggerSource(textView, vimTextBuffer.GlobalSettings, wordNavigator, _vim.SearchService, _vim.VimData, _vim.VimHost)
-                    let asyncTagger = new AsyncTagger<SearchData, TextMarkerTag>(asyncTaggerSource)
-                    asyncTagger :> obj :?> ITagger<'T>)
+                    let taggerSource = new HighlightSearchTaggerSource(textView, vimTextBuffer.GlobalSettings, wordNavigator, _vim.SearchService, _vim.VimData, _vim.VimHost)
+                    taggerSource :> IAsyncTaggerSource<SearchData, TextMarkerTag>)
+                tagger :> obj :?> ITagger<'T>
 
 /// Tagger for matches as they appear during a confirm substitute
 type SubstituteConfirmTaggerSource
     ( 
         _textBuffer : ITextBuffer,
         _mode : ISubstituteConfirmMode
-    ) =
+    ) as this =
 
-    let _changed = new Event<unit>()
+    let _changed = new DelegateEvent<System.EventHandler>()
     let _eventHandlers = DisposableBag()
     let mutable _currentMatch : SnapshotSpan option = None
 
     do 
-        let raiseChanged () = _changed.Trigger()
+        let raiseChanged () = _changed.Trigger([| this; System.EventArgs.Empty |])
 
         _mode.CurrentMatchChanged
         |> Observable.subscribe (fun data -> 
@@ -299,8 +314,9 @@ type SubstituteConfirmTaggerSource
         | Some currentMatch -> 
             let tag = TextMarkerTag(Constants.HighlightIncrementalSearchTagName)
             let tagSpan = TagSpan(currentMatch, tag) :> ITagSpan<TextMarkerTag>
-            [ tagSpan ]
-        | None -> List.empty
+            ReadOnlyCollectionUtil.Single tagSpan
+        | None -> 
+            ReadOnlyCollectionUtil.Empty
 
     interface IBasicTaggerSource<TextMarkerTag> with
         member x.TextSnapshot = _textBuffer.CurrentSnapshot
@@ -331,19 +347,20 @@ type SubstituteConfirmTaggerProvider
                 null
             | true, Some buffer ->
                 let taggerSource = new SubstituteConfirmTaggerSource(textBuffer, buffer.SubstituteConfirmMode)
-                _taggerFactory.CreateBasicTagger(taggerSource)
+                let tagger = _taggerFactory.CreateBasicTagger(taggerSource)
+                tagger :> obj :?> ITagger<'T>
 
 /// Fold tagger for the IOutliningRegion tags created by folds.  Note that folds work
 /// on an ITextBuffer level and not an ITextView level.  Hence this works directly with
 /// IFoldManagerData instead of IFoldManager
-type internal FoldTaggerSource(_foldData : IFoldData) =
+type internal FoldTaggerSource(_foldData : IFoldData) as this =
 
     let _textBuffer = _foldData.TextBuffer
-    let _changed = new Event<unit>()
+    let _changed = new DelegateEvent<System.EventHandler>()
 
     do 
         _foldData.FoldsUpdated 
-        |> Event.add (fun _ -> _changed.Trigger())
+        |> Event.add (fun _ -> _changed.Trigger([| this; System.EventArgs.Empty |]))
 
     member x.GetTags span =
 
@@ -361,13 +378,16 @@ type internal FoldTaggerSource(_foldData : IFoldData) =
             let hint = span.GetText()
             let tag = OutliningRegionTag(true, true, description, hint)
             TagSpan<OutliningRegionTag>(span, tag) :> ITagSpan<OutliningRegionTag> )
-        |> List.ofSeq
+        |> ReadOnlyCollectionUtil.OfSeq
 
     interface IBasicTaggerSource<OutliningRegionTag> with
         member x.TextSnapshot = _textBuffer.CurrentSnapshot
         member x.GetTags span = x.GetTags span
         [<CLIEvent>]
         member x.Changed = _changed.Publish
+
+    interface System.IDisposable with
+        member x.Dispose() = ()
 
 [<Export(typeof<ITaggerProvider>)>]
 [<ContentType(Constants.AnyContentType)>]
@@ -384,8 +404,10 @@ type FoldTaggerProvider
 
     interface ITaggerProvider with 
         member x.CreateTagger<'T when 'T :> ITag> textBuffer =
-            _taggerFactory.CreateBasicTaggerCounted(_key, textBuffer.Properties, fun() ->
+            let tagger = _taggerFactory.CreateBasicTaggerCounted(_key, textBuffer.Properties, fun() ->
                 let foldData = _factory.GetFoldData textBuffer
-                new FoldTaggerSource(foldData) :> IBasicTaggerSource<T>)
+                let taggerSource = new FoldTaggerSource(foldData)
+                taggerSource :> IBasicTaggerSource<OutliningRegionTag>)
+            tagger :> obj :?> ITagger<'T>
 
 

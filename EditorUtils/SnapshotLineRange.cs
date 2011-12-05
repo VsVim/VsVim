@@ -84,12 +84,12 @@ namespace EditorUtils
         {
             if (startLine >= snapshot.LineCount)
             {
-                throw new ArgumentException("startLine", Resources.InvalidLineNumber);
+                throw new ArgumentException("startLine", EditorUtilsResources.InvalidLineNumber);
             }
 
-            if (startLine + (count + 1) >= snapshot.LineCount || count < 1)
+            if (startLine + (count - 1) >= snapshot.LineCount || count < 1)
             {
-                throw new ArgumentException("count", Resources.InvalidLineNumber);
+                throw new ArgumentException("count", EditorUtilsResources.InvalidLineNumber);
             }
 
             _snapshot = snapshot;

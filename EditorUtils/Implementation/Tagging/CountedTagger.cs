@@ -50,7 +50,7 @@ namespace EditorUtils.Implementation.Tagging
             _propertyCollection = propertyCollection;
         }
 
-        private void Dispose()
+        internal void Dispose()
         {
             Counter counter;
             if (_propertyCollection.TryGetPropertySafe<Counter>(_key, out counter))
@@ -82,8 +82,9 @@ namespace EditorUtils.Implementation.Tagging
             }
             else
             {
-                propertyCollection[key] = counter;
                 tagger = createFunc();
+                counter = new Counter(tagger);
+                propertyCollection[key] = counter;
             }
 
             return new CountedTagger<TTag>(tagger, key, propertyCollection);

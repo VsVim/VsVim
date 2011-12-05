@@ -108,6 +108,11 @@ namespace EditorUtils.Implementation.Tagging
             internal BackgroundCacheData? BackgroundCacheData;
             internal TrackingCacheData? TrackingCacheData;
 
+            internal bool IsEmpty
+            {
+                get { return !BackgroundCacheData.HasValue && !TrackingCacheData.HasValue; }
+            }
+
             internal TagCache(BackgroundCacheData? backgroundCacheData, TrackingCacheData? trackingCacheData)
             {
                 BackgroundCacheData = backgroundCacheData;
@@ -270,26 +275,39 @@ namespace EditorUtils.Implementation.Tagging
             }
         }
 
-        private void Dispose()
+        /// <summary>
+        /// Given a new tag list determine if the results differ from what we would've been 
+        /// returning from our TrackingCacheData over the same SnapshotSpan
+        /// </summary>
+        internal bool DidTagsChange(SnapshotSpan span, ReadOnlyCollection<ITagSpan<TTag>> tagList)
         {
-            RemoveHandlers();
-            _asyncTaggerSource.Dispose();
-        }
-
-        private void RemoveHandlers()
-        {
-            _asyncTaggerSource.Changed -= OnAsyncTaggerSourceChanged;
-            if (_asyncTaggerSource.TextViewOptional != null)
+            if (!_tagCache.TrackingCacheData.HasValue)
             {
-                _asyncTaggerSource.TextViewOptional.LayoutChanged -= OnLayoutChanged;
+                // Nothing in the tracking cache so it changed if there is anything in the new
+                // collection
+                return tagList.Count > 0;
             }
+
+            var trackingCacheData = _tagCache.TrackingCacheData.Value;
+            var trackingTagList = GetTagsFromCache(span, trackingCacheData).TagList;
+
+            if (trackingTagList.Count != tagList.Count)
+            {
+               return true;
+            }
+
+            var trackingSet = trackingTagList
+                .Select(tagSpan => tagSpan.Span)
+                .ToHashSet();
+
+            return tagList.Any(x => !trackingSet.Contains(x.Span));
         }
 
         /// <summary>
         /// Get the tags for the specified NormalizedSnapshotSpanCollection.  Use the cache if 
         /// possible and possibly go to the background if necessary
         /// </summary>
-        private IEnumerable<ITagSpan<TTag>> GetTags(NormalizedSnapshotSpanCollection col)
+        internal IEnumerable<ITagSpan<TTag>> GetTags(NormalizedSnapshotSpanCollection col)
         {
             var span = col.GetOverarchingSpan();
             AdjustRequestSpan(span);
@@ -334,6 +352,25 @@ namespace EditorUtils.Implementation.Tagging
             // instead return all available tags.  We filter down the collection here to what's 
             // necessary.
             return tagList.Where(tagSpan => tagSpan.Span.IntersectsWith(span));
+        }
+
+        private void Dispose()
+        {
+            RemoveHandlers();
+            var disposable = _asyncTaggerSource as IDisposable;
+            if (disposable != null)
+            {
+                disposable.Dispose();
+            }
+        }
+
+        private void RemoveHandlers()
+        {
+            _asyncTaggerSource.Changed -= OnAsyncTaggerSourceChanged;
+            if (_asyncTaggerSource.TextViewOptional != null)
+            {
+                _asyncTaggerSource.TextViewOptional.LayoutChanged -= OnLayoutChanged;
+            }
         }
 
         /// <summary>
@@ -631,7 +668,7 @@ namespace EditorUtils.Implementation.Tagging
                 try
                 {
                     var asyncBackgroundRequest = _asyncBackgroundRequest.Value;
-                    if (asyncBackgroundRequest.CancellationTokenSource.IsCancellationRequested)
+                    if (!asyncBackgroundRequest.CancellationTokenSource.IsCancellationRequested)
                     {
                         asyncBackgroundRequest.CancellationTokenSource.Cancel();
                     }
@@ -730,34 +767,6 @@ namespace EditorUtils.Implementation.Tagging
         private bool IsActiveBackgroundRequest(CancellationTokenSource cancellationTokenSource)
         {
             return _asyncBackgroundRequest.HasValue && _asyncBackgroundRequest.Value.CancellationTokenSource == cancellationTokenSource;
-        }
-
-        /// <summary>
-        /// Given a new tag list determine if the results differ from what we would've been 
-        /// returning from our TrackingCacheData over the same SnapshotSpan
-        /// </summary>
-        private bool DidTagsChange(SnapshotSpan span, ReadOnlyCollection<ITagSpan<TTag>> tagList)
-        {
-            if (!_tagCache.TrackingCacheData.HasValue)
-            {
-                // Nothing in the tracking cache so it changed if there is anything in the new
-                // collection
-                return tagList.Count > 0;
-            }
-
-            var trackingCacheData = _tagCache.TrackingCacheData.Value;
-            var trackingTagList = GetTagsFromCache(span, trackingCacheData).TagList;
-
-            if (trackingTagList.Count != tagList.Count)
-            {
-               return true;
-            }
-
-            var trackingSet = trackingTagList
-                .Select(tagSpan => tagSpan.Span)
-                .ToHashSet();
-
-            return tagList.Any(x => !trackingSet.Contains(x.Span));
         }
 
         /// <summary>

@@ -2,6 +2,7 @@
 
 namespace Vim
 open Microsoft.VisualStudio.Text
+open System.Collections.ObjectModel
 
 [<AbstractClass>]
 type internal ToggleHandler() =
@@ -324,13 +325,16 @@ module internal CharUtil =
 
 module internal NullableUtil = 
 
-    let (|HasValue|Null|) (x:System.Nullable<_>) =
+    let (|HasValue|Null|) (x : System.Nullable<_>) =
         if x.HasValue then
             HasValue (x.Value)
         else
             Null 
 
-    let toOption (x:System.Nullable<_>) =
+    let Create (x : 'T) =
+        System.Nullable<'T>(x)
+
+    let ToOption (x : System.Nullable<_>) =
         if x.HasValue then
             Some x.Value
         else
@@ -449,6 +453,23 @@ module NonEmptyCollectionUtil =
         let head = mapFunc col.Head
         let rest = List.map mapFunc col.Rest
         NonEmptyCollection<_>(head, rest)
+
+type internal ReadOnlyCollectionUtil<'T>() = 
+
+    static let s_empty = 
+        let list = System.Collections.Generic.List<'T>()
+        ReadOnlyCollection<'T>(list)
+
+    static member Empty = s_empty
+
+    static member Single (item : 'T) = 
+        let list = System.Collections.Generic.List<'T>()
+        list.Add(item)
+        ReadOnlyCollection<'T>(list)
+
+    static member OfSeq (collection : 'T seq) = 
+        let list = System.Collections.Generic.List<'T>(collection)
+        ReadOnlyCollection<'T>(list)
 
 type Contract = 
 

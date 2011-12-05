@@ -13,7 +13,7 @@ namespace EditorUtils
     /// and each method which is called on the background thread is labelled as such
     /// be called on any thread
     /// </summary>
-    public interface IAsyncTaggerSource<TData, TTag> : IDisposable
+    public interface IAsyncTaggerSource<TData, TTag>
         where TTag : ITag
     {
         /// <summary>

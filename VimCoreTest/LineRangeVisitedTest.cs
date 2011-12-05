@@ -1,6 +1,6 @@
 ﻿using EditorUtils;
 using NUnit.Framework;
-using Vim;
+using EditorUtils.Implementation.Utilities;
 
 namespace VimCore.UnitTest
 {
@@ -9,7 +9,7 @@ namespace VimCore.UnitTest
     {
         private LineRangeVisited Create(params LineRange[] lineRanges)
         {
-            return LineRangeVisited.OfSeq(lineRanges);
+            return new LineRangeVisited(lineRanges);
         }
 
         [Test]
