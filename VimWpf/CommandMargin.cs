@@ -41,7 +41,7 @@ namespace Vim.UI.Wpf
 
         public void Dispose()
         {
-
+            _controller.Disconnect();
         }
     }
 }

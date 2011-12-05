@@ -2283,7 +2283,7 @@ type IMacroRecorder =
 
     /// Raised when a macro recording is completed.
     [<CLIEvent>]
-    abstract RecordingStopped : IEvent<unit>
+    abstract RecordingStopped : IEvent<System.EventArgs>
 
 [<RequireQualifiedAccess>]
 type ProcessResult = 
