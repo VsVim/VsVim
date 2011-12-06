@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using EditorUtils.UnitTest;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -10,7 +11,6 @@ using Vim.Extensions;
 using Vim.Modes.Normal;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
-using GlobalSettings = Vim.GlobalSettings;
 
 namespace VimCore.UnitTest
 {

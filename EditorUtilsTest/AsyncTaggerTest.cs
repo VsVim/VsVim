@@ -4,21 +4,19 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using EditorUtils;
 using EditorUtils.Implementation.Tagging;
 using EditorUtils.Implementation.Utilities;
+using EditorUtils.UnitTest.Utils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using NUnit.Framework;
-using Vim;
-using Vim.UnitTest;
 using AsyncTaggerType = EditorUtils.Implementation.Tagging.AsyncTagger<string, Microsoft.VisualStudio.Text.Tagging.TextMarkerTag>;
 
-namespace VimCore.UnitTest
+namespace EditorUtils.UnitTest
 {
     [TestFixture]
-    public sealed class AsyncTaggerTest : VimTestBase
+    public sealed class AsyncTaggerTest : EditorTestBase
     {
         #region TestableAsyncTaggerSource
 
@@ -154,7 +152,7 @@ namespace VimCore.UnitTest
 
         private NormalizedSnapshotSpanCollection EntireBufferSpan
         {
-            get { return new NormalizedSnapshotSpanCollection(SnapshotUtil.GetExtent(_textBuffer.CurrentSnapshot)); }
+            get { return new NormalizedSnapshotSpanCollection(_textBuffer.CurrentSnapshot.GetExtent()); }
         }
 
         [TearDown]
@@ -244,7 +242,7 @@ namespace VimCore.UnitTest
         {
             task = task ?? new Task(() => { });
             return new AsyncTaggerType.AsyncBackgroundRequest(
-                SnapshotLineRangeUtil.CreateForSpan(span),
+                SnapshotLineRange.CreateForSpan(span),
                 cancellationTokenSource,
                 new SingleItemQueue<SnapshotLineRange>(),
                 task);

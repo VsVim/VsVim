@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using EditorUtils.UnitTest;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -76,7 +77,7 @@ namespace VimCore.UnitTest
                 factory: _factory);
             _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
             _operations = _factory.Create<ICommonOperations>();
-            _operations.SetupGet(x => x.EditorOperations).Returns(EditorUtil.FactoryService.EditorOperationsFactory.GetEditorOperations(_textView));
+            _operations.SetupGet(x => x.EditorOperations).Returns(EditorOperationsFactoryService.GetEditorOperations(_textView));
             _broker = _factory.Create<IDisplayWindowBroker>();
             _broker.SetupGet(x => x.IsCompletionActive).Returns(false);
             _broker.SetupGet(x => x.IsQuickInfoActive).Returns(false);
@@ -103,7 +104,7 @@ namespace VimCore.UnitTest
                 !insertMode,
                 _keyboardDevice.Object,
                 _mouseDevice.Object,
-                EditorUtil.FactoryService.WordUtilFactory.GetWordUtil(_textView.TextBuffer),
+                WordUtilFactory.GetWordUtil(_textView.TextBuffer),
                 _wordCompletionSessionFactoryService.Object);
             _mode = _modeRaw;
             _mode.CommandRan += (sender, e) => { _lastCommandRan = e; };

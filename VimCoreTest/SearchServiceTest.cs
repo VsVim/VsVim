@@ -4,6 +4,7 @@ using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
+using EditorUtils.UnitTest;
 
 namespace VimCore.UnitTest
 {
@@ -26,7 +27,7 @@ namespace VimCore.UnitTest
             _globalSettings.IgnoreCase = true;
             _globalSettings.SmartCase = false;
 
-            _textSearch = EditorUtil.FactoryService.TextSearchService;
+            _textSearch = TextSearchService;
             _searchRaw = new SearchService(_textSearch, _globalSettings);
             _search = _searchRaw;
         }

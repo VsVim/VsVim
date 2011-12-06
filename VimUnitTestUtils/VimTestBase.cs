@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.Composition.Hosting;
+using System.ComponentModel.Composition.Primitives;
 using System.Linq;
+using EditorUtils.UnitTest;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -8,6 +11,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using NUnit.Framework;
 using Vim.UI.Wpf;
 using Vim.UI.Wpf.Implementation;
+using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
 
 namespace Vim.UnitTest
@@ -19,22 +23,21 @@ namespace Vim.UnitTest
     ///   - Remove any key mappings 
     /// </summary>
     [TestFixture]
-    public abstract class VimTestBase
+    public abstract class VimTestBase : EditorTestBase
     {
-        private CompositionContainer _compositionContainer;
+        [ThreadStatic]
+        private static CompositionContainer _vimCompositionContainer;
+
         private IVim _vim;
         private IVimBufferFactory _vimBufferFactory;
         private ICommonOperationsFactory _commonOperationsFactory;
         private IVimErrorDetector _vimErrorDetector;
         private IWordUtilFactory _wordUtilFactory;
-        private ITextBufferFactoryService _textBufferFactoryService;
-        private ITextEditorFactoryService _textEditorFactoryService;
         private IFoldManagerFactory _foldManagerFactory;
         private IBufferTrackingService _bufferTrackingService;
-        private ISmartIndentationService _smartIndentationService;
         private IProtectedOperations _protectedOperations;
-        private IEditorOperationsFactoryService _editorOperationsFactoryService;
-
+        private IAdhocOutlinerFactory _adhocOutlinerFactory;
+    
         /// <summary>
         /// An IProtectedOperations value which will be properly checked in the context of this
         /// test case
@@ -59,11 +62,6 @@ namespace Vim.UnitTest
             get { return (MockVimHost)_vim.VimHost; }
         }
 
-        protected CompositionContainer CompositionContainer
-        {
-            get { return _compositionContainer; }
-        }
-
         protected ICommonOperationsFactory CommonOperationsFactory
         {
             get { return _commonOperationsFactory; }
@@ -84,14 +82,9 @@ namespace Vim.UnitTest
             get { return _bufferTrackingService; }
         }
 
-        protected ISmartIndentationService SmartIndentationService
+        protected IAdhocOutlinerFactory AdhocOutlinerFactory
         {
-            get { return _smartIndentationService; }
-        }
-
-        protected IEditorOperationsFactoryService EditorOperationsFactoryService
-        {
-            get { return _editorOperationsFactoryService; }
+            get { return _adhocOutlinerFactory; }
         }
 
         protected virtual bool TrackTextViewHistory
@@ -99,28 +92,25 @@ namespace Vim.UnitTest
             get { return true; }
         }
 
-        [SetUp]
-        public void SetupBase()
+        public override void SetupBase()
         {
-            _compositionContainer = GetOrCreateCompositionContainer();
-            _vim = _compositionContainer.GetExportedValue<IVim>();
-            _vimBufferFactory = _compositionContainer.GetExportedValue<IVimBufferFactory>();
-            _textBufferFactoryService = _compositionContainer.GetExportedValue<ITextBufferFactoryService>();
-            _textEditorFactoryService = _compositionContainer.GetExportedValue<ITextEditorFactoryService>();
-            _vimErrorDetector = _compositionContainer.GetExportedValue<IVimErrorDetector>();
-            _commonOperationsFactory = _compositionContainer.GetExportedValue<ICommonOperationsFactory>();
-            _wordUtilFactory = _compositionContainer.GetExportedValue<IWordUtilFactory>();
-            _bufferTrackingService = _compositionContainer.GetExportedValue<IBufferTrackingService>();
-            _foldManagerFactory = _compositionContainer.GetExportedValue<IFoldManagerFactory>();
-            _smartIndentationService = _compositionContainer.GetExportedValue<ISmartIndentationService>();
-            _editorOperationsFactoryService = _compositionContainer.GetExportedValue<IEditorOperationsFactoryService>();
+            base.SetupBase();
+            _vim = CompositionContainer.GetExportedValue<IVim>();
+            _vimBufferFactory = CompositionContainer.GetExportedValue<IVimBufferFactory>();
+            _vimErrorDetector = CompositionContainer.GetExportedValue<IVimErrorDetector>();
+            _commonOperationsFactory = CompositionContainer.GetExportedValue<ICommonOperationsFactory>();
+            _wordUtilFactory = CompositionContainer.GetExportedValue<IWordUtilFactory>();
+            _bufferTrackingService = CompositionContainer.GetExportedValue<IBufferTrackingService>();
+            _foldManagerFactory = CompositionContainer.GetExportedValue<IFoldManagerFactory>();
+            _adhocOutlinerFactory = CompositionContainer.GetExportedValue<IAdhocOutlinerFactory>();
             _vimErrorDetector.Clear();
             _protectedOperations = new ProtectedOperations(_vimErrorDetector);
         }
 
-        [TearDown]
-        public void TearDownBase()
+        public override void  TearDownBase()
         {
+            base.TearDownBase();
+
             if (_vimErrorDetector.HasErrors())
             {
                 var msg = String.Format("Extension Exception: {0}", _vimErrorDetector.GetErrors().First().Message);
@@ -166,29 +156,12 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
-        /// Create an ITextBuffer instance with the given lines
-        /// </summary>
-        protected ITextBuffer CreateTextBuffer(params string[] lines)
-        {
-            return _textBufferFactoryService.CreateTextBuffer(lines);
-        }
-
-        /// <summary>
         /// Create an IUndoRedoOperations instance with the given IStatusUtil
         /// </summary>
         protected IUndoRedoOperations CreateUndoRedoOperations(IStatusUtil statusUtil = null)
         {
             statusUtil = statusUtil ?? new StatusUtil();
             return new UndoRedoOperations(statusUtil, FSharpOption<ITextUndoHistory>.None, null);
-        }
-
-        /// <summary>
-        /// Create an ITextView instance with the given lines
-        /// </summary>
-        protected IWpfTextView CreateTextView(params string[] lines)
-        {
-            var textBuffer = CreateTextBuffer(lines);
-            return _textEditorFactoryService.CreateTextView(textBuffer);
         }
 
         /// <summary>
@@ -277,9 +250,59 @@ namespace Vim.UnitTest
             return _vimBufferFactory.CreateVimBuffer(vimBufferData);
         }
 
-        protected virtual CompositionContainer GetOrCreateCompositionContainer()
+        protected ITextStructureNavigator CreateTextStructureNavigator(ITextBuffer textBuffer, WordKind kind)
         {
-            return EditorUtil.CompositionContainer;
+            return WordUtilFactory.GetWordUtil(textBuffer).CreateTextStructureNavigator(kind);
+        }
+
+        internal CommandUtil CreateCommandUtil(
+            IVimBufferData vimBufferData,
+            IMotionUtil motionUtil = null,
+            ICommonOperations operations = null,
+            IFoldManager foldManager = null,
+            InsertUtil insertUtil = null)
+        {
+            motionUtil = motionUtil ?? new MotionUtil(vimBufferData);
+            operations = operations ?? CommonOperationsFactory.GetCommonOperations(vimBufferData);
+            foldManager = foldManager ?? VimUtil.CreateFoldManager(vimBufferData.TextView, vimBufferData.StatusUtil);
+            insertUtil = insertUtil ?? new InsertUtil(vimBufferData, operations);
+            return new CommandUtil(
+                vimBufferData,
+                motionUtil,
+                operations,
+                foldManager,
+                insertUtil);
+        }
+
+        protected override CompositionContainer GetOrCreateCompositionContainer()
+        {
+            if (_vimCompositionContainer == null)
+            {
+                var list = GetVimCatalog();
+                var catalog = new AggregateCatalog(list.ToArray());
+                _vimCompositionContainer = new CompositionContainer(catalog);
+            }
+
+            return _vimCompositionContainer;
+        }
+
+        protected static List<ComposablePartCatalog> GetVimCatalog()
+        {
+            var list = GetEditorUtilsCatalog();
+            list.Add(new AssemblyCatalog(typeof(IVim).Assembly));
+
+            // Other Exports needed to construct VsVim
+            list.Add(new TypeCatalog(
+                typeof(ClipboardDevice),
+                typeof(TestableKeyboardDevice),
+                typeof(MouseDevice),
+                typeof(global::Vim.UnitTest.Exports.VimHost),
+                typeof(VimErrorDetector),
+                typeof(AdhocOutlinerFactory),
+                typeof(DisplayWindowBrokerFactoryService),
+                typeof(WordCompletionSessionFactoryService)));
+
+            return list;
         }
     }
 }

@@ -8,11 +8,12 @@ using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
+using EditorUtils.UnitTest;
 
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class SubstituteConfirmTaggerSourceTest
+    public class SubstituteConfirmTaggerSourceTest : VimTestBase
     {
         private MockRepository _factory;
         private Mock<ISubstituteConfirmMode> _mode;
@@ -25,7 +26,7 @@ namespace VimCore.UnitTest
         {
             _factory = new MockRepository(MockBehavior.Loose);
             _mode = _factory.Create<ISubstituteConfirmMode>();
-            _textBuffer = EditorUtil.CreateTextBuffer("cat", "dog", "bird", "tree");
+            _textBuffer = CreateTextBuffer("cat", "dog", "bird", "tree");
             _taggerSourceRaw = new SubstituteConfirmTaggerSource(_textBuffer, _mode.Object);
             _taggerSource = _taggerSourceRaw;
         }

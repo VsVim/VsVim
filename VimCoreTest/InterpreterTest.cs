@@ -7,6 +7,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Vim.UnitTest;
+using EditorUtils.UnitTest;
 
 namespace VimCore.UnitTest
 {

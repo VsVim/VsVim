@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using EditorUtils.UnitTest;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -62,7 +63,7 @@ namespace VimCore.UnitTest
             _markMap = vimBufferData.Vim.MarkMap;
             _vimData = vimBufferData.Vim.VimData;
             _search = vimBufferData.Vim.SearchService;
-            var wordNavigator = VimUtil.CreateTextStructureNavigator(_textView, WordKind.NormalWord);
+            var wordNavigator = CreateTextStructureNavigator(_textView.TextBuffer, WordKind.NormalWord);
             _motionUtil = new MotionUtil(vimBufferData);
         }
 

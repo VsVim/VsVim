@@ -9,14 +9,14 @@ using Vim.UnitTest;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class VimIntegrationTests
+    public sealed class VimIntegrationTests : VimTestBase
     {
         private IVim _vim;
 
         [SetUp]
         public void Setup()
         {
-            _vim = EditorUtil.FactoryService.Vim;
+            _vim = Vim;
         }
 
         [Test]
@@ -29,7 +29,7 @@ namespace VimCore.UnitTest
         [Test]
         public void RemoveBuffer2()
         {
-            var view = EditorUtil.CreateTextView("foo bar");
+            var view = CreateTextView("foo bar");
             var vimBuffer = _vim.CreateVimBuffer(view);
             Assert.IsTrue(_vim.RemoveVimBuffer(view));
             Assert.IsTrue(_vim.GetVimBuffer(view).IsNone());
@@ -38,7 +38,7 @@ namespace VimCore.UnitTest
         [Test]
         public void CreateVimBuffer1()
         {
-            var view = EditorUtil.CreateTextView("foo bar");
+            var view = CreateTextView("foo bar");
             var vimBuffer = _vim.CreateVimBuffer(view);
             Assert.IsTrue(_vim.GetVimBuffer(view).IsSome());
             Assert.AreSame(view, _vim.GetVimBuffer(view).Value.TextView);
@@ -47,7 +47,7 @@ namespace VimCore.UnitTest
         [Test,ExpectedException(typeof(ArgumentException))]
         public void CreateVimBuffer2()
         {
-            var view = EditorUtil.CreateTextView("foo bar");
+            var view = CreateTextView("foo bar");
             var vimBuffer = _vim.CreateVimBuffer(view);
             var vimBuffer2 = _vim.CreateVimBuffer(view);
         }

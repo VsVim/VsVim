@@ -60,6 +60,32 @@ namespace EditorUtils
 
         #endregion
 
+        #region ITextSnapshot
+
+        /// <summary>
+        /// Get the SnapshotSpan for the extent of the entire ITextSnapshot
+        /// </summary>
+        public static SnapshotSpan GetExtent(this ITextSnapshot snapshot)
+        {
+            return new SnapshotSpan(snapshot, 0, snapshot.Length);
+        }
+
+        public static SnapshotSpan GetSpan(this ITextSnapshot snapshot, int start, int length)
+        {
+            return new SnapshotSpan(snapshot, start, length);
+        }
+
+        #endregion
+
+        #region ITextBuffer
+
+        public static SnapshotSpan GetSpan(this ITextBuffer textBuffer, int start, int length)
+        {
+            return textBuffer.CurrentSnapshot.GetSpan(start, length);
+        }
+
+        #endregion
+
         #region ITextView
 
         /// <summary>

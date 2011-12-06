@@ -10,7 +10,7 @@ namespace VimCore.UnitTest
     /// associated IEditorOptions value
     /// </summary>
     [TestFixture]
-    public sealed class EditorToSettingSynchronizerTest
+    public sealed class EditorToSettingSynchronizerTest : VimTestBase
     {
         private EditorToSettingSynchronizer _synchronizer;
         private IVimBuffer _buffer;
@@ -21,13 +21,12 @@ namespace VimCore.UnitTest
         [SetUp]
         public void Setup()
         {
-            _synchronizer = new EditorToSettingSynchronizer(EditorUtil.FactoryService.EditorOptionsFactory, EditorUtil.FactoryService.Vim);
+            _synchronizer = new EditorToSettingSynchronizer(EditorOptionsFactoryService, Vim);
 
-            var textView = EditorUtil.CreateTextView("");
-            _buffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(textView);
+            _buffer = CreateVimBuffer("");
             _localSettings = _buffer.LocalSettings;
             _globalSettings = _localSettings.GlobalSettings;
-            _editorOptions = EditorUtil.FactoryService.EditorOptionsFactory.GetOptions(textView);
+            _editorOptions = _buffer.TextView.Options;
         }
 
         [TearDown]

@@ -1,4 +1,5 @@
 ﻿using System;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
 using Vim;
@@ -8,13 +9,13 @@ using Vim.UnitTest;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class SnapshotLineRangeUtilTest
+    public sealed class SnapshotLineRangeUtilTest : VimTestBase
     {
         private ITextBuffer _buffer;
 
         public void Create(params string[] lines)
         {
-            _buffer = EditorUtil.CreateTextBuffer(lines);
+            _buffer = CreateTextBuffer(lines);
         }
 
         [Test]

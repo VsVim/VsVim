@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Text;
+﻿using EditorUtils.UnitTest;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
@@ -10,7 +11,7 @@ using VsVim.ExternalEdit;
 namespace VsVim.UnitTest
 {
     [TestFixture]
-    public class ResharperExternalEditAdapterTest
+    public sealed class ResharperExternalEditAdapterTest : VimTestBase
     {
         sealed class VsTextAdornmentTag : ITag
         {
@@ -24,7 +25,7 @@ namespace VsVim.UnitTest
 
         public void Create(params string[] lines)
         {
-            _textBuffer = EditorUtil.CreateTextBuffer(lines);
+            _textBuffer = CreateTextBuffer(lines);
             _factory = new MockRepository(MockBehavior.Strict);
             _adapterRaw = new ResharperExternalEditAdapter();
             _adapter = _adapterRaw;

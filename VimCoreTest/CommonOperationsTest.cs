@@ -9,6 +9,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
+using EditorUtils.UnitTest;
 
 namespace VimCore.UnitTest
 {
@@ -54,7 +55,7 @@ namespace VimCore.UnitTest
             _globalSettings.SetupGet(x => x.VirtualEdit).Returns(String.Empty);
             _globalSettings.SetupGet(x => x.WrapScan).Returns(true);
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
-            _searchService = VimUtil.CreateSearchService(_globalSettings.Object);
+            _searchService = new SearchService(TextSearchService, _globalSettings.Object);
             var vim = MockObjectFactory.CreateVim(
                 registerMap: registerMap,
                 host: _vimHost.Object,

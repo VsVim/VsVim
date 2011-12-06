@@ -3,6 +3,7 @@ using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
+using EditorUtils.UnitTest;
 
 namespace VimCore.UnitTest
 {

@@ -1,15 +1,16 @@
-﻿using Microsoft.VisualStudio.Text;
+﻿using System;
+using System.Linq;
+using EditorUtils.UnitTest;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
-using System.Linq;
 using Vim;
 using Vim.UnitTest;
-using System;
 
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public sealed class WordUtilTest
+    public sealed class WordUtilTest : VimTestBase
     {
         private ITextBuffer _textBuffer;
         private ITextView _textView;
@@ -29,9 +30,9 @@ namespace VimCore.UnitTest
 
         private void Create(int caretPosition, params string[] lines)
         {
-            _textView = EditorUtil.CreateTextView(lines);
+            _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
-            _wordUtilRaw = new WordUtil(_textBuffer, EditorUtil.FactoryService.TextStructureNavigatorSelectorService.GetTextStructureNavigator(_textBuffer));
+            _wordUtilRaw = new WordUtil(_textBuffer, CreateTextStructureNavigator(_textBuffer, WordKind.NormalWord));
             _wordUtil = _wordUtilRaw;
         }
 

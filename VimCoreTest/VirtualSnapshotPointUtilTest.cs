@@ -2,18 +2,19 @@
 using NUnit.Framework;
 using Vim;
 using Vim.UnitTest;
+using EditorUtils.UnitTest;
 
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class VirtualSnapshotPointUtilTest
+    public class VirtualSnapshotPointUtilTest : VimTestBase
     {
         ITextBuffer _buffer;
         ITextSnapshot _snapshot;
 
         public void Create(params string[] lines)
         {
-            _buffer = EditorUtil.CreateTextBuffer(lines);
+            _buffer = CreateTextBuffer(lines);
             _snapshot = _buffer.CurrentSnapshot;
         }
 

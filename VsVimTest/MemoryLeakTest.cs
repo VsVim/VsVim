@@ -1,9 +1,9 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.Windows.Threading;
+using EditorUtils.UnitTest;
 using EnvDTE;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
@@ -18,6 +18,7 @@ using Vim;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
+
 namespace VsVim.UnitTest
 {
     /// <summary>
@@ -161,7 +162,7 @@ namespace VsVim.UnitTest
         {
             if (_compositionContainer == null)
             {
-                var list = EditorUtil.GetEditorCatalog();
+                var list = GetEditorUtilsCatalog();
                 list.Add(new AssemblyCatalog(typeof(Vim.IVim).Assembly));
                 list.Add(new AssemblyCatalog(typeof(Vim.UI.Wpf.KeyProcessor).Assembly));
                 list.Add(new AssemblyCatalog(typeof(VsVim.VsCommandTarget).Assembly));

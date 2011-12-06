@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using EditorUtils.UnitTest;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -66,6 +67,11 @@ namespace VimCore.UnitTest
                 operations,
                 _foldManager,
                 new InsertUtil(vimBufferData, operations));
+        }
+
+        private static string CreateLinesWithLineBreak(params string[] lines)
+        {
+            return lines.Aggregate((x, y) => x + Environment.NewLine + y);
         }
 
         private Register UnnamedRegister
@@ -774,7 +780,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "bear");
             _commandUtil.DeleteLines(2, UnnamedRegister);
-            Assert.AreEqual(EditorUtil.CreateLinesWithLineBreak("cat", "dog"), UnnamedRegister.StringValue);
+            Assert.AreEqual(CreateLinesWithLineBreak("cat", "dog"), UnnamedRegister.StringValue);
             Assert.AreEqual("bear", _textView.GetLine(0).GetText());
             Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
         }
@@ -789,7 +795,7 @@ namespace VimCore.UnitTest
             Create("cat", "dog", "bear", "fish", "tree");
             _foldManager.CreateFold(_textView.GetLineRange(1, 2));
             _commandUtil.DeleteLines(3, UnnamedRegister);
-            Assert.AreEqual(EditorUtil.CreateLinesWithLineBreak("cat", "dog", "bear", "fish"), UnnamedRegister.StringValue);
+            Assert.AreEqual(CreateLinesWithLineBreak("cat", "dog", "bear", "fish"), UnnamedRegister.StringValue);
             Assert.AreEqual("tree", _textView.GetLine(0).GetText());
             Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
         }
@@ -804,7 +810,7 @@ namespace VimCore.UnitTest
             Create("cat", "dog", "bear", "fish", "tree");
             _foldManager.CreateFold(_textView.GetLineRange(0, 1));
             _commandUtil.DeleteLines(2, UnnamedRegister);
-            Assert.AreEqual(EditorUtil.CreateLinesWithLineBreak("cat", "dog", "bear"), UnnamedRegister.StringValue);
+            Assert.AreEqual(CreateLinesWithLineBreak("cat", "dog", "bear"), UnnamedRegister.StringValue);
             Assert.AreEqual("fish", _textView.GetLine(0).GetText());
             Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
         }
@@ -1904,7 +1910,8 @@ namespace VimCore.UnitTest
             Create("cat", "dog", "bear", "fish", "pig");
             _foldManager.CreateFold(_textView.GetLineRange(1, 2));
             _commandUtil.YankLines(3, UnnamedRegister);
-            var text = EditorUtil.CreateLines("cat", "dog", "bear", "fish") + Environment.NewLine;
+            var lines = new []{"cat", "dog", "bear", "fish"};
+            var text = lines.Aggregate((x, y) => x + Environment.NewLine + y) + Environment.NewLine;
             Assert.AreEqual(text, UnnamedRegister.StringValue);
             Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
         }

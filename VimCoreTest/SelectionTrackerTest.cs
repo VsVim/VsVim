@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Threading;
+using EditorUtils.UnitTest;
+using EditorUtils.UnitTest.Utils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
@@ -11,7 +13,7 @@ using Vim.UnitTest;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class SelectionTrackerTest
+    public sealed class SelectionTrackerTest : VimTestBase
     {
         private ITextView _view;
         private IVimGlobalSettings _settings;
@@ -27,7 +29,7 @@ namespace VimCore.UnitTest
 
         private void Create(VisualKind kind, int caretPosition, params string[] lines)
         {
-            _view = EditorUtil.CreateTextView(lines);
+            _view = CreateTextView(lines);
             _view.MoveCaretTo(caretPosition);
             _settings = new Vim.GlobalSettings();
             _incrementalSearch = new Mock<IIncrementalSearch>(MockBehavior.Loose);
@@ -88,7 +90,7 @@ namespace VimCore.UnitTest
         [Test, Description("Don't reset the selection if there already is one.  Breaks actions like CTRL+A")]
         public void Start3()
         {
-            var realView = EditorUtil.CreateTextView("foo bar baz");
+            var realView = CreateTextView("foo bar baz");
             var selection = new Mock<ITextSelection>(MockBehavior.Strict);
             selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
             selection.SetupGet(x => x.Mode).Returns(TextSelectionMode.Stream);
@@ -106,7 +108,7 @@ namespace VimCore.UnitTest
         [Test, Description("In a selection it should take the anchor point of the selection")]
         public void Start4()
         {
-            var view = EditorUtil.CreateTextView("foo bar baz");
+            var view = CreateTextView("foo bar baz");
             view.Selection.Select(new SnapshotSpan(view.TextSnapshot, 1, 3), false);
             var tracker = new SelectionTracker(view, _settings, _incrementalSearch.Object, VisualKind.Character);
             tracker.Start();

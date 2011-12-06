@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.VisualStudio.Text.Operations;
 
-namespace Vim.UnitTest.Exports
+namespace EditorUtils.UnitTest.Utils
 {
     internal sealed class TextUndoTransaction : ITextUndoTransaction
     {

@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Text;
+﻿using EditorUtils.UnitTest;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
@@ -27,25 +28,13 @@ namespace VimCore.UnitTest
 
         private void Create(ModeArgument argument, params string[] lines)
         {
-            var tuple = EditorUtil.CreateTextViewAndEditorOperations(lines);
-            _textView = tuple.Item1;
+            _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
-            var service = EditorUtil.FactoryService;
-            _vimBuffer = service.Vim.CreateVimBuffer(_textView);
+            _vimBuffer = Vim.CreateVimBuffer(_textView);
             _vimBuffer.SwitchMode(ModeKind.Insert, argument);
             _register = Vim.RegisterMap.GetRegister('c');
             _globalSettings = Vim.GlobalSettings;
             _localSettings = _vimBuffer.LocalSettings;
-        }
-
-        /// <summary>
-        /// Clear out the key mappings on tear down so that they don't affect future suite
-        /// runs
-        /// </summary>
-        [TearDown]
-        public void TearDown()
-        {
-            EditorUtil.FactoryService.Vim.KeyMap.ClearAll();
         }
 
         /// <summary>

@@ -4,7 +4,7 @@ using System.Diagnostics;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
 
-namespace Vim.UnitTest.Exports
+namespace EditorUtils.UnitTest.Utils
 {
     /// <summary>
     /// Provides a very simple ITextUndoHistory implementation.  Sufficient for us to test

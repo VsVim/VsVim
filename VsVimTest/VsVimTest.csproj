@@ -155,6 +155,10 @@
     <Compile Include="VsVimHostTest.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\EditorUtilsTest\EditorUtilsTest.csproj">
+      <Project>{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}</Project>
+      <Name>EditorUtilsTest</Name>
+    </ProjectReference>
     <ProjectReference Include="..\VimCoreTest\VimCoreTest.csproj">
       <Project>{B4FC7C81-E500-47C8-A884-2DBB7CA77123}</Project>
       <Name>VimCoreTest</Name>

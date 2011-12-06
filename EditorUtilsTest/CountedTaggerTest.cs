@@ -4,12 +4,11 @@ using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 using Moq;
 using NUnit.Framework;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace EditorUtils.UnitTest
 {
     [TestFixture]
-    public sealed class CountedTaggerTest : VimTestBase
+    public sealed class CountedTaggerTest : EditorTestBase
     {
         private MockRepository _factory;
         private object _key;

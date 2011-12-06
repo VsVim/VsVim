@@ -2,17 +2,15 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using EditorUtils;
 using EditorUtils.Implementation.Tagging;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using NUnit.Framework;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace EditorUtils.UnitTest
 {
     [TestFixture]
-    public sealed class BasicTaggerTest : VimTestBase
+    public sealed class BasicTaggerTest : EditorTestBase
     {
         #region TestableBasicTaggerSource 
 

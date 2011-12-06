@@ -1,4 +1,5 @@
 ﻿using System;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
@@ -41,7 +42,7 @@ namespace VimCore.UnitTest
         [TearDown]
         public void TearDown()
         {
-            var history = EditorUtil.GetUndoHistory(_textView.TextBuffer);
+            var history = TextBufferUndoManagerProvider.GetTextBufferUndoManager(_textView.TextBuffer).TextBufferUndoHistory;
             Assert.IsNull(history.CurrentTransaction);
         }
 

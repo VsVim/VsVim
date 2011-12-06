@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Text.Editor;
+﻿using EditorUtils.UnitTest;
+using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
 using Vim.UnitTest;
@@ -26,12 +27,12 @@ namespace VimCore.UnitTest
         /// <param name="lines"></param>
         private void Create(params string[] lines)
         {
-            _textView = EditorUtil.CreateTextView(lines);
-            _buffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(_textView);
+            _textView = CreateTextView(lines);
+            _buffer = Vim.CreateVimBuffer(_textView);
             _globalSettings = _buffer.GlobalSettings;
             _localSettings = _buffer.LocalSettings;
 
-            var operations = EditorUtil.FactoryService.CommonOperationsFactory.GetCommonOperations(_buffer.VimBufferData);
+            var operations = CommonOperationsFactory.GetCommonOperations(_buffer.VimBufferData);
             _insertUtilRaw = new InsertUtil(_buffer.VimBufferData, operations);
             _insertUtil = _insertUtilRaw;
         }

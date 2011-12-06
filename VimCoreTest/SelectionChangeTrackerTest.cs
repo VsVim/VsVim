@@ -6,6 +6,7 @@ using NUnit.Framework;
 using Vim;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
+using EditorUtils.UnitTest.Utils;
 
 namespace VimCore.UnitTest
 {

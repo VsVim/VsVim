@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
 using Vim;
@@ -11,7 +12,7 @@ namespace VimCore.UnitTest
     /// folded regions for a given ITextBuffer
     /// </summary>
     [TestFixture]
-    public sealed class FoldDataTest
+    public sealed class FoldDataTest : VimTestBase
     {
         private ITextBuffer _textBuffer;
         private IFoldData _foldData;
@@ -19,7 +20,7 @@ namespace VimCore.UnitTest
 
         private void Create(params string[] lines)
         {
-            _textBuffer = EditorUtil.CreateTextBuffer(lines);
+            _textBuffer = CreateTextBuffer(lines);
             _foldDataRaw = new FoldData(_textBuffer);
             _foldData = _foldDataRaw;
         }

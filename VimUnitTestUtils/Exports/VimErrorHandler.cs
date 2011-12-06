@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
 
 namespace Vim.UnitTest.Exports
@@ -22,10 +23,12 @@ namespace Vim.UnitTest.Exports
         private readonly List<Exception> _errorList = new List<Exception>();
         private readonly List<ITextView> _activeTextViewList = new List<ITextView>();
         private readonly List<IVimBuffer> _activeVimBufferList = new List<IVimBuffer>();
+        private readonly ITextBufferUndoManagerProvider _textBufferUndoManagerProvider;
 
-        internal VimErrorDetector()
+        [ImportingConstructor]
+        internal VimErrorDetector(ITextBufferUndoManagerProvider textBufferUndoManagerProvider)
         {
-
+            _textBufferUndoManagerProvider = textBufferUndoManagerProvider;
         }
 
         private void CheckForOrphanedItems()
@@ -76,7 +79,7 @@ namespace Vim.UnitTest.Exports
         /// </summary>
         private void CheckForOrphanedUndoHistory(ITextView textView)
         {
-            var history = EditorUtil.GetUndoHistory(textView.TextBuffer);
+            var history = _textBufferUndoManagerProvider.GetTextBufferUndoManager(textView.TextBuffer).TextBufferUndoHistory;
             if (history.CurrentTransaction != null)
             {
                 _errorList.Add(new Exception("Failed to close an undo transaction"));

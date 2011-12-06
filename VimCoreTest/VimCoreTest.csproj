@@ -139,7 +139,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AsyncTaggerTest.cs" />
     <Compile Include="BlockSpanTest.cs" />
     <Compile Include="ChangeTrackerTest.cs" />
     <Compile Include="CharacterSpanTest.cs" />
@@ -152,33 +151,28 @@
     <Compile Include="CommandProcessorTest.cs" />
     <Compile Include="CommandRunnerTest.cs" />
     <Compile Include="CommandUtilTest.cs" />
-    <Compile Include="CountedTaggerTest.cs" />
     <Compile Include="ExpressionInterpreterTest.cs" />
+    <Compile Include="SnapshotLineUtilTest.cs" />
     <Compile Include="VimDataTest.cs" />
     <Compile Include="EditorToSettingSynchronizerTest.cs" />
     <Compile Include="FoldManagerTest.cs" />
     <Compile Include="InsertUtilTest.cs" />
     <Compile Include="InterpreterTest.cs" />
     <Compile Include="ParserTest.cs" />
-    <Compile Include="LineRangeTest.cs" />
-    <Compile Include="LineRangeVisitedTest.cs" />
     <Compile Include="ReplaceModeIntegrationTest.cs" />
     <Compile Include="MacroIntegrationTest.cs" />
     <Compile Include="IncrementalSearchTaggerSourceTest.cs" />
     <Compile Include="KeyInputSetTest.cs" />
-    <Compile Include="BasicTaggerTest.cs" />
     <Compile Include="SubstituteConfirmModeTest.cs" />
     <Compile Include="SnapshotLineRangeUtilTest.cs" />
     <Compile Include="RegisterMapTest.cs" />
     <Compile Include="RegisterNameTest.cs" />
     <Compile Include="RegisterTest.cs" />
-    <Compile Include="SnapshotLineRangeTest.cs" />
     <Compile Include="SubstituteConfirmTaggerSourceTest.cs" />
     <Compile Include="TextLineTest.cs" />
     <Compile Include="VimRegexTest.cs" />
     <Compile Include="VimTextBufferTest.cs" />
     <Compile Include="VirtualSnapshotPointUtilTest.cs" />
-    <Compile Include="MotionUtilLegacyTest.cs" />
     <Compile Include="SelectionChangeTrackerTest.cs" />
     <Compile Include="SeqUtilTest.cs" />
     <Compile Include="VisualModeIntegrationTest.cs" />
@@ -191,7 +185,6 @@
     <Compile Include="TextChangeTrackerTest.cs" />
     <Compile Include="TextSelectionUtilTest.cs" />
     <Compile Include="SnapshotSpanUtilTest.cs" />
-    <Compile Include="SnapshotLineUtilTest.cs" />
     <Compile Include="SnapshotPointUtilTest.cs" />
     <Compile Include="DisabledModeTest.cs" />
     <Compile Include="GlobalSettingsTest.cs" />
@@ -220,7 +213,6 @@
     <Compile Include="BufferTrackingServiceTest.cs" />
     <Compile Include="UndoRedoOperationsTest.cs" />
     <Compile Include="UndoTransactionTest.cs" />
-    <Compile Include="ViewUtilTest.cs" />
     <Compile Include="VimBufferFactoryIntegrationTest.cs" />
     <Compile Include="VimBufferTest.cs" />
     <Compile Include="VimIntegrationTests.cs" />
@@ -240,6 +232,10 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\EditorUtilsTest\EditorUtilsTest.csproj">
+      <Project>{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}</Project>
+      <Name>EditorUtilsTest</Name>
+    </ProjectReference>
     <ProjectReference Include="..\VimCore\VimCore.fsproj">
       <Project>{06BE08E7-8626-40BD-877B-8D2DCA6BA451}</Project>
       <Name>VimCore</Name>

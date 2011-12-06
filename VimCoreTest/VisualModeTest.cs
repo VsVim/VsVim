@@ -32,7 +32,7 @@ namespace VimCore.UnitTest
             ModeKind kind = ModeKind.VisualCharacter,
             params string[] lines)
         {
-            _textView = EditorUtil.CreateTextView(lines);
+            _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
             var vimTextBuffer = Vim.CreateVimTextBuffer(_textBuffer);
             var vimBufferData = CreateVimBufferData(vimTextBuffer, _textView);

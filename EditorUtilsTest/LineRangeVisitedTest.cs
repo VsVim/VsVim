@@ -1,8 +1,7 @@
-﻿using EditorUtils;
+﻿using EditorUtils.Implementation.Utilities;
 using NUnit.Framework;
-using EditorUtils.Implementation.Utilities;
 
-namespace VimCore.UnitTest
+namespace EditorUtils.UnitTest
 {
     [TestFixture]
     public sealed class LineRangeVisitedTest

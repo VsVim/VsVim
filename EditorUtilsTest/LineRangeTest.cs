@@ -1,8 +1,6 @@
 ﻿using NUnit.Framework;
-using Vim;
-using EditorUtils;
 
-namespace VimCore.UnitTest
+namespace EditorUtils.UnitTest
 {
     [TestFixture]
     public sealed class LineRangeTest

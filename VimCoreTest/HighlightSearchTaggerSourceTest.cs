@@ -9,6 +9,7 @@ using NUnit.Framework;
 using Vim;
 using Vim.UnitTest;
 using GlobalSettings = Vim.GlobalSettings;
+using EditorUtils.UnitTest;
 
 namespace VimCore.UnitTest
 {
@@ -30,12 +31,12 @@ namespace VimCore.UnitTest
             _globalSettings = new GlobalSettings();
             _globalSettings.IgnoreCase = true;
             _globalSettings.HighlightSearch = true;
-            _searchService = VimUtil.CreateSearchService();
+            _searchService = Vim.SearchService;
             _vimData = Vim.VimData;
             _asyncTaggerSourceRaw = new HighlightSearchTaggerSource(
                 _textView,
                 _globalSettings,
-                VimUtil.CreateTextStructureNavigator(_textBuffer, WordKind.NormalWord),
+                CreateTextStructureNavigator(_textBuffer, WordKind.NormalWord),
                 _searchService,
                 _vimData,
                 Vim.VimHost);

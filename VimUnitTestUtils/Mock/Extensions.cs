@@ -14,6 +14,7 @@ using Moq;
 using Moq.Language.Flow;
 using Vim.Extensions;
 using VsVim;
+using EditorUtils.UnitTest;
 
 namespace Vim.UnitTest.Mock
 {

@@ -31,40 +31,6 @@ namespace Vim.UnitTest
                 option);
         }
 
-        public static IMotionCapture CreateMotionCapture(
-            IVimBufferData vimBufferData,
-            IIncrementalSearch incrementalSearch = null)
-        {
-            incrementalSearch = incrementalSearch ?? new IncrementalSearch(
-                vimBufferData,
-                EditorUtil.FactoryService.CommonOperationsFactory.GetCommonOperations(vimBufferData));
-            return new MotionCapture(vimBufferData, incrementalSearch);
-        }
-
-        public static CommandUtil CreateCommandUtil(
-            IVimBufferData vimBufferData,
-            IMotionUtil motionUtil = null,
-            ICommonOperations operations = null,
-            IFoldManager foldManager = null,
-            InsertUtil insertUtil = null)
-        {
-            motionUtil = motionUtil ?? new MotionUtil(vimBufferData);
-            operations = operations ?? EditorUtil.FactoryService.CommonOperationsFactory.GetCommonOperations(vimBufferData);
-            foldManager = foldManager ?? CreateFoldManager(vimBufferData.TextView, vimBufferData.StatusUtil);
-            insertUtil = insertUtil ?? new InsertUtil(vimBufferData, operations);
-            return new CommandUtil(
-                vimBufferData,
-                motionUtil,
-                operations,
-                foldManager,
-                insertUtil);
-        }
-
-        internal static ISmartIndentationService CreateSmartIndentationService()
-        {
-            return EditorUtil.FactoryService.SmartIndentationService;
-        }
-
         internal static UndoRedoOperations CreateUndoRedoOperations(IStatusUtil statusUtil = null)
         {
             statusUtil = statusUtil ?? new StatusUtil();
@@ -79,12 +45,6 @@ namespace Vim.UnitTest
                 return string.IsNullOrEmpty(result) ? FSharpOption<string>.None : FSharpOption.Create(result);
             };
             return new RegisterMap(device, func2.ToFSharpFunc());
-        }
-
-        internal static ISearchService CreateSearchService(IVimGlobalSettings settings = null)
-        {
-            settings = settings ?? new GlobalSettings();
-            return new SearchService(EditorUtil.FactoryService.TextSearchService, settings);
         }
 
         internal static CommandBinding CreateNormalBinding(string name)
@@ -110,22 +70,6 @@ namespace Vim.UnitTest
             var commandName = KeyInputSet.NewManyKeyInputs(list);
             var command = NormalCommand.NewPing(new PingData(fsharpFunc));
             return CommandBinding.NewNormalBinding(commandName, CommandFlags.None, command);
-        }
-
-        internal static ITextStructureNavigator CreateTextStructureNavigator(ITextBuffer textBuffer, WordKind kind)
-        {
-            var textView = EditorUtil.FactoryService.TextEditorFactory.CreateTextView(textBuffer);
-            return CreateTextStructureNavigator(textView, kind);
-        }
-
-        internal static ITextStructureNavigator CreateTextStructureNavigator(ITextView textView, WordKind kind)
-        {
-            return GetWordUtil(textView).CreateTextStructureNavigator(kind);
-        }
-
-        internal static IWordUtil GetWordUtil(ITextView textView)
-        {
-            return EditorUtil.FactoryService.WordUtilFactory.GetWordUtil(textView.TextBuffer);
         }
 
         internal static CommandRunData CreateCommandRunData(

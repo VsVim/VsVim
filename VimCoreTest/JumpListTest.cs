@@ -4,6 +4,7 @@ using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
+using EditorUtils.UnitTest;
 
 namespace VimCore.UnitTest
 {
@@ -17,7 +18,7 @@ namespace VimCore.UnitTest
 
         public void Create(params string[] lines)
         {
-            var textView = EditorUtil.CreateTextView(lines);
+            var textView = CreateTextView(lines);
             _textBuffer = textView.TextBuffer;
             _bufferTrackingService = new BufferTrackingService();
             _jumpListRaw = new JumpList(textView, _bufferTrackingService);

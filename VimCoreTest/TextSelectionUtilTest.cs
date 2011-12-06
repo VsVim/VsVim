@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Text;
+﻿using EditorUtils.UnitTest;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
@@ -9,7 +10,7 @@ using Vim.UnitTest;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class TextSelectionUtilTest
+    public sealed class TextSelectionUtilTest : VimTestBase
     {
         private Mock<ITextSelection> _selection;
 
@@ -42,7 +43,7 @@ namespace VimCore.UnitTest
         [Test]
         public void GetOverarchingSpan3()
         {
-            var buffer = EditorUtil.CreateTextBuffer("foo bar");
+            var buffer = CreateTextBuffer("foo bar");
             var span = buffer.GetLineRange(0).Extent;
             var col = new NormalizedSnapshotSpanCollection(span);
             _selection.SetupGet(x => x.SelectedSpans).Returns(col).Verifiable();
@@ -53,7 +54,7 @@ namespace VimCore.UnitTest
         [Test]
         public void GetOverarchingSpan4()
         {
-            var buffer = EditorUtil.CreateTextBuffer("foo", "baz", "bar");
+            var buffer = CreateTextBuffer("foo", "baz", "bar");
             var span1 = buffer.GetLineRange(0).Extent;
             var span2 = buffer.GetLineRange(0, 1).Extent;
             var col = new NormalizedSnapshotSpanCollection(new SnapshotSpan[] { span1, span2 });

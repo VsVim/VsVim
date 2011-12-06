@@ -14,7 +14,7 @@ using Vim.UnitTest;
 namespace VsVim.UnitTest
 {
     [TestFixture]
-    public class VsVimHostTest
+    public sealed class VsVimHostTest : VimTestBase
     {
         private VsVimHost _hostRaw;
         private IVimHost _host;
@@ -51,7 +51,7 @@ namespace VsVim.UnitTest
                 _textManager.Object,
                 _factory.Create<ITextDocumentFactoryService>().Object,
                 _editorOperationsFactoryService.Object,
-                EditorUtil.FactoryService.WordUtilFactory,
+                WordUtilFactory,
                 sp.Object);
             _host = _hostRaw;
         }
@@ -70,7 +70,7 @@ namespace VsVim.UnitTest
         public void GotoDefinition1()
         {
             Create();
-            var textView = EditorUtil.CreateTextView("");
+            var textView = CreateTextView("");
             _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
             Assert.IsFalse(_host.GoToDefinition());
         }
@@ -79,7 +79,7 @@ namespace VsVim.UnitTest
         public void GotoDefinition2()
         {
             Create();
-            var textView = EditorUtil.CreateTextView("");
+            var textView = CreateTextView("");
             _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, String.Empty)).Throws(new Exception());
             Assert.IsFalse(_host.GoToDefinition());
@@ -89,7 +89,7 @@ namespace VsVim.UnitTest
         public void GotoDefinition3()
         {
             Create();
-            var textView = EditorUtil.CreateTextView("");
+            var textView = CreateTextView("");
             _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, String.Empty));
             Assert.IsTrue(_host.GoToDefinition());
@@ -103,9 +103,9 @@ namespace VsVim.UnitTest
         public void GotoDefinition_CPlusPlus()
         {
             Create();
-            var ct = EditorUtil.GetOrCreateContentType(VsVim.Constants.CPlusPlusContentType, "code");
-            var textView = EditorUtil.CreateTextView(ct, "hello world");
-            var wordUtil = EditorUtil.FactoryService.WordUtilFactory.GetWordUtil(textView.TextBuffer);
+            var ct = GetOrCreateContentType(VsVim.Constants.CPlusPlusContentType, "code");
+            var textView = CreateTextView(ct, "hello world");
+            var wordUtil = WordUtilFactory.GetWordUtil(textView.TextBuffer);
             _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, "hello"));
             Assert.IsTrue(_host.GoToDefinition());
@@ -119,8 +119,8 @@ namespace VsVim.UnitTest
         public void GotoDefinition_Normal()
         {
             Create();
-            var ct = EditorUtil.GetOrCreateContentType("csharp", "code");
-            var textView = EditorUtil.CreateTextView(ct, "hello world");
+            var ct = GetOrCreateContentType("csharp", "code");
+            var textView = CreateTextView(ct, "hello world");
             _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, ""));
             Assert.IsTrue(_host.GoToDefinition());
@@ -130,7 +130,7 @@ namespace VsVim.UnitTest
         public void NavigateTo1()
         {
             Create();
-            var buffer = EditorUtil.CreateTextBuffer("foo", "bar");
+            var buffer = CreateTextBuffer("foo", "bar");
             var point = new VirtualSnapshotPoint(buffer.CurrentSnapshot, 2);
             _textManager.Setup(x => x.NavigateTo(point)).Returns(true);
             _host.NavigateTo(new VirtualSnapshotPoint(buffer.CurrentSnapshot, 2));

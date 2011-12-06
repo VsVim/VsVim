@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Text;
+﻿using EditorUtils.UnitTest;
+using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;

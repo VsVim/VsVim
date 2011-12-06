@@ -10,7 +10,7 @@ using Vim.UnitTest;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class SnapshotUtilTest
+    public class SnapshotUtilTest : VimTestBase
     {
         static string[] s_lines = new string[]
             {
@@ -24,7 +24,7 @@ namespace VimCore.UnitTest
 
         public void Create(params string[] lines)
         {
-            _buffer = EditorUtil.CreateTextBuffer(lines);
+            _buffer = CreateTextBuffer(lines);
             _snapshot = _buffer.CurrentSnapshot;
         }
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Projection;
@@ -40,11 +41,9 @@ namespace VimCore.UnitTest
 
         public void Create(params string[] lines)
         {
-            var tuple = EditorUtil.CreateTextViewAndEditorOperations(lines);
-            _textView = tuple.Item1;
+            _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
-            var service = EditorUtil.FactoryService;
-            _vimBuffer = service.Vim.CreateVimBuffer(_textView);
+            _vimBuffer = Vim.CreateVimBuffer(_textView);
             _vimBuffer.ErrorMessage +=
                 (_, message) =>
                 {
@@ -68,8 +67,8 @@ namespace VimCore.UnitTest
             _jumpList = _vimBuffer.JumpList;
             _vimHost = (MockVimHost)_vimBuffer.Vim.VimHost;
             _vimHost.BeepCount = 0;
-            _vimData = service.Vim.VimData;
-            _foldManager = EditorUtil.FactoryService.FoldManagerFactory.GetFoldManager(_textView);
+            _vimData = Vim.VimData;
+            _foldManager = FoldManagerFactory.GetFoldManager(_textView);
             _clipboardDevice = (TestableClipboardDevice)CompositionContainer.GetExportedValue<IClipboardDevice>();
 
             // Many of the operations operate on both the visual and edit / text snapshot
