@@ -59,8 +59,10 @@
   <ItemGroup>
     <Compile Include="Contract.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="IAdhocOutliner.cs" />
     <Compile Include="IAsyncTaggerSource.cs" />
     <Compile Include="IBasicTaggerSource.cs" />
+    <Compile Include="Implementation\Outlining\AdhocOutliner.cs" />
     <Compile Include="Implementation\Tagging\AsyncTagger.cs" />
     <Compile Include="Implementation\Tagging\BasicTagger.cs" />
     <Compile Include="Implementation\Tagging\CountedTagger.cs" />

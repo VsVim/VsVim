@@ -176,10 +176,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="EqualityUtil.cs" />
-    <Compile Include="Exports\AdhocOutliner.cs" />
     <Compile Include="Exports\TestableClipboardDevice.cs" />
     <Compile Include="Exports\VimErrorHandler.cs" />
-    <Compile Include="IAdhocOutliner.cs" />
     <Compile Include="IVimErrorDetector.cs" />
     <Compile Include="Exports\TestableKeyboardDevice.cs" />
     <Compile Include="Exports\MouseDevice.cs" />

@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EditorUtils", "EditorUtils\EditorUtils.csproj", "{FB418222-C105-4942-8EEB-832DDCFFD89D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EditorUtilsTest", "EditorUtilsTest\EditorUtilsTest.csproj", "{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

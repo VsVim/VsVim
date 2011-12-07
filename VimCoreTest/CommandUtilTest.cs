@@ -71,7 +71,7 @@ namespace VimCore.UnitTest
 
         private static string CreateLinesWithLineBreak(params string[] lines)
         {
-            return lines.Aggregate((x, y) => x + Environment.NewLine + y);
+            return lines.Aggregate((x, y) => x + Environment.NewLine + y) + Environment.NewLine;
         }
 
         private Register UnnamedRegister

@@ -23,7 +23,7 @@ namespace EditorUtils.Implementation.Tagging
 
         ITagger<TTag> ITaggerFactory.CreateBasicTagger<TTag>(IBasicTaggerSource<TTag> basicTaggerSource)
         {
-            throw new NotImplementedException();
+            return new BasicTagger<TTag>(basicTaggerSource);
         }
 
         ITagger<TTag> ITaggerFactory.CreateBasicTaggerCounted<TTag>(object key, PropertyCollection propertyCollection, Func<IBasicTaggerSource<TTag>> createFunc)

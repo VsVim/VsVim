@@ -36,7 +36,6 @@ namespace Vim.UnitTest
         private IFoldManagerFactory _foldManagerFactory;
         private IBufferTrackingService _bufferTrackingService;
         private IProtectedOperations _protectedOperations;
-        private IAdhocOutlinerFactory _adhocOutlinerFactory;
     
         /// <summary>
         /// An IProtectedOperations value which will be properly checked in the context of this
@@ -82,11 +81,6 @@ namespace Vim.UnitTest
             get { return _bufferTrackingService; }
         }
 
-        protected IAdhocOutlinerFactory AdhocOutlinerFactory
-        {
-            get { return _adhocOutlinerFactory; }
-        }
-
         protected virtual bool TrackTextViewHistory
         {
             get { return true; }
@@ -102,7 +96,6 @@ namespace Vim.UnitTest
             _wordUtilFactory = CompositionContainer.GetExportedValue<IWordUtilFactory>();
             _bufferTrackingService = CompositionContainer.GetExportedValue<IBufferTrackingService>();
             _foldManagerFactory = CompositionContainer.GetExportedValue<IFoldManagerFactory>();
-            _adhocOutlinerFactory = CompositionContainer.GetExportedValue<IAdhocOutlinerFactory>();
             _vimErrorDetector.Clear();
             _protectedOperations = new ProtectedOperations(_vimErrorDetector);
         }
@@ -293,12 +286,11 @@ namespace Vim.UnitTest
 
             // Other Exports needed to construct VsVim
             list.Add(new TypeCatalog(
-                typeof(ClipboardDevice),
+                typeof(TestableClipboardDevice),
                 typeof(TestableKeyboardDevice),
                 typeof(MouseDevice),
                 typeof(global::Vim.UnitTest.Exports.VimHost),
                 typeof(VimErrorDetector),
-                typeof(AdhocOutlinerFactory),
                 typeof(DisplayWindowBrokerFactoryService),
                 typeof(WordCompletionSessionFactoryService)));
 

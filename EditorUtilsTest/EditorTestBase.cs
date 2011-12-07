@@ -33,6 +33,7 @@ namespace EditorUtils.UnitTest
         private ITextSearchService _textSearchService;
         private ITextBufferUndoManagerProvider _textBufferUndoManagerProvider;
         private IContentTypeRegistryService _contentTypeRegistryService;
+        private IAdhocOutlinerFactory _adhocOutlinerFactory;
 
         protected CompositionContainer CompositionContainer
         {
@@ -79,6 +80,11 @@ namespace EditorUtils.UnitTest
             get { return _contentTypeRegistryService; }
         }
 
+        protected IAdhocOutlinerFactory AdhocOutlinerFactory
+        {
+            get { return _adhocOutlinerFactory; }
+        }
+
         [SetUp]
         public virtual void SetupBase()
         {
@@ -92,6 +98,7 @@ namespace EditorUtils.UnitTest
             _outliningManagerService = _compositionContainer.GetExportedValue<IOutliningManagerService>();
             _textBufferUndoManagerProvider = _compositionContainer.GetExportedValue<ITextBufferUndoManagerProvider>();
             _contentTypeRegistryService = _compositionContainer.GetExportedValue<IContentTypeRegistryService>();
+            _adhocOutlinerFactory = _compositionContainer.GetExportedValue<IAdhocOutlinerFactory>();
         }
 
         [TearDown]
