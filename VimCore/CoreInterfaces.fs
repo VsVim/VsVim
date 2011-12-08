@@ -919,6 +919,7 @@ type SubstituteData = {
 [<StructuralEquality>]
 [<NoComparison>]
 [<Struct>]
+[<DebuggerDisplay("{ToString()}")>]
 type CharacterSpan
     (
         _start : SnapshotPoint,
@@ -955,6 +956,8 @@ type CharacterSpan
     member x.Span = SnapshotSpan(x.Start, x.End)
 
     member x.Length = x.Span.Length
+
+    override x.ToString() = x.Span.ToString()
 
     static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<CharacterSpan>.Default.Equals(this,other)
     static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<CharacterSpan>.Default.Equals(this,other))
@@ -1035,6 +1038,7 @@ type BlockCaretLocation =
 [<RequireQualifiedAccess>]
 [<StructuralEquality>]
 [<NoComparison>]
+[<DebuggerDisplay("{ToString()}")>]
 type VisualSpan =
 
     /// A characterwise span
@@ -1100,6 +1104,12 @@ type VisualSpan =
         | VisualSpan.Character _ -> ModeKind.VisualCharacter
         | VisualSpan.Line _ -> ModeKind.VisualLine
         | VisualSpan.Block _ -> ModeKind.VisualBlock
+
+    override x.ToString() =
+        match x with
+        | VisualSpan.Character characterSpan -> sprintf "Character: %O" characterSpan
+        | VisualSpan.Line lineRange -> sprintf "Line: %O" lineRange
+        | VisualSpan.Block blockSpan -> sprintf "Block: %O" blockSpan
 
     static member Create textView visualKind =
         let visualSelection : VisualSelection = VisualSelection.CreateForSelection textView visualKind

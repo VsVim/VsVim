@@ -542,7 +542,7 @@ namespace VimCore.UnitTest
             Create("dog", "cat");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 3));
             UnnamedRegister.UpdateValue("pig");
-            _buffer.Process("\"cp");
+            _buffer.Process("p");
             Assert.AreEqual("pig", _textView.GetLine(0).GetText());
             Assert.AreEqual("dog", UnnamedRegister.StringValue);
         }
