@@ -2223,6 +2223,29 @@ namespace VimCore.UnitTest
             Assert.AreEqual(4, _textView.GetCaretPoint().Position);
         }
 
+        /// <summary>
+        /// Verify a couple of searches for {} work as expected
+        /// </summary>
+        [Test]
+        public void IncrementalSearch_Braces()
+        {
+            Create("func() {   }");
+            Action<string, int> doSearch =
+                (pattern, position) =>
+                {
+                    _textView.MoveCaretTo(0);
+                    _vimBuffer.Process(pattern);
+                    _vimBuffer.Process(VimKey.Enter);
+                    Assert.AreEqual(position, _textView.GetCaretPoint().Position);
+                };
+            doSearch(@"/{", 7);
+            doSearch(@"/}", 11);
+
+            _assertOnErrorMessage = false;
+            doSearch(@"/\<{\>", 0);  // Should fail
+            doSearch(@"/\<}\>", 0);  // Should fail
+        }
+
         [Test]
         public void Mark_SelectionEndIsExclusive()
         {
