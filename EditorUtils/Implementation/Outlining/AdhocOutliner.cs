@@ -184,9 +184,17 @@ namespace EditorUtils.Implementation.Outlining
             _taggerFactory = taggerFactory;
         }
 
-        private AdhocOutliner GetOrCreateOutliner(ITextBuffer textBuffer)
+        internal AdhocOutliner GetOrCreateOutliner(ITextBuffer textBuffer)
         {
             return textBuffer.Properties.GetOrCreateSingletonProperty(_adhocOutlinerKey, () => new AdhocOutliner(textBuffer));
+        }
+
+        internal ITagger<OutliningRegionTag> CreateTagger(ITextBuffer textBuffer)
+        {
+            return _taggerFactory.CreateBasicTaggerCounted(
+                _taggerKey,
+                textBuffer.Properties,
+                () => GetOrCreateOutliner(textBuffer));
         }
 
         IAdhocOutliner IAdhocOutlinerFactory.GetAdhocOutliner(ITextBuffer textBuffer)
@@ -194,12 +202,9 @@ namespace EditorUtils.Implementation.Outlining
             return GetOrCreateOutliner(textBuffer);
         }
 
-        ITagger<T> ITaggerProvider.CreateTagger<T>(ITextBuffer buffer)
+        ITagger<T> ITaggerProvider.CreateTagger<T>(ITextBuffer textBuffer)
         {
-            var tagger = _taggerFactory.CreateBasicTaggerCounted(
-                _taggerKey,
-                buffer.Properties,
-                () => GetOrCreateOutliner(buffer));
+            var tagger = CreateTagger(textBuffer);
             return (ITagger<T>)(object)tagger;
         }
     }

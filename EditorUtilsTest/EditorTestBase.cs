@@ -34,6 +34,7 @@ namespace EditorUtils.UnitTest
         private ITextBufferUndoManagerProvider _textBufferUndoManagerProvider;
         private IContentTypeRegistryService _contentTypeRegistryService;
         private IAdhocOutlinerFactory _adhocOutlinerFactory;
+        private ITaggerFactory _taggerFactory;
 
         protected CompositionContainer CompositionContainer
         {
@@ -85,6 +86,11 @@ namespace EditorUtils.UnitTest
             get { return _adhocOutlinerFactory; }
         }
 
+        protected ITaggerFactory TaggerFactory
+        {
+            get { return _taggerFactory; }
+        }
+
         [SetUp]
         public virtual void SetupBase()
         {
@@ -99,6 +105,7 @@ namespace EditorUtils.UnitTest
             _textBufferUndoManagerProvider = _compositionContainer.GetExportedValue<ITextBufferUndoManagerProvider>();
             _contentTypeRegistryService = _compositionContainer.GetExportedValue<IContentTypeRegistryService>();
             _adhocOutlinerFactory = _compositionContainer.GetExportedValue<IAdhocOutlinerFactory>();
+            _taggerFactory = _compositionContainer.GetExportedValue<ITaggerFactory>();
         }
 
         [TearDown]
