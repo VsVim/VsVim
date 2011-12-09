@@ -34,6 +34,7 @@ namespace EditorUtils.UnitTest
                 get { return _threadId == Thread.CurrentThread.ManagedThreadId; }
             }
 
+            internal int? Delay { get; set; }
             internal string DataForSpan { get; set; }
             internal bool IsDisposed { get; set; }
             internal ITextView TextView { get; set; }
@@ -72,7 +73,7 @@ namespace EditorUtils.UnitTest
 
             int? IAsyncTaggerSource<string, TextMarkerTag>.Delay
             {
-                get { return null; }
+                get { return Delay; }
             }
 
             ITextView IAsyncTaggerSource<string, TextMarkerTag>.TextViewOptional
@@ -377,6 +378,21 @@ namespace EditorUtils.UnitTest
             Assert.AreEqual(1, tags.Count);
             Assert.AreEqual(span, tags[0].Span);
             Assert.IsTrue(wasAsync);
+        }
+
+        /// <summary>
+        /// Make sure that we can get the tags when there is an explicit delay from
+        /// the source
+        /// </summary>
+        [Test]
+        public void GetTags_Delay()
+        {
+            Create("cat", "dog", "bear");
+            var span = _textBuffer.GetSpan(1, 2);
+            _asyncTaggerSource.SetBackgroundTags(span);
+            var tags = GetTagsFull(_textBuffer.GetExtent());
+            Assert.AreEqual(1, tags.Count);
+            Assert.AreEqual(span, tags[0].Span);
         }
 
         /// <summary>

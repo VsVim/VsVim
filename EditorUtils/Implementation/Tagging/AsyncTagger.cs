@@ -540,25 +540,27 @@ namespace EditorUtils.Implementation.Tagging
 
             // Create the Task which will handle the actual gathering of data.  If there is a delay
             // specified use it
-            Task task;
+            Task startTask;
+            Task endTask;
             if (_asyncTaggerSource.Delay.HasValue)
             {
                 var delay = _asyncTaggerSource.Delay.Value;
-                task = new Task(() => Thread.Sleep(delay), cancellationToken);
-                task.ContinueWith(_ => getTags, cancellationToken);
+                startTask = new Task(() => Thread.Sleep(delay), cancellationToken);
+                endTask = startTask.ContinueWith(_ => getTags(), cancellationToken);
             }
             else
             {
-                task = new Task(getTags, cancellationToken);
+                startTask = new Task(getTags, cancellationToken);
+                endTask = startTask;
             }
 
             _asyncBackgroundRequest = new AsyncBackgroundRequest(
                 lineRange,
                 cancellationTokenSource,
                 priorityLineRangeQueue,
-                task);
+                endTask);
 
-            task.Start();
+            startTask.Start();
         }
 
         [UsedInBackgroundThread]
