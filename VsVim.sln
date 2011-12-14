@@ -20,8 +20,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimWpf", "VimWpf\VimWpf.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimWpfTest", "VimWpfTest\VimWpfTest.csproj", "{797C1463-3984-47BE-8CD2-4FF68D1E30DA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimUnitTestUtils", "VimUnitTestUtils\VimUnitTestUtils.csproj", "{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EditorUtils", "EditorUtils\EditorUtils.csproj", "{FB418222-C105-4942-8EEB-832DDCFFD89D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EditorUtilsTest", "EditorUtilsTest\EditorUtilsTest.csproj", "{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}"
@@ -99,18 +97,6 @@ Global
 		{797C1463-3984-47BE-8CD2-4FF68D1E30DA}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{797C1463-3984-47BE-8CD2-4FF68D1E30DA}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{797C1463-3984-47BE-8CD2-4FF68D1E30DA}.Release|x86.ActiveCfg = Release|Any CPU
-		{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
-		{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}.Debug|Mixed Platforms.Build.0 = Debug|x86
-		{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}.Debug|x86.ActiveCfg = Debug|x86
-		{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}.Debug|x86.Build.0 = Debug|x86
-		{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}.Release|Mixed Platforms.ActiveCfg = Release|x86
-		{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}.Release|Mixed Platforms.Build.0 = Release|x86
-		{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}.Release|x86.ActiveCfg = Release|x86
-		{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}.Release|x86.Build.0 = Release|x86
 		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU

@@ -6,7 +6,7 @@ using Vim.UnitTest.Mock;
 namespace Vim.UI.Wpf.Test
 {
     [TestFixture]
-    class BlockCaretControllerTest
+    public sealed class BlockCaretControllerTest
     {
         private MockRepository _factory;
         private Mock<ITextView> _textView;

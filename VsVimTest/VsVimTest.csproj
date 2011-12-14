@@ -126,9 +126,12 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="UnitTestExtensions.cs" />
     <Compile Include="ExternalEditMonitorTest.cs" />
     <Compile Include="KeyStrokeTest.cs" />
     <Compile Include="MemoryLeakTest.cs" />
+    <Compile Include="Mock\MockEnumLineMarkers.cs" />
+    <Compile Include="Mock\MockObjectFactory.cs" />
     <Compile Include="OleCommandUtilTest.cs" />
     <Compile Include="EditCommandTest.cs" />
     <Compile Include="ExtensionsTest.cs" />
@@ -170,10 +173,6 @@
     <ProjectReference Include="..\EditorUtils\EditorUtils.csproj">
       <Project>{FB418222-C105-4942-8EEB-832DDCFFD89D}</Project>
       <Name>EditorUtils</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\VimUnitTestUtils\VimUnitTestUtils.csproj">
-      <Project>{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}</Project>
-      <Name>VimUnitTestUtils</Name>
     </ProjectReference>
     <ProjectReference Include="..\VimWpfTest\VimWpfTest.csproj">
       <Project>{797C1463-3984-47BE-8CD2-4FF68D1E30DA}</Project>

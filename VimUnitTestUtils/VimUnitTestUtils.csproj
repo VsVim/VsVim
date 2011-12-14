@@ -176,25 +176,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="EqualityUtil.cs" />
-    <Compile Include="Exports\TestableClipboardDevice.cs" />
-    <Compile Include="Exports\VimErrorHandler.cs" />
     <Compile Include="IVimErrorDetector.cs" />
-    <Compile Include="Exports\TestableKeyboardDevice.cs" />
-    <Compile Include="Exports\MouseDevice.cs" />
-    <Compile Include="Exports\VimHost.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="FuncUtil.cs" />
     <Compile Include="MatchUtil.cs" />
-    <Compile Include="Mock\ITagSpan.cs" />
-    <Compile Include="Mock\Extensions.cs" />
-    <Compile Include="Mock\MockEnumLineMarkers.cs" />
-    <Compile Include="Mock\MockKeyboardDevice.cs" />
-    <Compile Include="Mock\MockNormalMode.cs" />
-    <Compile Include="Mock\MockObjectFactory.cs" />
-    <Compile Include="Mock\MockPresentationSource.cs" />
-    <Compile Include="Mock\MockRegisterValueBacking.cs" />
-    <Compile Include="Mock\MockVimBuffer.cs" />
-    <Compile Include="Mock\MockVimHost.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestableStatusUtil.cs" />
     <Compile Include="TestConstants.cs" />

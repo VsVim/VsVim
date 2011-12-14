@@ -130,10 +130,6 @@
       <Project>{FB418222-C105-4942-8EEB-832DDCFFD89D}</Project>
       <Name>EditorUtils</Name>
     </ProjectReference>
-    <ProjectReference Include="..\VimUnitTestUtils\VimUnitTestUtils.csproj">
-      <Project>{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}</Project>
-      <Name>VimUnitTestUtils</Name>
-    </ProjectReference>
     <ProjectReference Include="..\VimWpf\VimWpf.csproj">
       <Project>{65A749E0-F1B1-4E43-BE73-25072EE398C6}</Project>
       <Name>VimWpf</Name>

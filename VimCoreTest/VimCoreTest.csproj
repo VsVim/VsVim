@@ -151,8 +151,29 @@
     <Compile Include="CommandProcessorTest.cs" />
     <Compile Include="CommandRunnerTest.cs" />
     <Compile Include="CommandUtilTest.cs" />
+    <Compile Include="EqualityUtil.cs" />
+    <Compile Include="Exports\MouseDevice.cs" />
+    <Compile Include="Exports\TestableClipboardDevice.cs" />
+    <Compile Include="Exports\TestableKeyboardDevice.cs" />
+    <Compile Include="Exports\VimErrorHandler.cs" />
+    <Compile Include="Exports\VimHost.cs" />
     <Compile Include="ExpressionInterpreterTest.cs" />
+    <Compile Include="Extensions.cs" />
+    <Compile Include="FuncUtil.cs" />
+    <Compile Include="IVimErrorDetector.cs" />
+    <Compile Include="MatchUtil.cs" />
+    <Compile Include="Mock\Extensions.cs" />
+    <Compile Include="Mock\ITagSpan.cs" />
+    <Compile Include="Mock\MockKeyboardDevice.cs" />
+    <Compile Include="Mock\MockNormalMode.cs" />
+    <Compile Include="Mock\MockObjectFactory.cs" />
+    <Compile Include="Mock\MockPresentationSource.cs" />
+    <Compile Include="Mock\MockRegisterValueBacking.cs" />
+    <Compile Include="Mock\MockVimBuffer.cs" />
+    <Compile Include="Mock\MockVimHost.cs" />
     <Compile Include="SnapshotLineUtilTest.cs" />
+    <Compile Include="TestableStatusUtil.cs" />
+    <Compile Include="TestConstants.cs" />
     <Compile Include="VimDataTest.cs" />
     <Compile Include="EditorToSettingSynchronizerTest.cs" />
     <Compile Include="FoldManagerTest.cs" />
@@ -171,7 +192,9 @@
     <Compile Include="SubstituteConfirmTaggerSourceTest.cs" />
     <Compile Include="TextLineTest.cs" />
     <Compile Include="VimRegexTest.cs" />
+    <Compile Include="VimTestBase.cs" />
     <Compile Include="VimTextBufferTest.cs" />
+    <Compile Include="VimUtil.cs" />
     <Compile Include="VirtualSnapshotPointUtilTest.cs" />
     <Compile Include="SelectionChangeTrackerTest.cs" />
     <Compile Include="SeqUtilTest.cs" />
@@ -244,9 +267,9 @@
       <Project>{FB418222-C105-4942-8EEB-832DDCFFD89D}</Project>
       <Name>EditorUtils</Name>
     </ProjectReference>
-    <ProjectReference Include="..\VimUnitTestUtils\VimUnitTestUtils.csproj">
-      <Project>{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}</Project>
-      <Name>VimUnitTestUtils</Name>
+    <ProjectReference Include="..\VimWpf\VimWpf.csproj">
+      <Project>{65A749E0-F1B1-4E43-BE73-25072EE398C6}</Project>
+      <Name>VimWpf</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

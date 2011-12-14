@@ -13,8 +13,8 @@ using NUnit.Framework;
 using Vim;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
-using Vim.UnitTest.Mock;
 using VsVim.ExternalEdit;
+using VsVim.UnitTest.Mock;
 
 namespace VsVim.UnitTest
 {
