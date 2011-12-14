@@ -1,10 +1,8 @@
-﻿using Microsoft.VisualStudio.Text;
+﻿using EditorUtils.UnitTest;
+using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
-using Vim;
-using Vim.UnitTest;
-using EditorUtils.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public class VirtualSnapshotPointUtilTest : VimTestBase

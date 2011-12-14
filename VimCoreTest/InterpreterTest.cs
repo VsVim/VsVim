@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Linq;
 using EditorUtils;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
 using Vim.Interpreter;
-using Vim.UnitTest;
-using EditorUtils.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     public sealed class InterpreterTest : VimTestBase
     {
@@ -18,7 +16,7 @@ namespace VimCore.UnitTest
         private IVimTextBuffer _vimTextBuffer;
         private ITextBuffer _textBuffer;
         private IVimData _vimData;
-        private Interpreter _interpreter;
+        private global::Vim.Interpreter.Interpreter _interpreter;
         private TestableStatusUtil _statusUtil;
         private IVimGlobalSettings _globalSettings;
         private IVimLocalSettings _localSettings;
@@ -53,7 +51,7 @@ namespace VimCore.UnitTest
             _localSettings = _vimBufferData.LocalSettings;
             _globalSettings = _localSettings.GlobalSettings;
             _textBuffer = _vimBufferData.TextBuffer;
-            _interpreter = new Interpreter(
+            _interpreter = new global::Vim.Interpreter.Interpreter(
                 _vimBuffer,
                 CommonOperationsFactory.GetCommonOperations(_vimBufferData),
                 FoldManagerFactory.GetFoldManager(_vimBufferData.TextView),

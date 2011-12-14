@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using Microsoft.FSharp.Collections;
 using NUnit.Framework;
 using Vim.Modes.Command;
-using Vim;
-using Microsoft.FSharp.Collections;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public class CommandParseUtilTest

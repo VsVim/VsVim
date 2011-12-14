@@ -6,11 +6,9 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
-using Vim;
 using Vim.Modes.Visual;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public sealed class SelectionTrackerTest : VimTestBase
@@ -31,7 +29,7 @@ namespace VimCore.UnitTest
         {
             _view = CreateTextView(lines);
             _view.MoveCaretTo(caretPosition);
-            _settings = new Vim.GlobalSettings();
+            _settings = new GlobalSettings();
             _incrementalSearch = new Mock<IIncrementalSearch>(MockBehavior.Loose);
             _tracker = new SelectionTracker(_view, _settings, _incrementalSearch.Object, kind);
             _tracker.Start();

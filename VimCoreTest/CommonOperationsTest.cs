@@ -1,17 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Outlining;
 using Moq;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
 using Vim.UnitTest.Mock;
-using EditorUtils.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     // TODO: Need to remove several of the mock's here.  No reason to mock IVimLocalSettings and 
     // a couple others.

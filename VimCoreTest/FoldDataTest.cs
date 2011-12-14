@@ -2,10 +2,8 @@
 using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
-using Vim;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     /// <summary>
     /// Tests for the IFoldData implementation.  This class is responsible for simply holding onto the

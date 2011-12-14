@@ -1,15 +1,13 @@
-﻿using EditorUtils.UnitTest;
+﻿using EditorUtils;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Outlining;
 using Moq;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
-using EditorUtils;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     /// <summary>
     /// Tests for the IFoldManager implementation.  The Vim behavior for folds, especial that of 

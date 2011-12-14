@@ -1,11 +1,9 @@
 ﻿using System;
 using Moq;
 using NUnit.Framework;
-using Vim;
-using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public class RegisterMapTest

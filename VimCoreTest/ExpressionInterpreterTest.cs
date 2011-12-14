@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using Moq;
 using NUnit.Framework;
-using Vim;
 using Vim.Interpreter;
-using Vim.UnitTest;
-using Moq;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public sealed class ExpressionInterpreterTest

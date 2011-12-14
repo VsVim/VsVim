@@ -2,16 +2,13 @@
 using System.Linq;
 using System.Threading;
 using EditorUtils;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using NUnit.Framework;
-using Vim;
-using Vim.UnitTest;
-using GlobalSettings = Vim.GlobalSettings;
-using EditorUtils.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public class HighlightSearchTaggerSourceTest : VimTestBase

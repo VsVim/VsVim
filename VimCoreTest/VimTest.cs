@@ -4,12 +4,10 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public sealed class VimTest : VimTestBase
@@ -22,21 +20,21 @@ namespace VimCore.UnitTest
         private IKeyMap _keyMap;
         private IVimGlobalSettings _settings;
         private IVimBufferFactory _bufferFactory;
-        private Vim.Vim _vimRaw;
+        private Vim _vimRaw;
         private IVim _vim;
 
         [SetUp]
         public void Setup()
         {
             _factory = new MockRepository(MockBehavior.Strict);
-            _settings = new Vim.GlobalSettings();
+            _settings = new GlobalSettings();
             _markMap = _factory.Create<IMarkMap>(MockBehavior.Strict);
             _fileSystem = _factory.Create<IFileSystem>(MockBehavior.Strict);
             _bufferFactory = VimBufferFactory;
             _keyMap = new KeyMap();
             _host = _factory.Create<IVimHost>(MockBehavior.Strict);
             _searchInfo = _factory.Create<ISearchService>(MockBehavior.Strict);
-            _vimRaw = new Vim.Vim(
+            _vimRaw = new Vim(
                 _host.Object,
                 _bufferFactory,
                 FSharpList<Lazy<IVimBufferCreationListener>>.Empty,

@@ -1,16 +1,14 @@
 ﻿using System.Linq;
 using EditorUtils;
+using EditorUtils.UnitTest;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Moq;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
-using EditorUtils.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public class SubstituteConfirmTaggerSourceTest : VimTestBase

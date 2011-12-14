@@ -7,13 +7,11 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
 using Vim.Modes.Command;
-using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public sealed class CommandProcessorTest : VimTestBase

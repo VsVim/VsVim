@@ -1,9 +1,8 @@
 ﻿using System.Linq;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public sealed class KeyNotationUtilTest

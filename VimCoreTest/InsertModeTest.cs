@@ -7,12 +7,11 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
 using Vim.UnitTest.Mock;
+using Vim.Modes.Insert;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     /// <summary>
     /// Tests to verify the operation of Insert / Replace Mode
@@ -21,7 +20,7 @@ namespace VimCore.UnitTest
     public sealed class InsertModeTest : VimTestBase
     {
         private MockRepository _factory;
-        private Vim.Modes.Insert.InsertMode _modeRaw;
+        private InsertMode _modeRaw;
         private IInsertMode _mode;
         private ITextView _textView;
         private ITextBuffer _textBuffer;
@@ -93,7 +92,7 @@ namespace VimCore.UnitTest
             _keyboardDevice = _factory.Create<IKeyboardDevice>();
             _keyboardDevice.Setup(x => x.IsKeyDown(It.IsAny<VimKey>())).Returns(false);
 
-            _modeRaw = new Vim.Modes.Insert.InsertMode(
+            _modeRaw = new global::Vim.Modes.Insert.InsertMode(
                 _vimBuffer.Object,
                 _operations.Object,
                 _broker.Object,

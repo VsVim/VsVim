@@ -3,11 +3,9 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public sealed class UndoRedoOperationsTest

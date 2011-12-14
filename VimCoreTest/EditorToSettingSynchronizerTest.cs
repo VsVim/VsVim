@@ -1,9 +1,7 @@
 ﻿using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
-using Vim;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     /// <summary>
     /// Test the synchronization of settings from the IVimLocalSettings to the 

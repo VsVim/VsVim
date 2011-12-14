@@ -1,10 +1,9 @@
 ﻿using System.Linq;
 using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     /// <summary>
     /// Summary description for TextUtilTest

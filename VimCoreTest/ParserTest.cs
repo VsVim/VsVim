@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Linq;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
 using Vim.Interpreter;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     public sealed class ParserTest
     {

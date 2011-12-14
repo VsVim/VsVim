@@ -6,12 +6,10 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
 using Vim.Modes.SubstituteConfirm;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public sealed class SubstituteConfirmModeTest : VimTestBase

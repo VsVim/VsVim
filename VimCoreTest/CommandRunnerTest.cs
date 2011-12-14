@@ -2,11 +2,9 @@
 using System.Linq;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public sealed class CommandRunnerTest : VimTestBase

@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Linq;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
-using Vim;
-using Vim.UnitTest;
-using EditorUtils.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public class SnapshotLineUtilTest : VimTestBase
