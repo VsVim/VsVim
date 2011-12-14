@@ -3,7 +3,7 @@ using Moq;
 using NUnit.Framework;
 using Vim.UnitTest.Mock;
 
-namespace Vim.UI.Wpf.Test
+namespace Vim.UI.Wpf.UnitTest
 {
     [TestFixture]
     public sealed class BlockCaretControllerTest

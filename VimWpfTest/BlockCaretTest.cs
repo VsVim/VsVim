@@ -1,16 +1,12 @@
 ﻿using System;
-using System.Text;
-using System.Collections.Generic;
-using System.Linq;
-using Vim;
-using NUnit.Framework;
-using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Classification;
+using Microsoft.VisualStudio.Text.Editor;
 using Moq;
+using NUnit.Framework;
 using Vim.UI.Wpf.Implementation;
 using Vim.UnitTest;
 
-namespace Vim.UI.Wpf.Test
+namespace Vim.UI.Wpf.UnitTest
 {
     [TestFixture]
     public class BlockCaretTest : VimTestBase

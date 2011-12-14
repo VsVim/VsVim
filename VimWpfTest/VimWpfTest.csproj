@@ -8,7 +8,7 @@
     <ProjectGuid>{797C1463-3984-47BE-8CD2-4FF68D1E30DA}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Vim.UI.Wpf.Test</RootNamespace>
+    <RootNamespace>Vim.UI.Wpf.UnitTest</RootNamespace>
     <AssemblyName>Vim.UI.Wpf.UnitTest</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>

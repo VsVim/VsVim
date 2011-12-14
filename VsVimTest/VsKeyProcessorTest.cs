@@ -10,7 +10,7 @@ using VsVim.Implementation;
 namespace VsVim.UnitTest
 {
     [TestFixture]
-    public sealed class VsKeyProcessorTest : Vim.UI.Wpf.Test.KeyProcessorTest
+    public sealed class VsKeyProcessorTest : Vim.UI.Wpf.UnitTest.KeyProcessorTest
     {
         private Mock<IVsAdapter> _adapter;
         private Mock<ITextBuffer> _textBuffer;
