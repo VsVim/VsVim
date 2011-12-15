@@ -25,6 +25,9 @@ TestResult.xml
 # NUnit files
 VsVim.VisualState.xml
 VsVim.sln.VisualState.xml
+VimCoreTest.csproj.VisualState.xml
+VimWpfTest.csproj.VisualState.xml
+VsVimTest.csproj.VisualState.xml
 
 # Resharper
 _ReSharper.*
