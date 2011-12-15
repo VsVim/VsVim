@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
 using Microsoft.VisualStudio.Utilities;
 using NUnit.Framework;
+using System.Linq;
 
 namespace EditorUtils.UnitTest
 {
@@ -20,6 +21,27 @@ namespace EditorUtils.UnitTest
     [TestFixture]
     public abstract class EditorTestBase
     {
+        private static readonly string[] s_editorComponents =
+            new []
+            {
+                // Core editor components
+                "Microsoft.VisualStudio.Platform.VSEditor.dll",
+
+                // Not entirely sure why this is suddenly needed
+                "Microsoft.VisualStudio.Text.Internal.dll",
+
+                // Must include this because several editor options are actually stored as exported information 
+                // on this DLL.  Including most importantly, the tabsize information
+                "Microsoft.VisualStudio.Text.Logic.dll",
+
+                // Include this DLL to get several more EditorOptions including WordWrapStyle
+                "Microsoft.VisualStudio.Text.UI.dll",
+
+                // Include this DLL to get more EditorOptions values
+                "Microsoft.VisualStudio.Text.UI.Wpf.dll"
+
+            };
+
         [ThreadStatic]
         private static CompositionContainer _editorUtilsCompositionContainer;
 
@@ -172,24 +194,12 @@ namespace EditorUtils.UnitTest
         /// </summary>
         protected static List<ComposablePartCatalog> GetEditorCatalog()
         {
-            var uri = new Uri(typeof(EditorTestBase).Assembly.CodeBase);
-            var root = Path.GetDirectoryName(uri.LocalPath);
             var list = new List<ComposablePartCatalog>();
-
-            list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Platform.VSEditor.dll")));
-
-            // Not entirely sure why this is suddenly needed
-            list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Text.Internal.dll")));
-
-            // Must include this because several editor options are actually stored as exported information 
-            // on this DLL.  Including most importantly, the tabsize information
-            list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Text.Logic.dll")));
-
-            // Include this DLL to get several more EditorOptions including WordWrapStyle
-            list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Text.UI.dll")));
-
-            // Include this DLL to get more EditorOptions values
-            list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Text.UI.Wpf.dll")));
+            if (!TryGetEditorCatalog(list))
+            {
+                var msg = "Could not locate the editor components.  Make sure you have run PopulateReferences.ps1";
+                throw new Exception(msg);
+            }
 
             // There is no default IUndoHistoryRegistry provided so I need to provide it here just to 
             // satisfy the MEF import.  
@@ -203,6 +213,56 @@ namespace EditorUtils.UnitTest
             var list = GetEditorCatalog();
             list.Add(new AssemblyCatalog(typeof(ITaggerFactory).Assembly));
             return list;
+        }
+
+        /// <summary>
+        /// Look for the editor components in the given directory.  
+        /// </summary>
+        private static bool TryGetEditorCatalog(List<ComposablePartCatalog> list)
+        {
+            // First look for the editor components in the same directory as the unit test assembly
+            var uri = new Uri(typeof(EditorTestBase).Assembly.CodeBase);
+            var root = Path.GetDirectoryName(uri.LocalPath);
+            if (TryGetEditorCatalog(root, list))
+            {
+                return true;
+            }
+
+            // If that didn't work walk backwards until we find the References directory and grab the
+            // assemblies from there 
+            root = Path.GetDirectoryName(root);
+            while (root != null)
+            {
+                var referencesPath = Path.Combine(root, "References");
+                if (Directory.Exists(referencesPath) && TryGetEditorCatalog(referencesPath, list))
+                {
+                    return true;
+                }
+                
+                root = Path.GetDirectoryName(root);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Look for the editor components in the given directory.  
+        /// </summary>
+        private static bool TryGetEditorCatalog(string root, List<ComposablePartCatalog> list)
+        {
+            // Make sure they all exist in the given path
+            var componentPaths = s_editorComponents.Select(x => Path.Combine(root, x));
+            if (componentPaths.All(File.Exists))
+            {
+                foreach (var componentPath in componentPaths)
+                {
+                    list.Add(new AssemblyCatalog(componentPath));
+                }
+
+                return true;
+            }
+
+            return false;
         }
     }
 }
