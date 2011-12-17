@@ -2136,6 +2136,13 @@ type internal MotionUtil
 
             // Build up the SearchData structure
             let word = span.GetText()
+
+            // Can only do whole words on actual words.  If it's not an actual word then
+            // we revert back to non-whole word match
+            let isWholeWord = 
+                let isWord = word |> Seq.forall (fun c -> CharUtil.IsLetter c || CharUtil.IsDigit c)
+                isWholeWord && isWord
+
             let pattern = if isWholeWord then PatternUtil.CreateWholeWord word else word
             let patternData = { Pattern = pattern; Path = path }
 

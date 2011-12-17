@@ -2102,6 +2102,17 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// A non-word shouldn't require whole word
+        /// </summary>
+        [Test]
+        public void NextWord_Nonword()
+        {
+            Create("{", "dog", "{", "cat");
+            var result = _motionUtil.NextWord(Path.Forward, 1).Value;
+            Assert.AreEqual(_textView.GetLine(2).Start, result.Span.End);
+        }
+
+        /// <summary>
         /// Make sure we pass the LastSearch value to the method and move the caret
         /// for the provided SearchResult
         /// </summary>

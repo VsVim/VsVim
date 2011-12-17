@@ -1586,6 +1586,29 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// The'*' motion should work for non-words as well as words.  When dealing with non-words
+        /// the whole word portion is not considered
+        /// </summary>
+        [Test]
+        public void Move_NextWordUnderCursor_NonWord()
+        {
+            Create("{", "cat", "{", "dog");
+            _vimBuffer.Process('*');
+            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// The '*' motion should process multiple characters and properly match them
+        /// </summary>
+        [Test]
+        public void Move_NextWordUnderCursor_BigNonWord()
+        {
+            Create("{{", "cat{", "{{{{", "dog");
+            _vimBuffer.Process('*');
+            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
         /// When moving a line down over a fold it should not be expanded and the entire fold
         /// should count as a single line
         /// </summary>
