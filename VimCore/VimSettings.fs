@@ -116,9 +116,9 @@ type internal SettingsMap
 
 type internal GlobalSettings() =
 
-    static let DisableCommandLet = KeyInputUtil.VimKeyAndModifiersToKeyInput VimKey.F12 (KeyModifiers.Control ||| KeyModifiers.Shift)
+    static let _disableAllCommand = KeyInputUtil.VimKeyAndModifiersToKeyInput VimKey.F12 (KeyModifiers.Control ||| KeyModifiers.Shift)
 
-    static let GlobalSettings = 
+    static let _globalSettings = 
         [|
             (BackspaceName, "bs", StringKind, StringValue "")
             (CaretOpacityName, CaretOpacityName, NumberKind, NumberValue(65))
@@ -146,14 +146,14 @@ type internal GlobalSettings() =
             (WrapScanName, "ws", ToggleKind, ToggleValue(true))
         |]
 
-    let _map = SettingsMap(GlobalSettings, true)
+    let _map = SettingsMap(_globalSettings, true)
 
     let IsCommaSubOptionPresent optionName suboptionName =
         _map.GetStringValue optionName
         |> StringUtil.split ','
         |> Seq.exists (fun x -> StringUtil.isEqual suboptionName x)
 
-    static member DisableCommand = DisableCommandLet
+    static member DisableAllCommand = _disableAllCommand
 
     interface IVimGlobalSettings with
         // IVimSettings
@@ -243,7 +243,7 @@ type internal GlobalSettings() =
         member x.WrapScan
             with get() = _map.GetBoolValue WrapScanName
             and set value = _map.TrySetValue WrapScanName (ToggleValue(value)) |> ignore
-        member x.DisableCommand = DisableCommandLet
+        member x.DisableAllCommand = _disableAllCommand
         member x.IsBackspaceEol = IsCommaSubOptionPresent BackspaceName "eol"
         member x.IsBackspaceIndent = IsCommaSubOptionPresent BackspaceName "indent"
         member x.IsBackspaceStart = IsCommaSubOptionPresent BackspaceName "start"

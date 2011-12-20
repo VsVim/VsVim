@@ -20,19 +20,19 @@ namespace Vim.UnitTest
         [Test]
         public void CanProcess1()
         {
-            Assert.IsTrue(_mode.CanProcess(GlobalSettings.DisableCommand));
+            Assert.IsTrue(_mode.CanProcess(GlobalSettings.DisableAllCommand));
         }
 
         [Test]
         public void Commands1()
         {
-            Assert.IsTrue(_mode.CommandNames.First().KeyInputs.First().Equals(GlobalSettings.DisableCommand));
+            Assert.IsTrue(_mode.CommandNames.First().KeyInputs.First().Equals(GlobalSettings.DisableAllCommand));
         }
 
         [Test]
         public void Process1()
         {
-            var res = _mode.Process(GlobalSettings.DisableCommand);
+            var res = _mode.Process(GlobalSettings.DisableAllCommand);
             Assert.IsTrue(res.IsSwitchMode(ModeKind.Normal));
         }
     }

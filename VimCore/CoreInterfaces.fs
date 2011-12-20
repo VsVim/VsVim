@@ -2585,7 +2585,8 @@ and IVimGlobalSettings =
     /// Whether or not searches should wrap at the end of the file
     abstract WrapScan : bool with get, set
 
-    abstract DisableCommand: KeyInput;
+    /// The key binding which will cause all IVimBuffer instances to enter disabled mode
+    abstract DisableAllCommand: KeyInput;
 
     inherit IVimSettings
 

@@ -55,7 +55,7 @@ namespace VsVim.Implementation
         public void RunConflictingKeyBindingStateCheck(IVimBuffer buffer, Action<ConflictingKeyBindingState, CommandKeyBindingSnapshot> onComplete)
         {
             var needed = buffer.AllModes.Select(x => x.CommandNames).SelectMany(x => x).ToList();
-            needed.Add(KeyInputSet.NewOneKeyInput(buffer.LocalSettings.GlobalSettings.DisableCommand));
+            needed.Add(KeyInputSet.NewOneKeyInput(buffer.LocalSettings.GlobalSettings.DisableAllCommand));
             RunConflictingKeyBindingStateCheck(needed.Select(x => x.KeyInputs.First()), onComplete);
         }
 

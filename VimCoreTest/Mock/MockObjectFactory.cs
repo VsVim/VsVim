@@ -110,7 +110,7 @@ namespace Vim.UnitTest.Mock
                 mock.SetupGet(x => x.ShiftWidth).Returns(shiftWidth.Value);
             }
 
-            mock.SetupGet(x => x.DisableCommand).Returns(GlobalSettings.DisableCommand);
+            mock.SetupGet(x => x.DisableAllCommand).Returns(GlobalSettings.DisableAllCommand);
             return mock;
         }
 
