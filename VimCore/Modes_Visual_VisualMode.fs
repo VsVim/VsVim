@@ -31,6 +31,10 @@ type internal VisualMode
 
     let mutable _builtCommands = false
 
+    member x.CommandNames = 
+        x.EnsureCommandsBuilt()
+        _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
+
     member x.SelectedSpan = (TextSelectionUtil.GetStreamSelectionSpan _textView.Selection).SnapshotSpan
 
     /// Create the CommandBinding instances for the supported command values
@@ -114,117 +118,122 @@ type internal VisualMode
 
             _builtCommands <- true
 
+    member x.OnEnter modeArgument = 
+        x.EnsureCommandsBuilt()
+
+        // If we are provided an InitialVisualSpan value here go ahead and use it.  Do this before we
+        // begin selection tracking as it will properly update the resulting selection to the appropriate
+        // mode
+        match modeArgument with
+        | ModeArgument.InitialVisualSelection visualSelection ->
+            if visualSelection.ModeKind = _kind then
+                CommonUtil.SelectAndUpdateCaret _textView visualSelection
+        | _ ->
+            ()
+
+        _selectionTracker.Start()
+
+    member x.OnClose() =
+        _eventHandlers.DisposeAll()
+
+    /// Called when the Visual Mode is left.  Need to update the LastVisualSpan based on our selection
+    member x.OnLeave() =
+        _runner.ResetState()
+        _selectionTracker.Stop()
+
+    member x.Process (ki : KeyInput) =  
+
+        // Save the VisualSelection before executing the command.  Many commands which exit
+        // visual mode such as 'y' change the selection during execution.  We want to restore
+        // to the selection before the command executed so save it now
+        let lastVisualSelection = VisualSelection.CreateForSelection _textView _visualKind
+
+        let result = 
+            if ki = KeyInputUtil.EscapeKey && x.ShouldHandleEscape then
+                ProcessResult.Handled ModeSwitch.SwitchPreviousMode
+            else
+                let original = _textBuffer.CurrentSnapshot.Version.VersionNumber
+                match _runner.Run ki with
+                | BindResult.NeedMoreInput _ -> 
+                    // Commands like incremental search can move the caret and be incomplete.  Need to 
+                    // update the selection while waiting for the next key
+                    _selectionTracker.UpdateSelection()
+                    ProcessResult.HandledNeedMoreInput
+                | BindResult.Complete commandRanData ->
+
+                    if Util.IsFlagSet commandRanData.CommandBinding.CommandFlags CommandFlags.ResetCaret then
+                        _selectionTracker.ResetCaret()
+
+                    match commandRanData.CommandResult with
+                    | CommandResult.Error ->
+                        _selectionTracker.UpdateSelection()
+                    | CommandResult.Completed modeSwitch ->
+                        match modeSwitch with
+                        | ModeSwitch.NoSwitch -> _selectionTracker.UpdateSelection()
+                        | ModeSwitch.SwitchMode(_) -> ()
+                        | ModeSwitch.SwitchModeWithArgument(_,_) -> ()
+                        | ModeSwitch.SwitchPreviousMode -> ()
+                        | ModeSwitch.SwitchModeOneTimeCommand _ -> ()
+
+                    ProcessResult.OfCommandResult commandRanData.CommandResult
+                | BindResult.Error ->
+                    _operations.Beep()
+                    ProcessResult.Handled ModeSwitch.NoSwitch
+                | BindResult.Cancelled -> 
+                    ProcessResult.Handled ModeSwitch.NoSwitch
+
+        // If we are switching out Visual Mode then reset the selection
+        if result.IsAnySwitch then
+            // Is this a switch to command mode? 
+            let toCommandMode = 
+                match result with
+                | ProcessResult.NotHandled -> 
+                    false
+                | ProcessResult.Error ->
+                    false
+                | ProcessResult.HandledNeedMoreInput ->
+                    false
+                | ProcessResult.Handled switch ->
+                    match switch with 
+                    | ModeSwitch.NoSwitch -> false
+                    | ModeSwitch.SwitchMode modeKind -> modeKind = ModeKind.Command
+                    | ModeSwitch.SwitchModeWithArgument (modeKind, _) -> modeKind = ModeKind.Command
+                    | ModeSwitch.SwitchPreviousMode -> false
+                    | ModeSwitch.SwitchModeOneTimeCommand -> false
+
+            // On teardown we will get calls to Stop when the view is closed.  It's invalid to access 
+            // the selection at that point
+            if not _textView.IsClosed then
+
+                // Before resetting the selection save it
+                _vimTextBuffer.LastVisualSelection <- Some lastVisualSelection
+
+                if not toCommandMode then
+                    _textView.Selection.Clear()
+                    _textView.Selection.Mode <- TextSelectionMode.Stream
+
+        result
+
     member x.ShouldHandleEscape = not _runner.IsHandlingEscape
+
+    member x.SyncSelection() =
+        if _selectionTracker.IsRunning then
+            _selectionTracker.Stop()
+            _selectionTracker.Start()
 
     interface IMode with
         member x.VimTextBuffer = _vimTextBuffer
-        member x.CommandNames = 
-            x.EnsureCommandsBuilt()
-            _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
+        member x.CommandNames = x.CommandNames
         member x.ModeKind = _kind
-        member x.CanProcess (ki:KeyInput) = true
-        member x.Process (ki : KeyInput) =  
-
-            // Save the VisualSelection before executing the command.  Many commands which exit
-            // visual mode such as 'y' change the selection during execution.  We want to restore
-            // to the selection before the command executed so save it now
-            let lastVisualSelection = VisualSelection.CreateForSelection _textView _visualKind
-
-            let result = 
-                if ki = KeyInputUtil.EscapeKey && x.ShouldHandleEscape then
-                    ProcessResult.Handled ModeSwitch.SwitchPreviousMode
-                else
-                    let original = _textBuffer.CurrentSnapshot.Version.VersionNumber
-                    match _runner.Run ki with
-                    | BindResult.NeedMoreInput _ -> 
-                        // Commands like incremental search can move the caret and be incomplete.  Need to 
-                        // update the selection while waiting for the next key
-                        _selectionTracker.UpdateSelection()
-                        ProcessResult.HandledNeedMoreInput
-                    | BindResult.Complete commandRanData ->
-
-                        if Util.IsFlagSet commandRanData.CommandBinding.CommandFlags CommandFlags.ResetCaret then
-                            _selectionTracker.ResetCaret()
-
-                        match commandRanData.CommandResult with
-                        | CommandResult.Error ->
-                            _selectionTracker.UpdateSelection()
-                        | CommandResult.Completed modeSwitch ->
-                            match modeSwitch with
-                            | ModeSwitch.NoSwitch -> _selectionTracker.UpdateSelection()
-                            | ModeSwitch.SwitchMode(_) -> ()
-                            | ModeSwitch.SwitchModeWithArgument(_,_) -> ()
-                            | ModeSwitch.SwitchPreviousMode -> ()
-                            | ModeSwitch.SwitchModeOneTimeCommand _ -> ()
-
-                        ProcessResult.OfCommandResult commandRanData.CommandResult
-                    | BindResult.Error ->
-                        _operations.Beep()
-                        ProcessResult.Handled ModeSwitch.NoSwitch
-                    | BindResult.Cancelled -> 
-                        ProcessResult.Handled ModeSwitch.NoSwitch
-
-            // If we are switching out Visual Mode then reset the selection
-            if result.IsAnySwitch then
-                // Is this a switch to command mode? 
-                let toCommandMode = 
-                    match result with
-                    | ProcessResult.NotHandled -> 
-                        false
-                    | ProcessResult.Error ->
-                        false
-                    | ProcessResult.HandledNeedMoreInput ->
-                        false
-                    | ProcessResult.Handled switch ->
-                        match switch with 
-                        | ModeSwitch.NoSwitch -> false
-                        | ModeSwitch.SwitchMode modeKind -> modeKind = ModeKind.Command
-                        | ModeSwitch.SwitchModeWithArgument (modeKind, _) -> modeKind = ModeKind.Command
-                        | ModeSwitch.SwitchPreviousMode -> false
-                        | ModeSwitch.SwitchModeOneTimeCommand -> false
-
-                // On teardown we will get calls to Stop when the view is closed.  It's invalid to access 
-                // the selection at that point
-                if not _textView.IsClosed then
-
-                    // Before resetting the selection save it
-                    _vimTextBuffer.LastVisualSelection <- Some lastVisualSelection
-
-                    if not toCommandMode then
-                        _textView.Selection.Clear()
-                        _textView.Selection.Mode <- TextSelectionMode.Stream
-
-            result
-
-        member x.OnEnter modeArgument = 
-            x.EnsureCommandsBuilt()
-
-            // If we are provided an InitialVisualSpan value here go ahead and use it.  Do this before we
-            // begin selection tracking as it will properly update the resulting selection to the appropriate
-            // mode
-            match modeArgument with
-            | ModeArgument.InitialVisualSelection visualSelection ->
-                if visualSelection.ModeKind = _kind then
-                    CommonUtil.SelectAndUpdateCaret _textView visualSelection
-            | _ ->
-                ()
-
-            _selectionTracker.Start()
-
-        /// Called when the Visual Mode is left.  Need to update the LastVisualSpan based on our selection
-        member x.OnLeave () = 
-            _runner.ResetState()
-            _selectionTracker.Stop()
-
-        member x.OnClose() = 
-            _eventHandlers.DisposeAll()
+        member x.CanProcess _ = true
+        member x.Process keyInput =  x.Process keyInput
+        member x.OnEnter modeArgument = x.OnEnter modeArgument
+        member x.OnLeave () = x.OnLeave()
+        member x.OnClose() = x.OnClose()
 
     interface IVisualMode with
         member x.CommandRunner = _runner
-        member x.SyncSelection () = 
-            if _selectionTracker.IsRunning then
-                _selectionTracker.Stop()
-                _selectionTracker.Start()
+        member x.SyncSelection () = x.SyncSelection()
 
 
 
