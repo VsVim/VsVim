@@ -8,7 +8,7 @@
     <ProjectGuid>{797C1463-3984-47BE-8CD2-4FF68D1E30DA}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Vim.UI.Wpf.Test</RootNamespace>
+    <RootNamespace>Vim.UI.Wpf.UnitTest</RootNamespace>
     <AssemblyName>Vim.UI.Wpf.UnitTest</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -114,6 +114,10 @@
     <Compile Include="ProtectedOperationsTest.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\EditorUtilsTest\EditorUtilsTest.csproj">
+      <Project>{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}</Project>
+      <Name>EditorUtilsTest</Name>
+    </ProjectReference>
     <ProjectReference Include="..\VimCoreTest\VimCoreTest.csproj">
       <Project>{B4FC7C81-E500-47C8-A884-2DBB7CA77123}</Project>
       <Name>VimCoreTest</Name>
@@ -122,9 +126,9 @@
       <Project>{06BE08E7-8626-40BD-877B-8D2DCA6BA451}</Project>
       <Name>VimCore</Name>
     </ProjectReference>
-    <ProjectReference Include="..\VimUnitTestUtils\VimUnitTestUtils.csproj">
-      <Project>{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}</Project>
-      <Name>VimUnitTestUtils</Name>
+    <ProjectReference Include="..\EditorUtils\EditorUtils.csproj">
+      <Project>{FB418222-C105-4942-8EEB-832DDCFFD89D}</Project>
+      <Name>EditorUtils</Name>
     </ProjectReference>
     <ProjectReference Include="..\VimWpf\VimWpf.csproj">
       <Project>{65A749E0-F1B1-4E43-BE73-25072EE398C6}</Project>

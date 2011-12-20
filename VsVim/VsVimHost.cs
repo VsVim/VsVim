@@ -18,6 +18,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
 using VsVim.Properties;
+using EditorUtils;
 
 namespace VsVim
 {
@@ -230,9 +231,14 @@ namespace VsVim
             }
         }
 
-        public override void Close(ITextView textView, bool checkDirty)
+        public override void Close(ITextView textView)
         {
-            _textManager.CloseView(textView, checkDirty);
+            _textManager.CloseView(textView, false);
+        }
+
+        public override bool IsReadOnly(ITextBuffer textBuffer)
+        {
+            return _adapter.IsReadOnly(textBuffer);
         }
 
         /// <summary>
@@ -296,9 +302,10 @@ namespace VsVim
             targetView.ShowInFront();
         }
 
-        public override void BuildSolution()
+        public override HostResult Make(bool jumpToFirstError, string arguments)
         {
             SafeExecuteCommand("Build.BuildSolution");
+            return HostResult.Success;
         }
 
         /// <summary>

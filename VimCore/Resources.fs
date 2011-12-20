@@ -15,6 +15,7 @@ module internal Resources =
     let Common_BulkEdit = "VsVim Bulk Edit"
     let Common_GotoDefNoWordUnderCursor = "No word under cursor to go to the definition of"
     let Common_GotoDefFailed word = sprintf "Could not navigate to definition of %s" word
+    let Common_InvalidAddress = "Invalid addresss"
     let Common_InvalidLineNumber = "Invalid Line Number"
     let Common_MarkInvalid = "Argument must be a letter or forward / back quote"
     let Common_MarkNotSet = "Mark not set"
@@ -77,4 +78,21 @@ module internal Resources =
     let Internal_CannotRedo = "Cannot redo the last action"
     let Internal_ErrorMappingToVisual = "Error mapping to the visual buffer defaulting to edit buffer"
     let Internal_ErrorMappingBackToEdit = "Error mapping data back to the edit buffer"
+
+    let Parser_Error = "Parse error"
+    let Parser_NoRangeAllowed = "No range allowed"
+    let Parser_NoMarksMatching x = sprintf "No marks matching \"%c\"" x
+    let Parser_NoBangAllowed = "No ! allowed"
+    let Parser_InvalidArgument = "Invalid Argument"
+
+    let Interpreter_Error = "An error was encountered interpretting the expression"
+    let Interpreter_CantFindDirectory x = sprintf "Can't find directory \"%s\" in cdpath" x
+    let Interpreter_OptionNotSupported x = sprintf "Option is not supported: '%s'" x
+    let Interpreter_UnableToMapKeys lhs rhs = sprintf "Unable to map keys: %s %s" lhs rhs
+    let Interpreter_UnknownOption msg = sprintf "Unknown option: %s" msg
+    let Interpreter_InvalidArgument msg = sprintf "Invalid argument: %s" msg 
+    let Interpreter_ReadOnlyOptionIsSet = "'readonly' option is set (add ! to override)"
+    let Interpreter_CantOpenFile filePath = sprintf "Can't open file %s" filePath
+    let Interpreter_CantRunCommand command = sprintf "Can't run command %s" command
+
 

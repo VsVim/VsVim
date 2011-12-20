@@ -2,10 +2,9 @@
 using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public class UndoTransactionTest

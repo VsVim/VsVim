@@ -1,19 +1,17 @@
 ﻿using System;
+using EditorUtils.UnitTest;
 using Microsoft.FSharp.Collections;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
-using Vim;
 using Vim.Modes.Command;
-using Vim.UnitTest;
 using Vim.UnitTest.Mock;
-using Vim.Modes;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture, RequiresSTA]
-    public class CommandModeTest
+    public class CommandModeTest : VimTestBase
     {
         private MockRepository _factory;
         private Mock<ITextCaret> _caret;
@@ -33,7 +31,7 @@ namespace VimCore.UnitTest
             _selection = _factory.Create<ITextSelection>();
             _selection.Setup(x => x.IsEmpty).Returns(true);
             _operations = _factory.Create<ICommonOperations>();
-            _buffer = EditorUtil.CreateTextBuffer();
+            _buffer = CreateTextBuffer();
             _caret = MockObjectFactory.CreateCaret(factory: _factory);
             _caret.SetupProperty(x => x.IsHidden);
             _textView = MockObjectFactory.CreateTextView(

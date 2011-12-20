@@ -4,5 +4,6 @@
     <assembly path="VimCoreTest\bin\Debug\Vim.Core.UnitTest.dll" />
     <assembly path="VsVimTest\bin\Debug\VsVim.UnitTest.dll" />
     <assembly path="VimWpfTest\bin\Debug\Vim.UI.Wpf.UnitTest.dll" />
+    <assembly path="EditorUtilsTest\bin\Debug\EditorUtils.UnitTest.dll" />
   </Config>
 </NUnitProject>

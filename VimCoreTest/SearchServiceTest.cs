@@ -1,11 +1,10 @@
-﻿using Microsoft.VisualStudio.Text;
+﻿using EditorUtils.UnitTest;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Operations;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public sealed class SearchServiceTest : VimTestBase
@@ -26,7 +25,7 @@ namespace VimCore.UnitTest
             _globalSettings.IgnoreCase = true;
             _globalSettings.SmartCase = false;
 
-            _textSearch = EditorUtil.FactoryService.TextSearchService;
+            _textSearch = TextSearchService;
             _searchRaw = new SearchService(_textSearch, _globalSettings);
             _search = _searchRaw;
         }

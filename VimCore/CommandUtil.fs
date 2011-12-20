@@ -1,6 +1,7 @@
 ﻿#light
 
 namespace Vim
+open EditorUtils
 open Vim.Modes
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
@@ -40,7 +41,7 @@ type internal NumberValue =
 /// amount of stored state low here I believe it counters the size of the type
 type internal CommandUtil 
     (
-        _vimBufferData : VimBufferData,
+        _vimBufferData : IVimBufferData,
         _motionUtil : IMotionUtil,
         _commonOperations : ICommonOperations,
         _foldManager : IFoldManager,
@@ -2337,7 +2338,7 @@ type internal CommandUtil
                 true
 
         if result then
-            _vimHost.Close _textView false
+            _vimHost.Close _textView 
             CommandResult.Completed ModeSwitch.NoSwitch
         else
             CommandResult.Error

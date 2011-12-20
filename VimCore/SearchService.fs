@@ -141,7 +141,7 @@ type internal SearchService
 
                 let result = 
                     try
-                        textSearchService.FindNext(position, true, findData) |> NullableUtil.toOption
+                        textSearchService.FindNext(position, true, findData) |> NullableUtil.ToOption
                     with 
                     | :? System.InvalidOperationException ->
                         // Happens when we provide an invalid regular expression.  Just return None

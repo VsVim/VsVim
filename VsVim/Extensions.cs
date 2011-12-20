@@ -15,6 +15,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
+using EditorUtils;
 using Command = EnvDTE.Command;
 
 namespace VsVim

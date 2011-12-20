@@ -7,6 +7,36 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Utilities
 
+/// Core parts of an IVimBuffer.  Used for components which make up an IVimBuffer but
+/// need the same data provided by IVimBuffer.
+type VimBufferData 
+    (
+        _vimTextBuffer : IVimTextBuffer,
+        _textView : ITextView,
+        _windowSettings : IVimWindowSettings,
+        _jumpList : IJumpList,
+        _statusUtil : IStatusUtil,
+        _undoRedoOperations : IUndoRedoOperations,
+        _wordUtil : IWordUtil
+    ) = 
+
+    let mutable _currentDirectory : string option = None
+
+    interface IVimBufferData with
+        member x.CurrentDirectory 
+            with get() = _currentDirectory
+            and set value = _currentDirectory <- value
+        member x.JumpList = _jumpList
+        member x.TextView = _textView
+        member x.TextBuffer = _textView.TextBuffer
+        member x.StatusUtil = _statusUtil
+        member x.UndoRedoOperations = _undoRedoOperations
+        member x.VimTextBuffer = _vimTextBuffer
+        member x.WindowSettings = _windowSettings
+        member x.WordUtil = _wordUtil
+        member x.LocalSettings = _vimTextBuffer.LocalSettings
+        member x.Vim = _vimTextBuffer.Vim
+
 /// Implementation of the uninitialized mode.  This is designed to handle the ITextView
 /// while it's in an uninitalized state.  It shouldn't touch the ITextView in any way.  
 /// This is why it doesn't even contain a reference to it
@@ -64,7 +94,7 @@ type internal ModeMap() =
 
 type internal VimBuffer 
     (
-        _vimBufferData : VimBufferData,
+        _vimBufferData : IVimBufferData,
         _incrementalSearch : IIncrementalSearch,
         _motionUtil : IMotionUtil,
         _wordNavigator : ITextStructureNavigator,
@@ -406,6 +436,9 @@ type internal VimBuffer
 
                  
     interface IVimBuffer with
+        member x.CurrentDirectory 
+            with get() = _vimBufferData.CurrentDirectory
+            and set value = _vimBufferData.CurrentDirectory <- value
         member x.Vim = _vim
         member x.VimData = _vim.VimData
         member x.VimBufferData = x.VimBufferData

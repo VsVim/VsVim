@@ -1,17 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NUnit.Framework;
 using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Text.Operations;
-using Vim.UnitTest;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Operations;
+using NUnit.Framework;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
-    public class IEditorOperationsTest
+    public sealed class IEditorOperationsTest : VimTestBase
     {
         private ITextView _view;
         private ITextBuffer _buffer;
@@ -19,10 +15,9 @@ namespace VimCore.UnitTest
 
         public void CreateLines(params string[] lines)
         {
-            var tuple = EditorUtil.CreateTextViewAndEditorOperations(lines);
-            _view = tuple.Item1;
+            _view = CreateTextView(lines);
             _buffer = _view.TextBuffer;
-            _operations = tuple.Item2;
+            _operations = EditorOperationsFactoryService.GetEditorOperations(_view);
         }
 
         [Test, Description("Be wary the 0 length last line")]

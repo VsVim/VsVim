@@ -1,10 +1,8 @@
 ﻿using System.Linq;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public class RegisterNameTest

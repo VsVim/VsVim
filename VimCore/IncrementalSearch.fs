@@ -23,7 +23,7 @@ type IncrementalSearchData = {
 
 type internal IncrementalSearch
     (
-        _vimBufferData : VimBufferData,
+        _vimBufferData : IVimBufferData,
         _operations : ICommonOperations
     ) =
 

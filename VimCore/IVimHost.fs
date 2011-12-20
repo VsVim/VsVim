@@ -1,6 +1,7 @@
 ﻿#light
 
 namespace Vim
+open EditorUtils
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 
@@ -43,6 +44,9 @@ type IVimHost =
     /// Is the ITextBuffer in a dirty state?
     abstract IsDirty : textBuffer : ITextBuffer -> bool
 
+    /// Is the ITextBuffer readonly
+    abstract IsReadOnly : textBuffer : ITextBuffer -> bool
+
     /// Is the ITextView visible to the user
     abstract IsVisible : textView : ITextView -> bool
 
@@ -51,6 +55,9 @@ type IVimHost =
 
     /// Loads the new file into a new existing window
     abstract LoadFileIntoNewWindow : filePath : string -> HostResult
+
+    /// Run the host specific make operation
+    abstract Make : jumpToFirstError : bool -> arguments : string -> HostResult
 
     /// Move to the view above the current one
     abstract MoveViewUp : ITextView -> unit
@@ -82,10 +89,7 @@ type IVimHost =
     abstract SaveTextAs : text:string -> filePath:string -> bool 
 
     /// Close the provided view
-    abstract Close : ITextView -> checkDirty:bool -> unit
-
-    /// Builds the solution
-    abstract BuildSolution : unit -> unit
+    abstract Close : ITextView -> unit
 
     /// Split the views horizontally
     abstract SplitViewHorizontally : ITextView -> HostResult

@@ -74,7 +74,7 @@ type MarkMap(_bufferTrackingService : IBufferTrackingService) =
         _globalMarkMap <- Map.add letter value _globalMarkMap
 
     /// Get the given mark in the context of the given IVimTextBuffer
-    member x.GetMark mark (vimBufferData : VimBufferData) =
+    member x.GetMark mark (vimBufferData : IVimBufferData) =
         match mark with
         | Mark.GlobalMark letter -> 
 
@@ -91,7 +91,7 @@ type MarkMap(_bufferTrackingService : IBufferTrackingService) =
             vimBufferData.JumpList.LastJumpLocation
 
     /// Set the given mark to the specified line and column in the context of the IVimTextBuffer
-    member x.SetMark mark (vimBufferData : VimBufferData) line column = 
+    member x.SetMark mark (vimBufferData : IVimBufferData) line column = 
         let vimTextBuffer = vimBufferData.VimTextBuffer
         match mark with
         | Mark.GlobalMark letter -> 

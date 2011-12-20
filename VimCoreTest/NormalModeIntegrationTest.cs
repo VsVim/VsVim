@@ -1,16 +1,15 @@
 ﻿using System;
 using System.Linq;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Projection;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
 using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     /// <summary>
     /// Class for testing the full integration story of normal mode in VsVim
@@ -40,11 +39,9 @@ namespace VimCore.UnitTest
 
         public void Create(params string[] lines)
         {
-            var tuple = EditorUtil.CreateTextViewAndEditorOperations(lines);
-            _textView = tuple.Item1;
+            _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
-            var service = EditorUtil.FactoryService;
-            _vimBuffer = service.Vim.CreateVimBuffer(_textView);
+            _vimBuffer = Vim.CreateVimBuffer(_textView);
             _vimBuffer.ErrorMessage +=
                 (_, message) =>
                 {
@@ -68,8 +65,8 @@ namespace VimCore.UnitTest
             _jumpList = _vimBuffer.JumpList;
             _vimHost = (MockVimHost)_vimBuffer.Vim.VimHost;
             _vimHost.BeepCount = 0;
-            _vimData = service.Vim.VimData;
-            _foldManager = EditorUtil.FactoryService.FoldManagerFactory.GetFoldManager(_textView);
+            _vimData = Vim.VimData;
+            _foldManager = FoldManagerFactory.GetFoldManager(_textView);
             _clipboardDevice = (TestableClipboardDevice)CompositionContainer.GetExportedValue<IClipboardDevice>();
 
             // Many of the operations operate on both the visual and edit / text snapshot
@@ -1589,6 +1586,29 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// The'*' motion should work for non-words as well as words.  When dealing with non-words
+        /// the whole word portion is not considered
+        /// </summary>
+        [Test]
+        public void Move_NextWordUnderCursor_NonWord()
+        {
+            Create("{", "cat", "{", "dog");
+            _vimBuffer.Process('*');
+            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// The '*' motion should process multiple characters and properly match them
+        /// </summary>
+        [Test]
+        public void Move_NextWordUnderCursor_BigNonWord()
+        {
+            Create("{{", "cat{", "{{{{", "dog");
+            _vimBuffer.Process('*');
+            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
         /// When moving a line down over a fold it should not be expanded and the entire fold
         /// should count as a single line
         /// </summary>
@@ -2222,6 +2242,29 @@ namespace VimCore.UnitTest
             Create("dog cat tree");
             _vimBuffer.Process("/cat", enter: true);
             Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Verify a couple of searches for {} work as expected
+        /// </summary>
+        [Test]
+        public void IncrementalSearch_Braces()
+        {
+            Create("func() {   }");
+            Action<string, int> doSearch =
+                (pattern, position) =>
+                {
+                    _textView.MoveCaretTo(0);
+                    _vimBuffer.Process(pattern);
+                    _vimBuffer.Process(VimKey.Enter);
+                    Assert.AreEqual(position, _textView.GetCaretPoint().Position);
+                };
+            doSearch(@"/{", 7);
+            doSearch(@"/}", 11);
+
+            _assertOnErrorMessage = false;
+            doSearch(@"/\<{\>", 0);  // Should fail
+            doSearch(@"/\<}\>", 0);  // Should fail
         }
 
         [Test]

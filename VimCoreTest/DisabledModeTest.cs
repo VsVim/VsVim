@@ -1,10 +1,7 @@
 ﻿using System.Linq;
 using NUnit.Framework;
-using Vim;
-using Vim.UnitTest;
-using GlobalSettings = Vim.GlobalSettings;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public sealed class DisabledModeTest : VimTestBase

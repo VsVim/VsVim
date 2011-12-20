@@ -1,18 +1,17 @@
-﻿using Microsoft.VisualStudio.Text;
+﻿using EditorUtils.UnitTest;
+using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
-using Vim;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
-    public sealed class BlockSpanTest
+    public sealed class BlockSpanTest : VimTestBase
     {
         private ITextBuffer _textBuffer;
 
         private void Create(params string[] lines)
         {
-            _textBuffer = EditorUtil.CreateTextBuffer(lines);
+            _textBuffer = CreateTextBuffer(lines);
         }
 
         /// <summary>

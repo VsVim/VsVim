@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim.Extensions;
+using EditorUtils;
 
 namespace Vim.UI.Wpf
 {
@@ -33,9 +34,7 @@ namespace Vim.UI.Wpf
             SystemSounds.Beep.Play();
         }
 
-        public abstract void BuildSolution();
-
-        public virtual void Close(ITextView textView, bool checkDirty)
+        public virtual void Close(ITextView textView)
         {
             textView.Close();
         }
@@ -143,6 +142,15 @@ namespace Vim.UI.Wpf
         }
 
         /// <summary>
+        /// Default to seeing if the entire text buffer area is read only
+        /// </summary>
+        public virtual bool IsReadOnly(ITextBuffer textBuffer)
+        {
+            var span = new Span(0, textBuffer.CurrentSnapshot.Length);
+            return textBuffer.IsReadOnly(span);
+        }
+
+        /// <summary>
         /// Determine if the ITextView is visible.  Use the Wpf UIElement::IsVisible property
         /// to validate.  If this is not backed by an IWpfTextView then this will default to
         /// true
@@ -161,6 +169,8 @@ namespace Vim.UI.Wpf
         public abstract HostResult LoadFileIntoExistingWindow(string filePath, ITextBuffer textbuffer);
 
         public abstract HostResult LoadFileIntoNewWindow(string filePath);
+
+        public abstract HostResult Make(bool jumpToFirstError, string arguments);
 
         public abstract void MoveViewDown(ITextView value);
 
@@ -246,14 +256,9 @@ namespace Vim.UI.Wpf
             Beep();
         }
 
-        void IVimHost.BuildSolution()
+        void IVimHost.Close(ITextView value)
         {
-            BuildSolution();
-        }
-
-        void IVimHost.Close(ITextView value, bool checkDirty)
-        {
-            Close(value, checkDirty);
+            Close(value);
         }
 
         void IVimHost.EnsureVisible(ITextView textView, SnapshotPoint point)
@@ -306,6 +311,11 @@ namespace Vim.UI.Wpf
             return IsDirty(textBuffer);
         }
 
+        bool IVimHost.IsReadOnly(ITextBuffer textBuffer)
+        {
+            return IsReadOnly(textBuffer);
+        }
+
         HostResult IVimHost.LoadFileIntoExistingWindow(string filePath, ITextBuffer textBuffer)
         {
             return LoadFileIntoExistingWindow(filePath, textBuffer);
@@ -314,6 +324,11 @@ namespace Vim.UI.Wpf
         HostResult IVimHost.LoadFileIntoNewWindow(string filePath)
         {
             return LoadFileIntoNewWindow(filePath);
+        }
+
+        HostResult IVimHost.Make(bool jumpToFirstError, string arguments)
+        {
+            return Make(jumpToFirstError, arguments);
         }
 
         void IVimHost.MoveViewDown(ITextView value)

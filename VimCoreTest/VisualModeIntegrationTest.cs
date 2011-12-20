@@ -1,16 +1,16 @@
 ﻿using System.Threading;
+using EditorUtils.UnitTest;
+using EditorUtils.UnitTest.Utils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
-    public sealed class VisualModeIntegrationTest
+    public sealed class VisualModeIntegrationTest : VimTestBase 
     {
         private IVimBuffer _buffer;
         private IVimTextBuffer _vimTextBuffer;
@@ -34,11 +34,9 @@ namespace VimCore.UnitTest
         {
             _context = new TestableSynchronizationContext();
             SynchronizationContext.SetSynchronizationContext(_context);
-            var tuple = EditorUtil.CreateTextViewAndEditorOperations(lines);
-            _textView = tuple.Item1;
+            _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
-            var service = EditorUtil.FactoryService;
-            _buffer = service.Vim.CreateVimBuffer(_textView);
+            _buffer = Vim.CreateVimBuffer(_textView);
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             _vimTextBuffer = _buffer.VimTextBuffer;
             _registerMap = _buffer.RegisterMap;
@@ -542,7 +540,7 @@ namespace VimCore.UnitTest
             Create("dog", "cat");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 3));
             UnnamedRegister.UpdateValue("pig");
-            _buffer.Process("\"cp");
+            _buffer.Process("p");
             Assert.AreEqual("pig", _textView.GetLine(0).GetText());
             Assert.AreEqual("dog", UnnamedRegister.StringValue);
         }

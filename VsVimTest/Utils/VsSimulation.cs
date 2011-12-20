@@ -371,7 +371,7 @@ namespace VsVim.UnitTest.Utils
         private readonly Mock<IDisplayWindowBroker> _displayWindowBroker;
         private readonly Mock<IExternalEditorManager> _externalEditorManager;
 
-        internal VsSimulation(IVimBufferCoordinator bufferCoordinator, bool simulateResharper)
+        internal VsSimulation(IVimBufferCoordinator bufferCoordinator, bool simulateResharper, IEditorOperationsFactoryService editorOperationsFactoryService)
         {
             _wpfTextView = (IWpfTextView)bufferCoordinator.VimBuffer.TextView;
             _factory = new MockRepository(MockBehavior.Strict);
@@ -394,7 +394,7 @@ namespace VsVim.UnitTest.Utils
 
             _defaultCommandTarget = new DefaultCommandTarget(
                 bufferCoordinator.VimBuffer.TextView,
-                EditorUtil.GetEditorOperations(bufferCoordinator.VimBuffer.TextView));
+                editorOperationsFactoryService.GetEditorOperations(bufferCoordinator.VimBuffer.TextView));
 
             // Visual Studio hides the default IOleCommandTarget inside of the IWpfTextView property
             // bag.  The default KeyProcessor implementation looks here for IOleCommandTarget to 

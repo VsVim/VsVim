@@ -1,12 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using EditorUtils;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using NUnit.Framework;
-using Vim;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public sealed class IncrementalSearchTaggerSourceTest : VimTestBase

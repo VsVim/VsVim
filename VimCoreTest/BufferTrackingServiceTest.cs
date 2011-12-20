@@ -1,14 +1,13 @@
 ﻿using System;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
-    public sealed class BufferTrackingServiceTest
+    public sealed class BufferTrackingServiceTest : VimTestBase
     {
         private BufferTrackingService _bufferTrackingServiceRaw;
         private IBufferTrackingService _bufferTrackingService;
@@ -43,7 +42,7 @@ namespace VimCore.UnitTest
         [Test]
         public void SimpleEdit1()
         {
-            var buffer = EditorUtil.CreateTextBuffer("foo bar", "baz");
+            var buffer = CreateTextBuffer("foo bar", "baz");
             var tlc = Create(buffer, 0, 1);
             buffer.Replace(new Span(0, 0), "foo");
             AssertPoint(tlc, 0, 1);
@@ -52,7 +51,7 @@ namespace VimCore.UnitTest
         [Test, Description("Replace the line, shouldn't affect the column tracking")]
         public void SimpleEdit2()
         {
-            var buffer = EditorUtil.CreateTextBuffer("foo bar", "baz");
+            var buffer = CreateTextBuffer("foo bar", "baz");
             var tlc = Create(buffer, 0, 1);
             buffer.Replace(new Span(0, 5), "barbar");
             AssertPoint(tlc, 0, 1);
@@ -61,7 +60,7 @@ namespace VimCore.UnitTest
         [Test, Description("Edit at the end of the line")]
         public void SimpleEdit3()
         {
-            var buffer = EditorUtil.CreateTextBuffer("foo bar", "baz");
+            var buffer = CreateTextBuffer("foo bar", "baz");
             var tlc = Create(buffer, 0, 1);
             buffer.Replace(new Span(5, 0), "barbar");
             AssertPoint(tlc, 0, 1);
@@ -70,7 +69,7 @@ namespace VimCore.UnitTest
         [Test, Description("Edit a different line")]
         public void SimpleEdit4()
         {
-            var buffer = EditorUtil.CreateTextBuffer("foo bar", "baz");
+            var buffer = CreateTextBuffer("foo bar", "baz");
             var tlc = Create(buffer, 0, 1);
             buffer.Replace(buffer.GetLineRange(1, 1).ExtentIncludingLineBreak.Span, "hello world");
             AssertPoint(tlc, 0, 1);
@@ -82,7 +81,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Edit_DeleteLine()
         {
-            var buffer = EditorUtil.CreateTextBuffer("foo", "bar");
+            var buffer = CreateTextBuffer("foo", "bar");
             var tlc = Create(buffer, 0, 0);
             buffer.Delete(buffer.GetLineFromLineNumber(0).ExtentIncludingLineBreak.Span);
             Assert.IsTrue(tlc.Point.IsNone());
@@ -95,7 +94,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Edit_DeleteLineBelow()
         {
-            var buffer = EditorUtil.CreateTextBuffer("foo", "bar");
+            var buffer = CreateTextBuffer("foo", "bar");
             var tlc = Create(buffer, 0, 2);
             buffer.Delete(buffer.GetLineFromLineNumber(1).ExtentIncludingLineBreak.Span);
             AssertPoint(tlc, 0, 2);
@@ -107,7 +106,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Edit_DeleteLineAbove()
         {
-            var buffer = EditorUtil.CreateTextBuffer("foo", "bar", "baz");
+            var buffer = CreateTextBuffer("foo", "bar", "baz");
             var tlc = Create(buffer, 1, 2);
             buffer.Delete(buffer.GetLineFromLineNumber(0).ExtentIncludingLineBreak.Span);
             AssertPoint(tlc, 0, 2);
@@ -116,7 +115,7 @@ namespace VimCore.UnitTest
         [Test]
         public void TruncatingEdit1()
         {
-            var buffer = EditorUtil.CreateTextBuffer("foo bar baz");
+            var buffer = CreateTextBuffer("foo bar baz");
             var tlc = Create(buffer, 0, 5);
             buffer.Replace(buffer.GetLine(0).ExtentIncludingLineBreak, "yes");
             AssertPoint(tlc, 0, 3);
@@ -125,7 +124,7 @@ namespace VimCore.UnitTest
         [Test, Description("Make it 0 width")]
         public void TruncatingEdit2()
         {
-            var buffer = EditorUtil.CreateTextBuffer("foo bar baz");
+            var buffer = CreateTextBuffer("foo bar baz");
             var tlc = Create(buffer, 0, 5);
             buffer.Replace(buffer.GetLineFromLineNumber(0).ExtentIncludingLineBreak, "");
             AssertPoint(tlc, 0, 0);
@@ -137,7 +136,7 @@ namespace VimCore.UnitTest
         [Test]
         public void VisualSelection_Block_AddLineAbove()
         {
-            var textBuffer = EditorUtil.CreateTextBuffer("cats", "dogs", "fish");
+            var textBuffer = CreateTextBuffer("cats", "dogs", "fish");
             var visualSelection = VisualSelection.NewBlock(
                 textBuffer.GetBlockSpan(1, 2, 1, 2),
                 BlockCaretLocation.BottomRight);
@@ -156,7 +155,7 @@ namespace VimCore.UnitTest
         [Test]
         public void VisualSpan_Block_AddLineAbove()
         {
-            var textBuffer = EditorUtil.CreateTextBuffer("cats", "dogs", "fish");
+            var textBuffer = CreateTextBuffer("cats", "dogs", "fish");
             var visualSpan = VisualSpan.NewBlock(textBuffer.GetBlockSpan(1, 2, 1, 2));
             var trackingVisualSpan = _bufferTrackingService.CreateVisualSpan(visualSpan);
             textBuffer.Insert(textBuffer.GetLine(1).Start, Environment.NewLine);
@@ -172,7 +171,7 @@ namespace VimCore.UnitTest
         [Test]
         public void VisualSpan_Character_EditBefore()
         {
-            var textBuffer = EditorUtil.CreateTextBuffer("cat", "dog");
+            var textBuffer = CreateTextBuffer("cat", "dog");
             var visualSpan = VisualSpan.NewCharacter(new CharacterSpan(textBuffer.GetPoint(0), 1, 2));
             var trackingVisualSpan = _bufferTrackingService.CreateVisualSpan(visualSpan);
             textBuffer.Insert(0, "bat ");
@@ -188,7 +187,7 @@ namespace VimCore.UnitTest
         [Test]
         public void VisualSpan_Character_EditBeforeMultiLine()
         {
-            var textBuffer = EditorUtil.CreateTextBuffer("cat", "dog");
+            var textBuffer = CreateTextBuffer("cat", "dog");
             var visualSpan = VisualSpan.NewCharacter(new CharacterSpan(textBuffer.GetPoint(0), 2, 1));
             var trackingVisualSpan = _bufferTrackingService.CreateVisualSpan(visualSpan);
             textBuffer.Insert(0, "bat ");

@@ -1,8 +1,7 @@
 ﻿using NUnit.Framework;
-using Vim;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public class RegisterTest

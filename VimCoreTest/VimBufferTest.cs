@@ -1,12 +1,11 @@
 ﻿using System;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
-using Vim;
-using Vim.UnitTest;
 using Vim.Extensions;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public sealed class VimBufferTest : VimTestBase

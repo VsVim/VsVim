@@ -1,19 +1,18 @@
-﻿using Microsoft.VisualStudio.Text;
+﻿using EditorUtils.UnitTest;
+using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
-using Vim;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
-    public class VirtualSnapshotPointUtilTest
+    public class VirtualSnapshotPointUtilTest : VimTestBase
     {
         ITextBuffer _buffer;
         ITextSnapshot _snapshot;
 
         public void Create(params string[] lines)
         {
-            _buffer = EditorUtil.CreateTextBuffer(lines);
+            _buffer = CreateTextBuffer(lines);
             _snapshot = _buffer.CurrentSnapshot;
         }
 

@@ -1,8 +1,6 @@
 ﻿using NUnit.Framework;
-using Vim;
-using GlobalSettings = Vim.GlobalSettings;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public class LocalSettingsTest : SettingsCommonTest
@@ -10,7 +8,7 @@ namespace VimCore.UnitTest
         protected override string ToggleSettingName { get { return LocalSettingNames.NumberName; } }
         protected override IVimSettings Create()
         {
-            var global = new Vim.GlobalSettings();
+            var global = new GlobalSettings();
             return new LocalSettings(global);
         }
 

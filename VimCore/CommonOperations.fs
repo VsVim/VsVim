@@ -1,6 +1,7 @@
 ﻿#light
 
 namespace Vim
+open EditorUtils
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
@@ -104,7 +105,7 @@ module internal CommonUtil =
 
 type internal CommonOperations
     (
-        _vimBufferData : VimBufferData,
+        _vimBufferData : IVimBufferData,
         _editorOperations : IEditorOperations,
         _outliningManager : IOutliningManager option,
         _smartIndentationService : ISmartIndentationService
@@ -985,7 +986,7 @@ type CommonOperationsFactory
     let _key = System.Object()
 
     /// Create an ICommonOperations instance for the given VimBufferData
-    member x.CreateCommonOperations (vimBufferData : VimBufferData) =
+    member x.CreateCommonOperations (vimBufferData : IVimBufferData) =
         let textView = vimBufferData.TextView
         let editorOperations = _editorOperationsFactoryService.GetEditorOperations(textView)
 
@@ -998,7 +999,7 @@ type CommonOperationsFactory
         CommonOperations(vimBufferData, editorOperations, outlining, _smartIndentationService) :> ICommonOperations
 
     /// Get or create the ICommonOperations for the given buffer
-    member x.GetCommonOperations (bufferData : VimBufferData) = 
+    member x.GetCommonOperations (bufferData : IVimBufferData) = 
         let properties = bufferData.TextView.Properties
         properties.GetOrCreateSingletonProperty(_key, (fun () -> x.CreateCommonOperations bufferData))
 

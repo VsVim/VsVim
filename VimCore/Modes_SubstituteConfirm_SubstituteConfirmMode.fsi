@@ -5,7 +5,7 @@ open Vim
 open Vim.Modes
 
 type internal SubstituteConfirmMode =
-    new : VimBufferData * ICommonOperations -> SubstituteConfirmMode
+    new : IVimBufferData * ICommonOperations -> SubstituteConfirmMode
 
     interface ISubstituteConfirmMode
 

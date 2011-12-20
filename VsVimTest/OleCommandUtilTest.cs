@@ -9,7 +9,7 @@ using VsVim.UnitTest.Utils;
 namespace VsVim.UnitTest
 {
     [TestFixture()]
-    public sealed class OleCommandUtilTest
+    public sealed class OleCommandUtilTest : VimTestBase
     {
         internal EditCommand ConvertTypeChar(char data)
         {
@@ -161,8 +161,8 @@ namespace VsVim.UnitTest
         [Test]
         public void TryConvert_TextInputToOleCommandData()
         {
-            var textView = EditorUtil.CreateTextView("");
-            var buffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(textView);
+            var textView = CreateTextView("");
+            var buffer = Vim.CreateVimBuffer(textView);
             buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             foreach (var cur in KeyInputUtil.VimKeyInputList)
             {

@@ -6,7 +6,7 @@ using Moq;
 using NUnit.Framework;
 using Vim.UI.Wpf.Implementation;
 
-namespace Vim.UI.Wpf.Test
+namespace Vim.UI.Wpf.UnitTest
 {
     [TestFixture]
     public class DisplayWindowBrokerTest

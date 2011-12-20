@@ -1,22 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using Microsoft.FSharp.Collections;
-using Microsoft.FSharp.Core;
+using EditorUtils;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
 using Vim.Modes.Command;
-using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
-    [TestFixture, RequiresSTA]
+    [TestFixture]
     public sealed class CommandProcessorTest : VimTestBase
     {
         private ITextView _textView;
@@ -28,7 +25,6 @@ namespace VimCore.UnitTest
         private IVimData _vimData;
         private Mock<IEditorOperations> _editOpts;
         private Mock<ICommonOperations> _operations;
-        private Mock<IOperations> _commandOperations;
         private Mock<IStatusUtil> _statusUtil;
         private Mock<IFileSystem> _fileSystem;
         private Mock<IFoldManager> _foldManager;
@@ -44,9 +40,9 @@ namespace VimCore.UnitTest
             _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             _editOpts = _factory.Create<IEditorOperations>();
             _vimHost = _factory.Create<IVimHost>();
+            _vimHost.Setup(x => x.IsDirty(It.IsAny<ITextBuffer>())).Returns(false);
             _operations = _factory.Create<ICommonOperations>();
             _operations.SetupGet(x => x.EditorOperations).Returns(_editOpts.Object);
-            _commandOperations = _factory.Create<IOperations>();
             _statusUtil = _factory.Create<IStatusUtil>();
             _fileSystem = _factory.Create<IFileSystem>(MockBehavior.Strict);
             _foldManager = _factory.Create<IFoldManager>(MockBehavior.Strict);
@@ -62,10 +58,10 @@ namespace VimCore.UnitTest
                 vimTextBuffer.Object,
                 _textView,
                 statusUtil: _statusUtil.Object);
+            var vimBuffer = CreateVimBuffer(vimBufferData);
             _processorRaw = new CommandProcessor(
-                vimBufferData,
+                vimBuffer,
                 _operations.Object,
-                _commandOperations.Object,
                 _fileSystem.Object,
                 _foldManager.Object);
             _processor = _processorRaw;
@@ -79,54 +75,6 @@ namespace VimCore.UnitTest
         private RunResult RunCommand(string input)
         {
             return _processor.RunCommand(Microsoft.FSharp.Collections.ListModule.OfSeq(input));
-        }
-
-        private void TestNoRemap(string input, string lhs, string rhs, params KeyRemapMode[] modes)
-        {
-            TestMapCore(input, lhs, rhs, false, modes);
-        }
-
-        private void TestRemap(string input, string lhs, string rhs, params KeyRemapMode[] modes)
-        {
-            TestMapCore(input, lhs, rhs, true, modes);
-        }
-
-        private void TestMapCore(string input, string lhs, string rhs, bool allowRemap, params KeyRemapMode[] modes)
-        {
-            _commandOperations.Setup(x => x.RemapKeys(lhs, rhs, modes, allowRemap)).Verifiable();
-            RunCommand(input);
-            _operations.Verify();
-        }
-
-        private void TestMapClear(string input, params KeyRemapMode[] modes)
-        {
-            _commandOperations.Setup(x => x.ClearKeyMapModes(modes)).Verifiable();
-            RunCommand(input);
-            _operations.Verify();
-        }
-
-        private void TestUnmap(string input, string lhs, params KeyRemapMode[] modes)
-        {
-            _commandOperations.Setup(x => x.UnmapKeys(lhs, modes)).Verifiable();
-            RunCommand(input);
-            _operations.Verify();
-        }
-
-        private void TestPrintMap(string input, params KeyRemapMode[] modes)
-        {
-            _commandOperations
-                .Setup(x => x.PrintKeyMap(It.IsAny<FSharpList<KeyRemapMode>>()))
-                .Callback<FSharpList<KeyRemapMode>>(
-                    list =>
-                    {
-                        foreach (var mode in modes)
-                        {
-                            Assert.IsTrue(list.Contains(mode));
-                        }
-                    })
-                .Verifiable();
-            RunCommand(input);
-            _factory.Verify();
         }
 
         /// <summary>
@@ -231,15 +179,6 @@ namespace VimCore.UnitTest
             Assert.AreEqual(_textView.GetLine(0).ExtentIncludingLineBreak.GetText(), _registerMap.GetRegister('c').StringValue);
         }
 
-        [Test]
-        public void Yank4()
-        {
-            Create("foo", "bar");
-            RunCommand("y 2");
-            var text = _textView.GetLineRange(0, 1).ExtentIncludingLineBreak.GetText();
-            Assert.AreEqual(text, UnnamedRegister.StringValue);
-        }
-
         /// <summary>
         /// Ensure that an invalid line number still registers an error with commands line yank vs. chosing
         /// the last line in the ITextBuffer as it does for jump commands
@@ -262,107 +201,6 @@ namespace VimCore.UnitTest
             Create("cat", "dog", "rabbit", "tree");
             RunCommand("2y 1");
             Assert.AreEqual("dog" + Environment.NewLine, UnnamedRegister.StringValue);
-        }
-
-        /// <summary>
-        /// Ensure the Put command is linewise even if the register is marked as characterwise
-        /// </summary>
-        [Test]
-        public void Put_ShouldBeLinewise()
-        {
-            Create("foo", "bar");
-            _commandOperations
-                .Setup(x => x.PutLine(_registerMap.GetRegister(RegisterName.Unnamed), It.IsAny<ITextSnapshotLine>(), false))
-                .Callback<Register, ITextSnapshotLine, bool>((register, line, putBefore) => Assert.IsTrue(line.LineNumber == 0))
-                .Verifiable();
-            _registerMap.GetRegister(RegisterName.Unnamed).UpdateValue("hey", OperationKind.CharacterWise);
-            RunCommand("put");
-            _commandOperations.Verify();
-        }
-
-        /// <summary>
-        /// Ensure that when the ! is present that the appropriate option is passed along
-        /// </summary>
-        [Test]
-        public void Put_BangShouldPutTextBefore()
-        {
-            Create("foo", "bar");
-            _commandOperations
-                .Setup(x => x.PutLine(_registerMap.GetRegister(RegisterName.Unnamed), It.IsAny<ITextSnapshotLine>(), true))
-                .Callback<Register, ITextSnapshotLine, bool>((register, line, putBefore) => Assert.IsTrue(line.LineNumber == 0))
-                .Verifiable();
-            _registerMap.GetRegister(RegisterName.Unnamed).UpdateValue("hey", OperationKind.CharacterWise);
-            RunCommand("put!");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void ShiftLeft1()
-        {
-            Create("     foo", "bar", "baz");
-            var range = _textView.GetLineRange(0);
-            _operations
-                .Setup(x => x.ShiftLineRangeLeft(range, 1))
-                .Verifiable();
-            RunCommand("<");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftLeft2()
-        {
-            Create("     foo", "     bar", "baz");
-            var range = _textView.GetLineRange(0, 1);
-            _operations
-                .Setup(x => x.ShiftLineRangeLeft(range, 1))
-                .Verifiable();
-            RunCommand("1,2<");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftLeft3()
-        {
-            Create("     foo", "     bar", "baz");
-            var range = _textView.GetLineRange(0, 1);
-            _operations
-                .Setup(x => x.ShiftLineRangeLeft(range, 1))
-                .Verifiable();
-            RunCommand("< 2");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftRight1()
-        {
-            Create("foo", "bar", "baz");
-            _operations
-                .Setup(x => x.ShiftLineRangeRight(_textView.GetLineRange(0, 0), 1))
-                .Verifiable();
-            RunCommand(">");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftRight2()
-        {
-            Create("foo", "bar", "baz");
-            _operations
-                .Setup(x => x.ShiftLineRangeRight(_textView.GetLineRange(0, 1), 1))
-                .Verifiable();
-            RunCommand("1,2>");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftRight3()
-        {
-            Create("foo", "bar", "baz");
-            _operations
-                .Setup(x => x.ShiftLineRangeRight(_textView.GetLineRange(0, 1), 1))
-                .Verifiable();
-            RunCommand("> 2");
-            _operations.Verify();
         }
 
         /// <summary>
@@ -403,667 +241,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Substitute1()
-        {
-            Create("foo bar");
-            var range = _textView.GetLineRange(0);
-            _operations
-                .Setup(x => x.Substitute("f", "b", range, SubstituteFlags.None))
-                .Verifiable();
-            RunCommand("s/f/b");
-            _operations.Verify();
-        }
-
-
-        [Test]
-        public void Substitute2()
-        {
-            Create("foo bar");
-            var range = _textView.GetLineRange(0);
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.None))
-                .Verifiable();
-            RunCommand("s/foo/bar");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Substitute3()
-        {
-            Create("foo bar");
-            var range = _textView.GetLineRange(0);
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.None))
-                .Verifiable();
-            RunCommand("s/foo/bar/");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Substitute4()
-        {
-            Create("foo bar");
-            var range = _textView.GetLineRange(0);
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.ReplaceAll))
-                .Verifiable();
-            RunCommand("s/foo/bar/g");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Substitute5()
-        {
-            Create("foo bar");
-            var range = _textView.GetLineRange(0);
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.IgnoreCase))
-                .Verifiable();
-            RunCommand("s/foo/bar/i");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Substitute6()
-        {
-            Create("foo bar");
-            var range = _textView.GetLineRange(0);
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.IgnoreCase | SubstituteFlags.ReplaceAll))
-                .Verifiable();
-            RunCommand("s/foo/bar/gi");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Substitute7()
-        {
-            Create("foo bar");
-            var range = _textView.GetLineRange(0);
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.IgnoreCase | SubstituteFlags.ReplaceAll))
-                .Verifiable();
-            RunCommand("s/foo/bar/ig");
-            _operations.Verify();
-        }
-
-
-        [Test]
-        public void Substitute8()
-        {
-            Create("foo bar");
-            var range = _textView.GetLineRange(0);
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.ReportOnly))
-                .Verifiable();
-            RunCommand("s/foo/bar/n");
-            _operations.Verify();
-        }
-
-
-        [Test]
-        public void Substitute9()
-        {
-            Create("foo bar", "baz");
-            var range = _textView.GetLineRange(0, 1);
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.None))
-                .Verifiable();
-            RunCommand("%s/foo/bar");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Substitute10()
-        {
-            Create("foo bar", "baz");
-            var range = _textView.GetLineRange(0, 1);
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.SuppressError))
-                .Verifiable();
-            RunCommand("%s/foo/bar/e");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Substitute11()
-        {
-            Create("foo bar", "baz");
-            var range = _textView.GetLineRange(0, 1);
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.OrdinalCase))
-                .Verifiable();
-            RunCommand("%s/foo/bar/I");
-            _operations.Verify();
-        }
-
-        [Test, Description("Use last flags flag")]
-        public void Substitute12()
-        {
-            Create("foo bar", "baz");
-            var range = _textView.GetLineRange(0, 1);
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("", "", SubstituteFlags.OrdinalCase));
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.OrdinalCase))
-                .Verifiable();
-            RunCommand("%s/foo/bar/&");
-            _operations.Verify();
-        }
-
-        [Test, Description("Use last flags flag plus new flags")]
-        public void Substitute13()
-        {
-            Create("foo bar", "baz");
-            var range = _textView.GetLineRange(0, 1);
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("", "", SubstituteFlags.OrdinalCase));
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.OrdinalCase | SubstituteFlags.ReplaceAll))
-                .Verifiable();
-            RunCommand("%s/foo/bar/&g");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Substitute14()
-        {
-            Create("foo bar", "baz");
-            var result = RunCommand("%s/foo/bar/c");
-            Assert.IsTrue(result.IsSubstituteConfirm);
-
-            var confirm = result.AsSubstituteConfirm();
-            Assert.AreEqual("foo", confirm.Item3.SearchPattern);
-            Assert.AreEqual("bar", confirm.Item3.Substitute);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Substitute15()
-        {
-            Create("foo bar baz");
-            var range = _textView.GetLineRange(0);
-            _operations
-                .Setup(x => x.Substitute("foo", "", range, SubstituteFlags.None))
-                .Verifiable();
-            RunCommand("%s/foo//");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Substitute16()
-        {
-            Create("foo bar baz");
-            var range = _textView.GetLineRange(0);
-            _operations
-                .Setup(x => x.Substitute("foo", "b", range, SubstituteFlags.None))
-                .Verifiable();
-            RunCommand("%s/foo/b/");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Substitute17()
-        {
-            Create("foo bar baz");
-            var range = _textView.GetLineRange(0);
-            _operations
-                .Setup(x => x.Substitute("foo", "", range, SubstituteFlags.None))
-                .Verifiable();
-            RunCommand("%s/foo/");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Substitute18()
-        {
-            Create("cat", "dog");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.ReportOnly));
-            _operations.Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None));
-            RunCommand("s");
-        }
-
-        [Test]
-        public void Substitute19()
-        {
-            Create("cat", "dog");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.ReportOnly));
-            _operations.Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.ReplaceAll));
-            RunCommand("s g");
-        }
-
-        [Test]
-        public void Substitute20()
-        {
-            Create("cat", "dog");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.ReportOnly));
-            _operations.Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.ReplaceAll));
-            RunCommand("& g");
-        }
-
-        [Test]
-        [Description("Space in middle of flags is also not legal")]
-        public void Substitute23()
-        {
-            Create("cat", "dog");
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_TrailingCharacters)).Verifiable();
-            RunCommand("s/a/b/& g");
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("Count is legal after the flags")]
-        public void Substitute24()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 2), SubstituteFlags.None))
-                .Verifiable();
-            RunCommand("s/a/b/ 3");
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("Flags and count after the standard substitute command")]
-        public void Substitute25()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 2), SubstituteFlags.OrdinalCase))
-                .Verifiable();
-            RunCommand("s/a/b/I 3");
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("Repeat the last substitute when there is no last substitute")]
-        public void Substitute26()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _vimData.LastSubstituteData = FSharpOption<SubstituteData>.None;
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_NoPreviousSubstitute)).Verifiable();
-            RunCommand("s");
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("Repeat the substitute with no arguments should not re-use the flags")]
-        public void Substitute27()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None))
-                .Verifiable();
-            RunCommand("s");
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("Repeat the substitute with flags")]
-        public void Substitute28()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.ReplaceAll))
-                .Verifiable();
-            RunCommand("s g");
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("Repeat using & allows a space before the flags")]
-        public void Substitute29()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.ReplaceAll))
-                .Verifiable();
-            RunCommand("& g");
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("Repeat using & and several flags")]
-        public void Substitute30()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.OrdinalCase | SubstituteFlags.ReplaceAll))
-                .Verifiable();
-            RunCommand("&&g");
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("Repeat using & and a count")]
-        public void Substitute31()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 2), SubstituteFlags.None))
-                .Verifiable();
-            RunCommand("& 3");
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("Repeat using ~ uses last search not the last substitute search pattern")]
-        public void Substitute32()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.None));
-            _vimData.LastPatternData = VimUtil.CreatePatternData("a");
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None))
-                .Verifiable();
-            RunCommand("~");
-            _factory.Verify();
-
-        }
-
-        [Test]
-        [Description("Repeat using ~ does not repeat flags")]
-        public void Substitute33()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
-            _vimData.LastPatternData = VimUtil.CreatePatternData("a");
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None))
-                .Verifiable();
-            RunCommand("~");
-            _factory.Verify();
-
-        }
-
-        [Test]
-        [Description("Repeat using ~ allows flags after a space")]
-        public void Substitute34()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
-            _vimData.LastPatternData = VimUtil.CreatePatternData("a");
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.ReplaceAll))
-                .Verifiable();
-            RunCommand("~ g");
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("Repeat using ~ allows for a count")]
-        public void Substitute36()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
-            _vimData.LastPatternData = VimUtil.CreatePatternData("a");
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 2), SubstituteFlags.ReplaceAll))
-                .Verifiable();
-            RunCommand("~ g 3");
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("Repeat using && needs to keep previous flags (single & does not)")]
-        public void Substitute37()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.OrdinalCase))
-                .Verifiable();
-            RunCommand("&&");
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("Repeat via & plus r uses last search")]
-        public void Substitute39()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
-            _vimData.LastPatternData = VimUtil.CreatePatternData("a");
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None))
-                .Verifiable();
-            RunCommand("&r");
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("smagic has the additional Magic flag")]
-        public void Substitute40()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.Magic))
-                .Verifiable();
-            RunCommand("smagic/a/b");
-            _factory.Verify();
-            RunCommand("sm/a/b");
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("smagic with no arguments is a repeat")]
-        public void Substitute41()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.Magic))
-                .Verifiable();
-            RunCommand("smagic");
-            _factory.Verify();
-            RunCommand("sm");
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("snomagic has the additional Magic flag")]
-        public void Substitute42()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.Nomagic))
-                .Verifiable();
-            RunCommand("snomagic/a/b");
-            _factory.Verify();
-            RunCommand("sno/a/b");
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("snomagic with no arguments is a repeat")]
-        public void Substitute43()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.Nomagic))
-                .Verifiable();
-            RunCommand("snomagic");
-            _factory.Verify();
-            RunCommand("sno");
-            _factory.Verify();
-        }
-
-        [Test]
-        [Description("The print flag")]
-        public void Substitute44()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.PrintLast))
-                .Verifiable();
-            RunCommand("s/a/b/p");
-        }
-
-        [Test]
-        [Description("The print with number flag")]
-        public void Substitute45()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.PrintLastWithNumber))
-                .Verifiable();
-            RunCommand("s/a/b/#");
-        }
-
-        [Test]
-        [Description("The print with list flag")]
-        public void Substitute46()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.PrintLastWithList))
-                .Verifiable();
-            RunCommand("s/a/b/l");
-        }
-
-        [Test]
-        public void Substitute_EmptySearchUsesLastSearch()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _operations
-                .Setup(x => x.Substitute("cat", "lab", _textView.GetLineRange(0, 0), SubstituteFlags.None))
-                .Verifiable();
-            _vimData.LastPatternData = VimUtil.CreatePatternData("cat", Path.Forward);
-            RunCommand("s//lab/");
-            _operations.Verify();
-        }
-
-        /// <summary>
-        /// Support escaping of the backslash character in the strings
-        /// </summary>
-        [Test]
-        public void Substitute_BackslashEscape()
-        {
-            Create("and");
-            _operations
-                .Setup(x => x.Substitute(@"and", @"and/or", _textView.GetLineRange(0, 0), SubstituteFlags.None))
-                .Verifiable();
-            RunCommand(@"s/and/and\/or/");
-            _operations.Verify();
-        }
-
-        /// <summary>
-        /// Don't allow spaces between the flags
-        /// </summary>
-        [Test]
-        public void Substitute_SpacesBetweenFlags()
-        {
-            Create("cat", "dog");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("cat", "dog", SubstituteFlags.None));
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_TrailingCharacters)).Verifiable();
-            RunCommand("&& g");
-            _factory.Verify();
-        }
-
-        /// <summary>
-        /// Space between the final delimiter and flags is not allowed
-        /// </summary>
-        [Test]
-        public void Substitute_SpaceBetweenFinalDelimiterAndFlags()
-        {
-            Create("cat", "dog");
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_TrailingCharacters)).Verifiable();
-            RunCommand("s/a/b/ g");
-            _factory.Verify();
-        }
-
-        /// <summary>
-        /// Spaces are not allowed in between flags.  They must come in a group
-        /// </summary>
-        [Test]
-        public void Substitute_TildeWithSpacesInFlags()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("cat", "dog", SubstituteFlags.None));
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_TrailingCharacters)).Verifiable();
-            RunCommand("~& g");
-            _statusUtil.Verify();
-        }
-
-        /// <summary>
-        /// No argument substitute + r should use the last pattern as the pattern
-        /// </summary>
-        [Test]
-        public void Substitute_NoArgumentWithUseLastPatternFlag()
-        {
-            Create("cat", "dog", "rabbit", "tree");
-            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
-            _vimData.LastPatternData = VimUtil.CreatePatternData("a");
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None))
-                .Verifiable();
-            RunCommand("s r");
-            _factory.Verify();
-        }
-
-        /// <summary>
-        /// Make sure we handle comma as a delimiter
-        /// </summary>
-        [Test]
-        public void Substitute_CommaDelimiter()
-        {
-            Create("");
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None))
-                .Verifiable();
-            RunCommand("s,a,b,");
-            _operations.Verify();
-        }
-
-        /// <summary>
-        /// Make sure we handle ampersand as a delimiter
-        /// </summary>
-        [Test]
-        public void Substitute_AmpersandDelimiter()
-        {
-            Create("");
-            _operations
-                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.ReplaceAll))
-                .Verifiable();
-            RunCommand("s&a&b&g");
-            _operations.Verify();
-        }
-
-        /// <summary>
-        /// Handle the case where the replace string consists only of back slashes.  Note: We don't want to interpret
-        /// the backslashes here but instead want to pass them onto the substitute function.
-        /// </summary>
-        [Test]
-        public void Substitute_ReplaceWithOnlyBackslashes()
-        {
-            Create("");
-            _operations
-                .Setup(x => x.Substitute("a", @"\\\\", _textView.GetLineRange(0, 0), SubstituteFlags.None))
-                .Verifiable();
-            RunCommand(@":s/a/\\\\");
-            _operations.Verify();
-        }
-
-        /// <summary>
-        /// Handle the case where the replace string consists only of back slashes.  Note: We don't want to interpret
-        /// the backslashes here but instead want to pass them onto the substitute function.
-        /// </summary>
-        [Test]
-        public void Substitute_ReplaceWithOnlyBackslashesAndTrailingDelimiter()
-        {
-            Create("");
-            _operations
-                .Setup(x => x.Substitute("a", @"\\\\", _textView.GetLineRange(0, 0), SubstituteFlags.None))
-                .Verifiable();
-            RunCommand(@":s/a/\\\\/");
-            _operations.Verify();
-        }
-
-        [Test]
         public void Redo1()
         {
             Create("foo bar");
@@ -1082,40 +259,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Redo3()
-        {
-            Create("foo");
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_CannotRun("real"))).Verifiable();
-            RunCommand("real");
-            _factory.Verify();
-        }
-
-        /// <summary>
-        /// By default the retab command should affect the entire ITextBuffer and not include
-        /// space strings
-        /// </summary>
-        [Test]
-        public void Retab_Default()
-        {
-            Create("cat", "dog");
-            _commandOperations.Setup(x => x.RetabLineRange(_textBuffer.GetLineRange(0, 1), false)).Verifiable();
-            RunCommand("retab");
-            _factory.Verify();
-        }
-
-        /// <summary>
-        /// The ! operator should force the command to include spaces
-        /// </summary>
-        [Test]
-        public void Retab_WithBang()
-        {
-            Create("cat", "dog");
-            _commandOperations.Setup(x => x.RetabLineRange(_textBuffer.GetLineRange(0, 1), true)).Verifiable();
-            RunCommand("retab!");
-            _factory.Verify();
-        }
-
-        [Test]
         public void Undo1()
         {
             Create("foo");
@@ -1131,32 +274,6 @@ namespace VimCore.UnitTest
             _operations.Setup(x => x.Undo(1));
             RunCommand("undo");
             _operations.Verify();
-        }
-
-        [Test]
-        public void Undo3()
-        {
-            Create("foo");
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_CannotRun("unreal"))).Verifiable();
-            RunCommand("unreal");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Marks1()
-        {
-            Create("foo");
-            _commandOperations.Setup(x => x.PrintMarks(_vim.Object.MarkMap)).Verifiable();
-            RunCommand("marks");
-        }
-
-        [Test]
-        public void Marks2()
-        {
-            Create("foo");
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_CannotRun("marksaoeu"))).Verifiable();
-            RunCommand("marksaoeu");
-            _factory.Verify();
         }
 
         [Test]
@@ -1223,402 +340,11 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Set1()
-        {
-            Create("bar");
-            _commandOperations.Setup(x => x.PrintModifiedSettings()).Verifiable();
-            RunCommand("se");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Set2()
-        {
-            Create("bar");
-            _commandOperations.Setup(x => x.PrintModifiedSettings()).Verifiable();
-            RunCommand("set");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Set3()
-        {
-            Create("bar");
-            _commandOperations.Setup(x => x.PrintAllSettings()).Verifiable();
-            RunCommand("se all");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Set4()
-        {
-            Create("bar");
-            _commandOperations.Setup(x => x.PrintAllSettings()).Verifiable();
-            RunCommand("set all");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Set5()
-        {
-            Create("bar");
-            _commandOperations.Setup(x => x.PrintSetting("foo")).Verifiable();
-            RunCommand("set foo?");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Set6()
-        {
-            Create("bar");
-            _commandOperations.Setup(x => x.OperateSetting("foo")).Verifiable();
-            RunCommand("set foo");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Set7()
-        {
-            Create("bor");
-            _commandOperations.Setup(x => x.ResetSetting("foo")).Verifiable();
-            RunCommand("set nofoo");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Set8()
-        {
-            Create("bar");
-            _commandOperations.Setup(x => x.InvertSetting("foo")).Verifiable();
-            RunCommand("set foo!");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Set9()
-        {
-            Create("bar");
-            _commandOperations.Setup(x => x.InvertSetting("foo")).Verifiable();
-            RunCommand("set invfoo");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Set10()
-        {
-            Create("bar");
-            _commandOperations.Setup(x => x.SetSettingValue("foo", "bar")).Verifiable();
-            RunCommand("set foo=bar");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Set11()
-        {
-            Create("baa");
-            _commandOperations.Setup(x => x.SetSettingValue("foo", "true")).Verifiable();
-            RunCommand("set foo=true");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Set12()
-        {
-            Create("baa");
-            _commandOperations.Setup(x => x.SetSettingValue("foo", "true")).Verifiable();
-            RunCommand("set foo:true");
-            _commandOperations.Verify();
-        }
-
-        [Test]
-        public void Source1()
-        {
-            Create("boo");
-            _fileSystem.Setup(x => x.ReadAllLines(It.IsAny<string>())).Returns(FSharpOption<string[]>.None).Verifiable();
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_CouldNotOpenFile(String.Empty))).Verifiable();
-            RunCommand("source");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Source2()
-        {
-            Create("bar");
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_NotSupported_SourceNormal)).Verifiable();
-            RunCommand("source! boo");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Source3()
-        {
-            var text = new string[] { "set noignorecase" };
-            _fileSystem.Setup(x => x.ReadAllLines("blah.txt")).Returns(FSharpOption.Create(text)).Verifiable();
-            _commandOperations.Setup(x => x.ResetSetting("ignorecase")).Verifiable();
-            RunCommand("source blah.txt");
-            _commandOperations.Verify();
-            _fileSystem.Verify();
-        }
-
-        [Test]
-        public void Source4()
-        {
-            var text = new string[] { "set noignorecase", "set nofoo" };
-            _fileSystem.Setup(x => x.ReadAllLines("blah.txt")).Returns(FSharpOption.Create(text)).Verifiable();
-            _commandOperations.Setup(x => x.ResetSetting("ignorecase")).Verifiable();
-            _commandOperations.Setup(x => x.ResetSetting("foo")).Verifiable();
-            RunCommand("source blah.txt");
-            _operations.Verify();
-        }
-
-        [Test, Description("RunCommand should strip off the : prefix")]
-        public void RunCommand1()
-        {
-            var list = ListModule.OfSeq(":set nofoo");
-            _commandOperations.Setup(x => x.ResetSetting("foo")).Verifiable();
-            _processor.RunCommand(list);
-            _operations.Verify();
-        }
-
-        [Test]
-        public void RunCommand2()
-        {
-            var command = "\"foo bar";
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_CannotRun(command))).Verifiable();
-            _processor.RunCommand(ListModule.OfSeq(command));
-            _factory.Verify();
-        }
-
-        [Test]
-        public void RunCommand3()
-        {
-            var command = " \"foo bar";
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_CannotRun(command))).Verifiable();
-            _processor.RunCommand(ListModule.OfSeq(command));
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Remap_noremap()
-        {
-            Create("");
-            var modes = new KeyRemapMode[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Select, KeyRemapMode.OperatorPending };
-            TestNoRemap("noremap l h", "l", "h", modes);
-            TestNoRemap("nore l h", "l", "h", modes);
-            TestNoRemap("no l h", "l", "h", modes);
-        }
-
-        [Test]
-        public void Remap_noremap2()
-        {
-            Create("");
-            var modes = new KeyRemapMode[] { KeyRemapMode.Insert, KeyRemapMode.Command };
-            TestNoRemap("noremap! l h", "l", "h", modes);
-            TestNoRemap("nore! l h", "l", "h", modes);
-            TestNoRemap("no! l h", "l", "h", modes);
-        }
-
-        [Test]
-        public void Remap_nnoremap()
-        {
-            Create("");
-            TestNoRemap("nnoremap l h", "l", "h", KeyRemapMode.Normal);
-            TestNoRemap("nnor l h", "l", "h", KeyRemapMode.Normal);
-            TestNoRemap("nn l h", "l", "h", KeyRemapMode.Normal);
-        }
-
-        [Test]
-        public void Remap_vnoremap()
-        {
-            Create("");
-            TestNoRemap("vnoremap a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
-            TestNoRemap("vnor a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
-            TestNoRemap("vn a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
-        }
-
-        [Test]
-        public void Remap_xnoremap()
-        {
-            Create("");
-            TestNoRemap("xnoremap b c", "b", "c", KeyRemapMode.Visual);
-        }
-
-        [Test]
-        public void Remap_snoremap()
-        {
-            Create("");
-            TestNoRemap("snoremap a b", "a", "b", KeyRemapMode.Select);
-        }
-
-        [Test]
-        public void Remap_onoremap()
-        {
-            Create("");
-            TestNoRemap("onoremap a b", "a", "b", KeyRemapMode.OperatorPending);
-        }
-
-        [Test]
-        public void Remap_inoremap()
-        {
-            Create("");
-            TestNoRemap("inoremap a b", "a", "b", KeyRemapMode.Insert);
-        }
-
-        [Test]
-        public void Remap_map1()
-        {
-            Create("");
-            TestRemap("map a bc", "a", "bc", KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Select, KeyRemapMode.OperatorPending);
-        }
-
-        [Test]
-        public void Remap_nmap1()
-        {
-            Create("");
-            TestRemap("nmap a b", "a", "b", KeyRemapMode.Normal);
-        }
-
-        [Test]
-        public void Remap_many1()
-        {
-            Create("");
-            TestRemap("vmap a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
-            TestRemap("vm a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
-            TestRemap("xmap a b", "a", "b", KeyRemapMode.Visual);
-            TestRemap("xm a b", "a", "b", KeyRemapMode.Visual);
-            TestRemap("smap a b", "a", "b", KeyRemapMode.Select);
-            TestRemap("omap a b", "a", "b", KeyRemapMode.OperatorPending);
-            TestRemap("om a b", "a", "b", KeyRemapMode.OperatorPending);
-            TestRemap("imap a b", "a", "b", KeyRemapMode.Insert);
-            TestRemap("im a b", "a", "b", KeyRemapMode.Insert);
-            TestRemap("cmap a b", "a", "b", KeyRemapMode.Command);
-            TestRemap("cm a b", "a", "b", KeyRemapMode.Command);
-            TestRemap("lmap a b", "a", "b", KeyRemapMode.Language);
-            TestRemap("lm a b", "a", "b", KeyRemapMode.Language);
-            TestRemap("map! a b", "a", "b", KeyRemapMode.Insert, KeyRemapMode.Command);
-        }
-
-        [Test]
-        public void MapClear_Many1()
-        {
-            Create("");
-            TestMapClear("mapc", KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Command, KeyRemapMode.OperatorPending);
-            TestMapClear("nmapc", KeyRemapMode.Normal);
-            TestMapClear("vmapc", KeyRemapMode.Visual, KeyRemapMode.Select);
-            TestMapClear("xmapc", KeyRemapMode.Visual);
-            TestMapClear("smapc", KeyRemapMode.Select);
-            TestMapClear("omapc", KeyRemapMode.OperatorPending);
-            TestMapClear("mapc!", KeyRemapMode.Insert, KeyRemapMode.Command);
-            TestMapClear("imapc", KeyRemapMode.Insert);
-            TestMapClear("cmapc", KeyRemapMode.Command);
-        }
-
-        [Test]
-        public void Unmap_Many1()
-        {
-            Create("");
-            TestUnmap("vunmap a ", "a", KeyRemapMode.Visual, KeyRemapMode.Select);
-            TestUnmap("vunm a ", "a", KeyRemapMode.Visual, KeyRemapMode.Select);
-            TestUnmap("xunmap a", "a", KeyRemapMode.Visual);
-            TestUnmap("xunm a ", "a", KeyRemapMode.Visual);
-            TestUnmap("sunmap a ", "a", KeyRemapMode.Select);
-            TestUnmap("ounmap a ", "a", KeyRemapMode.OperatorPending);
-            TestUnmap("ounm a ", "a", KeyRemapMode.OperatorPending);
-            TestUnmap("iunmap a ", "a", KeyRemapMode.Insert);
-            TestUnmap("iunm a", "a", KeyRemapMode.Insert);
-            TestUnmap("cunmap a ", "a", KeyRemapMode.Command);
-            TestUnmap("cunm a ", "a", KeyRemapMode.Command);
-            TestUnmap("lunmap a ", "a", KeyRemapMode.Language);
-            TestUnmap("lunm a ", "a", KeyRemapMode.Language);
-            TestUnmap("unmap! a ", "a", KeyRemapMode.Insert, KeyRemapMode.Command);
-        }
-
-        [Test]
-        public void PrintKeyMap_Map()
-        {
-            Create("");
-
-            TestPrintMap("map", KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.OperatorPending);
-            TestPrintMap("imap", KeyRemapMode.Insert);
-            TestPrintMap("cmap", KeyRemapMode.Command);
-            TestPrintMap("smap", KeyRemapMode.Select);
-            TestPrintMap("nmap", KeyRemapMode.Normal);
-            TestPrintMap("vmap", KeyRemapMode.Visual, KeyRemapMode.Select);
-            TestPrintMap("xmap", KeyRemapMode.Visual);
-        }
-
-        /// <summary>
-        /// Make sure the short name causes a save
-        /// </summary>
-        [Test]
-        public void Write_ShortName()
-        {
-            Create("");
-            _vimHost.Setup(x => x.Save(_textBuffer)).Returns(true).Verifiable();
-            RunCommand("w");
-            _vimHost.Verify();
-        }
-
-        /// <summary>
-        /// Make sure the full name causes a save
-        /// </summary>
-        [Test]
-        public void Write_FullName()
-        {
-            Create("");
-            _vimHost.Setup(x => x.Save(_textBuffer)).Returns(true).Verifiable();
-            RunCommand("write");
-            _vimHost.Verify();
-        }
-
-        /// <summary>
-        /// Providing an alternate name should cause the contents to be saved to a different
-        /// file
-        /// </summary>
-        [Test]
-        public void Write_DifferentName()
-        {
-            Create("cat");
-            _vimHost.Setup(x => x.SaveTextAs("cat", "test.txt")).Returns(true).Verifiable();
-            RunCommand("write test.txt");
-            _vimHost.Verify();
-        }
-
-        /// <summary>
-        /// Short name should still cause all buffers to be written
-        /// </summary>
-        [Test]
-        public void WriteAll_ShortName()
-        {
-            Create("");
-            var vimBuffer = _factory.Create<IVimBuffer>();
-            vimBuffer.SetupGet(x => x.TextBuffer).Returns(_textBuffer).Verifiable();
-            var list = new List<IVimBuffer>() { vimBuffer.Object };
-            _vim.SetupGet(x => x.VimBuffers).Returns(list.ToFSharpList()).Verifiable();
-            _vimHost.Setup(x => x.Save(_textBuffer)).Returns(true).Verifiable();
-            RunCommand("wa");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void WriteAll_FullName()
-        {
-            Create("");
-            var vimBuffer = _factory.Create<IVimBuffer>();
-            vimBuffer.SetupGet(x => x.TextBuffer).Returns(_textBuffer).Verifiable();
-            var list = new List<IVimBuffer>() { vimBuffer.Object };
-            _vim.SetupGet(x => x.VimBuffers).Returns(list.ToFSharpList()).Verifiable();
-            _vimHost.Setup(x => x.Save(_textBuffer)).Returns(true).Verifiable();
-            RunCommand("wall");
-            _factory.Verify();
-        }
-
-        [Test]
         public void WriteQuit_NoArguments()
         {
             Create("");
             _vimHost.Setup(x => x.Save(_textView.TextBuffer)).Returns(true).Verifiable();
-            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
             RunCommand("wq");
             _factory.Verify();
         }
@@ -1628,7 +354,7 @@ namespace VimCore.UnitTest
         {
             Create("");
             _vimHost.Setup(x => x.Save(_textView.TextBuffer)).Returns(true).Verifiable();
-            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
             RunCommand("wq!");
             _factory.Verify();
         }
@@ -1638,7 +364,7 @@ namespace VimCore.UnitTest
         {
             Create("bar");
             _vimHost.Setup(x => x.SaveTextAs("bar", "foo.txt")).Returns(true).Verifiable();
-            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
             RunCommand("wq foo.txt");
             _factory.Verify();
         }
@@ -1648,7 +374,7 @@ namespace VimCore.UnitTest
         {
             Create("dog", "cat", "bear");
             _vimHost.Setup(x => x.SaveTextAs(It.IsAny<string>(), "foo.txt")).Returns(true).Verifiable();
-            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
             RunCommand("1,2wq foo.txt");
             _factory.Verify();
         }
@@ -1657,7 +383,7 @@ namespace VimCore.UnitTest
         public void Quit1()
         {
             Create("");
-            _vimHost.Setup(x => x.Close(_textView, true)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
             RunCommand("quit");
             _factory.Verify();
         }
@@ -1666,7 +392,7 @@ namespace VimCore.UnitTest
         public void Quit2()
         {
             Create("");
-            _vimHost.Setup(x => x.Close(_textView, true)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
             RunCommand("q");
             _factory.Verify();
         }
@@ -1675,7 +401,7 @@ namespace VimCore.UnitTest
         public void Quit3()
         {
             Create("");
-            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
             RunCommand("q!");
             _factory.Verify();
         }
@@ -1727,78 +453,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void TabNext_NoArguments()
-        {
-            Create("");
-            _operations.Setup(x => x.GoToNextTab(Path.Forward, 1)).Verifiable();
-            RunCommand("tabnext");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void TabNext_WithShortName()
-        {
-            Create("");
-            _operations.Setup(x => x.GoToNextTab(Path.Forward, 1)).Verifiable();
-            RunCommand("tabn");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void TabNext_WithCount()
-        {
-            Create("");
-            _operations.Setup(x => x.GoToTab(3)).Verifiable();
-            RunCommand("tabn 3");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void TabPrevious_NoArguments()
-        {
-            Create("");
-            _operations.Setup(x => x.GoToNextTab(Path.Backward, 1)).Verifiable();
-            RunCommand("tabprevious");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void TabPrevious_ShortName()
-        {
-            Create("");
-            _operations.Setup(x => x.GoToNextTab(Path.Backward, 1)).Verifiable();
-            RunCommand("tabp");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void TabPrevious_AlternateShortName()
-        {
-            Create("");
-            _operations.Setup(x => x.GoToNextTab(Path.Backward, 1)).Verifiable();
-            RunCommand("tabN");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void TabPrevious_AlternateFullName()
-        {
-            Create("");
-            _operations.Setup(x => x.GoToNextTab(Path.Backward, 1)).Verifiable();
-            RunCommand("tabNext");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void TabPrevious_AlternateNameAndCount()
-        {
-            Create("");
-            _operations.Setup(x => x.GoToNextTab(Path.Backward, 42)).Verifiable();
-            RunCommand("tabNext 42");
-            _operations.Verify();
-        }
-
-        [Test]
         public void Split1()
         {
             Create("");
@@ -1820,7 +474,7 @@ namespace VimCore.UnitTest
         public void Close1()
         {
             Create("");
-            _vimHost.Setup(x => x.Close(_textView, true)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
             RunCommand(":close");
             _factory.Verify();
         }
@@ -1829,7 +483,7 @@ namespace VimCore.UnitTest
         public void Close2()
         {
             Create("");
-            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
             RunCommand(":close!");
             _factory.Verify();
         }
@@ -1838,7 +492,7 @@ namespace VimCore.UnitTest
         public void Close3()
         {
             Create("");
-            _vimHost.Setup(x => x.Close(_textView, false)).Verifiable();
+            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
             RunCommand(":clo!");
             _factory.Verify();
         }

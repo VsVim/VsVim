@@ -1,16 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
-using Microsoft.VisualStudio.Text;
-using Vim;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
-    public class SnapshotUtilTest
+    public class SnapshotUtilTest : VimTestBase
     {
         static string[] s_lines = new string[]
             {
@@ -24,7 +18,7 @@ namespace VimCore.UnitTest
 
         public void Create(params string[] lines)
         {
-            _buffer = EditorUtil.CreateTextBuffer(lines);
+            _buffer = CreateTextBuffer(lines);
             _snapshot = _buffer.CurrentSnapshot;
         }
 

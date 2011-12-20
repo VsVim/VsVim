@@ -41,8 +41,6 @@
     <Compile Include="SearchKind.fs" />
     <Compile Include="Util.fs" />
     <Compile Include="EditorUtil.fs" />
-    <Compile Include="LineRangeVisited.fsi" />
-    <Compile Include="LineRangeVisited.fs" />
     <Compile Include="WordKind.fs" />
     <Compile Include="VimKey.fs" />
     <Compile Include="KeyInput.fsi" />
@@ -68,12 +66,14 @@
     <Compile Include="PatternUtil.fs" />
     <Compile Include="CommonOperations.fsi" />
     <Compile Include="CommonOperations.fs" />
+    <Compile Include="Interpreter_Expression.fs" />
+    <Compile Include="Interpreter_Parser.fsi" />
+    <Compile Include="Interpreter_Parser.fs" />
+    <Compile Include="Interpreter_Interpreter.fsi" />
+    <Compile Include="Interpreter_Interpreter.fs" />
     <Compile Include="Modes_CommandFactory.fsi" />
     <Compile Include="Modes_CommandFactory.fs" />
     <Compile Include="Modes_Command_Interfaces.fs" />
-    <Compile Include="Modes_Command_RangeUtil.fsi" />
-    <Compile Include="Modes_Command_RangeUtil.fs" />
-    <Compile Include="Modes_Command_DefaultOperations.fs" />
     <Compile Include="Modes_Command_CommandProcessor.fsi" />
     <Compile Include="Modes_Command_CommandProcessor.fs" />
     <Compile Include="Modes_Command_CommandMode.fsi" />
@@ -164,6 +164,13 @@
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EditorUtils\EditorUtils.csproj">
+      <Name>EditorUtils</Name>
+      <Project>{fb418222-c105-4942-8eeb-832ddcffd89d}</Project>
+      <Private>True</Private>
+    </ProjectReference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
 	     Other similar extension points exist, see Microsoft.Common.targets.

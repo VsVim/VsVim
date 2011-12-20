@@ -1,18 +1,17 @@
 ﻿using System.Linq;
+using EditorUtils;
+using EditorUtils.UnitTest;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Moq;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.Modes.SubstituteConfirm;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
-    public class SubstituteConfirmTaggerSourceTest
+    public class SubstituteConfirmTaggerSourceTest : VimTestBase
     {
         private MockRepository _factory;
         private Mock<ISubstituteConfirmMode> _mode;
@@ -25,7 +24,7 @@ namespace VimCore.UnitTest
         {
             _factory = new MockRepository(MockBehavior.Loose);
             _mode = _factory.Create<ISubstituteConfirmMode>();
-            _textBuffer = EditorUtil.CreateTextBuffer("cat", "dog", "bird", "tree");
+            _textBuffer = CreateTextBuffer("cat", "dog", "bird", "tree");
             _taggerSourceRaw = new SubstituteConfirmTaggerSource(_textBuffer, _mode.Object);
             _taggerSource = _taggerSourceRaw;
         }

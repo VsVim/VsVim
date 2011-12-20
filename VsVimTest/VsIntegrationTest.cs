@@ -5,6 +5,7 @@ using Vim.Extensions;
 using Vim.UnitTest;
 using VsVim.Implementation;
 using VsVim.UnitTest.Utils;
+using EditorUtils.UnitTest;
 
 namespace VsVim.UnitTest
 {
@@ -35,7 +36,7 @@ namespace VsVim.UnitTest
             _textView = CreateTextView(lines);
             _vimBuffer = Vim.CreateVimBuffer(_textView);
             _bufferCoordinator = new VimBufferCoordinator(_vimBuffer);
-            _simulation = new VsSimulation(_bufferCoordinator, simulateResharper);
+            _simulation = new VsSimulation(_bufferCoordinator, simulateResharper, EditorOperationsFactoryService);
         }
 
         /// <summary>

@@ -7,7 +7,7 @@ open Microsoft.VisualStudio.Text.Outlining
 
 type internal CommandUtil =
 
-    new : VimBufferData * IMotionUtil * ICommonOperations * IFoldManager * IInsertUtil -> CommandUtil
+    new : IVimBufferData * IMotionUtil * ICommonOperations * IFoldManager * IInsertUtil -> CommandUtil
 
     interface ICommandUtil
 

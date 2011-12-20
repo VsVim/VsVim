@@ -10,6 +10,7 @@ using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 using VsVim.Implementation;
+using EditorUtils.UnitTest;
 
 namespace VsVim.UnitTest
 {
@@ -31,8 +32,8 @@ namespace VsVim.UnitTest
         [SetUp]
         public void SetUp()
         {
-            _textView = EditorUtil.CreateTextView("");
-            _buffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(_textView);
+            _textView = CreateTextView("");
+            _buffer = Vim.CreateVimBuffer(_textView);
             _bufferCoordinator = new VimBufferCoordinator(_buffer);
             _vim = _buffer.Vim;
             _factory = new MockRepository(MockBehavior.Strict);

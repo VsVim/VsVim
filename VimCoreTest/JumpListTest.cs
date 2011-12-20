@@ -1,11 +1,10 @@
 ﻿using System.Linq;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public sealed class JumpListTest : VimTestBase
@@ -17,7 +16,7 @@ namespace VimCore.UnitTest
 
         public void Create(params string[] lines)
         {
-            var textView = EditorUtil.CreateTextView(lines);
+            var textView = CreateTextView(lines);
             _textBuffer = textView.TextBuffer;
             _bufferTrackingService = new BufferTrackingService();
             _jumpListRaw = new JumpList(textView, _bufferTrackingService);

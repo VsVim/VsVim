@@ -8,7 +8,7 @@
     <ProjectGuid>{B4FC7C81-E500-47C8-A884-2DBB7CA77123}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>VimCore.UnitTest</RootNamespace>
+    <RootNamespace>Vim.UnitTest</RootNamespace>
     <AssemblyName>Vim.Core.UnitTest</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -139,7 +139,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AsyncTaggerTest.cs" />
     <Compile Include="BlockSpanTest.cs" />
     <Compile Include="ChangeTrackerTest.cs" />
     <Compile Include="CharacterSpanTest.cs" />
@@ -151,31 +150,52 @@
     <Compile Include="CommandParseUtilTest.cs" />
     <Compile Include="CommandProcessorTest.cs" />
     <Compile Include="CommandRunnerTest.cs" />
-    <Compile Include="CommandDefaultOperationsTest.cs" />
     <Compile Include="CommandUtilTest.cs" />
-    <Compile Include="CountedTaggerTest.cs" />
+    <Compile Include="EqualityUtil.cs" />
+    <Compile Include="Exports\MouseDevice.cs" />
+    <Compile Include="Exports\TestableClipboardDevice.cs" />
+    <Compile Include="Exports\TestableKeyboardDevice.cs" />
+    <Compile Include="Exports\VimErrorHandler.cs" />
+    <Compile Include="Exports\VimHost.cs" />
+    <Compile Include="ExpressionInterpreterTest.cs" />
+    <Compile Include="Extensions.cs" />
+    <Compile Include="FuncUtil.cs" />
+    <Compile Include="IVimErrorDetector.cs" />
+    <Compile Include="MatchUtil.cs" />
+    <Compile Include="Mock\Extensions.cs" />
+    <Compile Include="Mock\ITagSpan.cs" />
+    <Compile Include="Mock\MockKeyboardDevice.cs" />
+    <Compile Include="Mock\MockNormalMode.cs" />
+    <Compile Include="Mock\MockObjectFactory.cs" />
+    <Compile Include="Mock\MockPresentationSource.cs" />
+    <Compile Include="Mock\MockRegisterValueBacking.cs" />
+    <Compile Include="Mock\MockVimBuffer.cs" />
+    <Compile Include="Mock\MockVimHost.cs" />
+    <Compile Include="SnapshotLineUtilTest.cs" />
+    <Compile Include="TestableStatusUtil.cs" />
+    <Compile Include="TestConstants.cs" />
+    <Compile Include="VimDataTest.cs" />
     <Compile Include="EditorToSettingSynchronizerTest.cs" />
     <Compile Include="FoldManagerTest.cs" />
     <Compile Include="InsertUtilTest.cs" />
-    <Compile Include="LineRangeTest.cs" />
-    <Compile Include="LineRangeVisitedTest.cs" />
+    <Compile Include="InterpreterTest.cs" />
+    <Compile Include="ParserTest.cs" />
     <Compile Include="ReplaceModeIntegrationTest.cs" />
     <Compile Include="MacroIntegrationTest.cs" />
     <Compile Include="IncrementalSearchTaggerSourceTest.cs" />
     <Compile Include="KeyInputSetTest.cs" />
-    <Compile Include="BasicTaggerTest.cs" />
     <Compile Include="SubstituteConfirmModeTest.cs" />
     <Compile Include="SnapshotLineRangeUtilTest.cs" />
     <Compile Include="RegisterMapTest.cs" />
     <Compile Include="RegisterNameTest.cs" />
     <Compile Include="RegisterTest.cs" />
-    <Compile Include="SnapshotLineRangeTest.cs" />
     <Compile Include="SubstituteConfirmTaggerSourceTest.cs" />
     <Compile Include="TextLineTest.cs" />
     <Compile Include="VimRegexTest.cs" />
+    <Compile Include="VimTestBase.cs" />
     <Compile Include="VimTextBufferTest.cs" />
+    <Compile Include="VimUtil.cs" />
     <Compile Include="VirtualSnapshotPointUtilTest.cs" />
-    <Compile Include="MotionUtilLegacyTest.cs" />
     <Compile Include="SelectionChangeTrackerTest.cs" />
     <Compile Include="SeqUtilTest.cs" />
     <Compile Include="VisualModeIntegrationTest.cs" />
@@ -188,7 +208,6 @@
     <Compile Include="TextChangeTrackerTest.cs" />
     <Compile Include="TextSelectionUtilTest.cs" />
     <Compile Include="SnapshotSpanUtilTest.cs" />
-    <Compile Include="SnapshotLineUtilTest.cs" />
     <Compile Include="SnapshotPointUtilTest.cs" />
     <Compile Include="DisabledModeTest.cs" />
     <Compile Include="GlobalSettingsTest.cs" />
@@ -209,7 +228,6 @@
     <Compile Include="MotionCaptureTest.cs" />
     <Compile Include="NormalModeTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RangeUtilTest.cs" />
     <Compile Include="SelectionTrackerTest.cs" />
     <Compile Include="SettingsCommonTest.cs" />
     <Compile Include="SnapshotUtilTest.cs" />
@@ -218,7 +236,6 @@
     <Compile Include="BufferTrackingServiceTest.cs" />
     <Compile Include="UndoRedoOperationsTest.cs" />
     <Compile Include="UndoTransactionTest.cs" />
-    <Compile Include="ViewUtilTest.cs" />
     <Compile Include="VimBufferFactoryIntegrationTest.cs" />
     <Compile Include="VimBufferTest.cs" />
     <Compile Include="VimIntegrationTests.cs" />
@@ -238,13 +255,21 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\EditorUtilsTest\EditorUtilsTest.csproj">
+      <Project>{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}</Project>
+      <Name>EditorUtilsTest</Name>
+    </ProjectReference>
     <ProjectReference Include="..\VimCore\VimCore.fsproj">
       <Project>{06BE08E7-8626-40BD-877B-8D2DCA6BA451}</Project>
       <Name>VimCore</Name>
     </ProjectReference>
-    <ProjectReference Include="..\VimUnitTestUtils\VimUnitTestUtils.csproj">
-      <Project>{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}</Project>
-      <Name>VimUnitTestUtils</Name>
+    <ProjectReference Include="..\EditorUtils\EditorUtils.csproj">
+      <Project>{FB418222-C105-4942-8EEB-832DDCFFD89D}</Project>
+      <Name>EditorUtils</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\VimWpf\VimWpf.csproj">
+      <Project>{65A749E0-F1B1-4E43-BE73-25072EE398C6}</Project>
+      <Name>VimWpf</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

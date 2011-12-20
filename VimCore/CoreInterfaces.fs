@@ -1,6 +1,7 @@
 ﻿#light
 
 namespace Vim
+open EditorUtils
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
@@ -80,7 +81,7 @@ type IFileSystem =
     abstract LoadVimRc : unit -> (string * string[]) option
 
     /// Attempt to read all of the lines from the given file 
-    abstract ReadAllLines : path:string -> string[] option
+    abstract ReadAllLines : filePath : string -> string[] option
 
 /// Utility functions relating to Word values in an ITextBuffer
 type IWordUtil = 
@@ -840,6 +841,16 @@ type KeyRemapMode =
 
     with 
 
+    static member All = 
+        seq {
+            yield Normal
+            yield Visual 
+            yield Select
+            yield OperatorPending
+            yield Insert
+            yield Command
+            yield Language }
+
     override x.ToString() =
         match x with 
         | Normal -> "Normal"
@@ -908,6 +919,7 @@ type SubstituteData = {
 [<StructuralEquality>]
 [<NoComparison>]
 [<Struct>]
+[<DebuggerDisplay("{ToString()}")>]
 type CharacterSpan
     (
         _start : SnapshotPoint,
@@ -944,6 +956,8 @@ type CharacterSpan
     member x.Span = SnapshotSpan(x.Start, x.End)
 
     member x.Length = x.Span.Length
+
+    override x.ToString() = x.Span.ToString()
 
     static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<CharacterSpan>.Default.Equals(this,other)
     static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<CharacterSpan>.Default.Equals(this,other))
@@ -1024,6 +1038,7 @@ type BlockCaretLocation =
 [<RequireQualifiedAccess>]
 [<StructuralEquality>]
 [<NoComparison>]
+[<DebuggerDisplay("{ToString()}")>]
 type VisualSpan =
 
     /// A characterwise span
@@ -1089,6 +1104,12 @@ type VisualSpan =
         | VisualSpan.Character _ -> ModeKind.VisualCharacter
         | VisualSpan.Line _ -> ModeKind.VisualLine
         | VisualSpan.Block _ -> ModeKind.VisualBlock
+
+    override x.ToString() =
+        match x with
+        | VisualSpan.Character characterSpan -> sprintf "Character: %O" characterSpan
+        | VisualSpan.Line lineRange -> sprintf "Line: %O" lineRange
+        | VisualSpan.Block blockSpan -> sprintf "Block: %O" blockSpan
 
     static member Create textView visualKind =
         let visualSelection : VisualSelection = VisualSelection.CreateForSelection textView visualKind
@@ -2685,6 +2706,9 @@ type internal IHistoryClient<'TData, 'TResult> =
 /// Represents shared state which is available to all IVimBuffer instances.
 type IVimData = 
 
+    /// The current directory Vim is positioned in
+    abstract CurrentDirectory : string with get, set
+
     /// The history of the : command list
     abstract CommandHistory : HistoryList with get, set
 
@@ -2708,6 +2732,9 @@ type IVimData =
     /// Data for the last substitute command performed
     abstract LastSubstituteData : SubstituteData option with get, set
 
+    /// The previous value of the current directory Vim is positioned in
+    abstract PreviousCurrentDirectory : string
+
     /// Raise the highlight search one time disabled event
     abstract RaiseHighlightSearchOneTimeDisable : unit -> unit
 
@@ -2719,37 +2746,41 @@ type IVimData =
     [<CLIEvent>]
     abstract HighlightSearchOneTimeDisabled : IEvent<unit>
 
-/// Core parts of an IVimBuffer
-type VimBufferData = {
+/// Core parts of an IVimBuffer.  Used for components which make up an IVimBuffer but
+/// need the same data provided by IVimBuffer.
+type IVimBufferData =
+
+    /// The current directory for this particular window
+    abstract CurrentDirectory : string option with get, set
 
     /// The IJumpList associated with the IVimBuffer
-    JumpList : IJumpList
+    abstract JumpList : IJumpList
 
     /// The ITextView associated with the IVimBuffer
-    TextView : ITextView
+    abstract TextView : ITextView
+
+    /// The ITextBuffer associated with the IVimBuffer
+    abstract TextBuffer : ITextBuffer
 
     /// The IStatusUtil associated with the IVimBuffer
-    StatusUtil : IStatusUtil
+    abstract StatusUtil : IStatusUtil
 
     /// The IUndoRedOperations associated with the IVimBuffer
-    UndoRedoOperations : IUndoRedoOperations
+    abstract UndoRedoOperations : IUndoRedoOperations
 
     /// The IVimTextBuffer associated with the IVimBuffer
-    VimTextBuffer : IVimTextBuffer
+    abstract VimTextBuffer : IVimTextBuffer
 
     /// The IVimWindowSettings associated with the ITextView 
-    WindowSettings : IVimWindowSettings
+    abstract WindowSettings : IVimWindowSettings
 
     /// The IWordUtil associated with the IVimBuffer
-    WordUtil : IWordUtil
+    abstract WordUtil : IWordUtil
 
-} with
+    /// The IVimLocalSettings associated with the ITextBuffer
+    abstract LocalSettings : IVimLocalSettings
 
-    member x.TextBuffer = x.VimTextBuffer.TextBuffer
-
-    member x.LocalSettings = x.VimTextBuffer.LocalSettings
-
-    member x.Vim = x.VimTextBuffer.Vim
+    abstract Vim : IVim
 
 /// Vim instance.  Global for a group of buffers
 and IVim =
@@ -2847,7 +2878,7 @@ and IMarkMap =
     abstract GlobalMarks : (Letter * VirtualSnapshotPoint) seq
 
     /// Get the mark for the given char for the IVimTextBuffer
-    abstract GetMark : mark : Mark -> vimBufferData : VimBufferData -> VirtualSnapshotPoint option
+    abstract GetMark : mark : Mark -> vimBufferData : IVimBufferData -> VirtualSnapshotPoint option
 
     /// Get the current value of the specified global mark
     abstract GetGlobalMark : letter : Letter -> VirtualSnapshotPoint option
@@ -2856,7 +2887,7 @@ and IMarkMap =
     abstract SetGlobalMark : letter: Letter -> vimtextBuffer : IVimTextBuffer -> line : int -> column : int -> unit
 
     /// Set the mark for the given char for the IVimTextBuffer
-    abstract SetMark : mark : Mark -> vimBufferData : VimBufferData -> line : int -> column : int -> bool
+    abstract SetMark : mark : Mark -> vimBufferData : IVimBufferData -> line : int -> column : int -> bool
 
     /// Delete all of the global marks 
     abstract ClearGlobalMarks : unit -> unit
@@ -2921,6 +2952,12 @@ and IVimBuffer =
     /// is buffered until it is completed or the ambiguity is removed.  
     abstract BufferedRemapKeyInputs : KeyInput list
 
+    /// The current directory for this particular window
+    abstract CurrentDirectory : string option with get, set
+
+    /// Global settings for the buffer
+    abstract GlobalSettings : IVimGlobalSettings
+
     /// IIncrementalSearch instance associated with this IVimBuffer
     abstract IncrementalSearch : IIncrementalSearch
 
@@ -2932,6 +2969,9 @@ and IVimBuffer =
 
     /// Jump list
     abstract JumpList : IJumpList
+
+    /// Local settings for the buffer
+    abstract LocalSettings : IVimLocalSettings
 
     /// Associated IMarkMap
     abstract MarkMap : IMarkMap
@@ -2948,12 +2988,6 @@ and IVimBuffer =
     /// If we are in the middle of processing a "one time command" (<c-o>) then this will
     /// hold the ModeKind which will be swiched back to after it's completed
     abstract InOneTimeCommand : ModeKind option
-
-    /// Global settings for the buffer
-    abstract GlobalSettings : IVimGlobalSettings
-
-    /// Local settings for the buffer
-    abstract LocalSettings : IVimLocalSettings
 
     /// Register map for IVim.  Global to all IVimBuffer instances but provided here
     /// for convenience
@@ -2981,7 +3015,7 @@ and IVimBuffer =
     abstract VimTextBuffer : IVimTextBuffer
 
     /// VimBufferData for the given IVimBuffer
-    abstract VimBufferData : VimBufferData
+    abstract VimBufferData : IVimBufferData
 
     /// The ITextStructureNavigator for word values in the buffer
     abstract WordNavigator : ITextStructureNavigator

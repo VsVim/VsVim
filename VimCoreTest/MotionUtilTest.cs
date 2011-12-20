@@ -1,16 +1,15 @@
 ﻿using System;
 using System.Linq;
+using EditorUtils.UnitTest;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public sealed class MotionUtilTest : VimTestBase
@@ -62,7 +61,7 @@ namespace VimCore.UnitTest
             _markMap = vimBufferData.Vim.MarkMap;
             _vimData = vimBufferData.Vim.VimData;
             _search = vimBufferData.Vim.SearchService;
-            var wordNavigator = VimUtil.CreateTextStructureNavigator(_textView, WordKind.NormalWord);
+            var wordNavigator = CreateTextStructureNavigator(_textView.TextBuffer, WordKind.NormalWord);
             _motionUtil = new MotionUtil(vimBufferData);
         }
 
@@ -2100,6 +2099,17 @@ namespace VimCore.UnitTest
             _textView.MoveCaretTo(5);
             var result = _motionUtil.NextWord(Path.Backward, 1).Value;
             Assert.AreEqual("cat c", result.Span.GetText());
+        }
+
+        /// <summary>
+        /// A non-word shouldn't require whole word
+        /// </summary>
+        [Test]
+        public void NextWord_Nonword()
+        {
+            Create("{", "dog", "{", "cat");
+            var result = _motionUtil.NextWord(Path.Forward, 1).Value;
+            Assert.AreEqual(_textView.GetLine(2).Start, result.Span.End);
         }
 
         /// <summary>

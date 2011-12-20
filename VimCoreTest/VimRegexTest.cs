@@ -2,11 +2,9 @@
 using System.Linq;
 using Microsoft.FSharp.Core;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public sealed class VimRegexTest
@@ -19,7 +17,7 @@ namespace VimCore.UnitTest
         [SetUp]
         public void Setup()
         {
-            _globalSettings = new Vim.GlobalSettings();
+            _globalSettings = new GlobalSettings();
             _globalSettings.IgnoreCase = true;
             _globalSettings.SmartCase = false;
         }

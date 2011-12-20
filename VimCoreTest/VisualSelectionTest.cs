@@ -1,21 +1,20 @@
 ﻿using System.Linq;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
-using Vim;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
-    public sealed class VisualSelectionTest
+    public sealed class VisualSelectionTest : VimTestBase
     {
         private ITextView _textView;
         private ITextBuffer _textBuffer;
 
         private void Create(params string[] lines)
         {
-            _textView = EditorUtil.CreateTextView(lines);
+            _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
         }
 

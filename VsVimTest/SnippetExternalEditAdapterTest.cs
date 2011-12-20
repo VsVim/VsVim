@@ -1,16 +1,17 @@
-﻿using Microsoft.VisualStudio.Text;
+﻿using EditorUtils.UnitTest;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using NUnit.Framework;
 using Vim.UnitTest;
-using Vim.UnitTest.Mock;
 using VsVim.ExternalEdit;
+using VsVim.UnitTest.Mock;
 
 namespace VsVim.UnitTest
 {
     [TestFixture]
-    public class SnippetExternalEditAdapterTest
+    public class SnippetExternalEditAdapterTest : VimTestBase
     {
         private ITextBuffer _textBuffer;
         private SnippetExternalEditAdapter _adapterRaw;
@@ -19,7 +20,7 @@ namespace VsVim.UnitTest
 
         public void Create(params string[] lines)
         {
-            _textBuffer = EditorUtil.CreateTextBuffer(lines);
+            _textBuffer = CreateTextBuffer(lines);
             _factory = new MockRepository(MockBehavior.Strict);
             _adapterRaw = new SnippetExternalEditAdapter();
             _adapter = _adapterRaw;

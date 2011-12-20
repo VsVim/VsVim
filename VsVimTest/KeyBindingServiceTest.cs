@@ -4,9 +4,9 @@ using EnvDTE;
 using Microsoft.VisualStudio.Shell.Interop;
 using Moq;
 using NUnit.Framework;
-using Vim.UnitTest.Mock;
 using VsVim;
 using VsVim.Implementation;
+using VsVim.UnitTest.Mock;
 
 namespace VsVim.UnitTest
 {

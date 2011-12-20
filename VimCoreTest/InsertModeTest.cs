@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using EditorUtils.UnitTest;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
 using Vim.UnitTest.Mock;
+using Vim.Modes.Insert;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     /// <summary>
     /// Tests to verify the operation of Insert / Replace Mode
@@ -20,7 +20,7 @@ namespace VimCore.UnitTest
     public sealed class InsertModeTest : VimTestBase
     {
         private MockRepository _factory;
-        private Vim.Modes.Insert.InsertMode _modeRaw;
+        private InsertMode _modeRaw;
         private IInsertMode _mode;
         private ITextView _textView;
         private ITextBuffer _textBuffer;
@@ -76,7 +76,7 @@ namespace VimCore.UnitTest
                 factory: _factory);
             _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
             _operations = _factory.Create<ICommonOperations>();
-            _operations.SetupGet(x => x.EditorOperations).Returns(EditorUtil.FactoryService.EditorOperationsFactory.GetEditorOperations(_textView));
+            _operations.SetupGet(x => x.EditorOperations).Returns(EditorOperationsFactoryService.GetEditorOperations(_textView));
             _broker = _factory.Create<IDisplayWindowBroker>();
             _broker.SetupGet(x => x.IsCompletionActive).Returns(false);
             _broker.SetupGet(x => x.IsQuickInfoActive).Returns(false);
@@ -92,7 +92,7 @@ namespace VimCore.UnitTest
             _keyboardDevice = _factory.Create<IKeyboardDevice>();
             _keyboardDevice.Setup(x => x.IsKeyDown(It.IsAny<VimKey>())).Returns(false);
 
-            _modeRaw = new Vim.Modes.Insert.InsertMode(
+            _modeRaw = new global::Vim.Modes.Insert.InsertMode(
                 _vimBuffer.Object,
                 _operations.Object,
                 _broker.Object,
@@ -103,7 +103,7 @@ namespace VimCore.UnitTest
                 !insertMode,
                 _keyboardDevice.Object,
                 _mouseDevice.Object,
-                EditorUtil.FactoryService.WordUtilFactory.GetWordUtil(_textView.TextBuffer),
+                WordUtilFactory.GetWordUtil(_textView.TextBuffer),
                 _wordCompletionSessionFactoryService.Object);
             _mode = _modeRaw;
             _mode.CommandRan += (sender, e) => { _lastCommandRan = e; };

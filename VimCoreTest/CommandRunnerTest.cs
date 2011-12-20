@@ -2,11 +2,9 @@
 using System.Linq;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public sealed class CommandRunnerTest : VimTestBase
@@ -26,8 +24,11 @@ namespace VimCore.UnitTest
             var vimBufferData = CreateVimBufferData(
                 _vimTextBuffer,
                 _textView);
-            _commandUtil = VimUtil.CreateCommandUtil(vimBufferData);
-            var motionCapture = VimUtil.CreateMotionCapture(vimBufferData);
+            _commandUtil = CreateCommandUtil(vimBufferData);
+            var incrementalSearch = new IncrementalSearch(
+                vimBufferData,
+                CommonOperationsFactory.GetCommonOperations(vimBufferData));
+            var motionCapture = new MotionCapture(vimBufferData, incrementalSearch);
 
             _runnerRaw = new CommandRunner(
                 _textView,

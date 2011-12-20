@@ -3,12 +3,10 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
-using Vim;
 using Vim.Modes.Visual;
-using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
     public sealed class VisualModeTest : VimTestBase
@@ -32,7 +30,7 @@ namespace VimCore.UnitTest
             ModeKind kind = ModeKind.VisualCharacter,
             params string[] lines)
         {
-            _textView = EditorUtil.CreateTextView(lines);
+            _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
             var vimTextBuffer = Vim.CreateVimTextBuffer(_textBuffer);
             var vimBufferData = CreateVimBufferData(vimTextBuffer, _textView);

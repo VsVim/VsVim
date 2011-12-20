@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using Vim;
-using Vim.UnitTest.Mock;
 using VsVim.Settings;
+using VsVim.UnitTest.Mock;
 
 namespace VsVim.UnitTest
 {

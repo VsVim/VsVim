@@ -2,15 +2,13 @@
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
-    public sealed class TextChangeTrackerTest
+    public sealed class TextChangeTrackerTest : VimTestBase
     {
         private MockRepository _factory;
         private ITextBuffer _textBuffer;
@@ -24,7 +22,7 @@ namespace VimCore.UnitTest
 
         private void Create(params string[] lines)
         {
-            _textBuffer = EditorUtil.CreateTextBuffer(lines);
+            _textBuffer = CreateTextBuffer(lines);
             _factory = new MockRepository(MockBehavior.Loose);
             _textCaret = _factory.Create<ITextCaret>();
             _textView = MockObjectFactory.CreateTextView(

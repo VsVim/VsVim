@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Threading;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
@@ -12,8 +13,8 @@ using NUnit.Framework;
 using Vim;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
-using Vim.UnitTest.Mock;
 using VsVim.ExternalEdit;
+using VsVim.UnitTest.Mock;
 
 namespace VsVim.UnitTest
 {
@@ -41,9 +42,9 @@ namespace VsVim.UnitTest
         public void Create(bool hasTextLines, bool hasTagger, params string[] lines)
         {
             _factory = new MockRepository(MockBehavior.Loose);
-            _textView = EditorUtil.CreateTextView(lines);
+            _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
-            _buffer = EditorUtil.FactoryService.Vim.CreateVimBuffer(_textView);
+            _buffer = Vim.CreateVimBuffer(_textView);
 
             // Have adatper ignore by default
             _adapter = _factory.Create<IExternalEditAdapter>(MockBehavior.Strict);

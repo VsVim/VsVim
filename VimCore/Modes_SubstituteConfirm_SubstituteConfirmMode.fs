@@ -29,7 +29,7 @@ type ConfirmAction = ConfirmData -> ModeSwitch
 
 type internal SubstituteConfirmMode
     (
-        _vimBufferData : VimBufferData,
+        _vimBufferData : IVimBufferData,
         _operations : ICommonOperations
     ) as this = 
 

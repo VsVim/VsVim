@@ -1,16 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Outlining;
 using Moq;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     // TODO: Need to remove several of the mock's here.  No reason to mock IVimLocalSettings and 
     // a couple others.
@@ -54,7 +53,7 @@ namespace VimCore.UnitTest
             _globalSettings.SetupGet(x => x.VirtualEdit).Returns(String.Empty);
             _globalSettings.SetupGet(x => x.WrapScan).Returns(true);
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
-            _searchService = VimUtil.CreateSearchService(_globalSettings.Object);
+            _searchService = new SearchService(TextSearchService, _globalSettings.Object);
             var vim = MockObjectFactory.CreateVim(
                 registerMap: registerMap,
                 host: _vimHost.Object,

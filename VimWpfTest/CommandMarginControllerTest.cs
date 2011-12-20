@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Windows;
 using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text.Classification;
 using Moq;
 using NUnit.Framework;
 using Vim.Extensions;
 using Vim.UI.Wpf.Properties;
 using Vim.UnitTest.Mock;
-using Microsoft.VisualStudio.Text.Classification;
-using System.Windows;
 
-namespace Vim.UI.Wpf.Test
+namespace Vim.UI.Wpf.UnitTest
 {
     [TestFixture]
     public sealed class CommandMarginControllerTest

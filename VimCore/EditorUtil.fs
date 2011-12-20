@@ -1,6 +1,7 @@
 ﻿#light
 
 namespace Vim
+open EditorUtils
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Projection
 open Microsoft.VisualStudio.Text.Editor
@@ -8,128 +9,6 @@ open Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Utilities
-
-/// Represents a simple range of lines
-[<Struct>]
-[<CustomEquality>]
-[<NoComparison>]
-type LineRange
-    (
-        _startLine : int,
-        _count : int
-    ) =
-
-    member x.StartLineNumber = _startLine
-    member x.LastLineNumber = _startLine + (_count - 1)
-    member x.Count = _count
-    member x.LineNumbers = 
-        let startLineNumber = x.StartLineNumber
-        let lastLineNumber = x.LastLineNumber
-        seq { 
-            for i in startLineNumber .. lastLineNumber do yield i 
-        }
-
-    member x.ContainsLineNumber lineNumber = 
-        lineNumber >= _startLine && lineNumber <= x.LastLineNumber
-
-    member x.Contains (lineRange : LineRange) = 
-        x.StartLineNumber <= lineRange.StartLineNumber &&
-        x.LastLineNumber >= lineRange.LastLineNumber 
-
-    member x.Intersects (lineRange : LineRange) =
-        x.ContainsLineNumber lineRange.StartLineNumber || 
-        x.ContainsLineNumber lineRange.LastLineNumber ||
-        x.LastLineNumber + 1 = lineRange.StartLineNumber ||
-        x.StartLineNumber = lineRange.LastLineNumber + 1
-
-    // Equality Functions
-    override x.GetHashCode() = _startLine ^^^ _count
-    override x.Equals (other : obj) = 
-        match other with
-        | :? LineRange as other -> x.Equals(other)
-        | _ -> false
-    member x.Equals (other : LineRange) = 
-        other.StartLineNumber = _startLine && other.Count = _count
-    interface System.IEquatable<LineRange> with
-        member x.Equals other = x.Equals other
-    static member op_Equality(this,other) = 
-        System.Collections.Generic.EqualityComparer<LineRange>.Default.Equals(this,other)
-    static member op_Inequality(this,other) = 
-        not (System.Collections.Generic.EqualityComparer<LineRange>.Default.Equals(this,other))
-
-    static member CreateFromBounds startLineNumber lastLineNumber =
-        if lastLineNumber < startLineNumber then
-            invalidArg "lastLineNumber" Resources.Common_InvalidLineNumber
-
-        let count = (lastLineNumber - startLineNumber) + 1
-        LineRange(startLineNumber, count)
-
-    static member CreateOverarching (leftLineRange : LineRange) (rightLineRange : LineRange) =
-        let startLineNumber = min leftLineRange.StartLineNumber rightLineRange.StartLineNumber
-        let lastLineNumber = max leftLineRange.LastLineNumber rightLineRange.LastLineNumber
-        LineRange.CreateFromBounds startLineNumber lastLineNumber
-
-    // Overrides
-    override x.ToString() = sprintf "%d - %d" _startLine x.LastLineNumber
-
-/// Represents a range of lines in an ITextSnapshot.  Different from a SnapshotSpan
-/// because it declaratively supports lines instead of a position range
-type SnapshotLineRange 
-    (
-        _snapshot : ITextSnapshot,
-        _startLine : int,
-        _count : int
-    ) =
-
-    do
-        if _startLine >= _snapshot.LineCount then
-            invalidArg "startLine" Resources.Common_InvalidLineNumber
-        if _startLine + (_count - 1) >= _snapshot.LineCount || _count < 1 then
-            invalidArg "count" Resources.Common_InvalidLineNumber
-
-    member x.Snapshot = _snapshot
-    member x.StartLineNumber = _startLine
-    member x.StartLine = _snapshot.GetLineFromLineNumber x.StartLineNumber
-    member x.Start = x.StartLine.Start
-
-    /// Number of lines in the SnapshotLineRange
-    member x.Count = _count
-    member x.LastLineNumber = _startLine + (_count - 1)
-    member x.LastLine = _snapshot.GetLineFromLineNumber x.LastLineNumber
-    member x.LineRange = LineRange.CreateFromBounds x.StartLineNumber x.LastLineNumber
-    member x.End = x.LastLine.End
-    member x.EndIncludingLineBreak = x.LastLine.EndIncludingLineBreak
-    member x.Extent =
-        let startLine = x.StartLine
-        let lastLine = x.LastLine
-        SnapshotSpan(startLine.Start, lastLine.End)
-    member x.ExtentIncludingLineBreak = 
-        let startLine = x.StartLine
-        let lastLine = x.LastLine
-        SnapshotSpan(startLine.Start, lastLine.EndIncludingLineBreak)
-    member x.Lines = seq { for i in _startLine .. x.LastLineNumber do yield _snapshot.GetLineFromLineNumber(i) }
-    member x.GetText() = x.Extent.GetText()
-    member x.GetTextIncludingLineBreak() = x.ExtentIncludingLineBreak.GetText()
-
-    // Equality Functions
-    override x.GetHashCode() = _startLine ^^^ _count
-    override x.Equals (other:obj) = 
-        match other with
-        | :? SnapshotLineRange as other -> x.Equals(other)
-        | _ -> false
-    member x.Equals (other:SnapshotLineRange) = 
-        other.Snapshot = _snapshot
-        && other.StartLineNumber = _startLine
-        && other.Count = _count
-    interface System.IEquatable<SnapshotLineRange> with
-        member x.Equals other = x.Equals other
-    static member op_Equality(this,other) = 
-        System.Collections.Generic.EqualityComparer<SnapshotLineRange>.Default.Equals(this,other)
-    static member op_Inequality(this,other) = 
-        not (System.Collections.Generic.EqualityComparer<SnapshotLineRange>.Default.Equals(this,other))
-
-    // Overrides
-    override x.ToString() = sprintf "[%d - %d] : %s" _startLine x.LastLineNumber (x.Extent.ToString()) 
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
@@ -278,16 +157,7 @@ module SnapshotSpanUtil =
     /// but instead the first point after the Span.  This is important when the Span is 
     /// ITextSnapshotLine.ExtentIncludingLineBreak as it is in Visual Mode
     let GetLastLine (span : SnapshotSpan) = 
-        let doNormal() = 
-            if span.Length > 0 then span.End.Subtract(1).GetContainingLine()
-            else GetStartLine span
-
-        let snapshot = span.Snapshot
-        if SnapshotUtil.GetEndPoint snapshot = span.End then 
-            let line = span.End.GetContainingLine()
-            if line.Length = 0 then line
-            else doNormal()
-        else doNormal()
+        EditorUtils.Extensions.GetLastLine(span);
 
     /// Get the start and end line of the SnapshotSpan.  Remember that End is not a part of
     /// the span but instead the first point after the span
@@ -1012,12 +882,12 @@ module VirtualSnapshotPointUtil =
 module SnapshotLineRangeUtil = 
 
     /// Create a range for the entire ItextSnapshot
-    let CreateForSnapshot (snapshot:ITextSnapshot) = 
-        SnapshotLineRange(snapshot, 0, snapshot.LineCount)
+    let CreateForSnapshot (snapshot : ITextSnapshot) = 
+        SnapshotLineRange.CreateForExtent snapshot
 
     /// Create a range for the provided ITextSnapshotLine
-    let CreateForLine (line:ITextSnapshotLine) =
-        SnapshotLineRange(line.Snapshot, line.LineNumber, 1)
+    let CreateForLine (line : ITextSnapshotLine) =
+        SnapshotLineRange.CreateForLine line
 
     /// Create a range for the provided ITextSnapshotLine and with count length
     let CreateForLineAndCount (line:ITextSnapshotLine) count = 
@@ -1029,9 +899,7 @@ module SnapshotLineRangeUtil =
     /// length.  If count pushes the range past the end of the buffer then the 
     /// span will go to the end of the buffer
     let CreateForLineAndMaxCount (line:ITextSnapshotLine) count = 
-        let maxCount = (line.Snapshot.LineCount - line.LineNumber)
-        let count = min count maxCount
-        SnapshotLineRange(line.Snapshot, line.LineNumber, count)
+        SnapshotLineRange.CreateForLineAndMaxCount(line, count)
 
     /// Create a line range which covers the start and end line of the provided span
     let CreateForSpan span = 
@@ -1055,9 +923,8 @@ module SnapshotLineRangeUtil =
         CreateForLineAndMaxCount line count
 
     /// Create a line range for the provided start and end line 
-    let CreateForLineRange (startLine:ITextSnapshotLine) (endLine:ITextSnapshotLine) = 
-        let count = (endLine.LineNumber - startLine.LineNumber) + 1
-        SnapshotLineRange(startLine.Snapshot, startLine.LineNumber, count)
+    let CreateForLineRange (startLine : ITextSnapshotLine) (endLine : ITextSnapshotLine) = 
+        SnapshotLineRange.CreateForLineRange(startLine, endLine)
 
     /// Create a line range for the provided start and end line 
     let CreateForLineNumberRange (snapshot:ITextSnapshot) startNumber lastNumber = 
@@ -1166,24 +1033,13 @@ module TextViewUtil =
 
     /// Return the overaching SnapshotLineRange for the visible lines in the ITextView
     let GetVisibleSnapshotLineRange (textView : ITextView) =
-        if textView.InLayout then
-            None
-        else 
-            let snapshot = textView.TextSnapshot
-            let lines = textView.TextViewLines
-            let startLine = 
-                let number = lines.FirstVisibleLine.Start.GetContainingLine().LineNumber
-                SnapshotUtil.GetLineOrFirst snapshot number
-            let endLine = 
-                let number = lines.LastVisibleLine.End.GetContainingLine().LineNumber
-                SnapshotUtil.GetLineOrLast snapshot number
-            SnapshotLineRangeUtil.CreateForLineRange startLine endLine |> Some
+        Extensions.GetVisibleSnapshotLineRange(textView)
 
     /// Returns a sequence of ITextSnapshotLine values representing the visible lines in the buffer
     let GetVisibleSnapshotLines (textView : ITextView) =
         match GetVisibleSnapshotLineRange textView with
-        | None -> Seq.empty
-        | Some lineRange -> lineRange.Lines
+        | NullableUtil.HasValue lineRange -> lineRange.Lines
+        | NullableUtil.Null -> Seq.empty
 
     /// Ensure the caret is currently on the visible screen
     let EnsureCaretOnScreen textView = 

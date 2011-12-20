@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Windows.Input;
 using NUnit.Framework;
 
-namespace Vim.UI.Wpf.Test
+namespace Vim.UI.Wpf.UnitTest
 {
     [TestFixture]
     public class KeyUtilTest

@@ -3,10 +3,10 @@ using Moq;
 using NUnit.Framework;
 using Vim.UnitTest.Mock;
 
-namespace Vim.UI.Wpf.Test
+namespace Vim.UI.Wpf.UnitTest
 {
     [TestFixture]
-    class BlockCaretControllerTest
+    public sealed class BlockCaretControllerTest
     {
         private MockRepository _factory;
         private Mock<ITextView> _textView;

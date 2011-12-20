@@ -1,13 +1,13 @@
-﻿using Microsoft.VisualStudio.Text;
+﻿using EditorUtils;
+using EditorUtils.UnitTest;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Outlining;
 using Moq;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     /// <summary>
     /// Tests for the IFoldManager implementation.  The Vim behavior for folds, especial that of 
@@ -19,7 +19,7 @@ namespace VimCore.UnitTest
     /// and it's important that it's correct
     /// </summary>
     [TestFixture]
-    public sealed class FoldManagerTest
+    public sealed class FoldManagerTest : VimTestBase
     {
         private ITextView _textView;
         private IFoldData _foldData;
@@ -32,17 +32,17 @@ namespace VimCore.UnitTest
 
         private void Create(params string[] lines)
         {
-            _textView = EditorUtil.CreateTextView(lines);
+            _textView = CreateTextView(lines);
             _visualBuffer = _textView.TextViewModel.VisualBuffer;
-            _adhocOutliner = EditorUtil.FactoryService.AdhocOutlinerFactory.GetAdhocOutliner(_textView.TextBuffer);
-            _outliningeManager = EditorUtil.FactoryService.OutliningManagerService.GetOutliningManager(_textView);
+            _adhocOutliner = AdhocOutlinerFactory.GetAdhocOutliner(_textView.TextBuffer);
+            _outliningeManager = OutliningManagerService.GetOutliningManager(_textView);
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
-            _foldData = EditorUtil.FactoryService.FoldManagerFactory.GetFoldData(_textView.TextBuffer);
+            _foldData = FoldManagerFactory.GetFoldData(_textView.TextBuffer);
             _foldManagerRaw = new FoldManager(
                 _textView,
                 _foldData,
                 _statusUtil.Object,
-                FSharpOption.Create(EditorUtil.FactoryService.OutliningManagerService.GetOutliningManager(_textView)));
+                FSharpOption.Create(OutliningManagerService.GetOutliningManager(_textView)));
             _foldManager = _foldManagerRaw;
         }
 

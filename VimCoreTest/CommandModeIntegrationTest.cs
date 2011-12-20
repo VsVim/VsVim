@@ -1,63 +1,89 @@
 ﻿using System;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     /// <summary>
     /// Summary description for CommandModeTest
     /// </summary>
     [TestFixture]
-    public class CommandModeIntegrationTest
+    public sealed class CommandModeIntegrationTest : VimTestBase
     {
-        private IVimBuffer _buffer;
-        private IWpfTextView _textView;
-        private MockVimHost _host;
+        private IVimBuffer _vimBuffer;
+        private ITextView _textView;
+        private MockVimHost _vimHost;
 
         public void Create(params string[] lines)
         {
-            var tuple = EditorUtil.CreateTextViewAndEditorOperations(lines);
-            _textView = tuple.Item1;
-            _host = new MockVimHost();
-
-            var service = EditorUtil.FactoryService;
-            _buffer = service.Vim.CreateVimBuffer(_textView);
-            _host = (MockVimHost)service.Vim.VimHost;
+            _vimBuffer = CreateVimBuffer(lines);
+            _textView = _vimBuffer.TextView;
+            _vimHost = VimHost;
         }
 
         private void RunCommand(string command)
         {
-            _buffer.Process(':');
-            _buffer.Process(command, enter: true);
+            _vimBuffer.Process(':');
+            _vimBuffer.Process(command, enter: true);
         }
 
+        /// <summary>
+        /// Copying a line to a given line should put it at that given line
+        /// </summary>
         [Test]
-        public void SwitchTo()
+        public void CopyTo_Line()
         {
-            Create("");
-            _buffer.Process(':');
-            Assert.AreEqual(ModeKind.Command, _buffer.ModeKind);
+            Create("cat", "dog", "bear");
+            RunCommand("co 1");
+            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(2).GetText());
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
+        /// <summary>
+        /// Copying a line to a given line should put it at that given line
+        /// </summary>
         [Test]
-        public void SwitchOut()
+        public void CopyTo_Line2()
         {
-            Create("");
-            RunCommand("e foo");
-            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
+            Create("cat", "dog", "bear");
+            RunCommand("co 2");
+            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(2).GetText());
+            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
         }
 
+        /// <summary>
+        /// Check the copy command via the 't' synonym
+        /// </summary>
         [Test]
-        public void SwitchOutFromBackspace()
+        public void CopyTo_ViaSynonym()
         {
-            Create("");
-            _buffer.Process(':');
-            _buffer.Process(VimKey.Back);
-            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
+            Create("cat", "dog", "bear");
+            RunCommand("t 2");
+            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(2).GetText());
+            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Copying a line to a range should cause it to copy to the first line 
+        /// in the range
+        /// </summary>
+        [Test]
+        public void CopyTo_LineRange()
+        {
+            Create("cat", "dog", "bear");
+            RunCommand("co 1,2");
+            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(2).GetText());
         }
 
         [Test]
@@ -107,7 +133,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog");
             var sawError = false;
-            _buffer.ErrorMessage += delegate { sawError = true; };
+            _vimBuffer.ErrorMessage += delegate { sawError = true; };
             RunCommand("s/z/o/e");
             Assert.IsFalse(sawError);
         }
@@ -127,7 +153,7 @@ namespace VimCore.UnitTest
         public void Substitute3()
         {
             Create("cat bat", "dag");
-            _buffer.VimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "o", SubstituteFlags.None));
+            _vimBuffer.VimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "o", SubstituteFlags.None));
             RunCommand("s g 2");
             Assert.AreEqual("cot bot", _textView.GetLine(0).GetText());
             Assert.AreEqual("dog", _textView.GetLine(1).GetText());
@@ -139,22 +165,9 @@ namespace VimCore.UnitTest
         {
             Create("cat bat", "dag");
             var message = String.Empty;
-            _buffer.StatusMessage += (_, e) => { message = e; };
+            _vimBuffer.StatusMessage += (_, e) => { message = e; };
             RunCommand("s/a/b/p");
             Assert.AreEqual("cbt bat", message);
-        }
-
-        [Test]
-        [Description("Testing the print option")]
-        public void Substitute5()
-        {
-            Create("cat bat", "dag");
-            string msg = null;
-            _buffer.StatusMessage += (_, e) => { msg = e; };
-            RunCommand("%s/a/b/pg");
-
-            var lines = msg.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
-            Assert.AreEqual(Resources.Common_SubstituteComplete(3, 2), lines[0]);
         }
 
         [Test]
@@ -163,7 +176,7 @@ namespace VimCore.UnitTest
         {
             Create("cat bat", "dag");
             var message = String.Empty;
-            _buffer.StatusMessage += (_, e) => { message = e; };
+            _vimBuffer.StatusMessage += (_, e) => { message = e; };
             RunCommand("s/a/b/#");
             Assert.AreEqual("  1 cbt bat", message);
         }
@@ -174,7 +187,7 @@ namespace VimCore.UnitTest
         {
             Create("cat bat", "dag");
             var message = String.Empty;
-            _buffer.StatusMessage += (_, e) => { message = e; };
+            _vimBuffer.StatusMessage += (_, e) => { message = e; };
             RunCommand("s/a/b/l");
             Assert.AreEqual("cbt bat$", message);
         }
@@ -235,8 +248,8 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "cat", "fish");
             var didHit = false;
-            _buffer.LocalSettings.GlobalSettings.WrapScan = false;
-            _buffer.ErrorMessage +=
+            _vimBuffer.LocalSettings.GlobalSettings.WrapScan = false;
+            _vimBuffer.ErrorMessage +=
                 (sender, message) =>
                 {
                     Assert.AreEqual(Resources.Common_SearchHitBottomWithout("cat"), message);
@@ -254,7 +267,7 @@ namespace VimCore.UnitTest
         {
             Create("cat", "dog", "cat", "fish");
             var didHit = false;
-            _buffer.ErrorMessage +=
+            _vimBuffer.ErrorMessage +=
                 (sender, message) =>
                 {
                     Assert.AreEqual(Resources.Common_PatternNotFound("pig"), message);
@@ -263,5 +276,31 @@ namespace VimCore.UnitTest
             RunCommand("1,2/pig");
             Assert.IsTrue(didHit);
         }
+
+        [Test]
+        public void SwitchTo()
+        {
+            Create("");
+            _vimBuffer.Process(':');
+            Assert.AreEqual(ModeKind.Command, _vimBuffer.ModeKind);
+        }
+
+        [Test]
+        public void SwitchOut()
+        {
+            Create("");
+            RunCommand("e foo");
+            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
+        }
+
+        [Test]
+        public void SwitchOutFromBackspace()
+        {
+            Create("");
+            _vimBuffer.Process(':');
+            _vimBuffer.Process(VimKey.Back);
+            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
+        }
+
     }
 }

@@ -1,14 +1,13 @@
 ﻿using System.Linq;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
-using Vim;
 using Vim.Extensions;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
-    public class SnapshotSpanUtilTest
+    public sealed class SnapshotSpanUtilTest : VimTestBase
     {
         static string[] s_lines = new string[]
             {
@@ -22,7 +21,7 @@ namespace VimCore.UnitTest
 
         public void Create(params string[] lines)
         {
-            _buffer = EditorUtil.CreateTextBuffer(lines);
+            _buffer = CreateTextBuffer(lines);
             _snapshot = _buffer.CurrentSnapshot;
         }
 

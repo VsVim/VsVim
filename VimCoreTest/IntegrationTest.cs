@@ -3,13 +3,11 @@ using System.Linq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
-using Vim;
-using Vim.UnitTest;
 
-namespace VimCore.UnitTest
+namespace Vim.UnitTest
 {
     [TestFixture]
-    public class IntegrationTest
+    public class IntegrationTest : VimTestBase
     {
         private IVimBuffer _buffer;
         private IWpfTextView _textView;
@@ -23,10 +21,8 @@ namespace VimCore.UnitTest
 
         private void CreateBuffer(params string[] lines)
         {
-            var tuple = EditorUtil.CreateTextViewAndEditorOperations(lines);
-            _textView = tuple.Item1;
-            var service = EditorUtil.FactoryService;
-            _buffer = service.Vim.CreateVimBuffer(_textView);
+            _textView = CreateTextView(lines);
+            _buffer = Vim.CreateVimBuffer(_textView);
         }
 
         [SetUp]

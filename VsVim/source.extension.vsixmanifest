@@ -30,5 +30,6 @@
     <MefComponent>|%CurrentProject%|</MefComponent>
     <MefComponent>|VimCore|</MefComponent>
     <MefComponent>|VimWpf|</MefComponent>
+    <MefComponent>|EditorUtils|</MefComponent>
   </Content>
 </Vsix>

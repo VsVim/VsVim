@@ -8,7 +8,7 @@ open Microsoft.VisualStudio.Text.Outlining
 /// This type houses the functionality for many of the insert mode commands
 type internal InsertUtil
     (
-        _vimBufferData : VimBufferData,
+        _vimBufferData : IVimBufferData,
         _operations : ICommonOperations
     ) =
 
