@@ -27,6 +27,7 @@ namespace Vim.UnitTest
         private IKeyMap _keyMap;
         private IVimData _vimData;
         private IFoldManager _foldManager;
+        private INormalMode _normalMode;
         private MockVimHost _vimHost;
         private TestableClipboardDevice _clipboardDevice;
         private bool _assertOnErrorMessage = true;
@@ -59,6 +60,7 @@ namespace Vim.UnitTest
                     }
                 };
             _vimTextBuffer = _vimBuffer.VimTextBuffer;
+            _normalMode = _vimBuffer.NormalMode;
             _keyMap = _vimBuffer.Vim.KeyMap;
             _localSettings = _vimBuffer.LocalSettings;
             _globalSettings = _localSettings.GlobalSettings;
@@ -281,6 +283,34 @@ namespace Vim.UnitTest
             _vimBuffer.Process(KeyInputUtil.CharToKeyInput('.'));
             _vimBuffer.Process(KeyInputUtil.CharToKeyInput('.'));
             Assert.AreEqual("hey hehey chased the bird", _textView.TextSnapshot.GetText());
+        }
+
+        /// <summary>
+        /// The backspace key should cancel a replace char
+        /// </summary>
+        [Test]
+        public void ReplaceChar_BackspaceShouldCancel()
+        {
+            Create("hello world");
+            _vimBuffer.Process('r');
+            Assert.IsTrue(_normalMode.IsInReplace);
+            _vimBuffer.Process(VimKey.Back);
+            Assert.IsFalse(_normalMode.IsInReplace);
+            Assert.AreEqual("hello world", _textBuffer.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// The delete key should cancel a replace char
+        /// </summary>
+        [Test]
+        public void ReplaceChar_DeleteShouldCancel()
+        {
+            Create("hello world");
+            _vimBuffer.Process('r');
+            Assert.IsTrue(_normalMode.IsInReplace);
+            _vimBuffer.Process(VimKey.Back);
+            Assert.IsFalse(_normalMode.IsInReplace);
+            Assert.AreEqual("hello world", _textBuffer.GetLine(0).GetText());
         }
 
         [Test]

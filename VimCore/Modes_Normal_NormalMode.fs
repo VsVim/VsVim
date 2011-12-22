@@ -89,9 +89,18 @@ type internal NormalMode
     member x.BindReplaceChar () =
         let func () = 
             _data <- { _data with IsInReplace = true }
-            BindData<_>.CreateForSingle (Some KeyRemapMode.Language) (fun ki -> 
+
+            let bind (keyInput : KeyInput) = 
                 _data <- { _data with IsInReplace = false }
-                NormalCommand.ReplaceChar ki)
+                match keyInput.Key with
+                | VimKey.Escape -> BindResult.Cancelled
+                | VimKey.Back -> BindResult.Cancelled
+                | VimKey.Delete -> BindResult.Cancelled
+                | _ -> NormalCommand.ReplaceChar keyInput |> BindResult.Complete
+
+            {
+                KeyRemapMode = Some KeyRemapMode.Language
+                BindFunction = bind }
         BindDataStorage.Complex func
 
     /// Get a mark and us the provided 'func' to create a Motion value
