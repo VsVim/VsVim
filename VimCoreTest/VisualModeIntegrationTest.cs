@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using EditorUtils.UnitTest;
 using EditorUtils.UnitTest.Utils;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
@@ -12,7 +13,7 @@ namespace Vim.UnitTest
     [TestFixture]
     public sealed class VisualModeIntegrationTest : VimTestBase 
     {
-        private IVimBuffer _buffer;
+        private IVimBuffer _vimBuffer;
         private IVimTextBuffer _vimTextBuffer;
         private IWpfTextView _textView;
         private ITextBuffer _textBuffer;
@@ -22,12 +23,12 @@ namespace Vim.UnitTest
 
         internal Register UnnamedRegister
         {
-            get { return _buffer.RegisterMap.GetRegister(RegisterName.Unnamed); }
+            get { return _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed); }
         }
 
         internal Register TestRegister
         {
-            get { return _buffer.RegisterMap.GetRegister('c'); }
+            get { return _vimBuffer.RegisterMap.GetRegister('c'); }
         }
 
         public void Create(params string[] lines)
@@ -36,22 +37,22 @@ namespace Vim.UnitTest
             SynchronizationContext.SetSynchronizationContext(_context);
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
-            _buffer = Vim.CreateVimBuffer(_textView);
-            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            _vimTextBuffer = _buffer.VimTextBuffer;
-            _registerMap = _buffer.RegisterMap;
-            _globalSettings = _buffer.LocalSettings.GlobalSettings;
+            _vimBuffer = Vim.CreateVimBuffer(_textView);
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimTextBuffer = _vimBuffer.VimTextBuffer;
+            _registerMap = _vimBuffer.RegisterMap;
+            _globalSettings = _vimBuffer.LocalSettings.GlobalSettings;
             Assert.IsTrue(_context.IsEmpty);
 
             // Need to make sure it's focused so macro recording will work
-            ((MockVimHost)_buffer.Vim.VimHost).FocusedTextView = _textView;
+            ((MockVimHost)_vimBuffer.Vim.VimHost).FocusedTextView = _textView;
         }
 
         private void EnterMode(SnapshotSpan span)
         {
             var characterSpan = CharacterSpan.CreateForSpan(span);
-            var visualSelection = VisualSelection.NewCharacter(characterSpan, true);
-            CommonUtil.SelectAndUpdateCaret(_textView, visualSelection);
+            var visualSelection = VisualSelection.NewCharacter(characterSpan, Path.Forward);
+            visualSelection.SelectAndMoveCaret(_textView);
             Assert.IsFalse(_context.IsEmpty);
             _context.RunAll();
             Assert.IsTrue(_context.IsEmpty);
@@ -60,18 +61,18 @@ namespace Vim.UnitTest
         private void EnterMode(ModeKind kind, SnapshotSpan span)
         {
             EnterMode(span);
-            _buffer.SwitchMode(kind, ModeArgument.None);
+            _vimBuffer.SwitchMode(kind, ModeArgument.None);
         }
 
         private void EnterBlock(BlockSpan blockSpan)
         {
             var visualSpan = VisualSpan.NewBlock(blockSpan);
             var visualSelection = VisualSelection.CreateForVisualSpan(visualSpan);
-            CommonUtil.SelectAndUpdateCaret(_textView, visualSelection);
+            visualSelection.SelectAndMoveCaret(_textView);
             Assert.IsFalse(_context.IsEmpty);
             _context.RunAll();
             Assert.IsTrue(_context.IsEmpty);
-            _buffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.None);
+            _vimBuffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.None);
         }
 
         /// <summary>
@@ -82,14 +83,14 @@ namespace Vim.UnitTest
         {
             Create("cat", "  dog", "  bear", "tree");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(1, 2).ExtentIncludingLineBreak);
-            _buffer.LocalSettings.AutoIndent = true;
-            _buffer.Process("c");
+            _vimBuffer.LocalSettings.AutoIndent = true;
+            _vimBuffer.Process("c");
             Assert.AreEqual("cat", _textView.GetLine(0).GetText());
             Assert.AreEqual("", _textView.GetLine(1).GetText());
             Assert.AreEqual("tree", _textView.GetLine(2).GetText());
             Assert.AreEqual(2, _textView.Caret.Position.VirtualBufferPosition.VirtualSpaces);
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
         }
 
         /// <summary>
@@ -101,11 +102,11 @@ namespace Vim.UnitTest
         {
             Create("cat chases the ball");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 4));
-            _buffer.LocalSettings.AutoIndent = true;
-            _buffer.Process("c");
+            _vimBuffer.LocalSettings.AutoIndent = true;
+            _vimBuffer.Process("c");
             Assert.AreEqual("chases the ball", _textView.GetLine(0).GetText());
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
         }
 
         /// <summary>
@@ -118,8 +119,8 @@ namespace Vim.UnitTest
         {
             Create("  cat", "dog");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 2, 2));
-            _buffer.Process('C');
-            _buffer.Process(VimKey.Escape);
+            _vimBuffer.Process('C');
+            _vimBuffer.Process(VimKey.Escape);
             Assert.AreEqual("", _textView.GetLine(0).GetText());
             Assert.AreEqual("dog", _textView.GetLine(1).GetText());
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
@@ -136,7 +137,7 @@ namespace Vim.UnitTest
         {
             Create("cat", "dog");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 3));
-            _buffer.Process("x");
+            _vimBuffer.Process("x");
             Assert.AreEqual("", _textView.GetLine(0).GetText());
             Assert.AreEqual("dog", _textView.GetLine(1).GetText());
         }
@@ -151,7 +152,7 @@ namespace Vim.UnitTest
             Create("cat", "dog");
             _globalSettings.VirtualEdit = "onemore";
             EnterMode(ModeKind.VisualCharacter, _textView.GetLine(0).ExtentIncludingLineBreak);
-            _buffer.Process("x");
+            _vimBuffer.Process("x");
             Assert.AreEqual("dog", _textView.GetLine(0).GetText());
         }
 
@@ -164,7 +165,7 @@ namespace Vim.UnitTest
         public void Delete_EndOfWordMotion()
         {
             Create("ThisIsALongWord. ThisIsAnotherLongWord!");
-            _buffer.Process("vex");
+            _vimBuffer.Process("vex");
             Assert.AreEqual(". ThisIsAnotherLongWord!", _textBuffer.GetLine(0).GetText());
         }
 
@@ -175,8 +176,8 @@ namespace Vim.UnitTest
         public void EnterVisualLine()
         {
             Create("hello", "world");
-            _buffer.Process(KeyNotationUtil.StringToKeyInput("<S-v>"));
-            Assert.AreEqual(ModeKind.VisualLine, _buffer.ModeKind);
+            _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<S-v>"));
+            Assert.AreEqual(ModeKind.VisualLine, _vimBuffer.ModeKind);
         }
 
         [Test]
@@ -184,8 +185,8 @@ namespace Vim.UnitTest
         {
             Create("dog again", "cat again", "chicken");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
-            _buffer.LocalSettings.GlobalSettings.ShiftWidth = 2;
-            _buffer.Process(">.");
+            _vimBuffer.LocalSettings.GlobalSettings.ShiftWidth = 2;
+            _vimBuffer.Process(">.");
             Assert.AreEqual("    dog again", _textView.GetLine(0).GetText());
         }
 
@@ -194,8 +195,8 @@ namespace Vim.UnitTest
         {
             Create("dog again", "cat again", "chicken");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
-            _buffer.LocalSettings.GlobalSettings.ShiftWidth = 2;
-            _buffer.Process(">..");
+            _vimBuffer.LocalSettings.GlobalSettings.ShiftWidth = 2;
+            _vimBuffer.Process(">..");
             Assert.AreEqual("      dog again", _textView.GetLine(0).GetText());
         }
 
@@ -204,7 +205,7 @@ namespace Vim.UnitTest
         {
             Create("  hello", "  world");
             EnterMode(_textView.GetLineRange(0, 1).Extent);
-            _buffer.Process("<");
+            _vimBuffer.Process("<");
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
 
@@ -213,7 +214,7 @@ namespace Vim.UnitTest
         {
             Create("  hello", "  world");
             EnterMode(_textView.GetLineRange(0, 1).Extent);
-            _buffer.Process("<");
+            _vimBuffer.Process("<");
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
 
@@ -222,7 +223,7 @@ namespace Vim.UnitTest
         {
             Create("  hello", "  world");
             EnterMode(_textView.TextBuffer.GetSpan(0, 2));
-            _buffer.Process("y");
+            _vimBuffer.Process("y");
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
 
@@ -232,12 +233,12 @@ namespace Vim.UnitTest
         {
             Create("  hello", "  world");
             EnterMode(_textView.TextBuffer.GetSpan(0, 2));
-            Assert.AreEqual(ModeKind.VisualCharacter, _buffer.ModeKind);
+            Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
             _textView.Selection.Select(
                 new SnapshotSpan(_textView.GetLine(1).Start, 0),
                 false);
             _context.RunAll();
-            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
+            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
         }
 
         [Test]
@@ -246,12 +247,12 @@ namespace Vim.UnitTest
         {
             Create("  hello", "  world");
             EnterMode(_textView.TextBuffer.GetSpan(0, 2));
-            Assert.AreEqual(ModeKind.VisualCharacter, _buffer.ModeKind);
+            Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
             _textView.Selection.Select(
                 new SnapshotSpan(_textView.GetLine(1).Start, 1),
                 false);
             _context.RunAll();
-            Assert.AreEqual(ModeKind.VisualCharacter, _buffer.ModeKind);
+            Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
         }
 
         [Test]
@@ -260,11 +261,11 @@ namespace Vim.UnitTest
         {
             Create("  hello", "  world");
             EnterMode(_textView.GetLine(0).Extent);
-            Assert.AreEqual(ModeKind.VisualCharacter, _buffer.ModeKind);
+            Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
             _textView.Selection.Select(_textView.GetLine(1).Extent, false);
-            _buffer.Process(KeyInputUtil.CharToKeyInput('y'));
+            _vimBuffer.Process(KeyInputUtil.CharToKeyInput('y'));
             _context.RunAll();
-            Assert.AreEqual("  world", _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
+            Assert.AreEqual("  world", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
         }
 
         [Test]
@@ -273,11 +274,11 @@ namespace Vim.UnitTest
         {
             Create("  hello", "  world");
             EnterMode(_textView.GetLine(0).Extent);
-            Assert.AreEqual(ModeKind.VisualCharacter, _buffer.ModeKind);
-            _textView.SelectAndUpdateCaret(new SnapshotSpan(_textView.GetLine(1).Start, 3));
+            Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+            _textView.SelectAndMoveCaret(new SnapshotSpan(_textView.GetLine(1).Start, 3));
             _context.RunAll();
-            _buffer.Process("ly");
-            Assert.AreEqual("  wo", _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
+            _vimBuffer.Process("ly");
+            Assert.AreEqual("  wo", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
         }
 
         /// <summary>
@@ -289,10 +290,10 @@ namespace Vim.UnitTest
         {
             Create("cat", "dog", "fish");
             EnterMode(ModeKind.VisualCharacter, new SnapshotSpan(_textView.GetLine(0).Start, _textView.GetLine(1).Start.Add(1)));
-            _buffer.Process('>');
+            _vimBuffer.Process('>');
             var visualSelection = VisualSelection.NewCharacter(
                 new CharacterSpan(_textView.GetLine(0).Start, 2, 1),
-                true);
+                Path.Forward);
             Assert.IsTrue(_vimTextBuffer.LastVisualSelection.IsSome());
             Assert.AreEqual(visualSelection, _vimTextBuffer.LastVisualSelection.Value);
         }
@@ -302,8 +303,84 @@ namespace Vim.UnitTest
         {
             Create("dog", "pig", "chicken");
             EnterMode(_textView.GetLineRange(0, 1).Extent);
-            _buffer.Process(':');
+            _vimBuffer.Process(':');
             Assert.IsFalse(_textView.Selection.IsEmpty);
+        }
+
+        /// <summary>
+        /// Switch the character mode to line mode and ensure we maintain the forward 
+        /// direction
+        /// </summary>
+        [Test]
+        public void Switch_CharacterToLine()
+        {
+            Create("big dog", "big cat", "big tree", "big fish");
+            var span = new SnapshotSpan(
+                _textBuffer.GetPoint(1),
+                _textBuffer.GetPointInLine(1, 2));
+            EnterMode(ModeKind.VisualCharacter, span);
+            _vimBuffer.Process('V');
+            Assert.AreEqual(ModeKind.VisualLine, _vimBuffer.ModeKind);
+            Assert.AreEqual(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
+        }
+
+        /// <summary>
+        /// Switch the character mode to line mode and ensure we maintain the backwards 
+        /// direction
+        /// </summary>
+        [Test]
+        public void Switch_CharacterToLineBackwards()
+        {
+            Create("big dog", "big cat", "big tree", "big fish");
+            _textView.MoveCaretToLine(1, 2);
+            _vimBuffer.Process("vkh");
+            Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+            _vimBuffer.Process('V');
+            Assert.AreEqual(ModeKind.VisualLine, _vimBuffer.ModeKind);
+            Assert.AreEqual(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
+        }
+
+        /// <summary>
+        /// Switch the line mode to character mode and ensure we maintain the forward 
+        /// direction
+        /// </summary>
+        [Test]
+        public void Switch_LineToCharacter()
+        {
+            Create("big dog", "big cat", "big tree", "big fish");
+            _textView.MoveCaretTo(1);
+            _vimBuffer.Process("Vj");
+            Assert.AreEqual(ModeKind.VisualLine, _vimBuffer.ModeKind);
+            _vimBuffer.Process('v');
+            Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+
+            var span = new SnapshotSpan(
+                _textBuffer.GetPoint(1),
+                _textBuffer.GetPointInLine(1, 2));
+            Assert.AreEqual(span, _textView.GetSelectionSpan());
+        }
+
+        /// <summary>
+        /// Switch the character mode to block mode and ensure we maintain the forward
+        /// direction
+        /// </summary>
+        [Test]
+        public void Switch_CharacterToBlock()
+        {
+            Create("big dog", "big cat", "big tree", "big fish");
+            _textView.MoveCaretTo(1);
+            _vimBuffer.Process("vjl");
+            Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+            _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('q'));
+            Assert.AreEqual(ModeKind.VisualBlock, _vimBuffer.ModeKind);
+
+            var tuple = _vimBuffer.VisualBlockMode.VisualSelection.AsBlock();
+            var blockSpan = new BlockSpan(
+                _textBuffer.GetPoint(1),
+                2,
+                2);
+            Assert.AreEqual(blockSpan, tuple.Item1);
+            Assert.AreEqual(BlockCaretLocation.BottomRight, tuple.Item2);
         }
 
         [Test]
@@ -312,7 +389,7 @@ namespace Vim.UnitTest
         {
             Create("the boy hit the cat", "bat");
             EnterMode(new SnapshotSpan(_textView.TextSnapshot, 0, 2));
-            _buffer.Process(":s/a/o", enter: true);
+            _vimBuffer.Process(":s/a/o", enter: true);
             Assert.AreEqual("the boy hit the cot", _textView.GetLine(0).GetText());
             Assert.AreEqual("bat", _textView.GetLine(1).GetText());
         }
@@ -323,7 +400,7 @@ namespace Vim.UnitTest
         {
             Create("the boy hit the cat", "bat");
             EnterMode(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
-            _buffer.Process(":s/a/o", enter: true);
+            _vimBuffer.Process(":s/a/o", enter: true);
             Assert.AreEqual("the boy hit the cot", _textView.GetLine(0).GetText());
             Assert.AreEqual("bot", _textView.GetLine(1).GetText());
         }
@@ -336,7 +413,7 @@ namespace Vim.UnitTest
         {
             Create("cat", "dog", "tree");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
-            _buffer.Process(":");
+            _vimBuffer.Process(":");
             Assert.IsFalse(_textView.GetSelectionSpan().IsEmpty);
         }
 
@@ -348,7 +425,7 @@ namespace Vim.UnitTest
         {
             Create("cat", "dog", "tree");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
-            _buffer.Process(VimKey.Escape);
+            _vimBuffer.Process(VimKey.Escape);
             Assert.IsTrue(_textView.GetSelectionSpan().IsEmpty);
         }
 
@@ -357,7 +434,7 @@ namespace Vim.UnitTest
         {
             Create("dog", "cat", "tree");
             EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
-            _buffer.Process("D");
+            _vimBuffer.Process("D");
             Assert.AreEqual("d", _textView.GetLine(0).GetText());
             Assert.AreEqual("c", _textView.GetLine(1).GetText());
         }
@@ -367,7 +444,7 @@ namespace Vim.UnitTest
         {
             Create("dog", "cat", "tree");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
-            _buffer.Process("/c");
+            _vimBuffer.Process("/c");
             Assert.AreEqual(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
         }
 
@@ -376,7 +453,7 @@ namespace Vim.UnitTest
         {
             Create("dog", "", "cat", "tree");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
-            _buffer.Process("/ca");
+            _vimBuffer.Process("/ca");
             Assert.AreEqual(_textView.GetLineRange(0, 2).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
         }
 
@@ -385,7 +462,7 @@ namespace Vim.UnitTest
         {
             Create("dog", "cat");
             EnterMode(ModeKind.VisualCharacter, new SnapshotSpan(_textView.GetLine(0).Start, 1));
-            _buffer.Process("/o");
+            _vimBuffer.Process("/o");
             Assert.AreEqual(new SnapshotSpan(_textView.GetLine(0).Start, 2), _textView.GetSelectionSpan());
         }
 
@@ -399,10 +476,10 @@ namespace Vim.UnitTest
         {
             Create("the cat chased the dog");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 3));
-            _buffer.Process("qcxq");
+            _vimBuffer.Process("qcxq");
             Assert.AreEqual(" cat chased the dog", _textView.GetLine(0).GetText());
             _textView.MoveCaretTo(1);
-            _buffer.Process("@c");
+            _vimBuffer.Process("@c");
             Assert.AreEqual(" at chased the dog", _textView.GetLine(0).GetText());
         }
 
@@ -415,7 +492,7 @@ namespace Vim.UnitTest
             Create("the cat chased the dog");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 3));
             TestRegister.UpdateValue("x");
-            _buffer.Process("@c");
+            _vimBuffer.Process("@c");
             Assert.AreEqual(" cat chased the dog", _textView.GetLine(0).GetText());
         }
 
@@ -428,7 +505,7 @@ namespace Vim.UnitTest
             Create("dog");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
             UnnamedRegister.UpdateValue("cat", OperationKind.CharacterWise);
-            _buffer.Process("p");
+            _vimBuffer.Process("p");
             Assert.AreEqual("dcatg", _textView.GetLine(0).GetText());
             Assert.AreEqual(3, _textView.GetCaretPoint().Position);
             Assert.AreEqual("o", UnnamedRegister.StringValue);
@@ -443,7 +520,7 @@ namespace Vim.UnitTest
             Create("dog");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
             UnnamedRegister.UpdateValue("cat", OperationKind.CharacterWise);
-            _buffer.Process("gp");
+            _vimBuffer.Process("gp");
             Assert.AreEqual("dcatg", _textView.GetLine(0).GetText());
             Assert.AreEqual(4, _textView.GetCaretPoint().Position);
             Assert.AreEqual("o", UnnamedRegister.StringValue);
@@ -458,7 +535,7 @@ namespace Vim.UnitTest
             Create("dog");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
             UnnamedRegister.UpdateValue("cat\n", OperationKind.LineWise);
-            _buffer.Process("p");
+            _vimBuffer.Process("p");
             Assert.AreEqual("d", _textView.GetLine(0).GetText());
             Assert.AreEqual("cat", _textView.GetLine(1).GetText());
             Assert.AreEqual("g", _textView.GetLine(2).GetText());
@@ -475,7 +552,7 @@ namespace Vim.UnitTest
             Create("dog");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
             UnnamedRegister.UpdateValue("cat\n", OperationKind.LineWise);
-            _buffer.Process("gp");
+            _vimBuffer.Process("gp");
             Assert.AreEqual("d", _textView.GetLine(0).GetText());
             Assert.AreEqual("cat", _textView.GetLine(1).GetText());
             Assert.AreEqual("g", _textView.GetLine(2).GetText());
@@ -492,7 +569,7 @@ namespace Vim.UnitTest
             Create("dog", "cat");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
             UnnamedRegister.UpdateBlockValues("aa", "bb");
-            _buffer.Process("p");
+            _vimBuffer.Process("p");
             Assert.AreEqual("daag", _textView.GetLine(0).GetText());
             Assert.AreEqual("cbbat", _textView.GetLine(1).GetText());
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
@@ -508,7 +585,7 @@ namespace Vim.UnitTest
             Create("dog", "cat");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
             UnnamedRegister.UpdateBlockValues("aa", "bb");
-            _buffer.Process("gp");
+            _vimBuffer.Process("gp");
             Assert.AreEqual("daag", _textView.GetLine(0).GetText());
             Assert.AreEqual("cbbat", _textView.GetLine(1).GetText());
             Assert.AreEqual(_textView.GetLine(1).Start.Add(3), _textView.GetCaretPoint());
@@ -524,7 +601,7 @@ namespace Vim.UnitTest
             Create("dog", "cat");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 3));
             _registerMap.GetRegister('c').UpdateValue("pig");
-            _buffer.Process("\"cp");
+            _vimBuffer.Process("\"cp");
             Assert.AreEqual("pig", _textView.GetLine(0).GetText());
             Assert.AreEqual("dog", UnnamedRegister.StringValue);
         }
@@ -540,7 +617,7 @@ namespace Vim.UnitTest
             Create("dog", "cat");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 3));
             UnnamedRegister.UpdateValue("pig");
-            _buffer.Process("p");
+            _vimBuffer.Process("p");
             Assert.AreEqual("pig", _textView.GetLine(0).GetText());
             Assert.AreEqual("dog", UnnamedRegister.StringValue);
         }
@@ -554,7 +631,7 @@ namespace Vim.UnitTest
             Create("dog", "cat");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
             UnnamedRegister.UpdateValue("fish", OperationKind.CharacterWise);
-            _buffer.Process("p");
+            _vimBuffer.Process("p");
             Assert.AreEqual("fish", _textView.GetLine(0).GetText());
             Assert.AreEqual("cat", _textView.GetLine(1).GetText());
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
@@ -570,7 +647,7 @@ namespace Vim.UnitTest
             Create("dog", "cat");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
             UnnamedRegister.UpdateValue("fish", OperationKind.CharacterWise);
-            _buffer.Process("gp");
+            _vimBuffer.Process("gp");
             Assert.AreEqual("fish", _textView.GetLine(0).GetText());
             Assert.AreEqual("cat", _textView.GetLine(1).GetText());
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
@@ -586,7 +663,7 @@ namespace Vim.UnitTest
             Create("dog", "cat");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
             UnnamedRegister.UpdateValue("fish\n", OperationKind.LineWise);
-            _buffer.Process("p");
+            _vimBuffer.Process("p");
             Assert.AreEqual("fish", _textView.GetLine(0).GetText());
             Assert.AreEqual("cat", _textView.GetLine(1).GetText());
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
@@ -602,7 +679,7 @@ namespace Vim.UnitTest
             Create("dog", "cat");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
             UnnamedRegister.UpdateValue("fish\n", OperationKind.LineWise);
-            _buffer.Process("gp");
+            _vimBuffer.Process("gp");
             Assert.AreEqual("fish", _textView.GetLine(0).GetText());
             Assert.AreEqual("cat", _textView.GetLine(1).GetText());
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
@@ -618,7 +695,7 @@ namespace Vim.UnitTest
             Create("dog", "cat");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
             UnnamedRegister.UpdateBlockValues("aa", "bb");
-            _buffer.Process("p");
+            _vimBuffer.Process("p");
             Assert.AreEqual("aa", _textView.GetLine(0).GetText());
             Assert.AreEqual("bb", _textView.GetLine(1).GetText());
             Assert.AreEqual("cat", _textView.GetLine(2).GetText());
@@ -636,7 +713,7 @@ namespace Vim.UnitTest
             Create("dog", "cat");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
             UnnamedRegister.UpdateBlockValues("aa", "bb");
-            _buffer.Process("gp");
+            _vimBuffer.Process("gp");
             Assert.AreEqual("aa", _textView.GetLine(0).GetText());
             Assert.AreEqual("bb", _textView.GetLine(1).GetText());
             Assert.AreEqual("cat", _textView.GetLine(2).GetText());
@@ -653,7 +730,7 @@ namespace Vim.UnitTest
             Create("dog", "cat");
             EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
             UnnamedRegister.UpdateValue("fish", OperationKind.CharacterWise);
-            _buffer.Process("p");
+            _vimBuffer.Process("p");
             Assert.AreEqual("dfishg", _textView.GetLine(0).GetText());
             Assert.AreEqual("ct", _textView.GetLine(1).GetText());
             Assert.AreEqual(4, _textView.GetCaretPoint().Position);
@@ -669,7 +746,7 @@ namespace Vim.UnitTest
             Create("dog", "cat");
             EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
             UnnamedRegister.UpdateValue("fish", OperationKind.CharacterWise);
-            _buffer.Process("gp");
+            _vimBuffer.Process("gp");
             Assert.AreEqual("dfishg", _textView.GetLine(0).GetText());
             Assert.AreEqual("ct", _textView.GetLine(1).GetText());
             Assert.AreEqual(5, _textView.GetCaretPoint().Position);
@@ -684,7 +761,7 @@ namespace Vim.UnitTest
             Create("dog", "cat");
             EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
             UnnamedRegister.UpdateValue("fish\n", OperationKind.LineWise);
-            _buffer.Process("p");
+            _vimBuffer.Process("p");
             Assert.AreEqual("dg", _textView.GetLine(0).GetText());
             Assert.AreEqual("ct", _textView.GetLine(1).GetText());
             Assert.AreEqual("fish", _textView.GetLine(2).GetText());
@@ -701,7 +778,7 @@ namespace Vim.UnitTest
             Create("dog", "cat", "bear");
             EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
             UnnamedRegister.UpdateValue("fish\n", OperationKind.LineWise);
-            _buffer.Process("gp");
+            _vimBuffer.Process("gp");
             Assert.AreEqual("dg", _textView.GetLine(0).GetText());
             Assert.AreEqual("ct", _textView.GetLine(1).GetText());
             Assert.AreEqual("fish", _textView.GetLine(2).GetText());
@@ -718,7 +795,7 @@ namespace Vim.UnitTest
             Create("dog", "cat");
             EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
             UnnamedRegister.UpdateBlockValues("aa", "bb");
-            _buffer.Process("p");
+            _vimBuffer.Process("p");
             Assert.AreEqual("daag", _textView.GetLine(0).GetText());
             Assert.AreEqual("cbbt", _textView.GetLine(1).GetText());
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
@@ -734,7 +811,7 @@ namespace Vim.UnitTest
             Create("dog", "cat");
             EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
             UnnamedRegister.UpdateBlockValues("aa", "bb");
-            _buffer.Process("gp");
+            _vimBuffer.Process("gp");
             Assert.AreEqual("daag", _textView.GetLine(0).GetText());
             Assert.AreEqual("cbbt", _textView.GetLine(1).GetText());
             Assert.AreEqual(_textView.GetLine(1).Start.Add(3), _textView.GetCaretPoint());
@@ -745,8 +822,8 @@ namespace Vim.UnitTest
         {
             Create("dog", "cat", "bear", "tree");
             EnterMode(ModeKind.VisualCharacter, new SnapshotSpan(_textView.TextSnapshot, 0, 2));
-            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig");
-            _buffer.Process("p");
+            _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig");
+            _vimBuffer.Process("p");
             Assert.AreEqual("pigg", _textView.GetLine(0).GetText());
             Assert.AreEqual("cat", _textView.GetLine(1).GetText());
             Assert.AreEqual(2, _textView.GetCaretPoint().Position);
@@ -760,8 +837,8 @@ namespace Vim.UnitTest
                 _textView.GetLine(0).Start.Add(1),
                 _textView.GetLine(1).Start.Add(2));
             EnterMode(ModeKind.VisualCharacter, span);
-            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig");
-            _buffer.Process("p");
+            _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig");
+            _vimBuffer.Process("p");
             Assert.AreEqual("dpigt", _textView.GetLine(0).GetText());
             Assert.AreEqual("bear", _textView.GetLine(1).GetText());
             Assert.AreEqual(3, _textView.GetCaretPoint().Position);
@@ -772,8 +849,8 @@ namespace Vim.UnitTest
         {
             Create("dog", "cat", "bear", "tree");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLineRange(0).Extent);
-            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig");
-            _buffer.Process("P");
+            _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig");
+            _vimBuffer.Process("P");
             Assert.AreEqual("pig", _textView.GetLine(0).GetText());
             Assert.AreEqual("cat", _textView.GetLine(1).GetText());
             Assert.AreEqual(2, _textView.GetCaretPoint().Position);
@@ -790,12 +867,12 @@ namespace Vim.UnitTest
             Create("  dog", "  cat", "bear");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
             UnnamedRegister.UpdateValue("bear", OperationKind.LineWise);
-            _buffer.Process("]p");
+            _vimBuffer.Process("]p");
             Assert.AreEqual("  dog", _textView.GetLine(0).GetText());
             Assert.AreEqual("  bear", _textView.GetLine(1).GetText());
             Assert.AreEqual(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
             Assert.AreEqual(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
-            Assert.AreEqual(ModeKind.VisualLine, _buffer.ModeKind);
+            Assert.AreEqual(ModeKind.VisualLine, _vimBuffer.ModeKind);
         }
 
         /// <summary>
@@ -806,8 +883,8 @@ namespace Vim.UnitTest
         {
             Create("cat", "dog");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLine(0).Extent);
-            _buffer.Process("y");
-            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
+            _vimBuffer.Process("y");
+            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
             Assert.IsTrue(_textView.Selection.IsEmpty);
         }
 
@@ -822,7 +899,7 @@ namespace Vim.UnitTest
             Create("cat", "dog", "fish");
             var span = _textView.GetLineRange(0, 1).ExtentIncludingLineBreak;
             EnterMode(ModeKind.VisualLine, span);
-            _buffer.Process('y');
+            _vimBuffer.Process('y');
             Assert.IsTrue(_vimTextBuffer.LastVisualSelection.IsSome());
             Assert.AreEqual(span, _vimTextBuffer.LastVisualSelection.Value.EditSpan.OverarchingSpan);
         }
@@ -835,8 +912,8 @@ namespace Vim.UnitTest
         {
             Create("cat", "dog");
             EnterMode(ModeKind.VisualCharacter, _textView.GetLine(0).Extent);
-            _buffer.Process("Y");
-            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
+            _vimBuffer.Process("Y");
+            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
             Assert.IsTrue(_textView.Selection.IsEmpty);
         }
 
@@ -850,7 +927,7 @@ namespace Vim.UnitTest
 
             var visualSpan = VimUtil.CreateVisualSpanCharacter(_textBuffer.GetSpan(1, 2));
             var visualSelection = VisualSelection.CreateForVisualSpan(visualSpan);
-            _buffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.NewInitialVisualSelection(visualSelection));
+            _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
             _context.RunAll();
             Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Character));
         }
@@ -864,8 +941,8 @@ namespace Vim.UnitTest
             Create("dogs", "cats", "fish");
 
             var lineRange = _textView.GetLineRange(0, 1);
-            var visualSelection = VisualSelection.NewLine(lineRange, true, 1);
-            _buffer.SwitchMode(ModeKind.VisualLine, ModeArgument.NewInitialVisualSelection(visualSelection));
+            var visualSelection = VisualSelection.NewLine(lineRange, Path.Forward, 1);
+            _vimBuffer.SwitchMode(ModeKind.VisualLine, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
             _context.RunAll();
             Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Line));
         }
@@ -880,7 +957,7 @@ namespace Vim.UnitTest
 
             var blockSpan = _textView.GetBlockSpan(1, 2, 0, 2);
             var visualSelection = VisualSelection.NewBlock(blockSpan, BlockCaretLocation.BottomLeft);
-            _buffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.NewInitialVisualSelection(visualSelection));
+            _vimBuffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
             _context.RunAll();
             Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Block));
         }

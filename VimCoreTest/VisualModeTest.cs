@@ -39,7 +39,6 @@ namespace Vim.UnitTest
             _factory = new MockRepository(MockBehavior.Strict);
             _tracker = _factory.Create<ISelectionTracker>();
             _tracker.Setup(x => x.Start());
-            _tracker.Setup(x => x.ResetCaret());
             _tracker.Setup(x => x.UpdateSelection());
             _operations = _factory.Create<ICommonOperations>();
             _operations.SetupGet(x => x.TextView).Returns(_textView);

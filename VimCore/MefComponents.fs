@@ -233,7 +233,7 @@ type internal TrackingVisualSpan =
 type internal TrackingVisualSelection 
     (
         _trackingVisualSpan : ITrackingVisualSpan,
-        _isForward : bool,
+        _path : Path,
         _column : int,
         _blockCaretLocation : BlockCaretLocation
     ) =
@@ -245,8 +245,8 @@ type internal TrackingVisualSelection
         | Some visualSpan -> 
             let visualSelection =
                 match visualSpan with
-                | VisualSpan.Character span -> VisualSelection.Character (span, _isForward)
-                | VisualSpan.Line lineRange -> VisualSelection.Line (lineRange, _isForward, _column)
+                | VisualSpan.Character span -> VisualSelection.Character (span, _path)
+                | VisualSpan.Line lineRange -> VisualSelection.Line (lineRange, _path, _column)
                 | VisualSpan.Block blockSpan -> VisualSelection.Block (blockSpan, _blockCaretLocation)
             Some visualSelection
 
@@ -263,12 +263,12 @@ type internal TrackingVisualSelection
     /// Create an ITrackingVisualSelection with the provided data
     static member Create (bufferTrackingService : IBufferTrackingService) (visualSelection : VisualSelection)=
         let trackingVisualSpan = bufferTrackingService.CreateVisualSpan visualSelection.VisualSpan
-        let isForward, column, blockCaretLocation =
+        let path, column, blockCaretLocation =
             match visualSelection with
-            | VisualSelection.Character (_, isForward) -> isForward, 0, BlockCaretLocation.TopRight
-            | VisualSelection.Line (_, isForward, column) -> isForward, column, BlockCaretLocation.TopRight
-            | VisualSelection.Block (_, blockCaretLocation) -> true, 0, blockCaretLocation
-        TrackingVisualSelection(trackingVisualSpan, isForward, column, blockCaretLocation)
+            | VisualSelection.Character (_, path) -> path, 0, BlockCaretLocation.TopRight
+            | VisualSelection.Line (_, path, column) -> path, column, BlockCaretLocation.TopRight
+            | VisualSelection.Block (_, blockCaretLocation) -> Path.Forward, 0, blockCaretLocation
+        TrackingVisualSelection(trackingVisualSpan, path, column, blockCaretLocation)
 
     interface ITrackingVisualSelection with
         member x.CaretPoint = x.CaretPoint

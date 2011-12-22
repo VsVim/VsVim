@@ -31,6 +31,10 @@ type internal VisualMode
 
     let mutable _builtCommands = false
 
+    member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
+
+    member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
+
     member x.CommandNames = 
         x.EnsureCommandsBuilt()
         _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
@@ -57,6 +61,8 @@ type internal VisualMode
                 yield ("S", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextCommand, VisualCommand.ChangeLineSelection false)
                 yield ("u", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToLowerCase)
                 yield ("U", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToUpperCase)
+                yield ("v", CommandFlags.Special, VisualCommand.SwitchModeVisual VisualKind.Character)
+                yield ("V", CommandFlags.Special, VisualCommand.SwitchModeVisual VisualKind.Line)
                 yield ("x", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
                 yield ("X", CommandFlags.Repeatable, VisualCommand.DeleteLineSelection)
                 yield ("y", CommandFlags.ResetCaret, VisualCommand.YankSelection)
@@ -69,6 +75,8 @@ type internal VisualMode
                 yield ("zC", CommandFlags.Special, VisualCommand.CloseAllFoldsInSelection)
                 yield ("zd", CommandFlags.Special, VisualCommand.DeleteFoldInSelection)
                 yield ("zD", CommandFlags.Special, VisualCommand.DeleteAllFoldsInSelection)
+                yield ("<C-q>", CommandFlags.Special, VisualCommand.SwitchModeVisual VisualKind.Block)
+                yield ("<C-v>", CommandFlags.Special, VisualCommand.SwitchModeVisual VisualKind.Block)
                 yield ("<Del>", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
                 yield ("<lt>", CommandFlags.Repeatable, VisualCommand.ShiftLinesLeft)
                 yield (">", CommandFlags.Repeatable, VisualCommand.ShiftLinesRight)
@@ -124,12 +132,32 @@ type internal VisualMode
         // If we are provided an InitialVisualSpan value here go ahead and use it.  Do this before we
         // begin selection tracking as it will properly update the resulting selection to the appropriate
         // mode
-        match modeArgument with
-        | ModeArgument.InitialVisualSelection visualSelection ->
-            if visualSelection.ModeKind = _kind then
-                CommonUtil.SelectAndUpdateCaret _textView visualSelection
-        | _ ->
-            ()
+        let caretPoint = 
+            match modeArgument with
+            | ModeArgument.InitialVisualSelection (visualSelection, caretPoint) ->
+
+                // TODO: I think this order is wrong
+                if visualSelection.ModeKind = _kind then
+
+                    visualSelection.SelectAndMoveCaret _textView
+                    caretPoint
+                else
+                    None
+            | _ ->
+                None
+
+        // Save the start point of the visual selection so we can potentially reset to it later
+        let caretPosition = 
+            match caretPoint with
+            | Some caretPoint -> caretPoint.Position
+            | None -> 
+                // If there is an existing explicit selection then the anchor point is considered
+                // the original start point.  Else just use the caret point
+                if _textView.Selection.IsEmpty then
+                    x.CaretPoint.Position
+                else 
+                    _textView.Selection.AnchorPoint.Position.Position
+        _vimBufferData.VisualCaretStartPoint <- x.CurrentSnapshot.CreateTrackingPoint(caretPosition, PointTrackingMode.Negative) |> Some
 
         _selectionTracker.Start()
 
@@ -162,7 +190,7 @@ type internal VisualMode
                 | BindResult.Complete commandRanData ->
 
                     if Util.IsFlagSet commandRanData.CommandBinding.CommandFlags CommandFlags.ResetCaret then
-                        _selectionTracker.ResetCaret()
+                        x.ResetCaret()
 
                     match commandRanData.CommandResult with
                     | CommandResult.Error ->
@@ -214,6 +242,34 @@ type internal VisualMode
 
         result
 
+    /// Certain operations cause the caret to be reset to it's position before visual mode 
+    /// started once visual mode is complete (y for example).  This function handles that
+    member x.ResetCaret() =
+
+        // Calculate the start point of the selection
+        let startPoint = 
+
+            match _vimBufferData.VisualCaretStartPoint with
+            | None -> None
+            | Some trackingPoint -> TrackingPointUtil.GetPoint x.CurrentSnapshot trackingPoint
+
+        match startPoint with
+        | None ->
+            // If we couldn't calculate a start point then there is just nothing to do.  This
+            // really shouldn't happen though
+            ()
+        | Some startPoint ->
+
+            // Calculate the actual point to use.  If the selection turned backwards then we
+            // prefer the current caret over the original
+            let point =
+                if startPoint.Position < x.CaretPoint.Position then 
+                    startPoint
+                else 
+                    x.CaretPoint
+            TextViewUtil.MoveCaretToPoint _textView point
+            TextViewUtil.EnsureCaretOnScreen _textView
+
     member x.ShouldHandleEscape = not _runner.IsHandlingEscape
 
     member x.SyncSelection() =
@@ -233,6 +289,7 @@ type internal VisualMode
 
     interface IVisualMode with
         member x.CommandRunner = _runner
+        member x.VisualSelection = VisualSelection.CreateForSelection _textView _visualKind
         member x.SyncSelection () = x.SyncSelection()
 
 

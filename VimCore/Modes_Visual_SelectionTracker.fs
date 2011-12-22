@@ -14,6 +14,8 @@ type internal SelectionTracker
         _incrementalSearch : IIncrementalSearch,
         _kind : VisualKind ) as this =
 
+    // TODO: Is this actually needed?  Is there a reason this just couldn't be calculated
+    // based off of ITextSelection.AnchorPoint?
     let mutable _anchorPoint = VirtualSnapshotPoint(_textView.TextSnapshot, 0) 
 
     /// Whether or not we are currently running
@@ -36,7 +38,7 @@ type internal SelectionTracker
         _incrementalSearch.CurrentSearchCompleted 
         |> Observable.add (fun _ -> _lastIncrementalSearchResult <- None)
 
-    /// Anchor point being tracked by the selection tracker
+    /// Anchor point of the selection 
     member x.AnchorPoint = _anchorPoint
 
     member x.IsRunning = _running
@@ -135,7 +137,7 @@ type internal SelectionTracker
 
     /// When the text is changed it invalidates the anchor point.  It needs to be forwarded to
     /// the next version of the buffer.  If it's not present then just go to point 0
-    member private x.OnTextChanged (args:TextContentChangedEventArgs) =
+    member x.OnTextChanged (args : TextContentChangedEventArgs) =
         let point = _anchorPoint.Position
         let trackingPoint = point.Snapshot.CreateTrackingPoint(point.Position, PointTrackingMode.Negative)
         _anchorPoint <- 
@@ -143,18 +145,9 @@ type internal SelectionTracker
             | Some point -> VirtualSnapshotPoint(point)
             | None -> VirtualSnapshotPoint(args.After, 0)
 
-    member private x.ResetCaret() =
-        let point =
-            let caretPoint = TextViewUtil.GetCaretPoint _textView
-            if _anchorPoint.Position.Position < caretPoint.Position then _anchorPoint
-            else VirtualSnapshotPoint(caretPoint)
-        TextViewUtil.MoveCaretToVirtualPoint _textView point
-        TextViewUtil.EnsureCaretOnScreen _textView
-
     interface ISelectionTracker with 
         member x.VisualKind = _kind
         member x.IsRunning = x.IsRunning
         member x.Start () = x.Start()
         member x.Stop () = x.Stop()
-        member x.ResetCaret() = x.ResetCaret()
         member x.UpdateSelection () = x.UpdateSelection()

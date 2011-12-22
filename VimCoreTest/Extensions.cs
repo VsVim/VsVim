@@ -736,12 +736,11 @@ namespace Vim.UnitTest
         /// Change the selection to be the specified SnapshotSpan value and update the caret to be on the
         /// last included point in the SnapshotSpan.  
         /// </summary>
-        public static void SelectAndUpdateCaret(this ITextView textView, SnapshotSpan span)
+        public static void SelectAndMoveCaret(this ITextView textView, SnapshotSpan span)
         {
             var characterSpan = CharacterSpan.CreateForSpan(span);
-            CommonUtil.SelectAndUpdateCaret(
-                textView,
-                VisualSelection.CreateForVisualSpan(VisualSpan.NewCharacter(characterSpan)));
+            var visualSelection = VisualSelection.CreateForVisualSpan(VisualSpan.NewCharacter(characterSpan));
+            visualSelection.SelectAndMoveCaret(textView);
         }
 
         public static VisualSpan GetVisualSpanBlock(this ITextView textView, int column, int length, int startLine = 0, int lineCount = 1)

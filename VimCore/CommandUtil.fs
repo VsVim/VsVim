@@ -1627,7 +1627,7 @@ type internal CommandUtil
                     | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
                     | ModeArgument.Substitute _ -> ()
                 | _ -> ()
-    
+
             match commandResult with
             | CommandResult.Error ->
                 commandResult
@@ -2020,6 +2020,7 @@ type internal CommandUtil
         | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
+        | VisualCommand.SwitchModeVisual visualKind -> x.SwitchModeVisual visualKind 
         | VisualCommand.YankLineSelection -> x.YankLineSelection register visualSpan
         | VisualCommand.YankSelection -> x.YankSelection register visualSpan
 
@@ -2321,8 +2322,32 @@ type internal CommandUtil
 
         | Some visualSelection ->
             let modeKind = visualSelection.ModeKind
-            let modeArgument = ModeArgument.InitialVisualSelection visualSelection
+            let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, None)
             x.SwitchMode modeKind modeArgument
+
+    /// Switch from the current visual mode into the specified visual mode
+    member x.SwitchModeVisual newVisualKind = 
+
+        let badOperation () =
+            _commonOperations.Beep()
+            CommandResult.Completed ModeSwitch.NoSwitch
+
+        // The archor point is the original anchor point of the visual session
+        let anchorPoint = 
+            _vimBufferData.VisualCaretStartPoint
+            |> OptionUtil.map2 (TrackingPointUtil.GetPoint x.CurrentSnapshot)
+        match anchorPoint with
+        | None -> badOperation ()
+        | Some anchorPoint -> 
+
+            match _vimTextBuffer.ModeKind |> VisualKind.OfModeKind with
+            | None -> badOperation ()
+            | Some currentVisualKind -> 
+                let caretPoint = x.CaretPoint
+                let newVisualSelection = VisualSelection.CreateForPoints newVisualKind anchorPoint caretPoint
+                let modeArgument = ModeArgument.InitialVisualSelection (newVisualSelection, Some anchorPoint)
+
+                x.SwitchMode newVisualSelection.ModeKind modeArgument
 
     /// Undo count operations in the ITextBuffer
     member x.Undo count = 

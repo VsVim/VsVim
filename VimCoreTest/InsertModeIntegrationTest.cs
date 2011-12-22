@@ -602,7 +602,7 @@ namespace Vim.UnitTest
         public void SelectionChange1()
         {
             Create("foo", "bar");
-            _textView.SelectAndUpdateCaret(new SnapshotSpan(_textView.GetLine(0).Start, 0));
+            _textView.SelectAndMoveCaret(new SnapshotSpan(_textView.GetLine(0).Start, 0));
             Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
         }
 

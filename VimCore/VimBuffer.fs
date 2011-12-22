@@ -21,11 +21,15 @@ type VimBufferData
     ) = 
 
     let mutable _currentDirectory : string option = None
+    let mutable _visualCaretStartPoint : ITrackingPoint option = None
 
     interface IVimBufferData with
         member x.CurrentDirectory 
             with get() = _currentDirectory
             and set value = _currentDirectory <- value
+        member x.VisualCaretStartPoint 
+            with get() = _visualCaretStartPoint
+            and set value = _visualCaretStartPoint <- value
         member x.JumpList = _jumpList
         member x.TextView = _textView
         member x.TextBuffer = _textView.TextBuffer

@@ -937,9 +937,17 @@ type CharacterSpan
 
     member x.LastLineLength = _lastLineLength
 
-    /// Get the EndPoint of the Character Span
+    /// The last point included in the CharacterSpan
+    member x.Last = 
+        let endPoint = x.Start
+        if endPoint.Position = x.Start.Position then
+            None
+        else
+            SnapshotPoint(x.Snapshot, endPoint.Position - 1) |> Some
+
+    /// Get the End point of the Character Span.
     member x.End =
-        let snapshot = x.Start.Snapshot
+        let snapshot = x.Snapshot
         let endPoint = 
             if x.LineCount = 1 then
                 x.Start
@@ -1041,7 +1049,7 @@ type BlockCaretLocation =
 [<DebuggerDisplay("{ToString()}")>]
 type VisualSpan =
 
-    /// A characterwise span
+    /// A characterwise span.  The 'End' of the span is not selected.
     | Character of CharacterSpan
 
     /// A linewise span
@@ -1115,15 +1123,20 @@ type VisualSpan =
         let visualSelection : VisualSelection = VisualSelection.CreateForSelection textView visualKind
         visualSelection.VisualSpan
 
-/// Represents both the VisualSpan and selection information for Visual Mode
+/// Represents both the VisualSpan and selection information for Visual Mode.  
+///
+/// Note: It's intentional that inclusive and exclusive are not included in this particular
+/// structure.  Whether or not the selection is inclusive or exclusive doesn't change the 
+/// anchor / caret point.  It just changes what is operated on and what is actually 
+/// physically selected by visual mode
 and [<RequireQualifiedAccess>] [<StructuralEquality>] [<NoComparison>] VisualSelection =
 
-    /// The bool represents whether or not the caret is at the start of the SnapshotSpan
-    | Character of CharacterSpan * bool
+    /// The underlying span and whether or not this is a forward looking span
+    | Character of CharacterSpan * Path
 
-    /// The bool represents whether or not the caret is at the start of the line range
-    /// and the int is which column in the range the caret should be placed in
-    | Line of SnapshotLineRange * bool * int 
+    /// The underlynig range, whether or not is forwards or backwards and the int 
+    /// is which column in the range the caret should be placed in
+    | Line of SnapshotLineRange * Path * int 
 
     /// Just keep the BlockSpan and the caret information for the block
     | Block of BlockSpan * BlockCaretLocation
@@ -1147,30 +1160,31 @@ and [<RequireQualifiedAccess>] [<StructuralEquality>] [<NoComparison>] VisualSel
 
     member x.IsCharacterForward =
         match x with
-        | Character (_, isForward) -> isForward
+        | Character (_, path) -> path.IsPathForward
         | _ -> false
 
     member x.IsLineForward = 
         match x with
-        | Line (_, isForward, _) -> isForward
+        | Line (_, path, _) -> path.IsPathForward
         | _ -> false
 
     /// Gets the SnapshotPoint for the caret as it should appear in the given VisualSelection
     member x.CaretPoint = 
         match x with
-        | Character (characterSpan, isForward) ->
+        | Character (characterSpan, path) ->
             // The caret is either positioned at the start or the end of the selected
             // SnapshotSpan
-            if isForward && characterSpan.Length > 0 then
+            if path.IsPathForward && characterSpan.Length > 0 then
                 SnapshotPointUtil.SubtractOne characterSpan.End
             else
                 characterSpan.Start
 
-        | Line (snapshotLineRange, isForward, column) ->
+        | Line (snapshotLineRange, path, column) ->
+
             // The caret is either positioned at the start or the end of the selected range
             // and can be on any column in either
             let line = 
-                if isForward then
+                if path.IsPathForward then
                     snapshotLineRange.LastLine
                 else
                     snapshotLineRange.StartLine
@@ -1194,64 +1208,128 @@ and [<RequireQualifiedAccess>] [<StructuralEquality>] [<NoComparison>] VisualSel
             | BlockCaretLocation.BottomLeft -> blockSpan.BlockSpans |> SeqUtil.last |> SnapshotSpanUtil.GetStartPoint
             | BlockCaretLocation.BottomRight -> blockSpan.BlockSpans |> SeqUtil.last |> getSpanEnd
 
-    static member CreateForSelection textView visualKind =
-        let caretPoint = TextViewUtil.GetCaretPoint textView
-        match visualKind with
-        | VisualKind.Character -> 
+    /// Select the given VisualSpan in the ITextView
+    ///
+    /// TODO: Make sure we check this for correctness when implementing exclusive selection
+    /// properly
+    member x.Select (textView : ITextView) = 
 
-            // This is just represented by looking at the Stream SelectionSpan and checking the position
-            // of the caret
-            let span = textView.Selection.StreamSelectionSpan.SnapshotSpan
-            let isBackward = caretPoint = span.Start
-            VisualSelection.Character (CharacterSpan.CreateForSpan span, not isBackward)
-        | VisualKind.Line-> 
+        // Select the given SnapshotSpan
+        let selectSpan (span : SnapshotSpan) path = 
 
-            let column = SnapshotPointUtil.GetColumn caretPoint
-            let snapshotLineRange = textView.Selection.StreamSelectionSpan.SnapshotSpan |> SnapshotLineRangeUtil.CreateForSpan
-            let isForward = 
-                if snapshotLineRange.StartLine.ExtentIncludingLineBreak.Contains caretPoint then
-                    false
-                else
-                    true
-            VisualSelection.Line (snapshotLineRange, isForward, column)
-        | VisualKind.Block -> 
+            // The editor will normalize SnapshotSpan values here which extend into the line break
+            // portion of the line to not include the line break.  Must use VirtualSnapshotPoint 
+            // values to ensure the proper selection
+            textView.Selection.Mode <- TextSelectionMode.Stream
+            let startPoint, endPoint = 
+                match path with
+                | Path.Forward -> span.Start, span.End
+                | Path.Backward -> span.End, span.Start
 
-            let caretPoint = TextViewUtil.GetCaretPoint textView
-            let spanCollection = textView.Selection.SelectedSpans
-            if spanCollection.Count = 0 then
-                // Just like we would treat Character as a single empty SnapshotSpan we do the same here
-                // for block selection
-                let blockSpan = BlockSpan(caretPoint, 0, 1)
-                VisualSelection.Block (blockSpan, BlockCaretLocation.TopLeft)
-            else
-                let firstSpan = spanCollection.[0]
-                let lastSpan = spanCollection |> SeqUtil.last
-                let blockSpan = BlockSpan(firstSpan.Start, firstSpan.Length, spanCollection.Count)
-                let blockCaretLocation = 
-                    
-                    if firstSpan.Start = caretPoint then
-                        BlockCaretLocation.TopLeft
-                    elif firstSpan.Contains(caretPoint) then
-                        BlockCaretLocation.TopRight
-                    elif lastSpan.Start = caretPoint then
-                        BlockCaretLocation.BottomLeft
-                    elif lastSpan.Contains(caretPoint) then
-                        BlockCaretLocation.BottomRight
-                    else
-                        BlockCaretLocation.TopLeft
+            let startPoint = startPoint |> VirtualSnapshotPointUtil.OfPointConsiderLineBreak
+            let endPoint = endPoint |> VirtualSnapshotPointUtil.OfPointConsiderLineBreak
 
-                VisualSelection.Block (blockSpan, blockCaretLocation)
+            textView.Selection.Select(startPoint, endPoint);
+
+        match x with
+        | Character (characterSpan, path) -> selectSpan characterSpan.Span path
+        | Line (lineRange, path, _) -> selectSpan lineRange.ExtentIncludingLineBreak path
+        | Block (blockSpan, blockCaretLocation) ->
+            textView.Selection.Mode <- TextSelectionMode.Box;
+            textView.Selection.Select(
+                VirtualSnapshotPoint(blockSpan.Start),
+                VirtualSnapshotPoint(blockSpan.End))
+
+    /// Select the given VisualSelection in the ITextView and place the caret in the correct
+    /// position
+    member x.SelectAndMoveCaret textView =
+        x.Select textView
+        TextViewUtil.MoveCaretToPointRaw textView x.CaretPoint MoveCaretFlags.EnsureOnScreen
 
     /// Create for the given VisualSpan.  Assumes this was a forward created VisualSpan
     static member CreateForVisualSpan visualSpan = 
         match visualSpan with
         | VisualSpan.Character span -> 
-            VisualSelection.Character (span, true)
+            VisualSelection.Character (span, Path.Forward)
         | VisualSpan.Line lineRange ->
             let column = SnapshotPointUtil.GetColumn lineRange.LastLine.End
-            VisualSelection.Line (lineRange, true, column)
+            VisualSelection.Line (lineRange, Path.Forward, column)
         | VisualSpan.Block blockSpan ->
             VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
+
+    /// Create the Visual Selection based on the specified points.  The activePoint is assumed
+    /// to be the end of the selection (just as it is in ITextSelection)
+    static member CreateForAllPoints visualKind (anchorPoint : SnapshotPoint) (activePoint : SnapshotPoint) (caretPoint : SnapshotPoint) =
+        let startPoint, endPoint, path =
+            if activePoint.Position >= anchorPoint.Position then 
+                anchorPoint, activePoint, Path.Forward
+            else
+                activePoint, anchorPoint, Path.Backward
+
+        match visualKind with
+        | VisualKind.Character ->
+            let span = SnapshotSpan(startPoint, endPoint) |> CharacterSpan.CreateForSpan
+            Character (span, path)
+        | VisualKind.Line ->
+
+            let startLine = SnapshotPointUtil.GetContainingLine startPoint
+
+            // If endPoint is EndIncludingLineBreak we would get the line after and be 
+            // one line too big.  Go back on point to ensure we don't expand the span
+            let endLine = 
+                let endPoint = SnapshotPointUtil.SubtractOneOrCurrent endPoint
+                SnapshotPointUtil.GetContainingLine endPoint
+            let range = SnapshotLineRangeUtil.CreateForLineRange startLine endLine
+            let column = SnapshotPointUtil.GetColumn caretPoint
+
+            Line (range, path, column)
+
+        | VisualKind.Block -> 
+
+            let lastLine, lastColumn = 
+                let lastPoint = SnapshotPointUtil.SubtractOneOrCurrent endPoint
+                SnapshotPointUtil.GetLineColumn lastPoint
+            let startLine, startColumn = SnapshotPointUtil.GetLineColumn startPoint
+
+            let width = 
+                let width = startColumn - lastColumn
+                (abs width) + 1
+
+            let height =
+                let height = startLine - lastLine
+                (abs height) + 1
+
+            let blockSpan = BlockSpan(startPoint, width, height)
+
+            // Need to calculate the caret location.  Do this based on the initial anchor and
+            // caret locations
+            let blockCaretLocation = 
+
+                let caretLine, caretColumn = SnapshotPointUtil.GetLineColumn caretPoint
+                match caretLine > startLine, caretColumn > startColumn with
+                | true, true -> BlockCaretLocation.BottomRight
+                | true, false -> BlockCaretLocation.BottomLeft
+                | false, true -> BlockCaretLocation.TopRight
+                | false, false -> BlockCaretLocation.TopLeft
+
+            Block (blockSpan, blockCaretLocation)
+
+    /// Create a VisualSelection for the given anchor point and caret.  The caret is assumed to 
+    /// be the end of the selection.
+    static member CreateForPoints visualKind anchorPoint caretPoint =
+        let activePoint = SnapshotPointUtil.AddOneOrCurrent caretPoint
+        VisualSelection.CreateForAllPoints visualKind anchorPoint activePoint caretPoint
+
+    /// Create a VisualSelection based off of the current selection and position of the caret
+    static member CreateForSelection (textView : ITextView) visualKind =
+        let caretPoint = TextViewUtil.GetCaretPoint textView
+        let selection = textView.Selection
+        if selection.IsEmpty then
+            VisualSelection.CreateForAllPoints visualKind caretPoint caretPoint caretPoint
+        else
+            let anchorPoint = selection.AnchorPoint.Position
+            let activePoint = selection.ActivePoint.Position 
+            VisualSelection.CreateForAllPoints visualKind anchorPoint activePoint caretPoint
 
 [<RequireQualifiedAccess>]
 type ModeArgument =
@@ -1260,9 +1338,10 @@ type ModeArgument =
     /// Used for transitions from Visual Mode directly to Command mode
     | FromVisual 
 
-    /// The initial span which should be selected and the SnapshotPoint where the 
-    /// caret should be placed within the VisualSpan
-    | InitialVisualSelection of VisualSelection
+    /// Passed to visual mode to indicate what the initial selection should be.  The SnapshotPoint
+    /// option provided is meant to be the initial caret point.  If not provided the actual 
+    /// caret point is used
+    | InitialVisualSelection of VisualSelection * SnapshotPoint option
 
     /// Begins insert mode with a specified count.  This means the text inserted should
     /// be repeated a total of 'count - 1' times when insert mode exits
@@ -1713,6 +1792,9 @@ type VisualCommand =
     /// Shift the selected lines to the right
     | ShiftLinesRight
 
+    /// Switch to the specified visual mode
+    | SwitchModeVisual of VisualKind
+
     /// Yank the lines which are specified by the selection
     | YankLineSelection
 
@@ -1958,16 +2040,16 @@ type CommandBinding =
 and ICommandUtil = 
 
     /// Run a normal command
-    abstract RunNormalCommand : NormalCommand -> CommandData -> CommandResult
+    abstract RunNormalCommand : command : NormalCommand -> commandData : CommandData -> CommandResult
 
     /// Run a visual command
-    abstract RunVisualCommand : VisualCommand -> CommandData -> VisualSpan -> CommandResult
+    abstract RunVisualCommand : command : VisualCommand -> commandData: CommandData -> visualSpan : VisualSpan -> CommandResult
 
     /// Run a insert command
-    abstract RunInsertCommand : InsertCommand -> CommandResult
+    abstract RunInsertCommand : command : InsertCommand -> CommandResult
 
     /// Run a command
-    abstract RunCommand : Command -> CommandResult
+    abstract RunCommand : command : Command -> CommandResult
 
 type internal IInsertUtil = 
 
@@ -2754,6 +2836,10 @@ type IVimBufferData =
     /// The current directory for this particular window
     abstract CurrentDirectory : string option with get, set
 
+    /// This is the caret point at the start of the most recent visual mode session. It's
+    /// the actual location of the caret vs. the anchor point.
+    abstract VisualCaretStartPoint : ITrackingPoint option with get, set
+
     /// The IJumpList associated with the IVimBuffer
     abstract JumpList : IJumpList
 
@@ -3234,6 +3320,9 @@ and IVisualMode =
 
     /// The ICommandRunner implementation associated with NormalMode
     abstract CommandRunner : ICommandRunner 
+
+    /// The current Visual Selection
+    abstract VisualSelection : VisualSelection
 
     /// Asks Visual Mode to reset what it perceives to be the original selection.  Instead it 
     /// views the current selection as the original selection for entering the mode

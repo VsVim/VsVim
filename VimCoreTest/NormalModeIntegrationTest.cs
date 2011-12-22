@@ -2273,7 +2273,7 @@ namespace Vim.UnitTest
             Create("the brown dog");
             var span = new SnapshotSpan(_textView.GetPoint(4), _textView.GetPoint(9));
             Assert.AreEqual("brown", span.GetText());
-            var visualSelection = VisualSelection.NewCharacter(CharacterSpan.CreateForSpan(span), true);
+            var visualSelection = VisualSelection.NewCharacter(CharacterSpan.CreateForSpan(span), Path.Backward);
             _vimTextBuffer.LastVisualSelection = FSharpOption.Create(visualSelection);
             _vimBuffer.Process("y`>");
             Assert.AreEqual("the brown", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
@@ -3205,7 +3205,7 @@ namespace Vim.UnitTest
             Create("cats", "dogs", "fish");
             var visualSelection = VisualSelection.NewLine(
                 _textView.GetLineRange(0, 1),
-                true,
+                Path.Forward,
                 1);
             _vimTextBuffer.LastVisualSelection = FSharpOption.Create(visualSelection);
             _vimBuffer.Process("gv");

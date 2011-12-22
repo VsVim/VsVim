@@ -27,7 +27,7 @@ namespace Vim.UnitTest
             Create("cats", "dogs");
             var visualSelection = VisualSelection.NewCharacter(
                 CharacterSpan.CreateForSpan(_textBuffer.GetSpan(0, 2)),
-                true);
+                Path.Forward);
             Assert.AreEqual(_textBuffer.GetPoint(1), visualSelection.CaretPoint);
         }
 
@@ -40,7 +40,7 @@ namespace Vim.UnitTest
             Create("cats", "dogs");
             var visualSelection = VisualSelection.NewCharacter(
                 CharacterSpan.CreateForSpan(_textBuffer.GetSpan(0, 2)),
-                false);
+                Path.Backward);
             Assert.AreEqual(_textBuffer.GetPoint(0), visualSelection.CaretPoint);
         }
 
@@ -57,6 +57,18 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Ensure the caret point is appropriately on the bottom right for a block selection
+        /// </summary>
+        [Test]
+        public void CaretPoint_Block_BottomRight()
+        {
+            Create("big dog", "big cat", "big tree", "big fish");
+            var blockSpan = _textBuffer.GetBlockSpan(1, 1, 0, 2);
+            var visualSelection = VisualSelection.NewBlock(blockSpan, BlockCaretLocation.BottomRight);
+            Assert.AreEqual(_textView.GetPointInLine(1, 1), visualSelection.CaretPoint);
+        }
+
+        /// <summary>
         /// Make sure we properly create from a forward selection
         /// </summary>
         [Test]
@@ -64,7 +76,7 @@ namespace Vim.UnitTest
         {
             Create("hello world");
             var span = new SnapshotSpan(_textView.GetLine(0).Start, 2);
-            _textView.SelectAndUpdateCaret(span);
+            _textView.SelectAndMoveCaret(span);
             var visualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Character);
             Assert.AreEqual(span, visualSelection.VisualSpan.EditSpan.OverarchingSpan);
             Assert.AreEqual(ModeKind.VisualCharacter, visualSelection.ModeKind);
@@ -98,7 +110,7 @@ namespace Vim.UnitTest
             foreach (var blockCaretLocation in all)
             {
                 var visualSelection = VisualSelection.NewBlock(blockSpanData, blockCaretLocation);
-                CommonUtil.SelectAndUpdateCaret(_textView, visualSelection);
+                visualSelection.SelectAndMoveCaret(_textView);
                 var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Block);
                 Assert.AreEqual(visualSelection, currentVisualSelection);
             }
@@ -112,11 +124,11 @@ namespace Vim.UnitTest
         {
             Create("cats", "dogs", "fish");
             var all = new[] { BlockCaretLocation.TopLeft, BlockCaretLocation.TopRight, BlockCaretLocation.BottomLeft, BlockCaretLocation.BottomRight };
-            var blockSpanData = _textView.GetBlockSpan(1, 2, 0, 2);
+            var blockSpan = _textView.GetBlockSpan(1, 2, 0, 2);
             foreach (var blockCaretLocation in all)
             {
-                var visualSelection = VisualSelection.NewBlock(blockSpanData, blockCaretLocation);
-                CommonUtil.SelectAndUpdateCaret(_textView, visualSelection);
+                var visualSelection = VisualSelection.NewBlock(blockSpan, blockCaretLocation);
+                visualSelection.SelectAndMoveCaret(_textView);
                 var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Block);
                 Assert.AreEqual(visualSelection, currentVisualSelection);
             }
@@ -130,11 +142,11 @@ namespace Vim.UnitTest
         {
             Create("cats", "dogs");
             var characterSpan = CharacterSpan.CreateForSpan(_textBuffer.GetSpan(1, 2));
-            var all = new[] { true, false };
-            foreach (var isForward in all)
+            var all = new[] { Path.Forward, Path.Backward };
+            foreach (var path in all)
             {
-                var visualSelection = VisualSelection.NewCharacter(characterSpan, isForward);
-                CommonUtil.SelectAndUpdateCaret(_textView, visualSelection);
+                var visualSelection = VisualSelection.NewCharacter(characterSpan, path);
+                visualSelection.SelectAndMoveCaret(_textView);
                 var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Character);
                 Assert.AreEqual(visualSelection, currentVisualSelection);
             }
@@ -148,11 +160,11 @@ namespace Vim.UnitTest
         {
             Create("cats", "dogs", "fish");
             var characterSpan = new CharacterSpan(_textView.GetLine(0).Start, 2, 4);
-            var all = new[] { true, false };
-            foreach (var isForward in all)
+            var all = new[] { Path.Forward, Path.Backward };
+            foreach (var path in all)
             {
-                var visualSelection = VisualSelection.NewCharacter(characterSpan, isForward);
-                CommonUtil.SelectAndUpdateCaret(_textView, visualSelection);
+                var visualSelection = VisualSelection.NewCharacter(characterSpan, path);
+                visualSelection.SelectAndMoveCaret(_textView);
                 var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Character);
                 Assert.AreEqual(visualSelection, currentVisualSelection);
             }
@@ -170,8 +182,8 @@ namespace Vim.UnitTest
             var all = Enumerable.Range(0, 3);
             foreach (var column in all)
             {
-                var visualSelection = VisualSelection.NewLine(lineRange, false, column);
-                CommonUtil.SelectAndUpdateCaret(_textView, visualSelection);
+                var visualSelection = VisualSelection.NewLine(lineRange, Path.Backward, column);
+                visualSelection.SelectAndMoveCaret(_textView);
                 var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Line);
                 Assert.AreEqual(visualSelection, currentVisualSelection);
             }
@@ -186,17 +198,31 @@ namespace Vim.UnitTest
             Create("cats", "dogs", "fish");
             var lineRange = _textView.GetLineRange(0, 1);
             var all = Enumerable.Range(0, 3);
-            var allDirections = new[] { true, false };
-            foreach (var isForward in allDirections)
+            var allDirections = new[] { Path.Forward, Path.Backward };
+            foreach (var path in allDirections)
             {
                 foreach (var column in all)
                 {
-                    var visualSelection = VisualSelection.NewLine(lineRange, isForward, column);
-                    CommonUtil.SelectAndUpdateCaret(_textView, visualSelection);
+                    var visualSelection = VisualSelection.NewLine(lineRange, path, column);
+                    visualSelection.SelectAndMoveCaret(_textView);
                     var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Line);
                     Assert.AreEqual(visualSelection, currentVisualSelection);
                 }
             }
+        }
+
+        /// <summary>
+        /// The selection of a reverse character span should cause a reversed selection
+        /// </summary>
+        [Test]
+        public void Select_Backwards()
+        {
+            Create("big dog", "big cat", "big tree", "big fish");
+            var characterSpan = CharacterSpan.CreateForSpan(_textBuffer.GetSpan(1, 3));
+            var visualSelection = VisualSelection.NewCharacter(characterSpan, Path.Backward);
+            visualSelection.SelectAndMoveCaret(_textView);
+            Assert.IsTrue(_textView.Selection.IsReversed);
+            Assert.AreEqual(characterSpan.Span, _textView.GetSelectionSpan());
         }
     }
 }

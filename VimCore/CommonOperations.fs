@@ -34,37 +34,6 @@ module internal CommonUtil =
         let point, _ = GetSearchPointAndWrap path point
         point
 
-    /// Select the given VisualSpan in the ITextView
-    let Select (textView : ITextView) visualSpan =
-
-        // Select the given SnapshotSpan
-        let selectSpan (span : SnapshotSpan) = 
-
-            // The editor will normalize SnapshotSpan values here which extend into the line break
-            // portion of the line to not include the line break.  Must use VirtualSnapshotPoint 
-            // values to ensure the proper selection
-            textView.Selection.Mode <- TextSelectionMode.Stream
-            let startPoint = span.Start |> VirtualSnapshotPointUtil.OfPointConsiderLineBreak
-            let endPoint = span.End |> VirtualSnapshotPointUtil.OfPointConsiderLineBreak
-            textView.Selection.Select(startPoint, endPoint);
-
-        match visualSpan with
-        | VisualSpan.Character characterSpan ->
-            selectSpan characterSpan.Span
-        | VisualSpan.Line lineRange ->
-            selectSpan lineRange.ExtentIncludingLineBreak
-        | VisualSpan.Block blockSpan ->
-            textView.Selection.Mode <- TextSelectionMode.Box;
-
-            textView.Selection.Select(
-                VirtualSnapshotPoint(blockSpan.Start),
-                VirtualSnapshotPoint(blockSpan.End))
-
-    /// Select the given selection and move the caret to the appropriate point
-    let SelectAndUpdateCaret textView (visualSelection : VisualSelection) =
-        Select textView visualSelection.VisualSpan
-        TextViewUtil.MoveCaretToPointRaw textView visualSelection.CaretPoint MoveCaretFlags.EnsureOnScreen
-
     /// Raise the error / warning messages for a given SearchResult
     let RaiseSearchResultMessage (statusUtil : IStatusUtil) searchResult =
 

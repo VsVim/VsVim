@@ -17,10 +17,18 @@ type Path =
 
     with
 
+    member x.IsPathForward = 
+        match x with
+        | Path.Forward -> true
+        | Path.Backward -> false
+
+    member x.IsPathBackward = not x.IsPathForward
+
     static member Reverse path = 
         match path with
         | Path.Forward -> Path.Backward
         | Path.Backward -> Path.Forward
+
 
 type SearchKind = 
      | Forward

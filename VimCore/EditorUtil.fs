@@ -1178,7 +1178,7 @@ module EditorOptionsUtil =
 
 module TrackingPointUtil =
     
-    let GetPoint (snapshot:ITextSnapshot) (point:ITrackingPoint) =
+    let GetPoint (snapshot : ITextSnapshot) (point : ITrackingPoint) =
         try
             point.GetPoint(snapshot) |> Some
         with
