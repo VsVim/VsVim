@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 using Vim.Extensions;
+using Vim.UI.Wpf;
 
 namespace VsVim
 {
@@ -295,7 +296,7 @@ namespace VsVim
         /// <summary>
         /// Try and convert the Visual Studio command to it's equivalent KeyInput
         /// </summary>
-        internal bool TryConvert(Guid commandGroup, uint commandId, IntPtr pvaIn, out EditCommand editCommand)
+        internal bool TryConvert(Guid commandGroup, uint commandId, IntPtr variantIn, out EditCommand editCommand)
         {
             editCommand = null;
 
@@ -312,7 +313,8 @@ namespace VsVim
                 return false;
             }
 
-            return OleCommandUtil.TryConvert(commandGroup, commandId, pvaIn, out editCommand);
+            var modifiers = KeyUtil.ConvertToKeyModifiers(_vsAdapter.KeyboardDevice.Modifiers);
+            return OleCommandUtil.TryConvert(commandGroup, commandId, variantIn, modifiers, out editCommand);
         }
 
         int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)

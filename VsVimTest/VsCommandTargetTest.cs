@@ -11,6 +11,7 @@ using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 using VsVim.Implementation;
 using EditorUtils.UnitTest;
+using System.Windows.Input;
 
 namespace VsVim.UnitTest
 {
@@ -22,7 +23,7 @@ namespace VsVim.UnitTest
         private IVimBufferCoordinator _bufferCoordinator;
         private IVim _vim;
         private ITextView _textView;
-        private Mock<IVsAdapter> _adapter;
+        private Mock<IVsAdapter> _vsAdapter;
         private Mock<IExternalEditorManager> _externalEditorManager;
         private Mock<IOleCommandTarget> _nextTarget;
         private Mock<IDisplayWindowBroker> _broker;
@@ -43,10 +44,11 @@ namespace VsVim.UnitTest
             _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(false);
 
             _nextTarget = _factory.Create<IOleCommandTarget>(MockBehavior.Strict);
-            _adapter = _factory.Create<IVsAdapter>();
-            _adapter.Setup(x => x.InAutomationFunction).Returns(false);
-            _adapter.Setup(x => x.InDebugMode).Returns(false);
-            _adapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(false);
+            _vsAdapter = _factory.Create<IVsAdapter>();
+            _vsAdapter.SetupGet(x => x.KeyboardDevice).Returns(InputManager.Current.PrimaryKeyboardDevice);
+            _vsAdapter.Setup(x => x.InAutomationFunction).Returns(false);
+            _vsAdapter.Setup(x => x.InDebugMode).Returns(false);
+            _vsAdapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(false);
 
             _broker = _factory.Create<IDisplayWindowBroker>(MockBehavior.Loose);
 
@@ -56,7 +58,7 @@ namespace VsVim.UnitTest
             var result = VsCommandTarget.Create(
                 _bufferCoordinator,
                 vsTextView.Object,
-                _adapter.Object,
+                _vsAdapter.Object,
                 _broker.Object,
                 _externalEditorManager.Object);
             Assert.IsTrue(result.IsSuccess);
@@ -154,14 +156,14 @@ namespace VsVim.UnitTest
         [Test]
         public void TryConvert_InAutomationShouldFail()
         {
-            _adapter.Setup(x => x.InAutomationFunction).Returns(true);
+            _vsAdapter.Setup(x => x.InAutomationFunction).Returns(true);
             AssertCannotConvert2K(VSConstants.VSStd2KCmdID.TAB);
         }
 
         [Test]
         public void TryConvert_InIncrementalSearchShouldFail()
         {
-            _adapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(true);
+            _vsAdapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(true);
             AssertCannotConvert2K(VSConstants.VSStd2KCmdID.TAB);
         }
 

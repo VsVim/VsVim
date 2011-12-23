@@ -123,7 +123,7 @@ namespace VsVim.UnitTest.Utils
             int IOleCommandTarget.Exec(ref Guid commandGroup, uint cmdId, uint cmdExecOpt, IntPtr variantIn, IntPtr variantOut)
             {
                 EditCommand editCommand;
-                if (!OleCommandUtil.TryConvert(commandGroup, cmdId, variantIn, out editCommand) ||
+                if (!OleCommandUtil.TryConvert(commandGroup, cmdId, variantIn, KeyModifiers.None, out editCommand) ||
                     editCommand.EditCommandKind != EditCommandKind.UserInput)
                 {
                     return VSConstants.E_FAIL;
@@ -136,7 +136,7 @@ namespace VsVim.UnitTest.Utils
             {
                 EditCommand editCommand;
                 if (1 != commandCount ||
-                    !OleCommandUtil.TryConvert(commandGroup, commands[0].cmdID, commandText, out editCommand) ||
+                    !OleCommandUtil.TryConvert(commandGroup, commands[0].cmdID, commandText, KeyModifiers.None, out editCommand) ||
                     editCommand.EditCommandKind != EditCommandKind.UserInput)
                 {
                     commands[0].cmdf = 0;
@@ -375,11 +375,13 @@ namespace VsVim.UnitTest.Utils
         {
             _wpfTextView = (IWpfTextView)bufferCoordinator.VimBuffer.TextView;
             _factory = new MockRepository(MockBehavior.Strict);
+            _defaultKeyboardDevice = new DefaultKeyboardDevice(InputManager.Current);
 
             // Create the IVsAdapter and pick reasonable defaults here.  Consumers can modify 
             // this via an exposed property
             _vsAdapter = _factory.Create<IVsAdapter>();
             _vsAdapter.SetupGet(x => x.InAutomationFunction).Returns(false);
+            _vsAdapter.SetupGet(x => x.KeyboardDevice).Returns(_defaultKeyboardDevice);
             _vsAdapter.Setup(x => x.IsReadOnly(It.IsAny<ITextBuffer>())).Returns(false);
             _vsAdapter.Setup(x => x.IsIncrementalSearchActive(_wpfTextView)).Returns(false);
 
@@ -433,7 +435,6 @@ namespace VsVim.UnitTest.Utils
             keyProcessors.Add(new VsKeyProcessor(_vsAdapter.Object, bufferCoordinator));
             keyProcessors.Add(new SimulationKeyProcessor(bufferCoordinator.VimBuffer.TextView));
             _defaultInputController = new DefaultInputController(bufferCoordinator.VimBuffer.TextView, keyProcessors);
-            _defaultKeyboardDevice = new DefaultKeyboardDevice(InputManager.Current);
         }
 
         /// <summary>
@@ -472,9 +473,29 @@ namespace VsVim.UnitTest.Utils
         /// </summary>
         internal void Run(KeyInput keyInput)
         {
-            if (!RunInOleCommandTarget(keyInput))
+            try
             {
-                RunInWpf(keyInput);
+                // Update the KeyModifiers while this is being processed by our key processor
+                var keyModifiers = keyInput.KeyModifiers;
+
+                // The KeyInput for an upper letter doesn't have a Shift modifier.  However the 
+                // keyboard state which produced the letter will likely have it (not sure about 
+                // caps lock).  Need to simulate that here
+                if (Char.IsLetter(keyInput.Char) && Char.IsUpper(keyInput.Char))
+                {
+                    keyModifiers |= KeyModifiers.Shift;
+                }
+
+                _defaultKeyboardDevice.DownKeyModifiers = keyInput.KeyModifiers;
+
+                if (!RunInOleCommandTarget(keyInput))
+                {
+                    RunInWpf(keyInput);
+                }
+            }
+            finally
+            {
+                _defaultKeyboardDevice.DownKeyModifiers = KeyModifiers.None;
             }
         }
 
@@ -616,45 +637,35 @@ namespace VsVim.UnitTest.Utils
                 throw new Exception("Couldn't get the WPF key for the given KeyInput");
             }
 
-            // Update the KeyModifiers while this is being processed by our key processor
-            try
+            // First raise the KeyDown event
+            var keyDownEventArgs = new KeyEventArgs(
+                _defaultKeyboardDevice,
+                presentationSource.Object,
+                0,
+                key);
+            keyDownEventArgs.RoutedEvent = UIElement.KeyDownEvent;
+            _defaultInputController.HandleKeyDown(this, keyDownEventArgs);
+
+            // If the event is handled then return
+            if (keyDownEventArgs.Handled)
             {
-                _defaultKeyboardDevice.DownKeyModifiers = keyInput.KeyModifiers;
-
-                // First raise the KeyDown event
-                var keyDownEventArgs = new KeyEventArgs(
-                    _defaultKeyboardDevice,
-                    presentationSource.Object,
-                    0,
-                    key);
-                keyDownEventArgs.RoutedEvent = UIElement.KeyDownEvent;
-                _defaultInputController.HandleKeyDown(this, keyDownEventArgs);
-
-                // If the event is handled then return
-                if (keyDownEventArgs.Handled)
-                {
-                    return;
-                }
-
-                // Now raise the TextInput event
-                var textInputEventArgs = new TextCompositionEventArgs(
-                    _defaultKeyboardDevice,
-                    new TextComposition(InputManager.Current, _wpfTextView.VisualElement, keyInput.Char.ToString()));
-                textInputEventArgs.RoutedEvent = UIElement.TextInputEvent;
-                _defaultInputController.HandleTextInput(this, textInputEventArgs);
-
-                var keyUpEventArgs = new KeyEventArgs(
-                    _defaultKeyboardDevice,
-                    presentationSource.Object,
-                    0,
-                    key);
-                keyUpEventArgs.RoutedEvent = UIElement.KeyUpEvent;
-                _defaultInputController.HandleKeyUp(this, keyUpEventArgs);
+                return;
             }
-            finally
-            {
-                _defaultKeyboardDevice.DownKeyModifiers = KeyModifiers.None;
-            }
+
+            // Now raise the TextInput event
+            var textInputEventArgs = new TextCompositionEventArgs(
+                _defaultKeyboardDevice,
+                new TextComposition(InputManager.Current, _wpfTextView.VisualElement, keyInput.Char.ToString()));
+            textInputEventArgs.RoutedEvent = UIElement.TextInputEvent;
+            _defaultInputController.HandleTextInput(this, textInputEventArgs);
+
+            var keyUpEventArgs = new KeyEventArgs(
+                _defaultKeyboardDevice,
+                presentationSource.Object,
+                0,
+                key);
+            keyUpEventArgs.RoutedEvent = UIElement.KeyUpEvent;
+            _defaultInputController.HandleKeyUp(this, keyUpEventArgs);
         }
     }
 }

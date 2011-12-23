@@ -1,11 +1,12 @@
-﻿using Microsoft.VisualStudio.Text.Editor;
+﻿using EditorUtils.UnitTest;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
 using VsVim.Implementation;
 using VsVim.UnitTest.Utils;
-using EditorUtils.UnitTest;
 
 namespace VsVim.UnitTest
 {
@@ -16,6 +17,7 @@ namespace VsVim.UnitTest
     public sealed class VsIntegrationTest : VimTestBase
     {
         private VsSimulation _simulation;
+        private ITextBuffer _textBuffer;
         private ITextView _textView;
         private IVimBuffer _vimBuffer;
         private IVimBufferCoordinator _bufferCoordinator;
@@ -34,6 +36,7 @@ namespace VsVim.UnitTest
         private void Create(bool simulateResharper, params string[] lines)
         {
             _textView = CreateTextView(lines);
+            _textBuffer = _textView.TextBuffer;
             _vimBuffer = Vim.CreateVimBuffer(_textView);
             _bufferCoordinator = new VimBufferCoordinator(_vimBuffer);
             _simulation = new VsSimulation(_bufferCoordinator, simulateResharper, EditorOperationsFactoryService);
@@ -50,6 +53,36 @@ namespace VsVim.UnitTest
             _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _simulation.Run('x');
             Assert.AreEqual("xhello world", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// Make sure that S_RETURN will actually come across as such 
+        /// </summary>
+        [Test]
+        public void KeyMap_ShiftAndReturn()
+        {
+            Create("cat", "dog");
+            _vimBuffer.Process(":map <S-RETURN> o<Esc>", enter: true);
+            _simulation.Run(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Enter, KeyModifiers.Shift));
+            Assert.AreEqual(3, _textBuffer.CurrentSnapshot.LineCount);
+            Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("", _textBuffer.GetLine(1).GetText());
+            Assert.AreEqual("dog", _textBuffer.GetLine(2).GetText());
+        }
+
+        /// <summary>
+        /// Make sure that S_TAB will actually come across as such 
+        /// </summary>
+        [Test]
+        public void KeyMap_ShiftAndTab()
+        {
+            Create("cat", "dog");
+            _vimBuffer.Process(":map <S-TAB> o<Esc>", enter: true);
+            _simulation.Run(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Tab, KeyModifiers.Shift));
+            Assert.AreEqual(3, _textBuffer.CurrentSnapshot.LineCount);
+            Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("", _textBuffer.GetLine(1).GetText());
+            Assert.AreEqual("dog", _textBuffer.GetLine(2).GetText());
         }
 
         /// <summary>
@@ -103,6 +136,19 @@ namespace VsVim.UnitTest
         }
 
         /// <summary>
+        /// Make sure the Insert key correctly toggles to insert mode then replace
+        /// </summary>
+        [Test]
+        public void SwitchMode_InsertKey()
+        {
+            Create(false, "");
+            _simulation.Run(VimKey.Insert);
+            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+            _simulation.Run(VimKey.Insert);
+            Assert.AreEqual(ModeKind.Replace, _vimBuffer.ModeKind);
+        }
+
+        /// <summary>
         /// Make sure that we allow keys like down to make it directly to Insert mode when there is
         /// an active IWordCompletionSession
         /// </summary>
@@ -131,19 +177,6 @@ namespace VsVim.UnitTest
             _simulation.Run('s');
             Assert.AreEqual("cats dog", _textView.GetLine(0).GetText());
             Assert.IsTrue(_vimBuffer.InsertMode.ActiveWordCompletionSession.IsNone());
-        }
-
-        /// <summary>
-        /// Make sure the Insert key correctly toggles to insert mode then replace
-        /// </summary>
-        [Test]
-        public void SwitchMode_InsertKey()
-        {
-            Create(false, "");
-            _simulation.Run(VimKey.Insert);
-            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
-            _simulation.Run(VimKey.Insert);
-            Assert.AreEqual(ModeKind.Replace, _vimBuffer.ModeKind);
         }
     }
 }

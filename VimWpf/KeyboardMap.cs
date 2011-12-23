@@ -162,7 +162,7 @@ namespace Vim.UI.Wpf
             return !TrySpecialVimKeyToVirtualKey(vimKey, out virtualKey);
         }
 
-        private static KeyModifiers ConvertToKeyModifiers(ModifierKeys keys)
+        internal static KeyModifiers ConvertToKeyModifiers(ModifierKeys keys)
         {
             var res = KeyModifiers.None;
             if (0 != (keys & ModifierKeys.Shift))

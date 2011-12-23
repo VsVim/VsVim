@@ -20,6 +20,25 @@ namespace Vim.UnitTest
             CharsLettersUpper +
             CharsRest;
 
+        /// <summary>
+        /// Verify that we properly unify upper case character combinations.
+        /// </summary>
+        [Test]
+        public void ApplyModifiers_UpperCase()
+        {
+            var keyInput = KeyInputUtil.CharToKeyInput('A');
+            Assert.AreEqual(keyInput, KeyInputUtil.ApplyModifiers(KeyInputUtil.CharToKeyInput('a'), KeyModifiers.Shift));
+            Assert.AreEqual(keyInput, KeyInputUtil.ApplyModifiers(KeyInputUtil.CharToKeyInput('A'), KeyModifiers.Shift));
+        }
+
+        [Test]
+        public void ApplyModifiers_ShiftToNonAlpha()
+        {
+            var keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.TabKey, KeyModifiers.Shift);
+            Assert.AreEqual(KeyModifiers.Shift, keyInput.KeyModifiers);
+            Assert.AreEqual(VimKey.Tab, keyInput.Key);
+        }
+
         [Test]
         public void CoreCharList1()
         {

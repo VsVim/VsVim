@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
+using System.Windows.Input;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
@@ -38,6 +39,11 @@ namespace VsVim.Implementation
         public bool InAutomationFunction
         {
             get { return VsShellUtilities.IsInAutomationFunction(_serviceProvider); }
+        }
+
+        public KeyboardDevice KeyboardDevice
+        {
+            get { return InputManager.Current.PrimaryKeyboardDevice; }
         }
 
         public IServiceProvider ServiceProvider

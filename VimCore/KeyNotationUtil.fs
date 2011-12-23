@@ -133,7 +133,7 @@ module KeyNotationUtil =
                 | None -> 
                     // Easiest case of #3.  Treat them all as separate entries
                     inner rest.Tail (fun next -> withData ("<" :: next))
-                | Some (closeIndex) ->
+                | Some closeIndex ->
                     let isModifier = rest.Length >= 3 && List.nth rest 2 = '-'
                     let processGroup() = 
                         let length = closeIndex + 1
@@ -174,37 +174,23 @@ module KeyNotationUtil =
 
         inner (data |> List.ofSeq) (fun all -> all)
 
-    let TryStringToKeyInput (data:string) = 
+    let TryStringToKeyInput (data : string) = 
 
         // Convert the string into a keyinput 
         let convertToRaw data =
             let comparableData = ComparableString.CreateOrdinalIgnoreCase data
             match Map.tryFind comparableData SpecialKeyMap with
-            | Some(ki) -> Some ki
+            | Some keyInput -> Some keyInput
             | None -> 
                 if StringUtil.length data = 1 then KeyInputUtil.CharToKeyInput data.[0] |> Some
                 else None
 
         // Convert and then apply the modifier
         let convertAndApply data modifier = 
-            let ki = convertToRaw data 
-            match ki with 
+            let keyInput = convertToRaw data 
+            match keyInput with 
             | None -> None
-            | Some(ki) -> 
-                if modifier = KeyModifiers.None then
-                    Some ki
-                elif Util.IsFlagSet modifier KeyModifiers.Shift && CharUtil.IsLetter ki.Char then
-                    let other = Util.UnsetFlag modifier KeyModifiers.Shift
-                    let ki = 
-                        if CharUtil.IsLower ki.Char then
-                            // The shift modifier should promote a letter into the upper form 
-                            ki.Char |> CharUtil.ToUpper |> KeyInputUtil.CharToKeyInput 
-                        else
-                            // Ignore the shift modifier on an upper letter
-                            ki
-                    KeyInputUtil.ChangeKeyModifiers ki other |> Some
-                else
-                    KeyInputUtil.ChangeKeyModifiers ki modifier |> Some
+            | Some keyInput -> KeyInputUtil.ApplyModifiers keyInput modifier |> Some
 
         // Inside the <
         let rec insideLessThanGreaterThan data index modifier = 

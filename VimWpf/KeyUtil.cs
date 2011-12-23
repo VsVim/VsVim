@@ -17,6 +17,11 @@ namespace Vim.UI.Wpf
             return _keyboardMap;
         }
 
+        public static KeyModifiers ConvertToKeyModifiers(ModifierKeys keys)
+        {
+            return KeyboardMap.ConvertToKeyModifiers(keys);
+        }
+
         /// <summary>
         /// Is this the AltGr key combination.  This is not directly representable in WPF
         /// logic but the best that can be done is to check for Alt + Control

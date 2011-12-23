@@ -8,27 +8,18 @@ namespace VsVim
 {
     internal static class OleCommandUtil
     {
-        internal static bool TryConvert(Guid commandGroup, uint commandId, out EditCommand command)
+        internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr pVariableIn, KeyModifiers modifiers, out EditCommand command)
         {
-            return TryConvert(commandGroup, commandId, IntPtr.Zero, out command);
-        }
-
-        internal static bool TryConvert(Guid commandGroup, uint commandId, out KeyInput ki, out EditCommandKind kind)
-        {
-            return TryConvert(commandGroup, commandId, IntPtr.Zero, out ki, out kind);
-        }
-
-        internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr pVariableIn, out EditCommand command)
-        {
-            KeyInput ki;
+            KeyInput keyInput;
             EditCommandKind kind;
-            if (!TryConvert(commandGroup, commandId, pVariableIn, out ki, out kind))
+            if (!TryConvert(commandGroup, commandId, pVariableIn, out keyInput, out kind))
             {
                 command = null;
                 return false;
             }
 
-            command = new EditCommand(ki, kind, commandGroup, commandId);
+            keyInput = KeyInputUtil.ApplyModifiers(keyInput, modifiers);
+            command = new EditCommand(keyInput, kind, commandGroup, commandId);
             return true;
         }
 
@@ -38,19 +29,19 @@ namespace VsVim
             return TryConvert(commandGroup, oleCommandData.CommandId, oleCommandData.VariantIn, out keyInput, out editCommandKind);
         }
 
-        internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr pVariableIn, out KeyInput ki, out EditCommandKind kind)
+        internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr variantIn, out KeyInput keyInput, out EditCommandKind kind)
         {
             if (VSConstants.GUID_VSStandardCommandSet97 == commandGroup)
             {
-                return TryConvert((VSConstants.VSStd97CmdID)commandId, pVariableIn, out ki, out kind);
+                return TryConvert((VSConstants.VSStd97CmdID)commandId, variantIn, out keyInput, out kind);
             }
 
             if (VSConstants.VSStd2K == commandGroup)
             {
-                return TryConvert((VSConstants.VSStd2KCmdID)commandId, pVariableIn, out ki, out kind);
+                return TryConvert((VSConstants.VSStd2KCmdID)commandId, variantIn, out keyInput, out kind);
             }
 
-            ki = null;
+            keyInput = null;
             kind = EditCommandKind.UserInput;
             return false;
         }

@@ -10,7 +10,8 @@ type KeyInput
     (
         _key:VimKey,
         _modKey:KeyModifiers, 
-        _literal:char option ) =
+        _literal:char option 
+    ) =
 
     static let _alternateEnterKeyInput = KeyInput(VimKey.LowerM, KeyModifiers.Control, Some 'm')
     static let _alternateEscapeKeyInput = KeyInput(VimKey.OpenBracket, KeyModifiers.Control, Some '[')
@@ -371,4 +372,39 @@ module KeyInputUtil =
     let GetAlternateTarget (ki : KeyInput) = 
         AlternateKeyInputPairList 
         |> List.tryPick (fun (target, alternate) -> if alternate = ki then Some target else None)
+
+    /// Apply the modifiers to the given KeyInput and determine the result.  This will
+    /// not necessarily return a KeyInput with the modifier set.  It attempts to unify 
+    /// certain ambiguous combinations.
+    let ApplyModifiers (keyInput : KeyInput) (modifiers : KeyModifiers) =
+        if modifiers = KeyModifiers.None then
+            keyInput
+        elif Util.IsFlagSet modifiers KeyModifiers.Shift && CharUtil.IsLetter keyInput.Char then
+
+            // The shift key and letters is ambiguous.  It can be represented equally well as 
+            // either of the following
+            //
+            //  - Lower case 'a' + shift
+            //  - Upper case 'a' with no shift
+            //
+            // Vim doesn't distinguish between these two and unifies internally.  This can be 
+            // demonstrated by playing with key mapping combinations (<S-A> and A).  It's 
+            // convenient to have upper 'A' as a stand alone VimKey hence we choose to represent
+            // that way and remove the shift modifier here
+            let modifiers = Util.UnsetFlag modifiers KeyModifiers.Shift
+            let keyInput = 
+                if CharUtil.IsLower keyInput.Char then
+
+                    // The shift modifier should promote a letter into the upper form 
+                    let c = CharUtil.ToUpper keyInput.Char
+                    let upperKeyInput = CharToKeyInput c 
+                    ChangeKeyModifiers upperKeyInput keyInput.KeyModifiers
+                else
+                    // Ignore the shift modifier on an upper letter
+                    keyInput
+
+            // Apply the remaining modifiers
+            ChangeKeyModifiers keyInput modifiers
+        else
+            ChangeKeyModifiers keyInput modifiers
 

@@ -78,6 +78,11 @@ module KeyInputUtil =
     /// The set of core characters as a seq
     val VimKeyCharList : char list
 
+    /// Apply the modifiers to the given KeyInput and determine the result.  This will
+    /// not necessarily return a KeyInput with the modifier set.  It attempts to unify 
+    /// certain ambiguous combinations.
+    val ApplyModifiers : keyInput : KeyInput -> modifiers : KeyModifiers -> KeyInput
+
     /// Try and convert the given char to a KeyInput value
     val CharToKeyInput : char -> KeyInput
 

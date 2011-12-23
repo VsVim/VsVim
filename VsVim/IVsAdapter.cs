@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Windows.Input;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
@@ -33,6 +34,11 @@ namespace VsVim
         /// Core Editor Adapter factory service
         /// </summary>
         IVsEditorAdaptersFactoryService EditorAdapter { get; }
+
+        /// <summary>
+        /// The KeyboardDevice currently in use
+        /// </summary>
+        KeyboardDevice KeyboardDevice { get; }
 
         /// <summary>
         /// Get the 

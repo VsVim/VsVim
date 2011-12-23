@@ -8,7 +8,7 @@ using VsVim.UnitTest.Utils;
 
 namespace VsVim.UnitTest
 {
-    [TestFixture()]
+    [TestFixture]
     public sealed class OleCommandUtilTest : VimTestBase
     {
         internal EditCommand ConvertTypeChar(char data)
@@ -16,7 +16,7 @@ namespace VsVim.UnitTest
             using (var ptr = CharPointer.Create(data))
             {
                 EditCommand command;
-                Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, ptr.IntPtr, out command));
+                Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, ptr.IntPtr, KeyModifiers.None, out command));
                 return command;
             }
         }
@@ -28,8 +28,13 @@ namespace VsVim.UnitTest
 
         private void VerifyConvert(VSConstants.VSStd2KCmdID cmd, KeyInput ki, EditCommandKind kind)
         {
+            VerifyConvert(cmd, KeyModifiers.None, ki, kind);
+        }
+
+        private void VerifyConvert(VSConstants.VSStd2KCmdID cmd, KeyModifiers modifiers, KeyInput ki, EditCommandKind kind)
+        {
             EditCommand command;
-            Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)cmd, out command));
+            Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)cmd, IntPtr.Zero, modifiers, out command));
             Assert.AreEqual(ki, command.KeyInput);
             Assert.AreEqual(kind, command.EditCommandKind);
         }
@@ -42,7 +47,7 @@ namespace VsVim.UnitTest
         private void VerifyConvert(VSConstants.VSStd97CmdID cmd, KeyInput ki, EditCommandKind kind)
         {
             EditCommand command;
-            Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)cmd, out command));
+            Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)cmd, IntPtr.Zero, KeyModifiers.None, out command));
             Assert.AreEqual(ki, command.KeyInput);
             Assert.AreEqual(kind, command.EditCommandKind);
         }
@@ -72,7 +77,7 @@ namespace VsVim.UnitTest
         public void TypeCharNoData()
         {
             EditCommand command;
-            Assert.IsFalse(OleCommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, IntPtr.Zero, out command));
+            Assert.IsFalse(OleCommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, IntPtr.Zero, KeyModifiers.None, out command));
         }
 
         // [Test, Description("Delete key"), Ignore]
@@ -116,9 +121,20 @@ namespace VsVim.UnitTest
         }
 
         [Test]
-        public void Tab1()
+        public void Tab()
         {
             VerifyConvert(VSConstants.VSStd2KCmdID.TAB, KeyInputUtil.TabKey, EditCommandKind.UserInput);
+        }
+
+        /// <summary>
+        /// Verify that the shift modifier is properly applied to a tab
+        /// </summary>
+        [Test]
+        public void Tab_WithShift()
+        {
+            var keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.TabKey, KeyModifiers.Shift);
+            Assert.AreEqual(keyInput.KeyModifiers, KeyModifiers.Shift);
+            VerifyConvert(VSConstants.VSStd2KCmdID.TAB, KeyModifiers.Shift, keyInput, EditCommandKind.UserInput);
         }
 
         [Test]
