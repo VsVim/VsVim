@@ -12,8 +12,8 @@ type internal MacroRecorder (_registerMap : IRegisterMap) =
     /// register.
     let mutable _recordKeyStroke = false
 
-    let _recordingStartedEvent = new Event<_>()
-    let _recordingStoppedEvent = new Event<_>()
+    let _recordingStartedEvent = StandardEvent<RecordRegisterEventArgs>()
+    let _recordingStoppedEvent = StandardEvent()
 
     member x.CurrentRecording = _recordData |> Option.map snd
 
@@ -32,7 +32,9 @@ type internal MacroRecorder (_registerMap : IRegisterMap) =
             else List.empty
         _recordData <- Some (register, list)
         _recordKeyStroke <- false
-        _recordingStartedEvent.Trigger (register, isAppend)
+        
+        let args = RecordRegisterEventArgs(register, isAppend)
+        _recordingStartedEvent.Trigger x args
 
     member x.StopRecording () = 
         Contract.Requires (Option.isSome _recordData)
@@ -55,7 +57,8 @@ type internal MacroRecorder (_registerMap : IRegisterMap) =
 
     /// Called whenever a KeyInput is processed.  Capture this if we are currently
     /// recording
-    member x.OnKeyInputProcessed (keyInput, _) =
+    member x.OnKeyInputProcessed (args : KeyInputProcessedEventArgs) =
+        let keyInput = args.KeyInput
         if not _recordKeyStroke then
             ()
         else

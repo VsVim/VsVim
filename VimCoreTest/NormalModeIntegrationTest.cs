@@ -592,9 +592,9 @@ namespace Vim.UnitTest
             _assertOnWarningMessage = false;
             _vimBuffer.LocalSettings.GlobalSettings.WrapScan = true;
             _vimBuffer.WarningMessage +=
-                (_, msg) =>
+                (_, args) =>
                 {
-                    Assert.AreEqual(Resources.Common_SearchForwardWrapped, msg);
+                    Assert.AreEqual(Resources.Common_SearchForwardWrapped, args.Message);
                     didHit = true;
                 };
             _vimBuffer.Process("/dog", enter: true);
@@ -2643,9 +2643,9 @@ namespace Vim.UnitTest
             Assert.AreEqual("fish", _textView.GetLine(2).GetText());
             var didHit = false;
             _vimBuffer.ErrorMessage +=
-                (sender, message) =>
+                (sender, args) =>
                 {
-                    Assert.AreEqual(Resources.Common_PatternNotFound("CAT"), message);
+                    Assert.AreEqual(Resources.Common_PatternNotFound("CAT"), args.Message);
                     didHit = true;
                 };
             _vimBuffer.Process("n");
@@ -2724,9 +2724,9 @@ namespace Vim.UnitTest
             _textView.MoveCaretToLine(1);
             _assertOnWarningMessage = false;
             _vimBuffer.WarningMessage +=
-                (_, msg) =>
+                (_, args) =>
                 {
-                    Assert.AreEqual(Resources.Common_SearchForwardWrapped, msg);
+                    Assert.AreEqual(Resources.Common_SearchForwardWrapped, args.Message);
                     didHit = true;
                 };
             _vimBuffer.Process("d/dog", enter: true);
@@ -2970,9 +2970,9 @@ namespace Vim.UnitTest
 
             var didSee = false;
             _vimBuffer.ErrorMessage +=
-                (sender, message) =>
+                (sender, args) =>
                 {
-                    Assert.AreEqual(Resources.Common_SearchHitBottomWithout(@"\<dog\>"), message);
+                    Assert.AreEqual(Resources.Common_SearchHitBottomWithout(@"\<dog\>"), args.Message);
                     didSee = true;
                 };
             _vimBuffer.Process("y*");
@@ -3064,9 +3064,9 @@ namespace Vim.UnitTest
             Create("dog", "cat", "dog", "fish");
             var didHit = false;
             _vimBuffer.WarningMessage +=
-                (_, msg) =>
+                (_, args) =>
                 {
-                    Assert.AreEqual(Resources.Common_SearchForwardWrapped, msg);
+                    Assert.AreEqual(Resources.Common_SearchForwardWrapped, args.Message);
                     didHit = true;
                 };
             _assertOnWarningMessage = false;
@@ -3091,9 +3091,9 @@ namespace Vim.UnitTest
 
             var didSee = false;
             _vimBuffer.ErrorMessage +=
-                (sender, message) =>
+                (sender, args) =>
                 {
-                    Assert.AreEqual(Resources.Common_PatternNotFound("bug"), message);
+                    Assert.AreEqual(Resources.Common_PatternNotFound("bug"), args.Message);
                     didSee = true;
                 };
             _vimBuffer.Process("y/bug", enter: true);
@@ -3181,9 +3181,9 @@ namespace Vim.UnitTest
             Create("cat", "dog", "fish");
             var didHit = false;
             _vimBuffer.WarningMessage +=
-                (_, msg) =>
+                (_, args) =>
                 {
-                    Assert.AreEqual(Resources.Common_SearchForwardWrapped, msg);
+                    Assert.AreEqual(Resources.Common_SearchForwardWrapped, args.Message);
                     didHit = true;
                 };
             _assertOnWarningMessage = false;

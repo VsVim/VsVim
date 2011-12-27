@@ -77,9 +77,10 @@ type internal NormalMode
             factory.CreateMacroEditCommands _runner _vimTextBuffer.Vim.MacroRecorder _eventHandlers
 
     /// Raised when a global setting is changed
-    member x.OnGlobalSettingsChanged (setting : Setting) = 
+    member x.OnGlobalSettingsChanged (args : SettingEventArgs) = 
         
         // If the 'tildeop' setting changes we need to update how we handle it
+        let setting = args.Setting
         if StringUtil.isEqual setting.Name GlobalSettingNames.TildeOpName && x.IsCommandRunnerPopulated then
             let name, command = x.GetTildeCommand()
             _runner.Remove name

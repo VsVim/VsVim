@@ -18,11 +18,11 @@ type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) as this =
     let _textBuffer = _vimBuffer.TextBuffer
     let _globalSettings = _vimBuffer.GlobalSettings
     let _eventHandlers = DisposableBag()
-    let _changed = new DelegateEvent<System.EventHandler>()
+    let _changed = StandardEvent()
     let mutable _searchSpan : ITrackingSpan option = None
 
     do 
-        let raiseChanged () = _changed.Trigger([| this; System.EventArgs.Empty |])
+        let raiseChanged () = _changed.Trigger this 
 
         let updateCurrentWithResult result = 
             _searchSpan <-
@@ -34,9 +34,9 @@ type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) as this =
         // the event.  The editor can and will call back into us synchronously and access a stale value
         // if we don't
         _search.CurrentSearchUpdated 
-        |> Observable.subscribe (fun result ->
+        |> Observable.subscribe (fun args ->
 
-            updateCurrentWithResult result
+            updateCurrentWithResult args.SearchResult
             raiseChanged())
         |> _eventHandlers.Add
 
@@ -65,7 +65,7 @@ type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) as this =
         // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
         // a derived type
         (_globalSettings :> IVimSettings).SettingChanged 
-        |> Observable.filter (fun args -> StringUtil.isEqual args.Name GlobalSettingNames.IncrementalSearchName)
+        |> Observable.filter (fun args -> StringUtil.isEqual args.Setting.Name GlobalSettingNames.IncrementalSearchName)
         |> Observable.subscribe (fun _ -> raiseChanged())
         |> _eventHandlers.Add
 
@@ -131,7 +131,7 @@ type HighlightSearchTaggerSource
     ) as this =
 
     let _textBuffer = _textView.TextBuffer
-    let _changed = new DelegateEvent<System.EventHandler>()
+    let _changed = StandardEvent()
     let _eventHandlers = DisposableBag()
 
     /// Users can temporarily disable highlight search with the ':noh' command.  This is true while 
@@ -146,8 +146,7 @@ type HighlightSearchTaggerSource
     let mutable _isVisible = true
 
     do 
-        let raiseChanged () = 
-            _changed.Trigger([| this; System.EventArgs.Empty |])
+        let raiseChanged () = _changed.Trigger this
 
         let resetDisabledAndRaiseAllChanged () =
             _oneTimeDisabled <- false
@@ -170,7 +169,7 @@ type HighlightSearchTaggerSource
         // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
         // a derived type
         (_globalSettings :> IVimSettings).SettingChanged 
-        |> Observable.filter (fun args -> StringUtil.isEqual args.Name GlobalSettingNames.HighlightSearchName)
+        |> Observable.filter (fun args -> StringUtil.isEqual args.Setting.Name GlobalSettingNames.HighlightSearchName)
         |> Observable.subscribe (fun _ -> resetDisabledAndRaiseAllChanged())
         |> _eventHandlers.Add
 
@@ -296,12 +295,12 @@ type SubstituteConfirmTaggerSource
         _mode : ISubstituteConfirmMode
     ) as this =
 
-    let _changed = new DelegateEvent<System.EventHandler>()
+    let _changed = StandardEvent()
     let _eventHandlers = DisposableBag()
     let mutable _currentMatch : SnapshotSpan option = None
 
     do 
-        let raiseChanged () = _changed.Trigger([| this; System.EventArgs.Empty |])
+        let raiseChanged () = _changed.Trigger this
 
         _mode.CurrentMatchChanged
         |> Observable.subscribe (fun data -> 

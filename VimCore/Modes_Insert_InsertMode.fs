@@ -50,7 +50,7 @@ type internal InsertMode
     let _textBuffer = _vimBuffer.TextBuffer
     let _globalSettings = _vimBuffer.GlobalSettings
     let _editorOperations = _operations.EditorOperations
-    let _commandRanEvent = Event<_>()
+    let _commandRanEvent = StandardEvent<CommandRunDataEventArgs>()
     let mutable _commandMap : Map<KeyInput, RawInsertCommand> = Map.empty
     let mutable _processDirectInsertCount = 0
     let _emptySessionData = {
@@ -165,7 +165,8 @@ type internal InsertMode
                 CommandBinding = CommandBinding.InsertBinding (KeyInputSet.Empty, CommandFlags.Repeatable ||| CommandFlags.InsertEdit, command)
                 Command = Command.InsertCommand command
                 CommandResult = CommandResult.Completed ModeSwitch.NoSwitch }
-            _commandRanEvent.Trigger data
+            let args = CommandRunDataEventArgs(data)
+            _commandRanEvent.Trigger x args
 
     /// Get the Span for the word we are trying to complete if there is one
     member x.GetWordCompletionSpan () =
@@ -477,7 +478,8 @@ type internal InsertMode
                 CommandBinding = CommandBinding.InsertBinding (keyInputSet, commandFlags, command)
                 Command = Command.InsertCommand command
                 CommandResult = result }
-            _commandRanEvent.Trigger data
+            let args = CommandRunDataEventArgs(data)
+            _commandRanEvent.Trigger x args
 
         ProcessResult.OfCommandResult result
 

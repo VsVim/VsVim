@@ -19,7 +19,7 @@ namespace Vim.UI.Wpf.Implementation
         private readonly IIntellisenseSessionStack _intellisenseSessionStack;
         private readonly ITrackingSpan _wordTrackingSpan;
         private bool _isDismissed;
-        private event FSharpHandler<EventArgs> _dismissed;
+        private event EventHandler _dismissed;
 
         internal WordCompletionSession(ITrackingSpan wordTrackingSpan, IIntellisenseSessionStack intellisenseSessionStack, ICompletionSession completionSession, CompletionSet wordCompletionSet)
         {
@@ -95,7 +95,7 @@ namespace Vim.UI.Wpf.Implementation
             get { return _isDismissed; }
         }
 
-        event FSharpHandler<EventArgs> IWordCompletionSession.Dismissed
+        event EventHandler IWordCompletionSession.Dismissed
         {
             add { _dismissed += value; }
             remove { _dismissed -= value; }

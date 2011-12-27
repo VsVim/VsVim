@@ -21,7 +21,7 @@ type internal VimTextBuffer
 
     let _vimHost = _vim.VimHost
     let _globalSettings = _localSettings.GlobalSettings
-    let _switchedModeEvent = new Event<_>()
+    let _switchedModeEvent = StandardEvent<SwitchModeKindEventArgs>()
     let mutable _modeKind = ModeKind.Normal
     let mutable _lastVisualSelection : ITrackingVisualSelection option = None
 
@@ -84,7 +84,9 @@ type internal VimTextBuffer
     /// Switch to the desired mode
     member x.SwitchMode modeKind modeArgument =
         _modeKind <- modeKind
-        _switchedModeEvent.Trigger (modeKind, modeArgument)
+
+        let args = SwitchModeKindEventArgs(modeKind, modeArgument)
+        _switchedModeEvent.Trigger x args
 
     interface IVimTextBuffer with
         member x.TextBuffer = _textBuffer

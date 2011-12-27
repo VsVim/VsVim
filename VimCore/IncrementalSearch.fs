@@ -36,9 +36,9 @@ type internal IncrementalSearch
     let _textView = _operations.TextView
     let _searchService = _vimBufferData.Vim.SearchService
     let mutable _data : IncrementalSearchData option = None
-    let _currentSearchUpdated = Event<SearchResult>()
-    let _currentSearchCompleted = Event<SearchResult>()
-    let _currentSearchCancelled = Event<SearchData>()
+    let _currentSearchUpdated = StandardEvent<SearchResultEventArgs>()
+    let _currentSearchCompleted = StandardEvent<SearchResultEventArgs>()
+    let _currentSearchCancelled = StandardEvent<SearchDataEventArgs>()
 
     member x.CurrentSearchData =
         match _data with
@@ -72,7 +72,7 @@ type internal IncrementalSearch
         _data <- Some data
 
         // Raise the event
-        _currentSearchUpdated.Trigger data.SearchResult
+        _currentSearchUpdated.Trigger x (SearchResultEventArgs(data.SearchResult))
 
         let historyClient = { 
             new IHistoryClient<IncrementalSearchData, SearchResult> with
@@ -115,7 +115,8 @@ type internal IncrementalSearch
             | SearchResult.Found (_, span, _) -> _operations.EnsurePointOnScreenAndTextExpanded span.Start
             | SearchResult.NotFound _ -> x.ResetView ()
 
-        _currentSearchUpdated.Trigger searchResult
+        let args = SearchResultEventArgs(searchResult)
+        _currentSearchUpdated.Trigger x args
         let data = { data with SearchResult = searchResult }
         _data <- Some data
         data
@@ -132,14 +133,14 @@ type internal IncrementalSearch
                 data
 
         _vimData.LastPatternData <- data.SearchData.PatternData
-        _currentSearchCompleted.Trigger data.SearchResult
+        _currentSearchCompleted.Trigger x (SearchResultEventArgs(data.SearchResult))
         _data <- None
         data.SearchResult
 
     /// Cancel the search.  Provide the last value searched for
     member x.Cancelled data =
         x.ResetView ()
-        _currentSearchCancelled.Trigger data
+        _currentSearchCancelled.Trigger x (SearchDataEventArgs(data))
         _data <- None
 
     interface IIncrementalSearch with

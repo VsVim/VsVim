@@ -576,10 +576,10 @@ namespace Vim.UnitTest
             var didSee = false;
             var command1 = VimUtil.CreateNormalBinding("c", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
             _runner.Add(command1);
-            _runner.CommandRan += (notUsed, tuple) =>
+            _runner.CommandRan += (notUsed, args) =>
                 {
-                    Assert.AreSame(command1, tuple.CommandBinding);
-                    Assert.IsTrue(tuple.CommandResult.IsCompleted);
+                    Assert.AreSame(command1, args.CommandRunData.CommandBinding);
+                    Assert.IsTrue(args.CommandRunData.CommandResult.IsCompleted);
                     didSee = true;
                 };
             _runner.Run('c');
@@ -593,9 +593,9 @@ namespace Vim.UnitTest
             var didSee = false;
             var command1 = VimUtil.CreateNormalBinding("c", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
             _runner.Add(command1);
-            _runner.CommandRan += (notUsed, tuple) =>
+            _runner.CommandRan += (notUsed, args) =>
                 {
-                    Assert.AreSame(command1, tuple.CommandBinding);
+                    Assert.AreSame(command1, args.CommandRunData.CommandBinding);
                     didSee = true;
                 };
             _runner.Run('2');

@@ -165,7 +165,7 @@ namespace Vim.UnitTest
         {
             Create("cat bat", "dag");
             var message = String.Empty;
-            _vimBuffer.StatusMessage += (_, e) => { message = e; };
+            _vimBuffer.StatusMessage += (_, e) => { message = e.Message; };
             RunCommand("s/a/b/p");
             Assert.AreEqual("cbt bat", message);
         }
@@ -176,7 +176,7 @@ namespace Vim.UnitTest
         {
             Create("cat bat", "dag");
             var message = String.Empty;
-            _vimBuffer.StatusMessage += (_, e) => { message = e; };
+            _vimBuffer.StatusMessage += (_, e) => { message = e.Message; };
             RunCommand("s/a/b/#");
             Assert.AreEqual("  1 cbt bat", message);
         }
@@ -187,7 +187,7 @@ namespace Vim.UnitTest
         {
             Create("cat bat", "dag");
             var message = String.Empty;
-            _vimBuffer.StatusMessage += (_, e) => { message = e; };
+            _vimBuffer.StatusMessage += (_, e) => { message = e.Message; };
             RunCommand("s/a/b/l");
             Assert.AreEqual("cbt bat$", message);
         }
@@ -250,9 +250,9 @@ namespace Vim.UnitTest
             var didHit = false;
             _vimBuffer.LocalSettings.GlobalSettings.WrapScan = false;
             _vimBuffer.ErrorMessage +=
-                (sender, message) =>
+                (sender, args) =>
                 {
-                    Assert.AreEqual(Resources.Common_SearchHitBottomWithout("cat"), message);
+                    Assert.AreEqual(Resources.Common_SearchHitBottomWithout("cat"), args.Message);
                     didHit = true;
                 };
             RunCommand("1,3/cat");
@@ -268,9 +268,9 @@ namespace Vim.UnitTest
             Create("cat", "dog", "cat", "fish");
             var didHit = false;
             _vimBuffer.ErrorMessage +=
-                (sender, message) =>
+                (sender, args) =>
                 {
-                    Assert.AreEqual(Resources.Common_PatternNotFound("pig"), message);
+                    Assert.AreEqual(Resources.Common_PatternNotFound("pig"), args.Message);
                     didHit = true;
                 };
             RunCommand("1,2/pig");

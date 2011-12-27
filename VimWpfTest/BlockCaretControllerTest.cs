@@ -178,7 +178,7 @@ namespace Vim.UI.Wpf.UnitTest
                 SettingValue.NewStringValue(""),
                 true);
             _settings.SetupGet(x => x.CaretOpacity).Returns(1);
-            _settings.Raise(x => x.SettingChanged += null, null, setting);
+            _settings.Raise(x => x.SettingChanged += null, null, new SettingEventArgs(setting));
             _caret.Verify();
         }
     }

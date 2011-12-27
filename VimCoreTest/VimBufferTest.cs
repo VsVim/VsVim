@@ -165,24 +165,24 @@ namespace Vim.UnitTest
             var processed = false;
             var end = false;
             _vimBuffer.KeyInputStart +=
-                (b, keyInput) =>
+                (b, args) =>
                 {
-                    Assert.AreEqual('l', keyInput.Char);
+                    Assert.AreEqual('l', args.KeyInput.Char);
                     Assert.IsFalse(processed || end);
                     start = true;
                 };
             _vimBuffer.KeyInputProcessed +=
-                (b, tuple) =>
+                (b, args) =>
                 {
-                    var keyInput = tuple.Item1;
+                    var keyInput = args.KeyInput;
                     Assert.AreEqual('l', keyInput.Char);
                     Assert.IsTrue(start && !end);
                     processed = true;
                 };
             _vimBuffer.KeyInputEnd +=
-                (b, keyInput) =>
+                (b, args) =>
                 {
-                    Assert.AreEqual('l', keyInput.Char);
+                    Assert.AreEqual('l', args.KeyInput.Char);
                     Assert.IsTrue(start && processed);
                     end = true;
                 };
@@ -204,16 +204,16 @@ namespace Vim.UnitTest
             var start = false;
             var end = false;
             _vimBuffer.KeyInputStart +=
-                (b, keyInput) =>
+                (b, args) =>
                 {
-                    Assert.AreEqual('l', keyInput.Char);
+                    Assert.AreEqual('l', args.KeyInput.Char);
                     Assert.IsTrue(!end);
                     start = true;
                 };
             _vimBuffer.KeyInputEnd +=
-                (b, keyInput) =>
+                (b, args) =>
                 {
-                    Assert.AreEqual('l', keyInput.Char);
+                    Assert.AreEqual('l', args.KeyInput.Char);
                     Assert.IsTrue(start);
                     end = true;
                 };
@@ -245,23 +245,23 @@ namespace Vim.UnitTest
             var end = false;
             var buffered = false;
             _vimBuffer.KeyInputStart +=
-                (b, keyInput) =>
+                (b, args) =>
                 {
-                    Assert.AreEqual('l', keyInput.Char);
+                    Assert.AreEqual('l', args.KeyInput.Char);
                     Assert.IsTrue(!buffered && !end);
                     start = true;
                 };
             _vimBuffer.KeyInputEnd +=
-                (b, keyInput) =>
+                (b, args) =>
                 {
-                    Assert.AreEqual('l', keyInput.Char);
+                    Assert.AreEqual('l', args.KeyInput.Char);
                     Assert.IsTrue(start && buffered);
                     end = true;
                 };
             _vimBuffer.KeyInputBuffered +=
-                (b, keyInput) =>
+                (b, args) =>
                 {
-                    Assert.AreEqual('l', keyInput.Char);
+                    Assert.AreEqual('l', args.KeyInput.Char);
                     Assert.IsTrue(start && !end);
                     buffered = true;
                 };
@@ -484,9 +484,9 @@ namespace Vim.UnitTest
             _keyMap.MapWithRemap("b", "a", KeyRemapMode.Normal);
             var didRun = false;
             _vimBuffer.ErrorMessage +=
-                (notUsed, msg) =>
+                (notUsed, args) =>
                 {
-                    Assert.AreEqual(Resources.Vim_RecursiveMapping, msg);
+                    Assert.AreEqual(Resources.Vim_RecursiveMapping, args.Message);
                     didRun = true;
                 };
             _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
@@ -707,9 +707,9 @@ namespace Vim.UnitTest
             _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             var ranProcessed = false;
             _vimBuffer.KeyInputProcessed +=
-                (unused, tuple) =>
+                (unused, args) =>
                 {
-                    Assert.AreEqual(KeyInputUtil.CharToKeyInput('a'), tuple.Item1);
+                    Assert.AreEqual(KeyInputUtil.CharToKeyInput('a'), args.KeyInput);
                     ranProcessed = true;
                 };
             _vimBuffer.SimulateProcessed(KeyInputUtil.CharToKeyInput('a'));

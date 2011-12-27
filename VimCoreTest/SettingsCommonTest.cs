@@ -168,8 +168,9 @@ namespace Vim.UnitTest
         {
             var settings = Create();
             var didRun = false;
-            settings.SettingChanged += (unused, setting) =>
+            settings.SettingChanged += (unused, args) =>
                 {
+                    var setting = args.Setting;
                     Assert.AreEqual(ToggleSettingName, setting.Name);
                     Assert.IsTrue(setting.AggregateValue.AsToggleValue().Item);
                     didRun = true;
@@ -183,8 +184,9 @@ namespace Vim.UnitTest
         {
             var settings = Create();
             var didRun = false;
-            settings.SettingChanged += (unused, setting) =>
+            settings.SettingChanged += (unused, args) =>
                 {
+                    var setting = args.Setting;
                     Assert.AreEqual(ToggleSettingName, setting.Name);
                     Assert.IsTrue(setting.AggregateValue.AsToggleValue().Item);
                     didRun = true;

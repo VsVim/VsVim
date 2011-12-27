@@ -35,7 +35,7 @@ type internal CommandRunner
         CommandFlags = None
     }
 
-    let _commandRanEvent = Event<_>()
+    let _commandRanEvent = StandardEvent<CommandRunDataEventArgs>()
     
     let mutable _commandMap : Map<KeyInputSet, CommandBinding> = Map.empty
 
@@ -311,7 +311,8 @@ type internal CommandRunner
                 x.ResetState()
                 let result = _commandUtil.RunCommand command
                 let data = { Command = command; CommandBinding = commandBinding; CommandResult = result }
-                _commandRanEvent.Trigger data
+                let args = CommandRunDataEventArgs(data)
+                _commandRanEvent.Trigger x args
                 BindResult.Complete data
             | BindResult.Cancelled ->
                 x.ResetState()

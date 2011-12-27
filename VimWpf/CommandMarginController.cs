@@ -224,29 +224,29 @@ namespace Vim.UI.Wpf
             }
         }
 
-        private void OnKeyInputStart(object sender, KeyInput input)
+        private void OnKeyInputStart(object sender, KeyInputEventArgs args)
         {
             _inKeyInputEvent = true;
         }
 
-        private void OnKeyInputEnd(object sender, KeyInput input)
+        private void OnKeyInputEnd(object sender, KeyInputEventArgs args)
         {
             KeyInputEventComplete();
         }
 
-        private void OnStatusMessage(object sender, string message)
+        private void OnStatusMessage(object sender, StringEventArgs args)
         {
-            MessageEvent(message);
+            MessageEvent(args.Message);
         }
 
-        private void OnErrorMessage(object sender, string message)
+        private void OnErrorMessage(object sender, StringEventArgs args)
         {
-            MessageEvent(message);
+            MessageEvent(args.Message);
         }
 
-        private void OnWarningMessage(object sender, string message)
+        private void OnWarningMessage(object sender, StringEventArgs args)
         {
-            MessageEvent(message);
+            MessageEvent(args.Message);
         }
 
         private void OnOptionsClicked(object sender, EventArgs e)
@@ -267,7 +267,7 @@ namespace Vim.UI.Wpf
             UpdateTextColor();
         }
 
-        private void OnRecordingStarted(object sender, Tuple<Register, bool> e)
+        private void OnRecordingStarted(object sender, RecordRegisterEventArgs args)
         {
             UpdateForRecordingChanged();
         }

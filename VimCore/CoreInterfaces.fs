@@ -126,7 +126,7 @@ type IWordCompletionSession =
 
     /// Raised when the session is dismissed
     [<CLIEvent>]
-    abstract Dismissed: IEvent<System.EventArgs>
+    abstract Dismissed: IDelegateEvent<System.EventHandler>
 
 /// Factory service for creating IWordCompletionSession instances
 type IWordCompletionSessionFactoryService = 
@@ -258,6 +258,11 @@ type PatternData = {
     /// The default search options when looking at a specific pattern
     static member DefaultSearchOptions = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderSmartCase
 
+type PatternDataEventArgs(_patternData : PatternData) =
+    inherit System.EventArgs()
+
+    member x.PatternData = _patternData
+
 type SearchData = {
 
     /// The pattern being searched for in the buffer
@@ -276,6 +281,11 @@ type SearchData = {
             Kind = SearchKind.OfPathAndWrap patternData.Path wrap
             Options = PatternData.DefaultSearchOptions
         }
+
+type SearchDataEventArgs(_searchData : SearchData) =
+    inherit System.EventArgs()
+
+    member x.SearchData = _searchData
 
 /// Result of an individual search
 [<RequireQualifiedAccess>]
@@ -296,6 +306,11 @@ type SearchResult =
         match x with 
         | SearchResult.Found (searchData, _, _) -> searchData
         | SearchResult.NotFound (searchData, _) -> searchData
+
+type SearchResultEventArgs(_searchResult : SearchResult) = 
+    inherit System.EventArgs()
+
+    member x.SearchResult = _searchResult
 
 /// Global information about searches within Vim.  
 ///
@@ -2198,6 +2213,11 @@ type CommandRunData = {
 
 }
 
+type CommandRunDataEventArgs(_commandRunData : CommandRunData) =
+    inherit System.EventArgs()
+
+    member x.CommandRunData = _commandRunData
+
 /// Responsible for binding key input to a Motion and MotionArgument tuple.  Does
 /// not actually run the motions
 type IMotionCapture =
@@ -2255,7 +2275,7 @@ type ICommandRunner =
 
     /// Raised when a command is successfully run
     [<CLIEvent>]
-    abstract CommandRan : IEvent<CommandRunData>
+    abstract CommandRan : IDelegateEvent<System.EventHandler<CommandRunDataEventArgs>>
 
 /// Manages the key map for Vim.  Responsible for handling all key remappings
 type IKeyMap =
@@ -2355,13 +2375,20 @@ type IIncrementalSearch =
     abstract Begin : Path -> BindData<SearchResult>
 
     [<CLIEvent>]
-    abstract CurrentSearchUpdated : IEvent<SearchResult>
+    abstract CurrentSearchUpdated : IDelegateEvent<System.EventHandler<SearchResultEventArgs>>
 
     [<CLIEvent>]
-    abstract CurrentSearchCompleted : IEvent<SearchResult>
+    abstract CurrentSearchCompleted : IDelegateEvent<System.EventHandler<SearchResultEventArgs>>
 
     [<CLIEvent>]
-    abstract CurrentSearchCancelled : IEvent<SearchData>
+    abstract CurrentSearchCancelled : IDelegateEvent<System.EventHandler<SearchDataEventArgs>>
+
+type RecordRegisterEventArgs(_register : Register, _isAppend : bool) =
+    inherit System.EventArgs()
+    
+    member x.Register = _register
+
+    member x.IsAppend = _isAppend
 
 /// Used to record macros in a Vim 
 type IMacroRecorder =
@@ -2382,11 +2409,11 @@ type IMacroRecorder =
     /// Raised when a macro recording is started.  Passes the Register where the recording
     /// will take place.  The bool is whether the record is an append or not
     [<CLIEvent>]
-    abstract RecordingStarted : IEvent<Register * bool>
+    abstract RecordingStarted : IDelegateEvent<System.EventHandler<RecordRegisterEventArgs>>
 
     /// Raised when a macro recording is completed.
     [<CLIEvent>]
-    abstract RecordingStopped : IEvent<System.EventArgs>
+    abstract RecordingStopped : IDelegateEvent<System.EventHandler>
 
 [<RequireQualifiedAccess>]
 type ProcessResult = 
@@ -2446,6 +2473,24 @@ type ProcessResult =
         match commandResult with
         | CommandResult.Completed modeSwitch -> Handled modeSwitch
         | CommandResult.Error -> Error
+
+type StringEventArgs(_message : string) =
+    inherit System.EventArgs()
+
+    member x.Message = _message
+
+type KeyInputEventArgs(_keyInput : KeyInput) = 
+    inherit System.EventArgs()
+
+    member x.KeyInput = _keyInput
+
+type KeyInputProcessedEventArgs(_keyInput : KeyInput, _processResult : ProcessResult) =
+    inherit System.EventArgs()
+
+    member x.KeyInput = _keyInput
+
+    member x.ProcessResult = _processResult
+    
 
 type SettingKind =
     | NumberKind
@@ -2547,6 +2592,11 @@ type NumberFormat =
     | Hex
     | Octal
 
+type SettingEventArgs(_setting : Setting) =
+    inherit System.EventArgs()
+
+    member x.Setting = _setting
+
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property
 /// names tend to have more familiar camel case names
@@ -2570,7 +2620,7 @@ type IVimSettings =
 
     /// Raised when a Setting changes
     [<CLIEvent>]
-    abstract SettingChanged : IEvent<Setting>
+    abstract SettingChanged : IDelegateEvent<System.EventHandler<SettingEventArgs>>
 
 and IVimGlobalSettings = 
 
@@ -2839,11 +2889,11 @@ type IVimData =
 
     /// Raised when the 'LastPatternData' value changes
     [<CLIEvent>]
-    abstract LastPatternDataChanged : IEvent<PatternData>
+    abstract LastPatternDataChanged : IDelegateEvent<System.EventHandler<PatternDataEventArgs>>
 
     /// Raised when highlight search is disabled one time via the :noh command
     [<CLIEvent>]
-    abstract HighlightSearchOneTimeDisabled : IEvent<unit>
+    abstract HighlightSearchOneTimeDisabled : IDelegateEvent<System.EventHandler>
 
 /// Core parts of an IVimBuffer.  Used for components which make up an IVimBuffer but
 /// need the same data provided by IVimBuffer.
@@ -2960,6 +3010,17 @@ and IVim =
     /// the IVimBuffer but instead just removes it's association with the given view
     abstract RemoveVimBuffer : ITextView -> bool
 
+and SwitchModeKindEventArgs
+    (
+        _modeKind : ModeKind,
+        _modeArgument : ModeArgument
+    ) =
+    inherit System.EventArgs()
+
+    member x.ModeKind = _modeKind
+
+    member x.ModeArgument = _modeArgument
+
 and SwitchModeEventArgs 
     (
         _previousMode : IMode option,
@@ -3043,7 +3104,7 @@ and IVimTextBuffer =
 
     /// Raised when the mode is switched.  Returns the old and new mode 
     [<CLIEvent>]
-    abstract SwitchedMode : IEvent<ModeKind * ModeArgument>
+    abstract SwitchedMode : IDelegateEvent<System.EventHandler<SwitchModeKindEventArgs>>
 
 /// Main interface for the Vim editor engine so to speak. 
 and IVimBuffer =
@@ -3205,7 +3266,7 @@ and IVimBuffer =
     
     /// Raised when the mode is switched.  Returns the old and new mode 
     [<CLIEvent>]
-    abstract SwitchedMode : IEvent<SwitchModeEventArgs>
+    abstract SwitchedMode : IDelegateEvent<System.EventHandler<SwitchModeEventArgs>>
 
     /// Raised when a key is processed.  This is raised when the KeyInput is actually
     /// processed by Vim not when it is received.  
@@ -3215,37 +3276,37 @@ and IVimBuffer =
     /// In this case the input is buffered until the second key is read and then the 
     /// inputs are processed
     [<CLIEvent>]
-    abstract KeyInputProcessed : IEvent<KeyInput * ProcessResult>
+    abstract KeyInputProcessed : IDelegateEvent<System.EventHandler<KeyInputProcessedEventArgs>>
 
     /// Raised when a KeyInput is received by the buffer
     [<CLIEvent>]
-    abstract KeyInputStart : IEvent<KeyInput>
+    abstract KeyInputStart : IDelegateEvent<System.EventHandler<KeyInputEventArgs>>
 
     /// Raised when a key is received but not immediately processed.  Occurs when a
     /// key remapping has more than one source key strokes
     [<CLIEvent>]
-    abstract KeyInputBuffered : IEvent<KeyInput>
+    abstract KeyInputBuffered : IDelegateEvent<System.EventHandler<KeyInputEventArgs>>
 
     /// Raised when a KeyInput is completed processing within the IVimBuffer.  This happens 
     /// if the KeyInput is buffered or processed
     [<CLIEvent>]
-    abstract KeyInputEnd : IEvent<KeyInput>
+    abstract KeyInputEnd : IDelegateEvent<System.EventHandler<KeyInputEventArgs>>
 
     /// Raised when a warning is encountered
     [<CLIEvent>]
-    abstract WarningMessage : IEvent<string>
+    abstract WarningMessage : IDelegateEvent<System.EventHandler<StringEventArgs>>
 
     /// Raised when an error is encountered
     [<CLIEvent>]
-    abstract ErrorMessage : IEvent<string>
+    abstract ErrorMessage : IDelegateEvent<System.EventHandler<StringEventArgs>>
 
     /// Raised when a status message is encountered
     [<CLIEvent>]
-    abstract StatusMessage : IEvent<string>
+    abstract StatusMessage : IDelegateEvent<System.EventHandler<StringEventArgs>>
 
     /// Raised when the IVimBuffer is being closed
     [<CLIEvent>]
-    abstract Closed : IEvent<System.EventArgs>
+    abstract Closed : IDelegateEvent<System.EventHandler>
 
     inherit IPropertyOwner
 
@@ -3310,7 +3371,7 @@ and IInsertMode =
 
     /// Raised when a command is successfully run
     [<CLIEvent>]
-    abstract CommandRan : IEvent<CommandRunData>
+    abstract CommandRan : IDelegateEvent<System.EventHandler<CommandRunDataEventArgs>>
 
     /// Custom process the given KeyInput value.  This is a hook for host components to custom
     /// process a KeyInput value.  The call back will be used to execute the custom processing

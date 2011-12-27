@@ -381,7 +381,8 @@ type internal ChangeTracker
         buffer.InsertMode.CommandRan |> Event.add handler
         buffer.ReplaceMode.CommandRan |> Event.add handler
 
-    member x.OnCommandRan (data : CommandRunData) = 
+    member x.OnCommandRan (args : CommandRunDataEventArgs) = 
+        let data = args.CommandRunData
         let command = data.CommandBinding
         if command.IsMovement || command.IsSpecial then
             // Movement and special commands don't participate in change tracking

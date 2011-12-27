@@ -106,7 +106,7 @@ namespace Vim.UnitTest
                 WordUtilFactory.GetWordUtil(_textView.TextBuffer),
                 _wordCompletionSessionFactoryService.Object);
             _mode = _modeRaw;
-            _mode.CommandRan += (sender, e) => { _lastCommandRan = e; };
+            _mode.CommandRan += (sender, e) => { _lastCommandRan = e.CommandRunData; };
         }
 
         private void SetupMoveCaretLeft()

@@ -32,6 +32,26 @@ and internal ToggleHandler<'T>
             _handler <- None
         | None -> ()
 
+type internal StandardEvent<'T when 'T :> System.EventArgs>() =
+
+    let _event = new DelegateEvent<System.EventHandler<'T>>()
+
+    member x.Publish = _event.Publish
+
+    member x.Trigger (sender : 'U) (args : 'T) = 
+        let argsArray = [| sender :> obj; args :> obj |]
+        _event.Trigger(argsArray)
+
+type internal StandardEvent() =
+
+    let _event = new DelegateEvent<System.EventHandler>()
+
+    member x.Publish = _event.Publish
+
+    member x.Trigger (sender : 'U) =
+        let argsArray = [| sender :> obj; System.EventArgs.Empty :> obj |]
+        _event.Trigger(argsArray)
+
 type internal DisposableBag() = 
     let mutable _toDispose : System.IDisposable list = List.empty
     member x.DisposeAll () = 

@@ -52,8 +52,8 @@ namespace Vim.UnitTest
             Create("hello");
             var runData1 = VimUtil.CreateCommandRunData(flags: CommandFlags.LinkedWithNextCommand | CommandFlags.Repeatable);
             var runData2 = VimUtil.CreateCommandRunData(flags: CommandFlags.Repeatable, command: Command.NewInsertCommand(InsertCommand.NewTextChange(TextChange.NewInsert("foo"))));
-            _runner.Raise(x => x.CommandRan += null, (object) null, runData1);
-            _runner.Raise(x => x.CommandRan += null, (object) null, runData2);
+            _runner.Raise(x => x.CommandRan += null, (object) null, new CommandRunDataEventArgs(runData1));
+            _runner.Raise(x => x.CommandRan += null, (object) null, new CommandRunDataEventArgs(runData2));
             var lastCommnad = _vimData.LastCommand;
             Assert.IsTrue(lastCommnad.IsSome(x => x.IsLinkedCommand));
         }
@@ -66,7 +66,7 @@ namespace Vim.UnitTest
         {
             Create("hello");
             var data = VimUtil.CreateCommandRunData(flags: CommandFlags.None);
-            _runner.Raise(x => x.CommandRan += null, (object) null, data);
+            _runner.Raise(x => x.CommandRan += null, (object) null, new CommandRunDataEventArgs(data));
             Assert.IsTrue(_vimData.LastCommand.IsNone());
         }
 
@@ -78,7 +78,7 @@ namespace Vim.UnitTest
         {
             Create("hello");
             var data = VimUtil.CreateCommandRunData(flags: CommandFlags.Repeatable);
-            _runner.Raise(x => x.CommandRan += null, (object) null, data);
+            _runner.Raise(x => x.CommandRan += null, (object) null, new CommandRunDataEventArgs(data));
             Assert.IsTrue(_vimData.LastCommand.IsSome(x => x.IsNormalCommand));
         }
 
@@ -90,7 +90,7 @@ namespace Vim.UnitTest
         {
             Create("hello");
             var data = VimUtil.CreateCommandRunData(flags: CommandFlags.Movement);
-            _runner.Raise(x => x.CommandRan += null, (object) null, data);
+            _runner.Raise(x => x.CommandRan += null, (object) null, new CommandRunDataEventArgs(data));
             Assert.IsTrue(_vimData.LastCommand.IsNone());
         }
 
@@ -102,7 +102,7 @@ namespace Vim.UnitTest
         {
             Create("hello");
             var data = VimUtil.CreateCommandRunData(flags: CommandFlags.Special);
-            _runner.Raise(x => x.CommandRan += null, (object) null, data);
+            _runner.Raise(x => x.CommandRan += null, (object) null, new CommandRunDataEventArgs(data));
             Assert.IsTrue(_vimData.LastCommand.IsNone());
         }
     }

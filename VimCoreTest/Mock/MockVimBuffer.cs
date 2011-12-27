@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
-using Microsoft.FSharp.Collections;
 
 namespace Vim.UnitTest.Mock
 {
@@ -185,7 +185,7 @@ namespace Vim.UnitTest.Mock
         {
             if (StatusMessage != null)
             {
-                StatusMessage(this, message);
+                StatusMessage(this, new StringEventArgs(message));
             }
         }
 
@@ -193,7 +193,7 @@ namespace Vim.UnitTest.Mock
         {
             if (ErrorMessage != null)
             {
-                ErrorMessage(this, message);
+                ErrorMessage(this, new StringEventArgs(message));
             }
         }
 
@@ -201,7 +201,7 @@ namespace Vim.UnitTest.Mock
         {
             if (KeyInputProcessed != null)
             {
-                KeyInputProcessed(this, Tuple.Create(ki, result));
+                KeyInputProcessed(this, new KeyInputProcessedEventArgs(ki, result));
             }
         }
 
@@ -209,7 +209,7 @@ namespace Vim.UnitTest.Mock
         {
             if (KeyInputStart != null)
             {
-                KeyInputStart(this, ki);
+                KeyInputStart(this, new KeyInputEventArgs(ki));
             }
         }
 
@@ -217,7 +217,7 @@ namespace Vim.UnitTest.Mock
         {
             if (KeyInputEnd != null)
             {
-                KeyInputEnd(this, ki);
+                KeyInputEnd(this, new KeyInputEventArgs(ki));
             }
         }
 
@@ -225,25 +225,25 @@ namespace Vim.UnitTest.Mock
         {
             if (KeyInputBuffered != null)
             {
-                KeyInputBuffered(this, ki);
+                KeyInputBuffered(this, new KeyInputEventArgs(ki));
             }
         }
 
-        public event Microsoft.FSharp.Control.FSharpHandler<string> StatusMessage;
+        public event EventHandler<StringEventArgs> StatusMessage;
 
-        public event Microsoft.FSharp.Control.FSharpHandler<string> ErrorMessage;
+        public event EventHandler<StringEventArgs> ErrorMessage;
 
-        public event Microsoft.FSharp.Control.FSharpHandler<Tuple<KeyInput, ProcessResult>> KeyInputProcessed;
+        public event EventHandler<KeyInputProcessedEventArgs> KeyInputProcessed;
 
-        public event Microsoft.FSharp.Control.FSharpHandler<KeyInput> KeyInputStart;
+        public event EventHandler<KeyInputEventArgs> KeyInputStart;
 
-        public event Microsoft.FSharp.Control.FSharpHandler<KeyInput> KeyInputEnd;
+        public event EventHandler<KeyInputEventArgs> KeyInputEnd;
 
-        public event Microsoft.FSharp.Control.FSharpHandler<KeyInput> KeyInputBuffered;
+        public event EventHandler<KeyInputEventArgs> KeyInputBuffered;
 
-        public event Microsoft.FSharp.Control.FSharpHandler<SwitchModeEventArgs> SwitchedMode;
+        public event EventHandler<SwitchModeEventArgs> SwitchedMode;
 
-        public event Microsoft.FSharp.Control.FSharpHandler<EventArgs> Closed;
+        public event EventHandler Closed;
 
 
         public IMode SwitchMode(ModeKind value, ModeArgument arg)
@@ -336,7 +336,7 @@ namespace Vim.UnitTest.Mock
         }
 
 #pragma warning disable 67
-        public event Microsoft.FSharp.Control.FSharpHandler<string> WarningMessage;
+        public event EventHandler<StringEventArgs> WarningMessage;
 #pragma warning restore 67
 
         public IUndoRedoOperations UndoRedoOperations

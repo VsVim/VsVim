@@ -59,9 +59,9 @@ type internal ModeMap() =
     let mutable _modeMap : Map<ModeKind, IMode> = Map.empty
     let mutable _mode : IMode option = None
     let mutable _previousMode : IMode option = None
-    let _modeSwitchedEvent = new Event<_>()
+    let _modeSwitchedEvent = StandardEvent<SwitchModeEventArgs>()
 
-    member x.SwitchedEvent = _modeSwitchedEvent.Publish
+    member x.SwitchedEvent = _modeSwitchedEvent
     member x.Mode = Option.get _mode
     member x.PreviousMode = _previousMode
     member x.Modes = _modeMap |> Map.toSeq |> Seq.map (fun (k,m) -> m)
@@ -88,7 +88,7 @@ type internal ModeMap() =
                     _previousMode <- Some prev
 
         mode.OnEnter arg
-        _modeSwitchedEvent.Trigger(SwitchModeEventArgs(prev, mode))
+        _modeSwitchedEvent.Trigger x (SwitchModeEventArgs(prev, mode))
         mode
     member x.GetMode kind = Map.find kind _modeMap
     member x.AddMode (mode : IMode) = 
@@ -127,20 +127,20 @@ type internal VimBuffer
     /// element
     let mutable _bufferedKeyInput : KeyInputSet option = None
 
-    let _keyInputProcessedEvent = new Event<_>()
-    let _keyInputStartEvent = new Event<_>()
-    let _keyInputEndEvent = new Event<_>()
-    let _keyInputBufferedEvent = new Event<_>()
-    let _errorMessageEvent = new Event<_>()
-    let _warningMessageEvent = new Event<_>()
-    let _statusMessageEvent = new Event<_>()
-    let _closedEvent = new Event<_>()
+    let _keyInputProcessedEvent = StandardEvent<KeyInputProcessedEventArgs>()
+    let _keyInputStartEvent = StandardEvent<KeyInputEventArgs>()
+    let _keyInputEndEvent = StandardEvent<KeyInputEventArgs>()
+    let _keyInputBufferedEvent = StandardEvent<KeyInputEventArgs>()
+    let _errorMessageEvent = StandardEvent<StringEventArgs>()
+    let _warningMessageEvent = StandardEvent<StringEventArgs>()
+    let _statusMessageEvent = StandardEvent<StringEventArgs>()
+    let _closedEvent = StandardEvent()
 
     do 
         // Listen for mode switches on the IVimTextBuffer instance.  We need to keep our 
         // Mode in sync with this value
         _vimTextBuffer.SwitchedMode
-        |> Observable.subscribe (fun (modeKind, modeArgument) -> this.OnVimTextBufferSwitchedMode modeKind modeArgument)
+        |> Observable.subscribe (fun args -> this.OnVimTextBufferSwitchedMode args.ModeKind args.ModeArgument)
         |> _bag.Add
 
         // Setup the initial uninitialized IMode value.  Note we don't want to change the 
@@ -364,14 +364,17 @@ type internal VimBuffer
                     result
             finally
                 _processingInputCount <- _processingInputCount - 1
-        _keyInputProcessedEvent.Trigger (keyInput, processResult)
+
+        let args = KeyInputProcessedEventArgs(keyInput, processResult)
+        _keyInputProcessedEvent.Trigger x args
         processResult
 
     /// Actually process the input key.  Raise the change event on an actual change
     member x.Process (keyInput : KeyInput) =
 
         // Raise the event that we received the key
-        _keyInputStartEvent.Trigger keyInput
+        let args = KeyInputEventArgs(keyInput)
+        _keyInputStartEvent.Trigger x args
 
         try
             let remapResult, keyInputSet = x.GetKeyInputMappingCore keyInput
@@ -387,7 +390,7 @@ type internal VimBuffer
                 keyInputSet.KeyInputs |> Seq.map x.ProcessCore |> SeqUtil.last
             | KeyMappingResult.NeedsMoreInput -> 
                 _bufferedKeyInput <- Some keyInputSet
-                _keyInputBufferedEvent.Trigger keyInput
+                _keyInputBufferedEvent.Trigger x args
                 ProcessResult.Handled ModeSwitch.NoSwitch
             | KeyMappingResult.Recursive ->
                 x.RaiseErrorMessage Resources.Vim_RecursiveMapping
@@ -395,7 +398,7 @@ type internal VimBuffer
             | KeyMappingResult.Mapped keyInputSet -> 
                 keyInputSet.KeyInputs |> Seq.map x.ProcessCore |> SeqUtil.last
         finally 
-            _keyInputEndEvent.Trigger keyInput
+            _keyInputEndEvent.Trigger x args
 
     /// Process all of the buffered KeyInput values 
     member x.ProcessBufferedKeyInputs() = 
@@ -407,9 +410,17 @@ type internal VimBuffer
             keyInputs.KeyInputs
             |> Seq.iter (fun keyInput -> x.ProcessCore keyInput |> ignore)
 
-    member x.RaiseErrorMessage msg = _errorMessageEvent.Trigger msg
-    member x.RaiseWarningMessage msg = _warningMessageEvent.Trigger msg
-    member x.RaiseStatusMessage msg = _statusMessageEvent.Trigger msg
+    member x.RaiseErrorMessage msg = 
+        let args = StringEventArgs(msg)
+        _errorMessageEvent.Trigger x args
+
+    member x.RaiseWarningMessage msg = 
+        let args = StringEventArgs(msg)
+        _warningMessageEvent.Trigger x args
+
+    member x.RaiseStatusMessage msg = 
+        let args = StringEventArgs(msg)
+        _statusMessageEvent.Trigger x args
 
     /// Remove an IMode from the IVimBuffer instance
     member x.RemoveMode mode = _modeMap.RemoveMode mode
@@ -445,9 +456,11 @@ type internal VimBuffer
         // buffered input with this action.
         _bufferedKeyInput <- None
 
-        _keyInputStartEvent.Trigger keyInput
-        _keyInputProcessedEvent.Trigger (keyInput, ProcessResult.Handled ModeSwitch.NoSwitch)
-        _keyInputEndEvent.Trigger keyInput
+        let keyInputEventArgs = KeyInputEventArgs(keyInput)
+        let keyInputProcessedEventArgs = KeyInputProcessedEventArgs(keyInput, ProcessResult.Handled ModeSwitch.NoSwitch)
+        _keyInputStartEvent.Trigger x keyInputEventArgs
+        _keyInputProcessedEvent.Trigger x keyInputProcessedEventArgs
+        _keyInputEndEvent.Trigger x keyInputEventArgs
 
     /// Toggle disabled mode for all active IVimBuffer instances
     member x.ToggleDisabledMode() = 
@@ -517,7 +530,7 @@ type internal VimBuffer
         member x.SimulateProcessed keyInput = x.SimulateProcessed keyInput
 
         [<CLIEvent>]
-        member x.SwitchedMode = _modeMap.SwitchedEvent
+        member x.SwitchedMode = _modeMap.SwitchedEvent.Publish
         [<CLIEvent>]
         member x.KeyInputProcessed = _keyInputProcessedEvent.Publish
         [<CLIEvent>]

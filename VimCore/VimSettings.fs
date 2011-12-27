@@ -19,7 +19,7 @@ type internal SettingsMap
         _isGlobal : bool
     ) =
 
-    let _settingChangedEvent = new Event<_>()
+    let _settingChangedEvent = StandardEvent<SettingEventArgs>()
 
     /// Create the settings off of the default map
     let mutable _settings =
@@ -35,7 +35,9 @@ type internal SettingsMap
     /// Replace a Setting with a new value
     member x.ReplaceSetting settingName setting = 
         _settings <- _settings |> Map.add settingName setting
-        _settingChangedEvent.Trigger setting
+
+        let args = SettingEventArgs(setting)
+        _settingChangedEvent.Trigger x args
 
     member x.TrySetValue settingNameOrAbbrev value =
 
@@ -53,7 +55,7 @@ type internal SettingsMap
             if doesValueMatchKind setting.Kind then
                 let setting = { setting with Value=value }
                 _settings <- _settings |> Map.add setting.Name setting
-                _settingChangedEvent.Trigger setting
+                _settingChangedEvent.Trigger x (SettingEventArgs(setting))
                 true
             else false
 
@@ -457,7 +459,7 @@ type internal EditorToSettingSynchronizer
             // Cast up to IVimSettings to avoid the F# bug of accessing a CLIEvent from 
             // a derived interface
             (localSettings :> IVimSettings).SettingChanged 
-            |> Observable.filter x.IsTrackedLocalSetting
+            |> Observable.filter (fun args -> x.IsTrackedLocalSetting args.Setting)
             |> Observable.subscribe (fun _ -> x.TrySyncLocalToEditor localSettings editorOptions)
             |> bag.Add
 

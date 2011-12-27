@@ -20,8 +20,8 @@ type internal VimData() =
     let mutable _lastCharSearch : (CharSearchKind * Path * char) option = None
     let mutable _lastMacroRun : char option = None
     let mutable _lastCommand : StoredCommand option = None
-    let _lastPatternDataChanged = Event<PatternData>()
-    let _highlightSearchOneTimeDisabled = Event<unit>()
+    let _lastPatternDataChanged = StandardEvent<PatternDataEventArgs>()
+    let _highlightSearchOneTimeDisabled = StandardEvent()
 
     interface IVimData with 
         member x.CurrentDirectory
@@ -45,7 +45,7 @@ type internal VimData() =
             with get () = _lastPatternData
             and set value = 
                 _lastPatternData <- value
-                _lastPatternDataChanged.Trigger value
+                _lastPatternDataChanged.Trigger x (PatternDataEventArgs(value))
         member x.PreviousCurrentDirectory = _previousCurrentDirecotry
         member x.LastCharSearch 
             with get () = _lastCharSearch
@@ -258,7 +258,7 @@ type internal Vim
         // a derived type
 
         (_globalSettings :> IVimSettings).SettingChanged 
-        |> Event.filter (fun args -> StringUtil.isEqual args.Name GlobalSettingNames.HistoryName)
+        |> Event.filter (fun args -> StringUtil.isEqual args.Setting.Name GlobalSettingNames.HistoryName)
         |> Event.add (fun _ -> 
             _vimData.SearchHistory.Limit <- _globalSettings.History
             _vimData.CommandHistory.Limit <- _globalSettings.History)

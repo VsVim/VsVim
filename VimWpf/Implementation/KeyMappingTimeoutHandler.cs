@@ -63,12 +63,12 @@ namespace Vim.UI.Wpf.Implementation
             /// When a KeyInput value is processed then it should stop the timer if it's
             /// currently running.  Actually processing a KeyInput means it wasn't buffered
             /// </summary>
-            private void OnKeyInputProcessed(object sender, Tuple<KeyInput, ProcessResult> tuple)
+            private void OnKeyInputProcessed(object sender, KeyInputProcessedEventArgs args)
             {
                 _timer.Stop();
             }
 
-            private void OnKeyInputBuffered(object sender, KeyInput keyInput)
+            private void OnKeyInputBuffered(object sender, KeyInputEventArgs args)
             {
                 try
                 {

@@ -29,9 +29,10 @@ namespace Vim.UI.Wpf
             buffer.WindowSettings.SettingChanged += (_, args) => OnSettingChanged(buffer, args);
         }
 
-        private void OnSettingChanged(IVimBuffer buffer, Setting args)
+        private void OnSettingChanged(IVimBuffer buffer, SettingEventArgs args)
         {
-            if (args.Name == WindowSettingNames.CursorLineName && buffer.TextView.Options != null)
+            var setting = args.Setting;
+            if (setting.Name == WindowSettingNames.CursorLineName && buffer.TextView.Options != null)
             {
                 buffer.TextView.Options.SetOptionValue(DefaultWpfViewOptions.EnableHighlightCurrentLineId, buffer.WindowSettings.CursorLine);
             }

@@ -29,8 +29,9 @@ namespace Vim.UI.Wpf
             UpdateCaretDisplay();
         }
 
-        private void OnSettingsChanged(object sender, Setting setting)
+        private void OnSettingsChanged(object sender, SettingEventArgs args)
         {
+            var setting = args.Setting;
             if (setting.Name == GlobalSettingNames.CaretOpacityName)
             {
                 UpdateCaretOpacity();

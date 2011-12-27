@@ -30,7 +30,7 @@ type internal SelectionTracker
         _textChangedHandler <- ToggleHandler.Create (_textView.TextBuffer.Changed) (fun (args:TextContentChangedEventArgs) -> this.OnTextChanged(args))
 
         _incrementalSearch.CurrentSearchUpdated
-        |> Observable.add (fun result -> _lastIncrementalSearchResult <- Some result)
+        |> Observable.add (fun args -> _lastIncrementalSearchResult <- Some args.SearchResult)
         
         _incrementalSearch.CurrentSearchCancelled
         |> Observable.add (fun _ -> _lastIncrementalSearchResult <- None)

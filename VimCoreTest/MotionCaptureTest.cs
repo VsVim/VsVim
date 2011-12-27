@@ -327,9 +327,9 @@ namespace Vim.UnitTest
         {
             _textView.SetText("cat dog");
             var didRun = false;
-            _incrementalSearch.CurrentSearchUpdated += (_, result) =>
+            _incrementalSearch.CurrentSearchUpdated += (_, args) =>
             {
-                Assert.IsTrue(SearchKind.ForwardWithWrap == result.SearchData.Kind);
+                Assert.IsTrue(SearchKind.ForwardWithWrap == args.SearchResult.SearchData.Kind);
                 didRun = true;
             };
             Process("/cat");
@@ -342,9 +342,9 @@ namespace Vim.UnitTest
             _textView.SetText("cat dog");
             _localSettings.GlobalSettings.WrapScan = false;
             var didRun = false;
-            _incrementalSearch.CurrentSearchUpdated += (_, result) =>
+            _incrementalSearch.CurrentSearchUpdated += (_, args) =>
             {
-                Assert.IsTrue(SearchKind.Forward == result.SearchData.Kind);
+                Assert.IsTrue(SearchKind.Forward == args.SearchResult.SearchData.Kind);
                 didRun = true;
             };
             Process("/cat");
@@ -356,9 +356,9 @@ namespace Vim.UnitTest
         {
             _textView.SetText("cat dog");
             var didRun = false;
-            _incrementalSearch.CurrentSearchUpdated += (_, result) =>
+            _incrementalSearch.CurrentSearchUpdated += (_, args) =>
             {
-                Assert.IsTrue(SearchKind.BackwardWithWrap == result.SearchData.Kind);
+                Assert.IsTrue(SearchKind.BackwardWithWrap == args.SearchResult.SearchData.Kind);
                 didRun = true;
             };
             Process("?cat");
@@ -371,9 +371,9 @@ namespace Vim.UnitTest
             _textView.SetText("cat dog");
             _localSettings.GlobalSettings.WrapScan = false;
             var didRun = false;
-            _incrementalSearch.CurrentSearchUpdated += (_, result) =>
+            _incrementalSearch.CurrentSearchUpdated += (_, args) =>
             {
-                Assert.IsTrue(SearchKind.Backward == result.SearchData.Kind);
+                Assert.IsTrue(SearchKind.Backward == args.SearchResult.SearchData.Kind);
                 didRun = true;
             };
             Process("?cat");

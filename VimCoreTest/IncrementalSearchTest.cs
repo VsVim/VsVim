@@ -114,10 +114,10 @@ namespace Vim.UnitTest
         {
             Create("foo");
             var didRun = false;
-            _search.CurrentSearchUpdated += (unused, result) =>
+            _search.CurrentSearchUpdated += (unused, args) =>
                 {
                     didRun = true;
-                    Assert.IsTrue(result.IsNotFound);
+                    Assert.IsTrue(args.SearchResult.IsNotFound);
                 };
             _search.Begin(Path.Forward);
             Assert.IsTrue(didRun);
@@ -134,10 +134,10 @@ namespace Vim.UnitTest
             var didRun = false;
             var bind = _search.Begin(Path.Forward);
             _search.CurrentSearchUpdated +=
-                (unused, result) =>
+                (unused, args) =>
                 {
-                    Assert.AreEqual("z", result.SearchData.Pattern);
-                    Assert.IsTrue(result.IsNotFound);
+                    Assert.AreEqual("z", args.SearchResult.SearchData.Pattern);
+                    Assert.IsTrue(args.SearchResult.IsNotFound);
                     didRun = true;
                 };
             bind.Run("z");
@@ -150,10 +150,10 @@ namespace Vim.UnitTest
             Create("cat foo bar");
             var didRun = false;
             _search.CurrentSearchCompleted +=
-                (unused, result) =>
+                (unused, args) =>
                 {
-                    Assert.AreEqual("foo", result.SearchData.Pattern);
-                    Assert.IsTrue(result.IsFound);
+                    Assert.AreEqual("foo", args.SearchResult.SearchData.Pattern);
+                    Assert.IsTrue(args.SearchResult.IsFound);
                     didRun = true;
                 };
 

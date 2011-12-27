@@ -148,7 +148,7 @@ namespace Vim.UI.Wpf.Implementation
             {
             }
 
-            event FSharpHandler<EventArgs> IWordCompletionSession.Dismissed
+            event EventHandler IWordCompletionSession.Dismissed
             {
                 add { }
                 remove { }
