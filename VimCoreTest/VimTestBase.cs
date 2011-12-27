@@ -98,6 +98,11 @@ namespace Vim.UnitTest
             _foldManagerFactory = CompositionContainer.GetExportedValue<IFoldManagerFactory>();
             _vimErrorDetector.Clear();
             _protectedOperations = new ProtectedOperations(_vimErrorDetector);
+
+            // One setting we do differ on for a default is 'timeout'.  We don't want them interferring
+            // with the reliability of tests.  The default is on but turn it off here to prevent any 
+            // problems
+            _vim.GlobalSettings.Timeout = false;
         }
 
         public override void  TearDownBase()

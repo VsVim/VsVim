@@ -137,6 +137,10 @@ type internal GlobalSettings() =
             (StartOfLineName, "sol", ToggleKind, ToggleValue(true))
             (TabStopName, "ts", NumberKind, NumberValue(8))
             (TildeOpName, "top", ToggleKind, ToggleValue(false))
+            (TimeoutName, "to", ToggleKind, ToggleValue(true))
+            (TimeoutExName, TimeoutExName, ToggleKind, ToggleValue(false))
+            (TimeoutLengthName, "tm", NumberKind, NumberValue(1000))
+            (TimeoutLengthExName, "ttm", NumberKind, NumberValue(-1))
             (UseEditorIndentName, UseEditorIndentName, ToggleKind, ToggleValue(true))
             (UseEditorSettingsName, UseEditorSettingsName, ToggleKind, ToggleValue(true))
             (VimRcName, VimRcName, StringKind, StringValue(System.String.Empty))
@@ -222,6 +226,18 @@ type internal GlobalSettings() =
         member x.TildeOp
             with get() = _map.GetBoolValue TildeOpName
             and set value = _map.TrySetValue TildeOpName (ToggleValue(value)) |> ignore
+        member x.Timeout
+            with get() = _map.GetBoolValue TimeoutName
+            and set value = _map.TrySetValue TimeoutName (ToggleValue(value)) |> ignore
+        member x.TimeoutEx
+            with get() = _map.GetBoolValue TimeoutExName
+            and set value = _map.TrySetValue TimeoutExName (ToggleValue(value)) |> ignore
+        member x.TimeoutLength
+            with get() = _map.GetNumberValue TimeoutLengthName
+            and set value = _map.TrySetValue TimeoutLengthName (NumberValue(value)) |> ignore
+        member x.TimeoutLengthEx
+            with get() = _map.GetNumberValue TimeoutLengthExName
+            and set value = _map.TrySetValue TimeoutLengthExName (NumberValue(value)) |> ignore
         member x.UseEditorIndent
             with get() = _map.GetBoolValue UseEditorIndentName
             and set value = _map.TrySetValue UseEditorIndentName (ToggleValue(value)) |> ignore

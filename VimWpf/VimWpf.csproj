@@ -93,6 +93,7 @@
     <Compile Include="Extensions.cs" />
     <Compile Include="CommandMarginController.cs" />
     <Compile Include="Implementation\ClipboardDevice.cs" />
+    <Compile Include="Implementation\KeyMappingTimeoutHandler.cs" />
     <Compile Include="Implementation\WordCompletionPresenterProvider.cs" />
     <Compile Include="Implementation\WordCompletionSessionFactoryService.cs" />
     <Compile Include="Implementation\DisplayWindowBroker.cs" />

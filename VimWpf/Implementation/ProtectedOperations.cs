@@ -119,5 +119,10 @@ namespace Vim.UI.Wpf.Implementation
         {
             return GetProtectedEventHandler(eventHandler);
         }
+
+        void IProtectedOperations.Report(Exception ex)
+        {
+            AlertAll(ex);
+        }
     }
 }

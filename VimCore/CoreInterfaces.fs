@@ -2513,6 +2513,10 @@ module GlobalSettingNames =
     let SmartCaseName = "smartcase"
     let StartOfLineName = "startofline"
     let TildeOpName = "tildeop"
+    let TimeoutExName = "ttimeout"
+    let TimeoutName = "timeout"
+    let TimeoutLengthName = "timeoutlen"
+    let TimeoutLengthExName = "ttimeoutlen"
     let UseEditorIndentName = "vsvim_useeditorindent"
     let UseEditorSettingsName = "vsvim_useeditorsettings"
     let VisualBellName = "visualbell"
@@ -2631,6 +2635,18 @@ and IVimGlobalSettings =
 
     /// Controls the behavior of ~ in normal mode
     abstract TildeOp : bool with get,set
+
+    /// Part of the control for key mapping and code timeout
+    abstract Timeout : bool with get, set
+
+    /// Part of the control for key mapping and code timeout
+    abstract TimeoutEx : bool with get, set
+
+    /// Timeout for a key mapping in milliseconds
+    abstract TimeoutLength : int with get, set
+
+    /// Timeout control for key mapping / code
+    abstract TimeoutLengthEx : int with get, set
 
     /// Holds the scroll offset value which is the number of lines to keep visible
     /// above the cursor after a move operation
@@ -3037,7 +3053,7 @@ and IVimBuffer =
 
     /// Buffered KeyInput list.  When a key remapping has multiple source elements the input 
     /// is buffered until it is completed or the ambiguity is removed.  
-    abstract BufferedRemapKeyInputs : KeyInput list
+    abstract BufferedKeyInputs : KeyInput list
 
     /// The current directory for this particular window
     abstract CurrentDirectory : string option with get, set
@@ -3155,6 +3171,9 @@ and IVimBuffer =
 
     /// Process the KeyInput and return whether or not the input was completely handled
     abstract Process : KeyInput -> ProcessResult
+
+    /// Process all of the buffered KeyInput values.
+    abstract ProcessBufferedKeyInputs : unit -> unit
 
     /// Can the passed in KeyInput be processed by the current state of IVimBuffer.  The
     /// provided KeyInput will participate in remapping based on the current mode

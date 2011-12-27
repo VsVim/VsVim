@@ -90,7 +90,7 @@ namespace VsVim
                 // If there is no mapping we still need to consider the case of buffered 
                 // KeyInput values.  If there are any buffered KeyInput values then we 
                 // have > 1 input values: the current and whatever is mapped
-                if (!_buffer.BufferedRemapKeyInputs.IsEmpty)
+                if (!_buffer.BufferedKeyInputs.IsEmpty)
                 {
                     mapped = null;
                     return false;

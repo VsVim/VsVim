@@ -414,10 +414,10 @@ namespace VsVim.UnitTest
             _vim.KeyMap.MapWithNoRemap("jj", "hello", KeyRemapMode.Insert);
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             RunExec('j');
-            Assert.IsFalse(_buffer.BufferedRemapKeyInputs.IsEmpty);
+            Assert.IsFalse(_buffer.BufferedKeyInputs.IsEmpty);
             RunExec('a');
             Assert.AreEqual("ja", _textView.GetLine(0).GetText());
-            Assert.IsTrue(_buffer.BufferedRemapKeyInputs.IsEmpty);
+            Assert.IsTrue(_buffer.BufferedKeyInputs.IsEmpty);
         }
 
         /// <summary>
@@ -430,10 +430,10 @@ namespace VsVim.UnitTest
             _vim.KeyMap.MapWithNoRemap("jj", "hello", KeyRemapMode.Insert);
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             RunExec('j');
-            Assert.IsFalse(_buffer.BufferedRemapKeyInputs.IsEmpty);
+            Assert.IsFalse(_buffer.BufferedKeyInputs.IsEmpty);
             RunExec('j');
             Assert.AreEqual("hello", _textView.GetLine(0).GetText());
-            Assert.IsTrue(_buffer.BufferedRemapKeyInputs.IsEmpty);
+            Assert.IsTrue(_buffer.BufferedKeyInputs.IsEmpty);
         }
 
         /// <summary>
@@ -447,11 +447,11 @@ namespace VsVim.UnitTest
             _vim.KeyMap.MapWithNoRemap("jj", "z", KeyRemapMode.Insert);
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             RunExec('j');
-            Assert.IsFalse(_buffer.BufferedRemapKeyInputs.IsEmpty);
+            Assert.IsFalse(_buffer.BufferedKeyInputs.IsEmpty);
             _nextTarget.SetupExec().Callback(() => _textView.SetText("hello")).Verifiable();
             RunExec('j');
             Assert.AreEqual("hello", _textView.GetLine(0).GetText());
-            Assert.IsTrue(_buffer.BufferedRemapKeyInputs.IsEmpty);
+            Assert.IsTrue(_buffer.BufferedKeyInputs.IsEmpty);
             _nextTarget.Verify();
         }
     }

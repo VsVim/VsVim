@@ -114,7 +114,7 @@ type internal VimBuffer
     let _statusUtil = _vimBufferData.StatusUtil
     let _properties = PropertyCollection()
     let _bag = DisposableBag()
-    let mutable _modeMap = ModeMap()
+    let _modeMap = ModeMap()
     let mutable _processingInputCount = 0
     let mutable _isClosed = false
 
@@ -125,7 +125,7 @@ type internal VimBuffer
 
     /// This is the buffered input when a remap request needs more than one 
     /// element
-    let mutable _remapInput : KeyInputSet option = None
+    let mutable _bufferedKeyInput : KeyInputSet option = None
 
     let _keyInputProcessedEvent = new Event<_>()
     let _keyInputStartEvent = new Event<_>()
@@ -150,10 +150,10 @@ type internal VimBuffer
         _modeMap.AddMode uninitializedMode
         _modeMap.SwitchMode ModeKind.Uninitialized ModeArgument.None |> ignore
 
-    member x.BufferedRemapKeyInputs =
-        match _remapInput with
+    member x.BufferedKeyInputs =
+        match _bufferedKeyInput with
         | None -> List.empty
-        | Some (keyInputSet) -> keyInputSet.KeyInputs
+        | Some keyInputSet -> keyInputSet.KeyInputs
 
     member x.InOneTimeCommand 
         with get() = _inOneTimeCommand
@@ -279,7 +279,7 @@ type internal VimBuffer
     /// Returns both the mapping of the KeyInput value and the set of inputs which were
     /// considered to get the mapping.  This does account for buffered KeyInput values
     member x.GetKeyInputMappingCore keyInput =
-        match _remapInput, x.KeyRemapMode with
+        match _bufferedKeyInput, x.KeyRemapMode with
         | Some buffered, Some remapMode -> 
             let keyInputSet = buffered.Add keyInput
             (_vim.KeyMap.GetKeyMapping keyInputSet remapMode), keyInputSet
@@ -302,71 +302,73 @@ type internal VimBuffer
         if x.Mode.ModeKind <> modeKind then
             _modeMap.SwitchMode modeKind modeArgument |> ignore
 
-    /// Actually process the input key.  Raise the change event on an actual change
-    member x.Process (keyInput : KeyInput) =
+    /// Process the single KeyInput value.  No mappings are considered here.  The KeyInput is 
+    /// simply processed directly
+    member x.ProcessCore (keyInput : KeyInput) =
 
-        // Actually process the given KeyInput value
-        let doProcess keyInput =
-            let processResult = 
-                _processingInputCount <- _processingInputCount + 1
-                try
-                    if keyInput = _vim.GlobalSettings.DisableAllCommand then
-                        x.ToggleDisabledMode()
-                    elif keyInput.Key = VimKey.Nop then
-                        // The <nop> key should have no affect
-                        ProcessResult.Handled ModeSwitch.NoSwitch
-                    else
-                        let result = x.Mode.Process keyInput
+        let processResult = 
+            _processingInputCount <- _processingInputCount + 1
+            try
+                if keyInput = _vim.GlobalSettings.DisableAllCommand then
+                    x.ToggleDisabledMode()
+                elif keyInput.Key = VimKey.Nop then
+                    // The <nop> key should have no affect
+                    ProcessResult.Handled ModeSwitch.NoSwitch
+                else
+                    let result = x.Mode.Process keyInput
 
-                        // Certain types of commands can always cause the current mode to be exited for
-                        // the previous one time command mode.  Handle them here
-                        let maybeLeaveOneCommand() = 
+                    // Certain types of commands can always cause the current mode to be exited for
+                    // the previous one time command mode.  Handle them here
+                    let maybeLeaveOneCommand() = 
+                        match _inOneTimeCommand with
+                        | Some modeKind ->
+                            _inOneTimeCommand <- None
+                            x.SwitchMode modeKind ModeArgument.None |> ignore
+                        | None ->
+                            ()
+
+                    match result with
+                    | ProcessResult.Handled modeSwitch ->
+                        match modeSwitch with
+                        | ModeSwitch.NoSwitch -> 
+                            // A completed command ends one command mode for all modes but visual.  We
+                            // stay in Visual Mode until it actually exists.  Else the simplest movement
+                            // command like 'l' would cause it to exit immediately
+                            if not (VisualKind.IsAnyVisual x.Mode.ModeKind) then
+                                maybeLeaveOneCommand()
+                        | ModeSwitch.SwitchMode kind -> 
+                            // An explicit mode switch doesn't affect one command mode
+                            x.SwitchMode kind ModeArgument.None |> ignore
+                        | ModeSwitch.SwitchModeWithArgument (kind, argument) -> 
+                            // An explicit mode switch doesn't affect one command mode
+                            x.SwitchMode kind argument |> ignore
+                        | ModeSwitch.SwitchPreviousMode -> 
+                            // The previous mode is interpreted as Insert when we are in the middle
+                            // of a one command
                             match _inOneTimeCommand with
                             | Some modeKind ->
-                                _inOneTimeCommand <- None
+                                _inOneTimeCommand <-None
                                 x.SwitchMode modeKind ModeArgument.None |> ignore
                             | None ->
-                                ()
+                                x.SwitchPreviousMode() |> ignore
+                        | ModeSwitch.SwitchModeOneTimeCommand ->
+                            // Begins one command mode and immediately switches to the target mode
+                            _inOneTimeCommand <- Some x.Mode.ModeKind
+                            x.SwitchMode ModeKind.Normal ModeArgument.None |> ignore
+                    | ProcessResult.HandledNeedMoreInput ->
+                        ()
+                    | ProcessResult.NotHandled -> 
+                        maybeLeaveOneCommand()
+                    | ProcessResult.Error ->
+                        maybeLeaveOneCommand()
+                    result
+            finally
+                _processingInputCount <- _processingInputCount - 1
+        _keyInputProcessedEvent.Trigger (keyInput, processResult)
+        processResult
 
-                        match result with
-                        | ProcessResult.Handled modeSwitch ->
-                            match modeSwitch with
-                            | ModeSwitch.NoSwitch -> 
-                                // A completed command ends one command mode for all modes but visual.  We
-                                // stay in Visual Mode until it actually exists.  Else the simplest movement
-                                // command like 'l' would cause it to exit immediately
-                                if not (VisualKind.IsAnyVisual x.Mode.ModeKind) then
-                                    maybeLeaveOneCommand()
-                            | ModeSwitch.SwitchMode kind -> 
-                                // An explicit mode switch doesn't affect one command mode
-                                x.SwitchMode kind ModeArgument.None |> ignore
-                            | ModeSwitch.SwitchModeWithArgument (kind, argument) -> 
-                                // An explicit mode switch doesn't affect one command mode
-                                x.SwitchMode kind argument |> ignore
-                            | ModeSwitch.SwitchPreviousMode -> 
-                                // The previous mode is interpreted as Insert when we are in the middle
-                                // of a one command
-                                match _inOneTimeCommand with
-                                | Some modeKind ->
-                                    _inOneTimeCommand <-None
-                                    x.SwitchMode modeKind ModeArgument.None |> ignore
-                                | None ->
-                                    x.SwitchPreviousMode() |> ignore
-                            | ModeSwitch.SwitchModeOneTimeCommand ->
-                                // Begins one command mode and immediately switches to the target mode
-                                _inOneTimeCommand <- Some x.Mode.ModeKind
-                                x.SwitchMode ModeKind.Normal ModeArgument.None |> ignore
-                        | ProcessResult.HandledNeedMoreInput ->
-                            ()
-                        | ProcessResult.NotHandled -> 
-                            maybeLeaveOneCommand()
-                        | ProcessResult.Error ->
-                            maybeLeaveOneCommand()
-                        result
-                finally
-                    _processingInputCount <- _processingInputCount - 1
-            _keyInputProcessedEvent.Trigger (keyInput, processResult)
-            processResult
+    /// Actually process the input key.  Raise the change event on an actual change
+    member x.Process (keyInput : KeyInput) =
 
         // Raise the event that we received the key
         _keyInputStartEvent.Trigger keyInput
@@ -374,26 +376,36 @@ type internal VimBuffer
         try
             let remapResult, keyInputSet = x.GetKeyInputMappingCore keyInput
 
-            // Clear out the _remapInput at this point.  It will be reset if the mapping needs more 
+            // Clear out the _bufferedKeyInput at this point.  It will be reset if the mapping needs more 
             // data
-            _remapInput <- None
+            _bufferedKeyInput <- None
 
             match remapResult with
             | KeyMappingResult.NoMapping -> 
                 // No mapping so just process the KeyInput values.  Don't forget previously
                 // buffered values which are now known to not be a part of a mapping
-                keyInputSet.KeyInputs |> Seq.map doProcess |> SeqUtil.last
+                keyInputSet.KeyInputs |> Seq.map x.ProcessCore |> SeqUtil.last
             | KeyMappingResult.NeedsMoreInput -> 
-                _remapInput <- Some keyInputSet
+                _bufferedKeyInput <- Some keyInputSet
                 _keyInputBufferedEvent.Trigger keyInput
                 ProcessResult.Handled ModeSwitch.NoSwitch
             | KeyMappingResult.Recursive ->
                 x.RaiseErrorMessage Resources.Vim_RecursiveMapping
                 ProcessResult.Error
             | KeyMappingResult.Mapped keyInputSet -> 
-                keyInputSet.KeyInputs |> Seq.map doProcess |> SeqUtil.last
+                keyInputSet.KeyInputs |> Seq.map x.ProcessCore |> SeqUtil.last
         finally 
             _keyInputEndEvent.Trigger keyInput
+
+    /// Process all of the buffered KeyInput values 
+    member x.ProcessBufferedKeyInputs() = 
+        match _bufferedKeyInput with
+        | None -> ()
+        | Some keyInputs ->
+            _bufferedKeyInput <- None
+    
+            keyInputs.KeyInputs
+            |> Seq.iter (fun keyInput -> x.ProcessCore keyInput |> ignore)
 
     member x.RaiseErrorMessage msg = _errorMessageEvent.Trigger msg
     member x.RaiseWarningMessage msg = _warningMessageEvent.Trigger msg
@@ -431,7 +443,7 @@ type internal VimBuffer
         // values.  By calling this API the caller wants us to simulate a specific key was 
         // pressed and they action was handled by them.  We assume they accounted for any 
         // buffered input with this action.
-        _remapInput <- None
+        _bufferedKeyInput <- None
 
         _keyInputStartEvent.Trigger keyInput
         _keyInputProcessedEvent.Trigger (keyInput, ProcessResult.Handled ModeSwitch.NoSwitch)
@@ -466,7 +478,7 @@ type internal VimBuffer
         member x.TextBuffer = _textView.TextBuffer
         member x.TextSnapshot = _textView.TextSnapshot
         member x.UndoRedoOperations = _undoRedoOperations
-        member x.BufferedRemapKeyInputs = x.BufferedRemapKeyInputs 
+        member x.BufferedKeyInputs = x.BufferedKeyInputs 
         member x.IncrementalSearch = _incrementalSearch
         member x.InOneTimeCommand = x.InOneTimeCommand
         member x.IsClosed = _isClosed
@@ -499,6 +511,7 @@ type internal VimBuffer
         member x.GetMode kind = _modeMap.GetMode kind
         member x.GetRegister name = _vim.RegisterMap.GetRegister name
         member x.Process keyInput = x.Process keyInput
+        member x.ProcessBufferedKeyInputs() = x.ProcessBufferedKeyInputs()
         member x.SwitchMode kind arg = x.SwitchMode kind arg
         member x.SwitchPreviousMode() = x.SwitchPreviousMode()
         member x.SimulateProcessed keyInput = x.SimulateProcessed keyInput

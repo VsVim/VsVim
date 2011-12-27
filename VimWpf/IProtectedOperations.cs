@@ -36,5 +36,10 @@ namespace Vim.UI.Wpf
         /// handling system will be notified
         /// </summary>
         void BeginInvoke(Action action, DispatcherPriority dispatcherPriority);
+
+        /// <summary>
+        /// Report an Exception to the IExtensionErrorHandlers
+        /// </summary>
+        void Report(Exception ex);
     }
 }

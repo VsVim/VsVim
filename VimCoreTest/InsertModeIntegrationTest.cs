@@ -260,6 +260,20 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Spaces need to be allowed in the target mapping
+        /// </summary>
+        [Test]
+        [Ignore("Need to fix, noticed while testing out another bug")]
+        public void KeyRemap_SpacesInTarget()
+        {
+            Create("");
+            _vimBuffer.Process(VimKey.Escape);
+            _vimBuffer.Process(":imap cat hello world", enter: true);
+            _vimBuffer.Process("icat");
+            Assert.AreEqual("hello world", _textBuffer.GetLine(0).GetText());
+        }
+
+        /// <summary>
         /// Make sure executing the one time command correctly sets the buffer state
         /// </summary>
         [Test]

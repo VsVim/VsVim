@@ -389,6 +389,36 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Processing the buffered key inputs when there are none should have no effect
+        /// </summary>
+        [Test]
+        public void ProcessBufferedKeyInputs_Nothing()
+        {
+            var runCount = 0;
+            _vimBuffer.KeyInputProcessed += delegate { runCount++; };
+            _vimBuffer.ProcessBufferedKeyInputs();
+            Assert.AreEqual(0, runCount);
+        }
+
+        /// <summary>
+        /// Processing the buffered key inputs should raise the processed event 
+        /// </summary>
+        [Test]
+        public void ProcessBufferedKeyInputs_RaiseProcessed()
+        {
+            var runCount = 0;
+            _textView.SetText("");
+            _vimBuffer.Vim.KeyMap.MapWithNoRemap("cat", "chase the cat", KeyRemapMode.Insert);
+            _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _vimBuffer.KeyInputProcessed += delegate { runCount++; };
+            _vimBuffer.Process("ca");
+            Assert.AreEqual(0, runCount);
+            _vimBuffer.ProcessBufferedKeyInputs();
+            Assert.AreEqual(2, runCount);
+            Assert.AreEqual("ca", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
         /// Ensure the mode sees the mapped KeyInput value
         /// </summary>
         [Test]
@@ -475,7 +505,7 @@ namespace Vim.UnitTest
             _textView.SetText("cat dog", 0);
             _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             _vimBuffer.Process("d");
-            Assert.AreEqual('d', _vimBuffer.BufferedRemapKeyInputs.Head.Char);
+            Assert.AreEqual('d', _vimBuffer.BufferedKeyInputs.Head.Char);
             _vimBuffer.Process("w");
             Assert.AreEqual("dog", _textView.GetLine(0).GetText());
         }
@@ -524,7 +554,7 @@ namespace Vim.UnitTest
             // <F4> is not a valid command
             Assert.IsFalse(_vimBuffer.CanProcess(VimKey.F4));
             _vimBuffer.Process("l");
-            Assert.IsFalse(_vimBuffer.BufferedRemapKeyInputs.IsEmpty);
+            Assert.IsFalse(_vimBuffer.BufferedKeyInputs.IsEmpty);
 
             // Is is still not a valid command but when mapping is considered it will
             // expand to l<F4> and l is a valid command
@@ -697,9 +727,9 @@ namespace Vim.UnitTest
             _vimBuffer.Vim.KeyMap.MapWithNoRemap("jj", "b", KeyRemapMode.Normal);
             _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             _vimBuffer.Process('j');
-            Assert.IsFalse(_vimBuffer.BufferedRemapKeyInputs.IsEmpty);
+            Assert.IsFalse(_vimBuffer.BufferedKeyInputs.IsEmpty);
             _vimBuffer.SimulateProcessed(KeyInputUtil.CharToKeyInput('a'));
-            Assert.IsTrue(_vimBuffer.BufferedRemapKeyInputs.IsEmpty);
+            Assert.IsTrue(_vimBuffer.BufferedKeyInputs.IsEmpty);
         }
     }
 }

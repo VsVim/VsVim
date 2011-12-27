@@ -4,6 +4,7 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
+using Microsoft.FSharp.Collections;
 
 namespace Vim.UnitTest.Mock
 {
@@ -44,7 +45,7 @@ namespace Vim.UnitTest.Mock
             get { throw new NotImplementedException(); }
         }
 
-        public Microsoft.FSharp.Collections.FSharpList<KeyInput> BufferedRemapKeyInputs
+        public FSharpList<KeyInput> BufferedKeyInputs
         {
             get { throw new NotImplementedException(); }
         }
@@ -135,6 +136,11 @@ namespace Vim.UnitTest.Mock
         }
 
         public ProcessResult Process(KeyInput value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ProcessBufferedKeyInputs()
         {
             throw new NotImplementedException();
         }
