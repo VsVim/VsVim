@@ -634,14 +634,16 @@ namespace Vim.UnitTest
             Assert.AreEqual("   bar", _textBuffer.GetLineRange(1).GetText());
         }
 
+        /// <summary>
+        /// Blank lines should expand when shifting right
+        /// </summary>
         [Test]
-        [Description("Blank lines need to expand")]
-        public void ShiftLineRangeRight6()
+        public void ShiftLineRangeRight_ExpandBlank()
         {
-            Create("foo", "", "bar");
+            Create("foo", " ", "bar");
             _operations.ShiftLineRangeRight(3);
             Assert.AreEqual("  foo", _textBuffer.GetLineRange(0).GetText());
-            Assert.AreEqual("  ", _textBuffer.GetLineRange(1).GetText());
+            Assert.AreEqual("   ", _textBuffer.GetLineRange(1).GetText());
             Assert.AreEqual("  bar", _textBuffer.GetLineRange(2).GetText());
         }
 

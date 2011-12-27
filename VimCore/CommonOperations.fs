@@ -561,11 +561,15 @@ type internal CommonOperations
         range.Lines
         |> Seq.iter (fun line ->
 
-            // Get the span we are formatting within the line
-            let span = line.Extent
-            let ws, originalLength = x.GetAndNormalizeLeadingBlanksToSpaces span
-            let ws = x.NormalizeSpaces (ws + shiftText)
-            edit.Replace(line.Start.Position, originalLength, ws) |> ignore)
+            // Only shift lines if they are non-empty
+            if line.Length > 0 then
+
+                // Get the span we are formatting within the line
+                let span = line.Extent
+                let ws, originalLength = x.GetAndNormalizeLeadingBlanksToSpaces span
+                let ws = x.NormalizeSpaces (ws + shiftText)
+                edit.Replace(line.Start.Position, originalLength, ws) |> ignore)
+
         edit.Apply() |> ignore
 
     member x.Substitute pattern replace (range : SnapshotLineRange) flags = 

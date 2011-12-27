@@ -3215,6 +3215,41 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// The shift right of an empty line should not add any spaces
+        /// </summary>
+        [Test]
+        public void ShiftRight_EmptyLine()
+        {
+            Create("", "dog");
+            _vimBuffer.Process(">>");
+            Assert.AreEqual("", _textBuffer.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// The shift right of an empty line should not add any spaces
+        /// </summary>
+        [Test]
+        public void ShiftRight_IncludeEmptyLine()
+        {
+            Create("cat", "", "dog");
+            _vimBuffer.Process("3>>");
+            Assert.AreEqual("    cat", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("", _textBuffer.GetLine(1).GetText());
+            Assert.AreEqual("    dog", _textBuffer.GetLine(2).GetText());
+        }
+
+        /// <summary>
+        /// The shift right of a blank line should add spaces
+        /// </summary>
+        [Test]
+        public void ShiftRight_BlankLine()
+        {
+            Create(" ", "dog");
+            _vimBuffer.Process(">>");
+            Assert.AreEqual("     ", _textBuffer.GetLine(0).GetText());
+        }
+
+        /// <summary>
         /// Subtract a negative decimal number
         /// </summary>
         [Test]

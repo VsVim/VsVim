@@ -492,7 +492,7 @@ namespace Vim.UnitTest
             Create("");
             _localSettings.ExpandTab = true;
             ParseAndRun("set");
-            Assert.AreEqual("expandtab", _statusUtil.LastStatus);
+            Assert.AreEqual("notimeout" + Environment.NewLine + "expandtab", _statusUtil.LastStatus);
         }
 
         /// <summary>
