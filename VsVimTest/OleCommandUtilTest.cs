@@ -126,6 +126,12 @@ namespace VsVim.UnitTest
             VerifyConvert(VSConstants.VSStd2KCmdID.TAB, KeyInputUtil.TabKey, EditCommandKind.UserInput);
         }
 
+        [Test]
+        public void BackTab()
+        {
+            VerifyConvert(VSConstants.VSStd2KCmdID.BACKTAB, KeyInputUtil.ApplyModifiers(KeyInputUtil.TabKey, KeyModifiers.Shift), EditCommandKind.UserInput);
+        }
+
         /// <summary>
         /// Verify that the shift modifier is properly applied to a tab
         /// </summary>

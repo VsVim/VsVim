@@ -110,6 +110,10 @@ namespace VsVim
                     ki = KeyInputUtil.TabKey;
                     kind = EditCommandKind.UserInput;
                     break;
+                case VSConstants.VSStd2KCmdID.BACKTAB:
+                    ki = KeyInputUtil.ApplyModifiers(KeyInputUtil.TabKey, KeyModifiers.Shift);
+                    kind = EditCommandKind.UserInput;
+                    break;
                 case VSConstants.VSStd2KCmdID.PAGEDN:
                 case VSConstants.VSStd2KCmdID.PAGEDN_EXT:
                     ki = KeyInputUtil.VimKeyToKeyInput(VimKey.PageDown);
@@ -262,7 +266,7 @@ namespace VsVim
                     oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.RIGHT);
                     break;
                 case VimKey.Tab:
-                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.TAB);
+                    oleCommandData = new OleCommandData(keyInput.KeyModifiers == KeyModifiers.Shift ? VSConstants.VSStd2KCmdID.BACKTAB : VSConstants.VSStd2KCmdID.TAB);
                     break;
                 case VimKey.PageUp:
                     oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.PAGEUP);

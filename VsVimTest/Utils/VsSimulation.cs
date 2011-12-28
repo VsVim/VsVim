@@ -92,7 +92,9 @@ namespace VsVim.UnitTest.Utils
 
         /// <summary>
         /// Represents the end of the IOleCommandTarget chain.  This is where Visual Studio will 
-        /// actually modify the ITextBuffer in response to commands
+        /// actually modify the ITextBuffer in response to commands.
+        /// 
+        /// This mimics mainly the implementation VsTextViewAdapter InnerExec and InnerQueryStatus
         /// </summary>
         private sealed class DefaultCommandTarget : IOleCommandTarget
         {
@@ -110,14 +112,30 @@ namespace VsVim.UnitTest.Utils
             /// </summary>
             private bool TryExec(KeyInput keyInput)
             {
-                if (keyInput.Key == VimKey.Back)
+                switch (keyInput.Key)
                 {
-                    _editorOperatins.Backspace();
+                    case VimKey.Back:
+                        _editorOperatins.Backspace();
+                        return true;
+                    case VimKey.Tab:
+                        if (keyInput.KeyModifiers == KeyModifiers.Shift)
+                        {
+                            _editorOperatins.Unindent();
+                        }
+                        else
+                        {
+                            _editorOperatins.Indent();
+                        }
+                        return true;
+                }
+
+                if (Char.IsLetterOrDigit(keyInput.Char))
+                {
+                    _editorOperatins.InsertText(keyInput.Char.ToString());
                     return true;
                 }
 
-                _editorOperatins.InsertText(keyInput.Char.ToString());
-                return true;
+                return false;
             }
 
             int IOleCommandTarget.Exec(ref Guid commandGroup, uint cmdId, uint cmdExecOpt, IntPtr variantIn, IntPtr variantOut)
