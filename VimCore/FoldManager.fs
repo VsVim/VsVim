@@ -24,7 +24,7 @@ type internal FoldData
         _textBuffer : ITextBuffer
     ) =
 
-    let _updated = Event<System.EventArgs>()
+    let _foldsUpdated = StandardEvent()
     let mutable _folds : ITrackingSpan list = List.empty
 
     /// Get the SnapshotSpan values which represent folded regions in the ITextView which
@@ -47,7 +47,7 @@ type internal FoldData
             let trackingSpan = _textBuffer.CurrentSnapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeInclusive)
 
             _folds <- trackingSpan :: _folds
-            _updated.Trigger System.EventArgs.Empty
+            _foldsUpdated.Trigger x
 
     /// Delete the fold which corresponds to the given SnapshotPoint
     member x.DeleteFold (point:SnapshotPoint) = 
@@ -64,7 +64,7 @@ type internal FoldData
             | Some(_,tracking) -> 
                 _folds <- _folds |> Seq.ofList |> Seq.filter (fun t -> t <> tracking) |> List.ofSeq
                 true
-        _updated.Trigger System.EventArgs.Empty
+        _foldsUpdated.Trigger x
         ret
 
     /// Delete all folds which intersect the given SnapshotSpan
@@ -76,7 +76,7 @@ type internal FoldData
             |> Seq.filter (fun s -> not (span.IntersectsWith(s)))
             |> Seq.map (fun span -> _textBuffer.CurrentSnapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeInclusive))
             |> List.ofSeq
-        _updated.Trigger System.EventArgs.Empty
+        _foldsUpdated.Trigger x
 
     interface IFoldData with
         member x.TextBuffer = _textBuffer
@@ -85,7 +85,7 @@ type internal FoldData
         member x.DeleteFold point = x.DeleteFold point
         member x.DeleteAllFolds span = x.DeleteAllFolds span
         [<CLIEvent>]
-        member x.FoldsUpdated = _updated.Publish
+        member x.FoldsUpdated = _foldsUpdated.Publish
 
 type internal FoldManager 
     (

@@ -11,7 +11,7 @@ namespace Vim.UnitTest.Mock
 {
     public class MockVimHost : IVimHost
     {
-        private event FSharpHandler<ITextView> _isVisibleChanged;
+        private event EventHandler<TextViewEventArgs> _isVisibleChanged;
 
         public int BeepCount { get; set; }
         public int GoToDefinitionCount { get; set; }
@@ -42,7 +42,8 @@ namespace Vim.UnitTest.Mock
         {
             if (_isVisibleChanged != null)
             {
-                _isVisibleChanged(this, textView);
+                var args = new TextViewEventArgs(textView);
+                _isVisibleChanged(this, args);
             }
         }
 
@@ -210,7 +211,7 @@ namespace Vim.UnitTest.Mock
             return true;
         }
 
-        event FSharpHandler<ITextView> IVimHost.IsVisibleChanged
+        event EventHandler<TextViewEventArgs> IVimHost.IsVisibleChanged
         {
             add { _isVisibleChanged += value; }
             remove { _isVisibleChanged -= value; }

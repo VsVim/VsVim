@@ -35,7 +35,7 @@ namespace Vim.UnitTest
             _trackerRaw = new TextChangeTracker(_textView.Object, _operations.Object);
             _trackerRaw.Enabled = true;
             _tracker = _trackerRaw;
-            _tracker.ChangeCompleted += (sender, data) => { _lastChange = data; };
+            _tracker.ChangeCompleted += (sender, args) => { _lastChange = args.TextChange; };
         }
 
         [TearDown]

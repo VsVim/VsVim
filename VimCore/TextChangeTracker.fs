@@ -15,7 +15,7 @@ type internal TextChangeTracker
     ) as this =
 
     let _bag = DisposableBag()
-    let _changeCompletedEvent = Event<TextChange>()
+    let _changeCompletedEvent = StandardEvent<TextChangeEventArgs>()
 
     /// Tracks the current active text change.  This will grow as the user edits
     let mutable _currentTextChange : (TextChange * ITextChange) option = None
@@ -52,9 +52,10 @@ type internal TextChangeTracker
         match _currentTextChange with
         | None -> 
             ()
-        | Some (change,_) -> 
+        | Some (change, _) -> 
             _currentTextChange <- None
-            _changeCompletedEvent.Trigger change
+            let args = TextChangeEventArgs(change)
+            _changeCompletedEvent.Trigger x args
 
     /// Clear out the current change without completing it
     member x.ClearChange() =

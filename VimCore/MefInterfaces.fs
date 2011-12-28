@@ -148,7 +148,7 @@ type IFoldData =
 
     /// Raised when the collection of folds are updated for any reason
     [<CLIEvent>]
-    abstract FoldsUpdated: IEvent<System.EventArgs>
+    abstract FoldsUpdated: IDelegateEvent<System.EventHandler>
 
 /// Supports the creation and deletion of folds within a ITextBuffer
 ///
@@ -223,7 +223,7 @@ type ITextChangeTracker =
 
     /// Raised when a change is completed
     [<CLIEvent>]
-    abstract ChangeCompleted : IEvent<TextChange>
+    abstract ChangeCompleted : IDelegateEvent<System.EventHandler<TextChangeEventArgs>>
 
 /// Manages the ITextChangeTracker instances
 type ITextChangeTrackerFactory =

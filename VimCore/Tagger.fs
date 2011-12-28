@@ -174,7 +174,7 @@ type HighlightSearchTaggerSource
         |> _eventHandlers.Add
 
         _vimHost.IsVisibleChanged
-        |> Observable.filter (fun textView -> textView = _textView)
+        |> Observable.filter (fun args -> args.TextView = _textView)
         |> Observable.subscribe (fun _ -> 
             let isVisible = _vimHost.IsVisible _textView
             if _isVisible <> isVisible then

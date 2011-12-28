@@ -595,8 +595,9 @@ type internal InsertMode
     /// and instead is added to the CombinedEditCommand value for this session which will be 
     /// raised as a command at a later time
     /// Insert Command whenever it completes
-    member x.OnTextChangeCompleted textChange =
+    member x.OnTextChangeCompleted (args : TextChangeEventArgs) =
 
+        let textChange = args.TextChange
         let command = 
             let textChangeCommand = InsertCommand.TextChange textChange
             match _sessionData.CombinedEditCommand with

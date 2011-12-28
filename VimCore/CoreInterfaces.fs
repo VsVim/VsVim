@@ -234,6 +234,11 @@ type TextChange =
         let right = TextChange.Insert str
         TextChange.Combination (left, right)
 
+type TextChangeEventArgs(_textChange : TextChange) =
+    inherit System.EventArgs()
+
+    member x.TextChange = _textChange
+
 [<System.Flags>]
 type SearchOptions = 
     | None = 0x0

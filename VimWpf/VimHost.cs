@@ -19,7 +19,7 @@ namespace Vim.UI.Wpf
         private readonly ITextDocumentFactoryService _textDocumentFactoryService;
         private readonly IEditorOperationsFactoryService _editorOperationsFactoryService;
         private readonly List<ITextView> _textViewList = new List<ITextView>();
-        private event FSharpHandler<ITextView> _isVisibleChanged;
+        private event EventHandler<TextViewEventArgs> _isVisibleChanged;
 
         protected VimHost(
             ITextDocumentFactoryService textDocumentFactoryService,
@@ -223,7 +223,8 @@ namespace Vim.UI.Wpf
         {
             if (_isVisibleChanged != null)
             {
-                _isVisibleChanged(this, textView);
+                var args = new TextViewEventArgs(textView);
+                _isVisibleChanged(this, args);
             }
         }
 
@@ -396,7 +397,7 @@ namespace Vim.UI.Wpf
             return IsVisible(textView);
         }
 
-        event FSharpHandler<ITextView> IVimHost.IsVisibleChanged
+        event EventHandler<TextViewEventArgs> IVimHost.IsVisibleChanged
         {
             add { _isVisibleChanged += value; }
             remove { _isVisibleChanged -= value; }

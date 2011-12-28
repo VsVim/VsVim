@@ -5,6 +5,11 @@ open EditorUtils
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 
+type TextViewEventArgs(_textView : ITextView) =
+    inherit System.EventArgs()
+
+    member x.TextView = _textView
+
 [<RequireQualifiedAccess>]
 type HostResult =
     | Success
@@ -99,7 +104,7 @@ type IVimHost =
 
     /// Raised when the visibility of an ITextView changes
     [<CLIEvent>]
-    abstract IsVisibleChanged : IEvent<ITextView>
+    abstract IsVisibleChanged : IDelegateEvent<System.EventHandler<TextViewEventArgs>>
 
 module internal VimHostExtensions =
     type IVimHost with 
