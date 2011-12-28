@@ -16,10 +16,12 @@ namespace Vim.UnitTest
         private IVimBuffer _vimBuffer;
         private ITextView _textView;
         private MockVimHost _vimHost;
+        private string _lastStatus;
 
         public void Create(params string[] lines)
         {
             _vimBuffer = CreateVimBuffer(lines);
+            _vimBuffer.StatusMessage += (sender, args) => { _lastStatus = args.Message; };
             _textView = _vimBuffer.TextView;
             _vimHost = VimHost;
         }
@@ -125,6 +127,17 @@ namespace Vim.UnitTest
             var tss = _textView.TextSnapshot;
             var last = tss.GetLineFromLineNumber(tss.LineCount - 1);
             Assert.AreEqual(last.Start.Add(2), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Make sure that we don't crash or print anything when :map is run with no mappings
+        /// </summary>
+        [Test]
+        public void Map_NoMappings()
+        {
+            Create("");
+            RunCommand("map");
+            Assert.AreEqual("", _lastStatus);
         }
 
         [Test]
