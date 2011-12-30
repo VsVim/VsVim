@@ -1,7 +1,7 @@
 Welcome to VsVim
 ====
 
-All code in this project is covered under the MS-PL license a copy of which is available in the same directory under the name License.txt.
+All code in this project is covered under the Apache 2 license a copy of which is available in the same directory under the name License.txt.
 
 Building
 ===
@@ -15,5 +15,4 @@ Branching Structure
 ===
 
  - master: This is the branch used for the majority of feature development.  
- - release: Release staging branch.  All releases come from this branch
- - next: Used for very long lead features
+ - refactor: Used for longer term refactoring
