@@ -701,12 +701,16 @@ type VisualKind =
         | Line _ -> TextSelectionMode.Stream
         | Block _ -> TextSelectionMode.Box
 
+    static member All = [ Character; Line; Block ] |> Seq.ofList
+
     static member OfModeKind kind = 
         match kind with 
         | ModeKind.VisualBlock -> VisualKind.Block |> Some
         | ModeKind.VisualLine -> VisualKind.Line |> Some
         | ModeKind.VisualCharacter -> VisualKind.Character |> Some
         | _ -> None
+
+
     static member IsAnyVisual kind = VisualKind.OfModeKind kind |> Option.isSome
 
 /// The actual command name.  This is a wrapper over the collection of KeyInput 
@@ -1261,35 +1265,6 @@ type VisualSelection =
 
     with
 
-    /// Get the anchor point of the selection
-    ///
-    /// TODO: Do I need this?
-    member x.AnchorPoint = 
-        match x with 
-        | Character (characterSpan, path) ->
-            if path.IsPathForward then 
-                characterSpan.Start
-            else
-                characterSpan.End
-        | Line (lineSpan, path, _) ->
-            if path.IsPathForward then  
-                lineSpan.Start
-            else
-                lineSpan.EndIncludingLineBreak
-        | Block (blockSpan, blockCaretLocation) ->
-
-            let getSpanEnd (span : SnapshotSpan) =
-                if span.Length = 0 then
-                    span.End
-                else
-                    span.End.Subtract 1
-
-            match blockCaretLocation with
-            | BlockCaretLocation.TopLeft -> blockSpan.BlockSpans |> SeqUtil.last |> SnapshotSpanUtil.GetEndPoint
-            | BlockCaretLocation.TopRight -> blockSpan.BlockSpans |> SeqUtil.last |> SnapshotSpanUtil.GetStartPoint
-            | BlockCaretLocation.BottomLeft -> blockSpan.BlockSpans.Head.End
-            | BlockCaretLocation.BottomRight -> blockSpan.Start
-
     /// Gets the SnapshotPoint for the caret as it should appear in the given VisualSelection
     member x.CaretPoint = 
         match x with
@@ -1438,18 +1413,12 @@ type VisualSelection =
         let visualSpan = 
             let anchorPoint, activePoint = 
 
-                let adjust() = 
-                    if path.IsPathForward then
-                        let activePoint = SnapshotPointUtil.AddOneOrCurrent caretPoint
-                        anchorPoint, activePoint
-                    else
-                        let activePoint = SnapshotPointUtil.AddOneOrCurrent anchorPoint
-                        caretPoint, activePoint
-
-                match visualKind with
-                | VisualKind.Character -> adjust()
-                | VisualKind.Line -> anchorPoint, caretPoint
-                | VisualKind.Block -> adjust()
+                if path.IsPathForward then
+                    let activePoint = SnapshotPointUtil.AddOneOrCurrent caretPoint
+                    anchorPoint, activePoint
+                else
+                    let activePoint = SnapshotPointUtil.AddOneOrCurrent anchorPoint
+                    caretPoint, activePoint
 
             VisualSpan.CreateForAllPoints visualKind anchorPoint activePoint
         VisualSelection.Create visualSpan path caretPoint

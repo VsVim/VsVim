@@ -17,10 +17,10 @@ open System.Collections.Generic
 /// inside on
 type internal SelectionChangeTracker
     ( 
-        _buffer : IVimBuffer 
+        _vimBuffer : IVimBuffer 
     ) as this =
 
-    let _textView = _buffer.TextView
+    let _textView = _vimBuffer.TextView
     let _bag = DisposableBag()
 
     let mutable _syncingSelection = false
@@ -34,29 +34,29 @@ type internal SelectionChangeTracker
         |> Observable.subscribe (fun args -> this.OnSelectionChanged() )
         |> _bag.Add
 
-        _buffer.Closed
+        _vimBuffer.Closed
         |> Observable.subscribe (fun args -> this.OnBufferClosed() )
         |> _bag.Add
 
-        _buffer.KeyInputProcessed
+        _vimBuffer.KeyInputProcessed
         |> Observable.subscribe (fun args -> this.OnKeyInputFinished() )
         |> _bag.Add
 
-        _buffer.KeyInputBuffered
+        _vimBuffer.KeyInputBuffered
         |> Observable.subscribe (fun args -> this.OnKeyInputFinished() )
         |> _bag.Add
 
-    member x.IsAnyVisualMode = VisualKind.IsAnyVisual _buffer.ModeKind
+    member x.IsAnyVisualMode = VisualKind.IsAnyVisual _vimBuffer.ModeKind
 
     /// Raised when the selection changes.  
     member x.OnSelectionChanged() = 
         if _syncingSelection then
             // Ignore selection changes when we are explicitly updating it
             ()
-        elif _buffer.ModeKind = ModeKind.Disabled || _buffer.ModeKind = ModeKind.ExternalEdit then
+        elif _vimBuffer.ModeKind = ModeKind.Disabled || _vimBuffer.ModeKind = ModeKind.ExternalEdit then
             // If the selection changes while Vim is disabled then don't update
             () 
-        elif _buffer.IsProcessingInput then
+        elif _vimBuffer.IsProcessingInput then
             if x.IsAnyVisualMode then 
                 // Do nothing.  Selection changes that occur while processing input during
                 // visual mode are the responsibility of Visual Mode to handle. 
@@ -85,12 +85,12 @@ type internal SelectionChangeTracker
                     if x.IsAnyVisualMode then Some ModeKind.Normal
                     else None
                 elif _textView.Selection.Mode = TextSelectionMode.Stream then 
-                    if _buffer.ModeKind = ModeKind.VisualLine then Some ModeKind.VisualLine
+                    if _vimBuffer.ModeKind = ModeKind.VisualLine then Some ModeKind.VisualLine
                     else Some ModeKind.VisualCharacter 
                 else Some ModeKind.VisualBlock
             match inner with 
             | None -> None
-            | Some kind -> if kind <> _buffer.ModeKind then Some kind else None 
+            | Some kind -> if kind <> _vimBuffer.ModeKind then Some kind else None 
 
         // Update the selections.  This is called from a post callback to ensure we don't 
         // interfer with other selection + edit events
@@ -98,14 +98,14 @@ type internal SelectionChangeTracker
             if not  _selectionDirty then 
                 match desiredMode() with
                 | None -> ()
-                | Some modeKind -> _buffer.SwitchMode modeKind ModeArgument.None |> ignore
+                | Some modeKind -> _vimBuffer.SwitchMode modeKind ModeArgument.None |> ignore
 
         match desiredMode() with
         | None ->
             // No mode change is desired.  However the selection has changed and Visual Mode 
             // caches information about the original selection.  Update that information now
             if x.IsAnyVisualMode then
-                let mode = _buffer.Mode :?> IVisualMode
+                let mode = _vimBuffer.Mode :?> IVisualMode
 
                 try
                     _syncingSelection <- true

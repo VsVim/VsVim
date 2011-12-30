@@ -12,7 +12,7 @@ type internal VisualMode
         _vimBufferData : IVimBufferData,
         _operations : ICommonOperations,
         _motionUtil : IMotionUtil,
-        _kind : ModeKind,
+        _modeKind : ModeKind,
         _runner : ICommandRunner,
         _capture : IMotionCapture,
         _selectionTracker : ISelectionTracker
@@ -24,7 +24,7 @@ type internal VisualMode
     let _globalSettings = _vimTextBuffer.GlobalSettings
     let _eventHandlers = DisposableBag()
     let _operationKind, _visualKind = 
-        match _kind with
+        match _modeKind with
         | ModeKind.VisualBlock -> (OperationKind.CharacterWise, VisualKind.Block)
         | ModeKind.VisualCharacter -> (OperationKind.CharacterWise, VisualKind.Character)
         | ModeKind.VisualLine -> (OperationKind.LineWise, VisualKind.Line)
@@ -137,9 +137,7 @@ type internal VisualMode
             match modeArgument with
             | ModeArgument.InitialVisualSelection (visualSelection, caretPoint) ->
 
-                // TODO: I think this order is wrong
-                if visualSelection.ModeKind = _kind then
-
+                if visualSelection.ModeKind = _modeKind then
                     visualSelection.SelectAndMoveCaret _textView _vimTextBuffer.GlobalSettings.SelectionKind
                     caretPoint
                 else
@@ -281,7 +279,7 @@ type internal VisualMode
     interface IMode with
         member x.VimTextBuffer = _vimTextBuffer
         member x.CommandNames = x.CommandNames
-        member x.ModeKind = _kind
+        member x.ModeKind = _modeKind
         member x.CanProcess _ = true
         member x.Process keyInput =  x.Process keyInput
         member x.OnEnter modeArgument = x.OnEnter modeArgument

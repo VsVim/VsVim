@@ -215,7 +215,7 @@ namespace Vim.UnitTest
         /// Ensure that a backwards character span includes the caret point in the span
         /// </summary>
         [Test]
-        public void CreateForAllPoints_Character_Backwards()
+        public void CreateForPoints_Character_Backwards()
         {
             Create("cats dogs");
             var visualSelection = VisualSelection.CreateForPoints(VisualKind.Character, _textBuffer.GetPoint(3), _textBuffer.GetPoint(1));
@@ -226,7 +226,7 @@ namespace Vim.UnitTest
         /// Ensure that a backwards line span includes the entire line
         /// </summary>
         [Test]
-        public void CreateForAllPoints_Line_Backwards()
+        public void CreateForPoints_Line_Backwards()
         {
             Create("cats dogs");
             var visualSelection = VisualSelection.CreateForPoints(VisualKind.Line, _textBuffer.GetPoint(3), _textBuffer.GetPoint(1));
@@ -234,10 +234,23 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// When the caret is at the start of a line make sure that we include that line in the 
+        /// selection.  This is different than the activePoint which wouldn't cause the line to 
+        /// be included because it's past the selection
+        /// </summary>
+        [Test]
+        public void CreateForPoints_Line_CaretAtStart()
+        {
+            Create("cat", "dog", "bear");
+            var visualSpan = VisualSelection.CreateForPoints(VisualKind.Line, _textBuffer.GetPoint(0), caretPoint: _textBuffer.GetPointInLine(1, 0));
+            Assert.AreEqual(_textBuffer.GetLineRange(0, 1), visualSpan.AsLine().Item1);
+        }
+
+        /// <summary>
         /// Ensure that a backwards block span includes the entire line
         /// </summary>
         [Test]
-        public void CreateForAllPoints_Block_Backwards()
+        public void CreateForPoints_Block_Backwards()
         {
             Create("cats dogs");
             var visualSelection = VisualSelection.CreateForPoints(VisualKind.Block, _textBuffer.GetPoint(3), _textBuffer.GetPoint(1));

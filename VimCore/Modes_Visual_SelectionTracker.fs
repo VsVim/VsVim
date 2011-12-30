@@ -40,10 +40,6 @@ type internal SelectionTracker
     member x.IsRunning = Option.isSome _anchorPoint
 
     /// Call when selection tracking should begin.  
-    ///
-    /// TODO: Should make this have an argument.  It should be passed from visual mode
-    /// TODO: Should the selection tracker be doing this trick anymore?  Or more simply should
-    /// it call SwitchMode with an initial visual selection?
     member x.Start() = 
         if x.IsRunning then invalidOp Vim.Resources.SelectionTracker_AlreadyRunning
         _textChangedHandler.Add()

@@ -282,6 +282,39 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// When selection is exclusive there should still be a single column selected in block
+        /// mode even if the original width is 1
+        /// </summary>
+        [Test]
+        public void Select_Exclusive_OneWidthBlock()
+        {
+            Create("the dog", "the cat");
+            _textView.MoveCaretTo(1);
+            _globalSettings.Selection = "exclusive";
+            _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('q'));
+            _vimBuffer.Process('j');
+            var blockSpan = _textBuffer.GetBlockSpan(1, 1, 0, 2);
+            Assert.AreEqual(blockSpan, _textView.GetSelectionBlockSpan());
+            Assert.AreEqual(_textView.GetPointInLine(1, 1), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// When selection is exclusive block selection should shrink by one in width
+        /// </summary>
+        [Test]
+        public void Select_Exclusive_TwoWidthBlock()
+        {
+            Create("the dog", "the cat");
+            _textView.MoveCaretTo(1);
+            _globalSettings.Selection = "exclusive";
+            _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('q'));
+            _vimBuffer.Process("jl");
+            var blockSpan = _textBuffer.GetBlockSpan(1, 1, 0, 2);
+            Assert.AreEqual(blockSpan, _textView.GetSelectionBlockSpan());
+            Assert.AreEqual(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
         /// Make sure that LastVisualSelection is set to the SnapshotSpan before the shift right
         /// command is executed
         /// </summary>

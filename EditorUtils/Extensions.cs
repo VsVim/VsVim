@@ -77,15 +77,6 @@ namespace EditorUtils
 
         #endregion
 
-        #region ITextBuffer
-
-        public static SnapshotSpan GetSpan(this ITextBuffer textBuffer, int start, int length)
-        {
-            return textBuffer.CurrentSnapshot.GetSpan(start, length);
-        }
-
-        #endregion
-
         #region ITextView
 
         /// <summary>
