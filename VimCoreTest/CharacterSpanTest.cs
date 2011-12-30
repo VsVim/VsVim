@@ -2,6 +2,7 @@
 using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
+using Vim.Extensions;
 
 namespace Vim.UnitTest
 {
@@ -35,6 +36,29 @@ namespace Vim.UnitTest
             Create("cats", "dogs");
             var characterSpan = new CharacterSpan(_textBuffer.GetPoint(1), 2, 2);
             Assert.AreEqual("ats" + Environment.NewLine + "do", characterSpan.Span.GetText());
+        }
+
+        /// <summary>
+        /// The last point should be the last included point in the CharacterSpan
+        /// </summary>
+        [Test]
+        public void Last_Simple()
+        {
+            Create("cats", "dogs");
+            var characterSpan = CharacterSpan.CreateForSpan(_textBuffer.GetSpan(0, 3));
+            Assert.IsTrue(characterSpan.Last.IsSome());
+            Assert.AreEqual('t', characterSpan.Last.Value.GetChar());
+        }
+
+        /// <summary>
+        /// Zero length spans should have no Last value
+        /// </summary>
+        [Test]
+        public void Last_ZeroLength()
+        {
+            Create("cats", "dogs");
+            var characterSpan = CharacterSpan.CreateForSpan(_textBuffer.GetSpan(0, 0));
+            Assert.IsFalse(characterSpan.Last.IsSome());
         }
 
         /// <summary>

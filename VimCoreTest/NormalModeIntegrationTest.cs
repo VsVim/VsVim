@@ -3275,7 +3275,7 @@ namespace Vim.UnitTest
             _vimTextBuffer.LastVisualSelection = FSharpOption.Create(visualSelection);
             _vimBuffer.Process("gv");
             Assert.AreEqual(ModeKind.VisualLine, _vimBuffer.ModeKind);
-            Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Line));
+            Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Line, SelectionKind.Inclusive));
         }
 
         /// <summary>

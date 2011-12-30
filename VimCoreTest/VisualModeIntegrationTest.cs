@@ -67,7 +67,7 @@ namespace Vim.UnitTest
         private void EnterBlock(BlockSpan blockSpan)
         {
             var visualSpan = VisualSpan.NewBlock(blockSpan);
-            var visualSelection = VisualSelection.CreateForVisualSpan(visualSpan);
+            var visualSelection = VisualSelection.CreateForward(visualSpan);
             visualSelection.SelectAndMoveCaret(_textView);
             Assert.IsFalse(_context.IsEmpty);
             _context.RunAll();
@@ -901,7 +901,7 @@ namespace Vim.UnitTest
             EnterMode(ModeKind.VisualLine, span);
             _vimBuffer.Process('y');
             Assert.IsTrue(_vimTextBuffer.LastVisualSelection.IsSome());
-            Assert.AreEqual(span, _vimTextBuffer.LastVisualSelection.Value.EditSpan.OverarchingSpan);
+            Assert.AreEqual(span, _vimTextBuffer.LastVisualSelection.Value.GetEditSpan(SelectionKind.Inclusive).OverarchingSpan);
         }
 
         /// <summary>
@@ -926,10 +926,10 @@ namespace Vim.UnitTest
             Create("dogs", "cats");
 
             var visualSpan = VimUtil.CreateVisualSpanCharacter(_textBuffer.GetSpan(1, 2));
-            var visualSelection = VisualSelection.CreateForVisualSpan(visualSpan);
+            var visualSelection = VisualSelection.CreateForward(visualSpan);
             _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
             _context.RunAll();
-            Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Character));
+            Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive));
         }
 
         /// <summary>
@@ -944,7 +944,7 @@ namespace Vim.UnitTest
             var visualSelection = VisualSelection.NewLine(lineRange, Path.Forward, 1);
             _vimBuffer.SwitchMode(ModeKind.VisualLine, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
             _context.RunAll();
-            Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Line));
+            Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Line, SelectionKind.Inclusive));
         }
 
         /// <summary>
@@ -959,7 +959,7 @@ namespace Vim.UnitTest
             var visualSelection = VisualSelection.NewBlock(blockSpan, BlockCaretLocation.BottomLeft);
             _vimBuffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
             _context.RunAll();
-            Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Block));
+            Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Block, SelectionKind.Inclusive));
         }
     }
 }

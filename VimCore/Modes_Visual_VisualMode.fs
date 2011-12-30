@@ -21,6 +21,7 @@ type internal VisualMode
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
     let _textView = _vimBufferData.TextView
     let _textBuffer = _vimTextBuffer.TextBuffer
+    let _globalSettings = _vimTextBuffer.GlobalSettings
     let _eventHandlers = DisposableBag()
     let _operationKind, _visualKind = 
         match _kind with
@@ -139,7 +140,7 @@ type internal VisualMode
                 // TODO: I think this order is wrong
                 if visualSelection.ModeKind = _kind then
 
-                    visualSelection.SelectAndMoveCaret _textView
+                    visualSelection.SelectAndMoveCaret _textView _vimTextBuffer.GlobalSettings.SelectionKind
                     caretPoint
                 else
                     None
@@ -174,7 +175,7 @@ type internal VisualMode
         // Save the VisualSelection before executing the command.  Many commands which exit
         // visual mode such as 'y' change the selection during execution.  We want to restore
         // to the selection before the command executed so save it now
-        let lastVisualSelection = VisualSelection.CreateForSelection _textView _visualKind
+        let lastVisualSelection = VisualSelection.CreateForSelection _textView _visualKind _globalSettings.SelectionKind
 
         let result = 
             if ki = KeyInputUtil.EscapeKey && x.ShouldHandleEscape then
@@ -289,7 +290,7 @@ type internal VisualMode
 
     interface IVisualMode with
         member x.CommandRunner = _runner
-        member x.VisualSelection = VisualSelection.CreateForSelection _textView _visualKind
+        member x.VisualSelection = VisualSelection.CreateForSelection _textView _visualKind _globalSettings.SelectionKind
         member x.SyncSelection () = x.SyncSelection()
 
 

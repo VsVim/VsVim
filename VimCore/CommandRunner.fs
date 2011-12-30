@@ -49,8 +49,7 @@ type internal CommandRunner
     let mutable _inBind = false
 
     /// Try and get the VisualSpan for the provided kind
-    member x.GetVisualSpan kind = 
-        VisualSpan.Create _textView kind
+    member x.GetVisualSpan kind = VisualSpan.CreateForSelection _textView kind
 
     /// Used to wait for the character after the " which signals the Register.  When the register
     /// is found it will be passed to completeFunc

@@ -17,10 +17,13 @@ open System.Collections.Generic
 /// inside on
 type internal SelectionChangeTracker
     ( 
-        _buffer : IVimBuffer ) as this =
+        _buffer : IVimBuffer 
+    ) as this =
 
     let _textView = _buffer.TextView
     let _bag = DisposableBag()
+
+    let mutable _syncingSelection = false
 
     /// Did the selection change while we were in the middle of processing 
     /// key input and not in Visual Mode 
@@ -43,11 +46,14 @@ type internal SelectionChangeTracker
         |> Observable.subscribe (fun args -> this.OnKeyInputFinished() )
         |> _bag.Add
 
-    member private x.IsAnyVisualMode = VisualKind.IsAnyVisual _buffer.ModeKind
+    member x.IsAnyVisualMode = VisualKind.IsAnyVisual _buffer.ModeKind
 
     /// Raised when the selection changes.  
-    member private x.OnSelectionChanged() = 
-        if _buffer.ModeKind = ModeKind.Disabled || _buffer.ModeKind = ModeKind.ExternalEdit then
+    member x.OnSelectionChanged() = 
+        if _syncingSelection then
+            // Ignore selection changes when we are explicitly updating it
+            ()
+        elif _buffer.ModeKind = ModeKind.Disabled || _buffer.ModeKind = ModeKind.ExternalEdit then
             // If the selection changes while Vim is disabled then don't update
             () 
         elif _buffer.IsProcessingInput then
@@ -60,17 +66,17 @@ type internal SelectionChangeTracker
         else
             x.SetModeForSelection()
 
-    member private x.OnBufferClosed() = _bag.DisposeAll()
+    member x.OnBufferClosed() = _bag.DisposeAll()
 
     /// Linked to the KeyInputProcessed event.  If the selection changed while processing keyinput
     /// and we weren't in Visual Mode then we need to update the selection
-    member private x.OnKeyInputFinished() = 
+    member x.OnKeyInputFinished() = 
         if _selectionDirty then
             _selectionDirty <- false
             x.SetModeForSelection()
 
     /// Update the mode based on the current Selection
-    member private x.SetModeForSelection() = 
+    member x.SetModeForSelection() = 
 
         // What should the mode be based on the current selection
         let desiredMode () = 
@@ -84,7 +90,7 @@ type internal SelectionChangeTracker
                 else Some ModeKind.VisualBlock
             match inner with 
             | None -> None
-            | Some(kind) -> if kind <> _buffer.ModeKind then Some kind else None 
+            | Some kind -> if kind <> _buffer.ModeKind then Some kind else None 
 
         // Update the selections.  This is called from a post callback to ensure we don't 
         // interfer with other selection + edit events
@@ -92,7 +98,7 @@ type internal SelectionChangeTracker
             if not  _selectionDirty then 
                 match desiredMode() with
                 | None -> ()
-                | Some(modeKind) -> _buffer.SwitchMode modeKind ModeArgument.None |> ignore
+                | Some modeKind -> _buffer.SwitchMode modeKind ModeArgument.None |> ignore
 
         match desiredMode() with
         | None ->
@@ -100,8 +106,13 @@ type internal SelectionChangeTracker
             // caches information about the original selection.  Update that information now
             if x.IsAnyVisualMode then
                 let mode = _buffer.Mode :?> IVisualMode
-                mode.SyncSelection()
-        | Some(_) -> 
+
+                try
+                    _syncingSelection <- true
+                    mode.SyncSelection()
+                finally
+                    _syncingSelection <- false
+        | Some _ -> 
             // It's not guaranteed that this will be set.  Visual Studio for instance will
             // null this out in certain WPF designer scenarios
             let context = System.Threading.SynchronizationContext.Current

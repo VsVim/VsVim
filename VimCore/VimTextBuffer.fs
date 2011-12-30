@@ -52,6 +52,7 @@ type internal VimTextBuffer
 
     /// Get the specified local mark value
     member x.GetLocalMark localMark =
+
         match localMark with
         | LocalMark.Letter letter ->
             _textBuffer.Properties
@@ -59,10 +60,14 @@ type internal VimTextBuffer
             |> OptionUtil.map2 (fun trackingLineColumn -> trackingLineColumn.VirtualPoint)
         | LocalMark.LastSelectionStart ->
             x.LastVisualSelection 
-            |> Option.map (fun visualSelection -> visualSelection.VisualSpan.Start |> VirtualSnapshotPointUtil.OfPoint) 
+            |> Option.map (fun visualSelection -> 
+                let visualSpan = visualSelection.GetVisualSpan _globalSettings.SelectionKind
+                visualSpan.Start |> VirtualSnapshotPointUtil.OfPoint) 
         | LocalMark.LastSelectionEnd ->
             x.LastVisualSelection
-            |> Option.map (fun visualSelection -> visualSelection.VisualSpan.End |> VirtualSnapshotPointUtil.OfPoint) 
+            |> Option.map (fun visualSelection -> 
+                let visualSpan = visualSelection.GetVisualSpan _globalSettings.SelectionKind
+                visualSpan.End |> VirtualSnapshotPointUtil.OfPoint) 
 
     /// Set the local mark at the given line and column
     member x.SetLocalMark localMark line column = 

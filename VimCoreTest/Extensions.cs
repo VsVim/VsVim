@@ -27,6 +27,15 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region VisualSelection
+
+        public static void SelectAndMoveCaret(this VisualSelection selection, ITextView textView)
+        {
+            selection.SelectAndMoveCaret(textView, SelectionKind.Inclusive);
+        }
+
+        #endregion
+
         #region LineCommand
 
         /// <summary>
@@ -739,7 +748,7 @@ namespace Vim.UnitTest
         public static void SelectAndMoveCaret(this ITextView textView, SnapshotSpan span)
         {
             var characterSpan = CharacterSpan.CreateForSpan(span);
-            var visualSelection = VisualSelection.CreateForVisualSpan(VisualSpan.NewCharacter(characterSpan));
+            var visualSelection = VisualSelection.CreateForward(VisualSpan.NewCharacter(characterSpan));
             visualSelection.SelectAndMoveCaret(textView);
         }
 
@@ -1077,6 +1086,14 @@ namespace Vim.UnitTest
         public static SnapshotSpan GetSelectionSpan(this ITextView textView)
         {
             return textView.Selection.StreamSelectionSpan.SnapshotSpan;
+        }
+
+        public static BlockSpan GetSelectionBlockSpan(this ITextView textView)
+        {
+            Assert.AreEqual(TextSelectionMode.Box, textView.Selection.Mode);
+            var spans = textView.Selection.SelectedSpans;
+            var first = spans[0];
+            return new BlockSpan(first.Start, first.Length, spans.Count);
         }
 
         public static Register GetRegister(this IRegisterMap map, char c)

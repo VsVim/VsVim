@@ -7,14 +7,15 @@ using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
 using Vim.Modes.Visual;
+using Vim.Extensions;
 
 namespace Vim.UnitTest
 {
     [TestFixture]
     public sealed class SelectionTrackerTest : VimTestBase
     {
-        private ITextView _view;
-        private IVimGlobalSettings _settings;
+        private ITextView _textView;
+        private IVimGlobalSettings _globalSettings;
         private SelectionTracker _tracker;
         private Mock<IIncrementalSearch> _incrementalSearch;
         private TestableSynchronizationContext _context;
@@ -27,11 +28,11 @@ namespace Vim.UnitTest
 
         private void Create(VisualKind kind, int caretPosition, params string[] lines)
         {
-            _view = CreateTextView(lines);
-            _view.MoveCaretTo(caretPosition);
-            _settings = new GlobalSettings();
+            _textView = CreateTextView(lines);
+            _textView.MoveCaretTo(caretPosition);
+            _globalSettings = new GlobalSettings();
             _incrementalSearch = new Mock<IIncrementalSearch>(MockBehavior.Loose);
-            _tracker = new SelectionTracker(_view, _settings, _incrementalSearch.Object, kind);
+            _tracker = new SelectionTracker(_textView, _globalSettings, _incrementalSearch.Object, kind);
             _tracker.Start();
         }
 
@@ -46,7 +47,7 @@ namespace Vim.UnitTest
         [TearDown]
         public void TearDown()
         {
-            _view = null;
+            _textView = null;
             _tracker = null;
             SynchronizationContext.SetSynchronizationContext(_before);
         }
@@ -56,18 +57,21 @@ namespace Vim.UnitTest
         public void AnchorPoint1()
         {
             Create(VisualKind.Character, "foo");
-            _view.TextBuffer.Replace(new Span(0, 1), "h");
+            _textView.TextBuffer.Replace(new Span(0, 1), "h");
             Assert.AreEqual(0, _tracker.AnchorPoint.Position);
-            Assert.AreSame(_view.TextSnapshot, _tracker.AnchorPoint.Position.Snapshot);
+            Assert.AreSame(_textView.TextSnapshot, _tracker.AnchorPoint.Snapshot);
         }
 
-        [Test, Description("Shouldn't track if it's Stopp'd")]
+        /// <summary>
+        /// Tracking shouldn't happen if we're stopped
+        /// </summary>
+        [Test]
         public void AnchorPoint2()
         {
             Create(VisualKind.Character, "foo");
             _tracker.Stop();
-            _view.TextBuffer.Replace(new Span(0, 1), "h");
-            Assert.AreNotSame(_view.TextSnapshot, _tracker.AnchorPoint.Position.Snapshot);
+            _textView.TextBuffer.Replace(new Span(0, 1), "h");
+            Assert.IsTrue(_tracker._anchorPoint.IsNone());
         }
 
         [Test]
@@ -82,23 +86,26 @@ namespace Vim.UnitTest
         public void Start2()
         {
             Create(VisualKind.Character, "foo");
-            Assert.AreEqual(new SnapshotPoint(_view.TextSnapshot, 0), _tracker.AnchorPoint.Position);
+            Assert.AreEqual(new SnapshotPoint(_textView.TextSnapshot, 0), _tracker.AnchorPoint.Position);
         }
 
-        [Test, Description("Don't reset the selection if there already is one.  Breaks actions like CTRL+A")]
-        public void Start3()
+        /// <summary>
+        /// Don't reset the selection if there already is one.  Breaks actions like CTRL+A")]
+        /// </summary>
+        [Test]
+        public void Start_DontResetSelection()
         {
             var realView = CreateTextView("foo bar baz");
             var selection = new Mock<ITextSelection>(MockBehavior.Strict);
             selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
-            selection.SetupGet(x => x.Mode).Returns(TextSelectionMode.Stream);
             selection.SetupGet(x => x.AnchorPoint).Returns(new VirtualSnapshotPoint(realView.TextSnapshot, 0));
+            selection.SetupProperty(x => x.Mode);
             var view = new Mock<ITextView>(MockBehavior.Strict);
             view.SetupGet(x => x.TextBuffer).Returns(realView.TextBuffer);
             view.SetupGet(x => x.Caret).Returns(realView.Caret);
             view.SetupGet(x => x.TextSnapshot).Returns(realView.TextSnapshot);
             view.SetupGet(x => x.Selection).Returns(selection.Object);
-            var tracker = new SelectionTracker(view.Object, _settings, _incrementalSearch.Object, VisualKind.Character);
+            var tracker = new SelectionTracker(view.Object, _globalSettings, _incrementalSearch.Object, VisualKind.Character);
             tracker.Start();
             selection.Verify();
         }
@@ -108,18 +115,21 @@ namespace Vim.UnitTest
         {
             var view = CreateTextView("foo bar baz");
             view.Selection.Select(new SnapshotSpan(view.TextSnapshot, 1, 3), false);
-            var tracker = new SelectionTracker(view, _settings, _incrementalSearch.Object, VisualKind.Character);
+            var tracker = new SelectionTracker(view, _globalSettings, _incrementalSearch.Object, VisualKind.Character);
             tracker.Start();
-            Assert.AreEqual(view.Selection.AnchorPoint.Position.Position, tracker.AnchorPoint.Position.Position);
+            Assert.AreEqual(view.Selection.AnchorPoint.Position.Position, tracker.AnchorPoint.Position);
         }
 
-        [Test, Description("Line mode should include the entire line with linebreak")]
-        public void Start5()
+        /// <summary>
+        /// Start in line mode should select the entire line
+        /// </summary>
+        [Test]
+        public void Start_LineShouldSelectWholeLine()
         {
             Create(VisualKind.Line, "foo", "bar");
             _context.RunAll();
-            Assert.AreEqual(_view.TextBuffer.GetLineFromLineNumber(0).Start, _view.Selection.Start.Position);
-            Assert.AreEqual(_view.TextBuffer.GetLineFromLineNumber(0).EndIncludingLineBreak, _view.Selection.End.Position);
+            Assert.AreEqual(_textView.TextBuffer.GetLineFromLineNumber(0).Start, _textView.Selection.Start.Position);
+            Assert.AreEqual(_textView.TextBuffer.GetLineFromLineNumber(0).EndIncludingLineBreak, _textView.Selection.End.Position);
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]
@@ -142,9 +152,9 @@ namespace Vim.UnitTest
         public void UpdateSelection1()
         {
             Create(VisualKind.Character, 0, "dog", "chicken");
-            _view.MoveCaretTo(1);
+            _textView.MoveCaretTo(1);
             _tracker.UpdateSelection();
-            Assert.AreEqual(_view.TextBuffer.GetSpan(0, 2), _view.Selection.StreamSelectionSpan.SnapshotSpan);
+            Assert.AreEqual(_textView.TextBuffer.GetSpan(0, 2), _textView.Selection.StreamSelectionSpan.SnapshotSpan);
         }
 
         [Test]
@@ -152,10 +162,10 @@ namespace Vim.UnitTest
         public void UpdateSelection2()
         {
             Create(VisualKind.Character, 0, "dog", "chicken");
-            _settings.Selection = "exclusive";
-            _view.MoveCaretTo(1);
+            _globalSettings.Selection = "exclusive";
+            _textView.MoveCaretTo(1);
             _tracker.UpdateSelection();
-            Assert.AreEqual(_view.TextBuffer.GetSpan(0, 1), _view.Selection.StreamSelectionSpan.SnapshotSpan);
+            Assert.AreEqual(_textView.TextBuffer.GetSpan(0, 1), _textView.Selection.StreamSelectionSpan.SnapshotSpan);
         }
 
         [Test]
@@ -163,9 +173,9 @@ namespace Vim.UnitTest
         public void UpdateSelection3()
         {
             Create(VisualKind.Character, 0, "dog", "chicken");
-            _view.MoveCaretTo(2);
+            _textView.MoveCaretTo(2);
             _tracker.UpdateSelection();
-            Assert.AreEqual(_view.TextBuffer.GetSpan(0, 3), _view.Selection.StreamSelectionSpan.SnapshotSpan);
+            Assert.AreEqual(_textView.TextBuffer.GetSpan(0, 3), _textView.Selection.StreamSelectionSpan.SnapshotSpan);
         }
 
         [Test]
@@ -173,9 +183,9 @@ namespace Vim.UnitTest
         public void UpdateSelection4()
         {
             Create(VisualKind.Character, 3, "dogs", "chicken");
-            _view.MoveCaretTo(0);
+            _textView.MoveCaretTo(0);
             _tracker.UpdateSelection();
-            Assert.AreEqual(_view.TextBuffer.GetSpan(0, 4), _view.Selection.StreamSelectionSpan.SnapshotSpan);
+            Assert.AreEqual(_textView.TextBuffer.GetSpan(0, 4), _textView.Selection.StreamSelectionSpan.SnapshotSpan);
         }
 
         [Test]
@@ -183,9 +193,9 @@ namespace Vim.UnitTest
         public void UpdateSelection5()
         {
             Create(VisualKind.Character, 5, "dogs", "chicken");
-            _view.MoveCaretTo(0);
+            _textView.MoveCaretTo(0);
             _tracker.UpdateSelection();
-            Assert.AreEqual(_view.TextBuffer.GetSpan(0, 4), _view.Selection.StreamSelectionSpan.SnapshotSpan);
+            Assert.AreEqual(_textView.TextBuffer.GetSpan(0, 4), _textView.Selection.StreamSelectionSpan.SnapshotSpan);
         }
     }
 }

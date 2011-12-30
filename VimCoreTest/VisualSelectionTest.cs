@@ -19,6 +19,121 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Make sure we get parity when going back and forth between block selection.  Only test the 
+        /// top caret locations here as for a single line we will never give back a bottom one since
+        /// it's just one line
+        /// </summary>
+        [Test]
+        public void BackAndForth_Block_SingleLine()
+        {
+            Create("cats", "dogs", "fish");
+            var all = new[] { BlockCaretLocation.TopLeft, BlockCaretLocation.TopRight };
+            var blockSpanData = _textView.GetBlockSpan(1, 2, 0, 1);
+            foreach (var blockCaretLocation in all)
+            {
+                var visualSelection = VisualSelection.NewBlock(blockSpanData, blockCaretLocation);
+                visualSelection.SelectAndMoveCaret(_textView);
+                var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Block, SelectionKind.Inclusive);
+                Assert.AreEqual(visualSelection, currentVisualSelection);
+            }
+        }
+
+        /// <summary>
+        /// Make sure we get parity when going back and forth between block selection
+        /// </summary>
+        [Test]
+        public void BackAndForth_Block_MultiLine()
+        {
+            Create("cats", "dogs", "fish");
+            var all = new[] { BlockCaretLocation.TopLeft, BlockCaretLocation.TopRight, BlockCaretLocation.BottomLeft, BlockCaretLocation.BottomRight };
+            var blockSpan = _textView.GetBlockSpan(1, 2, 0, 2);
+            foreach (var blockCaretLocation in all)
+            {
+                var visualSelection = VisualSelection.NewBlock(blockSpan, blockCaretLocation);
+                visualSelection.SelectAndMoveCaret(_textView);
+                var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Block, SelectionKind.Inclusive);
+                Assert.AreEqual(visualSelection, currentVisualSelection);
+            }
+        }
+
+        /// <summary>
+        /// Make sure we get parity when going back and forth between character selection
+        /// </summary>
+        [Test]
+        public void BackAndForth_Character_SingleLine()
+        {
+            Create("cats", "dogs");
+            var characterSpan = CharacterSpan.CreateForSpan(_textBuffer.GetSpan(1, 2));
+            var all = new[] { Path.Forward, Path.Backward };
+            foreach (var path in all)
+            {
+                var visualSelection = VisualSelection.NewCharacter(characterSpan, path);
+                visualSelection.SelectAndMoveCaret(_textView);
+                var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive);
+                Assert.AreEqual(visualSelection, currentVisualSelection);
+            }
+        }
+
+        /// <summary>
+        /// Make sure we get parity when going back and forth between character selection
+        /// </summary>
+        [Test]
+        public void BackAndForth_Character_MultiLine()
+        {
+            Create("cats", "dogs", "fish");
+            var characterSpan = new CharacterSpan(_textView.GetLine(0).Start, 2, 4);
+            var all = new[] { Path.Forward, Path.Backward };
+            foreach (var path in all)
+            {
+                var visualSelection = VisualSelection.NewCharacter(characterSpan, path);
+                visualSelection.SelectAndMoveCaret(_textView);
+                var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive);
+                Assert.AreEqual(visualSelection, currentVisualSelection);
+            }
+        }
+
+        /// <summary>
+        /// Make sure we get parity when going back and forth between line selection.  Don't check 
+        /// forward / back on single line as they're the same
+        /// </summary>
+        [Test]
+        public void BackAndForth_Line_SingleLine()
+        {
+            Create("cats", "dogs", "fish");
+            var lineRange = _textView.GetLineRange(0, 0);
+            var all = Enumerable.Range(0, 3);
+            foreach (var column in all)
+            {
+                var visualSelection = VisualSelection.NewLine(lineRange, Path.Backward, column);
+                visualSelection.SelectAndMoveCaret(_textView);
+                var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Line, SelectionKind.Inclusive);
+                Assert.AreEqual(visualSelection, currentVisualSelection);
+            }
+        }
+
+        /// <summary>
+        /// Make sure we get parity when going back and forth between line selection
+        /// </summary>
+        [Test]
+        public void BackAndForth_Line_MultiLine()
+        {
+            Create("cats", "dogs", "fish");
+            var lineRange = _textView.GetLineRange(0, 1);
+            var all = Enumerable.Range(0, 3);
+            var allDirections = new[] { Path.Forward, Path.Backward };
+            foreach (var path in allDirections)
+            {
+                foreach (var column in all)
+                {
+                    var visualSelection = VisualSelection.NewLine(lineRange, path, column);
+                    visualSelection.SelectAndMoveCaret(_textView);
+                    var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Line, SelectionKind.Inclusive);
+                    Assert.AreEqual(visualSelection, currentVisualSelection);
+                }
+            }
+        }
+
+        /// <summary>
         /// Get the appropriate Caret SnapshotPoint for a forward character span
         /// </summary>
         [Test]
@@ -77,8 +192,8 @@ namespace Vim.UnitTest
             Create("hello world");
             var span = new SnapshotSpan(_textView.GetLine(0).Start, 2);
             _textView.SelectAndMoveCaret(span);
-            var visualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Character);
-            Assert.AreEqual(span, visualSelection.VisualSpan.EditSpan.OverarchingSpan);
+            var visualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive);
+            Assert.AreEqual(span, visualSelection.GetVisualSpan(SelectionKind.Inclusive).EditSpan.OverarchingSpan);
             Assert.AreEqual(ModeKind.VisualCharacter, visualSelection.ModeKind);
             Assert.IsTrue(visualSelection.IsCharacterForward);
         }
@@ -91,138 +206,72 @@ namespace Vim.UnitTest
         {
             Create("cat", "dog");
             var visualSpan = VisualSpan.NewBlock(_textView.GetBlockSpan(0, 2, 0, 2));
-            var visualSelection = VisualSelection.CreateForVisualSpan(visualSpan);
+            var visualSelection = VisualSelection.CreateForward(visualSpan);
             Assert.AreEqual(_textView.GetLine(1).Start.Add(1), visualSelection.CaretPoint);
-            Assert.AreEqual(visualSpan, visualSelection.VisualSpan);
+            Assert.AreEqual(visualSpan, visualSelection.GetVisualSpan(SelectionKind.Inclusive));
         }
 
         /// <summary>
-        /// Make sure we get parity when going back and forth between block selection.  Only test the 
-        /// top caret locations here as for a single line we will never give back a bottom one since
-        /// it's just one line
+        /// Ensure that a backwards character span includes the caret point in the span
         /// </summary>
         [Test]
-        public void BackAndForth_Block_SingleLine()
+        public void CreateForAllPoints_Character_Backwards()
         {
-            Create("cats", "dogs", "fish");
-            var all = new[] { BlockCaretLocation.TopLeft, BlockCaretLocation.TopRight };
-            var blockSpanData = _textView.GetBlockSpan(1, 2, 0, 1);
-            foreach (var blockCaretLocation in all)
-            {
-                var visualSelection = VisualSelection.NewBlock(blockSpanData, blockCaretLocation);
-                visualSelection.SelectAndMoveCaret(_textView);
-                var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Block);
-                Assert.AreEqual(visualSelection, currentVisualSelection);
-            }
+            Create("cats dogs");
+            var visualSelection = VisualSelection.CreateForPoints(VisualKind.Character, _textBuffer.GetPoint(3), _textBuffer.GetPoint(1));
+            Assert.AreEqual("ats", visualSelection.GetEditSpan(SelectionKind.Inclusive).OverarchingSpan.GetText());
         }
 
         /// <summary>
-        /// Make sure we get parity when going back and forth between block selection
+        /// Ensure that a backwards line span includes the entire line
         /// </summary>
         [Test]
-        public void BackAndForth_Block_MultiLine()
+        public void CreateForAllPoints_Line_Backwards()
         {
-            Create("cats", "dogs", "fish");
-            var all = new[] { BlockCaretLocation.TopLeft, BlockCaretLocation.TopRight, BlockCaretLocation.BottomLeft, BlockCaretLocation.BottomRight };
-            var blockSpan = _textView.GetBlockSpan(1, 2, 0, 2);
-            foreach (var blockCaretLocation in all)
-            {
-                var visualSelection = VisualSelection.NewBlock(blockSpan, blockCaretLocation);
-                visualSelection.SelectAndMoveCaret(_textView);
-                var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Block);
-                Assert.AreEqual(visualSelection, currentVisualSelection);
-            }
+            Create("cats dogs");
+            var visualSelection = VisualSelection.CreateForPoints(VisualKind.Line, _textBuffer.GetPoint(3), _textBuffer.GetPoint(1));
+            Assert.AreEqual(_textBuffer.GetLineRange(0), visualSelection.AsLine().Item1);
         }
 
         /// <summary>
-        /// Make sure we get parity when going back and forth between character selection
+        /// Ensure that a backwards block span includes the entire line
         /// </summary>
         [Test]
-        public void BackAndForth_Character_SingleLine()
+        public void CreateForAllPoints_Block_Backwards()
         {
-            Create("cats", "dogs");
-            var characterSpan = CharacterSpan.CreateForSpan(_textBuffer.GetSpan(1, 2));
-            var all = new[] { Path.Forward, Path.Backward };
-            foreach (var path in all)
-            {
-                var visualSelection = VisualSelection.NewCharacter(characterSpan, path);
-                visualSelection.SelectAndMoveCaret(_textView);
-                var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Character);
-                Assert.AreEqual(visualSelection, currentVisualSelection);
-            }
+            Create("cats dogs");
+            var visualSelection = VisualSelection.CreateForPoints(VisualKind.Block, _textBuffer.GetPoint(3), _textBuffer.GetPoint(1));
+            Assert.AreEqual(_textBuffer.GetSpan(1, 3), visualSelection.AsBlock().Item1.BlockSpans.Head);
         }
 
         /// <summary>
-        /// Make sure we get parity when going back and forth between character selection
+        /// Block selection of width 1 with exclusive selection should still have a single
+        /// column.  Even though normal block selections are shrunk by a column
         /// </summary>
         [Test]
-        public void BackAndForth_Character_MultiLine()
+        public void GetVisualSpan_Block_SingleColumnExclusive()
         {
-            Create("cats", "dogs", "fish");
-            var characterSpan = new CharacterSpan(_textView.GetLine(0).Start, 2, 4);
-            var all = new[] { Path.Forward, Path.Backward };
-            foreach (var path in all)
-            {
-                var visualSelection = VisualSelection.NewCharacter(characterSpan, path);
-                visualSelection.SelectAndMoveCaret(_textView);
-                var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Character);
-                Assert.AreEqual(visualSelection, currentVisualSelection);
-            }
+            Create("cats", "dogs", "trees");
+            var blockSpan = _textBuffer.GetBlockSpan(1, 1, 0, 2);
+            var visualSpan = VisualSpan.NewBlock(blockSpan);
+            var visualSelection = VisualSelection.CreateForward(visualSpan);
+            Assert.AreEqual(visualSpan, visualSelection.GetVisualSpan(SelectionKind.Exclusive));
         }
 
         /// <summary>
-        /// Make sure we get parity when going back and forth between line selection.  Don't check 
-        /// forward / back on single line as they're the same
+        /// Block selection should lose a column in Exclusive
         /// </summary>
         [Test]
-        public void BackAndForth_Line_SingleLine()
+        public void GetVisualSpan_Block_MultiColumnExclusive()
         {
-            Create("cats", "dogs", "fish");
-            var lineRange = _textView.GetLineRange(0, 0);
-            var all = Enumerable.Range(0, 3);
-            foreach (var column in all)
-            {
-                var visualSelection = VisualSelection.NewLine(lineRange, Path.Backward, column);
-                visualSelection.SelectAndMoveCaret(_textView);
-                var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Line);
-                Assert.AreEqual(visualSelection, currentVisualSelection);
-            }
-        }
-
-        /// <summary>
-        /// Make sure we get parity when going back and forth between line selection
-        /// </summary>
-        [Test]
-        public void BackAndForth_Line_MultiLine()
-        {
-            Create("cats", "dogs", "fish");
-            var lineRange = _textView.GetLineRange(0, 1);
-            var all = Enumerable.Range(0, 3);
-            var allDirections = new[] { Path.Forward, Path.Backward };
-            foreach (var path in allDirections)
-            {
-                foreach (var column in all)
-                {
-                    var visualSelection = VisualSelection.NewLine(lineRange, path, column);
-                    visualSelection.SelectAndMoveCaret(_textView);
-                    var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Line);
-                    Assert.AreEqual(visualSelection, currentVisualSelection);
-                }
-            }
-        }
-
-        /// <summary>
-        /// The selection of a reverse character span should cause a reversed selection
-        /// </summary>
-        [Test]
-        public void Select_Backwards()
-        {
-            Create("big dog", "big cat", "big tree", "big fish");
-            var characterSpan = CharacterSpan.CreateForSpan(_textBuffer.GetSpan(1, 3));
-            var visualSelection = VisualSelection.NewCharacter(characterSpan, Path.Backward);
-            visualSelection.SelectAndMoveCaret(_textView);
-            Assert.IsTrue(_textView.Selection.IsReversed);
-            Assert.AreEqual(characterSpan.Span, _textView.GetSelectionSpan());
+            Create("cats", "dogs", "trees");
+            var blockSpan = _textBuffer.GetBlockSpan(1, 2, 0, 2);
+            var visualSpan = VisualSpan.NewBlock(blockSpan);
+            var visualSelection = VisualSelection.CreateForward(visualSpan);
+            var otherBlockSpan = visualSelection.GetVisualSpan(SelectionKind.Exclusive).AsBlock().Item;
+            Assert.AreEqual(blockSpan.Start, otherBlockSpan.Start);
+            Assert.AreEqual(1, otherBlockSpan.Width);
+            Assert.AreEqual(2, otherBlockSpan.Height);
         }
     }
 }

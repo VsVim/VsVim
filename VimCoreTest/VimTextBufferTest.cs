@@ -58,7 +58,7 @@ namespace Vim.UnitTest
         {
             Create("hello", "world");
             var visualSpan = VisualSpan.NewCharacter(new CharacterSpan(_textBuffer.GetPoint(0), 1, 2));
-            _vimTextBuffer.LastVisualSelection = FSharpOption.Create(VisualSelection.CreateForVisualSpan(visualSpan));
+            _vimTextBuffer.LastVisualSelection = FSharpOption.Create(VisualSelection.CreateForward(visualSpan));
             Assert.IsFalse(_vimTextBuffer.SetLocalMark(LocalMark.LastSelectionStart, 0, 4));
             Assert.AreEqual(0, _vimTextBuffer.GetLocalMark(LocalMark.LastSelectionStart).Value.Position.Position);
         }

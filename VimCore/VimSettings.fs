@@ -161,6 +161,12 @@ type internal GlobalSettings() =
 
     static member DisableAllCommand = _disableAllCommand
 
+    member x.SelectionKind = 
+        match _map.GetStringValue SelectionName with
+        | "inclusive" -> SelectionKind.Inclusive
+        | "old" -> SelectionKind.Exclusive
+        | _ -> SelectionKind.Exclusive
+
     interface IVimGlobalSettings with
         // IVimSettings
 
@@ -188,11 +194,7 @@ type internal GlobalSettings() =
         member x.IncrementalSearch
             with get() = _map.GetBoolValue IncrementalSearchName
             and set value = _map.TrySetValue IncrementalSearchName (ToggleValue value) |> ignore
-        member x.IsSelectionInclusive = 
-            match _map.GetStringValue SelectionName with
-            | "inclusive" -> true
-            | "old" -> true
-            | _ -> false
+        member x.IsSelectionInclusive = x.SelectionKind = SelectionKind.Inclusive
         member x.IsSelectionPastLine = 
             match _map.GetStringValue SelectionName with
             | "exclusive" -> true
@@ -216,6 +218,7 @@ type internal GlobalSettings() =
         member x.Selection
             with get() = _map.GetStringValue SelectionName
             and set value = _map.TrySetValue SelectionName (StringValue(value)) |> ignore
+        member x.SelectionKind = x.SelectionKind
         member x.ShiftWidth  
             with get() = _map.GetNumberValue ShiftWidthName
             and set value = _map.TrySetValue ShiftWidthName (NumberValue(value)) |> ignore

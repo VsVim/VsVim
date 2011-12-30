@@ -85,9 +85,6 @@ type ITrackingVisualSelection =
     /// The associated ITextBuffer instance
     abstract TextBuffer : ITextBuffer
 
-    /// Get the VisualSpan as it relates to the current ITextSnapshot
-    abstract VisualSpan : VisualSpan option
-
     /// Get the Visual Selection as it relates to the current ITextSnapshot
     abstract VisualSelection : VisualSelection option
 

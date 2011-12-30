@@ -14,7 +14,8 @@ type ISelectionTracker =
     /// Is the selection currently being tracked
     abstract IsRunning : bool 
 
-    /// Update the selection based on the current position of the cursor
+    /// Update the selection based on the current position of the caret or the active
+    /// incremental search
     abstract UpdateSelection : unit -> unit
 
     /// Start tracking the selection

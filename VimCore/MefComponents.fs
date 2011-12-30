@@ -253,16 +253,16 @@ type internal TrackingVisualSelection
     member x.CaretPoint =
         x.VisualSelection |> Option.map (fun visualSelection -> visualSelection.CaretPoint)
 
-    member x.VisualSpan = 
-        x.VisualSelection |> Option.map (fun visualSelection -> visualSelection.VisualSpan)
-
     /// Get the caret in the given VisualSpan
     member x.GetCaret visualSpan = 
         x.VisualSelection |> Option.map (fun visualSelection -> visualSelection.CaretPoint)
 
     /// Create an ITrackingVisualSelection with the provided data
     static member Create (bufferTrackingService : IBufferTrackingService) (visualSelection : VisualSelection)=
-        let trackingVisualSpan = bufferTrackingService.CreateVisualSpan visualSelection.VisualSpan
+
+        // Track the inclusive VisualSpan.  Internally the VisualSelection type represents values as inclusive
+        // ones.  
+        let trackingVisualSpan = bufferTrackingService.CreateVisualSpan (visualSelection.GetVisualSpan SelectionKind.Inclusive)
         let path, column, blockCaretLocation =
             match visualSelection with
             | VisualSelection.Character (_, path) -> path, 0, BlockCaretLocation.TopRight
@@ -274,7 +274,6 @@ type internal TrackingVisualSelection
         member x.CaretPoint = x.CaretPoint
         member x.TextBuffer = _trackingVisualSpan.TextBuffer
         member x.VisualSelection = x.VisualSelection
-        member x.VisualSpan = x.VisualSpan
         member x.Close() = _trackingVisualSpan.Close()
 
 type internal TrackedData = {

@@ -10,16 +10,13 @@ open Vim
 type internal SelectionTracker
     (
         _textView : ITextView,
-        _settings : IVimGlobalSettings, 
+        _globalSettings : IVimGlobalSettings, 
         _incrementalSearch : IIncrementalSearch,
-        _kind : VisualKind ) as this =
+        _visualKind : VisualKind
+    ) as this =
 
-    // TODO: Is this actually needed?  Is there a reason this just couldn't be calculated
-    // based off of ITextSelection.AnchorPoint?
-    let mutable _anchorPoint = VirtualSnapshotPoint(_textView.TextSnapshot, 0) 
-
-    /// Whether or not we are currently running
-    let mutable _running = false
+    /// The anchor point we are currently tracking 
+    let mutable _anchorPoint : SnapshotPoint option = None
 
     /// When we are in the middle of an incremental search this will 
     /// track the most recent search result
@@ -38,116 +35,76 @@ type internal SelectionTracker
         _incrementalSearch.CurrentSearchCompleted 
         |> Observable.add (fun _ -> _lastIncrementalSearchResult <- None)
 
-    /// Anchor point of the selection 
-    member x.AnchorPoint = _anchorPoint
+    member x.AnchorPoint = Option.get _anchorPoint
 
-    member x.IsRunning = _running
+    member x.IsRunning = Option.isSome _anchorPoint
 
     /// Call when selection tracking should begin.  
+    ///
+    /// TODO: Should make this have an argument.  It should be passed from visual mode
+    /// TODO: Should the selection tracker be doing this trick anymore?  Or more simply should
+    /// it call SwitchMode with an initial visual selection?
     member x.Start() = 
-        if _running then invalidOp Vim.Resources.SelectionTracker_AlreadyRunning
-        _running <- true
+        if x.IsRunning then invalidOp Vim.Resources.SelectionTracker_AlreadyRunning
         _textChangedHandler.Add()
 
-        let selection = _textView.Selection
-        if selection.IsEmpty then
-            // Do the initial selection update
-            let caretPoint = TextViewUtil.GetCaretPoint _textView 
-            _anchorPoint <- VirtualSnapshotPoint(caretPoint)
-            x.UpdateSelection()
-        else 
-            _anchorPoint <- selection.AnchorPoint
-            x.UpdateTextSelectionMode()
+        _anchorPoint <- 
+            let selection = _textView.Selection
+            if selection.IsEmpty then
+                // Set the selection.  If this is line mode we need to select the entire line 
+                // here
+                let caretPoint = TextViewUtil.GetCaretPoint _textView
+                let visualSpan = VisualSpan.CreateForAllPoints _visualKind caretPoint caretPoint
+                visualSpan.Select _textView Path.Forward
+
+                Some caretPoint
+            else 
+                _textView.Selection.Mode <- _visualKind.TextSelectionMode
+                Some selection.AnchorPoint.Position
 
     /// Called when selection should no longer be tracked.  Must be paired with Start calls or
     /// we will stay attached to certain event handlers
     member x.Stop() =
-        if not _running then invalidOp Resources.SelectionTracker_NotRunning
+        if not x.IsRunning then invalidOp Resources.SelectionTracker_NotRunning
         _textChangedHandler.Remove()
-
-        _running <- false
-
-    /// Update the TextSelectionMode to be the appropriate value based on the Visual Kind 
-    member x.UpdateTextSelectionMode() =
-        let desiredMode = 
-            match _kind with
-            | VisualKind.Character -> TextSelectionMode.Stream
-            | VisualKind.Line -> TextSelectionMode.Stream
-            | VisualKind.Block -> TextSelectionMode.Box
-
-        if _textView.Selection.Mode <> desiredMode then 
-            _textView.Selection.Mode <- desiredMode
+        _anchorPoint <- None
 
     /// Update the selection based on the current state of the view
     member x.UpdateSelection() = 
-        x.UpdateTextSelectionMode()
 
-        // Get the end point of the desired selection.  Typically this is 
-        // just the caret.  If an incremental search is active though and 
-        // has a found result it will be the start of it
-        let endPoint = 
-            let caretPoint = _textView.Caret.Position.VirtualBufferPosition 
-            if _incrementalSearch.InSearch then
-                match _lastIncrementalSearchResult with
-                | Some result ->
-                    match result with
-                    | SearchResult.Found (_, span, _) -> VirtualSnapshotPoint(span.Start)
-                    | SearchResult.NotFound _ -> caretPoint
-                | None -> 
+        match _anchorPoint with
+        | None -> ()
+        | Some anchorPoint ->
+            let simulatedCaretPoint = 
+                let caretPoint = TextViewUtil.GetCaretPoint _textView 
+                if _incrementalSearch.InSearch then
+                    match _lastIncrementalSearchResult with
+                    | None -> caretPoint
+                    | Some searchResult ->
+                        match searchResult with
+                        | SearchResult.NotFound _ -> caretPoint
+                        | SearchResult.Found (_, span, _) -> span.Start
+                else
                     caretPoint
-            else
-                caretPoint
 
-        // Set the selection based on the anchor point and the caret or the 
-        // current place of the incremental search
-        let selectStandard() = 
-            let first = _anchorPoint
-            let last = endPoint 
-            let first, last = VirtualSnapshotPointUtil.OrderAscending first last
-            let last = 
-                if _settings.IsSelectionInclusive then VirtualSnapshotPointUtil.AddOneOnSameLine last 
-                else last
-            _textView.Selection.Select(first,last)
-
-        match _kind with
-        | VisualKind.Character -> 
-            selectStandard()
-        | VisualKind.Line ->
-            let first, last = 
-                if VirtualSnapshotPointUtil.GetPosition _anchorPoint <= VirtualSnapshotPointUtil.GetPosition endPoint then 
-                    (_anchorPoint, endPoint)
-                else 
-                    (endPoint, _anchorPoint)
-            let first = 
-                first
-                |> VirtualSnapshotPointUtil.GetContainingLine 
-                |> SnapshotLineUtil.GetStart
-                |> VirtualSnapshotPointUtil.OfPoint
-            let last =
-                if last.IsInVirtualSpace then 
-                    last
-                else 
-                    last 
-                    |> VirtualSnapshotPointUtil.GetContainingLine
-                    |> SnapshotLineUtil.GetEndIncludingLineBreak
-                    |> VirtualSnapshotPointUtil.OfPoint
-            _textView.Selection.Select(first, last)
-        | VisualKind.Block -> 
-            selectStandard()
+            let visualSelection = VisualSelection.CreateForPoints _visualKind anchorPoint simulatedCaretPoint
+            visualSelection.SelectAndMoveCaret _textView _globalSettings.SelectionKind
 
     /// When the text is changed it invalidates the anchor point.  It needs to be forwarded to
     /// the next version of the buffer.  If it's not present then just go to point 0
     member x.OnTextChanged (args : TextContentChangedEventArgs) =
-        let point = _anchorPoint.Position
-        let trackingPoint = point.Snapshot.CreateTrackingPoint(point.Position, PointTrackingMode.Negative)
-        _anchorPoint <- 
-            match TrackingPointUtil.GetPoint args.After trackingPoint with
-            | Some point -> VirtualSnapshotPoint(point)
-            | None -> VirtualSnapshotPoint(args.After, 0)
+        match _anchorPoint with
+        | None -> ()
+        | Some anchorPoint ->
+
+            _anchorPoint <- 
+                match TrackingPointUtil.GetPointInSnapshot anchorPoint PointTrackingMode.Negative args.After with
+                | None -> SnapshotPoint(args.After, 0) |> Some
+                | Some anchorPoint -> Some anchorPoint
 
     interface ISelectionTracker with 
-        member x.VisualKind = _kind
+        member x.VisualKind = _visualKind
         member x.IsRunning = x.IsRunning
         member x.Start () = x.Start()
         member x.Stop () = x.Stop()
-        member x.UpdateSelection () = x.UpdateSelection()
+        member x.UpdateSelection() = x.UpdateSelection()
