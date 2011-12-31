@@ -13,6 +13,14 @@ namespace VsVim
         UserInput,
 
         /// <summary>
+        /// This command represents a visual studio command.  In reality everything is a Visual Studio 
+        /// command.  However these represent actions which should not be interpreted by VsVim and instead
+        /// left to the control of Visual Studio.  All of these key sequences can go back to VsVim
+        /// control if the user unmaps the keys that produced them
+        /// </summary>
+        VisualStudioCommand,
+
+        /// <summary>
         /// This command represents the user clicking on the undo button
         /// </summary>
         Undo,

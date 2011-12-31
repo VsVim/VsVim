@@ -49,87 +49,105 @@ namespace VsVim
         /// <summary>
         /// Try and convert a Visual Studio 2000 style command into the associated KeyInput and EditCommand items
         /// </summary>
-        internal static bool TryConvert(VSConstants.VSStd2KCmdID cmdId, IntPtr variantIn, out KeyInput ki, out EditCommandKind kind)
+        internal static bool TryConvert(VSConstants.VSStd2KCmdID cmdId, IntPtr variantIn, out KeyInput keyInput, out EditCommandKind kind)
         {
             switch (cmdId)
             {
                 case VSConstants.VSStd2KCmdID.TYPECHAR:
                     if (variantIn == IntPtr.Zero)
                     {
-                        ki = KeyInputUtil.CharToKeyInput(Char.MinValue);
+                        keyInput = KeyInputUtil.CharToKeyInput(Char.MinValue);
                     }
                     else
                     {
                         var obj = Marshal.GetObjectForNativeVariant(variantIn);
                         var c = (char)(ushort)obj;
-                        ki = KeyInputUtil.CharToKeyInput(c);
+                        keyInput = KeyInputUtil.CharToKeyInput(c);
                     }
                     kind = EditCommandKind.UserInput;
                     break;
                 case VSConstants.VSStd2KCmdID.RETURN:
-                    ki = KeyInputUtil.EnterKey;
+                    keyInput = KeyInputUtil.EnterKey;
                     kind = EditCommandKind.UserInput;
                     break;
                 case VSConstants.VSStd2KCmdID.CANCEL:
-                    ki = KeyInputUtil.EscapeKey;
+                    keyInput = KeyInputUtil.EscapeKey;
                     kind = EditCommandKind.UserInput;
                     break;
                 case VSConstants.VSStd2KCmdID.DELETE:
-                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Delete);
+                    keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Delete);
                     kind = EditCommandKind.UserInput;
                     break;
                 case VSConstants.VSStd2KCmdID.BACKSPACE:
-                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Back);
+                    keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Back);
                     kind = EditCommandKind.UserInput;
                     break;
                 case VSConstants.VSStd2KCmdID.LEFT:
+                    keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Left);
+                    kind = EditCommandKind.UserInput;
+                    break;
                 case VSConstants.VSStd2KCmdID.LEFT_EXT:
                 case VSConstants.VSStd2KCmdID.LEFT_EXT_COL:
-                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Left);
-                    kind = EditCommandKind.UserInput;
+                    keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(VimKey.Left), KeyModifiers.Shift);
+                    kind = EditCommandKind.VisualStudioCommand;
                     break;
                 case VSConstants.VSStd2KCmdID.RIGHT:
+                    keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Right);
+                    kind = EditCommandKind.UserInput;
+                    break;
                 case VSConstants.VSStd2KCmdID.RIGHT_EXT:
                 case VSConstants.VSStd2KCmdID.RIGHT_EXT_COL:
-                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Right);
-                    kind = EditCommandKind.UserInput;
+                    keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(VimKey.Right), KeyModifiers.Shift);
+                    kind = EditCommandKind.VisualStudioCommand;
                     break;
                 case VSConstants.VSStd2KCmdID.UP:
+                    keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Up);
+                    kind = EditCommandKind.UserInput;
+                    break;
                 case VSConstants.VSStd2KCmdID.UP_EXT:
                 case VSConstants.VSStd2KCmdID.UP_EXT_COL:
-                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Up);
-                    kind = EditCommandKind.UserInput;
+                    keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(VimKey.Up), KeyModifiers.Shift);
+                    kind = EditCommandKind.VisualStudioCommand;
                     break;
                 case VSConstants.VSStd2KCmdID.DOWN:
-                case VSConstants.VSStd2KCmdID.DOWN_EXT:
-                case VSConstants.VSStd2KCmdID.DOWN_EXT_COL:
-                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Down);
+                    keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Down);
                     kind = EditCommandKind.UserInput;
                     break;
+                case VSConstants.VSStd2KCmdID.DOWN_EXT:
+                case VSConstants.VSStd2KCmdID.DOWN_EXT_COL:
+                    keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(VimKey.Down), KeyModifiers.Shift);
+                    kind = EditCommandKind.VisualStudioCommand;
+                    break;
                 case VSConstants.VSStd2KCmdID.TAB:
-                    ki = KeyInputUtil.TabKey;
+                    keyInput = KeyInputUtil.TabKey;
                     kind = EditCommandKind.UserInput;
                     break;
                 case VSConstants.VSStd2KCmdID.BACKTAB:
-                    ki = KeyInputUtil.ApplyModifiers(KeyInputUtil.TabKey, KeyModifiers.Shift);
+                    keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.TabKey, KeyModifiers.Shift);
                     kind = EditCommandKind.UserInput;
                     break;
                 case VSConstants.VSStd2KCmdID.PAGEDN:
-                case VSConstants.VSStd2KCmdID.PAGEDN_EXT:
-                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.PageDown);
+                    keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.PageDown);
                     kind = EditCommandKind.UserInput;
                     break;
+                case VSConstants.VSStd2KCmdID.PAGEDN_EXT:
+                    keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(VimKey.PageDown), KeyModifiers.Shift);
+                    kind = EditCommandKind.VisualStudioCommand;
+                    break;
                 case VSConstants.VSStd2KCmdID.PAGEUP:
-                case VSConstants.VSStd2KCmdID.PAGEUP_EXT:
-                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.PageUp);
+                    keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.PageUp);
                     kind = EditCommandKind.UserInput;
+                    break;
+                case VSConstants.VSStd2KCmdID.PAGEUP_EXT:
+                    keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(VimKey.PageUp), KeyModifiers.Shift);
+                    kind = EditCommandKind.VisualStudioCommand;
                     break;
                 case VSConstants.VSStd2KCmdID.UNDO:
                 case VSConstants.VSStd2KCmdID.UNDONOMOVE:
                     // Visual Studio was asked to undo.  This happens when either the undo button
                     // was hit or the visual studio key combination bound to the undo command 
                     // was executed
-                    ki = KeyInput.DefaultValue;
+                    keyInput = KeyInput.DefaultValue;
                     kind = EditCommandKind.Undo;
                     break;
                 case VSConstants.VSStd2KCmdID.REDO:
@@ -137,38 +155,44 @@ namespace VsVim
                     // Visual Studio was asked to redo.  This happens when either the redo button
                     // was hit or the visual studio key combination bound to the redo command 
                     // was executed
-                    ki = KeyInput.DefaultValue;
+                    keyInput = KeyInput.DefaultValue;
                     kind = EditCommandKind.Redo;
                     break;
                 case VSConstants.VSStd2KCmdID.BOL:
-                case VSConstants.VSStd2KCmdID.BOL_EXT:
-                case VSConstants.VSStd2KCmdID.BOL_EXT_COL:
                     // Even though there as a HOME value defined, Visual Studio apparently maps the 
                     // Home key to BOL
-                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Home);
+                    keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Home);
                     kind = EditCommandKind.UserInput;
                     break;
+                case VSConstants.VSStd2KCmdID.BOL_EXT:
+                case VSConstants.VSStd2KCmdID.BOL_EXT_COL:
+                    keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(VimKey.Home), KeyModifiers.Shift);
+                    kind = EditCommandKind.VisualStudioCommand;
+                    break;
                 case VSConstants.VSStd2KCmdID.EOL:
-                case VSConstants.VSStd2KCmdID.EOL_EXT:
-                case VSConstants.VSStd2KCmdID.EOL_EXT_COL:
                     // Even though there as a END value defined, Visual Studio apparently maps the 
                     // Home key to EOL
-                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.End);
+                    keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.End);
                     kind = EditCommandKind.UserInput;
+                    break;
+                case VSConstants.VSStd2KCmdID.EOL_EXT:
+                case VSConstants.VSStd2KCmdID.EOL_EXT_COL:
+                    keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(VimKey.End), KeyModifiers.Shift);
+                    kind = EditCommandKind.VisualStudioCommand;
                     break;
                 case VSConstants.VSStd2KCmdID.TOGGLE_OVERTYPE_MODE:
                     // The <Insert> key is expressed in the toggle overtype mode flag.  In general
                     // over write mode is referred to as overtype in the code / documentation
-                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Insert);
+                    keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Insert);
                     kind = EditCommandKind.UserInput;
                     break;
                 default:
-                    ki = null;
+                    keyInput = null;
                     kind = EditCommandKind.UserInput;
                     break;
             }
 
-            return ki != null;
+            return keyInput != null;
         }
 
         /// <summary>

@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Security.Permissions;
 using System.Windows;
 using System.Windows.Input;
+using EditorUtils.UnitTest.Utils;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Text;
@@ -114,6 +115,18 @@ namespace VsVim.UnitTest.Utils
             {
                 switch (keyInput.Key)
                 {
+                    case VimKey.Left:
+                        _editorOperatins.MoveToPreviousCharacter(extendSelection: keyInput.KeyModifiers == KeyModifiers.Shift);
+                        return true;
+                    case VimKey.Right:
+                        _editorOperatins.MoveToNextCharacter(extendSelection: keyInput.KeyModifiers == KeyModifiers.Shift);
+                        return true;
+                    case VimKey.Up:
+                        _editorOperatins.MoveLineUp(extendSelection: keyInput.KeyModifiers == KeyModifiers.Shift);
+                        return true;
+                    case VimKey.Down:
+                        _editorOperatins.MoveLineDown(extendSelection: keyInput.KeyModifiers == KeyModifiers.Shift);
+                        return true;
                     case VimKey.Back:
                         _editorOperatins.Backspace();
                         return true;
@@ -141,8 +154,7 @@ namespace VsVim.UnitTest.Utils
             int IOleCommandTarget.Exec(ref Guid commandGroup, uint cmdId, uint cmdExecOpt, IntPtr variantIn, IntPtr variantOut)
             {
                 EditCommand editCommand;
-                if (!OleCommandUtil.TryConvert(commandGroup, cmdId, variantIn, KeyModifiers.None, out editCommand) ||
-                    editCommand.EditCommandKind != EditCommandKind.UserInput)
+                if (!OleCommandUtil.TryConvert(commandGroup, cmdId, variantIn, KeyModifiers.None, out editCommand))
                 {
                     return VSConstants.E_FAIL;
                 }
@@ -153,9 +165,7 @@ namespace VsVim.UnitTest.Utils
             int IOleCommandTarget.QueryStatus(ref Guid commandGroup, uint commandCount, OLECMD[] commands, IntPtr commandText)
             {
                 EditCommand editCommand;
-                if (1 != commandCount ||
-                    !OleCommandUtil.TryConvert(commandGroup, commands[0].cmdID, commandText, KeyModifiers.None, out editCommand) ||
-                    editCommand.EditCommandKind != EditCommandKind.UserInput)
+                if (1 != commandCount || !OleCommandUtil.TryConvert(commandGroup, commands[0].cmdID, commandText, KeyModifiers.None, out editCommand))
                 {
                     commands[0].cmdf = 0;
                     return NativeMethods.S_OK;
@@ -366,6 +376,45 @@ namespace VsVim.UnitTest.Utils
         #endregion
 
         /// <summary>
+        /// This dictionary is used to map KeyInput values to Visual Studio commands.  It 
+        /// represents the commands which are very commonly mapped on installations
+        /// </summary>
+        private static readonly Dictionary<KeyInput, VSConstants.VSStd2KCmdID> s_standardKeyMappings;
+
+        static VsSimulation()
+        {
+            s_standardKeyMappings = new Dictionary<KeyInput, VSConstants.VSStd2KCmdID>();
+
+            var keys = new [] { 
+                VimKey.Left,
+                VimKey.Up,
+                VimKey.Right,
+                VimKey.Down,
+                VimKey.Home,
+                VimKey.End,
+                VimKey.PageUp,
+                VimKey.PageDown
+            };
+
+            var commands = new[] {
+                VSConstants.VSStd2KCmdID.LEFT_EXT,
+                VSConstants.VSStd2KCmdID.UP_EXT,
+                VSConstants.VSStd2KCmdID.RIGHT_EXT,
+                VSConstants.VSStd2KCmdID.DOWN_EXT,
+                VSConstants.VSStd2KCmdID.BOL_EXT,
+                VSConstants.VSStd2KCmdID.EOL_EXT,
+                VSConstants.VSStd2KCmdID.PAGEUP_EXT,
+                VSConstants.VSStd2KCmdID.PAGEDN_EXT,
+            };
+
+            for (var i = 0; i < keys.Length; i++)
+            {
+                var keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(keys[i]), KeyModifiers.Shift);
+                s_standardKeyMappings[keyInput] = commands[i];
+            }
+        }
+
+        /// <summary>
         /// Cache of QueryStatus commands
         /// </summary>
         private readonly Dictionary<CommandKey, bool> _cachedQueryStatusMap = new Dictionary<CommandKey, bool>();
@@ -388,12 +437,21 @@ namespace VsVim.UnitTest.Utils
         private readonly Mock<IVsAdapter> _vsAdapter;
         private readonly Mock<IDisplayWindowBroker> _displayWindowBroker;
         private readonly Mock<IExternalEditorManager> _externalEditorManager;
+        private readonly TestableSynchronizationContext _testableSynchronizationContext;
+        private bool _simulateStandardKeyMappings;
 
-        internal VsSimulation(IVimBufferCoordinator bufferCoordinator, bool simulateResharper, IEditorOperationsFactoryService editorOperationsFactoryService)
+        internal bool SimulateStandardKeyMappings
+        {
+            get { return _simulateStandardKeyMappings; }
+            set { _simulateStandardKeyMappings = value; }
+        }
+
+        internal VsSimulation(IVimBufferCoordinator bufferCoordinator, bool simulateResharper, bool simulateStandardKeyMappings, IEditorOperationsFactoryService editorOperationsFactoryService)
         {
             _wpfTextView = (IWpfTextView)bufferCoordinator.VimBuffer.TextView;
             _factory = new MockRepository(MockBehavior.Strict);
             _defaultKeyboardDevice = new DefaultKeyboardDevice(InputManager.Current);
+            _testableSynchronizationContext = new TestableSynchronizationContext();
 
             // Create the IVsAdapter and pick reasonable defaults here.  Consumers can modify 
             // this via an exposed property
@@ -491,6 +549,7 @@ namespace VsVim.UnitTest.Utils
         /// </summary>
         internal void Run(KeyInput keyInput)
         {
+            _testableSynchronizationContext.Install();
             try
             {
                 // Update the KeyModifiers while this is being processed by our key processor
@@ -510,10 +569,13 @@ namespace VsVim.UnitTest.Utils
                 {
                     RunInWpf(keyInput);
                 }
+
+                _testableSynchronizationContext.RunAll();
             }
             finally
             {
                 _defaultKeyboardDevice.DownKeyModifiers = KeyModifiers.None;
+                _testableSynchronizationContext.Uninstall();
             }
         }
 
@@ -536,7 +598,13 @@ namespace VsVim.UnitTest.Utils
                 }
 
                 Guid commandGroup;
-                if (!OleCommandUtil.TryConvert(keyInput, out commandGroup, out oleCommandData))
+                VSConstants.VSStd2KCmdID commandId;
+                if (_simulateStandardKeyMappings && s_standardKeyMappings.TryGetValue(keyInput, out commandId))
+                {
+                    commandGroup = VSConstants.VSStd2K;
+                    oleCommandData = new OleCommandData(commandId);
+                }
+                else if (!OleCommandUtil.TryConvert(keyInput, out commandGroup, out oleCommandData))
                 {
                     throw new Exception("Couldn't convert the KeyInput into OleCommandData");
                 }

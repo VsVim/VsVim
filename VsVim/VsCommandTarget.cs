@@ -314,7 +314,19 @@ namespace VsVim
             }
 
             var modifiers = KeyUtil.ConvertToKeyModifiers(_vsAdapter.KeyboardDevice.Modifiers);
-            return OleCommandUtil.TryConvert(commandGroup, commandId, variantIn, modifiers, out editCommand);
+            if (!OleCommandUtil.TryConvert(commandGroup, commandId, variantIn, modifiers, out editCommand))
+            {
+                return false;
+            }
+
+            // Don't process Visual Studio commands.  If the key sequence is mapped to a Visual Studio command
+            // then that command wins.
+            if (editCommand.EditCommandKind == EditCommandKind.VisualStudioCommand)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)

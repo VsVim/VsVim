@@ -20,6 +20,11 @@ namespace VsVim.UnitTest
                 return command;
             }
         }
+        private void VerifyConvertWithShift(VSConstants.VSStd2KCmdID cmd, VimKey vimKey, EditCommandKind kind)
+        {
+            var keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(vimKey), KeyModifiers.Shift);
+            VerifyConvert(cmd, keyInput, kind);
+        }
 
         private void VerifyConvert(VSConstants.VSStd2KCmdID cmd, VimKey vimKey, EditCommandKind kind)
         {
@@ -107,17 +112,37 @@ namespace VsVim.UnitTest
         public void ArrowKeys()
         {
             VerifyConvert(VSConstants.VSStd2KCmdID.LEFT, VimKey.Left, EditCommandKind.UserInput);
-            VerifyConvert(VSConstants.VSStd2KCmdID.LEFT_EXT, VimKey.Left, EditCommandKind.UserInput);
-            VerifyConvert(VSConstants.VSStd2KCmdID.LEFT_EXT_COL, VimKey.Left, EditCommandKind.UserInput);
             VerifyConvert(VSConstants.VSStd2KCmdID.RIGHT, VimKey.Right, EditCommandKind.UserInput);
-            VerifyConvert(VSConstants.VSStd2KCmdID.RIGHT_EXT, VimKey.Right, EditCommandKind.UserInput);
-            VerifyConvert(VSConstants.VSStd2KCmdID.RIGHT_EXT_COL, VimKey.Right, EditCommandKind.UserInput);
             VerifyConvert(VSConstants.VSStd2KCmdID.UP, VimKey.Up, EditCommandKind.UserInput);
-            VerifyConvert(VSConstants.VSStd2KCmdID.UP_EXT, VimKey.Up, EditCommandKind.UserInput);
-            VerifyConvert(VSConstants.VSStd2KCmdID.UP_EXT_COL, VimKey.Up, EditCommandKind.UserInput);
             VerifyConvert(VSConstants.VSStd2KCmdID.DOWN, VimKey.Down, EditCommandKind.UserInput);
-            VerifyConvert(VSConstants.VSStd2KCmdID.DOWN_EXT, VimKey.Down, EditCommandKind.UserInput);
-            VerifyConvert(VSConstants.VSStd2KCmdID.DOWN_EXT_COL, VimKey.Down, EditCommandKind.UserInput);
+        }
+
+        /// <summary>
+        /// The selection extender versions of the arrow keys should register as commands.  Something we 
+        /// shouldn't be processing
+        /// </summary>
+        [Test]
+        public void Selectors_ArrowKeys()
+        {
+            VerifyConvertWithShift(VSConstants.VSStd2KCmdID.LEFT_EXT, VimKey.Left, EditCommandKind.VisualStudioCommand);
+            VerifyConvertWithShift(VSConstants.VSStd2KCmdID.LEFT_EXT_COL, VimKey.Left, EditCommandKind.VisualStudioCommand);
+            VerifyConvertWithShift(VSConstants.VSStd2KCmdID.RIGHT_EXT, VimKey.Right, EditCommandKind.VisualStudioCommand);
+            VerifyConvertWithShift(VSConstants.VSStd2KCmdID.RIGHT_EXT_COL, VimKey.Right, EditCommandKind.VisualStudioCommand);
+            VerifyConvertWithShift(VSConstants.VSStd2KCmdID.UP_EXT, VimKey.Up, EditCommandKind.VisualStudioCommand);
+            VerifyConvertWithShift(VSConstants.VSStd2KCmdID.UP_EXT_COL, VimKey.Up, EditCommandKind.VisualStudioCommand);
+            VerifyConvertWithShift(VSConstants.VSStd2KCmdID.DOWN_EXT, VimKey.Down, EditCommandKind.VisualStudioCommand);
+            VerifyConvertWithShift(VSConstants.VSStd2KCmdID.DOWN_EXT_COL, VimKey.Down, EditCommandKind.VisualStudioCommand);
+        }
+
+        [Test]
+        public void Selectors_Others()
+        {
+            VerifyConvertWithShift(VSConstants.VSStd2KCmdID.PAGEUP_EXT, VimKey.PageUp, EditCommandKind.VisualStudioCommand);
+            VerifyConvertWithShift(VSConstants.VSStd2KCmdID.PAGEDN_EXT, VimKey.PageDown, EditCommandKind.VisualStudioCommand);
+            VerifyConvertWithShift(VSConstants.VSStd2KCmdID.EOL_EXT, VimKey.End, EditCommandKind.VisualStudioCommand);
+            VerifyConvertWithShift(VSConstants.VSStd2KCmdID.EOL_EXT_COL, VimKey.End, EditCommandKind.VisualStudioCommand);
+            VerifyConvertWithShift(VSConstants.VSStd2KCmdID.BOL_EXT, VimKey.Home, EditCommandKind.VisualStudioCommand);
+            VerifyConvertWithShift(VSConstants.VSStd2KCmdID.BOL_EXT_COL, VimKey.Home, EditCommandKind.VisualStudioCommand);
         }
 
         [Test]
@@ -160,14 +185,12 @@ namespace VsVim.UnitTest
         public void PageUp()
         {
             VerifyConvert(VSConstants.VSStd2KCmdID.PAGEUP, VimKey.PageUp, EditCommandKind.UserInput);
-            VerifyConvert(VSConstants.VSStd2KCmdID.PAGEUP_EXT, VimKey.PageUp, EditCommandKind.UserInput);
         }
 
         [Test]
         public void PageDown()
         {
             VerifyConvert(VSConstants.VSStd2KCmdID.PAGEDN, VimKey.PageDown, EditCommandKind.UserInput);
-            VerifyConvert(VSConstants.VSStd2KCmdID.PAGEDN_EXT, VimKey.PageDown, EditCommandKind.UserInput);
         }
 
         [Test]
@@ -226,8 +249,6 @@ namespace VsVim.UnitTest
         public void TryConvert_End()
         {
             VerifyConvert(VSConstants.VSStd2KCmdID.EOL, VimKey.End, EditCommandKind.UserInput);
-            VerifyConvert(VSConstants.VSStd2KCmdID.EOL_EXT, VimKey.End, EditCommandKind.UserInput);
-            VerifyConvert(VSConstants.VSStd2KCmdID.EOL_EXT_COL, VimKey.End, EditCommandKind.UserInput);
         }
 
         /// <summary>
@@ -240,8 +261,6 @@ namespace VsVim.UnitTest
         public void TryConvert_Home()
         {
             VerifyConvert(VSConstants.VSStd2KCmdID.BOL, VimKey.Home, EditCommandKind.UserInput);
-            VerifyConvert(VSConstants.VSStd2KCmdID.BOL_EXT, VimKey.Home, EditCommandKind.UserInput);
-            VerifyConvert(VSConstants.VSStd2KCmdID.BOL_EXT_COL, VimKey.Home, EditCommandKind.UserInput);
         }
 
         /// <summary>

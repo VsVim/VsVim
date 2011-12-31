@@ -39,7 +39,11 @@ namespace VsVim.UnitTest
             _textBuffer = _textView.TextBuffer;
             _vimBuffer = Vim.CreateVimBuffer(_textView);
             _bufferCoordinator = new VimBufferCoordinator(_vimBuffer);
-            _simulation = new VsSimulation(_bufferCoordinator, simulateResharper, EditorOperationsFactoryService);
+            _simulation = new VsSimulation(
+                _bufferCoordinator,
+                simulateResharper: simulateResharper,
+                simulateStandardKeyMappings: false,
+                editorOperationsFactoryService: EditorOperationsFactoryService);
         }
 
         /// <summary>
@@ -133,6 +137,32 @@ namespace VsVim.UnitTest
             _simulation.Run(".");
             Assert.AreEqual("dogtoy", _textView.GetLine(0).GetText());
             Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Without any mappings the Shift+Down should extend the selection downwards and cause us to
+        /// enter Visual Mode
+        /// </summary>
+        [Test]
+        public void StandardCommand_ExtendSelectionDown()
+        {
+            Create("dog", "cat", "tree");
+            _simulation.SimulateStandardKeyMappings = true;
+            _simulation.Run(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Down, KeyModifiers.Shift));
+            Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+        }
+
+        /// <summary>
+        /// Without any mappings the Shift+Right should extend the selection downwards and cause us to
+        /// enter Visual Mode
+        /// </summary>
+        [Test]
+        public void StandardCommand_ExtendSelectionRight()
+        {
+            Create("dog", "cat", "tree");
+            _simulation.SimulateStandardKeyMappings = true;
+            _simulation.Run(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Right, KeyModifiers.Shift));
+            Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
         }
 
         /// <summary>
