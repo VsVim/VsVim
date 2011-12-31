@@ -80,6 +80,7 @@ type internal CommonOperations
         _smartIndentationService : ISmartIndentationService
     ) =
 
+    let _vimTextBuffer = _vimBufferData.VimTextBuffer
     let _textBuffer = _vimBufferData.TextBuffer
     let _textView = _vimBufferData.TextView
     let _editorOptions = _textView.Options
@@ -333,9 +334,16 @@ type internal CommonOperations
                         else
                             getAfterLastLine()
                     else
-                        // Normal exclusive motion should go to the last real point on the SnapshotSpan
-                        SnapshotPointUtil.TryGetPreviousPointOnLine result.Span.End 1 
-                        |> OptionUtil.getOrDefault result.Span.End
+                        // Normal inclusive motion should move the caret to the last real point on the 
+                        // SnapshotSpan.  The one exception is when we are in visual mode with an
+                        // exclusive selection.  In that case we move as if it's an exclusive motion.  
+                        // Couldn't find any documentation on this but it's indicated by several behavior 
+                        // tests ('e', 'w' movements in particular)
+                        if VisualKind.IsAnyVisual _vimTextBuffer.ModeKind && _globalSettings.SelectionKind = SelectionKind.Exclusive then
+                            result.Span.End
+                        else
+                            SnapshotPointUtil.TryGetPreviousPointOnLine result.Span.End 1 
+                            |> OptionUtil.getOrDefault result.Span.End
                 | MotionKind.LineWise column -> 
                     match column with
                     | CaretColumn.None -> 

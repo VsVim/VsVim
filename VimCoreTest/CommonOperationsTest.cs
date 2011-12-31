@@ -26,6 +26,7 @@ namespace Vim.UnitTest
         private Mock<IOutliningManager> _outlining;
         private Mock<IStatusUtil> _statusUtil;
         private Mock<ISmartIndentationService> _smartIndentationService;
+        private Mock<IVimTextBuffer> _vimTextBuffer;
         private IUndoRedoOperations _undoRedoOperations;
         private ISearchService _searchService;
         private IVimData _vimData;
@@ -67,7 +68,7 @@ namespace Vim.UnitTest
             _localSettings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
             _localSettings.SetupGet(x => x.ExpandTab).Returns(true);
             _localSettings.SetupGet(x => x.TabStop).Returns(4);
-            var vimTextBuffer = MockObjectFactory.CreateVimTextBuffer(
+            _vimTextBuffer = MockObjectFactory.CreateVimTextBuffer(
                 _textBuffer,
                 localSettings: _localSettings.Object,
                 vim: vim.Object,
@@ -78,7 +79,7 @@ namespace Vim.UnitTest
             _statusUtil = _factory.Create<IStatusUtil>();
             _undoRedoOperations = VimUtil.CreateUndoRedoOperations(_statusUtil.Object);
             var vimBufferData = CreateVimBufferData(
-                vimTextBuffer.Object,
+                _vimTextBuffer.Object,
                 _textView,
                 statusUtil: _statusUtil.Object,
                 jumpList: _jumpList.Object,
@@ -921,6 +922,21 @@ namespace Vim.UnitTest
                 MotionKind.CharacterWiseExclusive);
             _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// An exclusive selection should cause inclusive motions to be treated as
+        /// if they were exclusive for caret movement
+        /// </summary>
+        [Test]
+        public void MoveCaretToMotionResult_InclusiveWithExclusiveSelection()
+        {
+            Create("the dog");
+            _globalSettings.SetupGet(x => x.SelectionKind).Returns(SelectionKind.Exclusive);
+            _vimTextBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualBlock);
+            var data = VimUtil.CreateMotionResult(_textBuffer.GetSpan(0, 3), motionKind: MotionKind.CharacterWiseInclusive);
+            _operations.MoveCaretToMotionResult(data);
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
         }
 
         [Test]

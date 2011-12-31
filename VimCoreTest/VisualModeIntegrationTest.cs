@@ -180,6 +180,89 @@ namespace Vim.UnitTest
             Assert.AreEqual(ModeKind.VisualLine, _vimBuffer.ModeKind);
         }
 
+        /// <summary>
+        /// The caret position should be on the next character for a move right
+        /// </summary>
+        [Test]
+        public void Exclusive_CaretPosition_Right()
+        {
+            Create("the dog");
+            _globalSettings.Selection = "exclusive";
+            _vimBuffer.Process("vl");
+            _vimBuffer.Process(VimKey.Escape);
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// The caret position should be on the start of the next word after leaving visual mode
+        /// </summary>
+        [Test]
+        public void Exclusive_CaretPosition_Word()
+        {
+            Create("the dog");
+            _globalSettings.Selection = "exclusive";
+            _vimBuffer.Process("vw");
+            _vimBuffer.Process(VimKey.Escape);
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Make sure the 'e' motion still goes one character extra during a line wise movement
+        /// </summary>
+        [Test]
+        public void Exclusive_CaretPosition_EndOfWordLineWise()
+        {
+            Create("the dog. the cat");
+            _globalSettings.Selection = "exclusive";
+            _textView.MoveCaretTo(4);
+            _vimBuffer.Process("Ve");
+            Assert.AreEqual(7, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// The 'e' motion should result in a selection that encompasses the entire word
+        /// </summary>
+        [Test]
+        public void Exclusive_Delete_EndOfWord()
+        {
+            Create("the dog. cat");
+            _globalSettings.Selection = "exclusive";
+            _textView.MoveCaretTo(4);
+            _vimBuffer.Process("vex");
+            Assert.AreEqual("dog", UnnamedRegister.StringValue);
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// The 'e' motion should result in a selection that encompasses the entire word
+        /// </summary>
+        [Test]
+        public void Exclusive_Delete_EndOfWord_Block()
+        {
+            Create("the dog. end", "the cat. end", "the fish. end");
+            _globalSettings.Selection = "exclusive";
+            _textView.MoveCaretTo(4);
+            _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('q'));
+            _vimBuffer.Process("jex");
+            Assert.AreEqual("the . end", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("the . end", _textBuffer.GetLine(1).GetText());
+            Assert.AreEqual("the fish. end", _textBuffer.GetLine(2).GetText());
+        }
+
+        /// <summary>
+        /// The 'w' motion should result in a selection that encompasses the entire word
+        /// </summary>
+        [Test]
+        public void Exclusive_Delete_Word()
+        {
+            Create("the dog. cat");
+            _globalSettings.Selection = "exclusive";
+            _textView.MoveCaretTo(4);
+            _vimBuffer.Process("vwx");
+            Assert.AreEqual("dog", UnnamedRegister.StringValue);
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
+
         [Test]
         public void Repeat1()
         {
