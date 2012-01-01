@@ -7,15 +7,25 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
 open System
 
+[<RequireQualifiedAccess>]
+type InsertKind =
+
+    | Normal
+
+    /// This Insert is a repeat operation this holds the count and 
+    /// whether or not a newline should be inserted after the text
+    | Repeat of int * bool
+
+    | Block of BlockSpan
+
 /// Data relating to a particular Insert mode session
 type InsertSessionData = {
 
-    /// The transaction which is bracketing this Insert mode session
+    /// The transaction bracketing the edits of this session
     Transaction : ILinkedUndoTransaction option
 
-    /// If this Insert is a repeat operation this holds the count and 
-    /// whether or not a newline should be inserted after the text
-    RepeatData : (int * bool) option
+    /// The kind of insert we are currently performing
+    InsertKind : InsertKind
 
     /// This is the current InsertCommand being built up
     CombinedEditCommand : InsertCommand option
@@ -53,9 +63,9 @@ type internal InsertMode
     let _commandRanEvent = StandardEvent<CommandRunDataEventArgs>()
     let mutable _commandMap : Map<KeyInput, RawInsertCommand> = Map.empty
     let mutable _processDirectInsertCount = 0
-    let _emptySessionData = {
+    static let _emptySessionData = {
+        InsertKind = InsertKind.Normal
         Transaction = None
-        RepeatData = None
         CombinedEditCommand = None
         ActiveWordCompletionSession = None
     }
@@ -300,19 +310,22 @@ type internal InsertMode
             // insert
             Option.isSome keyInput.RawChar
 
-    /// Apply the repeated edits the the ITextBuffer
-    member x.MaybeApplyRepeatedEdits () = 
+    /// Apply any edits which must occur after insert mode is completed
+    member x.ApplyAfterEdits() = 
 
         // Flush out any existing text changes so the CombinedEditCommand has the final
         // edit data for the session
         _textChangeTracker.CompleteChange()
 
         try
-            match _sessionData.RepeatData, _sessionData.CombinedEditCommand with
-            | None, None -> ()
-            | None, Some _ -> ()
-            | Some _, None -> ()
-            | Some (count, addNewLines), Some command -> _insertUtil.RepeatEdit command addNewLines (count - 1)
+            match _sessionData.CombinedEditCommand with
+            | None -> ()
+            | Some command -> 
+                match _sessionData.InsertKind with
+                | InsertKind.Normal -> ()
+                | InsertKind.Repeat (count, addNewLines)-> _insertUtil.RepeatEdit command addNewLines (count - 1)
+                | InsertKind.Block blockSpan -> _insertUtil.RepeatBlock command blockSpan
+
         finally
             // Make sure to close out the transaction
             match _sessionData.Transaction with
@@ -368,21 +381,28 @@ type internal InsertMode
 
     member x.ProcessEscape () =
 
-        // Move the caret one to the left.  Note that this actually counts as a Vim command and is itself
-        // a repeatable item.  It works with insert mode by linking with the previous change
-        let moveCaretLeft () = 
+        let maybeMoveCaretLeft () = 
+            // Move the caret one to the left.  Note that this actually counts as a Vim command and is itself
+            // a repeatable item.  It works with insert mode by linking with the previous change
+            let moveCaretLeft () = 
+    
+                // TODO: Perhaps we can clean this up a bit.  Do we need to go through all of the ceremony of
+                // creating the KeyInputSet?
+                let keyInputSet = KeyNotationUtil.StringToKeyInputSet "<Left>"
+                let commandFlags = CommandFlags.Repeatable ||| CommandFlags.LinkedWithPreviousCommand
+                x.RunInsertCommand (InsertCommand.MoveCaret Direction.Left) keyInputSet commandFlags |> ignore
 
-            // TODO: Perhaps we can clean this up a bit.  Do we need to go through all of the ceremony of
-            // creating the KeyInputSet?
-            let keyInputSet = KeyNotationUtil.StringToKeyInputSet "<Left>"
-            let commandFlags = CommandFlags.Repeatable ||| CommandFlags.LinkedWithPreviousCommand
-            x.RunInsertCommand (InsertCommand.MoveCaret Direction.Left) keyInputSet commandFlags |> ignore
+            // Don't move the caret for block inserts.  It's explicitly positioned 
+            match _sessionData.InsertKind with
+            | InsertKind.Normal -> moveCaretLeft()
+            | InsertKind.Repeat _ -> moveCaretLeft()
+            | InsertKind.Block _ -> ()
 
-        this.MaybeApplyRepeatedEdits()
+        this.ApplyAfterEdits()
 
         if _broker.IsCompletionActive || _broker.IsSignatureHelpActive || _broker.IsQuickInfoActive then
             _broker.DismissDisplayWindows()
-            moveCaretLeft()
+            maybeMoveCaretLeft()
             ProcessResult.OfModeKind ModeKind.Normal
 
         else
@@ -392,7 +412,7 @@ type internal InsertMode
             if virtualPoint.IsInVirtualSpace then 
                 _operations.MoveCaretToPoint virtualPoint.Position
             else
-                moveCaretLeft()
+                maybeMoveCaretLeft()
             ProcessResult.OfModeKind ModeKind.Normal
 
     /// Start a word completion session in the given direction at the current caret point
@@ -621,29 +641,32 @@ type internal InsertMode
 
         // On enter we need to check the 'count' and possibly set up a transaction to 
         // lump edits and their repeats together
-        let transaction, repeatData =
+        let transaction, insertKind =
             match arg with
+            | ModeArgument.InsertBlock blockSpan ->
+                let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
+                Some transaction, InsertKind.Block blockSpan
             | ModeArgument.InsertWithCount count ->
                 if count > 1 then
                     let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
-                    Some transaction, Some (count, false)
+                    Some transaction, InsertKind.Repeat (count, false)
                 else
-                    None, None
+                    None, InsertKind.Normal
             | ModeArgument.InsertWithCountAndNewLine count ->
                 if count > 1 then
                     let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
-                    Some transaction, Some (count, true)
+                    Some transaction, InsertKind.Repeat (count, true)
                 else
-                    None, None
+                    None, InsertKind.Normal
             | ModeArgument.InsertWithTransaction transaction ->
-                Some transaction, None
+                Some transaction, InsertKind.Normal
             | _ -> 
                 if _isReplace then
                     // Replace mode occurs under a transaction even if we are not repeating
                     let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
-                    Some transaction, None
+                    Some transaction, InsertKind.Normal
                 else
-                    None, None
+                    None, InsertKind.Normal
 
         // If the LastCommand coming into insert / replace mode is not setup for linking 
         // with the next change then clear it out now.  This is needed to implement functions
@@ -658,7 +681,7 @@ type internal InsertMode
 
         _sessionData <- {
             Transaction = transaction
-            RepeatData = repeatData
+            InsertKind = insertKind
             CombinedEditCommand = None
             ActiveWordCompletionSession = None
         }

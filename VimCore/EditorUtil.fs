@@ -1284,6 +1284,20 @@ module EditUtil =
             else
                 GetLineBreakLength str index
 
+    /// Get the count of new lines in the string
+    let GetLineBreakCount (str : string) =
+        let rec inner index count =
+            if index >= str.Length then
+                count
+            else
+                let length = GetLineBreakLength str index 
+                if length > 0 then
+                    inner (index + length) (count + 1)
+                else
+                    inner (index + 1) count
+
+        inner 0 0
+
     /// Does the specified string end with a valid newline string 
     let EndsWithNewLine value = 0 <> GetLineBreakLengthAtEnd value
 

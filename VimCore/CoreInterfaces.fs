@@ -206,6 +206,23 @@ type TextChange =
 
     with 
 
+    /// Get the insert text resulting from the change if there is any
+    member x.InsertText = 
+        let rec inner textChange (text : string) = 
+            match textChange with 
+            | Insert data -> text + data |> Some
+            | Delete count -> 
+                if count > text.Length then
+                    None
+                else 
+                    text.Substring(0, text.Length - count) |> Some
+            | Combination (left, right) ->
+                match inner left text with
+                | None -> None
+                | Some text -> inner right text
+
+        inner x StringUtil.empty
+
     /// Get the last / most recent change in the TextChange tree
     member x.LastChange = 
         match x with
@@ -1057,7 +1074,7 @@ type BlockSpan
         let snapshot = SnapshotPointUtil.GetSnapshot x.Start
         let lineNumber = SnapshotPointUtil.GetLineNumber x.Start
         let list = System.Collections.Generic.List<SnapshotSpan>()
-        for i = lineNumber to ((_height - 1)+ lineNumber) do
+        for i = lineNumber to ((_height - 1) + lineNumber) do
             match SnapshotUtil.TryGetLine snapshot i with
             | None -> ()
             | Some line -> list.Add (SnapshotLineUtil.GetSpanInLine line x.Column _width)
@@ -1466,6 +1483,9 @@ type ModeArgument =
     /// option provided is meant to be the initial caret point.  If not provided the actual 
     /// caret point is used
     | InitialVisualSelection of VisualSelection * SnapshotPoint option
+
+    /// Begins a block insertion
+    | InsertBlock of BlockSpan
 
     /// Begins insert mode with a specified count.  This means the text inserted should
     /// be repeated a total of 'count - 1' times when insert mode exits
@@ -1916,6 +1936,9 @@ type VisualCommand =
     /// Shift the selected lines to the right
     | ShiftLinesRight
 
+    /// Switch the mode to insert and possibly a block insert
+    | SwitchModeInsert
+
     /// Switch to the specified visual mode
     | SwitchModeVisual of VisualKind
 
@@ -1963,6 +1986,29 @@ type InsertCommand  =
 
     /// Text Change 
     | TextChange of TextChange
+
+    with
+
+    /// For insert only commands this will hold the insert text
+    member x.GetInsertText editorOptions = 
+        let rec inner command = 
+            match command with
+            | Back -> None
+            | Combined (left, right) ->
+                match inner left, inner right with
+                | Some left, Some right -> left + right |> Some
+                | _ -> None
+            | Delete -> None
+            | DeleteAllIndent -> None
+            | DeleteWordBeforeCursor -> None
+            | InsertNewLine -> EditUtil.NewLine editorOptions |> Some
+            | InsertTab -> Some "\t"
+            | MoveCaret _ -> None
+            | ShiftLineLeft -> None
+            | ShiftLineRight -> None
+            | TextChange textChange -> textChange.InsertText 
+
+        inner x
 
 /// Commands which can be executed by the user
 [<RequireQualifiedAccess>]
@@ -2182,6 +2228,9 @@ type internal IInsertUtil =
 
     /// Repeat the given edit series. 
     abstract RepeatEdit : InsertCommand -> addNewLines : bool -> count : int -> unit
+
+    /// Repeat the given edit series. 
+    abstract RepeatBlock : InsertCommand -> blockSpan : BlockSpan -> unit
 
 /// Contains the stored information about a Visual Span.  This instance *will* be 
 /// stored for long periods of time and used to repeat a Command instance across

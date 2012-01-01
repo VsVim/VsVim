@@ -18,6 +18,7 @@ type internal InsertUtil
     let _globalSettings = _localSettings.GlobalSettings
     let _undoRedoOperations = _vimBufferData.UndoRedoOperations
     let _editorOperations = _operations.EditorOperations
+    let _editorOptions = _textView.Options
     let _wordUtil = _vimBufferData.WordUtil
 
     /// The column of the caret
@@ -256,6 +257,45 @@ type internal InsertUtil
             for i = 1 to count do
                 x.RunInsertCommandCore command addNewLines |> ignore)
 
+    /// Repeat the edits for the other lines in the block span.
+    member x.RepeatBlock (command : InsertCommand) (blockSpan : BlockSpan) =
+
+        match command.GetInsertText _editorOptions with
+        | None -> ()
+        | Some text ->
+
+            // Need to apply the edits to all of the other lines in the span.  Remember that
+            // BlockSpan is on the original ITextSnapshot.  Hence we need to adjust for the 
+            // newly inserted lines
+            use textEdit = _textBuffer.CreateEdit()
+            let lineCount = EditUtil.GetLineBreakCount text
+            let originalSnapshot = blockSpan.Snasphot
+            let currentSnapshot = x.CurrentSnapshot
+            let originalLineNumber = SnapshotPointUtil.GetLineNumber blockSpan.Start
+            for i = 1 to (blockSpan.Height - 1) do 
+
+                let originalLine = 
+                    let number = originalLineNumber + i
+                    SnapshotUtil.GetLine originalSnapshot number
+
+                // Only apply the edit to lines which were included in the original selection
+                if originalLine.Length > blockSpan.Column then
+                    let number = originalLineNumber + i + lineCount
+                    match SnapshotUtil.TryGetLine currentSnapshot number with
+                    | None -> ()
+                    | Some currentLine ->
+                        if currentLine.Length > blockSpan.Column then
+                            let position = currentLine.Start.Position + blockSpan.Column
+                            textEdit.Insert(position, text) |> ignore
+
+            textEdit.Apply() |> ignore
+
+        // Once the edit is complete we need to move the caret back to the original 
+        // insertion point which is the start of the BlockSpan.
+        match TrackingPointUtil.GetPointInSnapshot blockSpan.Start PointTrackingMode.Negative x.CurrentSnapshot with
+        | None -> ()
+        | Some point -> x.EditWithUndoTransaciton "Move Caret" (fun () -> TextViewUtil.MoveCaretToPoint _textView point)
+
     member x.RunInsertCommandCore command addNewLines = 
         match command with
         | InsertCommand.Back -> x.Back()
@@ -316,4 +356,5 @@ type internal InsertUtil
 
         member x.RunInsertCommand command = x.RunInsertCommand command
         member x.RepeatEdit command addNewLines count = x.RepeatEdit command addNewLines count
+        member x.RepeatBlock command blockSpan = x.RepeatBlock command blockSpan
 

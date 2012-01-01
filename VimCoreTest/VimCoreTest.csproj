@@ -151,6 +151,7 @@
     <Compile Include="CommandProcessorTest.cs" />
     <Compile Include="CommandRunnerTest.cs" />
     <Compile Include="CommandUtilTest.cs" />
+    <Compile Include="TextChangeTest.cs" />
     <Compile Include="VisualSpanTest.cs" />
     <Compile Include="EqualityUtil.cs" />
     <Compile Include="Exports\MouseDevice.cs" />

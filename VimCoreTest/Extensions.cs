@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using EditorUtils.UnitTest;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
-using EditorUtils.UnitTest;
 using Vim.Extensions;
 using Vim.Interpreter;
 using InterpreterLineRange = Vim.Interpreter.LineRange;
@@ -706,6 +706,18 @@ namespace Vim.UnitTest
             if (enter)
             {
                 buf.Process(KeyInputUtil.EnterKey);
+            }
+        }
+
+        /// <summary>
+        /// Process the full notation as a series of KeyInput values
+        /// </summary>
+        public static void ProcessNotation(this IVimBuffer vimBuffer, string notation)
+        {
+            var keyInputSet = KeyNotationUtil.StringToKeyInputSet(notation);
+            foreach (var keyInput in keyInputSet.KeyInputs)
+            {
+                vimBuffer.Process(keyInput);
             }
         }
 

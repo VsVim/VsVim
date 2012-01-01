@@ -76,6 +76,74 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// The block insert should add the text to every column
+        /// </summary>
+        [Test]
+        public void BlockInsert_Simple()
+        {
+            Create("dog", "cat", "fish");
+            _vimBuffer.ProcessNotation("<C-q>j<S-i>the <Esc>");
+            Assert.AreEqual("the dog", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("the cat", _textBuffer.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// The caret should be positioned at the start of the block span when the insertion
+        /// starts
+        /// </summary>
+        [Test]
+        public void BlockInsert_CaretPosition()
+        {
+            Create("dog", "cat", "fish");
+            _vimBuffer.ProcessNotation("<C-q>jl<S-i>");
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+        }
+
+        /// <summary>
+        /// The block insert shouldn't add text to any of the columns which didn't extend into 
+        /// the original selection
+        /// </summary>
+        [Test]
+        public void BlockInsert_EmptyColumn()
+        {
+            Create("dog", "", "fish");
+            _vimBuffer.ProcessNotation("l<C-q>jjl<S-i> the <Esc>");
+            Assert.AreEqual("d the og", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("", _textBuffer.GetLine(1).GetText());
+            Assert.AreEqual("f the ish", _textBuffer.GetLine(2).GetText());
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// The undo of a block insert should undo all of the inserts
+        /// </summary>
+        [Test]
+        public void BlockInsert_Undo()
+        {
+            Create("dog", "cat", "fish");
+            _vimBuffer.ProcessNotation("<C-q>j<S-i>the <Esc>");
+            Assert.AreEqual("the dog", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("the cat", _textBuffer.GetLine(1).GetText());
+            _vimBuffer.Process('u');
+            Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textBuffer.GetLine(1).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Delete actions aren't repeated
+        /// </summary>
+        [Test]
+        public void BlockInsert_DontRepeatDelete()
+        {
+            Create("dog", "cat", "fish");
+            _vimBuffer.ProcessNotation("<C-q>j<S-i><Del><Esc>");
+            Assert.AreEqual("og", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
         /// When changing a line wise selection one blank line should be left remaining in the ITextBuffer
         /// </summary>
         [Test]

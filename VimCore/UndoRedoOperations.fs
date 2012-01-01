@@ -54,7 +54,12 @@ type LinkedUndoTransaction
         _undoRedoOperations : UndoRedoOperations
     ) = 
 
-    member x.Complete () = _undoRedoOperations.LinkedUndoTransactionClosed()
+    let mutable _isComplete = false
+
+    member x.Complete () = 
+        if not _isComplete then
+            _isComplete <- true
+            _undoRedoOperations.LinkedUndoTransactionClosed()
 
     interface ILinkedUndoTransaction with
         member x.Complete() = x.Complete()

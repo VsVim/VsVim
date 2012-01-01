@@ -1622,6 +1622,7 @@ type internal CommandUtil
                     | ModeArgument.None -> ()
                     | ModeArgument.FromVisual -> ()
                     | ModeArgument.InitialVisualSelection _ -> ()
+                    | ModeArgument.InsertBlock _ -> ()
                     | ModeArgument.InsertWithCount _ -> ()
                     | ModeArgument.InsertWithCountAndNewLine _ -> ()
                     | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
@@ -2020,6 +2021,7 @@ type internal CommandUtil
         | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
+        | VisualCommand.SwitchModeInsert -> x.SwitchModeInsert visualSpan 
         | VisualCommand.SwitchModeVisual visualKind -> x.SwitchModeVisual visualKind 
         | VisualCommand.YankLineSelection -> x.YankLineSelection register visualSpan
         | VisualCommand.YankSelection -> x.YankSelection register visualSpan
@@ -2324,6 +2326,22 @@ type internal CommandUtil
             let modeKind = visualSelection.ModeKind
             let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, None)
             x.SwitchMode modeKind modeArgument
+
+    /// Switch from the current visual mode into insert.  If we are in block mode this
+    /// will start a block insertion
+    member x.SwitchModeInsert (visualSpan : VisualSpan) = 
+
+        // The insert begins at column 0 of the first line of the visual selection.  Any
+        // undo should move the caret back to this position so do the move inside of 
+        // an undo transaction
+        x.EditWithUndoTransaciton "Visual Insert" (fun () -> TextViewUtil.MoveCaretToPoint _textView visualSpan.Start)
+
+        let argument = 
+            match _vimTextBuffer.ModeKind = ModeKind.VisualBlock, visualSpan with
+            | true, VisualSpan.Block blockSpan -> ModeArgument.InsertBlock blockSpan
+            | _ -> ModeArgument.None
+
+        x.SwitchMode ModeKind.Insert argument
 
     /// Switch from the current visual mode into the specified visual mode
     member x.SwitchModeVisual newVisualKind = 

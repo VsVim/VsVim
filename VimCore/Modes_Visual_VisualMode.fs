@@ -78,6 +78,7 @@ type internal VisualMode
                 yield ("zD", CommandFlags.Special, VisualCommand.DeleteAllFoldsInSelection)
                 yield ("<C-q>", CommandFlags.Special, VisualCommand.SwitchModeVisual VisualKind.Block)
                 yield ("<C-v>", CommandFlags.Special, VisualCommand.SwitchModeVisual VisualKind.Block)
+                yield ("<S-i>", CommandFlags.Special, VisualCommand.SwitchModeInsert)
                 yield ("<Del>", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
                 yield ("<lt>", CommandFlags.Repeatable, VisualCommand.ShiftLinesLeft)
                 yield (">", CommandFlags.Repeatable, VisualCommand.ShiftLinesRight)
