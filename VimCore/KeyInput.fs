@@ -329,10 +329,6 @@ module KeyInputUtil =
         | None -> invalidArg "vimKey" Resources.KeyInput_InvalidVimKey
         | Some(ki) -> ki
 
-    let VimKeyAndModifiersToKeyInput vimKey keyModifiers = 
-        let ki = VimKeyToKeyInput vimKey
-        KeyInput(ki.Key, keyModifiers, ki.RawChar)
-
     let ChangeKeyModifiers (ki:KeyInput) keyModifiers = 
         KeyInput(ki.Key, keyModifiers, ki.RawChar)
 
@@ -343,10 +339,6 @@ module KeyInputUtil =
     let CharWithAltToKeyInput ch = 
         let ki = ch |> CharToKeyInput 
         ChangeKeyModifiers ki (ki.KeyModifiers ||| KeyModifiers.Alt)
-
-    let CharWithShiftToKeyInput ch = 
-        let ki = ch |> CharToKeyInput  
-        ChangeKeyModifiers ki (ki.KeyModifiers ||| KeyModifiers.Shift)
 
     let AlternateEnterKey = KeyInput.AlternateEnterKey
     let AlternateEscapeKey = KeyInput.AlternateEscapeKey
@@ -407,4 +399,8 @@ module KeyInputUtil =
             ChangeKeyModifiers keyInput modifiers
         else
             ChangeKeyModifiers keyInput modifiers
+
+    let ApplyModifiersToVimKey vimKey modifiers = 
+        let keyInput = VimKeyToKeyInput vimKey
+        ApplyModifiers keyInput modifiers
 

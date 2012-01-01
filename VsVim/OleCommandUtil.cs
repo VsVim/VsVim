@@ -88,7 +88,7 @@ namespace VsVim
                     break;
                 case VSConstants.VSStd2KCmdID.LEFT_EXT:
                 case VSConstants.VSStd2KCmdID.LEFT_EXT_COL:
-                    keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(VimKey.Left), KeyModifiers.Shift);
+                    keyInput = KeyInputUtil.ApplyModifiersToVimKey(VimKey.Left, KeyModifiers.Shift);
                     kind = EditCommandKind.VisualStudioCommand;
                     break;
                 case VSConstants.VSStd2KCmdID.RIGHT:
@@ -97,7 +97,7 @@ namespace VsVim
                     break;
                 case VSConstants.VSStd2KCmdID.RIGHT_EXT:
                 case VSConstants.VSStd2KCmdID.RIGHT_EXT_COL:
-                    keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(VimKey.Right), KeyModifiers.Shift);
+                    keyInput = KeyInputUtil.ApplyModifiersToVimKey(VimKey.Right, KeyModifiers.Shift);
                     kind = EditCommandKind.VisualStudioCommand;
                     break;
                 case VSConstants.VSStd2KCmdID.UP:
@@ -106,7 +106,7 @@ namespace VsVim
                     break;
                 case VSConstants.VSStd2KCmdID.UP_EXT:
                 case VSConstants.VSStd2KCmdID.UP_EXT_COL:
-                    keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(VimKey.Up), KeyModifiers.Shift);
+                    keyInput = KeyInputUtil.ApplyModifiersToVimKey(VimKey.Up, KeyModifiers.Shift);
                     kind = EditCommandKind.VisualStudioCommand;
                     break;
                 case VSConstants.VSStd2KCmdID.DOWN:
@@ -115,7 +115,7 @@ namespace VsVim
                     break;
                 case VSConstants.VSStd2KCmdID.DOWN_EXT:
                 case VSConstants.VSStd2KCmdID.DOWN_EXT_COL:
-                    keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(VimKey.Down), KeyModifiers.Shift);
+                    keyInput = KeyInputUtil.ApplyModifiersToVimKey(VimKey.Down, KeyModifiers.Shift);
                     kind = EditCommandKind.VisualStudioCommand;
                     break;
                 case VSConstants.VSStd2KCmdID.TAB:
@@ -123,7 +123,7 @@ namespace VsVim
                     kind = EditCommandKind.UserInput;
                     break;
                 case VSConstants.VSStd2KCmdID.BACKTAB:
-                    keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.TabKey, KeyModifiers.Shift);
+                    keyInput = KeyInputUtil.ApplyModifiersToVimKey(VimKey.Tab, KeyModifiers.Shift);
                     kind = EditCommandKind.UserInput;
                     break;
                 case VSConstants.VSStd2KCmdID.PAGEDN:
@@ -131,7 +131,7 @@ namespace VsVim
                     kind = EditCommandKind.UserInput;
                     break;
                 case VSConstants.VSStd2KCmdID.PAGEDN_EXT:
-                    keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(VimKey.PageDown), KeyModifiers.Shift);
+                    keyInput = KeyInputUtil.ApplyModifiersToVimKey(VimKey.PageDown, KeyModifiers.Shift);
                     kind = EditCommandKind.VisualStudioCommand;
                     break;
                 case VSConstants.VSStd2KCmdID.PAGEUP:
@@ -139,7 +139,7 @@ namespace VsVim
                     kind = EditCommandKind.UserInput;
                     break;
                 case VSConstants.VSStd2KCmdID.PAGEUP_EXT:
-                    keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(VimKey.PageUp), KeyModifiers.Shift);
+                    keyInput = KeyInputUtil.ApplyModifiersToVimKey(VimKey.PageUp, KeyModifiers.Shift);
                     kind = EditCommandKind.VisualStudioCommand;
                     break;
                 case VSConstants.VSStd2KCmdID.UNDO:
@@ -166,7 +166,7 @@ namespace VsVim
                     break;
                 case VSConstants.VSStd2KCmdID.BOL_EXT:
                 case VSConstants.VSStd2KCmdID.BOL_EXT_COL:
-                    keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(VimKey.Home), KeyModifiers.Shift);
+                    keyInput = KeyInputUtil.ApplyModifiersToVimKey(VimKey.Home, KeyModifiers.Shift);
                     kind = EditCommandKind.VisualStudioCommand;
                     break;
                 case VSConstants.VSStd2KCmdID.EOL:
@@ -177,7 +177,7 @@ namespace VsVim
                     break;
                 case VSConstants.VSStd2KCmdID.EOL_EXT:
                 case VSConstants.VSStd2KCmdID.EOL_EXT_COL:
-                    keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(VimKey.End), KeyModifiers.Shift);
+                    keyInput = KeyInputUtil.ApplyModifiersToVimKey(VimKey.End, KeyModifiers.Shift);
                     kind = EditCommandKind.VisualStudioCommand;
                     break;
                 case VSConstants.VSStd2KCmdID.TOGGLE_OVERTYPE_MODE:
@@ -257,64 +257,95 @@ namespace VsVim
         }
 
         /// <summary>
-        /// Try and convert the KeyInput value into an OleCommandData instance
+        /// Try and convert the KeyInput into the appropriate Visual Studio command.  The conversion will be done
+        /// without any consideration of Visual Studio standard commands.  It will map as if VsVim was in 
+        /// complete control of key bindings
         /// </summary>
         internal static bool TryConvert(KeyInput keyInput, out Guid commandGroup, out OleCommandData oleCommandData)
         {
-            var success = true;
+            return TryConvert(keyInput, false, out commandGroup, out oleCommandData);
+        }
+
+        /// <summary>
+        /// Try and convert the KeyInput value into an OleCommandData instance.  If simulateStandardKeyBindings is set
+        /// to true then "standard" Visual Studio key bindings will be assumed and this will be reflected in the 
+        /// resulting command information
+        /// </summary>
+        internal static bool TryConvert(KeyInput keyInput, bool simulateStandardKeyBindings, out Guid commandGroup, out OleCommandData oleCommandData)
+        {
+            var hasShift = 0 != (keyInput.KeyModifiers & KeyModifiers.Shift);
             commandGroup = VSConstants.VSStd2K;
+            VSConstants.VSStd2KCmdID? cmdId = null;
             switch (keyInput.Key)
             {
                 case VimKey.Enter:
-                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.RETURN);
+                    cmdId = VSConstants.VSStd2KCmdID.RETURN;
                     break;
                 case VimKey.Escape:
-                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.CANCEL);
+                    cmdId = VSConstants.VSStd2KCmdID.CANCEL;
                     break;
                 case VimKey.Delete:
-                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.DELETE);
+                    cmdId = VSConstants.VSStd2KCmdID.DELETE;
                     break;
                 case VimKey.Back:
-                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.BACKSPACE);
+                    cmdId = VSConstants.VSStd2KCmdID.BACKSPACE;
                     break;
                 case VimKey.Up:
-                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.UP);
+                    cmdId = simulateStandardKeyBindings && hasShift
+                        ? VSConstants.VSStd2KCmdID.UP_EXT
+                        : VSConstants.VSStd2KCmdID.UP;
                     break;
                 case VimKey.Down:
-                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.DOWN);
+                    cmdId = simulateStandardKeyBindings && hasShift
+                        ? VSConstants.VSStd2KCmdID.DOWN_EXT
+                        : VSConstants.VSStd2KCmdID.DOWN;
                     break;
                 case VimKey.Left:
-                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.LEFT);
+                    cmdId = simulateStandardKeyBindings && hasShift
+                        ? VSConstants.VSStd2KCmdID.LEFT_EXT
+                        : VSConstants.VSStd2KCmdID.LEFT;
                     break;
                 case VimKey.Right:
-                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.RIGHT);
+                    cmdId = simulateStandardKeyBindings && hasShift
+                        ? VSConstants.VSStd2KCmdID.RIGHT_EXT
+                        : VSConstants.VSStd2KCmdID.RIGHT;
                     break;
                 case VimKey.Tab:
-                    oleCommandData = new OleCommandData(keyInput.KeyModifiers == KeyModifiers.Shift ? VSConstants.VSStd2KCmdID.BACKTAB : VSConstants.VSStd2KCmdID.TAB);
+                    cmdId = simulateStandardKeyBindings && hasShift
+                        ? VSConstants.VSStd2KCmdID.BACKTAB
+                        : VSConstants.VSStd2KCmdID.TAB;
                     break;
                 case VimKey.PageUp:
-                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.PAGEUP);
+                    cmdId = simulateStandardKeyBindings && hasShift
+                        ? VSConstants.VSStd2KCmdID.PAGEUP_EXT
+                        : VSConstants.VSStd2KCmdID.PAGEUP;
                     break;
                 case VimKey.PageDown:
-                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.PAGEDN);
+                    cmdId = simulateStandardKeyBindings && hasShift
+                        ? VSConstants.VSStd2KCmdID.PAGEDN_EXT
+                        : VSConstants.VSStd2KCmdID.PAGEDN;
                     break;
                 case VimKey.Insert:
-                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.TOGGLE_OVERTYPE_MODE);
-                    break;
-                default:
-                    if (keyInput.RawChar.IsSome())
-                    {
-                        oleCommandData = OleCommandData.Allocate(keyInput.Char);
-                    }
-                    else
-                    {
-                        oleCommandData = new OleCommandData();
-                        success = false;
-                    }
+                    cmdId = VSConstants.VSStd2KCmdID.TOGGLE_OVERTYPE_MODE;
                     break;
             }
 
-            return success;
+            if (cmdId.HasValue)
+            {
+                oleCommandData = new OleCommandData(cmdId.Value);
+                return true;
+            }
+
+            if (keyInput.RawChar.IsSome())
+            {
+                oleCommandData = OleCommandData.Allocate(keyInput.Char);
+                return true;
+            }
+            else
+            {
+                oleCommandData = new OleCommandData();
+                return false;
+            }
         }
     }
 }

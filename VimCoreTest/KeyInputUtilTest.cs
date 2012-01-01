@@ -197,7 +197,7 @@ namespace Vim.UnitTest
                     continue;
                 }
 
-                var ki = KeyInputUtil.VimKeyAndModifiersToKeyInput(cur, KeyModifiers.Control);
+                var ki = KeyInputUtil.ApplyModifiersToVimKey(cur, KeyModifiers.Control);
                 Assert.AreEqual(cur, ki.Key);
                 Assert.AreEqual(KeyModifiers.Control, ki.KeyModifiers & KeyModifiers.Control);
             }

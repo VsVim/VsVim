@@ -25,7 +25,7 @@ namespace VsVim.UnitTest
                 KeyInputUtil.CharToKeyInput('#'),
                 KeyModifiers.Shift);
             Assert.AreEqual(KeyInputUtil.CharToKeyInput('#'), stroke.KeyInput);
-            Assert.AreEqual(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Pound, KeyModifiers.Shift), stroke.AggregateKeyInput);
+            Assert.AreEqual(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Pound, KeyModifiers.Shift), stroke.AggregateKeyInput);
             Assert.AreEqual('#', stroke.Char);
         }
 
@@ -36,7 +36,7 @@ namespace VsVim.UnitTest
                 KeyInputUtil.CharToKeyInput('#'),
                 KeyModifiers.Shift | KeyModifiers.Control);
             Assert.AreEqual(KeyInputUtil.CharToKeyInput('#'), stroke.KeyInput);
-            Assert.AreEqual(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Pound, KeyModifiers.Shift | KeyModifiers.Control), stroke.AggregateKeyInput);
+            Assert.AreEqual(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Pound, KeyModifiers.Shift | KeyModifiers.Control), stroke.AggregateKeyInput);
             Assert.AreEqual('#', stroke.Char);
         }
 

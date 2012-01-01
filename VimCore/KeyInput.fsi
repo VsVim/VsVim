@@ -83,6 +83,9 @@ module KeyInputUtil =
     /// certain ambiguous combinations.
     val ApplyModifiers : keyInput : KeyInput -> modifiers : KeyModifiers -> KeyInput
 
+    /// Apply the modifiers to the given VimKey
+    val ApplyModifiersToVimKey : VimKey -> modifiers : KeyModifiers -> KeyInput
+
     /// Try and convert the given char to a KeyInput value
     val CharToKeyInput : char -> KeyInput
 
@@ -92,14 +95,8 @@ module KeyInputUtil =
     /// Convert the passed in char to a KeyInput with Alt
     val CharWithAltToKeyInput : char -> KeyInput
 
-    /// Convert the passed in char to a KeyInput with Shift
-    val CharWithShiftToKeyInput : char -> KeyInput
-
     /// Convert the specified VimKey code to a KeyInput 
     val VimKeyToKeyInput : VimKey -> KeyInput
-
-    /// Convert the specified VimKey to a KeyInput with the given KeyModifiers
-    val VimKeyAndModifiersToKeyInput : VimKey -> KeyModifiers -> KeyInput
 
     /// Change the KeyModifiers associated with this KeyInput.  Will not change the value
     /// of the underlying char.  Although it may produce a KeyInput that makes no 

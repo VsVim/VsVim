@@ -431,7 +431,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             _commandUtil.SetupCommandNormal(NormalCommand.NewScrollPages(ScrollDirection.Down));
-            _mode.Process(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Down, KeyModifiers.Shift));
+            _mode.Process(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Down, KeyModifiers.Shift));
             _commandUtil.Verify();
         }
 
@@ -467,7 +467,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             _commandUtil.SetupCommandNormal(NormalCommand.NewScrollPages(ScrollDirection.Up));
-            _mode.Process(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Up, KeyModifiers.Shift));
+            _mode.Process(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Up, KeyModifiers.Shift));
             _commandUtil.Verify();
         }
 
@@ -1483,7 +1483,7 @@ namespace Vim.UnitTest
         {
             Create("");
             _commandUtil.SetupCommandNormal(NormalCommand.NewGoToNextTab(Path.Forward));
-            _mode.Process(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.PageDown, KeyModifiers.Control));
+            _mode.Process(KeyInputUtil.ApplyModifiersToVimKey(VimKey.PageDown, KeyModifiers.Control));
             _commandUtil.Verify();
         }
 
@@ -1501,7 +1501,7 @@ namespace Vim.UnitTest
         {
             Create("");
             _commandUtil.SetupCommandNormal(NormalCommand.NewGoToNextTab(Path.Backward));
-            _mode.Process(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.PageUp, KeyModifiers.Control));
+            _mode.Process(KeyInputUtil.ApplyModifiersToVimKey(VimKey.PageUp, KeyModifiers.Control));
             _commandUtil.Verify();
         }
 

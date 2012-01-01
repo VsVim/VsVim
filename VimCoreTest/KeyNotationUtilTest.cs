@@ -75,22 +75,22 @@ namespace Vim.UnitTest
         [Test]
         public void Single_ShiftNumberShouldNotPromote()
         {
-            AssertSingle("<S-1>", KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Number1, KeyModifiers.Shift));
-            AssertSingle("<s-1>", KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Number1, KeyModifiers.Shift));
+            AssertSingle("<S-1>", KeyInputUtil.ApplyModifiersToVimKey(VimKey.Number1, KeyModifiers.Shift));
+            AssertSingle("<s-1>", KeyInputUtil.ApplyModifiersToVimKey(VimKey.Number1, KeyModifiers.Shift));
         }
 
         [Test]
         public void Single_AlphaWithControl()
         {
-            AssertSingle("<C-x>", KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.LowerX, KeyModifiers.Control));
-            AssertSingle("<c-X>", KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.UpperX, KeyModifiers.Control));
+            AssertSingle("<C-x>", KeyInputUtil.ApplyModifiersToVimKey(VimKey.LowerX, KeyModifiers.Control));
+            AssertSingle("<c-X>", KeyInputUtil.ApplyModifiersToVimKey(VimKey.UpperX, KeyModifiers.Control));
         }
 
         [Test]
         public void Single_AlphaWithAltIsCaseSensitive()
         {
-            AssertSingle("<A-b>", KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.LowerB, KeyModifiers.Alt));
-            AssertSingle("<A-B>", KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.UpperB, KeyModifiers.Alt));
+            AssertSingle("<A-b>", KeyInputUtil.ApplyModifiersToVimKey(VimKey.LowerB, KeyModifiers.Alt));
+            AssertSingle("<A-B>", KeyInputUtil.ApplyModifiersToVimKey(VimKey.UpperB, KeyModifiers.Alt));
         }
 
         [Test]
@@ -102,20 +102,20 @@ namespace Vim.UnitTest
         [Test]
         public void Single_NotationControlAndSymbol()
         {
-            AssertSingle("<C-]>", KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.CloseBracket, KeyModifiers.Control));
+            AssertSingle("<C-]>", KeyInputUtil.ApplyModifiersToVimKey(VimKey.CloseBracket, KeyModifiers.Control));
         }
 
         [Test]
         public void Single_NotationOfFunctionKey()
         {
-            AssertSingle("<S-F11>", KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.F11, KeyModifiers.Shift));
-            AssertSingle("<c-F11>", KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.F11, KeyModifiers.Control));
+            AssertSingle("<S-F11>", KeyInputUtil.ApplyModifiersToVimKey(VimKey.F11, KeyModifiers.Shift));
+            AssertSingle("<c-F11>", KeyInputUtil.ApplyModifiersToVimKey(VimKey.F11, KeyModifiers.Control));
         }
 
         [Test]
         public void Single_ShiftAndControlModifier()
         {
-            AssertSingle("<C-S-A>", KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.UpperA, KeyModifiers.Control));
+            AssertSingle("<C-S-A>", KeyInputUtil.ApplyModifiersToVimKey(VimKey.UpperA, KeyModifiers.Control));
         }
 
         [Test]

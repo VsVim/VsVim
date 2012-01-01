@@ -376,45 +376,6 @@ namespace VsVim.UnitTest.Utils
         #endregion
 
         /// <summary>
-        /// This dictionary is used to map KeyInput values to Visual Studio commands.  It 
-        /// represents the commands which are very commonly mapped on installations
-        /// </summary>
-        private static readonly Dictionary<KeyInput, VSConstants.VSStd2KCmdID> s_standardKeyMappings;
-
-        static VsSimulation()
-        {
-            s_standardKeyMappings = new Dictionary<KeyInput, VSConstants.VSStd2KCmdID>();
-
-            var keys = new [] { 
-                VimKey.Left,
-                VimKey.Up,
-                VimKey.Right,
-                VimKey.Down,
-                VimKey.Home,
-                VimKey.End,
-                VimKey.PageUp,
-                VimKey.PageDown
-            };
-
-            var commands = new[] {
-                VSConstants.VSStd2KCmdID.LEFT_EXT,
-                VSConstants.VSStd2KCmdID.UP_EXT,
-                VSConstants.VSStd2KCmdID.RIGHT_EXT,
-                VSConstants.VSStd2KCmdID.DOWN_EXT,
-                VSConstants.VSStd2KCmdID.BOL_EXT,
-                VSConstants.VSStd2KCmdID.EOL_EXT,
-                VSConstants.VSStd2KCmdID.PAGEUP_EXT,
-                VSConstants.VSStd2KCmdID.PAGEDN_EXT,
-            };
-
-            for (var i = 0; i < keys.Length; i++)
-            {
-                var keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(keys[i]), KeyModifiers.Shift);
-                s_standardKeyMappings[keyInput] = commands[i];
-            }
-        }
-
-        /// <summary>
         /// Cache of QueryStatus commands
         /// </summary>
         private readonly Dictionary<CommandKey, bool> _cachedQueryStatusMap = new Dictionary<CommandKey, bool>();
@@ -598,13 +559,7 @@ namespace VsVim.UnitTest.Utils
                 }
 
                 Guid commandGroup;
-                VSConstants.VSStd2KCmdID commandId;
-                if (_simulateStandardKeyMappings && s_standardKeyMappings.TryGetValue(keyInput, out commandId))
-                {
-                    commandGroup = VSConstants.VSStd2K;
-                    oleCommandData = new OleCommandData(commandId);
-                }
-                else if (!OleCommandUtil.TryConvert(keyInput, out commandGroup, out oleCommandData))
+                if (!OleCommandUtil.TryConvert(keyInput, SimulateStandardKeyMappings, out commandGroup, out oleCommandData))
                 {
                     throw new Exception("Couldn't convert the KeyInput into OleCommandData");
                 }

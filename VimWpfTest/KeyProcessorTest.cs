@@ -211,7 +211,7 @@ namespace Vim.UI.Wpf.UnitTest
         [Test]
         public void KeyDown_NonCharWithModifierShouldCarryModifier()
         {
-            var ki = KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Left, KeyModifiers.Shift);
+            var ki = KeyInputUtil.ApplyModifiersToVimKey(VimKey.Left, KeyModifiers.Shift);
             _buffer.Setup(x => x.CanProcessAsCommand(ki)).Returns(true).Verifiable();
             _buffer.Setup(x => x.Process(ki)).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
 

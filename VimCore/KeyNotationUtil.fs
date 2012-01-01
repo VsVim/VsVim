@@ -33,7 +33,7 @@ module KeyNotationUtil =
 
     let ManualKeyList = 
         [
-            ("<Nul>",KeyInputUtil.VimKeyAndModifiersToKeyInput VimKey.AtSign KeyModifiers.Control)
+            ("<Nul>",KeyInputUtil.ApplyModifiersToVimKey VimKey.AtSign KeyModifiers.Control)
             ("<BS>", KeyInputUtil.VimKeyToKeyInput VimKey.Back)
             ("<Tab>",KeyInputUtil.TabKey)
             ("<NL>", KeyInputUtil.LineFeedKey)

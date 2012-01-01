@@ -101,7 +101,6 @@ namespace Vim.UI.Wpf.UnitTest
             AssertGetKeyInput('a', 'a', ModifierKeys.None);
             AssertGetKeyInput('A', 'A', ModifierKeys.None);
             AssertGetKeyInput('A', 'A', ModifierKeys.Shift);
-            AssertGetKeyInput(KeyInputUtil.CharWithShiftToKeyInput('a'), 'a', ModifierKeys.Shift);
             AssertGetKeyInput(KeyInputUtil.CharWithControlToKeyInput('a'), 'a', ModifierKeys.Control);
             AssertGetKeyInput(KeyInputUtil.CharWithControlToKeyInput('A'), 'A', ModifierKeys.Control);
             AssertGetKeyInput(KeyInputUtil.CharWithControlToKeyInput('A'), 'A', ModifierKeys.Control | ModifierKeys.Shift);

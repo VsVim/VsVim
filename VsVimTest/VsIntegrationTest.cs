@@ -67,7 +67,7 @@ namespace VsVim.UnitTest
         {
             Create("cat", "dog");
             _vimBuffer.Process(":map <S-RETURN> o<Esc>", enter: true);
-            _simulation.Run(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Enter, KeyModifiers.Shift));
+            _simulation.Run(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Enter, KeyModifiers.Shift));
             Assert.AreEqual(3, _textBuffer.CurrentSnapshot.LineCount);
             Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
             Assert.AreEqual("", _textBuffer.GetLine(1).GetText());
@@ -82,7 +82,7 @@ namespace VsVim.UnitTest
         {
             Create("cat", "dog");
             _vimBuffer.Process(":map <S-TAB> o<Esc>", enter: true);
-            _simulation.Run(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Tab, KeyModifiers.Shift));
+            _simulation.Run(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Tab, KeyModifiers.Shift));
             Assert.AreEqual(3, _textBuffer.CurrentSnapshot.LineCount);
             Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
             Assert.AreEqual("", _textBuffer.GetLine(1).GetText());
@@ -148,7 +148,7 @@ namespace VsVim.UnitTest
         {
             Create("dog", "cat", "tree");
             _simulation.SimulateStandardKeyMappings = true;
-            _simulation.Run(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Down, KeyModifiers.Shift));
+            _simulation.Run(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Down, KeyModifiers.Shift));
             Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
         }
 
@@ -161,7 +161,7 @@ namespace VsVim.UnitTest
         {
             Create("dog", "cat", "tree");
             _simulation.SimulateStandardKeyMappings = true;
-            _simulation.Run(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Right, KeyModifiers.Shift));
+            _simulation.Run(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Right, KeyModifiers.Shift));
             Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
         }
 

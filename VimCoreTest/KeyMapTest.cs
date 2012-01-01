@@ -97,7 +97,7 @@ namespace Vim.UnitTest
         {
             Assert.IsTrue(_map.MapWithNoRemap("<S-#>", "pound", KeyRemapMode.Normal));
             Assert.IsTrue(_map.GetKeyMappingResult(KeyInputUtil.VimKeyToKeyInput(VimKey.Pound), KeyRemapMode.Normal).IsNoMapping);
-            Assert.IsTrue(_map.GetKeyMappingResult(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Pound, KeyModifiers.Shift), KeyRemapMode.Normal).IsMapped);
+            Assert.IsTrue(_map.GetKeyMappingResult(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Pound, KeyModifiers.Shift), KeyRemapMode.Normal).IsMapped);
         }
 
         [Test]
@@ -350,7 +350,7 @@ namespace Vim.UnitTest
         public void Issue328()
         {
             Assert.IsTrue(_map.MapWithNoRemap("<S-SPACE>", "<ESC>", KeyRemapMode.Insert));
-            var res = _map.GetKeyMapping(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Space, KeyModifiers.Shift), KeyRemapMode.Insert);
+            var res = _map.GetKeyMapping(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Space, KeyModifiers.Shift), KeyRemapMode.Insert);
             Assert.AreEqual(KeyInputUtil.EscapeKey, res.Single());
         }
     }

@@ -65,7 +65,7 @@ namespace VsVim.UnitTest
             var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
             Guid commandGroup;
             OleCommandData oleCommandData;
-            Assert.IsTrue(OleCommandUtil.TryConvert(keyInput, out commandGroup, out oleCommandData));
+            Assert.IsTrue(OleCommandUtil.TryConvert(keyInput, false, out commandGroup, out oleCommandData));
             Assert.AreEqual(VSConstants.VSStd2K, commandGroup);
             Assert.AreEqual(new OleCommandData(cmd), oleCommandData);
         }
