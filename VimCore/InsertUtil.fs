@@ -20,6 +20,7 @@ type internal InsertUtil
     let _editorOperations = _operations.EditorOperations
     let _editorOptions = _textView.Options
     let _wordUtil = _vimBufferData.WordUtil
+    let _vimHost = _vimBufferData.Vim.VimHost
 
     /// The column of the caret
     member x.CaretColumn = SnapshotPointUtil.GetColumn x.CaretPoint
@@ -137,6 +138,13 @@ type internal InsertUtil
                 TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
 
         CommandResult.Completed ModeSwitch.NoSwitch
+
+    member x.DirectInsert (c : char) = 
+        let text = c.ToString()
+        if _editorOperations.InsertText(text) then
+            CommandResult.Completed ModeSwitch.NoSwitch
+        else
+            CommandResult.Error
 
     /// Insert a new line into the ITextBuffer.  Make sure to indent the text
     member x.InsertNewLine() =
@@ -297,18 +305,24 @@ type internal InsertUtil
         | Some point -> x.EditWithUndoTransaciton "Move Caret" (fun () -> TextViewUtil.MoveCaretToPoint _textView point)
 
     member x.RunInsertCommandCore command addNewLines = 
-        match command with
-        | InsertCommand.Back -> x.Back()
-        | InsertCommand.Combined (left, right) -> x.Combined left right
-        | InsertCommand.Delete -> x.Delete()
-        | InsertCommand.DeleteAllIndent -> x.DeleteAllIndent() 
-        | InsertCommand.DeleteWordBeforeCursor -> x.DeleteWordBeforeCursor()
-        | InsertCommand.InsertNewLine -> x.InsertNewLine()
-        | InsertCommand.InsertTab -> x.InsertTab()
-        | InsertCommand.MoveCaret direction -> x.MoveCaret direction
-        | InsertCommand.ShiftLineLeft -> x.ShiftLineLeft ()
-        | InsertCommand.ShiftLineRight -> x.ShiftLineRight ()
-        | InsertCommand.TextChange textChange -> x.TextChange textChange addNewLines
+
+        // Allow the host to custom process this message here.
+        if _vimHost.TryCustomProcess _textView command then
+            CommandResult.Completed ModeSwitch.NoSwitch
+        else
+            match command with
+            | InsertCommand.Back -> x.Back()
+            | InsertCommand.Combined (left, right) -> x.Combined left right
+            | InsertCommand.Delete -> x.Delete()
+            | InsertCommand.DeleteAllIndent -> x.DeleteAllIndent() 
+            | InsertCommand.DeleteWordBeforeCursor -> x.DeleteWordBeforeCursor()
+            | InsertCommand.DirectInsert c -> x.DirectInsert c
+            | InsertCommand.InsertNewLine -> x.InsertNewLine()
+            | InsertCommand.InsertTab -> x.InsertTab()
+            | InsertCommand.MoveCaret direction -> x.MoveCaret direction
+            | InsertCommand.ShiftLineLeft -> x.ShiftLineLeft ()
+            | InsertCommand.ShiftLineRight -> x.ShiftLineRight ()
+            | InsertCommand.ExtraTextChange textChange -> x.ExtraTextChange textChange addNewLines
 
     member x.RunInsertCommand command = 
         x.RunInsertCommandCore command false
@@ -348,7 +362,7 @@ type internal InsertUtil
     member x.ShiftLineRight () =
         CommandResult.Error
 
-    member x.TextChange textChange addNewLines = 
+    member x.ExtraTextChange textChange addNewLines = 
         _operations.ApplyTextChange textChange addNewLines 1
         CommandResult.Completed ModeSwitch.NoSwitch
 

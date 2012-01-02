@@ -220,26 +220,6 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
-        /// Ensure that KeyInput which comes through CustomProcess is properly recorded
-        /// </summary>
-        [Test]
-        public void Record_CustomProcess()
-        {
-            Create("");
-            _vimBuffer.Process("qc");
-            _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-            _vimBuffer.Process("ab");
-            _vimBuffer.InsertMode.CustomProcess(KeyInputUtil.CharToKeyInput('c'), () => true);
-            _vimBuffer.Process(VimKey.Escape);
-            _vimBuffer.Process("q");
-
-            // Tricky comparing the values since it embeds an <Esc> into the string.  Just
-            // compare the printable items and assert the length is correct
-            Assert.AreEqual("abc", TestRegister.StringValue.Substring(0, 3));
-            Assert.AreEqual(4, TestRegister.StringValue.Length);
-        }
-
-        /// <summary>
         /// Running a macro which consists of several commands should cause only the last
         /// command to be the last command for the purpose of a 'repeat' operation
         /// </summary>

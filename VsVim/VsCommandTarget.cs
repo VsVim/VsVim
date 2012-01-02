@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace VsVim
 {
@@ -36,6 +37,12 @@ namespace VsVim
             PassOn,
         }
 
+        /// <summary>
+        /// This is the key which is used to store VsCommandTarget instances in the ITextView
+        /// property bag
+        /// </summary>
+        private static readonly object Key = new object();
+
         private readonly IVimBuffer _buffer;
         private readonly IVimBufferCoordinator _bufferCoordinator;
         private readonly ITextBuffer _textBuffer;
@@ -56,6 +63,85 @@ namespace VsVim
             _vsAdapter = vsAdapter;
             _broker = broker;
             _externalEditManager = externalEditorManager;
+        }
+
+        /// <summary>
+        /// Try and custom process the given InsertCommand when it's appropriate to override
+        /// with Visual Studio specific behavior
+        /// </summary>
+        public bool TryCustomProcess(InsertCommand command)
+        {
+            OleCommandData oleCommandData = OleCommandData.Empty;
+            try
+            {
+                Guid commandGroup;
+                if (!TryGetOleCommandData(command, out commandGroup, out oleCommandData))
+                {
+                    // Not a command that we custom process
+                    return false;
+                }
+                var versionNumber = _textBuffer.CurrentSnapshot.Version.VersionNumber;
+
+                // TODO: Make an extension method that just takes an OleCommandData
+                int hr = _nextTarget.Exec(
+                    ref commandGroup,
+                    oleCommandData.CommandId,
+                    oleCommandData.CommandExecOpt,
+                    oleCommandData.VariantIn,
+                    oleCommandData.VariantOut);
+
+                // Whether or not an Exec succeeded is a bit of a heuristic.  IOleCommandTarget implementations like
+                // C++ will return E_ABORT if Intellisense failed but the character was actually inserted into 
+                // the ITextBuffer.  VsVim really only cares about the character insert.  However we must also
+                // consider cases where the character successfully resulted in no action as a success
+                return ErrorHandler.Succeeded(hr) || versionNumber < _textBuffer.CurrentSnapshot.Version.VersionNumber;
+            }
+            finally
+            {
+                OleCommandData.Release(ref oleCommandData);
+            }
+        }
+
+        /// <summary>
+        /// Try and convert the given insert command to an OleCommand.  This should only be done
+        /// for InsertCommand values which we want to custom process
+        /// </summary>
+        private bool TryGetOleCommandData(InsertCommand command, out Guid commandGroup, out OleCommandData commandData)
+        {
+            commandGroup = VSConstants.VSStd2K;
+            if (command.IsBack)
+            {
+                commandData = new OleCommandData(VSConstants.VSStd2KCmdID.BACKSPACE);
+                return true;
+            }
+
+            if (command.IsDelete)
+            {
+                commandData = new OleCommandData(VSConstants.VSStd2KCmdID.DELETE);
+                return true;
+            }
+
+            if (command.IsDirectInsert)
+            {
+                var directInsert = (InsertCommand.DirectInsert)command;
+                commandData = OleCommandData.Allocate(directInsert.Item);
+                return true;
+            }
+
+            if (command.IsInsertTab)
+            {
+                commandData = new OleCommandData(VSConstants.VSStd2KCmdID.TAB);
+                return true;
+            }
+
+            if (command.IsInsertNewLine)
+            {
+                commandData = new OleCommandData(VSConstants.VSStd2KCmdID.RETURN);
+                return true;
+            }
+
+            commandData = OleCommandData.Empty;
+            return false;
         }
 
         /// <summary>
@@ -122,20 +208,6 @@ namespace VsVim
                 return false;
             }
 
-            // Don't let the mode directly process anything it considers direct input.  We need this to go
-            // through IOleCommandTarget in order for features like intellisense to work properly
-            if (mode.IsDirectInsert(keyInput))
-            {
-                return true;
-            }
-
-            // Don't handle Enter or Tab in general as they are often very much special cased by the 
-            // language service
-            if (keyInput == KeyInputUtil.EnterKey || keyInput.Key == VimKey.Tab)
-            {
-                return true;
-            }
-
             // Is this a key known to impact IntelliSense
             var isIntelliSenseKey =
                 keyInput.Key == VimKey.Up ||
@@ -191,95 +263,31 @@ namespace VsVim
             // not at the individual IMode.  Have to manually map here and test against the 
             // mapped KeyInput
             KeyInput mapped;
-            if (!TryGetSingleMapping(keyInput, out mapped) || !ShouldProcessWithCommandTargetOverInsertMode(insertMode, mapped))
+            if (TryGetSingleMapping(keyInput, out mapped) && ShouldProcessWithCommandTargetOverInsertMode(insertMode, mapped))
             {
-                return _buffer.Process(keyInput).IsAnyHandled;
-            }
-
-            // We are now intentionally by passing insert mode here.  If there is an active 
-            // IWordCompletionSession here we need to manually dismiss it.  Else it will remain
-            // as we start typing a new word
-            if (insertMode.ActiveWordCompletionSession.IsSome())
-            {
-                insertMode.ActiveWordCompletionSession.Value.Dismiss();
-            }
-
-            // We've successfully mapped the KeyInput (even if t's a no-op) and determined that
-            // we don't want to process it directly if possible.  Now we try and process the 
-            // potentially mapped value
-            if (TryProcessWithExec(commandGroup, oleCommandData, insertMode, keyInput, mapped))
-            {
-                return true;
-            }
-
-            // If we couldn't map the KeyInput value into a Visual Studio command then go straight to the 
-            // ITextBuffer.  Insert mode is already designed to handle these KeyInput values we'd just prefer
-            // to pass them through Visual Studio..  Remember to use the original KeyInput value here as
-            // going through IVimBuffer will process mappings
-            return _buffer.Process(keyInput).IsAnyHandled;
-        }
-
-        /// <summary>
-        /// Try and process the given KeyInput for insert mode in the middle of an Exec.  This is 
-        /// called for commands which can't be processed directly like edits.  We'd prefer these 
-        /// go through Visual Studio's command system so items like Intellisense work properly.
-        /// </summary>
-        private bool TryProcessWithExec(Guid commandGroup, OleCommandData oleCommandData, IInsertMode insertMode, KeyInput originalKeyInput, KeyInput mappedKeyInput)
-        {
-
-            Func<bool> customProcess =
-                () =>
+                // We are now intentionally by passing insert mode here.  If there is an active 
+                // IWordCompletionSession here we need to manually dismiss it.  Else it will remain
+                // as we start typing a new word
+                if (insertMode.ActiveWordCompletionSession.IsSome())
                 {
-                    var versionNumber = _textBuffer.CurrentSnapshot.Version.VersionNumber;
-                    int? hr = null;
-                    Guid mappedCommandGroup;
-                    OleCommandData mappedOleCommandData;
-                    if (originalKeyInput == mappedKeyInput)
-                    {
-                        // No changes so just use the original OleCommandData
-                        hr = _nextTarget.Exec(
-                            ref commandGroup,
-                            oleCommandData.CommandId,
-                            oleCommandData.CommandExecOpt,
-                            oleCommandData.VariantIn,
-                            oleCommandData.VariantOut);
-                    }
-                    else if (OleCommandUtil.TryConvert(mappedKeyInput, out mappedCommandGroup, out mappedOleCommandData))
-                    {
-                        hr = _nextTarget.Exec(
-                            ref mappedCommandGroup,
-                            mappedOleCommandData.CommandId,
-                            mappedOleCommandData.CommandExecOpt,
-                            mappedOleCommandData.VariantIn,
-                            mappedOleCommandData.VariantOut);
-                        OleCommandData.Release(ref mappedOleCommandData);
-                    }
+                    insertMode.ActiveWordCompletionSession.Value.Dismiss();
+                }
 
-                    if (hr.HasValue)
-                    {
-                        // Whether or not an Exec succeeded is a bit of a heuristic.  IOleCommandTarget implementations like
-                        // C++ will return E_ABORT if Intellisense failed but the character was actually inserted into 
-                        // the ITextBuffer.  VsVim really only cares about the character insert.  However we must also
-                        // consider cases where the character successfully resulted in no action as a success
-                        return ErrorHandler.Succeeded(hr.Value) || versionNumber < _textBuffer.CurrentSnapshot.Version.VersionNumber;
-                    }
+                return false;
+            }
 
-                    // Couldn't map to a Visual Studio command so it didn't succeed
-                    return false;
-                };
-
-            return insertMode.CustomProcess(mappedKeyInput, customProcess.ToFSharpFunc());
+            return _buffer.Process(keyInput).IsAnyHandled;
         }
 
         /// <summary>
         /// Try and convert the Visual Studio command to it's equivalent KeyInput
         /// </summary>
-        internal bool TryConvert(Guid commandGroup, uint commandId, IntPtr pvaIn, out KeyInput keyInput)
+        internal bool TryConvert(Guid commandGroup, uint commandId, IntPtr variantIn, out KeyInput keyInput)
         {
             keyInput = null;
 
             EditCommand editCommand;
-            if (!TryConvert(commandGroup, commandId, pvaIn, out editCommand))
+            if (!TryConvert(commandGroup, commandId, variantIn, out editCommand))
             {
                 return false;
             }
@@ -490,9 +498,20 @@ namespace VsVim
             IDisplayWindowBroker broker,
             IExternalEditorManager externalEditorManager)
         {
-            var filter = new VsCommandTarget(bufferCoordinator, adapter, broker, externalEditorManager);
-            var hresult = vsTextView.AddCommandFilter(filter, out filter._nextTarget);
-            return Result.CreateSuccessOrError(filter, hresult);
+            var vsCommandTarget = new VsCommandTarget(bufferCoordinator, adapter, broker, externalEditorManager);
+            var hresult = vsTextView.AddCommandFilter(vsCommandTarget, out vsCommandTarget._nextTarget);
+            var result = Result.CreateSuccessOrError(vsCommandTarget, hresult);
+            if (result.IsSuccess)
+            {
+                bufferCoordinator.VimBuffer.TextView.Properties[Key] = vsCommandTarget;
+            }
+
+            return result;
+        }
+
+        internal static bool TryGet(ITextView textView, out VsCommandTarget vsCommandTarget)
+        {
+            return textView.Properties.TryGetProperty(Key, out vsCommandTarget);
         }
     }
 }

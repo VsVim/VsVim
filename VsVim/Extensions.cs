@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.InteropServices;
+using EditorUtils;
 using EnvDTE;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;
@@ -15,7 +16,6 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
-using EditorUtils;
 using Command = EnvDTE.Command;
 
 namespace VsVim
@@ -138,33 +138,23 @@ namespace VsVim
 
         #region PropertyCollection
 
-        internal static void AddTypedProperty<T>(this PropertyCollection col, T value)
-        {
-            col.AddProperty(typeof(T), value);
-        }
-
-        internal static FSharpOption<T> TryGetTypedProperty<T>(this PropertyCollection col)
+        internal static bool TryGetProperty<T>(this PropertyCollection col, object key, out T value)
         {
             try
             {
-                T value;
-                if (col.TryGetProperty(typeof(T), out value))
+                if (col.TryGetProperty(key, out value))
                 {
-                    return FSharpOption<T>.Some(value);
+                    return true;
                 }
             }
             catch (Exception)
             {
                 // If the Property is not of type T an exception will be thrown
-                return FSharpOption<T>.None;
+                value = default(T);
+                return false;
             }
 
-            return FSharpOption<T>.None;
-        }
-
-        internal static bool RemoveTypedProperty<T>(this PropertyCollection col)
-        {
-            return col.RemoveProperty(typeof(T));
+            return false;
         }
 
         #endregion

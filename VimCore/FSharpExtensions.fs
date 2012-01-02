@@ -77,12 +77,3 @@ type public FSharpFuncUtil =
     static member Create<'a,'b,'c> (func:System.Func<'a,'b,'c>) = FSharpFuncUtil.ToFSharpFunc func
 
     static member Create<'a,'b,'c,'d> (func:System.Func<'a,'b,'c,'d>) = FSharpFuncUtil.ToFSharpFunc func
-
-[<Extension>]
-type public ModeExtensions = 
-
-    [<Extension>]
-    static member CustomProcess (insertMode : Vim.IInsertMode) keyInput (func : System.Func<bool>) = 
-        insertMode.CustomProcess keyInput (fun () -> func.Invoke())
-
-

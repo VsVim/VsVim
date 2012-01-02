@@ -55,6 +55,13 @@ type internal InsertMode
         _wordCompletionSessionFactoryService : IWordCompletionSessionFactoryService
     ) as this =
 
+    static let _emptySessionData = {
+        InsertKind = InsertKind.Normal
+        Transaction = None
+        CombinedEditCommand = None
+        ActiveWordCompletionSession = None
+    }
+
     let _bag = DisposableBag()
     let _textView = _vimBuffer.TextView
     let _textBuffer = _vimBuffer.TextBuffer
@@ -62,13 +69,6 @@ type internal InsertMode
     let _editorOperations = _operations.EditorOperations
     let _commandRanEvent = StandardEvent<CommandRunDataEventArgs>()
     let mutable _commandMap : Map<KeyInput, RawInsertCommand> = Map.empty
-    let mutable _processDirectInsertCount = 0
-    static let _emptySessionData = {
-        InsertKind = InsertKind.Normal
-        Transaction = None
-        CombinedEditCommand = None
-        ActiveWordCompletionSession = None
-    }
     let mutable _sessionData = _emptySessionData
 
     /// The set of commands supported by insert mode
@@ -120,7 +120,7 @@ type internal InsertMode
         |> Observable.subscribe (fun _ -> this.OnCaretPositionChanged() )
         |> _bag.Add
 
-        // Listen for text changes
+        // Listen for text changes 
         _textChangeTracker.ChangeCompleted
         |> Observable.filter (fun _ -> this.IsActive)
         |> Observable.subscribe (fun args -> this.OnTextChangeCompleted args)
@@ -135,8 +135,6 @@ type internal InsertMode
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
 
     member x.CurrentSnapshot = _textView.TextSnapshot
-
-    member x.IsProcessingDirectInsert = _processDirectInsertCount > 0
 
     member x.ModeKind = if _isReplace then ModeKind.Replace else ModeKind.Insert
 
@@ -156,11 +154,7 @@ type internal InsertMode
             _sessionData <- { _sessionData with ActiveWordCompletionSession = None }
 
     /// Can Insert mode handle this particular KeyInput value 
-    member x.CanProcess keyInput = 
-        if Map.containsKey keyInput _commandMap then
-            true
-        else
-            x.IsDirectInsert keyInput
+    member x.CanProcess keyInput = x.GetRawInsertCommand keyInput |> Option.isSome
 
     /// Complete the current batched edit command if one exists
     member x.CompleteCombinedEditCommand () = 
@@ -177,6 +171,20 @@ type internal InsertMode
                 CommandResult = CommandResult.Completed ModeSwitch.NoSwitch }
             let args = CommandRunDataEventArgs(data)
             _commandRanEvent.Trigger x args
+
+    /// Get the RawInsertCommand for the given KeyInput
+    member x.GetRawInsertCommand keyInput = 
+        match Map.tryFind keyInput _commandMap with
+        | Some rawInsertCommand -> Some rawInsertCommand
+        | None ->
+            match keyInput.RawChar with
+            | None -> None
+            | Some c ->
+                // It's a direct insert if it's a char not mapped to an existing command
+                let command = InsertCommand.DirectInsert c
+                let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
+                let keyInputSet = KeyInputSet.OneKeyInput keyInput
+                RawInsertCommand.InsertCommand (keyInputSet, command, commandFlags) |> Some
 
     /// Get the Span for the word we are trying to complete if there is one
     member x.GetWordCompletionSpan () =
@@ -199,44 +207,6 @@ type internal InsertMode
             | None -> None
             | Some span -> SnapshotSpan(span.Start, x.CaretPoint) |> Some
 
-    /// Custom process the given KeyInput value.  The actual processing of the command, for this
-    /// execution only, is left to the provided function.  The main work of this function is to 
-    /// set the command up for repeat, macro execution and do any other book keeping which would
-    /// occur if this command was processed normally
-    member x.CustomProcess keyInput customProcessFunc =
-
-        let succeeded = 
-            match Map.tryFind keyInput _commandMap with
-            | None -> 
-                // No explicit command.  Treat this like it was a direct input command.  Insert it 
-                // and rely on the text change tracker to build up repeat data
-                customProcessFunc()
-    
-            | Some rawInsertCommand ->
-                match rawInsertCommand with
-                | RawInsertCommand.CustomCommand _ -> 
-                    // Treat the custom command just like direct input.  We don't do any special tracking
-                    // for this
-                    customProcessFunc()
-                | RawInsertCommand.InsertCommand (_, insertCommand, commandFlags) ->
-    
-                    /// This is the function which actually does the processing.  
-                    let func _ =
-                        if customProcessFunc() then
-                            CommandResult.Completed ModeSwitch.NoSwitch
-                        else
-                            CommandResult.Error
-    
-                    let keyInputSet = KeyInputSet.OneKeyInput keyInput
-                    let processResult = x.RunInsertCommandCore insertCommand keyInputSet commandFlags func
-                    processResult.IsHandledSuccess
-
-        if succeeded then
-            // Let the IVimBuffer know that we processed the given KeyInput.  This will add the KeyInput
-            // value to the current macro if one is being keyInputSet recorder
-            _vimBuffer.SimulateProcessed keyInput
-
-        succeeded
 
     /// Get the word completions for the given word text in the ITextBuffer
     member x.GetWordCompletions (wordSpan : SnapshotSpan) =
@@ -301,14 +271,15 @@ type internal InsertMode
     /// processed by adding characters to the ITextBuffer.  This is anything which has an
     /// associated character that is not an insert mode command
     member x.IsDirectInsert (keyInput : KeyInput) = 
-        match Map.tryFind keyInput _commandMap with
-        | Some _ ->
-            // Known commands are not direct text insert
-            false
-        | None ->
-            // If it's not a command and has an associated 'char' then it's a direct text
-            // insert
-            Option.isSome keyInput.RawChar
+        match x.GetRawInsertCommand keyInput with
+        | None -> false
+        | Some rawInsertCommand ->
+            match rawInsertCommand with
+            | RawInsertCommand.InsertCommand (_, insertCommand, _) ->
+                match insertCommand with
+                | InsertCommand.DirectInsert _ -> true
+                | _ -> false
+            | RawInsertCommand.CustomCommand _ -> false
 
     /// Apply any edits which must occur after insert mode is completed
     member x.ApplyAfterEdits() = 
@@ -335,37 +306,13 @@ type internal InsertMode
                 transaction.Complete()
                 _sessionData <- { _sessionData with Transaction = None }
 
-    /// Process the direct text insert command
-    member x.ProcessDirectInsert (keyInput : KeyInput) = 
-
-        // When doing a direct insert go ahead and cancel the active IWordCompletion session
-        x.CancelWordCompletionSession()
-
-        _processDirectInsertCount <- _processDirectInsertCount + 1
-        try
-            let value = 
-                match keyInput.RawChar with
-                | None -> 
-                    // Nothing to do
-                    false
-                | Some c ->
-                    let text = c.ToString()
-                    _editorOperations.InsertText(text)
-
-            if value then
-                ProcessResult.Handled ModeSwitch.NoSwitch
-            else
-                ProcessResult.NotHandled
-         finally 
-            _processDirectInsertCount <- _processDirectInsertCount - 1
-
     /// Process the <Insert> command.  This toggles between insert an replace mode
     member x.ProcessInsert () = 
 
         let mode = if _isReplace then ModeKind.Insert else ModeKind.Replace
         ProcessResult.Handled (ModeSwitch.SwitchMode mode)
 
-    /// Enter normal mode for a single command.  
+    /// Enter normal mode for a single command.
     member x.ProcessNormalModeOneCommand () =
 
         let switch = ModeSwitch.SwitchModeOneTimeCommand
@@ -455,26 +402,24 @@ type internal InsertMode
         ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Run the insert command with the given information
-    member x.RunInsertCommand command keyInputSet commandFlags = 
-
-        x.RunInsertCommandCore command keyInputSet commandFlags _insertUtil.RunInsertCommand
-
-    /// Both custom processing and actual processing have the same begin and end processing.  They only
-    /// differ in the actual running of the command.  Here we put the common code
-    member x.RunInsertCommandCore (command : InsertCommand) (keyInputSet : KeyInputSet) commandFlags runFunc : ProcessResult = 
+    member x.RunInsertCommand (command : InsertCommand) (keyInputSet : KeyInputSet) commandFlags : ProcessResult =
 
         // Dismiss the completion when running an explicit insert commend
         x.CancelWordCompletionSession()
 
         // When running an explicit command then we need to go ahead and complete the previous 
-        // text change
+        // extra text change.  It needs to be completed now so that it happens before the 
+        // command we are about to run
         _textChangeTracker.CompleteChange()
 
-        let result = runFunc command
-
-        // Clear up any text changes this command caused.  They shouldn't raise as a text change
-        // event as repeat needs to go through the command
-        _textChangeTracker.ClearChange()
+        let result = 
+            try
+                // We don't want the edits which are executed as part of the command to be tracked through 
+                // an external / extra text change so disable tracking while executing the command
+                _textChangeTracker.Enabled <- false
+                _insertUtil.RunInsertCommand command
+            finally
+                _textChangeTracker.Enabled <- true
 
         // Now we need to decided how the external world sees this edit.  If it links with an
         // existing edit then we save it and send it out as a batch later.
@@ -579,16 +524,13 @@ type internal InsertMode
             | Some result ->
                 result
             | None ->
-                match Map.tryFind keyInput _commandMap with
+                match x.GetRawInsertCommand keyInput with
                 | Some rawInsertCommand ->
                     match rawInsertCommand with
                     | RawInsertCommand.CustomCommand func -> func()
                     | RawInsertCommand.InsertCommand (keyInputSet, insertCommand, commandFlags) -> x.RunInsertCommand insertCommand keyInputSet commandFlags
                 | None -> 
-                    if x.IsDirectInsert keyInput then 
-                        x.ProcessDirectInsert keyInput
-                    else
-                        ProcessResult.NotHandled
+                    ProcessResult.NotHandled
 
     /// This is raised when caret changes.  If this is the result of a user click then 
     /// we need to complete the change.
@@ -614,12 +556,11 @@ type internal InsertMode
     /// Raised on the completion of a TextChange event.  This event is not raised immediately
     /// and instead is added to the CombinedEditCommand value for this session which will be 
     /// raised as a command at a later time
-    /// Insert Command whenever it completes
     member x.OnTextChangeCompleted (args : TextChangeEventArgs) =
 
         let textChange = args.TextChange
         let command = 
-            let textChangeCommand = InsertCommand.TextChange textChange
+            let textChangeCommand = InsertCommand.ExtraTextChange textChange
             match _sessionData.CombinedEditCommand with
             | None -> textChangeCommand
             | Some command -> InsertCommand.Combined (command, textChangeCommand)
@@ -725,11 +666,9 @@ type internal InsertMode
         member x.VimTextBuffer = _vimBuffer.VimTextBuffer
         member x.CommandNames =  _commandMap |> Seq.map (fun p -> p.Key) |> Seq.map OneKeyInput
         member x.ModeKind = x.ModeKind
-        member x.IsProcessingDirectInsert = x.IsProcessingDirectInsert
-        member x.CanProcess ki = x.CanProcess ki
-        member x.CustomProcess keyInput customProcessFunc = x.CustomProcess keyInput customProcessFunc
-        member x.IsDirectInsert ki = x.IsDirectInsert ki
-        member x.Process ki = x.Process ki
+        member x.CanProcess keyInput = x.CanProcess keyInput
+        member x.IsDirectInsert keyInput = x.IsDirectInsert keyInput
+        member x.Process keyInput = x.Process keyInput
         member x.OnEnter arg = x.OnEnter arg
         member x.OnLeave () = x.OnLeave ()
         member x.OnClose() = x.OnClose ()

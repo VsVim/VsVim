@@ -7,6 +7,9 @@ namespace VsVim
     /// <summary>
     /// Container for the 4 common pieces of data which are needed for an OLE
     /// command.  Makes it easy to pass them around between functions
+    ///
+    /// TODO: Why isn't this a class that implements IDisposable?
+    /// TODO: Why doesn't this have the GUID group?
     /// </summary>
     internal struct OleCommandData
     {

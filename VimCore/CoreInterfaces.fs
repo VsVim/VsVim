@@ -10,6 +10,16 @@ open Microsoft.VisualStudio.Utilities
 open System.Diagnostics
 open System.Runtime.CompilerServices
 
+type TextViewEventArgs(_textView : ITextView) =
+    inherit System.EventArgs()
+
+    member x.TextView = _textView
+
+[<RequireQualifiedAccess>]
+type HostResult =
+    | Success
+    | Error of string
+
 [<RequireQualifiedAccess>]
 type SelectionKind =
     | Inclusive
@@ -1504,7 +1514,6 @@ type ModeArgument =
     /// match to process and the range is the full range to consider for a replace
     | Substitute of SnapshotSpan * SnapshotLineRange * SubstituteData
 
-
 type ModeSwitch =
     | NoSwitch
     | SwitchMode of ModeKind
@@ -1969,6 +1978,9 @@ type InsertCommand  =
     /// Delete the word before the cursor
     | DeleteWordBeforeCursor
 
+    /// Direct insert of the specified char
+    | DirectInsert of char
+
     /// Insert a new line into the ITextBuffer
     | InsertNewLine
 
@@ -1984,8 +1996,11 @@ type InsertCommand  =
     /// Shift the current line one indent width to the right
     | ShiftLineRight
 
-    /// Text Change 
-    | TextChange of TextChange
+    /// This covers edits which weren't directly typed by the user.  It covers
+    /// a range of scenarios including
+    ///  - Repeated portion of count / block edits
+    ///  - Edits which occur outside of Vim
+    | ExtraTextChange of TextChange
 
     with
 
@@ -2001,12 +2016,13 @@ type InsertCommand  =
             | Delete -> None
             | DeleteAllIndent -> None
             | DeleteWordBeforeCursor -> None
+            | DirectInsert c -> Some (c.ToString())
             | InsertNewLine -> EditUtil.NewLine editorOptions |> Some
             | InsertTab -> Some "\t"
             | MoveCaret _ -> None
             | ShiftLineLeft -> None
             | ShiftLineRight -> None
-            | TextChange textChange -> textChange.InsertText 
+            | ExtraTextChange textChange -> textChange.InsertText 
 
         inner x
 
@@ -3013,6 +3029,102 @@ type internal IHistoryClient<'TData, 'TResult> =
     /// be provided
     abstract Cancelled : 'TData -> unit
 
+type IVimHost =
+    abstract Beep : unit -> unit
+
+    /// Close the provided view
+    abstract Close : ITextView -> unit
+
+    /// Ensure that the given point is visible
+    abstract EnsureVisible : textView : ITextView -> point : SnapshotPoint -> unit
+
+    /// Format the provided lines
+    abstract FormatLines : textView : ITextView -> range : SnapshotLineRange -> unit
+
+    /// Get the ITextView which currently has keyboard focus
+    abstract GetFocusedTextView : unit -> ITextView option
+
+    /// Go to the definition of the value under the cursor
+    abstract GoToDefinition : unit -> bool
+
+    /// Go to the local declaration of the value under the cursor
+    abstract GoToLocalDeclaration : textView : ITextView -> identifier : string -> bool
+
+    /// Go to the local declaration of the value under the cursor
+    abstract GoToGlobalDeclaration : tetxView : ITextView -> identifier : string -> bool
+
+    /// Go to the "count" next tab window in the specified direction.  This will wrap 
+    /// around
+    abstract GoToNextTab : Path -> count : int -> unit
+
+    /// Go the nth tab.  The first tab can be accessed with both 0 and 1
+    abstract GoToTab : index : int -> unit
+
+    /// Get the name of the given ITextBuffer
+    abstract GetName : textBuffer : ITextBuffer -> string
+
+    /// Is the ITextBuffer in a dirty state?
+    abstract IsDirty : textBuffer : ITextBuffer -> bool
+
+    /// Is the ITextBuffer readonly
+    abstract IsReadOnly : textBuffer : ITextBuffer -> bool
+
+    /// Is the ITextView visible to the user
+    abstract IsVisible : textView : ITextView -> bool
+
+    /// Loads the new file into the existing window
+    abstract LoadFileIntoExistingWindow : filePath : string -> textBuffer : ITextBuffer -> HostResult
+
+    /// Loads the new file into a new existing window
+    abstract LoadFileIntoNewWindow : filePath : string -> HostResult
+
+    /// Run the host specific make operation
+    abstract Make : jumpToFirstError : bool -> arguments : string -> HostResult
+
+    /// Move to the view above the current one
+    abstract MoveViewUp : ITextView -> unit
+
+    /// Move to the view below the current one
+    abstract MoveViewDown : ITextView -> unit
+
+    /// Move to the view to the right of the current one
+    abstract MoveViewRight : ITextView -> unit
+
+    /// Move to the view to the right of the current one
+    abstract MoveViewLeft : ITextView -> unit
+
+    abstract NavigateTo : point : VirtualSnapshotPoint -> bool
+
+    /// Quit the application
+    abstract Quit : unit -> unit
+
+    /// Display the open file dialog 
+    abstract ShowOpenFileDialog : unit -> unit
+
+    /// Reload the contents of the ITextBuffer discarding any changes
+    abstract Reload : ITextBuffer -> bool
+
+    /// Save the provided ITextBuffer instance
+    abstract Save : ITextBuffer -> bool 
+
+    /// Save the current document as a new file with the specified name
+    abstract SaveTextAs : text:string -> filePath:string -> bool 
+
+    /// Allow the host to custom process the insert command.  Hosts often have
+    /// special non-vim semantics for certain types of edits (Enter for 
+    /// example).  This override allows them to do this processing
+    abstract TryCustomProcess : textView : ITextView -> command : InsertCommand -> bool
+
+    /// Split the views horizontally
+    abstract SplitViewHorizontally : ITextView -> HostResult
+
+    /// Split the views horizontally
+    abstract SplitViewVertically: ITextView -> HostResult
+
+    /// Raised when the visibility of an ITextView changes
+    [<CLIEvent>]
+    abstract IsVisibleChanged : IDelegateEvent<System.EventHandler<TextViewEventArgs>>
+
 /// Represents shared state which is available to all IVimBuffer instances.
 type IVimData = 
 
@@ -3521,9 +3633,6 @@ and IInsertMode =
     /// The active IWordCompletionSession if one is active
     abstract ActiveWordCompletionSession : IWordCompletionSession option
 
-    /// Is InsertMode currently processing a Text Input value
-    abstract IsProcessingDirectInsert : bool
-
     /// Is this KeyInput value considered to be a direct insert command in the current
     /// state of the IVimBuffer.  This does not apply to commands which edit the buffer
     /// like 'CTRL-D' but instead commands like 'a', 'b' which directly edit the 
@@ -3533,17 +3642,6 @@ and IInsertMode =
     /// Raised when a command is successfully run
     [<CLIEvent>]
     abstract CommandRan : IDelegateEvent<System.EventHandler<CommandRunDataEventArgs>>
-
-    /// Custom process the given KeyInput value.  This is a hook for host components to custom
-    /// process a KeyInput value.  The call back will be used to execute the custom processing
-    /// the first time.  Subsequent repeats and macro execution will not call the callback
-    /// but will go through normal processing.  The callback should return true if the processing
-    /// succeeded.  If it succeeded then the KeyInPut will be considered processed and stored
-    /// for future repeats and macro edits.  If it failed then the KeyInput will be ignored
-    /// altogether
-    ///
-    /// Note: The provided KeyInput won't go through any key remapping
-    abstract CustomProcess : keyInput : KeyInput -> customProcessFunc : (unit -> bool) -> bool
 
     inherit IMode
 
@@ -3601,3 +3699,7 @@ module VimExtensions =
         modeKind = ModeKind.Insert ||
         modeKind = ModeKind.Replace
 
+module internal VimHostExtensions =
+    type IVimHost with 
+        member x.SaveAs (textView:ITextView) filePath = 
+            x.SaveTextAs (textView.TextSnapshot.GetText()) filePath

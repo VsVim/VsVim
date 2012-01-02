@@ -490,6 +490,15 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region InsertCommand
+
+        public static InsertCommand.DirectInsert AsDirectInsert(this InsertCommand command)
+        {
+            return (InsertCommand.DirectInsert)command;
+        }
+
+        #endregion
+
         #region IMotionCapture
 
         public static BindResult<Tuple<Motion, FSharpOption<int>>> GetMotionAndCount(this IMotionCapture capture, char c)

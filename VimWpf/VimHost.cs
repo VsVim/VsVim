@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Media;
 using System.Windows;
-using Microsoft.FSharp.Control;
+using EditorUtils;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim.Extensions;
-using EditorUtils;
 
 namespace Vim.UI.Wpf
 {
+    // TODO: Should the override / abstract methods be protected?
     public abstract class VimHost : IVimHost, IWpfTextViewCreationListener
     {
         private readonly ITextDocumentFactoryService _textDocumentFactoryService;
@@ -219,6 +219,15 @@ namespace Vim.UI.Wpf
 
         public abstract HostResult SplitViewVertically(ITextView value);
 
+        /// <summary>
+        /// Custom processing of an insert command is a host specific operation.  By default
+        /// no custom processing is done
+        /// </summary>
+        public virtual bool TryCustomProcess(ITextView textView, InsertCommand command)
+        {
+            return false;
+        }
+
         protected void RaiseIsVisibleChanged(ITextView textView)
         {
             if (_isVisibleChanged != null)
@@ -390,6 +399,11 @@ namespace Vim.UI.Wpf
         HostResult IVimHost.SplitViewVertically(ITextView value)
         {
             return SplitViewVertically(value);
+        }
+
+        bool IVimHost.TryCustomProcess(ITextView textView, InsertCommand command)
+        {
+            return TryCustomProcess(textView, command);
         }
 
         bool IVimHost.IsVisible(ITextView textView)

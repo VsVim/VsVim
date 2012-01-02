@@ -162,52 +162,6 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
-        /// When CustomProcess receives an InsertComand key input value it needs to record it as
-        /// the last command
-        /// </summary>
-        [Test]
-        public void CustomProcess_Back_Suceeded()
-        {
-            Create("");
-            var didRun = false;
-            var keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Back);
-            _vimBuffer.Setup(x => x.SimulateProcessed(keyInput)).Verifiable();
-            _mode.CustomProcess(
-                keyInput,
-                () =>
-                {
-                    didRun = true;
-                    return true;
-                });
-            _vimBuffer.Verify();
-            Assert.IsTrue(didRun);
-
-            // Make sure the Back command was raised as if it ran.
-            Assert.IsTrue(_modeRaw._sessionData.CombinedEditCommand.IsSome());
-            Assert.IsTrue(_modeRaw._sessionData.CombinedEditCommand.Value.IsBack);
-        }
-
-        /// <summary>
-        /// When the custom process func fails then it should be as if the function wasn't ever
-        /// called
-        /// </summary>
-        [Test]
-        public void CustomProcess_Back_Failed()
-        {
-            Create("");
-            var didRun = false;
-            _mode.CustomProcess(
-                KeyInputUtil.VimKeyToKeyInput(VimKey.Back),
-                () =>
-                {
-                    didRun = true;
-                    return false;
-                });
-            Assert.IsTrue(didRun);
-            Assert.IsNull(_lastCommandRan);
-        }
-
-        /// <summary>
         /// After a word should return the entire word 
         /// </summary>
         [Test]
@@ -599,5 +553,28 @@ namespace Vim.UnitTest
             Assert.AreEqual("chello world", _textView.GetLine(0).GetText());
             Assert.IsTrue(_mode.ActiveWordCompletionSession.IsNone());
         }
+
+        /// <summary>
+        /// Actions which are customed processed should still show up as the last command
+        /// </summary>
+        [Test]
+        public void Process_InsertNewLine_Custom()
+        {
+            Create("");
+            var didRun = false;
+            VimHost.TryCustomProcessFunc = 
+                (textView, command) =>
+                {
+                    didRun = true;
+                    return true;
+                };
+            _mode.Process(VimKey.Enter);
+            Assert.IsTrue(didRun);
+
+            // Make sure the Back command was raised as if it ran.
+            Assert.IsTrue(_modeRaw._sessionData.CombinedEditCommand.IsSome());
+            Assert.IsTrue(_modeRaw._sessionData.CombinedEditCommand.Value.IsInsertNewLine);
+        }
+
     }
 }

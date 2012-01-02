@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
+using EditorUtils;
 using EnvDTE;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Editor;
@@ -18,7 +19,6 @@ using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
 using VsVim.Properties;
-using EditorUtils;
 
 namespace VsVim
 {
@@ -239,6 +239,20 @@ namespace VsVim
         public override bool IsReadOnly(ITextBuffer textBuffer)
         {
             return _adapter.IsReadOnly(textBuffer);
+        }
+
+        /// <summary>
+        /// Custom process the insert command if possible.  This is handled by VsCommandTarget
+        /// </summary>
+        public override bool TryCustomProcess(ITextView textView, InsertCommand command)
+        {
+            VsCommandTarget vsCommandTarget;
+            if (VsCommandTarget.TryGet(textView, out vsCommandTarget))
+            {
+                return vsCommandTarget.TryCustomProcess(command);
+            }
+
+            return false;
         }
 
         /// <summary>

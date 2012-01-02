@@ -48,90 +48,107 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
-        /// Make sure that a custom process command which uses direct insert gets handled 
-        /// properly
+        /// Ensure that normal typing gets passed to TryCustomProcess
         /// </summary>
         [Test]
-        public void CustomProcess_DirectInsert()
+        public void TryCustomProcess_DirectInsert()
         {
-            Create("world", "");
-            _vimBuffer.InsertMode.CustomProcess(
-                KeyInputUtil.CharToKeyInput('a'),
-                () =>
+            Create("world");
+            VimHost.TryCustomProcessFunc =
+                (textView, command) =>
                 {
-                    _textBuffer.Insert(0, "hello ");
-                    return true;
-                });
-            Assert.AreEqual("hello world", _textView.GetLine(0).GetText());
-            _vimBuffer.Process(VimKey.Escape);
+                    if (command.IsDirectInsert)
+                    {
+                        Assert.AreEqual('#', command.AsDirectInsert().Item);
+                        _textBuffer.Insert(0, "hello ");
+                        return true;
+                    }
 
-            // Now ensure it repeats properly
-            _textView.MoveCaretToLine(1);
-            _vimBuffer.Process(".");
-            Assert.AreEqual("hello ", _textView.GetLine(1).GetText());
+                    return false;
+                };
+            _vimBuffer.Process('#');
+            Assert.AreEqual("hello world", _textBuffer.GetLine(0).GetText());
         }
 
         /// <summary>
-        /// Make sure that a custom process command which uses a real command under the hood.  Make
-        /// sure the custom processing and repeat have nothing to do with each other
+        /// Ensure that other commands go through TryCustomProcess
         /// </summary>
         [Test]
-        public void CustomProcess_Back()
+        public void TryCustomProcess_Enter()
         {
-            Create("world", "");
-            _vimBuffer.InsertMode.CustomProcess(
-                KeyInputUtil.VimKeyToKeyInput(VimKey.Back),
-                () =>
+            Create("world");
+            VimHost.TryCustomProcessFunc =
+                (textView, command) =>
                 {
-                    _textBuffer.Insert(0, "hello ");
-                    return true;
-                });
+                    if (command.IsInsertNewLine)
+                    {
+                        _textBuffer.Insert(0, "hello ");
+                        return true;
+                    }
 
-            Assert.AreEqual("hello world", _textView.GetLine(0).GetText());
-            _vimBuffer.Process(VimKey.Escape);
-
-            // Now ensure it repeats properly
-            _textView.MoveCaretTo(2);
-            _vimBuffer.Process(".");
-            Assert.AreEqual("hllo world", _textView.GetLine(0).GetText());
-            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+                    return false;
+                };
+            _vimBuffer.Process(VimKey.Enter);
+            Assert.AreEqual("hello world", _textBuffer.GetLine(0).GetText());
         }
 
         /// <summary>
-        /// When macro recording is on we should record the input to CustomProcess as the KeyInput
-        /// in the macro recorder
+        /// Repeat of a TryCustomProcess should recall that function vs. repeating the
+        /// inserted text
         /// </summary>
         [Test]
-        public void CustomProcess_Macro_Succeeded()
+        public void TryCustomProcess_Repeat()
         {
-            Create("hello world");
+            Create("world");
+            var first = true;
+            VimHost.TryCustomProcessFunc =
+                (textView, command) =>
+                {
+                    if (command.IsDirectInsert)
+                    {
+                        Assert.AreEqual('#', command.AsDirectInsert().Item);
+                        if (first)
+                        {
+                            _textBuffer.Insert(0, "hello ");
+                            first = false;
+                        }
+                        else
+                        {
+                            _textBuffer.Insert(0, "big ");
+                        }
+                        return true;
+                    }
+
+                    return false;
+                };
+            _vimBuffer.ProcessNotation("#<Esc>.");
+            Assert.AreEqual("big hello world", _textBuffer.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// KeyInput values which are custom processed should still end up in the macro recorder
+        /// </summary>
+        [Test]
+        public void TryCustomProcess_Macro()
+        {
+            Create("world");
             Vim.MacroRecorder.StartRecording(_register, false);
-            _vimBuffer.InsertMode.CustomProcess(
-                KeyInputUtil.CharToKeyInput('a'),
-                () =>
+            VimHost.TryCustomProcessFunc =
+                (textView, command) =>
                 {
-                    _textBuffer.Insert(0, "hello ");
-                    return true;
-                });
-            Vim.MacroRecorder.StopRecording();
-            Assert.AreEqual("a", _register.StringValue);
-        }
+                    if (command.IsDirectInsert)
+                    {
+                        Assert.AreEqual('#', command.AsDirectInsert().Item);
+                        _textBuffer.Insert(0, "hello ");
+                        return true;
+                    }
 
-
-        /// <summary>
-        /// Even if Macro recording is on, if the CustomProcess command fails it shouldn't update
-        /// the macro recorder
-        /// </summary>
-        [Test]
-        public void CustomProcess_Macro_Failed()
-        {
-            Create("hello world");
-            Vim.MacroRecorder.StartRecording(_register, false);
-            _vimBuffer.InsertMode.CustomProcess(
-                KeyInputUtil.CharToKeyInput('a'),
-                () => false);
+                    return false;
+                };
+            _vimBuffer.Process('#');
             Vim.MacroRecorder.StopRecording();
-            Assert.AreEqual("", _register.StringValue);
+            Assert.AreEqual("hello world", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("#", _register.StringValue);
         }
 
         /// <summary>

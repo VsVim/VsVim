@@ -7,8 +7,6 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Utilities;
 using Moq;
 using NUnit.Framework;
-using Vim.Extensions;
-using Vim.UnitTest.Mock;
 
 namespace VsVim.UnitTest
 {
@@ -78,30 +76,39 @@ namespace VsVim.UnitTest
         #region PropertyCollection
 
         [Test]
-        public void AddTypedProperty1()
+        public void TryGetProperty_Found()
         {
             var col = new PropertyCollection();
-            col.AddTypedProperty("foo");
-            Assert.AreEqual(1, col.PropertyList.Count);
-            Assert.IsTrue(col.ContainsProperty(typeof(string)));
+            var key = new object();
+            col.AddProperty(key, "target");
+
+            string value;
+            Assert.IsTrue(col.TryGetProperty(key, out value));
+            Assert.AreEqual("target", value);
         }
 
         [Test]
-        public void TryGetTypedProperty1()
+        public void TryGetProperty_NotFound()
         {
             var col = new PropertyCollection();
-            col.AddTypedProperty("foo");
-            var opt = col.TryGetTypedProperty<string>();
-            Assert.IsTrue(opt.IsSome());
-            Assert.AreEqual("foo", opt.Value);
+            var key = new object();
+
+            string value;
+            Assert.IsFalse(col.TryGetProperty(key, out value));
         }
 
+        /// <summary>
+        /// Make sure it doesn't throw if the value is the wrong type
+        /// </summary>
         [Test]
-        public void TryGetTypedProperty2()
+        public void TryGetProperty_WrongType()
         {
             var col = new PropertyCollection();
-            var opt = col.TryGetTypedProperty<string>();
-            Assert.IsFalse(opt.IsSome());
+            var key = new object();
+            col.AddProperty(key, this);
+
+            string value;
+            Assert.IsFalse(col.TryGetProperty(key, out value));
         }
 
         #endregion

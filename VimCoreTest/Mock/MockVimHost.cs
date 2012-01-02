@@ -1,7 +1,6 @@
 ﻿using System;
 using EditorUtils;
 using Microsoft.FSharp.Collections;
-using Microsoft.FSharp.Control;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -25,6 +24,7 @@ namespace Vim.UnitTest.Mock
         public ITextView FocusedTextView { get; set; }
         public FSharpList<IVimBuffer> Buffers { get; set; }
         public bool? IsTextViewVisible { get; set; }
+        public Func<ITextView, InsertCommand, bool> TryCustomProcessFunc { get; set; }
 
         /// <summary>
         /// Data from the last GoToNextTab call
@@ -57,6 +57,7 @@ namespace Vim.UnitTest.Mock
             GoToDefinitionCount = 0;
             IsTextViewVisible = null;
             _isVisibleChanged = null;
+            TryCustomProcessFunc = null;
         }
 
         void IVimHost.Beep()
@@ -209,6 +210,16 @@ namespace Vim.UnitTest.Mock
             }
 
             return true;
+        }
+
+        bool IVimHost.TryCustomProcess(ITextView textView, InsertCommand command)
+        {
+            if (TryCustomProcessFunc != null)
+            {
+                return TryCustomProcessFunc(textView, command);
+            }
+
+            return false;
         }
 
         event EventHandler<TextViewEventArgs> IVimHost.IsVisibleChanged

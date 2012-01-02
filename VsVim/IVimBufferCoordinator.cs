@@ -4,7 +4,7 @@ namespace VsVim
 {
     /// <summary>
     /// Coordinates events / items specific to an IVimBuffer which are needed across multiple
-    /// Visual Studio components coordinator
+    /// Visual Studio components
     /// </summary>
     internal interface IVimBufferCoordinator
     {
