@@ -358,6 +358,8 @@ module VimRegexFactory =
         | 'M' -> {data with MagicKind = MagicKind.NoMagic }
         | 'v' -> {data with MagicKind = MagicKind.VeryMagic }
         | 'V' -> {data with MagicKind = MagicKind.VeryNoMagic }
+        | 't' -> data.AppendString "\t"
+        | 'n' -> data.AppendString "\n"
         | _ ->
             let data = 
                 match data.MagicKind with
@@ -367,7 +369,7 @@ module VimRegexFactory =
                 | MagicKind.VeryNoMagic -> ConvertCharAsSpecial data c
             { data with IsStartOfPattern = false }
 
-    /// Convert a normal unescaped char based on the 
+    /// Convert a normal unescaped char based on the magic kind
     let ProcessNormalChar (data : Data) c = 
         let data = 
             match data.MagicKind with

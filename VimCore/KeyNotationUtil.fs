@@ -164,8 +164,8 @@ module KeyNotationUtil =
             else 
                 match ListUtil.tryHead rest with
                 | None -> withData []
-                | Some('\\',[]) -> withData [@"\"]
-                | Some('\\',h::t) -> 
+                | Some ('\\', []) -> withData [@"\"]
+                | Some ('\\', h::t) -> 
                     let str = h |> StringUtil.ofChar
                     inner t (fun next -> withData (str :: next))
                 | Some(h,t) -> 

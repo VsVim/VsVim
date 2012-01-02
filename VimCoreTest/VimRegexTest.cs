@@ -1059,5 +1059,23 @@ namespace Vim.UnitTest
             VerifyMatches(@"a\{2\}", "aa");
             VerifyNotMatches(@"a\{2\}", "a");
         }
+
+        /// <summary>
+        /// A \t should be able to match a tab
+        /// </summary>
+        [Test]
+        public void Tab()
+        {
+            VerifyMatches(@"\t", "hello\tworld", "\t");
+        }
+
+        /// <summary>
+        /// A \n should be able to match a tab
+        /// </summary>
+        [Test]
+        public void NewLine()
+        {
+            VerifyMatches(@"\n", "hello" + Environment.NewLine);
+        }
     }
 }

@@ -707,6 +707,17 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Make sure we can move forward searching for a tab
+        /// </summary>
+        [Test]
+        public void Move_SearchForTab()
+        {
+            Create("dog", "hello\tworld");
+            _vimBuffer.ProcessNotation(@"/\\t<Enter>");
+            Assert.AreEqual(_textView.GetPointInLine(1, 5), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
         /// Ensure the '%' motion properly moves between the block comments in the 
         /// mismatch case
         /// </summary>
