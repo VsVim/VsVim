@@ -977,9 +977,14 @@ namespace Vim.UnitTest
             return (TextChange.Insert)change;
         }
 
-        public static TextChange.Delete AsDelete(this TextChange change)
+        public static TextChange.DeleteLeft AsDeleteLeft(this TextChange change)
         {
-            return (TextChange.Delete)change;
+            return (TextChange.DeleteLeft)change;
+        }
+
+        public static TextChange.DeleteRight AsDeleteRight(this TextChange change)
+        {
+            return (TextChange.DeleteRight)change;
         }
 
         public static TextChange.Combination AsCombination(this TextChange change)
@@ -992,9 +997,14 @@ namespace Vim.UnitTest
             return change.IsInsert && change.AsInsert().Item == text;
         }
 
-        public static bool IsDelete(this TextChange change, int count)
+        public static bool IsDeleteLeft(this TextChange change, int count)
         {
-            return change.IsDelete && change.AsDelete().Item == count;
+            return change.IsDeleteLeft && change.AsDeleteLeft().Item == count;
+        }
+
+        public static bool IsDeleteRight(this TextChange change, int count)
+        {
+            return change.IsDeleteRight && change.AsDeleteRight().Item == count;
         }
 
         #endregion

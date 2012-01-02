@@ -481,7 +481,8 @@ type internal InsertMode
             None
         | Some textChange ->
             match textChange.LastChange with
-            | TextChange.Delete _ -> None
+            | TextChange.DeleteLeft _ -> None
+            | TextChange.DeleteRight _ -> None
             | TextChange.Insert text -> func text
             | TextChange.Combination _ -> None
 

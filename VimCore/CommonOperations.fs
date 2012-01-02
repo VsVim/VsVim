@@ -122,49 +122,6 @@ type internal CommonOperations
         with get() = _maintainCaretColumnSpaces
         and set value = _maintainCaretColumnSpaces <- value
 
-    /// Apply the TextChange to the ITextBuffer 'count' times as a single operation.
-    member x.ApplyTextChange textChange addNewLines count =
-        Contract.Requires (count > 0)
-
-        // Apply a single change to the ITextBuffer as a transaction 
-        let rec applyChange textChange = 
-            match textChange with
-            | TextChange.Insert text -> 
-                // Insert the same text 'count' times at the cursor
-                let text = 
-                    if addNewLines then
-                        let newLine = x.GetNewLineText x.CaretPoint
-                        newLine + text
-                    else 
-                        text
-
-                let caretPoint = TextViewUtil.GetCaretPoint _textView
-                let span = SnapshotSpan(caretPoint, 0)
-                _textView.TextBuffer.Replace(span.Span, text) |> ignore
-
-                // Now make sure to position the caret at the end of the inserted
-                // text so the next edit will occur after.
-                TextViewUtil.MoveCaretToPosition _textView (caretPoint.Position + text.Length)
-            | TextChange.Delete deleteCount -> 
-                // Delete 'count * deleteCount' more characters
-                let caretPoint = TextViewUtil.GetCaretPoint _textView
-                let count = deleteCount
-                let count = min (_textView.TextSnapshot.Length - caretPoint.Position) count
-                _textView.TextBuffer.Delete((Span(caretPoint.Position, count))) |> ignore
-
-                // Now make sure the caret is still at the same position
-                TextViewUtil.MoveCaretToPosition _textView caretPoint.Position
-            | TextChange.Combination (left, right) ->
-                applyChange left 
-                applyChange right
-
-        // Create a transaction so the textChange is applied as a single edit and to 
-        // maintain caret position 
-        _undoRedoOperations.EditWithUndoTransaction "Repeat Edits" (fun () -> 
-
-            for i = 1 to count do
-                applyChange textChange)
-
     /// Get the spaces for the given character
     member x.GetSpacesForCharAtPoint point = 
         let c = SnapshotPointUtil.GetChar point
@@ -916,7 +873,6 @@ type internal CommonOperations
         member x.EditorOperations = _editorOperations
         member x.EditorOptions = _editorOptions
 
-        member x.ApplyTextChange textChange addNewLines count = x.ApplyTextChange textChange addNewLines count
         member x.Beep () = x.Beep()
         member x.EnsureCaretOnScreen () = x.EnsureCaretOnScreen()
         member x.EnsureCaretOnScreenAndTextExpanded () = x.EnsureCaretOnScreenAndTextExpanded()

@@ -256,9 +256,6 @@ type ICommonOperations =
     /// Associated IEditorOptions
     abstract EditorOptions : IEditorOptions
 
-    /// Apply the TextChange to the ITextBuffer 'count' times
-    abstract ApplyTextChange : TextChange -> addNewLintes : bool -> int -> unit
-
     /// Run the beep operation
     abstract Beep : unit -> unit
 

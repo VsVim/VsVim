@@ -63,22 +63,32 @@ type internal TextChangeTracker
 
     /// Convert the ITextChange value into a TextChange instance.  This will not handle any special 
     /// edit patterns and simply does a raw adjustment
-    member x.ConvertBufferChange (change : ITextChange) =
-        if change.OldText.Length = 0 then
-            // This is a straight insert operation
-            TextChange.Insert change.NewText
-        elif change.NewText.Length = 0 then 
-            // This is a straight delete operation
-            TextChange.Delete change.OldText.Length
-        else
-            // This is a delete + insert combination 
-            let left = TextChange.Delete change.OldText.Length
-            let right = TextChange.Insert change.NewText
-            TextChange.Combination (left, right)
+    member x.ConvertBufferChange (beforeSnapshot : ITextSnapshot) (change : ITextChange) =
 
-    /// Looks for special edit patterns in the buffer and creates an TextChange value for those
-    /// specific patterns
-    member x.ConvertSpecialBufferChange (change : ITextChange) = 
+        let convert () = 
+
+            let getDelete () = 
+                let caretPoint = TextViewUtil.GetCaretPoint _textView
+                let isCaretAtStart = 
+                    caretPoint.Snapshot = beforeSnapshot &&
+                    caretPoint.Position = change.OldPosition
+
+                if isCaretAtStart then
+                    TextChange.DeleteRight change.OldLength
+                else
+                    TextChange.DeleteLeft change.OldLength
+
+            if change.OldText.Length = 0 then
+                // This is a straight insert operation
+                TextChange.Insert change.NewText
+            elif change.NewText.Length = 0 then 
+                // This is a straight delete operation
+                getDelete()
+            else
+                // This is a delete + insert combination 
+                let left = getDelete()
+                let right = TextChange.Insert change.NewText
+                TextChange.Combination (left, right)
 
         // Look for the pattern where tabs are used to replace spaces.  When there are spaces in 
         // the ITextBuffer and tabs are enabled and the user hits <Tab> the spaces will be deleted
@@ -89,21 +99,18 @@ type internal TextChangeTracker
             let newText = _operations.NormalizeBlanks change.NewText
             if newText.StartsWith oldText then
                 let diffText = newText.Substring(oldText.Length)
-                TextChange.Insert diffText |> Some
+                TextChange.Insert diffText 
             else
-                None
+                convert ()
         else 
-            None
+            convert ()
 
     member x.OnTextChanged (args : TextContentChangedEventArgs) = 
 
         // At this time we only support contiguous changes (or rather a single change)
         if args.Changes.Count = 1 then
             let newBufferChange = args.Changes.Item(0)
-            let newTextChange = 
-                match x.ConvertSpecialBufferChange newBufferChange with
-                | None -> x.ConvertBufferChange newBufferChange
-                | Some textChange -> textChange
+            let newTextChange = x.ConvertBufferChange args.Before newBufferChange
 
             match _currentTextChange with
             | None -> _currentTextChange <- Some (newTextChange, newBufferChange)

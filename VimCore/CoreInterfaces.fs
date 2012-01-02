@@ -206,26 +206,29 @@ type IUndoRedoOperations =
     /// Undo the last "count" operations
     abstract Undo : count:int -> unit
 
-/// Represents the type of text change operations we recognize in the ITextBuffer.  These
-/// items are repeatable
+/// Represents a set of changes to a contiguous region. 
 [<RequireQualifiedAccess>]
 type TextChange = 
-    | Delete of int
+    | DeleteLeft of int
+    | DeleteRight of int
     | Insert of string
     | Combination of TextChange * TextChange
 
     with 
 
     /// Get the insert text resulting from the change if there is any
+    /// 
+    /// TODO: Do I still need this
     member x.InsertText = 
         let rec inner textChange (text : string) = 
             match textChange with 
             | Insert data -> text + data |> Some
-            | Delete count -> 
+            | DeleteLeft count -> 
                 if count > text.Length then
                     None
                 else 
                     text.Substring(0, text.Length - count) |> Some
+            | DeleteRight _ -> None
             | Combination (left, right) ->
                 match inner left text with
                 | None -> None
@@ -236,33 +239,51 @@ type TextChange =
     /// Get the last / most recent change in the TextChange tree
     member x.LastChange = 
         match x with
-        | Delete _ -> x
+        | DeleteLeft _ -> x
+        | DeleteRight _ -> x
         | Insert _ -> x
         | Combination (_, right) -> right.LastChange
 
     /// Merge two TextChange values together.  The goal is to produce a the smallest TextChange
     /// value possible
     static member Merge left right =
-        match left, right with
-        | Insert leftStr, Insert rightStr -> 
-            Insert (leftStr + rightStr)
-        | Delete leftCount, Delete rightCount -> 
-            Delete (leftCount + rightCount)
-        | Insert leftStr, Delete rightCount ->
-            let diff = leftStr.Length - rightCount
-            if diff >= 0 then
-                let value = leftStr.Substring(0, diff)
-                Insert value
-            else
-                Delete (-diff)
-        | Delete _, Insert _ ->
-            // Can't reduce a left delete any further so we just create a Combination value
-            Combination (left, right)
-        | _ -> 
-            Combination (left, right)
+
+        let noMerge () = Combination (left, right)
+
+        let mergeInsert (text : string) =
+            match right with
+            | DeleteLeft count -> 
+                if count > text.Length then
+                    DeleteLeft (count - text.Length)
+                else
+                    let text = text.Substring(0, text.Length - count)
+                    Insert text
+            | DeleteRight count -> noMerge ()
+            | Insert otherText -> Insert (text + otherText)
+            | Combination _ -> noMerge ()
+
+        let mergeDeleteLeft count = 
+            match right with
+            | DeleteLeft otherCount -> DeleteLeft (count + otherCount)
+            | DeleteRight _ -> noMerge ()
+            | Insert _ -> noMerge ()
+            | Combination _ -> noMerge()
+
+        let mergeDeleteRight count = 
+            match right with
+            | DeleteRight otherCount -> DeleteRight (count + otherCount)
+            | DeleteLeft _ -> noMerge ()
+            | Insert _ -> noMerge ()
+            | Combination _ -> noMerge()
+
+        match left with
+        | Insert text -> mergeInsert text
+        | DeleteLeft count -> mergeDeleteLeft count
+        | DeleteRight count -> mergeDeleteRight count
+        | Combination _ -> noMerge()
 
     static member Replace str =
-        let left = str |> StringUtil.length |> TextChange.Delete
+        let left = str |> StringUtil.length |> TextChange.DeleteLeft
         let right = TextChange.Insert str
         TextChange.Combination (left, right)
 

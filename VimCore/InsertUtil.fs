@@ -66,6 +66,63 @@ type internal InsertUtil
                 transaction.Dispose()
                 reraise()
 
+    /// Apply the TextChange to the ITextBuffer 'count' times as a single operation.
+    member x.ApplyTextChange textChange addNewLines count =
+        Contract.Requires (count > 0)
+
+        // Apply a single change to the ITextBuffer as a transaction 
+        let rec applyChange textChange = 
+            match textChange with
+            | TextChange.Insert text -> 
+                // Insert the same text 'count' times at the cursor
+                let text = 
+                    if addNewLines then
+                        let newLine = _operations.GetNewLineText x.CaretPoint
+                        newLine + text
+                    else 
+                        text
+
+                let caretPoint = TextViewUtil.GetCaretPoint _textView
+                let span = SnapshotSpan(caretPoint, 0)
+                _textBuffer.Replace(span.Span, text) |> ignore
+
+                // Now make sure to position the caret at the end of the inserted
+                // text so the next edit will occur after.
+                TextViewUtil.MoveCaretToPosition _textView (caretPoint.Position + text.Length)
+            | TextChange.DeleteRight count -> 
+
+                // Delete 'count * deleteCount' more characters
+                let caretPoint = TextViewUtil.GetCaretPoint _textView
+                let count = min (_textView.TextSnapshot.Length - caretPoint.Position) count
+                let span = Span(caretPoint.Position, count)
+                _textBuffer.Delete(span) |> ignore
+
+                // Now make sure the caret is still at the same position
+                TextViewUtil.MoveCaretToPosition _textView caretPoint.Position
+
+            | TextChange.DeleteLeft count -> 
+
+                // Delete 'count' characters to the left of the caret
+                let caretPoint = TextViewUtil.GetCaretPoint _textView
+                let startPosition = 
+                    let position = caretPoint.Position - count
+                    max 0 position
+                let span = Span(startPosition, count)
+                _textBuffer.Delete(span) |> ignore
+
+                TextViewUtil.MoveCaretToPosition _textView startPosition
+
+            | TextChange.Combination (left, right) ->
+                applyChange left 
+                applyChange right
+
+        // Create a transaction so the textChange is applied as a single edit and to 
+        // maintain caret position 
+        _undoRedoOperations.EditWithUndoTransaction "Repeat Edits" (fun () -> 
+
+            for i = 1 to count do
+                applyChange textChange)
+
     /// Delete the character before the cursor
     ///
     /// TODO: This needs to respect the 'backspace' option
@@ -363,7 +420,7 @@ type internal InsertUtil
         CommandResult.Error
 
     member x.ExtraTextChange textChange addNewLines = 
-        _operations.ApplyTextChange textChange addNewLines 1
+        x.ApplyTextChange textChange addNewLines 1
         CommandResult.Completed ModeSwitch.NoSwitch
 
     interface IInsertUtil with
