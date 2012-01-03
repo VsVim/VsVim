@@ -121,6 +121,7 @@
     <Compile Include="BasicTaggerTest.cs" />
     <Compile Include="CountedTaggerTest.cs" />
     <Compile Include="EditorExtensions.cs" />
+    <Compile Include="ExtensionsTest.cs" />
     <Compile Include="LineRangeTest.cs" />
     <Compile Include="LineRangeVisitedTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

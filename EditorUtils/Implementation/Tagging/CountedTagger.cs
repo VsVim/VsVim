@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
+using EditorUtils;
 
 namespace EditorUtils.Implementation.Tagging
 {
@@ -75,7 +76,7 @@ namespace EditorUtils.Implementation.Tagging
         {
             Counter counter;
             ITagger<TTag> tagger;
-            if (propertyCollection.TryGetProperty(key, out counter))
+            if (propertyCollection.TryGetPropertySafe(key, out counter))
             {
                 counter.Count++;
                 tagger = counter.Tagger;

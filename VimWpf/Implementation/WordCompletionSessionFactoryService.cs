@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Linq;
+using EditorUtils;
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
-using Microsoft.FSharp.Control;
 
 namespace Vim.UI.Wpf.Implementation
 {
@@ -86,7 +86,7 @@ namespace Vim.UI.Wpf.Implementation
                 // Get out the collection of words.  If none is present then there is no information to
                 // augment here
                 CompletionData completionData;
-                if (!textView.Properties.TryGetProperty(_completionDataKey, out completionData) || completionData.WordCollection == null)
+                if (!textView.Properties.TryGetPropertySafe(_completionDataKey, out completionData) || completionData.WordCollection == null)
                 {
                     return;
                 }

@@ -74,15 +74,9 @@ namespace VsVim.UnitTest.Utils
 
             private void SendTypeChar(char c)
             {
-                var oleCommandData = OleCommandData.Allocate(c);
-                try
+                using (var oleCommandData = OleCommandData.CreateTypeChar(c))
                 {
-                    var commandGuid = VSConstants.VSStd2K;
-                    OleCommandTarget.Exec(ref commandGuid, oleCommandData.CommandId, oleCommandData.CommandExecOpt, oleCommandData.VariantIn, oleCommandData.VariantOut);
-                }
-                finally
-                {
-                    OleCommandData.Release(ref oleCommandData);
+                    OleCommandTarget.Exec(oleCommandData);
                 }
             }
         }
@@ -558,30 +552,29 @@ namespace VsVim.UnitTest.Utils
                     return false;
                 }
 
-                Guid commandGroup;
-                if (!OleCommandUtil.TryConvert(keyInput, SimulateStandardKeyMappings, out commandGroup, out oleCommandData))
+                if (!OleCommandUtil.TryConvert(keyInput, SimulateStandardKeyMappings, out oleCommandData))
                 {
                     throw new Exception("Couldn't convert the KeyInput into OleCommandData");
                 }
 
-                if (!RunQueryStatus(commandGroup, oleCommandData))
+                if (!RunQueryStatus(oleCommandData))
                 {
                     return false;
                 }
 
-                RunExec(commandGroup, oleCommandData);
+                RunExec(oleCommandData);
                 return true;
             }
             finally
             {
-                OleCommandData.Release(ref oleCommandData);
+                oleCommandData.Dispose();
             }
         }
 
         /// <summary>
         /// Run QueryStatus and return whether or not it should be enabled 
         /// </summary>
-        private bool RunQueryStatus(Guid commandGroup, OleCommandData oleCommandData)
+        private bool RunQueryStatus(OleCommandData oleCommandData)
         {
             // First check and see if this represents a cached call to QueryStatus.  Visual Studio
             // will cache the result of QueryStatus for most types of commands that Vim will be 
@@ -592,13 +585,13 @@ namespace VsVim.UnitTest.Utils
             // and gains focus again.  These may be related
 
             bool result;
-            var key = new CommandKey(commandGroup, oleCommandData.CommandId);
+            var key = new CommandKey(oleCommandData.CommandGroup, oleCommandData.CommandId);
             if (_cachedQueryStatusMap.TryGetValue(key, out result))
             {
                 return result;
             }
 
-            result = RunQueryStatusCore(commandGroup, oleCommandData);
+            result = RunQueryStatusCore(oleCommandData);
             _cachedQueryStatusMap[key] = result;
             return result;
         }
@@ -606,11 +599,10 @@ namespace VsVim.UnitTest.Utils
         /// <summary>
         /// Actually run the QueryStatus command and report the result
         /// </summary>
-        private bool RunQueryStatusCore(Guid commandGroup, OleCommandData oleCommandData)
+        private bool RunQueryStatusCore(OleCommandData oleCommandData)
         {
-            var commands = new OLECMD[1];
-            commands[0].cmdID = oleCommandData.CommandId;
-            var hr = _commandTarget.QueryStatus(ref commandGroup, 1, commands, oleCommandData.VariantIn);
+            OLECMD command;
+            var hr = _commandTarget.QueryStatus(oleCommandData, out command);
             if (!ErrorHandler.Succeeded(hr))
             {
                 return false;
@@ -619,15 +611,15 @@ namespace VsVim.UnitTest.Utils
             // TODO: Visual Studio has slightly different behavior here IIRC.  I believe it will 
             // only cache if it's at least supported.  Need to check on that
             var result = (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
-            return result == (result & commands[0].cmdf);
+            return result == (result & command.cmdf);
         }
 
         /// <summary>
         /// Run the Exec operation.  Make sure to properly manage the QueryStatus cache
         /// </summary>
-        private void RunExec(Guid commandGroup, OleCommandData oleCommandData)
+        private void RunExec(OleCommandData oleCommandData)
         {
-            var result = RunExecCore(commandGroup, oleCommandData);
+            var result = RunExecCore(oleCommandData);
             if (result)
             {
                 _cachedQueryStatusMap.Clear();
@@ -637,13 +629,12 @@ namespace VsVim.UnitTest.Utils
         /// <summary>
         /// Exec the operation in question
         /// </summary>
-        private bool RunExecCore(Guid commandGroup, OleCommandData oleCommandData)
+        private bool RunExecCore(OleCommandData oleCommandData)
         {
             var variantOut = IntPtr.Zero;
             try
             {
-                var hr = _commandTarget.Exec(ref commandGroup, oleCommandData.CommandId, oleCommandData.CommandExecOpt,
-                                    oleCommandData.VariantIn, variantOut);
+                var hr = _commandTarget.Exec(oleCommandData);
                 return ErrorHandler.Succeeded(hr);
             }
             finally

@@ -7,88 +7,126 @@ namespace VsVim
     /// <summary>
     /// Container for the 4 common pieces of data which are needed for an OLE
     /// command.  Makes it easy to pass them around between functions
-    ///
-    /// TODO: Why isn't this a class that implements IDisposable?
-    /// TODO: Why doesn't this have the GUID group?
     /// </summary>
-    internal struct OleCommandData
+    internal sealed class OleCommandData : IDisposable
     {
-        internal readonly uint CommandId;
-        internal readonly uint CommandExecOpt;
-        internal readonly IntPtr VariantIn;
-        internal readonly IntPtr VariantOut;
+        internal readonly Guid _commandGroup;
+        internal readonly uint _commandId;
+        internal readonly uint _commandExecOpt;
+        internal IntPtr _variantIn;
+        internal IntPtr _variantOut;
+
+        internal Guid CommandGroup
+        {
+            get { return _commandGroup; }
+        }
+
+        internal uint CommandId
+        {
+            get { return _commandId; }
+        }
+
+        internal uint CommandExecOpt
+        {
+            get { return _commandExecOpt; }
+        }
+
+        internal IntPtr VariantIn
+        {
+            get { return _variantIn; }
+        }
+
+        internal IntPtr VariantOut
+        {
+            get { return _variantOut; }
+        }
 
         internal OleCommandData(VSConstants.VSStd2KCmdID id)
-            : this((uint)id)
+            : this(VSConstants.VSStd2K, (uint)id)
         {
 
         }
 
         internal OleCommandData(
+            Guid commandGroup,
             uint commandId,
             uint commandExecOpt = 0u)
+            : this(commandGroup, commandId, commandExecOpt, IntPtr.Zero, IntPtr.Zero)
         {
-            CommandId = commandId;
-            CommandExecOpt = commandExecOpt;
-            VariantIn = IntPtr.Zero;
-            VariantOut = IntPtr.Zero;
+
         }
 
-        internal OleCommandData(
+        internal void Dispose()
+        {
+            Dispose(true);
+        }
+
+        private OleCommandData(
+            Guid commandGroup,
             uint commandId,
             uint commandExecOpt,
             IntPtr variantIn,
             IntPtr variantOut)
         {
-            CommandId = commandId;
-            CommandExecOpt = commandExecOpt;
-            VariantIn = variantIn;
-            VariantOut = variantOut;
+            _commandGroup = commandGroup;
+            _commandId = commandId;
+            _commandExecOpt = commandExecOpt;
+            _variantIn = variantIn;
+            _variantOut = variantOut;
+        }
+
+        ~OleCommandData()
+        {
+            Dispose(false);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            try
+            {
+                if (_variantIn != IntPtr.Zero)
+                {
+                    NativeMethods.VariantClear(_variantIn);
+                    Marshal.FreeCoTaskMem(_variantIn);
+                }
+
+                if (_variantOut != IntPtr.Zero)
+                {
+                    NativeMethods.VariantClear(_variantOut);
+                    Marshal.FreeCoTaskMem(_variantOut);
+                }
+            }
+            finally
+            {
+                _variantIn = IntPtr.Zero;
+                _variantOut = IntPtr.Zero;
+            }
+        }
+
+        void IDisposable.Dispose()
+        {
+            Dispose();
         }
 
         internal static OleCommandData Empty
         {
-            get { return new OleCommandData(); }
+            get { return new OleCommandData(Guid.Empty, 0); }
         }
 
         /// <summary>
         /// Create an OleCommandData for typing the given character.  This causes a native resource
         /// allocation and must be freed at a later time with Release
         /// </summary>
-        internal static OleCommandData Allocate(char c)
+        internal static OleCommandData CreateTypeChar(char c)
         {
             var variantIn = Marshal.AllocCoTaskMem(32); // size of(VARIANT), 16 may be enough
             Marshal.GetNativeVariantForObject(c, variantIn);
             return new OleCommandData(
+                VSConstants.VSStd2K,
                 (uint)VSConstants.VSStd2KCmdID.TYPECHAR,
                 0,
                 variantIn,
                 IntPtr.Zero);
-        }
-
-        /// <summary>
-        /// Release the contents of the OleCommandData.  If no allocation was performed then this 
-        /// will be a no-op
-        ///
-        /// Do no call this one OleCommandData instances that you don't own.  Calling this on 
-        /// parameters created by Visual Studio for example could easily lead to memory corruption
-        /// issues
-        /// </summary>
-        internal static void Release(ref OleCommandData oleCommandData)
-        {
-            if (oleCommandData.VariantIn != IntPtr.Zero)
-            {
-                NativeMethods.VariantClear(oleCommandData.VariantIn);
-                Marshal.FreeCoTaskMem(oleCommandData.VariantIn);
-            }
-
-            if (oleCommandData.VariantOut != IntPtr.Zero)
-            {
-                NativeMethods.VariantClear(oleCommandData.VariantOut);
-                Marshal.FreeCoTaskMem(oleCommandData.VariantOut);
-            }
-
-            oleCommandData = new OleCommandData();
         }
     }
 }

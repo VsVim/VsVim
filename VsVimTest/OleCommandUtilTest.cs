@@ -63,10 +63,9 @@ namespace VsVim.UnitTest
         private void VerifyConvert(VimKey vimKey, VSConstants.VSStd2KCmdID cmd)
         {
             var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
-            Guid commandGroup;
             OleCommandData oleCommandData;
-            Assert.IsTrue(OleCommandUtil.TryConvert(keyInput, false, out commandGroup, out oleCommandData));
-            Assert.AreEqual(VSConstants.VSStd2K, commandGroup);
+            Assert.IsTrue(OleCommandUtil.TryConvert(keyInput, false, out oleCommandData));
+            Assert.AreEqual(VSConstants.VSStd2K, oleCommandData.CommandGroup);
             Assert.AreEqual(new OleCommandData(cmd), oleCommandData);
         }
 
@@ -216,12 +215,11 @@ namespace VsVim.UnitTest
                     continue;
                 }
 
-                var oleCommandData = new OleCommandData();
+                var oleCommandData = OleCommandData.Empty;
                 try
                 {
                     KeyInput converted;
-                    Guid commandGroup;
-                    Assert.IsTrue(OleCommandUtil.TryConvert(cur, out commandGroup, out oleCommandData));
+                    Assert.IsTrue(OleCommandUtil.TryConvert(cur, out oleCommandData));
 
                     // We lose fidelity on these keys because they both get written out as numbers
                     // at this point
@@ -229,12 +227,12 @@ namespace VsVim.UnitTest
                     {
                         continue;
                     }
-                    Assert.IsTrue(OleCommandUtil.TryConvert(commandGroup, oleCommandData, out converted));
+                    Assert.IsTrue(OleCommandUtil.TryConvert(oleCommandData, out converted));
                     Assert.AreEqual(converted, cur);
                 }
                 finally
                 {
-                    OleCommandData.Release(ref oleCommandData);
+                    oleCommandData.Dispose();
                 }
             }
         }

@@ -3,11 +3,12 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
-using Microsoft.VisualStudio.Text.Editor;
+using EditorUtils;
 
 namespace VsVim
 {
@@ -71,11 +72,10 @@ namespace VsVim
         /// </summary>
         public bool TryCustomProcess(InsertCommand command)
         {
-            OleCommandData oleCommandData = OleCommandData.Empty;
+            var oleCommandData = OleCommandData.Empty;
             try
             {
-                Guid commandGroup;
-                if (!TryGetOleCommandData(command, out commandGroup, out oleCommandData))
+                if (!TryGetOleCommandData(command, out oleCommandData))
                 {
                     // Not a command that we custom process
                     return false;
@@ -83,12 +83,7 @@ namespace VsVim
                 var versionNumber = _textBuffer.CurrentSnapshot.Version.VersionNumber;
 
                 // TODO: Make an extension method that just takes an OleCommandData
-                int hr = _nextTarget.Exec(
-                    ref commandGroup,
-                    oleCommandData.CommandId,
-                    oleCommandData.CommandExecOpt,
-                    oleCommandData.VariantIn,
-                    oleCommandData.VariantOut);
+                int hr = _nextTarget.Exec(oleCommandData);
 
                 // Whether or not an Exec succeeded is a bit of a heuristic.  IOleCommandTarget implementations like
                 // C++ will return E_ABORT if Intellisense failed but the character was actually inserted into 
@@ -98,7 +93,10 @@ namespace VsVim
             }
             finally
             {
-                OleCommandData.Release(ref oleCommandData);
+                if (oleCommandData != null)
+                {
+                    oleCommandData.Dispose();
+                }
             }
         }
 
@@ -106,9 +104,8 @@ namespace VsVim
         /// Try and convert the given insert command to an OleCommand.  This should only be done
         /// for InsertCommand values which we want to custom process
         /// </summary>
-        private bool TryGetOleCommandData(InsertCommand command, out Guid commandGroup, out OleCommandData commandData)
+        private bool TryGetOleCommandData(InsertCommand command, out OleCommandData commandData)
         {
-            commandGroup = VSConstants.VSStd2K;
             if (command.IsBack)
             {
                 commandData = new OleCommandData(VSConstants.VSStd2KCmdID.BACKSPACE);
@@ -124,7 +121,7 @@ namespace VsVim
             if (command.IsDirectInsert)
             {
                 var directInsert = (InsertCommand.DirectInsert)command;
-                commandData = OleCommandData.Allocate(directInsert.Item);
+                commandData = OleCommandData.CreateTypeChar(directInsert.Item);
                 return true;
             }
 
@@ -239,7 +236,7 @@ namespace VsVim
         /// <summary>
         /// Try and process the KeyInput from the Exec method
         /// </summary>
-        private bool TryProcessWithBuffer(ref Guid commandGroup, ref OleCommandData oleCommandData, KeyInput keyInput)
+        private bool TryProcessWithBuffer(KeyInput keyInput)
         {
             if (!_buffer.CanProcess(keyInput))
             {
@@ -369,8 +366,7 @@ namespace VsVim
                         }
 
                         // Try and process the command with the IVimBuffer
-                        var commandData = new OleCommandData(commandId, commandExecOpt, variantIn, variantOut);
-                        if (TryProcessWithBuffer(ref commandGroup, ref commandData, keyInput))
+                        if (TryProcessWithBuffer(keyInput))
                         {
                             return NativeMethods.S_OK;
                         }
@@ -511,7 +507,7 @@ namespace VsVim
 
         internal static bool TryGet(ITextView textView, out VsCommandTarget vsCommandTarget)
         {
-            return textView.Properties.TryGetProperty(Key, out vsCommandTarget);
+            return textView.Properties.TryGetPropertySafe(Key, out vsCommandTarget);
         }
     }
 }

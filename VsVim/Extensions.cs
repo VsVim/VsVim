@@ -8,6 +8,7 @@ using EnvDTE;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
+using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -132,29 +133,6 @@ namespace VsVim
         internal static IEnumerable<Command> GetCommands(this Commands commands)
         {
             return commands.Cast<Command>();
-        }
-
-        #endregion
-
-        #region PropertyCollection
-
-        internal static bool TryGetProperty<T>(this PropertyCollection col, object key, out T value)
-        {
-            try
-            {
-                if (col.TryGetProperty(key, out value))
-                {
-                    return true;
-                }
-            }
-            catch (Exception)
-            {
-                // If the Property is not of type T an exception will be thrown
-                value = default(T);
-                return false;
-            }
-
-            return false;
         }
 
         #endregion
@@ -440,7 +418,7 @@ namespace VsVim
 
         #region IServiceProvider
 
-        internal static TInterface GetService<TService, TInterface>(this IServiceProvider sp)
+        internal static TInterface GetService<TService, TInterface>(this System.IServiceProvider sp)
         {
             return (TInterface)sp.GetService(typeof(TService));
         }
@@ -738,6 +716,41 @@ namespace VsVim
         internal static bool IsSome<T>(this FSharpOption<T> option, T value)
         {
             return option.IsSome() && EqualityComparer<T>.Default.Equals(option.Value, value);
+        }
+
+        #endregion
+
+        #region IOleCommandTarget
+
+        internal static int Exec(this IOleCommandTarget oleCommandTarget, OleCommandData oleCommandData)
+        {
+            Guid commandGroup = oleCommandData.CommandGroup;
+            return oleCommandTarget.Exec(
+                ref commandGroup,
+                oleCommandData.CommandId,
+                oleCommandData.CommandExecOpt,
+                oleCommandData.VariantIn,
+                oleCommandData.VariantOut);
+        }
+
+        internal static int QueryStatus(this IOleCommandTarget oleCommandTarget, OleCommandData oleCommandData)
+        {
+            OLECMD command;
+            return QueryStatus(oleCommandTarget, oleCommandData, out command);
+        }
+
+        internal static int QueryStatus(this IOleCommandTarget oleCommandTarget, OleCommandData oleCommandData, out OLECMD command)
+        {
+            var commandGroup = oleCommandData.CommandGroup;
+            var cmds = new OLECMD[1];
+            cmds[0] = new OLECMD { cmdID = oleCommandData.CommandId };
+            var result = oleCommandTarget.QueryStatus(
+                ref commandGroup,
+                1,
+                cmds,
+                oleCommandData.VariantIn);
+            command = cmds[0];
+            return result;
         }
 
         #endregion

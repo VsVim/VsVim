@@ -23,10 +23,10 @@ namespace VsVim
             return true;
         }
 
-        internal static bool TryConvert(Guid commandGroup, OleCommandData oleCommandData, out KeyInput keyInput)
+        internal static bool TryConvert(OleCommandData oleCommandData, out KeyInput keyInput)
         {
             EditCommandKind editCommandKind;
-            return TryConvert(commandGroup, oleCommandData.CommandId, oleCommandData.VariantIn, out keyInput, out editCommandKind);
+            return TryConvert(oleCommandData.CommandGroup, oleCommandData.CommandId, oleCommandData.VariantIn, out keyInput, out editCommandKind);
         }
 
         internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr variantIn, out KeyInput keyInput, out EditCommandKind kind)
@@ -261,9 +261,9 @@ namespace VsVim
         /// without any consideration of Visual Studio standard commands.  It will map as if VsVim was in 
         /// complete control of key bindings
         /// </summary>
-        internal static bool TryConvert(KeyInput keyInput, out Guid commandGroup, out OleCommandData oleCommandData)
+        internal static bool TryConvert(KeyInput keyInput, out OleCommandData oleCommandData)
         {
-            return TryConvert(keyInput, false, out commandGroup, out oleCommandData);
+            return TryConvert(keyInput, false, out oleCommandData);
         }
 
         /// <summary>
@@ -271,10 +271,9 @@ namespace VsVim
         /// to true then "standard" Visual Studio key bindings will be assumed and this will be reflected in the 
         /// resulting command information
         /// </summary>
-        internal static bool TryConvert(KeyInput keyInput, bool simulateStandardKeyBindings, out Guid commandGroup, out OleCommandData oleCommandData)
+        internal static bool TryConvert(KeyInput keyInput, bool simulateStandardKeyBindings, out OleCommandData oleCommandData)
         {
             var hasShift = 0 != (keyInput.KeyModifiers & KeyModifiers.Shift);
-            commandGroup = VSConstants.VSStd2K;
             VSConstants.VSStd2KCmdID? cmdId = null;
             switch (keyInput.Key)
             {
@@ -338,12 +337,12 @@ namespace VsVim
 
             if (keyInput.RawChar.IsSome())
             {
-                oleCommandData = OleCommandData.Allocate(keyInput.Char);
+                oleCommandData = OleCommandData.CreateTypeChar(keyInput.Char);
                 return true;
             }
             else
             {
-                oleCommandData = new OleCommandData();
+                oleCommandData = OleCommandData.Empty;
                 return false;
             }
         }

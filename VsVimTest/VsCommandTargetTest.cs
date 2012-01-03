@@ -81,15 +81,14 @@ namespace VsVim.UnitTest
         private void RunExec(KeyInput keyInput)
         {
             OleCommandData data;
-            Guid commandGroup;
-            Assert.IsTrue(OleCommandUtil.TryConvert(keyInput, out commandGroup, out data));
+            Assert.IsTrue(OleCommandUtil.TryConvert(keyInput, out data));
             try
             {
-                _target.Exec(ref commandGroup, data.CommandId, data.CommandExecOpt, data.VariantIn, data.VariantOut);
+                _target.Exec(data);
             }
             finally
             {
-                OleCommandData.Release(ref data);
+                data.Dispose();
             }
         }
 
@@ -109,19 +108,17 @@ namespace VsVim.UnitTest
         private bool RunQueryStatus(KeyInput keyInput)
         {
             OleCommandData data;
-            Guid commandGroup;
-            Assert.IsTrue(OleCommandUtil.TryConvert(keyInput, out commandGroup, out data));
+            Assert.IsTrue(OleCommandUtil.TryConvert(keyInput, out data));
             try
             {
-                var cmds = new OLECMD[1];
-                cmds[0] = new OLECMD { cmdID = data.CommandId };
+                OLECMD command;
                 return
-                    ErrorHandler.Succeeded(_target.QueryStatus(ref commandGroup, 1, cmds, data.VariantIn)) &&
-                    cmds[0].cmdf == (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
+                    ErrorHandler.Succeeded(_target.QueryStatus(data, out command)) &&
+                    command.cmdf == (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
             }
             finally
             {
-                OleCommandData.Release(ref data);
+                data.Dispose();
             }
         }
 
@@ -388,21 +385,6 @@ namespace VsVim.UnitTest
         }
 
         /// <summary>
-        /// Make sure that KeyInput is simulated for any KeyInput which is intercepted
-        /// </summary>
-        [Test]
-        public void Exec_SimulateInterceptedInput()
-        {
-            var count = 0;
-            _buffer.KeyInputProcessed += delegate { count++; };
-            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-            _nextTarget.SetupExec().Verifiable();
-            RunExec(KeyInputUtil.EnterKey);
-            Assert.AreEqual(1, count);
-            _factory.Verify();
-        }
-
-        /// <summary>
         /// If there is buffered KeyInput values then the provided KeyInput shouldn't ever be 
         /// directly handled by the VsCommandTarget or the next IOleCommandTarget in the 
         /// chain.  It should be passed directly to the IVimBuffer if it can be handled else 
@@ -438,8 +420,8 @@ namespace VsVim.UnitTest
 
         /// <summary>
         /// In the case where there is buffered KeyInput values and the next KeyInput collapses
-        /// it into a single value then we should process the result as a single key stroke and
-        /// go through Exec
+        /// it into a single value then we need to make sure we pass both values onto the IVimBuffer
+        /// so the remapping can occur
         /// </summary>
         [Test]
         public void Exec_CollapseBufferedInputToSingleKeyInput()
@@ -448,11 +430,9 @@ namespace VsVim.UnitTest
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             RunExec('j');
             Assert.IsFalse(_buffer.BufferedKeyInputs.IsEmpty);
-            _nextTarget.SetupExec().Callback(() => _textView.SetText("hello")).Verifiable();
             RunExec('j');
-            Assert.AreEqual("hello", _textView.GetLine(0).GetText());
+            Assert.AreEqual("z", _textView.GetLine(0).GetText());
             Assert.IsTrue(_buffer.BufferedKeyInputs.IsEmpty);
-            _nextTarget.Verify();
         }
     }
 }
