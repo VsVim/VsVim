@@ -67,8 +67,7 @@ type internal InsertUtil
                 reraise()
 
     /// Apply the TextChange to the ITextBuffer 'count' times as a single operation.
-    member x.ApplyTextChange textChange addNewLines count =
-        Contract.Requires (count > 0)
+    member x.ApplyTextChange textChange addNewLines overwrite =
 
         // Apply a single change to the ITextBuffer as a transaction 
         let rec applyChange textChange = 
@@ -83,7 +82,17 @@ type internal InsertUtil
                         text
 
                 let caretPoint = TextViewUtil.GetCaretPoint _textView
-                let span = SnapshotSpan(caretPoint, 0)
+
+                // If this is an overwrite operation then replace vs. insert
+                let span = 
+                    if overwrite then
+                        let snapshot = x.CurrentSnapshot
+                        let position = min snapshot.Length (caretPoint.Position + text.Length)
+                        let endPoint = SnapshotPoint(snapshot, position)
+                        SnapshotSpan(caretPoint, endPoint)
+                    else
+                        SnapshotSpan(caretPoint, 0)
+
                 _textBuffer.Replace(span.Span, text) |> ignore
 
                 // Now make sure to position the caret at the end of the inserted
@@ -116,12 +125,7 @@ type internal InsertUtil
                 applyChange left 
                 applyChange right
 
-        // Create a transaction so the textChange is applied as a single edit and to 
-        // maintain caret position 
-        _undoRedoOperations.EditWithUndoTransaction "Repeat Edits" (fun () -> 
-
-            for i = 1 to count do
-                applyChange textChange)
+        applyChange textChange
 
     /// Delete the character before the cursor
     ///
@@ -313,14 +317,14 @@ type internal InsertUtil
 
     /// Repeat the given edit InsertCommand.  This is used at the exit of insert mode to
     /// apply the edits again and again
-    member x.RepeatEdit command addNewLines count = 
+    member x.RepeatEdit textChange addNewLines overwrite count = 
 
         // Create a transaction so the textChange is applied as a single edit and to 
         // maintain caret position 
         _undoRedoOperations.EditWithUndoTransaction "Repeat Edits" (fun () -> 
 
             for i = 1 to count do
-                x.RunInsertCommandCore command addNewLines |> ignore)
+                x.ApplyTextChange textChange addNewLines overwrite)
 
     /// Repeat the edits for the other lines in the block span.
     member x.RepeatBlock (command : InsertCommand) (blockSpan : BlockSpan) =
@@ -420,12 +424,12 @@ type internal InsertUtil
         CommandResult.Error
 
     member x.ExtraTextChange textChange addNewLines = 
-        x.ApplyTextChange textChange addNewLines 1
+        x.ApplyTextChange textChange addNewLines false
         CommandResult.Completed ModeSwitch.NoSwitch
 
     interface IInsertUtil with
 
         member x.RunInsertCommand command = x.RunInsertCommand command
-        member x.RepeatEdit command addNewLines count = x.RepeatEdit command addNewLines count
+        member x.RepeatEdit textChange addNewLines overwrite count = x.RepeatEdit textChange addNewLines overwrite count
         member x.RepeatBlock command blockSpan = x.RepeatBlock command blockSpan
 

@@ -14,7 +14,7 @@ type InsertKind =
 
     /// This Insert is a repeat operation this holds the count and 
     /// whether or not a newline should be inserted after the text
-    | Repeat of int * bool
+    | Repeat of int * bool * TextChange
 
     | Block of BlockSpan
 
@@ -26,6 +26,9 @@ type InsertSessionData = {
 
     /// The kind of insert we are currently performing
     InsertKind : InsertKind
+
+    /// The most recent TextChange for the insert session
+    InsertTextChange : TextChange option
 
     /// This is the current InsertCommand being built up
     CombinedEditCommand : InsertCommand option
@@ -57,6 +60,7 @@ type internal InsertMode
 
     static let _emptySessionData = {
         InsertKind = InsertKind.Normal
+        InsertTextChange = None
         Transaction = None
         CombinedEditCommand = None
         ActiveWordCompletionSession = None
@@ -289,13 +293,13 @@ type internal InsertMode
         _textChangeTracker.CompleteChange()
 
         try
-            match _sessionData.CombinedEditCommand with
-            | None -> ()
-            | Some command -> 
-                match _sessionData.InsertKind with
-                | InsertKind.Normal -> ()
-                | InsertKind.Repeat (count, addNewLines)-> _insertUtil.RepeatEdit command addNewLines (count - 1)
-                | InsertKind.Block blockSpan -> _insertUtil.RepeatBlock command blockSpan
+            match _sessionData.InsertKind with
+            | InsertKind.Normal -> ()
+            | InsertKind.Repeat (count, addNewLines, textChange)-> _insertUtil.RepeatEdit textChange addNewLines _isReplace (count - 1)
+            | InsertKind.Block blockSpan -> 
+                match _sessionData.CombinedEditCommand with
+                | None -> ()
+                | Some command -> _insertUtil.RepeatBlock command blockSpan
 
         finally
             // Make sure to close out the transaction
@@ -421,6 +425,8 @@ type internal InsertMode
             finally
                 _textChangeTracker.Enabled <- true
 
+        x.OnAfterRunInsertCommand command
+
         // Now we need to decided how the external world sees this edit.  If it links with an
         // existing edit then we save it and send it out as a batch later.
         let isEdit = Util.IsFlagSet commandFlags CommandFlags.InsertEdit
@@ -476,7 +482,7 @@ type internal InsertMode
                 // Now run the command
                 x.RunInsertCommand command keyInputSet CommandFlags.Repeatable |> Some
 
-        match _textChangeTracker.CurrentChange with
+        match _sessionData.InsertTextChange with
         | None ->
             None
         | Some textChange ->
@@ -554,6 +560,49 @@ type internal InsertMode
             if keyMove then 
                 _textChangeTracker.CompleteChange()
 
+    member x.OnAfterRunInsertCommand command =
+
+        let commandTextChange = 
+            match command with 
+            | InsertCommand.Back ->  Some (TextChange.DeleteLeft 1)
+            | InsertCommand.Combined _ -> None
+            | InsertCommand.Delete -> Some (TextChange.DeleteRight 1)
+            | InsertCommand.DeleteAllIndent -> None
+            | InsertCommand.DeleteWordBeforeCursor -> None
+            | InsertCommand.DirectInsert c -> Some (TextChange.Insert (c.ToString()))
+            | InsertCommand.ExtraTextChange textChange -> Some textChange
+            | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine _editorOptions))
+            | InsertCommand.InsertTab -> Some (TextChange.Insert "\t")
+            | InsertCommand.MoveCaret _ -> None
+            | InsertCommand.ShiftLineLeft -> None
+            | InsertCommand.ShiftLineRight -> None
+
+        let insertTextChange = 
+            match _sessionData.InsertTextChange, commandTextChange with
+            | Some left, Some right -> TextChange.Merge left right |> Some
+            | None, Some right -> Some right
+            | _ -> None
+        _sessionData <- { _sessionData with InsertTextChange = insertTextChange }
+
+        let updateRepeat count addNewLines textChange =
+
+            let insertKind = 
+                match commandTextChange with
+                | None -> 
+                    // Certain actions such as caret movement cause us to abandon the repeat session
+                    // and move to a normal insert
+                    InsertKind.Normal
+                | Some otherTextChange ->
+                    let textChange = TextChange.Merge textChange otherTextChange
+                    InsertKind.Repeat (count, addNewLines, textChange)
+
+            _sessionData <- { _sessionData with InsertKind = insertKind }
+
+        match _sessionData.InsertKind with
+        | InsertKind.Normal -> ()
+        | InsertKind.Repeat (count, addNewLines, textChange) -> updateRepeat count addNewLines textChange
+        | InsertKind.Block _ -> ()
+
     /// Raised on the completion of a TextChange event.  This event is not raised immediately
     /// and instead is added to the CombinedEditCommand value for this session which will be 
     /// raised as a command at a later time
@@ -562,6 +611,7 @@ type internal InsertMode
         let textChange = args.TextChange
         let command = 
             let textChangeCommand = InsertCommand.ExtraTextChange textChange
+            x.OnAfterRunInsertCommand textChangeCommand
             match _sessionData.CombinedEditCommand with
             | None -> textChangeCommand
             | Some command -> InsertCommand.Combined (command, textChangeCommand)
@@ -591,13 +641,13 @@ type internal InsertMode
             | ModeArgument.InsertWithCount count ->
                 if count > 1 then
                     let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
-                    Some transaction, InsertKind.Repeat (count, false)
+                    Some transaction, InsertKind.Repeat (count, false, TextChange.Insert StringUtil.empty)
                 else
                     None, InsertKind.Normal
             | ModeArgument.InsertWithCountAndNewLine count ->
                 if count > 1 then
                     let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
-                    Some transaction, InsertKind.Repeat (count, true)
+                    Some transaction, InsertKind.Repeat (count, true, TextChange.Insert StringUtil.empty)
                 else
                     None, InsertKind.Normal
             | ModeArgument.InsertWithTransaction transaction ->
@@ -624,6 +674,7 @@ type internal InsertMode
         _sessionData <- {
             Transaction = transaction
             InsertKind = insertKind
+            InsertTextChange = None
             CombinedEditCommand = None
             ActiveWordCompletionSession = None
         }

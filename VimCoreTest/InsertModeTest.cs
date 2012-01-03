@@ -126,6 +126,14 @@ namespace Vim.UnitTest
             _modeRaw.StartWordCompletionSession(true);
         }
 
+        private void SetupInsertCommand(InsertCommand command)
+        {
+            _insertUtil
+                .Setup(x => x.RunInsertCommand(command))
+                .Returns(CommandResult.NewCompleted(ModeSwitch.NoSwitch))
+                .Verifiable();
+        }
+
         /// <summary>
         /// If the active IWordCompletionSession is dismissed via the API it should cause the 
         /// ActiveWordCompletionSession value to be reset as well
@@ -546,35 +554,43 @@ namespace Vim.UnitTest
         {
             Create("hello world");
             SetupActiveWordCompletionSession();
+            SetupInsertCommand(InsertCommand.NewDirectInsert('c'));
             _textView.MoveCaretTo(0);
             _activeWordCompletionSession.Setup(x => x.Dismiss()).Verifiable();
             _mode.Process('c');
             _activeWordCompletionSession.Verify();
-            Assert.AreEqual("chello world", _textView.GetLine(0).GetText());
+            _insertUtil.Verify();
             Assert.IsTrue(_mode.ActiveWordCompletionSession.IsNone());
         }
 
         /// <summary>
-        /// Actions which are customed processed should still show up as the last command
+        /// Ensure that Enter maps to the appropriate InsertCommand and shows up as the LastCommand
+        /// after processing
         /// </summary>
         [Test]
-        public void Process_InsertNewLine_Custom()
+        public void Process_InsertNewLine()
         {
             Create("");
-            var didRun = false;
-            VimHost.TryCustomProcessFunc = 
-                (textView, command) =>
-                {
-                    didRun = true;
-                    return true;
-                };
+            SetupInsertCommand(InsertCommand.InsertNewLine);
             _mode.Process(VimKey.Enter);
-            Assert.IsTrue(didRun);
-
-            // Make sure the Back command was raised as if it ran.
+            _insertUtil.Verify();
             Assert.IsTrue(_modeRaw._sessionData.CombinedEditCommand.IsSome());
             Assert.IsTrue(_modeRaw._sessionData.CombinedEditCommand.Value.IsInsertNewLine);
         }
 
+        /// <summary>
+        /// Ensure that a character maps to the DirectInsert and shows up as the LastCommand
+        /// after processing
+        /// </summary>
+        [Test]
+        public void Process_DirectInsert()
+        {
+            Create("");
+            SetupInsertCommand(InsertCommand.NewDirectInsert('c'));
+            _mode.Process('c');
+            _insertUtil.Verify();
+            Assert.IsTrue(_modeRaw._sessionData.CombinedEditCommand.IsSome());
+            Assert.IsTrue(_modeRaw._sessionData.CombinedEditCommand.Value.IsDirectInsert);
+        }
     }
 }

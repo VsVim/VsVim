@@ -2264,7 +2264,7 @@ type internal IInsertUtil =
     abstract RunInsertCommand : InsertCommand -> CommandResult
 
     /// Repeat the given edit series. 
-    abstract RepeatEdit : InsertCommand -> addNewLines : bool -> count : int -> unit
+    abstract RepeatEdit : textChange : TextChange -> addNewLines : bool -> overwrite : bool -> count : int -> unit
 
     /// Repeat the given edit series. 
     abstract RepeatBlock : InsertCommand -> blockSpan : BlockSpan -> unit

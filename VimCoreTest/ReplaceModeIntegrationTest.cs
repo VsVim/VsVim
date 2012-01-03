@@ -7,13 +7,13 @@ namespace Vim.UnitTest
     [TestFixture]
     public sealed class ReplaceModeIntegrationTest : VimTestBase
     {
-        private IVimBuffer _buffer;
+        private IVimBuffer _vimBuffer;
         private ITextView _textView;
 
         private void Create(params string[] lines)
         {
             _textView = CreateTextView(lines);
-            _buffer = Vim.CreateVimBuffer(_textView);
+            _vimBuffer = Vim.CreateVimBuffer(_textView);
         }
 
         /// <summary>
@@ -23,8 +23,8 @@ namespace Vim.UnitTest
         public void TypeForwardShouldReplace()
         {
             Create("hello world");
-            _buffer.SwitchMode(ModeKind.Replace, ModeArgument.None);
-            _buffer.Process("again");
+            _vimBuffer.SwitchMode(ModeKind.Replace, ModeArgument.None);
+            _vimBuffer.Process("again");
             Assert.AreEqual("again world", _textView.GetLine(0).GetText());
             Assert.AreEqual(5, _textView.GetCaretPoint().Position);
         }
@@ -36,8 +36,8 @@ namespace Vim.UnitTest
         public void TypePastEndOfLine()
         {
             Create("cat", "dog");
-            _buffer.SwitchMode(ModeKind.Replace, ModeArgument.None);
-            _buffer.Process("big tree");
+            _vimBuffer.SwitchMode(ModeKind.Replace, ModeArgument.None);
+            _vimBuffer.Process("big tree");
             Assert.AreEqual("big tree", _textView.GetLine(0).GetText());
             Assert.AreEqual("dog", _textView.GetLine(1).GetText());
         }
@@ -49,9 +49,9 @@ namespace Vim.UnitTest
         public void Repeat_InsertText()
         {
             Create("dog");
-            _buffer.SwitchMode(ModeKind.Replace, ModeArgument.NewInsertWithCount(2));
-            _buffer.Process("cat");
-            _buffer.Process(VimKey.Escape);
+            _vimBuffer.SwitchMode(ModeKind.Replace, ModeArgument.NewInsertWithCount(2));
+            _vimBuffer.Process("cat");
+            _vimBuffer.Process(VimKey.Escape);
             Assert.AreEqual("catcat", _textView.GetLine(0).GetText());
             Assert.AreEqual(5, _textView.GetCaretPoint().Position);
         }
@@ -63,9 +63,9 @@ namespace Vim.UnitTest
         public void Repeat_InsertOver()
         {
             Create("fish tree");
-            _buffer.SwitchMode(ModeKind.Replace, ModeArgument.NewInsertWithCount(2));
-            _buffer.Process("cat");
-            _buffer.Process(VimKey.Escape);
+            _vimBuffer.SwitchMode(ModeKind.Replace, ModeArgument.NewInsertWithCount(2));
+            _vimBuffer.Process("cat");
+            _vimBuffer.Process(VimKey.Escape);
             Assert.AreEqual("catcatree", _textView.GetLine(0).GetText());
             Assert.AreEqual(5, _textView.GetCaretPoint().Position);
         }
