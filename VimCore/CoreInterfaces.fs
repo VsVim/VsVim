@@ -217,8 +217,6 @@ type TextChange =
     with 
 
     /// Get the insert text resulting from the change if there is any
-    /// 
-    /// TODO: Do I still need this
     member x.InsertText = 
         let rec inner textChange (text : string) = 
             match textChange with 
