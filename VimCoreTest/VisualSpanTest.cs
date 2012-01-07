@@ -99,15 +99,16 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
-        /// An empty selection should produce a block span of width 1.  Block's have to 
-        /// have at least this width.  It's a corner case that comes up again and again
+        /// VisualSpan doesn't understand weird Vim semantics.  An empty selection is an 
+        /// empty selection even if it's block
         /// </summary>
         [Test]
         public void CreateForSelection_Block_Empty()
         {
             Create("hello world");
             var visualSpan = VisualSpan.CreateForSelection(_textView, VisualKind.Block);
-            Assert.AreEqual(1, visualSpan.EditSpan.OverarchingSpan.Length);
+            var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 0, 1);
+            Assert.AreEqual(blockSpan, visualSpan.AsBlock().Item);
         }
 
         /// <summary>
@@ -119,6 +120,32 @@ namespace Vim.UnitTest
             Create("hello world");
             var visualSpan = VisualSpan.CreateForSelection(_textView, VisualKind.Line);
             Assert.AreEqual(_textBuffer.GetLineRange(0), visualSpan.AsLine().Item);
+        }
+
+        /// <summary>
+        /// Ensure creating a VisualSpan for an empty points results in an empty selection
+        /// </summary>
+        [Test]
+        public void CreateForAllPoints_Block_Empty()
+        {
+            Create("dog cat");
+            var point = _textBuffer.GetPoint(2);
+            var visualSpan = VisualSpan.CreateForAllPoints(VisualKind.Block, point, point);
+            var blockSpan = new BlockSpan(point, 0, 1);
+            Assert.AreEqual(blockSpan, visualSpan.AsBlock().Item);
+        }
+
+        /// <summary>
+        /// Ensure creating a VisualSpan for an empty points results in an empty selection
+        /// </summary>
+        [Test]
+        public void CreateForAllPoints_Character_Empty()
+        {
+            Create("dog cat");
+            var point = _textBuffer.GetPoint(2);
+            var visualSpan = VisualSpan.CreateForAllPoints(VisualKind.Character, point, point);
+            Assert.AreEqual(point, visualSpan.AsCharacter().Item.Start);
+            Assert.AreEqual(0, visualSpan.AsCharacter().Item.Length);
         }
     }
 }

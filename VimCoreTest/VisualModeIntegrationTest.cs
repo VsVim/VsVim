@@ -11,7 +11,7 @@ using Vim.UnitTest.Mock;
 namespace Vim.UnitTest
 {
     [TestFixture]
-    public sealed class VisualModeIntegrationTest : VimTestBase 
+    public sealed class VisualModeIntegrationTest : VimTestBase
     {
         private IVimBuffer _vimBuffer;
         private IVimTextBuffer _vimTextBuffer;
@@ -430,6 +430,36 @@ namespace Vim.UnitTest
             _context.RunAll();
             _vimBuffer.Process("ly");
             Assert.AreEqual("  wo", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
+        }
+
+        /// <summary>
+        /// Make sure the CTRL-Q command causes the block selection to start out as a single width
+        /// column
+        /// </summary>
+        [Test]
+        public void Select_Block_InitialState()
+        {
+            Create("hello world");
+            _vimBuffer.ProcessNotation("<C-Q>");
+            Assert.AreEqual(ModeKind.VisualBlock, _vimBuffer.ModeKind);
+            var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 1, 1);
+            Assert.AreEqual(blockSpan, _textView.GetSelectionBlockSpan());
+        }
+
+        /// <summary>
+        /// Make sure the CTRL-Q command causes the block selection to start out as a single width 
+        /// column from places other than the start of the document
+        /// </summary>
+        [Test]
+        public void Select_Block_InitialNonStartPoint()
+        {
+            Create("big cats", "big dogs", "big trees");
+            var point = _textBuffer.GetPointInLine(1, 3);
+            _textView.MoveCaretTo(point);
+            _vimBuffer.ProcessNotation("<C-Q>");
+            Assert.AreEqual(ModeKind.VisualBlock, _vimBuffer.ModeKind);
+            var blockSpan = new BlockSpan(point, 1, 1);
+            Assert.AreEqual(blockSpan, _textView.GetSelectionBlockSpan());
         }
 
         /// <summary>

@@ -1125,7 +1125,9 @@ type BlockCaretLocation =
     | BottomLeft
     | BottomRight
 
-/// Represents the span of text a given visual selection can occuppy.  
+/// Represents a visual span of text in the form Vim understands.  This type understands 
+/// nothing about the intricacies of Visual Mode selection.  It simply understands how
+/// to represent the Spans it can occupy.
 ///
 /// Note: There is no use of inclusive or exclusive in this type.  That is intentional.  This
 /// type is simply a measurement.  The context in which it was measured is important for
@@ -1260,20 +1262,26 @@ type VisualSpan =
 
         | VisualKind.Block -> 
 
-            let lastLine, lastColumn = 
-                let lastPoint = SnapshotPointUtil.SubtractOneOrCurrent endPoint
-                SnapshotPointUtil.GetLineColumn lastPoint
-            let startLine, startColumn = SnapshotPointUtil.GetLineColumn startPoint
+            if startPoint = endPoint then
+                // Special case of an empty selection.  The math below is predicated
+                // on an non-empty selection.  Catch that case here
+                BlockSpan(startPoint, 0, 1) |> Block
+            else
 
-            let width = 
-                let width = startColumn - lastColumn
-                (abs width) + 1
-
-            let height =
-                let height = startLine - lastLine
-                (abs height) + 1
-
-            BlockSpan(startPoint, width, height) |> Block
+                let lastLine, lastColumn = 
+                    let lastPoint = SnapshotPointUtil.SubtractOneOrCurrent endPoint
+                    SnapshotPointUtil.GetLineColumn lastPoint
+                let startLine, startColumn = SnapshotPointUtil.GetLineColumn startPoint
+    
+                let width = 
+                    let width = startColumn - lastColumn
+                    (abs width) + 1
+    
+                let height =
+                    let height = startLine - lastLine
+                    (abs height) + 1
+    
+                BlockSpan(startPoint, width, height) |> Block
 
     /// Create a VisualSelection based off of the current selection.  If no selection is present
     /// then an empty VisualSpan will be created at the caret
@@ -1500,6 +1508,26 @@ type VisualSelection =
 
         let caretPoint = TextViewUtil.GetCaretPoint textView
         VisualSelection.Create visualSpan path caretPoint
+
+    /// Create the initial Visual Selection information for the specified Kind started at 
+    /// the specified point
+    static member CreateInitial visualKind caretPoint =
+        match visualKind with
+        | VisualKind.Character ->
+            let characterSpan = 
+                let endPoint = SnapshotPointUtil.AddOneOrCurrent caretPoint
+                let span = SnapshotSpan(caretPoint, endPoint)
+                CharacterSpan.CreateForSpan span
+            VisualSelection.Character (characterSpan, Path.Forward)
+        | VisualKind.Line ->
+            let lineRange = 
+                let line = SnapshotPointUtil.GetContainingLine caretPoint
+                SnapshotLineRangeUtil.CreateForLine line
+            let column = SnapshotPointUtil.GetColumn caretPoint
+            VisualSelection.Line (lineRange, Path.Forward, column)
+        | VisualKind.Block ->
+            let blockSpan = BlockSpan(caretPoint, 1, 1)
+            VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
 
 [<RequireQualifiedAccess>]
 type ModeArgument =

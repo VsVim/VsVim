@@ -47,10 +47,12 @@ type internal SelectionTracker
         _anchorPoint <- 
             let selection = _textView.Selection
             if selection.IsEmpty then
+
                 // Set the selection.  If this is line mode we need to select the entire line 
                 // here
                 let caretPoint = TextViewUtil.GetCaretPoint _textView
-                let visualSpan = VisualSpan.CreateForAllPoints _visualKind caretPoint caretPoint
+                let visualSelection = VisualSelection.CreateInitial _visualKind caretPoint
+                let visualSpan = visualSelection.GetVisualSpan _globalSettings.SelectionKind
                 visualSpan.Select _textView Path.Forward
 
                 Some caretPoint
