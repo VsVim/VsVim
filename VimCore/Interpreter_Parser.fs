@@ -255,6 +255,12 @@ type Parser
     /// which are not letters such as numbers, <, >, etc ...
     member x.ParseKeyNotation() = x.ParseWhile CharUtil.IsNotBlank
 
+    /// Parse out the remainder of the line including any trailing blanks
+    member x.ParseRestOfLine() = 
+        match x.ParseWhile (fun _ -> true) with
+        | None -> StringUtil.empty
+        | Some text -> text
+
     /// Parse out the mapclear variants. 
     member x.ParseMapClear allowBang keyRemapModes =
         let hasBang = x.ParseBang()
@@ -296,13 +302,13 @@ type Parser
             LineCommand.DisplayKeyMap (keyRemapModes, None) |> ParseResult.Succeeded
         | Some leftKeyNotation -> 
             x.SkipBlanks()
-            match x.ParseKeyNotation() with
-            | None ->
+            let rightKeyNotation = x.ParseRestOfLine()
+            if StringUtil.isBlanks rightKeyNotation then
                 LineCommand.DisplayKeyMap (keyRemapModes, Some leftKeyNotation) |> ParseResult.Succeeded
-            | Some rightKeyNotation ->
+            else
                 LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap, mapArgumentList) |> ParseResult.Succeeded
 
-    /// Parse out the :map commands
+    /// Parse out the :map commands and all of it's variants (imap, cmap, etc ...)
     member x.ParseMapKeys allowBang keyRemapModes =
 
         if x.ParseBang() then

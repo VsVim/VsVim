@@ -280,7 +280,6 @@ namespace Vim.UnitTest
         /// Spaces need to be allowed in the target mapping
         /// </summary>
         [Test]
-        [Ignore("Need to fix, noticed while testing out another bug")]
         public void KeyRemap_SpacesInTarget()
         {
             Create("");
