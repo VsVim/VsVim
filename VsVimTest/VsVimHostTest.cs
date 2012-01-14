@@ -71,7 +71,7 @@ namespace VsVim.UnitTest
         {
             Create();
             var textView = CreateTextView("");
-            _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
+            _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
             Assert.IsFalse(_host.GoToDefinition());
         }
 
@@ -80,7 +80,7 @@ namespace VsVim.UnitTest
         {
             Create();
             var textView = CreateTextView("");
-            _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
+            _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, String.Empty)).Throws(new Exception());
             Assert.IsFalse(_host.GoToDefinition());
         }
@@ -90,7 +90,7 @@ namespace VsVim.UnitTest
         {
             Create();
             var textView = CreateTextView("");
-            _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
+            _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, String.Empty));
             Assert.IsTrue(_host.GoToDefinition());
         }
@@ -106,7 +106,7 @@ namespace VsVim.UnitTest
             var ct = GetOrCreateContentType(VsVim.Constants.CPlusPlusContentType, "code");
             var textView = CreateTextView(ct, "hello world");
             var wordUtil = WordUtilFactory.GetWordUtil(textView.TextBuffer);
-            _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
+            _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, "hello"));
             Assert.IsTrue(_host.GoToDefinition());
         }
@@ -121,7 +121,7 @@ namespace VsVim.UnitTest
             Create();
             var ct = GetOrCreateContentType("csharp", "code");
             var textView = CreateTextView(ct, "hello world");
-            _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
+            _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, ""));
             Assert.IsTrue(_host.GoToDefinition());
         }

@@ -24,6 +24,5 @@ namespace Vim.UI.Wpf
 
         #endregion
 
-
     }
 }

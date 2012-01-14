@@ -16,7 +16,6 @@ using Vim;
 
 namespace VsVim.Implementation
 {
-    // TODO: make this an explicit implementation
     [Export(typeof(IVsAdapter))]
     internal sealed class VsAdapter : IVsAdapter
     {

@@ -19,7 +19,7 @@ namespace VsVim
         /// <summary>
         /// Returns the active IWpfITextView
         /// </summary>
-        ITextView ActiveTextView { get; }
+        ITextView ActiveTextViewOptional { get; }
 
         /// <summary>
         /// Get the ITextView instances which are attachked to this ITextBuffer

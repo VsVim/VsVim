@@ -195,5 +195,59 @@ namespace VsVim.Implementation
                 .Select(x => _adapter.EditorAdapter.GetWpfTextView(x))
                 .Where(x => x != null);
         }
+
+        #region ITextManager
+
+        IEnumerable<ITextBuffer> ITextManager.TextBuffers
+        {
+            get { return TextBuffers; }
+        }
+
+        IEnumerable<ITextView> ITextManager.TextViews
+        {
+            get { return TextViews; }
+        }
+
+        ITextView ITextManager.ActiveTextViewOptional
+        {
+            get { return ActiveTextView; }
+        }
+
+        IEnumerable<ITextView> ITextManager.GetTextViews(ITextBuffer textBuffer)
+        {
+            return GetTextViews(textBuffer);
+        }
+
+        bool ITextManager.NavigateTo(VirtualSnapshotPoint point)
+        {
+            return NavigateTo(point);
+        }
+
+        Result ITextManager.Save(ITextBuffer textBuffer)
+        {
+            return Save(textBuffer);
+        }
+
+        bool ITextManager.CloseView(ITextView textView, bool checkDirty)
+        {
+            return CloseView(textView, checkDirty);
+        }
+
+        bool ITextManager.SplitView(ITextView textView)
+        {
+            return SplitView(textView);
+        }
+
+        bool ITextManager.MoveViewUp(ITextView textView)
+        {
+            return MoveViewUp(textView);
+        }
+
+        bool ITextManager.MoveViewDown(ITextView textView)
+        {
+            return MoveViewDown(textView);
+        }
+
+        #endregion
     }
 }

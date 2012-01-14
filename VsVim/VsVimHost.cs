@@ -151,7 +151,7 @@ namespace VsVim
 
         public override bool GoToDefinition()
         {
-            return GoToDefinitionCore(_textManager.ActiveTextView, null);
+            return GoToDefinitionCore(_textManager.ActiveTextViewOptional, null);
         }
 
         /// <summary>
