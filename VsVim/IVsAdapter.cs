@@ -72,9 +72,14 @@ namespace VsVim
         bool IsReadOnly(ITextBuffer textBuffer);
 
         /// <summary>
+        /// Get the IVsCodeWindowFrame instances currently open
+        /// </summary>
+        Result<List<IVsWindowFrame>> GetWindowFrames();
+
+        /// <summary>
         /// Get the containing IVsCodeWindowFrame for the provided ITextBuffer
         /// </summary>
-        Result<IVsWindowFrame> GetContainingWindowFrame(ITextBuffer textBuffer);
+        Result<List<IVsWindowFrame>> GetContainingWindowFrames(ITextBuffer textBuffer);
 
         /// <summary>
         /// Get the IVsPersisteDocData for the provided ITextBuffer
@@ -85,22 +90,15 @@ namespace VsVim
         /// Get the IVsCodeWindow for the given ITextView.  Multiple ITextView
         /// instances may resolve to the same IVsCodeWindow
         /// </summary>
-        bool TryGetCodeWindow(ITextView textView, out IVsCodeWindow codeWindow);
+        Result<IVsCodeWindow> GetCodeWindow(ITextView textView);
 
         /// <summary>
         /// Get the IVsWindowFrame.  Note that multiple ITextView instances
         /// may resolve to the same IVsWindowFrame.  Will happen in split view
         /// scenarios
         /// </summary>
-        bool TryGetContainingWindowFrame(ITextView textView, out IVsWindowFrame frame);
+        Result<IVsWindowFrame> GetContainingWindowFrame(ITextView textView);
 
-        /// <summary>
-        /// Get the IVsWindowFrame.  Note that multiple IVsTextView instances
-        /// may resolve to the same IVsWindowFrame.  Will happen in split view
-        /// scenarios
-        /// </summary>
-        bool TryGetContainingWindowFrame(IVsTextView textView, out IVsWindowFrame windowFrame);
-
-        bool TryGetTextBufferForDocCookie(uint cookie, out ITextBuffer textBuffer);
+        Result<ITextBuffer> GetTextBufferForDocCookie(uint cookie);
     }
 }

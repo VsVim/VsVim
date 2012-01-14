@@ -1143,7 +1143,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             _vimHost.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
-            _vimHost.Setup(x => x.LoadFileIntoExistingWindow("foo", _textBuffer)).Returns(HostResult.Success).Verifiable();
+            _vimHost.Setup(x => x.LoadFileIntoExistingWindow("foo", _textView)).Returns(HostResult.Success).Verifiable();
             _operations.GoToFile();
             _vimHost.Verify();
         }
@@ -1153,7 +1153,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             _vimHost.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
-            _vimHost.Setup(x => x.LoadFileIntoExistingWindow("foo", _textBuffer)).Returns(HostResult.NewError("")).Verifiable();
+            _vimHost.Setup(x => x.LoadFileIntoExistingWindow("foo", _textView)).Returns(HostResult.NewError("")).Verifiable();
             _statusUtil.Setup(x => x.OnError(Resources.NormalMode_CantFindFile("foo"))).Verifiable();
             _operations.GoToFile();
             _statusUtil.Verify();

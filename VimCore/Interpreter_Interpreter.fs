@@ -500,7 +500,7 @@ type Interpreter
         elif not hasBang && _vimHost.IsDirty _textBuffer then
             _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
         else
-            match _vimHost.LoadFileIntoExistingWindow filePath _textBuffer with
+            match _vimHost.LoadFileIntoExistingWindow filePath _textView with
             | HostResult.Success -> ()
             | HostResult.Error(msg) -> _statusUtil.OnError(msg)
 

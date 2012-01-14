@@ -30,7 +30,7 @@ namespace VsVim.Implementation
                 foreach (var item in _table)
                 {
                     ITextBuffer buffer;
-                    if (_adapter.TryGetTextBufferForDocCookie(item.DocCookie, out buffer))
+                    if (_adapter.GetTextBufferForDocCookie(item.DocCookie).TryGetValue(out buffer))
                     {
                         list.Add(buffer);
                     }
@@ -109,38 +109,34 @@ namespace VsVim.Implementation
             }
         }
 
-        public bool Close(ITextBuffer textBuffer, bool checkDirty)
+        public bool CloseView(ITextView textView, bool checkDirty)
         {
-            var result = _adapter.GetContainingWindowFrame(textBuffer);
-            if (result.IsError)
+            IVsCodeWindow vsCodeWindow;
+            if (!_adapter.GetCodeWindow(textView).TryGetValue(out vsCodeWindow))
             {
                 return false;
             }
 
-            var frame = result.Value;
+            if (vsCodeWindow.IsSplit())
+            {
+                return SendSplit(vsCodeWindow);
+            }
+
+            IVsWindowFrame vsWindowFrame;
+            if (!_adapter.GetContainingWindowFrame(textView).TryGetValue(out vsWindowFrame))
+            {
+                return false;
+            }
             var value = checkDirty
                 ? __FRAMECLOSE.FRAMECLOSE_PromptSave
                 : __FRAMECLOSE.FRAMECLOSE_SaveIfDirty;
-            return ErrorHandler.Succeeded(frame.CloseFrame((uint)value));
-        }
-
-        public bool CloseView(ITextView textView, bool checkDirty)
-        {
-            IVsCodeWindow codeWindow;
-            if (_adapter.TryGetCodeWindow(textView, out codeWindow))
-            {
-                return codeWindow.IsSplit()
-                    ? SendSplit(codeWindow)
-                    : Close(textView.TextBuffer, checkDirty);
-            }
-
-            return false;
+            return ErrorHandler.Succeeded(vsWindowFrame.CloseFrame((uint)value));
         }
 
         public bool SplitView(ITextView textView)
         {
             IVsCodeWindow codeWindow;
-            if (_adapter.TryGetCodeWindow(textView, out codeWindow))
+            if (_adapter.GetCodeWindow(textView).TryGetValue(out codeWindow))
             {
                 return SendSplit(codeWindow);
             }
@@ -150,44 +146,30 @@ namespace VsVim.Implementation
 
         public bool MoveViewUp(ITextView textView)
         {
-            var vsView = _adapter.EditorAdapter.GetViewAdapter(textView);
-            IVsTextView otherVsView;
-            IVsCodeWindow codeWindow;
-            if (vsView == null
-                || !_adapter.TryGetCodeWindow(textView, out codeWindow)
-                || !codeWindow.TryGetSecondaryView(out otherVsView))
+            try
+            {
+                var vsCodeWindow = _adapter.GetCodeWindow(textView).Value;
+                var vsTextView = vsCodeWindow.GetSecondaryView().Value;
+                return ErrorHandler.Succeeded(vsTextView.SendExplicitFocus());
+            }
+            catch
             {
                 return false;
             }
-
-            var otherTextView = _adapter.EditorAdapter.GetWpfTextView(otherVsView);
-            if (otherTextView == null || otherTextView == textView)
-            {
-                return false;
-            }
-
-            return ErrorHandler.Succeeded(otherVsView.SendExplicitFocus());
         }
 
         public bool MoveViewDown(ITextView textView)
         {
-            var vsView = _adapter.EditorAdapter.GetViewAdapter(textView);
-            IVsTextView otherVsView;
-            IVsCodeWindow codeWindow;
-            if (vsView == null
-                || !_adapter.TryGetCodeWindow(textView, out codeWindow)
-                || !codeWindow.TryGetPrimaryView(out otherVsView))
+            try
+            {
+                var vsCodeWindow = _adapter.GetCodeWindow(textView).Value;
+                var vsTextView = vsCodeWindow.GetPrimaryView().Value;
+                return ErrorHandler.Succeeded(vsTextView.SendExplicitFocus());
+            }
+            catch
             {
                 return false;
             }
-
-            var otherTextView = _adapter.EditorAdapter.GetWpfTextView(otherVsView);
-            if (otherTextView == null || otherTextView == textView)
-            {
-                return false;
-            }
-
-            return ErrorHandler.Succeeded(otherVsView.SendExplicitFocus());
         }
 
         /// <summary>

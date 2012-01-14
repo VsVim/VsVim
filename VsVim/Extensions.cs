@@ -190,6 +190,38 @@ namespace VsVim
             return Result.CreateSuccessOrError(textLines, hresult);
         }
 
+        internal static Result<IVsWindowFrame> GetWindowFrame(this IVsTextView textView)
+        {
+            var textViewEx = textView as IVsTextViewEx;
+            if (textViewEx == null)
+            {
+                return Result.Error;
+            }
+
+            return textViewEx.GetWindowFrame();
+        }
+
+        #endregion
+
+        #region IVsTextViewEx
+
+        internal static Result<IVsWindowFrame> GetWindowFrame(this IVsTextViewEx textViewEx)
+        {
+            object frame;
+            if (!ErrorHandler.Succeeded(textViewEx.GetWindowFrame(out frame)))
+            {
+                return Result.Error;
+            }
+
+            var vsWindowFrame = frame as IVsWindowFrame;
+            if (vsWindowFrame == null)
+            {
+                return Result.Error;
+            }
+
+            return Result.CreateSuccess(vsWindowFrame);
+        }
+
         #endregion
 
         #region IVsUIShell
@@ -263,40 +295,84 @@ namespace VsVim
         /// <summary>
         /// Is this window currently in a split mode?
         /// </summary>
-        internal static bool IsSplit(this IVsCodeWindow window)
+        internal static bool IsSplit(this IVsCodeWindow vsCodeWindow)
         {
-            IVsTextView primary;
-            IVsTextView secondary;
-            return TryGetPrimaryView(window, out primary) && TryGetSecondaryView(window, out secondary);
+            return
+                vsCodeWindow.GetPrimaryView().IsSuccess &&
+                vsCodeWindow.GetSecondaryView().IsSuccess;
         }
 
         /// <summary>
         /// Get the primary view of the code window.  Is actually the one on bottom
         /// </summary>
-        internal static bool TryGetPrimaryView(this IVsCodeWindow codeWindow, out IVsTextView textView)
+        internal static Result<IWpfTextView> GetPrimaryTextView(this IVsCodeWindow codeWindow, IVsEditorAdaptersFactoryService factoryService)
         {
-            return ErrorHandler.Succeeded(codeWindow.GetPrimaryView(out textView)) && textView != null;
+            var result = GetPrimaryView(codeWindow);
+            if (result.IsError)
+            {
+                return Result.CreateError(result.HResult);
+            }
+
+            var textView = factoryService.GetWpfTextView(result.Value);
+            return Result.CreateSuccessNonNull(textView);
+        }
+
+        /// <summary>
+        /// Get the primary view of the code window.  Is actually the one on bottom
+        /// </summary>
+        internal static Result<IVsTextView> GetPrimaryView(this IVsCodeWindow vsCodeWindow)
+        {
+            IVsTextView vsTextView;
+            var hr = vsCodeWindow.GetPrimaryView(out vsTextView);
+            if (ErrorHandler.Failed(hr))
+            {
+                return Result.CreateError(hr);
+            }
+
+            return Result.CreateSuccessNonNull(vsTextView);
         }
 
         /// <summary>
         /// Get the secondary view of the code window.  Is actually the one on top
         /// </summary>
-        internal static bool TryGetSecondaryView(this IVsCodeWindow codeWindow, out IVsTextView textView)
+        internal static Result<IWpfTextView> GetSecondaryTextView(this IVsCodeWindow codeWindow, IVsEditorAdaptersFactoryService factoryService)
         {
-            return ErrorHandler.Succeeded(codeWindow.GetSecondaryView(out textView)) && textView != null;
+            var result = GetSecondaryView(codeWindow);
+            if (result.IsError)
+            {
+                return Result.CreateError(result.HResult);
+            }
+
+            var textView = factoryService.GetWpfTextView(result.Value);
+            return Result.CreateSuccessNonNull(textView);
+        }
+
+        /// <summary>
+        /// Get the secondary view of the code window.  Is actually the one on top
+        /// </summary>
+        internal static Result<IVsTextView> GetSecondaryView(this IVsCodeWindow vsCodeWindow)
+        {
+            IVsTextView vsTextView;
+            var hr = vsCodeWindow.GetSecondaryView(out vsTextView);
+            if (ErrorHandler.Failed(hr))
+            {
+                return Result.CreateError(hr);
+            }
+
+            return Result.CreateSuccessNonNull(vsTextView);
         }
 
         #endregion
 
         #region IVsWindowFrame
 
-        internal static Result<IVsCodeWindow> GetCodeWindow(this IVsWindowFrame frame)
+        internal static Result<IVsCodeWindow> GetCodeWindow(this IVsWindowFrame vsWindowFrame)
         {
             var iid = typeof(IVsCodeWindow).GUID;
             var ptr = IntPtr.Zero;
             try
             {
-                ErrorHandler.ThrowOnFailure(frame.QueryViewInterface(ref iid, out ptr));
+                ErrorHandler.ThrowOnFailure(vsWindowFrame.QueryViewInterface(ref iid, out ptr));
                 return Result.CreateSuccess((IVsCodeWindow)Marshal.GetObjectForIUnknown(ptr));
             }
             catch (Exception e)
@@ -311,14 +387,45 @@ namespace VsVim
                     Marshal.Release(ptr);
                 }
             }
-
         }
 
-        internal static bool TryGetCodeWindow(this IVsWindowFrame frame, out IVsCodeWindow codeWindow)
+        internal static Result<IVsTextLines> GetTextLines(this IVsWindowFrame vsWindowFrame)
         {
-            var result = GetCodeWindow(frame);
-            codeWindow = result.IsSuccess ? result.Value : null;
-            return result.IsSuccess;
+            try
+            {
+                var vsCodeWindow = vsWindowFrame.GetCodeWindow().Value;
+
+                IVsTextLines vsTextLines;
+                ErrorHandler.ThrowOnFailure(vsCodeWindow.GetBuffer(out vsTextLines));
+                if (vsTextLines == null)
+                {
+                    return Result.Error;
+                }
+
+                return Result.CreateSuccess(vsTextLines);
+            }
+            catch (Exception ex)
+            {
+                return Result.CreateError(ex);
+            }
+        }
+
+        internal static Result<ITextBuffer> GetTextBuffer(this IVsWindowFrame vsWindowFrame, IVsEditorAdaptersFactoryService factoryService)
+        {
+            var result = GetTextLines(vsWindowFrame);
+            if (result.IsError)
+            {
+                return Result.CreateError(result.HResult);
+            }
+
+            var vsTextLines = result.Value;
+            var textBuffer = factoryService.GetDocumentBuffer(vsTextLines);
+            if (textBuffer == null)
+            {
+                return Result.Error;
+            }
+
+            return Result.CreateSuccess(textBuffer);
         }
 
         #endregion

@@ -152,7 +152,7 @@ namespace Vim.UnitTest.Mock
             return false;
         }
 
-        HostResult IVimHost.LoadFileIntoExistingWindow(string filePath, ITextBuffer textBuffer)
+        HostResult IVimHost.LoadFileIntoExistingWindow(string filePath, ITextView textView)
         {
             return HostResult.Success;
         }

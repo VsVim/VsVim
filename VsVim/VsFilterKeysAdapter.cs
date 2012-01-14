@@ -109,7 +109,7 @@ namespace VsVim
             }
 
             IVsCodeWindow codeWindow;
-            if (!adapter.TryGetCodeWindow(textView, out codeWindow))
+            if (!adapter.GetCodeWindow(textView).TryGetValue(out codeWindow))
             {
                 return false;
             }

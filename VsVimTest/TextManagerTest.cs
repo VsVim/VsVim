@@ -72,36 +72,6 @@ namespace VsVim.UnitTest
         }
 
         [Test]
-        public void Close_NoAdapter()
-        {
-            var textBuffer = _factory.Create<ITextBuffer>().Object;
-            Assert.IsFalse(_manager.Close(textBuffer, false));
-        }
-
-        [Test]
-        public void Close_ShouldPassThroughToFrame()
-        {
-            var textBuffer = _factory.Create<ITextBuffer>().Object;
-            var mock = _adapter.MakeWindowFrame(textBuffer, _factory);
-            mock
-                .Setup(x => x.CloseFrame((uint)__FRAMECLOSE.FRAMECLOSE_PromptSave))
-                .Returns(VSConstants.S_OK);
-            Assert.IsTrue(_manager.Close(textBuffer, checkDirty: true));
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Close_PassDirtyFlagToCloseFrame()
-        {
-            var view = _factory.Create<IWpfTextView>().Object;
-            var mock = _adapter.MakeWindowFrame(view, _factory);
-            mock
-                .Setup(x => x.CloseFrame((uint)__FRAMECLOSE.FRAMECLOSE_SaveIfDirty))
-                .Returns(VSConstants.S_OK);
-            _factory.Verify();
-        }
-
-        [Test]
         public void CloseView1()
         {
             var view = _factory.Create<IWpfTextView>().Object;

@@ -19,6 +19,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
 using VsVim.Properties;
+using Microsoft.VisualStudio.Shell.Interop;
 
 namespace VsVim
 {
@@ -34,7 +35,7 @@ namespace VsVim
     {
         internal const string CommandNameGoToDefinition = "Edit.GoToDefinition";
 
-        private readonly IVsAdapter _adapter;
+        private readonly IVsAdapter _vsAdapter;
         private readonly ITextManager _textManager;
         private readonly IWordUtilFactory _wordUtilFactory;
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
@@ -57,7 +58,7 @@ namespace VsVim
             SVsServiceProvider serviceProvider)
             : base(textDocumentFactoryService, editorOperationsFactoryService)
         {
-            _adapter = adapter;
+            _vsAdapter = adapter;
             _editorAdaptersFactoryService = editorAdaptersFactoryService;
             _wordUtilFactory = wordUtilFactory;
             _dte = (_DTE)serviceProvider.GetService(typeof(_DTE));
@@ -160,15 +161,15 @@ namespace VsVim
         /// mimic the behavior by opening the document in a new window and closing the
         /// existing one
         /// </summary>
-        public override HostResult LoadFileIntoExistingWindow(string filePath, ITextBuffer textBuffer)
+        public override HostResult LoadFileIntoExistingWindow(string filePath, ITextView textView)
         {
             try
             {
                 // Open the document before closing the other.  That way any error which occurs
                 // during an open will cause the method to abandon and produce a user error 
                 // message
-                VsShellUtilities.OpenDocument(_adapter.ServiceProvider, filePath);
-                _textManager.Close(textBuffer, checkDirty: false);
+                VsShellUtilities.OpenDocument(_vsAdapter.ServiceProvider, filePath);
+                _textManager.CloseView(textView, checkDirty: false);
                 return HostResult.Success;
             }
             catch (Exception e)
@@ -184,7 +185,7 @@ namespace VsVim
         {
             try
             {
-                VsShellUtilities.OpenDocument(_adapter.ServiceProvider, filePath);
+                VsShellUtilities.OpenDocument(_vsAdapter.ServiceProvider, filePath);
                 return HostResult.Success;
             }
             catch (Exception e)
@@ -238,7 +239,7 @@ namespace VsVim
 
         public override bool IsReadOnly(ITextBuffer textBuffer)
         {
-            return _adapter.IsReadOnly(textBuffer);
+            return _vsAdapter.IsReadOnly(textBuffer);
         }
 
         /// <summary>
@@ -331,30 +332,39 @@ namespace VsVim
         public override FSharpOption<ITextView> GetFocusedTextView()
         {
             var activeView = ViewManager.Instance.ActiveView;
-
-            // Now find the ITextBuffer which has the matching View instance
-            foreach (var textBuffer in _textManager.TextBuffers)
+            var result = _vsAdapter.GetWindowFrames();
+            if (result.IsError)
             {
-                var result = _adapter.GetContainingWindowFrame(textBuffer);
-                if (result.IsError)
-                {
-                    continue;
-                }
+                return FSharpOption<ITextView>.None;
+            }
 
-                var frame = result.Value as WindowFrame;
+            IVsWindowFrame activeWindowFrame = null;
+            foreach (var vsWindowFrame in result.Value)
+            {
+                var frame = vsWindowFrame as WindowFrame;
                 if (frame != null && frame.FrameView == activeView)
                 {
-                    // TODO: Should try and pick the ITextView which is actually focussed as 
-                    // there could be several in a split screen
-                    var textView = _textManager.GetTextViews(textBuffer).FirstOrDefault();
-                    if (textView != null)
-                    {
-                        return FSharpOption.Create(textView);
-                    }
+                    activeWindowFrame = frame;
+                    break;
                 }
             }
 
-            return FSharpOption<ITextView>.None;
+            if (activeWindowFrame == null)
+            {
+                return FSharpOption<ITextView>.None;
+            }
+
+            // TODO: Should try and pick the ITextView which is actually focussed as 
+            // there could be several in a split screen
+            try
+            {
+                ITextView textView = activeWindowFrame.GetCodeWindow().Value.GetPrimaryTextView(_editorAdaptersFactoryService).Value;
+                return FSharpOption.Create(textView);
+            }
+            catch
+            {
+                return FSharpOption<ITextView>.None;
+            }
         }
 
         public override void Quit()

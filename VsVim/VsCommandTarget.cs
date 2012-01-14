@@ -1,4 +1,5 @@
 ﻿using System;
+using EditorUtils;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
@@ -8,7 +9,6 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
-using EditorUtils;
 
 namespace VsVim
 {
@@ -81,8 +81,6 @@ namespace VsVim
                     return false;
                 }
                 var versionNumber = _textBuffer.CurrentSnapshot.Version.VersionNumber;
-
-                // TODO: Make an extension method that just takes an OleCommandData
                 int hr = _nextTarget.Exec(oleCommandData);
 
                 // Whether or not an Exec succeeded is a bit of a heuristic.  IOleCommandTarget implementations like

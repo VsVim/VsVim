@@ -166,7 +166,7 @@ namespace Vim.UI.Wpf
             return true;
         }
 
-        public abstract HostResult LoadFileIntoExistingWindow(string filePath, ITextBuffer textbuffer);
+        public abstract HostResult LoadFileIntoExistingWindow(string filePath, ITextView textView);
 
         public abstract HostResult LoadFileIntoNewWindow(string filePath);
 
@@ -326,9 +326,9 @@ namespace Vim.UI.Wpf
             return IsReadOnly(textBuffer);
         }
 
-        HostResult IVimHost.LoadFileIntoExistingWindow(string filePath, ITextBuffer textBuffer)
+        HostResult IVimHost.LoadFileIntoExistingWindow(string filePath, ITextView textView)
         {
-            return LoadFileIntoExistingWindow(filePath, textBuffer);
+            return LoadFileIntoExistingWindow(filePath, textView);
         }
 
         HostResult IVimHost.LoadFileIntoNewWindow(string filePath)

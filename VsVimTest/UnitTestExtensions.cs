@@ -67,8 +67,7 @@ namespace VsVim.UnitTest
         {
             factory = factory ?? new MockRepository(MockBehavior.Loose);
             var mock = factory.Create<IVsCodeWindow>();
-            var obj = mock.Object;
-            adapter.Setup(x => x.TryGetCodeWindow(textView, out obj)).Returns(true);
+            adapter.Setup(x => x.GetCodeWindow(textView)).Returns(Result.CreateSuccess(mock.Object));
             return mock;
         }
 
@@ -79,21 +78,8 @@ namespace VsVim.UnitTest
         {
             var mock1 = factory.Create<IVsCodeWindow>();
             var mock2 = mock1.As<IOleCommandTarget>();
-            var obj = mock1.Object;
-            adapter.Setup(x => x.TryGetCodeWindow(textView, out obj)).Returns(true);
+            adapter.Setup(x => x.GetCodeWindow(textView)).Returns(Result.CreateSuccess(mock1.Object));
             return Tuple.Create(mock1, mock2);
-        }
-
-        public static Mock<IVsWindowFrame> MakeWindowFrame(
-            this Mock<IVsAdapter> adapter,
-            ITextBuffer textBuffer,
-            MockRepository factory)
-        {
-            var mock = factory.Create<IVsWindowFrame>();
-            adapter
-                .Setup(x => x.GetContainingWindowFrame(textBuffer))
-                .Returns(VsVim.Result.CreateSuccess(mock.Object));
-            return mock;
         }
 
         public static Mock<IVsWindowFrame> MakeWindowFrame(
@@ -102,10 +88,9 @@ namespace VsVim.UnitTest
             MockRepository factory)
         {
             var mock = factory.Create<IVsWindowFrame>();
-            IVsWindowFrame frame = mock.Object;
             adapter
-                .Setup(x => x.TryGetContainingWindowFrame(textView, out frame))
-                .Returns(true);
+                .Setup(x => x.GetContainingWindowFrame(textView))
+                .Returns(Result.CreateSuccess(mock.Object));
             return mock;
         }
 

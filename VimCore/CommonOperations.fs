@@ -374,7 +374,7 @@ type internal CommonOperations
     member x.GoToFile () = 
         x.CheckDirty (fun () ->
             let text = x.WordUnderCursorOrEmpty 
-            match _vimHost.LoadFileIntoExistingWindow text _textBuffer with
+            match _vimHost.LoadFileIntoExistingWindow text _textView with
             | HostResult.Success -> ()
             | HostResult.Error(_) -> _statusUtil.OnError (Resources.NormalMode_CantFindFile text))
 

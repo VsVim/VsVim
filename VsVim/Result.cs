@@ -20,6 +20,7 @@ namespace VsVim
             get { return !_isSuccess; }
         }
 
+        // TOOD: Get rid of this.  Make it a method that says throws
         public T Value
         {
             get
@@ -63,6 +64,18 @@ namespace VsVim
         public T GetValueOrDefault(T defaultValue = default(T))
         {
             return IsSuccess ? Value : defaultValue;
+        }
+
+        public bool TryGetValue(out T value)
+        {
+            if (IsSuccess)
+            {
+                value = Value;
+                return true;
+            }
+
+            value = default(T);
+            return false;
         }
 
         public static implicit operator Result<T>(Result result)
@@ -121,6 +134,17 @@ namespace VsVim
 
         public static Result<T> CreateSuccess<T>(T value)
         {
+            return new Result<T>(value);
+        }
+
+        public static Result<T> CreateSuccessNonNull<T>(T value)
+            where T : class
+        {
+            if (value == null)
+            {
+                return Result.Error;
+            }
+
             return new Result<T>(value);
         }
 

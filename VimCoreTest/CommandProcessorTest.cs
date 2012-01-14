@@ -333,7 +333,7 @@ namespace Vim.UnitTest
         public void Edit_FilePathShouldLoadIntoExisting()
         {
             Create("");
-            _vimHost.Setup(x => x.LoadFileIntoExistingWindow("cat.txt", _textBuffer)).Returns(HostResult.Success).Verifiable();
+            _vimHost.Setup(x => x.LoadFileIntoExistingWindow("cat.txt", _textView)).Returns(HostResult.Success).Verifiable();
             _vimHost.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
             RunCommand("e cat.txt");
             _factory.Verify();

@@ -3120,7 +3120,7 @@ type IVimHost =
     abstract IsVisible : textView : ITextView -> bool
 
     /// Loads the new file into the existing window
-    abstract LoadFileIntoExistingWindow : filePath : string -> textBuffer : ITextBuffer -> HostResult
+    abstract LoadFileIntoExistingWindow : filePath : string -> textView : ITextView -> HostResult
 
     /// Loads the new file into a new existing window
     abstract LoadFileIntoNewWindow : filePath : string -> HostResult

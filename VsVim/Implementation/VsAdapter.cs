@@ -10,11 +10,13 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.IncrementalSearch;
+using Microsoft.VisualStudio.Text.Projection;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 
 namespace VsVim.Implementation
 {
+    // TODO: make this an explicit implementation
     [Export(typeof(IVsAdapter))]
     internal sealed class VsAdapter : IVsAdapter
     {
@@ -27,7 +29,7 @@ namespace VsVim.Implementation
         private readonly IServiceProvider _serviceProvider;
         private readonly IVsMonitorSelection _monitorSelection;
 
-        public bool InDebugMode
+        internal bool InDebugMode
         {
             get
             {
@@ -36,22 +38,22 @@ namespace VsVim.Implementation
             }
         }
 
-        public bool InAutomationFunction
+        internal bool InAutomationFunction
         {
             get { return VsShellUtilities.IsInAutomationFunction(_serviceProvider); }
         }
 
-        public KeyboardDevice KeyboardDevice
+        internal KeyboardDevice KeyboardDevice
         {
             get { return InputManager.Current.PrimaryKeyboardDevice; }
         }
 
-        public IServiceProvider ServiceProvider
+        internal IServiceProvider ServiceProvider
         {
             get { return _serviceProvider; }
         }
 
-        public IVsEditorAdaptersFactoryService EditorAdapter
+        internal IVsEditorAdaptersFactoryService EditorAdapter
         {
             get { return _editorAdaptersFactoryService; }
         }
@@ -73,7 +75,7 @@ namespace VsVim.Implementation
             _monitorSelection = _serviceProvider.GetService<SVsShellMonitorSelection, IVsMonitorSelection>();
         }
 
-        public Result<IVsTextLines> GetTextLines(ITextBuffer textBuffer)
+        internal Result<IVsTextLines> GetTextLines(ITextBuffer textBuffer)
         {
             var lines = _editorAdaptersFactoryService.GetBufferAdapter(textBuffer) as IVsTextLines;
             return lines != null
@@ -81,55 +83,34 @@ namespace VsVim.Implementation
                : Result.Error;
         }
 
-        public bool TryGetCodeWindow(ITextView textView, out IVsCodeWindow codeWindow)
+        internal Result<IVsCodeWindow> GetCodeWindow(ITextView textView)
         {
-            codeWindow = null;
-
-            IVsWindowFrame frame;
-            return TryGetContainingWindowFrame(textView, out frame)
-                && frame.TryGetCodeWindow(out codeWindow);
-        }
-
-        public bool TryGetContainingWindowFrame(ITextView textView, out IVsWindowFrame windowFrame)
-        {
-            var targetView = _editorAdaptersFactoryService.GetViewAdapter(textView);
-            return TryGetContainingWindowFrame(targetView, out windowFrame);
-        }
-
-        public bool TryGetContainingWindowFrame(IVsTextView textView, out IVsWindowFrame windowFrame)
-        {
-            var result = _uiShell.GetDocumentWindowFrames();
+            var result = GetContainingWindowFrame(textView);
             if (result.IsError)
             {
-                windowFrame = null;
-                return false;
+                return Result.CreateError(result.HResult);
             }
 
-            foreach (var frame in result.Value)
-            {
-                IVsCodeWindow codeWindow;
-                if (frame.TryGetCodeWindow(out codeWindow))
-                {
-                    IVsTextView vsTextView;
-                    if (ErrorHandler.Succeeded(codeWindow.GetPrimaryView(out vsTextView)) && NativeMethods.IsSameComObject(vsTextView, textView))
-                    {
-                        windowFrame = frame;
-                        return true;
-                    }
-
-                    if (ErrorHandler.Succeeded(codeWindow.GetSecondaryView(out vsTextView)) && NativeMethods.IsSameComObject(vsTextView, textView))
-                    {
-                        windowFrame = frame;
-                        return true;
-                    }
-                }
-            }
-
-            windowFrame = null;
-            return false;
+            return result.Value.GetCodeWindow();
         }
 
-        public Result<IVsWindowFrame> GetContainingWindowFrame(ITextBuffer textBuffer)
+        internal Result<IVsWindowFrame> GetContainingWindowFrame(ITextView textView)
+        {
+            var vsTextView = _editorAdaptersFactoryService.GetViewAdapter(textView);
+            if (vsTextView == null)
+            {
+                return Result.Error;
+            }
+
+            return vsTextView.GetWindowFrame();
+        }
+
+        internal Result<List<IVsWindowFrame>> GetWindowFrames()
+        {
+            return _uiShell.GetDocumentWindowFrames();
+        }
+
+        internal Result<List<IVsWindowFrame>> GetContainingWindowFrames(ITextBuffer textBuffer)
         {
             var vsTextLines = _editorAdaptersFactoryService.GetBufferAdapter(textBuffer);
             if (vsTextLines == null)
@@ -143,24 +124,35 @@ namespace VsVim.Implementation
                 return Result.CreateError(frameList.HResult);
             }
 
+            var list = new List<IVsWindowFrame>();
             foreach (var frame in frameList.Value)
             {
-                var result = frame.GetCodeWindow();
-                if (result.IsSuccess)
+                var result = frame.GetTextBuffer(_editorAdaptersFactoryService);
+                if (result.IsError)
                 {
-                    IVsTextLines frameLines;
-                    if (ErrorHandler.Succeeded(result.Value.GetBuffer(out frameLines))
-                        && NativeMethods.IsSameComObject(frameLines, vsTextLines))
-                    {
-                        return Result.CreateSuccess(frame);
-                    }
+                    continue;
+                }
+
+                var frameTextBuffer = result.Value;
+                if (frameTextBuffer == textBuffer)
+                {
+                    list.Add(frame);
+                    continue;
+                }
+
+                // Still need to account for the case where the window is backed by a projection buffer
+                // and this ITextBuffer is in the graph
+                var frameProjectionBuffer = frameTextBuffer as IProjectionBuffer;
+                if (frameProjectionBuffer != null && frameProjectionBuffer.SourceBuffers.Contains(textBuffer))
+                {
+                    list.Add(frame);
                 }
             }
 
-            return Result.Error;
+            return Result.CreateSuccess(list);
         }
 
-        public Result<IVsPersistDocData> GetPersistDocData(ITextBuffer textBuffer)
+        internal Result<IVsPersistDocData> GetPersistDocData(ITextBuffer textBuffer)
         {
             var vsTextBuffer = _editorAdaptersFactoryService.GetBufferAdapter(textBuffer);
             if (vsTextBuffer == null)
@@ -178,7 +170,7 @@ namespace VsVim.Implementation
             }
         }
 
-        public IEnumerable<IVsTextView> GetTextViews(ITextBuffer textBuffer)
+        internal IEnumerable<IVsTextView> GetTextViews(ITextBuffer textBuffer)
         {
             var vsTextBuffer = _editorAdaptersFactoryService.GetBufferAdapter(textBuffer);
             if (vsTextBuffer == null)
@@ -211,31 +203,33 @@ namespace VsVim.Implementation
             return list;
         }
 
-        public bool TryGetTextBufferForDocCookie(uint cookie, out ITextBuffer buffer)
+        internal Result<ITextBuffer> GetTextBufferForDocCookie(uint cookie)
         {
             var info = _table.GetDocumentInfo(cookie);
             var obj = info.DocData;
             var vsTextLines = obj as IVsTextLines;
             var vsTextBufferProvider = obj as IVsTextBufferProvider;
+
+            ITextBuffer textBuffer;
             if (vsTextLines != null)
             {
-                buffer = _editorAdaptersFactoryService.GetDataBuffer(vsTextLines);
+                textBuffer = _editorAdaptersFactoryService.GetDataBuffer(vsTextLines);
             }
             else if (vsTextBufferProvider != null
                 && ErrorHandler.Succeeded(vsTextBufferProvider.GetTextBuffer(out vsTextLines))
                 && vsTextLines != null)
             {
-                buffer = _editorAdaptersFactoryService.GetDataBuffer(vsTextLines);
+                textBuffer = _editorAdaptersFactoryService.GetDataBuffer(vsTextLines);
             }
             else
             {
-                buffer = null;
+                textBuffer = null;
             }
 
-            return buffer != null;
+            return Result.CreateSuccessNonNull(textBuffer);
         }
 
-        public bool IsVenusView(IVsTextView vsTextView)
+        internal bool IsVenusView(IVsTextView vsTextView)
         {
             var textView = _editorAdaptersFactoryService.GetWpfTextView(vsTextView);
             if (textView == null)
@@ -254,7 +248,7 @@ namespace VsVim.Implementation
                 && id == VSConstants.CLSID_HtmlLanguageService;
         }
 
-        public bool IsReadOnly(ITextBuffer textBuffer)
+        internal bool IsReadOnly(ITextBuffer textBuffer)
         {
             var editorOptions = _editorOptionsFactoryService.GetOptions(textBuffer);
             if (editorOptions != null
@@ -279,11 +273,94 @@ namespace VsVim.Implementation
             return false;
         }
 
-        public bool IsIncrementalSearchActive(ITextView textView)
+        internal bool IsIncrementalSearchActive(ITextView textView)
         {
             var search = _incrementalSearchFactoryService.GetIncrementalSearch(textView);
             return search != null && search.IsActive;
         }
 
+        #region IVsAdapter
+
+        bool IVsAdapter.InAutomationFunction
+        {
+            get { return InAutomationFunction; }
+        }
+
+        bool IVsAdapter.InDebugMode
+        {
+            get { return InDebugMode; }
+        }
+
+        IServiceProvider IVsAdapter.ServiceProvider
+        {
+            get { return ServiceProvider; }
+        }
+
+        IVsEditorAdaptersFactoryService IVsAdapter.EditorAdapter
+        {
+            get { return EditorAdapter; }
+        }
+
+        KeyboardDevice IVsAdapter.KeyboardDevice
+        {
+            get { return KeyboardDevice; }
+        }
+
+        Result<IVsTextLines> IVsAdapter.GetTextLines(ITextBuffer textBuffer)
+        {
+            return GetTextLines(textBuffer);
+        }
+
+        IEnumerable<IVsTextView> IVsAdapter.GetTextViews(ITextBuffer textBuffer)
+        {
+            return GetTextViews(textBuffer);
+        }
+
+        bool IVsAdapter.IsIncrementalSearchActive(ITextView textView)
+        {
+            return IsIncrementalSearchActive(textView);
+        }
+
+        bool IVsAdapter.IsVenusView(IVsTextView textView)
+        {
+            return IsVenusView(textView);
+        }
+
+        bool IVsAdapter.IsReadOnly(ITextBuffer textBuffer)
+        {
+            return IsReadOnly(textBuffer);
+        }
+
+        Result<List<IVsWindowFrame>> IVsAdapter.GetWindowFrames()
+        {
+            return GetWindowFrames();
+        }
+
+        Result<List<IVsWindowFrame>> IVsAdapter.GetContainingWindowFrames(ITextBuffer textBuffer)
+        {
+            return GetContainingWindowFrames(textBuffer);
+        }
+
+        Result<IVsPersistDocData> IVsAdapter.GetPersistDocData(ITextBuffer textBuffer)
+        {
+            return GetPersistDocData(textBuffer);
+        }
+
+        Result<IVsCodeWindow> IVsAdapter.GetCodeWindow(ITextView textView)
+        {
+            return GetCodeWindow(textView);
+        }
+
+        Result<IVsWindowFrame> IVsAdapter.GetContainingWindowFrame(ITextView textView)
+        {
+            return GetContainingWindowFrame(textView);
+        }
+
+        Result<ITextBuffer> IVsAdapter.GetTextBufferForDocCookie(uint cookie)
+        {
+            return GetTextBufferForDocCookie(cookie);
+        }
+
+        #endregion
     }
 }
