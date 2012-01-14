@@ -2498,11 +2498,24 @@ type ICommandRunner =
     [<CLIEvent>]
     abstract CommandRan : IDelegateEvent<System.EventHandler<CommandRunDataEventArgs>>
 
+/// Information about a single key mapping
+type KeyMapping = {
+
+    // The LHS of the key mapping
+    Left : KeyInputSet
+
+    // The RHS of the key mapping
+    Right : KeyInputSet 
+
+    // Does the expansion partipciate in remapping
+    AllowRemap : bool
+}
+
 /// Manages the key map for Vim.  Responsible for handling all key remappings
 type IKeyMap =
 
     /// Get all mappings for the specified mode
-    abstract GetKeyMappingsForMode : KeyRemapMode -> (KeyInputSet * KeyInputSet) seq 
+    abstract GetKeyMappingsForMode : KeyRemapMode -> KeyMapping list
 
     /// Get the mapping for the provided KeyInput for the given mode.  If no mapping exists
     /// then a sequence of a single element containing the passed in key will be returned.  
@@ -2511,13 +2524,17 @@ type IKeyMap =
     abstract GetKeyMapping : KeyInputSet -> KeyRemapMode -> KeyMappingResult
 
     /// Map the given key sequence without allowing for remaping
-    abstract MapWithNoRemap : lhs:string -> rhs:string -> KeyRemapMode -> bool
+    abstract MapWithNoRemap : lhs : string -> rhs : string -> KeyRemapMode -> bool
 
     /// Map the given key sequence allowing for a remap 
-    abstract MapWithRemap : lhs:string -> rhs:string -> KeyRemapMode -> bool
+    abstract MapWithRemap : lhs : string -> rhs : string -> KeyRemapMode -> bool
 
     /// Unmap the specified key sequence for the specified mode
-    abstract Unmap : lhs:string -> KeyRemapMode -> bool
+    abstract Unmap : lhs : string -> KeyRemapMode -> bool
+
+    /// Unmap the specified key sequence for the specified mode by considering
+    /// the passed in value to be an expansion
+    abstract UnmapByMapping : righs : string -> KeyRemapMode -> bool
 
     /// Clear the Key mappings for the specified mode
     abstract Clear : KeyRemapMode -> unit

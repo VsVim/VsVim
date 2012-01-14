@@ -402,7 +402,7 @@ type Interpreter
             |> Seq.map (fun mode -> 
                 mode
                 |> _keyMap.GetKeyMappingsForMode 
-                |> Seq.map (fun (lhs,rhs) -> (mode,lhs,rhs)))
+                |> Seq.map (fun keyMapping -> (mode, keyMapping.Left, keyMapping.Right)))
             |> Seq.concat
             |> Seq.groupBy (fun (mode,lhs,rhs) -> lhs)
             |> Seq.map (fun (lhs, all) ->
@@ -1058,12 +1058,13 @@ type Interpreter
         if not (List.isEmpty mapArgumentList) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "map special arguments")
         else
+
             let allSucceeded =
                 keyRemapModes
-                |> Seq.map (fun keyRemapMode -> _keyMap.Unmap keyNotation keyRemapMode)
+                |> Seq.map (fun keyRemapMode -> _keyMap.Unmap keyNotation keyRemapMode || _keyMap.UnmapByMapping keyNotation keyRemapMode)
                 |> Seq.filter (fun x -> not x)
                 |> Seq.isEmpty
-    
+
             if not allSucceeded then 
                 _statusUtil.OnError Resources.CommandMode_NoSuchMapping
 

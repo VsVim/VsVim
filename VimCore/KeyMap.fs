@@ -4,7 +4,7 @@ namespace Vim
 
 /// Map of a LHS of a mapping to the RHS.  The bool is used to indicate whether or not 
 /// the RHS should be remapped as part of an expansion
-type internal RemapModeMap = Map<KeyInputSet, (KeyInputSet * bool)>
+type internal RemapModeMap = Map<KeyInputSet, KeyMapping>
 
 type internal KeyMap() =
     
@@ -23,28 +23,27 @@ type internal KeyMap() =
         | Some(map) -> map
 
     /// Get all of the mappings for the given KeyRemapMode
-    member x.GetKeyMappingsForMode mode = 
+    member x.GetKeyMappingsForMode mode : KeyMapping list = 
         match Map.tryFind mode _map with
-        | None ->
-            Seq.empty
-        | Some map -> 
-            map
-            |> Seq.map (fun pair -> 
-                let value,_ = pair.Value
-                pair.Key,value)
+        | None -> List.empty
+        | Some map -> map |> Map.toSeq |> Seq.map snd |> List.ofSeq
 
     /// Main API for adding a key mapping into our storage
-    member x.MapCore (lhs:string) (rhs:string) (mode:KeyRemapMode) allowRemap = 
+    member x.MapCore (lhs : string) (rhs : string) (mode : KeyRemapMode) allowRemap = 
         if StringUtil.isNullOrEmpty rhs then
             false
         else
             let key = KeyNotationUtil.TryStringToKeyInputSet lhs
             let rhs = KeyNotationUtil.TryStringToKeyInputSet rhs
             match key, rhs with
-            | Some key,Some rightList ->
-                let value = (rightList, allowRemap)
+            | Some left, Some right ->
+                let keyMapping = {
+                    Left = left
+                    Right = right
+                    AllowRemap = allowRemap
+                }
                 let modeMap = x.GetRemapModeMap mode
-                let modeMap = Map.add key value modeMap
+                let modeMap = Map.add left keyMapping modeMap
                 _map <- Map.add mode modeMap _map
                 true
             | _ -> 
@@ -53,8 +52,7 @@ type internal KeyMap() =
 
     member x.Unmap lhs mode = 
         match KeyNotationUtil.TryStringToKeyInputSet lhs with
-        | None -> 
-            false
+        | None -> false
         | Some key ->
             let modeMap = x.GetRemapModeMap mode
             if Map.containsKey key modeMap then
@@ -63,6 +61,20 @@ type internal KeyMap() =
                 true
             else
                 false
+
+    /// Unmap by considering the expansion
+    member x.UnmapByMapping rhs mode = 
+        match KeyNotationUtil.TryStringToKeyInputSet rhs with
+        | None -> false
+        | Some right ->
+            let modeMap = x.GetRemapModeMap mode
+            let key = modeMap |> Map.tryFindKey (fun _ keyMapping -> keyMapping.Right = right)
+            match key with
+            | None -> false
+            | Some key ->
+                let modeMap = Map.remove key modeMap
+                _map <- Map.add mode modeMap _map
+                true
 
     /// Get the key mapping for the passed in data.  Returns a KeyMappingResult representing the 
     /// mapping
@@ -139,12 +151,12 @@ type internal KeyMap() =
                         // Single KeyInput didn't match.  Time to move along
                         let result = result.Add (current.FirstKeyInput |> Option.get)
                         processNext remaining result didMapAny
-                | Some (mapped, doRemap) ->
-                    if not doRemap then 
-                        let result = KeyInputSetUtil.Combine result mapped
-                        processNext remaining result true
+                | Some keyMapping ->
+                    if keyMapping.AllowRemap then
+                        processRemap current keyMapping.Right result seenSet
                     else
-                        processRemap current mapped result seenSet
+                        let result = KeyInputSetUtil.Combine result keyMapping.Right
+                        processNext remaining result true
 
             let currentEqualMapping = 
                 match sourceMapping with
@@ -175,6 +187,7 @@ type internal KeyMap() =
         member x.MapWithNoRemap lhs rhs mode = x.MapWithNoRemap lhs rhs mode
         member x.MapWithRemap lhs rhs mode = x.MapWithRemap lhs rhs mode
         member x.Unmap lhs mode = x.Unmap lhs mode
+        member x.UnmapByMapping rhs mode = x.UnmapByMapping rhs mode
         member x.Clear mode = x.Clear mode
         member x.ClearAll () = x.ClearAll()
 

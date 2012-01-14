@@ -81,6 +81,11 @@ namespace Vim.UnitTest
             get { return _bufferTrackingService; }
         }
 
+        protected IKeyMap KeyMap
+        {
+            get { return _vim.KeyMap; }
+        }
+
         protected virtual bool TrackTextViewHistory
         {
             get { return true; }

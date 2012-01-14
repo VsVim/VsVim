@@ -5,7 +5,7 @@ using Vim.Extensions;
 namespace Vim.UnitTest
 {
     [TestFixture]
-    public class KeyMapTest
+    public sealed class KeyMapTest
     {
         private KeyMap _mapRaw;
         private IKeyMap _map;
@@ -324,6 +324,27 @@ namespace Vim.UnitTest
             Assert.IsTrue(_map.MapWithNoRemap("a", "b", KeyRemapMode.Normal));
             Assert.IsFalse(_map.Unmap("a", KeyRemapMode.Insert));
             Assert.IsTrue(_map.GetKeyMappingResult(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal).IsMapped);
+        }
+
+        /// <summary>
+        /// Straight forward unmap of via the mapping instead of the key 
+        /// </summary>
+        [Test]
+        public void UnmapByMapping_Simple()
+        {
+            Assert.IsTrue(_map.MapWithNoRemap("cat", "dog", KeyRemapMode.Insert));
+            Assert.IsTrue(_map.UnmapByMapping("dog", KeyRemapMode.Insert));
+            Assert.IsTrue(_map.GetKeyMappingResult("cat", KeyRemapMode.Insert).IsNoMapping);
+        }
+
+        /// <summary>
+        /// Don't allow the unmapping by the key
+        /// </summary>
+        [Test]
+        public void UnmapByMapping_Bad()
+        {
+            Assert.IsTrue(_map.MapWithNoRemap("cat", "dog", KeyRemapMode.Insert));
+            Assert.IsFalse(_map.UnmapByMapping("cat", KeyRemapMode.Insert));
         }
 
         [Test]

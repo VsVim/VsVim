@@ -133,11 +133,38 @@ namespace Vim.UnitTest
         /// Make sure that we don't crash or print anything when :map is run with no mappings
         /// </summary>
         [Test]
-        public void Map_NoMappings()
+        public void KeyMap_NoMappings()
         {
             Create("");
             RunCommand("map");
             Assert.AreEqual("", _lastStatus);
+        }
+
+        /// <summary>
+        /// In Vim it's legal to unmap a key command with the expansion
+        /// </summary>
+        [Test]
+        public void KeyMap_UnmapByExpansion()
+        {
+            Create("");
+            RunCommand("imap cat dog");
+            Assert.AreEqual(1, KeyMap.GetKeyMappingsForMode(KeyRemapMode.Insert).Length);
+            RunCommand("iunmap dog");
+            Assert.AreEqual(0, KeyMap.GetKeyMappingsForMode(KeyRemapMode.Insert).Length);
+        }
+
+        /// <summary>
+        /// The ! in unmap should cause it to umap command and insert commands.  Make sure it
+        /// works for unmap by expansion as well
+        /// </summary>
+        [Test]
+        public void KeyMap_UnmapByExpansionUsingBang()
+        {
+            Create("");
+            RunCommand("imap cat dog");
+            Assert.AreEqual(1, KeyMap.GetKeyMappingsForMode(KeyRemapMode.Insert).Length);
+            RunCommand("unmap! dog");
+            Assert.AreEqual(0, KeyMap.GetKeyMappingsForMode(KeyRemapMode.Insert).Length);
         }
 
         [Test]
