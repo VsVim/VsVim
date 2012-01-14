@@ -25,6 +25,7 @@ namespace Vim.UnitTest.Mock
         public FSharpList<IVimBuffer> Buffers { get; set; }
         public bool? IsTextViewVisible { get; set; }
         public Func<ITextView, InsertCommand, bool> TryCustomProcessFunc { get; set; }
+        public Func<ITextView> CreateHiddenTextViewFunc { get; set; }
 
         /// <summary>
         /// Data from the last GoToNextTab call
@@ -36,6 +37,7 @@ namespace Vim.UnitTest.Mock
             GoToDefinitionReturn = true;
             IsCompletionWindowActive = false;
             NavigateToReturn = false;
+            Clear();
         }
 
         public void RaiseIsVisibleChanged(ITextView textView)
@@ -53,6 +55,7 @@ namespace Vim.UnitTest.Mock
         public void Clear()
         {
             Buffers = FSharpList<IVimBuffer>.Empty;
+            CreateHiddenTextViewFunc = () => { throw new NotImplementedException(); };
             BeepCount = 0;
             GoToDefinitionCount = 0;
             IsTextViewVisible = null;
@@ -90,6 +93,11 @@ namespace Vim.UnitTest.Mock
         void IVimHost.Close(ITextView textView)
         {
             throw new NotImplementedException();
+        }
+
+        ITextView IVimHost.CreateHiddenTextView()
+        {
+            return CreateHiddenTextViewFunc();
         }
 
         bool IVimHost.Save(ITextBuffer textBuffer)

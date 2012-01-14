@@ -74,6 +74,8 @@ namespace VsVim
             _adapter = adapter;
             _protectedOperations = protectedOperations;
             _bufferCoordinatorFactory = bufferCoordinatorFactory;
+
+            _vim.AutoLoadVimRc = false;
         }
 
         private void MaybeLoadVimRc()
@@ -84,10 +86,7 @@ namespace VsVim
                 // can be used to load the settings against.  We don't want this ITextView 
                 // coming back through TextViewCreated so give it a ITextViewRole that won't
                 // hit our filter 
-                Func<ITextView> createViewFunc = () => _editorFactoryService.CreateTextView(
-                    _bufferFactoryService.CreateTextBuffer(),
-                    _editorFactoryService.NoRoles);
-                if (!_vim.LoadVimRc(createViewFunc.ToFSharpFunc()))
+                if (!_vim.LoadVimRc())
                 {
                     // If no VimRc file is loaded add a couple of sanity settings
                     _vim.VimRcLocalSettings.AutoIndent = true;

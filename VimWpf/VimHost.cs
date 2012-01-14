@@ -13,18 +13,23 @@ using Vim.Extensions;
 
 namespace Vim.UI.Wpf
 {
-    // TODO: Should the override / abstract methods be protected?
     public abstract class VimHost : IVimHost, IWpfTextViewCreationListener
     {
+        private readonly ITextBufferFactoryService _textBufferFactoryService;
+        private readonly ITextEditorFactoryService _textEditorFactoryService;
         private readonly ITextDocumentFactoryService _textDocumentFactoryService;
         private readonly IEditorOperationsFactoryService _editorOperationsFactoryService;
         private readonly List<ITextView> _textViewList = new List<ITextView>();
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
 
         protected VimHost(
+            ITextBufferFactoryService textBufferFactoryService,
+            ITextEditorFactoryService textEditorFactoryService,
             ITextDocumentFactoryService textDocumentFactoryService,
             IEditorOperationsFactoryService editorOperationsFactoryService)
         {
+            _textBufferFactoryService = textBufferFactoryService;
+            _textEditorFactoryService = textEditorFactoryService;
             _textDocumentFactoryService = textDocumentFactoryService;
             _editorOperationsFactoryService = editorOperationsFactoryService;
         }
@@ -37,6 +42,17 @@ namespace Vim.UI.Wpf
         public virtual void Close(ITextView textView)
         {
             textView.Close();
+        }
+
+        /// <summary>
+        /// Create a hidden ITextView.  It will have no roles in order to keep it out of 
+        /// most plugins
+        /// </summary>
+        public virtual ITextView CreateHiddenTextView()
+        {
+            return _textEditorFactoryService.CreateTextView(
+                _textBufferFactoryService.CreateTextBuffer(),
+                _textEditorFactoryService.NoRoles);
         }
 
         /// <summary>
@@ -269,6 +285,11 @@ namespace Vim.UI.Wpf
         void IVimHost.Close(ITextView value)
         {
             Close(value);
+        }
+
+        ITextView IVimHost.CreateHiddenTextView()
+        {
+            return CreateHiddenTextView();
         }
 
         void IVimHost.EnsureVisible(ITextView textView, SnapshotPoint point)

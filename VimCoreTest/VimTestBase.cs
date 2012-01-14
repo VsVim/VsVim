@@ -108,6 +108,9 @@ namespace Vim.UnitTest
             // with the reliability of tests.  The default is on but turn it off here to prevent any 
             // problems
             _vim.GlobalSettings.Timeout = false;
+
+            // Don't let the personal VimRc of the user interfere with the unit tests
+            _vim.AutoLoadVimRc = false;
         }
 
         public override void  TearDownBase()

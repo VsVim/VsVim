@@ -76,6 +76,15 @@ type IStatusUtilFactory =
     /// Get the IStatusUtil instance for the given ITextView
     abstract GetStatusUtil : ITextView -> IStatusUtil
 
+type FileContents = {
+
+    /// Full path to the file which the contents were loaded from
+    FilePath : string
+
+    /// Actual lines in the file
+    Lines : string[]
+}
+
 /// Abstracts away VsVim's interaction with the file system to facilitate testing
 type IFileSystem =
 
@@ -93,7 +102,7 @@ type IFileSystem =
 
     /// Attempts to load the contents of the .VimRC and return both the path the file
     /// was loaded from and it's contents a
-    abstract LoadVimRc : unit -> (string * string[]) option
+    abstract LoadVimRcContents : unit -> FileContents option
 
     /// Attempt to read all of the lines from the given file 
     abstract ReadAllLines : filePath : string -> string[] option
@@ -3094,10 +3103,15 @@ type internal IHistoryClient<'TData, 'TResult> =
     abstract Cancelled : 'TData -> unit
 
 type IVimHost =
+
     abstract Beep : unit -> unit
 
     /// Close the provided view
     abstract Close : ITextView -> unit
+
+    /// Create a hidden ITextView instance.  This is primarily used to load the contents
+    /// of the vimrc
+    abstract CreateHiddenTextView : unit -> ITextView
 
     /// Ensure that the given point is visible
     abstract EnsureVisible : textView : ITextView -> point : SnapshotPoint -> unit
@@ -3279,6 +3293,10 @@ and IVim =
     /// which has focus 
     abstract ActiveBuffer : IVimBuffer option
 
+    /// Whether or not the vimrc file should be autoloaded before the first IVimBuffer
+    /// is created
+    abstract AutoLoadVimRc : bool with get, set
+
     /// Get the set of tracked IVimBuffer instances
     abstract VimBuffers : IVimBuffer list
 
@@ -3337,11 +3355,10 @@ and IVim =
     abstract GetOrCreateVimTextBuffer : ITextBuffer -> IVimTextBuffer
 
     /// Load the VimRc file.  If the file was previously loaded a new load will be 
-    /// attempted.  Returns true if a VimRc was actually loaded
+    /// attempted.  Returns true if a VimRc was actually loaded.
     ///
-    /// TODO: Should rethink this API for pushing a func down to create the 
-    /// ITextView.  Forces awkward code in host factory start methods
-    abstract LoadVimRc : createViewFunc:(unit -> ITextView) -> bool
+    /// If the VimRC is already loaded then it will be reloaded
+    abstract LoadVimRc : unit -> bool
 
     /// Remove the IVimBuffer associated with the given view.  This will not actually close
     /// the IVimBuffer but instead just removes it's association with the given view

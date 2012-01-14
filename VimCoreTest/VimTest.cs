@@ -14,7 +14,7 @@ namespace Vim.UnitTest
     {
         private MockRepository _factory;
         private Mock<IMarkMap> _markMap;
-        private Mock<IVimHost> _host;
+        private Mock<IVimHost> _vimHost;
         private Mock<ISearchService> _searchInfo;
         private Mock<IFileSystem> _fileSystem;
         private IKeyMap _keyMap;
@@ -32,10 +32,10 @@ namespace Vim.UnitTest
             _fileSystem = _factory.Create<IFileSystem>(MockBehavior.Strict);
             _bufferFactory = VimBufferFactory;
             _keyMap = new KeyMap();
-            _host = _factory.Create<IVimHost>(MockBehavior.Strict);
+            _vimHost = _factory.Create<IVimHost>(MockBehavior.Strict);
             _searchInfo = _factory.Create<ISearchService>(MockBehavior.Strict);
             _vimRaw = new Vim(
-                _host.Object,
+                _vimHost.Object,
                 _bufferFactory,
                 FSharpList<Lazy<IVimBufferCreationListener>>.Empty,
                 _settings,
@@ -46,6 +46,7 @@ namespace Vim.UnitTest
                 _fileSystem.Object,
                 new VimData());
             _vim = _vimRaw;
+            _vim.AutoLoadVimRc = false;
         }
 
         /// <summary>
@@ -247,8 +248,8 @@ namespace Vim.UnitTest
             _settings.VimRc = "invalid";
             _settings.VimRcPaths = "invalid";
             _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { }).Verifiable();
-            _fileSystem.Setup(x => x.LoadVimRc()).Returns(FSharpOption<Tuple<string, string[]>>.None).Verifiable();
-            Assert.IsFalse(_vim.LoadVimRc(FSharpFuncUtil.Create<Unit, ITextView>(_ => null)));
+            _fileSystem.Setup(x => x.LoadVimRcContents()).Returns(FSharpOption<FileContents>.None).Verifiable();
+            Assert.IsFalse(_vim.LoadVimRc());
             _fileSystem.Verify();
             Assert.AreEqual("", _settings.VimRc);
             Assert.AreEqual("", _settings.VimRcPaths);
@@ -258,8 +259,8 @@ namespace Vim.UnitTest
         public void LoadVimRc2()
         {
             _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { "foo" }).Verifiable();
-            _fileSystem.Setup(x => x.LoadVimRc()).Returns(FSharpOption<Tuple<string, string[]>>.None).Verifiable();
-            Assert.IsFalse(_vim.LoadVimRc(FSharpFuncUtil.Create<Unit, ITextView>(_ => null)));
+            _fileSystem.Setup(x => x.LoadVimRcContents()).Returns(FSharpOption<FileContents>.None).Verifiable();
+            Assert.IsFalse(_vim.LoadVimRc());
             Assert.AreEqual("", _settings.VimRc);
             Assert.AreEqual("foo", _settings.VimRcPaths);
             _fileSystem.Verify();
@@ -269,15 +270,15 @@ namespace Vim.UnitTest
         public void LoadVimRc3()
         {
             // Setup the VimRc contents
-            var fileName = "foo";
-            var contents = new string[] { "set ai" };
-            var tuple = Tuple.Create(fileName, contents);
+            var contents = new FileContents(
+                "foo",
+                new[] { "set ai" });
 
             _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { "" }).Verifiable();
-            _fileSystem.Setup(x => x.LoadVimRc()).Returns(FSharpOption.Create(tuple)).Verifiable();
+            _fileSystem.Setup(x => x.LoadVimRcContents()).Returns(FSharpOption.Create(contents)).Verifiable();
+            _vimHost.Setup(x => x.CreateHiddenTextView()).Returns(CreateTextView());
 
-            Func<ITextView> createViewFunc = () => CreateTextView();
-            Assert.IsTrue(_vim.LoadVimRc(createViewFunc.ToFSharpFunc()));
+            Assert.IsTrue(_vim.LoadVimRc());
 
             Assert.IsTrue(_vim.VimRcLocalSettings.AutoIndent);
             _fileSystem.Verify();

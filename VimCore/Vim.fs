@@ -207,7 +207,7 @@ type internal VimBufferFactory
 [<Export(typeof<IVim>)>]
 type internal Vim
     (
-        _host : IVimHost,
+        _vimHost : IVimHost,
         _bufferFactoryService : IVimBufferFactory,
         _bufferCreationListeners : Lazy<IVimBufferCreationListener> list,
         _globalSettings : IVimGlobalSettings,
@@ -228,6 +228,11 @@ type internal Vim
     /// Holds the active stack of IVimBuffer instances
     let mutable _activeBufferStack : IVimBuffer list = List.empty
 
+    /// Whether or not the vimrc file should be automatically loaded before creating the 
+    /// first IVimBuffer instance
+    let mutable _autoLoadVimRc = true
+    let mutable _isLoadingVimRc = false
+
     /// Holds the setting information which was stored when loading the VimRc file.  This 
     /// is applied to IVimBuffer instances which are created when there is no active IVimBuffer
     let mutable _vimRcLocalSettings = LocalSettings(_globalSettings) :> IVimLocalSettings
@@ -238,7 +243,7 @@ type internal Vim
             match _activeBufferStack with
             | [] -> None
             | h::_ -> 
-                let name = _host.GetName h.TextBuffer 
+                let name = _vimHost.GetName h.TextBuffer 
                 let name = System.IO.Path.GetFileName(name)
                 Some name
         RegisterMap(_clipboardDevice, currentFileNameFunc) :> IRegisterMap
@@ -290,10 +295,16 @@ type internal Vim
 
     member x.ActiveBuffer = ListUtil.tryHeadOnly _activeBufferStack
 
+    member x.AutoLoadVimRc 
+        with get () = _autoLoadVimRc
+        and set value = _autoLoadVimRc <- value
+
+    member x.IsVimRcLoaded = not (System.String.IsNullOrEmpty(_globalSettings.VimRc))
+
     member x.VimBuffers = _bufferMap.Values |> Seq.map fst |> List.ofSeq
 
     member x.FocusedBuffer = 
-        match _host.GetFocusedTextView() with
+        match _vimHost.GetFocusedTextView() with
         | None -> 
             None
         | Some textView -> 
@@ -341,14 +352,16 @@ type internal Vim
 
         vimTextBuffer
 
-    /// Create an IVimBuffer for the given ITextView and associated IVimTextBuffer
-    member x.CreateVimBuffer textView (windowSettings : IVimWindowSettings option) =
+    /// Create an IVimBuffer for the given ITextView and associated IVimTextBuffer.  This 
+    /// will not notify the IVimBufferCreationListener calloction about the new
+    /// IVimBuffer
+    member x.CreateVimBufferCore textView (windowSettings : IVimWindowSettings option) =
         if _bufferMap.ContainsKey(textView) then 
             invalidArg "textView" Resources.Vim_TextViewAlreadyHasVimBuffer
 
         let vimTextBuffer = x.GetOrCreateVimTextBuffer textView.TextBuffer
         let vimBufferData = _bufferFactoryService.CreateVimBufferData vimTextBuffer textView
-        let buffer = _bufferFactoryService.CreateVimBuffer vimBufferData
+        let vimBuffer = _bufferFactoryService.CreateVimBuffer vimBufferData
 
         // Apply the specified window settings
         match windowSettings with
@@ -357,16 +370,16 @@ type internal Vim
         | Some windowSettings ->
             windowSettings.AllSettings
             |> Seq.filter (fun s -> not s.IsGlobal && not s.IsValueCalculated)
-            |> Seq.iter (fun s -> buffer.WindowSettings.TrySetValue s.Name s.Value |> ignore)
+            |> Seq.iter (fun s -> vimBuffer.WindowSettings.TrySetValue s.Name s.Value |> ignore)
 
         // Setup the handlers for KeyInputStart and KeyInputEnd to accurately track the active
         // IVimBuffer instance
         let eventBag = DisposableBag()
-        buffer.KeyInputStart
-        |> Observable.subscribe (fun _ -> _activeBufferStack <- buffer :: _activeBufferStack )
+        vimBuffer.KeyInputStart
+        |> Observable.subscribe (fun _ -> _activeBufferStack <- vimBuffer :: _activeBufferStack )
         |> eventBag.Add
 
-        buffer.KeyInputEnd 
+        vimBuffer.KeyInputEnd 
         |> Observable.subscribe (fun _ -> 
             _activeBufferStack <- 
                 match _activeBufferStack with
@@ -374,9 +387,20 @@ type internal Vim
                 | [] -> [] )
         |> eventBag.Add
 
-        _bufferMap.Add(textView, (buffer,eventBag))
-        _bufferCreationListeners |> Seq.iter (fun x -> x.Value.VimBufferCreated buffer)
-        buffer
+        _bufferMap.Add(textView, (vimBuffer, eventBag))
+        vimBuffer
+
+    /// Create an IVimBuffer for the given ITextView and associated IVimTextBuffer and notify
+    /// the IVimBufferCreationListener collection about it
+    member x.CreateVimBuffer textView windowSettings = 
+
+        // Automatically load VimRc here if we haven't yet and are set to do so automatically
+        if x.AutoLoadVimRc && not x.IsVimRcLoaded then
+            x.LoadVimRc() |> ignore
+
+        let vimBuffer = x.CreateVimBufferCore textView windowSettings
+        _bufferCreationListeners |> Seq.iter (fun x -> x.Value.VimBufferCreated vimBuffer)
+        vimBuffer
 
     member x.GetVimTextBuffer (textBuffer : ITextBuffer) =
         PropertyCollectionUtil.GetValue<IVimTextBuffer> _vimTextBufferKey textBuffer.Properties
@@ -403,22 +427,35 @@ type internal Vim
             let settings = x.GetWindowSettingsForNewBuffer()
             x.CreateVimBuffer textView settings
 
-    member x.LoadVimRc (createViewFunc : (unit -> ITextView)) =
-        _globalSettings.VimRc <- System.String.Empty
-        _globalSettings.VimRcPaths <- _fileSystem.GetVimRcDirectories() |> String.concat ";"
+    member x.LoadVimRc () =
+        _isLoadingVimRc <- true
+        try
 
-        match _fileSystem.LoadVimRc() with
-        | None -> false
-        | Some(path,lines) ->
-            _globalSettings.VimRc <- path
-            let view = createViewFunc()
-            let buffer = x.GetOrCreateVimBuffer view
-            let mode = buffer.CommandMode
-            lines |> Seq.iter (fun input -> mode.RunCommand input |> ignore)
-            _vimRcLocalSettings <- LocalSettings.Copy buffer.LocalSettings
-            _vimRcWindowSettings <- Some (WindowSettings.Copy buffer.WindowSettings)
-            view.Close()
-            true
+            _globalSettings.VimRc <- System.String.Empty
+            _globalSettings.VimRcPaths <- _fileSystem.GetVimRcDirectories() |> String.concat ";"
+    
+            match _fileSystem.LoadVimRcContents() with
+            | None -> false
+            | Some fileContents ->
+                _globalSettings.VimRc <- fileContents.FilePath
+                let textView = _vimHost.CreateHiddenTextView()
+    
+                try
+                    // Call into the core version of create.  We don't want to notify any consumers
+                    // about the IVimBuffer created to load the vimrc file.  It causes confusion if
+                    // we do and really there's just no reason to as it's gonig to almost immediately
+                    // go away
+                    let vimBuffer = x.CreateVimBufferCore textView None
+                    let mode = vimBuffer.CommandMode
+                    fileContents.Lines |> Seq.iter (fun input -> mode.RunCommand input |> ignore)
+                    _vimRcLocalSettings <- LocalSettings.Copy vimBuffer.LocalSettings
+                    _vimRcWindowSettings <- Some (WindowSettings.Copy vimBuffer.WindowSettings)
+                finally
+                    // Be careful not to leak the ITextView in the case of an exception
+                    textView.Close()
+                true
+        finally
+            _isLoadingVimRc <- false
 
     member x.RemoveVimBuffer textView = 
         let found, tuple = _bufferMap.TryGetValue(textView)
@@ -429,10 +466,13 @@ type internal Vim
 
     interface IVim with
         member x.ActiveBuffer = x.ActiveBuffer
+        member x.AutoLoadVimRc 
+            with get() = x.AutoLoadVimRc
+            and set value = x.AutoLoadVimRc <- value
         member x.FocusedBuffer = x.FocusedBuffer
         member x.VimBuffers = x.VimBuffers
         member x.VimData = _vimData
-        member x.VimHost = _host
+        member x.VimHost = _vimHost
         member x.VimRcLocalSettings
             with get() = _vimRcLocalSettings
             and set value = _vimRcLocalSettings <- LocalSettings.Copy value
@@ -440,7 +480,7 @@ type internal Vim
         member x.MarkMap = _markMap
         member x.KeyMap = _keyMap
         member x.SearchService = _search
-        member x.IsVimRcLoaded = not (System.String.IsNullOrEmpty(_globalSettings.VimRc))
+        member x.IsVimRcLoaded = x.IsVimRcLoaded
         member x.RegisterMap = _registerMap 
         member x.GlobalSettings = _globalSettings
         member x.CloseAllVimBuffers() = x.CloseAllVimBuffers()
@@ -451,5 +491,5 @@ type internal Vim
         member x.RemoveVimBuffer textView = x.RemoveVimBuffer textView
         member x.GetVimBuffer textView = x.GetVimBuffer textView
         member x.GetVimTextBuffer textBuffer = x.GetVimTextBuffer textBuffer
-        member x.LoadVimRc createViewFunc = x.LoadVimRc createViewFunc
+        member x.LoadVimRc() = x.LoadVimRc()
 

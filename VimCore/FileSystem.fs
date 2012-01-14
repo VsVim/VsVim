@@ -51,11 +51,16 @@ type internal FileSystem() =
         |> Seq.map (fun path -> _fileNames |> Seq.map (fun name -> Path.Combine(path,name)))
         |> Seq.concat
 
-    member x.LoadVimRc () = 
+    member x.LoadVimRcContents () = 
         let readLines path = 
             match x.ReadAllLines path with
             | None -> None
-            | Some(lines) -> Some(path,lines)
+            | Some lines -> 
+                let contents = {
+                    FilePath = path
+                    Lines = lines
+                } 
+                Some contents
         x.GetVimRcFilePaths()  |> Seq.tryPick readLines
 
     interface IFileSystem with
@@ -63,6 +68,6 @@ type internal FileSystem() =
         member x.VimRcFileNames = _fileNames
         member x.GetVimRcDirectories () = x.GetVimRcDirectories()
         member x.GetVimRcFilePaths() = x.GetVimRcFilePaths()
-        member x.LoadVimRc () = x.LoadVimRc()
+        member x.LoadVimRcContents () = x.LoadVimRcContents()
         member x.ReadAllLines path = x.ReadAllLines path
 

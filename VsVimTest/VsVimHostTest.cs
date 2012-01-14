@@ -10,6 +10,7 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.UnitTest;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace VsVim.UnitTest
 {
@@ -46,12 +47,14 @@ namespace VsVim.UnitTest
             sp.Setup(x => x.GetService(typeof(SVsUIShell))).Returns(_shell.Object);
             _hostRaw = new VsVimHost(
                 _adapter.Object,
+                _factory.Create<ITextBufferFactoryService>().Object,
+                _factory.Create<ITextEditorFactoryService>().Object,
+                _factory.Create<ITextDocumentFactoryService>().Object,
                 _undoManagerProvider.Object,
                 _editorAdaptersFactoryService.Object,
-                _textManager.Object,
-                _factory.Create<ITextDocumentFactoryService>().Object,
                 _editorOperationsFactoryService.Object,
                 WordUtilFactory,
+                _textManager.Object,
                 sp.Object);
             _host = _hostRaw;
         }

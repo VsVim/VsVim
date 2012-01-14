@@ -49,14 +49,16 @@ namespace VsVim
         [ImportingConstructor]
         internal VsVimHost(
             IVsAdapter adapter,
+            ITextBufferFactoryService textBufferFactoryService,
+            ITextEditorFactoryService textEditorFactoryService,
+            ITextDocumentFactoryService textDocumentFactoryService,
             ITextBufferUndoManagerProvider undoManagerProvider,
             IVsEditorAdaptersFactoryService editorAdaptersFactoryService,
-            ITextManager textManager,
-            ITextDocumentFactoryService textDocumentFactoryService,
             IEditorOperationsFactoryService editorOperationsFactoryService,
             IWordUtilFactory wordUtilFactory,
+            ITextManager textManager,
             SVsServiceProvider serviceProvider)
-            : base(textDocumentFactoryService, editorOperationsFactoryService)
+            : base(textBufferFactoryService, textEditorFactoryService, textDocumentFactoryService, editorOperationsFactoryService)
         {
             _vsAdapter = adapter;
             _editorAdaptersFactoryService = editorAdaptersFactoryService;
