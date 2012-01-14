@@ -9,6 +9,7 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 open System.ComponentModel.Composition
 open System.Text.RegularExpressions
+open StringBuilderExtensions
 
 module internal CommonUtil = 
 
@@ -419,16 +420,16 @@ type internal CommonOperations
         for c in text do
             match c with 
             | ' ' -> 
-                builder.Append(' ') |> ignore
+                builder.AppendChar ' '
             | '\t' ->
                 // Insert spaces up to the next tab size modulus.  
                 let count = 
                     let remainder = builder.Length % tabSize
                     if remainder = 0 then tabSize else remainder
                 for i = 1 to count do
-                    builder.Append(' ') |> ignore
+                    builder.AppendChar ' '
             | _ -> 
-                builder.Append(' ') |> ignore
+                builder.AppendChar ' '
         builder.ToString()
 
     /// Normalize spaces into tabs / spaces based on the ExpandTab, TabSize settings
@@ -655,16 +656,16 @@ type internal CommonOperations
         for c in text do
             match c with 
             | ' ' -> 
-                builder.Append(' ') |> ignore
+                builder.AppendChar ' '
             | '\t' ->
                 // Insert spaces up to the next tab size modulus.  
                 let count = 
                     let remainder = builder.Length % tabSize
                     if remainder = 0 then tabSize else remainder
                 for i = 1 to count do
-                    builder.Append(' ') |> ignore
+                    builder.AppendChar ' '
             | _ -> 
-                builder.Append(' ') |> ignore
+                builder.AppendChar ' '
         builder.ToString(), text.Length
 
     /// Join the lines in the specified line range together. 

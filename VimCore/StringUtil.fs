@@ -1,7 +1,7 @@
 ﻿#light
 
-
 namespace Vim
+open StringBuilderExtensions
 
 module internal StringUtil =
 
@@ -40,7 +40,7 @@ module internal StringUtil =
         else
             let buffer = new System.Text.StringBuilder()
             for i = 1 to count do
-                buffer.Append(value) |> ignore
+                buffer.AppendString value
             buffer.ToString()
 
     [<CompiledName("RepeatChar")>]
@@ -49,7 +49,7 @@ module internal StringUtil =
         else
             let buffer = new System.Text.StringBuilder()
             for i = 1 to count do
-                buffer.Append(value) |> ignore
+                buffer.AppendChar value
             buffer.ToString()
 
     /// Create a String from an array of chars
@@ -71,7 +71,7 @@ module internal StringUtil =
     let ofStringSeq (strings : string seq) = 
         let builder = System.Text.StringBuilder()
         for value in strings do
-            builder.Append(value) |> ignore
+            builder.AppendString value
         builder.ToString()
 
     [<CompiledName("IsNullOrEmpty")>]
@@ -114,8 +114,8 @@ module internal StringUtil =
         let builder = new System.Text.StringBuilder()
         values |> Seq.iteri (fun i str -> 
             if i <> 0 then 
-                builder.Append(arg) |> ignore
-            builder.Append(str) |> ignore )
+                builder.AppendString arg
+            builder.AppendString str)
         builder.ToString()
 
     [<CompiledName("ContainsChar")>]

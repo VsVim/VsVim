@@ -3,6 +3,7 @@
 namespace Vim
 open Microsoft.VisualStudio.Text
 open System.Collections.ObjectModel
+open System.Text
 
 [<AbstractClass>]
 type internal ToggleHandler() =
@@ -342,6 +343,15 @@ module internal CharUtil =
             upperBound
         else
             char ((int lowerBound) + number) 
+
+module internal StringBuilderExtensions =
+
+    type StringBuilder with
+        member x.AppendChar (c: char) = 
+            x.Append(c) |> ignore
+
+        member x.AppendString (str : string) =
+            x.Append(str) |> ignore
 
 module internal NullableUtil = 
 

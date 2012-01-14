@@ -9,6 +9,7 @@ open Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Utilities
+open StringBuilderExtensions
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
@@ -1349,8 +1350,8 @@ type TextLine = {
     static member CreateString (textLines : TextLine seq) = 
         let builder = System.Text.StringBuilder()
         for textLine in textLines do
-            builder.Append(textLine.Text) |> ignore
-            builder.Append(textLine.NewLine) |> ignore
+            builder.AppendString textLine.Text
+            builder.AppendString textLine.NewLine
         builder.ToString()
 
     /// Break a string representation into a series of TextNode values.  This will 

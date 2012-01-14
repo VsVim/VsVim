@@ -6,6 +6,7 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Vim.Modes
+open Vim.StringBuilderExtensions
 
 type QuotedStringData =  {
     LeadingWhiteSpace : SnapshotSpan
@@ -86,7 +87,7 @@ module internal MotionUtilLegacy =
                     if builder.Length > 0 then
                         // Append the next value and check to see if we've completed the 
                         // match or need to continue looking
-                        builder.Append(current) |> ignore
+                        builder.AppendChar current
                         let current = builder.ToString()
                         match Map.tryFind current StandardMatchTokenMap with
                         | Some flags -> 
@@ -121,7 +122,7 @@ module internal MotionUtilLegacy =
                         | None ->
                             if Set.contains current startSet then
                                 builderStart := currentPoint 
-                                builder.Append(current) |> ignore
+                                builder.AppendChar current
 
         } |> Seq.filter (fun (span, flags) -> 
 

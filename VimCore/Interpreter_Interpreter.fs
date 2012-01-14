@@ -4,6 +4,7 @@ open EditorUtils
 open Microsoft.VisualStudio.Text
 open Vim
 open Vim.VimHostExtensions
+open Vim.StringBuilderExtensions
 
 [<Sealed>]
 [<Class>]
@@ -701,8 +702,8 @@ type Interpreter
         let text = 
             let builder = System.Text.StringBuilder()
             for line in lines do
-                builder.Append(line) |> ignore
-                builder.Append(lineBreak) |> ignore
+                builder.AppendString line
+                builder.AppendString lineBreak
             builder.ToString()
         _textBuffer.Insert(point.Position, text) |> ignore
 

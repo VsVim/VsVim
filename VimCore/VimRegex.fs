@@ -3,6 +3,7 @@
 namespace Vim
 open System.Text
 open System.Text.RegularExpressions
+open StringBuilderExtensions
 
 [<System.Flags>]
 type VimRegexOptions = 
@@ -79,8 +80,8 @@ module VimRegexUtils =
 
     let ConvertReplacementString (replacement : string) (replaceData : ReplaceData) = 
         let builder = StringBuilder()
-        let appendChar (c:char) = builder.Append(c) |> ignore
-        let appendString (str:string) = builder.Append(str) |> ignore
+        let appendChar c = builder.AppendChar c
+        let appendString str = builder.AppendString str
         let rec inner index = 
 
             // Process a character which follows an '\' in the string
@@ -196,11 +197,11 @@ type Data = {
     member x.DecrementIndex count = { x with Index = x.Index - count }
     member x.Break() = { x with IsBroken = true; }
     member x.CharAtIndex = StringUtil.charAtOption x.Index x.Pattern
-    member x.AppendString (str : string) = 
-        x.Builder.Append(str) |> ignore
+    member x.AppendString str = 
+        x.Builder.AppendString str
         x
-    member x.AppendChar (c : char) = 
-        x.Builder.Append(c) |> ignore
+    member x.AppendChar c =
+        x.Builder.AppendChar c
         x
     member x.AppendEscapedChar c = c |> StringUtil.ofChar |> Regex.Escape |> x.AppendString
     member x.BeginGrouping() = 

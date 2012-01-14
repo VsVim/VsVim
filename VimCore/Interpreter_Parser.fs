@@ -2,6 +2,7 @@
 
 namespace Vim.Interpreter
 open Vim
+open StringBuilderExtensions
 
 [<RequireQualifiedAccess>]
 type ParseResult<'T> = 
@@ -636,14 +637,14 @@ type Parser
                             // If the next char is not the delimeter then we have to assume the '\'
                             // is part of an escape for the pattern itself (\(, \1, etc ..) and we
                             // need to leave it in.  
-                            builder.Append('\\') |> ignore
+                            builder.AppendChar '\\'
 
-                        builder.Append(c) |> ignore
+                        builder.AppendChar c
                         x.IncrementIndex()
 
                     inner()
                 else
-                    builder.Append(c) |> ignore
+                    builder.AppendChar c
                     x.IncrementIndex()
                     inner()
 
@@ -1299,13 +1300,13 @@ type Parser
                 if x.IsPeekCharValue 1 ''' then
                     x.IncrementIndex()
                     x.IncrementIndex()
-                    builder.Append(''') |> ignore
+                    builder.AppendChar '''
                     inner()
                 else
                     builder.ToString() |> Value.String |> Expression.ConstantValue |> ParseResult.Succeeded
             | Some c ->
                 x.IncrementIndex()
-                builder.Append(c) |> ignore
+                builder.AppendChar c
                 inner()
 
         inner()
