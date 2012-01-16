@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Platform.WindowManagement;
 using Microsoft.VisualStudio.PlatformUI.Shell;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
@@ -19,7 +20,6 @@ using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
 using VsVim.Properties;
-using Microsoft.VisualStudio.Shell.Interop;
 
 namespace VsVim
 {
@@ -372,6 +372,11 @@ namespace VsVim
         public override void Quit()
         {
             _dte.Quit();
+        }
+
+        public override void RunVisualStudioCommand(string command, string argument)
+        {
+            SafeExecuteCommand(command, argument);
         }
 
         /// <summary>

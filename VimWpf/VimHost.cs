@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Media;
 using System.Windows;
@@ -10,7 +11,6 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim.Extensions;
-using System.Diagnostics;
 
 namespace Vim.UI.Wpf
 {
@@ -238,6 +238,8 @@ namespace Vim.UI.Wpf
             }
         }
 
+        public abstract void RunVisualStudioCommand(string command, string argument);
+
         public virtual bool Save(ITextBuffer textBuffer)
         {
             ITextDocument document;
@@ -423,6 +425,11 @@ namespace Vim.UI.Wpf
         string IVimHost.RunCommand(string command, string arguments)
         {
             return RunCommand(command, arguments);
+        }
+
+        void IVimHost.RunVisualStudioCommand(string command, string argument)
+        {
+            RunVisualStudioCommand(command, argument);
         }
 
         bool IVimHost.Save(ITextBuffer value)

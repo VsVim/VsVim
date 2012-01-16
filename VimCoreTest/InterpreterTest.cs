@@ -714,5 +714,43 @@ namespace Vim.UnitTest
             Assert.AreEqual(Path.Backward, VimHost.GoToNextTabData.Item1);
             Assert.AreEqual(3, VimHost.GoToNextTabData.Item2);
         }
+
+        /// <summary>
+        /// Simple visual studio command
+        /// </summary>
+        [Test]
+        public void VisualStudioCommand_Simple()
+        {
+            Create("");
+            var didRun = false;
+            VimHost.RunVisualStudioCommandFunc =
+                (command, argument) =>
+                {
+                    Assert.AreEqual("Build.BuildSelection", command);
+                    Assert.AreEqual("", argument);
+                    didRun = true;
+                };
+            ParseAndRun("vsc Build.BuildSelection");
+            Assert.IsTrue(didRun);
+        }
+
+        /// <summary>
+        /// Simple visual studio command with an argument
+        /// </summary>
+        [Test]
+        public void VisualStudioCommand_WithArgument()
+        {
+            Create("");
+            var didRun = false;
+            VimHost.RunVisualStudioCommandFunc =
+                (command, argument) =>
+                {
+                    Assert.AreEqual("Build.BuildSelection", command);
+                    Assert.AreEqual("Arg", argument);
+                    didRun = true;
+                };
+            ParseAndRun("vsc Build.BuildSelection Arg");
+            Assert.IsTrue(didRun);
+        }
     }
 }

@@ -27,6 +27,7 @@ namespace Vim.UnitTest.Mock
         public Func<ITextView, InsertCommand, bool> TryCustomProcessFunc { get; set; }
         public Func<ITextView> CreateHiddenTextViewFunc { get; set; }
         public Func<string, string, string> RunCommandFunc { get; set; }
+        public Action<string, string> RunVisualStudioCommandFunc { get; set; }
 
         /// <summary>
         /// Data from the last GoToNextTab call
@@ -63,6 +64,7 @@ namespace Vim.UnitTest.Mock
             TryCustomProcessFunc = null;
             CreateHiddenTextViewFunc = delegate { throw new NotImplementedException(); };
             RunCommandFunc = delegate { throw new NotImplementedException(); };
+            RunVisualStudioCommandFunc = delegate { throw new NotImplementedException(); };
         }
 
         void IVimHost.Beep()
@@ -195,6 +197,11 @@ namespace Vim.UnitTest.Mock
         string IVimHost.RunCommand(string command, string arguments)
         {
             return RunCommandFunc(command, arguments);
+        }
+
+        void IVimHost.RunVisualStudioCommand(string command, string argument)
+        {
+            RunVisualStudioCommandFunc(command, argument);
         }
 
         HostResult IVimHost.SplitViewVertically(ITextView value)

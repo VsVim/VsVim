@@ -86,6 +86,7 @@ type Parser
         ("tabrewind", "tabr")
         ("undo", "u")
         ("vglobal", "v")
+        ("vscmd", "vsc")
         ("write","w")
         ("wq", "")
         ("wall", "wa")
@@ -892,6 +893,19 @@ type Parser
 
         LineCommand.QuitWithWrite (lineRange, hasBang, fileOptionList, fileName) |> ParseResult.Succeeded
 
+    /// Parse out a visual studio command.  The format is "commandName argument".  The command
+    /// name can use letters, numbers and a period.  The rest of the line after will be taken
+    /// as the argument
+    member x.ParseVisualStudioCommand() = 
+        x.SkipBlanks()
+        let command = x.ParseWhile (fun c -> CharUtil.IsLetterOrDigit c || c = '.')
+        match command with 
+        | None -> ParseResult.Failed Resources.Parser_Error
+        | Some command ->
+            x.SkipBlanks()
+            let argument = x.ParseRestOfLine()
+            LineCommand.VisualStudioCommand (command, argument) |> ParseResult.Succeeded
+
     member x.ParseWrite lineRange = 
         let hasBang = x.ParseBang()
         x.SkipBlanks()
@@ -1236,6 +1250,7 @@ type Parser
             | "vglobal" -> x.ParseGlobalCore lineRange false
             | "vmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Visual;KeyRemapMode.Select])
             | "vmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Visual; KeyRemapMode.Select])
+            | "vscmd" -> noRange (fun () -> x.ParseVisualStudioCommand ())
             | "vnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Visual;KeyRemapMode.Select])
             | "vunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Visual;KeyRemapMode.Select])
             | "wall" -> noRange x.ParseWriteAll

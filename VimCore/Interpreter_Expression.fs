@@ -358,6 +358,10 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Unmap the key notation in the given modes
     | UnmapKeys of string * KeyRemapMode list * KeyMapArgument list
 
+    /// Run a visual studio command (or really any custom host command).  The first string is the
+    /// command and the second string in the argument
+    | VisualStudioCommand of string * string
+
     /// Write the 
     ///  - The line range to write out
     ///  - Whether or not a ! was provided

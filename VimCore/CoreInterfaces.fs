@@ -3191,6 +3191,9 @@ type IVimHost =
     /// output
     abstract RunCommand : file : string -> arguments : string -> string
 
+    /// Run the Visual studio command
+    abstract RunVisualStudioCommand : commandName : string -> argument : string -> unit
+
     /// Save the provided ITextBuffer instance
     abstract Save : ITextBuffer -> bool 
 

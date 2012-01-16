@@ -1118,6 +1118,10 @@ type Interpreter
 
         RunResult.Completed
 
+    member x.RunVisualStudioCommand command argument =
+        _vimHost.RunVisualStudioCommand command argument
+        RunResult.Completed
+
     member x.RunWrite lineRange hasBang fileOptionList filePath =
         if not (List.isEmpty fileOptionList) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
@@ -1196,6 +1200,7 @@ type Interpreter
         | LineCommand.SubstituteRepeat (lineRange, _) -> lineRange
         | LineCommand.Undo -> None
         | LineCommand.UnmapKeys _ -> None
+        | LineCommand.VisualStudioCommand _ -> None
         | LineCommand.Write (lineRange, _, _, _) -> lineRange
         | LineCommand.WriteAll _ -> None
         | LineCommand.Yank (lineRange, _, _) -> lineRange
@@ -1256,6 +1261,7 @@ type Interpreter
             | LineCommand.SubstituteRepeat (_, substituteFlags) -> x.RunSubstituteRepeatLast lineRange substituteFlags
             | LineCommand.Undo -> x.RunUndo()
             | LineCommand.UnmapKeys (keyNotation, keyRemapModes, mapArgumentList) -> x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList
+            | LineCommand.VisualStudioCommand (command, argument) -> x.RunVisualStudioCommand command argument
             | LineCommand.Write (_, hasBang, fileOptionList, filePath) -> x.RunWrite lineRange hasBang fileOptionList filePath
             | LineCommand.WriteAll hasBang -> x.RunWriteAll hasBang
             | LineCommand.Yank (_, registerName, count) -> x.RunYank lineRange (getRegister registerName)
