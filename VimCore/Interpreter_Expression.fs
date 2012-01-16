@@ -325,6 +325,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Process the '/' and '?' commands
     | Search of LineRange option * Path * string
 
+    /// Execute the given shell command
+    | ShellCommand of string
+
     /// Process the '<' shift left command
     | ShiftLeft of LineRange option
 

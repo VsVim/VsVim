@@ -22,6 +22,7 @@ module internal Resources =
     let Common_NoFoldFound = "No fold found"
     let Common_NoWriteSinceLastChange = "No write since last change (add ! to override)"
     let Common_NoPreviousVisualSpan = "Cannot retrieve the previous Visual Span"
+    let Common_NoPreviousShellCommand = "No previous command"
     let Common_PatternNotFound pattern = sprintf "Pattern not found: %s" pattern
     let Common_SaveFailed = "Save operation failed"
     let Common_SelectionInvalid = "An invalid selection was detected"

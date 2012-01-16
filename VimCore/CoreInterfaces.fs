@@ -2801,6 +2801,8 @@ module GlobalSettingNames =
     let ScrollOffsetName = "scrolloff"
     let SectionsName = "sections"
     let SelectionName = "selection"
+    let ShellName = "shell"
+    let ShellFlagName = "shellcmdflag"
     let ShiftWidthName = "shiftwidth"
     let SmartCaseName = "smartcase"
     let StartOfLineName = "startofline"
@@ -2925,6 +2927,12 @@ and IVimGlobalSettings =
 
     /// The nrooff macros that separate sections
     abstract Sections : string with get, set
+
+    /// The name of the shell to use for shell commands
+    abstract Shell : string with get, set
+
+    /// The flag which is passed to the shell when executing shell commands
+    abstract ShellFlag : string with get, set
 
     abstract ShiftWidth : int with get, set
 
@@ -3176,17 +3184,21 @@ type IVimHost =
     /// Quit the application
     abstract Quit : unit -> unit
 
-    /// Display the open file dialog 
-    abstract ShowOpenFileDialog : unit -> unit
-
     /// Reload the contents of the ITextBuffer discarding any changes
     abstract Reload : ITextBuffer -> bool
+
+    /// Run the specified command with the given arguments and return the textual
+    /// output
+    abstract RunCommand : file : string -> arguments : string -> string
 
     /// Save the provided ITextBuffer instance
     abstract Save : ITextBuffer -> bool 
 
     /// Save the current document as a new file with the specified name
     abstract SaveTextAs : text:string -> filePath:string -> bool 
+
+    /// Display the open file dialog 
+    abstract ShowOpenFileDialog : unit -> unit
 
     /// Allow the host to custom process the insert command.  Hosts often have
     /// special non-vim semantics for certain types of edits (Enter for 
@@ -3222,6 +3234,9 @@ type IVimData =
 
     /// The last command which was ran 
     abstract LastCommand : StoredCommand option with get, set
+
+    /// The last shell command that was run
+    abstract LastShellCommand : string option with get, set
 
     /// The last macro register which was run
     abstract LastMacroRun : char option with get, set

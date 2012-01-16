@@ -111,6 +111,9 @@ namespace Vim.UnitTest
 
             // Don't let the personal VimRc of the user interfere with the unit tests
             _vim.AutoLoadVimRc = false;
+
+            _vim.VimData.LastShellCommand = FSharpOption<string>.None;
+            _vim.VimData.LastCommand = FSharpOption<StoredCommand>.None;
         }
 
         public override void  TearDownBase()

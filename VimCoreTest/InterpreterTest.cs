@@ -565,6 +565,79 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Make sure the basic command is passed down to the func
+        /// </summary>
+        [Test]
+        public void ShellCommand_Simple()
+        {
+            Create("");
+            var didRun = false;
+            VimHost.RunCommandFunc =
+                (command, args) =>
+                {
+                    Assert.AreEqual("/c git status", args);
+                    didRun = true;
+                    return "";
+                };
+            ParseAndRun(@"!git status");
+            Assert.IsTrue(didRun);
+        }
+
+        /// <summary>
+        /// Do a simple replacement of a ! in the shell command
+        /// </summary>
+        [Test]
+        public void ShellCommand_BangReplacement()
+        {
+            Create("");
+            Vim.VimData.LastShellCommand = FSharpOption.Create("cat");
+            var didRun = false;
+            VimHost.RunCommandFunc =
+                (command, args) =>
+                {
+                    Assert.AreEqual("/c git status cat", args);
+                    didRun = true;
+                    return "";
+                };
+            ParseAndRun(@"!git status !");
+            Assert.IsTrue(didRun);
+        }
+
+        /// <summary>
+        /// Don't replace a ! which occurs after a \
+        /// </summary>
+        [Test]
+        public void ShellCommand_BangNoReplace()
+        {
+            Create("");
+            var didRun = false;
+            VimHost.RunCommandFunc =
+                (command, args) =>
+                {
+                    Assert.AreEqual("/c git status !", args);
+                    didRun = true;
+                    return "";
+                };
+            ParseAndRun(@"!git status \!");
+            Assert.IsTrue(didRun);
+        }
+
+        /// <summary>
+        /// Raise an error message if there is no previous command and a bang relpacement
+        /// isr requested.  Shouldn't run any command in this case
+        /// </summary>
+        [Test]
+        public void ShellCommand_BangReplacementFails()
+        {
+            Create("");
+            var didRun = false;
+            VimHost.RunCommandFunc = delegate { didRun = true; return ""; };
+            ParseAndRun(@"!git status !");
+            Assert.IsFalse(didRun);
+            Assert.AreEqual(Resources.Common_NoPreviousShellCommand, _statusUtil.LastError);
+        }
+
+        /// <summary>
         /// When an empty string is provided for the pattern string then the pattern from the last
         /// substitute
         /// </summary>

@@ -947,6 +947,53 @@ type Interpreter
 
         RunResult.Completed
 
+    /// Run the specified shell command
+    member x.RunShellCommand (command : string) =
+
+        // Actuall run the command
+        let doRun command = 
+
+            let file = _globalSettings.Shell
+            let output = _vimHost.RunCommand _globalSettings.Shell command
+            _statusUtil.OnStatus output
+
+        // Build up the actual command replacing any non-escaped ! with the previous
+        // shell command
+        let builder = System.Text.StringBuilder()
+
+        // Append the shell flag before the other arguments
+        if _globalSettings.ShellFlag.Length > 0 then
+            builder.AppendString _globalSettings.ShellFlag
+            builder.AppendChar ' '
+
+        let rec inner index afterBackslash = 
+            if index >= command.Length then
+                builder.ToString() |> doRun
+            else
+                let current = command.[index]
+                if current = '\\' && (index + 1) < command.Length then
+                    let next = command.[index + 1]
+                    builder.AppendChar next
+
+                    // It seems odd to escape ! after an escaped backslash but it's
+                    // specifically called out in the documentation for :shell
+                    let afterBackslash = next = '\\'
+                    inner (index + 2) afterBackslash
+                elif current = '!' then
+                    match _vimData.LastShellCommand with
+                    | None -> 
+                        _statusUtil.OnError Resources.Common_NoPreviousShellCommand
+                    | Some previousCommand ->
+                        builder.AppendString previousCommand
+                        inner (index + 1) false
+                else
+                    builder.AppendChar current
+                    inner (index + 1) false
+
+        inner 0 false
+
+        RunResult.Completed
+
     /// Shift the given line range to the left
     member x.RunShiftLeft lineRange = 
         _commonOperations.ShiftLineRangeLeft lineRange 1
@@ -1140,6 +1187,7 @@ type Interpreter
         | LineCommand.Retab (lineRange, _, _) -> Some lineRange
         | LineCommand.Search (lineRange, _, _) -> lineRange
         | LineCommand.Set _ -> None
+        | LineCommand.ShellCommand _ -> None
         | LineCommand.ShiftLeft lineRange -> lineRange
         | LineCommand.ShiftRight lineRange -> lineRange
         | LineCommand.Source _ -> None
@@ -1199,6 +1247,7 @@ type Interpreter
             | LineCommand.Retab (_, hasBang, tabStop) -> x.RunRetab lineRange hasBang tabStop
             | LineCommand.Search (_, path, pattern) -> x.RunSearch lineRange path pattern
             | LineCommand.Set argumentList -> x.RunSet argumentList
+            | LineCommand.ShellCommand command -> x.RunShellCommand command
             | LineCommand.ShiftLeft _ -> x.RunShiftLeft lineRange
             | LineCommand.ShiftRight _ -> x.RunShiftRight lineRange
             | LineCommand.Source (hasBang, filePath) -> x.RunSource hasBang filePath

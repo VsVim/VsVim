@@ -131,10 +131,12 @@ type internal GlobalSettings() =
             (JoinSpacesName, "js", ToggleKind, ToggleValue(true))
             (MagicName, MagicName, ToggleKind, ToggleValue(true))
             (ParagraphsName, "para", StringKind, StringValue("IPLPPPQPP TPHPLIPpLpItpplpipbp"))
-            (ShiftWidthName, "sw", NumberKind, NumberValue(4))
             (SectionsName, "sect", StringKind, StringValue "SHNHH HUnhsh")
             (SelectionName, "sel", StringKind, StringValue("inclusive"))
             (ScrollOffsetName, "so", NumberKind, NumberValue(0))
+            (ShiftWidthName, "sw", NumberKind, NumberValue(4))
+            (ShellName, "sh", StringKind, "ComSpec" |> SystemUtil.GetEnvironmentVariable |> StringValue)
+            (ShellFlagName, "shcf", StringKind, StringValue("/c"))
             (SmartCaseName, "scs", ToggleKind, ToggleValue(false))
             (StartOfLineName, "sol", ToggleKind, ToggleValue(true))
             (TabStopName, "ts", NumberKind, NumberValue(8))
@@ -222,6 +224,12 @@ type internal GlobalSettings() =
         member x.ShiftWidth  
             with get() = _map.GetNumberValue ShiftWidthName
             and set value = _map.TrySetValue ShiftWidthName (NumberValue(value)) |> ignore
+        member x.Shell 
+            with get() = _map.GetStringValue ShellName
+            and set value = _map.TrySetValue ShellName (StringValue(value)) |> ignore
+        member x.ShellFlag
+            with get() = _map.GetStringValue ShellFlagName
+            and set value = _map.TrySetValue ShellFlagName (StringValue(value)) |> ignore
         member x.SmartCase
             with get() = _map.GetBoolValue SmartCaseName
             and set value = _map.TrySetValue SmartCaseName (ToggleValue(value)) |> ignore

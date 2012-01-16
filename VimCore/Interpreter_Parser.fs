@@ -860,6 +860,11 @@ type Parser
         let lineRange = LineRange.WithEndCount (lineRange, x.ParseNumber())
         LineCommand.ShiftRight (Some lineRange) |> ParseResult.Succeeded
 
+    /// Parse out the shell command
+    member x.ParseShellCommand () =
+        let command = x.ParseRestOfLine()
+        LineCommand.ShellCommand command |> ParseResult.Succeeded
+
     /// Parse out the 'tabnext' command
     member x.ParseTabNext() =   
         x.SkipBlanks()
@@ -1248,6 +1253,7 @@ type Parser
             | ">" -> x.ParseShiftRight lineRange
             | "&" -> x.ParseSubstituteRepeat lineRange SubstituteFlags.None
             | "~" -> x.ParseSubstituteRepeat lineRange SubstituteFlags.UsePreviousSearchPattern
+            | "!" -> noRange (fun () -> x.ParseShellCommand())
             | "" -> match lineRange with | Some lineRange -> x.ParseJumpToLine lineRange | None -> ParseResult.Failed Resources.Parser_Error
             | _ -> ParseResult.Failed Resources.Parser_Error
 

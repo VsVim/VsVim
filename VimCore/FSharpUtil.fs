@@ -512,3 +512,10 @@ type Contract =
         if not test then
             raise (System.Exception("Contract failed"))
 
+module internal SystemUtil =
+
+    let GetEnvironmentVariable name = 
+        try
+            System.Environment.GetEnvironmentVariable(name)
+        with
+            | _ -> ""

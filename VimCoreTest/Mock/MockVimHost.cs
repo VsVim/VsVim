@@ -26,6 +26,7 @@ namespace Vim.UnitTest.Mock
         public bool? IsTextViewVisible { get; set; }
         public Func<ITextView, InsertCommand, bool> TryCustomProcessFunc { get; set; }
         public Func<ITextView> CreateHiddenTextViewFunc { get; set; }
+        public Func<string, string, string> RunCommandFunc { get; set; }
 
         /// <summary>
         /// Data from the last GoToNextTab call
@@ -34,9 +35,6 @@ namespace Vim.UnitTest.Mock
 
         public MockVimHost()
         {
-            GoToDefinitionReturn = true;
-            IsCompletionWindowActive = false;
-            NavigateToReturn = false;
             Clear();
         }
 
@@ -54,13 +52,17 @@ namespace Vim.UnitTest.Mock
         /// </summary>
         public void Clear()
         {
+            GoToDefinitionReturn = true;
+            IsCompletionWindowActive = false;
+            NavigateToReturn = false;
             Buffers = FSharpList<IVimBuffer>.Empty;
-            CreateHiddenTextViewFunc = () => { throw new NotImplementedException(); };
             BeepCount = 0;
             GoToDefinitionCount = 0;
             IsTextViewVisible = null;
             _isVisibleChanged = null;
             TryCustomProcessFunc = null;
+            CreateHiddenTextViewFunc = delegate { throw new NotImplementedException(); };
+            RunCommandFunc = delegate { throw new NotImplementedException(); };
         }
 
         void IVimHost.Beep()
@@ -188,6 +190,11 @@ namespace Vim.UnitTest.Mock
         void IVimHost.MoveViewRight(ITextView value)
         {
             throw new NotImplementedException();
+        }
+
+        string IVimHost.RunCommand(string command, string arguments)
+        {
+            return RunCommandFunc(command, arguments);
         }
 
         HostResult IVimHost.SplitViewVertically(ITextView value)

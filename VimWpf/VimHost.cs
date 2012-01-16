@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim.Extensions;
+using System.Diagnostics;
 
 namespace Vim.UI.Wpf
 {
@@ -215,6 +216,28 @@ namespace Vim.UI.Wpf
             return true;
         }
 
+        /// <summary>
+        /// Run the specified command, capture it's output and return it to the caller
+        /// </summary>
+        public virtual string RunCommand(string command, string arguments)
+        {
+            var startInfo = new ProcessStartInfo();
+            startInfo.FileName = command;
+            startInfo.Arguments = arguments;
+            startInfo.RedirectStandardOutput = true;
+            startInfo.UseShellExecute = false;
+            try
+            {
+                var process = Process.Start(startInfo);
+                process.WaitForExit();
+                return process.StandardOutput.ReadToEnd();
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+
         public virtual bool Save(ITextBuffer textBuffer)
         {
             ITextDocument document;
@@ -395,6 +418,11 @@ namespace Vim.UI.Wpf
         bool IVimHost.Reload(ITextBuffer value)
         {
             return Reload(value);
+        }
+
+        string IVimHost.RunCommand(string command, string arguments)
+        {
+            return RunCommand(command, arguments);
         }
 
         bool IVimHost.Save(ITextBuffer value)

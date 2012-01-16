@@ -17,6 +17,7 @@ type internal VimData() =
     let mutable _searchHistory = HistoryList()
     let mutable _lastSubstituteData : SubstituteData option = None
     let mutable _lastPatternData = { Pattern = StringUtil.empty; Path = Path.Forward }
+    let mutable _lastShellCommand : string option = None
     let mutable _lastCharSearch : (CharSearchKind * Path * char) option = None
     let mutable _lastMacroRun : char option = None
     let mutable _lastCommand : StoredCommand option = None
@@ -41,6 +42,9 @@ type internal VimData() =
         member x.LastCommand 
             with get () = _lastCommand
             and set value = _lastCommand <- value
+        member x.LastShellCommand
+            with get () = _lastShellCommand
+            and set value = _lastShellCommand <- value
         member x.LastPatternData 
             with get () = _lastPatternData
             and set value = 
