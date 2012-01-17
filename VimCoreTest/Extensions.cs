@@ -8,7 +8,6 @@ using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim.Extensions;
 using Vim.Interpreter;
-using InterpreterLineRange = Vim.Interpreter.LineRange;
 
 namespace Vim.UnitTest
 {
@@ -225,25 +224,25 @@ namespace Vim.UnitTest
         /// <summary>
         /// LineRange as SingleLine
         /// </summary>
-        public static InterpreterLineRange.SingleLine AsSingleLine(this InterpreterLineRange lineRange)
+        public static LineRangeSpecifier.SingleLine AsSingleLine(this LineRangeSpecifier lineRange)
         {
-            return (InterpreterLineRange.SingleLine)lineRange;
+            return (LineRangeSpecifier.SingleLine)lineRange;
         }
 
         /// <summary>
         /// LineRange as Range
         /// </summary>
-        public static InterpreterLineRange.Range AsRange(this InterpreterLineRange lineRange)
+        public static LineRangeSpecifier.Range AsRange(this LineRangeSpecifier lineRange)
         {
-            return (InterpreterLineRange.Range)lineRange;
+            return (LineRangeSpecifier.Range)lineRange;
         }
 
         /// <summary>
         /// LineRange as WithEndCount
         /// </summary>
-        public static InterpreterLineRange.WithEndCount AsWithEndCount(this InterpreterLineRange lineRange)
+        public static LineRangeSpecifier.WithEndCount AsWithEndCount(this LineRangeSpecifier lineRange)
         {
-            return (InterpreterLineRange.WithEndCount)lineRange;
+            return (LineRangeSpecifier.WithEndCount)lineRange;
         }
 
         #endregion

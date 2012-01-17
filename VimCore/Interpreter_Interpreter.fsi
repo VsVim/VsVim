@@ -16,7 +16,7 @@ type Interpreter =
     member GetLine : lineSpecifier : LineSpecifier -> ITextSnapshotLine option
 
     /// Get the specified LineRange in the IVimBuffer
-    member GetLineRange : lineRange : Vim.Interpreter.LineRange -> SnapshotLineRange option
+    member GetLineRange : lineRange : LineRangeSpecifier -> SnapshotLineRange option
 
     /// Run the LineCommand
     member RunLineCommand : lineCommand : LineCommand -> RunResult

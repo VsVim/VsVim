@@ -15,12 +15,12 @@ namespace Vim.UnitTest
             return parseResult.AsSucceeded().Item;
         }
 
-        private global::Vim.Interpreter.LineRange ParseLineRange(string text)
+        private LineRangeSpecifier ParseLineRange(string text)
         {
             var parser = new Parser(text);
-            var option = parser.ParseLineRange();
-            Assert.IsTrue(option.IsSome());
-            return option.Value;
+            var lineRange = parser.ParseLineRange();
+            Assert.IsFalse(lineRange.IsNone);
+            return lineRange;
         }
 
         private LineSpecifier ParseLineSpecifier(string text)
@@ -191,7 +191,7 @@ namespace Vim.UnitTest
         public void Parse_Delete_WithCount()
         {
             var lineCommand = ParseLineCommand("delete 2");
-            var lineRange = lineCommand.AsDelete().Item1.Value;
+            var lineRange = lineCommand.AsDelete().Item1;
             Assert.AreEqual(2, lineRange.AsWithEndCount().Item2.Value);
         }
 
@@ -796,7 +796,7 @@ namespace Vim.UnitTest
         public void Parse_Write_Simple()
         {
             var write = ParseLineCommand("w").AsWrite();
-            Assert.IsTrue(write.Item1.IsNone());
+            Assert.IsTrue(write.Item1.IsNone);
             Assert.IsFalse(write.Item2);
             Assert.IsTrue(write.Item4.IsNone());
         }
@@ -808,7 +808,7 @@ namespace Vim.UnitTest
         public void Parse_Write_ToFile()
         {
             var write = ParseLineCommand("w example.txt").AsWrite();
-            Assert.IsTrue(write.Item1.IsNone());
+            Assert.IsTrue(write.Item1.IsNone);
             Assert.IsFalse(write.Item2);
             Assert.AreEqual("example.txt", write.Item4.Value);
         }

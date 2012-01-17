@@ -9,7 +9,17 @@ type ParseResult<'T> =
     | Succeeded of 'T
     | Failed of string
 
-type ParseLineCommand = LineRange option -> ParseResult<LineCommand>
+    with 
+
+    member x.Map (mapFunc : 'T -> ParseResult<'U>) =
+        match x with
+        | ParseResult.Failed msg -> ParseResult.Failed msg
+        | ParseResult.Succeeded value -> mapFunc value
+
+module ParseResultUtil =
+
+    let Map (parseResult : ParseResult<'T>) mapFunc = 
+        parseResult.Map mapFunc
 
 type ParserBuilder
     (
@@ -557,17 +567,18 @@ type Parser
     /// address
     member x.ParseCopyTo sourceLineRange = 
         x.SkipBlanks()
-        match x.ParseLineRange() with
-        | None -> ParseResult.Failed Resources.Common_InvalidAddress
-        | Some destLineRange -> LineCommand.CopyTo (sourceLineRange, destLineRange) |> ParseResult.Succeeded
+        let destinationLineRange = x.ParseLineRange()
+        match destinationLineRange with
+        | LineRangeSpecifier.None -> ParseResult.Failed Resources.Common_InvalidAddress
+        | _ -> LineCommand.CopyTo (sourceLineRange, destinationLineRange) |> ParseResult.Succeeded
 
     /// Parse out the :delete command
     member x.ParseDelete lineRange = 
         x.SkipBlanks()
         let name = x.ParseRegisterName()
         x.SkipBlanks()
-        let lineRange = LineRange.WithEndCount (lineRange, x.ParseNumber())
-        LineCommand.Delete (Some lineRange, name) |> ParseResult.Succeeded
+        let lineRange = LineRangeSpecifier.WithEndCount (lineRange, x.ParseNumber())
+        LineCommand.Delete (lineRange, name) |> ParseResult.Succeeded
 
     /// Parse out the :edit command
     member x.ParseEdit () = 
@@ -586,9 +597,8 @@ type Parser
 
     /// Parse out the :[digit] command
     member x.ParseJumpToLine lineRange =
-
         match lineRange with
-        | LineRange.SingleLine lineSpecifier ->
+        | LineRangeSpecifier.SingleLine lineSpecifier ->
             match lineSpecifier with
             | LineSpecifier.Number number -> 
                 ParseResult.Succeeded (LineCommand.JumpToLine number)
@@ -733,25 +743,23 @@ type Parser
 
     /// Parse out any valid range node.  This will consider % and any other 
     /// range expression
-    member x.ParseLineRange () =
+    member x.ParseLineRange () : LineRangeSpecifier =
         if x.IsCurrentCharValue '%' then
             x.IncrementIndex()
-            LineRange.EntireBuffer |> Some
+            LineRangeSpecifier.EntireBuffer
         else
             match x.ParseLineSpecifier() with
-            | None ->
-                None
+            | None -> LineRangeSpecifier.None
             | Some left ->
-                if x.IsCurrentCharValue ',' then
+
+                if x.IsCurrentCharValue ',' || x.IsCurrentCharValue ';' then
+                    let isSemicolon = x.IsCurrentCharValue ';'
                     x.IncrementIndex()
-                    x.ParseLineSpecifier()
-                    |> Option.map (fun right -> LineRange.Range (left, right, false))
-                elif x.IsCurrentCharValue ';' then
-                    x.IncrementIndex()
-                    x.ParseLineSpecifier()
-                    |> Option.map (fun right -> LineRange.Range (left, right, true))
+                    match x.ParseLineSpecifier() with
+                    | None -> LineRangeSpecifier.SingleLine left
+                    | Some right -> LineRangeSpecifier.Range (left, right, isSemicolon)
                 else
-                    LineRange.SingleLine left |> Some
+                    LineRangeSpecifier.SingleLine left 
 
     /// Parse out the valid ex-flags
     member x.ParseLineCommandFlags() = 
@@ -808,8 +816,8 @@ type Parser
                 let flags = processFlags flags
                 x.SkipBlanks()
                 let count = x.ParseNumber()
-                let lineRange = LineRange.WithEndCount (lineRange, count)
-                let command = LineCommand.Substitute (Some lineRange, pattern, replace, flags)
+                let lineRange = LineRangeSpecifier.WithEndCount (lineRange, count)
+                let command = LineCommand.Substitute (lineRange, pattern, replace, flags)
                 ParseResult.Succeeded command
         else
             // Without a delimiter it's the repeat variety of the substitute command
@@ -835,8 +843,8 @@ type Parser
         // Parses out the optional trailing count
         x.SkipBlanks()
         let count = x.ParseNumber()
-        let lineRange = LineRange.WithEndCount (lineRange, count)
-        let command = LineCommand.SubstituteRepeat (Some lineRange, flags)
+        let lineRange = LineRangeSpecifier.WithEndCount (lineRange, count)
+        let command = LineCommand.SubstituteRepeat (lineRange, flags)
         ParseResult.Succeeded command
 
     /// Parse out the repeat variety of the substitute command which is initiated
@@ -852,14 +860,14 @@ type Parser
     /// Parse out the shift left pattern
     member x.ParseShiftLeft lineRange = 
         x.SkipBlanks()
-        let lineRange = LineRange.WithEndCount (lineRange, x.ParseNumber())
-        LineCommand.ShiftLeft (Some lineRange) |> ParseResult.Succeeded
+        let lineRange = LineRangeSpecifier.WithEndCount (lineRange, x.ParseNumber())
+        LineCommand.ShiftLeft (lineRange) |> ParseResult.Succeeded
 
     /// Parse out the shift right pattern
     member x.ParseShiftRight lineRange = 
         x.SkipBlanks()
-        let lineRange = LineRange.WithEndCount (lineRange, x.ParseNumber())
-        LineCommand.ShiftRight (Some lineRange) |> ParseResult.Succeeded
+        let lineRange = LineRangeSpecifier.WithEndCount (lineRange, x.ParseNumber())
+        LineCommand.ShiftRight (lineRange) |> ParseResult.Succeeded
 
     /// Parse out the shell command
     member x.ParseShellCommand () =
@@ -951,15 +959,15 @@ type Parser
                 if foundDelimiter then 
                     return! x.ParseSingleCommand()
                 else 
-                    return LineCommand.Print (None, LineCommandFlags.None) }
+                    return LineCommand.Print (LineRangeSpecifier.None, LineCommandFlags.None) }
 
     /// Parse out the join command
     member x.ParseJoin lineRange =  
         let hasBang = x.ParseBang()
         x.SkipBlanks()
-        let lineRange = LineRange.Join (lineRange, x.ParseNumber())
+        let lineRange = LineRangeSpecifier.Join (lineRange, x.ParseNumber())
         let joinKind = if hasBang then JoinKind.KeepEmptySpaces else JoinKind.RemoveEmptySpaces
-        LineCommand.Join (Some lineRange, joinKind) |> ParseResult.Succeeded
+        LineCommand.Join (lineRange, joinKind) |> ParseResult.Succeeded
 
     /// Parse out the :make command.  The arguments here other than ! are undefined.  Just
     /// get the text blob and let the interpreter / host deal with it 
@@ -983,11 +991,11 @@ type Parser
 
     member x.ParsePrint lineRange : ParseResult<LineCommand> = 
         x.SkipBlanks()
-        let lineRange = LineRange.WithEndCount (lineRange, x.ParseNumber())
+        let lineRange = LineRangeSpecifier.WithEndCount (lineRange, x.ParseNumber())
         x.SkipBlanks()
         _parserBuilder { 
             let! flags = x.ParseLineCommandFlags()
-            return LineCommand.Print (Some lineRange, flags) }
+            return LineCommand.Print (lineRange, flags) }
 
     /// Parse out the :read command
     member x.ParseRead lineRange = 
@@ -1016,14 +1024,6 @@ type Parser
         let hasBang = x.ParseBang()
         x.SkipBlanks()
         let newTabStop = x.ParseNumber()
-
-        // The default range for most commands is the current line.  This command instead 
-        // defaults to the entire snapshot
-        let lineRange = 
-            match lineRange with
-            | Some lineRange -> lineRange
-            | None -> LineRange.EntireBuffer
-
         LineCommand.Retab (lineRange, hasBang, newTabStop) |> ParseResult.Succeeded
 
     /// Parse out the :set command and all of it's variants
@@ -1160,8 +1160,8 @@ type Parser
 
         let noRange parseFunc = 
             match lineRange with
-            | None -> parseFunc()
-            | Some _ -> ParseResult.Failed Resources.Parser_NoRangeAllowed
+            | LineRangeSpecifier.None -> parseFunc()
+            | _ -> ParseResult.Failed Resources.Parser_NoRangeAllowed
 
         // Get the command name and make sure to expand it to it's possible full
         // name
@@ -1269,7 +1269,7 @@ type Parser
             | "&" -> x.ParseSubstituteRepeat lineRange SubstituteFlags.None
             | "~" -> x.ParseSubstituteRepeat lineRange SubstituteFlags.UsePreviousSearchPattern
             | "!" -> noRange (fun () -> x.ParseShellCommand())
-            | "" -> match lineRange with | Some lineRange -> x.ParseJumpToLine lineRange | None -> ParseResult.Failed Resources.Parser_Error
+            | "" -> x.ParseJumpToLine lineRange
             | _ -> ParseResult.Failed Resources.Parser_Error
 
         match parseResult with
@@ -1361,10 +1361,7 @@ type Parser
 
     static member ParseRange rangeText = 
         let parser = Parser(rangeText)
-        let lineRange = parser.ParseLineRange()
-        match lineRange with 
-        | None -> ParseResult.Failed Resources.Parser_Error
-        | Some lineRange -> ParseResult.Succeeded (lineRange, parser.RemainingText) 
+        (parser.ParseLineRange(), parser.RemainingText)
 
     static member ParseExpression (expressionText : string) : ParseResult<Expression> = 
         let parser = Parser(expressionText)

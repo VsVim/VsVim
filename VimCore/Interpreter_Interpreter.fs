@@ -6,6 +6,12 @@ open Vim
 open Vim.VimHostExtensions
 open Vim.StringBuilderExtensions
 
+[<RequireQualifiedAccess>]
+type DefaultLineRange =
+    | None
+    | EntireBuffer
+    | CurrentLine
+
 [<Sealed>]
 [<Class>]
 type ExpressionInterpreter
@@ -176,14 +182,22 @@ type Interpreter
     member x.GetLine lineSpecifier = 
         x.GetLineCore lineSpecifier x.CaretLine
 
-    /// Get the specified LineRange in the IVimBuffer
-    member x.GetLineRange (lineRange : Vim.Interpreter.LineRange) =
+    /// Get the specified LineRange in the IVimBuffer.
+    member x.GetLineRangeOrDefault lineRange defaultLineRange =
         match lineRange with
-        | LineRange.EntireBuffer -> 
+        | LineRangeSpecifier.None ->
+            // None is specified so use the default
+            match defaultLineRange with
+            | DefaultLineRange.None -> None
+            | DefaultLineRange.CurrentLine -> SnapshotLineRangeUtil.CreateForLine x.CaretLine |> Some
+            | DefaultLineRange.EntireBuffer -> SnapshotLineRangeUtil.CreateForSnapshot x.CurrentSnapshot |> Some
+
+
+        | LineRangeSpecifier.EntireBuffer -> 
             SnapshotLineRangeUtil.CreateForSnapshot x.CurrentSnapshot |> Some
-        | LineRange.SingleLine lineSpecifier-> 
+        | LineRangeSpecifier.SingleLine lineSpecifier-> 
             x.GetLine lineSpecifier |> Option.map SnapshotLineRangeUtil.CreateForLine
-        | LineRange.Range (leftLineSpecifier, rightLineSpecifier, adjustCaret) ->
+        | LineRangeSpecifier.Range (leftLineSpecifier, rightLineSpecifier, adjustCaret) ->
             match x.GetLine leftLineSpecifier with
             | None ->
                 None
@@ -198,20 +212,20 @@ type Interpreter
                 match x.GetLineCore rightLineSpecifier leftLine with
                 | None -> None
                 | Some rightLine -> SnapshotLineRangeUtil.CreateForLineRange leftLine rightLine |> Some
-        | LineRange.WithEndCount (lineRange, count) ->
+        | LineRangeSpecifier.WithEndCount (lineRange, count) ->
 
             // WithEndCount should create for a single line which is 'count' lines below the
             // end of the specified range
             match count with
-            | None -> x.GetLineRangeOrCurrent lineRange
+            | None -> x.GetLineRangeOrDefault lineRange defaultLineRange
             | Some count -> 
-                match x.GetLineRangeOrCurrent lineRange with
+                match x.GetLineRangeOrDefault lineRange defaultLineRange with
                 | None -> None
                 | Some lineRange -> SnapshotLineRangeUtil.CreateForLineAndMaxCount lineRange.LastLine count |> Some
 
-        | LineRange.Join (lineRange, count)->
+        | LineRangeSpecifier.Join (lineRange, count)->
             match lineRange with 
-            | None ->
+            | LineRangeSpecifier.None ->
                 // Count is the only thing important when there is no explicit range is the
                 // count.  It is special cased when there is no line range
                 let count = 
@@ -220,16 +234,11 @@ type Interpreter
                     | Some 1 -> 2
                     | Some count -> count
                 SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count |> Some
-            | Some _ ->
-                x.GetLineRange (LineRange.WithEndCount (lineRange, count))
+            | _ ->
+                x.GetLineRangeOrDefault (LineRangeSpecifier.WithEndCount (lineRange, count)) defaultLineRange
 
-
-    /// Try and get the line range if one is specified.  If one is not specified then just 
-    /// use the current line
-    member x.GetLineRangeOrCurrent lineRange = 
-        match lineRange with
-        | None -> SnapshotLineRangeUtil.CreateForLine x.CaretLine |> Some
-        | Some lineRange -> x.GetLineRange lineRange
+    member x.GetLineRange lineRange =
+        x.GetLineRangeOrDefault lineRange DefaultLineRange.None
 
     /// Get the count value or the default of 1
     member x.GetCountOrDefault count = 
@@ -275,30 +284,34 @@ type Interpreter
         RunResult.Completed
 
     /// Copy the text from the source address to the destination address
-    member x.RunCopyTo (sourceLineRange : SnapshotLineRange) destLineRange =
-        // The :copy command allows the specification of a full range but for the destination
-        // it will only be valid for single line specifiers.  
-        let destLine = 
-            match destLineRange with 
-            | LineRange.EntireBuffer -> None
-            | LineRange.Range (left, _ , _) -> x.GetLine left
-            | LineRange.SingleLine line -> x.GetLine line
-            | LineRange.WithEndCount _ -> None
-            | LineRange.Join _ -> None
+    member x.RunCopyTo sourceLineRange destLineRange =
 
-        match destLine with
-        | None -> _statusUtil.OnError Resources.Common_InvalidAddress
-        | Some destLine -> 
+        x.RunWithLineRangeOrDefault sourceLineRange DefaultLineRange.CurrentLine (fun sourceLineRange ->
 
-            // Use an undo transaction so that the caret move and insert is a single
-            // operation
-            _undoRedoOperations.EditWithUndoTransaction "CopyTo" (fun () ->
-
-                let destPosition = destLine.EndIncludingLineBreak.Position
-                _textBuffer.Insert(destPosition, sourceLineRange.GetTextIncludingLineBreak()) |> ignore
-                TextViewUtil.MoveCaretToPosition _textView destPosition)
-
-        RunResult.Completed
+            // The :copy command allows the specification of a full range but for the destination
+            // it will only be valid for single line specifiers.  
+            let destLine = 
+                match destLineRange with 
+                | LineRangeSpecifier.None -> None
+                | LineRangeSpecifier.EntireBuffer -> None
+                | LineRangeSpecifier.Range (left, _ , _) -> x.GetLine left
+                | LineRangeSpecifier.SingleLine line -> x.GetLine line
+                | LineRangeSpecifier.WithEndCount _ -> None
+                | LineRangeSpecifier.Join _ -> None
+    
+            match destLine with
+            | None -> _statusUtil.OnError Resources.Common_InvalidAddress
+            | Some destLine -> 
+    
+                // Use an undo transaction so that the caret move and insert is a single
+                // operation
+                _undoRedoOperations.EditWithUndoTransaction "CopyTo" (fun () ->
+    
+                    let destPosition = destLine.EndIncludingLineBreak.Position
+                    _textBuffer.Insert(destPosition, sourceLineRange.GetTextIncludingLineBreak()) |> ignore
+                    TextViewUtil.MoveCaretToPosition _textView destPosition)
+    
+            RunResult.Completed)
 
     /// Clear out the key map for the given modes
     member x.RunClearKeyMap keyRemapModes mapArgumentList = 
@@ -319,15 +332,16 @@ type Interpreter
 
     /// Run the delete command.  Delete the specified range of text and set it to 
     /// the given Register
-    member x.RunDelete (lineRange : SnapshotLineRange) register = 
+    member x.RunDelete lineRange register = 
 
-        let span = lineRange.ExtentIncludingLineBreak
-        _textBuffer.Delete(span.Span) |> ignore
-
-        let value = RegisterValue.String (StringData.OfSpan span, OperationKind.LineWise)
-        _registerMap.SetRegisterValue register RegisterOperation.Delete value
-
-        RunResult.Completed
+        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
+            let span = lineRange.ExtentIncludingLineBreak
+            _textBuffer.Delete(span.Span) |> ignore
+    
+            let value = RegisterValue.String (StringData.OfSpan span, OperationKind.LineWise)
+            _registerMap.SetRegisterValue register RegisterOperation.Delete value
+    
+            RunResult.Completed)
 
     /// Display the given map modes
     member x.RunDisplayKeyMap keyRemapModes keyNotationOption = 
@@ -514,31 +528,36 @@ type Interpreter
 
     /// Fold the specified line range
     member x.RunFold lineRange = 
-        _foldManager.CreateFold lineRange
-        RunResult.Completed
+
+        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
+            if lineRange.Count > 1 then
+                _foldManager.CreateFold lineRange
+            RunResult.Completed)
 
     /// Run the global command.  
-    member x.RunGlobal (lineRange : SnapshotLineRange) pattern matchPattern lineCommand =
-        let options = VimRegexFactory.CreateRegexOptions _globalSettings
-        match VimRegexFactory.Create pattern options with
-        | None -> _statusUtil.OnError Resources.Interpreter_Error
-        | Some regex ->
+    member x.RunGlobal lineRange pattern matchPattern lineCommand =
 
-            // All of the edits should behave as a single undo
-            _undoRedoOperations.EditWithUndoTransaction "Global" (fun () ->
-                lineRange.Lines 
-                |> Seq.filter (fun snapshotLine ->
-                    let text = SnapshotLineUtil.GetText snapshotLine
-                    let didMatch = regex.IsMatch text
-                    didMatch = matchPattern)
-                |> Seq.iter (fun snapshotLine ->
-                    // Caret needs to move to the start of the line for each :global command
-                    // action.  The caret will persist on the final line in the range once
-                    // the :global command completes
-                    TextViewUtil.MoveCaretToPoint _textView snapshotLine.Start
-                    x.RunLineCommand lineCommand |> ignore))
-
-        RunResult.Completed
+        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.EntireBuffer (fun lineRange ->
+            let options = VimRegexFactory.CreateRegexOptions _globalSettings
+            match VimRegexFactory.Create pattern options with
+            | None -> _statusUtil.OnError Resources.Interpreter_Error
+            | Some regex ->
+    
+                // All of the edits should behave as a single undo
+                _undoRedoOperations.EditWithUndoTransaction "Global" (fun () ->
+                    lineRange.Lines 
+                    |> Seq.filter (fun snapshotLine ->
+                        let text = SnapshotLineUtil.GetText snapshotLine
+                        let didMatch = regex.IsMatch text
+                        didMatch = matchPattern)
+                    |> Seq.iter (fun snapshotLine ->
+                        // Caret needs to move to the start of the line for each :global command
+                        // action.  The caret will persist on the final line in the range once
+                        // the :global command completes
+                        TextViewUtil.MoveCaretToPoint _textView snapshotLine.Start
+                        x.RunLineCommand lineCommand |> ignore))
+    
+            RunResult.Completed)
 
     /// Go to the first tab
     member x.RunGoToFirstTab() =
@@ -563,9 +582,10 @@ type Interpreter
         RunResult.Completed
 
     /// Join the lines in the specified range
-    member x.RunJoin joinKind lineRange =
-        _commonOperations.Join lineRange joinKind
-        RunResult.Completed
+    member x.RunJoin lineRange joinKind =
+        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
+            _commonOperations.Join lineRange joinKind
+            RunResult.Completed)
 
     /// Jump to the last line
     member x.RunJumpToLastLine() =
@@ -618,14 +638,16 @@ type Interpreter
         RunResult.Completed
 
     /// Print out the contents of the specified range
-    member x.RunPrint (lineRange : SnapshotLineRange) lineCommandFlags = 
-        if lineCommandFlags <> LineCommandFlags.None then
-            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[ex-flags]")
-        else
-            lineRange.Lines
-            |> Seq.map SnapshotLineUtil.GetText
-            |> _statusUtil.OnStatusLong
-        RunResult.Completed
+    member x.RunPrint lineRange lineCommandFlags = 
+        
+        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
+            if lineCommandFlags <> LineCommandFlags.None then
+                _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[ex-flags]")
+            else
+                lineRange.Lines
+                |> Seq.map SnapshotLineUtil.GetText
+                |> _statusUtil.OnStatusLong
+            RunResult.Completed)
 
     /// Print out the current directory
     member x.RunPrintCurrentDirectory() =
@@ -633,34 +655,35 @@ type Interpreter
         RunResult.Completed
 
     /// Put the register after the last line in the given range
-    member x.RunPut (lineRange : SnapshotLineRange) (register : Register) putAfter = 
+    member x.RunPut lineRange (register : Register) putAfter = 
 
-        // Need to get the cursor position correct for undo / redo so start an undo 
-        // transaction 
-        _undoRedoOperations.EditWithUndoTransaction "PutLine" (fun () ->
-
-            // Get the point to start the Put operation at 
-            let line = 
-                if putAfter then lineRange.LastLine
-                else lineRange.StartLine
-
-            let point = 
-                if putAfter then line.EndIncludingLineBreak
-                else line.Start
-
-            _commonOperations.Put point register.StringData OperationKind.LineWise
-
-            // Need to put the caret on the first non-blank of the last line of the 
-            // inserted text
-            let lineCount = x.CurrentSnapshot.LineCount - point.Snapshot.LineCount
-            let line = 
-                let number = if putAfter then line.LineNumber + 1 else line.LineNumber
-                let number = number + (lineCount - 1)
-                SnapshotUtil.GetLine x.CurrentSnapshot number
-            let point = SnapshotLineUtil.GetFirstNonBlankOrEnd line
-            _commonOperations.MoveCaretToPointAndCheckVirtualSpace point)
-
-        RunResult.Completed
+        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
+            // Need to get the cursor position correct for undo / redo so start an undo 
+            // transaction 
+            _undoRedoOperations.EditWithUndoTransaction "PutLine" (fun () ->
+    
+                // Get the point to start the Put operation at 
+                let line = 
+                    if putAfter then lineRange.LastLine
+                    else lineRange.StartLine
+    
+                let point = 
+                    if putAfter then line.EndIncludingLineBreak
+                    else line.Start
+    
+                _commonOperations.Put point register.StringData OperationKind.LineWise
+    
+                // Need to put the caret on the first non-blank of the last line of the 
+                // inserted text
+                let lineCount = x.CurrentSnapshot.LineCount - point.Snapshot.LineCount
+                let line = 
+                    let number = if putAfter then line.LineNumber + 1 else line.LineNumber
+                    let number = number + (lineCount - 1)
+                    SnapshotUtil.GetLine x.CurrentSnapshot number
+                let point = SnapshotLineUtil.GetFirstNonBlankOrEnd line
+                _commonOperations.MoveCaretToPointAndCheckVirtualSpace point)
+    
+            RunResult.Completed)
 
     /// Run the quit command
     member x.RunQuit hasBang =
@@ -681,19 +704,20 @@ type Interpreter
             _vimHost.Quit()
         RunResult.Completed
 
-    member x.RunQuitWithWrite (lineRange : SnapshotLineRange) hasBang fileOptions filePath = 
-        
-        if not (List.isEmpty fileOptions) then
-            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
-        else
+    member x.RunQuitWithWrite lineRange hasBang fileOptions filePath = 
 
-            match filePath with
-            | None -> _vimHost.Save _textView.TextBuffer |> ignore  
-            | Some filePath -> _vimHost.SaveTextAs (lineRange.GetTextIncludingLineBreak()) filePath |> ignore
-
-            x.RunClose false |> ignore
-
-        RunResult.Completed
+        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.EntireBuffer (fun lineRange ->
+            if not (List.isEmpty fileOptions) then
+                _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
+            else
+    
+                match filePath with
+                | None -> _vimHost.Save _textView.TextBuffer |> ignore  
+                | Some filePath -> _vimHost.SaveTextAs (lineRange.GetTextIncludingLineBreak()) filePath |> ignore
+    
+                x.RunClose false |> ignore
+    
+            RunResult.Completed)
 
     /// Run the core parts of the read command
     member x.RunReadCore (lineRange : SnapshotLineRange) (lines : string[]) = 
@@ -709,24 +733,26 @@ type Interpreter
 
     /// Run the read command command
     member x.RunReadCommand lineRange command = 
-        match x.ExecuteCommand command with
-        | None ->
-            _statusUtil.OnError (Resources.Interpreter_CantRunCommand command)
-        | Some lines ->
-            x.RunReadCore lineRange lines
-        RunResult.Completed
-
-    /// Run the read file command.
-    member x.RunReadFile (lineRange : SnapshotLineRange) fileOptionList filePath =
-        if not (List.isEmpty fileOptionList) then
-            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
-        else
-            match _fileSystem.ReadAllLines filePath with
+        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
+            match x.ExecuteCommand command with
             | None ->
-                _statusUtil.OnError (Resources.Interpreter_CantOpenFile filePath)
+                _statusUtil.OnError (Resources.Interpreter_CantRunCommand command)
             | Some lines ->
                 x.RunReadCore lineRange lines
-        RunResult.Completed
+            RunResult.Completed)
+
+    /// Run the read file command.
+    member x.RunReadFile lineRange fileOptionList filePath =
+        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
+            if not (List.isEmpty fileOptionList) then
+                _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
+            else
+                match _fileSystem.ReadAllLines filePath with
+                | None ->
+                    _statusUtil.OnError (Resources.Interpreter_CantOpenFile filePath)
+                | Some lines ->
+                    x.RunReadCore lineRange lines
+            RunResult.Completed)
 
     /// Run a single redo operation
     member x.RunRedo() = 
@@ -736,91 +762,93 @@ type Interpreter
     /// Process the :retab command.  Changes all sequences of spaces and tabs which contain
     /// at least a single tab into the normalized value based on the provided 'tabstop' or 
     /// default 'tabstop' setting
-    member x.RunRetab (lineRange : SnapshotLineRange) includeSpaces tabStop =
+    member x.RunRetab lineRange includeSpaces tabStop =
 
-        // If the user explicitly specified a 'tabstop' it becomes the new value.  Do this before
-        // we re-tab the line so the new value will be used
-        match tabStop with
-        | None -> ()
-        | Some tabStop -> _localSettings.TabStop <- tabStop
-
-        let snapshot = lineRange.Snapshot
-
-        // First break into a sequence of SnapshotSpan values which contain only space and tab
-        // values.  We'll filter out the space only ones later if needed
-        let spans = 
-
-            // Find the next position which has a space or tab value 
-            let rec nextPoint (point : SnapshotPoint) = 
-                if point.Position >= lineRange.End.Position then
-                    None
-                elif SnapshotPointUtil.IsBlank point then
-                    Some point
-                else
-                    point |> SnapshotPointUtil.AddOne |> nextPoint 
-
-            Seq.unfold (fun point ->
-                match nextPoint point with
-                | None ->
-                    None
-                | Some startPoint -> 
-                    // Now find the first point which is not a space or tab. 
-                    let endPoint = 
-                        SnapshotSpan(startPoint, lineRange.End)
-                        |> SnapshotSpanUtil.GetPoints Path.Forward
-                        |> Seq.skipWhile SnapshotPointUtil.IsBlank
-                        |> SeqUtil.headOrDefault lineRange.End
-                    let span = SnapshotSpan(startPoint, endPoint)
-                    Some (span, endPoint)) lineRange.Start
-            |> Seq.filter (fun span -> 
-
-                // Filter down to the SnapshotSpan values which contain tabs or spaces
-                // depending on the switch
-                if includeSpaces then
-                    true
-                else
-                    let hasTab = 
-                        span 
-                        |> SnapshotSpanUtil.GetPoints Path.Forward
-                        |> SeqUtil.any (SnapshotPointUtil.IsChar '\t')
-                    hasTab)
-
-        // Now that we have the set of spans perform the edit
-        use edit = _textBuffer.CreateEdit()
-        for span in spans do
-            let oldText = span.GetText()
-            let newText = _commonOperations.NormalizeBlanks oldText
-            edit.Replace(span.Span, newText) |> ignore
-
-        edit.Apply() |> ignore
-
-        RunResult.Completed
+        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.EntireBuffer (fun lineRange ->
+            // If the user explicitly specified a 'tabstop' it becomes the new value.  Do this before
+            // we re-tab the line so the new value will be used
+            match tabStop with
+            | None -> ()
+            | Some tabStop -> _localSettings.TabStop <- tabStop
+    
+            let snapshot = lineRange.Snapshot
+    
+            // First break into a sequence of SnapshotSpan values which contain only space and tab
+            // values.  We'll filter out the space only ones later if needed
+            let spans = 
+    
+                // Find the next position which has a space or tab value 
+                let rec nextPoint (point : SnapshotPoint) = 
+                    if point.Position >= lineRange.End.Position then
+                        None
+                    elif SnapshotPointUtil.IsBlank point then
+                        Some point
+                    else
+                        point |> SnapshotPointUtil.AddOne |> nextPoint 
+    
+                Seq.unfold (fun point ->
+                    match nextPoint point with
+                    | None ->
+                        None
+                    | Some startPoint -> 
+                        // Now find the first point which is not a space or tab. 
+                        let endPoint = 
+                            SnapshotSpan(startPoint, lineRange.End)
+                            |> SnapshotSpanUtil.GetPoints Path.Forward
+                            |> Seq.skipWhile SnapshotPointUtil.IsBlank
+                            |> SeqUtil.headOrDefault lineRange.End
+                        let span = SnapshotSpan(startPoint, endPoint)
+                        Some (span, endPoint)) lineRange.Start
+                |> Seq.filter (fun span -> 
+    
+                    // Filter down to the SnapshotSpan values which contain tabs or spaces
+                    // depending on the switch
+                    if includeSpaces then
+                        true
+                    else
+                        let hasTab = 
+                            span 
+                            |> SnapshotSpanUtil.GetPoints Path.Forward
+                            |> SeqUtil.any (SnapshotPointUtil.IsChar '\t')
+                        hasTab)
+    
+            // Now that we have the set of spans perform the edit
+            use edit = _textBuffer.CreateEdit()
+            for span in spans do
+                let oldText = span.GetText()
+                let newText = _commonOperations.NormalizeBlanks oldText
+                edit.Replace(span.Span, newText) |> ignore
+    
+            edit.Apply() |> ignore
+    
+            RunResult.Completed)
 
     /// Run the search command in the given direction
-    member x.RunSearch (lineRange : SnapshotLineRange) path pattern = 
-        let pattern = 
-            if StringUtil.isNullOrEmpty pattern then _vimData.LastPatternData.Pattern
-            else pattern
-
-        // Searches start after the end of the specified line range
-        let startPoint = lineRange.End
-        let patternData = { Pattern = pattern; Path = path }
-        let result = _searchService.FindNextPattern patternData startPoint _vimBufferData.VimTextBuffer.WordNavigator 1
-        _commonOperations.RaiseSearchResultMessage(result)
-
-        match result with
-        | SearchResult.Found (_, span, _) ->
-            // Move it to the start of the line containing the match 
-            let point = 
-                span.Start 
-                |> SnapshotPointUtil.GetContainingLine 
-                |> SnapshotLineUtil.GetStart
-            TextViewUtil.MoveCaretToPoint _textView point
-            _commonOperations.EnsureCaretOnScreenAndTextExpanded()
-        | SearchResult.NotFound _ ->
-            ()
-
-        RunResult.Completed
+    member x.RunSearch lineRange path pattern = 
+        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
+            let pattern = 
+                if StringUtil.isNullOrEmpty pattern then _vimData.LastPatternData.Pattern
+                else pattern
+    
+            // Searches start after the end of the specified line range
+            let startPoint = lineRange.End
+            let patternData = { Pattern = pattern; Path = path }
+            let result = _searchService.FindNextPattern patternData startPoint _vimBufferData.VimTextBuffer.WordNavigator 1
+            _commonOperations.RaiseSearchResultMessage(result)
+    
+            match result with
+            | SearchResult.Found (_, span, _) ->
+                // Move it to the start of the line containing the match 
+                let point = 
+                    span.Start 
+                    |> SnapshotPointUtil.GetContainingLine 
+                    |> SnapshotLineUtil.GetStart
+                TextViewUtil.MoveCaretToPoint _textView point
+                _commonOperations.EnsureCaretOnScreenAndTextExpanded()
+            | SearchResult.NotFound _ ->
+                ()
+    
+            RunResult.Completed)
 
     /// Run the :set command.  Process each of the arguments 
     member x.RunSet setArguments =
@@ -996,13 +1024,15 @@ type Interpreter
 
     /// Shift the given line range to the left
     member x.RunShiftLeft lineRange = 
-        _commonOperations.ShiftLineRangeLeft lineRange 1
-        RunResult.Completed
+        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
+            _commonOperations.ShiftLineRangeLeft lineRange 1
+            RunResult.Completed)
 
     /// Shift the given line range to the right
     member x.RunShiftRight lineRange = 
-        _commonOperations.ShiftLineRangeRight lineRange 1
-        RunResult.Completed
+        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
+            _commonOperations.ShiftLineRangeRight lineRange 1
+            RunResult.Completed)
 
     /// Run the :source command
     member x.RunSource hasBang filePath =
@@ -1081,12 +1111,14 @@ type Interpreter
                 // If a pattern is given then it is the one that we will use 
                 pattern
 
-        if Util.IsFlagSet flags SubstituteFlags.Confirm then
-            let data = { SearchPattern = pattern; Substitute = replace; Flags = flags}
-            setupConfirmSubstitute lineRange data
-        else
-            _commonOperations.Substitute pattern replace lineRange flags 
-            RunResult.Completed
+        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
+
+            if Util.IsFlagSet flags SubstituteFlags.Confirm then
+                let data = { SearchPattern = pattern; Substitute = replace; Flags = flags}
+                setupConfirmSubstitute lineRange data
+            else
+                _commonOperations.Substitute pattern replace lineRange flags 
+                RunResult.Completed)
 
     /// Run substitute using the pattern and replace values from the last substitute
     member x.RunSubstituteRepeatLast lineRange flags = 
@@ -1145,65 +1177,13 @@ type Interpreter
 
     /// Yank the specified line range into the register.  This is done in a 
     /// linewise fashion
-    member x.RunYank (lineRange : SnapshotLineRange) register =
-        let stringData = StringData.OfSpan lineRange.ExtentIncludingLineBreak
-        let value = RegisterValue.String (stringData, OperationKind.LineWise)
-        _registerMap.SetRegisterValue register RegisterOperation.Yank value
-
-        RunResult.Completed
-
-    /// Get the LineRange for the specified LineCommand value
-    member x.GetLineCommandRange lineCommand = 
-
-        match lineCommand with
-        | LineCommand.ChangeDirectory path -> None
-        | LineCommand.ChangeLocalDirectory path -> None
-        | LineCommand.CopyTo (sourceLineRange, _) -> sourceLineRange
-        | LineCommand.ClearKeyMap _ -> None
-        | LineCommand.Close _ -> None
-        | LineCommand.Edit _ -> None
-        | LineCommand.Delete (lineRange, _) -> lineRange
-        | LineCommand.DisplayKeyMap _ -> None
-        | LineCommand.DisplayRegisters _ -> None
-        | LineCommand.DisplayMarks _ -> None
-        | LineCommand.Fold lineRange -> lineRange
-        | LineCommand.Global (lineRange, _, _ , _) -> lineRange
-        | LineCommand.GoToFirstTab -> None
-        | LineCommand.GoToLastTab -> None
-        | LineCommand.GoToNextTab _ -> None
-        | LineCommand.GoToPreviousTab _ -> None
-        | LineCommand.Join (lineRange, _) -> lineRange
-        | LineCommand.JumpToLastLine -> None
-        | LineCommand.JumpToLine _ -> None
-        | LineCommand.Make _ -> None
-        | LineCommand.MapKeys _ -> None
-        | LineCommand.NoHighlightSearch -> None
-        | LineCommand.Print (lineRange, _) -> lineRange
-        | LineCommand.PrintCurrentDirectory -> None
-        | LineCommand.PutAfter (lineRange, _) -> lineRange
-        | LineCommand.PutBefore (lineRange, _) -> lineRange
-        | LineCommand.Quit _ -> None
-        | LineCommand.QuitAll _ -> None
-        | LineCommand.QuitWithWrite (lineRange, _, _, _) -> lineRange
-        | LineCommand.ReadCommand (lineRange, _) -> lineRange
-        | LineCommand.ReadFile (lineRange, _, _)-> lineRange
-        | LineCommand.Redo -> None
-        | LineCommand.Retab (lineRange, _, _) -> Some lineRange
-        | LineCommand.Search (lineRange, _, _) -> lineRange
-        | LineCommand.Set _ -> None
-        | LineCommand.ShellCommand _ -> None
-        | LineCommand.ShiftLeft lineRange -> lineRange
-        | LineCommand.ShiftRight lineRange -> lineRange
-        | LineCommand.Source _ -> None
-        | LineCommand.Split (lineRange, _, _) -> lineRange
-        | LineCommand.Substitute (lineRange, _, _, _) -> lineRange
-        | LineCommand.SubstituteRepeat (lineRange, _) -> lineRange
-        | LineCommand.Undo -> None
-        | LineCommand.UnmapKeys _ -> None
-        | LineCommand.VisualStudioCommand _ -> None
-        | LineCommand.Write (lineRange, _, _, _) -> lineRange
-        | LineCommand.WriteAll _ -> None
-        | LineCommand.Yank (lineRange, _, _) -> lineRange
+    member x.RunYank lineRange register =
+        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
+            let stringData = StringData.OfSpan lineRange.ExtentIncludingLineBreak
+            let value = RegisterValue.String (stringData, OperationKind.LineWise)
+            _registerMap.SetRegisterValue register RegisterOperation.Yank value
+    
+            RunResult.Completed)
 
     /// Run the specified LineCommand
     member x.RunLineCommand lineCommand = 
@@ -1215,64 +1195,67 @@ type Interpreter
             |> OptionUtil.getOrDefault RegisterName.Unnamed
             |> _registerMap.GetRegister
 
-        let inner lineRange = 
-            match lineCommand with
-            | LineCommand.ChangeDirectory path -> x.RunChangeDirectory path
-            | LineCommand.ChangeLocalDirectory path -> x.RunChangeLocalDirectory path
-            | LineCommand.CopyTo (_, destLineRange) -> x.RunCopyTo lineRange destLineRange
-            | LineCommand.ClearKeyMap (keyRemapModes, mapArgumentList) -> x.RunClearKeyMap keyRemapModes mapArgumentList
-            | LineCommand.Close hasBang -> x.RunClose hasBang
-            | LineCommand.Edit (hasBang, fileOptions, commandOption, filePath) -> x.RunEdit hasBang fileOptions commandOption filePath
-            | LineCommand.Delete (_, registerName) -> x.RunDelete lineRange (getRegister registerName)
-            | LineCommand.DisplayKeyMap (keyRemapModes, keyNotationOption) -> x.RunDisplayKeyMap keyRemapModes keyNotationOption
-            | LineCommand.DisplayRegisters registerName -> x.RunDisplayRegisters registerName
-            | LineCommand.DisplayMarks marks -> x.RunDisplayMarks marks
-            | LineCommand.Fold _ -> x.RunFold lineRange
-            | LineCommand.Global (_, pattern, matchPattern, lineCommand) -> x.RunGlobal lineRange pattern matchPattern lineCommand
-            | LineCommand.GoToFirstTab -> x.RunGoToFirstTab()
-            | LineCommand.GoToLastTab -> x.RunGoToLastTab()
-            | LineCommand.GoToNextTab count -> x.RunGoToNextTab count
-            | LineCommand.GoToPreviousTab count -> x.RunGoToPreviousTab count
-            | LineCommand.Join (_, joinKind) -> x.RunJoin joinKind lineRange
-            | LineCommand.JumpToLastLine -> x.RunJumpToLastLine()
-            | LineCommand.JumpToLine number -> x.RunJumpToLine number
-            | LineCommand.Make (hasBang, arguments) -> x.RunMake hasBang arguments
-            | LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap, mapArgumentList) -> x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList
-            | LineCommand.NoHighlightSearch -> x.RunNoHighlightSearch()
-            | LineCommand.Print (_, lineCommandFlags)-> x.RunPrint lineRange lineCommandFlags
-            | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()
-            | LineCommand.PutAfter (_, registerName) -> x.RunPut lineRange (getRegister registerName) true
-            | LineCommand.PutBefore (_, registerName) -> x.RunPut lineRange (getRegister registerName) false
-            | LineCommand.Quit hasBang -> x.RunQuit hasBang
-            | LineCommand.QuitAll hasBang -> x.RunQuitAll hasBang
-            | LineCommand.QuitWithWrite (_, hasBang, fileOptions, filePath) -> x.RunQuitWithWrite lineRange hasBang fileOptions filePath
-            | LineCommand.ReadCommand (_, command) -> x.RunReadCommand lineRange command
-            | LineCommand.ReadFile (_, fileOptionList, filePath) -> x.RunReadFile lineRange fileOptionList filePath
-            | LineCommand.Redo -> x.RunRedo()
-            | LineCommand.Retab (_, hasBang, tabStop) -> x.RunRetab lineRange hasBang tabStop
-            | LineCommand.Search (_, path, pattern) -> x.RunSearch lineRange path pattern
-            | LineCommand.Set argumentList -> x.RunSet argumentList
-            | LineCommand.ShellCommand command -> x.RunShellCommand command
-            | LineCommand.ShiftLeft _ -> x.RunShiftLeft lineRange
-            | LineCommand.ShiftRight _ -> x.RunShiftRight lineRange
-            | LineCommand.Source (hasBang, filePath) -> x.RunSource hasBang filePath
-            | LineCommand.Split (_, fileOptions, commandOptions) -> x.RunSplit lineRange fileOptions commandOptions
-            | LineCommand.Substitute (_, pattern, replace, flags) -> x.RunSubstitute lineRange pattern replace flags
-            | LineCommand.SubstituteRepeat (_, substituteFlags) -> x.RunSubstituteRepeatLast lineRange substituteFlags
-            | LineCommand.Undo -> x.RunUndo()
-            | LineCommand.UnmapKeys (keyNotation, keyRemapModes, mapArgumentList) -> x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList
-            | LineCommand.VisualStudioCommand (command, argument) -> x.RunVisualStudioCommand command argument
-            | LineCommand.Write (_, hasBang, fileOptionList, filePath) -> x.RunWrite lineRange hasBang fileOptionList filePath
-            | LineCommand.WriteAll hasBang -> x.RunWriteAll hasBang
-            | LineCommand.Yank (_, registerName, count) -> x.RunYank lineRange (getRegister registerName)
+        match lineCommand with
+        | LineCommand.ChangeDirectory path -> x.RunChangeDirectory path
+        | LineCommand.ChangeLocalDirectory path -> x.RunChangeLocalDirectory path
+        | LineCommand.CopyTo (sourceLineRange, destLineRange) -> x.RunCopyTo sourceLineRange destLineRange
+        | LineCommand.ClearKeyMap (keyRemapModes, mapArgumentList) -> x.RunClearKeyMap keyRemapModes mapArgumentList
+        | LineCommand.Close hasBang -> x.RunClose hasBang
+        | LineCommand.Edit (hasBang, fileOptions, commandOption, filePath) -> x.RunEdit hasBang fileOptions commandOption filePath
+        | LineCommand.Delete (lineRange, registerName) -> x.RunDelete lineRange (getRegister registerName)
+        | LineCommand.DisplayKeyMap (keyRemapModes, keyNotationOption) -> x.RunDisplayKeyMap keyRemapModes keyNotationOption
+        | LineCommand.DisplayRegisters registerName -> x.RunDisplayRegisters registerName
+        | LineCommand.DisplayMarks marks -> x.RunDisplayMarks marks
+        | LineCommand.Fold lineRange -> x.RunFold lineRange
+        | LineCommand.Global (lineRange, pattern, matchPattern, lineCommand) -> x.RunGlobal lineRange pattern matchPattern lineCommand
+        | LineCommand.GoToFirstTab -> x.RunGoToFirstTab()
+        | LineCommand.GoToLastTab -> x.RunGoToLastTab()
+        | LineCommand.GoToNextTab count -> x.RunGoToNextTab count
+        | LineCommand.GoToPreviousTab count -> x.RunGoToPreviousTab count
+        | LineCommand.Join (lineRange, joinKind) -> x.RunJoin lineRange joinKind
+        | LineCommand.JumpToLastLine -> x.RunJumpToLastLine()
+        | LineCommand.JumpToLine number -> x.RunJumpToLine number
+        | LineCommand.Make (hasBang, arguments) -> x.RunMake hasBang arguments
+        | LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap, mapArgumentList) -> x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList
+        | LineCommand.NoHighlightSearch -> x.RunNoHighlightSearch()
+        | LineCommand.Print (lineRange, lineCommandFlags)-> x.RunPrint lineRange lineCommandFlags
+        | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()
+        | LineCommand.PutAfter (lineRange, registerName) -> x.RunPut lineRange (getRegister registerName) true
+        | LineCommand.PutBefore (lineRange, registerName) -> x.RunPut lineRange (getRegister registerName) false
+        | LineCommand.Quit hasBang -> x.RunQuit hasBang
+        | LineCommand.QuitAll hasBang -> x.RunQuitAll hasBang
+        | LineCommand.QuitWithWrite (lineRange, hasBang, fileOptions, filePath) -> x.RunQuitWithWrite lineRange hasBang fileOptions filePath
+        | LineCommand.ReadCommand (lineRange, command) -> x.RunReadCommand lineRange command
+        | LineCommand.ReadFile (lineRange, fileOptionList, filePath) -> x.RunReadFile lineRange fileOptionList filePath
+        | LineCommand.Redo -> x.RunRedo()
+        | LineCommand.Retab (lineRange, hasBang, tabStop) -> x.RunRetab lineRange hasBang tabStop
+        | LineCommand.Search (lineRange, path, pattern) -> x.RunSearch lineRange path pattern
+        | LineCommand.Set argumentList -> x.RunSet argumentList
+        | LineCommand.ShellCommand command -> x.RunShellCommand command
+        | LineCommand.ShiftLeft lineRange -> x.RunShiftLeft lineRange
+        | LineCommand.ShiftRight lineRange -> x.RunShiftRight lineRange
+        | LineCommand.Source (hasBang, filePath) -> x.RunSource hasBang filePath
+        | LineCommand.Split (lineRange, fileOptions, commandOptions) -> x.RunSplit lineRange fileOptions commandOptions
+        | LineCommand.Substitute (lineRange, pattern, replace, flags) -> x.RunSubstitute lineRange pattern replace flags
+        | LineCommand.SubstituteRepeat (lineRange, substituteFlags) -> x.RunSubstituteRepeatLast lineRange substituteFlags
+        | LineCommand.Undo -> x.RunUndo()
+        | LineCommand.UnmapKeys (keyNotation, keyRemapModes, mapArgumentList) -> x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList
+        | LineCommand.VisualStudioCommand (command, argument) -> x.RunVisualStudioCommand command argument
+        | LineCommand.Write (lineRange, hasBang, fileOptionList, filePath) -> x.RunWrite lineRange hasBang fileOptionList filePath
+        | LineCommand.WriteAll hasBang -> x.RunWriteAll hasBang
+        | LineCommand.Yank (lineRange, registerName, count) -> x.RunYank lineRange (getRegister registerName)
 
-        let lineRange = x.GetLineCommandRange lineCommand
-        match x.GetLineRangeOrCurrent lineRange with
+    member x.RunWithLineRange lineRangeSpecifier (func : SnapshotLineRange -> RunResult) = 
+        x.RunWithLineRangeOrDefault lineRangeSpecifier DefaultLineRange.None func
+
+    member x.RunWithLineRangeOrDefault (lineRangeSpecifier : LineRangeSpecifier) defaultLineRange (func : SnapshotLineRange -> RunResult) = 
+        match x.GetLineRangeOrDefault lineRangeSpecifier defaultLineRange with
         | None -> 
             _statusUtil.OnError Resources.Range_Invalid
             RunResult.Completed
-        | Some lineRange -> 
-            inner lineRange
+        | Some lineRange ->
+            func lineRange
+
 
 
 

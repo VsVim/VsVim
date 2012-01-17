@@ -75,7 +75,10 @@ type LineSpecifier =
 
 /// A line range in the file 
 [<RequireQualifiedAccess>]
-type LineRange = 
+type LineRangeSpecifier = 
+
+    /// There is no specifier
+    | None
 
     /// The entire buffer: '%'
     | EntireBuffer 
@@ -90,10 +93,10 @@ type LineRange =
 
     /// The range is an end count on top of another LineRange value.  It's possible for the 
     /// end count to exist in the abscence a range
-    | WithEndCount of LineRange option * int option
+    | WithEndCount of LineRangeSpecifier * int option
 
     /// The LineRange value for Join is heavily special cased
-    | Join of LineRange option * int option
+    | Join of LineRangeSpecifier * int option
 
 /// Represents the values for '++opt' which can occur on commands like :edit
 [<RequireQualifiedAccess>]
@@ -206,10 +209,10 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// Copy the specific line range to the given position.  The first line range is the 
     /// source and the second is the desitination
-    | CopyTo of LineRange option * LineRange
+    | CopyTo of LineRangeSpecifier * LineRangeSpecifier
 
     /// The :delete command
-    | Delete of LineRange option * RegisterName option
+    | Delete of LineRangeSpecifier * RegisterName option
 
     /// Display the contents of registers.  Unless a specific register name is 
     /// given all registers will be displayed
@@ -231,12 +234,12 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Edit of bool * FileOption list * CommandOption option * string
 
     /// Fold the selected LineRange
-    | Fold of LineRange option
+    | Fold of LineRangeSpecifier
 
     /// Run the given command against all lines in the specified range (default is the 
     /// entire buffer) which match the predicate pattern.  If the bool provided is false
     /// then it will be run on the lines which don't match the pattern
-    | Global of LineRange option * string * bool * LineCommand
+    | Global of LineRangeSpecifier * string * bool * LineCommand
 
     /// Go to the first tab 
     | GoToFirstTab
@@ -252,7 +255,7 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// Join the lines in the specified range.  Optionally provides a count of lines to 
     /// start the join after the line range
-    | Join of LineRange option * JoinKind
+    | Join of LineRangeSpecifier * JoinKind
 
     /// Jump to the specified line number 
     | JumpToLine of int
@@ -273,18 +276,18 @@ and [<RequireQualifiedAccess>] LineCommand =
     | NoHighlightSearch
 
     /// Print out the specified line range 
-    | Print of LineRange option * LineCommandFlags
+    | Print of LineRangeSpecifier * LineCommandFlags
 
     /// Print out the current directory
     | PrintCurrentDirectory
 
     /// Put the contents of the given register after the line identified by the
     /// LineRange (defaults to current)
-    | PutAfter of LineRange option * RegisterName option
+    | PutAfter of LineRangeSpecifier * RegisterName option
 
     /// Put the contents of the given register before the line identified by the
     /// LineRange (defaults to current)
-    | PutBefore of LineRange option * RegisterName option
+    | PutBefore of LineRangeSpecifier * RegisterName option
 
     /// Quit the curren window without writing it's content.  If the boolean option
     /// is present (for !) then don't warn about a dirty window
@@ -300,15 +303,15 @@ and [<RequireQualifiedAccess>] LineCommand =
     ///  - ! option present
     ///  - The provided ++opt
     ///  - The provided +cmd
-    | QuitWithWrite of LineRange option * bool * FileOption list * string option 
+    | QuitWithWrite of LineRangeSpecifier * bool * FileOption list * string option 
 
     /// Read the contents of the specified file and put it after the specified
     /// line range or the caret
-    | ReadFile of LineRange option * FileOption list * string
+    | ReadFile of LineRangeSpecifier * FileOption list * string
 
     /// Read the contens of the specified command and put it after the specified
     /// line range or the caret
-    | ReadCommand of LineRange option * string
+    | ReadCommand of LineRangeSpecifier * string
 
     /// Redo the last item on the undo stack
     | Redo
@@ -317,22 +320,22 @@ and [<RequireQualifiedAccess>] LineCommand =
     ///  - The LineRange to change (defaults to entire buffer)
     ///  - True to replace both tabs and spaces, false for just spaces
     ///  - new tabstop value
-    | Retab of LineRange * bool * int option
+    | Retab of LineRangeSpecifier * bool * int option
 
     /// Process the 'set' command
     | Set of SetArgument list
 
     /// Process the '/' and '?' commands
-    | Search of LineRange option * Path * string
+    | Search of LineRangeSpecifier * Path * string
 
     /// Execute the given shell command
     | ShellCommand of string
 
     /// Process the '<' shift left command
-    | ShiftLeft of LineRange option
+    | ShiftLeft of LineRangeSpecifier
 
     /// Process the '>' shift right command
-    | ShiftRight of LineRange option
+    | ShiftRight of LineRangeSpecifier
 
     /// Process the 'source' command.  
     | Source of bool * string
@@ -342,15 +345,15 @@ and [<RequireQualifiedAccess>] LineCommand =
     ///    doesn't specify a range can be used here but usage indicates it can
     ///  - The provided ++opt
     ///  - The provided +cmd
-    | Split of LineRange option * FileOption list * CommandOption option
+    | Split of LineRangeSpecifier * FileOption list * CommandOption option
 
     /// The :substitute command.  The argument order is range, pattern, replace,
     /// substitute flags and count
-    | Substitute of LineRange option * string * string * SubstituteFlags
+    | Substitute of LineRangeSpecifier * string * string * SubstituteFlags
 
     /// The variant of the :substitute command which repeats the last :subsitute with
     /// different flags and count
-    | SubstituteRepeat of LineRange option * SubstituteFlags
+    | SubstituteRepeat of LineRangeSpecifier * SubstituteFlags
 
     /// Undo the last change
     | Undo
@@ -367,10 +370,10 @@ and [<RequireQualifiedAccess>] LineCommand =
     ///  - Whether or not a ! was provided
     ///  - The provided ++opt
     ///  - The file name to write to
-    | Write of LineRange option * bool * FileOption list * string option
+    | Write of LineRangeSpecifier * bool * FileOption list * string option
 
     /// Write out all changed buffers
     | WriteAll of bool
 
     /// Yank the line range into the given register with the specified count
-    | Yank of LineRange option * RegisterName option * int option
+    | Yank of LineRangeSpecifier * RegisterName option * int option

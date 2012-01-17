@@ -70,12 +70,12 @@ namespace Vim.UnitTest
             _interpreter.RunLineCommand(parseResult.AsSucceeded().Item);
         }
 
-        private global::Vim.Interpreter.LineRange ParseLineRange(string lineRangeText)
+        private LineRangeSpecifier ParseLineRange(string lineRangeText)
         {
-            var parseResult = Parser.ParseRange(lineRangeText);
-            Assert.IsTrue(parseResult.IsSucceeded);
-            Assert.AreEqual("", parseResult.AsSucceeded().Item.Item2);
-            return parseResult.AsSucceeded().Item.Item1;
+            var result = Parser.ParseRange(lineRangeText);
+            Assert.IsTrue(!result.Item1.IsNone);
+            Assert.AreEqual("", result.Item2);
+            return result.Item1;
         }
 
         private SnapshotLineRange ParseAndGetLineRange(string lineRangeText)
