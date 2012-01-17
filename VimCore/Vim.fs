@@ -170,7 +170,7 @@ type internal VimBufferFactory
         let createCommandRunner kind = CommandRunner (textView, vim.RegisterMap, capture, commandUtil, vimBufferData.StatusUtil, kind) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker textView
         let bufferOptions = _editorOptionsFactoryService.GetOptions(textView.TextBuffer)
-        let commandProcessor = Modes.Command.CommandProcessor(buffer, commonOperations, FileSystem() :> IFileSystem, foldManager, _bufferTrackingService) :> Modes.Command.ICommandProcessor
+        let interpreter = Interpreter.Interpreter(buffer, commonOperations, foldManager, FileSystem() :> IFileSystem, _bufferTrackingService)
         let visualOptsFactory kind = 
             let kind = VisualKind.OfModeKind kind |> Option.get
             let tracker = Modes.Visual.SelectionTracker(textView, vim.GlobalSettings, incrementalSearch, kind) :> Modes.Visual.ISelectionTracker
@@ -191,7 +191,7 @@ type internal VimBufferFactory
         let modeList = 
             [
                 ((Modes.Normal.NormalMode(vimBufferData, commonOperations, motionUtil, broker, createCommandRunner VisualKind.Character, capture)) :> IMode)
-                ((Modes.Command.CommandMode(buffer, commandProcessor, commonOperations)) :> IMode)
+                ((Modes.Command.CommandMode(buffer, commonOperations, interpreter)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, false, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, true, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
                 ((Modes.SubstituteConfirm.SubstituteConfirmMode(vimBufferData, commonOperations) :> IMode))

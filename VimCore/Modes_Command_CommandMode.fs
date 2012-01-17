@@ -3,17 +3,19 @@
 namespace Vim.Modes.Command
 open Vim
 open Vim.Modes
+open Vim.Interpreter
 open Microsoft.VisualStudio.Text
 open System.Text.RegularExpressions
 
 type internal CommandMode
     ( 
         _buffer : IVimBuffer, 
-        _processor : ICommandProcessor,
-        _operations : ICommonOperations
+        _operations : ICommonOperations,
+        _interpreter : Interpreter
     ) =
 
     let _vimData = _buffer.VimData
+    let _statusUtil = _buffer.VimBufferData.StatusUtil
 
     // Command to show when entering command from Visual Mode
     static let FromVisualModeString = "'<,'>"
@@ -22,6 +24,7 @@ type internal CommandMode
 
     let mutable _bindData : BindData<RunResult> option = None
 
+
     /// Currently queued up command string
     member x.Command = _command
 
@@ -29,10 +32,25 @@ type internal CommandMode
     member x.ProcessCommand command =
         _command <- command
 
+    member x.ParseAndRunInput (command : string) = 
+
+        let command = 
+            if command.Length > 0 && command.[0] = ':' then
+                command.Substring(1)
+            else
+                command
+
+        match Parser.ParseLineCommand command with
+        | ParseResult.Failed msg -> 
+            _statusUtil.OnError msg
+            RunResult.Completed
+        | ParseResult.Succeeded lineCommand -> 
+            _interpreter.RunLineCommand lineCommand
+
     /// Run the specified command
     member x.Completed command =
         _command <- StringUtil.empty
-        let result = _processor.RunCommand (command |> List.ofSeq)
+        let result = x.ParseAndRunInput command
         x.MaybeClearSelection false
         result
 
@@ -114,6 +132,6 @@ type internal CommandMode
         member x.OnClose() = ()
 
         member x.RunCommand command = 
-            _processor.RunCommand (command |> List.ofSeq)
+            x.ParseAndRunInput command
 
 

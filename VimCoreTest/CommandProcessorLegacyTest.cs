@@ -8,19 +8,21 @@ using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using NUnit.Framework;
 using Vim.Extensions;
-using Vim.Modes.Command;
+using Vim.Interpreter;
 using Vim.UnitTest.Mock;
 
 namespace Vim.UnitTest
 {
+    /// <summary>
+    /// Tests from the old CommandProcessor implementation.  They have value but the majority of the functionality
+    /// switched to Interpreter
+    /// </summary>
     [TestFixture]
-    public sealed class CommandProcessorTest : VimTestBase
+    public sealed class CommandProcessorLegacyTest : VimTestBase
     {
         private ITextView _textView;
         private ITextBuffer _textBuffer;
         private MockRepository _factory;
-        private CommandProcessor _processorRaw;
-        private ICommandProcessor _processor;
         private IRegisterMap _registerMap;
         private IVimData _vimData;
         private Mock<IEditorOperations> _editOpts;
@@ -30,6 +32,7 @@ namespace Vim.UnitTest
         private Mock<IFoldManager> _foldManager;
         private Mock<IVimHost> _vimHost;
         private Mock<IVim> _vim;
+        private Interpreter.Interpreter _interpreter;
 
         public void Create(params string[] lines)
         {
@@ -59,13 +62,12 @@ namespace Vim.UnitTest
                 _textView,
                 statusUtil: _statusUtil.Object);
             var vimBuffer = CreateVimBuffer(vimBufferData);
-            _processorRaw = new CommandProcessor(
+            _interpreter = new Interpreter.Interpreter(
                 vimBuffer,
                 _operations.Object,
-                _fileSystem.Object,
                 _foldManager.Object,
+                _fileSystem.Object,
                 _factory.Create<IBufferTrackingService>().Object);
-            _processor = _processorRaw;
         }
 
         private Register UnnamedRegister
@@ -73,9 +75,16 @@ namespace Vim.UnitTest
             get { return _registerMap.GetRegister(RegisterName.Unnamed); }
         }
 
-        private RunResult RunCommand(string input)
+        private void RunCommand(string command)
         {
-            return _processor.RunCommand(Microsoft.FSharp.Collections.ListModule.OfSeq(input));
+            if (command.StartsWith(":"))
+            {
+                command = command.Substring(1);
+            }
+
+            var parseResult = Parser.ParseLineCommand(command);
+            Assert.IsTrue(parseResult.IsSucceeded);
+            _interpreter.RunLineCommand(parseResult.AsSucceeded().Item);
         }
 
         /// <summary>
@@ -283,15 +292,6 @@ namespace Vim.UnitTest
             _operations.Setup(x => x.Beep()).Verifiable();
             RunCommand("e");
             _factory.Verify();
-        }
-
-        [Test, Description("Make sure the starting e is not picked up as an :edit command")]
-        public void Edit_BadCommandName()
-        {
-            Create("");
-            _statusUtil.Setup(x => x.OnError(It.IsAny<string>())).Verifiable();
-            RunCommand("endfunc");
-            _statusUtil.Verify();
         }
 
         [Test]

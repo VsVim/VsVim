@@ -13,36 +13,28 @@ namespace Vim.UnitTest
     [TestFixture, RequiresSTA]
     public class CommandModeTest : VimTestBase
     {
-        private MockRepository _factory;
-        private Mock<ITextCaret> _caret;
-        private Mock<ITextView> _textView;
-        private Mock<ITextSelection> _selection;
-        private Mock<IVimBuffer> _bufferData;
-        private Mock<ICommandProcessor> _processor;
-        private Mock<ICommonOperations> _operations;
-        private ITextBuffer _buffer;
+        private ITextView _textView;
+        private IVimBuffer _vimBuffer;
+        private ITextBuffer _textBuffer;
         private CommandMode _modeRaw;
         private ICommandMode _mode;
 
         [SetUp]
         public void SetUp()
         {
-            _factory = new MockRepository(MockBehavior.Strict);
-            _selection = _factory.Create<ITextSelection>();
-            _selection.Setup(x => x.IsEmpty).Returns(true);
-            _operations = _factory.Create<ICommonOperations>();
-            _buffer = CreateTextBuffer();
-            _caret = MockObjectFactory.CreateCaret(factory: _factory);
-            _caret.SetupProperty(x => x.IsHidden);
-            _textView = MockObjectFactory.CreateTextView(
-                textBuffer: _buffer,
-                caret: _caret.Object,
-                selection: _selection.Object,
-                factory: _factory);
+            _textView = CreateTextView();
+            _textBuffer = _textView.TextBuffer;
+            _vimBuffer = CreateVimBuffer(CreateVimBufferData(_textView));
 
-            _bufferData = MockObjectFactory.CreateVimBuffer(textView: _textView.Object, factory: _factory);
-            _processor = _factory.Create<ICommandProcessor>();
-            _modeRaw = new CommandMode(_bufferData.Object, _processor.Object, _operations.Object);
+            var factory = new MockRepository(MockBehavior.Strict);
+            var commonOperations = CommonOperationsFactory.GetCommonOperations(_vimBuffer.VimBufferData);
+            var interpreter = new Interpreter.Interpreter(
+                _vimBuffer,
+                commonOperations,
+                factory.Create<IFoldManager>().Object,
+                factory.Create<IFileSystem>().Object,
+                factory.Create<IBufferTrackingService>().Object);
+            _modeRaw = new CommandMode(_vimBuffer, commonOperations, interpreter);
             _mode = _modeRaw;
         }
 
@@ -66,38 +58,10 @@ namespace Vim.UnitTest
         }
 
         [Test]
-        public void StatusOnProcess()
-        {
-            _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("1"))).Returns(RunResult.Completed).Verifiable();
-            _mode.Process("1", enter: true);
-            _factory.Verify();
-        }
-
-        [Test, Description("Ensure multiple commands can be processed")]
-        public void DoubleCommand1()
-        {
-            _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("2"))).Returns(RunResult.Completed).Verifiable();
-            ProcessWithEnter("2");
-            _factory.Verify();
-            _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("3"))).Returns(RunResult.Completed).Verifiable();
-            ProcessWithEnter("3");
-            _factory.Verify();
-        }
-
-        [Test]
         public void Input1()
         {
             _mode.Process("fo");
             Assert.AreEqual("fo", _modeRaw.Command);
-        }
-
-        [Test]
-        public void Input2()
-        {
-            _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("foo"))).Returns(RunResult.Completed).Verifiable();
-            ProcessWithEnter("foo");
-            _factory.Verify();
-            Assert.AreEqual(String.Empty, _modeRaw.Command);
         }
 
         [Test]
@@ -154,73 +118,21 @@ namespace Vim.UnitTest
         }
 
         [Test]
-        public void OnEnter3()
-        {
-            _mode.OnEnter(ModeArgument.FromVisual);
-            _processor
-                .Setup(x => x.RunCommand(MatchUtil.CreateForCharList(CommandMode.FromVisualModeString)))
-                .Returns(RunResult.Completed)
-                .Verifiable();
-            _mode.Process(KeyInputUtil.EnterKey);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void OnEnter4()
-        {
-            _mode.OnEnter(ModeArgument.FromVisual);
-            _mode.Process('a');
-            _processor
-                .Setup(x => x.RunCommand(MatchUtil.CreateForCharList(CommandMode.FromVisualModeString + "a")))
-                .Returns(RunResult.Completed)
-                .Verifiable();
-            _mode.Process(KeyInputUtil.EnterKey);
-            _factory.Verify();
-        }
-
-        [Test]
         public void ClearSelectionOnComplete1()
         {
-            _processor.Setup(x => x.RunCommand(It.IsAny<FSharpList<char>>())).Returns(RunResult.Completed).Verifiable();
-            _selection.Setup(x => x.IsEmpty).Returns(true).Verifiable();
+            _textView.SetText("hello world");
+            _textView.SelectAndMoveCaret(_textBuffer.GetSpan(0, 2));
             _mode.Process(KeyInputUtil.EnterKey);
-            _factory.Verify();
+            Assert.IsTrue(_textView.Selection.IsEmpty);
         }
 
         [Test]
         public void ClearSelectionOnComplete2()
         {
-            _textView.Setup(x => x.IsClosed).Returns(false).Verifiable();
-            _processor.Setup(x => x.RunCommand(It.IsAny<FSharpList<char>>())).Returns(RunResult.Completed).Verifiable();
-            _selection.Setup(x => x.IsEmpty).Returns(false).Verifiable();
-            _selection.Setup(x => x.Clear()).Verifiable();
+            _textView.SetText("hello world");
+            _textView.SelectAndMoveCaret(_textBuffer.GetSpan(0, 2));
             _mode.Process(KeyInputUtil.EnterKey);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void ClearSelectionOnComplete3()
-        {
-            _selection.Setup(x => x.IsEmpty).Returns(true).Verifiable();
-            _mode.Process(KeyInputUtil.EscapeKey);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void ClearSelectionOnComplete4()
-        {
-            _textView.Setup(x => x.IsClosed).Returns(false).Verifiable();
-            _selection.Setup(x => x.IsEmpty).Returns(false).Verifiable();
-            _selection.Setup(x => x.Clear()).Verifiable();
-            _buffer.SetText("hello world");
-            _selection
-                .Setup(x => x.StreamSelectionSpan)
-                .Returns(new VirtualSnapshotSpan(_buffer.GetSpan(1, 2)))
-                .Verifiable();
-            _caret.Setup(x => x.MoveTo(_buffer.GetPoint(1))).Returns(new CaretPosition()).Verifiable();
-            _caret.Setup(x => x.EnsureVisible()).Verifiable();
-            _mode.Process(KeyInputUtil.EscapeKey);
-            _factory.Verify();
+            Assert.IsTrue(_textView.Selection.IsEmpty);
         }
     }
 }
