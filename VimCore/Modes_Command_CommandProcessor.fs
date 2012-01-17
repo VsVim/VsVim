@@ -133,12 +133,13 @@ type internal CommandProcessor
         _vimBuffer : IVimBuffer,
         _operations : ICommonOperations,
         _fileSystem : IFileSystem,
-        _foldManager : IFoldManager
+        _foldManager : IFoldManager,
+        _bufferTrackingService : IBufferTrackingService
     ) =
 
     let _vimBufferData = _vimBuffer.VimBufferData
     let _statusUtil = _vimBufferData.StatusUtil
-    let _interpreter = Interpreter.Interpreter(_vimBuffer, _operations, _foldManager, _fileSystem)
+    let _interpreter = Interpreter.Interpreter(_vimBuffer, _operations, _foldManager, _fileSystem, _bufferTrackingService)
 
     let mutable _command : System.String = System.String.Empty
 

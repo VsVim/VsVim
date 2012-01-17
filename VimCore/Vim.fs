@@ -170,7 +170,7 @@ type internal VimBufferFactory
         let createCommandRunner kind = CommandRunner (textView, vim.RegisterMap, capture, commandUtil, vimBufferData.StatusUtil, kind) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker textView
         let bufferOptions = _editorOptionsFactoryService.GetOptions(textView.TextBuffer)
-        let commandProcessor = Modes.Command.CommandProcessor(buffer, commonOperations, FileSystem() :> IFileSystem, foldManager) :> Modes.Command.ICommandProcessor
+        let commandProcessor = Modes.Command.CommandProcessor(buffer, commonOperations, FileSystem() :> IFileSystem, foldManager, _bufferTrackingService) :> Modes.Command.ICommandProcessor
         let visualOptsFactory kind = 
             let kind = VisualKind.OfModeKind kind |> Option.get
             let tracker = Modes.Visual.SelectionTracker(textView, vim.GlobalSettings, incrementalSearch, kind) :> Modes.Visual.ISelectionTracker

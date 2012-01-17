@@ -85,6 +85,7 @@ type internal CommonOperations
     let _textBuffer = _vimBufferData.TextBuffer
     let _textView = _vimBufferData.TextView
     let _editorOptions = _textView.Options
+    let _bufferGraph = _textView.BufferGraph
     let _jumpList = _vimBufferData.JumpList
     let _wordUtil = _vimBufferData.WordUtil
     let _statusUtil = _vimBufferData.StatusUtil
@@ -189,6 +190,81 @@ type internal CommonOperations
                 line.GetLineBreakText()
             else
                 _editorOptions.GetNewLineCharacter()
+
+    /// Delete count lines from the cursor.  The caret should be positioned at the start
+    /// of the first line for both undo / redo
+    member x.DeleteLines (startLine : ITextSnapshotLine) count register = 
+
+        // Function to actually perform the delete
+        let doDelete spanOnVisualSnapshot caretPointOnVisualSnapshot includesLastLine =  
+
+            // Make sure to map the SnapshotSpan back into the text / edit buffer
+            let span = BufferGraphUtil.MapSpanDownToSingle _bufferGraph spanOnVisualSnapshot x.CurrentSnapshot
+            let point = BufferGraphUtil.MapPointDownToSnapshotStandard _bufferGraph caretPointOnVisualSnapshot x.CurrentSnapshot
+            match span, point with
+            | Some span, Some caretPoint ->
+                // Use a transaction to properly position the caret for undo / redo.  We want it in the same
+                // place for undo / redo so move it before the transaction
+                TextViewUtil.MoveCaretToPoint _textView caretPoint
+                _undoRedoOperations.EditWithUndoTransaction "Delete Lines" (fun() ->
+                    let snapshot = _textBuffer.Delete(span.Span)
+
+                    // After delete the span should move to the start of the line of the same number 
+                    let caretPoint = 
+                        let lineNumber = SnapshotPointUtil.GetLineNumber caretPoint
+                        SnapshotUtil.GetLineOrLast x.CurrentSnapshot lineNumber
+                        |> SnapshotLineUtil.GetStart
+
+                    TextViewUtil.MoveCaretToPoint _textView caretPoint)
+
+                // Need to manipulate the StringData so that it includes the expected trailing newline
+                let stringData = 
+                    if includesLastLine then
+                        let newLineText = x.GetNewLineText x.CaretPoint
+                        (span.GetText()) + newLineText |> EditUtil.RemoveBeginingNewLine |> StringData.Simple
+                    else               
+                        span |> StringData.OfSpan
+
+                // Now update the register after the delete completes
+                let value = RegisterValue.String (stringData, OperationKind.LineWise)
+                _registerMap.SetRegisterValue register RegisterOperation.Delete value
+
+            | _ ->
+                // If we couldn't map back down raise an error
+                _statusUtil.OnError Resources.Internal_ErrorMappingToVisual
+
+        // The span should be calculated using the visual snapshot if available.  Binding 
+        // it as 'x' here will help prevent us from accidentally mixing the visual and text
+        // snapshot values
+        let x = TextViewUtil.GetVisualSnapshotDataOrEdit _textView
+
+        // Map the start line into the visual snapshot
+        match BufferGraphUtil.MapPointUpToSnapshotStandard _bufferGraph startLine.Start x.CurrentSnapshot with
+        | None -> 
+            // If we couldn't map back down raise an error
+            _statusUtil.OnError Resources.Internal_ErrorMappingToVisual
+        | Some point ->
+
+            // Calculate the range in the visual snapshot
+            let range = 
+                let line = SnapshotPointUtil.GetContainingLine point
+                SnapshotLineRangeUtil.CreateForLineAndMaxCount line count
+
+            // The last line is an unfortunate special case here as it does not have a line break.  Hence 
+            // in order to delete the line we must delete the line break at the end of the preceding line.  
+            //
+            // This cannot be normalized by always deleting the line break from the previous line because
+            // it would still break for the first line.  This is an unfortunate special case we must 
+            // deal with
+            let includesLastLine = range.LastLineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot
+            if includesLastLine && range.StartLineNumber > 0 then
+                let aboveLine = SnapshotUtil.GetLine x.CurrentSnapshot (range.StartLineNumber - 1)
+                let span = SnapshotSpan(aboveLine.End, range.EndIncludingLineBreak)
+                doDelete span range.StartLine.Start true
+            else 
+                // Simpler case.  Get the line range and delete
+                let stringData = range.ExtentIncludingLineBreak |> StringData.OfSpan
+                doDelete range.ExtentIncludingLineBreak range.StartLine.Start false
 
     /// Move the caret to the specified point and ensure it's visible and the surrounding 
     /// text is expanded
@@ -875,6 +951,7 @@ type internal CommonOperations
         member x.EditorOptions = _editorOptions
 
         member x.Beep () = x.Beep()
+        member x.DeleteLines startLine count register = x.DeleteLines startLine count register
         member x.EnsureCaretOnScreen () = x.EnsureCaretOnScreen()
         member x.EnsureCaretOnScreenAndTextExpanded () = x.EnsureCaretOnScreenAndTextExpanded()
         member x.EnsurePointOnScreenAndTextExpanded point = x.EnsurePointOnScreenAndTextExpanded point
@@ -943,4 +1020,3 @@ type CommonOperationsFactory
 
     interface ICommonOperationsFactory with
         member x.GetCommonOperations bufferData = x.GetCommonOperations bufferData
-

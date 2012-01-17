@@ -937,7 +937,7 @@ module BufferGraphUtil =
 
     /// Map the point up to the given ITextSnapshot.  Returns None if the mapping is not 
     /// possible
-    let MapPointUpToSnapshot (bufferGraph : IBufferGraph) point trackingMode affinity snapshot =
+    let MapPointUpToSnapshot (bufferGraph : IBufferGraph) point snapshot trackingMode affinity =
         try
             bufferGraph.MapUpToSnapshot(point, trackingMode, affinity, snapshot)
             |> OptionUtil.ofNullable
@@ -945,15 +945,25 @@ module BufferGraphUtil =
             | :? System.ArgumentException-> None
             | :? System.InvalidOperationException -> None
 
+    /// Map the point up to the given ITextSnapshot.  Returns None if the mapping is not 
+    /// possible
+    let MapPointUpToSnapshotStandard (bufferGraph : IBufferGraph) point snapshot =
+        MapPointUpToSnapshot bufferGraph point snapshot PointTrackingMode.Negative PositionAffinity.Predecessor
+
     /// Map the point down to the given ITextSnapshot.  Returns None if the mapping is not 
     /// possible
-    let MapPointDownToSnapshot (bufferGraph : IBufferGraph) point trackingMode snapshot affinity =
+    let MapPointDownToSnapshot (bufferGraph : IBufferGraph) point snapshot trackingMode affinity =
         try
             bufferGraph.MapDownToSnapshot(point, trackingMode, snapshot, affinity)
             |> OptionUtil.ofNullable
         with
             | :? System.ArgumentException-> None
             | :? System.InvalidOperationException -> None
+
+    /// Map the point down to the given ITextSnapshot.  Returns None if the mapping is not 
+    /// possible
+    let MapPointDownToSnapshotStandard (bufferGraph : IBufferGraph) point snapshot =
+        MapPointDownToSnapshot bufferGraph point snapshot PointTrackingMode.Negative PositionAffinity.Predecessor
 
     /// Map the SnapshotSpan down to the given ITextSnapshot.  Returns None if the mapping is
     /// not possible
@@ -970,8 +980,8 @@ module BufferGraphUtil =
     /// TODO: Need to talk with the editor team to better understand why this behavior is 
     /// so different
     let MapSpanDownToSingle (bufferGraph : IBufferGraph) (span : SnapshotSpan) snapshot = 
-        let startPoint = MapPointDownToSnapshot bufferGraph span.Start PointTrackingMode.Negative snapshot PositionAffinity.Predecessor
-        let endPoint = MapPointDownToSnapshot bufferGraph span.End PointTrackingMode.Positive snapshot PositionAffinity.Successor
+        let startPoint = MapPointDownToSnapshot bufferGraph span.Start snapshot PointTrackingMode.Negative PositionAffinity.Predecessor
+        let endPoint = MapPointDownToSnapshot bufferGraph span.End snapshot PointTrackingMode.Positive PositionAffinity.Successor
         match startPoint, endPoint with
         | Some startPoint, Some endPoint -> SnapshotSpan(startPoint, endPoint) |> Some
         | None, Some _ -> None
@@ -1119,7 +1129,7 @@ module TextViewUtil =
         let caretPoint = 
             let bufferGraph = textView.BufferGraph
             let editCaretPoint = GetCaretPoint textView
-            BufferGraphUtil.MapPointUpToSnapshot bufferGraph editCaretPoint PointTrackingMode.Negative PositionAffinity.Predecessor visualSnapshot
+            BufferGraphUtil.MapPointUpToSnapshot bufferGraph editCaretPoint visualSnapshot PointTrackingMode.Negative PositionAffinity.Predecessor
 
         match caretPoint with
         | None ->

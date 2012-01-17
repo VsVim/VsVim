@@ -3,6 +3,7 @@ using System.Linq;
 using EditorUtils;
 using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim.Extensions;
 using Vim.Interpreter;
@@ -15,6 +16,7 @@ namespace Vim.UnitTest
         private IVimBuffer _vimBuffer;
         private IVimTextBuffer _vimTextBuffer;
         private ITextBuffer _textBuffer;
+        private ITextView _textView;
         private IVimData _vimData;
         private global::Vim.Interpreter.Interpreter _interpreter;
         private TestableStatusUtil _statusUtil;
@@ -22,6 +24,12 @@ namespace Vim.UnitTest
         private IVimLocalSettings _localSettings;
         private IRegisterMap _registerMap;
         private IKeyMap _keyMap;
+
+        // TODO: Should move this up into VimTestBase
+        private Register UnnamedRegister
+        {
+            get { return _registerMap.GetRegister(RegisterName.Unnamed); }
+        }
 
         /// <summary>
         /// A valid directory in the file system
@@ -51,11 +59,13 @@ namespace Vim.UnitTest
             _localSettings = _vimBufferData.LocalSettings;
             _globalSettings = _localSettings.GlobalSettings;
             _textBuffer = _vimBufferData.TextBuffer;
+            _textView = _vimBufferData.TextView;
             _interpreter = new global::Vim.Interpreter.Interpreter(
                 _vimBuffer,
                 CommonOperationsFactory.GetCommonOperations(_vimBufferData),
                 FoldManagerFactory.GetFoldManager(_vimBufferData.TextView),
-                new FileSystem());
+                new FileSystem(),
+                BufferTrackingService);
             _registerMap = Vim.RegisterMap;
             _keyMap = Vim.KeyMap;
         }
@@ -82,6 +92,98 @@ namespace Vim.UnitTest
         {
             var lineRange = ParseLineRange(lineRangeText);
             return _interpreter.GetLineRange(lineRange).Value;
+        }
+
+        /// <summary>
+        /// The delete of the last line in the ITextBuffer should reduce the line count
+        /// </summary>
+        [Test]
+        public void Delete_LastLine()
+        {
+            Create("cat", "dog");
+            _textView.MoveCaretToLine(1);
+            ParseAndRun("del");
+            Assert.AreEqual(1, _textBuffer.CurrentSnapshot.LineCount);
+            Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// The delete of the first line in the ITextBuffer should reduce the line count
+        /// </summary>
+        [Test]
+        public void Delete_FirstLine()
+        {
+            Create("cat", "dog");
+            ParseAndRun("del");
+            Assert.AreEqual(1, _textBuffer.CurrentSnapshot.LineCount);
+            Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Running :del on a single line should cause the line contents to be deleted
+        /// but not crash
+        /// </summary>
+        [Test]
+        public void Delete_OneLine()
+        {
+            Create("cat");
+            ParseAndRun("del");
+            Assert.AreEqual(1, _textBuffer.CurrentSnapshot.LineCount);
+            Assert.AreEqual("", _textBuffer.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// The delete of the multiple lines including the last line should reduce by the 
+        /// appropriate number of lines
+        /// </summary>
+        [Test]
+        public void Delete_MultipleLastLine()
+        {
+            Create("cat", "dog", "fish", "tree");
+            _textView.MoveCaretToLine(1);
+            ParseAndRun("2,$del");
+            Assert.AreEqual(1, _textBuffer.CurrentSnapshot.LineCount);
+            Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// No arguments means delete the current line
+        /// </summary>
+        [Test]
+        public void Delete_CurrentLine()
+        {
+            Create("foo", "bar");
+            ParseAndRun("del");
+            Assert.AreEqual("foo" + Environment.NewLine, UnnamedRegister.StringValue);
+            Assert.AreEqual("bar", _textView.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// When count is in back it's a range of lines
+        /// </summary>
+        [Test]
+        public void Delete_SeveralLines()
+        {
+            Create("foo", "bar", "baz");
+            ParseAndRun("dele 2");
+            Assert.AreEqual("baz", _textView.GetLine(0).GetText());
+            Assert.AreEqual("foo" + Environment.NewLine + "bar" + Environment.NewLine, UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Delete only the specified line when count is in front
+        /// </summary>
+        [Test]
+        public void Delete_SpecificLineNumber()
+        {
+            Create("foo", "bar", "baz");
+            ParseAndRun("2del");
+            Assert.AreEqual("foo", _textView.GetLine(0).GetText());
+            Assert.AreEqual("baz", _textView.GetLine(1).GetText());
+            Assert.AreEqual("bar" + Environment.NewLine, UnnamedRegister.StringValue);
         }
 
         /// <summary>
@@ -205,6 +307,62 @@ namespace Vim.UnitTest
             ParseAndRun("lcd " + ValidDirectoryPath);
             Assert.AreEqual(@"c:\", _vimData.CurrentDirectory);
             Assert.AreEqual(ValidDirectoryPath, _vimBuffer.CurrentDirectory.Value);
+        }
+
+        /// <summary>
+        /// Test the use of the "del" command with global
+        /// </summary>
+        [Test]
+        public void Global_Delete()
+        {
+            Create("cat", "dog", "fish");
+            ParseAndRun("g/a/del");
+            Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("fish", _textBuffer.GetLine(1).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Test the use of the "del" command with global for a negative match
+        /// </summary>
+        [Test]
+        public void Global_Delete_NotMatch()
+        {
+            Create("cat", "dog", "fish");
+            ParseAndRun("g!/a/del");
+            Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual(1, _textBuffer.CurrentSnapshot.LineCount);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Test the use of the "del" command with global and alternate separators
+        /// </summary>
+        [Test]
+        public void Global_Delete_AlternateSeparators()
+        {
+            Create("cat", "dog", "fish");
+            ParseAndRun("g,a,del");
+            Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("fish", _textBuffer.GetLine(1).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Test out the :global command with put
+        /// </summary>
+        [Test]
+        public void Global_Put()
+        {
+            Create("cat", "dog", "fash");
+            _registerMap.GetRegister(RegisterName.Unnamed).UpdateValue("bat");
+            ParseAndRun("g,a,put");
+            Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("bat", _textBuffer.GetLine(1).GetText());
+            Assert.AreEqual("dog", _textBuffer.GetLine(2).GetText());
+            Assert.AreEqual("fash", _textBuffer.GetLine(3).GetText());
+            Assert.AreEqual("bat", _textBuffer.GetLine(4).GetText());
+            Assert.AreEqual(_textView.GetPointInLine(4, 0), _textView.GetCaretPoint());
         }
 
         /// <summary>

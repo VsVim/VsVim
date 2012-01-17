@@ -63,7 +63,8 @@ namespace Vim.UnitTest
                 vimBuffer,
                 _operations.Object,
                 _fileSystem.Object,
-                _foldManager.Object);
+                _foldManager.Object,
+                _factory.Create<IBufferTrackingService>().Object);
             _processor = _processorRaw;
         }
 
@@ -203,42 +204,6 @@ namespace Vim.UnitTest
             Assert.AreEqual("dog" + Environment.NewLine, UnnamedRegister.StringValue);
         }
 
-        /// <summary>
-        /// No arguments means delete the current line
-        /// </summary>
-        [Test]
-        public void Delete_CurrentLine()
-        {
-            Create("foo", "bar");
-            RunCommand("del");
-            Assert.AreEqual("foo" + Environment.NewLine, UnnamedRegister.StringValue);
-            Assert.AreEqual("bar", _textView.GetLine(0).GetText());
-        }
-
-        /// <summary>
-        /// When count is in back it's a range of lines
-        /// </summary>
-        [Test]
-        public void Delete_SeveralLines()
-        {
-            Create("foo", "bar", "baz");
-            RunCommand("dele 2");
-            Assert.AreEqual("baz", _textView.GetLine(0).GetText());
-            Assert.AreEqual("foo" + Environment.NewLine + "bar" + Environment.NewLine, UnnamedRegister.StringValue);
-        }
-
-        /// <summary>
-        /// Delete only the specified line when count is in front
-        /// </summary>
-        [Test]
-        public void Delete_SpecificLineNumber()
-        {
-            Create("foo", "bar", "baz");
-            RunCommand("2del");
-            Assert.AreEqual("foo", _textView.GetLine(0).GetText());
-            Assert.AreEqual("baz", _textView.GetLine(1).GetText());
-            Assert.AreEqual("bar" + Environment.NewLine, UnnamedRegister.StringValue);
-        }
 
         [Test]
         public void Redo1()

@@ -28,10 +28,17 @@ type ParserBuilder
 
     new () = ParserBuilder(Resources.Parser_Error)
 
-    member x.Bind (parseResult, rest) = 
+    /// Bind a ParseResult value
+    member x.Bind (parseResult : ParseResult<'T>, rest) = 
         match parseResult with
         | ParseResult.Failed msg -> ParseResult.Failed msg
         | ParseResult.Succeeded value -> rest value
+
+    /// Bind an option value
+    member x.Bind (parseValue : 'T option, rest) = 
+        match parseValue with
+        | None -> ParseResult.Failed _errorMessage
+        | Some value -> rest value
 
     member x.Return value =
         ParseResult.Succeeded value
@@ -949,17 +956,24 @@ type Parser
     /// Parse out the :global command
     member x.ParseGlobal lineRange =
         let hasBang = x.ParseBang()
-        x.ParseGlobalCore lineRange hasBang
+        x.ParseGlobalCore lineRange (not hasBang)
 
     /// Parse out the core global information. 
     member x.ParseGlobalCore lineRange matchPattern =
-        ParserBuilder(Resources.Parser_InvalidArgument) {
-            if x.ParseCharValue '/' then
-                let pattern, foundDelimiter = x.ParsePattern '/'
-                if foundDelimiter then 
-                    return! x.ParseSingleCommand()
-                else 
-                    return LineCommand.Print (LineRangeSpecifier.None, LineCommandFlags.None) }
+        match x.ParseChar() with
+        | None -> ParseResult.Failed Resources.Parser_InvalidArgument
+        | Some c ->
+            if c = '\\' || c = '"' then
+                ParseResult.Failed Resources.Parser_InvalidArgument
+            else
+                let pattern, foundDelimeter = x.ParsePattern c
+                if foundDelimeter then
+                    let command = x.ParseSingleCommand()
+                    match command with 
+                    | ParseResult.Failed msg -> ParseResult.Failed msg
+                    | ParseResult.Succeeded command -> LineCommand.Global (lineRange, pattern, matchPattern, command) |> ParseResult.Succeeded
+                else
+                    ParseResult.Failed Resources.Parser_InvalidArgument
 
     /// Parse out the join command
     member x.ParseJoin lineRange =  

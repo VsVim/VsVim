@@ -259,6 +259,9 @@ type ICommonOperations =
     /// Run the beep operation
     abstract Beep : unit -> unit
 
+    /// Delete at least count lines from the visual snapshot
+    abstract DeleteLines : startLine : ITextSnapshotLine -> maxCount : int -> register : Register -> unit
+
     /// Ensure the caret is on the visible screen
     abstract EnsureCaretOnScreen : unit -> unit
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -18,6 +19,7 @@ namespace Vim.UnitTest
     {
         private ITextView _textView;
         private ITextBuffer _textBuffer;
+        private IFoldManager _foldManager;
         private MockRepository _factory;
         private Mock<IVimHost> _vimHost;
         private Mock<IJumpList> _jumpList;
@@ -33,11 +35,17 @@ namespace Vim.UnitTest
         private ICommonOperations _operations;
         private CommonOperations _operationsRaw;
 
+        private Register UnnamedRegister
+        {
+            get { return Vim.RegisterMap.GetRegister(RegisterName.Unnamed); }
+        }
+
         public void Create(params string[] lines)
         {
             _textView = CreateTextView(lines);
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
             _textBuffer = _textView.TextBuffer;
+            _foldManager = FoldManagerFactory.GetFoldManager(_textView);
             _factory = new MockRepository(MockBehavior.Strict);
 
             // Create the Vim instance with our Mock'd services
@@ -104,6 +112,87 @@ namespace Vim.UnitTest
         {
             _operations = null;
             _operationsRaw = null;
+        }
+
+        private static string CreateLinesWithLineBreak(params string[] lines)
+        {
+            return lines.Aggregate((x, y) => x + Environment.NewLine + y) + Environment.NewLine;
+        }
+
+        /// <summary>
+        /// Standard case of deleting several lines in the buffer
+        /// </summary>
+        [Test]
+        public void DeleteLines_Multiple()
+        {
+            Create("cat", "dog", "bear");
+            _operations.DeleteLines(_textBuffer.GetLine(0), 2, UnnamedRegister);
+            Assert.AreEqual(CreateLinesWithLineBreak("cat", "dog"), UnnamedRegister.StringValue);
+            Assert.AreEqual("bear", _textView.GetLine(0).GetText());
+            Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
+        }
+
+        /// <summary>
+        /// Verify the deleting of lines where the count causes the deletion to cross 
+        /// over a fold
+        /// </summary>
+        [Test]
+        public void DeleteLines_OverFold()
+        {
+            Create("cat", "dog", "bear", "fish", "tree");
+            _foldManager.CreateFold(_textView.GetLineRange(1, 2));
+            _operations.DeleteLines(_textBuffer.GetLine(0), 3, UnnamedRegister);
+            Assert.AreEqual(CreateLinesWithLineBreak("cat", "dog", "bear", "fish"), UnnamedRegister.StringValue);
+            Assert.AreEqual("tree", _textView.GetLine(0).GetText());
+            Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
+        }
+
+        /// <summary>
+        /// Verify the deleting of lines where the count causes the deletion to cross 
+        /// over a fold which begins the deletion span
+        /// </summary>
+        [Test]
+        public void DeleteLines_StartOfFold()
+        {
+            Create("cat", "dog", "bear", "fish", "tree");
+            _foldManager.CreateFold(_textView.GetLineRange(0, 1));
+            _operations.DeleteLines(_textBuffer.GetLine(0), 2, UnnamedRegister);
+            Assert.AreEqual(CreateLinesWithLineBreak("cat", "dog", "bear"), UnnamedRegister.StringValue);
+            Assert.AreEqual("fish", _textView.GetLine(0).GetText());
+            Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
+        }
+
+        [Test]
+        public void DeleteLines_Simple()
+        {
+            Create("foo", "bar", "baz", "jaz");
+            _operations.DeleteLines(_textBuffer.GetLine(0), 1, UnnamedRegister);
+            Assert.AreEqual("bar", _textView.GetLine(0).GetText());
+            Assert.AreEqual("foo" + Environment.NewLine, UnnamedRegister.StringValue);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void DeleteLines_WithCount()
+        {
+            Create("foo", "bar", "baz", "jaz");
+            _operations.DeleteLines(_textBuffer.GetLine(0), 2, UnnamedRegister);
+            Assert.AreEqual("baz", _textView.GetLine(0).GetText());
+            Assert.AreEqual("foo" + Environment.NewLine + "bar" + Environment.NewLine, UnnamedRegister.StringValue);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Delete the last line and make sure it actually deletes a line from the buffer
+        /// </summary>
+        [Test]
+        public void DeleteLines_LastLine()
+        {
+            Create("foo", "bar");
+            _operations.DeleteLines(_textBuffer.GetLine(1), 1, UnnamedRegister);
+            Assert.AreEqual("bar" + Environment.NewLine, UnnamedRegister.StringValue);
+            Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
+            Assert.AreEqual("foo", _textView.GetLine(0).GetText());
         }
 
         /// <summary>
