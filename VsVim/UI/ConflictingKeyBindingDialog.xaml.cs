@@ -104,6 +104,14 @@ namespace VsVim.UI
                 return true;
             }
 
+            // Look for copy
+            if (keyStroke.KeyModifiers == KeyModifiers.Control &&
+                keyStroke.KeyInput.Key == VimKey.LowerC &&
+                keyStroke.KeyInput.KeyModifiers == KeyModifiers.None)
+            {
+                return true;
+            }
+
             // Look for select all
             if (keyStroke.KeyModifiers == KeyModifiers.Control &&
                 keyStroke.KeyInput.Key == VimKey.LowerA &&

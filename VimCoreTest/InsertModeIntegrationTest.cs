@@ -40,11 +40,18 @@ namespace Vim.UnitTest
         /// ITextView is closed
         /// </summary>
         [Test]
-        [Description("Make sure we don't access the ITextView on the way down")]
         public void CloseInInsertMode()
         {
             Create("foo", "bar");
             _textView.Close();
+        }
+
+        [Test]
+        public void Leave_WithControlC()
+        {
+            Create("hello world");
+            _vimBuffer.ProcessNotation("<C-c>");
+            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
         }
 
         /// <summary>

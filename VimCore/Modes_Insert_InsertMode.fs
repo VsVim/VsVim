@@ -99,6 +99,7 @@ type internal InsertMode
             [
                 ("<Esc>", RawInsertCommand.CustomCommand this.ProcessEscape)
                 ("<Insert>", RawInsertCommand.CustomCommand this.ProcessInsert)
+                ("<C-c>", RawInsertCommand.CustomCommand this.ProcessEscape)
                 ("<C-o>", RawInsertCommand.CustomCommand this.ProcessNormalModeOneCommand)
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
                 ("<C-n>", RawInsertCommand.CustomCommand this.ProcessWordCompletionNext)
