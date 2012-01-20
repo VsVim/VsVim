@@ -21,7 +21,9 @@ namespace VsVim.UnitTest
         private void Create(params string[] args)
         {
             _dte = MockObjectFactory.CreateDteWithCommands(args);
-            var sp = MockObjectFactory.CreateVsServiceProvider(Tuple.Create(typeof(SDTE), (object)(_dte.Object)));
+            var sp = MockObjectFactory.CreateVsServiceProvider(
+                Tuple.Create(typeof(SDTE), (object)(_dte.Object)),
+                Tuple.Create(typeof(SVsShell), (object)(new Mock<IVsShell>(MockBehavior.Strict)).Object));
             _optionsDialogService = new Mock<IOptionsDialogService>(MockBehavior.Strict);
             _serviceRaw = new KeyBindingService(sp.Object, _optionsDialogService.Object);
             _service = _serviceRaw;

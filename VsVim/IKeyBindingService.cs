@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Vim;
 
 namespace VsVim
@@ -21,6 +19,11 @@ namespace VsVim
         ConflictingKeyBindingState ConflictingKeyBindingState { get; }
 
         event EventHandler ConflictingKeyBindingStateChanged;
+
+        /// <summary>
+        /// Create a CommandKeyBindingSnapshot for the given IVimBuffer
+        /// </summary>
+        CommandKeyBindingSnapshot CreateCommandKeyBindingSnapshot(IVimBuffer buffer);
 
         /// <summary>
         /// Start the check for conflicting key bindings.  This method will return immediately but can

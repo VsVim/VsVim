@@ -13,21 +13,20 @@ namespace VsVim.Implementation
     {
         private sealed class Provider : IOptionsProvider
         {
-            private readonly _DTE _dte;
+            private readonly IKeyBindingService _keyBindingService;
             private readonly IServiceProvider _serviceProvider;
 
-            internal Provider(_DTE dte, IServiceProvider serviceProvider)
+            internal Provider(IKeyBindingService keyBindingService, IServiceProvider serviceProvider)
             {
-                _dte = dte;
+                _keyBindingService = keyBindingService;
                 _serviceProvider = serviceProvider;
             }
 
-            public void ShowDialog(IVimBuffer buffer)
+            public void ShowDialog(IVimBuffer vimBuffer)
             {
                 try
                 {
-                    var util = new KeyBindingUtil(_dte);
-                    var snapshot = util.CreateCommandKeyBindingSnapshot(buffer);
+                    var snapshot = _keyBindingService.CreateCommandKeyBindingSnapshot(vimBuffer);
                     new UI.ConflictingKeyBindingDialog(snapshot).ShowDialog();
                 }
                 catch (Exception)
@@ -48,19 +47,19 @@ namespace VsVim.Implementation
             }
         }
 
-        private readonly _DTE _dte;
+        private readonly IKeyBindingService _keyBindingService;
         private readonly IServiceProvider _serviceProvider;
 
         [ImportingConstructor]
-        internal OptionsProviderFatory(SVsServiceProvider provider)
+        internal OptionsProviderFatory(IKeyBindingService keyBindingService, SVsServiceProvider provider)
         {
-            _dte = provider.GetService<SDTE, _DTE>();
+            _keyBindingService = keyBindingService;
             _serviceProvider = provider;
         }
 
         public IOptionsProvider CreateOptionsProvider()
         {
-            return new Provider(_dte, _serviceProvider);
+            return new Provider(_keyBindingService, _serviceProvider);
         }
     }
 }

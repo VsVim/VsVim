@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using Vim;
+using VsVim.Implementation;
 using VsVim.Settings;
 using VsVim.UnitTest.Mock;
 
@@ -22,7 +23,7 @@ namespace VsVim.UnitTest
         {
             var all = MockObjectFactory.CreateCommandList(args).Select(x => x.Object);
             var snapshot = new CommandsSnapshot(all);
-            return new KeyBindingUtil(snapshot);
+            return new KeyBindingUtil(snapshot, KeyBindingService.GetDefaultImportantScopeSet());
         }
 
         [Test()]
@@ -93,23 +94,26 @@ namespace VsVim.UnitTest
         [Test]
         public void IsImportantScope1()
         {
-            Assert.IsTrue(KeyBindingUtil.IsImportantScope("Global"));
-            Assert.IsTrue(KeyBindingUtil.IsImportantScope("Text Editor"));
-            Assert.IsTrue(KeyBindingUtil.IsImportantScope(String.Empty));
+            var set = KeyBindingService.GetDefaultImportantScopeSet();
+            Assert.IsTrue(set.Contains("Global"));
+            Assert.IsTrue(set.Contains("Text Editor"));
+            Assert.IsTrue(set.Contains(String.Empty));
         }
 
         [Test]
         public void IsImportantScope2()
         {
-            Assert.IsFalse(KeyBindingUtil.IsImportantScope("blah"));
-            Assert.IsFalse(KeyBindingUtil.IsImportantScope("VC Image Editor"));
+           var set = KeyBindingService.GetDefaultImportantScopeSet();
+            Assert.IsFalse(set.Contains("blah"));
+            Assert.IsFalse(set.Contains("VC Image Editor"));
         }
 
         [Test]
         public void ShouldSkip1()
         {
             var binding = CreateCommandKeyBinding(KeyInputUtil.VimKeyToKeyInput(VimKey.Left));
-            Assert.IsTrue(KeyBindingUtil.ShouldSkip(binding));
+            var util = Create();
+            Assert.IsTrue(util.ShouldSkip(binding));
         }
 
         [Test]

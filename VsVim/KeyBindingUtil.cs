@@ -9,14 +9,16 @@ namespace VsVim
     internal sealed class KeyBindingUtil
     {
         private readonly CommandsSnapshot _snapshot;
+        private readonly HashSet<string> _importantScopeSet;
 
-        internal KeyBindingUtil(CommandsSnapshot snapshot)
+        internal KeyBindingUtil(CommandsSnapshot snapshot, HashSet<string> importantScopeSet)
         {
             _snapshot = snapshot;
+            _importantScopeSet = importantScopeSet;
         }
 
-        internal KeyBindingUtil(_DTE dte)
-            : this(new CommandsSnapshot(dte))
+        internal KeyBindingUtil(_DTE dte, HashSet<string> importantScopeSet)
+            : this(new CommandsSnapshot(dte), importantScopeSet)
         {
 
         }
@@ -81,9 +83,10 @@ namespace VsVim
         /// <summary>
         /// Should this be skipped when removing conflicting bindings?
         /// </summary>
-        internal static bool ShouldSkip(CommandKeyBinding binding)
+        internal bool ShouldSkip(CommandKeyBinding binding)
         {
-            if (!IsImportantScope(binding.KeyBinding.Scope))
+            var scope = binding.KeyBinding.Scope;
+            if (!_importantScopeSet.Contains(scope))
             {
                 return true;
             }
@@ -100,27 +103,6 @@ namespace VsVim
             // example remove Delete in insert mode, arrow keys for intellisense and 
             // general navigation, space bar for completion, etc ...
             if (first.KeyModifiers == KeyModifiers.None)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        internal static bool IsImportantScope(string scope)
-        {
-            var comp = StringComparer.OrdinalIgnoreCase;
-            if (comp.Equals("Global", scope))
-            {
-                return true;
-            }
-
-            if (comp.Equals("Text Editor", scope))
-            {
-                return true;
-            }
-
-            if (comp.Equals(String.Empty, scope))
             {
                 return true;
             }
