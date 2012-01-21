@@ -119,13 +119,16 @@ type internal IncrementalSearchTaggerProvider
                 let tagger = _taggerFactory.CreateBasicTagger taggerSource
                 tagger :> obj :?> ITagger<'T>
 
+type HighlightSearchData = {
+    Pattern : string
+    VimRegexOptions : VimRegexOptions
+}
+
 /// Tagger for completed incremental searches
 type HighlightSearchTaggerSource
     ( 
         _textView : ITextView,
         _globalSettings : IVimGlobalSettings,
-        _wordNav : ITextStructureNavigator,
-        _search : ISearchService,
         _vimData : IVimData,
         _vimHost : IVimHost
     ) as this =
@@ -184,10 +187,13 @@ type HighlightSearchTaggerSource
 
     /// Get the search information for a background 
     member x.GetDataForSpan() =
-        // Build up the search information.  Don't need to wrap here as we just want
-        // to consider the SnapshotSpan going forward
-        let searchData = SearchData.OfPatternData _vimData.LastPatternData false
-        { searchData with Kind = SearchKind.Forward }
+
+        let highlightSearchData = {
+            Pattern = _vimData.LastPatternData.Pattern
+            VimRegexOptions = VimRegexFactory.CreateRegexOptions _globalSettings
+        }
+
+        highlightSearchData
 
     member x.GetTagsPrompt() = 
         let searchData = x.GetDataForSpan()
@@ -204,49 +210,64 @@ type HighlightSearchTaggerSource
             None
 
     [<UsedInBackgroundThread>]
-    static member GetTagsInBackground (searchService : ISearchService) wordNavigator searchData span (cancellationToken : CancellationToken) = 
+    static member GetTagsInBackground (highlightSearchData : HighlightSearchData) span (cancellationToken : CancellationToken) = 
 
-        let withSpan (span : SnapshotSpan) =  
-            span.Start
-            |> Seq.unfold (fun point -> 
+        if StringUtil.isNullOrEmpty highlightSearchData.Pattern then
+            ReadOnlyCollectionUtil.Empty
+        else
 
-                cancellationToken.ThrowIfCancellationRequested()
+            // Note: We specifically avoid using ITextSearchService here.  It's a very inefficient search and 
+            // allocates a lot of memory (the FindAll function will bring the contents of the entire 
+            // ITextSnapshot into memory even if you are only searching a single line 
 
-                if SnapshotPointUtil.IsEndPoint point then
-                    // If this is the end point of the ITextBuffer then we are done
-                    None
-                else
-                    match searchService.FindNext searchData point wordNavigator with
-                    | SearchResult.NotFound _ -> 
-                        None
-                    | SearchResult.Found (_, foundSpan, _) ->
+            let spans = 
+                match VimRegexFactory.Create highlightSearchData.Pattern highlightSearchData.VimRegexOptions with
+                | None -> Seq.empty
+                | Some vimRegex ->
+                    try
+                        let snapshot = SnapshotSpanUtil.GetSnapshot span
+                        let text = SnapshotSpanUtil.GetText span
+                        let offset = span |> SnapshotSpanUtil.GetStartPoint |> SnapshotPointUtil.GetPosition
+                        let collection = vimRegex.Regex.Matches(text)
 
-                        // It's possible for the SnapshotSpan here to be a 0 length span since Regex expressions
-                        // can match 0 width text.  For example "\|i\>" from issue #480.  Vim handles this by 
-                        // treating the 0 width match as a 1 width match. 
-                        let foundSpan = 
-                            if foundSpan.Length = 0 then
-                                SnapshotSpan(foundSpan.Start, 1)
-                            else
-                                foundSpan
+                        if collection.Count >= span.Length && collection |> Seq.cast<System.Text.RegularExpressions.Match> |> Seq.forall (fun m -> m.Length = 0) then
+                            // If the user enters a regex which has a 0 match for every character in the 
+                            // ITextBuffer then we special case this and just tag everything.  If we don't
+                            // then the user can essentially hang Visual Studio in a big file by searching 
+                            // for say '\|i'.  
+                            [span] |> Seq.ofList
+                        else
+                            collection
+                            |> Seq.cast<System.Text.RegularExpressions.Match>
+                            |> Seq.map (fun m -> 
+                                let start = m.Index + offset
+    
+                                // It's possible for the SnapshotSpan here to be a 0 length span since Regex expressions
+                                // can match 0 width text.  For example "\|i\>" from issue #480.  Vim handles this by 
+                                // treating the 0 width match as a 1 width match. 
+                                let length = 
+                                    if m.Length = 0 && start < snapshot.Length then 
+                                        1
+                                    else 
+                                        m.Length
+    
+                                SnapshotSpan(snapshot, start, length))
+                    with 
+                    | :? System.InvalidOperationException ->
+                        // Happens when we provide an invalid regular expression.  Just return empty list
+                        Seq.empty
 
-                        // Don't continue searching once we pass the end of the SnapshotSpan we are searching
-                        if foundSpan.Start.Position <= span.End.Position then 
-                            Some(foundSpan, foundSpan.End)
-                        else 
-                            None)
+            let tag = TextMarkerTag(Constants.HighlightIncrementalSearchTagName)
+            spans
+            |> Seq.map (fun span -> TagSpan(span,tag) :> ITagSpan<TextMarkerTag> )
+            |> ReadOnlyCollectionUtil.OfSeq
 
-        let tag = TextMarkerTag(Constants.HighlightIncrementalSearchTagName)
-        withSpan span
-        |> Seq.map (fun span -> TagSpan(span,tag) :> ITagSpan<TextMarkerTag> )
-        |> ReadOnlyCollectionUtil.OfSeq
-
-    interface IAsyncTaggerSource<SearchData, TextMarkerTag> with
+    interface IAsyncTaggerSource<HighlightSearchData, TextMarkerTag> with
         member x.Delay = NullableUtil.Create 100
         member x.TextSnapshot = _textBuffer.CurrentSnapshot
         member x.TextViewOptional = _textView
         member x.GetDataForSpan _ = x.GetDataForSpan()
-        member x.GetTagsInBackground(searchData, span, cancellationToken) = HighlightSearchTaggerSource.GetTagsInBackground _search _wordNav searchData span cancellationToken
+        member x.GetTagsInBackground(highlightSearchData, span, cancellationToken) = HighlightSearchTaggerSource.GetTagsInBackground highlightSearchData span cancellationToken
         member x.TryGetTagsPrompt(_, value : byref<ITagSpan<TextMarkerTag> seq>) =
             match x.GetTagsPrompt() with
             | None -> 
@@ -284,8 +305,8 @@ type HighlightIncrementalSearchTaggerProvider
             | true, Some vimTextBuffer ->
                 let tagger = _taggerFactory.CreateAsyncTaggerCounted(_key, textView.Properties, fun () ->
                     let wordNavigator = vimTextBuffer.WordNavigator
-                    let taggerSource = new HighlightSearchTaggerSource(textView, vimTextBuffer.GlobalSettings, wordNavigator, _vim.SearchService, _vim.VimData, _vim.VimHost)
-                    taggerSource :> IAsyncTaggerSource<SearchData, TextMarkerTag>)
+                    let taggerSource = new HighlightSearchTaggerSource(textView, vimTextBuffer.GlobalSettings, _vim.VimData, _vim.VimHost)
+                    taggerSource :> IAsyncTaggerSource<HighlightSearchData , TextMarkerTag>)
                 tagger :> obj :?> ITagger<'T>
 
 /// Tagger for matches as they appear during a confirm substitute

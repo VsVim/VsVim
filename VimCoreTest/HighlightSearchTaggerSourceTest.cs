@@ -14,10 +14,9 @@ namespace Vim.UnitTest
     public class HighlightSearchTaggerSourceTest : VimTestBase
     {
         private HighlightSearchTaggerSource _asyncTaggerSourceRaw;
-        private IAsyncTaggerSource<SearchData, TextMarkerTag> _asyncTaggerSource;
+        private IAsyncTaggerSource<HighlightSearchData, TextMarkerTag> _asyncTaggerSource;
         private ITextView _textView;
         private ITextBuffer _textBuffer;
-        private ISearchService _searchService;
         private IVimGlobalSettings _globalSettings;
         private IVimData _vimData;
 
@@ -28,13 +27,10 @@ namespace Vim.UnitTest
             _globalSettings = new GlobalSettings();
             _globalSettings.IgnoreCase = true;
             _globalSettings.HighlightSearch = true;
-            _searchService = Vim.SearchService;
             _vimData = Vim.VimData;
             _asyncTaggerSourceRaw = new HighlightSearchTaggerSource(
                 _textView,
                 _globalSettings,
-                CreateTextStructureNavigator(_textBuffer, WordKind.NormalWord),
-                _searchService,
                 _vimData,
                 Vim.VimHost);
             _asyncTaggerSource = _asyncTaggerSourceRaw;
@@ -99,21 +95,11 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
-        /// Spans which start in the request and end outside it should be returned
-        /// </summary>
-        [Test]
-        public void GetTags_SpansOnStartOfMatch()
-        {
-            Create("foo is the bar");
-            _vimData.LastPatternData = VimUtil.CreatePatternData("foo");
-            var ret = GetTags(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 2));
-            Assert.AreEqual(1, ret.Count());
-            Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3), ret.Single().Span);
-        }
-
-        /// <summary>
         /// It's possible for the search service to return a match of 0 length.  This is perfectly legal 
         /// and should be treated as a match of length 1.  This is how gVim does it
+        ///
+        /// When they are grouped thuogh return a single overarching span to avoid overloading the 
+        /// editor
         /// </summary>
         [Test]
         public void GetTags_ZeroLengthResults()
@@ -122,7 +108,7 @@ namespace Vim.UnitTest
             _vimData.LastPatternData = VimUtil.CreatePatternData(@"\|i\>");
             var ret = GetTags(_textBuffer.GetExtent());
             CollectionAssert.AreEquivalent(
-                new [] {"c", "a", "t"},
+                new [] {"cat"},
                 ret.Select(x => x.Span.GetText()).ToList());
         }
 

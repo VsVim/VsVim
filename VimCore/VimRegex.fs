@@ -134,7 +134,8 @@ type VimRegex
         _vimPattern : string,
         _caseSpecifier : CaseSpecifier,
         _regexPattern : string,
-        _regex : Regex ) =
+        _regex : Regex
+    ) =
 
     member x.CaseSpecifier = _caseSpecifier
     member x.VimPattern = _vimPattern

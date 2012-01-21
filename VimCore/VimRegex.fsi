@@ -71,7 +71,7 @@ type VimRegex =
     member Regex : Regex
 
     /// Does the string match the text
-    member IsMatch : pattern:string -> bool
+    member IsMatch : pattern : string -> bool
 
     /// Matches the regex against the specified input and does the replacement 
     /// as specified "count" times

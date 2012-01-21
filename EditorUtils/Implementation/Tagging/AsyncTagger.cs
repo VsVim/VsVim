@@ -810,7 +810,6 @@ namespace EditorUtils.Implementation.Tagging
             }
         }
 
-
         /// <summary>
         /// Called when the background request is completed
         ///
