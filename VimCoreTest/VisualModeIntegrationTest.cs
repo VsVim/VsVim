@@ -681,6 +681,51 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Enter visual mode with the InitialVisualSelection argument which is a character span
+        /// </summary>
+        [Test]
+        public void InitialVisualSelection_Character()
+        {
+            Create("dogs", "cats");
+
+            var visualSpan = VimUtil.CreateVisualSpanCharacter(_textBuffer.GetSpan(1, 2));
+            var visualSelection = VisualSelection.CreateForward(visualSpan);
+            _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
+            _context.RunAll();
+            Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive));
+        }
+
+        /// <summary>
+        /// Enter visual mode with the InitialVisualSelection argument which is a line span
+        /// </summary>
+        [Test]
+        public void InitialVisualSelection_Line()
+        {
+            Create("dogs", "cats", "fish");
+
+            var lineRange = _textView.GetLineRange(0, 1);
+            var visualSelection = VisualSelection.NewLine(lineRange, Path.Forward, 1);
+            _vimBuffer.SwitchMode(ModeKind.VisualLine, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
+            _context.RunAll();
+            Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Line, SelectionKind.Inclusive));
+        }
+
+        /// <summary>
+        /// Enter visual mode with the InitialVisualSelection argument which is a block span
+        /// </summary>
+        [Test]
+        public void InitialVisualSelection_Block()
+        {
+            Create("dogs", "cats", "fish");
+
+            var blockSpan = _textView.GetBlockSpan(1, 2, 0, 2);
+            var visualSelection = VisualSelection.NewBlock(blockSpan, BlockCaretLocation.BottomLeft);
+            _vimBuffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
+            _context.RunAll();
+            Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Block, SelectionKind.Inclusive));
+        }
+
+        /// <summary>
         /// Record a macro which delets selected text.  When the macro is played back it should
         /// just run the delete against unselected text.  In other words it's just the raw keystrokes
         /// which are saved not the selection state
@@ -1090,6 +1135,121 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Simple inner word selection on visual mode
+        /// </summary>
+        [Test]
+        public void TextObject_InnerWord()
+        {
+            Create("cat dog fish");
+            _textView.MoveCaretTo(4);
+            _vimBuffer.Process("viw");
+            Assert.AreEqual("dog", _textView.GetSelectionSpan().GetText());
+            Assert.AreEqual(6, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// When a 'iw' text selection occurs and extends the selection backwards it should reset
+        /// the visual caret start point.  This can be demonstrated jumping back and forth between
+        /// character and line mode
+        /// </summary>
+        [Test]
+        public void TextObject_InnerWord_ResetVisualStartPoint()
+        {
+            Create("cat dog fish");
+            _textView.MoveCaretTo(5);
+            _vimBuffer.Process("viwVv");
+            Assert.AreEqual("dog", _textView.GetSelectionSpan().GetText());
+            Assert.AreEqual(6, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Simple inner word selection from the middle of a word.  Should still select the entire
+        /// word
+        /// </summary>
+        [Test]
+        public void TextObject_InnerWord_FromMiddle()
+        {
+            Create("cat dog fish");
+            _textView.MoveCaretTo(5);
+            _vimBuffer.Process("viw");
+            Assert.AreEqual("dog", _textView.GetSelectionSpan().GetText());
+            Assert.AreEqual(6, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// This behavior isn't documented.  But if iw begins on a single white space character 
+        /// then repeated iw shouldn't change anything.  It should select the single space and 
+        /// go from there
+        /// </summary>
+        [Test]
+        public void TextObject_InnerWord_FromSingleWhiteSpace()
+        {
+            Create("cat dog fish");
+            _textView.MoveCaretTo(3);
+            _vimBuffer.Process('v');
+            for (var i = 0; i < 10; i++)
+            {
+                _vimBuffer.Process("iw");
+                Assert.AreEqual(" ", _textView.GetSelectionSpan().GetText());
+                Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+            }
+        }
+
+        /// <summary>
+        /// From a non-single white space the inner word motion should select
+        /// the entire white space
+        /// </summary>
+        [Test]
+        public void TextObject_InnerWord_FromMultipleWhiteSpace()
+        {
+            Create("cat  dog fish");
+            _textView.MoveCaretTo(3);
+            _vimBuffer.Process("viw");
+            Assert.AreEqual("  ", _textView.GetSelectionSpan().GetText());
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// The non initial selection from white space should extend to the 
+        /// next word
+        /// </summary>
+        [Test]
+        public void TextObject_InnerWord_MultipleWhiteSpace_Second()
+        {
+            Create("cat  dog fish");
+            _textView.MoveCaretTo(3);
+            _vimBuffer.Process("viwiw");
+            Assert.AreEqual("  dog", _textView.GetSelectionSpan().GetText());
+            Assert.AreEqual(7, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Simple all word selection
+        /// </summary>
+        [Test]
+        public void TextObject_AllWord()
+        {
+            Create("cat dog fish");
+            _vimBuffer.Process("vaw");
+            Assert.AreEqual("cat ", _textView.GetSelectionSpan().GetText());
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Unlike the 'iw' motion the 'aw' motion doesn't have truly odd behavior from
+        /// a single white space
+        /// </summary>
+        [Test]
+        public void TextObject_AllWord_FromSingleWhiteSpace()
+        {
+            Create("cat dog fish");
+            _textView.MoveCaretTo(3);
+            _vimBuffer.Process("vaw");
+            Assert.AreEqual(" dog", _textView.GetSelectionSpan().GetText());
+            Assert.AreEqual(6, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
         /// The yank selection command should exit visual mode after the operation
         /// </summary>
         [Test]
@@ -1131,49 +1291,5 @@ namespace Vim.UnitTest
             Assert.IsTrue(_textView.Selection.IsEmpty);
         }
 
-        /// <summary>
-        /// Enter visual mode with the InitialVisualSelection argument which is a character span
-        /// </summary>
-        [Test]
-        public void InitialVisualSelection_Character()
-        {
-            Create("dogs", "cats");
-
-            var visualSpan = VimUtil.CreateVisualSpanCharacter(_textBuffer.GetSpan(1, 2));
-            var visualSelection = VisualSelection.CreateForward(visualSpan);
-            _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
-            _context.RunAll();
-            Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive));
-        }
-
-        /// <summary>
-        /// Enter visual mode with the InitialVisualSelection argument which is a line span
-        /// </summary>
-        [Test]
-        public void InitialVisualSelection_Line()
-        {
-            Create("dogs", "cats", "fish");
-
-            var lineRange = _textView.GetLineRange(0, 1);
-            var visualSelection = VisualSelection.NewLine(lineRange, Path.Forward, 1);
-            _vimBuffer.SwitchMode(ModeKind.VisualLine, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
-            _context.RunAll();
-            Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Line, SelectionKind.Inclusive));
-        }
-
-        /// <summary>
-        /// Enter visual mode with the InitialVisualSelection argument which is a block span
-        /// </summary>
-        [Test]
-        public void InitialVisualSelection_Block()
-        {
-            Create("dogs", "cats", "fish");
-
-            var blockSpan = _textView.GetBlockSpan(1, 2, 0, 2);
-            var visualSelection = VisualSelection.NewBlock(blockSpan, BlockCaretLocation.BottomLeft);
-            _vimBuffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
-            _context.RunAll();
-            Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Block, SelectionKind.Inclusive));
-        }
     }
 }

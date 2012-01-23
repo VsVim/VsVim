@@ -11,6 +11,10 @@ type internal CommandFactory =
     /// valid as movements.  Several of these are overridden with custom movement behavior though.
     member CreateMovementCommands : unit -> CommandBinding seq
 
+    /// Returns the set of commands which move the cursor that are a result of a text object
+    /// motion
+    member CreateMovementTextObjectCommands : unit -> CommandBinding seq
+
     /// Returns the set of commands which move the caret as a scroll operation
     member CreateScrollCommands : unit -> CommandBinding seq
 

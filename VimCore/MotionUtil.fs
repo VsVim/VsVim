@@ -1526,7 +1526,9 @@ type internal MotionUtil
     ///
     ///  - It doesn't go through the exclusive-linewise promotion 
     ///  - The caret position suggests inclusive when used as a caret movement in visual mode
-    member x.InnerWord wordKind count =
+    member x.InnerWord wordKind count contextPoint =
+
+        let contextLine = SnapshotPointUtil.GetContainingLine contextPoint
 
         // Given a point which is a tab or space get the space and tab span backwards up 
         // to and including the point
@@ -1617,37 +1619,37 @@ type internal MotionUtil
                     SnapshotSpan(startPoint, endPoint) |> Some
 
         let span = 
-            if SnapshotPointUtil.IsInsideLineBreak x.CaretPoint && count = 1 then
+            if SnapshotPointUtil.IsInsideLineBreak contextPoint && count = 1 then
                 // The behavior of 'iw' is special in the case it begins in the line break and 
-                // has a single count.  If there is white space before the caret we grab that 
+                // has a single count.  If there is white space before the context point we grab that 
                 // else we grab a single character.  
 
-                match SnapshotLineUtil.GetLastIncludedPoint x.CaretLine with
+                match SnapshotLineUtil.GetLastIncludedPoint contextLine with
                 | None -> 
                     // This intentionally produces an empty span vs. None.  Doing a 'yiw' on an
                     // empty line followed by a 'put' and then 'undo' causes the no-op 'put' to 
                     // be undone
-                    SnapshotSpan(x.CaretLine.Start, 0) |> Some
+                    SnapshotSpan(contextLine.Start, 0) |> Some
                 | Some point -> 
                     if SnapshotPointUtil.IsBlank point then
                         // If it's a space or tab then get the space / tab span
                         let startPoint = getReverseSpaceAndTabSpaceStart point
-                        SnapshotSpan(startPoint, x.CaretLine.End) |> Some
+                        SnapshotSpan(startPoint, contextLine.End) |> Some
                     else
                         // If it's character then we get the single character.  So weird
                         SnapshotSpan(point, 1) |> Some
-            elif SnapshotPointUtil.IsInsideLineBreak x.CaretPoint then
+            elif SnapshotPointUtil.IsInsideLineBreak contextPoint then
                 // With a count of greater than 1 then starting in the line break behaves
                 // like a normal command.  Costs a count of 1 to get over the line break
-                getSpan x.CaretPoint x.CaretLine.EndIncludingLineBreak (count - 1)
+                getSpan contextPoint contextLine.EndIncludingLineBreak (count - 1)
             else
                 // Simple case.  Need to move the point backwards though if it starts in
                 // a space or tab to get the full span
                 let point = 
-                    if SnapshotPointUtil.IsBlank x.CaretPoint then
-                        getReverseSpaceAndTabSpaceStart x.CaretPoint
+                    if SnapshotPointUtil.IsBlank contextPoint then
+                        getReverseSpaceAndTabSpaceStart contextPoint
                     else
-                        x.CaretPoint
+                        contextPoint
                 getSpan point point count
 
         match span with
@@ -2267,7 +2269,7 @@ type internal MotionUtil
             | Motion.EndOfWord wordKind -> x.EndOfWord wordKind motionArgument.Count |> Some
             | Motion.FirstNonBlankOnCurrentLine -> x.FirstNonBlankOnCurrentLine() |> Some
             | Motion.FirstNonBlankOnLine -> x.FirstNonBlankOnLine motionArgument.Count |> Some
-            | Motion.InnerWord wordKind -> x.InnerWord wordKind motionArgument.Count
+            | Motion.InnerWord wordKind -> x.InnerWord wordKind motionArgument.Count x.CaretPoint
             | Motion.LastNonBlankOnLine -> x.LastNonBlankOnLine motionArgument.Count |> Some
             | Motion.LastSearch isReverse -> x.LastSearch isReverse motionArgument.Count
             | Motion.LineDown -> x.LineDown motionArgument.Count
@@ -2301,7 +2303,17 @@ type internal MotionUtil
             | Motion.WordForward wordKind -> x.WordForward wordKind motionArgument.Count |> Some
         Option.map (x.AdjustMotionResult motion) motionResult
 
+    member x.GetTextObject motion point = 
+        // TODO: Need to expand for all text objects
+
+        let motionResult = 
+            match motion with 
+            | Motion.InnerWord wordKind -> x.InnerWord wordKind 1 point 
+            | _ -> None
+        Option.map (x.AdjustMotionResult motion) motionResult
+
     interface IMotionUtil with
         member x.TextView = _textView
         member x.GetMotion motion motionArgument = x.GetMotion motion motionArgument
+        member x.GetTextObject motion point = x.GetTextObject motion point
 

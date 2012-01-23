@@ -202,11 +202,11 @@ type internal MotionCapture
                     Motion.LastNonBlankOnLine)
                 yield (
                     "aw", 
-                    MotionFlags.TextObjectSelection,
+                    MotionFlags.TextObject ||| MotionFlags.TextObjectWithLineToCharacter,
                     Motion.AllWord WordKind.NormalWord)
                 yield (
                     "aW", 
-                    MotionFlags.TextObjectSelection,
+                    MotionFlags.TextObject ||| MotionFlags.TextObjectWithLineToCharacter,
                     Motion.AllWord WordKind.BigWord)
                 yield (
                     "as", 
@@ -234,27 +234,27 @@ type internal MotionCapture
                     Motion.SectionBackwardOrCloseBrace)
                 yield (
                     "a\"", 
-                    MotionFlags.TextObjectSelection,
+                    MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter,
                     Motion.QuotedString)
                 yield (
                     "a'", 
-                    MotionFlags.TextObjectSelection,
+                    MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter,
                     Motion.QuotedString)
                 yield (
                     "a`", 
-                    MotionFlags.TextObjectSelection,
+                    MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter,
                     Motion.QuotedString)
                 yield (
                     "i\"", 
-                    MotionFlags.TextObjectSelection,
+                    MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter,
                     Motion.QuotedStringContents)
                 yield (
                     "i'", 
-                    MotionFlags.TextObjectSelection,
+                    MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter,
                     Motion.QuotedStringContents)
                 yield (
                     "i`", 
-                    MotionFlags.TextObjectSelection,
+                    MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter,
                     Motion.QuotedStringContents)
                 yield (
                     "G", 
@@ -318,11 +318,11 @@ type internal MotionCapture
                     Motion.NextPartialWord Path.Backward)
                 yield (
                     "iw",
-                    MotionFlags.TextObjectSelection,
+                    MotionFlags.TextObject ||| MotionFlags.TextObjectWithLineToCharacter,
                     Motion.InnerWord WordKind.NormalWord)
                 yield (
                     "iW",
-                    MotionFlags.TextObjectSelection,
+                    MotionFlags.TextObject ||| MotionFlags.TextObjectWithLineToCharacter,
                     Motion.InnerWord WordKind.BigWord)
             } 
             

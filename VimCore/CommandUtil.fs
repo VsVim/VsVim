@@ -1258,6 +1258,76 @@ type internal CommandUtil
             else
                 CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Move the caret to the result of the text object selection
+    member x.MoveCaretToTextObject motion textObjectKind (visualSpan : VisualSpan) = 
+
+        // First step is to get the desired final mode of the text object movement
+        let forcedModeKind = 
+            match textObjectKind with
+            | TextObjectKind.None -> None
+            | TextObjectKind.LineToCharacter ->
+                if _vimTextBuffer.ModeKind = ModeKind.VisualLine then
+                    Some ModeKind.VisualCharacter
+                else
+                    None
+            | TextObjectKind.AlwaysCharacter ->
+                if _vimTextBuffer.ModeKind <> ModeKind.VisualCharacter then
+                    Some ModeKind.VisualCharacter
+                else
+                    None
+            | TextObjectKind.AlwaysLine ->
+                if _vimTextBuffer.ModeKind <> ModeKind.VisualLine then
+                    Some ModeKind.VisualLine
+                else
+                    None
+
+        // The behavior of a text object depends highly on whether or not this is 
+        // visual mode in it's initial state.  The docs define this as the start 
+        // and end being the same but that's not true for line mode where stard and 
+        // end are rarely the same.
+        let isInitialSelection = 
+            match visualSpan with
+            | VisualSpan.Character characterSpan -> characterSpan.Length <= 1
+            | VisualSpan.Block blockSpan -> blockSpan.Width <= 1
+            | VisualSpan.Line lineRange -> lineRange.Count = 1
+
+        let onError () =
+            _commonOperations.Beep()
+            CommandResult.Error
+
+        // TODO: Initial selection shoulddn't assume a Character VisualSelection
+        // TODO: Backwards motions
+        // TODO: The non-initial selection needs to ensure we're in the correct mode
+
+        if isInitialSelection then
+            // For an initial selection we just do a standard motion from the caret point
+            // and update the selection.
+            let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = Some 1}
+            match _motionUtil.GetMotion motion argument with
+            | None -> onError ()
+            | Some motionResult -> 
+                let visualSelection = 
+                    let visualSpan = motionResult.Span |> CharacterSpan.CreateForSpan |> VisualSpan.Character
+                    VisualSelection.CreateForward visualSpan
+                let argument = ModeArgument.InitialVisualSelection (visualSelection, None)
+                let modeKind = OptionUtil.getOrDefault _vimTextBuffer.ModeKind forcedModeKind 
+                x.SwitchMode modeKind argument
+        else
+            // Need to move the caret to the next item.  When we are in inclusive selection
+            // though the caret is at the last position of the previous motion so doing the
+            // motion again is essentially a no-op.  Calculate the correct point from which 
+            // to do the motion
+            let point = 
+                match _globalSettings.SelectionKind with
+                | SelectionKind.Inclusive -> SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
+                | SelectionKind.Exclusive -> x.CaretPoint
+
+            match _motionUtil.GetTextObject motion point with
+            | None -> onError()
+            | Some motionResult ->
+                _commonOperations.MoveCaretToMotionResult motionResult
+                CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Open a fold in visual mode.  In Visual Mode a single fold level is opened for every
     /// line in the selection
     member x.OpenFoldInSelection (visualSpan : VisualSpan) = 
@@ -1966,6 +2036,7 @@ type internal CommandUtil
         | VisualCommand.FormatLines -> x.FormatLinesVisual visualSpan
         | VisualCommand.FoldSelection -> x.FoldSelection visualSpan
         | VisualCommand.JoinSelection kind -> x.JoinSelection kind visualSpan
+        | VisualCommand.MoveCaretToTextObject (motion, textObjectKind)-> x.MoveCaretToTextObject motion textObjectKind visualSpan
         | VisualCommand.OpenFoldInSelection -> x.OpenFoldInSelection visualSpan
         | VisualCommand.OpenAllFoldsInSelection -> x.OpenAllFoldsInSelection visualSpan
         | VisualCommand.PutOverSelection moveCaretAfterText -> x.PutOverSelection register count moveCaretAfterText visualSpan 
