@@ -854,7 +854,7 @@ namespace Vim.UnitTest
         {
             Create("the dog");
             _textView.MoveCaretTo(1);
-            var data = _motionUtil.InnerWord(WordKind.NormalWord, 1).Value;
+            var data = _motionUtil.InnerWord(WordKind.NormalWord, 1, _textView.GetCaretPoint()).Value;
             Assert.AreEqual("the", data.Span.GetText());
             Assert.IsTrue(data.IsInclusive);
             Assert.IsTrue(data.IsForward);
@@ -869,7 +869,7 @@ namespace Vim.UnitTest
         {
             Create("   the dog");
             _textView.MoveCaretTo(1);
-            var data = _motionUtil.InnerWord(WordKind.NormalWord, 1).Value;
+            var data = _motionUtil.InnerWord(WordKind.NormalWord, 1, _textView.GetCaretPoint()).Value;
             Assert.AreEqual("   ", data.Span.GetText());
         }
 
@@ -882,7 +882,7 @@ namespace Vim.UnitTest
         {
             Create("   the dog");
             _textView.MoveCaretTo(1);
-            var data = _motionUtil.InnerWord(WordKind.NormalWord, 2).Value;
+            var data = _motionUtil.InnerWord(WordKind.NormalWord, 2, _textView.GetCaretPoint()).Value;
             Assert.AreEqual("   the", data.Span.GetText());
         }
 
@@ -895,7 +895,7 @@ namespace Vim.UnitTest
         {
             Create("   the dog");
             _textView.MoveCaretTo(1);
-            var data = _motionUtil.InnerWord(WordKind.NormalWord, 3).Value;
+            var data = _motionUtil.InnerWord(WordKind.NormalWord, 3, _textView.GetCaretPoint()).Value;
             Assert.AreEqual("   the ", data.Span.GetText());
         }
 
@@ -909,7 +909,7 @@ namespace Vim.UnitTest
         {
             Create("cat", "dog");
             _textView.MoveCaretTo(_textView.GetLine(0).End);
-            var data = _motionUtil.InnerWord(WordKind.NormalWord, 1).Value;
+            var data = _motionUtil.InnerWord(WordKind.NormalWord, 1, _textView.GetCaretPoint()).Value;
             Assert.AreEqual("t", data.Span.GetText());
             Assert.IsTrue(data.IsForward);
         }
@@ -923,7 +923,7 @@ namespace Vim.UnitTest
         {
             Create("cat  ", "dog");
             _textView.MoveCaretTo(_textView.GetLine(0).End);
-            var data = _motionUtil.InnerWord(WordKind.NormalWord, 1).Value;
+            var data = _motionUtil.InnerWord(WordKind.NormalWord, 1, _textView.GetCaretPoint()).Value;
             Assert.AreEqual("  ", data.Span.GetText());
             Assert.IsTrue(data.IsForward);
         }
@@ -937,7 +937,7 @@ namespace Vim.UnitTest
         {
             Create("cat", "fish dog");
             _textView.MoveCaretTo(_textView.GetLine(0).End);
-            var data = _motionUtil.InnerWord(WordKind.NormalWord, 2).Value;
+            var data = _motionUtil.InnerWord(WordKind.NormalWord, 2, _textView.GetCaretPoint()).Value;
             Assert.AreEqual(Environment.NewLine + "fish", data.Span.GetText());
             Assert.IsTrue(data.IsForward);
         }

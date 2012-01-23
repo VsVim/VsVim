@@ -67,7 +67,7 @@ type internal SelectionTracker
         _textChangedHandler.Remove()
         _anchorPoint <- None
 
-    /// Update the selection based on the current state of the view
+    /// Update the selection based on the current state of the ITextView
     member x.UpdateSelection() = 
 
         match _anchorPoint with

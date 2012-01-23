@@ -720,7 +720,10 @@ and IMotionUtil =
     abstract TextView : ITextView
 
     /// Get the specified Motion value 
-    abstract GetMotion : Motion -> MotionArgument -> MotionResult option 
+    abstract GetMotion : motion : Motion -> motionArgument : MotionArgument -> MotionResult option 
+
+    /// Get the specific text object motion from the given SnapshotPoint
+    abstract GetTextObject : motion : Motion -> point : SnapshotPoint -> MotionResult option
 
 type ModeKind = 
     | Normal = 1
@@ -1538,6 +1541,15 @@ type VisualSelection =
             let blockSpan = BlockSpan(caretPoint, 1, 1)
             VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
 
+/// Most text object entries have specific effects on Visual Mode.  They are 
+/// described below
+[<RequireQualifiedAccess>]
+type TextObjectKind = 
+    | None
+    | LineToCharacter
+    | AlwaysCharacter
+    | AlwaysLine
+
 [<RequireQualifiedAccess>]
 type ModeArgument =
     | None
@@ -1982,6 +1994,10 @@ type VisualCommand =
     /// Join the selected lines
     | JoinSelection of JoinKind
 
+    /// Move the caret to the result of the given Motion.  This movement is from a 
+    /// text-object selection.  Certain motions 
+    | MoveCaretToTextObject of Motion * TextObjectKind
+
     /// Open all folds in the selection
     | OpenAllFoldsInSelection
 
@@ -2393,14 +2409,23 @@ type MotionFlags =
     /// This type of motion can be used to move the cursor
     | CursorMovement = 0x1 
 
+    /// The motion function wants to specially handle the esape function.  This is used 
+    /// on Complex motions such as / and ? 
+    | HandlesEscape = 0x2
+
     /// Text object selection motions.  These can be used for cursor movement inside of 
     /// Visual Mode but otherwise need to be used only after operators.  
     /// :help text-objects
-    | TextObjectSelection = 0x2
+    | TextObject = 0x4
 
-    /// The motion function wants to specially handle the esape function.  This is used 
-    /// on Complex motions such as / and ? 
-    | HandlesEscape = 0x4
+    /// Text object with line to character.  Requires TextObject
+    | TextObjectWithLineToCharacter = 0x8
+
+    /// Text object with always character.  Requires TextObject
+    | TextObjectWithAlwaysCharacter = 0x10
+
+    /// Text objcet with always line.  Requires TextObject
+    | TextObjectWithAlwaysLine = 0x12
 
 /// Represents the types of MotionCommands which exist
 [<RequireQualifiedAccess>]

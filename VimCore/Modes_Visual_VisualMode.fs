@@ -119,6 +119,7 @@ type internal VisualMode
 
             // Add in the standard commands
             factory.CreateMovementCommands()
+            |> Seq.append (factory.CreateMovementTextObjectCommands())
             |> Seq.append (factory.CreateScrollCommands())
             |> Seq.append (x.CreateCommandBindings())
             |> Seq.iter _runner.Add 

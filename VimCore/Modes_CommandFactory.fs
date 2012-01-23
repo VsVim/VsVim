@@ -58,6 +58,47 @@ type internal CommandFactory
         |> Seq.filter (fun binding -> Util.IsFlagSet binding.MotionFlags MotionFlags.CursorMovement)
         |> Seq.map processMotionBinding
 
+    /// Create movement commands for the text-object Motions.  These are described in :help text-objects
+    /// section.  All text-object motions will contain the TextObjectSelection flag
+    member x.CreateMovementTextObjectCommands() =
+        let processMotionBinding (binding : MotionBinding) =
+
+            // Determine what kind of text object we are dealing with here
+            let textObjectKind = 
+                if Util.IsFlagSet binding.MotionFlags MotionFlags.TextObjectWithLineToCharacter then
+                    TextObjectKind.LineToCharacter
+                elif Util.IsFlagSet binding.MotionFlags MotionFlags.TextObjectWithAlwaysCharacter then
+                    TextObjectKind.AlwaysCharacter
+                elif Util.IsFlagSet binding.MotionFlags MotionFlags.TextObjectWithAlwaysLine then
+                    TextObjectKind.AlwaysLine
+                else
+                    TextObjectKind.None
+
+            match binding with
+            | MotionBinding.Simple (name, _, motion) -> 
+
+                let command = VisualCommand.MoveCaretToTextObject (motion, textObjectKind)
+                CommandBinding.VisualBinding(name, CommandFlags.Movement, command) 
+
+            | MotionBinding.Complex (name, motionFlags, bindDataStorage) ->
+
+                // We're starting with a BindData<Motion> and need to instead produce a BindData<VisualCommand>
+                // where the command will move the motion 
+                let bindDataStorage = bindDataStorage.Convert (fun motion -> VisualCommand.MoveCaretToTextObject (motion, textObjectKind))
+
+                // Create the flags.  Make sure that we set that Escape can be handled if the
+                // motion itself can handle escape
+                let flags = 
+                    if Util.IsFlagSet motionFlags MotionFlags.HandlesEscape then 
+                        CommandFlags.Movement ||| CommandFlags.HandlesEscape
+                    else
+                        CommandFlags.Movement
+                CommandBinding.ComplexVisualBinding (name, flags, bindDataStorage)
+
+        _capture.MotionBindings
+        |> Seq.filter (fun binding -> Util.IsFlagSet binding.MotionFlags MotionFlags.TextObject)
+        |> Seq.map processMotionBinding
+
     member x.CreateMovementCommands() = 
         let standard = x.CreateStandardMovementBindings()
         let taken = standard |> Seq.map (fun command -> command.KeyInputSet) |> Set.ofSeq
