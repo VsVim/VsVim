@@ -22,6 +22,28 @@ namespace Vim.UnitTest
             Assert.IsFalse(input.IsDigit);
         }
 
+        [Test]
+        public void IsFunction_Not()
+        {
+            foreach (var cur in KeyInputUtil.VimKeyCharList)
+            {
+                var keyInput = KeyInputUtil.CharToKeyInput(cur);
+                Assert.IsFalse(keyInput.IsFunctionKey);
+            }
+        }
+
+        [Test]
+        public void IsFunction_All()
+        {
+            foreach (var number in Enumerable.Range(1, 12))
+            {
+                var name = "F" + number;
+                var vimKey = (VimKey)(Enum.Parse(typeof(VimKey), name));
+                var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
+                Assert.IsTrue(keyInput.IsFunctionKey);
+            }
+        }
+
         /// <summary>
         /// The key pad should register as digits.  Otherwise it won't be included as count
         /// values
