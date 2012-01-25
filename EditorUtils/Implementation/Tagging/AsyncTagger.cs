@@ -31,21 +31,25 @@ namespace EditorUtils.Implementation.Tagging
                 TagList = tagList;
             }
 
-            internal TrackingCacheData CreateTrackingCacheData(ITextSnapshot snapshot)
+            /// <summary>
+            /// Create a TrackingCacheData instance from this BackgroundCacheData
+            /// </summary>
+            /// <param name="snapshot"></param>
+            /// <returns></returns>
+            internal TrackingCacheData CreateTrackingCacheData()
             {
-                var cacheSpan = Span;
-
                 // Create the list.  Initiate an ITrackingSpan for every SnapshotSpan present
                 var trackingList = TagList.Select(
                     tagSpan =>
                     {
+                        var snapshot = tagSpan.Span.Snapshot;
                         var trackingSpan = snapshot.CreateTrackingSpan(tagSpan.Span, SpanTrackingMode.EdgeExclusive);
                         return Tuple.Create(trackingSpan, tagSpan.Tag);
                     })
                     .ToReadOnlyCollection();
 
                 return new TrackingCacheData(
-                    snapshot.CreateTrackingSpan(Span, SpanTrackingMode.EdgeInclusive),
+                    Span.Snapshot.CreateTrackingSpan(Span, SpanTrackingMode.EdgeInclusive),
                     trackingList);
             }
         }
@@ -702,7 +706,7 @@ namespace EditorUtils.Implementation.Tagging
             }
 
             var backgroundCacheData = _tagCache.BackgroundCacheData.Value;
-            var trackingCacheData = backgroundCacheData.CreateTrackingCacheData(snapshot);
+            var trackingCacheData = backgroundCacheData.CreateTrackingCacheData();
             if (_tagCache.TrackingCacheData.HasValue)
             {
                 trackingCacheData = trackingCacheData.Merge(snapshot, _tagCache.TrackingCacheData.Value);

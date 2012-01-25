@@ -562,6 +562,24 @@ namespace EditorUtils.UnitTest
         }
 
         /// <summary>
+        /// Shrink the ITextSnapshot to 0 to ensure the GetTags call doesn't do math against the
+        /// incorrect ITextSnapshot.  If we use a Span against the wrong ITextSnapshot it should 
+        /// cause an exception
+        /// </summary>
+        [Test]
+        public void GetTags_ToEmptyBuffer()
+        {
+            Create("cat", "dog", "bear", "pig");
+            _asyncTagger.TagCacheData = CreateTagCache(
+                _textBuffer.GetExtent(),
+                _textBuffer.GetSpan(0, 3),
+                _textBuffer.GetSpan(5, 3));
+            _textBuffer.Delete(new Span(0, _textBuffer.CurrentSnapshot.Length));
+            var list = GetTagsFull(_textBuffer.GetExtent());
+            Assert.IsNotNull(list);
+        }
+
+        /// <summary>
         /// If the IAsyncTaggerSource raises a TagsChanged event then the tagger must clear 
         /// out it's cache.  Anything it's stored up until this point is now invalid
         /// </summary>
