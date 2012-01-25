@@ -41,93 +41,7 @@ type internal NormalMode
 
     let _eventHandlers = DisposableBag()
 
-    do
-        // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
-        // a derived type
-        let settings = _globalSettings :> IVimSettings
-        settings.SettingChanged.Subscribe this.OnGlobalSettingsChanged |> _eventHandlers.Add
-
-    member this.TextView = _vimBufferData.TextView
-    member this.TextBuffer = _vimTextBuffer.TextBuffer
-    member this.CaretPoint = this.TextView.Caret.Position.BufferPosition
-    member this.IsCommandRunnerPopulated = _runner.Commands |> SeqUtil.isNotEmpty
-    member this.KeyRemapMode = 
-        match _runner.KeyRemapMode with
-        | Some remapMode -> remapMode
-        | None -> KeyRemapMode.Normal
-    member this.Command = _data.Command
-    member this.Commands = 
-        this.EnsureCommands()
-        _runner.Commands
-
-    member x.EnsureCommands() = 
-        if not x.IsCommandRunnerPopulated then
-            let factory = Vim.Modes.CommandFactory(_operations, _capture, _motionUtil, _vimBufferData.JumpList, _localSettings)
-
-            x.CreateCommandBindings()
-            |> Seq.append (factory.CreateMovementCommands())
-            |> Seq.append (factory.CreateScrollCommands())
-            |> Seq.iter _runner.Add
-
-            // Add in the special ~ command
-            let _, command = x.GetTildeCommand()
-            _runner.Add command
-
-            // Add in the macro command
-            factory.CreateMacroEditCommands _runner _vimTextBuffer.Vim.MacroRecorder _eventHandlers
-
-    /// Raised when a global setting is changed
-    member x.OnGlobalSettingsChanged (args : SettingEventArgs) = 
-        
-        // If the 'tildeop' setting changes we need to update how we handle it
-        let setting = args.Setting
-        if StringUtil.isEqual setting.Name GlobalSettingNames.TildeOpName && x.IsCommandRunnerPopulated then
-            let name, command = x.GetTildeCommand()
-            _runner.Remove name
-            _runner.Add command
-
-    /// Bind the character in a replace character command: 'r'.  
-    member x.BindReplaceChar () =
-        let func () = 
-            _data <- { _data with IsInReplace = true }
-
-            let bind (keyInput : KeyInput) = 
-                _data <- { _data with IsInReplace = false }
-                match keyInput.Key with
-                | VimKey.Escape -> BindResult.Cancelled
-                | VimKey.Back -> BindResult.Cancelled
-                | VimKey.Delete -> BindResult.Cancelled
-                | _ -> NormalCommand.ReplaceChar keyInput |> BindResult.Complete
-
-            {
-                KeyRemapMode = Some KeyRemapMode.Language
-                BindFunction = bind }
-        BindDataStorage.Complex func
-
-    /// Get a mark and us the provided 'func' to create a Motion value
-    member x.BindMark func = 
-        let bindFunc (keyInput : KeyInput) =
-            match Mark.OfChar keyInput.Char with
-            | None -> BindResult<NormalCommand>.Error
-            | Some localMark -> BindResult<_>.Complete (func localMark)
-        let bindData = {
-            KeyRemapMode = None
-            BindFunction = bindFunc }
-        BindDataStorage<_>.Simple bindData
-
-    /// Get the information on how to handle the tilde command based on the current setting for 'tildeop'
-    member x.GetTildeCommand () =
-        let name = KeyInputUtil.CharToKeyInput '~' |> OneKeyInput
-        let flags = CommandFlags.Repeatable
-        let command = 
-            if _globalSettings.TildeOp then
-                CommandBinding.MotionBinding (name, flags, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.ToggleCase, motion)))
-            else
-                CommandBinding.NormalBinding (name, flags, NormalCommand.ChangeCaseCaretPoint ChangeCharacterKind.ToggleCase)
-        name, command
-
-    /// Create the CommandBinding instances for the supported NormalCommand values
-    member x.CreateCommandBindings() =
+    static let SharedCommands =
         let normalSeq = 
             seq {
                 yield ("a", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.InsertAfterCaret)
@@ -237,18 +151,108 @@ type internal NormalMode
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.MotionBinding (keyInputSet, flags, command))
 
-        let complexSeq = 
-            seq {
-                yield ("r", CommandFlags.Repeatable, x.BindReplaceChar ())
-                yield ("'", CommandFlags.Movement, x.BindMark NormalCommand.JumpToMark)
-                yield ("`", CommandFlags.Movement, x.BindMark NormalCommand.JumpToMark)
-                yield ("m", CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar None NormalCommand.SetMarkToCaret)
-                yield ("@", CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar None NormalCommand.RunMacro)
-            } |> Seq.map (fun (str, flags, storage) -> 
-                let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
-                CommandBinding.ComplexNormalBinding (keyInputSet, flags, storage))
-        Seq.append normalSeq motionSeq |> Seq.append complexSeq
+        Seq.append normalSeq motionSeq 
+        |> List.ofSeq
 
+    do
+        // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
+        // a derived type
+        let settings = _globalSettings :> IVimSettings
+        settings.SettingChanged.Subscribe this.OnGlobalSettingsChanged |> _eventHandlers.Add
+
+    member this.TextView = _vimBufferData.TextView
+    member this.TextBuffer = _vimTextBuffer.TextBuffer
+    member this.CaretPoint = this.TextView.Caret.Position.BufferPosition
+    member this.IsCommandRunnerPopulated = _runner.Commands |> SeqUtil.isNotEmpty
+    member this.KeyRemapMode = 
+        match _runner.KeyRemapMode with
+        | Some remapMode -> remapMode
+        | None -> KeyRemapMode.Normal
+    member this.Command = _data.Command
+    member this.Commands = 
+        this.EnsureCommands()
+        _runner.Commands
+
+    member x.EnsureCommands() = 
+        if not x.IsCommandRunnerPopulated then
+            let factory = Vim.Modes.CommandFactory(_operations, _capture, _motionUtil, _vimBufferData.JumpList, _localSettings)
+
+            let complexSeq = 
+                seq {
+                    yield ("r", CommandFlags.Repeatable, x.BindReplaceChar ())
+                    yield ("'", CommandFlags.Movement, x.BindMark NormalCommand.JumpToMark)
+                    yield ("`", CommandFlags.Movement, x.BindMark NormalCommand.JumpToMark)
+                    yield ("m", CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar None NormalCommand.SetMarkToCaret)
+                    yield ("@", CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar None NormalCommand.RunMacro)
+                } |> Seq.map (fun (str, flags, storage) -> 
+                    let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
+                    CommandBinding.ComplexNormalBinding (keyInputSet, flags, storage))
+
+
+            SharedCommands
+            |> Seq.append complexSeq
+            |> Seq.append (factory.CreateMovementCommands())
+            |> Seq.append (factory.CreateScrollCommands())
+            |> Seq.iter _runner.Add
+
+            // Add in the special ~ command
+            let _, command = x.GetTildeCommand()
+            _runner.Add command
+
+            // Add in the macro command
+            factory.CreateMacroEditCommands _runner _vimTextBuffer.Vim.MacroRecorder _eventHandlers
+
+    /// Raised when a global setting is changed
+    member x.OnGlobalSettingsChanged (args : SettingEventArgs) = 
+        
+        // If the 'tildeop' setting changes we need to update how we handle it
+        let setting = args.Setting
+        if StringUtil.isEqual setting.Name GlobalSettingNames.TildeOpName && x.IsCommandRunnerPopulated then
+            let name, command = x.GetTildeCommand()
+            _runner.Remove name
+            _runner.Add command
+
+    /// Bind the character in a replace character command: 'r'.  
+    member x.BindReplaceChar () =
+        let func () = 
+            _data <- { _data with IsInReplace = true }
+
+            let bind (keyInput : KeyInput) = 
+                _data <- { _data with IsInReplace = false }
+                match keyInput.Key with
+                | VimKey.Escape -> BindResult.Cancelled
+                | VimKey.Back -> BindResult.Cancelled
+                | VimKey.Delete -> BindResult.Cancelled
+                | _ -> NormalCommand.ReplaceChar keyInput |> BindResult.Complete
+
+            {
+                KeyRemapMode = Some KeyRemapMode.Language
+                BindFunction = bind }
+        BindDataStorage.Complex func
+
+    /// Get a mark and us the provided 'func' to create a Motion value
+    member x.BindMark func = 
+        let bindFunc (keyInput : KeyInput) =
+            match Mark.OfChar keyInput.Char with
+            | None -> BindResult<NormalCommand>.Error
+            | Some localMark -> BindResult<_>.Complete (func localMark)
+        let bindData = {
+            KeyRemapMode = None
+            BindFunction = bindFunc }
+        BindDataStorage<_>.Simple bindData
+
+    /// Get the information on how to handle the tilde command based on the current setting for 'tildeop'
+    member x.GetTildeCommand () =
+        let name = KeyInputUtil.CharToKeyInput '~' |> OneKeyInput
+        let flags = CommandFlags.Repeatable
+        let command = 
+            if _globalSettings.TildeOp then
+                CommandBinding.MotionBinding (name, flags, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.ToggleCase, motion)))
+            else
+                CommandBinding.NormalBinding (name, flags, NormalCommand.ChangeCaseCaretPoint ChangeCharacterKind.ToggleCase)
+        name, command
+
+    /// Create the CommandBinding instances for the supported NormalCommand values
     member this.Reset() =
         _runner.ResetState()
         _data <- _emptyData

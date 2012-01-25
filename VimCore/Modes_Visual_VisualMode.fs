@@ -30,20 +30,7 @@ type internal VisualMode
         | ModeKind.VisualLine -> (OperationKind.LineWise, VisualKind.Line)
         | _ -> failwith "Invalid"
 
-    let mutable _builtCommands = false
-
-    member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
-
-    member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
-
-    member x.CommandNames = 
-        x.EnsureCommandsBuilt()
-        _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
-
-    member x.SelectedSpan = (TextSelectionUtil.GetStreamSelectionSpan _textView.Selection).SnapshotSpan
-
-    /// Create the CommandBinding instances for the supported command values
-    member x.CreateCommandBindings() =
+    static let SharedCommands = 
         let visualSeq = 
             seq {
                 yield ("c", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextCommand, VisualCommand.ChangeSelection)
@@ -111,7 +98,21 @@ type internal VisualMode
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.NormalBinding (keyInputSet, flags, command))
 
-        Seq.append visualSeq complexSeq |> Seq.append normalSeq
+        Seq.append visualSeq complexSeq 
+        |> Seq.append normalSeq
+        |> List.ofSeq
+
+    let mutable _builtCommands = false
+
+    member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
+
+    member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
+
+    member x.CommandNames = 
+        x.EnsureCommandsBuilt()
+        _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
+
+    member x.SelectedSpan = (TextSelectionUtil.GetStreamSelectionSpan _textView.Selection).SnapshotSpan
 
     member x.EnsureCommandsBuilt() =
         if not _builtCommands then
@@ -121,7 +122,7 @@ type internal VisualMode
             factory.CreateMovementCommands()
             |> Seq.append (factory.CreateMovementTextObjectCommands())
             |> Seq.append (factory.CreateScrollCommands())
-            |> Seq.append (x.CreateCommandBindings())
+            |> Seq.append SharedCommands
             |> Seq.iter _runner.Add 
 
             // Add in macro editing
