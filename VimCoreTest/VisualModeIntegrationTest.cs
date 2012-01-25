@@ -1250,6 +1250,19 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// All white space and the following word should be selecetd
+        /// </summary>
+        [Test]
+        public void TextObject_AllWord_FromMultipleWhiteSpace()
+        {
+            Create("cat  dog fish");
+            _textView.MoveCaretTo(3);
+            _vimBuffer.Process("vaw");
+            Assert.AreEqual("  dog", _textView.GetSelectionSpan().GetText());
+            Assert.AreEqual(7, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
         /// The yank selection command should exit visual mode after the operation
         /// </summary>
         [Test]

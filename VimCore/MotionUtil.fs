@@ -1236,17 +1236,19 @@ type internal MotionUtil
 
     /// Implements the 'aw' motion.  The 'aw' motion is limited to the current line and won't ever
     /// extend above or below it.
-    member x.AllWord kind count = 
+    member x.AllWord kind count contextPoint = 
 
-        // Is this word span on the same line as the caret?  A word won't ever span multiple lines
+        let contextLine = SnapshotPointUtil.GetContainingLine contextPoint 
+
+        // Is this word span on the same line as the context?  A word won't ever span multiple lines
         // so we can be content with checking the start point
         let isOnSameLine span =
             let line = span |> SnapshotSpanUtil.GetStartPoint |> SnapshotPointUtil.GetContainingLine
-            line.LineNumber = x.CaretLine.LineNumber
+            line.LineNumber = contextLine.LineNumber
 
         // Get all of the words on this line going forward
         let all = 
-            _wordUtil.GetWords kind Path.Forward x.CaretPoint
+            _wordUtil.GetWords kind Path.Forward contextPoint
             |> Seq.takeWhile isOnSameLine
             |> Seq.truncate count
             |> List.ofSeq
@@ -1269,35 +1271,35 @@ type internal MotionUtil
                 let endPoint = 
                     span.End
                     |> SnapshotPointUtil.GetPoints Path.Forward
-                    |> Seq.filter (fun point -> point.Position <= x.CaretLine.End.Position)
+                    |> Seq.filter (fun point -> point.Position <= contextLine.End.Position)
                     |> Seq.skipWhile SnapshotPointUtil.IsWhiteSpace
-                    |> SeqUtil.headOrDefault x.CaretLine.End
+                    |> SeqUtil.headOrDefault contextLine.End
                 let span = SnapshotSpan(span.End, endPoint)
                 if span.Length > 0 then Some span else None
 
-            let isCaretInWhiteSpace = SnapshotPointUtil.IsWhiteSpace x.CaretPoint
+            let isContextInWhiteSpace = SnapshotPointUtil.IsWhiteSpace contextPoint
 
 
             // Now do the standard adjustments listed at the bottom of ':help text-objects'
             let span = 
-                match isCaretInWhiteSpace, whiteSpaceAfter with
+                match isContextInWhiteSpace, whiteSpaceAfter with
                 | true , _ ->
-                    // If the caret is in white space then we include all of the white space before
+                    // If the context is in white space then we include all of the white space before
                     // up until the start of the line or the next non-white space character.  
                     let startPoint = 
                         span.Start
                         |> SnapshotPointUtil.GetPoints Path.Backward
                         |> SeqUtil.skipMax 1
-                        |> Seq.filter (fun point -> point.Position >= x.CaretLine.Start.Position)
+                        |> Seq.filter (fun point -> point.Position >= contextLine.Start.Position)
                         |> Seq.skipWhile (fun point -> 
                             match SnapshotPointUtil.TrySubtractOne point with
                             | None -> false
                             | Some point -> SnapshotPointUtil.IsWhiteSpace point)
-                        |> SeqUtil.headOrDefault x.CaretLine.Start
+                        |> SeqUtil.headOrDefault contextLine.Start
                     SnapshotSpan(startPoint, span.End)
 
                 | false, None ->
-                    // There are different rules here that when the caret is in white space even 
+                    // There are different rules here that when the context is in white space even 
                     // though they are not called out in the documentation.  We should only include
                     // white space here if there is a word on the same line before this one.  
                     let startPoint = 
@@ -2259,7 +2261,7 @@ type internal MotionUtil
         let motionResult = 
             match motion with 
             | Motion.AllParagraph -> x.AllParagraph motionArgument.Count
-            | Motion.AllWord wordKind -> x.AllWord wordKind motionArgument.Count
+            | Motion.AllWord wordKind -> x.AllWord wordKind motionArgument.Count x.CaretPoint
             | Motion.AllSentence -> x.AllSentence motionArgument.Count |> Some
             | Motion.BeginingOfLine -> x.BeginingOfLine() |> Some
             | Motion.CharLeft -> x.CharLeft motionArgument.Count |> Some
@@ -2309,6 +2311,7 @@ type internal MotionUtil
         let motionResult = 
             match motion with 
             | Motion.InnerWord wordKind -> x.InnerWord wordKind 1 point 
+            | Motion.AllWord wordKind -> x.AllWord wordKind 1 point
             | _ -> None
         Option.map (x.AdjustMotionResult motion) motionResult
 
