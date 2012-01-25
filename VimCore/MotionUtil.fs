@@ -2062,36 +2062,40 @@ type internal MotionUtil
         // Raise the messages that go with this given result
         CommonUtil.RaiseSearchResultMessage _statusUtil searchResult
 
-        match searchResult with
-        | SearchResult.NotFound (searchData, isOutsidePath) ->
-
-            // Nothing to return here. 
-            None
-
-        | SearchResult.Found (_, span, _) ->
-
-            // Create the MotionResult for the provided MotionArgument and the 
-            // start and end points of the search.  Need to be careful because
-            // the start and end point can be forward or reverse
-            //
-            // Even though the search doesn't necessarily start from the caret
-            // point the resulting Span begins / ends on it
-            let caretPoint = x.CaretPoint
-            let endPoint = span.Start
-            if caretPoint.Position = endPoint.Position then
+        let motionResult = 
+            match searchResult with
+            | SearchResult.NotFound (searchData, isOutsidePath) ->
+    
+                // Nothing to return here. 
                 None
-            else if caretPoint.Position < endPoint.Position then 
-                {
-                    Span = SnapshotSpan(caretPoint, endPoint)
-                    IsForward = true
-                    MotionKind = MotionKind.CharacterWiseExclusive
-                    MotionResultFlags = MotionResultFlags.None } |> Some
-            else 
-                {
-                    Span = SnapshotSpan(endPoint, caretPoint)
-                    IsForward = false
-                    MotionKind = MotionKind.CharacterWiseExclusive
-                    MotionResultFlags = MotionResultFlags.None } |> Some
+    
+            | SearchResult.Found (_, span, _) ->
+    
+                // Create the MotionResult for the provided MotionArgument and the 
+                // start and end points of the search.  Need to be careful because
+                // the start and end point can be forward or reverse
+                //
+                // Even though the search doesn't necessarily start from the caret
+                // point the resulting Span begins / ends on it
+                let caretPoint = x.CaretPoint
+                let endPoint = span.Start
+                if caretPoint.Position = endPoint.Position then
+                    None
+                else if caretPoint.Position < endPoint.Position then 
+                    {
+                        Span = SnapshotSpan(caretPoint, endPoint)
+                        IsForward = true
+                        MotionKind = MotionKind.CharacterWiseExclusive
+                        MotionResultFlags = MotionResultFlags.None } |> Some
+                else 
+                    {
+                        Span = SnapshotSpan(endPoint, caretPoint)
+                        IsForward = false
+                        MotionKind = MotionKind.CharacterWiseExclusive
+                        MotionResultFlags = MotionResultFlags.None } |> Some
+
+        _vimData.RaiseSearchRanEvent()
+        motionResult
 
     /// Move the caret to the next occurrence of the last search
     member x.LastSearch isReverse count =

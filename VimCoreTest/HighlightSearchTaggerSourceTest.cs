@@ -157,7 +157,7 @@ namespace Vim.UnitTest
         /// flag to be set
         /// </summary>
         [Test]
-        public void Changed_OneTimeDisabledEvent()
+        public void Changed_OneTimeDisabled_Event()
         {
             Create("");
             Assert.IsFalse(_asyncTaggerSourceRaw._oneTimeDisabled);
@@ -166,6 +166,49 @@ namespace Vim.UnitTest
             _vimData.RaiseHighlightSearchOneTimeDisable();
             Assert.IsTrue(raised);
             Assert.IsTrue(_asyncTaggerSourceRaw._oneTimeDisabled);
+        }
+
+        /// <summary>
+        /// The search ran should cause a Changed event if we were previously disabled
+        /// </summary>
+        [Test]
+        public void Changed_SearchRan_WhenDisabled()
+        {
+            Create("");
+            var raised = false;
+            _asyncTaggerSource.Changed += delegate { raised = true; };
+            _vimData.RaiseHighlightSearchOneTimeDisable();
+            _vimData.RaiseSearchRanEvent();
+            Assert.IsTrue(raised);
+        }
+
+        /// <summary>
+        /// The search ran should not cause a Changed event if we were not disabled and 
+        /// the pattern didn't change from the last search.  Nothing has changed at this
+        /// point
+        /// </summary>
+        [Test]
+        public void Changed_SearchRan_NoDifference()
+        {
+            Create("");
+            var raised = false;
+            _asyncTaggerSource.Changed += delegate { raised = true; };
+            _vimData.RaiseSearchRanEvent();
+            Assert.IsFalse(raised);
+        }
+
+        /// <summary>
+        /// The SearchRan event should cause a Changed event if the Pattern changes
+        /// </summary>
+        [Test]
+        public void Changed_SearchRan_WhenPatternChanged()
+        {
+            Create("");
+            var raised = false;
+            _asyncTaggerSource.Changed += delegate { raised = true; };
+            _vimData.LastPatternData = new PatternData("hello", Path.Forward);
+            _vimData.RaiseSearchRanEvent();
+            Assert.IsTrue(raised);
         }
 
         /// <summary>
@@ -185,27 +228,32 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
-        /// The setting of the 'hlsearch' option should reset the one time disabled flag
+        /// The setting of the 'hlsearch' option should raise the changed event
         /// </summary>
         [Test]
-        public void SettingSet()
+        public void HighlightSearch_RaiseChanged()
         {
             Create("");
-            _asyncTaggerSourceRaw._oneTimeDisabled = true;
+            _globalSettings.HighlightSearch = false;
+            var raised = false;
+            _asyncTaggerSource.Changed += delegate { raised = true; };
             _globalSettings.HighlightSearch = true;
-            Assert.IsFalse(_asyncTaggerSourceRaw._oneTimeDisabled);
+            Assert.IsTrue(raised);
+            Assert.IsTrue(_asyncTaggerSourceRaw.IsProvidingTags);
         }
 
         /// <summary>
-        /// The setting of the LastSearchData property should reset the _oneTimeDisabled flag
+        /// The setting of the 'hlsearch' option should reset the one time disabled flag
         /// </summary>
         [Test]
-        public void LastSearchDataSet()
+        public void HighlightSearch_ResetOneTimeDisabled()
         {
             Create("");
+            _globalSettings.HighlightSearch = false;
             _asyncTaggerSourceRaw._oneTimeDisabled = true;
-            _vimData.LastPatternData = VimUtil.CreatePatternData("dog");
+            _globalSettings.HighlightSearch = true;
             Assert.IsFalse(_asyncTaggerSourceRaw._oneTimeDisabled);
+            Assert.IsTrue(_asyncTaggerSourceRaw.IsProvidingTags);
         }
     }
 }
