@@ -422,7 +422,7 @@ namespace Vim.UnitTest
         public void AllWord_Simple()
         {
             Create("foo bar");
-            var data = _motionUtil.AllWord(WordKind.NormalWord, 1).Value;
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 1, _textView.GetCaretPoint()).Value;
             Assert.AreEqual("foo ", data.Span.GetText());
         }
 
@@ -434,7 +434,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             _textView.MoveCaretTo(1);
-            var data = _motionUtil.AllWord(WordKind.NormalWord, 1).Value;
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 1, _textView.GetCaretPoint()).Value;
             Assert.AreEqual("foo ", data.Span.GetText());
         }
 
@@ -446,7 +446,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar baz");
             _textView.MoveCaretTo(1);
-            var data = _motionUtil.AllWord(WordKind.NormalWord, 2).Value;
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 2, _textView.GetCaretPoint()).Value;
             Assert.AreEqual("foo bar ", data.Span.GetText());
         }
 
@@ -459,7 +459,7 @@ namespace Vim.UnitTest
         {
             Create("dog cat tree");
             _textView.MoveCaretTo(3);
-            var data = _motionUtil.AllWord(WordKind.NormalWord, 1).Value;
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 1, _textView.GetCaretPoint()).Value;
             Assert.AreEqual(" cat", data.Span.GetText());
         }
 
@@ -472,7 +472,7 @@ namespace Vim.UnitTest
         {
             Create("dog cat");
             _textView.MoveCaretTo(5);
-            var data = _motionUtil.AllWord(WordKind.NormalWord, 1).Value;
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 1, _textView.GetCaretPoint()).Value;
             Assert.AreEqual(" cat", data.Span.GetText());
         }
 
@@ -485,7 +485,7 @@ namespace Vim.UnitTest
         {
             Create("dog", "  cat");
             _textView.MoveCaretTo(_textView.GetLine(1).Start.Add(2));
-            var data = _motionUtil.AllWord(WordKind.NormalWord, 1).Value;
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 1, _textView.GetCaretPoint()).Value;
             Assert.AreEqual("cat", data.Span.GetText());
         }
 
@@ -498,7 +498,7 @@ namespace Vim.UnitTest
         {
             Create("  cat");
             _textView.MoveCaretTo(3);
-            var data = _motionUtil.AllWord(WordKind.NormalWord, 1).Value;
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 1, _textView.GetCaretPoint()).Value;
             Assert.AreEqual("cat", data.Span.GetText());
         }
 
@@ -511,7 +511,7 @@ namespace Vim.UnitTest
         {
             Create("cat   dog");
             _textView.MoveCaretTo(4);
-            var data = _motionUtil.AllWord(WordKind.NormalWord, 1).Value;
+            var data = _motionUtil.AllWord(WordKind.NormalWord, 1, _textView.GetCaretPoint()).Value;
             Assert.AreEqual("   dog", data.Span.GetText());
         }
 
