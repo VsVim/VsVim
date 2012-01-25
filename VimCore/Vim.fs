@@ -21,7 +21,7 @@ type internal VimData() =
     let mutable _lastCharSearch : (CharSearchKind * Path * char) option = None
     let mutable _lastMacroRun : char option = None
     let mutable _lastCommand : StoredCommand option = None
-    let _lastPatternDataChanged = StandardEvent<PatternDataEventArgs>()
+    let _searchRanEvent = StandardEvent()
     let _highlightSearchOneTimeDisabled = StandardEvent()
 
     interface IVimData with 
@@ -47,9 +47,7 @@ type internal VimData() =
             and set value = _lastShellCommand <- value
         member x.LastPatternData 
             with get () = _lastPatternData
-            and set value = 
-                _lastPatternData <- value
-                _lastPatternDataChanged.Trigger x (PatternDataEventArgs(value))
+            and set value = _lastPatternData <- value
         member x.PreviousCurrentDirectory = _previousCurrentDirecotry
         member x.LastCharSearch 
             with get () = _lastCharSearch
@@ -58,8 +56,9 @@ type internal VimData() =
             with get () = _lastMacroRun
             and set value = _lastMacroRun <- value
         member x.RaiseHighlightSearchOneTimeDisable () = _highlightSearchOneTimeDisabled.Trigger ()
+        member x.RaiseSearchRanEvent () = _searchRanEvent.Trigger()
         [<CLIEvent>]
-        member x.LastPatternDataChanged = _lastPatternDataChanged.Publish
+        member x.SearchRan = _searchRanEvent.Publish
         [<CLIEvent>]
         member x.HighlightSearchOneTimeDisabled = _highlightSearchOneTimeDisabled.Publish
 

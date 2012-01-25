@@ -137,8 +137,8 @@ type HighlightSearchTaggerSource
     let _changed = StandardEvent()
     let _eventHandlers = DisposableBag()
 
-    /// Users can temporarily disable highlight search with the ':noh' command.  This is true while 
-    /// we are in that mode
+    /// Whether or not we are currently supressing tags because the user executed the 
+    /// :nohl command
     let mutable _oneTimeDisabled = false
 
     /// Whether or not the ITextView is visible.  There is one setting which controls the tags for
@@ -148,24 +148,31 @@ type HighlightSearchTaggerSource
     /// background.
     let mutable _isVisible = true
 
-    do 
-        let raiseChanged () = _changed.Trigger this
+    do
+        let lastIsProvidingTags = ref this.IsProvidingTags
+        let lastPatternData = ref _vimData.LastPatternData
 
-        let resetDisabledAndRaiseAllChanged () =
-            _oneTimeDisabled <- false
-            raiseChanged()
+        // If anything around how we display tags has changed then need to raise the Changed event
+        let maybeRaiseChanged () = 
+            if lastIsProvidingTags.Value <> this.IsProvidingTags || lastPatternData.Value <> _vimData.LastPatternData then
+                lastPatternData := _vimData.LastPatternData
+                lastIsProvidingTags := this.IsProvidingTags
+
+                _changed.Trigger this
 
         // When the 'LastSearchData' property changes we want to reset the 'oneTimeDisabled' flag and 
         // begin highlighting again
-        _vimData.LastPatternDataChanged
-        |> Observable.subscribe (fun _ -> resetDisabledAndRaiseAllChanged() )
+        _vimData.SearchRan
+        |> Observable.subscribe (fun _ -> 
+            _oneTimeDisabled <- false
+            maybeRaiseChanged())
         |> _eventHandlers.Add
 
         // Make sure we respond to the HighlightSearchOneTimeDisabled event
         _vimData.HighlightSearchOneTimeDisabled
         |> Observable.subscribe (fun _ ->
             _oneTimeDisabled <- true
-            raiseChanged())
+            maybeRaiseChanged())
         |> _eventHandlers.Add
 
         // When the setting is changed it also resets the one time disabled flag
@@ -173,17 +180,24 @@ type HighlightSearchTaggerSource
         // a derived type
         (_globalSettings :> IVimSettings).SettingChanged 
         |> Observable.filter (fun args -> StringUtil.isEqual args.Setting.Name GlobalSettingNames.HighlightSearchName)
-        |> Observable.subscribe (fun _ -> resetDisabledAndRaiseAllChanged())
+        |> Observable.subscribe (fun _ -> 
+            _oneTimeDisabled <- false
+            maybeRaiseChanged())
         |> _eventHandlers.Add
 
         _vimHost.IsVisibleChanged
         |> Observable.filter (fun args -> args.TextView = _textView)
         |> Observable.subscribe (fun _ -> 
-            let isVisible = _vimHost.IsVisible _textView
-            if _isVisible <> isVisible then
-                _isVisible <- isVisible
-                raiseChanged())
+            _isVisible <- _vimHost.IsVisible _textView
+            maybeRaiseChanged())
         |> _eventHandlers.Add
+
+    /// Whether or not we are currently providing any tags.  Tags are surpressed in a
+    /// number of scenarios
+    member x.IsProvidingTags = 
+        not _oneTimeDisabled &&
+        _isVisible &&
+        _globalSettings.HighlightSearch
 
     /// Get the search information for a background 
     member x.GetDataForSpan() =

@@ -3281,9 +3281,12 @@ type IVimData =
     /// Raise the highlight search one time disabled event
     abstract RaiseHighlightSearchOneTimeDisable : unit -> unit
 
-    /// Raised when the 'LastPatternData' value changes
+    /// Raise the search occurred event
+    abstract RaiseSearchRanEvent : unit -> unit
+
+    /// Raised when a search is run on any IVimBuffer
     [<CLIEvent>]
-    abstract LastPatternDataChanged : IDelegateEvent<System.EventHandler<PatternDataEventArgs>>
+    abstract SearchRan: IDelegateEvent<System.EventHandler>
 
     /// Raised when highlight search is disabled one time via the :noh command
     [<CLIEvent>]

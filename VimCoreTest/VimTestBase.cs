@@ -51,6 +51,11 @@ namespace Vim.UnitTest
             get { return _vim; }
         }
 
+        protected IVimData VimData
+        {
+            get { return _vim.VimData; }
+        }
+
         protected IVimBufferFactory VimBufferFactory
         {
             get { return _vimBufferFactory; }
