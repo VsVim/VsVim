@@ -212,8 +212,10 @@ type internal VisualMode
                 | BindResult.Cancelled -> 
                     ProcessResult.Handled ModeSwitch.NoSwitch
 
-        // If we are switching out Visual Mode then reset the selection
-        if result.IsAnySwitch then
+        // If we are switching out Visual Mode then reset the selection.  Only do this if 
+        // we are the active IMode.  It's very possible that we were switched out already 
+        // as part of a complex command
+        if result.IsAnySwitch && _selectionTracker.IsRunning then
             // Is this a switch to command mode? 
             let toCommandMode = 
                 match result with

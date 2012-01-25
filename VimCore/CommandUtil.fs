@@ -1262,24 +1262,16 @@ type internal CommandUtil
     member x.MoveCaretToTextObject motion textObjectKind (visualSpan : VisualSpan) = 
 
         // First step is to get the desired final mode of the text object movement
-        let forcedModeKind = 
+        let desiredVisualKind = 
             match textObjectKind with
-            | TextObjectKind.None -> None
+            | TextObjectKind.None -> visualSpan.VisualKind
+            | TextObjectKind.AlwaysCharacter -> VisualKind.Character
+            | TextObjectKind.AlwaysLine -> VisualKind.Line
             | TextObjectKind.LineToCharacter ->
                 if _vimTextBuffer.ModeKind = ModeKind.VisualLine then
-                    Some ModeKind.VisualCharacter
+                    VisualKind.Character
                 else
-                    None
-            | TextObjectKind.AlwaysCharacter ->
-                if _vimTextBuffer.ModeKind <> ModeKind.VisualCharacter then
-                    Some ModeKind.VisualCharacter
-                else
-                    None
-            | TextObjectKind.AlwaysLine ->
-                if _vimTextBuffer.ModeKind <> ModeKind.VisualLine then
-                    Some ModeKind.VisualLine
-                else
-                    None
+                    visualSpan.VisualKind
 
         // The behavior of a text object depends highly on whether or not this is 
         // visual mode in it's initial state.  The docs define this as the start 
@@ -1295,7 +1287,6 @@ type internal CommandUtil
             _commonOperations.Beep()
             CommandResult.Error
 
-        // TODO: Initial selection shoulddn't assume a Character VisualSelection
         // TODO: Backwards motions
         // TODO: The non-initial selection needs to ensure we're in the correct mode
 
@@ -1306,12 +1297,14 @@ type internal CommandUtil
             match _motionUtil.GetMotion motion argument with
             | None -> onError ()
             | Some motionResult -> 
-                let visualSelection = 
-                    let visualSpan = motionResult.Span |> CharacterSpan.CreateForSpan |> VisualSpan.Character
-                    VisualSelection.CreateForward visualSpan
+
+                // The initial selection span for a text object doesn't change based on 
+                // whether the selection is inclusive / exclusive.  Only the caret position
+                // changes
+                let visualSpan = VisualSpan.CreateForSpan motionResult.Span desiredVisualKind
+                let visualSelection = VisualSelection.CreateForward visualSpan
                 let argument = ModeArgument.InitialVisualSelection (visualSelection, None)
-                let modeKind = OptionUtil.getOrDefault _vimTextBuffer.ModeKind forcedModeKind 
-                x.SwitchMode modeKind argument
+                x.SwitchMode desiredVisualKind.ModeKind argument
         else
             // Need to move the caret to the next item.  When we are in inclusive selection
             // though the caret is at the last position of the previous motion so doing the

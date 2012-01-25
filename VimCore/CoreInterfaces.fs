@@ -759,6 +759,12 @@ type VisualKind =
         | Line _ -> TextSelectionMode.Stream
         | Block _ -> TextSelectionMode.Box
 
+    member x.ModeKind = 
+        match x with
+        | Character _ -> ModeKind.VisualCharacter
+        | Line _ -> ModeKind.VisualLine
+        | Block _ -> ModeKind.VisualBlock
+
     static member All = [ Character; Line; Block ] |> Seq.ofList
 
     static member OfModeKind kind = 
@@ -1130,6 +1136,29 @@ type BlockSpan
     static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<BlockSpan>.Default.Equals(this,other)
     static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<BlockSpan>.Default.Equals(this,other))
 
+    /// Create a BlockSpan for the given SnapshotSpan.  The returned BlockSpan will have a minumum of 1 for
+    /// height and width.  The start of the BlockSpan is not necessarily the Start of the SnapshotSpan
+    /// as an End column which occurs before the start could cause the BlockSpan start to be before the 
+    /// SnapshotSpan start
+    static member CreateForSpan (span : SnapshotSpan) = 
+        let startPoint, width = 
+            let startColumn = SnapshotPointUtil.GetColumn span.Start
+            let endColumn = SnapshotPointUtil.GetColumn span.End
+            let width = endColumn - startColumn
+
+            if width = 0 then
+                span.Start, 1
+            elif width > 0 then
+                span.Start, width
+            else 
+                let startLine = SnapshotPointUtil.GetContainingLine span.Start
+                let start = SnapshotLineUtil.GetOffsetOrEnd endColumn startLine
+                let width = abs width
+                start, width
+
+        let height = SnapshotSpanUtil.GetLineCount span
+        BlockSpan(startPoint, width, height)
+
 [<RequireQualifiedAccess>]
 type BlockCaretLocation =
     | TopLeft
@@ -1213,6 +1242,13 @@ type VisualSpan =
         | VisualSpan.Character _ -> ModeKind.VisualCharacter
         | VisualSpan.Line _ -> ModeKind.VisualLine
         | VisualSpan.Block _ -> ModeKind.VisualBlock
+
+    /// VisualKind of the VisualSpan
+    member x.VisualKind = 
+        match x with
+        | VisualSpan.Character _ -> VisualKind.Character
+        | VisualSpan.Block _ -> VisualKind.Block
+        | VisualSpan.Line _ -> VisualKind.Line
 
     /// Select the given VisualSpan in the ITextView
     member x.Select (textView : ITextView) path =
@@ -1306,6 +1342,12 @@ type VisualSpan =
             let anchorPoint = selection.AnchorPoint.Position
             let activePoint = selection.ActivePoint.Position 
             VisualSpan.CreateForAllPoints visualKind anchorPoint activePoint
+
+    static member CreateForSpan (span : SnapshotSpan) visualKind =
+        match visualKind with
+        | VisualKind.Character -> span |> CharacterSpan.CreateForSpan |> Character
+        | VisualKind.Line -> span |> SnapshotLineRangeUtil.CreateForSpan |> Line
+        | VisualKind.Block -> span |> BlockSpan.CreateForSpan |> Block
 
 /// Represents the information for a visual mode selection.  All of the values are expressed
 /// in terms of an inclusive selection.
