@@ -36,6 +36,18 @@ namespace VsVim
                 .Where(x => x.KeyInputs.Length > 0)
                 .Select(x => x.KeyInputs.First()));
 
+            // Need to get the custom key bindings in the list.  It's very common for users 
+            // to use for example function keys (<F2>, <F3>, etc ...) in their mappings which
+            // are often bound to other Visual Studio commands.
+            var keyMap = buffer.Vim.KeyMap;
+            foreach (var keyRemapMode in KeyRemapMode.All)
+            {
+                foreach (var keyMapping in keyMap.GetKeyMappingsForMode(keyRemapMode))
+                {
+                    keyMapping.Left.KeyInputs.ForEach(keyInput => hashSet.Add(keyInput));
+                }
+            }
+
             // Include the key used to disable VsVim
             hashSet.Add(buffer.LocalSettings.GlobalSettings.DisableAllCommand);
 
@@ -102,7 +114,11 @@ namespace VsVim
             // because it removes too many mappings.  Without this check we would for
             // example remove Delete in insert mode, arrow keys for intellisense and 
             // general navigation, space bar for completion, etc ...
-            if (first.KeyModifiers == KeyModifiers.None)
+            //
+            // One exception is function keys.  They are only bound in Vim to key 
+            // mappings and should win over VS commands since users explicitly 
+            // want them to occur
+            if (first.KeyModifiers == KeyModifiers.None && !first.KeyInput.IsFunctionKey)
             {
                 return true;
             }

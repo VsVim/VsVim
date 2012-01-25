@@ -31,6 +31,9 @@ type KeyInput =
     /// Is this an arrow key?
     member IsArrowKey : bool 
 
+    /// Is this a function key
+    member IsFunctionKey : bool
+
     /// The empty KeyInput.  Used in places where a KeyInput is required but no 
     /// good mapping exists
     static member DefaultValue : KeyInput

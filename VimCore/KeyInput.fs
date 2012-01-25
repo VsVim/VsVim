@@ -63,6 +63,23 @@ type KeyInput
         | VimKey.Down -> true
         | _ -> false
 
+    /// Is this a function key
+    member x.IsFunctionKey =    
+        match _key with
+        | VimKey.F1 -> true
+        | VimKey.F2 -> true
+        | VimKey.F3 -> true
+        | VimKey.F4 -> true
+        | VimKey.F5 -> true
+        | VimKey.F6 -> true
+        | VimKey.F7 -> true
+        | VimKey.F8 -> true
+        | VimKey.F9 -> true
+        | VimKey.F10 -> true
+        | VimKey.F11 -> true
+        | VimKey.F12 -> true
+        | _ -> false
+
     member x.IsControlAndLetter = x.KeyModifiers = KeyModifiers.Control && CharUtil.IsLetter x.Char
 
     member x.GetAlternate () = 

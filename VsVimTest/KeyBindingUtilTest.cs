@@ -108,12 +108,28 @@ namespace VsVim.UnitTest
             Assert.IsFalse(set.Contains("VC Image Editor"));
         }
 
+        /// <summary>
+        /// By default we should skip the unbinding of the arrow keys. They are too important 
+        /// to VS experience and it nearly matches the Vim one anyways
+        /// </summary>
         [Test]
-        public void ShouldSkip1()
+        public void ShouldSkip_ArrowKeys()
         {
             var binding = CreateCommandKeyBinding(KeyInputUtil.VimKeyToKeyInput(VimKey.Left));
             var util = Create();
             Assert.IsTrue(util.ShouldSkip(binding));
+        }
+
+        /// <summary>
+        /// Don't skip function keys.  They are only used in Vim custom key bindings and hence
+        /// it's something we really want to support if it's specified
+        /// </summary>
+        [Test]
+        public void ShouldSkip_FunctionKeys()
+        {
+            var binding = CreateCommandKeyBinding(KeyInputUtil.VimKeyToKeyInput(VimKey.F2));
+            var util = Create();
+            Assert.IsFalse(util.ShouldSkip(binding));
         }
 
         [Test]
