@@ -173,6 +173,32 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// The delete key when combined with shift should still cause a standard delete
+        /// </summary>
+        [Test]
+        public void Delete_WithShift()
+        {
+            Create("cat dog");
+            _textView.MoveCaretTo(1);
+            _vimBuffer.ProcessNotation("<S-BS>");
+            Assert.AreEqual("at dog", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// The delete key when combined with shift should still participate in key mapping
+        /// </summary>
+        [Test]
+        public void Delete_WithShift_KeyMapping()
+        {
+            Create(" world");
+            KeyMap.MapWithNoRemap("<S-BS>", "hello", KeyRemapMode.Insert);
+            _textView.MoveCaretTo(0);
+            _vimBuffer.ProcessNotation("<S-BS>");
+            Assert.AreEqual("hello world", _textBuffer.GetLine(0).GetText());
+        }
+
+        /// <summary>
         /// Verify that inserting tab with a count and inserting tab "count" times is an exchangable
         /// operation
         /// </summary>

@@ -185,11 +185,24 @@ type internal InsertMode
             match keyInput.RawChar with
             | None -> None
             | Some c ->
-                // It's a direct insert if it's a char not mapped to an existing command
-                let command = InsertCommand.DirectInsert c
-                let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
-                let keyInputSet = KeyInputSet.OneKeyInput keyInput
-                RawInsertCommand.InsertCommand (keyInputSet, command, commandFlags) |> Some
+
+                // Since the char is not mapped to a particular command then it's a direct insert
+                let getDirectInsert () =
+                    let command = InsertCommand.DirectInsert c
+                    let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
+                    let keyInputSet = KeyInputSet.OneKeyInput keyInput
+                    RawInsertCommand.InsertCommand (keyInputSet, command, commandFlags) |> Some
+
+                if keyInput.KeyModifiers <> KeyModifiers.None && not (CharUtil.IsLetterOrDigit c) then
+                    // Certain keys such as Delete, Esc, etc ... have the same behavior when invoked
+                    // with or without any modifiers.  The modifiers must be considered because they
+                    // do participate in key mapping.  Once we get here though we must discard them
+                    let alternateKeyInput = KeyInputUtil.ChangeKeyModifiers keyInput KeyModifiers.None
+                    match Map.tryFind alternateKeyInput _commandMap with
+                    | Some rawInsertCommand -> Some rawInsertCommand
+                    | None -> getDirectInsert()
+                else
+                    getDirectInsert()
 
     /// Get the Span for the word we are trying to complete if there is one
     member x.GetWordCompletionSpan () =
