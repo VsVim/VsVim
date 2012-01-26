@@ -1339,12 +1339,15 @@ type internal MotionUtil
     member x.CharSearchCore c count charSearch direction = 
 
         let forward () = 
-            let start = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
-            SnapshotSpan(start, x.CaretLine.End)
-            |> SnapshotSpanUtil.GetPoints Path.Forward
-            |> Seq.filter (SnapshotPointUtil.IsChar c)
-            |> SeqUtil.skipMax (count - 1)
-            |> SeqUtil.tryHeadOnly
+            if x.CaretPoint.Position < x.CaretLine.End.Position then
+                let start = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
+                SnapshotSpan(start, x.CaretLine.End)
+                |> SnapshotSpanUtil.GetPoints Path.Forward
+                |> Seq.filter (SnapshotPointUtil.IsChar c)
+                |> SeqUtil.skipMax (count - 1)
+                |> SeqUtil.tryHeadOnly
+            else
+                None
 
         let backward () = 
             SnapshotSpan(x.CaretLine.Start, x.CaretPoint)
@@ -1373,6 +1376,7 @@ type internal MotionUtil
                     let point = SnapshotPointUtil.AddOne point
                     let span = SnapshotSpan(point, x.CaretPoint)
                     span, MotionKind.CharacterWiseExclusive)
+
         match option with 
         | None ->
             None

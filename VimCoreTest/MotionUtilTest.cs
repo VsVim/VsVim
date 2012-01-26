@@ -773,6 +773,19 @@ namespace Vim.UnitTest
             Assert.IsTrue(data.IsNone());
         }
 
+        /// <summary>
+        /// A forward char search on an empty line shouldn't produce a result.  It's also a corner
+        /// case prone to produce exceptions
+        /// </summary>
+        [Test]
+        public void ForwardChar_EmptyLine()
+        {
+            Create("cat", "", "dog");
+            _textView.MoveCaretToLine(1);
+            var data = _motionUtil.CharSearch('o', 1, CharSearchKind.ToChar, Path.Forward);
+            Assert.IsTrue(data.IsNone());
+        }
+
         [Test]
         public void ForwardTillChar1()
         {
@@ -824,6 +837,18 @@ namespace Vim.UnitTest
             Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
         }
 
+        /// <summary>
+        /// Doing a backward char search on an empty line should produce no data
+        /// </summary>
+        [Test]
+        public void BackwardChar_OnEmptyLine()
+        {
+            Create("cat", "", "dog");
+            _textView.MoveCaretToLine(1);
+            var data = _motionUtil.CharSearch('b', 1, CharSearchKind.ToChar, Path.Backward);
+            Assert.IsTrue(data.IsNone());
+        }
+
         [Test]
         public void BackwardTillCharMotion1()
         {
@@ -872,7 +897,6 @@ namespace Vim.UnitTest
             var data = _motionUtil.InnerWord(WordKind.NormalWord, 1, _textView.GetCaretPoint()).Value;
             Assert.AreEqual("   ", data.Span.GetText());
         }
-
 
         /// <summary>
         /// The count should apply equally to white space and the following words
