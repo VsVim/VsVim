@@ -228,6 +228,20 @@ namespace VsVim.Implementation
             return Result.CreateSuccessNonNull(textBuffer);
         }
 
+        internal Result<uint> GetDocCookie(ITextDocument textDocument)
+        {
+            try
+            {
+                uint docCookie;
+                _table.FindDocument(textDocument.FilePath, out docCookie);
+                return docCookie;
+            }
+            catch (Exception ex)
+            {
+                return Result.CreateError(ex);
+            }
+        }
+
         internal bool IsVenusView(IVsTextView vsTextView)
         {
             var textView = _editorAdaptersFactoryService.GetWpfTextView(vsTextView);
@@ -353,6 +367,11 @@ namespace VsVim.Implementation
         Result<IVsWindowFrame> IVsAdapter.GetContainingWindowFrame(ITextView textView)
         {
             return GetContainingWindowFrame(textView);
+        }
+
+        Result<uint> IVsAdapter.GetDocCookie(ITextDocument textDocument)
+        {
+            return GetDocCookie(textDocument);
         }
 
         Result<ITextBuffer> IVsAdapter.GetTextBufferForDocCookie(uint cookie)

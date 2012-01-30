@@ -35,6 +35,7 @@ namespace VsVim.UnitTest
                 .Returns(_table.Object);
             _managerRaw = new TextManager(
                 _adapter.Object,
+                _factory.Create<ITextDocumentFactoryService>().Object,
                 _serviceProvider.Object);
             _manager = _managerRaw;
         }
