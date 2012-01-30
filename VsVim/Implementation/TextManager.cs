@@ -17,10 +17,11 @@ namespace VsVim.Implementation
     [Export(typeof(ITextManager))]
     internal sealed class TextManager : ITextManager
     {
-        private readonly IVsAdapter _adapter;
+        private readonly IVsAdapter _vsAdapter;
         private readonly IVsTextManager _textManager;
         private readonly RunningDocumentTable _table;
         private readonly IServiceProvider _serviceProvider;
+        private readonly ITextDocumentFactoryService _textDocumentFactoryService;
 
         public IEnumerable<ITextBuffer> TextBuffers
         {
@@ -30,7 +31,7 @@ namespace VsVim.Implementation
                 foreach (var item in _table)
                 {
                     ITextBuffer buffer;
-                    if (_adapter.GetTextBufferForDocCookie(item.DocCookie).TryGetValue(out buffer))
+                    if (_vsAdapter.GetTextBufferForDocCookie(item.DocCookie).TryGetValue(out buffer))
                     {
                         list.Add(buffer);
                     }
@@ -51,7 +52,7 @@ namespace VsVim.Implementation
                 IVsTextView vsTextView;
                 IWpfTextView textView = null;
                 ErrorHandler.ThrowOnFailure(_textManager.GetActiveView(0, null, out vsTextView));
-                textView = _adapter.EditorAdapter.GetWpfTextView(vsTextView);
+                textView = _vsAdapter.EditorAdapter.GetWpfTextView(vsTextView);
                 if (textView == null)
                 {
                     throw new InvalidOperationException();
@@ -63,11 +64,13 @@ namespace VsVim.Implementation
         [ImportingConstructor]
         internal TextManager(
             IVsAdapter adapter,
+            ITextDocumentFactoryService textDocumentFactoryService,
             SVsServiceProvider serviceProvider)
         {
-            _adapter = adapter;
+            _vsAdapter = adapter;
             _serviceProvider = serviceProvider;
             _textManager = _serviceProvider.GetService<SVsTextManager, IVsTextManager>();
+            _textDocumentFactoryService = textDocumentFactoryService;
             _table = new RunningDocumentTable(_serviceProvider);
         }
 
@@ -76,7 +79,7 @@ namespace VsVim.Implementation
             var tuple = SnapshotPointUtil.GetLineColumn(point.Position);
             var line = tuple.Item1;
             var column = tuple.Item2;
-            var vsBuffer = _adapter.EditorAdapter.GetBufferAdapter(point.Position.Snapshot.TextBuffer);
+            var vsBuffer = _vsAdapter.EditorAdapter.GetBufferAdapter(point.Position.Snapshot.TextBuffer);
             var viewGuid = VSConstants.LOGVIEWID_Code;
             var hr = _textManager.NavigateToLineAndColumn(
                 vsBuffer,
@@ -90,17 +93,17 @@ namespace VsVim.Implementation
 
         public Result Save(ITextBuffer textBuffer)
         {
+            ITextDocument textDocument;
+            if (!_textDocumentFactoryService.TryGetTextDocument(textBuffer, out textDocument))
+            {
+                return Result.Error;
+            }
+
             try
             {
-                var docData = _adapter.GetPersistDocData(textBuffer).Value;
-                string unusedNewDocumentName;
-                int saveCancelled;
-                ErrorHandler.ThrowOnFailure(docData.SaveDocData(VSSAVEFLAGS.VSSAVE_Save, out unusedNewDocumentName, out saveCancelled));
-                if (saveCancelled != 0)
-                {
-                    return Result.Error;
-                }
-
+                var docCookie = _vsAdapter.GetDocCookie(textDocument).Value;
+                var runningDocumentTable = _serviceProvider.GetService<SVsRunningDocumentTable, IVsRunningDocumentTable>();
+                ErrorHandler.ThrowOnFailure(runningDocumentTable.SaveDocuments((uint)__VSRDTSAVEOPTIONS.RDTSAVEOPT_ForceSave, null, 0, docCookie));
                 return Result.Success;
             }
             catch (Exception e)
@@ -112,7 +115,7 @@ namespace VsVim.Implementation
         public bool CloseView(ITextView textView, bool checkDirty)
         {
             IVsCodeWindow vsCodeWindow;
-            if (!_adapter.GetCodeWindow(textView).TryGetValue(out vsCodeWindow))
+            if (!_vsAdapter.GetCodeWindow(textView).TryGetValue(out vsCodeWindow))
             {
                 return false;
             }
@@ -123,7 +126,7 @@ namespace VsVim.Implementation
             }
 
             IVsWindowFrame vsWindowFrame;
-            if (!_adapter.GetContainingWindowFrame(textView).TryGetValue(out vsWindowFrame))
+            if (!_vsAdapter.GetContainingWindowFrame(textView).TryGetValue(out vsWindowFrame))
             {
                 return false;
             }
@@ -136,7 +139,7 @@ namespace VsVim.Implementation
         public bool SplitView(ITextView textView)
         {
             IVsCodeWindow codeWindow;
-            if (_adapter.GetCodeWindow(textView).TryGetValue(out codeWindow))
+            if (_vsAdapter.GetCodeWindow(textView).TryGetValue(out codeWindow))
             {
                 return SendSplit(codeWindow);
             }
@@ -148,7 +151,7 @@ namespace VsVim.Implementation
         {
             try
             {
-                var vsCodeWindow = _adapter.GetCodeWindow(textView).Value;
+                var vsCodeWindow = _vsAdapter.GetCodeWindow(textView).Value;
                 var vsTextView = vsCodeWindow.GetSecondaryView().Value;
                 return ErrorHandler.Succeeded(vsTextView.SendExplicitFocus());
             }
@@ -162,7 +165,7 @@ namespace VsVim.Implementation
         {
             try
             {
-                var vsCodeWindow = _adapter.GetCodeWindow(textView).Value;
+                var vsCodeWindow = _vsAdapter.GetCodeWindow(textView).Value;
                 var vsTextView = vsCodeWindow.GetPrimaryView().Value;
                 return ErrorHandler.Succeeded(vsTextView.SendExplicitFocus());
             }
@@ -191,8 +194,8 @@ namespace VsVim.Implementation
 
         public IEnumerable<ITextView> GetTextViews(ITextBuffer textBuffer)
         {
-            return _adapter.GetTextViews(textBuffer)
-                .Select(x => _adapter.EditorAdapter.GetWpfTextView(x))
+            return _vsAdapter.GetTextViews(textBuffer)
+                .Select(x => _vsAdapter.EditorAdapter.GetWpfTextView(x))
                 .Where(x => x != null);
         }
 

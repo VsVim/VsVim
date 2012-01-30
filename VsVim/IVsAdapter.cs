@@ -99,6 +99,11 @@ namespace VsVim
         /// </summary>
         Result<IVsWindowFrame> GetContainingWindowFrame(ITextView textView);
 
+        /// <summary>
+        /// Get the document cookie for the ITextBuffer
+        /// </summary>
+        Result<uint> GetDocCookie(ITextDocument textDocument);
+
         Result<ITextBuffer> GetTextBufferForDocCookie(uint cookie);
     }
 }
