@@ -858,6 +858,40 @@ type internal MotionUtil
             // Line can't match
             false
 
+    /// Get the block span for the specified char at the given context point
+    member x.GetBlock contextPoint (blockKind : BlockKind) count = 
+
+        let startChar, endChar = blockKind.Characters
+
+        // Is the char at the given point escaped?
+        let isEscaped point = 
+            match SnapshotPointUtil.TrySubtractOne point with
+            | None -> false
+            | Some point -> SnapshotPointUtil.GetChar point = '\\'
+
+        let isChar c point = SnapshotPointUtil.GetChar point = c && not (isEscaped point) 
+
+        let snapshot = SnapshotPointUtil.GetSnapshot contextPoint
+        let startPoint = 
+            SnapshotSpan(SnapshotPoint(snapshot, 0), SnapshotPointUtil.AddOneOrCurrent contextPoint)
+            |> SnapshotSpanUtil.GetPoints Path.Backward
+            |> Seq.tryFind (isChar startChar)
+
+        let endPoint = 
+            SnapshotSpan(contextPoint, SnapshotUtil.GetEndPoint snapshot)
+            |> SnapshotSpanUtil.GetPoints Path.Forward
+            |> Seq.tryFind (isChar endChar)
+
+        match startPoint, endPoint with
+        | Some startPoint, Some endPoint -> 
+            if count = 1 then
+                let endPoint = SnapshotPointUtil.AddOneOrCurrent endPoint
+                SnapshotSpan(startPoint, endPoint) |> Some
+            else
+                // Need to support counts other than 1
+                None
+        | _ -> None
+
     member x.GetQuotedStringData () = 
         let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine _textView
 
@@ -1039,6 +1073,19 @@ type internal MotionUtil
                     IsForward = isForward
                     MotionKind = MotionKind.CharacterWiseInclusive
                     MotionResultFlags = MotionResultFlags.None } |> Some
+
+    /// Implement the all block motion
+    member x.AllBlock contextPoint blockKind count =
+
+        let span = x.GetBlock contextPoint blockKind count
+        match span with
+        | None -> None
+        | Some span ->
+            { 
+                Span = span
+                IsForward = true
+                MotionKind = MotionKind.CharacterWiseInclusive
+                MotionResultFlags = MotionResultFlags.None } |> Some
 
     /// Implementation of the 'ap' motion.  Unfortunately this is not as simple as the documentation
     /// states it is.  While the 'ap' motion uses the same underlying definition of a paragraph 
@@ -1522,6 +1569,9 @@ type internal MotionUtil
                 IsForward = true
                 MotionKind = MotionKind.LineWise column
                 MotionResultFlags = MotionResultFlags.None })
+
+    member x.InnerBlock contextPoint blockKind count =
+        None
 
     /// Implement the 'iw' motion.  Unlike the 'aw' motion it is not limited to a specific line
     /// and can exceed it
@@ -2264,6 +2314,7 @@ type internal MotionUtil
 
         let motionResult = 
             match motion with 
+            | Motion.AllBlock blockKind -> x.AllBlock x.CaretPoint blockKind motionArgument.Count
             | Motion.AllParagraph -> x.AllParagraph motionArgument.Count
             | Motion.AllWord wordKind -> x.AllWord wordKind motionArgument.Count x.CaretPoint
             | Motion.AllSentence -> x.AllSentence motionArgument.Count |> Some
@@ -2275,6 +2326,7 @@ type internal MotionUtil
             | Motion.EndOfWord wordKind -> x.EndOfWord wordKind motionArgument.Count |> Some
             | Motion.FirstNonBlankOnCurrentLine -> x.FirstNonBlankOnCurrentLine() |> Some
             | Motion.FirstNonBlankOnLine -> x.FirstNonBlankOnLine motionArgument.Count |> Some
+            | Motion.InnerBlock blockKind -> x.InnerBlock x.CaretPoint blockKind motionArgument.Count
             | Motion.InnerWord wordKind -> x.InnerWord wordKind motionArgument.Count x.CaretPoint
             | Motion.LastNonBlankOnLine -> x.LastNonBlankOnLine motionArgument.Count |> Some
             | Motion.LastSearch isReverse -> x.LastSearch isReverse motionArgument.Count
