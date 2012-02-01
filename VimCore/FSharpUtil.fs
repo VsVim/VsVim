@@ -514,8 +514,67 @@ type Contract =
 
 module internal SystemUtil =
 
-    let GetEnvironmentVariable name = 
+    let TryGetEnvironmentVariable name = 
         try
-            System.Environment.GetEnvironmentVariable(name)
+            let value = System.Environment.GetEnvironmentVariable(name) 
+            if value = null then
+                None
+            else
+                Some value
         with
-            | _ -> ""
+            | _ -> None
+
+    let GetEnvironmentVariable name = 
+        match TryGetEnvironmentVariable name with
+        | Some name -> name
+        | None -> ""
+
+    /// The IO.Path.Combine API has a lot of "features" which basically prevents it
+    /// from being a reliable API.  The most notable is that if you pass it c:
+    /// instead of c:\ it will silently fail.
+    let CombinePath (path1 : string) (path2 : string) = 
+
+        // Work around the c: problem by adding a trailing slash to a drive specification
+        let path1 = 
+            if System.String.IsNullOrEmpty(path1) then
+                ""
+            elif path1.Length = 2 && CharUtil.IsLetter path1.[0] && path1.[1] = ':' then
+                path1 + @"\"
+            else
+                path1
+
+        // Remove the begining slash from the second path so that it will combine properly
+        let path2 =
+            if System.String.IsNullOrEmpty(path2) then
+                ""
+            elif path2.[0] = '\\' then 
+                path2.Substring(1)
+            else
+                path2
+
+        System.IO.Path.Combine(path1, path2)
+
+    /// Get the value of $HOME.  There is no explicit documentation that I could find 
+    /// for how this value is calculated.  However experimentation shows that gVim 7.1
+    /// calculates it in the following order 
+    ///     %HOME%
+    ///     %HOMEDRIVE%%HOMEPATH%
+    ///     c:\
+    let GetHome () = 
+        match TryGetEnvironmentVariable "HOME" with
+        | Some path -> path
+        | None -> 
+            match TryGetEnvironmentVariable "HOMEDRIVE", TryGetEnvironmentVariable "HOMEPATH" with
+            | Some drive, Some path -> CombinePath drive path
+            | _ -> @"c:\"
+
+    /// Resolve the specified path.  If it starts with ~ then replace with the appropriate 
+    /// expansion
+    let ResolvePath (path : string) =
+        if System.String.IsNullOrEmpty(path) || path.[0] <> '~' then
+            path
+        else
+            let home = GetHome()
+            let path = path.Substring(1)
+            CombinePath home path
+

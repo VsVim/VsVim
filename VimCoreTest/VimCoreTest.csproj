@@ -150,6 +150,7 @@
     <Compile Include="CommandProcessorLegacyTest.cs" />
     <Compile Include="CommandRunnerTest.cs" />
     <Compile Include="CommandUtilTest.cs" />
+    <Compile Include="SystemUtilTest.cs" />
     <Compile Include="TextChangeTest.cs" />
     <Compile Include="VisualSpanTest.cs" />
     <Compile Include="EqualityUtil.cs" />
