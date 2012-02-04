@@ -262,6 +262,23 @@ module internal SeqUtil =
                     yield e.Current }
         inner count
 
+    /// Same functionality as Seq.tryFind except it allows you to pass along a 
+    /// state value along 
+    let tryFind initialState predicate (sequence : 'a seq) =
+        use e = sequence.GetEnumerator()
+        let rec inner state = 
+            match predicate e.Current state with
+            | true, _ -> Some e.Current
+            | false, state -> 
+                if e.MoveNext() then
+                    inner state
+                else
+                    None
+        if e.MoveNext() then
+            inner initialState
+        else
+            None
+
 module internal MapUtil =
 
     /// Get the set of keys in the Map

@@ -1250,6 +1250,48 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Ensure the ab motion includes the parens and puts the caret on the last 
+        /// character
+        /// </summary>
+        [Test]
+        public void TextObject_AllParen_MiddleOfWord()
+        {
+            Create("cat (dog) fish");
+            _textView.MoveCaretTo(6);
+            _vimBuffer.Process("vab");
+            Assert.AreEqual("(dog)", _textView.GetSelectionSpan().GetText());
+            Assert.AreEqual(8, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Unlike non-block selections multiple calls to ab won't extend the selection
+        /// any
+        /// </summary>
+        [Test]
+        public void TextObject_AllParen_Multiple()
+        {
+            Create("cat (dog) (bear)");
+            _textView.MoveCaretTo(6);
+            _vimBuffer.Process("vabababab");
+            Assert.AreEqual("(dog)", _textView.GetSelectionSpan().GetText());
+            Assert.AreEqual(8, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Ensure the ib motion excludes the parens and puts the caret on the last 
+        /// character
+        /// </summary>
+        [Test]
+        public void TextObject_InnerParen_MiddleOfWord()
+        {
+            Create("cat (dog) fish");
+            _textView.MoveCaretTo(6);
+            _vimBuffer.Process("vib");
+            Assert.AreEqual("dog", _textView.GetSelectionSpan().GetText());
+            Assert.AreEqual(7, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
         /// All white space and the following word should be selecetd
         /// </summary>
         [Test]

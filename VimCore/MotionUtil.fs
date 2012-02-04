@@ -859,7 +859,7 @@ type internal MotionUtil
             false
 
     /// Get the block span for the specified char at the given context point
-    member x.GetBlock contextPoint (blockKind : BlockKind) count = 
+    member x.GetBlock contextPoint (blockKind : BlockKind) = 
 
         let startChar, endChar = blockKind.Characters
 
@@ -871,25 +871,36 @@ type internal MotionUtil
 
         let isChar c point = SnapshotPointUtil.GetChar point = c && not (isEscaped point) 
 
+        let findMatched plusChar minusChar = 
+            let inner point count = 
+                let count = 
+                    if isChar minusChar point then
+                        count - 1
+                    elif isChar plusChar point then
+                        count + 1
+                    else 
+                        count
+                count = 0, count
+            inner
+
         let snapshot = SnapshotPointUtil.GetSnapshot contextPoint
         let startPoint = 
             SnapshotSpan(SnapshotPoint(snapshot, 0), SnapshotPointUtil.AddOneOrCurrent contextPoint)
             |> SnapshotSpanUtil.GetPoints Path.Backward
-            |> Seq.tryFind (isChar startChar)
+            |> SeqUtil.tryFind 1 (findMatched endChar startChar)
 
-        let endPoint = 
-            SnapshotSpan(contextPoint, SnapshotUtil.GetEndPoint snapshot)
-            |> SnapshotSpanUtil.GetPoints Path.Forward
-            |> Seq.tryFind (isChar endChar)
+        let lastPoint = 
+            match startPoint with
+            | None -> None
+            | Some startPoint ->
+                SnapshotSpan(startPoint, SnapshotUtil.GetEndPoint snapshot)
+                |> SnapshotSpanUtil.GetPoints Path.Forward
+                |> SeqUtil.tryFind 0 (findMatched startChar endChar)
 
-        match startPoint, endPoint with
-        | Some startPoint, Some endPoint -> 
-            if count = 1 then
-                let endPoint = SnapshotPointUtil.AddOneOrCurrent endPoint
-                SnapshotSpan(startPoint, endPoint) |> Some
-            else
-                // Need to support counts other than 1
-                None
+        match startPoint, lastPoint with
+        | Some startPoint, Some lastPoint -> 
+            let endPoint = SnapshotPointUtil.AddOneOrCurrent lastPoint
+            SnapshotSpan(startPoint, endPoint) |> Some
         | _ -> None
 
     member x.GetQuotedStringData () = 
@@ -1077,15 +1088,18 @@ type internal MotionUtil
     /// Implement the all block motion
     member x.AllBlock contextPoint blockKind count =
 
-        let span = x.GetBlock contextPoint blockKind count
-        match span with
-        | None -> None
-        | Some span ->
-            { 
-                Span = span
-                IsForward = true
-                MotionKind = MotionKind.CharacterWiseInclusive
-                MotionResultFlags = MotionResultFlags.None } |> Some
+        if count <> 1 then
+            None
+        else
+            let span = x.GetBlock contextPoint blockKind
+            match span with
+            | None -> None
+            | Some span ->
+                { 
+                    Span = span
+                    IsForward = true
+                    MotionKind = MotionKind.CharacterWiseInclusive
+                    MotionResultFlags = MotionResultFlags.None } |> Some
 
     /// Implementation of the 'ap' motion.  Unfortunately this is not as simple as the documentation
     /// states it is.  While the 'ap' motion uses the same underlying definition of a paragraph 
@@ -1572,20 +1586,24 @@ type internal MotionUtil
     /// An inner block motion is just the all block motion with the start and 
     /// end character removed 
     member x.InnerBlock contextPoint blockKind count =
-        match x.GetBlock contextPoint blockKind count with
-        | None -> None
-        | Some span ->
-            if span.Length < 3 then
-                None
-            else
-                let startPoint = SnapshotPointUtil.AddOne span.Start
-                let endPoint = SnapshotPointUtil.SubtractOne span.End
-                let span = SnapshotSpan(startPoint, endPoint)
-                {
-                    Span = span
-                    IsForward = true
-                    MotionKind = MotionKind.CharacterWiseInclusive
-                    MotionResultFlags = MotionResultFlags.None } |> Some
+
+        if count <> 1 then
+            None
+        else
+            match x.GetBlock contextPoint blockKind with
+            | None -> None
+            | Some span ->
+                if span.Length < 3 then
+                    None
+                else
+                    let startPoint = SnapshotPointUtil.AddOne span.Start
+                    let endPoint = SnapshotPointUtil.SubtractOne span.End
+                    let span = SnapshotSpan(startPoint, endPoint)
+                    {
+                        Span = span
+                        IsForward = true
+                        MotionKind = MotionKind.CharacterWiseInclusive
+                        MotionResultFlags = MotionResultFlags.None } |> Some
 
     /// Implement the 'iw' motion.  Unlike the 'aw' motion it is not limited to a specific line
     /// and can exceed it
