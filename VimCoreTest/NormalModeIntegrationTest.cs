@@ -1445,6 +1445,34 @@ namespace Vim.UnitTest
             Assert.AreEqual("  fish", _textView.GetLine(3).GetText());
         }
 
+        /// <summary>
+        /// The 'o' command used to have a bug which occured when 
+        ///
+        ///  - Insert mode made no edits
+        ///  - The 'o' command put the caret into virtual space
+        ///
+        /// In that case the next edit command would link with the insert line below 
+        /// change in the repeat infrastructure.  Normally the move caret left
+        /// operation processed on Escape moved the caret and ended a repeat.  But
+        /// the move left from virtual space didn't use a proper command and 
+        /// caused repeat to remain open
+        /// 
+        /// Regression Test for Issue #748
+        /// </summary>
+        [Test]
+        public void RepeatCommand_InsertLineBelow_ToVirtualSpace()
+        {
+            Create("cat", "dog");
+            _vimBuffer.Process('o');
+            _textView.MoveCaretTo(_textView.GetCaretPoint().Position, 4);
+            _vimBuffer.Process(VimKey.Escape);
+            _textView.MoveCaretTo(0);
+            _vimBuffer.ProcessNotation("cwbear<Esc>");
+            _textView.MoveCaretToLine(2);
+            _vimBuffer.Process('.');
+            Assert.AreEqual("bear", _textBuffer.GetLine(2).GetText());
+        }
+
         [Test]
         public void Repeat_DeleteWithIncrementalSearch()
         {

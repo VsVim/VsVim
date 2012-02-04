@@ -2083,6 +2083,13 @@ type InsertCommand  =
     /// This is an insert command which is a combination of other insert commands
     | Combined of InsertCommand * InsertCommand
 
+    /// Complete the Insert Mode session.  This is done as a command so that it will 
+    /// be a bookend of insert mode for the repeat infrastructure
+    ///
+    /// The bool value represents whether or not the caret needs to be moved to the
+    /// left
+    | CompleteMode of bool
+
     /// Delete the character under the caret
     | Delete
 
@@ -2127,6 +2134,7 @@ type InsertCommand  =
                 match inner left, inner right with
                 | Some left, Some right -> left + right |> Some
                 | _ -> None
+            | CompleteMode _ -> None
             | Delete -> None
             | DeleteAllIndent -> None
             | DeleteWordBeforeCursor -> None

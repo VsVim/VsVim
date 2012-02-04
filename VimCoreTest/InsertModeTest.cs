@@ -8,8 +8,8 @@ using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
 using Vim.Extensions;
-using Vim.UnitTest.Mock;
 using Vim.Modes.Insert;
+using Vim.UnitTest.Mock;
 
 namespace Vim.UnitTest
 {
@@ -109,10 +109,10 @@ namespace Vim.UnitTest
             _mode.CommandRan += (sender, e) => { _lastCommandRan = e.CommandRunData; };
         }
 
-        private void SetupMoveCaretLeft()
+        private void SetupRunCompleteMode(bool moveCaret)
         {
             _insertUtil
-                .Setup(x => x.RunInsertCommand(InsertCommand.NewMoveCaret(Direction.Left)))
+                .Setup(x => x.RunInsertCommand(InsertCommand.NewCompleteMode(moveCaret)))
                 .Returns(CommandResult.NewCompleted(ModeSwitch.NewSwitchMode(ModeKind.Normal)))
                 .Verifiable();
         }
@@ -324,9 +324,23 @@ namespace Vim.UnitTest
             _broker.SetupGet(x => x.IsCompletionActive).Returns(false).Verifiable();
             _broker.SetupGet(x => x.IsQuickInfoActive).Returns(false).Verifiable();
             _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(false).Verifiable();
-            SetupMoveCaretLeft();
+            SetupRunCompleteMode(true);
             var res = _mode.Process(KeyInputUtil.EscapeKey);
             Assert.IsTrue(res.IsSwitchMode(ModeKind.Normal));
+            _factory.Verify();
+        }
+
+        /// <summary>
+        /// Make sure that Escape in insert mode runs a command even if the caret is in virtual 
+        /// space
+        /// </summary>
+        [Test]
+        public void Escape_RunCommand()
+        {
+            _textView.SetText("hello world", "", "again");
+            _textView.MoveCaretTo(_textView.GetLine(1).Start.Position, 4);
+            SetupRunCompleteMode(true);
+            _mode.Process(KeyInputUtil.EscapeKey);
             _factory.Verify();
         }
 
@@ -347,33 +361,10 @@ namespace Vim.UnitTest
             _broker
                 .Setup(x => x.DismissDisplayWindows())
                 .Verifiable();
-            SetupMoveCaretLeft();
+            SetupRunCompleteMode(true);
             var res = _mode.Process(KeyInputUtil.EscapeKey);
             Assert.IsTrue(res.IsSwitchMode(ModeKind.Normal));
             _factory.Verify();
-        }
-
-        /// <summary>
-        /// If the caret is in virtual space when leaving insert mode move it back to the real
-        /// position.  This really only comes up in a few cases, primarily the 'C' command 
-        /// which preserves indent by putting the caret in virtual space.  For example take the 
-        /// following (- are spaces and ^ is caret).
-        /// --cat
-        ///
-        /// Caret starts on the 'c' and 'autoindent' is on.  Execute the following
-        ///  - cc
-        ///  - Escape
-        /// Now the caret is at position 0 on a blank line 
-        /// </summary>
-        [Test]
-        public void Escape_LeaveVirtualSpace()
-        {
-            _textView.SetText("", "random data");
-            var virtualPoint = new VirtualSnapshotPoint(_textView.TextSnapshot.GetPoint(0), 2);
-            _textView.Caret.MoveTo(virtualPoint);
-            _operations.Setup(x => x.MoveCaretToPoint(virtualPoint.Position)).Verifiable();
-            _mode.Process(KeyInputUtil.EscapeKey);
-            _operations.Verify();
         }
 
         [Test]
@@ -394,10 +385,7 @@ namespace Vim.UnitTest
             _broker
                 .Setup(x => x.DismissDisplayWindows())
                 .Verifiable();
-            _insertUtil
-                .Setup(x => x.RunInsertCommand(InsertCommand.NewMoveCaret(Direction.Left)))
-                .Returns(CommandResult.NewCompleted(ModeSwitch.NewSwitchMode(ModeKind.Normal)))
-                .Verifiable();
+            SetupRunCompleteMode(true);
             var ki = KeyInputUtil.CharWithControlToKeyInput('[');
             var res = _mode.Process(ki);
             Assert.IsTrue(res.IsSwitchMode(ModeKind.Normal));
