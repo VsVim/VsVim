@@ -346,39 +346,28 @@ type internal InsertMode
 
     member x.ProcessEscape () =
 
-        let maybeMoveCaretLeft () = 
-            // Move the caret one to the left.  Note that this actually counts as a Vim command and is itself
-            // a repeatable item.  It works with insert mode by linking with the previous change
-            let moveCaretLeft () = 
-    
-                // TODO: Perhaps we can clean this up a bit.  Do we need to go through all of the ceremony of
-                // creating the KeyInputSet?
-                let keyInputSet = KeyNotationUtil.StringToKeyInputSet "<Left>"
-                let commandFlags = CommandFlags.Repeatable ||| CommandFlags.LinkedWithPreviousCommand
-                x.RunInsertCommand (InsertCommand.MoveCaret Direction.Left) keyInputSet commandFlags |> ignore
-
-            // Don't move the caret for block inserts.  It's explicitly positioned 
-            match _sessionData.InsertKind with
-            | InsertKind.Normal -> moveCaretLeft()
-            | InsertKind.Repeat _ -> moveCaretLeft()
-            | InsertKind.Block _ -> ()
-
         this.ApplyAfterEdits()
 
         if _broker.IsCompletionActive || _broker.IsSignatureHelpActive || _broker.IsQuickInfoActive then
             _broker.DismissDisplayWindows()
-            maybeMoveCaretLeft()
-            ProcessResult.OfModeKind ModeKind.Normal
 
-        else
-            // Need to adjust the caret on exit.  Typically it's just a move left by 1 but if we're
-            // in virtual space we just need to get out of it.
-            let virtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
-            if virtualPoint.IsInVirtualSpace then 
-                _operations.MoveCaretToPoint virtualPoint.Position
-            else
-                maybeMoveCaretLeft()
-            ProcessResult.OfModeKind ModeKind.Normal
+        // Don't move the caret for block inserts.  It's explicitly positioned 
+        let moveCaretLeft = 
+            match _sessionData.InsertKind with
+            | InsertKind.Normal -> true
+            | InsertKind.Repeat _ -> true
+            | InsertKind.Block _ -> false
+
+        // Run the mode cleanup command.  This must be done as a command.  Many commands call
+        // into insert mode expecting to link with at least one following command (cw, o, ct,
+        // etc ...).  Ending insert with an explicit link previous command guarantees these 
+        // commands are completed and not left hanging open for subsequente commands to link
+        // to.  
+        let keyInputSet = KeyNotationUtil.StringToKeyInputSet "<Left>"
+        let commandFlags = CommandFlags.Repeatable ||| CommandFlags.LinkedWithPreviousCommand
+        x.RunInsertCommand (InsertCommand.CompleteMode moveCaretLeft) keyInputSet commandFlags |> ignore
+
+        ProcessResult.OfModeKind ModeKind.Normal
 
     /// Start a word completion session in the given direction at the current caret point
     member x.StartWordCompletionSession isForward = 
@@ -580,6 +569,7 @@ type internal InsertMode
             match command with 
             | InsertCommand.Back ->  Some (TextChange.DeleteLeft 1)
             | InsertCommand.Combined _ -> None
+            | InsertCommand.CompleteMode _ -> None
             | InsertCommand.Delete -> Some (TextChange.DeleteRight 1)
             | InsertCommand.DeleteAllIndent -> None
             | InsertCommand.DeleteWordBeforeCursor -> None

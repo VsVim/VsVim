@@ -36,6 +36,40 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// If the caret is in virtual space when leaving insert mode move it back to the real
+        /// position.  This really only comes up in a few cases, primarily the 'C' command 
+        /// which preserves indent by putting the caret in virtual space.  For example take the 
+        /// following (- are spaces and ^ is caret).
+        /// --cat
+        ///
+        /// Caret starts on the 'c' and 'autoindent' is on.  Execute the following
+        ///  - cc
+        ///  - Escape
+        /// Now the caret is at position 0 on a blank line 
+        /// </summary>
+        [Test]
+        public void CompleteMode_CaretInVirtualSpace()
+        {
+            Create("", "hello world");
+            _textView.MoveCaretTo(0, 4);
+            _insertUtilRaw.CompleteMode(true);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// By default it needs to move the caret one to the left as insert mode does
+        /// upon completion
+        /// </summary>
+        [Test]
+        public void CompleteMode_Standard()
+        {
+            Create("cat dog");
+            _textView.MoveCaretTo(2);
+            _insertUtilRaw.CompleteMode(true);
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
         /// Run the command from the begining of a word
         /// </summary>
         [Test]

@@ -1066,6 +1066,7 @@ type Interpreter
         if hasBang then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "!")
         else
+            let filePath = SystemUtil.ResolvePath filePath
             match _fileSystem.ReadAllLines filePath with
             | None -> 
                 _statusUtil.OnError (Resources.CommandMode_CouldNotOpenFile filePath)

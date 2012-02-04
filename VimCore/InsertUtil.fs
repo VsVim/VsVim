@@ -138,6 +138,19 @@ type internal InsertUtil
         x.RunInsertCommand left |> ignore
         x.RunInsertCommand right
 
+    /// Complete the insert mode session.
+    member x.CompleteMode moveCaretLeft = 
+
+        // If the caret is in virtual space we move regardless of the flag.
+        let virtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
+        if virtualPoint.IsInVirtualSpace then 
+            _operations.MoveCaretToPoint virtualPoint.Position
+            CommandResult.Completed ModeSwitch.NoSwitch
+        elif moveCaretLeft then 
+            x.MoveCaret Direction.Left
+        else
+            CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Delete the character under the cursor
     member x.Delete () = 
         _editorOperations.Delete() |> ignore
@@ -374,6 +387,7 @@ type internal InsertUtil
             match command with
             | InsertCommand.Back -> x.Back()
             | InsertCommand.Combined (left, right) -> x.Combined left right
+            | InsertCommand.CompleteMode moveCaretLeft -> x.CompleteMode moveCaretLeft
             | InsertCommand.Delete -> x.Delete()
             | InsertCommand.DeleteAllIndent -> x.DeleteAllIndent() 
             | InsertCommand.DeleteWordBeforeCursor -> x.DeleteWordBeforeCursor()

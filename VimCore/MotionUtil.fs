@@ -1284,7 +1284,6 @@ type internal MotionUtil
     /// Implements the 'aw' motion.  The 'aw' motion is limited to the current line and won't ever
     /// extend above or below it.
     member x.AllWord kind count contextPoint = 
-
         let contextLine = SnapshotPointUtil.GetContainingLine contextPoint 
 
         // Is this word span on the same line as the context?  A word won't ever span multiple lines
