@@ -565,11 +565,23 @@ type BlockKind =
     /// A [] block
     | Bracket 
 
+    /// A () block
+    | Paren
+
+    /// A <> block
+    | AngleBracket
+
+    /// A {} block
+    | CurlyBracket
+
     with
 
     member x.Characters = 
         match x with 
         | Bracket -> '[', ']'
+        | Paren -> '(', ')'
+        | AngleBracket -> '<', '>'
+        | CurlyBracket -> '{', '}'
 
 /// A discriminated union of the Motion types supported.  These are the primary
 /// repeat mechanisms for Motion arguments so it's very important that these 

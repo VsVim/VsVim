@@ -1569,8 +1569,23 @@ type internal MotionUtil
                 MotionKind = MotionKind.LineWise column
                 MotionResultFlags = MotionResultFlags.None })
 
+    /// An inner block motion is just the all block motion with the start and 
+    /// end character removed 
     member x.InnerBlock contextPoint blockKind count =
-        None
+        match x.GetBlock contextPoint blockKind count with
+        | None -> None
+        | Some span ->
+            if span.Length < 3 then
+                None
+            else
+                let startPoint = SnapshotPointUtil.AddOne span.Start
+                let endPoint = SnapshotPointUtil.SubtractOne span.End
+                let span = SnapshotSpan(startPoint, endPoint)
+                {
+                    Span = span
+                    IsForward = true
+                    MotionKind = MotionKind.CharacterWiseInclusive
+                    MotionResultFlags = MotionResultFlags.None } |> Some
 
     /// Implement the 'iw' motion.  Unlike the 'aw' motion it is not limited to a specific line
     /// and can exceed it
