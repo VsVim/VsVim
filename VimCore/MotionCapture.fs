@@ -14,6 +14,85 @@ type internal MotionCapture
     let _vimHost = _vimBufferData.Vim.VimHost
     let _localSettings = _vimBufferData.LocalSettings
 
+    static let SharedMotions =  
+        let motionSeq : (string * MotionFlags * Motion) seq = 
+            seq { 
+                yield ("ap", MotionFlags.CursorMovement, Motion.AllParagraph)
+                yield ("as", MotionFlags.CursorMovement, Motion.AllSentence)
+                yield ("aw", MotionFlags.TextObject ||| MotionFlags.TextObjectWithLineToCharacter, Motion.AllWord WordKind.NormalWord)
+                yield ("aW", MotionFlags.TextObject ||| MotionFlags.TextObjectWithLineToCharacter, Motion.AllWord WordKind.BigWord)
+                yield ("a\"", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.QuotedString)
+                yield ("a'", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.QuotedString)
+                yield ("a`", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.QuotedString)
+                yield ("b", MotionFlags.CursorMovement, Motion.WordBackward WordKind.NormalWord)
+                yield ("B", MotionFlags.CursorMovement, Motion.WordBackward WordKind.BigWord)
+                yield ("e", MotionFlags.CursorMovement, Motion.EndOfWord WordKind.NormalWord)
+                yield ("E", MotionFlags.CursorMovement, Motion.EndOfWord WordKind.BigWord)
+                yield ("gg", MotionFlags.CursorMovement, Motion.LineOrFirstToFirstNonBlank)
+                yield ("g_", MotionFlags.CursorMovement, Motion.LastNonBlankOnLine)
+                yield ("g*", MotionFlags.CursorMovement, Motion.NextPartialWord Path.Forward)
+                yield ("g#", MotionFlags.CursorMovement, Motion.NextPartialWord Path.Backward)
+                yield ("G", MotionFlags.CursorMovement, Motion.LineOrLastToFirstNonBlank)
+                yield ("h", MotionFlags.CursorMovement, Motion.CharLeft)
+                yield ("H", MotionFlags.CursorMovement, Motion.LineFromTopOfVisibleWindow)
+                yield ("iw", MotionFlags.TextObject ||| MotionFlags.TextObjectWithLineToCharacter, Motion.InnerWord WordKind.NormalWord)
+                yield ("iW", MotionFlags.TextObject ||| MotionFlags.TextObjectWithLineToCharacter, Motion.InnerWord WordKind.BigWord)
+                yield ("i\"", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.QuotedStringContents)
+                yield ("i'", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.QuotedStringContents)
+                yield ("i`", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.QuotedStringContents)
+                yield ("j", MotionFlags.CursorMovement, Motion.LineDown)
+                yield ("k", MotionFlags.CursorMovement, Motion.LineUp)
+                yield ("l", MotionFlags.CursorMovement, Motion.CharRight)
+                yield ("M", MotionFlags.CursorMovement, Motion.LineInMiddleOfVisibleWindow)
+                yield ("n", MotionFlags.CursorMovement, Motion.LastSearch false)
+                yield ("N", MotionFlags.CursorMovement, Motion.LastSearch true)
+                yield ("L", MotionFlags.CursorMovement, Motion.LineFromBottomOfVisibleWindow)
+                yield ("w", MotionFlags.CursorMovement, Motion.WordForward WordKind.NormalWord)
+                yield ("W", MotionFlags.CursorMovement, Motion.WordForward WordKind.BigWord)
+                yield ("<End>", MotionFlags.CursorMovement, Motion.EndOfLine)
+                yield ("<C-Home>", MotionFlags.CursorMovement, Motion.LineOrFirstToFirstNonBlank)
+                yield ("<C-Right>", MotionFlags.CursorMovement, Motion.WordForward WordKind.BigWord)
+                yield ("<C-Left>", MotionFlags.CursorMovement, Motion.WordBackward WordKind.BigWord)
+                yield ("<C-h>", MotionFlags.CursorMovement, Motion.CharLeft)
+                yield ("<C-j>", MotionFlags.CursorMovement, Motion.LineDown)
+                yield ("<C-m>", MotionFlags.CursorMovement, Motion.LineDownToFirstNonBlank)
+                yield ("<C-n>", MotionFlags.CursorMovement, Motion.LineDown)
+                yield ("<C-p>", MotionFlags.CursorMovement, Motion.LineUp)
+                yield ("<Down>", MotionFlags.CursorMovement, Motion.LineDown)
+                yield ("<S-Left>", MotionFlags.CursorMovement, Motion.WordBackward WordKind.NormalWord)
+                yield ("<S-Right>", MotionFlags.CursorMovement, Motion.WordForward WordKind.NormalWord)
+                yield ("<Left>", MotionFlags.CursorMovement, Motion.CharLeft)
+                yield ("<Bs>", MotionFlags.CursorMovement, Motion.CharLeft)
+                yield ("<Right>", MotionFlags.CursorMovement, Motion.CharRight)
+                yield ("<Space>", MotionFlags.CursorMovement, Motion.CharRight)
+                yield ("<Up>", MotionFlags.CursorMovement, Motion.LineUp)
+                yield ("$", MotionFlags.CursorMovement, Motion.EndOfLine)
+                yield ("^", MotionFlags.CursorMovement, Motion.FirstNonBlankOnCurrentLine)
+                yield ("0", MotionFlags.CursorMovement, Motion.BeginingOfLine)
+                yield ("+", MotionFlags.CursorMovement, Motion.LineDownToFirstNonBlank)
+                yield ("_", MotionFlags.CursorMovement, Motion.FirstNonBlankOnLine)
+                yield ("-", MotionFlags.CursorMovement, Motion.LineUpToFirstNonBlank)
+                yield ("(", MotionFlags.CursorMovement, Motion.SentenceBackward)
+                yield (")", MotionFlags.CursorMovement, Motion.SentenceForward)
+                yield ("{", MotionFlags.CursorMovement, Motion.ParagraphBackward)
+                yield ("}", MotionFlags.CursorMovement, Motion.ParagraphForward)
+                yield ("]]", MotionFlags.CursorMovement, Motion.SectionForward)
+                yield ("][", MotionFlags.CursorMovement, Motion.SectionForwardOrCloseBrace)
+                yield ("[[", MotionFlags.CursorMovement, Motion.SectionBackwardOrOpenBrace)
+                yield ("[]", MotionFlags.CursorMovement, Motion.SectionBackwardOrCloseBrace)
+                yield (";", MotionFlags.CursorMovement, Motion.RepeatLastCharSearch)
+                yield ("%", MotionFlags.CursorMovement, Motion.MatchingToken)
+                yield (",", MotionFlags.CursorMovement, Motion.RepeatLastCharSearchOpposite)
+                yield ("*", MotionFlags.CursorMovement, Motion.NextWord Path.Forward)
+                yield ("#", MotionFlags.CursorMovement, Motion.NextWord Path.Backward)
+            } 
+            
+        motionSeq 
+        |> Seq.map (fun (str, flags, motion) ->
+            let name = KeyNotationUtil.StringToKeyInputSet str
+            MotionBinding.Simple (name, flags, motion))
+        |> List.ofSeq
+
     /// Get a char and use the provided 'func' to create a Motion value.
     let GetChar func = 
         let data = BindData<_>.CreateForSingleChar (Some KeyRemapMode.Language) func
@@ -49,288 +128,6 @@ type internal MotionCapture
 
         BindDataStorage.Complex activateFunc
 
-    let SimpleMotions =  
-        let motionSeq : (string * MotionFlags * Motion) seq = 
-            seq { 
-                yield (
-                    "w", 
-                    MotionFlags.CursorMovement,
-                    Motion.WordForward WordKind.NormalWord)
-                yield (
-                    "<S-Right>",
-                    MotionFlags.CursorMovement,
-                    Motion.WordForward WordKind.NormalWord)
-                yield (
-                    "W", 
-                    MotionFlags.CursorMovement,
-                    Motion.WordForward WordKind.BigWord)
-                yield (
-                    "<C-Right>", 
-                    MotionFlags.CursorMovement,
-                    Motion.WordForward WordKind.BigWord)
-                yield (
-                    "b", 
-                    MotionFlags.CursorMovement,
-                    Motion.WordBackward WordKind.NormalWord)
-                yield (
-                    "<S-Left>", 
-                    MotionFlags.CursorMovement,
-                    Motion.WordBackward WordKind.NormalWord)
-                yield (
-                    "B", 
-                    MotionFlags.CursorMovement,
-                    Motion.WordBackward WordKind.BigWord)
-                yield (
-                    "<C-Left>", 
-                    MotionFlags.CursorMovement,
-                    Motion.WordBackward WordKind.BigWord)
-                yield (
-                    "$", 
-                    MotionFlags.CursorMovement,
-                    Motion.EndOfLine)
-                yield (
-                    "<End>", 
-                    MotionFlags.CursorMovement,
-                    Motion.EndOfLine)
-                yield (
-                    "^", 
-                    MotionFlags.CursorMovement,
-                    Motion.FirstNonBlankOnCurrentLine)
-                yield (
-                    "0", 
-                    MotionFlags.CursorMovement,
-                    Motion.BeginingOfLine)
-                yield (
-                    "e", 
-                    MotionFlags.CursorMovement,
-                    Motion.EndOfWord WordKind.NormalWord)
-                yield (
-                    "E", 
-                    MotionFlags.CursorMovement,
-                    Motion.EndOfWord WordKind.BigWord)
-                yield (
-                    "h", 
-                    MotionFlags.CursorMovement,
-                    Motion.CharLeft)
-                yield (
-                    "<Left>", 
-                    MotionFlags.CursorMovement,
-                    Motion.CharLeft)
-                yield (
-                    "<Bs>", 
-                    MotionFlags.CursorMovement,
-                    Motion.CharLeft)
-                yield (
-                    "<C-h>", 
-                    MotionFlags.CursorMovement,
-                    Motion.CharLeft)
-                yield (
-                    "l", 
-                    MotionFlags.CursorMovement,
-                    Motion.CharRight)
-                yield (
-                    "<Right>", 
-                    MotionFlags.CursorMovement,
-                    Motion.CharRight)
-                yield (
-                    "<Space>", 
-                    MotionFlags.CursorMovement,
-                    Motion.CharRight)
-                yield (
-                    "k", 
-                    MotionFlags.CursorMovement,
-                    Motion.LineUp)
-                yield (
-                    "<Up>", 
-                    MotionFlags.CursorMovement,
-                    Motion.LineUp)
-                yield (
-                    "<C-p>", 
-                    MotionFlags.CursorMovement,
-                    Motion.LineUp)
-                yield (
-                    "j", 
-                    MotionFlags.CursorMovement,
-                    Motion.LineDown)
-                yield (
-                    "<Down>", 
-                    MotionFlags.CursorMovement,
-                    Motion.LineDown)
-                yield (
-                    "<C-n>", 
-                    MotionFlags.CursorMovement,
-                    Motion.LineDown)
-                yield (
-                    "<C-j>", 
-                    MotionFlags.CursorMovement,
-                    Motion.LineDown)
-                yield (
-                    "+", 
-                    MotionFlags.CursorMovement,
-                    Motion.LineDownToFirstNonBlank)
-                yield (
-                    "_", 
-                    MotionFlags.CursorMovement,
-                    Motion.FirstNonBlankOnLine)
-                yield (
-                    "<C-m>", 
-                    MotionFlags.CursorMovement,
-                    Motion.LineDownToFirstNonBlank)
-                yield (
-                    "-", 
-                    MotionFlags.CursorMovement,
-                    Motion.LineUpToFirstNonBlank)
-                yield (
-                    "(", 
-                    MotionFlags.CursorMovement,
-                    Motion.SentenceBackward)
-                yield (
-                    ")", 
-                    MotionFlags.CursorMovement,
-                    Motion.SentenceForward)
-                yield (
-                    "{", 
-                    MotionFlags.CursorMovement,
-                    Motion.ParagraphBackward)
-                yield (
-                    "}", 
-                    MotionFlags.CursorMovement,
-                    Motion.ParagraphForward)
-                yield (
-                    "g_", 
-                    MotionFlags.CursorMovement,
-                    Motion.LastNonBlankOnLine)
-                yield (
-                    "aw", 
-                    MotionFlags.TextObject ||| MotionFlags.TextObjectWithLineToCharacter,
-                    Motion.AllWord WordKind.NormalWord)
-                yield (
-                    "aW", 
-                    MotionFlags.TextObject ||| MotionFlags.TextObjectWithLineToCharacter,
-                    Motion.AllWord WordKind.BigWord)
-                yield (
-                    "as", 
-                    MotionFlags.CursorMovement,
-                    Motion.AllSentence)
-                yield (
-                    "ap", 
-                    MotionFlags.CursorMovement,
-                    Motion.AllParagraph)
-                yield (
-                    "]]", 
-                    MotionFlags.CursorMovement,
-                    Motion.SectionForward)
-                yield (
-                    "][", 
-                    MotionFlags.CursorMovement,
-                    Motion.SectionForwardOrCloseBrace)
-                yield (
-                    "[[", 
-                    MotionFlags.CursorMovement,
-                    Motion.SectionBackwardOrOpenBrace)
-                yield (
-                    "[]", 
-                    MotionFlags.CursorMovement,
-                    Motion.SectionBackwardOrCloseBrace)
-                yield (
-                    "a\"", 
-                    MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter,
-                    Motion.QuotedString)
-                yield (
-                    "a'", 
-                    MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter,
-                    Motion.QuotedString)
-                yield (
-                    "a`", 
-                    MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter,
-                    Motion.QuotedString)
-                yield (
-                    "i\"", 
-                    MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter,
-                    Motion.QuotedStringContents)
-                yield (
-                    "i'", 
-                    MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter,
-                    Motion.QuotedStringContents)
-                yield (
-                    "i`", 
-                    MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter,
-                    Motion.QuotedStringContents)
-                yield (
-                    "G", 
-                    MotionFlags.CursorMovement,
-                    Motion.LineOrLastToFirstNonBlank)
-                yield (
-                    "H", 
-                    MotionFlags.CursorMovement,
-                    Motion.LineFromTopOfVisibleWindow)
-                yield (
-                    "L", 
-                    MotionFlags.CursorMovement,
-                    Motion.LineFromBottomOfVisibleWindow)
-                yield (
-                    "M", 
-                    MotionFlags.CursorMovement,
-                    Motion.LineInMiddleOfVisibleWindow)
-                yield (
-                    ";", 
-                    MotionFlags.CursorMovement,
-                    Motion.RepeatLastCharSearch)
-                yield (
-                    "%",
-                    MotionFlags.CursorMovement,
-                    Motion.MatchingToken)
-                yield (
-                    ",", 
-                    MotionFlags.CursorMovement,
-                    Motion.RepeatLastCharSearchOpposite)
-                yield ( 
-                    "gg", 
-                    MotionFlags.CursorMovement,
-                    Motion.LineOrFirstToFirstNonBlank)
-                yield ( 
-                    "<C-Home>", 
-                    MotionFlags.CursorMovement,
-                    Motion.LineOrFirstToFirstNonBlank)
-                yield (
-                    "n",
-                    MotionFlags.CursorMovement,
-                    Motion.LastSearch false)
-                yield (
-                    "N",
-                    MotionFlags.CursorMovement,
-                    Motion.LastSearch true)
-                yield (
-                    "*",
-                    MotionFlags.CursorMovement,
-                    Motion.NextWord Path.Forward)
-                yield (
-                    "#",
-                    MotionFlags.CursorMovement,
-                    Motion.NextWord Path.Backward)
-                yield (
-                    "g*",
-                    MotionFlags.CursorMovement,
-                    Motion.NextPartialWord Path.Forward)
-                yield (
-                    "g#",
-                    MotionFlags.CursorMovement,
-                    Motion.NextPartialWord Path.Backward)
-                yield (
-                    "iw",
-                    MotionFlags.TextObject ||| MotionFlags.TextObjectWithLineToCharacter,
-                    Motion.InnerWord WordKind.NormalWord)
-                yield (
-                    "iW",
-                    MotionFlags.TextObject ||| MotionFlags.TextObjectWithLineToCharacter,
-                    Motion.InnerWord WordKind.BigWord)
-            } 
-            
-        motionSeq 
-        |> Seq.map (fun (str, flags, motion) ->
-            let name = KeyNotationUtil.StringToKeyInputSet str
-            MotionBinding.Simple (name, flags, motion))
-    
     let ComplexMotions = 
         let motionSeq : (string * MotionFlags * BindDataStorage<Motion>) seq = 
             seq {
@@ -373,9 +170,8 @@ type internal MotionCapture
                 MotionBinding.Complex (name, flags, bindDataStorage))
     
     let AllMotionsCore =
-        let simple = SimpleMotions 
         let complex = ComplexMotions 
-        simple |> Seq.append complex
+        SharedMotions |> Seq.append complex
 
     let MotionBindings = AllMotionsCore
 
