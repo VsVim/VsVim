@@ -27,4 +27,9 @@ copy VsVim\bin\Debug\* $target
 popd
 & $vsixInstaller /quiet (join-path $target "VsVim.vsix")
 wait-process "vsixInstaller"
+
+# Even though we waited for the installer to finish devenv doesn't
+# always seem to pick up the change immediately.  Wait a sec for
+# it all to catch up
+sleep 2
 & $devenv
