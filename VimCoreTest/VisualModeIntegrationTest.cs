@@ -1265,7 +1265,7 @@ namespace Vim.UnitTest
 
         /// <summary>
         /// Unlike non-block selections multiple calls to ab won't extend the selection
-        /// any
+        /// to a sibling block
         /// </summary>
         [Test]
         public void TextObject_AllParen_Multiple()
@@ -1275,6 +1275,50 @@ namespace Vim.UnitTest
             _vimBuffer.Process("vabababab");
             Assert.AreEqual("(dog)", _textView.GetSelectionSpan().GetText());
             Assert.AreEqual(8, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Text object selections will extend to outer blocks
+        /// </summary>
+        [Test]
+        public void TextObject_AllParen_ExpandOutward()
+        {
+            Create("cat (fo(bad)od) bear");
+            _textView.MoveCaretTo(9);
+            _vimBuffer.Process("vab");
+            Assert.AreEqual("(bad)", _textView.GetSelectionSpan().GetText());
+            _vimBuffer.Process("ab");
+            Assert.AreEqual("(fo(bad)od)", _textView.GetSelectionSpan().GetText());
+            Assert.AreEqual(14, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// If we've already selected the inner block at the caret then move outward 
+        /// and select the containing block
+        /// </summary>
+        [Test]
+        public void TextObject_InnerParen_ExpandOutward()
+        {
+            Create("a (fo(tree)od) b");
+            _textView.MoveCaretTo(7);
+            _vimBuffer.Process("vib");
+            Assert.AreEqual("tree", _textView.GetSelectionSpan().GetText());
+            _vimBuffer.Process("ib");
+            Assert.AreEqual("fo(tree)od", _textView.GetSelectionSpan().GetText());
+            Assert.AreEqual(12, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// If the entire inner block is not yet selected then go ahead and select it 
+        /// </summary>
+        [Test]
+        public void TextObject_InnerParen_ExpandToFullBlock()
+        {
+            Create("a (fo(tree)od) b");
+            _textView.MoveCaretTo(8);
+            _vimBuffer.Process("vl");
+            Assert.AreEqual("ee", _textView.GetSelectionSpan().GetText());
+            _vimBuffer.Process("ib");
         }
 
         /// <summary>

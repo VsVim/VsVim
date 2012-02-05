@@ -2398,8 +2398,10 @@ type internal MotionUtil
 
         let motionResult = 
             match motion with 
-            | Motion.InnerWord wordKind -> x.InnerWord wordKind 1 point 
+            | Motion.AllBlock blockKind -> x.AllBlock point blockKind 1
             | Motion.AllWord wordKind -> x.AllWord wordKind 1 point
+            | Motion.InnerWord wordKind -> x.InnerWord wordKind 1 point 
+            | Motion.InnerBlock blockKind -> x.InnerBlock point blockKind 1
             | _ -> None
         Option.map (x.AdjustMotionResult motion) motionResult
 

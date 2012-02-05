@@ -1273,53 +1273,83 @@ type internal CommandUtil
                 else
                     visualSpan.VisualKind
 
-        // The behavior of a text object depends highly on whether or not this is 
-        // visual mode in it's initial state.  The docs define this as the start 
-        // and end being the same but that's not true for line mode where stard and 
-        // end are rarely the same.
-        let isInitialSelection = 
-            match visualSpan with
-            | VisualSpan.Character characterSpan -> characterSpan.Length <= 1
-            | VisualSpan.Block blockSpan -> blockSpan.Width <= 1
-            | VisualSpan.Line lineRange -> lineRange.Count = 1
-
         let onError () =
             _commonOperations.Beep()
             CommandResult.Error
 
-        // TODO: Backwards motions
-        // TODO: The non-initial selection needs to ensure we're in the correct mode
+        let setSelection span =
+            let visualSpan = VisualSpan.CreateForSpan span desiredVisualKind
+            let visualSelection = VisualSelection.CreateForward visualSpan
+            let argument = ModeArgument.InitialVisualSelection (visualSelection, None)
+            x.SwitchMode desiredVisualKind.ModeKind argument
 
-        if isInitialSelection then
-            // For an initial selection we just do a standard motion from the caret point
-            // and update the selection.
+        // Handle the normal set of text objects (essentially non-block movements)
+        let moveNormal () =
+
+            // The behavior of a text object depends highly on whether or not this is 
+            // visual mode in it's initial state.  The docs define this as the start 
+            // and end being the same but that's not true for line mode where stard and 
+            // end are rarely the same.
+            let isInitialSelection = 
+                match visualSpan with
+                | VisualSpan.Character characterSpan -> characterSpan.Length <= 1
+                | VisualSpan.Block blockSpan -> blockSpan.Width <= 1
+                | VisualSpan.Line lineRange -> lineRange.Count = 1
+
+            // TODO: Backwards motions
+            // TODO: The non-initial selection needs to ensure we're in the correct mode
+
+            if isInitialSelection then
+                // For an initial selection we just do a standard motion from the caret point
+                // and update the selection.
+                let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = Some 1}
+                match _motionUtil.GetMotion motion argument with
+                | None -> onError ()
+                | Some motionResult -> 
+
+                    // The initial selection span for a text object doesn't change based on 
+                    // whether the selection is inclusive / exclusive.  Only the caret position
+                    // changes
+                    setSelection motionResult.Span
+            else
+                // Need to move the caret to the next item.  When we are in inclusive selection
+                // though the caret is at the last position of the previous motion so doing the
+                // motion again is essentially a no-op.  Calculate the correct point from which 
+                // to do the motion
+                let point = 
+                    match _globalSettings.SelectionKind with
+                    | SelectionKind.Inclusive -> SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
+                    | SelectionKind.Exclusive -> x.CaretPoint
+
+                match _motionUtil.GetTextObject motion point with
+                | None -> onError()
+                | Some motionResult ->
+                    _commonOperations.MoveCaretToMotionResult motionResult
+                    CommandResult.Completed ModeSwitch.NoSwitch
+
+        let moveBlock blockKind isAll = 
             let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = Some 1}
             match _motionUtil.GetMotion motion argument with
             | None -> onError ()
             | Some motionResult -> 
+                let blockVisualSpan = VisualSpan.CreateForSpan motionResult.Span desiredVisualKind
+                if visualSpan <> blockVisualSpan then
+                    // Selection is not yet the entire block so just expand to the block 
+                    setSelection motionResult.Span
+                else
+                    // Attempt to expand the selection to the encompassing block.  Simply move
+                    // the caret outside the current block and attempt again to get the 
+                    let contextPoint = 
+                        let offset = if isAll then 1 else 2
+                        SnapshotPointUtil.TryAdd offset x.CaretPoint
+                    match contextPoint |> OptionUtil.map2 (fun point -> _motionUtil.GetTextObject motion point) with
+                    | None -> onError()
+                    | Some motionResult -> setSelection motionResult.Span
 
-                // The initial selection span for a text object doesn't change based on 
-                // whether the selection is inclusive / exclusive.  Only the caret position
-                // changes
-                let visualSpan = VisualSpan.CreateForSpan motionResult.Span desiredVisualKind
-                let visualSelection = VisualSelection.CreateForward visualSpan
-                let argument = ModeArgument.InitialVisualSelection (visualSelection, None)
-                x.SwitchMode desiredVisualKind.ModeKind argument
-        else
-            // Need to move the caret to the next item.  When we are in inclusive selection
-            // though the caret is at the last position of the previous motion so doing the
-            // motion again is essentially a no-op.  Calculate the correct point from which 
-            // to do the motion
-            let point = 
-                match _globalSettings.SelectionKind with
-                | SelectionKind.Inclusive -> SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
-                | SelectionKind.Exclusive -> x.CaretPoint
-
-            match _motionUtil.GetTextObject motion point with
-            | None -> onError()
-            | Some motionResult ->
-                _commonOperations.MoveCaretToMotionResult motionResult
-                CommandResult.Completed ModeSwitch.NoSwitch
+        match motion with
+        | Motion.AllBlock blockKind -> moveBlock blockKind true
+        | Motion.InnerBlock blockKind -> moveBlock blockKind false
+        | _ -> moveNormal () 
 
     /// Open a fold in visual mode.  In Visual Mode a single fold level is opened for every
     /// line in the selection
