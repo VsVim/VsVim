@@ -2486,8 +2486,8 @@ type MotionFlags =
 
     | None = 0x0
 
-    /// This type of motion can be used to move the cursor
-    | CursorMovement = 0x1 
+    /// This type of motion can be used to move the caret
+    | CaretMovement = 0x1 
 
     /// The motion function wants to specially handle the esape function.  This is used 
     /// on Complex motions such as / and ? 

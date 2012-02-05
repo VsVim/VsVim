@@ -859,7 +859,7 @@ type internal MotionUtil
             false
 
     /// Get the block span for the specified char at the given context point
-    member x.GetBlock contextPoint (blockKind : BlockKind) = 
+    member x.GetBlock (blockKind : BlockKind) contextPoint = 
 
         let startChar, endChar = blockKind.Characters
 
@@ -1091,7 +1091,7 @@ type internal MotionUtil
         if count <> 1 then
             None
         else
-            let span = x.GetBlock contextPoint blockKind
+            let span = x.GetBlock blockKind contextPoint 
             match span with
             | None -> None
             | Some span ->
@@ -1590,7 +1590,7 @@ type internal MotionUtil
         if count <> 1 then
             None
         else
-            match x.GetBlock contextPoint blockKind with
+            match x.GetBlock blockKind contextPoint with
             | None -> None
             | Some span ->
                 if span.Length < 3 then

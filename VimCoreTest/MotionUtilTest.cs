@@ -2231,7 +2231,7 @@ namespace Vim.UnitTest
         public void GetBlock_Simple()
         {
             Create("[cat] dog");
-            var span = _motionUtil.GetBlock(_textBuffer.GetPoint(0), BlockKind.Bracket).Value;
+            var span = _motionUtil.GetBlock(BlockKind.Bracket, _textBuffer.GetPoint(0)).Value;
             Assert.AreEqual(_textBuffer.GetSpan(0, 5), span);
         }
 
@@ -2242,7 +2242,7 @@ namespace Vim.UnitTest
         public void GetBlock_Simple_FromMiddle()
         {
             Create("[cat] dog");
-            var span = _motionUtil.GetBlock(_textBuffer.GetPoint(2), BlockKind.Bracket).Value;
+            var span = _motionUtil.GetBlock(BlockKind.Bracket, _textBuffer.GetPoint(2)).Value;
             Assert.AreEqual(_textBuffer.GetSpan(0, 5), span);
         }
 
@@ -2253,7 +2253,7 @@ namespace Vim.UnitTest
         public void GetBlock_Nested_Before()
         {
             Create("cat (fo(a)od) dog");
-            var span = _motionUtil.GetBlock(_textBuffer.GetPoint(6), BlockKind.Paren).Value;
+            var span = _motionUtil.GetBlock(BlockKind.Paren, _textBuffer.GetPoint(6)).Value;
             Assert.AreEqual(_textBuffer.GetSpan(4, 9), span);
         }
 
@@ -2264,7 +2264,7 @@ namespace Vim.UnitTest
         public void GetBlock_Nested_After()
         {
             Create("cat (fo(a)od) dog");
-            var span = _motionUtil.GetBlock(_textBuffer.GetPoint(10), BlockKind.Paren).Value;
+            var span = _motionUtil.GetBlock(BlockKind.Paren, _textBuffer.GetPoint(10)).Value;
             Assert.AreEqual(_textBuffer.GetSpan(4, 9), span);
         }
 
@@ -2275,7 +2275,7 @@ namespace Vim.UnitTest
         public void GetBlock_Bad_NoStartChar()
         {
             Create("cat] dog");
-            var span = _motionUtil.GetBlock(_textBuffer.GetPoint(0), BlockKind.Bracket);
+            var span = _motionUtil.GetBlock(BlockKind.Bracket, _textBuffer.GetPoint(0));
             Assert.IsTrue(span.IsNone());
         }
 
@@ -2286,7 +2286,7 @@ namespace Vim.UnitTest
         public void GetBlock_Bad_NoEndChar()
         {
             Create("[cat dog");
-            var span = _motionUtil.GetBlock(_textBuffer.GetPoint(0), BlockKind.Bracket);
+            var span = _motionUtil.GetBlock(BlockKind.Bracket, _textBuffer.GetPoint(0));
             Assert.IsTrue(span.IsNone());
         }
 
@@ -2294,7 +2294,7 @@ namespace Vim.UnitTest
         public void GetBlock_Bad_EscapedStartChar()
         {
             Create(@"\[cat] dog");
-            var span = _motionUtil.GetBlock(_textBuffer.GetPoint(1), BlockKind.Bracket);
+            var span = _motionUtil.GetBlock(BlockKind.Bracket, _textBuffer.GetPoint(1));
             Assert.IsTrue(span.IsNone());
         }
 
