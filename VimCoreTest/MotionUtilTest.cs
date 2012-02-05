@@ -2225,6 +2225,80 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Simple matched bracket test
+        /// </summary>
+        [Test]
+        public void GetBlock_Simple()
+        {
+            Create("[cat] dog");
+            var span = _motionUtil.GetBlock(BlockKind.Bracket, _textBuffer.GetPoint(0)).Value;
+            Assert.AreEqual(_textBuffer.GetSpan(0, 5), span);
+        }
+
+        /// <summary>
+        /// Simple matched bracket test from the middle
+        /// </summary>
+        [Test]
+        public void GetBlock_Simple_FromMiddle()
+        {
+            Create("[cat] dog");
+            var span = _motionUtil.GetBlock(BlockKind.Bracket, _textBuffer.GetPoint(2)).Value;
+            Assert.AreEqual(_textBuffer.GetSpan(0, 5), span);
+        }
+
+        /// <summary>
+        /// Make sure that we can process the nested block when the caret is before it
+        /// </summary>
+        [Test]
+        public void GetBlock_Nested_Before()
+        {
+            Create("cat (fo(a)od) dog");
+            var span = _motionUtil.GetBlock(BlockKind.Paren, _textBuffer.GetPoint(6)).Value;
+            Assert.AreEqual(_textBuffer.GetSpan(4, 9), span);
+        }
+
+        /// <summary>
+        /// Make sure that we can process the nested block when the caret is after it
+        /// </summary>
+        [Test]
+        public void GetBlock_Nested_After()
+        {
+            Create("cat (fo(a)od) dog");
+            var span = _motionUtil.GetBlock(BlockKind.Paren, _textBuffer.GetPoint(10)).Value;
+            Assert.AreEqual(_textBuffer.GetSpan(4, 9), span);
+        }
+
+        /// <summary>
+        /// Bad match because of no start char
+        /// </summary>
+        [Test]
+        public void GetBlock_Bad_NoStartChar()
+        {
+            Create("cat] dog");
+            var span = _motionUtil.GetBlock(BlockKind.Bracket, _textBuffer.GetPoint(0));
+            Assert.IsTrue(span.IsNone());
+        }
+
+        /// <summary>
+        /// Bad match because of no end char
+        /// </summary>
+        [Test]
+        public void GetBlock_Bad_NoEndChar()
+        {
+            Create("[cat dog");
+            var span = _motionUtil.GetBlock(BlockKind.Bracket, _textBuffer.GetPoint(0));
+            Assert.IsTrue(span.IsNone());
+        }
+
+        [Test]
+        public void GetBlock_Bad_EscapedStartChar()
+        {
+            Create(@"\[cat] dog");
+            var span = _motionUtil.GetBlock(BlockKind.Bracket, _textBuffer.GetPoint(1));
+            Assert.IsTrue(span.IsNone());
+        }
+
+        /// <summary>
         /// Break on section macros
         /// </summary>
         [Test]

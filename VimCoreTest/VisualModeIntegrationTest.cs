@@ -1250,6 +1250,92 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Ensure the ab motion includes the parens and puts the caret on the last 
+        /// character
+        /// </summary>
+        [Test]
+        public void TextObject_AllParen_MiddleOfWord()
+        {
+            Create("cat (dog) fish");
+            _textView.MoveCaretTo(6);
+            _vimBuffer.Process("vab");
+            Assert.AreEqual("(dog)", _textView.GetSelectionSpan().GetText());
+            Assert.AreEqual(8, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Unlike non-block selections multiple calls to ab won't extend the selection
+        /// to a sibling block
+        /// </summary>
+        [Test]
+        public void TextObject_AllParen_Multiple()
+        {
+            Create("cat (dog) (bear)");
+            _textView.MoveCaretTo(6);
+            _vimBuffer.Process("vabababab");
+            Assert.AreEqual("(dog)", _textView.GetSelectionSpan().GetText());
+            Assert.AreEqual(8, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Text object selections will extend to outer blocks
+        /// </summary>
+        [Test]
+        public void TextObject_AllParen_ExpandOutward()
+        {
+            Create("cat (fo(bad)od) bear");
+            _textView.MoveCaretTo(9);
+            _vimBuffer.Process("vab");
+            Assert.AreEqual("(bad)", _textView.GetSelectionSpan().GetText());
+            _vimBuffer.Process("ab");
+            Assert.AreEqual("(fo(bad)od)", _textView.GetSelectionSpan().GetText());
+            Assert.AreEqual(14, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// If we've already selected the inner block at the caret then move outward 
+        /// and select the containing block
+        /// </summary>
+        [Test]
+        public void TextObject_InnerParen_ExpandOutward()
+        {
+            Create("a (fo(tree)od) b");
+            _textView.MoveCaretTo(7);
+            _vimBuffer.Process("vib");
+            Assert.AreEqual("tree", _textView.GetSelectionSpan().GetText());
+            _vimBuffer.Process("ib");
+            Assert.AreEqual("fo(tree)od", _textView.GetSelectionSpan().GetText());
+            Assert.AreEqual(12, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// If the entire inner block is not yet selected then go ahead and select it 
+        /// </summary>
+        [Test]
+        public void TextObject_InnerParen_ExpandToFullBlock()
+        {
+            Create("a (fo(tree)od) b");
+            _textView.MoveCaretTo(8);
+            _vimBuffer.Process("vl");
+            Assert.AreEqual("ee", _textView.GetSelectionSpan().GetText());
+            _vimBuffer.Process("ib");
+        }
+
+        /// <summary>
+        /// Ensure the ib motion excludes the parens and puts the caret on the last 
+        /// character
+        /// </summary>
+        [Test]
+        public void TextObject_InnerParen_MiddleOfWord()
+        {
+            Create("cat (dog) fish");
+            _textView.MoveCaretTo(6);
+            _vimBuffer.Process("vib");
+            Assert.AreEqual("dog", _textView.GetSelectionSpan().GetText());
+            Assert.AreEqual(7, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
         /// All white space and the following word should be selecetd
         /// </summary>
         [Test]

@@ -559,12 +559,39 @@ type CharSearchKind  =
     /// Used for the 't' and 'T' motion.  Till the specified char
     | TillChar
 
+[<RequireQualifiedAccess>]
+type BlockKind =
+
+    /// A [] block
+    | Bracket 
+
+    /// A () block
+    | Paren
+
+    /// A <> block
+    | AngleBracket
+
+    /// A {} block
+    | CurlyBracket
+
+    with
+
+    member x.Characters = 
+        match x with 
+        | Bracket -> '[', ']'
+        | Paren -> '(', ')'
+        | AngleBracket -> '<', '>'
+        | CurlyBracket -> '{', '}'
+
 /// A discriminated union of the Motion types supported.  These are the primary
 /// repeat mechanisms for Motion arguments so it's very important that these 
 /// are ITextView / IVimBuffer agnostic.  It will be very common for a Motion 
 /// item to be stored and then applied to many IVimBuffer instances.
 [<RequireQualifiedAccess>]
 type Motion =
+
+    /// Implement the all block motion
+    | AllBlock of BlockKind
 
     /// Implement the 'aw' motion.  This is called once the a key is seen.
     | AllWord of WordKind
@@ -608,6 +635,9 @@ type Motion =
 
     /// Inner word motion
     | InnerWord of WordKind
+
+    /// Inner block motion
+    | InnerBlock of BlockKind
 
     /// Find the last non-blank character on the line.  Count causes it to go "count" lines
     /// down and perform the search
@@ -2456,8 +2486,8 @@ type MotionFlags =
 
     | None = 0x0
 
-    /// This type of motion can be used to move the cursor
-    | CursorMovement = 0x1 
+    /// This type of motion can be used to move the caret
+    | CaretMovement = 0x1 
 
     /// The motion function wants to specially handle the esape function.  This is used 
     /// on Complex motions such as / and ? 

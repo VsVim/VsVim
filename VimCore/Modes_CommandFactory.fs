@@ -55,7 +55,7 @@ type internal CommandFactory
                 CommandBinding.ComplexNormalBinding (name, flags, bindDataStorage)
 
         _capture.MotionBindings
-        |> Seq.filter (fun binding -> Util.IsFlagSet binding.MotionFlags MotionFlags.CursorMovement)
+        |> Seq.filter (fun binding -> Util.IsFlagSet binding.MotionFlags MotionFlags.CaretMovement)
         |> Seq.map processMotionBinding
 
     /// Create movement commands for the text-object Motions.  These are described in :help text-objects

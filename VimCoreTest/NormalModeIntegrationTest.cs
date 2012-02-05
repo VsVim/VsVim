@@ -1632,6 +1632,42 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Simple yank of a () block 
+        /// </summary>
+        [Test]
+        public void Motion_Block_AllParen_Simple()
+        {
+            Create("cat (dog) bear");
+            _textView.MoveCaretTo(6);
+            _vimBuffer.Process("ya(");
+            Assert.AreEqual("(dog)", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Simple yank of a () block via the b command
+        /// </summary>
+        [Test]
+        public void Motion_Block_AllParen_SimpleAltKey()
+        {
+            Create("cat (dog) bear");
+            _textView.MoveCaretTo(6);
+            _vimBuffer.Process("yab");
+            Assert.AreEqual("(dog)", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Simple yank of a () block 
+        /// </summary>
+        [Test]
+        public void Motion_Block_InnerParen_Simple()
+        {
+            Create("cat (dog) bear");
+            _textView.MoveCaretTo(6);
+            _vimBuffer.Process("yi(");
+            Assert.AreEqual("dog", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
         /// This should beep
         /// </summary>
         [Test]

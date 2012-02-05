@@ -858,6 +858,51 @@ type internal MotionUtil
             // Line can't match
             false
 
+    /// Get the block span for the specified char at the given context point
+    member x.GetBlock (blockKind : BlockKind) contextPoint = 
+
+        let startChar, endChar = blockKind.Characters
+
+        // Is the char at the given point escaped?
+        let isEscaped point = 
+            match SnapshotPointUtil.TrySubtractOne point with
+            | None -> false
+            | Some point -> SnapshotPointUtil.GetChar point = '\\'
+
+        let isChar c point = SnapshotPointUtil.GetChar point = c && not (isEscaped point) 
+
+        let findMatched plusChar minusChar = 
+            let inner point count = 
+                let count = 
+                    if isChar minusChar point then
+                        count - 1
+                    elif isChar plusChar point then
+                        count + 1
+                    else 
+                        count
+                count = 0, count
+            inner
+
+        let snapshot = SnapshotPointUtil.GetSnapshot contextPoint
+        let startPoint = 
+            SnapshotSpan(SnapshotPoint(snapshot, 0), SnapshotPointUtil.AddOneOrCurrent contextPoint)
+            |> SnapshotSpanUtil.GetPoints Path.Backward
+            |> SeqUtil.tryFind 1 (findMatched endChar startChar)
+
+        let lastPoint = 
+            match startPoint with
+            | None -> None
+            | Some startPoint ->
+                SnapshotSpan(startPoint, SnapshotUtil.GetEndPoint snapshot)
+                |> SnapshotSpanUtil.GetPoints Path.Forward
+                |> SeqUtil.tryFind 0 (findMatched startChar endChar)
+
+        match startPoint, lastPoint with
+        | Some startPoint, Some lastPoint -> 
+            let endPoint = SnapshotPointUtil.AddOneOrCurrent lastPoint
+            SnapshotSpan(startPoint, endPoint) |> Some
+        | _ -> None
+
     member x.GetQuotedStringData () = 
         let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine _textView
 
@@ -1037,6 +1082,22 @@ type internal MotionUtil
                 {
                     Span = span
                     IsForward = isForward
+                    MotionKind = MotionKind.CharacterWiseInclusive
+                    MotionResultFlags = MotionResultFlags.None } |> Some
+
+    /// Implement the all block motion
+    member x.AllBlock contextPoint blockKind count =
+
+        if count <> 1 then
+            None
+        else
+            let span = x.GetBlock blockKind contextPoint 
+            match span with
+            | None -> None
+            | Some span ->
+                { 
+                    Span = span
+                    IsForward = true
                     MotionKind = MotionKind.CharacterWiseInclusive
                     MotionResultFlags = MotionResultFlags.None } |> Some
 
@@ -1237,7 +1298,6 @@ type internal MotionUtil
     /// Implements the 'aw' motion.  The 'aw' motion is limited to the current line and won't ever
     /// extend above or below it.
     member x.AllWord kind count contextPoint = 
-
         let contextLine = SnapshotPointUtil.GetContainingLine contextPoint 
 
         // Is this word span on the same line as the context?  A word won't ever span multiple lines
@@ -1522,6 +1582,28 @@ type internal MotionUtil
                 IsForward = true
                 MotionKind = MotionKind.LineWise column
                 MotionResultFlags = MotionResultFlags.None })
+
+    /// An inner block motion is just the all block motion with the start and 
+    /// end character removed 
+    member x.InnerBlock contextPoint blockKind count =
+
+        if count <> 1 then
+            None
+        else
+            match x.GetBlock blockKind contextPoint with
+            | None -> None
+            | Some span ->
+                if span.Length < 3 then
+                    None
+                else
+                    let startPoint = SnapshotPointUtil.AddOne span.Start
+                    let endPoint = SnapshotPointUtil.SubtractOne span.End
+                    let span = SnapshotSpan(startPoint, endPoint)
+                    {
+                        Span = span
+                        IsForward = true
+                        MotionKind = MotionKind.CharacterWiseInclusive
+                        MotionResultFlags = MotionResultFlags.None } |> Some
 
     /// Implement the 'iw' motion.  Unlike the 'aw' motion it is not limited to a specific line
     /// and can exceed it
@@ -2264,6 +2346,7 @@ type internal MotionUtil
 
         let motionResult = 
             match motion with 
+            | Motion.AllBlock blockKind -> x.AllBlock x.CaretPoint blockKind motionArgument.Count
             | Motion.AllParagraph -> x.AllParagraph motionArgument.Count
             | Motion.AllWord wordKind -> x.AllWord wordKind motionArgument.Count x.CaretPoint
             | Motion.AllSentence -> x.AllSentence motionArgument.Count |> Some
@@ -2275,6 +2358,7 @@ type internal MotionUtil
             | Motion.EndOfWord wordKind -> x.EndOfWord wordKind motionArgument.Count |> Some
             | Motion.FirstNonBlankOnCurrentLine -> x.FirstNonBlankOnCurrentLine() |> Some
             | Motion.FirstNonBlankOnLine -> x.FirstNonBlankOnLine motionArgument.Count |> Some
+            | Motion.InnerBlock blockKind -> x.InnerBlock x.CaretPoint blockKind motionArgument.Count
             | Motion.InnerWord wordKind -> x.InnerWord wordKind motionArgument.Count x.CaretPoint
             | Motion.LastNonBlankOnLine -> x.LastNonBlankOnLine motionArgument.Count |> Some
             | Motion.LastSearch isReverse -> x.LastSearch isReverse motionArgument.Count
@@ -2314,8 +2398,10 @@ type internal MotionUtil
 
         let motionResult = 
             match motion with 
-            | Motion.InnerWord wordKind -> x.InnerWord wordKind 1 point 
+            | Motion.AllBlock blockKind -> x.AllBlock point blockKind 1
             | Motion.AllWord wordKind -> x.AllWord wordKind 1 point
+            | Motion.InnerWord wordKind -> x.InnerWord wordKind 1 point 
+            | Motion.InnerBlock blockKind -> x.InnerBlock point blockKind 1
             | _ -> None
         Option.map (x.AdjustMotionResult motion) motionResult
 
