@@ -476,8 +476,8 @@ module VimRegexFactory =
 
         // Get the magic options
         let options = 
-            if Util.IsFlagSet flags SubstituteFlags.Magic then options 
-            else options ||| VimRegexOptions.NoMagic
+            if Util.IsFlagSet flags SubstituteFlags.Nomagic then options ||| VimRegexOptions.NoMagic
+            else options 
 
         Create pattern options 
 

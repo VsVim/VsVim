@@ -279,6 +279,15 @@ namespace Vim.UnitTest
             Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
         }
 
+        [Test]
+        public void Substitute_DefaultsToMagicMode()
+        {
+            Create("a.c", "abc");
+            RunCommand(@"%s/a\.c/replaced/g");
+            Assert.That(_textView.GetLine(0).GetText(), Is.EqualTo("replaced"));
+            Assert.That(_textView.GetLine(1).GetText(), Is.EqualTo("abc"));
+        }
+
         /// <summary>
         /// Using the search forward feature which doesn't hit a match in the specified path.  Should 
         /// raise a warning
