@@ -361,7 +361,10 @@ module VimRegexFactory =
         | 'v' -> {data with MagicKind = MagicKind.VeryMagic }
         | 'V' -> {data with MagicKind = MagicKind.VeryNoMagic }
         | 't' -> data.AppendString "\t"
-        | 'n' -> data.AppendString "\n"
+        // vim expects \n to match any kind of newline, regardless of platform. Think about it,
+        // you can't see newlines, so why should you be expected to know the diff between them?
+        // Also, use ?: for non-capturing group, so we don't cause any weird behavior
+        | 'n' -> data.AppendString "(?:\r?\n|\r)"
         | _ ->
             let data = 
                 match data.MagicKind with
