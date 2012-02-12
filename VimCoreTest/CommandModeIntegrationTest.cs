@@ -288,6 +288,14 @@ namespace Vim.UnitTest
             Assert.That(_textView.GetLine(1).GetText(), Is.EqualTo("abc"));
         }
 
+        [Test]
+        public void Substitute_NewlinesCanBeReplaced()
+        {
+            Create("foo", "bar");
+            RunCommand(@"%s/\n/ /");
+            Assert.That(_textView.GetLine(0).GetText(), Is.EqualTo("foo bar"));
+        }
+
         /// <summary>
         /// Using the search forward feature which doesn't hit a match in the specified path.  Should 
         /// raise a warning
