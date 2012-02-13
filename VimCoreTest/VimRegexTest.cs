@@ -1070,12 +1070,20 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
-        /// A \n should be able to match a tab
+        /// A \n should be able to match a newline, any newline 
         /// </summary>
         [Test]
-        public void NewLine()
+        public void NewLine_Match()
         {
-            VerifyMatches(@"\n", "hello" + Environment.NewLine);
+            VerifyMatches(@"\n", "hello\r\n", "hello\n", "hello\r");
+        }
+
+        [Test]
+        public void NewLine_Replace()
+        {
+            VerifyReplace(@"\n", "hello\nworld", " ", "hello world");
+            VerifyReplace(@"\n", "hello\r\nworld", " ", "hello world");
+            VerifyReplace(@"\n", "hello\rworld", " ", "hello world");
         }
     }
 }

@@ -856,7 +856,7 @@ namespace Vim.UnitTest
                 result = runner.Run(command[i]);
                 if (i + 1 < command.Length)
                 {
-                    Assert.IsTrue(result.IsNeedMoreInput);
+                    Assert.IsTrue(result.IsNeedMoreInput, "Needs more input");
                 }
             }
 
