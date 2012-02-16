@@ -1334,8 +1334,11 @@ type VisualSpan =
             // If endPoint is EndIncludingLineBreak we would get the line after and be 
             // one line too big.  Go back on point to ensure we don't expand the span
             let endLine = 
-                let endPoint = SnapshotPointUtil.SubtractOneOrCurrent endPoint
-                SnapshotPointUtil.GetContainingLine endPoint
+                if startPoint = endPoint then
+                    startLine
+                else
+                    let endPoint = SnapshotPointUtil.SubtractOneOrCurrent endPoint
+                    SnapshotPointUtil.GetContainingLine endPoint
             SnapshotLineRangeUtil.CreateForLineRange startLine endLine |> Line
 
         | VisualKind.Block -> 

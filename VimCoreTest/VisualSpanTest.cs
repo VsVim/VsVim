@@ -147,5 +147,32 @@ namespace Vim.UnitTest
             Assert.AreEqual(point, visualSpan.AsCharacter().Item.Start);
             Assert.AreEqual(0, visualSpan.AsCharacter().Item.Length);
         }
+
+        /// <summary>
+        /// Ensure we handle the case where the start and end point are the same point at the 
+        /// start of the line.  The code should return the single line range for the line 
+        /// containing the points
+        /// </summary>
+        [Test]
+        public void CreateForAllPoints_Line_SamePoint()
+        {
+            Create("cat", "dog", "tree");
+            var point = _textBuffer.GetLine(1).Start;
+            var visualSpan = VisualSpan.CreateForAllPoints(VisualKind.Line, point, point);
+            Assert.AreEqual(_textBuffer.GetLineRange(1), visualSpan.AsLine().LineRange);
+        }
+
+        /// <summary>
+        /// Make sure the code handles the case where the caret is positioned at the end of the
+        /// ITextSnapshot.  Should return the last line
+        /// </summary>
+        [Test]
+        public void CreateForAllPoints_Line_EndOfSnapshot()
+        {
+            Create("cat", "dog");
+            var point = new SnapshotPoint(_textBuffer.CurrentSnapshot, _textBuffer.CurrentSnapshot.Length);
+            var visualSpan = VisualSpan.CreateForAllPoints(VisualKind.Line, point, point);
+            Assert.AreEqual(1, visualSpan.AsLine().LineRange.LastLineNumber);
+        }
     }
 }

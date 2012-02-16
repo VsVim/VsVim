@@ -756,6 +756,21 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// When the final line of the ITextBuffer is an empty line make sure that we can
+        /// move up off of it when in Visual Line Mode.  
+        /// 
+        /// Issue #769
+        /// </summary>
+        [Test]
+        public void Move_Line_FromBottom()
+        {
+            Create("cat", "dog", "");
+            _textView.MoveCaretToLine(2);
+            _vimBuffer.Process("Vk");
+            Assert.AreEqual(_textBuffer.GetLineRange(1, 2).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
+        }
+
+        /// <summary>
         /// Character should be positioned at the end of the inserted text
         /// </summary>
         [Test]
