@@ -171,7 +171,7 @@ namespace VsVim
                 // during an open will cause the method to abandon and produce a user error 
                 // message
                 VsShellUtilities.OpenDocument(_vsAdapter.ServiceProvider, filePath);
-                _textManager.CloseView(textView, checkDirty: false);
+                _textManager.CloseView(textView);
                 return HostResult.Success;
             }
             catch (Exception e)
@@ -236,7 +236,7 @@ namespace VsVim
 
         public override void Close(ITextView textView)
         {
-            _textManager.CloseView(textView, false);
+            _textManager.CloseView(textView);
         }
 
         public override bool IsReadOnly(ITextBuffer textBuffer)

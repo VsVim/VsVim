@@ -7,7 +7,6 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
-using Vim.UnitTest.Mock;
 using VsVim.Implementation;
 
 namespace VsVim.UnitTest
@@ -72,15 +71,21 @@ namespace VsVim.UnitTest
             _factory.Verify();
         }
 
+        /// <summary>
+        /// If there is no frame present then the call should fail
+        /// </summary>
         [Test]
-        public void CloseView1()
+        public void CloseView_NoWindowFrame()
         {
             var view = _factory.Create<IWpfTextView>().Object;
-            Assert.IsFalse(_manager.CloseView(view, checkDirty: false));
+            Assert.IsFalse(_manager.CloseView(view));
         }
 
+        /// <summary>
+        /// If the frame is split then close should just remove the split
+        /// </summary>
         [Test]
-        public void CloseView2()
+        public void CloseView_Split()
         {
             var view = _factory.Create<IWpfTextView>().Object;
             var tuple = _adapter.MakeCodeWindowAndCommandTarget(view, _factory);
@@ -91,7 +96,25 @@ namespace VsVim.UnitTest
                 .Setup(x => x.Exec(ref id, It.IsAny<uint>(), It.IsAny<uint>(), IntPtr.Zero, IntPtr.Zero))
                 .Returns(VSConstants.S_OK)
                 .Verifiable();
-            Assert.IsTrue(_manager.CloseView(view, checkDirty: false));
+            Assert.IsTrue(_manager.CloseView(view));
+            _factory.Verify();
+        }
+
+        /// <summary>
+        /// The CloseView method shouldn't cause a save.  It should simply force close the
+        /// ITextView
+        /// </summary>
+        [Test]
+        public void CloseView_DontSave()
+        {
+            var textView = _factory.Create<IWpfTextView>();
+            var vsCodeWindow = _adapter.MakeCodeWindow(textView.Object, _factory);
+            var vsWindowFrame = _adapter.MakeWindowFrame(textView.Object, _factory);
+            vsWindowFrame
+                .Setup(x => x.CloseFrame((uint)__FRAMECLOSE.FRAMECLOSE_NoSave))
+                .Returns(VSConstants.S_OK)
+                .Verifiable();
+            Assert.IsTrue(_manager.CloseView(textView.Object));
             _factory.Verify();
         }
 
@@ -165,7 +188,5 @@ namespace VsVim.UnitTest
             Assert.IsTrue(_manager.MoveViewDown(view2.Object));
             _factory.Verify();
         }
-
-
     }
 }

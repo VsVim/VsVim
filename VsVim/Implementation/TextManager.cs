@@ -23,7 +23,7 @@ namespace VsVim.Implementation
         private readonly IServiceProvider _serviceProvider;
         private readonly ITextDocumentFactoryService _textDocumentFactoryService;
 
-        public IEnumerable<ITextBuffer> TextBuffers
+        internal IEnumerable<ITextBuffer> TextBuffers
         {
             get
             {
@@ -40,12 +40,12 @@ namespace VsVim.Implementation
             }
         }
 
-        public IEnumerable<ITextView> TextViews
+        internal IEnumerable<ITextView> TextViews
         {
             get { return TextBuffers.Select(x => GetTextViews(x)).SelectMany(x => x); }
         }
 
-        public ITextView ActiveTextView
+        internal ITextView ActiveTextView
         {
             get
             {
@@ -74,7 +74,7 @@ namespace VsVim.Implementation
             _table = new RunningDocumentTable(_serviceProvider);
         }
 
-        public bool NavigateTo(VirtualSnapshotPoint point)
+        internal bool NavigateTo(VirtualSnapshotPoint point)
         {
             var tuple = SnapshotPointUtil.GetLineColumn(point.Position);
             var line = tuple.Item1;
@@ -91,7 +91,7 @@ namespace VsVim.Implementation
             return ErrorHandler.Succeeded(hr);
         }
 
-        public Result Save(ITextBuffer textBuffer)
+        internal Result Save(ITextBuffer textBuffer)
         {
             ITextDocument textDocument;
             if (!_textDocumentFactoryService.TryGetTextDocument(textBuffer, out textDocument))
@@ -112,7 +112,7 @@ namespace VsVim.Implementation
             }
         }
 
-        public bool CloseView(ITextView textView, bool checkDirty)
+        internal bool CloseView(ITextView textView)
         {
             IVsCodeWindow vsCodeWindow;
             if (!_vsAdapter.GetCodeWindow(textView).TryGetValue(out vsCodeWindow))
@@ -130,13 +130,12 @@ namespace VsVim.Implementation
             {
                 return false;
             }
-            var value = checkDirty
-                ? __FRAMECLOSE.FRAMECLOSE_PromptSave
-                : __FRAMECLOSE.FRAMECLOSE_SaveIfDirty;
+
+            var value = __FRAMECLOSE.FRAMECLOSE_NoSave;
             return ErrorHandler.Succeeded(vsWindowFrame.CloseFrame((uint)value));
         }
 
-        public bool SplitView(ITextView textView)
+        internal bool SplitView(ITextView textView)
         {
             IVsCodeWindow codeWindow;
             if (_vsAdapter.GetCodeWindow(textView).TryGetValue(out codeWindow))
@@ -147,7 +146,7 @@ namespace VsVim.Implementation
             return false;
         }
 
-        public bool MoveViewUp(ITextView textView)
+        internal bool MoveViewUp(ITextView textView)
         {
             try
             {
@@ -161,7 +160,7 @@ namespace VsVim.Implementation
             }
         }
 
-        public bool MoveViewDown(ITextView textView)
+        internal bool MoveViewDown(ITextView textView)
         {
             try
             {
@@ -192,7 +191,7 @@ namespace VsVim.Implementation
             return false;
         }
 
-        public IEnumerable<ITextView> GetTextViews(ITextBuffer textBuffer)
+        internal IEnumerable<ITextView> GetTextViews(ITextBuffer textBuffer)
         {
             return _vsAdapter.GetTextViews(textBuffer)
                 .Select(x => _vsAdapter.EditorAdapter.GetWpfTextView(x))
@@ -231,9 +230,9 @@ namespace VsVim.Implementation
             return Save(textBuffer);
         }
 
-        bool ITextManager.CloseView(ITextView textView, bool checkDirty)
+        bool ITextManager.CloseView(ITextView textView)
         {
-            return CloseView(textView, checkDirty);
+            return CloseView(textView);
         }
 
         bool ITextManager.SplitView(ITextView textView)

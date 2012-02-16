@@ -40,7 +40,7 @@ namespace VsVim
         /// Close the given view passed in.  If there is a split view only
         /// the split will be closed
         /// </summary>
-        bool CloseView(ITextView textView, bool checkDirty);
+        bool CloseView(ITextView textView);
 
         /// <summary>
         /// Split the provided view
