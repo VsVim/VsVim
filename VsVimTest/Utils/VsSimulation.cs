@@ -401,6 +401,11 @@ namespace VsVim.UnitTest.Utils
             set { _simulateStandardKeyMappings = value; }
         }
 
+        internal Mock<IDisplayWindowBroker> DisplayWindowBroker
+        {
+            get { return _displayWindowBroker; }
+        }
+
         internal VsSimulation(IVimBufferCoordinator bufferCoordinator, bool simulateResharper, bool simulateStandardKeyMappings, IEditorOperationsFactoryService editorOperationsFactoryService)
         {
             _wpfTextView = (IWpfTextView)bufferCoordinator.VimBuffer.TextView;

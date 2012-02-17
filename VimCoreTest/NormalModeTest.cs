@@ -21,7 +21,6 @@ namespace Vim.UnitTest
         private IVimGlobalSettings _globalSettings;
         private MockRepository _factory;
         private Mock<IIncrementalSearch> _incrementalSearch;
-        private Mock<IDisplayWindowBroker> _displayWindowBroker;
         private Mock<ICommandUtil> _commandUtil;
         private Register _unnamedRegister;
 
@@ -50,10 +49,6 @@ namespace Vim.UnitTest
             _factory = new MockRepository(MockBehavior.Strict);
             _incrementalSearch = MockObjectFactory.CreateIncrementalSearch(factory: _factory);
             _commandUtil = _factory.Create<ICommandUtil>();
-            _displayWindowBroker = _factory.Create<IDisplayWindowBroker>(MockBehavior.Strict);
-            _displayWindowBroker.SetupGet(x => x.IsCompletionActive).Returns(false);
-            _displayWindowBroker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
-            _displayWindowBroker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false);
 
             _globalSettings = Vim.GlobalSettings;
 
@@ -74,7 +69,6 @@ namespace Vim.UnitTest
                 vimBufferData,
                 operations,
                 motionUtil,
-                _displayWindowBroker.Object,
                 runner,
                 capture);
             _mode = _modeRaw;
@@ -147,18 +141,12 @@ namespace Vim.UnitTest
             Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput('Z')));
         }
 
-        [Test, Description("Don't process while a smart tag is open otherwise you prevent it from being used")]
-        public void CanProcess5()
-        {
-            Create(DefaultLines);
-            _displayWindowBroker.SetupGet(x => x.IsSmartTagSessionActive).Returns(true);
-            Assert.IsFalse(_mode.CanProcess(KeyInputUtil.EnterKey));
-            Assert.IsFalse(_mode.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Left)));
-            Assert.IsFalse(_mode.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Down)));
-        }
-
-        [Test, Description("Should be able to handle ever core character")]
-        public void CanProcess6()
+        /// <summary>
+        /// Ensure that all of the core characters are valid Normal Mode commands.  They all should
+        /// be 
+        /// </summary>
+        [Test]
+        public void CanProcess_AllCoreCharacters()
         {
             Create(DefaultLines);
             foreach (var cur in KeyInputUtil.VimKeyCharList)
@@ -167,23 +155,12 @@ namespace Vim.UnitTest
             }
         }
 
-        [Test, Description("Must be able to handle certain movement keys")]
-        public void CanProcess7()
+        [Test]
+        public void CanProcess_MovementKeys()
         {
             Create(DefaultLines);
             Assert.IsTrue(_mode.CanProcess(KeyInputUtil.EnterKey));
             Assert.IsTrue(_mode.CanProcess(KeyInputUtil.TabKey));
-        }
-
-        [Test, Description("Don't process while a completion window is open otherwise you prevent it from being used")]
-        public void CanProcess8()
-        {
-            Create(DefaultLines);
-            _displayWindowBroker.SetupGet(x => x.IsCompletionActive).Returns(true);
-            Assert.IsFalse(_mode.CanProcess(KeyInputUtil.EnterKey));
-            Assert.IsFalse(_mode.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Left)));
-            Assert.IsFalse(_mode.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Down)));
-            Assert.IsFalse(_mode.CanProcess(KeyInputUtil.TabKey));
         }
 
         [Test]

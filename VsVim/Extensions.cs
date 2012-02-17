@@ -560,6 +560,22 @@ namespace VsVim
 
         #endregion
 
+        #region IDisplayWindowBroker
+
+        /// <summary>
+        /// Are any of the standard displays currently active?
+        /// </summary>
+        internal static bool IsAnyDisplayActive(this IDisplayWindowBroker displayWindowBroker)
+        {
+            return
+                displayWindowBroker.IsCompletionActive ||
+                displayWindowBroker.IsQuickInfoActive ||
+                displayWindowBroker.IsSignatureHelpActive ||
+                displayWindowBroker.IsSmartTagSessionActive;
+        }
+
+        #endregion
+
         #region ITaggerProvider
 
         /// <summary>

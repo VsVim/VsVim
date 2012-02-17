@@ -189,7 +189,7 @@ type internal VimBufferFactory
         let undoRedoOperations = vimBufferData.UndoRedoOperations
         let modeList = 
             [
-                ((Modes.Normal.NormalMode(vimBufferData, commonOperations, motionUtil, broker, createCommandRunner VisualKind.Character, capture)) :> IMode)
+                ((Modes.Normal.NormalMode(vimBufferData, commonOperations, motionUtil, createCommandRunner VisualKind.Character, capture)) :> IMode)
                 ((Modes.Command.CommandMode(buffer, commonOperations, interpreter)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, false, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, true, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)

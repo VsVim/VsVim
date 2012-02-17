@@ -16,7 +16,6 @@ type internal NormalMode
         _vimBufferData : IVimBufferData,
         _operations : ICommonOperations,
         _motionUtil : IMotionUtil,
-        _displayWindowBroker : IDisplayWindowBroker,
         _runner : ICommandRunner,
         _capture : IMotionCapture
     ) as this =
@@ -293,10 +292,7 @@ type internal NormalMode
                 |> Seq.filter (fun command -> command.KeyInputSet.StartsWith name)
                 |> SeqUtil.isNotEmpty
 
-            if _displayWindowBroker.IsSmartTagSessionActive then false
-            elif _displayWindowBroker.IsCompletionActive then false
-            elif _displayWindowBroker.IsSignatureHelpActive then false
-            elif _runner.IsWaitingForMoreInput then  true
+            if _runner.IsWaitingForMoreInput then  true
             elif doesCommandStartWith ki then true
             elif Option.isSome ki.RawChar && KeyModifiers.None = ki.KeyModifiers && Set.contains ki.Char _coreCharSet then true
             else false

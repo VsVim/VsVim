@@ -191,66 +191,72 @@ namespace VsVim
         }
 
         /// <summary>
-        /// Determine if the IInsertMode value should process the given KeyInput
+        /// Is this KeyInput intended to be processed by the active display window
         /// </summary>
-        private bool ShouldProcessWithCommandTargetOverInsertMode(IInsertMode mode, KeyInput keyInput)
+        private bool IsDisplayWindowKey(KeyInput keyInput)
         {
-            // In the middle of a word completion session let insert mode handle the input.  It's 
-            // displaying the intellisense itself and this method is meant to let custom intellisense
-            // operate normally
-            if (mode.ActiveWordCompletionSession.IsSome())
+            // Consider normal completion
+            if (_broker.IsCompletionActive || _externalEditManager.IsResharperInstalled)
             {
-                return false;
+                return
+                    keyInput.IsArrowKey ||
+                    keyInput == KeyInputUtil.EnterKey ||
+                    keyInput.Key == VimKey.Tab ||
+                    keyInput.Key == VimKey.Back;
             }
 
-            // Is this a key known to impact IntelliSense
-            var isIntelliSenseKey =
-                keyInput.Key == VimKey.Up ||
-                keyInput.Key == VimKey.Down ||
-                keyInput.Key == VimKey.Left ||
-                keyInput.Key == VimKey.Right ||
-                keyInput.Key == VimKey.Tab ||
-                keyInput.Key == VimKey.Back ||
-                keyInput == KeyInputUtil.EnterKey;
-
-            // If this is any of the arrow keys and one of the help windows is active then don't 
-            // let insert mode process the input.  We want the KeyInput to be routed to the windows
-            // like Intellisense so navigation can occur
-            if (isIntelliSenseKey && (_broker.IsCompletionActive || _broker.IsQuickInfoActive || _broker.IsSignatureHelpActive || _broker.IsSmartTagSessionActive))
+            if (_broker.IsSmartTagSessionActive)
             {
-                return true;
-            }
-
-            // Unfortunately there is no way to detect if the R# completion windows are active.  We have
-            // to take the pessimistic view that they are and just not handle the input
-            if (isIntelliSenseKey && _externalEditManager.IsResharperInstalled)
-            {
-                return true;
+                return
+                    keyInput.IsArrowKey ||
+                    keyInput == KeyInputUtil.EnterKey;
             }
 
             return false;
         }
 
         /// <summary>
-        /// Try and process the KeyInput from the Exec method
+        /// Try and process the KeyInput from the Exec method.  This method decides whether or not
+        /// a key should be processed directly by IVimBuffer or if should be going through 
+        /// IOleCommandTarget.  Generally the key is processed by IVimBuffer but for many intellisense
+        /// scenarios we want the key to be routed to Visual Studio directly.  Issues to consider 
+        /// here are ...
+        /// 
+        ///  - How should the KeyInput participate in Macro playback?
+        ///  - Does both VsVim and Visual Studio need to process the key (Escape mainly)
+        ///  
         /// </summary>
         private bool TryProcessWithBuffer(KeyInput keyInput)
         {
+            // If the IVimBuffer can't process it then it doesn't matter
             if (!_buffer.CanProcess(keyInput))
             {
-                // If the IVimBuffer can't process it then it doesn't matter
                 return false;
             }
 
-            // Next we need to determine if we can process this directly or not.  The only mode 
-            // we actively intercept KeyInput for is InsertMode because we need to route it
-            // through IOleCommandTarget to get Intellisense and many other features.
-            var insertMode = _buffer.ModeKind == ModeKind.Insert
-                ? _buffer.InsertMode
-                : null;
-            if (insertMode == null)
+            // In the middle of a word completion session let insert mode handle the input.  It's 
+            // displaying the intellisense itself and this method is meant to let custom intellisense
+            // operate normally
+            if (_buffer.ModeKind == ModeKind.Insert && _buffer.InsertMode.ActiveWordCompletionSession.IsSome())
             {
                 return _buffer.Process(keyInput).IsAnyHandled;
+            }
+
+            // The only time we actively intercept keys and route them through IOleCommandTarget
+            // is when one of the IDisplayWindowBroker windows is active
+            //
+            // In those cases if the KeyInput is a command which should be handled by the
+            // display window we route it through IOleCommandTarget to get the proper 
+            // experience for those features
+            if (!_broker.IsAnyDisplayActive())
+            {
+                // The one exception to this rule is R#.  We can't accurately determine if 
+                // R# has intellisense active or not so we have to pretend like it always 
+                // does.  We limit this to insert mode only though. 
+                if (!_externalEditManager.IsResharperInstalled || _buffer.ModeKind != ModeKind.Insert)
+                {
+                    return _buffer.Process(keyInput).IsAnyHandled;
+                }
             }
 
             // Next we need to consider here are Key mappings.  The CanProcess and Process APIs 
@@ -258,20 +264,30 @@ namespace VsVim
             // not at the individual IMode.  Have to manually map here and test against the 
             // mapped KeyInput
             KeyInput mapped;
-            if (TryGetSingleMapping(keyInput, out mapped) && ShouldProcessWithCommandTargetOverInsertMode(insertMode, mapped))
+            if (!TryGetSingleMapping(keyInput, out mapped))
             {
-                // We are now intentionally by passing insert mode here.  If there is an active 
-                // IWordCompletionSession here we need to manually dismiss it.  Else it will remain
-                // as we start typing a new word
-                if (insertMode.ActiveWordCompletionSession.IsSome())
-                {
-                    insertMode.ActiveWordCompletionSession.Value.Dismiss();
-                }
+                return _buffer.Process(keyInput).IsAnyHandled;
+            }
 
+            // If the key actually being processed is a display window key and the display window
+            // is active then we allow IOleCommandTarget to control the key
+            if (IsDisplayWindowKey(mapped))
+            {
                 return false;
             }
 
-            return _buffer.Process(keyInput).IsAnyHandled;
+            var handled = _buffer.Process(keyInput).IsAnyHandled;
+
+            // The Escape key should always dismiss the active completion session.  However Vim
+            // itself is mostly ignorant of display windows and typically won't dismiss them
+            // as part of processing Escape (one exception is insert mode).  Dismiss it here if 
+            // it's still active
+            if (mapped.Key == VimKey.Escape && _broker.IsAnyDisplayActive())
+            {
+                _broker.DismissDisplayWindows();
+            }
+
+            return handled;
         }
 
         /// <summary>

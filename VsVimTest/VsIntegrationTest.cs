@@ -90,6 +90,46 @@ namespace VsVim.UnitTest
         }
 
         /// <summary>
+        /// Make sure that Escape dismisses intellisense even in normal mode
+        /// </summary>
+        [Test]
+        public void NormalMode_EscapeShouldDismissCompletion()
+        {
+            Create("cat dog");
+            _simulation.DisplayWindowBroker.Setup(x => x.IsCompletionActive).Returns(true);
+            _simulation.DisplayWindowBroker.Setup(x => x.DismissDisplayWindows()).Verifiable();
+            _simulation.Run(VimKey.Escape);
+            _simulation.DisplayWindowBroker.Verify();
+        }
+
+        /// <summary>
+        /// Keys like j, k should go to normal mode even when Intellisense is active
+        /// </summary>
+        [Test]
+        public void NormalMode_CommandKeysGoToVim()
+        {
+            Create("cat dog");
+            _simulation.DisplayWindowBroker.Setup(x => x.IsCompletionActive).Returns(true);
+            _simulation.Run("dw");
+            Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
+        }
+
+        /// <summary>
+        /// Arrow keys and the like should go through Visual Studio when intellisense is 
+        /// active
+        /// </summary>
+        [Test]
+        public void NormalMode_ArrowKeysGoToVisualStudio()
+        {
+            Create("cat", "dog");
+            var didProcess = false;
+            _vimBuffer.KeyInputProcessed += delegate { didProcess = false; };
+            _simulation.DisplayWindowBroker.Setup(x => x.IsCompletionActive).Returns(true);
+            _simulation.Run(VimKey.Down);
+            Assert.IsFalse(didProcess);
+        }
+
+        /// <summary>
         /// Verify that the back behavior which R# works as expected when we are in 
         /// Insert mode.  It should delete the simple double matched parens
         /// </summary>
