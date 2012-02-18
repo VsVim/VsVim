@@ -40,6 +40,11 @@ namespace Vim.UI.Wpf
             SystemSounds.Beep.Play();
         }
 
+        public virtual void BeginBulkOperation()
+        {
+            // Host specific decision on how to respond
+        }
+
         public virtual void Close(ITextView textView)
         {
             textView.Close();
@@ -54,6 +59,11 @@ namespace Vim.UI.Wpf
             return _textEditorFactoryService.CreateTextView(
                 _textBufferFactoryService.CreateTextBuffer(),
                 _textEditorFactoryService.NoRoles);
+        }
+
+        public virtual void EndBulkOperation()
+        {
+            // Host specific decision on how to respond
         }
 
         /// <summary>
@@ -307,6 +317,11 @@ namespace Vim.UI.Wpf
             Beep();
         }
 
+        void IVimHost.BeginBulkOperation()
+        {
+            BeginBulkOperation();
+        }
+
         void IVimHost.Close(ITextView value)
         {
             Close(value);
@@ -315,6 +330,11 @@ namespace Vim.UI.Wpf
         ITextView IVimHost.CreateHiddenTextView()
         {
             return CreateHiddenTextView();
+        }
+
+        void IVimHost.EndBulkOperation()
+        {
+            EndBulkOperation();
         }
 
         void IVimHost.EnsureVisible(ITextView textView, SnapshotPoint point)

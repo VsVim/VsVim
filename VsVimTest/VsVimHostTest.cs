@@ -4,13 +4,13 @@ using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.UnitTest;
-using Microsoft.VisualStudio.Text.Editor;
 
 namespace VsVim.UnitTest
 {
@@ -45,6 +45,7 @@ namespace VsVim.UnitTest
             var sp = _factory.Create<SVsServiceProvider>();
             sp.Setup(x => x.GetService(typeof(_DTE))).Returns(_dte.Object);
             sp.Setup(x => x.GetService(typeof(SVsUIShell))).Returns(_shell.Object);
+            sp.Setup(x => x.GetService(typeof(IVsExtensibility))).Returns(_factory.Create<IVsExtensibility>().Object);
             _hostRaw = new VsVimHost(
                 _adapter.Object,
                 _factory.Create<ITextBufferFactoryService>().Object,

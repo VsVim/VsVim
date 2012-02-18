@@ -9,6 +9,35 @@ open Microsoft.VisualStudio.Text.Classification
 open System.ComponentModel.Composition
 open Vim.Modes
 
+[<Export(typeof<IBulkOperations>)>]
+type internal BulkOperations  
+    [<ImportingConstructor>]
+    (
+        _vimHost : IVimHost
+    ) =
+
+    /// The active count of bulk operations
+    let mutable _bulkOperationCount = 0
+
+    /// Called when a bulk operation is initiated in VsVim.
+    member x.BeginBulkOperation () = 
+
+        if _bulkOperationCount = 0 then
+            _vimHost.BeginBulkOperation()
+
+        _bulkOperationCount <- _bulkOperationCount + 1
+
+        {
+            new System.IDisposable with 
+                member x.Dispose() = 
+                    _bulkOperationCount <- _bulkOperationCount - 1
+                    if _bulkOperationCount = 0 then
+                        _vimHost.EndBulkOperation() }
+
+    interface IBulkOperations with
+        member x.InBulkOperation = _bulkOperationCount > 0
+        member x.BeginBulkOperation () = x.BeginBulkOperation()
+
 type internal VimData() =
 
     let mutable _currentDirectory = System.Environment.CurrentDirectory
@@ -82,9 +111,9 @@ type internal VimBufferFactory
         _foldManagerFactory : IFoldManagerFactory,
         _keyboardDevice : IKeyboardDevice,
         _mouseDevice : IMouseDevice,
-        _wordCompletionSessionFactoryService : IWordCompletionSessionFactoryService
-    ) = 
-
+        _wordCompletionSessionFactoryService : IWordCompletionSessionFactoryService,
+        _bulkOperations : IBulkOperations
+    ) =
 
     /// Create an IVimTextBuffer instance for the provided ITextBuffer
     member x.CreateVimTextBuffer textBuffer (vim : IVim) = 
@@ -152,7 +181,7 @@ type internal VimBufferFactory
         let motionUtil = MotionUtil(vimBufferData) :> IMotionUtil
         let foldManager = _foldManagerFactory.GetFoldManager textView
         let insertUtil = InsertUtil(vimBufferData, commonOperations) :> IInsertUtil
-        let commandUtil = CommandUtil(vimBufferData, motionUtil, commonOperations, foldManager, insertUtil) :> ICommandUtil
+        let commandUtil = CommandUtil(vimBufferData, motionUtil, commonOperations, foldManager, insertUtil, _bulkOperations) :> ICommandUtil
 
         let bufferRaw = VimBuffer(vimBufferData, incrementalSearch, motionUtil, wordNav, vimBufferData.WindowSettings)
         let buffer = bufferRaw :> IVimBuffer
@@ -219,7 +248,9 @@ type internal Vim
         _clipboardDevice : IClipboardDevice,
         _search : ISearchService,
         _fileSystem : IFileSystem,
-        _vimData : IVimData ) =
+        _vimData : IVimData,
+        _bulkOperations : IBulkOperations
+    ) =
 
     /// Key for IVimTextBuffer instances inside of the ITextBuffer property bag
     let _vimTextBufferKey = System.Object()
@@ -279,7 +310,8 @@ type internal Vim
         [<ImportMany>] bufferCreationListeners : Lazy<IVimBufferCreationListener> seq,
         search : ITextSearchService,
         fileSystem : IFileSystem,
-        clipboard : IClipboardDevice ) =
+        clipboard : IClipboardDevice,
+        bulkOperations : IBulkOperations) =
         let markMap = MarkMap(bufferTrackingService)
         let vimData = VimData() :> IVimData
         let globalSettings = GlobalSettings() :> IVimGlobalSettings
@@ -294,7 +326,8 @@ type internal Vim
             clipboard,
             SearchService(search, globalSettings) :> ISearchService,
             fileSystem,
-            vimData)
+            vimData,
+            bulkOperations)
 
     member x.ActiveBuffer = ListUtil.tryHeadOnly _activeBufferStack
 
@@ -484,6 +517,7 @@ type internal Vim
         member x.KeyMap = _keyMap
         member x.SearchService = _search
         member x.IsVimRcLoaded = x.IsVimRcLoaded
+        member x.InBulkOperation = _bulkOperations.InBulkOperation
         member x.RegisterMap = _registerMap 
         member x.GlobalSettings = _globalSettings
         member x.CloseAllVimBuffers() = x.CloseAllVimBuffers()
@@ -495,4 +529,5 @@ type internal Vim
         member x.GetVimBuffer textView = x.GetVimBuffer textView
         member x.GetVimTextBuffer textBuffer = x.GetVimTextBuffer textBuffer
         member x.LoadVimRc() = x.LoadVimRc()
+
 

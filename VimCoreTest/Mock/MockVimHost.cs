@@ -249,5 +249,16 @@ namespace Vim.UnitTest.Mock
             add { _isVisibleChanged += value; }
             remove { _isVisibleChanged -= value; }
         }
+
+
+        void IVimHost.BeginBulkOperation()
+        {
+
+        }
+
+        void IVimHost.EndBulkOperation()
+        {
+
+        }
     }
 }

@@ -45,7 +45,8 @@ type internal CommandUtil
         _motionUtil : IMotionUtil,
         _commonOperations : ICommonOperations,
         _foldManager : IFoldManager,
-        _insertUtil : IInsertUtil
+        _insertUtil : IInsertUtil,
+        _bulkOperations : IBulkOperations
     ) =
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
@@ -1754,6 +1755,7 @@ type internal CommandUtil
             _statusUtil.OnError Resources.NormalMode_RecursiveRepeatDetected
             CommandResult.Error 
         else
+            use bulkOperation = _bulkOperations.BeginBulkOperation()
             try
                 _inRepeatLastChange <- true
                 match _vimData.LastCommand with
@@ -1896,6 +1898,7 @@ type internal CommandUtil
             // the comparison constraint
             let map = System.Collections.Generic.Dictionary<ITextBuffer, IUndoTransaction>();
 
+            use bulkOperation = _bulkOperations.BeginBulkOperation()
             try 
 
                 // Actually run the macro by replaying the key strokes one at a time.  Returns 
@@ -1941,6 +1944,7 @@ type internal CommandUtil
                     transaction.Complete()
 
             finally
+
                 // Make sure to dispose the transactions in a finally block.  Leaving them open
                 // completely breaks undo in the ITextBuffer
                 map.Values |> Seq.iter (fun transaction -> transaction.Dispose())

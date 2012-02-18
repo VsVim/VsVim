@@ -3222,12 +3222,20 @@ type IVimHost =
 
     abstract Beep : unit -> unit
 
+    /// Called at the start of a bulk operation such as a macro replay or a repeat of
+    /// a last command
+    abstract BeginBulkOperation : unit -> unit
+
     /// Close the provided view
     abstract Close : ITextView -> unit
 
     /// Create a hidden ITextView instance.  This is primarily used to load the contents
     /// of the vimrc
     abstract CreateHiddenTextView : unit -> ITextView
+
+    /// Called at the end of a bulk operation such as a macro replay or a repeat of
+    /// a last command
+    abstract EndBulkOperation : unit -> unit
 
     /// Ensure that the given point is visible
     abstract EnsureVisible : textView : ITextView -> point : SnapshotPoint -> unit
@@ -3434,6 +3442,9 @@ and IVim =
 
     /// Is the VimRc loaded
     abstract IsVimRcLoaded : bool
+
+    /// In the middle of a bulk operation such as a macro replay or repeat last command
+    abstract InBulkOperation : bool
 
     /// IKeyMap for this IVim instance
     abstract KeyMap : IKeyMap

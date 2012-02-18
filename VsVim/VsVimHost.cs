@@ -40,6 +40,7 @@ namespace VsVim
         private readonly IWordUtilFactory _wordUtilFactory;
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
         private readonly _DTE _dte;
+        private readonly IVsExtensibility _vsExtensibility;
 
         internal _DTE DTE
         {
@@ -64,6 +65,7 @@ namespace VsVim
             _editorAdaptersFactoryService = editorAdaptersFactoryService;
             _wordUtilFactory = wordUtilFactory;
             _dte = (_DTE)serviceProvider.GetService(typeof(_DTE));
+            _vsExtensibility = (IVsExtensibility)serviceProvider.GetService(typeof(IVsExtensibility));
             _textManager = textManager;
         }
 
@@ -132,6 +134,34 @@ namespace VsVim
             }
 
             return group.VisibleChildren.OfType<View>().ToList();
+        }
+
+        /// <summary>
+        /// Treat a bulk operation just like a macro replay.  They have similar semantics like we
+        /// don't want intellisense to be displayed during the operation.  
+        /// </summary>
+        public override void BeginBulkOperation()
+        {
+            try
+            {
+                _vsExtensibility.EnterAutomationFunction();
+            }
+            catch
+            {
+                // If automation support isn't present it's not an issue
+            }
+        }
+
+        public override void EndBulkOperation()
+        {
+            try
+            {
+                _vsExtensibility.ExitAutomationFunction();
+            }
+            catch
+            {
+                // If automation support isn't present it's not an issue
+            }
         }
 
         /// <summary>

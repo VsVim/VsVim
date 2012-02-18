@@ -44,7 +44,8 @@ namespace VsVim
         /// </summary>
         private static readonly object Key = new object();
 
-        private readonly IVimBuffer _buffer;
+        private readonly IVimBuffer _vimBuffer;
+        private readonly IVim _vim;
         private readonly IVimBufferCoordinator _bufferCoordinator;
         private readonly ITextBuffer _textBuffer;
         private readonly IVsAdapter _vsAdapter;
@@ -58,9 +59,10 @@ namespace VsVim
             IDisplayWindowBroker broker,
             IExternalEditorManager externalEditorManager)
         {
-            _buffer = bufferCoordinator.VimBuffer;
+            _vimBuffer = bufferCoordinator.VimBuffer;
+            _vim = _vimBuffer.Vim;
             _bufferCoordinator = bufferCoordinator;
-            _textBuffer = _buffer.TextBuffer;
+            _textBuffer = _vimBuffer.TextBuffer;
             _vsAdapter = vsAdapter;
             _broker = broker;
             _externalEditManager = externalEditorManager;
@@ -80,6 +82,21 @@ namespace VsVim
                     // Not a command that we custom process
                     return false;
                 }
+
+                if (_vim.InBulkOperation && !command.IsInsertNewLine)
+                {
+                    // If we are in the middle of a bulk operation we don't want to forward any
+                    // input to IOleCommandTarget because it will trigger actions like displaying
+                    // Intellisense.  Definitely don't want intellisense popping up during say a 
+                    // repeat of a 'cw' operation or macro.
+                    //
+                    // The one exception to this rule though is the Enter key.  Every single language
+                    // formats Enter in a special way that we absolutely want to preserve in a change
+                    // or macro operation.  Go ahead and let it go through here and we'll dismiss 
+                    // any intellisense which pops up as a result
+                    return false;
+                }
+
                 var versionNumber = _textBuffer.CurrentSnapshot.Version.VersionNumber;
                 int hr = _nextTarget.Exec(oleCommandData);
 
@@ -94,6 +111,11 @@ namespace VsVim
                 if (oleCommandData != null)
                 {
                     oleCommandData.Dispose();
+                }
+
+                if (_vim.InBulkOperation && _broker.IsCompletionActive)
+                {
+                    _broker.DismissDisplayWindows();
                 }
             }
         }
@@ -145,7 +167,7 @@ namespace VsVim
         /// </summary>
         private bool TryGetSingleMapping(KeyInput original, out KeyInput mapped)
         {
-            var result = _buffer.GetKeyInputMapping(original);
+            var result = _vimBuffer.GetKeyInputMapping(original);
             if (result.IsNeedsMoreInput || result.IsRecursive)
             {
                 // No single mapping
@@ -171,7 +193,7 @@ namespace VsVim
                 // If there is no mapping we still need to consider the case of buffered 
                 // KeyInput values.  If there are any buffered KeyInput values then we 
                 // have > 1 input values: the current and whatever is mapped
-                if (!_buffer.BufferedKeyInputs.IsEmpty)
+                if (!_vimBuffer.BufferedKeyInputs.IsEmpty)
                 {
                     mapped = null;
                     return false;
@@ -229,7 +251,7 @@ namespace VsVim
         private bool TryProcessWithBuffer(KeyInput keyInput)
         {
             // If the IVimBuffer can't process it then it doesn't matter
-            if (!_buffer.CanProcess(keyInput))
+            if (!_vimBuffer.CanProcess(keyInput))
             {
                 return false;
             }
@@ -237,9 +259,9 @@ namespace VsVim
             // In the middle of a word completion session let insert mode handle the input.  It's 
             // displaying the intellisense itself and this method is meant to let custom intellisense
             // operate normally
-            if (_buffer.ModeKind == ModeKind.Insert && _buffer.InsertMode.ActiveWordCompletionSession.IsSome())
+            if (_vimBuffer.ModeKind == ModeKind.Insert && _vimBuffer.InsertMode.ActiveWordCompletionSession.IsSome())
             {
-                return _buffer.Process(keyInput).IsAnyHandled;
+                return _vimBuffer.Process(keyInput).IsAnyHandled;
             }
 
             // The only time we actively intercept keys and route them through IOleCommandTarget
@@ -253,9 +275,9 @@ namespace VsVim
                 // The one exception to this rule is R#.  We can't accurately determine if 
                 // R# has intellisense active or not so we have to pretend like it always 
                 // does.  We limit this to insert mode only though. 
-                if (!_externalEditManager.IsResharperInstalled || _buffer.ModeKind != ModeKind.Insert)
+                if (!_externalEditManager.IsResharperInstalled || _vimBuffer.ModeKind != ModeKind.Insert)
                 {
-                    return _buffer.Process(keyInput).IsAnyHandled;
+                    return _vimBuffer.Process(keyInput).IsAnyHandled;
                 }
             }
 
@@ -266,7 +288,7 @@ namespace VsVim
             KeyInput mapped;
             if (!TryGetSingleMapping(keyInput, out mapped))
             {
-                return _buffer.Process(keyInput).IsAnyHandled;
+                return _vimBuffer.Process(keyInput).IsAnyHandled;
             }
 
             // If the key actually being processed is a display window key and the display window
@@ -276,7 +298,7 @@ namespace VsVim
                 return false;
             }
 
-            var handled = _buffer.Process(keyInput).IsAnyHandled;
+            var handled = _vimBuffer.Process(keyInput).IsAnyHandled;
 
             // The Escape key should always dismiss the active completion session.  However Vim
             // itself is mostly ignorant of display windows and typically won't dismiss them
@@ -327,7 +349,7 @@ namespace VsVim
             }
 
             // Don't intercept commands while incremental search is active.  Don't want to interfere with it
-            if (_vsAdapter.IsIncrementalSearchActive(_buffer.TextView))
+            if (_vsAdapter.IsIncrementalSearchActive(_vimBuffer.TextView))
             {
                 return false;
             }
@@ -359,14 +381,14 @@ namespace VsVim
                     {
                         // The user hit the undo button.  Don't attempt to map anything here and instead just 
                         // run a single Vim undo operation
-                        _buffer.UndoRedoOperations.Undo(1);
+                        _vimBuffer.UndoRedoOperations.Undo(1);
                         return NativeMethods.S_OK;
                     }
                     else if (editCommand.IsRedo)
                     {
                         // The user hit the redo button.  Don't attempt to map anything here and instead just 
                         // run a single Vim redo operation
-                        _buffer.UndoRedoOperations.Redo(1);
+                        _vimBuffer.UndoRedoOperations.Redo(1);
                         return NativeMethods.S_OK;
                     }
                     else if (editCommand.HasKeyInput)
@@ -407,7 +429,7 @@ namespace VsVim
                 {
                     action = CommandStatus.Enable;
                 }
-                else if (editCommand.HasKeyInput && _buffer.CanProcess(editCommand.KeyInput))
+                else if (editCommand.HasKeyInput && _vimBuffer.CanProcess(editCommand.KeyInput))
                 {
                     action = CommandStatus.Enable;
                     if (_externalEditManager.IsResharperInstalled)
@@ -442,7 +464,7 @@ namespace VsVim
         {
             CommandStatus? status = null;
             var passToResharper = true;
-            if (_buffer.ModeKind.IsAnyInsert() && keyInput == KeyInputUtil.EscapeKey)
+            if (_vimBuffer.ModeKind.IsAnyInsert() && keyInput == KeyInputUtil.EscapeKey)
             {
                 // Have to special case Escape here for insert mode.  R# is typically ahead of us on the IOleCommandTarget
                 // chain.  If a completion window is open and we wait for Exec to run R# will be ahead of us and run
@@ -450,14 +472,14 @@ namespace VsVim
                 // our exec leaving us in insert mode.
                 status = CommandStatus.Enable;
             }
-            else if (_buffer.ModeKind == ModeKind.ExternalEdit && keyInput == KeyInputUtil.EscapeKey)
+            else if (_vimBuffer.ModeKind == ModeKind.ExternalEdit && keyInput == KeyInputUtil.EscapeKey)
             {
                 // Have to special case Escape here for external edit mode because we want escape to get us back to 
                 // normal mode.  However we do want this key to make it to R# as well since they may need to dismiss
                 // intellisense
                 status = CommandStatus.Enable;
             }
-            else if ((keyInput.Key == VimKey.Back || keyInput == KeyInputUtil.EnterKey) && _buffer.ModeKind != ModeKind.Insert)
+            else if ((keyInput.Key == VimKey.Back || keyInput == KeyInputUtil.EnterKey) && _vimBuffer.ModeKind != ModeKind.Insert)
             {
                 // R# special cases both the Back and Enter command in various scenarios
                 //
@@ -481,7 +503,7 @@ namespace VsVim
             //  1. R# will handle the KeyInput
             //  2. R# will not handle it, it will come back to use in Exec and we will ignore it
             //     because we mark it as silently handled
-            if (status.HasValue && status.Value == CommandStatus.Enable && _buffer.Process(keyInput).IsAnyHandled)
+            if (status.HasValue && status.Value == CommandStatus.Enable && _vimBuffer.Process(keyInput).IsAnyHandled)
             {
                 // We've broken the rules a bit by handling the command in QueryStatus and we need
                 // to silently handle this command if it comes back to us again either through 

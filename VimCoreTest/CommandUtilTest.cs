@@ -18,6 +18,7 @@ namespace Vim.UnitTest
         private MockVimHost _vimHost;
         private IMacroRecorder _macroRecorder;
         private Mock<IStatusUtil> _statusUtil;
+        private TestableBulkOperations _bulkOperations;
         private IVimGlobalSettings _globalSettings;
         private IVimLocalSettings _localSettings;
         private IVimWindowSettings _windowSettings;
@@ -44,6 +45,7 @@ namespace Vim.UnitTest
 
             _factory = new MockRepository(MockBehavior.Loose);
             _statusUtil = _factory.Create<IStatusUtil>();
+            _bulkOperations = new TestableBulkOperations();
 
             var vimBufferData = CreateVimBufferData(
                 _vimTextBuffer,
@@ -64,7 +66,8 @@ namespace Vim.UnitTest
                 _motionUtil,
                 operations,
                 _foldManager,
-                new InsertUtil(vimBufferData, operations));
+                new InsertUtil(vimBufferData, operations),
+                _bulkOperations);
         }
 
         private static string CreateLinesWithLineBreak(params string[] lines)
@@ -555,6 +558,32 @@ namespace Vim.UnitTest
                 {
 
                 });
+        }
+
+        /// <summary>
+        /// Make sure the RepeatLastCommand properly registers as a bulk operation.  Ensure it also
+        /// behaves correctly in the face of an exception
+        /// </summary>
+        [Test]
+        public void RepeatLastCommand_CallBulkOperations()
+        {
+            SetLastCommand(VimUtil.CreatePing(
+                _ =>
+                {
+                    Assert.AreEqual(1, _bulkOperations.BeginCount);
+                    Assert.AreEqual(0, _bulkOperations.BeginCount);
+                    throw new Exception();
+                }));
+            try
+            {
+                _commandUtil.RepeatLastCommand(VimUtil.CreateCommandData());
+            }
+            catch
+            {
+
+            }
+            Assert.AreEqual(1, _bulkOperations.BeginCount);
+            Assert.AreEqual(1, _bulkOperations.BeginCount);
         }
 
         /// <summary>
@@ -1698,6 +1727,17 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Make sure the macro infrastructure hooks into bulk operations
+        /// </summary>
+        public void RunMacro_CallBulkOperations()
+        {
+            Create("");
+            _commandUtil.RunMacro('!', 1);
+            Assert.AreEqual(1, _bulkOperations.BeginCount);
+            Assert.AreEqual(1, _bulkOperations.BeginCount);
+        }
+
+        /// <summary>
         /// When jumping from a location not in the jump list and we're not in the middle 
         /// of a traversal the location should be added to the list
         /// </summary>
@@ -1831,7 +1871,7 @@ namespace Vim.UnitTest
             Create("cat", "dog", "bear", "fish", "pig");
             _foldManager.CreateFold(_textView.GetLineRange(1, 2));
             _commandUtil.YankLines(3, UnnamedRegister);
-            var lines = new []{"cat", "dog", "bear", "fish"};
+            var lines = new[] { "cat", "dog", "bear", "fish" };
             var text = lines.Aggregate((x, y) => x + Environment.NewLine + y) + Environment.NewLine;
             Assert.AreEqual(text, UnnamedRegister.StringValue);
             Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);

@@ -36,7 +36,8 @@ namespace Vim.UnitTest
         private IFoldManagerFactory _foldManagerFactory;
         private IBufferTrackingService _bufferTrackingService;
         private IProtectedOperations _protectedOperations;
-    
+        private IBulkOperations _bulkOperations;
+
         /// <summary>
         /// An IProtectedOperations value which will be properly checked in the context of this
         /// test case
@@ -56,7 +57,7 @@ namespace Vim.UnitTest
             get { return _vim.VimData; }
         }
 
-        protected IVimBufferFactory VimBufferFactory
+        internal IVimBufferFactory VimBufferFactory
         {
             get { return _vimBufferFactory; }
         }
@@ -106,6 +107,7 @@ namespace Vim.UnitTest
             _wordUtilFactory = CompositionContainer.GetExportedValue<IWordUtilFactory>();
             _bufferTrackingService = CompositionContainer.GetExportedValue<IBufferTrackingService>();
             _foldManagerFactory = CompositionContainer.GetExportedValue<IFoldManagerFactory>();
+            _bulkOperations = CompositionContainer.GetExportedValue<IBulkOperations>();
             _vimErrorDetector.Clear();
             _protectedOperations = new ProtectedOperations(_vimErrorDetector);
 
@@ -285,7 +287,8 @@ namespace Vim.UnitTest
                 motionUtil,
                 operations,
                 foldManager,
-                insertUtil);
+                insertUtil,
+                _bulkOperations);
         }
 
         protected override CompositionContainer GetOrCreateCompositionContainer()

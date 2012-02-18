@@ -49,6 +49,7 @@
     <Compile Include="Mark.fs" />
     <Compile Include="Register.fs" />
     <Compile Include="CoreInterfaces.fs" />
+    <Compile Include="InternalInterfaces.fs" />
     <Compile Include="CountCapture.fs" />
     <Compile Include="VimRegex.fsi" />
     <Compile Include="VimRegex.fs" />

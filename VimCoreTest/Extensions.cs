@@ -640,7 +640,7 @@ namespace Vim.UnitTest
 
         #region IVimBufferFactory
 
-        public static IVimBuffer CreateVimBuffer(this IVimBufferFactory vimBufferFactory, ITextView textView, IVimTextBuffer vimTextBuffer)
+        internal static IVimBuffer CreateVimBuffer(this IVimBufferFactory vimBufferFactory, ITextView textView, IVimTextBuffer vimTextBuffer)
         {
             var vimBufferData = vimBufferFactory.CreateVimBufferData(vimTextBuffer, textView);
             return vimBufferFactory.CreateVimBuffer(vimBufferData);

@@ -140,6 +140,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BlockSpanTest.cs" />
+    <Compile Include="BulkOperationsTest.cs" />
     <Compile Include="ChangeTrackerTest.cs" />
     <Compile Include="CharacterSpanTest.cs" />
     <Compile Include="CharUtilTest.cs" />
@@ -150,6 +151,7 @@
     <Compile Include="CommandProcessorLegacyTest.cs" />
     <Compile Include="CommandRunnerTest.cs" />
     <Compile Include="CommandUtilTest.cs" />
+    <Compile Include="TestableBulkOperations.cs" />
     <Compile Include="SystemUtilTest.cs" />
     <Compile Include="TextChangeTest.cs" />
     <Compile Include="VisualSpanTest.cs" />

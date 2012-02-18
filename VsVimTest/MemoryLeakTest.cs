@@ -45,6 +45,7 @@ namespace VsVim.UnitTest
                 _serviceMap[typeof(SVsRunningDocumentTable)] = _factory.Create<IVsRunningDocumentTable>().Object;
                 _serviceMap[typeof(SVsUIShell)] = _factory.Create<IVsUIShell>().As<IVsUIShell4>().Object;
                 _serviceMap[typeof(SVsShellMonitorSelection)] = _factory.Create<IVsMonitorSelection>().Object;
+                _serviceMap[typeof(IVsExtensibility)] = _factory.Create<IVsExtensibility>().Object;
                 var dte = MockObjectFactory.CreateDteWithCommands();
                 _serviceMap[typeof(_DTE)] = dte.Object;
                 _serviceMap[typeof(SDTE)] = dte.Object;

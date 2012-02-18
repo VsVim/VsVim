@@ -44,7 +44,8 @@ namespace Vim.UnitTest
                 MockObjectFactory.CreateClipboardDevice().Object,
                 _searchInfo.Object,
                 _fileSystem.Object,
-                new VimData());
+                new VimData(),
+                _factory.Create<IBulkOperations>().Object);
             _vim = _vimRaw;
             _vim.AutoLoadVimRc = false;
         }

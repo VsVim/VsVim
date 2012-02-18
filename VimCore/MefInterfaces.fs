@@ -105,17 +105,6 @@ type IBufferTrackingService =
     /// Close all of the outstanding ITrackingLineColumn and ITrackingVisualSpan instances
     abstract CloseAll : unit -> unit
 
-type IVimBufferFactory =
-
-    /// Create an IVimTextBuffer for the given ITextView
-    abstract CreateVimTextBuffer : textBuffer : ITextBuffer -> vim : IVim -> IVimTextBuffer
-
-    /// Create a VimBufferData value for the given values
-    abstract CreateVimBufferData : vimTextBuffer : IVimTextBuffer -> textView : ITextView -> IVimBufferData
-
-    /// Create an IVimBuffer for the given parameters
-    abstract CreateVimBuffer : vimBufferData : IVimBufferData -> IVimBuffer
-
 type IVimBufferCreationListener =
 
     /// Called whenever an IVimBuffer is created
