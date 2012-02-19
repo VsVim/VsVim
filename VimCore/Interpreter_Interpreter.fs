@@ -287,8 +287,7 @@ type Interpreter
                 _vimBuffer.CurrentDirectory <- Some directoryPath
         RunResult.Completed
 
-    /// Copy the text from the source address to the destination address
-    member x.RunCopyTo sourceLineRange destLineRange =
+    member private x.RunCopyOrMoveTo sourceLineRange destLineRange transactionName editOperation = 
 
         x.RunWithLineRangeOrDefault sourceLineRange DefaultLineRange.CurrentLine (fun sourceLineRange ->
 
@@ -306,16 +305,38 @@ type Interpreter
             match destLine with
             | None -> _statusUtil.OnError Resources.Common_InvalidAddress
             | Some destLine -> 
-    
                 // Use an undo transaction so that the caret move and insert is a single
                 // operation
-                _undoRedoOperations.EditWithUndoTransaction "CopyTo" (fun () ->
-    
-                    let destPosition = destLine.EndIncludingLineBreak.Position
-                    _textBuffer.Insert(destPosition, sourceLineRange.GetTextIncludingLineBreak()) |> ignore
-                    TextViewUtil.MoveCaretToPosition _textView destPosition)
+                _undoRedoOperations.EditWithUndoTransaction transactionName (fun() -> editOperation sourceLineRange destLine)
     
             RunResult.Completed)
+
+    member private x.textToInsert(sourceLineRange : SnapshotLineRange, destLine : ITextSnapshotLine) = 
+        let text = sourceLineRange.GetTextIncludingLineBreak()
+        if destLine.GetTextIncludingLineBreak().EndsWith "\n" then
+            text
+        else
+            System.Environment.NewLine + text
+
+    /// Copy the text from the source address to the destination address
+    member x.RunCopyTo sourceLineRange destLineRange =
+        x.RunCopyOrMoveTo sourceLineRange destLineRange "CopyTo" (fun sourceLineRange destLine ->
+                    let destPosition = destLine.EndIncludingLineBreak.Position
+                    let textToInsert = x.textToInsert(sourceLineRange, destLine)
+
+                    _textBuffer.Insert(destPosition, textToInsert) |> ignore
+                    TextViewUtil.MoveCaretToPosition _textView destPosition
+                )
+
+    member x.RunMoveTo sourceLineRange destLineRange =
+        x.RunCopyOrMoveTo sourceLineRange destLineRange "MoveTo" (fun sourceLineRange destLine ->
+                    let destPosition = destLine.EndIncludingLineBreak.Position
+                    let textToInsert = x.textToInsert(sourceLineRange, destLine)
+
+                    _textBuffer.Insert(destPosition, textToInsert) |> ignore
+                    _textBuffer.Delete(sourceLineRange.ExtentIncludingLineBreak.Span) |> ignore
+                    TextViewUtil.MoveCaretToPosition _textView destLine.End.Position
+                )
 
     /// Clear out the key map for the given modes
     member x.RunClearKeyMap keyRemapModes mapArgumentList = 
@@ -1245,6 +1266,7 @@ type Interpreter
         | LineCommand.JumpToLine number -> x.RunJumpToLine number
         | LineCommand.Make (hasBang, arguments) -> x.RunMake hasBang arguments
         | LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap, mapArgumentList) -> x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList
+        | LineCommand.MoveTo (sourceLineRange, destLineRange) -> x.RunMoveTo sourceLineRange destLineRange
         | LineCommand.NoHighlightSearch -> x.RunNoHighlightSearch()
         | LineCommand.Print (lineRange, lineCommandFlags)-> x.RunPrint lineRange lineCommandFlags
         | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()
