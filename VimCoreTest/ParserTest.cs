@@ -569,6 +569,16 @@ namespace Vim.UnitTest
             Assert.AreEqual("y", option.Item2);
         }
 
+        /// <summary>
+        /// Make sure we can parse out a set with a trailing comment
+        /// </summary>
+        [Test]
+        public void Parse_Set_TrailingComment()
+        {
+            var command = ParseLineCommand("set ai \"hello world");
+            Assert.IsTrue(command.IsSet);
+        }
+
         [Test]
         public void Parse_Shift_Left()
         {
