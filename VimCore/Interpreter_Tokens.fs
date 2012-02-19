@@ -14,10 +14,10 @@ type TokenKind =
     /// A decimal number 
     | Number of int 
 
-    /// A string constant bracketed by '"' 
-    | String of string
+    /// A contiguous set of letters in the text
+    | Word of string
 
-    /// A single character
+    /// A single non-letter character
     | Character of char
 
     /// The end of the line
@@ -29,7 +29,7 @@ type TokenKind =
         match x with 
         | TokenKind.Blank -> "Blank"
         | TokenKind.Number number -> sprintf "Number %d" number
-        | TokenKind.String str -> sprintf "String %s" str
+        | TokenKind.Word word -> sprintf "Word %s" word
         | TokenKind.Character c -> sprintf "Character %c" c
         | TokenKind.EndOfLine -> "EndOfLine"
 
@@ -54,8 +54,9 @@ type Token
         else
             _lineText.Substring(_startIndex, _length)
 
+    member x.StartIndex = _startIndex
+
+    member x.Length = _length
+
     override x.ToString() = sprintf "%O - %s" x.TokenKind x.TokenText
-
-    static member EndOfLine = Token(StringUtil.empty, 0, 0, TokenKind.EndOfLine)
-
 

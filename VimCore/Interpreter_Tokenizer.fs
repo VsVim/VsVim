@@ -5,19 +5,35 @@ open Vim
 open StringBuilderExtensions
 open System.Diagnostics
 
-type TokenizerUtil
+type NextTokenFlags = 
+    | None = 0
+
+    // In almost all cases a double quote is a comment and will cause the token stream to
+    // terminate.  There are a few exceptions like string constants but those are all 
+    // contextual and driven by the parser
+    | AllowDoubleQuote = 0x1
+
+type internal TokenStream
     (
         _text : string
-    ) = 
+    ) =
 
-    /// Current index into the expression text
     let mutable _index = 0
+
+    member x.Index 
+        with get () = _index
+        and set value = _index <- value
+
+    member x.Length = _text.Length
 
     member x.CurrentChar =
         if _index >= _text.Length then
             None
         else
             Some _text.[_index]
+
+    member x.IncrementIndex () =
+        _index <- _index + 1
 
     member x.PeekChar count = 
         let index = _index + count
@@ -36,32 +52,27 @@ type TokenizerUtil
         | None -> false
         | Some c -> c = value
 
-    member x.IncrementIndex() =
-        if _index < _text.Length then
-            _index <- _index + 1
-
-    member x.GetNextTokenKind() =
+    /// Tokenize the next item from the current position in the stream
+    member x.GetCurrentTokenKind flags = 
         match x.CurrentChar with
         | None -> TokenKind.EndOfLine
         | Some c ->
-            match c with
-            | '"' -> x.GetStringOrComment()
-            | _ ->
-                if CharUtil.IsDigit c then
-                    x.GetNumber c
-                elif CharUtil.IsBlank c then
-                    x.GetBlanks()
-                else
+            if CharUtil.IsDigit c then
+                x.GetNumber c
+            elif CharUtil.IsLetter c then
+                x.GetWord()
+            elif CharUtil.IsBlank c then
+                x.GetBlanks()
+            elif c = '\"' then
+                if Util.IsFlagSet flags NextTokenFlags.AllowDoubleQuote then
                     x.IncrementIndex()
                     TokenKind.Character c
-
-                // TODO: Need todo strin literal
-
-    member x.GetNextToken() =
-        let startIndex = _index
-        let tokenKind = x.GetNextTokenKind()
-        let length = _index - startIndex
-        Token(_text, startIndex, length, tokenKind)
+                else
+                    _index <- _text.Length
+                    TokenKind.EndOfLine
+            else
+                x.IncrementIndex()
+                TokenKind.Character c
 
     /// Called when the current character is a digit.  Eat up the letters until we 
     /// exhaust all of the consequitive digit tokens
@@ -118,6 +129,20 @@ type TokenizerUtil
         else
             parseDecimal ()
 
+    /// Move past the set of coniguous letter characters
+    member x.GetWord() = 
+        let startIndex = _index
+        let isCurrentLetter () = 
+            match x.CurrentChar with
+            | None -> false
+            | Some c -> CharUtil.IsLetter c
+
+        while isCurrentLetter() do
+            x.IncrementIndex()
+
+        let word = _text.Substring(startIndex, _index - startIndex)
+        TokenKind.Word word
+
     /// Move past a series of blanks
     member x.GetBlanks() =
         let isCurrentBlank () = 
@@ -130,60 +155,6 @@ type TokenizerUtil
 
         TokenKind.Blank
 
-    /// This is called when the index is pointing at a doube-quote and we need to parse
-    /// out a comment or a string
-    ///
-    /// Help expr-string
-    /// TODO: Need to support all of the escapes
-    member x.GetStringOrComment() =
-
-        // Move past the '"'
-        x.IncrementIndex()
-
-        let startIndex = _index
-        let rec inner () = 
-            if x.IsCurrentChar '\\' then
-                // In a string the '\' are escapes so just move past them so we don't 
-                // conisder a '"' following it to be the close of the string.
-                x.IncrementIndex()
-                x.IncrementIndex()
-                inner ()
-            elif x.IsCurrentChar '"' then
-                let str = _text.Substring(startIndex, _index - startIndex)
-                x.IncrementIndex()
-                TokenKind.String str
-            elif _index >= _text.Length then
-                // We're at the end of the line.  This was just a comment so go aheand and
-                // return that we're at the end of the line
-                TokenKind.EndOfLine
-            else
-                x.IncrementIndex()
-                inner()
-
-        inner ()
-
-        (*
-    member x.GetStringLiteral() = 
-        let startIndex = _index
-        let builder = System.Text.StringBuilder()
-        let rec inner () = 
-            if x.IsCurrentChar '\\' && x.IsPeekChar '\'' then
-                builder.AppendChar('\'')
-                x.IncrementIndex()
-                x.IncrementIndex()
-                inner ()
-            elif x.IsCurrentChar '\'' then
-                let str = builder.ToString()
-                x.IncrementIndex()
-                TokenKind.String str
-            elif _index >= _text.Length then
-                TokenKind.Error "Unterminated string literal"
-            else
-                x.IncrementIndex()
-                inner()
-
-        inner ()
-        *)
 
 [<Sealed>]
 [<Class>]
@@ -191,46 +162,50 @@ type TokenizerUtil
 type internal Tokenizer
     (
         _text : string
-    ) = 
+    ) as this =
 
-    let _tokens = 
-        let tokenizerUtil = TokenizerUtil(_text)
-        Seq.unfold (fun isDone ->
-            if isDone then
-                None
-            else
-                let token = tokenizerUtil.GetNextToken()
-                let isDone = 
-                    match token.TokenKind with
-                    | TokenKind.EndOfLine -> true
-                    | _ -> false
-                Some (token, isDone)) false
-        |> List.ofSeq
+    let _tokenStream = TokenStream(_text)
 
-    let mutable _index = 0
+    /// The current Token the tokenizer is looking at
+    let mutable _currentToken = Token(_text, 0, 0, TokenKind.EndOfLine)
 
-    member x.Index = _index
+    do
+        this.MakeCurrentToken 0 NextTokenFlags.None
 
-    member x.CurrentToken = 
-        if _index >= _tokens.Length then
-            Token.EndOfLine
-        else
-            _tokens.[_index]
+    member x.CurrentToken = _currentToken
 
-    member x.CurrentTokenKind = x.CurrentToken.TokenKind
+    member x.CurrentTokenKind = _currentToken.TokenKind
 
     member x.IsAtEndOfLine = x.CurrentTokenKind = TokenKind.EndOfLine
 
-    member x.GetNextToken() = 
-        x.IncrementIndex()
-        x.CurrentToken
+    member x.Index = _currentToken.StartIndex
 
-    member x.IncrementIndex() =
-        if _index < _tokens.Length then
-            _index <- _index + 1
+    member x.MakeCurrentToken startIndex flags = 
+        if startIndex >= _tokenStream.Length then
 
-    member x.Rewind index =
-        _index <- index
+            // Make the current token the end of the line if it's not already so since
+            // we're past the end if the line
+            if _currentToken.TokenKind <> TokenKind.EndOfLine then
+                _currentToken <- Token(
+                    _text,
+                    _text.Length,
+                    0,
+                    TokenKind.EndOfLine)
+        else
+            _tokenStream.Index <- startIndex
+            let tokenKind = _tokenStream.GetCurrentTokenKind flags
+            let length = _tokenStream.Index - startIndex
+            _currentToken <- Token(
+                _text,
+                startIndex,
+                length,
+                tokenKind)
 
-    override x.ToString() = x.CurrentToken.ToString()
+    member x.MoveNextTokenEx flags = 
+        let index = _currentToken.StartIndex + _currentToken.Length
+        x.MakeCurrentToken index flags
+
+    member x.MoveNextToken() = x.MoveNextTokenEx NextTokenFlags.None
+
+    member x.Rewind index = x.MakeCurrentToken index NextTokenFlags.None
 

@@ -512,6 +512,7 @@ namespace Vim.UnitTest
                     _keyMap.ClearAll();
                 };
 
+            Create("");
             testMapClear("mapc", new [] {KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Command, KeyRemapMode.OperatorPending});
             testMapClear("nmapc", new [] {KeyRemapMode.Normal});
             testMapClear("vmapc", new [] {KeyRemapMode.Visual, KeyRemapMode.Select});

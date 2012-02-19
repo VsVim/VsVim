@@ -2,6 +2,14 @@
 
 namespace Vim.Interpreter
 
+type NextTokenFlags = 
+    | None = 0
+
+    // In almost all cases a double quote is a comment and will cause the token stream to
+    // terminate.  There are a few exceptions like string constants but those are all 
+    // contextual and driven by the parser
+    | AllowDoubleQuote = 0x1
+
 [<Sealed>]
 [<Class>]
 type internal Tokenizer = 
@@ -20,11 +28,12 @@ type internal Tokenizer =
     /// Current TokenKind
     member CurrentTokenKind : TokenKind
 
-    /// Advance the token stream one and return the next Token
-    member GetNextToken : unit -> Token
+    /// Move to the next token in the stream.  Double quotes will be treated as a 
+    /// comment
+    member MoveNextToken : unit -> unit
 
-    /// Increment the token stream to the next token
-    member IncrementIndex : unit -> unit
+    /// Move to the next token in the stream.
+    member MoveNextTokenEx : flags : NextTokenFlags -> unit
 
     /// Rewind the token stream to the specified index
     member Rewind : index : int -> unit

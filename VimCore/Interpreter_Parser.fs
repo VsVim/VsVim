@@ -153,10 +153,6 @@ type Parser
         ("cnoremap", "cno")
     ]
 
-    // TODO: Delete.  Force the use of _tokenizer.IncrementIndex
-    member x.IncrementIndex() =
-        _tokenizer.IncrementIndex()
-
     // TODO: Delete.  Force the use of _tokenizer.IsAtEndOfLine
     member x.IsAtEndOfLine =
         _tokenizer.IsAtEndOfLine
@@ -164,7 +160,7 @@ type Parser
     /// Move past the white space in the expression text
     member x.SkipBlanks () = 
         match _tokenizer.CurrentTokenKind with
-        | TokenKind.Blank -> x.IncrementIndex()
+        | TokenKind.Blank -> _tokenizer.MoveNextToken()
         | _ -> ()
 
     /// Try and expand the possible abbreviation to a full line command name.  If it's 
@@ -188,7 +184,7 @@ type Parser
     member x.ParseBang () = 
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Character '!' ->
-            x.IncrementIndex()
+            _tokenizer.MoveNextToken()
             true
         | _ -> false
 
@@ -203,7 +199,7 @@ type Parser
                 ()
             elif predicate token then
                 builder.AppendString token.TokenText
-                x.IncrementIndex()
+                _tokenizer.MoveNextToken()
                 inner ()
             else
                 ()
@@ -214,34 +210,10 @@ type Parser
         else
             builder.ToString() |> Some
 
-    /// Parse out a single word from the text.  This will simply take the current cursor
-    /// position and move while IsLetter is true.  This will return None if the resulting
-    /// string is blank.  This will not skip any blanks
-    member x.ParseWord() = 
-        x.ParseWhile (fun token -> 
-            match token.TokenKind with
-            | TokenKind.Character c -> CharUtil.IsLetterOrDigit c
-            | _ -> false)
-
-    /// Try and parse out the given word from the text.  If the next word matches the
-    /// given string then the parser moves past that word and returns true.  Else the 
-    /// index is unchanged and false is returned
-    member x.TryParseWord word = 
-        let mark = _tokenizer.Index
-        match x.ParseWord() with
-        | None ->
-            false
-        | Some foundWord -> 
-            if foundWord = word then
-                true
-            else
-                _tokenizer.Rewind mark
-                false
-
     member x.ParseNumber() =
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Number number ->
-            x.IncrementIndex()
+            _tokenizer.MoveNextToken()
             Some number
         | _ -> None
 
@@ -283,7 +255,7 @@ type Parser
     member x.ParseNumberConstant() =
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Number number ->
-            x.IncrementIndex()
+            _tokenizer.MoveNextToken()
             number |> Value.Number |> Expression.ConstantValue |> ParseResult.Succeeded
         | _ -> ParseResult.Failed "Invalid Number"
 
@@ -355,13 +327,13 @@ type Parser
         | TokenKind.Character '+' ->
             let mark = _tokenizer.Index
 
-            x.IncrementIndex()
+            _tokenizer.MoveNextToken()
             match _tokenizer.CurrentTokenKind with
             | TokenKind.Number number ->
-                x.IncrementIndex()
+                _tokenizer.MoveNextToken()
                 CommandOption.StartAtLine number |> Some
             | TokenKind.Character '/' ->
-                x.IncrementIndex()
+                _tokenizer.MoveNextToken()
                 let pattern = x.ParseToEndOfLine()
                 CommandOption.StartAtPattern pattern |> Some
             | TokenKind.Character c ->
@@ -398,27 +370,27 @@ type Parser
             // The argument is mostly parsed out.  Need the closing '>' and the jump to
             // the next element in the list
             let completeArgument mapArgument = 
+                _tokenizer.MoveNextToken()
                 match _tokenizer.CurrentTokenKind with
                 | TokenKind.Character '>' ->
                     // Skip the '>' and any trailing blanks.  The method was called with
                     // the index pointing past white space and it should end that way
-                    x.IncrementIndex()
+                    _tokenizer.MoveNextToken()
                     x.SkipBlanks()
                     inner (fun tail -> withResult (mapArgument :: tail))
                 | _ -> finish ()
 
             match _tokenizer.CurrentTokenKind with
             | TokenKind.Character '<' ->
-                x.IncrementIndex()
-                match x.ParseWord() with
-                | None -> finish()
-                | Some "buffer" -> completeArgument KeyMapArgument.Buffer
-                | Some "silent" -> completeArgument KeyMapArgument.Silent
-                | Some "special" -> completeArgument KeyMapArgument.Special
-                | Some "script" -> completeArgument KeyMapArgument.Script
-                | Some "expr" -> completeArgument KeyMapArgument.Expr 
-                | Some "unique" -> completeArgument KeyMapArgument.Unique
-                | Some _ -> finish ()
+                _tokenizer.MoveNextToken()
+                match _tokenizer.CurrentTokenKind with 
+                | TokenKind.Word "buffer" -> completeArgument KeyMapArgument.Buffer
+                | TokenKind.Word "silent" -> completeArgument KeyMapArgument.Silent
+                | TokenKind.Word "special" -> completeArgument KeyMapArgument.Special
+                | TokenKind.Word "script" -> completeArgument KeyMapArgument.Script
+                | TokenKind.Word "expr" -> completeArgument KeyMapArgument.Expr 
+                | TokenKind.Word "unique" -> completeArgument KeyMapArgument.Unique
+                | _ -> finish()
             | _ -> finish ()
 
         inner (fun x -> x)
@@ -426,47 +398,63 @@ type Parser
     /// Parse out a register value from the text.  This will not parse out numbered register
     member x.ParseRegisterName () = 
 
-        match _tokenizer.CurrentTokenKind with
-        | TokenKind.Character c ->
-            let name = RegisterName.OfChar c
-            if Option.isSome name then
-                x.IncrementIndex()
+        let name =
+            match _tokenizer.CurrentTokenKind with
+            | TokenKind.Character c -> RegisterName.OfChar c
+            | TokenKind.Word word ->
+                if word.Length = 1 then
+                    RegisterName.OfChar word.[0]
+                else
+                    None
+            | _ -> None
 
-            name
-        | _ -> None
+        if Option.isSome name then
+            _tokenizer.MoveNextToken()
+        name
 
     /// Used to parse out the flags for substitute commands.  Will not modify the 
     /// stream if there are no flags
     member x.ParseSubstituteFlags () =
 
-        let rec inner flags isFirst = 
-            let newFlag = 
-                match _tokenizer.CurrentTokenKind with 
-                | TokenKind.Character 'c' -> Some SubstituteFlags.Confirm
-                | TokenKind.Character 'r' -> Some SubstituteFlags.UsePreviousSearchPattern
-                | TokenKind.Character 'e' -> Some SubstituteFlags.SuppressError
-                | TokenKind.Character 'g' -> Some SubstituteFlags.ReplaceAll
-                | TokenKind.Character 'i' -> Some SubstituteFlags.IgnoreCase
-                | TokenKind.Character 'I' -> Some SubstituteFlags.OrdinalCase
-                | TokenKind.Character 'n' -> Some SubstituteFlags.ReportOnly
-                | TokenKind.Character 'p' -> Some SubstituteFlags.PrintLast
-                | TokenKind.Character 'l' -> Some SubstituteFlags.PrintLastWithList
-                | TokenKind.Character '#' -> Some SubstituteFlags.PrintLastWithNumber
-                | TokenKind.Character '&' -> Some SubstituteFlags.UsePreviousFlags
-                | _  -> None
-            match newFlag, isFirst with
-            | None, _ -> 
-                // No more flags so we are done
-                flags
-            | Some SubstituteFlags.UsePreviousFlags, false ->
-                // The '&' flag is only legal in the first position.  After that
-                // it terminates the flag notation
-                flags
-            | Some newFlag, _ -> 
-                x.IncrementIndex()
-                inner (flags ||| newFlag) false
+        // Get the string which we are parsing for flags
+        let flagString = x.ParseWhile (fun token -> 
+            match token.TokenKind with
+            | TokenKind.Character '&' -> true
+            | TokenKind.Character '#' -> true
+            | TokenKind.Word _ -> true
+            | _ -> false)
+        let flagString = OptionUtil.getOrDefault "" flagString
 
-        inner SubstituteFlags.None true
+        let rec inner flags index  = 
+            if index >= flagString.Length then
+                ParseResult.Succeeded flags
+            else
+                let newFlag = 
+                    match flagString.[index] with
+                    | 'c' -> Some SubstituteFlags.Confirm
+                    | 'r' -> Some SubstituteFlags.UsePreviousSearchPattern
+                    | 'e' -> Some SubstituteFlags.SuppressError
+                    | 'g' -> Some SubstituteFlags.ReplaceAll
+                    | 'i' -> Some SubstituteFlags.IgnoreCase
+                    | 'I' -> Some SubstituteFlags.OrdinalCase
+                    | 'n' -> Some SubstituteFlags.ReportOnly
+                    | 'p' -> Some SubstituteFlags.PrintLast
+                    | 'l' -> Some SubstituteFlags.PrintLastWithList
+                    | '#' -> Some SubstituteFlags.PrintLastWithNumber
+                    | '&' -> Some SubstituteFlags.UsePreviousFlags
+                    | _  -> None
+                match newFlag, index = 0 with
+                | None, _ -> 
+                    // Illegal character was used 
+                    ParseResult.Failed Resources.CommandMode_TrailingCharacters
+                | Some SubstituteFlags.UsePreviousFlags, false ->
+                    // The '&' flag is only legal in the first position.  After that
+                    // it terminates the flag notation
+                    ParseResult.Failed Resources.CommandMode_TrailingCharacters
+                | Some newFlag, _ -> 
+                    inner (flags ||| newFlag) (index + 1)
+
+        inner SubstituteFlags.None 0
 
     /// Parse out the change directory command.  The path here is optional
     member x.ParseChangeDirectory() =
@@ -559,10 +547,10 @@ type Parser
             match token.TokenKind with
             | TokenKind.Character c ->
                 if c = delimiter then 
-                    x.IncrementIndex()
+                    _tokenizer.MoveNextToken()
                     builder.ToString(), true
                 elif c = '\\' then
-                    x.IncrementIndex()
+                    _tokenizer.MoveNextToken()
 
                     match _tokenizer.CurrentTokenKind with
                     | TokenKind.Character c ->
@@ -573,21 +561,24 @@ type Parser
                             builder.AppendChar '\\'
 
                         builder.AppendChar c
-                        x.IncrementIndex()
+                        _tokenizer.MoveNextToken()
+                    | TokenKind.Word _ -> 
+                        // It's part of an escape sequence
+                        builder.AppendChar '\\'
                     | _ ->
                         ()
 
                     inner()
                 else
                     builder.AppendChar c
-                    x.IncrementIndex()
+                    _tokenizer.MoveNextToken()
                     inner()
             | TokenKind.EndOfLine ->
                 // Hit the end without finding 'delimiter'. 
                 builder.ToString(), false
             | _ ->
                 builder.AppendString token.TokenText
-                x.IncrementIndex()
+                _tokenizer.MoveNextToken()
                 inner()
 
         inner ()
@@ -600,24 +591,31 @@ type Parser
 
         let lineSpecifier = 
             if x.IsCurrentCharValue '.' then
-                x.IncrementIndex()
+                _tokenizer.MoveNextToken()
                 Some LineSpecifier.CurrentLine
             elif x.IsCurrentCharValue '\'' then
-                x.IncrementIndex()
+                _tokenizer.MoveNextToken()
+
                 match _tokenizer.CurrentTokenKind with
-                | TokenKind.Character c -> 
-                    x.IncrementIndex()
-                    c
-                    |> Mark.OfChar 
-                    |> Option.map LineSpecifier.MarkLine
+                | TokenKind.Word word ->
+                    let mark = 
+                        if word.Length = 1 then
+                            Mark.OfChar word.[0]
+                        else 
+                            None
+                    match mark with
+                    | None -> None
+                    | Some mark ->
+                        _tokenizer.MoveNextToken()
+                        LineSpecifier.MarkLine mark |> Some
                 | _ -> None
             elif x.IsCurrentCharValue '$' || x.IsCurrentCharValue '%' then
-                x.IncrementIndex()
+                _tokenizer.MoveNextToken()
                 Some LineSpecifier.LastLine
             elif x.IsCurrentCharValue '/' then
 
                 // It's one of the forward pattern specifiers
-                x.IncrementIndex()
+                _tokenizer.MoveNextToken()
                 if x.IsCurrentCharValue '/' then
                     Some LineSpecifier.NextLineWithPreviousPattern
                 elif x.IsCurrentCharValue '?' then
@@ -634,7 +632,7 @@ type Parser
 
             elif x.IsCurrentCharValue '?' then
                 // It's the ? previous search pattern
-                x.IncrementIndex()
+                _tokenizer.MoveNextToken()
                 let pattern, foundDelimeter = x.ParsePattern '?'
                 if foundDelimeter then
                     Some (LineSpecifier.PreviousLineWithPattern pattern)
@@ -642,10 +640,10 @@ type Parser
                     None
 
             elif x.IsCurrentCharValue '+' then
-                x.IncrementIndex()
+                _tokenizer.MoveNextToken()
                 x.ParseNumber() |> Option.map LineSpecifier.AdjustmentOnCurrent
             elif x.IsCurrentCharValue '-' then
-                x.IncrementIndex()
+                _tokenizer.MoveNextToken()
                 x.ParseNumber() |> Option.map (fun number -> LineSpecifier.AdjustmentOnCurrent -number)
             else 
                 match x.ParseNumber() with
@@ -658,7 +656,7 @@ type Parser
             None
         | Some lineSpecifier ->
             let parseAdjustment isNegative = 
-                x.IncrementIndex()
+                _tokenizer.MoveNextToken()
 
                 // If no number is specified then 1 is used instead
                 let number = x.ParseNumber() |> OptionUtil.getOrDefault 1
@@ -680,7 +678,7 @@ type Parser
     /// range expression
     member x.ParseLineRange () : LineRangeSpecifier =
         if x.IsCurrentCharValue '%' then
-            x.IncrementIndex()
+            _tokenizer.MoveNextToken()
             LineRangeSpecifier.EntireBuffer
         else
             match x.ParseLineSpecifier() with
@@ -689,7 +687,7 @@ type Parser
 
                 if x.IsCurrentCharValue ',' || x.IsCurrentCharValue ';' then
                     let isSemicolon = x.IsCurrentCharValue ';'
-                    x.IncrementIndex()
+                    _tokenizer.MoveNextToken()
                     match x.ParseLineSpecifier() with
                     | None -> LineRangeSpecifier.SingleLine left
                     | Some right -> LineRangeSpecifier.Range (left, right, isSemicolon)
@@ -701,7 +699,7 @@ type Parser
         let rec inner flags = 
 
             let withFlag flag =
-                x.IncrementIndex()
+                _tokenizer.MoveNextToken()
                 inner (flag ||| flags)
 
             match _tokenizer.CurrentTokenKind with
@@ -739,7 +737,7 @@ type Parser
             if isValidDelimiter delimiter then
                 // If this is a valid delimiter then first try and parse out the pattern version
                 // of substitute 
-                x.IncrementIndex()
+                _tokenizer.MoveNextToken()
                 let pattern, foundDelimeter = x.ParsePattern delimiter
                 if not foundDelimeter then
                     // When there is no trailing delimeter then the replace string is empty
@@ -748,13 +746,15 @@ type Parser
                 else
                     let replace, _ = x.ParsePattern delimiter
                     x.SkipBlanks()
-                    let flags = x.ParseSubstituteFlags()
-                    let flags = processFlags flags
-                    x.SkipBlanks()
-                    let count = x.ParseNumber()
-                    let lineRange = LineRangeSpecifier.WithEndCount (lineRange, count)
-                    let command = LineCommand.Substitute (lineRange, pattern, replace, flags)
-                    ParseResult.Succeeded command
+                    match x.ParseSubstituteFlags() with
+                    | ParseResult.Failed message -> ParseResult.Failed message
+                    | ParseResult.Succeeded flags ->
+                        let flags = processFlags flags
+                        x.SkipBlanks()
+                        let count = x.ParseNumber()
+                        let lineRange = LineRangeSpecifier.WithEndCount (lineRange, count)
+                        let command = LineCommand.Substitute (lineRange, pattern, replace, flags)
+                        ParseResult.Succeeded command
             else
                 // Without a delimiter it's the repeat variety of the substitute command
                 x.ParseSubstituteRepeatCore lineRange processFlags
@@ -777,14 +777,17 @@ type Parser
     /// Parse out the options to the repeat variety of the substitute command
     member x.ParseSubstituteRepeatCore lineRange processFlags =
         x.SkipBlanks()
-        let flags = x.ParseSubstituteFlags() |> processFlags
+        match x.ParseSubstituteFlags() with
+        | ParseResult.Failed message -> ParseResult.Failed message
+        | ParseResult.Succeeded flags ->
+            let flags = processFlags flags
 
-        // Parses out the optional trailing count
-        x.SkipBlanks()
-        let count = x.ParseNumber()
-        let lineRange = LineRangeSpecifier.WithEndCount (lineRange, count)
-        let command = LineCommand.SubstituteRepeat (lineRange, flags)
-        ParseResult.Succeeded command
+            // Parses out the optional trailing count
+            x.SkipBlanks()
+            let count = x.ParseNumber()
+            let lineRange = LineRangeSpecifier.WithEndCount (lineRange, count)
+            let command = LineCommand.SubstituteRepeat (lineRange, flags)
+            ParseResult.Succeeded command
 
     /// Parse out the repeat variety of the substitute command which is initiated
     /// by the '&' character.
@@ -848,7 +851,8 @@ type Parser
         x.SkipBlanks()
         let command = x.ParseWhile (fun token -> 
             match token.TokenKind with 
-            | TokenKind.Character c -> CharUtil.IsLetterOrDigit c || c = '.'
+            | TokenKind.Word _ -> true
+            | TokenKind.Character '.' -> true
             | _ -> false)
         match command with 
         | None -> ParseResult.Failed Resources.Parser_Error
@@ -901,7 +905,7 @@ type Parser
         | TokenKind.Character '\\' -> ParseResult.Failed Resources.Parser_InvalidArgument
         | TokenKind.Character '"' -> ParseResult.Failed Resources.Parser_InvalidArgument
         | TokenKind.Character delimiter ->
-            x.IncrementIndex()
+            _tokenizer.MoveNextToken()
             let pattern, foundDelimiter = x.ParsePattern delimiter
             if foundDelimiter then
                 let command = x.ParseSingleCommand()
@@ -958,7 +962,7 @@ type Parser
             // differentiate it at this point
             x.SkipBlanks()
             if x.IsCurrentCharValue '!' then
-                x.IncrementIndex()
+                _tokenizer.MoveNextToken()
                 let command = x.ParseToEndOfLine()
                 LineCommand.ReadCommand (lineRange, command) |> ParseResult.Succeeded
             else
@@ -991,57 +995,70 @@ type Parser
             // Parse out an operator.  Parse out the value and use the specified setting name
             // and argument function as the argument
             let parseOperator name argumentFunc = 
-                x.IncrementIndex()
-                match x.ParseWord() with
-                | None -> ParseResult.Failed Resources.Parser_Error
-                | Some value -> parseNext (argumentFunc (name, value))
+                _tokenizer.MoveNextToken()
+
+                // TODO: Really need parseSetValue
+                let isValid = 
+                    match _tokenizer.CurrentTokenKind with
+                    | TokenKind.Word _ -> true
+                    | TokenKind.Number _ -> true
+                    | _ -> false
+
+                if isValid then
+                    let value = _tokenizer.CurrentToken.TokenText
+                    _tokenizer.MoveNextToken()
+                    parseNext (argumentFunc (name, value))
+                else
+                    ParseResult.Failed Resources.Parser_Error
 
             // Parse out a compound operator.  This is used for '+=' and such.  This will be called
             // with the index pointed at the first character
             let parseCompoundOperator name argumentFunc = 
-                x.IncrementIndex()
+                _tokenizer.MoveNextToken()
                 if x.IsCurrentCharValue '=' then
                     parseOperator name argumentFunc
                 else
                     ParseResult.Failed Resources.Parser_Error
 
-            if x.IsAtEndOfLine then
+            match _tokenizer.CurrentTokenKind with
+            | TokenKind.EndOfLine ->
                 let list = withArgument []
                 ParseResult.Succeeded (LineCommand.Set list)
-            elif x.TryParseWord "all" then
+            | TokenKind.Word "all" ->
+                _tokenizer.MoveNextToken()
                 if x.IsCurrentCharValue '&' then
-                    x.IncrementIndex()
+                    _tokenizer.MoveNextToken()
                     parseNext SetArgument.ResetAllToDefault
                 else
                     parseNext SetArgument.DisplayAllButTerminal
-            elif x.TryParseWord "termcap" then
+            | TokenKind.Word "termcap" ->
+                _tokenizer.MoveNextToken()
                 parseNext SetArgument.DisplayAllTerminal
-            else
-                match x.ParseWord() with
-                | None ->
-                     ParseResult.Failed Resources.Parser_Error                   
-                | Some name ->
-                    if name.StartsWith("no", System.StringComparison.Ordinal) then
-                        let option = name.Substring(2)
-                        parseNext (SetArgument.ToggleOffSetting option)
-                    elif name.StartsWith("inv", System.StringComparison.Ordinal) then
-                        let option = name.Substring(3)
-                        parseNext (SetArgument.InvertSetting option)
-                    else
+            | TokenKind.Word name ->
+                _tokenizer.MoveNextToken()
+                if name.StartsWith("no", System.StringComparison.Ordinal) then
+                    let option = name.Substring(2)
+                    parseNext (SetArgument.ToggleOffSetting option)
+                elif name.StartsWith("inv", System.StringComparison.Ordinal) then
+                    let option = name.Substring(3)
+                    parseNext (SetArgument.InvertSetting option)
+                else
 
-                        // Need to look at the next character to decide what type of 
-                        // argument this is
-                        match _tokenizer.CurrentTokenKind with
-                        | TokenKind.Character '?' -> x.IncrementIndex(); parseNext (SetArgument.DisplaySetting name)
-                        | TokenKind.Character '!' -> x.IncrementIndex(); parseNext (SetArgument.InvertSetting name)
-                        | TokenKind.Character ':' -> parseOperator name SetArgument.AssignSetting
-                        | TokenKind.Character '=' -> parseOperator name SetArgument.AssignSetting
-                        | TokenKind.Character '+' -> parseCompoundOperator name SetArgument.AddSetting
-                        | TokenKind.Character '^' -> parseCompoundOperator name SetArgument.MultiplySetting
-                        | TokenKind.Character '-' -> parseCompoundOperator name SetArgument.SubtractSetting
-                        | TokenKind.Blank -> x.IncrementIndex(); parseNext (SetArgument.UseSetting name)
-                        | TokenKind.EndOfLine -> parseNext (SetArgument.UseSetting name)
-                        | _ -> ParseResult.Failed Resources.Parser_Error
+                    // Need to look at the next character to decide what type of 
+                    // argument this is
+                    match _tokenizer.CurrentTokenKind with
+                    | TokenKind.Character '?' -> _tokenizer.MoveNextToken(); parseNext (SetArgument.DisplaySetting name)
+                    | TokenKind.Character '!' -> _tokenizer.MoveNextToken(); parseNext (SetArgument.InvertSetting name)
+                    | TokenKind.Character ':' -> parseOperator name SetArgument.AssignSetting
+                    | TokenKind.Character '=' -> parseOperator name SetArgument.AssignSetting
+                    | TokenKind.Character '+' -> parseCompoundOperator name SetArgument.AddSetting
+                    | TokenKind.Character '^' -> parseCompoundOperator name SetArgument.MultiplySetting
+                    | TokenKind.Character '-' -> parseCompoundOperator name SetArgument.SubtractSetting
+                    | TokenKind.Blank -> _tokenizer.MoveNextToken(); parseNext (SetArgument.UseSetting name)
+                    | TokenKind.EndOfLine -> parseNext (SetArgument.UseSetting name)
+                    | _ -> ParseResult.Failed Resources.Parser_Error
+            | _ ->
+                 ParseResult.Failed Resources.Parser_Error                   
 
         parseOption (fun x -> x)
 
@@ -1085,12 +1102,10 @@ type Parser
     member x.ParseDisplayMarks () = 
         x.SkipBlanks()
 
-        match x.ParseWord() with
-        | None ->
-            // Simple case.  No marks to parse out.  Just return them all
-            LineCommand.DisplayMarks List.empty |> ParseResult.Succeeded
-        | Some word ->
+        match _tokenizer.CurrentTokenKind with
+        | TokenKind.Word word ->
 
+            _tokenizer.MoveNextToken()
             let mutable message : string option = None
             let list = System.Collections.Generic.List<Mark>()
             for c in word do
@@ -1101,6 +1116,9 @@ type Parser
             match message with
             | None -> LineCommand.DisplayMarks (List.ofSeq list) |> ParseResult.Succeeded
             | Some message -> ParseResult.Failed message
+        | _ ->
+            // Simple case.  No marks to parse out.  Just return them all
+            LineCommand.DisplayMarks List.empty |> ParseResult.Succeeded
 
     /// Parse out a single expression
     member x.ParseSingleCommand () = 
@@ -1116,17 +1134,12 @@ type Parser
         // name
         let name = 
             match _tokenizer.CurrentTokenKind with
+            | TokenKind.Word word ->
+                _tokenizer.MoveNextToken()
+                x.TryExpand word
             | TokenKind.Character c ->
-                if CharUtil.IsAlpha c then
-                    x.ParseWhile (fun token ->
-                        match token.TokenKind with
-                        | TokenKind.Character c -> CharUtil.IsAlpha c
-                        | _ -> false)
-                    |> OptionUtil.getOrDefault ""
-                    |> x.TryExpand
-                else
-                    x.IncrementIndex()
-                    StringUtil.ofChar c
+                _tokenizer.MoveNextToken()
+                c |> StringUtil.ofChar |> x.TryExpand
             | _ -> ""
 
         let parseResult = 
@@ -1239,11 +1252,14 @@ type Parser
     /// Parse out a single expression
     member x.ParseSingleExpression() =
         match _tokenizer.CurrentTokenKind with
-        | TokenKind.String str ->
-            x.IncrementIndex()
-            Value.String str |> Expression.ConstantValue |> ParseResult.Succeeded
+        | TokenKind.Character '\"' ->
+            // TODO: Must parse out string constant
+            ParseResult.Failed "Invalid expression"
+        | TokenKind.Character '\'' ->
+            // TODO: Must parse out string literal
+            ParseResult.Failed "Invalid expression"
         | TokenKind.Number number ->
-            x.IncrementIndex()
+            _tokenizer.MoveNextToken()
             Value.Number number |> Expression.ConstantValue |> ParseResult.Succeeded
         | _ -> ParseResult.Failed "Invalid expression"
 
@@ -1255,7 +1271,7 @@ type Parser
 
             // Parsee out a binary expression
             let parseBinary binaryKind =
-                x.IncrementIndex()
+                _tokenizer.MoveNextToken()
                 x.SkipBlanks()
 
                 _parserBuilder {
