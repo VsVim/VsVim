@@ -14,17 +14,17 @@ type internal Tokenizer =
     /// Is it at the end of the stream
     member IsAtEndOfLine : bool
 
-    /// Get the next token from the stream and adavance the index
+    /// Current Token 
+    member CurrentToken : Token
+
+    /// Current TokenKind
+    member CurrentTokenKind : TokenKind
+
+    /// Advance the token stream one and return the next Token
     member GetNextToken : unit -> Token
 
     /// Increment the token stream to the next token
     member IncrementIndex : unit -> unit
-
-    /// Peek the next token from the stream 
-    member PeekNextToken : unit -> Token
-
-    /// Peek the next TokenKind from the stream 
-    member PeekNextTokenKind : unit -> TokenKind
 
     /// Rewind the token stream to the specified index
     member Rewind : index : int -> unit

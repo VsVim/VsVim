@@ -211,20 +211,19 @@ type internal Tokenizer
 
     member x.Index = _index
 
-    member x.IsAtEndOfLine = x.PeekNextTokenKind() = TokenKind.EndOfLine
-
-    member x.PeekNextToken() = 
+    member x.CurrentToken = 
         if _index >= _tokens.Length then
             Token.EndOfLine
         else
             _tokens.[_index]
 
-    member x.PeekNextTokenKind() = x.PeekNextToken().TokenKind
+    member x.CurrentTokenKind = x.CurrentToken.TokenKind
+
+    member x.IsAtEndOfLine = x.CurrentTokenKind = TokenKind.EndOfLine
 
     member x.GetNextToken() = 
-        let token = x.PeekNextToken()
         x.IncrementIndex()
-        token
+        x.CurrentToken
 
     member x.IncrementIndex() =
         if _index < _tokens.Length then
@@ -233,5 +232,5 @@ type internal Tokenizer
     member x.Rewind index =
         _index <- index
 
-    override x.ToString() = x.PeekNextToken().ToString()
+    override x.ToString() = x.CurrentToken.ToString()
 

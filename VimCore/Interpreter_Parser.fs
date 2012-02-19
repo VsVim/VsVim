@@ -163,7 +163,7 @@ type Parser
 
     /// Move past the white space in the expression text
     member x.SkipBlanks () = 
-        match _tokenizer.PeekNextTokenKind() with
+        match _tokenizer.CurrentTokenKind with
         | TokenKind.Blank -> x.IncrementIndex()
         | _ -> ()
 
@@ -186,7 +186,7 @@ type Parser
     /// Parse out the '!'.  Returns true if a ! was found and consumed
     /// actually skipped
     member x.ParseBang () = 
-        match _tokenizer.PeekNextTokenKind() with
+        match _tokenizer.CurrentTokenKind with
         | TokenKind.Character '!' ->
             x.IncrementIndex()
             true
@@ -198,7 +198,7 @@ type Parser
     member x.ParseWhile predicate =
         let builder = System.Text.StringBuilder()
         let rec inner () =
-            let token = _tokenizer.PeekNextToken()
+            let token = _tokenizer.CurrentToken
             if token.TokenKind = TokenKind.EndOfLine then
                 ()
             elif predicate token then
@@ -239,7 +239,7 @@ type Parser
                 false
 
     member x.ParseNumber() =
-        match _tokenizer.PeekNextTokenKind() with
+        match _tokenizer.CurrentTokenKind with
         | TokenKind.Number number ->
             x.IncrementIndex()
             Some number
@@ -247,7 +247,7 @@ type Parser
 
     /// TODO: Delete.  Or at least verify that 'c' isn't a token vs. TokenKind.Character
     member x.IsCurrentCharValue c = 
-        match _tokenizer.PeekNextTokenKind() with
+        match _tokenizer.CurrentTokenKind with
         | TokenKind.Character source -> c = source
         | _ -> false
 
@@ -281,7 +281,7 @@ type Parser
 
     /// Parse out a number from the stream
     member x.ParseNumberConstant() =
-        match _tokenizer.PeekNextTokenKind() with
+        match _tokenizer.CurrentTokenKind with
         | TokenKind.Number number ->
             x.IncrementIndex()
             number |> Value.Number |> Expression.ConstantValue |> ParseResult.Succeeded
@@ -351,12 +351,12 @@ type Parser
     /// Parse out a CommandOption value if the caret is currently pointed at one.  If 
     /// there is no CommnadOption here then the index will not change
     member x.ParseCommandOption () = 
-        match _tokenizer.PeekNextTokenKind() with
+        match _tokenizer.CurrentTokenKind with
         | TokenKind.Character '+' ->
             let mark = _tokenizer.Index
 
             x.IncrementIndex()
-            match _tokenizer.PeekNextTokenKind() with
+            match _tokenizer.CurrentTokenKind with
             | TokenKind.Number number ->
                 x.IncrementIndex()
                 CommandOption.StartAtLine number |> Some
@@ -398,7 +398,7 @@ type Parser
             // The argument is mostly parsed out.  Need the closing '>' and the jump to
             // the next element in the list
             let completeArgument mapArgument = 
-                match _tokenizer.PeekNextTokenKind() with
+                match _tokenizer.CurrentTokenKind with
                 | TokenKind.Character '>' ->
                     // Skip the '>' and any trailing blanks.  The method was called with
                     // the index pointing past white space and it should end that way
@@ -407,7 +407,7 @@ type Parser
                     inner (fun tail -> withResult (mapArgument :: tail))
                 | _ -> finish ()
 
-            match _tokenizer.PeekNextTokenKind() with
+            match _tokenizer.CurrentTokenKind with
             | TokenKind.Character '<' ->
                 x.IncrementIndex()
                 match x.ParseWord() with
@@ -426,7 +426,7 @@ type Parser
     /// Parse out a register value from the text.  This will not parse out numbered register
     member x.ParseRegisterName () = 
 
-        match _tokenizer.PeekNextTokenKind() with
+        match _tokenizer.CurrentTokenKind with
         | TokenKind.Character c ->
             let name = RegisterName.OfChar c
             if Option.isSome name then
@@ -441,7 +441,7 @@ type Parser
 
         let rec inner flags isFirst = 
             let newFlag = 
-                match _tokenizer.PeekNextTokenKind() with 
+                match _tokenizer.CurrentTokenKind with 
                 | TokenKind.Character 'c' -> Some SubstituteFlags.Confirm
                 | TokenKind.Character 'r' -> Some SubstituteFlags.UsePreviousSearchPattern
                 | TokenKind.Character 'e' -> Some SubstituteFlags.SuppressError
@@ -555,7 +555,7 @@ type Parser
     member x.ParsePattern delimiter = 
         let builder = System.Text.StringBuilder()
         let rec inner () = 
-            let token = _tokenizer.PeekNextToken()
+            let token = _tokenizer.CurrentToken
             match token.TokenKind with
             | TokenKind.Character c ->
                 if c = delimiter then 
@@ -564,7 +564,7 @@ type Parser
                 elif c = '\\' then
                     x.IncrementIndex()
 
-                    match _tokenizer.PeekNextTokenKind() with
+                    match _tokenizer.CurrentTokenKind with
                     | TokenKind.Character c ->
                         if c <> delimiter then
                             // If the next char is not the delimeter then we have to assume the '\'
@@ -604,7 +604,7 @@ type Parser
                 Some LineSpecifier.CurrentLine
             elif x.IsCurrentCharValue '\'' then
                 x.IncrementIndex()
-                match _tokenizer.PeekNextTokenKind() with
+                match _tokenizer.CurrentTokenKind with
                 | TokenKind.Character c -> 
                     x.IncrementIndex()
                     c
@@ -704,7 +704,7 @@ type Parser
                 x.IncrementIndex()
                 inner (flag ||| flags)
 
-            match _tokenizer.PeekNextTokenKind() with
+            match _tokenizer.CurrentTokenKind with
             | TokenKind.Character 'l' -> withFlag LineCommandFlags.List
             | TokenKind.Character '#' -> withFlag LineCommandFlags.AddLineNumber
             | TokenKind.Character 'p' -> withFlag LineCommandFlags.Print
@@ -734,7 +734,7 @@ type Parser
 
         // Need to look at the next char to know if we are parsing out a search string or not for
         // this particular :substitute command
-        match _tokenizer.PeekNextTokenKind() with
+        match _tokenizer.CurrentTokenKind with
         | TokenKind.Character delimiter -> 
             if isValidDelimiter delimiter then
                 // If this is a valid delimiter then first try and parse out the pattern version
@@ -897,7 +897,7 @@ type Parser
 
     /// Parse out the core global information. 
     member x.ParseGlobalCore lineRange matchPattern =
-        match _tokenizer.PeekNextTokenKind() with
+        match _tokenizer.CurrentTokenKind with
         | TokenKind.Character '\\' -> ParseResult.Failed Resources.Parser_InvalidArgument
         | TokenKind.Character '"' -> ParseResult.Failed Resources.Parser_InvalidArgument
         | TokenKind.Character delimiter ->
@@ -1031,7 +1031,7 @@ type Parser
 
                         // Need to look at the next character to decide what type of 
                         // argument this is
-                        match _tokenizer.PeekNextTokenKind() with
+                        match _tokenizer.CurrentTokenKind with
                         | TokenKind.Character '?' -> x.IncrementIndex(); parseNext (SetArgument.DisplaySetting name)
                         | TokenKind.Character '!' -> x.IncrementIndex(); parseNext (SetArgument.InvertSetting name)
                         | TokenKind.Character ':' -> parseOperator name SetArgument.AssignSetting
@@ -1115,7 +1115,7 @@ type Parser
         // Get the command name and make sure to expand it to it's possible full
         // name
         let name = 
-            match _tokenizer.PeekNextTokenKind() with
+            match _tokenizer.CurrentTokenKind with
             | TokenKind.Character c ->
                 if CharUtil.IsAlpha c then
                     x.ParseWhile (fun token ->
@@ -1238,7 +1238,7 @@ type Parser
 
     /// Parse out a single expression
     member x.ParseSingleExpression() =
-        match _tokenizer.PeekNextTokenKind() with
+        match _tokenizer.CurrentTokenKind with
         | TokenKind.String str ->
             x.IncrementIndex()
             Value.String str |> Expression.ConstantValue |> ParseResult.Succeeded
@@ -1263,7 +1263,7 @@ type Parser
                     return Expression.Binary (binaryKind, expr, rightExpr)
                 }
 
-            match _tokenizer.PeekNextTokenKind() with
+            match _tokenizer.CurrentTokenKind with
             | TokenKind.Character '+' -> return! parseBinary BinaryKind.Add
             | TokenKind.Character '/' -> return! parseBinary BinaryKind.Divide
             | TokenKind.Character '*' -> return! parseBinary BinaryKind.Multiply
