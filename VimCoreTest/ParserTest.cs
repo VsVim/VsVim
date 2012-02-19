@@ -185,6 +185,25 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// A line consisting of only a comment should parse as a nop
+        /// </summary>
+        [Test]
+        public void Parse_Nop_CommentLine()
+        {
+            Assert.IsTrue(ParseLineCommand(@" "" hello world").IsNop);
+        }
+
+
+        /// <summary>
+        /// A line consisting of nothing should parse as a nop
+        /// </summary>
+        [Test]
+        public void Parse_Nop_EmptyLine()
+        {
+            Assert.IsTrue(ParseLineCommand(@"").IsNop);
+        }
+
+        /// <summary>
         /// Make sure we can handle the count argument of :delete
         /// </summary>
         [Test]

@@ -25,6 +25,26 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// If the line starts with a " then the current token should be the end of the line
+        /// </summary>
+        [Test]
+        public void InitialState_AtEndOfLine()
+        {
+            Create(@"""hello world");
+            Assert.IsTrue(_tokenizer.CurrentTokenKind.IsEndOfLine);
+        }
+
+        /// <summary>
+        /// Need to go to the first token on initialization
+        /// </summary>
+        [Test]
+        public void InitialState_Number()
+        {
+            Create(@"42 hello");
+            Assert.IsTrue(_tokenizer.CurrentTokenKind.IsNumber);
+        }
+
+        /// <summary>
         /// Rewind to the end of the line should put you back at the end of the line
         /// </summary>
         [Test]
