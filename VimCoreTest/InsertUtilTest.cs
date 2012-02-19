@@ -181,8 +181,32 @@ namespace Vim.UnitTest
             Create("", "dog");
             _buffer.GlobalSettings.ShiftWidth = 4;
             _textView.MoveCaretTo(0, 8);
+
             _insertUtilRaw.ShiftLineLeft();
+
             Assert.AreEqual("    ", _textView.GetLine(0).GetText());
+            Assert.That(_insertUtilRaw.CaretColumn, Is.EqualTo(4));
+            Assert.That(_textView.Caret.InVirtualSpace, Is.False);
+            // probably redundant, but we just want to be sure...
+            Assert.That(_textView.Caret.Position.VirtualSpaces, Is.EqualTo(0));
+        }
+
+        /// <summary>
+        /// This is actually non-vim behavior. Vim would leave the caret where it started, just
+        /// dedented 2 columns. I think we're opting for VS-ish behavior instead here.
+        /// </summary>
+        [Test]
+        public void ShiftLeft_CaretIsMovedToBeginningOfLineIfInVirtualSpaceAfterEndOfLine()
+        {
+            Create("    foo");
+            _buffer.GlobalSettings.ShiftWidth = 2;
+            _textView.MoveCaretTo(0, 16);
+
+            _insertUtilRaw.ShiftLineLeft();
+
+            Assert.That(_textView.GetLine(0).GetText(), Is.EqualTo("  foo"));
+            Assert.That(_insertUtilRaw.CaretColumn, Is.EqualTo(2));
+            Assert.That(_textView.Caret.Position.VirtualSpaces, Is.EqualTo(0));
         }
     }
 }

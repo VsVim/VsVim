@@ -409,6 +409,9 @@ type internal InsertUtil
         let indentSpan = SnapshotLineUtil.GetIndentSpan x.CaretLine
 
         if indentSpan.Length > 0 || x.CaretVirtualPoint.IsInVirtualSpace then
+            let isBlankLine = 
+                x.CaretLine.GetText().Trim() = ""
+
             let spaces = 
                 let spaces = _operations.NormalizeBlanksToSpaces (indentSpan.GetText())
 
@@ -430,6 +433,9 @@ type internal InsertUtil
                 let spaces = spaces.Substring(0, spaces.Length - trim)
                 _operations.NormalizeBlanks spaces
             _textBuffer.Replace(indentSpan.Span, indent) |> ignore
+            if isBlankLine then
+                // the line is now all spaces, move it to the end
+                TextViewUtil.MoveCaretToPoint _textView x.CaretLine.End
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
