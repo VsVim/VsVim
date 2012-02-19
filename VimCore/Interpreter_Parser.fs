@@ -75,6 +75,7 @@ type Parser
         ("join", "j")
         ("lcd", "lc")
         ("lchdir", "lch")
+        ("move", "m")
         ("make", "mak")
         ("marks", "")
         ("nohlsearch", "noh")
@@ -495,6 +496,15 @@ type Parser
         | LineRangeSpecifier.None -> ParseResult.Failed Resources.Common_InvalidAddress
         | _ -> LineCommand.CopyTo (sourceLineRange, destinationLineRange) |> ParseResult.Succeeded
 
+    /// Parse out the :copy command.  It has a single required argument that is the destination
+    /// address
+    member x.ParseMoveTo sourceLineRange = 
+        x.SkipBlanks()
+        let destinationLineRange = x.ParseLineRange()
+        match destinationLineRange with
+        | LineRangeSpecifier.None -> ParseResult.Failed Resources.Common_InvalidAddress
+        | _ -> LineCommand.MoveTo (sourceLineRange, destinationLineRange) |> ParseResult.Succeeded
+
     /// Parse out the :delete command
     member x.ParseDelete lineRange = 
         x.SkipBlanks()
@@ -665,6 +675,7 @@ type Parser
                         number
 
                 Some (LineSpecifier.LineSpecifierWithAdjustment (lineSpecifier, number))
+
             if x.IsCurrentCharValue '+' then
                 parseAdjustment false
             elif x.IsCurrentCharValue '-' then
@@ -1181,6 +1192,7 @@ type Parser
                 | "marks" -> noRange x.ParseDisplayMarks
                 | "map"-> noRange (fun () -> x.ParseMapKeys true [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
                 | "mapclear" -> noRange (fun () -> x.ParseMapClear true [KeyRemapMode.Normal; KeyRemapMode.Visual; KeyRemapMode.Command; KeyRemapMode.OperatorPending])
+                | "move" -> x.ParseMoveTo lineRange 
                 | "nmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Normal])
                 | "nmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Normal])
                 | "nnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Normal])

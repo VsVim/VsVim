@@ -211,6 +211,10 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// source and the second is the desitination
     | CopyTo of LineRangeSpecifier * LineRangeSpecifier
 
+    /// Move the specific line range to the given position.  The first line range is the 
+    /// source and the second is the desitination
+    | MoveTo of LineRangeSpecifier * LineRangeSpecifier
+
     /// The :delete command
     | Delete of LineRangeSpecifier * RegisterName option
 

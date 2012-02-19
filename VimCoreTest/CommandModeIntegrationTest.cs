@@ -7,16 +7,12 @@ using Vim.UnitTest.Mock;
 
 namespace Vim.UnitTest
 {
-    /// <summary>
-    /// Summary description for CommandModeTest
-    /// </summary>
-    [TestFixture]
-    public sealed class CommandModeIntegrationTest : VimTestBase
+    public abstract class CommandModeIntegrationTestBase : VimTestBase
     {
-        private IVimBuffer _vimBuffer;
-        private ITextView _textView;
-        private MockVimHost _vimHost;
-        private string _lastStatus;
+        protected IVimBuffer _vimBuffer;
+        protected ITextView _textView;
+        protected MockVimHost _vimHost;
+        protected string _lastStatus;
 
         public void Create(params string[] lines)
         {
@@ -26,66 +22,152 @@ namespace Vim.UnitTest
             _vimHost = VimHost;
         }
 
-        private void RunCommand(string command)
+        protected void RunCommand(string command)
         {
             _vimBuffer.Process(':');
             _vimBuffer.Process(command, enter: true);
         }
+    }
 
-        /// <summary>
-        /// Copying a line to a given line should put it at that given line
-        /// </summary>
-        [Test]
-        public void CopyTo_Line()
+    /// <summary>
+    /// Summary description for CommandModeTest
+    /// </summary>
+    [TestFixture]
+    public sealed class CommandModeIntegrationTest : CommandModeIntegrationTestBase
+    {
+        public sealed class CopyToTests : CommandModeIntegrationTestBase
         {
-            Create("cat", "dog", "bear");
-            RunCommand("co 1");
-            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
-            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
-            Assert.AreEqual("dog", _textView.GetLine(2).GetText());
-            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            /// <summary>
+            /// Copying a line to a given line should put it at that given line
+            /// </summary>
+            [Test]
+            public void ItDisplacesToTheLineBelowWhenTargetedAtCurrentLine()
+            {
+                Create("cat", "dog", "bear");
+                RunCommand("co 1");
+                Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+                Assert.AreEqual("cat", _textView.GetLine(1).GetText());
+                Assert.AreEqual("dog", _textView.GetLine(2).GetText());
+                Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            [Test]
+            public void ItCanJumpLongRanges()
+            {
+                Create("cat", "dog", "bear");
+                RunCommand("co 2");
+                Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+                Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+                Assert.AreEqual("cat", _textView.GetLine(2).GetText());
+                Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Check the copy command via the 't' synonym
+            /// </summary>
+            [Test]
+            public void The_t_SynonymWorksAlso()
+            {
+                Create("cat", "dog", "bear");
+                RunCommand("t 2");
+                Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+                Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+                Assert.AreEqual("cat", _textView.GetLine(2).GetText());
+                Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Copying a line to a range should cause it to copy to the first line 
+            /// in the range
+            /// </summary>
+            [Test]
+            public void CopyingASingleLineToARangeDuplicatesTheLine()
+            {
+                Create("cat", "dog", "bear");
+                RunCommand("co 1,2");
+                Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+                Assert.AreEqual("cat", _textView.GetLine(1).GetText());
+                Assert.AreEqual("dog", _textView.GetLine(2).GetText());
+            }
+
+            [Test]
+            public void PositiveRelativeReferencesUsingDotWork()
+            {
+                Create("cat", "dog", "bear");
+                _textView.MoveCaretToLine(1);
+                RunCommand("co .");
+                Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+                Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+                Assert.AreEqual("dog", _textView.GetLine(2).GetText());
+                Assert.AreEqual("bear", _textView.GetLine(3).GetText());
+            }
+
+            [Test]
+            public void PositiveRelativeReferencesWork()
+            {
+                Create("cat", "dog", "bear");
+                RunCommand("co +1");
+                Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+                Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+                Assert.AreEqual("cat", _textView.GetLine(2).GetText());
+                Assert.AreEqual("bear", _textView.GetLine(3).GetText());
+            }
+
+            [Test]
+            public void NegativeRelativeReferencesWork()
+            {
+                // Added goose to simplify this test case. Look further for an issue with last line endlines 
+                Create("cat", "dog", "bear", "goose");
+                _textView.MoveCaretToLine(2);
+                RunCommand("co -2");
+                Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+                Assert.AreEqual("bear", _textView.GetLine(1).GetText());
+                Assert.AreEqual("dog", _textView.GetLine(2).GetText());
+                Assert.AreEqual("bear", _textView.GetLine(3).GetText());
+            }
+
+            [Test]
+            public void CopyingPastLastLineInsertsAnImplicitNewline()
+            {
+                Create("cat", "dog", "bear");
+                RunCommand("co 3");
+                Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+                Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+                Assert.AreEqual("bear", _textView.GetLine(2).GetText());
+                Assert.AreEqual("cat", _textView.GetLine(3).GetText());
+            }
+
         }
 
-        /// <summary>
-        /// Copying a line to a given line should put it at that given line
-        /// </summary>
-        [Test]
-        public void CopyTo_Line2()
+        public sealed class MoveToTests : CommandModeIntegrationTestBase
         {
-            Create("cat", "dog", "bear");
-            RunCommand("co 2");
-            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
-            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
-            Assert.AreEqual("cat", _textView.GetLine(2).GetText());
-            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
-        }
 
-        /// <summary>
-        /// Check the copy command via the 't' synonym
-        /// </summary>
-        [Test]
-        public void CopyTo_ViaSynonym()
-        {
-            Create("cat", "dog", "bear");
-            RunCommand("t 2");
-            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
-            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
-            Assert.AreEqual("cat", _textView.GetLine(2).GetText());
-            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
-        }
+            [Test]
+            public void SimpleCaseOfMovingLineOneBelow()
+            {
+                Create("cat", "dog", "bear");
 
-        /// <summary>
-        /// Copying a line to a range should cause it to copy to the first line 
-        /// in the range
-        /// </summary>
-        [Test]
-        public void CopyTo_LineRange()
-        {
-            Create("cat", "dog", "bear");
-            RunCommand("co 1,2");
-            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
-            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
-            Assert.AreEqual("dog", _textView.GetLine(2).GetText());
+                RunCommand("m 2");
+                Assert.That(_textView.GetLine(0).GetText(), Is.EqualTo("dog"));
+                Assert.That(_textView.GetLine(1).GetText(), Is.EqualTo("cat"));
+                Assert.That(_textView.GetLine(2).GetText(), Is.EqualTo("bear"));
+            }
+
+            /// <summary>
+            /// The last line in the file seems to be an exception because it doesn't have a 
+            /// newline at the end
+            /// </summary>
+            [Test]
+            public void MoveToLastLineInFile()
+            {
+                Create("cat", "dog", "bear");
+
+                RunCommand("m 3");
+                Assert.That(_textView.GetLine(0).GetText(), Is.EqualTo("dog"));
+                Assert.That(_textView.GetLine(1).GetText(), Is.EqualTo("bear"));
+                Assert.That(_textView.GetLine(2).GetText(), Is.EqualTo("cat"));
+            }
+
         }
 
         [Test]
