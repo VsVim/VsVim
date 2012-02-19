@@ -596,19 +596,17 @@ type Parser
             elif x.IsCurrentCharValue '\'' then
                 _tokenizer.MoveNextToken()
 
-                match _tokenizer.CurrentTokenKind with
-                | TokenKind.Word word ->
-                    let mark = 
-                        if word.Length = 1 then
-                            Mark.OfChar word.[0]
-                        else 
-                            None
-                    match mark with
-                    | None -> None
-                    | Some mark ->
-                        _tokenizer.MoveNextToken()
-                        LineSpecifier.MarkLine mark |> Some
-                | _ -> None
+                let c = 
+                    match _tokenizer.CurrentTokenKind with
+                    | TokenKind.Character c -> Some c
+                    | TokenKind.Word word -> if word.Length = 1 then Some word.[0] else None
+                    | _ -> None
+
+                match c with
+                | Some c -> 
+                    _tokenizer.MoveNextToken()
+                    c |> Mark.OfChar |> Option.map LineSpecifier.MarkLine
+                | None -> None
             elif x.IsCurrentCharValue '$' || x.IsCurrentCharValue '%' then
                 _tokenizer.MoveNextToken()
                 Some LineSpecifier.LastLine
