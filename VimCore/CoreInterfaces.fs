@@ -1064,9 +1064,14 @@ type CharacterSpan
 
     member x.Start =  _start
 
-    member x.LineCount =_lineCount
+    member x.LineCount = _lineCount
 
     member x.LastLineLength = _lastLineLength
+
+    /// The last line in the CharacterSpan
+    member x.LastLine = 
+        let number = x.StartLine.LineNumber + (_lineCount - 1)
+        SnapshotUtil.GetLineOrLast x.Snapshot number
 
     /// The last point included in the CharacterSpan
     member x.Last = 
@@ -1079,18 +1084,27 @@ type CharacterSpan
     /// Get the End point of the Character Span.
     member x.End =
         let snapshot = x.Snapshot
-        let endPoint = 
-            if x.LineCount = 1 then
-                x.Start
-                |> SnapshotPointUtil.TryAdd x.LastLineLength 
-                |> OptionUtil.getOrDefault x.StartLine.End
-            else 
-                SnapshotUtil.GetLineOrLast snapshot (x.StartLine.LineNumber + x.LineCount - 1)
-                |> SnapshotLineUtil.GetOffsetOrEnd x.LastLineLength
+        let lastLine = x.LastLine
+        let offset = 
+            if _lineCount = 1 then
+                // For a single line we need to apply the offset past the start point
+                SnapshotPointUtil.GetColumn _start + _lastLineLength
+            else
+                _lastLineLength
 
-        // Handle the case where StartPoint is in the line break.  Need to ensure
-        // StartPoint.Position < EndPoint.Position.
-        SnapshotPointUtil.OrderAscending x.Start endPoint |> snd
+        // The original SnapshotSpan could extend into the line break and hence we must
+        // consider that here.  The most common case for this occuring is when the caret
+        // in visual mode is on the first column of an empty line.  In that case the caret
+        // is really in the line break so End is one past that
+        let endPoint = SnapshotLineUtil.GetOffsetOrEndIncludingLineBreak offset lastLine
+
+        // Make sure that we don't create a negative SnapshotSpan.  Really we should
+        // be verifying the arguments to ensure we don't but until we do fix up
+        // potential errors here
+        if _start.Position <= endPoint.Position then
+            endPoint
+        else
+            _start
 
     member x.Span = SnapshotSpan(x.Start, x.End)
 
@@ -1102,14 +1116,15 @@ type CharacterSpan
     static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<CharacterSpan>.Default.Equals(this,other))
 
     static member CreateForSpan (span : SnapshotSpan) = 
-        let lineRange = SnapshotLineRangeUtil.CreateForSpan span
+        let lineCount = SnapshotSpanUtil.GetLineCount span
+        let lastLine = SnapshotSpanUtil.GetLastLine span
         let lastLineLength = 
-            if lineRange.Count = 1 then
-                span.Length
+            if lineCount = 1 then
+                span.End.Position - span.Start.Position
             else
-                let diff = span.End.Position - lineRange.LastLine.Start.Position
+                let diff = span.End.Position - lastLine.Start.Position
                 max 0 diff
-        CharacterSpan(span.Start, lineRange.Count, lastLineLength)
+        CharacterSpan(span.Start, lineCount, lastLineLength)
 
 /// Represents the span for a Visual Block mode selection
 [<StructuralEquality>]
@@ -2410,7 +2425,7 @@ type internal IInsertUtil =
 type StoredVisualSpan = 
 
     /// Storing a character wise span.  Need to know the line count and the offset 
-    /// in the last line for the end
+    /// in the last line for the end.  
     | Character of int * int
 
     /// Storing a linewise span just stores the count of lines

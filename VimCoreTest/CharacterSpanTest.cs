@@ -62,6 +62,38 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Consider the case where there is an empty line and the span end in the line
+        /// break of the empty line.  The last line must be included but it shouldn't
+        /// have any length
+        /// </summary>
+        [Test]
+        public void Create_LastLineEmpty()
+        {
+            Create("cat", "", "dog");
+            var endPoint = _textBuffer.GetLine(1).End.Add(1);
+            var span = new SnapshotSpan(_textBuffer.GetPoint(0), endPoint);
+            var characterSpan = CharacterSpan.CreateForSpan(span);
+            Assert.AreEqual(endPoint, characterSpan.End);
+
+            // The last line is included even though it's blank
+            Assert.AreEqual(2, characterSpan.LineCount);
+        }
+
+        /// <summary>
+        /// Similar case to the last line empty is column 0 in the last line is included
+        /// </summary>
+        [Test]
+        public void Create_LastLineLengthOfOne()
+        {
+            Create("cat", "dog", "fish");
+            var endPoint = _textBuffer.GetLine(1).Start.Add(1);
+            var span = new SnapshotSpan(_textBuffer.GetPoint(0), endPoint);
+            var characterSpan = CharacterSpan.CreateForSpan(span);
+            Assert.AreEqual(endPoint, characterSpan.End);
+            Assert.AreEqual(2, characterSpan.LineCount);
+        }
+
+        /// <summary>
         /// Make sure operator equality functions as expected
         /// </summary>
         [Test]

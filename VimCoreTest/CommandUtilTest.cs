@@ -631,7 +631,7 @@ namespace Vim.UnitTest
         /// point and not the original
         /// </summary>
         [Test]
-        public void CalculateVisualSpan_CharacterSingleLine()
+        public void CalculateVisualSpan_Character_SingleLine()
         {
             Create("the dog kicked the cat", "and ball");
 
@@ -641,6 +641,19 @@ namespace Vim.UnitTest
             var restored = _commandUtil.CalculateVisualSpan(stored);
             var expected = new SnapshotSpan(_textView.GetPoint(1), 4);
             Assert.AreEqual(expected, restored.AsCharacter().Item.Span);
+        }
+
+        /// <summary>
+        /// Make sure that this can handle an empty last line
+        /// </summary>
+        [Test]
+        public void CalculateVisualSpan_Character_EmptyLastLine()
+        {
+            Create("dog", "", "cat");
+            var span = new SnapshotSpan(_textBuffer.GetPoint(0), _textBuffer.GetLine(1).Start.Add(1));
+            var stored = StoredVisualSpan.OfVisualSpan(VimUtil.CreateVisualSpanCharacter(span));
+            var restored = _commandUtil.CalculateVisualSpan(stored);
+            Assert.AreEqual(span, restored.AsCharacter().Item.Span);
         }
 
         /// <summary>

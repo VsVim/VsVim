@@ -160,6 +160,21 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// When the last line in a character selection is empty the caret -1 offset
+        /// shouldn't be applied to the End location.  Else we'd end up in the line
+        /// break instead of the start of the line
+        /// </summary>
+        [Test]
+        public void CaretPoint_Character_EmptyLastLine()
+        {
+            Create("cat", "", "dog");
+            var visualSelection = VisualSelection.NewCharacter(
+                new CharacterSpan(_textBuffer.GetPoint(0), 2, 1),
+                Path.Forward);
+            Assert.AreEqual(_textBuffer.GetLine(1).Start, visualSelection.CaretPoint);
+        }
+
+        /// <summary>
         /// Get the appropriate Caret SnapshotPoint for a top right block selection
         /// </summary>
         [Test]

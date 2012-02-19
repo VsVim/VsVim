@@ -771,6 +771,20 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Make sure that we can use 'j' to go over an empty line in Visual Character 
+        /// mode
+        /// 
+        /// Issue #758
+        /// </summary>
+        [Test]
+        public void Move_Character_OverEmptyLine()
+        {
+            Create("cat", "", "dog");
+            _vimBuffer.Process("vjj");
+            Assert.AreEqual(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
         /// Character should be positioned at the end of the inserted text
         /// </summary>
         [Test]

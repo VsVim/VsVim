@@ -431,6 +431,12 @@ module SnapshotLineUtil =
         if line.Start.Position + offset >= line.End.Position then line.End
         else line.Start.Add(offset)
 
+    /// Get a SnapshotPoint representing 'offset' characters into the line or it's
+    /// line break or the EndIncludingLineBreak of the line
+    let GetOffsetOrEndIncludingLineBreak offset (line : ITextSnapshotLine) = 
+        if line.Start.Position + offset >= line.EndIncludingLineBreak.Position then line.EndIncludingLineBreak
+        else line.Start.Add(offset)
+
     /// Is this the last included point on the ITextSnapshotLine
     let IsLastPoint (line : ITextSnapshotLine) point = 
         if line.Length = 0 then point = line.Start
@@ -444,6 +450,10 @@ module SnapshotLineUtil =
     let IsLastLine (line : ITextSnapshotLine) = 
         let snapshot = line.Snapshot
         snapshot.LineCount - 1 = line.LineNumber
+
+    /// Is the line empty
+    let IsEmpty line = 
+        GetLength line = 0 
 
     /// Does the line consist of only whitespace
     let IsBlank line = 
