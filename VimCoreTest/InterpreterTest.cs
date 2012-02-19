@@ -95,6 +95,30 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Don't execute a line that starts with a comment
+        /// </summary>
+        [Test]
+        public void CommentLine_Set()
+        {
+            Create("");
+            _localSettings.AutoIndent = false;
+            ParseAndRun(@"""set ai");
+            Assert.IsFalse(_localSettings.AutoIndent);
+        }
+
+        /// <summary>
+        /// Don't execute a line that starts with a comment
+        /// </summary>
+        [Test]
+        public void CommentLine_Delete()
+        {
+            Create("dog", "cat");
+            ParseAndRun(@"""del");
+            Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textBuffer.GetLine(1).GetText());
+        }
+
+        /// <summary>
         /// The delete of the last line in the ITextBuffer should reduce the line count
         /// </summary>
         [Test]
@@ -512,6 +536,7 @@ namespace Vim.UnitTest
                     _keyMap.ClearAll();
                 };
 
+            Create("");
             testMapClear("mapc", new [] {KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Command, KeyRemapMode.OperatorPending});
             testMapClear("nmapc", new [] {KeyRemapMode.Normal});
             testMapClear("vmapc", new [] {KeyRemapMode.Visual, KeyRemapMode.Select});
@@ -708,6 +733,30 @@ namespace Vim.UnitTest
             _localSettings.ExpandTab = false;
             ParseAndRun(@"set et!");
             Assert.IsTrue(_localSettings.ExpandTab);
+        }
+
+        /// <summary>
+        /// Make sure that we can toggle the options that have an underscore in them
+        /// </summary>
+        [Test]
+        public void Set_Toggle_OptionWithUnderscore()
+        {
+            Create("");
+            Assert.IsTrue(_globalSettings.UseEditorIndent);
+            ParseAndRun(@"set novsvim_useeditorindent");
+            Assert.IsFalse(_globalSettings.UseEditorIndent);
+        }
+
+        /// <summary>
+        /// Make sure we can deal with a trailing comment
+        /// </summary>
+        [Test]
+        public void Set_Toggle_TrailingComment()
+        {
+            Create("");
+            _localSettings.AutoIndent = false;
+            ParseAndRun(@"set ai ""what's going on?");
+            Assert.IsTrue(_localSettings.AutoIndent);
         }
 
         /// <summary>

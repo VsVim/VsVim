@@ -63,6 +63,9 @@
     <Compile Include="PatternUtil.fs" />
     <Compile Include="CommonOperations.fsi" />
     <Compile Include="CommonOperations.fs" />
+    <Compile Include="Interpreter_Tokens.fs" />
+    <Compile Include="Interpreter_Tokenizer.fsi" />
+    <Compile Include="Interpreter_Tokenizer.fs" />
     <Compile Include="Interpreter_Expression.fs" />
     <Compile Include="Interpreter_Parser.fsi" />
     <Compile Include="Interpreter_Parser.fs" />

@@ -364,11 +364,14 @@ module internal CharUtil =
 module internal StringBuilderExtensions =
 
     type StringBuilder with
-        member x.AppendChar (c: char) = 
+        member x.AppendChar (c : char) = 
             x.Append(c) |> ignore
 
         member x.AppendString (str : string) =
             x.Append(str) |> ignore
+
+        member x.AppendNumber (number : int) =
+            x.Append(number) |> ignore
 
 module internal NullableUtil = 
 

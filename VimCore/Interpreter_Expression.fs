@@ -275,6 +275,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Temporarily disable the 'hlsearch' option
     | NoHighlightSearch
 
+    /// This is a line command that does nothing on execution
+    | Nop
+
     /// Print out the specified line range 
     | Print of LineRangeSpecifier * LineCommandFlags
 

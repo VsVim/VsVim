@@ -185,6 +185,25 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// A line consisting of only a comment should parse as a nop
+        /// </summary>
+        [Test]
+        public void Parse_Nop_CommentLine()
+        {
+            Assert.IsTrue(ParseLineCommand(@" "" hello world").IsNop);
+        }
+
+
+        /// <summary>
+        /// A line consisting of nothing should parse as a nop
+        /// </summary>
+        [Test]
+        public void Parse_Nop_EmptyLine()
+        {
+            Assert.IsTrue(ParseLineCommand(@"").IsNop);
+        }
+
+        /// <summary>
         /// Make sure we can handle the count argument of :delete
         /// </summary>
         [Test]
@@ -567,6 +586,16 @@ namespace Vim.UnitTest
             var option = command.Item.Single().AsMultiplySetting();
             Assert.AreEqual("x", option.Item1);
             Assert.AreEqual("y", option.Item2);
+        }
+
+        /// <summary>
+        /// Make sure we can parse out a set with a trailing comment
+        /// </summary>
+        [Test]
+        public void Parse_Set_TrailingComment()
+        {
+            var command = ParseLineCommand("set ai \"hello world");
+            Assert.IsTrue(command.IsSet);
         }
 
         [Test]
