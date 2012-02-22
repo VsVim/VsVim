@@ -44,6 +44,13 @@ type internal Tokenizer =
     /// word
     member MoveNextChar : unit -> unit
 
+    /// Move to the next token with specified flags
+    member MoveNextCharEx : flags : NextTokenFlags -> unit
+
     /// Rewind the token stream to the specified index
-    member Rewind : index : int -> unit
+    member MoveToIndex : index : int -> unit
+
+    /// Rewind the token stream to the specified index and use the specified flags
+    /// to examine the current token
+    member MoveToIndexEx : index : int -> flags : NextTokenFlags -> unit
 

@@ -311,6 +311,18 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region Expression
+
+        /// <summary>
+        /// Get the suceeded version of the Expression
+        /// </summary>
+        public static Expression.ConstantValue AsConstantValue(this Expression expr)
+        {
+            return (Expression.ConstantValue)expr;
+        }
+
+        #endregion
+
         #region Value
 
         /// <summary>

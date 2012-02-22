@@ -114,13 +114,31 @@ namespace Vim.UnitTest
         /// Rewind to the end of the line should put you back at the end of the line
         /// </summary>
         [Test]
-        public void Rewind_EndOfLine()
+        public void MoveToIndex_EndOfLine()
         {
             Create("bird");
             _tokenizer.MoveNextToken();
             Assert.IsTrue(_tokenizer.CurrentTokenKind.IsEndOfLine);
-            _tokenizer.Rewind(_tokenizer.Index);
+            _tokenizer.MoveToIndex(_tokenizer.Index);
             Assert.IsTrue(_tokenizer.CurrentTokenKind.IsEndOfLine);
+        }
+
+        /// <summary>
+        /// It's possible that we want to re-examine the end of line character should it
+        /// end in a comment after we've already gotten there.  Useful when parsing out string
+        /// constants
+        /// </summary>
+        [Test]
+        public void MoveToIndex_TokenizeEndOfLine()
+        {
+            Create(@"42 "" again");
+            _tokenizer.MoveNextToken();
+            _tokenizer.MoveNextToken();
+            Assert.IsTrue(_tokenizer.IsAtEndOfLine);
+            Assert.IsTrue(_tokenizer.CurrentChar.IsNone());
+            _tokenizer.MoveToIndexEx(_tokenizer.Index, NextTokenFlags.AllowDoubleQuote);
+            Assert.AreEqual('"', _tokenizer.CurrentChar.Value);
+            Assert.IsTrue(_tokenizer.CurrentTokenKind.IsCharacter);
         }
     }
 }

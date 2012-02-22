@@ -85,6 +85,7 @@ module internal Resources =
     let Parser_NoMarksMatching x = sprintf "No marks matching \"%c\"" x
     let Parser_NoBangAllowed = "No ! allowed"
     let Parser_InvalidArgument = "Invalid Argument"
+    let Parser_MissingQuote = "Missing quote"
 
     let Interpreter_Error = "An error was encountered interpretting the expression"
     let Interpreter_CantFindDirectory x = sprintf "Can't find directory \"%s\" in cdpath" x

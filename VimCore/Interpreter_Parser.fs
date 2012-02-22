@@ -220,9 +220,9 @@ type Parser
 
     /// TODO: Delete.  Or at least verify that 'c' isn't a token vs. TokenKind.Character
     member x.IsCurrentCharValue c = 
-        match _tokenizer.CurrentTokenKind with
-        | TokenKind.Character source -> c = source
-        | _ -> false
+        match _tokenizer.CurrentChar with
+        | Some currentChar -> currentChar = c
+        | None -> false
 
     /// Parse out a key notation argument.  Different than a word because it can accept items
     /// which are not letters such as numbers, <, >, etc ...
@@ -340,7 +340,7 @@ type Parser
             | TokenKind.Character c ->
                 match x.ParseSingleCommand() with
                 | ParseResult.Failed _ -> 
-                    _tokenizer.Rewind mark
+                    _tokenizer.MoveToIndex mark
                     None
                 | ParseResult.Succeeded lineCommand ->
                     CommandOption.ExecuteLineCommand lineCommand |> Some
@@ -365,7 +365,7 @@ type Parser
 
             // Finish without changinging anything.
             let finish() =
-                _tokenizer.Rewind mark
+                _tokenizer.MoveToIndex mark
                 withResult []
 
             // The argument is mostly parsed out.  Need the closing '>' and the jump to
@@ -815,6 +815,42 @@ type Parser
     member x.ParseShellCommand () =
         let command = x.ParseRestOfLine()
         LineCommand.ShellCommand command |> ParseResult.Succeeded
+
+    /// Parse out a string literal from the token stream.  The only special character here is
+    /// an escaped '.  Everything else is taken literally 
+    ///
+    /// help literal-string
+    member x.ParseStringLiteral() = 
+        _tokenizer.MoveNextTokenEx NextTokenFlags.AllowDoubleQuote
+        let builder = System.Text.StringBuilder()
+        let moveNextChar () = _tokenizer.MoveNextCharEx NextTokenFlags.AllowDoubleQuote
+        let rec inner () = 
+            match _tokenizer.CurrentChar with
+            | None -> ParseResult.Failed Resources.Parser_MissingQuote
+            | Some '\\' -> 
+                // Need to peek ahead to see if this is a back slash to be inserted or if it's
+                // escaping a single quote
+                moveNextChar ()
+                match _tokenizer.CurrentChar with 
+                | Some '\'' ->
+                    builder.AppendChar '\''
+                    moveNextChar ()
+                    inner ()
+                | _ ->
+                    builder.AppendChar '\\'
+                    inner ()
+            | Some '\'' ->
+                // Found the terminating character
+                builder.ToString()
+                |> Value.String
+                |> Expression.ConstantValue
+                |> ParseResult.Succeeded
+            | Some c ->
+                builder.AppendChar c
+                moveNextChar ()
+                inner ()
+
+        inner ()
 
     /// Parse out the 'tabnext' command
     member x.ParseTabNext() =   
@@ -1267,14 +1303,17 @@ type Parser
 
     /// Parse out a single expression
     member x.ParseSingleExpression() =
+
+        // Re-examine the current token based on the knowledge that double quotes are
+        // legal in this context as a real token
+        _tokenizer.MoveToIndexEx _tokenizer.Index NextTokenFlags.AllowDoubleQuote
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Character '\"' ->
             // TODO: Must parse out string constant
             ParseResult.Failed "Invalid expression"
-        | TokenKind.Character '\'' ->
-            // TODO: Must parse out string literal
-            ParseResult.Failed "Invalid expression"
-        | TokenKind.Number number ->
+        | TokenKind.Character '\'' -> 
+            x.ParseStringLiteral()
+        | TokenKind.Number number -> 
             _tokenizer.MoveNextToken()
             Value.Number number |> Expression.ConstantValue |> ParseResult.Succeeded
         | _ -> ParseResult.Failed "Invalid expression"
