@@ -1,4 +1,5 @@
 ﻿using NUnit.Framework;
+using Vim.Extensions;
 using Vim.Interpreter;
 
 namespace Vim.UnitTest
@@ -11,6 +12,34 @@ namespace Vim.UnitTest
         public void Create(string line)
         {
             _tokenizer = new Tokenizer(line);
+        }
+
+        [Test]
+        public void CurrentChar_WordStart()
+        {
+            Create("hello world");
+            Assert.AreEqual('h', _tokenizer.CurrentChar.Value);
+        }
+
+        /// <summary>
+        /// CurrentChar should work for all token types
+        /// </summary>
+        [Test]
+        public void CurrentChar_Digit()
+        {
+            Create("42 world");
+            Assert.AreEqual('4', _tokenizer.CurrentChar.Value);
+        }
+
+        /// <summary>
+        /// There is no CurrentChar when we are at the end of the line
+        /// </summary>
+        [Test]
+        public void CurrentChar_EndOfLine()
+        {
+            Create("hello");
+            _tokenizer.MoveNextToken();
+            Assert.IsTrue(_tokenizer.CurrentChar.IsNone());
         }
 
         /// <summary>
@@ -42,6 +71,43 @@ namespace Vim.UnitTest
         {
             Create(@"42 hello");
             Assert.IsTrue(_tokenizer.CurrentTokenKind.IsNumber);
+        }
+
+        /// <summary>
+        /// Make sure it advances past the first character and rebuilds a new Word
+        /// </summary>
+        [Test]
+        public void MoveNextChar_Word()
+        {
+            Create("cat dog");
+            _tokenizer.MoveNextChar();
+            Assert.IsTrue(_tokenizer.CurrentTokenKind.IsWord);
+            Assert.AreEqual("at", _tokenizer.CurrentToken.TokenText);
+        }
+
+        /// <summary>
+        /// The MoveNextChar should rebuild the token based off of the new index even if 
+        /// it's a new token kind
+        /// </summary>
+        [Test]
+        public void MoveNextChar_TokenChange()
+        {
+            Create("a dog");
+            _tokenizer.MoveNextChar();
+            Assert.IsTrue(_tokenizer.CurrentTokenKind.IsBlank);
+            Assert.AreEqual(" ", _tokenizer.CurrentToken.TokenText);
+        }
+
+        /// <summary>
+        /// Make sure it advances past the first character and rebuilds a digit
+        /// </summary>
+        [Test]
+        public void MoveNextChar_Number()
+        {
+            Create("42 dog");
+            _tokenizer.MoveNextChar();
+            Assert.IsTrue(_tokenizer.CurrentTokenKind.IsNumber);
+            Assert.AreEqual("2", _tokenizer.CurrentToken.TokenText);
         }
 
         /// <summary>

@@ -441,5 +441,15 @@ namespace Vim.UnitTest
             Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
         }
 
+        [Test]
+        public void Yank_WithRange()
+        {
+            Create("cat", "dog", "fish");
+            _vimBuffer.VimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.A), 0, 0);
+            _vimBuffer.VimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.B), 1, 0);
+            RunCommand("'a,'by");
+            Assert.AreEqual("cat" + Environment.NewLine + "dog" + Environment.NewLine, Vim.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
+        }
+
     }
 }

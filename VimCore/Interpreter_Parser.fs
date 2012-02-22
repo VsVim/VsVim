@@ -398,20 +398,16 @@ type Parser
 
     /// Parse out a register value from the text.  This will not parse out numbered register
     member x.ParseRegisterName () = 
-
-        let name =
-            match _tokenizer.CurrentTokenKind with
-            | TokenKind.Character c -> RegisterName.OfChar c
-            | TokenKind.Word word ->
-                if word.Length = 1 then
-                    RegisterName.OfChar word.[0]
-                else
-                    None
-            | _ -> None
-
-        if Option.isSome name then
-            _tokenizer.MoveNextToken()
-        name
+        match _tokenizer.CurrentChar with
+        | None -> None
+        | Some c ->
+            if CharUtil.IsDigit c then
+                None
+            else
+                let name = RegisterName.OfChar c
+                if Option.isSome name then
+                    _tokenizer.MoveNextChar()
+                name
 
     /// Used to parse out the flags for substitute commands.  Will not modify the 
     /// stream if there are no flags
@@ -606,17 +602,12 @@ type Parser
             elif x.IsCurrentCharValue '\'' then
                 _tokenizer.MoveNextToken()
 
-                let c = 
-                    match _tokenizer.CurrentTokenKind with
-                    | TokenKind.Character c -> Some c
-                    | TokenKind.Word word -> if word.Length = 1 then Some word.[0] else None
-                    | _ -> None
-
-                match c with
-                | Some c -> 
-                    _tokenizer.MoveNextToken()
-                    c |> Mark.OfChar |> Option.map LineSpecifier.MarkLine
+                match _tokenizer.CurrentChar |> OptionUtil.map2 Mark.OfChar with
                 | None -> None
+                | Some mark -> 
+                    _tokenizer.MoveNextChar()
+                    LineSpecifier.MarkLine mark |> Some
+
             elif x.IsCurrentCharValue '$' || x.IsCurrentCharValue '%' then
                 _tokenizer.MoveNextToken()
                 Some LineSpecifier.LastLine

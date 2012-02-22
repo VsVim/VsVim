@@ -176,6 +176,12 @@ type internal Tokenizer
 
     member x.CurrentTokenKind = _currentToken.TokenKind
 
+    member x.CurrentChar = 
+        if _currentToken.StartIndex < _text.Length then
+            Some _text.[_currentToken.StartIndex]
+        else
+            None
+
     member x.IsAtEndOfLine = x.CurrentTokenKind = TokenKind.EndOfLine
 
     member x.Index = _currentToken.StartIndex
@@ -206,6 +212,8 @@ type internal Tokenizer
         x.MakeCurrentToken index flags
 
     member x.MoveNextToken() = x.MoveNextTokenEx NextTokenFlags.None
+
+    member x.MoveNextChar() = x.MakeCurrentToken (_currentToken.StartIndex + 1) NextTokenFlags.None
 
     member x.Rewind index = x.MakeCurrentToken index NextTokenFlags.None
 

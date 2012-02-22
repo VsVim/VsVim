@@ -273,6 +273,28 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Make sure that it can handle a mark range
+        /// </summary>
+        [Test]
+        public void Parse_LineRange_Marks()
+        {
+            var lineRange = ParseLineRange("'a,'b");
+            Assert.IsTrue(lineRange.AsRange().Item1.IsMarkLine);
+            Assert.IsTrue(lineRange.AsRange().Item2.IsMarkLine);
+        }
+
+        /// <summary>
+        /// Make sure that it can handle a mark range with trailing text
+        /// </summary>
+        [Test]
+        public void Parse_LineRange_MarksWithTrailing()
+        {
+            var lineRange = ParseLineRange("'a,'bc");
+            Assert.IsTrue(lineRange.AsRange().Item1.IsMarkLine);
+            Assert.IsTrue(lineRange.AsRange().Item2.IsMarkLine);
+        }
+
+        /// <summary>
         /// Ensure we can parse out a simple next pattern
         /// </summary>
         [Test]
@@ -857,6 +879,16 @@ namespace Vim.UnitTest
         {
             var writeAll = ParseLineCommand("wall!").AsWriteAll();
             Assert.IsTrue(writeAll.Item);
+        }
+
+        /// <summary>
+        /// Verify that we can parse out a yank command with a corresponding range
+        /// </summary>
+        [Test]
+        public void Parse_Yank_WithRange()
+        {
+            var yank = ParseLineCommand("'a,'by");
+            Assert.IsTrue(yank.IsYank);
         }
 
         /// <summary>
