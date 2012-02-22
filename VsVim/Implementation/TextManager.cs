@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
+using EditorUtils;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell;
@@ -22,6 +23,7 @@ namespace VsVim.Implementation
         private readonly RunningDocumentTable _table;
         private readonly IServiceProvider _serviceProvider;
         private readonly ITextDocumentFactoryService _textDocumentFactoryService;
+        private readonly ITextBufferFactoryService _textBufferFactoryService;
 
         internal IEnumerable<ITextBuffer> TextBuffers
         {
@@ -65,12 +67,14 @@ namespace VsVim.Implementation
         internal TextManager(
             IVsAdapter adapter,
             ITextDocumentFactoryService textDocumentFactoryService,
+            ITextBufferFactoryService textBufferFactoryService,
             SVsServiceProvider serviceProvider)
         {
             _vsAdapter = adapter;
             _serviceProvider = serviceProvider;
             _textManager = _serviceProvider.GetService<SVsTextManager, IVsTextManager>();
             _textDocumentFactoryService = textDocumentFactoryService;
+            _textBufferFactoryService = textBufferFactoryService;
             _table = new RunningDocumentTable(_serviceProvider);
         }
 
@@ -92,6 +96,36 @@ namespace VsVim.Implementation
         }
 
         internal Result Save(ITextBuffer textBuffer)
+        {
+            // In order to save the ITextBuffer we need to get a document cookie for it.  The only way I'm
+            // aware of is to use the path moniker which is available for the accompanying ITextDocment 
+            // value.  
+            //
+            // In many types of files (.cs, .vb, .cpp) there is usually a 1-1 mapping between ITextBuffer 
+            // and the ITextDocument.  But in any file type where an IProjectionBuffer is common (.js, 
+            // .aspx, etc ...) this mapping breaks down.  To get it back we must visit all of the 
+            // source buffers for a projection and individually save them
+            var result = Result.Success;
+            foreach (var sourceBuffer in textBuffer.GetSourceBuffersRecursive())
+            {
+                // The inert buffer doesn't need to be saved.  It's used as a fake buffer by web applications
+                // in order to render projected content
+                if (sourceBuffer.ContentType == _textBufferFactoryService.InertContentType)
+                {
+                    continue;
+                }
+
+                var sourceResult = SaveCore(sourceBuffer);
+                if (sourceResult.IsError)
+                {
+                    result = sourceResult;
+                }
+            }
+
+            return result;
+        }
+
+        internal Result SaveCore(ITextBuffer textBuffer)
         {
             ITextDocument textDocument;
             if (!_textDocumentFactoryService.TryGetTextDocument(textBuffer, out textDocument))

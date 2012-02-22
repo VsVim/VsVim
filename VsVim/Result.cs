@@ -119,7 +119,7 @@ namespace VsVim
         private Result(int hresult)
         {
             _hresult = hresult;
-            _isSuccess = false;
+            _isSuccess = ErrorHandler.Succeeded(hresult);
         }
 
         public static Result Error
@@ -129,7 +129,7 @@ namespace VsVim
 
         public static Result Success
         {
-            get { return new Result(); }
+            get { return new Result(VSConstants.S_OK); }
         }
 
         public static Result<T> CreateSuccess<T>(T value)

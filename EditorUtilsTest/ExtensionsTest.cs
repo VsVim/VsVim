@@ -1,11 +1,51 @@
-﻿using Microsoft.VisualStudio.Utilities;
+﻿using System.Collections.Generic;
+using System.Linq;
+using Microsoft.VisualStudio.Text.Projection;
+using Microsoft.VisualStudio.Utilities;
 using NUnit.Framework;
 
 namespace EditorUtils.UnitTest
 {
     [TestFixture]
-    public sealed class ExtensionsTest
+    public sealed class ExtensionsTest : EditorTestBase
     {
+        [Test]
+        public void GetSourceBuffersRecursive_Simple()
+        {
+            var textBuffer1 = CreateTextBuffer("hello");
+            var textBuffer2 = CreateTextBuffer(" world");
+            var projectionBuffer = CreateProjectionBuffer(
+                textBuffer1.GetExtent(),
+                textBuffer2.GetExtent());
+
+            Assert.AreEqual("hello world", projectionBuffer.GetLine(0).GetText());
+            var all = projectionBuffer.GetSourceBuffersRecursive().ToList();
+            Assert.AreEqual(2, all.Count);
+            Assert.IsTrue(all.Contains(textBuffer1));
+            Assert.IsTrue(all.Contains(textBuffer2));
+        }
+
+        [Test]
+        public void GetSourceBuffersRecursive_Nested()
+        {
+            var textBuffer1 = CreateTextBuffer("hello");
+            var textBuffer2 = CreateTextBuffer(" ");
+            var textBuffer3 = CreateTextBuffer("world");
+            var projectionBuffer1 = CreateProjectionBuffer(
+                textBuffer1.GetExtent(),
+                textBuffer2.GetExtent());
+            var projectionBuffer2 = CreateProjectionBuffer(
+                projectionBuffer1.GetExtent(),
+                textBuffer3.GetExtent());
+
+            Assert.AreEqual("hello world", projectionBuffer2.GetLine(0).GetText());
+            var all = projectionBuffer2.GetSourceBuffersRecursive().ToList();
+            Assert.AreEqual(3, all.Count);
+            Assert.IsTrue(all.Contains(textBuffer1));
+            Assert.IsTrue(all.Contains(textBuffer2));
+            Assert.IsTrue(all.Contains(textBuffer3));
+        }
+
         [Test]
         public void TryGetPropertySafe_Found()
         {
@@ -41,6 +81,5 @@ namespace EditorUtils.UnitTest
             string value;
             Assert.IsFalse(col.TryGetPropertySafe(key, out value));
         }
-
     }
 }

@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Projection;
 using Microsoft.VisualStudio.Utilities;
 
 namespace EditorUtils
@@ -93,6 +94,66 @@ namespace EditorUtils
             var startLine = lines.FirstVisibleLine.Start.GetContainingLine().LineNumber;
             var lastLine = lines.LastVisibleLine.End.GetContainingLine().LineNumber;
             return SnapshotLineRange.CreateForLineNumberRange(textView.TextSnapshot, startLine, lastLine);
+        }
+
+        #endregion
+
+        #region ITextBuffer
+
+        /// <summary>
+        /// Any ITextBuffer instance is possibly an IProjectionBuffer (which is a text buffer composed 
+        /// of parts of other ITextBuffers).  This will return all of the real ITextBuffer buffers 
+        /// composing the provided ITextBuffer
+        /// </summary>
+        public static IEnumerable<ITextBuffer> GetSourceBuffersRecursive(this ITextBuffer textBuffer)
+        {
+            var projectionBuffer = textBuffer as IProjectionBuffer;
+            if (projectionBuffer != null)
+            {
+                return projectionBuffer.GetSourceBuffersRecursive();
+            }
+
+            return new [] { textBuffer };
+        }
+
+        #endregion
+
+        #region IProjectionBuffer
+
+        /// <summary>
+        /// IProjectionBuffer instances can compose recursively.  This will look recursively down the 
+        /// source buffers to find all of the critical ones
+        /// </summary>
+        public static IEnumerable<ITextBuffer> GetSourceBuffersRecursive(this IProjectionBuffer projectionBuffer)
+        {
+            var toVisit = new Queue<IProjectionBuffer>();
+            toVisit.Enqueue(projectionBuffer);
+
+            var found = new HashSet<ITextBuffer>();
+            while (toVisit.Count > 0)
+            {
+                var current = toVisit.Dequeue();
+                if (found.Contains(current))
+                {
+                    continue;
+                }
+
+                found.Add(current);
+                foreach (var sourceBuffer in current.SourceBuffers)
+                {
+                    var sourceProjection = sourceBuffer as IProjectionBuffer;
+                    if (sourceProjection != null)
+                    {
+                        toVisit.Enqueue(sourceProjection);
+                    }
+                    else
+                    {
+                        found.Add(sourceBuffer);
+                    }
+                }
+            }
+
+            return found.Where(x => !(x is IProjectionBuffer));
         }
 
         #endregion
