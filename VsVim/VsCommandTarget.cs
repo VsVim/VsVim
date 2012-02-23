@@ -234,6 +234,11 @@ namespace VsVim
                     keyInput == KeyInputUtil.EnterKey;
             }
 
+            if (_broker.IsSignatureHelpActive)
+            {
+                return keyInput.IsArrowKey;
+            }
+
             return false;
         }
 

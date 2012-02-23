@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Windows.Input;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Text.Editor;
@@ -8,10 +10,7 @@ using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
-using Vim.UnitTest.Mock;
 using VsVim.Implementation;
-using EditorUtils.UnitTest;
-using System.Windows.Input;
 
 namespace VsVim.UnitTest
 {
@@ -90,6 +89,11 @@ namespace VsVim.UnitTest
             {
                 data.Dispose();
             }
+        }
+
+        private void RunExec(VimKey vimKey)
+        {
+            RunExec(KeyInputUtil.VimKeyToKeyInput(vimKey));
         }
 
         /// <summary>
@@ -433,6 +437,26 @@ namespace VsVim.UnitTest
             RunExec('j');
             Assert.AreEqual("z", _textView.GetLine(0).GetText());
             Assert.IsTrue(_buffer.BufferedKeyInputs.IsEmpty);
+        }
+
+        /// <summary>
+        /// If parameter info is up then the arrow keys should be routed to parameter info and
+        /// not to the IVimBuffer
+        /// </summary>
+        [Test]
+        public void Exec_SignatureHelp_ArrowGoToCommandTarget()
+        {
+            _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(true);
+
+            var count = 0;
+            _nextTarget.SetupExec().Callback(() => { count++; });
+
+            foreach (var key in new[] { VimKey.Down, VimKey.Up })
+            {
+                RunExec(VimKey.Down);
+            }
+
+            Assert.AreEqual(2, count);
         }
     }
 }
