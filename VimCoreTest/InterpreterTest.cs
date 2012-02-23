@@ -852,10 +852,7 @@ namespace Vim.UnitTest
         public void Substitute_EmptySearchUsesLastSearch()
         {
             Create("cat tree");
-            Vim.VimData.LastSubstituteData = FSharpOption.Create(new SubstituteData(
-                "cat",
-                "rat",
-                SubstituteFlags.None));
+            Vim.VimData.LastPatternData = new PatternData("cat", new Path(0));
             ParseAndRun("s//dog/");
             Assert.AreEqual("dog tree", _textBuffer.GetLine(0).GetText());
         }

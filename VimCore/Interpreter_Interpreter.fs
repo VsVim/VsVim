@@ -1149,12 +1149,7 @@ type Interpreter
         // Get the actual pattern to use
         let pattern = 
             if pattern = "" then 
-                if Util.IsFlagSet flags SubstituteFlags.UsePreviousSearchPattern then
-                    _vimData.LastPatternData.Pattern
-                else
-                    match _vimData.LastSubstituteData with
-                    | None -> ""
-                    | Some substituteData -> substituteData.SearchPattern
+                _vimData.LastPatternData.Pattern
             else
                 // If a pattern is given then it is the one that we will use 
                 pattern
