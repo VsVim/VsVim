@@ -2556,6 +2556,23 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// In issue #744 where there are 3 parts to the conditional, the caret is supposed to cycle through
+        /// (#if, #else, #end, #if), ... However, it actually only cycles between the last 
+        /// two (#if, #else, #end, #else)
+        /// </summary>
+        [Test]
+        public void MatchingTokens_PreProcessorIfElse()
+        {
+            Create("#if DEBUG", "#else", "#endif");
+
+            _vimBuffer.Process("%");
+            _vimBuffer.Process("%");
+            _vimBuffer.Process("%");
+
+            Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(0));
+        }
+
+        /// <summary>
         /// Make sure we jump correctly between matching token values of different types
         ///
         /// TODO: This test is also broken due to the matching case not being able to 
