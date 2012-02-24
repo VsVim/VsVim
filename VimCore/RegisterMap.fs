@@ -47,6 +47,7 @@ type internal RegisterMap (_map: Map<RegisterName,Register> ) =
 
         let getBacking name = 
             match name with 
+            | RegisterName.Unnamed -> clipboardBacking
             | RegisterName.SelectionAndDrop(SelectionAndDropRegister.Register_Plus) -> clipboardBacking
             | RegisterName.SelectionAndDrop(SelectionAndDropRegister.Register_Star) -> clipboardBacking
             | RegisterName.ReadOnly(ReadOnlyRegister.Register_Percent) -> fileNameBacking
