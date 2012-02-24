@@ -204,5 +204,16 @@ namespace Vim.UnitTest
             AssertRegister(RegisterName.Blackhole, "", OperationKind.LineWise);
         }
 
+        /// <summary>
+        /// Unnamed registers should use system clipboard backing
+        /// </summary>
+        [Test]
+        public void UnnamedRegister_To_Use_Clipboard_Backing()
+        {
+            var unnamedReg = _map.GetRegister(RegisterName.Unnamed);
+            var backing = unnamedReg._valueBacking;
+            Assert.True(backing.GetType().IsAssignableFrom(typeof(ClipboardRegisterValueBacking)));
+        }
+
     }
 }
