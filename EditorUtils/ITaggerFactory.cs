@@ -10,29 +10,29 @@ namespace EditorUtils
     public interface ITaggerFactory
     {
         /// <summary>
-        /// Create an ITagger implementation for the IAsyncTaggerSource
+        /// Create an ITagger implementation for the IAsyncTaggerSource.
         /// </summary>
-        ITagger<TTag> CreateAsyncTagger<TData, TTag>(IAsyncTaggerSource<TData, TTag> asyncTaggerSource)
+        ITagger<TTag> CreateAsyncTaggerRaw<TData, TTag>(IAsyncTaggerSource<TData, TTag> asyncTaggerSource)
             where TTag : ITag;
 
         /// <summary>
-        /// Create a counted ITagger implementation for IAsyncTaggerSource.  This will cause a single
-        /// IAsyncTaggerSource to be used for ITagger requests for the provided key
+        /// Create an ITagger implementation for the IAsyncTaggerSource.  This instance will be a counted 
+        /// wrapper over the single IAsyncTaggerSource represented by the specified key
         /// </summary>
-        ITagger<TTag> CreateAsyncTaggerCounted<TData, TTag>(object key, PropertyCollection propertyCollection, Func<IAsyncTaggerSource<TData, TTag>> createFunc)
+        ITagger<TTag> CreateAsyncTagger<TData, TTag>(PropertyCollection propertyCollection, object key, Func<IAsyncTaggerSource<TData, TTag>> createFunc)
             where TTag : ITag;
 
         /// <summary>
         /// Create an ITagger implementation for the IBasicTaggerSource
         /// </summary>
-        ITagger<TTag> CreateBasicTagger<TTag>(IBasicTaggerSource<TTag> basicTaggerSource)
+        ITagger<TTag> CreateBasicTaggerRaw<TTag>(IBasicTaggerSource<TTag> basicTaggerSource)
             where TTag : ITag;
 
         /// <summary>
-        /// Create a counted ITagger implementation for IBasicTaggerSource.  This will cause a single
-        /// IBasicTaggerSource to be used for ITagger requests for the provided key
+        /// Create an ITagger implementation for the IBasicTaggerSource.  This instance will be a counted
+        /// wrapper over the single IBasicTaggerSource represented by the specified key
         /// </summary>
-        ITagger<TTag> CreateBasicTaggerCounted<TTag>(object key, PropertyCollection propertyCollection, Func<IBasicTaggerSource<TTag>> createFunc)
+        ITagger<TTag> CreateBasicTagger<TTag>(PropertyCollection propertyCollection, object key, Func<IBasicTaggerSource<TTag>> createFunc)
             where TTag : ITag;
     }
 }

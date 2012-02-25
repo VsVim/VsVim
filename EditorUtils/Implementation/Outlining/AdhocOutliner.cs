@@ -191,9 +191,9 @@ namespace EditorUtils.Implementation.Outlining
 
         internal ITagger<OutliningRegionTag> CreateTagger(ITextBuffer textBuffer)
         {
-            return _taggerFactory.CreateBasicTaggerCounted(
-                _taggerKey,
+            return _taggerFactory.CreateBasicTagger(
                 textBuffer.Properties,
+                _taggerKey,
                 () => GetOrCreateOutliner(textBuffer));
         }
 
