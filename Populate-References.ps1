@@ -1,4 +1,4 @@
-$script:scriptPath = split-path -parent $MyInvocation.MyCommand.Definition 
+$script:scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
 $refPath = join-path $scriptPath "References"
 $coreDllList = @(   "Microsoft.VisualStudio.CoreUtility.dll",
                 "Microsoft.VisualStudio.Editor.dll",
@@ -15,7 +15,7 @@ function Get-ProgramFiles32() {
     if ( test-path (join-path $env:WinDir "SysWow64") ) {
         return ${env:ProgramFiles(x86)}
     }
-    
+
     return $env:ProgramFiles
 }
 
