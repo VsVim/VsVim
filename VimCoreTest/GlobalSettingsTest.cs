@@ -119,5 +119,22 @@ namespace Vim.UnitTest
             Assert.IsTrue(seen);
         }
 
+        [Test]
+        public void Clipboard_SetUnnamed()
+        {
+            var global = CreateGlobal();
+            global.Clipboard = "unnamed";
+            Assert.AreEqual(ClipboardOptions.Unnamed, global.ClipboardOptions);
+            Assert.AreEqual("unnamed", global.Clipboard);
+        }
+
+        [Test]
+        public void Clipboard_Multiple()
+        {
+            var global = CreateGlobal();
+            global.Clipboard = "unnamed,autoselect";
+            Assert.AreEqual(ClipboardOptions.Unnamed | ClipboardOptions.AutoSelect, global.ClipboardOptions);
+            Assert.AreEqual("unnamed,autoselect", global.Clipboard);
+        }
     }
 }

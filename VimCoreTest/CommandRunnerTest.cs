@@ -265,7 +265,7 @@ namespace Vim.UnitTest
             var didRun = false;
             _runner.Add(VimUtil.CreateNormalBinding("a", data =>
                 {
-                    Assert.AreEqual(RegisterName.Unnamed, data.RegisterNameOrDefault);
+                    Assert.AreEqual(RegisterName.Unnamed, data.GetRegisterNameOrDefault());
                     didRun = true;
                     return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
                 }));

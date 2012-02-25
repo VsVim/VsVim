@@ -37,6 +37,7 @@ namespace Vim.UnitTest
         private IBufferTrackingService _bufferTrackingService;
         private IProtectedOperations _protectedOperations;
         private IBulkOperations _bulkOperations;
+        private IClipboardDevice _clipboardDevice;
 
         /// <summary>
         /// An IProtectedOperations value which will be properly checked in the context of this
@@ -92,6 +93,11 @@ namespace Vim.UnitTest
             get { return _vim.KeyMap; }
         }
 
+        protected IClipboardDevice ClipboardDevice
+        {
+            get { return _clipboardDevice; }
+        }
+
         protected virtual bool TrackTextViewHistory
         {
             get { return true; }
@@ -108,8 +114,10 @@ namespace Vim.UnitTest
             _bufferTrackingService = CompositionContainer.GetExportedValue<IBufferTrackingService>();
             _foldManagerFactory = CompositionContainer.GetExportedValue<IFoldManagerFactory>();
             _bulkOperations = CompositionContainer.GetExportedValue<IBulkOperations>();
+            _clipboardDevice = CompositionContainer.GetExportedValue<IClipboardDevice>();
             _vimErrorDetector.Clear();
             _protectedOperations = new ProtectedOperations(_vimErrorDetector);
+            _clipboardDevice.Text = String.Empty;
 
             // One setting we do differ on for a default is 'timeout'.  We don't want them interferring
             // with the reliability of tests.  The default is on but turn it off here to prevent any 

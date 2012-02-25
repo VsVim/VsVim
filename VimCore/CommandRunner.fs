@@ -182,7 +182,6 @@ type internal CommandRunner
                 SeqUtil.contentsEqual commandInputsSeq short)
 
         let commandData = { RegisterName = registerName; Count = count }
-        let register = commandData.GetRegister _registerMap
 
         let rec inner (commandName : KeyInputSet) previousCommandName currentInput = 
 

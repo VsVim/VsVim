@@ -3223,6 +3223,33 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Make sure a yank goes to the clipboard if we don't specify a register and the 
+        /// unnamed option is set
+        /// </summary>
+        [Test]
+        public void Yank_Unnamed_GoToClipboardIfOptionSet()
+        {
+            Create("cat", "dog");
+            _globalSettings.Clipboard = "unnamed,autoselect";
+            _vimBuffer.Process("yaw");
+            Assert.AreEqual("cat", ClipboardDevice.Text);
+        }
+
+        /// <summary>
+        /// Make sure a yank goes to unnamed if the register is explicitly specified even if the
+        /// unnamed option is set in 'clipboard'
+        /// </summary>
+        [Test]
+        public void Yank_Unnamed_ExplicitBypassesClipboardOption()
+        {
+            Create("cat", "dog");
+            _globalSettings.Clipboard = "unnamed,autoselect";
+            _vimBuffer.Process("\"\"yaw");
+            Assert.AreEqual("", ClipboardDevice.Text);
+            Assert.AreEqual("cat", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
         /// Yank lines using the special y#y syntax
         /// </summary>
         [Test]

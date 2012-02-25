@@ -26,6 +26,22 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region CommandData
+
+        public static RegisterName GetRegisterNameOrDefault(this CommandData commandData)
+        {
+            return commandData.RegisterName.IsSome()
+                ? commandData.RegisterName.Value
+                : RegisterName.Unnamed;
+        }
+
+        public static Register GetRegister(this CommandData commandData, IRegisterMap registerMap)
+        {
+            return registerMap.GetRegister(commandData.GetRegisterNameOrDefault());
+        }
+
+        #endregion
+
         #region VisualSelection
 
         public static void SelectAndMoveCaret(this VisualSelection selection, ITextView textView)

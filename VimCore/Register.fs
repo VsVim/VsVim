@@ -351,15 +351,15 @@ type RegisterName =
 
     member x.Char = 
         match x with 
-        | Unnamed -> None
+        | Unnamed -> Some '"'
         | SmallDelete -> Some '-'
         | Blackhole -> Some '_'
         | LastSearchPattern -> Some '/'
         | Expression -> Some '='
-        | Numbered(r) -> Some r.Char
-        | Named(r) -> Some r.Char
-        | ReadOnly(r) -> Some r.Char
-        | SelectionAndDrop(r) -> Some r.Char
+        | Numbered r -> Some r.Char
+        | Named r -> Some r.Char
+        | ReadOnly r -> Some r.Char
+        | SelectionAndDrop r -> Some r.Char
 
     /// Is this one of the named append registers
     member x.IsAppend =
@@ -376,16 +376,16 @@ type RegisterName =
 
     static member OfChar c = 
         match NumberedRegister.OfChar c with
-        | Some(r) -> Some (Numbered r)
+        | Some r -> Some (Numbered r)
         | None ->
             match NamedRegister.OfChar c with
-            | Some(r) -> Some (Named r)
+            | Some r -> Some (Named r)
             | None ->
                 match ReadOnlyRegister.OfChar c with
-                | Some(r) -> Some (ReadOnly r)
+                | Some r -> Some (ReadOnly r)
                 | None ->
                     match SelectionAndDropRegister.OfChar c with
-                    | Some(r) -> Some (SelectionAndDrop r)
+                    | Some r -> Some (SelectionAndDrop r)
                     | None -> 
                         match c with
                         | '=' -> Some Expression

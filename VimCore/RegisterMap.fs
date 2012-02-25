@@ -29,8 +29,8 @@ type AppendRegisterValueBacking (_register : Register) =
             with get () = _register.RegisterValue
             and set value = _register.RegisterValue <- _register.RegisterValue.Append value
 
-type internal RegisterMap (_map: Map<RegisterName,Register> ) =
-    new( clipboard : IClipboardDevice, currentFileNameFunc : unit -> string option ) = 
+type internal RegisterMap (_map: Map<RegisterName, Register>) =
+    new(clipboard : IClipboardDevice, currentFileNameFunc : unit -> string option) = 
         let clipboardBacking = ClipboardRegisterValueBacking(clipboard) :> IRegisterValueBacking
         let fileNameBacking = { new IRegisterValueBacking with
             member x.RegisterValue
@@ -134,5 +134,4 @@ type internal RegisterMap (_map: Map<RegisterName,Register> ) =
         member x.RegisterNames = _map |> Seq.map (fun pair -> pair.Key)
         member x.GetRegister name = x.GetRegister name
         member x.SetRegisterValue register operation value = x.SetRegisterValue register operation value
-          
 

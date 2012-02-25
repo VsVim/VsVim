@@ -828,6 +828,20 @@ type internal CommandUtil
         _commonOperations.FormatLines result.LineRange
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Get the appropriate register for the CommandData
+    member x.GetRegister (commandData : CommandData) =
+        let name = 
+
+            match commandData.RegisterName with
+            | Some name -> name
+            | None ->
+                if Util.IsFlagSet _globalSettings.ClipboardOptions ClipboardOptions.Unnamed then
+                    RegisterName.SelectionAndDrop SelectionAndDropRegister.Register_Star
+                else
+                    RegisterName.Unnamed
+
+        _registerMap.GetRegister name
+
     /// Get the number value at the caret.  This is used for the CTRL-A and CTRL-X
     /// command so it will look forward on the current line for the first word
     member x.GetNumberValueAtCaret() : (NumberValue * SnapshotSpan) option= 
@@ -1959,7 +1973,7 @@ type internal CommandUtil
 
     /// Run a NormalCommand against the buffer
     member x.RunNormalCommand command (data : CommandData) =
-        let register = _registerMap.GetRegister data.RegisterNameOrDefault
+        let register = x.GetRegister data
         let count = data.CountOrDefault
         match command with
         | NormalCommand.AddToWord -> x.AddToWord count
@@ -2048,7 +2062,7 @@ type internal CommandUtil
         // reappear during an undo hence clear it now so it's gone.
         _textView.Selection.Clear()
 
-        let register = _registerMap.GetRegister data.RegisterNameOrDefault
+        let register = x.GetRegister data
         let count = data.CountOrDefault
         match command with
         | VisualCommand.ChangeCase kind -> x.ChangeCaseVisual kind visualSpan
