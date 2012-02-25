@@ -48,6 +48,30 @@ namespace Vim.UnitTest
         }
 
         [TestFixture]
+        public sealed class StringConstant : ParserTest
+        {
+            public string ParseStringConstant(string text)
+            {
+                var parser = new Parser(text);
+                var parseResult = parser.ParseStringLiteral();
+                Assert.IsTrue(parseResult.IsSucceeded);
+                return parseResult.AsSucceeded().Item.AsConstantValue().Item.AsString().Item;
+            }
+
+            [Test]
+            public void Simple()
+            {
+                Assert.AreEqual("hello", ParseStringConstant(@"""hello"""));
+            }
+
+            [Test]
+            public void TabEscape()
+            {
+                Assert.AreEqual("\t", ParseStringConstant(@"""\t"""));
+            }
+        }
+
+        [TestFixture]
         public sealed class Misc : ParserTest
         {
             private LineCommand ParseLineCommand(string text)
