@@ -49,8 +49,6 @@ type ParserBuilder
     member x.Zero () = 
         ParseResult.Failed _errorMessage
 
-// TODO: Look at every case of ParseResult.Failed and ensure we are using the appropriate error
-// message
 [<Sealed>]
 type Parser
     (
@@ -154,10 +152,6 @@ type Parser
         ("cnoremap", "cno")
     ]
 
-    // TODO: Delete.  Force the use of _tokenizer.IsAtEndOfLine
-    member x.IsAtEndOfLine =
-        _tokenizer.IsAtEndOfLine
-
     /// Move past the white space in the expression text
     member x.SkipBlanks () = 
         match _tokenizer.CurrentTokenKind with
@@ -218,7 +212,6 @@ type Parser
             Some number
         | _ -> None
 
-    /// TODO: Delete.  Or at least verify that 'c' isn't a token vs. TokenKind.Character
     member x.IsCurrentCharValue c = 
         match _tokenizer.CurrentChar with
         | Some currentChar -> currentChar = c
@@ -316,11 +309,6 @@ type Parser
         else
             inner keyRemapModes
 
-    /// Parse out the rest of the text to the end of the line 
-    ///
-    /// TODO: Delete.  Combine with ParseRestOfLine
-    member x.ParseToEndOfLine() = x.ParseRestOfLine()
-
     /// Parse out a CommandOption value if the caret is currently pointed at one.  If 
     /// there is no CommnadOption here then the index will not change
     member x.ParseCommandOption () = 
@@ -335,7 +323,7 @@ type Parser
                 CommandOption.StartAtLine number |> Some
             | TokenKind.Character '/' ->
                 _tokenizer.MoveNextToken()
-                let pattern = x.ParseToEndOfLine()
+                let pattern = x.ParseRestOfLine()
                 CommandOption.StartAtPattern pattern |> Some
             | TokenKind.Character c ->
                 match x.ParseSingleCommand() with
@@ -459,10 +447,10 @@ type Parser
         x.ParseBang() |> ignore
         x.SkipBlanks()
         let path = 
-            if x.IsAtEndOfLine then
+            if _tokenizer.IsAtEndOfLine then
                 None
             else
-                x.ParseToEndOfLine() |> Some
+                x.ParseRestOfLine() |> Some
         ParseResult.Succeeded (LineCommand.ChangeDirectory path)
 
     /// Parse out the change local directory command.  The path here is optional
@@ -472,10 +460,10 @@ type Parser
 
         x.SkipBlanks()
         let path = 
-            if x.IsAtEndOfLine then
+            if _tokenizer.IsAtEndOfLine then
                 None
             else
-                x.ParseToEndOfLine() |> Some
+                x.ParseRestOfLine() |> Some
         ParseResult.Succeeded (LineCommand.ChangeLocalDirectory path)
 
     /// Parse out the :close command
@@ -520,7 +508,7 @@ type Parser
         let commandOption = x.ParseCommandOption()
 
         x.SkipBlanks()
-        let fileName = x.ParseToEndOfLine()
+        let fileName = x.ParseRestOfLine()
 
         LineCommand.Edit (hasBang, fileOptionList, commandOption, fileName) |> ParseResult.Succeeded
 
@@ -796,7 +784,7 @@ type Parser
 
     /// Parse out the search commands
     member x.ParseSearch lineRange path =
-        let pattern = x.ParseToEndOfLine()
+        let pattern = x.ParseRestOfLine()
         LineCommand.Search (lineRange, path, pattern) |> ParseResult.Succeeded
 
     /// Parse out the shift left pattern
@@ -815,6 +803,41 @@ type Parser
     member x.ParseShellCommand () =
         let command = x.ParseRestOfLine()
         LineCommand.ShellCommand command |> ParseResult.Succeeded
+
+    /// Parse out a string constant from the token stream.  Loads of special characters are
+    /// possible here.  A complete list is available at :help expr-string
+    member x.ParseStringConstant() = 
+        _tokenizer.MoveNextTokenEx NextTokenFlags.AllowDoubleQuote
+        let builder = System.Text.StringBuilder()
+        let moveNextChar () = _tokenizer.MoveNextCharEx NextTokenFlags.AllowDoubleQuote
+        let rec inner afterEscape = 
+            match _tokenizer.CurrentChar with
+            | None -> ParseResult.Failed Resources.Parser_MissingQuote
+            | Some c -> 
+
+                moveNextChar()
+                if afterEscape then
+                    match c with
+                    | 't' -> builder.AppendChar '\t'
+                    | 'b' -> builder.AppendChar '\b'
+                    | 'f' -> builder.AppendChar '\f'
+                    | 'n' -> builder.AppendChar '\n'
+                    | 'r' -> builder.AppendChar '\r'
+                    | '\\' -> builder.AppendChar '\\'
+                    | _ -> builder.AppendChar c
+                    inner false
+                elif c = '\\' then
+                    inner true
+                elif c = '"' then
+                    builder.ToString()
+                    |> Value.String
+                    |> Expression.ConstantValue
+                    |> ParseResult.Succeeded
+                else
+                    builder.AppendChar c
+                    inner false
+
+        inner false
 
     /// Parse out a string literal from the token stream.  The only special character here is
     /// an escaped '.  Everything else is taken literally 
@@ -873,10 +896,10 @@ type Parser
 
         x.SkipBlanks()
         let fileName =
-            if x.IsAtEndOfLine then
+            if _tokenizer.IsAtEndOfLine then
                 None
             else
-                x.ParseToEndOfLine() |> Some
+                x.ParseRestOfLine() |> Some
 
         LineCommand.QuitWithWrite (lineRange, hasBang, fileOptionList, fileName) |> ParseResult.Succeeded
 
@@ -905,10 +928,10 @@ type Parser
         // Pares out the final fine name if it's provided
         x.SkipBlanks()
         let fileName =
-            if x.IsAtEndOfLine then
+            if _tokenizer.IsAtEndOfLine then
                 None
             else
-                x.ParseToEndOfLine() |> Some
+                x.ParseRestOfLine() |> Some
 
         ParseResult.Succeeded (LineCommand.Write (lineRange, hasBang, fileOptionList, fileName))
 
@@ -965,7 +988,7 @@ type Parser
     member x.ParseMake () = 
         let hasBang = x.ParseBang()
         x.SkipBlanks()
-        let arguments = x.ParseToEndOfLine()
+        let arguments = x.ParseRestOfLine()
         LineCommand.Make (hasBang, arguments) |> ParseResult.Succeeded
 
     /// Parse out the :put command.  The presence of a bang indicates that we need
@@ -999,15 +1022,15 @@ type Parser
             x.SkipBlanks()
             if x.IsCurrentCharValue '!' then
                 _tokenizer.MoveNextToken()
-                let command = x.ParseToEndOfLine()
+                let command = x.ParseRestOfLine()
                 LineCommand.ReadCommand (lineRange, command) |> ParseResult.Succeeded
             else
-                let filePath = x.ParseToEndOfLine()
+                let filePath = x.ParseRestOfLine()
                 LineCommand.ReadFile (lineRange, [], filePath) |> ParseResult.Succeeded
         | _ ->
             // Can only be the file variety.
             x.SkipBlanks()
-            let filePath = x.ParseToEndOfLine()
+            let filePath = x.ParseRestOfLine()
             LineCommand.ReadFile (lineRange, fileOptionList, filePath) |> ParseResult.Succeeded
 
     /// Parse out the :retab command
@@ -1110,7 +1133,7 @@ type Parser
     member x.ParseSource() =
         let hasBang = x.ParseBang()
         x.SkipBlanks()
-        let fileName = x.ParseToEndOfLine()
+        let fileName = x.ParseRestOfLine()
         ParseResult.Succeeded (LineCommand.Source (hasBang, fileName))
 
     /// Parse out the :split commnad
@@ -1183,7 +1206,7 @@ type Parser
                 x.SkipBlanks()
 
                 // If there are still characters then it's illegal trailing characters
-                if not x.IsAtEndOfLine then
+                if not _tokenizer.IsAtEndOfLine then
                     ParseResult.Failed Resources.CommandMode_TrailingCharacters
                 else
                     parseResult
@@ -1309,8 +1332,7 @@ type Parser
         _tokenizer.MoveToIndexEx _tokenizer.Index NextTokenFlags.AllowDoubleQuote
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Character '\"' ->
-            // TODO: Must parse out string constant
-            ParseResult.Failed "Invalid expression"
+            x.ParseStringConstant()
         | TokenKind.Character '\'' -> 
             x.ParseStringLiteral()
         | TokenKind.Number number -> 
