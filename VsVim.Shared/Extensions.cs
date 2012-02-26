@@ -224,6 +224,16 @@ namespace VsVim
 
         #endregion
 
+        #region IVsShell
+
+        internal static bool IsPackageInstalled(this IVsShell vsShell, Guid packageId)
+        {
+            int isInstalled;
+            return ErrorHandler.Succeeded(vsShell.IsPackageInstalled(ref packageId, out isInstalled)) && 1 == isInstalled;
+        }
+
+        #endregion
+
         #region IVsUIShell
 
         private sealed class ModelessUtil : IDisposable
