@@ -47,9 +47,9 @@ module internal MotionUtilLegacy =
             ("{", ["}"], TokenFlags.None)
             ("/*", ["*/"], TokenFlags.StartTokenDoesNotNest)
             /// Last in list is always the one that needs to be the end delimiter
+            ("#ifdef", ["#else"; "#endif"], TokenFlags.MatchOnSeparateLine ||| TokenFlags.ValidOnlyAtStartOfLine)
+            ("#ifndef", ["#else"; "#endif"], TokenFlags.MatchOnSeparateLine ||| TokenFlags.ValidOnlyAtStartOfLine)
             ("#if", ["#else"; "#elif"; "#endif"], TokenFlags.MatchOnSeparateLine ||| TokenFlags.ValidOnlyAtStartOfLine)
-            //("#else", ["#else"; "#elif"; "#endif"], TokenFlags.MatchOnSeparateLine ||| TokenFlags.ValidOnlyAtStartOfLine)
-            //("#elif", ["#else"; "#elif"; "#endif"], TokenFlags.MatchOnSeparateLine ||| TokenFlags.ValidOnlyAtStartOfLine) 
         ]
 
     /// Set of all of the tokens which need to be considered
@@ -77,7 +77,25 @@ module internal MotionUtilLegacy =
             // Is the data in the builder a prefix match for any item in the 
             // set of possible matches
             let isPrefixMatch current = 
+                let keys = StandardMatchTokenMap |> Seq.map (fun pair -> pair.Key) |> List.ofSeq
                 StandardMatchTokenMap |> Seq.exists (fun pair -> pair.Key.StartsWith current)
+
+            let attemptToFindIfdef current = 
+                let rec inner fallback current =
+                    if e.MoveNext() then
+                        let nextPrefix = current + e.Current.GetChar().ToString()
+                        if StandardMatchTokenMap.ContainsKey(nextPrefix) then
+                            nextPrefix
+                        elif isPrefixMatch nextPrefix then
+                            inner fallback nextPrefix
+                        else
+                            fallback
+                    else 
+                       fallback 
+                if current = "#if" then
+                    inner current current
+                else 
+                    current
 
             while e.MoveNext() do
                 let currentPoint = e.Current
@@ -92,8 +110,10 @@ module internal MotionUtilLegacy =
                         match Map.tryFind current StandardMatchTokenMap with
                         | Some flags -> 
     
+                            let fullToken = attemptToFindIfdef current 
+
                             // Found a match.  Yield the Token
-                            let token = SnapshotSpan(builderStart.Value, builder.Length), flags
+                            let token = SnapshotSpan(builderStart.Value, fullToken.Length), flags
                             builder.Length <- 0
                             Some token
                         | None -> 
@@ -160,20 +180,29 @@ module internal MotionUtilLegacy =
             let getMiddleTokenResult searchToken tokenSet = 
                 let middleTokens = 
                     tokenSet 
-                    |> Seq.skip 1 
-                    |> Seq.take ((List.length tokenSet) - 2) 
+                    |> Seq.map (fun set ->
+                        set
+                        |> Seq.skip 1 
+                        |> Seq.take ((List.length set) - 2) 
+                    )
+                    |> Seq.concat
                     |> List.ofSeq
 
-                let endTokens = tokenSet |> Seq.skip ((List.length tokenSet) - 1) |> List.ofSeq
+                let endTokens = 
+                    tokenSet 
+                    |> Seq.map (fun set ->
+                        set
+                        |> Seq.skip ((List.length tokenSet) - 1) 
+                    )
+                    |> Seq.concat
+                    |> List.ofSeq
                     
                 Seq.exists (fun t -> t = searchToken) middleTokens, middleTokens, endTokens
 
             StandardMatchTokens 
             |> List.map (fun (start, endTokens, _) -> start :: endTokens) 
             |> List.filter (fun tokenList -> tokenList |> List.exists (fun t -> t = text))
-            |> List.concat 
             |> getMiddleTokenResult text 
-            
 
         // Is the text in the given Span a match for the original token?
         let isMatch span = 
@@ -240,8 +269,6 @@ module internal MotionUtilLegacy =
                                     inner ([current] :: startTokenList)
                             else 
                                 inner startTokenList
-                    // TODO: Add more cases to handle #if/elif/else/endif.
-                    // I think this is pushing/popping incorrectly for multiple delimiters
                     elif current.GetText() = text then 
                         // Found another end token.  Pop off the top of the stack if there is
                         // any
