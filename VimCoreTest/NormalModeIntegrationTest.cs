@@ -2567,8 +2567,7 @@ namespace Vim.UnitTest
 
             _vimBuffer.Process("%");
             Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(1), "checking that % does actually change lines at all");
-            _vimBuffer.Process("%");
-            _vimBuffer.Process("%");
+            _vimBuffer.Process("%%");
 
             Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(0));
         }
@@ -2582,8 +2581,7 @@ namespace Vim.UnitTest
 
             _vimBuffer.Process("%");
             Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(1), "checking that % does actually change lines at all");
-            _vimBuffer.Process("%");
-            _vimBuffer.Process("%");
+            _vimBuffer.Process("%%");
 
             Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(0));
         }
@@ -2597,8 +2595,7 @@ namespace Vim.UnitTest
 
             _vimBuffer.Process("%");
             Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(1), "checking that % does actually change lines at all");
-            _vimBuffer.Process("%");
-            _vimBuffer.Process("%");
+            _vimBuffer.Process("%%");
 
             Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(0));
         }
