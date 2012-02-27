@@ -1793,7 +1793,8 @@ type internal CommandUtil
 
         let succeeded = 
             let point = x.CaretPoint
-            if (point.Position + count) > point.GetContainingLine().End.Position then
+            let line = point.GetContainingLine()
+            if (point.Position + count) > line.End.Position then
                 // If the replace operation exceeds the line length then the operation
                 // can't succeed
                 _commonOperations.Beep()
@@ -1804,14 +1805,18 @@ type internal CommandUtil
                 x.EditWithUndoTransaciton "ReplaceChar" (fun () -> 
 
                     let replaceText = 
-                        if keyInput = KeyInputUtil.EnterKey then EditUtil.NewLine _options
-                        else new System.String(keyInput.Char, count)
+                        if keyInput = KeyInputUtil.EnterKey then 
+                            let previousIndent = SnapshotLineUtil.GetIndentText line |> _commonOperations.NormalizeBlanks
+                            let replaceText = EditUtil.NewLine _options
+                            replaceText + previousIndent 
+                        else 
+                            new System.String(keyInput.Char, count)
                     let span = new Span(point.Position, count)
                     let snapshot = _textView.TextBuffer.Replace(span, replaceText) 
 
                     // The caret should move to the end of the replace operation which is 
                     // 'count - 1' characters from the original position 
-                    let point = SnapshotPoint(snapshot, point.Position + (count - 1))
+                    let point = SnapshotPoint(snapshot, point.Position + (replaceText.Length - 1))
 
                     _textView.Caret.MoveTo(point) |> ignore)
                 true

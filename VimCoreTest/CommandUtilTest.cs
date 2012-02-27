@@ -227,6 +227,19 @@ namespace Vim.UnitTest
             Assert.IsTrue(_vimHost.BeepCount > 0);
         }
 
+        [Test]
+        public void ReplaceChar_r_Enter_ShouldIndentNextLine()
+        {
+            Create("    the food is especially good today");
+            const int betweenIsAndEspecially = 15;
+            _textView.MoveCaretTo(betweenIsAndEspecially); 
+            var tss = _textView.TextSnapshot;
+            
+            Assert.IsTrue(_commandUtil.ReplaceChar(KeyInputUtil.EnterKey, 1).IsCompleted);
+            var withIndentedSecondLine = string.Format("    the food is{0}    especially good today", Environment.NewLine);
+            Assert.That(_textBuffer.GetExtent().GetText(), Is.EqualTo(withIndentedSecondLine));
+        }
+
         /// <summary>
         /// Caret should not move as a result of a single ReplaceChar operation
         /// </summary>
