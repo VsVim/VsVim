@@ -2604,6 +2604,19 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// This is obviously not standard Vim behavior, but it is nice for C# developers ;)
+        /// </summary>
+        [Test]
+        public void MatchingTokens_RegionIsImplemented()
+        {
+            Create("#region DEBUG", "#endregion");
+
+            _vimBuffer.Process("%");
+
+            Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(1));
+        }
+
+        /// <summary>
         /// Make sure we jump correctly between matching token values of different types
         ///
         /// TODO: This test is also broken due to the matching case not being able to 
