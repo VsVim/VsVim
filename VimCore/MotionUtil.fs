@@ -1113,14 +1113,28 @@ type internal MotionUtil
     /// Find the matching token for the next token on the current line 
     member x.MatchingToken() = 
 
-        // First step is to find the token under the caret point or the one
-        // immediately after it.  
-        let all = MotionUtilLegacy.GetMatchTokens x.CaretLine.Extent
-        let token = 
-            MotionUtilLegacy.GetMatchTokens x.CaretLine.Extent
-            |> Seq.tryFind (fun (span, _) -> 
-                span.Contains(x.CaretPoint) || 
-                span.Start.Position >= x.CaretPoint.Position)
+        let rec searchFrom (point : SnapshotPoint) depth =
+            let line = x.CaretLine
+
+            // First step is to find the token under the caret point or the one
+            // immediately after it.  
+            let all = MotionUtilLegacy.GetMatchTokens line.Extent
+
+            let token = 
+                MotionUtilLegacy.GetMatchTokens line.Extent
+                |> Seq.tryFind (fun (span, _) -> 
+                    span.Contains(point) || 
+                    span.Start.Position >= point.Position)
+            if depth = 0 then
+                match token with
+                | Some x -> Some x
+                | None -> 
+                    // Try one more time but from the beginning of the line
+                    let point = SnapshotLineUtil.GetFirstNonBlankOrStart(line)
+                    searchFrom point (depth + 1)
+            else token
+
+        let token = searchFrom x.CaretPoint 0
 
         match token with
         | None -> 
@@ -1149,6 +1163,7 @@ type internal MotionUtil
                     IsForward = isForward
                     MotionKind = MotionKind.CharacterWiseInclusive
                     MotionResultFlags = MotionResultFlags.None } |> Some
+
 
     /// Implement the all block motion
     member x.AllBlock contextPoint blockKind count =
