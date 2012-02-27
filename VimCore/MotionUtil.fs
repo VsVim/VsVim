@@ -38,7 +38,6 @@ type Token = SnapshotSpan * TokenFlags
 
 /// Motion utility class for parsing out constructs from the text buffer
 module internal MotionUtilLegacy =
-
     /// The Standard tokens which are used when getting matches in an ITextBuffer.  The syntax
     /// is (start, end matches, flags)
     let StandardMatchTokens = 
@@ -47,9 +46,11 @@ module internal MotionUtilLegacy =
             ("[", ["]"], TokenFlags.None)
             ("{", ["}"], TokenFlags.None)
             ("/*", ["*/"], TokenFlags.StartTokenDoesNotNest)
+            /// Last in list is always the one that needs to be the end delimiter
+            ("#ifdef", ["#else"; "#endif"], TokenFlags.MatchOnSeparateLine ||| TokenFlags.ValidOnlyAtStartOfLine)
+            ("#ifndef", ["#else"; "#endif"], TokenFlags.MatchOnSeparateLine ||| TokenFlags.ValidOnlyAtStartOfLine)
             ("#if", ["#else"; "#elif"; "#endif"], TokenFlags.MatchOnSeparateLine ||| TokenFlags.ValidOnlyAtStartOfLine)
-            ("#else", ["#else"; "#elif"; "#endif"], TokenFlags.MatchOnSeparateLine ||| TokenFlags.ValidOnlyAtStartOfLine)
-            ("#elif", ["#else"; "#elif"; "#endif"], TokenFlags.MatchOnSeparateLine ||| TokenFlags.ValidOnlyAtStartOfLine) 
+            ("#region", ["#endregion"], TokenFlags.MatchOnSeparateLine ||| TokenFlags.ValidOnlyAtStartOfLine)
         ]
 
     /// Set of all of the tokens which need to be considered
@@ -77,7 +78,25 @@ module internal MotionUtilLegacy =
             // Is the data in the builder a prefix match for any item in the 
             // set of possible matches
             let isPrefixMatch current = 
+                let keys = StandardMatchTokenMap |> Seq.map (fun pair -> pair.Key) |> List.ofSeq
                 StandardMatchTokenMap |> Seq.exists (fun pair -> pair.Key.StartsWith current)
+
+            let attemptToFindIfdef current = 
+                let rec inner fallback current =
+                    if e.MoveNext() then
+                        let nextPrefix = current + e.Current.GetChar().ToString()
+                        if StandardMatchTokenMap.ContainsKey(nextPrefix) then
+                            nextPrefix
+                        elif isPrefixMatch nextPrefix then
+                            inner fallback nextPrefix
+                        else
+                            fallback
+                    else 
+                       fallback 
+                if current = "#if" then
+                    inner current current
+                else 
+                    current
 
             while e.MoveNext() do
                 let currentPoint = e.Current
@@ -92,8 +111,10 @@ module internal MotionUtilLegacy =
                         match Map.tryFind current StandardMatchTokenMap with
                         | Some flags -> 
     
+                            let fullToken = attemptToFindIfdef current 
+
                             // Found a match.  Yield the Token
-                            let token = SnapshotSpan(builderStart.Value, builder.Length), flags
+                            let token = SnapshotSpan(builderStart.Value, fullToken.Length), flags
                             builder.Length <- 0
                             Some token
                         | None -> 
@@ -148,18 +169,51 @@ module internal MotionUtilLegacy =
                 let possibleMatches = 
                     StandardMatchTokens
                     |> Seq.filter (fun (_, endTokens, _) -> Seq.exists (fun t -> t = text) endTokens)
-                    |> Seq.map (fun (start, _ , _) -> start)
+                    |> Seq.map (fun (start, endTokens , _) -> (start :: endTokens) |> Seq.take (List.length endTokens))
+                    |> Seq.concat
                 false, possibleMatches
             | Some (_, endTokens, _) ->
                 // A start token, match the end tokens
                 true, (endTokens |> Seq.ofList)
 
+        // middle tokens are ones that aren't start tokens nor end tokens. Things like #elif, #else, etc...
+        let isMiddle, middleTokens, endTokens = 
+            let getMiddleTokenResult searchToken tokenSet = 
+                let middleTokens = 
+                    tokenSet 
+                    |> Seq.map (fun set ->
+                        set
+                        |> Seq.skip 1 
+                        |> Seq.take ((List.length set) - 2) 
+                    )
+                    |> Seq.concat
+                    |> List.ofSeq
+
+                let endTokens = 
+                    tokenSet 
+                    |> Seq.map (fun set ->
+                        set
+                        |> Seq.skip ((List.length tokenSet) - 1) 
+                    )
+                    |> Seq.concat
+                    |> List.ofSeq
+                    
+                Seq.exists (fun t -> t = searchToken) middleTokens, middleTokens, endTokens
+
+            StandardMatchTokens 
+            |> List.map (fun (start, endTokens, _) -> start :: endTokens) 
+            |> List.filter (fun tokenList -> tokenList |> List.exists (fun t -> t = text))
+            |> getMiddleTokenResult text 
+
         // Is the text in the given Span a match for the original token?
         let isMatch span = 
             let text = SnapshotSpanUtil.GetText span
-            Seq.exists (fun t -> t = text) possibleMatches
+            let isSimpleMatch = Seq.exists (fun t -> t = text) possibleMatches
+            if isSimpleMatch then true
+            elif isMiddle && Seq.exists (fun t -> t = text) endTokens then true
+            else false
 
-        if isStart then
+        if isStart || isMiddle then
             // Starting from this token.  Start the next line if that is one of the options
             // for this token 
             let startPoint = 
@@ -200,13 +254,22 @@ module internal MotionUtilLegacy =
                     if isMatch current then 
                         match startTokenList with
                         | [] ->
-                            inner [current]
+                            inner [[current]]
                         | _ -> 
                             // If we have start tokens which nest (like parens) then put the new
                             // start token at the top of the list.  Else don't even record the 
                             // token
-                            if startTokenNests then inner (current :: startTokenList)
-                            else inner startTokenList
+                            if startTokenNests then
+                                if middleTokens |> Seq.exists (fun t -> t = current.GetText()) then
+                                    let updatedCurrent = 
+                                        match startTokenList with
+                                        | head :: others -> (head @ [current]) :: others
+                                        | others -> others
+                                    inner updatedCurrent
+                                else
+                                    inner ([current] :: startTokenList)
+                            else 
+                                inner startTokenList
                     elif current.GetText() = text then 
                         // Found another end token.  Pop off the top of the stack if there is
                         // any
@@ -222,7 +285,10 @@ module internal MotionUtilLegacy =
                     // Can't move the enumerator anymore so we are at the end token.  The top 
                     // of the list is our matching token
                     ListUtil.tryHeadOnly startTokenList
-            inner List.empty
+
+            match inner List.empty with
+            | Some potentials -> potentials |> ListUtil.tryHeadOnly
+            | None -> None
 
 [<RequireQualifiedAccess>]
 type SentenceKind = 
