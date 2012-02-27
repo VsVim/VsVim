@@ -2600,6 +2600,18 @@ namespace Vim.UnitTest
             Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(0));
         }
 
+        [Test]
+        public void MatchingTokens_ItMatchesEvenWhenCaretIsAtTheEnd()
+        {
+            Create("#if DEBUG", "#endif");
+            // move caret off of #if, otherwise it'll be covered by the previous functionaly and won't actually prove anything
+            _textView.MoveCaretTo(6); 
+
+            _vimBuffer.Process("%");
+
+            Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(1));
+        }
+
         /// <summary>
         /// Make sure we jump correctly between matching token values of different types
         ///
