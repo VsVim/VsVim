@@ -2566,6 +2566,37 @@ namespace Vim.UnitTest
             Create("#if DEBUG", "#else", "#endif");
 
             _vimBuffer.Process("%");
+            Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(1), "checking that % does actually change lines at all");
+            _vimBuffer.Process("%");
+            _vimBuffer.Process("%");
+
+            Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void MatchingTokens_PreProcessorIfdefElse()
+        {
+            Create("#ifdef DEBUG", "#else", "#endif");
+            // move caret off of #if, otherwise it'll be covered by the previous functionaly and won't actually prove anything
+            _textView.MoveCaretTo(4); 
+
+            _vimBuffer.Process("%");
+            Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(1), "checking that % does actually change lines at all");
+            _vimBuffer.Process("%");
+            _vimBuffer.Process("%");
+
+            Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void MatchingTokens_PreProcessorIfndefElse()
+        {
+            Create("#ifndef DEBUG", "#else", "#endif");
+            // move caret off of #if, otherwise it'll be covered by the previous functionaly and won't actually prove anything
+            _textView.MoveCaretTo(4); 
+
+            _vimBuffer.Process("%");
+            Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(1), "checking that % does actually change lines at all");
             _vimBuffer.Process("%");
             _vimBuffer.Process("%");
 
