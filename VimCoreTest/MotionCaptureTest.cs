@@ -290,17 +290,17 @@ namespace Vim.UnitTest
         [Test]
         public void QuotedString()
         {
-            AssertMotion(@"a""", Motion.QuotedString);
-            AssertMotion("a'", Motion.QuotedString);
-            AssertMotion("a`", Motion.QuotedString);
+            AssertMotion(@"a""", Motion.NewQuotedString('"'));
+            AssertMotion("a'", Motion.NewQuotedString('\''));
+            AssertMotion("a`", Motion.NewQuotedString('`'));
         }
 
         [Test]
         public void QuotedStringContents1()
         {
-            AssertMotion(@"i""", Motion.QuotedStringContents);
-            AssertMotion("i'", Motion.QuotedStringContents);
-            AssertMotion("i`", Motion.QuotedStringContents);
+            AssertMotion(@"i""", Motion.NewQuotedString('"'));
+            AssertMotion("i'", Motion.NewQuotedString('\''));
+            AssertMotion("i`", Motion.NewQuotedString('`'));
         }
 
         [Test]

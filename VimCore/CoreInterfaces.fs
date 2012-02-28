@@ -705,10 +705,10 @@ type Motion =
     | ParagraphForward
 
     /// The quoted string including the quotes
-    | QuotedString
+    | QuotedString of char
 
     /// The quoted string excluding the quotes
-    | QuotedStringContents
+    | QuotedStringContents of char
 
     /// Repeat the last CharSearch value
     | RepeatLastCharSearch
