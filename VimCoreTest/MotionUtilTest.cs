@@ -1762,6 +1762,17 @@ namespace Vim.UnitTest
         }
 
         [Test]
+        public void QuotedString_ApostropheQuotes()
+        {
+            Create(@"""foo"" 'bar'");
+            var start = _snapshot.GetText().IndexOf('b');
+            _textView.MoveCaretTo(start);
+            var data = _motionUtil.QuotedString();
+            Assert.IsTrue(data.IsSome());
+            AssertData(data.Value, new SnapshotSpan(_snapshot, start - 2, 6), MotionKind.CharacterWiseInclusive);
+        }
+
+        [Test]
         public void QuotedStringContents1()
         {
             Create(@"""foo""");
