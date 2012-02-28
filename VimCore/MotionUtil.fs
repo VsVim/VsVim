@@ -968,7 +968,7 @@ type internal MotionUtil
             SnapshotSpan(startPoint, endPoint) |> Some
         | _ -> None
 
-    member x.GetQuotedStringData () = 
+    member x.GetQuotedStringData quoteChar = 
         let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine _textView
 
         // Find the quoted data structure from a given point on the line 
@@ -981,7 +981,7 @@ type internal MotionUtil
                     if point = caretLine.End then None
                     else
                         let c = SnapshotPointUtil.GetChar point
-                        if c = '\"' then
+                        if c = quoteChar then
                             if inEscape then inner (point.Add(1)) false 
                             else Some point
                         elif StringUtil.containsChar _localSettings.QuoteEscape c then 
@@ -2184,8 +2184,8 @@ type internal MotionUtil
             MotionKind = MotionKind.CharacterWiseExclusive
             MotionResultFlags = MotionResultFlags.None }
 
-    member x.QuotedString () = 
-        match x.GetQuotedStringData() with
+    member x.QuotedString quoteChar = 
+        match x.GetQuotedStringData quoteChar with
         | None -> None 
         | Some(data) -> 
             let span = 
@@ -2197,8 +2197,8 @@ type internal MotionUtil
                 MotionKind = MotionKind.CharacterWiseInclusive
                 MotionResultFlags = MotionResultFlags.None } |> Some
 
-    member x.QuotedStringContents () = 
-        match x.GetQuotedStringData() with
+    member x.QuotedStringContents quoteChar = 
+        match x.GetQuotedStringData quoteChar with
         | None -> None 
         | Some(data) ->
             let span = data.Contents
@@ -2458,8 +2458,8 @@ type internal MotionUtil
             | Motion.NextWord path -> x.NextWord path motionArgument.Count
             | Motion.ParagraphBackward -> x.ParagraphBackward motionArgument.Count |> Some
             | Motion.ParagraphForward -> x.ParagraphForward motionArgument.Count |> Some
-            | Motion.QuotedString -> x.QuotedString()
-            | Motion.QuotedStringContents -> x.QuotedStringContents()
+            | Motion.QuotedString quoteChar -> x.QuotedString quoteChar
+            | Motion.QuotedStringContents quoteChar -> x.QuotedStringContents quoteChar
             | Motion.RepeatLastCharSearch -> x.RepeatLastCharSearch()
             | Motion.RepeatLastCharSearchOpposite -> x.RepeatLastCharSearchOpposite()
             | Motion.Search patternData-> x.Search patternData motionArgument.Count
