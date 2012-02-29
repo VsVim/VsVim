@@ -298,9 +298,9 @@ namespace Vim.UnitTest
         [Test]
         public void QuotedStringContents1()
         {
-            AssertMotion(@"i""", Motion.NewQuotedString('"'));
-            AssertMotion("i'", Motion.NewQuotedString('\''));
-            AssertMotion("i`", Motion.NewQuotedString('`'));
+            AssertMotion(@"i""", Motion.NewQuotedStringContents('"'));
+            AssertMotion("i'", Motion.NewQuotedStringContents('\''));
+            AssertMotion("i`", Motion.NewQuotedStringContents('`'));
         }
 
         [Test]
