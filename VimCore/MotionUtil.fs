@@ -2298,13 +2298,20 @@ type internal MotionUtil
         // Next word motions should update the jump list
         _jumpList.Add x.CaretPoint
 
-        // Move forward along the line to find the first non-blank
+        // Pick the start point of the word.  If there are any words on this line after
+        // the caret then we choose them.  Else we stick with the first non-blank.
+        // 
+        // Note: The search for the word start is forward even if we are doing a 
+        // backward search
         let point =
-            x.CaretPoint
-            |> SnapshotPointUtil.GetPointsOnContainingLineFrom
-            |> Seq.filter (fun p -> not (SnapshotPointUtil.IsWhiteSpace p))
-            |> SeqUtil.tryHeadOnly
-            |> OptionUtil.getOrDefault x.CaretPoint
+            let points = SnapshotPointUtil.GetPointsOnContainingLineFrom x.CaretPoint
+            let isWordPoint point = 
+                let c = SnapshotPointUtil.GetChar point 
+                TextUtil.IsWordChar WordKind.NormalWord c
+
+            match points |> Seq.filter isWordPoint |> SeqUtil.tryHeadOnly with
+            | Some point -> point
+            | None -> points |> Seq.filter SnapshotPointUtil.IsNotBlank |> SeqUtil.headOrDefault x.CaretPoint
 
         match _wordUtil.GetFullWordSpan WordKind.NormalWord point with
         | None -> 

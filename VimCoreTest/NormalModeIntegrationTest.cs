@@ -1683,7 +1683,7 @@ namespace Vim.UnitTest
         /// The '*' movement should update the search history for the buffer
         /// </summary>
         [Test]
-        public void Move_NextWordUnderCursor()
+        public void Move_NextWord()
         {
             Create("cat", "dog", "cat");
             _vimBuffer.Process("*");
@@ -1695,7 +1695,7 @@ namespace Vim.UnitTest
         /// the whole word portion is not considered
         /// </summary>
         [Test]
-        public void Move_NextWordUnderCursor_NonWord()
+        public void Move_NextWord_NonWord()
         {
             Create("{", "cat", "{", "dog");
             _vimBuffer.Process('*');
@@ -1706,11 +1706,35 @@ namespace Vim.UnitTest
         /// The '*' motion should process multiple characters and properly match them
         /// </summary>
         [Test]
-        public void Move_NextWordUnderCursor_BigNonWord()
+        public void Move_NextWord_BigNonWord()
         {
             Create("{{", "cat{", "{{{{", "dog");
             _vimBuffer.Process('*');
             Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// If the caret is positioned an a non-word character but there is a word 
+        /// later on the line then the '*' should target that word
+        /// </summary>
+        [Test]
+        public void Move_NextWord_JumpToWord()
+        {
+            Create("{ try", "{", "try");
+            _vimBuffer.Process("*");
+            Assert.AreEqual(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// If the caret is positioned an a non-word character but there is a word 
+        /// later on the line then the 'g*' should target that word
+        /// </summary>
+        [Test]
+        public void Move_NextPartialWord_JumpToWord()
+        {
+            Create("{ try", "{", "trying");
+            _vimBuffer.Process("g*");
+            Assert.AreEqual(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
         }
 
         /// <summary>
@@ -3335,7 +3359,7 @@ namespace Vim.UnitTest
         /// Doing a * on a word that doesn't even match should still update the jump list
         /// </summary>
         [Test]
-        public void JumpList_NextWordUnderCursorWithNoMatch()
+        public void JumpList_NextWordWithNoMatch()
         {
             Create("cat", "dog", "fish");
             var didHit = false;
