@@ -705,10 +705,10 @@ type Motion =
     | ParagraphForward
 
     /// The quoted string including the quotes
-    | QuotedString
+    | QuotedString of char
 
     /// The quoted string excluding the quotes
-    | QuotedStringContents
+    | QuotedStringContents of char
 
     /// Repeat the last CharSearch value
     | RepeatLastCharSearch
@@ -1771,15 +1771,6 @@ type CommandData = {
         match x.Count with 
         | Some count -> count
         | None -> 1
-
-    /// Get the provided register name or the default name (Unnamed)
-    member x.RegisterNameOrDefault =
-        match x.RegisterName with
-        | Some name -> name
-        | None -> RegisterName.Unnamed
-
-    /// Get the applicable register
-    member x.GetRegister (map : IRegisterMap) = map.GetRegister x.RegisterNameOrDefault
 
 /// We want the NormalCommand discriminated union to have structural equality in order
 /// to ease testing requirements.  In order to do this and support Ping we need a 
@@ -2914,6 +2905,7 @@ module GlobalSettingNames =
 
     let BackspaceName = "backspace"
     let CaretOpacityName = "vsvimcaret"
+    let ClipboardName = "clipboard"
     let HighlightSearchName = "hlsearch"
     let HistoryName = "history"
     let IgnoreCaseName = "ignorecase"
@@ -2969,6 +2961,13 @@ type SettingEventArgs(_setting : Setting) =
 
     member x.Setting = _setting
 
+/// The options which can be set in the 'clipboard' setting
+type ClipboardOptions = 
+    | None = 0
+    | Unnamed = 0x1 
+    | AutoSelect = 0x2
+    | AutoSelectMl = 0x4
+
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property
 /// names tend to have more familiar camel case names
@@ -3003,6 +3002,13 @@ and IVimGlobalSettings =
     /// Opacity of the caret.  This must be an integer between values 0 and 100 which
     /// will be converted into a double for the opacity of the caret
     abstract CaretOpacity : int with get, set
+
+    /// The clipboard option.  Use the IsClipboard helpers for finding out if specific options 
+    /// are set
+    abstract Clipboard : string with get, set
+
+    /// The parsed set of clipboard options
+    abstract ClipboardOptions : ClipboardOptions
 
     /// Whether or not to highlight previous search patterns matching cases
     abstract HighlightSearch : bool with get,set

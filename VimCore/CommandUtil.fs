@@ -828,6 +828,20 @@ type internal CommandUtil
         _commonOperations.FormatLines result.LineRange
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Get the appropriate register for the CommandData
+    member x.GetRegister (commandData : CommandData) =
+        let name = 
+
+            match commandData.RegisterName with
+            | Some name -> name
+            | None ->
+                if Util.IsFlagSet _globalSettings.ClipboardOptions ClipboardOptions.Unnamed then
+                    RegisterName.SelectionAndDrop SelectionAndDropRegister.Register_Star
+                else
+                    RegisterName.Unnamed
+
+        _registerMap.GetRegister name
+
     /// Get the number value at the caret.  This is used for the CTRL-A and CTRL-X
     /// command so it will look forward on the current line for the first word
     member x.GetNumberValueAtCaret() : (NumberValue * SnapshotSpan) option= 
@@ -1793,7 +1807,8 @@ type internal CommandUtil
 
         let succeeded = 
             let point = x.CaretPoint
-            if (point.Position + count) > point.GetContainingLine().End.Position then
+            let line = point.GetContainingLine()
+            if (point.Position + count) > line.End.Position then
                 // If the replace operation exceeds the line length then the operation
                 // can't succeed
                 _commonOperations.Beep()
@@ -1804,14 +1819,18 @@ type internal CommandUtil
                 x.EditWithUndoTransaciton "ReplaceChar" (fun () -> 
 
                     let replaceText = 
-                        if keyInput = KeyInputUtil.EnterKey then EditUtil.NewLine _options
-                        else new System.String(keyInput.Char, count)
+                        if keyInput = KeyInputUtil.EnterKey then 
+                            let previousIndent = SnapshotLineUtil.GetIndentText line |> _commonOperations.NormalizeBlanks
+                            let replaceText = EditUtil.NewLine _options
+                            replaceText + previousIndent 
+                        else 
+                            new System.String(keyInput.Char, count)
                     let span = new Span(point.Position, count)
                     let snapshot = _textView.TextBuffer.Replace(span, replaceText) 
 
                     // The caret should move to the end of the replace operation which is 
                     // 'count - 1' characters from the original position 
-                    let point = SnapshotPoint(snapshot, point.Position + (count - 1))
+                    let point = SnapshotPoint(snapshot, point.Position + (replaceText.Length - 1))
 
                     _textView.Caret.MoveTo(point) |> ignore)
                 true
@@ -1959,7 +1978,7 @@ type internal CommandUtil
 
     /// Run a NormalCommand against the buffer
     member x.RunNormalCommand command (data : CommandData) =
-        let register = _registerMap.GetRegister data.RegisterNameOrDefault
+        let register = x.GetRegister data
         let count = data.CountOrDefault
         match command with
         | NormalCommand.AddToWord -> x.AddToWord count
@@ -2048,7 +2067,7 @@ type internal CommandUtil
         // reappear during an undo hence clear it now so it's gone.
         _textView.Selection.Clear()
 
-        let register = _registerMap.GetRegister data.RegisterNameOrDefault
+        let register = x.GetRegister data
         let count = data.CountOrDefault
         match command with
         | VisualCommand.ChangeCase kind -> x.ChangeCaseVisual kind visualSpan

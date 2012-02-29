@@ -2556,6 +2556,63 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// In issue #744 where there are 3 parts to the conditional, the caret is supposed to cycle through
+        /// (#if, #else, #end, #if), ... However, it actually only cycles between the last 
+        /// two (#if, #else, #end, #else)
+        /// </summary>
+        [Test]
+        public void MatchingTokens_PreProcessorIfElse()
+        {
+            Create("#if DEBUG", "#else", "#endif");
+
+            _vimBuffer.Process("%");
+            Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(1), "checking that % does actually change lines at all");
+            _vimBuffer.Process("%%");
+
+            Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void MatchingTokens_PreProcessorIfdefElse()
+        {
+            Create("#ifdef DEBUG", "#else", "#endif");
+            // move caret off of #if, otherwise it'll be covered by the previous functionaly and won't actually prove anything
+            _textView.MoveCaretTo(4); 
+
+            _vimBuffer.Process("%");
+            Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(1), "checking that % does actually change lines at all");
+            _vimBuffer.Process("%%");
+
+            Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void MatchingTokens_PreProcessorIfndefElse()
+        {
+            Create("#ifndef DEBUG", "#else", "#endif");
+            // move caret off of #if, otherwise it'll be covered by the previous functionaly and won't actually prove anything
+            _textView.MoveCaretTo(4); 
+
+            _vimBuffer.Process("%");
+            Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(1), "checking that % does actually change lines at all");
+            _vimBuffer.Process("%%");
+
+            Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void MatchingTokens_ItMatchesEvenWhenCaretIsAtTheEnd()
+        {
+            Create("#if DEBUG", "#endif");
+            // move caret off of #if, otherwise it'll be covered by the previous functionaly and won't actually prove anything
+            _textView.MoveCaretTo(6); 
+
+            _vimBuffer.Process("%");
+
+            Assert.That(_textView.GetCaretLine().LineNumber, Is.EqualTo(1));
+        }
+
+        /// <summary>
         /// Make sure we jump correctly between matching token values of different types
         ///
         /// TODO: This test is also broken due to the matching case not being able to 
@@ -3220,6 +3277,33 @@ namespace Vim.UnitTest
             Create("cat", "dog", "bear");
             _vimBuffer.Process("y2iw");
             Assert.AreEqual("cat" + Environment.NewLine + "dog", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Make sure a yank goes to the clipboard if we don't specify a register and the 
+        /// unnamed option is set
+        /// </summary>
+        [Test]
+        public void Yank_Unnamed_GoToClipboardIfOptionSet()
+        {
+            Create("cat", "dog");
+            _globalSettings.Clipboard = "unnamed,autoselect";
+            _vimBuffer.Process("yaw");
+            Assert.AreEqual("cat", ClipboardDevice.Text);
+        }
+
+        /// <summary>
+        /// Make sure a yank goes to unnamed if the register is explicitly specified even if the
+        /// unnamed option is set in 'clipboard'
+        /// </summary>
+        [Test]
+        public void Yank_Unnamed_ExplicitBypassesClipboardOption()
+        {
+            Create("cat", "dog");
+            _globalSettings.Clipboard = "unnamed,autoselect";
+            _vimBuffer.Process("\"\"yaw");
+            Assert.AreEqual("", ClipboardDevice.Text);
+            Assert.AreEqual("cat", UnnamedRegister.StringValue);
         }
 
         /// <summary>

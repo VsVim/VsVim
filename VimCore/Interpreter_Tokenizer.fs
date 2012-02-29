@@ -170,17 +170,23 @@ type internal Tokenizer
     let mutable _currentToken = Token(_text, 0, 0, TokenKind.EndOfLine)
 
     do
-        this.MakeCurrentToken 0 NextTokenFlags.None
+        this.MoveToIndexEx 0 NextTokenFlags.None
 
     member x.CurrentToken = _currentToken
 
     member x.CurrentTokenKind = _currentToken.TokenKind
 
+    member x.CurrentChar = 
+        if x.IsAtEndOfLine || _currentToken.StartIndex >= _text.Length then
+            None
+        else
+            Some _text.[_currentToken.StartIndex]
+
     member x.IsAtEndOfLine = x.CurrentTokenKind = TokenKind.EndOfLine
 
     member x.Index = _currentToken.StartIndex
 
-    member x.MakeCurrentToken startIndex flags = 
+    member x.MoveToIndexEx startIndex flags = 
         if startIndex >= _tokenStream.Length then
 
             // Make the current token the end of the line if it's not already so since
@@ -201,11 +207,16 @@ type internal Tokenizer
                 length,
                 tokenKind)
 
+    member x.MoveToIndex startIndex = x.MoveToIndexEx startIndex NextTokenFlags.None
+
     member x.MoveNextTokenEx flags = 
         let index = _currentToken.StartIndex + _currentToken.Length
-        x.MakeCurrentToken index flags
+        x.MoveToIndexEx index flags
 
     member x.MoveNextToken() = x.MoveNextTokenEx NextTokenFlags.None
 
-    member x.Rewind index = x.MakeCurrentToken index NextTokenFlags.None
+    member x.MoveNextCharEx flags = x.MoveToIndexEx (_currentToken.StartIndex + 1) flags
+
+    member x.MoveNextChar() = x.MoveNextCharEx NextTokenFlags.None
+
 

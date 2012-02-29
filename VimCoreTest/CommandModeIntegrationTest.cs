@@ -27,6 +27,11 @@ namespace Vim.UnitTest
             _vimBuffer.Process(':');
             _vimBuffer.Process(command, enter: true);
         }
+
+        protected void RunCommandRaw(string command)
+        {
+            _vimBuffer.Process(command, enter: true);
+        }
     }
 
     /// <summary>
@@ -416,6 +421,49 @@ namespace Vim.UnitTest
             Assert.IsTrue(didHit);
         }
 
+        /// <summary>
+        /// Covers #763 where the default search for substitute uses the last substitute
+        /// instead of the last search
+        /// </summary>
+        [Test]
+        public void SubstituteThenSearchThenSubstitute_UsesPatternFromLastSearch()
+        {
+            Create("foo", "bar");
+            
+            RunCommandRaw(":%s/foo/foos");
+            RunCommandRaw("/bar");
+            RunCommandRaw(":%s//baz");
+
+            Assert.That(_textView.GetLine(1).Extent.GetText(), Is.EqualTo("baz"));
+        }
+
+        [Test]
+        public void SubstituteThenSearchThenSubstitute_UsesPatternFromLastSubstitute()
+        {
+            Create("foo foo foo");
+            
+            RunCommandRaw(":%s/foo/bar");
+            RunCommandRaw("/bar");
+            // Do same substitute as the last substitute, but global this time
+            RunCommandRaw(":%&g");
+
+            Assert.That(_textView.GetLine(0).Extent.GetText(), Is.EqualTo("bar bar bar"));
+        }
+
+        /// <summary>
+        /// Baseline to make sure I don't break anything while fixing #763
+        /// </summary>
+        [Test]
+        public void SubstituteThenSubstitute_UsesPatternFromLastSubstitute()
+        {
+            Create("foo", "bar");
+            
+            RunCommandRaw(":%s/foo/foos");
+            RunCommandRaw(":%s//baz");
+
+            Assert.That(_textView.GetLine(0).Extent.GetText(), Is.EqualTo("bazs"));
+        }
+
         [Test]
         public void SwitchTo()
         {
@@ -439,6 +487,16 @@ namespace Vim.UnitTest
             _vimBuffer.Process(':');
             _vimBuffer.Process(VimKey.Back);
             Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
+        }
+
+        [Test]
+        public void Yank_WithRange()
+        {
+            Create("cat", "dog", "fish");
+            _vimBuffer.VimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.A), 0, 0);
+            _vimBuffer.VimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.B), 1, 0);
+            RunCommand("'a,'by");
+            Assert.AreEqual("cat" + Environment.NewLine + "dog" + Environment.NewLine, Vim.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
         }
 
     }

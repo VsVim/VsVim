@@ -1,4 +1,5 @@
 ﻿using NUnit.Framework;
+using Vim.Extensions;
 using Vim.Interpreter;
 
 namespace Vim.UnitTest
@@ -11,6 +12,34 @@ namespace Vim.UnitTest
         public void Create(string line)
         {
             _tokenizer = new Tokenizer(line);
+        }
+
+        [Test]
+        public void CurrentChar_WordStart()
+        {
+            Create("hello world");
+            Assert.AreEqual('h', _tokenizer.CurrentChar.Value);
+        }
+
+        /// <summary>
+        /// CurrentChar should work for all token types
+        /// </summary>
+        [Test]
+        public void CurrentChar_Digit()
+        {
+            Create("42 world");
+            Assert.AreEqual('4', _tokenizer.CurrentChar.Value);
+        }
+
+        /// <summary>
+        /// There is no CurrentChar when we are at the end of the line
+        /// </summary>
+        [Test]
+        public void CurrentChar_EndOfLine()
+        {
+            Create("hello");
+            _tokenizer.MoveNextToken();
+            Assert.IsTrue(_tokenizer.CurrentChar.IsNone());
         }
 
         /// <summary>
@@ -45,16 +74,71 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Make sure it advances past the first character and rebuilds a new Word
+        /// </summary>
+        [Test]
+        public void MoveNextChar_Word()
+        {
+            Create("cat dog");
+            _tokenizer.MoveNextChar();
+            Assert.IsTrue(_tokenizer.CurrentTokenKind.IsWord);
+            Assert.AreEqual("at", _tokenizer.CurrentToken.TokenText);
+        }
+
+        /// <summary>
+        /// The MoveNextChar should rebuild the token based off of the new index even if 
+        /// it's a new token kind
+        /// </summary>
+        [Test]
+        public void MoveNextChar_TokenChange()
+        {
+            Create("a dog");
+            _tokenizer.MoveNextChar();
+            Assert.IsTrue(_tokenizer.CurrentTokenKind.IsBlank);
+            Assert.AreEqual(" ", _tokenizer.CurrentToken.TokenText);
+        }
+
+        /// <summary>
+        /// Make sure it advances past the first character and rebuilds a digit
+        /// </summary>
+        [Test]
+        public void MoveNextChar_Number()
+        {
+            Create("42 dog");
+            _tokenizer.MoveNextChar();
+            Assert.IsTrue(_tokenizer.CurrentTokenKind.IsNumber);
+            Assert.AreEqual("2", _tokenizer.CurrentToken.TokenText);
+        }
+
+        /// <summary>
         /// Rewind to the end of the line should put you back at the end of the line
         /// </summary>
         [Test]
-        public void Rewind_EndOfLine()
+        public void MoveToIndex_EndOfLine()
         {
             Create("bird");
             _tokenizer.MoveNextToken();
             Assert.IsTrue(_tokenizer.CurrentTokenKind.IsEndOfLine);
-            _tokenizer.Rewind(_tokenizer.Index);
+            _tokenizer.MoveToIndex(_tokenizer.Index);
             Assert.IsTrue(_tokenizer.CurrentTokenKind.IsEndOfLine);
+        }
+
+        /// <summary>
+        /// It's possible that we want to re-examine the end of line character should it
+        /// end in a comment after we've already gotten there.  Useful when parsing out string
+        /// constants
+        /// </summary>
+        [Test]
+        public void MoveToIndex_TokenizeEndOfLine()
+        {
+            Create(@"42 "" again");
+            _tokenizer.MoveNextToken();
+            _tokenizer.MoveNextToken();
+            Assert.IsTrue(_tokenizer.IsAtEndOfLine);
+            Assert.IsTrue(_tokenizer.CurrentChar.IsNone());
+            _tokenizer.MoveToIndexEx(_tokenizer.Index, NextTokenFlags.AllowDoubleQuote);
+            Assert.AreEqual('"', _tokenizer.CurrentChar.Value);
+            Assert.IsTrue(_tokenizer.CurrentTokenKind.IsCharacter);
         }
     }
 }

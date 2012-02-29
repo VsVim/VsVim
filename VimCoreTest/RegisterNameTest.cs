@@ -45,5 +45,14 @@ namespace Vim.UnitTest
             Assert.AreEqual(74, RegisterName.All.Count());
         }
 
+        /// <summary>
+        /// It's the default if unnamed but does have the exlicit name "
+        /// </summary>
+        [Test]
+        public void Unnamed()
+        {
+            Assert.AreEqual('"', RegisterName.Unnamed.Char.Value);
+            Assert.AreEqual(RegisterName.Unnamed, RegisterNameUtil.CharToRegister('"').Value);
+        }
     }
 }

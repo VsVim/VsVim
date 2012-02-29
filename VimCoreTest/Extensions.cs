@@ -26,6 +26,22 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region CommandData
+
+        public static RegisterName GetRegisterNameOrDefault(this CommandData commandData)
+        {
+            return commandData.RegisterName.IsSome()
+                ? commandData.RegisterName.Value
+                : RegisterName.Unnamed;
+        }
+
+        public static Register GetRegister(this CommandData commandData, IRegisterMap registerMap)
+        {
+            return registerMap.GetRegister(commandData.GetRegisterNameOrDefault());
+        }
+
+        #endregion
+
         #region VisualSelection
 
         public static void SelectAndMoveCaret(this VisualSelection selection, ITextView textView)
@@ -307,6 +323,18 @@ namespace Vim.UnitTest
         public static bool IsFailed<T>(this ParseResult<T> parseResult, string message)
         {
             return parseResult.IsFailed && message == parseResult.AsFailed().Item;
+        }
+
+        #endregion
+
+        #region Expression
+
+        /// <summary>
+        /// Get the suceeded version of the Expression
+        /// </summary>
+        public static Expression.ConstantValue AsConstantValue(this Expression expr)
+        {
+            return (Expression.ConstantValue)expr;
         }
 
         #endregion

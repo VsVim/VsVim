@@ -124,6 +124,7 @@ type internal GlobalSettings() =
         [|
             (BackspaceName, "bs", StringKind, StringValue "")
             (CaretOpacityName, CaretOpacityName, NumberKind, NumberValue(65))
+            (ClipboardName, "cb", StringKind, StringValue "")
             (HighlightSearchName, "hls", ToggleKind, ToggleValue(false))
             (HistoryName, "hi", NumberKind, NumberValue(Constants.DefaultHistoryLength))
             (IncrementalSearchName, "is", ToggleKind, ToggleValue(false))
@@ -169,6 +170,16 @@ type internal GlobalSettings() =
         | "old" -> SelectionKind.Exclusive
         | _ -> SelectionKind.Exclusive
 
+    member x.ClipboardOptions = 
+        _map.GetStringValue ClipboardName
+        |> StringUtil.split ','
+        |> Seq.fold (fun options current ->
+            match current with 
+            | "unnamed" -> options ||| ClipboardOptions.Unnamed
+            | "autoselect" -> options ||| ClipboardOptions.AutoSelect
+            | "autoselectml" -> options ||| ClipboardOptions.AutoSelectMl
+            | _ -> options) ClipboardOptions.None
+
     interface IVimGlobalSettings with
         // IVimSettings
 
@@ -184,6 +195,10 @@ type internal GlobalSettings() =
         member x.CaretOpacity
             with get() = _map.GetNumberValue CaretOpacityName
             and set value = _map.TrySetValue CaretOpacityName (NumberValue(value)) |> ignore
+        member x.Clipboard
+            with get() = _map.GetStringValue ClipboardName
+            and set value = _map.TrySetValue ClipboardName (StringValue value) |> ignore
+        member x.ClipboardOptions = x.ClipboardOptions
         member x.HighlightSearch
             with get() = _map.GetBoolValue HighlightSearchName
             and set value = _map.TrySetValue HighlightSearchName (ToggleValue(value)) |> ignore

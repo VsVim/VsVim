@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
 using System.IO;
+using System.Linq;
 using EditorUtils.UnitTest.Utils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
+using Microsoft.VisualStudio.Text.Projection;
 using Microsoft.VisualStudio.Utilities;
 using NUnit.Framework;
-using System.Linq;
 
 namespace EditorUtils.UnitTest
 {
@@ -48,6 +49,7 @@ namespace EditorUtils.UnitTest
         private CompositionContainer _compositionContainer;
         private ITextBufferFactoryService _textBufferFactoryService;
         private ITextEditorFactoryService _textEditorFactoryService;
+        private IProjectionBufferFactoryService _projectionBufferFactoryService;
         private ISmartIndentationService _smartIndentationService;
         private IEditorOperationsFactoryService _editorOperationsFactoryService;
         private IEditorOptionsFactoryService _editorOptionsFactoryService;
@@ -71,6 +73,11 @@ namespace EditorUtils.UnitTest
         protected ITextEditorFactoryService TextEditorFactoryService
         {
             get { return _textEditorFactoryService; }
+        }
+
+        protected IProjectionBufferFactoryService ProjectionBufferFactoryService
+        {
+            get { return _projectionBufferFactoryService; }
         }
 
         protected IEditorOperationsFactoryService EditorOperationsFactoryService
@@ -119,6 +126,7 @@ namespace EditorUtils.UnitTest
             _compositionContainer = GetOrCreateCompositionContainer();
             _textBufferFactoryService = _compositionContainer.GetExportedValue<ITextBufferFactoryService>();
             _textEditorFactoryService = _compositionContainer.GetExportedValue<ITextEditorFactoryService>();
+            _projectionBufferFactoryService = _compositionContainer.GetExportedValue<IProjectionBufferFactoryService>();
             _smartIndentationService = _compositionContainer.GetExportedValue<ISmartIndentationService>();
             _editorOperationsFactoryService = _compositionContainer.GetExportedValue<IEditorOperationsFactoryService>();
             _editorOptionsFactoryService = _compositionContainer.GetExportedValue<IEditorOptionsFactoryService>();
@@ -142,6 +150,25 @@ namespace EditorUtils.UnitTest
         protected ITextBuffer CreateTextBuffer(params string[] lines)
         {
             return _textBufferFactoryService.CreateTextBuffer(lines);
+        }
+
+        /// <summary>
+        /// Create a simple IProjectionBuffer from the specified SnapshotSpan values
+        /// </summary>
+        protected IProjectionBuffer CreateProjectionBuffer(params SnapshotSpan[] spans)
+        {
+            var list = new List<object>();
+            foreach (var span in spans)
+            {
+                var snapshot = span.Snapshot;
+                var trackingSpan = snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeInclusive);
+                list.Add(trackingSpan);
+            }
+
+            return ProjectionBufferFactoryService.CreateProjectionBuffer(
+                null,
+                list,
+                ProjectionBufferOptions.None);
         }
 
         /// <summary>
