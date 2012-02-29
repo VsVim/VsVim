@@ -1721,9 +1721,36 @@ namespace Vim.UnitTest
             public void ItFavorsTrailingWhitespaceOverLeading()
             {
                 Create(@"  ""foo""  ");
+
                 var data = _motionUtil.QuotedString('"');
+
                 Assert.IsTrue(data.IsSome());
                 AssertData(data.Value, new SnapshotSpan(_snapshot, 2, 7), MotionKind.CharacterWiseInclusive);
+                Assert.That(data.Value.Span.GetText(), Is.EqualTo(@"""foo""  "));
+            }
+
+            [Test]
+            public void WhenFavoringTrailingSpace_ItActuallyLooksAtTheFirstCharAfterTheEndQuote()
+            {
+                Create(@"  ""foo""X ");
+                var start = _snapshot.GetText().IndexOf('f');
+                _textView.MoveCaretTo(start);
+
+                var data = _motionUtil.QuotedString('"');
+                
+                Assert.That(data.Value.Span.GetText(), Is.EqualTo(@"  ""foo"""));
+            }
+
+            [Test]
+            public void ItFavorsTrailingWhitespaceOverLeading_WithOnlyOneTrailingSpace()
+            {
+                Create(@"  ""foo"" ");
+                var start = _snapshot.GetText().IndexOf('f');
+                _textView.MoveCaretTo(start);
+
+                var data = _motionUtil.QuotedString('"');
+                
+                Assert.That(data.Value.Span.GetText(), Is.EqualTo(@"""foo"" "));
             }
 
             [Test]
@@ -1731,7 +1758,9 @@ namespace Vim.UnitTest
             public void ItIgnoresEscapedQuotes()
             {
                 Create(@"""foo\""""");
+
                 var data = _motionUtil.QuotedString('"');
+
                 Assert.IsTrue(data.IsSome());
                 AssertData(data.Value, new SnapshotSpan(_snapshot, 0, 7), MotionKind.CharacterWiseInclusive);
             }
@@ -1787,6 +1816,7 @@ namespace Vim.UnitTest
                 Assert.IsTrue(data.IsSome());
                 AssertData(data.Value, new SnapshotSpan(_snapshot, start - 2, 6), MotionKind.CharacterWiseInclusive);
             }
+
         }
 
         [Test]
