@@ -1028,12 +1028,14 @@ type internal MotionUtil
     
                         let start = SnapshotPointUtil.AddOne secondQuote
                         let rec inner endPoint =
-                            if isNextWhiteSpace endPoint then endPoint |> SnapshotPointUtil.AddOne |> inner
-                            elif endPoint = start then SnapshotSpanUtil.CreateEmpty start
+                            if isNextWhiteSpace endPoint then 
+                                endPoint |> SnapshotPointUtil.AddOne |> inner
+                            elif endPoint = (start - 1) then 
+                                SnapshotSpanUtil.CreateEmpty start
                             else 
                                 let endPoint = SnapshotPointUtil.AddOne endPoint
                                 SnapshotSpanUtil.Create start endPoint
-                        inner start
+                        inner (start - 1)
 
                     {
                         LeadingWhiteSpace = leadingSpan
@@ -2189,8 +2191,10 @@ type internal MotionUtil
         | None -> None 
         | Some(data) -> 
             let span = 
-                if not data.TrailingWhiteSpace.IsEmpty then SnapshotSpanUtil.Create data.LeadingQuote data.TrailingWhiteSpace.End
-                else SnapshotSpanUtil.Create data.LeadingWhiteSpace.Start data.TrailingWhiteSpace.Start
+                if not data.TrailingWhiteSpace.IsEmpty then
+                    SnapshotSpanUtil.Create data.LeadingQuote data.TrailingWhiteSpace.End
+                else 
+                    SnapshotSpanUtil.Create data.LeadingWhiteSpace.Start data.TrailingWhiteSpace.Start
             {
                 Span = span 
                 IsForward = true 
