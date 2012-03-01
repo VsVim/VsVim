@@ -680,6 +680,20 @@ namespace Vim.UnitTest
             Assert.That(_vimData.CurrentDirectory, Is.EqualTo(parentDirectory.ToString()));
         }
 
+        [Test]
+        public void RunChangeLocalDirectory_ItCanChangeToParentDirectory()
+        {
+            Create();
+            var cwd = _vimData.CurrentDirectory;
+
+            var result = _interpreter.RunChangeLocalDirectory(FSharpOption.Create(".."));
+            
+            Assert.That(result, Is.EqualTo(RunResult.Completed));
+            var parentDirectory = Directory.GetParent(cwd);
+            cwd = _vimBuffer.CurrentDirectory.Value;
+            Assert.That(cwd, Is.EqualTo(parentDirectory.ToString()));
+        }
+
         /// <summary>
         /// Print out the modified settings
         /// </summary>
