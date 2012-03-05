@@ -488,18 +488,22 @@ type Parser
     member x.ParseCopyTo sourceLineRange = 
         x.SkipBlanks()
         let destinationLineRange = x.ParseLineRange()
+        x.SkipBlanks()
+        let count = x.ParseNumber()
         match destinationLineRange with
         | LineRangeSpecifier.None -> ParseResult.Failed Resources.Common_InvalidAddress
-        | _ -> LineCommand.CopyTo (sourceLineRange, destinationLineRange) |> ParseResult.Succeeded
+        | _ -> LineCommand.CopyTo (sourceLineRange, destinationLineRange, count) |> ParseResult.Succeeded
 
     /// Parse out the :copy command.  It has a single required argument that is the destination
     /// address
     member x.ParseMoveTo sourceLineRange = 
         x.SkipBlanks()
         let destinationLineRange = x.ParseLineRange()
+        x.SkipBlanks()
+        let count = x.ParseNumber()
         match destinationLineRange with
         | LineRangeSpecifier.None -> ParseResult.Failed Resources.Common_InvalidAddress
-        | _ -> LineCommand.MoveTo (sourceLineRange, destinationLineRange) |> ParseResult.Succeeded
+        | _ -> LineCommand.MoveTo (sourceLineRange, destinationLineRange, count) |> ParseResult.Succeeded
 
     /// Parse out the :delete command
     member x.ParseDelete lineRange = 
