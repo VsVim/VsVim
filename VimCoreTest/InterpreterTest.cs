@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using EditorUtils;
 using EditorUtils.UnitTest;
@@ -664,6 +665,33 @@ namespace Vim.UnitTest
             ParseAndRun("retab!");
             Assert.AreEqual("\tcat", _textBuffer.GetLine(0).GetText());
             Assert.AreEqual("\tdog", _textBuffer.GetLine(1).GetText());
+        }
+
+        [Test]
+        public void RunChangeDirectory_ItCanChangeToParentDirectory()
+        {
+            Create();
+            var cwd = _vimData.CurrentDirectory;
+
+            var result = _interpreter.RunChangeDirectory(FSharpOption.Create(".."));
+            
+            Assert.That(result, Is.EqualTo(RunResult.Completed));
+            var parentDirectory = Directory.GetParent(cwd);
+            Assert.That(_vimData.CurrentDirectory, Is.EqualTo(parentDirectory.ToString()));
+        }
+
+        [Test]
+        public void RunChangeLocalDirectory_ItCanChangeToParentDirectory()
+        {
+            Create();
+            var cwd = _vimData.CurrentDirectory;
+
+            var result = _interpreter.RunChangeLocalDirectory(FSharpOption.Create(".."));
+            
+            Assert.That(result, Is.EqualTo(RunResult.Completed));
+            var parentDirectory = Directory.GetParent(cwd);
+            cwd = _vimBuffer.CurrentDirectory.Value;
+            Assert.That(cwd, Is.EqualTo(parentDirectory.ToString()));
         }
 
         /// <summary>
