@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using EditorUtils;
 using EditorUtils.UnitTest;
@@ -93,7 +94,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretToLine(2);
                 ParseAndRun("co 1");
                 CollectionAssert.AreEqual(
-                    new [] { "cat", "fish", "dog", "fish", "tree" },
+                    new[] { "cat", "fish", "dog", "fish", "tree" },
                     _textBuffer.GetLines().ToArray());
                 Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
             }
@@ -109,7 +110,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretToLine(3);
                 ParseAndRun("co 1,3");
                 CollectionAssert.AreEqual(
-                    new [] { "cat", "tree", "dog", "fish", "tree" },
+                    new[] { "cat", "tree", "dog", "fish", "tree" },
                     _textBuffer.GetLines().ToArray());
                 Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
             }
@@ -124,7 +125,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretToLine(4);
                 ParseAndRun("co 1 2");
                 CollectionAssert.AreEqual(
-                    new [] { "cat", "dog", "fish", "tree", "bear", "tree" },
+                    new[] { "cat", "dog", "fish", "tree", "bear", "tree" },
                     _textBuffer.GetLines().ToArray());
                 Assert.AreEqual(_textBuffer.GetLine(3).Start, _textView.GetCaretPoint());
             }
@@ -139,7 +140,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretToLine(4);
                 ParseAndRun("co 1,3 2");
                 CollectionAssert.AreEqual(
-                    new [] { "cat", "tree", "dog", "fish", "bear", "tree" },
+                    new[] { "cat", "tree", "dog", "fish", "bear", "tree" },
                     _textBuffer.GetLines().ToArray());
                 Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
             }
@@ -586,23 +587,9 @@ namespace Vim.UnitTest
                         {
                             Assert.IsTrue(_keyMap.MapWithNoRemap("a", "b", keyRemapMode));
                         }
-
-                        ParseAndRun(command);
-
-                        foreach (var keyRemapMode in KeyRemapMode.All)
-                        {
-                            if (toClearModes.Contains(keyRemapMode))
-                            {
-                                Assert.IsFalse(_keyMap.GetKeyMappingsForMode(keyRemapMode).Any());
-                            }
-                            else
-                            {
-                                Assert.IsTrue(_keyMap.GetKeyMappingsForMode(keyRemapMode).Any());
-                            }
-                        }
-
-                        _keyMap.ClearAll();
                     };
+
+                _keyMap.ClearAll();
 
                 Create("");
                 testMapClear("mapc", new[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Command, KeyRemapMode.OperatorPending });
@@ -616,47 +603,6 @@ namespace Vim.UnitTest
                 testMapClear("cmapc", new[] { KeyRemapMode.Command });
             }
 
-            /// <summary>
-            /// Test the ability to print out the key mappings
-            /// </summary>
-            [Test]
-            public void MapKeys_Print()
-            {
-                Action<string, string> assertPrintMap =
-                    (input, output) =>
-                    {
-                        Vim.KeyMap.MapWithNoRemap(input, input, KeyRemapMode.Normal);
-                        ParseAndRun("nmap");
-                        var expected = String.Format("n    {0} {0}", output);
-                        Assert.AreEqual(expected, _statusUtil.LastStatus);
-                        Vim.KeyMap.ClearAll();
-                    };
-
-                Create("");
-
-                assertPrintMap("a", "a");
-                assertPrintMap("b", "b");
-                assertPrintMap("A", "A");
-                assertPrintMap("<S-a>", "A");
-                assertPrintMap("<S-A>", "A");
-                assertPrintMap("<c-a>", "<C-A>");
-                assertPrintMap("<c-S-a>", "<C-A>");
-                assertPrintMap("<Esc>", "<Esc>");
-                assertPrintMap("<c-[>", "<Esc>");
-                assertPrintMap("<c-@>", "<Nul>");
-                assertPrintMap("<Tab>", "<Tab>");
-                assertPrintMap("<c-i>", "<Tab>");
-                assertPrintMap("<c-h>", "<C-H>");
-                assertPrintMap("<BS>", "<BS>");
-                assertPrintMap("<NL>", "<NL>");
-                assertPrintMap("<c-j>", "<NL>");
-                assertPrintMap("<c-l>", "<C-L>");
-                assertPrintMap("<FF>", "<FF>");
-                assertPrintMap("<c-m>", "<CR>");
-                assertPrintMap("<CR>", "<CR>");
-                assertPrintMap("<Return>", "<CR>");
-                assertPrintMap("<Enter>", "<CR>");
-            }
 
             [Test]
             public void PrintCurrentDirectory_Global()
@@ -848,7 +794,7 @@ namespace Vim.UnitTest
                 Create("");
                 var didRun = false;
                 VimHost.RunCommandFunc =
-                    (command, args) =>
+                    (command, args, _) =>
                     {
                         Assert.AreEqual("/c git status", args);
                         didRun = true;
@@ -868,7 +814,7 @@ namespace Vim.UnitTest
                 Vim.VimData.LastShellCommand = FSharpOption.Create("cat");
                 var didRun = false;
                 VimHost.RunCommandFunc =
-                    (command, args) =>
+                    (command, args, _) =>
                     {
                         Assert.AreEqual("/c git status cat", args);
                         didRun = true;
@@ -887,7 +833,7 @@ namespace Vim.UnitTest
                 Create("");
                 var didRun = false;
                 VimHost.RunCommandFunc =
-                    (command, args) =>
+                    (command, args, _) =>
                     {
                         Assert.AreEqual("/c git status !", args);
                         didRun = true;

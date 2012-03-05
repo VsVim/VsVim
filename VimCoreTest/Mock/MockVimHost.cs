@@ -26,7 +26,7 @@ namespace Vim.UnitTest.Mock
         public bool? IsTextViewVisible { get; set; }
         public Func<ITextView, InsertCommand, bool> TryCustomProcessFunc { get; set; }
         public Func<ITextView> CreateHiddenTextViewFunc { get; set; }
-        public Func<string, string, string> RunCommandFunc { get; set; }
+        public Func<string, string, IVimData, string> RunCommandFunc { get; set; }
         public Action<string, string> RunVisualStudioCommandFunc { get; set; }
 
         /// <summary>
@@ -194,9 +194,9 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        string IVimHost.RunCommand(string command, string arguments)
+        string IVimHost.RunCommand(string command, string arguments, IVimData vimData)
         {
-            return RunCommandFunc(command, arguments);
+            return RunCommandFunc(command, arguments, vimData);
         }
 
         void IVimHost.RunVisualStudioCommand(string command, string argument)

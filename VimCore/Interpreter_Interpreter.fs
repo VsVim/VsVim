@@ -258,9 +258,12 @@ type Interpreter
             // cd is given no options
             _statusUtil.OnStatus x.CurrentDirectory
         | Some directoryPath ->
-            if not (System.IO.Path.IsPathRooted directoryPath) then
-                _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "Relative paths")
-            elif not (System.IO.Directory.Exists directoryPath) then
+            let directoryPath = 
+                if not (System.IO.Path.IsPathRooted directoryPath) then
+                    System.IO.Path.GetFullPath(System.IO.Path.Combine(_vimData.CurrentDirectory, directoryPath))
+                else directoryPath
+
+            if not (System.IO.Directory.Exists directoryPath) then
                 // Not a fan of this function but we need to emulate the Vim behavior here
                 _statusUtil.OnError (Resources.Interpreter_CantFindDirectory directoryPath)
             else
@@ -277,9 +280,12 @@ type Interpreter
             // cd is given no options
             _statusUtil.OnStatus x.CurrentDirectory
         | Some directoryPath ->
-            if not (System.IO.Path.IsPathRooted directoryPath) then
-                _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "Relative paths")
-            elif not (System.IO.Directory.Exists directoryPath) then
+            let directoryPath = 
+                if not (System.IO.Path.IsPathRooted directoryPath) then
+                    System.IO.Path.GetFullPath(System.IO.Path.Combine(_vimData.CurrentDirectory, directoryPath))
+                else directoryPath
+
+            if not (System.IO.Directory.Exists directoryPath) then
                 // Not a fan of this function but we need to emulate the Vim behavior here
                 _statusUtil.OnError (Resources.Interpreter_CantFindDirectory directoryPath)
             else
@@ -1042,7 +1048,7 @@ type Interpreter
         let doRun command = 
 
             let file = _globalSettings.Shell
-            let output = _vimHost.RunCommand _globalSettings.Shell command
+            let output = _vimHost.RunCommand _globalSettings.Shell command _vimData
             _statusUtil.OnStatus output
 
         // Build up the actual command replacing any non-escaped ! with the previous

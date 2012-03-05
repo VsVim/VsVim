@@ -229,13 +229,16 @@ namespace Vim.UI.Wpf
         /// <summary>
         /// Run the specified command, capture it's output and return it to the caller
         /// </summary>
-        public virtual string RunCommand(string command, string arguments)
+        public virtual string RunCommand(string command, string arguments, IVimData vimdata)
         {
-            var startInfo = new ProcessStartInfo();
-            startInfo.FileName = command;
-            startInfo.Arguments = arguments;
-            startInfo.RedirectStandardOutput = true;
-            startInfo.UseShellExecute = false;
+            var startInfo = new ProcessStartInfo
+                                {
+                                    FileName = command,
+                                    Arguments = arguments,
+                                    RedirectStandardOutput = true,
+                                    UseShellExecute = false,
+                                    WorkingDirectory = vimdata.CurrentDirectory
+                                };
             try
             {
                 var process = Process.Start(startInfo);
@@ -442,9 +445,9 @@ namespace Vim.UI.Wpf
             return Reload(value);
         }
 
-        string IVimHost.RunCommand(string command, string arguments)
+        string IVimHost.RunCommand(string command, string arguments, IVimData vimData)
         {
-            return RunCommand(command, arguments);
+            return RunCommand(command, arguments, vimData);
         }
 
         void IVimHost.RunVisualStudioCommand(string command, string argument)
