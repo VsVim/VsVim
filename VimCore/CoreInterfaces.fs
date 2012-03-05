@@ -3239,6 +3239,55 @@ type internal IHistoryClient<'TData, 'TResult> =
     /// be provided
     abstract Cancelled : 'TData -> unit
 
+/// Represents shared state which is available to all IVimBuffer instances.
+type IVimData = 
+
+    /// The current directory Vim is positioned in
+    abstract CurrentDirectory : string with get, set
+
+    /// The history of the : command list
+    abstract CommandHistory : HistoryList with get, set
+
+    /// The ordered list of incremental search values
+    abstract SearchHistory : HistoryList with get, set
+
+    /// Motion function used with the last f, F, t or T motion.  The 
+    /// first item in the tuple is the forward version and the second item
+    /// is the backwards version
+    abstract LastCharSearch : (CharSearchKind * Path * char) option with get, set
+
+    /// The last command which was ran 
+    abstract LastCommand : StoredCommand option with get, set
+
+    /// The last shell command that was run
+    abstract LastShellCommand : string option with get, set
+
+    /// The last macro register which was run
+    abstract LastMacroRun : char option with get, set
+
+    /// Last pattern searched for in any buffer.
+    abstract LastPatternData : PatternData with get, set
+
+    /// Data for the last substitute command performed
+    abstract LastSubstituteData : SubstituteData option with get, set
+
+    /// The previous value of the current directory Vim is positioned in
+    abstract PreviousCurrentDirectory : string
+
+    /// Raise the highlight search one time disabled event
+    abstract RaiseHighlightSearchOneTimeDisable : unit -> unit
+
+    /// Raise the search occurred event
+    abstract RaiseSearchRanEvent : unit -> unit
+
+    /// Raised when a search is run on any IVimBuffer
+    [<CLIEvent>]
+    abstract SearchRan: IDelegateEvent<System.EventHandler>
+
+    /// Raised when highlight search is disabled one time via the :noh command
+    [<CLIEvent>]
+    abstract HighlightSearchOneTimeDisabled : IDelegateEvent<System.EventHandler>
+
 type IVimHost =
 
     abstract Beep : unit -> unit
@@ -3326,7 +3375,7 @@ type IVimHost =
 
     /// Run the specified command with the given arguments and return the textual
     /// output
-    abstract RunCommand : file : string -> arguments : string -> string
+    abstract RunCommand : file : string -> arguments : string -> vimHost : IVimData -> string
 
     /// Run the Visual studio command
     abstract RunVisualStudioCommand : commandName : string -> argument : string -> unit
@@ -3355,54 +3404,6 @@ type IVimHost =
     [<CLIEvent>]
     abstract IsVisibleChanged : IDelegateEvent<System.EventHandler<TextViewEventArgs>>
 
-/// Represents shared state which is available to all IVimBuffer instances.
-type IVimData = 
-
-    /// The current directory Vim is positioned in
-    abstract CurrentDirectory : string with get, set
-
-    /// The history of the : command list
-    abstract CommandHistory : HistoryList with get, set
-
-    /// The ordered list of incremental search values
-    abstract SearchHistory : HistoryList with get, set
-
-    /// Motion function used with the last f, F, t or T motion.  The 
-    /// first item in the tuple is the forward version and the second item
-    /// is the backwards version
-    abstract LastCharSearch : (CharSearchKind * Path * char) option with get, set
-
-    /// The last command which was ran 
-    abstract LastCommand : StoredCommand option with get, set
-
-    /// The last shell command that was run
-    abstract LastShellCommand : string option with get, set
-
-    /// The last macro register which was run
-    abstract LastMacroRun : char option with get, set
-
-    /// Last pattern searched for in any buffer.
-    abstract LastPatternData : PatternData with get, set
-
-    /// Data for the last substitute command performed
-    abstract LastSubstituteData : SubstituteData option with get, set
-
-    /// The previous value of the current directory Vim is positioned in
-    abstract PreviousCurrentDirectory : string
-
-    /// Raise the highlight search one time disabled event
-    abstract RaiseHighlightSearchOneTimeDisable : unit -> unit
-
-    /// Raise the search occurred event
-    abstract RaiseSearchRanEvent : unit -> unit
-
-    /// Raised when a search is run on any IVimBuffer
-    [<CLIEvent>]
-    abstract SearchRan: IDelegateEvent<System.EventHandler>
-
-    /// Raised when highlight search is disabled one time via the :noh command
-    [<CLIEvent>]
-    abstract HighlightSearchOneTimeDisabled : IDelegateEvent<System.EventHandler>
 
 /// Core parts of an IVimBuffer.  Used for components which make up an IVimBuffer but
 /// need the same data provided by IVimBuffer.

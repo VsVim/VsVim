@@ -1029,7 +1029,7 @@ type Interpreter
         let doRun command = 
 
             let file = _globalSettings.Shell
-            let output = _vimHost.RunCommand _globalSettings.Shell command
+            let output = _vimHost.RunCommand _globalSettings.Shell command _vimData
             _statusUtil.OnStatus output
 
         // Build up the actual command replacing any non-escaped ! with the previous
