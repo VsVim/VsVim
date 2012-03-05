@@ -7,10 +7,18 @@ using Vim;
 
 namespace VsVim.Implementation
 {
+    /// <summary>
+    /// This type is responsible for working around a couple of conflicts that VsVim has with the
+    /// MindScape plugin.  The main conflict is MindScape listens directly to the Wpf KeyDown event
+    /// for determining if intellisense should be displayed.  It doesn't see if the event makes it 
+    /// to the actual buffer, just that the key was pressed.  In normal mode this causes a conflict
+    /// as it causes intellisense to be displayed during caret navigation commands.  Need to work
+    /// around that behavior
+    /// </summary>
     [Export(typeof(IVimBufferCreationListener))]
     internal sealed class MindScape : IVimBufferCreationListener
     {
-        private static readonly Guid MindScapePackageGuid = new Guid("29C7CD30-2759-428A-895D-50E2B6A8487F");
+        internal static readonly Guid MindScapePackageGuid = new Guid("29C7CD30-2759-428A-895D-50E2B6A8487F");
 
         private readonly bool _isInstalled;
         private readonly ICompletionBroker _completionBroker;
