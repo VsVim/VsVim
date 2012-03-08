@@ -1047,33 +1047,39 @@ type Parser
 
             // Parse out the next argument and use 'argument' as the value of the current
             // argument
-            let parseNext argument = parseOption (fun list -> argument :: list)
+            let parseNext argument = parseOption (fun list -> argument :: list |> withArgument)
 
             // Parse out an operator.  Parse out the value and use the specified setting name
             // and argument function as the argument
-            let parseOperator name argumentFunc = 
-                _tokenizer.MoveNextToken()
+            let parseSetValue name argumentFunc = 
 
-                // TODO: Really need parseSetValue
-                let isValid = 
-                    match _tokenizer.CurrentTokenKind with
-                    | TokenKind.Word _ -> true
-                    | TokenKind.Number _ -> true
-                    | _ -> false
-
-                if isValid then
-                    let value = _tokenizer.CurrentToken.TokenText
+                let empty () = 
                     _tokenizer.MoveNextToken()
-                    parseNext (argumentFunc (name, value))
-                else
-                    ParseResult.Failed Resources.Parser_Error
+                    parseNext (SetArgument.AssignSetting (name, ""))
+
+                match _tokenizer.CurrentChar with
+                | None -> empty ()
+                | Some ' ' -> empty ()
+                | Some c -> 
+                    if CharUtil.IsLetterOrDigit c then
+                        let value = _tokenizer.CurrentToken.TokenText
+                        _tokenizer.MoveNextToken()
+                        parseNext (argumentFunc (name, value))
+                    else
+                        ParseResult.Failed Resources.Parser_Error
+
+            // Parse out a simple assignment.  Move past the assignment char and get the value
+            let parseAssign name = 
+                _tokenizer.MoveNextChar()
+                parseSetValue name SetArgument.AssignSetting
 
             // Parse out a compound operator.  This is used for '+=' and such.  This will be called
             // with the index pointed at the first character
             let parseCompoundOperator name argumentFunc = 
                 _tokenizer.MoveNextToken()
                 if x.IsCurrentCharValue '=' then
-                    parseOperator name argumentFunc
+                    _tokenizer.MoveNextChar()
+                    parseSetValue name argumentFunc
                 else
                     ParseResult.Failed Resources.Parser_Error
 
@@ -1113,8 +1119,8 @@ type Parser
                     match _tokenizer.CurrentTokenKind with
                     | TokenKind.Character '?' -> _tokenizer.MoveNextToken(); parseNext (SetArgument.DisplaySetting name)
                     | TokenKind.Character '!' -> _tokenizer.MoveNextToken(); parseNext (SetArgument.InvertSetting name)
-                    | TokenKind.Character ':' -> parseOperator name SetArgument.AssignSetting
-                    | TokenKind.Character '=' -> parseOperator name SetArgument.AssignSetting
+                    | TokenKind.Character ':' -> parseAssign name
+                    | TokenKind.Character '=' -> parseAssign name
                     | TokenKind.Character '+' -> parseCompoundOperator name SetArgument.AddSetting
                     | TokenKind.Character '^' -> parseCompoundOperator name SetArgument.MultiplySetting
                     | TokenKind.Character '-' -> parseCompoundOperator name SetArgument.SubtractSetting

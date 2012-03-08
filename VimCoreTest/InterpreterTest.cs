@@ -726,6 +726,33 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Assign multiple values and verify it works
+            /// </summary>
+            [Test]
+            public void Set_Assign_Many()
+            {
+                Create("");
+                ParseAndRun(@"set ai vb ts=42");
+                Assert.AreEqual(42, _localSettings.TabStop);
+                Assert.IsTrue(_localSettings.AutoIndent);
+                Assert.IsTrue(_globalSettings.VisualBell);
+            }
+
+            /// <summary>
+            /// Make sure that if there are mulitple assignments and one is unsupported that the
+            /// others work
+            /// 
+            /// Raised in issue #764
+            /// </summary>
+            [Test]
+            public void Set_Assign_ManyUnsupported()
+            {
+                Create("");
+                ParseAndRun(@"set vb t_vb=");
+                Assert.IsTrue(_globalSettings.VisualBell);
+            }
+
+            /// <summary>
             /// Toggle a toggle option off
             /// </summary>
             [Test]

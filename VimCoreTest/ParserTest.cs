@@ -296,6 +296,186 @@ namespace Vim.UnitTest
         }
 
         [TestFixture]
+        public sealed class SetTest : ParserTest
+        {
+            /// <summary>
+            /// Make sure we can parse out the short version of the ":set" command
+            /// </summary>
+            [Test]
+            public void ShortName()
+            {
+                var command = ParseLineCommand("se");
+                Assert.IsTrue(command.IsSet);
+            }
+
+            /// <summary>
+            /// Make sure we can parse out the 'all' modifier on the ":set" command
+            /// </summary>
+            [Test]
+            public void All()
+            {
+                var command = ParseLineCommand("set all").AsSet();
+                Assert.IsTrue(command.Item.Single().IsDisplayAllButTerminal);
+            }
+
+            /// <summary>
+            /// Make sure we can parse out the display setting argument to ":set"
+            /// </summary>
+            [Test]
+            public void DisplaySetting()
+            {
+                var command = ParseLineCommand("set example?").AsSet();
+                var option = command.Item.Single().AsDisplaySetting();
+                Assert.AreEqual("example", option.Item);
+            }
+
+            /// <summary>
+            /// Make sure we can parse out the use setting argument to ":set"
+            /// </summary>
+            [Test]
+            public void UseSetting()
+            {
+                var command = ParseLineCommand("set example").AsSet();
+                var option = command.Item.Single().AsUseSetting();
+                Assert.AreEqual("example", option.Item);
+            }
+
+            /// <summary>
+            /// Make sure we can parse out the toggle setting argument to ":set"
+            /// </summary>
+            [Test]
+            public void ToggleOffSetting()
+            {
+                var command = ParseLineCommand("set noexample").AsSet();
+                var option = command.Item.Single().AsToggleOffSetting();
+                Assert.AreEqual("example", option.Item);
+            }
+
+            /// <summary>
+            /// Make sure we can parse out the invert setting argument to ":set"
+            /// </summary>
+            [Test]
+            public void InvertSetting()
+            {
+                var command = ParseLineCommand("set example!").AsSet();
+                var option = command.Item.Single().AsInvertSetting();
+                Assert.AreEqual("example", option.Item);
+            }
+
+            /// <summary>
+            /// Make sure we can parse out the invert setting argument to ":set" using the alternate
+            /// syntax
+            /// </summary>
+            [Test]
+            public void InvertSetting_AlternateSyntax()
+            {
+                var command = ParseLineCommand("set invexample").AsSet();
+                var option = command.Item.Single().AsInvertSetting();
+                Assert.AreEqual("example", option.Item);
+            }
+
+            /// <summary>
+            /// Make sure we can parse out the assign setting argument to ":set"
+            /// </summary>
+            [Test]
+            public void AssignSetting()
+            {
+                var command = ParseLineCommand("set x=y").AsSet();
+                var option = command.Item.Single().AsAssignSetting();
+                Assert.AreEqual("x", option.Item1);
+                Assert.AreEqual("y", option.Item2);
+            }
+
+            /// <summary>
+            /// Make sure we can parse out the assign setting argument to ":set" using the alternate 
+            /// syntax
+            /// </summary>
+            [Test]
+            public void AssignSetting_AlternateSyntax()
+            {
+                var command = ParseLineCommand("set x:y").AsSet();
+                var option = command.Item.Single().AsAssignSetting();
+                Assert.AreEqual("x", option.Item1);
+                Assert.AreEqual("y", option.Item2);
+            }
+
+            /// <summary>
+            /// It's a legal parse for the value to be empty.  This is used with the terminal settings (t_vb)
+            /// </summary>
+            [Test]
+            public void AssignNoValue()
+            {
+                var command = ParseLineCommand("set vb=").AsSet();
+                var option = command.Item.Single().AsAssignSetting();
+                Assert.AreEqual("vb", option.Item1);
+                Assert.AreEqual("", option.Item2);
+            }
+
+            /// <summary>
+            /// Make sure we can parse out the add setting argument to ":set"
+            /// </summary>
+            [Test]
+            public void AddSetting()
+            {
+                var command = ParseLineCommand("set x+=y").AsSet();
+                var option = command.Item.Single().AsAddSetting();
+                Assert.AreEqual("x", option.Item1);
+                Assert.AreEqual("y", option.Item2);
+            }
+
+            /// <summary>
+            /// Make sure we can parse out the subtract setting argument to ":set"
+            /// </summary>
+            [Test]
+            public void SubtractSetting()
+            {
+                var command = ParseLineCommand("set x-=y").AsSet();
+                var option = command.Item.Single().AsSubtractSetting();
+                Assert.AreEqual("x", option.Item1);
+                Assert.AreEqual("y", option.Item2);
+            }
+
+            /// <summary>
+            /// A space after an = terminates the current set and begins a new one
+            /// </summary>
+            [Test]
+            public void AssignWithSpaceAfter()
+            {
+                var command = ParseLineCommand("set vb= ai").AsSet();
+                Assert.AreEqual(2, command.Item.Length);
+
+                var set = command.Item[0];
+                Assert.AreEqual("vb", set.AsAssignSetting().Item1);
+                Assert.AreEqual("", set.AsAssignSetting().Item2);
+
+                set = command.Item[1];
+                Assert.AreEqual("ai", set.AsUseSetting().Item);
+            }
+
+            /// <summary>
+            /// Make sure we can parse out the multiply setting argument to ":set"
+            /// </summary>
+            [Test]
+            public void MultiplySetting()
+            {
+                var command = ParseLineCommand("set x^=y").AsSet();
+                var option = command.Item.Single().AsMultiplySetting();
+                Assert.AreEqual("x", option.Item1);
+                Assert.AreEqual("y", option.Item2);
+            }
+
+            /// <summary>
+            /// Make sure we can parse out a set with a trailing comment
+            /// </summary>
+            [Test]
+            public void TrailingComment()
+            {
+                var command = ParseLineCommand("set ai \"hello world");
+                Assert.IsTrue(command.IsSet);
+            }
+        }
+
+        [TestFixture]
         public sealed class Misc : ParserTest
         {
             private LineRangeSpecifier ParseLineRange(string text)
@@ -719,153 +899,6 @@ namespace Vim.UnitTest
             {
                 var command = ParseLineCommand("read test.txt").AsReadFile();
                 Assert.AreEqual("test.txt", command.Item3);
-            }
-
-            /// <summary>
-            /// Make sure we can parse out the short version of the ":set" command
-            /// </summary>
-            [Test]
-            public void Parse_Set_ShortName()
-            {
-                var command = ParseLineCommand("se");
-                Assert.IsTrue(command.IsSet);
-            }
-
-            /// <summary>
-            /// Make sure we can parse out the 'all' modifier on the ":set" command
-            /// </summary>
-            [Test]
-            public void Parse_Set_All()
-            {
-                var command = ParseLineCommand("set all").AsSet();
-                Assert.IsTrue(command.Item.Single().IsDisplayAllButTerminal);
-            }
-
-            /// <summary>
-            /// Make sure we can parse out the display setting argument to ":set"
-            /// </summary>
-            [Test]
-            public void Parse_Set_DisplaySetting()
-            {
-                var command = ParseLineCommand("set example?").AsSet();
-                var option = command.Item.Single().AsDisplaySetting();
-                Assert.AreEqual("example", option.Item);
-            }
-
-            /// <summary>
-            /// Make sure we can parse out the use setting argument to ":set"
-            /// </summary>
-            [Test]
-            public void Parse_Set_UseSetting()
-            {
-                var command = ParseLineCommand("set example").AsSet();
-                var option = command.Item.Single().AsUseSetting();
-                Assert.AreEqual("example", option.Item);
-            }
-
-            /// <summary>
-            /// Make sure we can parse out the toggle setting argument to ":set"
-            /// </summary>
-            [Test]
-            public void Parse_Set_ToggleOffSetting()
-            {
-                var command = ParseLineCommand("set noexample").AsSet();
-                var option = command.Item.Single().AsToggleOffSetting();
-                Assert.AreEqual("example", option.Item);
-            }
-
-            /// <summary>
-            /// Make sure we can parse out the invert setting argument to ":set"
-            /// </summary>
-            [Test]
-            public void Parse_Set_InvertSetting()
-            {
-                var command = ParseLineCommand("set example!").AsSet();
-                var option = command.Item.Single().AsInvertSetting();
-                Assert.AreEqual("example", option.Item);
-            }
-
-            /// <summary>
-            /// Make sure we can parse out the invert setting argument to ":set" using the alternate
-            /// syntax
-            /// </summary>
-            [Test]
-            public void Parse_Set_InvertSetting_AlternateSyntax()
-            {
-                var command = ParseLineCommand("set invexample").AsSet();
-                var option = command.Item.Single().AsInvertSetting();
-                Assert.AreEqual("example", option.Item);
-            }
-
-            /// <summary>
-            /// Make sure we can parse out the assign setting argument to ":set"
-            /// </summary>
-            [Test]
-            public void Parse_Set_AssignSetting()
-            {
-                var command = ParseLineCommand("set x=y").AsSet();
-                var option = command.Item.Single().AsAssignSetting();
-                Assert.AreEqual("x", option.Item1);
-                Assert.AreEqual("y", option.Item2);
-            }
-
-            /// <summary>
-            /// Make sure we can parse out the assign setting argument to ":set" using the alternate 
-            /// syntax
-            /// </summary>
-            [Test]
-            public void Parse_Set_AssignSetting_AlternateSyntax()
-            {
-                var command = ParseLineCommand("set x:y").AsSet();
-                var option = command.Item.Single().AsAssignSetting();
-                Assert.AreEqual("x", option.Item1);
-                Assert.AreEqual("y", option.Item2);
-            }
-
-            /// <summary>
-            /// Make sure we can parse out the add setting argument to ":set"
-            /// </summary>
-            [Test]
-            public void Parse_Set_AddSetting()
-            {
-                var command = ParseLineCommand("set x+=y").AsSet();
-                var option = command.Item.Single().AsAddSetting();
-                Assert.AreEqual("x", option.Item1);
-                Assert.AreEqual("y", option.Item2);
-            }
-
-            /// <summary>
-            /// Make sure we can parse out the subtract setting argument to ":set"
-            /// </summary>
-            [Test]
-            public void Parse_Set_SubtractSetting()
-            {
-                var command = ParseLineCommand("set x-=y").AsSet();
-                var option = command.Item.Single().AsSubtractSetting();
-                Assert.AreEqual("x", option.Item1);
-                Assert.AreEqual("y", option.Item2);
-            }
-
-            /// <summary>
-            /// Make sure we can parse out the multiply setting argument to ":set"
-            /// </summary>
-            [Test]
-            public void Parse_Set_MultiplySetting()
-            {
-                var command = ParseLineCommand("set x^=y").AsSet();
-                var option = command.Item.Single().AsMultiplySetting();
-                Assert.AreEqual("x", option.Item1);
-                Assert.AreEqual("y", option.Item2);
-            }
-
-            /// <summary>
-            /// Make sure we can parse out a set with a trailing comment
-            /// </summary>
-            [Test]
-            public void Parse_Set_TrailingComment()
-            {
-                var command = ParseLineCommand("set ai \"hello world");
-                Assert.IsTrue(command.IsSet);
             }
 
             [Test]
