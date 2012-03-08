@@ -207,9 +207,11 @@ type internal VisualMode
 
                     ProcessResult.OfCommandResult commandRanData.CommandResult
                 | BindResult.Error ->
+                    _selectionTracker.UpdateSelection()
                     _operations.Beep()
                     ProcessResult.Handled ModeSwitch.NoSwitch
                 | BindResult.Cancelled -> 
+                    _selectionTracker.UpdateSelection()
                     ProcessResult.Handled ModeSwitch.NoSwitch
 
         // If we are switching out Visual Mode then reset the selection.  Only do this if 

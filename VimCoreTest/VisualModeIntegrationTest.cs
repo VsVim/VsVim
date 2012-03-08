@@ -681,6 +681,45 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// An incremental search operation shouldn't change the location of the caret until the search is
+        /// completed
+        /// </summary>
+        [Test]
+        public void IncrementalSearch_DontChangeCaret()
+        {
+            Create("cat", "dog", "tree");
+            _vimBuffer.Process("v/do");
+            Assert.AreEqual(0, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Make sure that Escape will properly exit the incremental search and return us to the previous
+        /// visual mode state (with the same selection)
+        /// </summary>
+        [Test]
+        public void IncrementalSearch_EscapeShouldExitSearch()
+        {
+            Create("cat", "dog", "tree");
+            _vimBuffer.ProcessNotation("vl/dog<Esc>");
+            Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+            Assert.IsFalse(_vimBuffer.IncrementalSearch.InSearch);
+            Assert.AreEqual("ca", _textView.GetSelectionSpan().GetText());
+        }
+
+        /// <summary>
+        /// Make sure that enter completes the search which includes updating the caret
+        /// </summary>
+        [Test]
+        public void IncrementalSearch_EnterShouldCompleteSearch()
+        {
+            Create("cat", "dog", "tree");
+            _vimBuffer.ProcessNotation("vl/dog<Enter>");
+            Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+            Assert.IsFalse(_vimBuffer.IncrementalSearch.InSearch);
+            Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
         /// Enter visual mode with the InitialVisualSelection argument which is a character span
         /// </summary>
         [Test]
