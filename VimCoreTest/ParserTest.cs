@@ -6,8 +6,25 @@ using Vim.Interpreter;
 
 namespace Vim.UnitTest
 {
-    public class ParserTest 
+    public class ParserTest
     {
+        /// <summary>
+        /// Assert that parsing the given line command produces the specific error
+        /// </summary>
+        protected void AssertParseLineCommandError(string command, string error)
+        {
+            var parseResult = Parser.ParseLineCommand(command);
+            Assert.IsTrue(parseResult.IsFailed);
+            Assert.AreEqual(error, parseResult.AsFailed().Item);
+        }
+
+        protected LineCommand ParseLineCommand(string text)
+        {
+            var parseResult = Parser.ParseLineCommand(text);
+            Assert.IsTrue(parseResult.IsSucceeded);
+            return parseResult.AsSucceeded().Item;
+        }
+
         [TestFixture]
         public sealed class StringLiteral : ParserTest
         {
@@ -73,15 +90,214 @@ namespace Vim.UnitTest
         }
 
         [TestFixture]
-        public sealed class Misc : ParserTest
+        public sealed class SubstituteTest : ParserTest
         {
-            private LineCommand ParseLineCommand(string text)
+            /// <summary>
+            /// Assert the given command parser out to a substitute with the specified values
+            /// </summary>
+            private void AssertSubstitute(string command, string pattern, string replace, SubstituteFlags? flags = null)
             {
-                var parseResult = Parser.ParseLineCommand(text);
-                Assert.IsTrue(parseResult.IsSucceeded);
-                return parseResult.AsSucceeded().Item;
+                var subCommand = ParseLineCommand(command).AsSubstitute();
+                Assert.AreEqual(pattern, subCommand.Item2);
+                Assert.AreEqual(replace, subCommand.Item3);
+
+                // Verify flags if it was passed
+                if (flags.HasValue)
+                {
+                    Assert.AreEqual(flags.Value, subCommand.Item4);
+                }
             }
 
+            /// <summary>
+            /// Assert the given command parses out to a substitute repeat with the specified values
+            /// </summary>
+            private void AssertSubstituteRepeat(string command, SubstituteFlags flags)
+            {
+                var subCommand = ParseLineCommand(command).AsSubstituteRepeat();
+                Assert.AreEqual(flags, subCommand.Item2);
+            }
+
+            /// <summary>
+            /// Verify the substitute commands.  Simple replaces with no options
+            /// </summary>
+            [Test]
+            public void Simple()
+            {
+                AssertSubstitute("s/f/b", "f", "b", SubstituteFlags.None);
+                AssertSubstitute("s/foo/bar", "foo", "bar", SubstituteFlags.None);
+                AssertSubstitute("s/foo/bar/", "foo", "bar", SubstituteFlags.None);
+                AssertSubstitute("s/foo//", "foo", "", SubstituteFlags.None);
+                AssertSubstitute("s/foo", "foo", "", SubstituteFlags.None);
+            }
+
+            /// <summary>
+            /// Support alternate separators in the substitute command
+            /// </summary>
+            [Test]
+            public void AlternateSeparators()
+            {
+                AssertSubstitute("s,f,b", "f", "b", SubstituteFlags.None);
+                AssertSubstitute("s&f&b", "f", "b", SubstituteFlags.None);
+                AssertSubstitute("s,foo,bar", "foo", "bar", SubstituteFlags.None);
+                AssertSubstitute("s,foo,bar,", "foo", "bar", SubstituteFlags.None);
+                AssertSubstitute("s,foo,,", "foo", "", SubstituteFlags.None);
+                AssertSubstitute("s,foo", "foo", "", SubstituteFlags.None);
+            }
+
+            /// <summary>
+            /// Make sure that we handle escaped separators properly
+            /// </summary>
+            [Test]
+            public void EscapedSeparator()
+            {
+                AssertSubstitute(@"s/and\/or/then", "and/or", "then", SubstituteFlags.None);
+            }
+
+            /// <summary>
+            /// Simple substitute commands which provide specific flags
+            /// </summary>
+            [Test]
+            public void WithFlags()
+            {
+                AssertSubstitute("s/foo/bar/g", "foo", "bar", SubstituteFlags.ReplaceAll);
+                AssertSubstitute("s/foo/bar/ g", "foo", "bar", SubstituteFlags.ReplaceAll);
+                AssertSubstitute("s/foo/bar/i", "foo", "bar", SubstituteFlags.IgnoreCase);
+                AssertSubstitute("s/foo/bar/gi", "foo", "bar", SubstituteFlags.ReplaceAll | SubstituteFlags.IgnoreCase);
+                AssertSubstitute("s/foo/bar/ig", "foo", "bar", SubstituteFlags.ReplaceAll | SubstituteFlags.IgnoreCase);
+                AssertSubstitute("s/foo/bar/n", "foo", "bar", SubstituteFlags.ReportOnly);
+                AssertSubstitute("s/foo/bar/e", "foo", "bar", SubstituteFlags.SuppressError);
+                AssertSubstitute("s/foo/bar/I", "foo", "bar", SubstituteFlags.OrdinalCase);
+                AssertSubstitute("s/foo/bar/&", "foo", "bar", SubstituteFlags.UsePreviousFlags);
+                AssertSubstitute("s/foo/bar/&g", "foo", "bar", SubstituteFlags.ReplaceAll | SubstituteFlags.UsePreviousFlags);
+                AssertSubstitute("s/foo/bar/c", "foo", "bar", SubstituteFlags.Confirm);
+                AssertSubstitute("s/foo/bar/p", "foo", "bar", SubstituteFlags.PrintLast);
+                AssertSubstitute("s/foo/bar/#", "foo", "bar", SubstituteFlags.PrintLastWithNumber);
+                AssertSubstitute("s/foo/bar/l", "foo", "bar", SubstituteFlags.PrintLastWithList);
+                AssertSubstitute("s/foo/bar/ l", "foo", "bar", SubstituteFlags.PrintLastWithList);
+            }
+
+            /// <summary>
+            /// Without a trailing delimiter a count won't ever be considered
+            /// </summary>
+            [Test]
+            public void CountMustHaveFinalDelimiter()
+            {
+                AssertSubstitute("s/a/b 2", "a", "b 2", SubstituteFlags.None);
+            }
+
+            /// <summary>
+            /// Simple substitute with count
+            /// </summary>
+            [Test]
+            public void WithCount()
+            {
+                AssertSubstitute("s/a/b/g 2", "a", "b", SubstituteFlags.ReplaceAll);
+            }
+
+            /// <summary>
+            /// The backslashes need to be preserved for the regex engine
+            /// </summary>
+            [Test]
+            public void Backslashes()
+            {
+                AssertSubstitute(@"s/a/\\\\", "a", @"\\\\", SubstituteFlags.None);
+                AssertSubstitute(@"s/a/\\\\/", "a", @"\\\\", SubstituteFlags.None);
+            }
+
+            /// <summary>
+            /// The & flag can only appear as the first flag.  In any other position it's a parser error
+            /// </summary>
+            [Test]
+            public void BadUsePreviousFlags()
+            {
+                AssertParseLineCommandError("s/a/b/g&", Resources.CommandMode_TrailingCharacters);
+            }
+
+            /// <summary>
+            /// Can't have a space between flag values
+            /// </summary>
+            [Test]
+            public void BadSpaceBetweenFlags()
+            {
+                AssertParseLineCommandError("s/a/b/g &", Resources.CommandMode_TrailingCharacters);
+            }
+
+            /// <summary>
+            /// Make sure that we properly parse out the group specifier in the replace string
+            /// </summary>
+            [Test]
+            public void ReplaceHasGroupSpecifier()
+            {
+                AssertSubstitute(@"s/cat/\1", "cat", @"\1");
+                AssertSubstitute(@"s/dog/\2", "dog", @"\2");
+                AssertSubstitute(@"s/dog/fish\2", "dog", @"fish\2");
+                AssertSubstitute(@"s/dog/\2fish", "dog", @"\2fish");
+            }
+
+            [Test]
+            public void RepeatWithCount()
+            {
+                AssertSubstituteRepeat("& 3", SubstituteFlags.None);
+            }
+
+            /// <summary>
+            /// Parse the snomagic form of substitute
+            /// </summary>
+            [Test]
+            public void NoMagic()
+            {
+                AssertSubstitute("snomagic/a/b", "a", "b", SubstituteFlags.Nomagic);
+                AssertSubstitute("snomagic/a/b/g", "a", "b", SubstituteFlags.Nomagic | SubstituteFlags.ReplaceAll);
+            }
+
+            /// <summary>
+            /// Parse the smagic form of substitute
+            /// </summary>
+            [Test]
+            public void Magic()
+            {
+                AssertSubstitute("smagic/a/b", "a", "b", SubstituteFlags.Magic);
+                AssertSubstitute("smagic/a/b/g", "a", "b", SubstituteFlags.ReplaceAll | SubstituteFlags.Magic);
+            }
+
+            [Test]
+            public void RepeatSimple()
+            {
+                AssertSubstituteRepeat("s", SubstituteFlags.None);
+                AssertSubstituteRepeat("s g", SubstituteFlags.ReplaceAll);
+                AssertSubstituteRepeat("& g", SubstituteFlags.ReplaceAll);
+                AssertSubstituteRepeat("&&", SubstituteFlags.UsePreviousFlags);
+                AssertSubstituteRepeat("&r", SubstituteFlags.UsePreviousSearchPattern);
+                AssertSubstituteRepeat("&&g", SubstituteFlags.ReplaceAll | SubstituteFlags.UsePreviousFlags);
+                AssertSubstituteRepeat("~", SubstituteFlags.UsePreviousSearchPattern);
+                AssertSubstituteRepeat("~ g", SubstituteFlags.UsePreviousSearchPattern | SubstituteFlags.ReplaceAll);
+                AssertSubstituteRepeat("~ g 3", SubstituteFlags.UsePreviousSearchPattern | SubstituteFlags.ReplaceAll);
+            }
+
+            /// <summary>
+            /// Parse the snomagic form of substitute repeat
+            /// </summary>
+            [Test]
+            public void RepeatNoMagic()
+            {
+                AssertSubstituteRepeat("snomagic", SubstituteFlags.Nomagic);
+                AssertSubstituteRepeat("snomagic g", SubstituteFlags.Nomagic | SubstituteFlags.ReplaceAll);
+            }
+
+            /// <summary>
+            /// Parse the smagic form of substitute repeat
+            /// </summary>
+            [Test]
+            public void RepeatMagic()
+            {
+                AssertSubstituteRepeat("smagic", SubstituteFlags.Magic);
+                AssertSubstituteRepeat("smagic g", SubstituteFlags.ReplaceAll | SubstituteFlags.Magic);
+            }
+        }
+
+        [TestFixture]
+        public sealed class Misc : ParserTest
+        {
             private LineRangeSpecifier ParseLineRange(string text)
             {
                 var parser = new Parser(text);
@@ -96,16 +312,6 @@ namespace Vim.UnitTest
                 var option = parser.ParseLineSpecifier();
                 Assert.IsTrue(option.IsSome());
                 return option.Value;
-            }
-
-            /// <summary>
-            /// Assert that parsing the given line command produces the specific error
-            /// </summary>
-            private void AssertParseLineCommandError(string command, string error)
-            {
-                var parseResult = Parser.ParseLineCommand(command);
-                Assert.IsTrue(parseResult.IsFailed);
-                Assert.AreEqual(error, parseResult.AsFailed().Item);
             }
 
             private void AssertMap(string command, string lhs, string rhs, params KeyRemapMode[] keyRemapModes)
@@ -132,31 +338,6 @@ namespace Vim.UnitTest
                 var map = ParseLineCommand(command).AsUnmapKeys();
                 Assert.AreEqual(keyNotation, map.Item1);
                 CollectionAssert.AreEqual(keyRemapModes, map.Item2.ToArray());
-            }
-
-            /// <summary>
-            /// Assert the given command parser out to a substitute with the specified values
-            /// </summary>
-            private void AssertSubstitute(string command, string pattern, string replace, SubstituteFlags? flags = null)
-            {
-                var subCommand = ParseLineCommand(command).AsSubstitute();
-                Assert.AreEqual(pattern, subCommand.Item2);
-                Assert.AreEqual(replace, subCommand.Item3);
-
-                // Verify flags if it was passed
-                if (flags.HasValue)
-                {
-                    Assert.AreEqual(flags.Value, subCommand.Item4);
-                }
-            }
-
-            /// <summary>
-            /// Assert the given command parses out to a substitute repeat with the specified values
-            /// </summary>
-            private void AssertSubstituteRepeat(string command, SubstituteFlags flags)
-            {
-                var subCommand = ParseLineCommand(command).AsSubstituteRepeat();
-                Assert.AreEqual(flags, subCommand.Item2);
             }
 
             /// <summary>
@@ -721,171 +902,6 @@ namespace Vim.UnitTest
                 var command = ParseLineCommand("source! test.txt").AsSource();
                 Assert.IsTrue(command.Item1);
                 Assert.AreEqual("test.txt", command.Item2);
-            }
-
-            /// <summary>
-            /// Verify the substitute commands.  Simple replaces with no options
-            /// </summary>
-            [Test]
-            public void Parse_Substitute_Simple()
-            {
-                AssertSubstitute("s/f/b", "f", "b", SubstituteFlags.None);
-                AssertSubstitute("s/foo/bar", "foo", "bar", SubstituteFlags.None);
-                AssertSubstitute("s/foo/bar/", "foo", "bar", SubstituteFlags.None);
-                AssertSubstitute("s/foo//", "foo", "", SubstituteFlags.None);
-                AssertSubstitute("s/foo", "foo", "", SubstituteFlags.None);
-            }
-
-            /// <summary>
-            /// Support alternate separators in the substitute command
-            /// </summary>
-            [Test]
-            public void Parse_Substitute_AlternateSeparators()
-            {
-                AssertSubstitute("s,f,b", "f", "b", SubstituteFlags.None);
-                AssertSubstitute("s&f&b", "f", "b", SubstituteFlags.None);
-                AssertSubstitute("s,foo,bar", "foo", "bar", SubstituteFlags.None);
-                AssertSubstitute("s,foo,bar,", "foo", "bar", SubstituteFlags.None);
-                AssertSubstitute("s,foo,,", "foo", "", SubstituteFlags.None);
-                AssertSubstitute("s,foo", "foo", "", SubstituteFlags.None);
-            }
-
-            /// <summary>
-            /// Make sure that we handle escaped separators properly
-            /// </summary>
-            [Test]
-            public void Parse_Substitute_EscapedSeparator()
-            {
-                AssertSubstitute(@"s/and\/or/then", "and/or", "then", SubstituteFlags.None);
-            }
-
-            /// <summary>
-            /// Simple substitute commands which provide specific flags
-            /// </summary>
-            [Test]
-            public void Parse_Substitute_WithFlags()
-            {
-                AssertSubstitute("s/foo/bar/g", "foo", "bar", SubstituteFlags.ReplaceAll);
-                AssertSubstitute("s/foo/bar/ g", "foo", "bar", SubstituteFlags.ReplaceAll);
-                AssertSubstitute("s/foo/bar/i", "foo", "bar", SubstituteFlags.IgnoreCase);
-                AssertSubstitute("s/foo/bar/gi", "foo", "bar", SubstituteFlags.ReplaceAll | SubstituteFlags.IgnoreCase);
-                AssertSubstitute("s/foo/bar/ig", "foo", "bar", SubstituteFlags.ReplaceAll | SubstituteFlags.IgnoreCase);
-                AssertSubstitute("s/foo/bar/n", "foo", "bar", SubstituteFlags.ReportOnly);
-                AssertSubstitute("s/foo/bar/e", "foo", "bar", SubstituteFlags.SuppressError);
-                AssertSubstitute("s/foo/bar/I", "foo", "bar", SubstituteFlags.OrdinalCase);
-                AssertSubstitute("s/foo/bar/&", "foo", "bar", SubstituteFlags.UsePreviousFlags);
-                AssertSubstitute("s/foo/bar/&g", "foo", "bar", SubstituteFlags.ReplaceAll | SubstituteFlags.UsePreviousFlags);
-                AssertSubstitute("s/foo/bar/c", "foo", "bar", SubstituteFlags.Confirm);
-                AssertSubstitute("s/foo/bar/p", "foo", "bar", SubstituteFlags.PrintLast);
-                AssertSubstitute("s/foo/bar/#", "foo", "bar", SubstituteFlags.PrintLastWithNumber);
-                AssertSubstitute("s/foo/bar/l", "foo", "bar", SubstituteFlags.PrintLastWithList);
-                AssertSubstitute("s/foo/bar/ l", "foo", "bar", SubstituteFlags.PrintLastWithList);
-            }
-
-            /// <summary>
-            /// Without a trailing delimiter a count won't ever be considered
-            /// </summary>
-            [Test]
-            public void Parse_Substitute_CountMustHaveFinalDelimiter()
-            {
-                AssertSubstitute("s/a/b 2", "a", "b 2", SubstituteFlags.None);
-            }
-
-            /// <summary>
-            /// Simple substitute with count
-            /// </summary>
-            [Test]
-            public void Parse_Substitute_WithCount()
-            {
-                AssertSubstitute("s/a/b/g 2", "a", "b", SubstituteFlags.ReplaceAll);
-            }
-
-            /// <summary>
-            /// The backslashes need to be preserved for the regex engine
-            /// </summary>
-            [Test]
-            public void Parse_Substitute_Backslashes()
-            {
-                AssertSubstitute(@"s/a/\\\\", "a", @"\\\\", SubstituteFlags.None);
-                AssertSubstitute(@"s/a/\\\\/", "a", @"\\\\", SubstituteFlags.None);
-            }
-
-            /// <summary>
-            /// The & flag can only appear as the first flag.  In any other position it's a parser error
-            /// </summary>
-            [Test]
-            public void Parse_Substitute_BadUsePreviousFlags()
-            {
-                AssertParseLineCommandError("s/a/b/g&", Resources.CommandMode_TrailingCharacters);
-            }
-
-            /// <summary>
-            /// Can't have a space between flag values
-            /// </summary>
-            [Test]
-            public void Parse_Substitute_BadSpaceBetweenFlags()
-            {
-                AssertParseLineCommandError("s/a/b/g &", Resources.CommandMode_TrailingCharacters);
-            }
-
-            [Test]
-            public void Parse_SubstituteRepeat_WithCount()
-            {
-                AssertSubstituteRepeat("& 3", SubstituteFlags.None);
-            }
-
-            /// <summary>
-            /// Parse the snomagic form of substitute
-            /// </summary>
-            [Test]
-            public void Parse_Substitute_NoMagic()
-            {
-                AssertSubstitute("snomagic/a/b", "a", "b", SubstituteFlags.Nomagic);
-                AssertSubstitute("snomagic/a/b/g", "a", "b", SubstituteFlags.Nomagic | SubstituteFlags.ReplaceAll);
-            }
-
-            /// <summary>
-            /// Parse the smagic form of substitute
-            /// </summary>
-            [Test]
-            public void Parse_Substitute_Magic()
-            {
-                AssertSubstitute("smagic/a/b", "a", "b", SubstituteFlags.Magic);
-                AssertSubstitute("smagic/a/b/g", "a", "b", SubstituteFlags.ReplaceAll | SubstituteFlags.Magic);
-            }
-
-            [Test]
-            public void Parse_SubstituteRepeat_Simple()
-            {
-                AssertSubstituteRepeat("s", SubstituteFlags.None);
-                AssertSubstituteRepeat("s g", SubstituteFlags.ReplaceAll);
-                AssertSubstituteRepeat("& g", SubstituteFlags.ReplaceAll);
-                AssertSubstituteRepeat("&&", SubstituteFlags.UsePreviousFlags);
-                AssertSubstituteRepeat("&r", SubstituteFlags.UsePreviousSearchPattern);
-                AssertSubstituteRepeat("&&g", SubstituteFlags.ReplaceAll | SubstituteFlags.UsePreviousFlags);
-                AssertSubstituteRepeat("~", SubstituteFlags.UsePreviousSearchPattern);
-                AssertSubstituteRepeat("~ g", SubstituteFlags.UsePreviousSearchPattern | SubstituteFlags.ReplaceAll);
-                AssertSubstituteRepeat("~ g 3", SubstituteFlags.UsePreviousSearchPattern | SubstituteFlags.ReplaceAll);
-            }
-
-            /// <summary>
-            /// Parse the snomagic form of substitute repeat
-            /// </summary>
-            [Test]
-            public void Parse_SubstituteRepeat_NoMagic()
-            {
-                AssertSubstituteRepeat("snomagic", SubstituteFlags.Nomagic);
-                AssertSubstituteRepeat("snomagic g", SubstituteFlags.Nomagic | SubstituteFlags.ReplaceAll);
-            }
-
-            /// <summary>
-            /// Parse the smagic form of substitute repeat
-            /// </summary>
-            [Test]
-            public void Parse_SubstituteRepeat_Magic()
-            {
-                AssertSubstituteRepeat("smagic", SubstituteFlags.Magic);
-                AssertSubstituteRepeat("smagic g", SubstituteFlags.ReplaceAll | SubstituteFlags.Magic);
             }
 
             /// <summary>

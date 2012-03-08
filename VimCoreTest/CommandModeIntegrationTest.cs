@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
+using Microsoft.VisualStudio.Text;
 
 namespace Vim.UnitTest
 {
@@ -11,6 +12,7 @@ namespace Vim.UnitTest
     {
         protected IVimBuffer _vimBuffer;
         protected ITextView _textView;
+        protected ITextBuffer _textBuffer;
         protected MockVimHost _vimHost;
         protected string _lastStatus;
 
@@ -19,6 +21,7 @@ namespace Vim.UnitTest
             _vimBuffer = CreateVimBuffer(lines);
             _vimBuffer.StatusMessage += (sender, args) => { _lastStatus = args.Message; };
             _textView = _vimBuffer.TextView;
+            _textBuffer = _textView.TextBuffer;
             _vimHost = VimHost;
         }
 
@@ -373,6 +376,17 @@ namespace Vim.UnitTest
             RunCommand(@"%s/a\.c/replaced/g");
             Assert.That(_textView.GetLine(0).GetText(), Is.EqualTo("replaced"));
             Assert.That(_textView.GetLine(1).GetText(), Is.EqualTo("abc"));
+        }
+
+        /// <summary>
+        /// Make sure the "\1" does a group substitution instead of pushing in the literal 1
+        /// </summary>
+        [Test]
+        public void Substitute_ReplaceWithGroup()
+        {
+            Create(@"cat (dog)");
+            RunCommand(@"s/(\(\w\+\))/\1/");
+            Assert.AreEqual(@"cat dog", _textBuffer.GetLine(0).GetText());
         }
 
         [Test]

@@ -541,19 +541,23 @@ type Parser
     /// of the pattern and a bool.  The bool will represent whether or not the delimiter was found.
     /// If the delimeter is found then it will be consumed
     member x.ParsePattern delimiter = 
+        let moveNextChar () = _tokenizer.MoveNextCharEx NextTokenFlags.AllowDoubleQuote
         let builder = System.Text.StringBuilder()
         let rec inner () = 
-            let token = _tokenizer.CurrentToken
-            match token.TokenKind with
-            | TokenKind.Character c ->
+            match _tokenizer.CurrentChar with
+            | None ->
+                // Hit the end without finding 'delimiter'. 
+                builder.ToString(), false
+            | Some c ->
                 if c = delimiter then 
-                    _tokenizer.MoveNextToken()
+                    moveNextChar ()
                     builder.ToString(), true
                 elif c = '\\' then
-                    _tokenizer.MoveNextToken()
+                    moveNextChar ()
 
-                    match _tokenizer.CurrentTokenKind with
-                    | TokenKind.Character c ->
+                    match _tokenizer.CurrentChar with
+                    | None -> ()
+                    | Some c ->
                         if c <> delimiter then
                             // If the next char is not the delimeter then we have to assume the '\'
                             // is part of an escape for the pattern itself (\(, \1, etc ..) and we
@@ -561,25 +565,13 @@ type Parser
                             builder.AppendChar '\\'
 
                         builder.AppendChar c
-                        _tokenizer.MoveNextToken()
-                    | TokenKind.Word _ -> 
-                        // It's part of an escape sequence
-                        builder.AppendChar '\\'
-                    | _ ->
-                        ()
+                        moveNextChar ()
 
                     inner()
                 else
                     builder.AppendChar c
-                    _tokenizer.MoveNextToken()
+                    moveNextChar ()
                     inner()
-            | TokenKind.EndOfLine ->
-                // Hit the end without finding 'delimiter'. 
-                builder.ToString(), false
-            | _ ->
-                builder.AppendString token.TokenText
-                _tokenizer.MoveNextToken()
-                inner()
 
         inner ()
 
