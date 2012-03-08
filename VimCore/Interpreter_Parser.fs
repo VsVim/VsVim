@@ -152,6 +152,8 @@ type Parser
         ("cnoremap", "cno")
     ]
 
+    member x.Tokenizer = _tokenizer
+
     /// Move past the white space in the expression text
     member x.SkipBlanks () = 
         match _tokenizer.CurrentTokenKind with

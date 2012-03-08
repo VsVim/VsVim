@@ -53,7 +53,8 @@ namespace Vim.UnitTest
             public string ParseStringConstant(string text)
             {
                 var parser = new Parser(text);
-                var parseResult = parser.ParseStringLiteral();
+                parser.Tokenizer.MoveToIndexEx(parser.Tokenizer.Index, NextTokenFlags.AllowDoubleQuote);
+                var parseResult = parser.ParseStringConstant();
                 Assert.IsTrue(parseResult.IsSucceeded);
                 return parseResult.AsSucceeded().Item.AsConstantValue().Item.AsString().Item;
             }
