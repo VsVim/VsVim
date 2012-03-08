@@ -785,6 +785,25 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Test the movement of the caret over a shorter line and then back to a line long
+        /// enough
+        /// </summary>
+        [Test]
+        public void Move_Block_OverShortLine()
+        {
+            Create("really long line", "short", "really long line");
+            _textView.MoveCaretTo(7);
+            _vimBuffer.ProcessNotation("<C-v>lll");
+            Assert.AreEqual("long", _textView.Selection.SelectedSpans[0].GetText());
+            _vimBuffer.ProcessNotation("jj");
+            var spans = _textView.Selection.SelectedSpans;
+            Assert.AreEqual(3, spans.Count);
+            Assert.AreEqual("long", spans[0].GetText());
+            Assert.AreEqual("", spans[1].GetText());
+            Assert.AreEqual("long", spans[2].GetText());
+        }
+
+        /// <summary>
         /// Character should be positioned at the end of the inserted text
         /// </summary>
         [Test]
