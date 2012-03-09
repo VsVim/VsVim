@@ -541,6 +541,11 @@ type Parser
     /// of the pattern and a bool.  The bool will represent whether or not the delimiter was found.
     /// If the delimeter is found then it will be consumed
     member x.ParsePattern delimiter = 
+
+        // Need to reset to account for the case where the pattern begins with a 
+        // double quote
+        _tokenizer.ResetAtIndex NextTokenFlags.AllowDoubleQuote
+
         let moveNextChar () = _tokenizer.MoveNextCharEx NextTokenFlags.AllowDoubleQuote
         let builder = System.Text.StringBuilder()
         let rec inner () = 
@@ -1333,7 +1338,7 @@ type Parser
 
         // Re-examine the current token based on the knowledge that double quotes are
         // legal in this context as a real token
-        _tokenizer.MoveToIndexEx _tokenizer.Index NextTokenFlags.AllowDoubleQuote
+        _tokenizer.ResetAtIndex NextTokenFlags.AllowDoubleQuote
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Character '\"' ->
             x.ParseStringConstant()

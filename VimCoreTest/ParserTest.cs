@@ -223,6 +223,16 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Make sure we can handle double quotes in both places
+            /// </summary>
+            [Test]
+            public void DoubleQuotes()
+            {
+                AssertSubstitute(@"s/""cat""/dog", @"""cat""", "dog");
+                AssertSubstitute(@"s/cat/""dog""", @"cat", @"""dog""");
+            }
+
+            /// <summary>
             /// Make sure that we properly parse out the group specifier in the replace string
             /// </summary>
             [Test]

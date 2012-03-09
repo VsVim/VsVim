@@ -910,6 +910,22 @@ namespace Vim.UnitTest
             }
 
             [Test]
+            public void Substitute_DoubleQuotesPattern()
+            {
+                Create(@"""cat""");
+                ParseAndRun(@"s/""cat""/dog");
+                Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Test]
+            public void Substitute_DoubleQuotesReplace()
+            {
+                Create(@"cat");
+                ParseAndRun(@"s/cat/""dog""");
+                Assert.AreEqual(@"""dog""", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Test]
             public void TabNext_NoCount()
             {
                 Create("");

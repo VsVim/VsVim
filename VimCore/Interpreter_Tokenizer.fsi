@@ -54,3 +54,6 @@ type internal Tokenizer =
     /// to examine the current token
     member MoveToIndexEx : index : int -> flags : NextTokenFlags -> unit
 
+    /// Reset the tokenizer at the current index with the specified flags
+    member ResetAtIndex : flags : NextTokenFlags -> unit
+
