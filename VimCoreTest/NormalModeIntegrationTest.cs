@@ -2396,6 +2396,17 @@ namespace Vim.UnitTest
             doSearch(@"/\<}\>", 0);  // Should fail
         }
 
+        /// <summary>
+        /// Verify we can use the \1 in an incremental search for matches
+        /// </summary>
+        [Test]
+        public void IncrementalSearch_GroupingMatch()
+        {
+            Create("dog", "dog::dog", "dog");
+            _vimBuffer.Process(@"/\(dog\)::\1", enter: true);
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
         [Test]
         public void Mark_SelectionEndIsExclusive()
         {

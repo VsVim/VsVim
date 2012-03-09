@@ -596,6 +596,17 @@ namespace Vim.UnitTest
             Assert.IsTrue(regex.IsNone());
         }
 
+        /// <summary>
+        /// Make sure that \1 can be used to match the previous group specified
+        /// </summary>
+        [Test]
+        public void Group_MatchPreviousGroup()
+        {
+            VerifyMatches(@"\(dog\)::\1", "dog::dog");
+            VerifyMatches(@"\(dog\)::cat::\1", "dog::cat::dog");
+            VerifyNotMatches(@"\(dog\)::\1", "dog::cat");
+        }
+
         [Test]
         public void Separator1()
         {

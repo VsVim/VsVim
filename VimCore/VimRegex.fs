@@ -365,13 +365,18 @@ module VimRegexFactory =
         // you can't see newlines, so why should you be expected to know the diff between them?
         // Also, use ?: for non-capturing group, so we don't cause any weird behavior
         | 'n' -> data.AppendString "(?:\r?\n|\r)"
-        | _ ->
+        | c ->
             let data = 
-                match data.MagicKind with
-                | MagicKind.Magic -> ConvertEscapedCharAsMagicAndNoMagic data c 
-                | MagicKind.NoMagic -> ConvertEscapedCharAsMagicAndNoMagic data c
-                | MagicKind.VeryMagic -> data.AppendEscapedChar c
-                | MagicKind.VeryNoMagic -> ConvertCharAsSpecial data c
+                if CharUtil.IsDigit c then
+                    // Convert the \1 escape into the BCL \1 for any single digit
+                    let str = sprintf "\\%c"c
+                    data.AppendString str
+                else
+                    match data.MagicKind with
+                    | MagicKind.Magic -> ConvertEscapedCharAsMagicAndNoMagic data c 
+                    | MagicKind.NoMagic -> ConvertEscapedCharAsMagicAndNoMagic data c
+                    | MagicKind.VeryMagic -> data.AppendEscapedChar c
+                    | MagicKind.VeryNoMagic -> ConvertCharAsSpecial data c
             { data with IsStartOfPattern = false }
 
     /// Convert a normal unescaped char based on the magic kind
