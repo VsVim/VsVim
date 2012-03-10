@@ -179,6 +179,56 @@ namespace Vim.UnitTest
                 ParseAndRun(@"s/cat/""dog""");
                 Assert.AreEqual(@"""dog""", _textBuffer.GetLine(0).GetText());
             }
+
+            /// <summary>
+            /// This is a bit of a special case around the escape sequence for a new line.  The escape
+            /// actually escapes the backslash and doesn't add a new line
+            /// </summary>
+            [Test]
+            public void EscapedLooksLikeNewLine()
+            {
+                Create("cat", "dog");
+                ParseAndRun(@"s/$/\\n\\/");
+                Assert.AreEqual(@"cat\n\", _textBuffer.GetLine(0).GetText());
+                Assert.AreEqual(@"dog", _textBuffer.GetLine(1).GetText());
+            }
+
+            /// <summary>
+            /// The $ marker needs to be treated as a zero width assertion.  Don't replace the new line
+            /// just the rest of the string
+            /// </summary>
+            [Test]
+            public void WordAndEndOfLine()
+            {
+                Create("cat cat", "fish");
+                ParseAndRun(@"s/cat$/dog/");
+                Assert.AreEqual("cat dog", _textBuffer.GetLine(0).GetText());
+                Assert.AreEqual("fish", _textBuffer.GetLine(1).GetText());
+            }
+
+            /// <summary>
+            /// Matching $ as part of the regex is a zero width match.  It can't be used to delete the 
+            /// end of the line
+            /// </summary>
+            [Test]
+            public void EndOfLineIsZeroWidth()
+            {
+                Create("cat", "dog", "fish");
+                ParseAndRun(@"%s/$//");
+                Assert.AreEqual(3, _textBuffer.CurrentSnapshot.LineCount);
+            }
+
+            /// <summary>
+            /// The \n character is not zero width and can be used to delete the new line
+            /// </summary>
+            [Test]
+            public void NewLineIsNotZeroWidth()
+            {
+                Create("cat", "dog", "fish");
+                ParseAndRun(@"s/\n//");
+                Assert.AreEqual("catdog", _textBuffer.GetLine(0).GetText());
+                Assert.AreEqual("fish", _textBuffer.GetLine(1).GetText());
+            }
         }
 
         [TestFixture]

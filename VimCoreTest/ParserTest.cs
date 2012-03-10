@@ -244,6 +244,16 @@ namespace Vim.UnitTest
                 AssertSubstitute(@"s/dog/\2fish", "dog", @"\2fish");
             }
 
+            /// <summary>
+            /// Make sure this scenario isn't treated as a new line.  The backslashes need to all
+            /// be preserved and handled by the regex engine
+            /// </summary>
+            [Test]
+            public void EscapedBackslashInReplace()
+            {
+                AssertSubstitute(@"s/$/\\n\\/", "$", @"\\n\\");
+            }
+
             [Test]
             public void RepeatWithCount()
             {

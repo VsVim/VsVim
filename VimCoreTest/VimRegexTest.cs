@@ -697,6 +697,18 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Don't treat an escaped backslash in front of a 'n' character as a new line. 
+        /// 
+        /// Issue #779
+        /// </summary>
+        [Test]
+        public void Replace_EscapedBackSlashNotNewLine()
+        {
+            VerifyReplace("b", "abc", @"\\n\\", @"a\n\c");
+            VerifyReplace("$", "dog", @"\\n\\", @"dog\n\");
+        }
+
+        /// <summary>
         /// When the '&' character is used in the replacement string it should replace with 
         /// the entire matched pattern
         /// </summary>

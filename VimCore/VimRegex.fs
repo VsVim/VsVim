@@ -134,18 +134,20 @@ type VimRegex
         _vimPattern : string,
         _caseSpecifier : CaseSpecifier,
         _regexPattern : string,
-        _regex : Regex
+        _regex : Regex,
+        _includesNewLine : bool
     ) =
 
     member x.CaseSpecifier = _caseSpecifier
     member x.VimPattern = _vimPattern
     member x.RegexPattern = _regexPattern
     member x.Regex = _regex
+    member x.IncludesNewLine = _includesNewLine
     member x.IsMatch input = _regex.IsMatch(input)
     member x.ReplaceAll (input : string) (replacement : string) (replaceData : ReplaceData) = 
         let replacement = VimRegexUtils.ConvertReplacementString replacement replaceData
         _regex.Replace(input, replacement)
-    member x.Replace (input:string) (replacement:string) (replaceData : ReplaceData) =
+    member x.Replace (input : string) (replacement : string) (replaceData : ReplaceData) =
         let replacement = VimRegexUtils.ConvertReplacementString replacement replaceData
         _regex.Replace(input, replacement, replaceData.Count) 
 
@@ -191,6 +193,9 @@ type Data = {
 
     /// The original options 
     Options : VimRegexOptions
+
+    /// Includes a \n reference
+    IncludesNewLine : bool
 }
     with
     member x.IsEndOfPattern = x.Index >= x.Pattern.Length
@@ -217,8 +222,8 @@ type Data = {
 
 module VimRegexFactory =
 
-    // Create the actual BCL regex 
-    let CreateRegex (data : Data) =
+    // Create the actual Vim regex
+    let CreateVimRegex (data : Data) =
 
         let regexOptions = 
             let regexOptions = 
@@ -238,7 +243,7 @@ module VimRegexFactory =
             let regex = VimRegexUtils.TryCreateRegex bclPattern regexOptions
             match regex with
             | None -> None
-            | Some regex -> Some (bclPattern, data.CaseSpecifier, regex)
+            | Some regex -> VimRegex(data.Pattern, data.CaseSpecifier, bclPattern, regex, data.IncludesNewLine) |> Some
 
     /// Convert the given character as a special character.  Interpretation
     /// may depend on the type of magic that is currently being employed
@@ -361,10 +366,12 @@ module VimRegexFactory =
         | 'v' -> {data with MagicKind = MagicKind.VeryMagic }
         | 'V' -> {data with MagicKind = MagicKind.VeryNoMagic }
         | 't' -> data.AppendString "\t"
-        // vim expects \n to match any kind of newline, regardless of platform. Think about it,
-        // you can't see newlines, so why should you be expected to know the diff between them?
-        // Also, use ?: for non-capturing group, so we don't cause any weird behavior
-        | 'n' -> data.AppendString "(?:\r?\n|\r)"
+        | 'n' -> 
+            // vim expects \n to match any kind of newline, regardless of platform. Think about it,
+            // you can't see newlines, so why should you be expected to know the diff between them?
+            // Also, use ?: for non-capturing group, so we don't cause any weird behavior
+            let data = data.AppendString "(?:\r?\n|\r)"
+            { data with IncludesNewLine = true } 
         | c ->
             let data = 
                 if CharUtil.IsDigit c then
@@ -394,13 +401,12 @@ module VimRegexFactory =
         {data with IsStartOfPattern = false}
 
     let Convert (data : Data) = 
-        let rec inner (data : Data) : (string * CaseSpecifier * Regex) option =
+        let rec inner (data : Data) : VimRegex option =
             if data.IsBroken then 
                 None
             else
                 match data.CharAtIndex with
-                | None -> 
-                    CreateRegex data 
+                | None -> CreateVimRegex data 
                 | Some '\\' -> 
                     let wasStartOfGrouping = data.IsStartOfGrouping
                     let data = data.IncrementIndex 1
@@ -451,11 +457,10 @@ module VimRegexFactory =
             IsRangeOpen = false
             IsStartOfPattern = true
             IsStartOfGrouping = false
-            Options = options }
+            Options = options
+            IncludesNewLine = false }
 
-        match Convert data with
-        | None -> None
-        | Some (bclPattern, caseSpecifier, regex) -> VimRegex(pattern, caseSpecifier, bclPattern, regex) |> Some
+        Convert data
 
     let CreateRegexOptions (globalSettings : IVimGlobalSettings) =
         let options = VimRegexOptions.Default

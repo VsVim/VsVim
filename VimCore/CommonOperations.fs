@@ -617,29 +617,39 @@ type internal CommonOperations
     member x.Substitute pattern replace (range : SnapshotLineRange) flags = 
 
         /// Actually do the replace with the given regex
-        let doReplace (regex:VimRegex) = 
+        let doReplace (regex : VimRegex) = 
             use edit = _textView.TextBuffer.CreateEdit()
 
-            let replaceOne (span:SnapshotSpan) (c:Capture) = 
+            let replaceOne line (c : Capture) = 
                 let replaceData = x.GetReplaceData x.CaretPoint
                 let newText =  regex.Replace c.Value replace replaceData
-                let offset = span.Start.Position
-                edit.Replace(Span(c.Index+offset, c.Length), newText) |> ignore
-            let getMatches (span:SnapshotSpan) = 
+                let offset = 
+                    line
+                    |> SnapshotLineUtil.GetStart
+                    |> SnapshotPointUtil.GetPosition
+                edit.Replace(Span(c.Index + offset, c.Length), newText) |> ignore
+
+            let getMatches line = 
+                let text = 
+                    if regex.IncludesNewLine then
+                        SnapshotLineUtil.GetTextIncludingLineBreak line
+                    else 
+                        SnapshotLineUtil.GetText line
                 if Util.IsFlagSet flags SubstituteFlags.ReplaceAll then
-                    regex.Regex.Matches(span.GetText()) |> Seq.cast<Match>
+                    regex.Regex.Matches(text) |> Seq.cast<Match>
                 else
-                    regex.Regex.Match(span.GetText()) |> Seq.singleton
+                    regex.Regex.Match(text) |> Seq.singleton
+
             let matches = 
                 range.Lines
-                |> Seq.map (fun line -> line.ExtentIncludingLineBreak)
-                |> Seq.map (fun span -> getMatches span |> Seq.map (fun m -> (m,span)) )
+                |> Seq.map (fun line -> getMatches line |> Seq.map (fun m -> (m, line)) )
                 |> Seq.concat 
                 |> Seq.filter (fun (m,_) -> m.Success)
+                |> List.ofSeq
 
             if not (Util.IsFlagSet flags SubstituteFlags.ReportOnly) then
                 // Actually do the edits
-                matches |> Seq.iter (fun (m,span) -> replaceOne span m)
+                matches |> Seq.iter (fun (m, line) -> replaceOne line m)
 
             // Update the status for the substitute operation
             let printMessage () = 
@@ -649,7 +659,7 @@ type internal CommonOperations
                     let replaceCount = matches |> Seq.length
                     let lineCount = 
                         matches 
-                        |> Seq.map (fun (_,s) -> s.Start.GetContainingLine().LineNumber)
+                        |> Seq.map (fun (_, line) -> line.LineNumber)
                         |> Seq.distinct
                         |> Seq.length
                     if replaceCount > 1 then Resources.Common_SubstituteComplete replaceCount lineCount |> Some
@@ -666,7 +676,8 @@ type internal CommonOperations
                     if Seq.isEmpty matches then 
                         None
                     else 
-                        let _, span = matches |> SeqUtil.last 
+                        let _, line = matches |> SeqUtil.last 
+                        let span = line.ExtentIncludingLineBreak
                         let tracking = span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeInclusive)
                         match TrackingSpanUtil.GetSpan _textView.TextSnapshot tracking with
                         | None -> None
