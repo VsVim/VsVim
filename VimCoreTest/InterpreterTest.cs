@@ -231,6 +231,20 @@ namespace Vim.UnitTest
                     _textBuffer.GetLines().ToArray());
             }
 
+            [Test]
+            public void EndOfLineWithGroupReplace()
+            {
+                Create(
+                    @"  { ""cat"",  CAT_VALUE /* 100 */ },",
+                    @"  { ""dog"",  BAT_VALUE /* 101 */ },",
+                    @"  { ""bat"",  BAT_VALUE /* 102 */ }");
+                ParseAndRun(@"%s/\(\s\+\){\s*\(""\w\+"",\).*$/\1\2/");
+                Assert.AreEqual(3, _textBuffer.CurrentSnapshot.LineCount);
+                Assert.AreEqual(@"  ""cat"",", _textBuffer.GetLine(0).GetText());
+                Assert.AreEqual(@"  ""dog"",", _textBuffer.GetLine(1).GetText());
+                Assert.AreEqual(@"  ""bat"",", _textBuffer.GetLine(2).GetText());
+            }
+
             /// <summary>
             /// The \n character is not zero width and can be used to delete the new line
             /// </summary>
