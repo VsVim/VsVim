@@ -486,7 +486,7 @@ namespace Vim.UnitTest
         }
 
         [TestFixture]
-        public sealed class Misc : ParserTest
+        public sealed class Address : ParserTest
         {
             private LineRangeSpecifier ParseLineRange(string text)
             {
@@ -504,6 +504,110 @@ namespace Vim.UnitTest
                 return option.Value;
             }
 
+            /// <summary>
+            /// Make sure we can parse out the '%' range
+            /// </summary>
+            [Test]
+            public void EntireBuffer()
+            {
+                var lineRange = ParseLineRange("%");
+                Assert.IsTrue(lineRange.IsEntireBuffer);
+            }
+
+            /// <summary>
+            /// Make sure we can parse out a single line number range
+            /// </summary>
+            [Test]
+            public void SingleLineNumber()
+            {
+                var lineRange = ParseLineRange("42");
+                Assert.IsTrue(lineRange.IsSingleLine);
+                Assert.IsTrue(lineRange.AsSingleLine().Item.IsNumber(42));
+            }
+
+            /// <summary>
+            /// Make sure we can parse out a range of the current line and itself
+            /// </summary>
+            [Test]
+            public void RangeOfCurrentLine()
+            {
+                var lineRange = ParseLineRange(".,.");
+                Assert.IsTrue(lineRange.AsRange().Item1.IsCurrentLine);
+                Assert.IsTrue(lineRange.AsRange().Item2.IsCurrentLine);
+                Assert.IsFalse(lineRange.AsRange().item3);
+            }
+
+            /// <summary>
+            /// Make sure we can parse out a range of numbers
+            /// </summary>
+            [Test]
+            public void RangeOfNumbers()
+            {
+                var lineRange = ParseLineRange("1,2");
+                Assert.IsTrue(lineRange.AsRange().Item1.IsNumber(1));
+                Assert.IsTrue(lineRange.AsRange().Item2.IsNumber(2));
+                Assert.IsFalse(lineRange.AsRange().item3);
+            }
+
+            /// <summary>
+            /// Make sure we can parse out a range of numbers with the adjust caret 
+            /// option specified
+            /// </summary>
+            [Test]
+            public void RangeOfNumbersWithAdjustCaret()
+            {
+                var lineRange = ParseLineRange("1;2");
+                Assert.IsTrue(lineRange.AsRange().Item1.IsNumber(1));
+                Assert.IsTrue(lineRange.AsRange().Item2.IsNumber(2));
+                Assert.IsTrue(lineRange.AsRange().item3);
+            }
+
+            /// <summary>
+            /// Make sure that it can handle a mark range
+            /// </summary>
+            [Test]
+            public void Marks()
+            {
+                var lineRange = ParseLineRange("'a,'b");
+                Assert.IsTrue(lineRange.AsRange().Item1.IsMarkLine);
+                Assert.IsTrue(lineRange.AsRange().Item2.IsMarkLine);
+            }
+
+            /// <summary>
+            /// Make sure that it can handle a mark range with trailing text
+            /// </summary>
+            [Test]
+            public void MarksWithTrailing()
+            {
+                var lineRange = ParseLineRange("'a,'bc");
+                Assert.IsTrue(lineRange.AsRange().Item1.IsMarkLine);
+                Assert.IsTrue(lineRange.AsRange().Item2.IsMarkLine);
+            }
+
+            /// <summary>
+            /// Ensure we can parse out a simple next pattern
+            /// </summary>
+            [Test]
+            public void NextPatternSpecifier()
+            {
+                var lineSpecifier = ParseLineSpecifier("/dog/");
+                Assert.AreEqual("dog", lineSpecifier.AsNextLineWithPattern().Item);
+            }
+
+            /// <summary>
+            /// Ensure we can parse out a simple previous pattern
+            /// </summary>
+            [Test]
+            public void PreviousPatternSpecifier()
+            {
+                var lineSpecifier = ParseLineSpecifier("?dog?");
+                Assert.AreEqual("dog", lineSpecifier.AsPreviousLineWithPattern().Item);
+            }
+        }
+
+        [TestFixture]
+        public sealed class Map : ParserTest
+        {
             private void AssertMap(string command, string lhs, string rhs, params KeyRemapMode[] keyRemapModes)
             {
                 AssertMapCore(command, lhs, rhs, false, keyRemapModes);
@@ -530,6 +634,171 @@ namespace Vim.UnitTest
                 CollectionAssert.AreEqual(keyRemapModes, map.Item2.ToArray());
             }
 
+            [Test]
+            public void Default()
+            {
+                var modes = new KeyRemapMode[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Select, KeyRemapMode.OperatorPending };
+                AssertMap("noremap l h", "l", "h", modes);
+                AssertMap("nore l h", "l", "h", modes);
+                AssertMap("no l h", "l", "h", modes);
+            }
+
+            [Test]
+            public void DefaultWithBang()
+            {
+                var modes = new KeyRemapMode[] { KeyRemapMode.Insert, KeyRemapMode.Command };
+                AssertMap("noremap! l h", "l", "h", modes);
+                AssertMap("nore! l h", "l", "h", modes);
+                AssertMap("no! l h", "l", "h", modes);
+            }
+
+            [Test]
+            public void Normal()
+            {
+                AssertMap("nnoremap l h", "l", "h", KeyRemapMode.Normal);
+                AssertMap("nnor l h", "l", "h", KeyRemapMode.Normal);
+                AssertMap("nn l h", "l", "h", KeyRemapMode.Normal);
+            }
+
+            [Test]
+            public void VirtualAndSelect()
+            {
+                AssertMap("vnoremap a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
+                AssertMap("vnor a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
+                AssertMap("vn a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
+            }
+
+            [Test]
+            public void Visual()
+            {
+                AssertMap("xnoremap b c", "b", "c", KeyRemapMode.Visual);
+            }
+
+            [Test]
+            public void Select()
+            {
+                AssertMap("snoremap a b", "a", "b", KeyRemapMode.Select);
+            }
+
+            [Test]
+            public void OperatorPending()
+            {
+                AssertMap("onoremap a b", "a", "b", KeyRemapMode.OperatorPending);
+            }
+
+            [Test]
+            public void Insert()
+            {
+                AssertMap("inoremap a b", "a", "b", KeyRemapMode.Insert);
+            }
+
+            /// <summary>
+            /// Make sure the map commands can handle the special argument
+            /// </summary>
+            [Test]
+            public void Arguments()
+            {
+                Action<string, KeyMapArgument> action =
+                    (commandText, mapArgument) =>
+                    {
+                        var command = ParseLineCommand(commandText).AsMapKeys();
+                        var mapArguments = command.Item5;
+                        Assert.AreEqual(1, mapArguments.Length);
+                        Assert.AreEqual(mapArgument, mapArguments.Head);
+                    };
+                action("map <buffer> a b", KeyMapArgument.Buffer);
+                action("map <silent> a b", KeyMapArgument.Silent);
+                action("imap <silent> a b", KeyMapArgument.Silent);
+                action("nmap <silent> a b", KeyMapArgument.Silent);
+            }
+
+            /// <summary>
+            /// Make sure we can parse out all of the map special argument values
+            /// </summary>
+            [Test]
+            public void ArgumentsAll()
+            {
+                var all = new[] { "buffer", "silent", "expr", "unique", "special" };
+                foreach (var cur in all)
+                {
+                    var parser = new Parser("<" + cur + ">");
+                    var list = parser.ParseMapArguments();
+                    Assert.AreEqual(1, list.Length);
+                }
+            }
+
+            /// <summary>
+            /// Make sure we can parse out several items in a row and in the correct order
+            /// </summary>
+            [Test]
+            public void ArgumentsMultiple()
+            {
+                var text = "<buffer> <silent>";
+                var parser = new Parser(text);
+                var list = parser.ParseMapArguments().ToList();
+                CollectionAssert.AreEquivalent(
+                    new[] { KeyMapArgument.Buffer, KeyMapArgument.Silent },
+                    list);
+            }
+
+            [Test]
+            public void RemapStandard()
+            {
+                AssertMapWithRemap("map a bc", "a", "bc", KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Select, KeyRemapMode.OperatorPending);
+            }
+
+            [Test]
+            public void RemapNormal()
+            {
+                AssertMapWithRemap("nmap a b", "a", "b", KeyRemapMode.Normal);
+            }
+
+            [Test]
+            public void RemapMany()
+            {
+                AssertMapWithRemap("vmap a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
+                AssertMapWithRemap("vm a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
+                AssertMapWithRemap("xmap a b", "a", "b", KeyRemapMode.Visual);
+                AssertMapWithRemap("xm a b", "a", "b", KeyRemapMode.Visual);
+                AssertMapWithRemap("smap a b", "a", "b", KeyRemapMode.Select);
+                AssertMapWithRemap("omap a b", "a", "b", KeyRemapMode.OperatorPending);
+                AssertMapWithRemap("om a b", "a", "b", KeyRemapMode.OperatorPending);
+                AssertMapWithRemap("imap a b", "a", "b", KeyRemapMode.Insert);
+                AssertMapWithRemap("im a b", "a", "b", KeyRemapMode.Insert);
+                AssertMapWithRemap("cmap a b", "a", "b", KeyRemapMode.Command);
+                AssertMapWithRemap("cm a b", "a", "b", KeyRemapMode.Command);
+                AssertMapWithRemap("lmap a b", "a", "b", KeyRemapMode.Language);
+                AssertMapWithRemap("lm a b", "a", "b", KeyRemapMode.Language);
+                AssertMapWithRemap("map! a b", "a", "b", KeyRemapMode.Insert, KeyRemapMode.Command);
+            }
+
+            /// <summary>
+            /// Parse out the unmapping of keys
+            /// </summary>
+            [Test]
+            public void UnmapSimple()
+            {
+                AssertUnmap("vunmap a ", "a", KeyRemapMode.Visual, KeyRemapMode.Select);
+                AssertUnmap("vunm a ", "a", KeyRemapMode.Visual, KeyRemapMode.Select);
+                AssertUnmap("xunmap a", "a", KeyRemapMode.Visual);
+                AssertUnmap("xunm a ", "a", KeyRemapMode.Visual);
+                AssertUnmap("sunmap a ", "a", KeyRemapMode.Select);
+                AssertUnmap("ounmap a ", "a", KeyRemapMode.OperatorPending);
+                AssertUnmap("ounm a ", "a", KeyRemapMode.OperatorPending);
+                AssertUnmap("iunmap a ", "a", KeyRemapMode.Insert);
+                AssertUnmap("iunm a", "a", KeyRemapMode.Insert);
+                AssertUnmap("cunmap a ", "a", KeyRemapMode.Command);
+                AssertUnmap("cunm a ", "a", KeyRemapMode.Command);
+                AssertUnmap("lunmap a ", "a", KeyRemapMode.Language);
+                AssertUnmap("lunm a ", "a", KeyRemapMode.Language);
+                AssertUnmap("unmap! a ", "a", KeyRemapMode.Insert, KeyRemapMode.Command);
+            }
+
+        }
+
+        [TestFixture]
+        public sealed class Misc : ParserTest
+        {
             /// <summary>
             /// Change directory with an empty path
             /// </summary>
@@ -652,244 +921,6 @@ namespace Vim.UnitTest
                 Assert.AreEqual(2, lineRange.AsWithEndCount().Item2.Value);
             }
 
-            /// <summary>
-            /// Make sure we can parse out the '%' range
-            /// </summary>
-            [Test]
-            public void Parse_LineRange_EntireBuffer()
-            {
-                var lineRange = ParseLineRange("%");
-                Assert.IsTrue(lineRange.IsEntireBuffer);
-            }
-
-            /// <summary>
-            /// Make sure we can parse out a single line number range
-            /// </summary>
-            [Test]
-            public void Parse_LineRange_SingleLineNumber()
-            {
-                var lineRange = ParseLineRange("42");
-                Assert.IsTrue(lineRange.IsSingleLine);
-                Assert.IsTrue(lineRange.AsSingleLine().Item.IsNumber(42));
-            }
-
-            /// <summary>
-            /// Make sure we can parse out a range of the current line and itself
-            /// </summary>
-            [Test]
-            public void Parse_LineRange_RangeOfCurrentLine()
-            {
-                var lineRange = ParseLineRange(".,.");
-                Assert.IsTrue(lineRange.AsRange().Item1.IsCurrentLine);
-                Assert.IsTrue(lineRange.AsRange().Item2.IsCurrentLine);
-                Assert.IsFalse(lineRange.AsRange().item3);
-            }
-
-            /// <summary>
-            /// Make sure we can parse out a range of numbers
-            /// </summary>
-            [Test]
-            public void Parse_LineRange_RangeOfNumbers()
-            {
-                var lineRange = ParseLineRange("1,2");
-                Assert.IsTrue(lineRange.AsRange().Item1.IsNumber(1));
-                Assert.IsTrue(lineRange.AsRange().Item2.IsNumber(2));
-                Assert.IsFalse(lineRange.AsRange().item3);
-            }
-
-            /// <summary>
-            /// Make sure we can parse out a range of numbers with the adjust caret 
-            /// option specified
-            /// </summary>
-            [Test]
-            public void Parse_LineRange_RangeOfNumbersWithAdjustCaret()
-            {
-                var lineRange = ParseLineRange("1;2");
-                Assert.IsTrue(lineRange.AsRange().Item1.IsNumber(1));
-                Assert.IsTrue(lineRange.AsRange().Item2.IsNumber(2));
-                Assert.IsTrue(lineRange.AsRange().item3);
-            }
-
-            /// <summary>
-            /// Make sure that it can handle a mark range
-            /// </summary>
-            [Test]
-            public void Parse_LineRange_Marks()
-            {
-                var lineRange = ParseLineRange("'a,'b");
-                Assert.IsTrue(lineRange.AsRange().Item1.IsMarkLine);
-                Assert.IsTrue(lineRange.AsRange().Item2.IsMarkLine);
-            }
-
-            /// <summary>
-            /// Make sure that it can handle a mark range with trailing text
-            /// </summary>
-            [Test]
-            public void Parse_LineRange_MarksWithTrailing()
-            {
-                var lineRange = ParseLineRange("'a,'bc");
-                Assert.IsTrue(lineRange.AsRange().Item1.IsMarkLine);
-                Assert.IsTrue(lineRange.AsRange().Item2.IsMarkLine);
-            }
-
-            /// <summary>
-            /// Ensure we can parse out a simple next pattern
-            /// </summary>
-            [Test]
-            public void Parse_LineSpecifier_NextPattern()
-            {
-                var lineSpecifier = ParseLineSpecifier("/dog/");
-                Assert.AreEqual("dog", lineSpecifier.AsNextLineWithPattern().Item);
-            }
-
-            /// <summary>
-            /// Ensure we can parse out a simple previous pattern
-            /// </summary>
-            [Test]
-            public void Parse_LineSpecifier_PreviousPattern()
-            {
-                var lineSpecifier = ParseLineSpecifier("?dog?");
-                Assert.AreEqual("dog", lineSpecifier.AsPreviousLineWithPattern().Item);
-            }
-
-            [Test]
-            public void Parse_Map_Default()
-            {
-                var modes = new KeyRemapMode[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Select, KeyRemapMode.OperatorPending };
-                AssertMap("noremap l h", "l", "h", modes);
-                AssertMap("nore l h", "l", "h", modes);
-                AssertMap("no l h", "l", "h", modes);
-            }
-
-            [Test]
-            public void Parse_Map_DefaultWithBang()
-            {
-                var modes = new KeyRemapMode[] { KeyRemapMode.Insert, KeyRemapMode.Command };
-                AssertMap("noremap! l h", "l", "h", modes);
-                AssertMap("nore! l h", "l", "h", modes);
-                AssertMap("no! l h", "l", "h", modes);
-            }
-
-            [Test]
-            public void Parse_Map_Normal()
-            {
-                AssertMap("nnoremap l h", "l", "h", KeyRemapMode.Normal);
-                AssertMap("nnor l h", "l", "h", KeyRemapMode.Normal);
-                AssertMap("nn l h", "l", "h", KeyRemapMode.Normal);
-            }
-
-            [Test]
-            public void Parse_Map_VirtualAndSelect()
-            {
-                AssertMap("vnoremap a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
-                AssertMap("vnor a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
-                AssertMap("vn a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
-            }
-
-            [Test]
-            public void Parse_Map_Visual()
-            {
-                AssertMap("xnoremap b c", "b", "c", KeyRemapMode.Visual);
-            }
-
-            [Test]
-            public void Parse_Map_Select()
-            {
-                AssertMap("snoremap a b", "a", "b", KeyRemapMode.Select);
-            }
-
-            [Test]
-            public void Parse_Map_OperatorPending()
-            {
-                AssertMap("onoremap a b", "a", "b", KeyRemapMode.OperatorPending);
-            }
-
-            [Test]
-            public void Parse_Map_Insert()
-            {
-                AssertMap("inoremap a b", "a", "b", KeyRemapMode.Insert);
-            }
-
-            /// <summary>
-            /// Make sure the map commands can handle the special argument
-            /// </summary>
-            [Test]
-            public void Parse_Map_Arguments()
-            {
-                Action<string, KeyMapArgument> action =
-                    (commandText, mapArgument) =>
-                    {
-                        var command = ParseLineCommand(commandText).AsMapKeys();
-                        var mapArguments = command.Item5;
-                        Assert.AreEqual(1, mapArguments.Length);
-                        Assert.AreEqual(mapArgument, mapArguments.Head);
-                    };
-                action("map <buffer> a b", KeyMapArgument.Buffer);
-                action("map <silent> a b", KeyMapArgument.Silent);
-                action("imap <silent> a b", KeyMapArgument.Silent);
-                action("nmap <silent> a b", KeyMapArgument.Silent);
-            }
-
-            /// <summary>
-            /// Make sure we can parse out all of the map special argument values
-            /// </summary>
-            [Test]
-            public void ParseMapArguments_All()
-            {
-                var all = new[] { "buffer", "silent", "expr", "unique", "special" };
-                foreach (var cur in all)
-                {
-                    var parser = new Parser("<" + cur + ">");
-                    var list = parser.ParseMapArguments();
-                    Assert.AreEqual(1, list.Length);
-                }
-            }
-
-            /// <summary>
-            /// Make sure we can parse out several items in a row and in the correct order
-            /// </summary>
-            [Test]
-            public void ParseMapArguments_Multiple()
-            {
-                var text = "<buffer> <silent>";
-                var parser = new Parser(text);
-                var list = parser.ParseMapArguments().ToList();
-                CollectionAssert.AreEquivalent(
-                    new[] { KeyMapArgument.Buffer, KeyMapArgument.Silent },
-                    list);
-            }
-
-            [Test]
-            public void Parse_MapWithRemap_Standard()
-            {
-                AssertMapWithRemap("map a bc", "a", "bc", KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Select, KeyRemapMode.OperatorPending);
-            }
-
-            [Test]
-            public void Parse_MapWithRemap_Normal()
-            {
-                AssertMapWithRemap("nmap a b", "a", "b", KeyRemapMode.Normal);
-            }
-
-            [Test]
-            public void Parse_MapWithRemap_Many()
-            {
-                AssertMapWithRemap("vmap a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
-                AssertMapWithRemap("vm a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
-                AssertMapWithRemap("xmap a b", "a", "b", KeyRemapMode.Visual);
-                AssertMapWithRemap("xm a b", "a", "b", KeyRemapMode.Visual);
-                AssertMapWithRemap("smap a b", "a", "b", KeyRemapMode.Select);
-                AssertMapWithRemap("omap a b", "a", "b", KeyRemapMode.OperatorPending);
-                AssertMapWithRemap("om a b", "a", "b", KeyRemapMode.OperatorPending);
-                AssertMapWithRemap("imap a b", "a", "b", KeyRemapMode.Insert);
-                AssertMapWithRemap("im a b", "a", "b", KeyRemapMode.Insert);
-                AssertMapWithRemap("cmap a b", "a", "b", KeyRemapMode.Command);
-                AssertMapWithRemap("cm a b", "a", "b", KeyRemapMode.Command);
-                AssertMapWithRemap("lmap a b", "a", "b", KeyRemapMode.Language);
-                AssertMapWithRemap("lm a b", "a", "b", KeyRemapMode.Language);
-                AssertMapWithRemap("map! a b", "a", "b", KeyRemapMode.Insert, KeyRemapMode.Command);
-            }
-
             [Test]
             public void Parse_PrintCurrentDirectory()
             {
@@ -945,28 +976,6 @@ namespace Vim.UnitTest
                 var command = ParseLineCommand("source! test.txt").AsSource();
                 Assert.IsTrue(command.Item1);
                 Assert.AreEqual("test.txt", command.Item2);
-            }
-
-            /// <summary>
-            /// Parse out the unmapping of keys
-            /// </summary>
-            [Test]
-            public void Parse_UnmapKeys_Simple()
-            {
-                AssertUnmap("vunmap a ", "a", KeyRemapMode.Visual, KeyRemapMode.Select);
-                AssertUnmap("vunm a ", "a", KeyRemapMode.Visual, KeyRemapMode.Select);
-                AssertUnmap("xunmap a", "a", KeyRemapMode.Visual);
-                AssertUnmap("xunm a ", "a", KeyRemapMode.Visual);
-                AssertUnmap("sunmap a ", "a", KeyRemapMode.Select);
-                AssertUnmap("ounmap a ", "a", KeyRemapMode.OperatorPending);
-                AssertUnmap("ounm a ", "a", KeyRemapMode.OperatorPending);
-                AssertUnmap("iunmap a ", "a", KeyRemapMode.Insert);
-                AssertUnmap("iunm a", "a", KeyRemapMode.Insert);
-                AssertUnmap("cunmap a ", "a", KeyRemapMode.Command);
-                AssertUnmap("cunm a ", "a", KeyRemapMode.Command);
-                AssertUnmap("lunmap a ", "a", KeyRemapMode.Language);
-                AssertUnmap("lunm a ", "a", KeyRemapMode.Language);
-                AssertUnmap("unmap! a ", "a", KeyRemapMode.Insert, KeyRemapMode.Command);
             }
 
             [Test]

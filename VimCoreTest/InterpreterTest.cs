@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using EditorUtils;
 using EditorUtils.UnitTest;
@@ -143,6 +142,50 @@ namespace Vim.UnitTest
                     new[] { "cat", "tree", "dog", "fish", "bear", "tree" },
                     _textBuffer.GetLines().ToArray());
                 Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+        }
+
+        [TestFixture]
+        public sealed class Substitute : InterpreterTest
+        {
+            /// <summary>
+            /// When an empty string is provided for the pattern string then the pattern from the last
+            /// substitute
+            /// </summary>
+            [Test]
+            public void EmptySearchUsesLastSearch()
+            {
+                Create("cat tree");
+                Vim.VimData.LastPatternData = new PatternData("cat", new Path(0));
+                ParseAndRun("s//dog/");
+                Assert.AreEqual("dog tree", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure that back slashes are properly handled in the replace 
+            /// </summary>
+            [Test]
+            public void Backslashes()
+            {
+                Create("cat");
+                ParseAndRun(@"s/a/\\\\");
+                Assert.AreEqual(@"c\\t", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Test]
+            public void DoubleQuotesPattern()
+            {
+                Create(@"""cat""");
+                ParseAndRun(@"s/""cat""/dog");
+                Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Test]
+            public void DoubleQuotesReplace()
+            {
+                Create(@"cat");
+                ParseAndRun(@"s/cat/""dog""");
+                Assert.AreEqual(@"""dog""", _textBuffer.GetLine(0).GetText());
             }
         }
 
@@ -883,46 +926,6 @@ namespace Vim.UnitTest
                 ParseAndRun(@"!git status !");
                 Assert.IsFalse(didRun);
                 Assert.AreEqual(Resources.Common_NoPreviousShellCommand, _statusUtil.LastError);
-            }
-
-            /// <summary>
-            /// When an empty string is provided for the pattern string then the pattern from the last
-            /// substitute
-            /// </summary>
-            [Test]
-            public void Substitute_EmptySearchUsesLastSearch()
-            {
-                Create("cat tree");
-                Vim.VimData.LastPatternData = new PatternData("cat", new Path(0));
-                ParseAndRun("s//dog/");
-                Assert.AreEqual("dog tree", _textBuffer.GetLine(0).GetText());
-            }
-
-            /// <summary>
-            /// Make sure that back slashes are properly handled in the replace 
-            /// </summary>
-            [Test]
-            public void Substitute_Backslashes()
-            {
-                Create("cat");
-                ParseAndRun(@"s/a/\\\\");
-                Assert.AreEqual(@"c\\t", _textBuffer.GetLine(0).GetText());
-            }
-
-            [Test]
-            public void Substitute_DoubleQuotesPattern()
-            {
-                Create(@"""cat""");
-                ParseAndRun(@"s/""cat""/dog");
-                Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
-            }
-
-            [Test]
-            public void Substitute_DoubleQuotesReplace()
-            {
-                Create(@"cat");
-                ParseAndRun(@"s/cat/""dog""");
-                Assert.AreEqual(@"""dog""", _textBuffer.GetLine(0).GetText());
             }
 
             [Test]
