@@ -33,11 +33,6 @@ namespace Vim.UnitTest
         private bool _assertOnErrorMessage = true;
         private bool _assertOnWarningMessage = true;
 
-        internal Register UnnamedRegister
-        {
-            get { return _vimBuffer.GetRegister(RegisterName.Unnamed); }
-        }
-
         public void Create(params string[] lines)
         {
             _textView = CreateTextView(lines);

@@ -22,14 +22,7 @@ namespace Vim.UnitTest
         protected TestableStatusUtil _statusUtil;
         protected IVimGlobalSettings _globalSettings;
         protected IVimLocalSettings _localSettings;
-        protected IRegisterMap _registerMap;
         protected IKeyMap _keyMap;
-
-        // TODO: Should move this up into VimTestBase
-        protected Register UnnamedRegister
-        {
-            get { return _registerMap.GetRegister(RegisterName.Unnamed); }
-        }
 
         /// <summary>
         /// A valid directory in the file system
@@ -66,7 +59,6 @@ namespace Vim.UnitTest
                 FoldManagerFactory.GetFoldManager(_vimBufferData.TextView),
                 new FileSystem(),
                 BufferTrackingService);
-            _registerMap = Vim.RegisterMap;
             _keyMap = Vim.KeyMap;
         }
 
@@ -491,7 +483,7 @@ namespace Vim.UnitTest
             public void Global_Put()
             {
                 Create("cat", "dog", "fash");
-                _registerMap.GetRegister(RegisterName.Unnamed).UpdateValue("bat");
+                UnnamedRegister.UpdateValue("bat");
                 ParseAndRun("g,a,put");
                 Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
                 Assert.AreEqual("bat", _textBuffer.GetLine(1).GetText());
@@ -675,7 +667,7 @@ namespace Vim.UnitTest
             public void Put_ShouldBeLinewise()
             {
                 Create("foo", "bar");
-                _registerMap.GetRegister(RegisterName.Unnamed).UpdateValue("hey", OperationKind.CharacterWise);
+                UnnamedRegister.UpdateValue("hey", OperationKind.CharacterWise);
                 ParseAndRun("put");
                 Assert.AreEqual("foo", _textBuffer.GetLine(0).GetText());
                 Assert.AreEqual("hey", _textBuffer.GetLine(1).GetText());
@@ -688,7 +680,7 @@ namespace Vim.UnitTest
             public void Put_BangShouldPutTextBefore()
             {
                 Create("foo", "bar");
-                _registerMap.GetRegister(RegisterName.Unnamed).UpdateValue("hey", OperationKind.CharacterWise);
+                UnnamedRegister.UpdateValue("hey", OperationKind.CharacterWise);
                 ParseAndRun("put!");
                 Assert.AreEqual("hey", _textBuffer.GetLine(0).GetText());
                 Assert.AreEqual("foo", _textBuffer.GetLine(1).GetText());

@@ -23,7 +23,6 @@ namespace Vim.UnitTest
         private IVimLocalSettings _localSettings;
         private IVimWindowSettings _windowSettings;
         private IMotionUtil _motionUtil;
-        private IRegisterMap _registerMap;
         private IVimData _vimData;
         private IWpfTextView _textView;
         private ITextBuffer _textBuffer;
@@ -56,7 +55,6 @@ namespace Vim.UnitTest
 
             _vimData = Vim.VimData;
             _macroRecorder = Vim.MacroRecorder;
-            _registerMap = Vim.RegisterMap;
             _globalSettings = Vim.GlobalSettings;
 
             var operations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
@@ -73,11 +71,6 @@ namespace Vim.UnitTest
         private static string CreateLinesWithLineBreak(params string[] lines)
         {
             return lines.Aggregate((x, y) => x + Environment.NewLine + y) + Environment.NewLine;
-        }
-
-        private Register UnnamedRegister
-        {
-            get { return _registerMap.GetRegister(RegisterName.Unnamed); }
         }
 
         private void SetLastCommand(NormalCommand command, int? count = null, RegisterName name = null)
@@ -1722,7 +1715,7 @@ namespace Vim.UnitTest
         public void RecordMacroStart_AppendRegisters()
         {
             Create("");
-            _registerMap.GetRegister('c').UpdateValue("d");
+            RegisterMap.GetRegister('c').UpdateValue("d");
             _commandUtil.RecordMacroStart('C');
             Assert.IsTrue(_macroRecorder.IsRecording);
             Assert.AreEqual('d', _macroRecorder.CurrentRecording.Value.Single().Char);
@@ -1735,7 +1728,7 @@ namespace Vim.UnitTest
         public void RecordMacroStart_NormalRegister()
         {
             Create("");
-            _registerMap.GetRegister('c').UpdateValue("d");
+            RegisterMap.GetRegister('c').UpdateValue("d");
             _commandUtil.RecordMacroStart('c');
             Assert.IsTrue(_macroRecorder.IsRecording);
             Assert.IsTrue(_macroRecorder.CurrentRecording.Value.IsEmpty);

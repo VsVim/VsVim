@@ -21,11 +21,6 @@ namespace Vim.UnitTest
         private IVimGlobalSettings _globalSettings;
         private TestableSynchronizationContext _context;
 
-        internal Register UnnamedRegister
-        {
-            get { return _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed); }
-        }
-
         internal Register TestRegister
         {
             get { return _vimBuffer.RegisterMap.GetRegister('c'); }

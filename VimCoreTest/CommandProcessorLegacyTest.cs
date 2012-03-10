@@ -23,7 +23,6 @@ namespace Vim.UnitTest
         private ITextView _textView;
         private ITextBuffer _textBuffer;
         private MockRepository _factory;
-        private IRegisterMap _registerMap;
         private IVimData _vimData;
         private Mock<IEditorOperations> _editOpts;
         private Mock<ICommonOperations> _operations;
@@ -40,7 +39,6 @@ namespace Vim.UnitTest
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
             _textBuffer = _textView.TextBuffer;
             _factory = new MockRepository(MockBehavior.Strict);
-            _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             _editOpts = _factory.Create<IEditorOperations>();
             _vimHost = _factory.Create<IVimHost>();
             _vimHost.Setup(x => x.IsDirty(It.IsAny<ITextBuffer>())).Returns(false);
@@ -50,7 +48,7 @@ namespace Vim.UnitTest
             _fileSystem = _factory.Create<IFileSystem>(MockBehavior.Strict);
             _foldManager = _factory.Create<IFoldManager>(MockBehavior.Strict);
             _vimData = new VimData();
-            _vim = MockObjectFactory.CreateVim(_registerMap, host: _vimHost.Object, vimData: _vimData, factory: _factory);
+            _vim = MockObjectFactory.CreateVim(RegisterMap, host: _vimHost.Object, vimData: _vimData, factory: _factory);
             var localSettings = new LocalSettings(Vim.GlobalSettings);
             var vimTextBuffer = MockObjectFactory.CreateVimTextBuffer(
                 _textBuffer,
@@ -68,11 +66,6 @@ namespace Vim.UnitTest
                 _foldManager.Object,
                 _fileSystem.Object,
                 _factory.Create<IBufferTrackingService>().Object);
-        }
-
-        private Register UnnamedRegister
-        {
-            get { return _registerMap.GetRegister(RegisterName.Unnamed); }
         }
 
         private void RunCommand(string command)
@@ -186,7 +179,7 @@ namespace Vim.UnitTest
         {
             Create("foo", "bar");
             RunCommand("y c");
-            Assert.AreEqual(_textView.GetLine(0).ExtentIncludingLineBreak.GetText(), _registerMap.GetRegister('c').StringValue);
+            Assert.AreEqual(_textView.GetLine(0).ExtentIncludingLineBreak.GetText(), RegisterMap.GetRegister('c').StringValue);
         }
 
         /// <summary>
