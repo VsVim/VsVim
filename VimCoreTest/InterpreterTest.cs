@@ -219,6 +219,19 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Make sure a replace here at the end of the line happens after
+            /// </summary>
+            [Test]
+            public void EndOfLineIsZeroWidth2()
+            {
+                Create("cat", "dog", "fish");
+                ParseAndRun(@"%s/$/ hat/");
+                Assert.AreEqual(
+                    new[] { "cat hat", "dog hat", "fish hat" },
+                    _textBuffer.GetLines().ToArray());
+            }
+
+            /// <summary>
             /// The \n character is not zero width and can be used to delete the new line
             /// </summary>
             [Test]
