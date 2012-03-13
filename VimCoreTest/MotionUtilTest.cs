@@ -122,35 +122,6 @@ namespace Vim.UnitTest
                 Assert.IsTrue(result2.MotionKind.IsCharacterWiseInclusive);
                 Assert.IsTrue(MotionResultFlags.ExclusivePromotion == (result2.MotionResultFlags & MotionResultFlags.ExclusivePromotion));
             }
-            /// <summary>
-            /// Make sure special motions don't get adjusted to 'exclusive-linewise'.  These are
-            /// not documented anywhere but the exception appears to be word motions
-            /// </summary>
-            [Test]
-            public void FullLineExceptions()
-            {
-                Create("  cat", "dog");
-                var span = new SnapshotSpan(_textView.GetPoint(2), _textView.GetLine(1).Start);
-                var result1 = VimUtil.CreateMotionResult(span, motionKind: MotionKind.CharacterWiseExclusive);
-                var result2 = _motionUtil.AdjustMotionResult(Motion.NewAllWord(WordKind.NormalWord), result1);
-                Assert.AreEqual(OperationKind.CharacterWise, result2.OperationKind);
-                Assert.AreEqual("cat", result2.Span.GetText());
-                Assert.IsTrue(result2.MotionKind.IsCharacterWiseInclusive);
-            }
-
-            /// <summary>
-            /// A word motion past the end of the line can't go through a full promotion to linewise but
-            /// it does become inclusive
-            /// </summary>
-            [Test]
-            public void WordPastEndOfLine()
-            {
-                Create("cat", "  dog");
-                var motionResult = _motionUtil.GetMotion(Motion.NewWordForward(WordKind.NormalWord)).Value;
-                Assert.AreEqual("cat", motionResult.Span.GetText());
-                Assert.AreEqual("cat" + Environment.NewLine + "  ", motionResult.OriginalSpan.GetText());
-                Assert.AreEqual(MotionKind.CharacterWiseInclusive, motionResult.MotionKind);
-            }
 
             /// <summary>
             /// If the last word on the line is yanked and there is a space after it then the
@@ -163,19 +134,6 @@ namespace Vim.UnitTest
                 Create("cat ", " dog");
                 var motionResult = _motionUtil.GetMotion(Motion.NewWordForward(WordKind.NormalWord)).Value;
                 Assert.AreEqual("cat ", motionResult.Span.GetText());
-            }
-
-            /// <summary>
-            /// When there is a blank line (blank not empty) then the 'w' motion should ignore the blank
-            /// line for operations but jump over it for movements
-            /// </summary>
-            [Test]
-            public void WordFollowedByBlankLine()
-            {
-                Create("cat", "  ", "  dog");
-                var motionResult = _motionUtil.GetMotion(Motion.NewWordForward(WordKind.NormalWord)).Value;
-                Assert.AreEqual("cat", motionResult.Span.GetText());
-                Assert.AreEqual("cat" + Environment.NewLine + "  " + Environment.NewLine + "  ", motionResult.OriginalSpan.GetText());
             }
         }
 
@@ -316,13 +274,60 @@ namespace Vim.UnitTest
         [TestFixture]
         public sealed class Word : MotionUtilTest
         {
+            /// <summary>
+            /// If the word motion crosses a new line and it's a moveement then we keep it. The 
+            /// caret should move to the next line
+            /// </summary>
+            [Test]
+            public void AcrossLineBreakMovement()
+            {
+                Create("cat", " dog");
+                var motionResult = _motionUtil.WordForward(WordKind.NormalWord, 1, MotionContext.Movement);
+                Assert.AreEqual(_textBuffer.GetLine(1).Start.Add(1), motionResult.Span.End);
+            }
+
+            /// <summary>
+            /// If the word motion crosses a line rbeak and it's an operator then we back it up 
+            /// because we don't want the new line in the operator
+            /// </summary>
+            [Test]
+            public void AcrossLineBreakOperator()
+            {
+                Create("cat  ", " dog");
+                var motionResult = _motionUtil.WordForward(WordKind.NormalWord, 1, MotionContext.AfterOperator);
+                Assert.AreEqual("cat  ", motionResult.Span.GetText());
+            }
+
+            /// <summary>
+            /// Blank lines don't factor into an operator.  Make sure we back up over it completel
+            /// </summary>
+            [Test]
+            public void AcrossBlankLineOperator()
+            {
+                Create("dog", "cat", " ", " ", "  fish");
+                _textView.MoveCaretToLine(1);
+                var motionResult = _motionUtil.WordForward(WordKind.NormalWord, 1, MotionContext.AfterOperator);
+                Assert.AreEqual("cat", motionResult.Span.GetText());
+            }
+
+            /// <summary>
+            /// Empty lines are different because they are actual words so we don't back over them
+            /// </summary>
+            [Test]
+            public void AcrossEmptyLineOperator()
+            {
+                Create("dog", "cat", "", "  fish");
+                _textView.MoveCaretToLine(1);
+                var motionResult = _motionUtil.WordForward(WordKind.NormalWord, 2, MotionContext.AfterOperator);
+                Assert.AreEqual("cat" + Environment.NewLine + Environment.NewLine, motionResult.Span.GetText());
+            }
 
             [Test]
             public void Forward1()
             {
                 Create("foo bar");
                 _textView.MoveCaretTo(0);
-                var res = _motionUtil.WordForward(WordKind.NormalWord, 1);
+                var res = _motionUtil.WordForward(WordKind.NormalWord, 1, MotionContext.Movement);
                 var span = res.Span;
                 Assert.AreEqual(4, span.Length);
                 Assert.AreEqual("foo ", span.GetText());
@@ -336,7 +341,7 @@ namespace Vim.UnitTest
             {
                 Create("foo bar");
                 _textView.MoveCaretTo(1);
-                var res = _motionUtil.WordForward(WordKind.NormalWord, 1);
+                var res = _motionUtil.WordForward(WordKind.NormalWord, 1, MotionContext.Movement);
                 var span = res.Span;
                 Assert.AreEqual(3, span.Length);
                 Assert.AreEqual("oo ", span.GetText());
@@ -347,7 +352,7 @@ namespace Vim.UnitTest
             {
                 Create("foo bar baz");
                 _textView.MoveCaretTo(0);
-                var res = _motionUtil.WordForward(WordKind.NormalWord, 2);
+                var res = _motionUtil.WordForward(WordKind.NormalWord, 2, MotionContext.Movement);
                 Assert.AreEqual("foo bar ", res.Span.GetText());
             }
 
@@ -355,7 +360,7 @@ namespace Vim.UnitTest
             public void Forward4()
             {
                 Create("foo bar", "baz jaz");
-                var res = _motionUtil.WordForward(WordKind.NormalWord, 3);
+                var res = _motionUtil.WordForward(WordKind.NormalWord, 3, MotionContext.Movement);
                 Assert.AreEqual("foo bar" + Environment.NewLine + "baz ", res.Span.GetText());
             }
 
@@ -363,7 +368,7 @@ namespace Vim.UnitTest
             public void Forward5()
             {
                 Create("foo bar");
-                var res = _motionUtil.WordForward(WordKind.NormalWord, 10);
+                var res = _motionUtil.WordForward(WordKind.NormalWord, 10, MotionContext.Movement);
                 Assert.AreEqual("foo bar", res.Span.GetText());
             }
 
@@ -371,7 +376,7 @@ namespace Vim.UnitTest
             public void ForwardBigWordIsAnyWord()
             {
                 Create("foo bar");
-                var res = _motionUtil.WordForward(WordKind.BigWord, 1);
+                var res = _motionUtil.WordForward(WordKind.BigWord, 1, MotionContext.Movement);
                 Assert.IsTrue(res.IsAnyWordMotion);
             }
 

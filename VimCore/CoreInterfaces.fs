@@ -432,18 +432,12 @@ type MotionResultFlags =
     /// line above is last.  This helps differentiate the two
     | ExclusivePromotionPlusOne = 0x4
 
-    /// When moving the caret to the MotionResult of an exclusive promotion use the
-    /// original instead of the new span
-    ///
-    /// Today the only known use is for 'w'
-    | ExclusivePromotionUseOriginal = 0x8
-
     /// This motion was promoted under rule #2 to a line wise motion
-    | ExclusiveLineWise = 0x10
+    | ExclusiveLineWise = 0x8
 
     /// This motion when used as a movement should maintain the caret column
     /// setting.
-    | MaintainCaretColumn = 0x20
+    | MaintainCaretColumn = 0x10
 
 /// Information about the type of the motion this was.
 [<RequireQualifiedAccess>]

@@ -1394,7 +1394,6 @@ type internal MotionUtil
 
             let isContextInWhiteSpace = SnapshotPointUtil.IsWhiteSpace contextPoint
 
-
             // Now do the standard adjustments listed at the bottom of ':help text-objects'
             let span = 
                 match isContextInWhiteSpace, whiteSpaceAfter with
@@ -1507,7 +1506,7 @@ type internal MotionUtil
                 | Path.Backward -> Path.Forward
             x.CharSearchCore c 1 kind direction
 
-    member x.WordForward kind count =
+    member x.WordForward kind count motionContext =
 
         // If we are in white space in the middle of the line then we adjust the 
         // count down by 1.  From white space the 'w' motion should take us to the 
@@ -1523,6 +1522,34 @@ type internal MotionUtil
             |> SeqUtil.skipMax count
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
+
+        let endPoint = 
+            match motionContext with
+            | MotionContext.Movement -> endPoint
+            | MotionContext.AfterOperator -> 
+                // If the word motion comes after an operator and ends on the first word 
+                // of a different line then the motion is moved back to the last line containg
+                // a word
+                let endLine = SnapshotPointUtil.GetContainingLine endPoint
+                let isFirstNonBlank = SnapshotLineUtil.GetFirstNonBlankOrStart endLine = endPoint
+
+                if isFirstNonBlank && endLine.Length > 0 && endLine.LineNumber > x.CaretLine.LineNumber then
+                    let previousLine = 
+                        SnapshotUtil.GetLines x.CurrentSnapshot (endLine.LineNumber - 1) Path.Backward
+                        |> Seq.skipWhile SnapshotLineUtil.IsBlank
+                        |> SeqUtil.tryHeadOnly
+                    let previousLine = 
+                        match previousLine with
+                        | None -> SnapshotUtil.GetFirstLine x.CurrentSnapshot
+                        | Some line -> line
+
+                    if SnapshotLineUtil.IsEmpty previousLine then
+                        previousLine.EndIncludingLineBreak
+                    else
+                        previousLine.End
+                else
+                    endPoint
+
         let span = SnapshotSpan(x.CaretPoint, endPoint)
         MotionResult.CreateEx span true MotionKind.CharacterWiseExclusive MotionResultFlags.AnyWord
 
@@ -2217,30 +2244,7 @@ type internal MotionUtil
             let endLine = SnapshotPointUtil.GetContainingLine originalSpan.End
             let snapshot = startLine.Snapshot
             let firstNonBlank = SnapshotLineUtil.GetFirstNonBlankOrStart startLine
-
-            // There are certain motions to which we cannot apply the 'exclusive-linewise'
-            // adjustment.  They are not listed in the documentation (but it does note there
-            // are exceptions to the exception).  Experimentation has shown though that 
-            // it's the following
-            let allowExclusiveLineWise = 
-                match motion with
-                | Motion.AllWord _ -> false
-                | Motion.WordForward _ ->
-                    // Word again is the special case of Vim.  The 'exclusive-linewise' promotion
-                    // is disallowed in every case except when the line above is an empty line.  Or
-                    // more simply when the last 'word' in the motion is a blank line
-                    match SnapshotUtil.TryGetLine snapshot (endLine.LineNumber - 1) with
-                    | Some line -> line.Length = 0
-                    | None -> false
-                | _ -> true
-
-            // A shared component of both promotions is whether or not the caret ends in the
-            // first column of the next line.  Words are special in that it doesn't need to 
-            // be the first column but simply at or before the first non-blank on the line
-            let endsInColumnZero = 
-                match motion with
-                | Motion.WordForward _ -> originalSpan.End.Position <= (SnapshotLineUtil.GetFirstNonBlankOrStart endLine).Position
-                | _ -> SnapshotPointUtil.IsStartOfLine originalSpan.End
+            let endsInColumnZero = SnapshotPointUtil.IsStartOfLine originalSpan.End
 
             if endLine.LineNumber <= startLine.LineNumber then
                 // No adjustment needed when everything is on the same line
@@ -2249,7 +2253,7 @@ type internal MotionUtil
                 // End is not the start of the line so there is no adjustment to 
                 // be made.  
                 motionResult
-            elif originalSpan.Start.Position <= firstNonBlank.Position && allowExclusiveLineWise then
+            elif originalSpan.Start.Position <= firstNonBlank.Position then
                 // Rule #2. Make this a line wise motion.  Also remove the column 
                 // set.  This is necessary because these set the column to 0 which
                 // is redundant and confusing for line wise motions when moving the 
@@ -2260,40 +2264,20 @@ type internal MotionUtil
                 { motionResult with Span = span; OriginalSpan = originalSpan; MotionKind = kind; MotionResultFlags = flags }
             else 
                 // Rule #1. Move this back a line.
-                let line = 
-                    let snapshot = originalSpan.Snapshot
-                    let previousLine = SnapshotUtil.GetLine originalSpan.Snapshot (endLine.LineNumber - 1)
-                    match motion with
-                    | Motion.WordForward _ -> 
-                        // Once again word motions are special in that they go backwards over blank 
-                        // (but not empty) lines 
-                        let rec moveBackward line = 
-                            if SnapshotLineUtil.IsBlank line && line.LineNumber > 0 then
-                                SnapshotUtil.GetLine snapshot (line.LineNumber - 1) |> moveBackward
-                            else 
-                                line
-                        moveBackward previousLine
-                    | _ -> previousLine
-
+                let line = SnapshotUtil.GetLine originalSpan.Snapshot (endLine.LineNumber - 1)
                 let span = SnapshotSpan(originalSpan.Start, line.End)
 
                 let flags = 
                     let flags = motionResult.MotionResultFlags ||| MotionResultFlags.ExclusivePromotion
 
-                    match motion with
-                    | Motion.WordForward _ ->
-                        // Once again we must special case word here.  Need to make sure caret moves
-                        // to the first non-blank 
-                        flags ||| MotionResultFlags.ExclusivePromotionUseOriginal
-                    | _ ->
-                        // Make sure to flag the case where the last line was blank in a 
-                        // promotion.  Needed for caret movement
-                        let line = SnapshotUtil.GetLine span.Snapshot (endLine.LineNumber - 1)
+                    // Make sure to flag the case where the last line was blank in a 
+                    // promotion.  Needed for caret movement
+                    let line = SnapshotUtil.GetLine span.Snapshot (endLine.LineNumber - 1)
 
-                        if line.Length = 0 then
-                            flags ||| MotionResultFlags.ExclusivePromotionPlusOne
-                        else
-                            flags
+                    if line.Length = 0 then
+                        flags ||| MotionResultFlags.ExclusivePromotionPlusOne
+                    else
+                        flags
 
                 let kind = MotionKind.CharacterWiseInclusive
                 { motionResult with Span = span; OriginalSpan = originalSpan; MotionKind = kind; MotionResultFlags = flags }
@@ -2352,7 +2336,7 @@ type internal MotionUtil
             | Motion.SentenceBackward -> x.SentenceBackward motionArgument.Count |> Some
             | Motion.SentenceForward -> x.SentenceForward motionArgument.Count |> Some
             | Motion.WordBackward wordKind -> x.WordBackward wordKind motionArgument.Count |> Some
-            | Motion.WordForward wordKind -> x.WordForward wordKind motionArgument.Count |> Some
+            | Motion.WordForward wordKind -> x.WordForward wordKind motionArgument.Count motionArgument.MotionContext |> Some
         Option.map (x.AdjustMotionResult motion) motionResult
 
     member x.GetTextObject motion point = 

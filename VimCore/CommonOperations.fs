@@ -361,8 +361,6 @@ type internal CommonOperations
                             match SnapshotUtil.TryGetLine x.CurrentSnapshot (line.LineNumber + 2) with
                             | None -> result.Span.End
                             | Some line -> line.Start
-                        elif Util.IsFlagSet result.MotionResultFlags MotionResultFlags.ExclusivePromotionUseOriginal then
-                            result.OriginalSpan.End
                         else
                             getAfterLastLine()
                     else
