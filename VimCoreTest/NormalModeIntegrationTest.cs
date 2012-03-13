@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Projection;
@@ -8,6 +7,8 @@ using NUnit.Framework;
 using Vim.Extensions;
 using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
+using EditorUtils;
+using EditorUtils.UnitTest;
 
 namespace Vim.UnitTest
 {
@@ -223,6 +224,375 @@ namespace Vim.UnitTest
                 Create("dog", "hello\tworld");
                 _vimBuffer.ProcessNotation(@"/\\t<Enter>");
                 Assert.AreEqual(_textView.GetPointInLine(1, 5), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// When the 'w' motion ends on a new line it should move to the first non-blank
+            /// in the next line
+            /// </summary>
+            [Test]
+            public void WordToFirstNonBlankAfterNewLine()
+            {
+                Create("cat", "  dog");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process("w");
+                Assert.AreEqual(_textBuffer.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// The 'w' motion needs to jump over the blanks at the end of the previous line and
+            /// find the blank in the next line
+            /// </summary>
+            [Test]
+            public void WordToFirstNonBlankAfterNewLineWithSpacesOnPrevious()
+            {
+                Create("cat    ", "  dog");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process("w");
+                Assert.AreEqual(_textBuffer.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// The 'w' motion can't jump an empty line
+            /// </summary>
+            [Test]
+            public void WordOverEmptyLineWithIndent()
+            {
+                Create("cat", "", "  dog");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process("w");
+                Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// The 'w' motion can jump over a blank line 
+            /// </summary>
+            [Test]
+            public void WordOverBlankLine()
+            {
+                Create("cat", "    ", "  dog");
+                _vimBuffer.Process("w");
+                Assert.AreEqual(_textBuffer.GetLine(2).Start.Add(2), _textView.GetCaretPoint());
+            }
+        }
+
+        [TestFixture]
+        public sealed class Yank : NormalModeIntegrationTest
+        {
+            /// <summary>
+            /// Make sure we properly update register 0 during a yank
+            /// </summary>
+            [Test]
+            public void Register0()
+            {
+                Create("dog", "cat", "fish");
+                _vimBuffer.Process("yaw");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("\"cyaw");
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.Process("dw");
+                _vimBuffer.Process("\"0p");
+                Assert.AreEqual("dog", _textView.GetLine(2).GetText());
+            }
+
+            /// <summary>
+            /// Where there are not section boundaries between the caret and the end of the 
+            /// ITextBuffer the entire ITextBuffer should be yanked when section forward 
+            /// is used
+            /// </summary>
+            [Test]
+            public void SectionForwardToEndOfBuffer()
+            {
+                Create("dog", "cat", "bear");
+                _vimBuffer.Process("y]]");
+                Assert.AreEqual("dog" + Environment.NewLine + "cat" + Environment.NewLine + "bear", UnnamedRegister.StringValue);
+                Assert.AreEqual(OperationKind.CharacterWise, UnnamedRegister.OperationKind);
+            }
+
+            /// <summary>
+            /// Yanking with an append register should concatenate the values
+            /// </summary>
+            [Test]
+            public void Append()
+            {
+                Create("dog", "cat", "fish");
+                _vimBuffer.Process("\"cyaw");
+                _vimBuffer.Process("j");
+                _vimBuffer.Process("\"Cyaw");
+                Assert.AreEqual("dogcat", _vimBuffer.RegisterMap.GetRegister('c').StringValue);
+                Assert.AreEqual("dogcat", _vimBuffer.RegisterMap.GetRegister('C').StringValue);
+            }
+
+            /// <summary>
+            /// Trying to char left from the start of the line should not cause a beep to 
+            /// be emitted.  However it should cause the targetted register to be updated 
+            /// </summary>
+            [Test]
+            public void EmptyCharLeftMotion()
+            {
+                Create("dog", "cat");
+                UnnamedRegister.UpdateValue("hello");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("yh");
+                Assert.AreEqual("", UnnamedRegister.StringValue);
+                Assert.AreEqual(0, _vimHost.BeepCount);
+            }
+
+            /// <summary>
+            /// Yanking a line down from the end of the buffer should not cause the 
+            /// unnamed register text from resetting and it should cause a beep to occur
+            /// </summary>
+            [Test]
+            public void LineDownAtEndOfBuffer()
+            {
+                Create("dog", "cat");
+                _textView.MoveCaretToLine(1);
+                UnnamedRegister.UpdateValue("hello");
+                _vimBuffer.Process("yj");
+                Assert.AreEqual(1, _vimHost.BeepCount);
+                Assert.AreEqual("hello", UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
+            /// A yank of a search which needs no wrap but doesn't wrap should raise an 
+            /// error message
+            /// </summary>
+            [Test]
+            public void WrappingSearch()
+            {
+                Create("dog", "cat", "dog", "fish");
+                _globalSettings.WrapScan = false;
+                _textView.MoveCaretToLine(2);
+                _assertOnErrorMessage = false;
+
+                var didSee = false;
+                _vimBuffer.ErrorMessage +=
+                    (sender, args) =>
+                    {
+                        Assert.AreEqual(Resources.Common_SearchHitBottomWithout(@"\<dog\>"), args.Message);
+                        didSee = true;
+                    };
+                _vimBuffer.Process("y*");
+                Assert.IsTrue(didSee);
+            }
+
+            /// <summary>
+            /// Doing a word yank from a blank should yank the white space till the start of 
+            /// the next word 
+            /// </summary>
+            [Test]
+            public void WordFromBlank()
+            {
+                Create("dog cat  ball");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.Process("yw");
+                Assert.AreEqual(" ", UnnamedRegister.StringValue);
+                _textView.MoveCaretTo(7);
+                _vimBuffer.Process("yw");
+                Assert.AreEqual("  ", UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
+            /// Yanking a word in a blank line should yank the line and be a linewise motion
+            /// </summary>
+            [Test]
+            public void WordInEmptyLine()
+            {
+                Create("dog", "", "cat");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("yw");
+                Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
+                Assert.AreEqual(Environment.NewLine, UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
+            /// Yanking a word in a blank line with white space in the following line should 
+            /// ignore the white space in the following line
+            /// </summary>
+            [Test]
+            public void WordInEmptyLineWithWhiteSpaceInFollowing()
+            {
+                Create("dog", "", "  cat");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("yw");
+                Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
+                Assert.AreEqual(Environment.NewLine, UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
+            /// Yanking a word which includes a blank line should still be line wise if it started at 
+            /// the beginning of the previous word
+            /// </summary>
+            [Test]
+            public void WordEndInEmptyLine()
+            {
+                Create("dog", "", "cat");
+                _vimBuffer.Process("y2w");
+                Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
+                Assert.AreEqual("dog" + Environment.NewLine + Environment.NewLine, UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
+            /// Yanking a word which includes a blank line should not be line wise if it starts in 
+            /// the middle of a word
+            /// </summary>
+            [Test]
+            public void WordMiddleEndInEmptyLin()
+            {
+                Create("dog", "", "cat");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process("y2w");
+                Assert.AreEqual(OperationKind.CharacterWise, UnnamedRegister.OperationKind);
+                Assert.AreEqual("og" + Environment.NewLine, UnnamedRegister.StringValue);
+                _vimBuffer.Process("p");
+                Assert.AreEqual("doog", _textView.GetLine(0).GetText());
+                Assert.AreEqual("g", _textView.GetLine(1).GetText());
+                Assert.AreEqual("", _textView.GetLine(2).GetText());
+                Assert.AreEqual("cat", _textView.GetLine(3).GetText());
+            }
+
+            /// <summary>
+            /// Even though the 'w' motion should move to the first non-blank in the next line
+            /// it shouldn't yank that text
+            /// </summary>
+            [Test]
+            public void WordIndentOnNextLine()
+            {
+                Create("cat", "  dog");
+                _vimBuffer.Process("yw");
+                Assert.AreEqual("cat", UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
+            /// A yank which wraps around the buffer should just be a backwards motion and 
+            /// shouldn't cause an error or warning message to be displayed
+            /// </summary>
+            [Test]
+            public void WrappingSearchSucceeds()
+            {
+                Create("dog", "cat", "dog", "fish");
+                var didHit = false;
+                _vimBuffer.WarningMessage +=
+                    (_, args) =>
+                    {
+                        Assert.AreEqual(Resources.Common_SearchForwardWrapped, args.Message);
+                        didHit = true;
+                    };
+                _assertOnWarningMessage = false;
+                _globalSettings.WrapScan = true;
+                _textView.MoveCaretToLine(2);
+
+                _vimBuffer.Process("y/dog", enter: true);
+                Assert.AreEqual("dog" + Environment.NewLine + "cat" + Environment.NewLine, UnnamedRegister.StringValue);
+                Assert.IsTrue(didHit);
+            }
+
+            /// <summary>
+            /// A yank of a search which has no match should raise an error 
+            /// </summary>
+            [Test]
+            public void SearchMotionWithNoResult()
+            {
+                Create("dog", "cat", "dog", "fish");
+                _globalSettings.WrapScan = false;
+                _textView.MoveCaretToLine(2);
+                _assertOnErrorMessage = false;
+
+                var didSee = false;
+                _vimBuffer.ErrorMessage +=
+                    (sender, args) =>
+                    {
+                        Assert.AreEqual(Resources.Common_PatternNotFound("bug"), args.Message);
+                        didSee = true;
+                    };
+                _vimBuffer.Process("y/bug", enter: true);
+                Assert.IsTrue(didSee);
+            }
+
+            /// <summary>
+            /// Doing an 'iw' yank from the start of the word should yank just the word
+            /// </summary>
+            [Test]
+            public void InnerWord_FromWordStart()
+            {
+                Create("the dog chased the ball");
+                _vimBuffer.Process("yiw");
+                Assert.AreEqual("the", UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
+            /// Doing an 'iw' yank with a count of 2 should yank the word and the trailing
+            /// white space
+            /// </summary>
+            [Test]
+            public void InnerWord_FromWordStartWithCount()
+            {
+                Create("the dog chased the ball");
+                _vimBuffer.Process("y2iw");
+                Assert.AreEqual("the ", UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
+            /// Doing an 'iw' from white space should yank the white space
+            /// </summary>
+            [Test]
+            public void InnerWord_FromWhiteSpace()
+            {
+                Create("the dog chased the ball");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.Process("y2iw");
+                Assert.AreEqual(" dog", UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
+            /// Yanking a word across new lines should not count the new line as a word. Odd since
+            /// most white space is counted
+            /// </summary>
+            [Test]
+            public void InnerWord_AcrossNewLine()
+            {
+                Create("cat", "dog", "bear");
+                _vimBuffer.Process("y2iw");
+                Assert.AreEqual("cat" + Environment.NewLine + "dog", UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
+            /// Make sure a yank goes to the clipboard if we don't specify a register and the 
+            /// unnamed option is set
+            /// </summary>
+            [Test]
+            public void UnnamedGoToClipboardIfOptionSet()
+            {
+                Create("cat", "dog");
+                _globalSettings.Clipboard = "unnamed,autoselect";
+                _vimBuffer.Process("yaw");
+                Assert.AreEqual("cat", ClipboardDevice.Text);
+            }
+
+            /// <summary>
+            /// Make sure a yank goes to unnamed if the register is explicitly specified even if the
+            /// unnamed option is set in 'clipboard'
+            /// </summary>
+            [Test]
+            public void UnnamedExplicitBypassesClipboardOption()
+            {
+                Create("cat", "dog");
+                _globalSettings.Clipboard = "unnamed,autoselect";
+                _vimBuffer.Process("\"\"yaw");
+                Assert.AreEqual("", ClipboardDevice.Text);
+                Assert.AreEqual("cat", UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
+            /// Yank lines using the special y#y syntax
+            /// </summary>
+            [Test]
+            public void SpecialSyntaxSimple()
+            {
+                Create("cat", "dog", "bear");
+                _vimBuffer.Process("y2y");
+                Assert.AreEqual("cat" + Environment.NewLine + "dog" + Environment.NewLine, UnnamedRegister.StringValue);
+                Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
             }
         }
 
@@ -3048,310 +3418,6 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("2d2d");
                 Assert.AreEqual("tree", _textBuffer.GetLine(0).GetText());
                 Assert.AreEqual(1, _textBuffer.CurrentSnapshot.LineCount);
-            }
-
-            /// <summary>
-            /// Make sure we properly update register 0 during a yank
-            /// </summary>
-            [Test]
-            public void Yank_Register0()
-            {
-                Create("dog", "cat", "fish");
-                _vimBuffer.Process("yaw");
-                _textView.MoveCaretToLine(1);
-                _vimBuffer.Process("\"cyaw");
-                _textView.MoveCaretToLine(2);
-                _vimBuffer.Process("dw");
-                _vimBuffer.Process("\"0p");
-                Assert.AreEqual("dog", _textView.GetLine(2).GetText());
-            }
-
-            /// <summary>
-            /// Where there are not section boundaries between the caret and the end of the 
-            /// ITextBuffer the entire ITextBuffer should be yanked when section forward 
-            /// is used
-            /// </summary>
-            [Test]
-            public void Yank_SectionForwardToEndOfBuffer()
-            {
-                Create("dog", "cat", "bear");
-                _vimBuffer.Process("y]]");
-                Assert.AreEqual("dog" + Environment.NewLine + "cat" + Environment.NewLine + "bear", UnnamedRegister.StringValue);
-                Assert.AreEqual(OperationKind.CharacterWise, UnnamedRegister.OperationKind);
-            }
-
-            /// <summary>
-            /// Yanking with an append register should concatenate the values
-            /// </summary>
-            [Test]
-            public void Yank_Append()
-            {
-                Create("dog", "cat", "fish");
-                _vimBuffer.Process("\"cyaw");
-                _vimBuffer.Process("j");
-                _vimBuffer.Process("\"Cyaw");
-                Assert.AreEqual("dogcat", _vimBuffer.RegisterMap.GetRegister('c').StringValue);
-                Assert.AreEqual("dogcat", _vimBuffer.RegisterMap.GetRegister('C').StringValue);
-            }
-
-            /// <summary>
-            /// Trying to char left from the start of the line should not cause a beep to 
-            /// be emitted.  However it should cause the targetted register to be updated 
-            /// </summary>
-            [Test]
-            public void Yank_EmptyCharLeftMotion()
-            {
-                Create("dog", "cat");
-                UnnamedRegister.UpdateValue("hello");
-                _textView.MoveCaretToLine(1);
-                _vimBuffer.Process("yh");
-                Assert.AreEqual("", UnnamedRegister.StringValue);
-                Assert.AreEqual(0, _vimHost.BeepCount);
-            }
-
-            /// <summary>
-            /// Yanking a line down from the end of the buffer should not cause the 
-            /// unnamed register text from resetting and it should cause a beep to occur
-            /// </summary>
-            [Test]
-            public void Yank_LineDownAtEndOfBuffer()
-            {
-                Create("dog", "cat");
-                _textView.MoveCaretToLine(1);
-                UnnamedRegister.UpdateValue("hello");
-                _vimBuffer.Process("yj");
-                Assert.AreEqual(1, _vimHost.BeepCount);
-                Assert.AreEqual("hello", UnnamedRegister.StringValue);
-            }
-
-            /// <summary>
-            /// A yank of a search which needs no wrap but doesn't wrap should raise an 
-            /// error message
-            /// </summary>
-            [Test]
-            public void Yank_WrappingSearch()
-            {
-                Create("dog", "cat", "dog", "fish");
-                _globalSettings.WrapScan = false;
-                _textView.MoveCaretToLine(2);
-                _assertOnErrorMessage = false;
-
-                var didSee = false;
-                _vimBuffer.ErrorMessage +=
-                    (sender, args) =>
-                    {
-                        Assert.AreEqual(Resources.Common_SearchHitBottomWithout(@"\<dog\>"), args.Message);
-                        didSee = true;
-                    };
-                _vimBuffer.Process("y*");
-                Assert.IsTrue(didSee);
-            }
-
-            /// <summary>
-            /// Doing a word yank from a blank should yank the white space till the start of 
-            /// the next word 
-            /// </summary>
-            [Test]
-            public void Yank_WordFromBlank()
-            {
-                Create("dog cat  ball");
-                _textView.MoveCaretTo(3);
-                _vimBuffer.Process("yw");
-                Assert.AreEqual(" ", UnnamedRegister.StringValue);
-                _textView.MoveCaretTo(7);
-                _vimBuffer.Process("yw");
-                Assert.AreEqual("  ", UnnamedRegister.StringValue);
-            }
-
-            /// <summary>
-            /// Yanking a word in a blank line should yank the line and be a linewise motion
-            /// </summary>
-            [Test]
-            public void Yank_WordInEmptyLine()
-            {
-                Create("dog", "", "cat");
-                _textView.MoveCaretToLine(1);
-                _vimBuffer.Process("yw");
-                Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
-                Assert.AreEqual(Environment.NewLine, UnnamedRegister.StringValue);
-            }
-
-            /// <summary>
-            /// Yanking a word in a blank line with white space in the following line should 
-            /// ignore the white space in the following line
-            /// </summary>
-            [Test]
-            public void Yank_WordInEmptyLineWithWhiteSpaceInFollowing()
-            {
-                Create("dog", "", "  cat");
-                _textView.MoveCaretToLine(1);
-                _vimBuffer.Process("yw");
-                Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
-                Assert.AreEqual(Environment.NewLine, UnnamedRegister.StringValue);
-            }
-
-            /// <summary>
-            /// Yanking a word which includes a blank line should still be line wise if it started at 
-            /// the beginning of the previous word
-            /// </summary>
-            [Test]
-            public void Yank_WordEndInEmptyLine()
-            {
-                Create("dog", "", "cat");
-                _vimBuffer.Process("y2w");
-                Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
-                Assert.AreEqual("dog" + Environment.NewLine + Environment.NewLine, UnnamedRegister.StringValue);
-            }
-
-            /// <summary>
-            /// Yanking a word which includes a blank line should not be line wise if it starts in 
-            /// the middle of a word
-            /// </summary>
-            [Test]
-            public void Yank_WordMiddleEndInEmptyLin()
-            {
-                Create("dog", "", "cat");
-                _textView.MoveCaretTo(1);
-                _vimBuffer.Process("y2w");
-                Assert.AreEqual(OperationKind.CharacterWise, UnnamedRegister.OperationKind);
-                Assert.AreEqual("og" + Environment.NewLine, UnnamedRegister.StringValue);
-                _vimBuffer.Process("p");
-                Assert.AreEqual("doog", _textView.GetLine(0).GetText());
-                Assert.AreEqual("g", _textView.GetLine(1).GetText());
-                Assert.AreEqual("", _textView.GetLine(2).GetText());
-                Assert.AreEqual("cat", _textView.GetLine(3).GetText());
-            }
-
-            /// <summary>
-            /// A yank which wraps around the buffer should just be a backwards motion and 
-            /// shouldn't cause an error or warning message to be displayed
-            /// </summary>
-            [Test]
-            public void Yank_WrappingSearchSucceeds()
-            {
-                Create("dog", "cat", "dog", "fish");
-                var didHit = false;
-                _vimBuffer.WarningMessage +=
-                    (_, args) =>
-                    {
-                        Assert.AreEqual(Resources.Common_SearchForwardWrapped, args.Message);
-                        didHit = true;
-                    };
-                _assertOnWarningMessage = false;
-                _globalSettings.WrapScan = true;
-                _textView.MoveCaretToLine(2);
-
-                _vimBuffer.Process("y/dog", enter: true);
-                Assert.AreEqual("dog" + Environment.NewLine + "cat" + Environment.NewLine, UnnamedRegister.StringValue);
-                Assert.IsTrue(didHit);
-            }
-
-            /// <summary>
-            /// A yank of a search which has no match should raise an error 
-            /// </summary>
-            [Test]
-            public void Yank_SearchMotionWithNoResult()
-            {
-                Create("dog", "cat", "dog", "fish");
-                _globalSettings.WrapScan = false;
-                _textView.MoveCaretToLine(2);
-                _assertOnErrorMessage = false;
-
-                var didSee = false;
-                _vimBuffer.ErrorMessage +=
-                    (sender, args) =>
-                    {
-                        Assert.AreEqual(Resources.Common_PatternNotFound("bug"), args.Message);
-                        didSee = true;
-                    };
-                _vimBuffer.Process("y/bug", enter: true);
-                Assert.IsTrue(didSee);
-            }
-
-            /// <summary>
-            /// Doing an 'iw' yank from the start of the word should yank just the word
-            /// </summary>
-            [Test]
-            public void Yank_InnerWord_FromWordStart()
-            {
-                Create("the dog chased the ball");
-                _vimBuffer.Process("yiw");
-                Assert.AreEqual("the", UnnamedRegister.StringValue);
-            }
-
-            /// <summary>
-            /// Doing an 'iw' yank with a count of 2 should yank the word and the trailing
-            /// white space
-            /// </summary>
-            [Test]
-            public void Yank_InnerWord_FromWordStartWithCount()
-            {
-                Create("the dog chased the ball");
-                _vimBuffer.Process("y2iw");
-                Assert.AreEqual("the ", UnnamedRegister.StringValue);
-            }
-
-            /// <summary>
-            /// Doing an 'iw' from white space should yank the white space
-            /// </summary>
-            [Test]
-            public void Yank_InnerWord_FromWhiteSpace()
-            {
-                Create("the dog chased the ball");
-                _textView.MoveCaretTo(3);
-                _vimBuffer.Process("y2iw");
-                Assert.AreEqual(" dog", UnnamedRegister.StringValue);
-            }
-
-            /// <summary>
-            /// Yanking a word across new lines should not count the new line as a word. Odd since
-            /// most white space is counted
-            /// </summary>
-            [Test]
-            public void Yank_InnerWord_AcrossNewLine()
-            {
-                Create("cat", "dog", "bear");
-                _vimBuffer.Process("y2iw");
-                Assert.AreEqual("cat" + Environment.NewLine + "dog", UnnamedRegister.StringValue);
-            }
-
-            /// <summary>
-            /// Make sure a yank goes to the clipboard if we don't specify a register and the 
-            /// unnamed option is set
-            /// </summary>
-            [Test]
-            public void Yank_Unnamed_GoToClipboardIfOptionSet()
-            {
-                Create("cat", "dog");
-                _globalSettings.Clipboard = "unnamed,autoselect";
-                _vimBuffer.Process("yaw");
-                Assert.AreEqual("cat", ClipboardDevice.Text);
-            }
-
-            /// <summary>
-            /// Make sure a yank goes to unnamed if the register is explicitly specified even if the
-            /// unnamed option is set in 'clipboard'
-            /// </summary>
-            [Test]
-            public void Yank_Unnamed_ExplicitBypassesClipboardOption()
-            {
-                Create("cat", "dog");
-                _globalSettings.Clipboard = "unnamed,autoselect";
-                _vimBuffer.Process("\"\"yaw");
-                Assert.AreEqual("", ClipboardDevice.Text);
-                Assert.AreEqual("cat", UnnamedRegister.StringValue);
-            }
-
-            /// <summary>
-            /// Yank lines using the special y#y syntax
-            /// </summary>
-            [Test]
-            public void YankLines_Special_Simple()
-            {
-                Create("cat", "dog", "bear");
-                _vimBuffer.Process("y2y");
-                Assert.AreEqual("cat" + Environment.NewLine + "dog" + Environment.NewLine, UnnamedRegister.StringValue);
-                Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
             }
 
             /// <summary>

@@ -343,10 +343,8 @@ type internal CommonOperations
                 // Get the point when moving the caret after the last line in the SnapshotSpan
                 let getAfterLastLine() = 
                     match SnapshotUtil.TryGetLine x.CurrentSnapshot (line.LineNumber + 1) with
-                    | None -> 
-                        line.End
-                    | Some line ->
-                        line.Start
+                    | None -> line.End
+                    | Some line -> line.Start
 
                 match result.MotionKind with 
                 | MotionKind.CharacterWiseExclusive ->
@@ -361,10 +359,10 @@ type internal CommonOperations
 
                         if Util.IsFlagSet result.MotionResultFlags MotionResultFlags.ExclusivePromotionPlusOne then
                             match SnapshotUtil.TryGetLine x.CurrentSnapshot (line.LineNumber + 2) with
-                            | None -> 
-                                result.Span.End
-                            | Some line ->
-                                line.Start
+                            | None -> result.Span.End
+                            | Some line -> line.Start
+                        elif Util.IsFlagSet result.MotionResultFlags MotionResultFlags.ExclusivePromotionUseOriginal then
+                            result.OriginalSpan.End
                         else
                             getAfterLastLine()
                     else

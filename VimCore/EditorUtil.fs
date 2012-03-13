@@ -455,12 +455,15 @@ module SnapshotLineUtil =
     let IsEmpty line = 
         GetLength line = 0 
 
-    /// Does the line consist of only whitespace
-    let IsBlank line = 
+    /// Is the line empty or consisting of only blank characters
+    let IsBlankOrEmpty line = 
         line
         |> GetExtent
         |> SnapshotSpanUtil.GetPoints Path.Forward
         |> Seq.forall (fun point -> CharUtil.IsBlank (point.GetChar()))
+
+    /// Does the line have at least 1 character all of which are blank?
+    let IsBlank line = GetLength line > 0 && IsBlankOrEmpty line
 
     /// Get the first non-blank character on the line
     let GetFirstNonBlank line = 

@@ -206,7 +206,7 @@ type internal InsertMode
 
     /// Get the Span for the word we are trying to complete if there is one
     member x.GetWordCompletionSpan () =
-        if SnapshotLineUtil.IsBlank x.CaretLine then
+        if SnapshotLineUtil.IsBlankOrEmpty x.CaretLine then
             // Have to special case a bit here.  Blank lines are actually words but we
             // don't want to replace the new line when doing a completion
             None

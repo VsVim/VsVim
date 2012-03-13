@@ -409,7 +409,7 @@ type internal InsertUtil
         let indentSpan = SnapshotLineUtil.GetIndentSpan x.CaretLine
 
         if indentSpan.Length > 0 || x.CaretVirtualPoint.IsInVirtualSpace then
-            let isBlankLine = SnapshotLineUtil.IsBlank x.CaretLine
+            let isBlankLine = SnapshotLineUtil.IsBlankOrEmpty x.CaretLine
 
             let spaces = 
                 let spaces = _operations.NormalizeBlanksToSpaces (indentSpan.GetText())
