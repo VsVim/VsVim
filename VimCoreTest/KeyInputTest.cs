@@ -124,9 +124,9 @@ namespace Vim.UnitTest
         {
             Action<KeyInput, KeyInput> func = (left, right) =>
             {
-                Assert.AreNotEqual(KeyInputUtil.ChangeKeyModifiers(left, KeyModifiers.Control), right);
-                Assert.AreNotEqual(KeyInputUtil.ChangeKeyModifiers(left, KeyModifiers.Alt), right);
-                Assert.AreNotEqual(KeyInputUtil.ChangeKeyModifiers(left, KeyModifiers.Shift), right);
+                Assert.AreNotEqual(KeyInputUtil.ChangeKeyModifiersDangerous(left, KeyModifiers.Control), right);
+                Assert.AreNotEqual(KeyInputUtil.ChangeKeyModifiersDangerous(left, KeyModifiers.Alt), right);
+                Assert.AreNotEqual(KeyInputUtil.ChangeKeyModifiersDangerous(left, KeyModifiers.Shift), right);
             };
 
             foreach (var cur in KeyInputUtil.AlternateKeyInputPairList)
@@ -163,9 +163,9 @@ namespace Vim.UnitTest
             var allKeyInputs = Enumerable.Concat(KeyInputUtil.VimKeyInputList, KeyInputUtil.AlternateKeyInputList);
             var all = allKeyInputs.SelectMany(x => new[] {
                 x,
-                KeyInputUtil.ChangeKeyModifiers(x, KeyModifiers.Control),
-                KeyInputUtil.ChangeKeyModifiers(x, KeyModifiers.Shift),
-                KeyInputUtil.ChangeKeyModifiers(x, KeyModifiers.Alt)
+                KeyInputUtil.ChangeKeyModifiersDangerous(x, KeyModifiers.Control),
+                KeyInputUtil.ChangeKeyModifiersDangerous(x, KeyModifiers.Shift),
+                KeyInputUtil.ChangeKeyModifiersDangerous(x, KeyModifiers.Alt)
             });
 
             foreach (var left in all)

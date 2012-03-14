@@ -96,8 +96,10 @@ namespace Vim.UnitTest
         public void MapWithNoRemap_ShiftSymbolDoesNotChangeChar()
         {
             Assert.IsTrue(_map.MapWithNoRemap("<S-#>", "pound", KeyRemapMode.Normal));
-            Assert.IsTrue(_map.GetKeyMappingResult(KeyInputUtil.VimKeyToKeyInput(VimKey.Pound), KeyRemapMode.Normal).IsNoMapping);
-            Assert.IsTrue(_map.GetKeyMappingResult(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Pound, KeyModifiers.Shift), KeyRemapMode.Normal).IsMapped);
+
+            var keyInput = KeyInputUtil.CharToKeyInput('#');
+            Assert.IsTrue(_map.GetKeyMappingResult(keyInput, KeyRemapMode.Normal).IsNoMapping);
+            Assert.IsTrue(_map.GetKeyMappingResult(KeyInputUtil.ChangeKeyModifiersDangerous(keyInput, KeyModifiers.Shift), KeyRemapMode.Normal).IsMapped);
         }
 
         [Test]

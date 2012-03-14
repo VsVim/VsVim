@@ -346,16 +346,16 @@ module KeyInputUtil =
         | None -> invalidArg "vimKey" Resources.KeyInput_InvalidVimKey
         | Some(ki) -> ki
 
-    let ChangeKeyModifiers (ki:KeyInput) keyModifiers = 
+    let ChangeKeyModifiersDangerous (ki:KeyInput) keyModifiers = 
         KeyInput(ki.Key, keyModifiers, ki.RawChar)
 
     let CharWithControlToKeyInput ch = 
         let ki = ch |> CharToKeyInput  
-        ChangeKeyModifiers ki (ki.KeyModifiers ||| KeyModifiers.Control)
+        ChangeKeyModifiersDangerous ki (ki.KeyModifiers ||| KeyModifiers.Control)
 
     let CharWithAltToKeyInput ch = 
         let ki = ch |> CharToKeyInput 
-        ChangeKeyModifiers ki (ki.KeyModifiers ||| KeyModifiers.Alt)
+        ChangeKeyModifiersDangerous ki (ki.KeyModifiers ||| KeyModifiers.Alt)
 
     let AlternateEnterKey = KeyInput.AlternateEnterKey
     let AlternateEscapeKey = KeyInput.AlternateEscapeKey
@@ -382,40 +382,81 @@ module KeyInputUtil =
         AlternateKeyInputPairList 
         |> List.tryPick (fun (target, alternate) -> if alternate = ki then Some target else None)
 
+
+    /// There is a set of characters to which the shift modifier is meaningless.  When the shift
+    /// key is held down for these keys it's essentially ignored
+    ///
+    /// Note: This isn't documented anywhere I can find.  It's all ferreted out by experimentation
+    /// particularly on international keyboards where you can get certain characters with and
+    /// without the shift key.
+    ///
+    /// The experiments are done by mapping the character with shift in normal mode and seeing if 
+    /// I can get the key mapping to hit.  For example :nmap <S->> ihit<Esc> doesn't work but
+    /// :nmap <S-Del> ihit<Esc> does.  
+    let ModifierSpecialCharSet = 
+        VimKeyRawData
+        |> Seq.filter (fun (vimKey, c) -> 
+            match c with 
+            | None -> false
+            | Some _ ->
+                // In general if there is an associated character then the shift key doesn't 
+                // matter.  There are several notable exceptions.  Mostly for characters which aren't
+                // considered printable
+                match vimKey with
+                | VimKey.Back -> false 
+                | VimKey.Enter -> false
+                | VimKey.FormFeed -> false
+                | VimKey.Escape -> false
+                | VimKey.Space -> false
+                | VimKey.Delete -> false
+                | VimKey.Tab -> false
+                | _ -> true)
+        |> Seq.map snd
+        |> SeqUtil.filterToSome
+        |> Set.ofSeq
+
     /// Apply the modifiers to the given KeyInput and determine the result.  This will
     /// not necessarily return a KeyInput with the modifier set.  It attempts to unify 
     /// certain ambiguous combinations.
     let ApplyModifiers (keyInput : KeyInput) (modifiers : KeyModifiers) =
         if modifiers = KeyModifiers.None then
             keyInput
-        elif Util.IsFlagSet modifiers KeyModifiers.Shift && CharUtil.IsLetter keyInput.Char then
+        elif Util.IsFlagSet modifiers KeyModifiers.Shift && Option.isSome keyInput.RawChar then
 
-            // The shift key and letters is ambiguous.  It can be represented equally well as 
-            // either of the following
-            //
-            //  - Lower case 'a' + shift
-            //  - Upper case 'a' with no shift
-            //
-            // Vim doesn't distinguish between these two and unifies internally.  This can be 
-            // demonstrated by playing with key mapping combinations (<S-A> and A).  It's 
-            // convenient to have upper 'A' as a stand alone VimKey hence we choose to represent
-            // that way and remove the shift modifier here
-            let modifiers = Util.UnsetFlag modifiers KeyModifiers.Shift
-            let keyInput = 
-                if CharUtil.IsLower keyInput.Char then
+            if CharUtil.IsLetter keyInput.Char then
+                // The shift key and letters is ambiguous.  It can be represented equally well as 
+                // either of the following
+                //
+                //  - Lower case 'a' + shift
+                //  - Upper case 'a' with no shift
+                //
+                // Vim doesn't distinguish between these two and unifies internally.  This can be 
+                // demonstrated by playing with key mapping combinations (<S-A> and A).  It's 
+                // convenient to have upper 'A' as a stand alone VimKey hence we choose to represent
+                // that way and remove the shift modifier here
+                let modifiers = Util.UnsetFlag modifiers KeyModifiers.Shift
+                let keyInput = 
+                    if CharUtil.IsLower keyInput.Char then
 
-                    // The shift modifier should promote a letter into the upper form 
-                    let c = CharUtil.ToUpper keyInput.Char
-                    let upperKeyInput = CharToKeyInput c 
-                    ChangeKeyModifiers upperKeyInput keyInput.KeyModifiers
-                else
-                    // Ignore the shift modifier on an upper letter
-                    keyInput
+                        // The shift modifier should promote a letter into the upper form 
+                        let c = CharUtil.ToUpper keyInput.Char
+                        let upperKeyInput = CharToKeyInput c 
+                        ChangeKeyModifiersDangerous upperKeyInput keyInput.KeyModifiers
+                    else
+                        // Ignore the shift modifier on an upper letter
+                        keyInput
 
-            // Apply the remaining modifiers
-            ChangeKeyModifiers keyInput modifiers
+                // Apply the remaining modifiers
+                ChangeKeyModifiersDangerous keyInput modifiers
+            elif Set.contains keyInput.Char ModifierSpecialCharSet then
+                // There is a set of chars for which the Shift modifier has no effect.  If this is one of them then
+                // don't apply the shift modifier to the final KeyInput
+                let modifiers = Util.UnsetFlag modifiers KeyModifiers.Shift
+                ChangeKeyModifiersDangerous keyInput modifiers
+            else
+                ChangeKeyModifiersDangerous keyInput modifiers
         else
-            ChangeKeyModifiers keyInput modifiers
+            ChangeKeyModifiersDangerous keyInput modifiers
 
     let ApplyModifiersToVimKey vimKey modifiers = 
         let keyInput = VimKeyToKeyInput vimKey

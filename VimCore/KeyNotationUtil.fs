@@ -190,7 +190,19 @@ module KeyNotationUtil =
             let keyInput = convertToRaw data 
             match keyInput with 
             | None -> None
-            | Some keyInput -> KeyInputUtil.ApplyModifiers keyInput modifier |> Some
+            | Some keyInput -> 
+
+                // This is one place where we don't want to always smooth out the modifiers with
+                // ApplyModifiers.  Even though it doesn't make any sense to create a mappping
+                // for say Shift + # it's completely legal to do so.  It produces a KeyInput which
+                // can't be matched on keyboards.  But it will appear in the map list.  
+                //
+                // The exception to this rule is letters.  They are still smoothed out and this can
+                // be verified experimentally
+                if Option.isSome keyInput.RawChar && CharUtil.IsLetterOrDigit keyInput.Char then
+                    KeyInputUtil.ApplyModifiers keyInput modifier |> Some
+                else
+                    KeyInputUtil.ChangeKeyModifiersDangerous keyInput modifier |> Some
 
         // Inside the <
         let rec insideLessThanGreaterThan data index modifier = 
