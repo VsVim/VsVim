@@ -353,27 +353,16 @@ type internal CommonOperations
                     // but does move to it when going forward so End works here
                     result.Span.End
                 | MotionKind.CharacterWiseInclusive -> 
-                    if Util.IsFlagSet result.MotionResultFlags MotionResultFlags.ExclusivePromotion then
-                        // If we adjusted a span under rule #1 of ':help exclusive' then we should still
-                        // move the caret to the original end of the span
-
-                        if Util.IsFlagSet result.MotionResultFlags MotionResultFlags.ExclusivePromotionPlusOne then
-                            match SnapshotUtil.TryGetLine x.CurrentSnapshot (line.LineNumber + 2) with
-                            | None -> result.Span.End
-                            | Some line -> line.Start
-                        else
-                            getAfterLastLine()
+                    // Normal inclusive motion should move the caret to the last real point on the 
+                    // SnapshotSpan.  The one exception is when we are in visual mode with an
+                    // exclusive selection.  In that case we move as if it's an exclusive motion.  
+                    // Couldn't find any documentation on this but it's indicated by several behavior 
+                    // tests ('e', 'w' movements in particular)
+                    if VisualKind.IsAnyVisual _vimTextBuffer.ModeKind && _globalSettings.SelectionKind = SelectionKind.Exclusive then
+                        result.Span.End
                     else
-                        // Normal inclusive motion should move the caret to the last real point on the 
-                        // SnapshotSpan.  The one exception is when we are in visual mode with an
-                        // exclusive selection.  In that case we move as if it's an exclusive motion.  
-                        // Couldn't find any documentation on this but it's indicated by several behavior 
-                        // tests ('e', 'w' movements in particular)
-                        if VisualKind.IsAnyVisual _vimTextBuffer.ModeKind && _globalSettings.SelectionKind = SelectionKind.Exclusive then
-                            result.Span.End
-                        else
-                            SnapshotPointUtil.TryGetPreviousPointOnLine result.Span.End 1 
-                            |> OptionUtil.getOrDefault result.Span.End
+                        SnapshotPointUtil.TryGetPreviousPointOnLine result.Span.End 1 
+                        |> OptionUtil.getOrDefault result.Span.End
                 | MotionKind.LineWise column -> 
                     match column with
                     | CaretColumn.None -> 

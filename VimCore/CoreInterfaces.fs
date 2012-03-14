@@ -423,21 +423,12 @@ type MotionResultFlags =
     /// Any of the word motions
     | AnyWord = 0x1
 
-    /// This was promoted under rule #1 listed in ':help exclusive'
-    | ExclusivePromotion = 0x2
-
-    /// This is to cover cases where the last line is blank and an exclusive promotion
-    /// under rule #1 occurs.  It's impossible for the caret movement code to tell the 
-    /// difference between a blank which should be consider the last line or if the 
-    /// line above is last.  This helps differentiate the two
-    | ExclusivePromotionPlusOne = 0x4
-
     /// This motion was promoted under rule #2 to a line wise motion
-    | ExclusiveLineWise = 0x8
+    | ExclusiveLineWise = 0x2
 
     /// This motion when used as a movement should maintain the caret column
     /// setting.
-    | MaintainCaretColumn = 0x10
+    | MaintainCaretColumn = 0x4
 
 /// Information about the type of the motion this was.
 [<RequireQualifiedAccess>]

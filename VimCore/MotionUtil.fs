@@ -2266,25 +2266,12 @@ type internal MotionUtil
                 // Rule #1. Move this back a line.
                 let line = SnapshotUtil.GetLine originalSpan.Snapshot (endLine.LineNumber - 1)
                 let span = SnapshotSpan(originalSpan.Start, line.End)
-
-                let flags = 
-                    let flags = motionResult.MotionResultFlags ||| MotionResultFlags.ExclusivePromotion
-
-                    // Make sure to flag the case where the last line was blank in a 
-                    // promotion.  Needed for caret movement
-                    let line = SnapshotUtil.GetLine span.Snapshot (endLine.LineNumber - 1)
-
-                    if line.Length = 0 then
-                        flags ||| MotionResultFlags.ExclusivePromotionPlusOne
-                    else
-                        flags
-
                 let kind = MotionKind.CharacterWiseInclusive
-                { motionResult with Span = span; OriginalSpan = originalSpan; MotionKind = kind; MotionResultFlags = flags }
+                { motionResult with Span = span; OriginalSpan = originalSpan; MotionKind = kind }
 
         match motionResult.MotionKind with
+        | MotionKind.CharacterWiseExclusive -> adjust()
         | MotionKind.CharacterWiseInclusive -> motionResult
-        | MotionKind.CharacterWiseExclusive -> adjust ()
         | MotionKind.LineWise _ -> motionResult
 
     /// Run the specified motion and return it's result
@@ -2337,19 +2324,24 @@ type internal MotionUtil
             | Motion.SentenceForward -> x.SentenceForward motionArgument.Count |> Some
             | Motion.WordBackward wordKind -> x.WordBackward wordKind motionArgument.Count |> Some
             | Motion.WordForward wordKind -> x.WordForward wordKind motionArgument.Count motionArgument.MotionContext |> Some
-        Option.map (x.AdjustMotionResult motion) motionResult
+
+        // If this motion is being used for an operator we need to consider the exclusive
+        // promotions
+        motionResult 
+        |> Option.map (fun motionResult -> 
+            match motionArgument.MotionContext with
+            | MotionContext.AfterOperator -> x.AdjustMotionResult motion motionResult
+            | MotionContext.Movement -> motionResult) 
 
     member x.GetTextObject motion point = 
         // TODO: Need to expand for all text objects
 
-        let motionResult = 
-            match motion with 
-            | Motion.AllBlock blockKind -> x.AllBlock point blockKind 1
-            | Motion.AllWord wordKind -> x.AllWord wordKind 1 point
-            | Motion.InnerWord wordKind -> x.InnerWord wordKind 1 point 
-            | Motion.InnerBlock blockKind -> x.InnerBlock point blockKind 1
-            | _ -> None
-        Option.map (x.AdjustMotionResult motion) motionResult
+        match motion with 
+        | Motion.AllBlock blockKind -> x.AllBlock point blockKind 1
+        | Motion.AllWord wordKind -> x.AllWord wordKind 1 point
+        | Motion.InnerWord wordKind -> x.InnerWord wordKind 1 point 
+        | Motion.InnerBlock blockKind -> x.InnerBlock point blockKind 1
+        | _ -> None
 
     interface IMotionUtil with
         member x.TextView = _textView

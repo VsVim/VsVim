@@ -120,7 +120,6 @@ namespace Vim.UnitTest
                 Assert.AreEqual(OperationKind.CharacterWise, result2.OperationKind);
                 Assert.AreEqual("at", result2.Span.GetText());
                 Assert.IsTrue(result2.MotionKind.IsCharacterWiseInclusive);
-                Assert.IsTrue(MotionResultFlags.ExclusivePromotion == (result2.MotionResultFlags & MotionResultFlags.ExclusivePromotion));
             }
 
             /// <summary>
