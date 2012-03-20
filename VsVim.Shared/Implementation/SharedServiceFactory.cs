@@ -27,7 +27,7 @@ namespace VsVim.Implementation
         /// </summary>
         VisualStudioVersion CalculateVisualStudioVersion()
         {
-            return VisualStudioVersion.Dev10;
+            return VisualStudioVersion.Dev11;
         }
 
         #region ISharedServiceFactory

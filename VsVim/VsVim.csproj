@@ -180,6 +180,10 @@
     <Compile Include="VsVimHost.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="VsVim.Dev11.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <None Include="app.config" />
     <Content Include="License.rtf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

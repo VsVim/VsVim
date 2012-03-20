@@ -1,15 +1,19 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Editor;
+using Microsoft.VisualStudio.Platform.WindowManagement;
 using Microsoft.VisualStudio.PlatformUI.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Text.Editor;
 using Vim;
 using Vim.Extensions;
-using Microsoft.FSharp.Core;
-using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Platform.WindowManagement;
-using Microsoft.VisualStudio.Editor;
 
+#if DEV10
 namespace VsVim.Dev10
+#else
+namespace VsVim.Dev11
+#endif
 {
     internal sealed class SharedService : ISharedService
     {
@@ -140,7 +144,6 @@ namespace VsVim.Dev10
                 return FSharpOption<ITextView>.None;
             }
         }
-
 
         #region ISharedService
 
