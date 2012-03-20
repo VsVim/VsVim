@@ -56,6 +56,7 @@ namespace VsVim.UnitTest
                 _editorOperationsFactoryService.Object,
                 WordUtilFactory,
                 _textManager.Object,
+                _factory.Create<ISharedServiceFactory>().Object,
                 sp.Object);
             _host = _hostRaw;
         }

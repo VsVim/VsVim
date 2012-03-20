@@ -7,8 +7,6 @@ using EditorUtils;
 using EnvDTE;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Editor;
-using Microsoft.VisualStudio.Platform.WindowManagement;
-using Microsoft.VisualStudio.PlatformUI.Shell;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
@@ -41,6 +39,7 @@ namespace VsVim
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
         private readonly _DTE _dte;
         private readonly IVsExtensibility _vsExtensibility;
+        private readonly ISharedService _sharedService;
 
         internal _DTE DTE
         {
@@ -58,6 +57,7 @@ namespace VsVim
             IEditorOperationsFactoryService editorOperationsFactoryService,
             IWordUtilFactory wordUtilFactory,
             ITextManager textManager,
+            ISharedServiceFactory sharedServiceFactory,
             SVsServiceProvider serviceProvider)
             : base(textBufferFactoryService, textEditorFactoryService, textDocumentFactoryService, editorOperationsFactoryService)
         {
@@ -67,6 +67,7 @@ namespace VsVim
             _dte = (_DTE)serviceProvider.GetService(typeof(_DTE));
             _vsExtensibility = (IVsExtensibility)serviceProvider.GetService(typeof(IVsExtensibility));
             _textManager = textManager;
+            _sharedService = sharedServiceFactory.Create();
         }
 
         private bool SafeExecuteCommand(string command, string args = "")
@@ -114,26 +115,6 @@ namespace VsVim
             }
 
             return SafeExecuteCommand(CommandNameGoToDefinition);
-        }
-
-        /// <summary>
-        /// Get the list of View's in the current ViewManager DocumentGroup
-        /// </summary>
-        private static List<View> GetActiveViews()
-        {
-            var activeView = ViewManager.Instance.ActiveView;
-            if (activeView == null)
-            {
-                return new List<View>();
-            }
-
-            var group = activeView.Parent as DocumentGroup;
-            if (group == null)
-            {
-                return new List<View>();
-            }
-
-            return group.VisibleChildren.OfType<View>().ToList();
         }
 
         /// <summary>
@@ -294,59 +275,12 @@ namespace VsVim
         /// </summary>
         public override void GoToNextTab(Vim.Path direction, int count)
         {
-            // First get the index of the current tab so we know where we are incrementing
-            // from.  Make sure to check that our view is actually a part of the active
-            // views
-            var children = GetActiveViews();
-            var activeView = ViewManager.Instance.ActiveView;
-            var index = children.IndexOf(activeView);
-            if (index == -1)
-            {
-                return;
-            }
-
-            count = count % children.Count;
-            if (direction.IsForward)
-            {
-                index += count;
-                index %= children.Count;
-            }
-            else
-            {
-                index -= count;
-                if (index < 0)
-                {
-                    index += children.Count;
-                }
-            }
-
-            children[index].ShowInFront();
+            _sharedService.GoToNextTab(direction, count);
         }
 
         public override void GoToTab(int index)
         {
-            View targetView;
-            var children = GetActiveViews();
-            if (index < 0)
-            {
-                targetView = children[children.Count - 1];
-            }
-            else if (index == 0)
-            {
-                targetView = children[0];
-            }
-            else
-            {
-                index -= 1;
-                targetView = index < children.Count ? children[index] : null;
-            }
-
-            if (targetView == null)
-            {
-                return;
-            }
-
-            targetView.ShowInFront();
+            _sharedService.GoToTab(index);
         }
 
         public override HostResult Make(bool jumpToFirstError, string arguments)
@@ -355,48 +289,9 @@ namespace VsVim
             return HostResult.Success;
         }
 
-        /// <summary>
-        /// Returns the ITextView which should have keyboard focus.  This method is used during macro
-        /// running and hence must account for view changes which occur during a macro run.  Say by the
-        /// macro containing the 'gt' command.  Unfortunately these don't fully process through Visual
-        /// Studio until the next UI thread pump so we instead have to go straight to the view controller
-        /// </summary>
         public override FSharpOption<ITextView> GetFocusedTextView()
         {
-            var activeView = ViewManager.Instance.ActiveView;
-            var result = _vsAdapter.GetWindowFrames();
-            if (result.IsError)
-            {
-                return FSharpOption<ITextView>.None;
-            }
-
-            IVsWindowFrame activeWindowFrame = null;
-            foreach (var vsWindowFrame in result.Value)
-            {
-                var frame = vsWindowFrame as WindowFrame;
-                if (frame != null && frame.FrameView == activeView)
-                {
-                    activeWindowFrame = frame;
-                    break;
-                }
-            }
-
-            if (activeWindowFrame == null)
-            {
-                return FSharpOption<ITextView>.None;
-            }
-
-            // TODO: Should try and pick the ITextView which is actually focussed as 
-            // there could be several in a split screen
-            try
-            {
-                ITextView textView = activeWindowFrame.GetCodeWindow().Value.GetPrimaryTextView(_editorAdaptersFactoryService).Value;
-                return FSharpOption.Create(textView);
-            }
-            catch
-            {
-                return FSharpOption<ITextView>.None;
-            }
+            return _sharedService.GetFocusedTextView();
         }
 
         public override void Quit()

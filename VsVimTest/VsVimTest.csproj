@@ -187,6 +187,10 @@
       <Project>{65A749E0-F1B1-4E43-BE73-25072EE398C6}</Project>
       <Name>VimWpf</Name>
     </ProjectReference>
+    <ProjectReference Include="..\VsVim.Shared\VsVim.Shared.csproj">
+      <Project>{979DEDC6-25E2-494B-9E8F-6E42078C601C}</Project>
+      <Name>VsVim.Shared</Name>
+    </ProjectReference>
     <ProjectReference Include="..\VsVim\VsVim.csproj">
       <Project>{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}</Project>
       <Name>VsVim</Name>
