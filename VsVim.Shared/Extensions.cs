@@ -21,7 +21,7 @@ using Command = EnvDTE.Command;
 
 namespace VsVim
 {
-    internal static class Extensions
+    public static class Extensions
     {
         #region Command
 
@@ -29,7 +29,7 @@ namespace VsVim
         /// Get the binding strings for this Command.  Digs through the various ways a 
         /// binding string can be stored and returns a uniform result
         /// </summary>
-        internal static IEnumerable<string> GetBindings(this Command command)
+        public static IEnumerable<string> GetBindings(this Command command)
         {
             if (null == command)
             {
@@ -57,7 +57,7 @@ namespace VsVim
         /// <summary>
         /// Get the binding strings in the form of CommandKeyBinding instances
         /// </summary>
-        internal static IEnumerable<CommandKeyBinding> GetCommandKeyBindings(this Command command)
+        public static IEnumerable<CommandKeyBinding> GetCommandKeyBindings(this Command command)
         {
             if (null == command)
             {
@@ -80,7 +80,7 @@ namespace VsVim
             }
         }
 
-        internal static IEnumerable<KeyBinding> GetKeyBindings(this Command command)
+        public static IEnumerable<KeyBinding> GetKeyBindings(this Command command)
         {
             return GetCommandKeyBindings(command).Select(x => x.KeyBinding);
         }
@@ -88,7 +88,7 @@ namespace VsVim
         /// <summary>
         /// Does the Command have the provided KeyBinding as a valid binding
         /// </summary>
-        internal static bool HasKeyBinding(this Command command, KeyBinding binding)
+        public static bool HasKeyBinding(this Command command, KeyBinding binding)
         {
             return GetCommandKeyBindings(command).Any(x => x.KeyBinding == binding);
         }
@@ -97,7 +97,7 @@ namespace VsVim
         /// Remove all bindings on the provided Command value
         /// </summary>
         /// <param name="command"></param>
-        internal static void SafeResetBindings(this Command command)
+        public static void SafeResetBindings(this Command command)
         {
             try
             {
@@ -113,7 +113,7 @@ namespace VsVim
         /// <summary>
         /// Safely reset the bindings on this Command to the provided KeyBinding value
         /// </summary>
-        internal static void SafeSetBindings(this Command command, KeyBinding binding)
+        public static void SafeSetBindings(this Command command, KeyBinding binding)
         {
             try
             {
@@ -130,7 +130,7 @@ namespace VsVim
 
         #region Commands
 
-        internal static IEnumerable<Command> GetCommands(this Commands commands)
+        public static IEnumerable<Command> GetCommands(this Commands commands)
         {
             return commands.Cast<Command>();
         }
@@ -142,7 +142,7 @@ namespace VsVim
         /// <summary>
         /// Get the file name of the presented view.  If the name cannot be discovered an empty string will be returned
         /// </summary>
-        internal static string GetFileName(this IVsTextLines lines)
+        public static string GetFileName(this IVsTextLines lines)
         {
             try
             {
@@ -164,14 +164,14 @@ namespace VsVim
             }
         }
 
-        internal static Result<IVsEnumLineMarkers> GetLineMarkersEnum(this IVsTextLines lines, TextSpan span)
+        public static Result<IVsEnumLineMarkers> GetLineMarkersEnum(this IVsTextLines lines, TextSpan span)
         {
             IVsEnumLineMarkers markers;
             var hresult = lines.EnumMarkers(span.iStartLine, span.iStartIndex, span.iEndLine, span.iEndIndex, 0, (uint)ENUMMARKERFLAGS.EM_ALLTYPES, out markers);
             return Result.CreateSuccessOrError(markers, hresult);
         }
 
-        internal static List<IVsTextLineMarker> GetLineMarkers(this IVsTextLines lines, TextSpan span)
+        public static List<IVsTextLineMarker> GetLineMarkers(this IVsTextLines lines, TextSpan span)
         {
             var markers = GetLineMarkersEnum(lines, span);
             return markers.IsSuccess
@@ -183,14 +183,14 @@ namespace VsVim
 
         #region IVsTextView
 
-        internal static Result<IVsTextLines> GetTextLines(this IVsTextView textView)
+        public static Result<IVsTextLines> GetTextLines(this IVsTextView textView)
         {
             IVsTextLines textLines;
             var hresult = textView.GetBuffer(out textLines);
             return Result.CreateSuccessOrError(textLines, hresult);
         }
 
-        internal static Result<IVsWindowFrame> GetWindowFrame(this IVsTextView textView)
+        public static Result<IVsWindowFrame> GetWindowFrame(this IVsTextView textView)
         {
             var textViewEx = textView as IVsTextViewEx;
             if (textViewEx == null)
@@ -205,7 +205,7 @@ namespace VsVim
 
         #region IVsTextViewEx
 
-        internal static Result<IVsWindowFrame> GetWindowFrame(this IVsTextViewEx textViewEx)
+        public static Result<IVsWindowFrame> GetWindowFrame(this IVsTextViewEx textViewEx)
         {
             object frame;
             if (!ErrorHandler.Succeeded(textViewEx.GetWindowFrame(out frame)))
@@ -240,19 +240,19 @@ namespace VsVim
             }
         }
 
-        internal static IDisposable EnableModelessDialog(this IVsUIShell vsShell)
+        public static IDisposable EnableModelessDialog(this IVsUIShell vsShell)
         {
             return new ModelessUtil(vsShell);
         }
 
-        internal static Result<List<IVsWindowFrame>> GetDocumentWindowFrames(this IVsUIShell vsShell)
+        public static Result<List<IVsWindowFrame>> GetDocumentWindowFrames(this IVsUIShell vsShell)
         {
             IEnumWindowFrames enumFrames;
             var hr = vsShell.GetDocumentWindowEnum(out enumFrames);
             return ErrorHandler.Failed(hr) ? Result.CreateError(hr) : enumFrames.GetContents();
         }
 
-        internal static Result<List<IVsWindowFrame>> GetDocumentWindowFrames(this IVsUIShell4 vsShell, __WindowFrameTypeFlags flags)
+        public static Result<List<IVsWindowFrame>> GetDocumentWindowFrames(this IVsUIShell4 vsShell, __WindowFrameTypeFlags flags)
         {
             IEnumWindowFrames enumFrames;
             var hr = vsShell.GetWindowEnum((uint)flags, out enumFrames);
@@ -263,7 +263,7 @@ namespace VsVim
 
         #region IEnumWindowFrames
 
-        internal static Result<List<IVsWindowFrame>> GetContents(this IEnumWindowFrames enumFrames)
+        public static Result<List<IVsWindowFrame>> GetContents(this IEnumWindowFrames enumFrames)
         {
             var list = new List<IVsWindowFrame>();
             var array = new IVsWindowFrame[16];
@@ -293,9 +293,39 @@ namespace VsVim
         #region IVsCodeWindow
 
         /// <summary>
+        /// Get the primary view of the code window.  Is actually the one on bottom
+        /// </summary>
+        public static Result<IVsTextView> GetPrimaryView(this IVsCodeWindow vsCodeWindow)
+        {
+            IVsTextView vsTextView;
+            var hr = vsCodeWindow.GetPrimaryView(out vsTextView);
+            if (ErrorHandler.Failed(hr))
+            {
+                return Result.CreateError(hr);
+            }
+
+            return Result.CreateSuccessNonNull(vsTextView);
+        }
+
+        /// <summary>
+        /// Get the primary view of the code window.  Is actually the one on bottom
+        /// </summary>
+        public static Result<IWpfTextView> GetPrimaryTextView(this IVsCodeWindow codeWindow, IVsEditorAdaptersFactoryService factoryService)
+        {
+            var result = GetPrimaryView(codeWindow);
+            if (result.IsError)
+            {
+                return Result.CreateError(result.HResult);
+            }
+
+            var textView = factoryService.GetWpfTextView(result.Value);
+            return Result.CreateSuccessNonNull(textView);
+        }
+
+        /// <summary>
         /// Is this window currently in a split mode?
         /// </summary>
-        internal static bool IsSplit(this IVsCodeWindow vsCodeWindow)
+        public static bool IsSplit(this IVsCodeWindow vsCodeWindow)
         {
             return
                 vsCodeWindow.GetPrimaryView().IsSuccess &&
@@ -305,7 +335,7 @@ namespace VsVim
         /// <summary>
         /// Get the secondary view of the code window.  Is actually the one on top
         /// </summary>
-        internal static Result<IWpfTextView> GetSecondaryTextView(this IVsCodeWindow codeWindow, IVsEditorAdaptersFactoryService factoryService)
+        public static Result<IWpfTextView> GetSecondaryTextView(this IVsCodeWindow codeWindow, IVsEditorAdaptersFactoryService factoryService)
         {
             var result = GetSecondaryView(codeWindow);
             if (result.IsError)
@@ -320,7 +350,7 @@ namespace VsVim
         /// <summary>
         /// Get the secondary view of the code window.  Is actually the one on top
         /// </summary>
-        internal static Result<IVsTextView> GetSecondaryView(this IVsCodeWindow vsCodeWindow)
+        public static Result<IVsTextView> GetSecondaryView(this IVsCodeWindow vsCodeWindow)
         {
             IVsTextView vsTextView;
             var hr = vsCodeWindow.GetSecondaryView(out vsTextView);
@@ -336,7 +366,30 @@ namespace VsVim
 
         #region IVsWindowFrame
 
-        internal static Result<IVsTextLines> GetTextLines(this IVsWindowFrame vsWindowFrame)
+        public static Result<IVsCodeWindow> GetCodeWindow(this IVsWindowFrame vsWindowFrame)
+        {
+            var iid = typeof(IVsCodeWindow).GUID;
+            var ptr = IntPtr.Zero;
+            try
+            {
+                ErrorHandler.ThrowOnFailure(vsWindowFrame.QueryViewInterface(ref iid, out ptr));
+                return Result.CreateSuccess((IVsCodeWindow)Marshal.GetObjectForIUnknown(ptr));
+            }
+            catch (Exception e)
+            {
+                // Venus will throw when querying for the code window
+                return Result.CreateError(e);
+            }
+            finally
+            {
+                if (ptr != IntPtr.Zero)
+                {
+                    Marshal.Release(ptr);
+                }
+            }
+        }
+
+        public static Result<IVsTextLines> GetTextLines(this IVsWindowFrame vsWindowFrame)
         {
             try
             {
@@ -357,7 +410,7 @@ namespace VsVim
             }
         }
 
-        internal static Result<ITextBuffer> GetTextBuffer(this IVsWindowFrame vsWindowFrame, IVsEditorAdaptersFactoryService factoryService)
+        public static Result<ITextBuffer> GetTextBuffer(this IVsWindowFrame vsWindowFrame, IVsEditorAdaptersFactoryService factoryService)
         {
             var result = GetTextLines(vsWindowFrame);
             if (result.IsError)
@@ -379,7 +432,7 @@ namespace VsVim
 
         #region IVsTextManager
 
-        internal static Tuple<bool, IWpfTextView> TryGetActiveTextView(this IVsTextManager vsTextManager, IVsEditorAdaptersFactoryService factoryService)
+        public static Tuple<bool, IWpfTextView> TryGetActiveTextView(this IVsTextManager vsTextManager, IVsEditorAdaptersFactoryService factoryService)
         {
             IVsTextView vsTextView;
             IWpfTextView textView = null;
@@ -399,7 +452,7 @@ namespace VsVim
         /// Don't be tempted to make this an IEnumerable because multiple calls would not
         /// produce multiple enumerations since the parameter would need to be reset
         /// </summary>
-        internal static List<IVsTextLineMarker> GetAll(this IVsEnumLineMarkers markers)
+        public static List<IVsTextLineMarker> GetAll(this IVsEnumLineMarkers markers)
         {
             var list = new List<IVsTextLineMarker>();
             do
@@ -424,20 +477,20 @@ namespace VsVim
 
         #region IVsTextLineMarker
 
-        internal static Result<TextSpan> GetCurrentSpan(this IVsTextLineMarker marker)
+        public static Result<TextSpan> GetCurrentSpan(this IVsTextLineMarker marker)
         {
             var array = new TextSpan[1];
             var hresult = marker.GetCurrentSpan(array);
             return Result.CreateSuccessOrError(array[0], hresult);
         }
 
-        internal static Result<SnapshotSpan> GetCurrentSpan(this IVsTextLineMarker marker, ITextSnapshot snapshot)
+        public static Result<SnapshotSpan> GetCurrentSpan(this IVsTextLineMarker marker, ITextSnapshot snapshot)
         {
             var span = GetCurrentSpan(marker);
             return span.IsError ? Result.CreateError(span.HResult) : span.Value.ToSnapshotSpan(snapshot);
         }
 
-        internal static Result<MARKERTYPE> GetMarkerType(this IVsTextLineMarker marker)
+        public static Result<MARKERTYPE> GetMarkerType(this IVsTextLineMarker marker)
         {
             int type;
             var hresult = marker.GetType(out type);
@@ -454,7 +507,7 @@ namespace VsVim
 
         #region IVsMonitorSelection
 
-        internal static Result<bool> IsCmdUIContextActive(this IVsMonitorSelection selection, Guid cmdId)
+        public static Result<bool> IsCmdUIContextActive(this IVsMonitorSelection selection, Guid cmdId)
         {
             uint cookie;
             var hresult = selection.GetCmdUIContextCookie(ref cmdId, out cookie);
@@ -472,7 +525,7 @@ namespace VsVim
 
         #region IServiceProvider
 
-        internal static TInterface GetService<TService, TInterface>(this System.IServiceProvider sp)
+        public static TInterface GetService<TService, TInterface>(this System.IServiceProvider sp)
         {
             return (TInterface)sp.GetService(typeof(TService));
         }
@@ -484,7 +537,7 @@ namespace VsVim
         /// <summary>
         /// Does this IContentType represent C++
         /// </summary>
-        internal static bool IsCPlusPlus(this IContentType ct)
+        public static bool IsCPlusPlus(this IContentType ct)
         {
             return ct.IsOfType(Constants.CPlusPlusContentType);
         }
@@ -492,7 +545,7 @@ namespace VsVim
         /// <summary>
         /// Is this IContentType of any of the specified types
         /// </summary>
-        internal static bool IsOfAnyType(this IContentType contentType, IEnumerable<string> types)
+        public static bool IsOfAnyType(this IContentType contentType, IEnumerable<string> types)
         {
             foreach (var type in types)
             {
@@ -512,7 +565,7 @@ namespace VsVim
         /// <summary>
         /// Are any of the standard displays currently active?
         /// </summary>
-        internal static bool IsAnyDisplayActive(this IDisplayWindowBroker displayWindowBroker)
+        public static bool IsAnyDisplayActive(this IDisplayWindowBroker displayWindowBroker)
         {
             return
                 displayWindowBroker.IsCompletionActive ||
@@ -529,7 +582,7 @@ namespace VsVim
         /// Creating an ITagger for an ITaggerProvider can fail in a number of ways.  Wrap them
         /// all up here 
         /// </summary>
-        internal static Result<ITagger<T>> SafeCreateTagger<T>(this ITaggerProvider taggerProvider, ITextBuffer textbuffer)
+        public static Result<ITagger<T>> SafeCreateTagger<T>(this ITaggerProvider taggerProvider, ITextBuffer textbuffer)
             where T : ITag
         {
             try
@@ -556,7 +609,7 @@ namespace VsVim
         /// This will return the SnapshotSpan values from the EditBuffer which are actually visible
         /// on the screen.
         /// </summary>
-        internal static NormalizedSnapshotSpanCollection GetVisibleSnapshotSpans(this ITextView textView)
+        public static NormalizedSnapshotSpanCollection GetVisibleSnapshotSpans(this ITextView textView)
         {
             var bufferGraph = textView.BufferGraph;
             var visualSnapshot = textView.VisualSnapshot;
@@ -584,7 +637,7 @@ namespace VsVim
         /// This method attempts to return the set of SnapshotSpan values which actually have visible
         /// text associated with them.
         /// </summary>
-        internal static NormalizedSnapshotSpanCollection GetLikelyVisibleSnapshotSpans(this ITextView textView)
+        public static NormalizedSnapshotSpanCollection GetLikelyVisibleSnapshotSpans(this ITextView textView)
         {
             // Mapping up and down is potentially expensive so we don't want to do it unless we have to.  Implement
             // a heuristic to check for large sections of invisible text and if it's not present then just return
@@ -613,7 +666,7 @@ namespace VsVim
         /// Get the SnapshotSpan for the ITextViewLineCollection.  This can throw when the ITextView is being
         /// laid out so we wrap the try / catch here
         /// </summary>
-        internal static Result<SnapshotSpan> GetFormattedSpan(this ITextViewLineCollection collection)
+        public static Result<SnapshotSpan> GetFormattedSpan(this ITextViewLineCollection collection)
         {
             try
             {
@@ -629,7 +682,7 @@ namespace VsVim
 
         #region ITextSnapshot
 
-        internal static Result<SnapshotSpan> ToSnapshotSpan(this TextSpan span, ITextSnapshot snapshot)
+        public static Result<SnapshotSpan> ToSnapshotSpan(this TextSpan span, ITextSnapshot snapshot)
         {
             try
             {
@@ -647,7 +700,7 @@ namespace VsVim
 
         #region SnapshotSpan
 
-        internal static TextSpan ToTextSpan(this SnapshotSpan span)
+        public static TextSpan ToTextSpan(this SnapshotSpan span)
         {
             var start = SnapshotPointUtil.GetLineColumn(span.Start);
             var option = SnapshotSpanUtil.GetLastIncludedPoint(span);
@@ -663,7 +716,7 @@ namespace VsVim
             };
         }
 
-        internal static Result<SnapshotSpan> SafeTranslateTo(this SnapshotSpan span, ITextSnapshot snapshot, SpanTrackingMode mode)
+        public static Result<SnapshotSpan> SafeTranslateTo(this SnapshotSpan span, ITextSnapshot snapshot, SpanTrackingMode mode)
         {
             try
             {
@@ -679,12 +732,12 @@ namespace VsVim
 
         #region SnapshotLineRange
 
-        internal static TextSpan ToTextSpan(this SnapshotLineRange range)
+        public static TextSpan ToTextSpan(this SnapshotLineRange range)
         {
             return range.Extent.ToTextSpan();
         }
 
-        internal static TextSpan ToTextSpanIncludingLineBreak(this SnapshotLineRange range)
+        public static TextSpan ToTextSpanIncludingLineBreak(this SnapshotLineRange range)
         {
             return range.ExtentIncludingLineBreak.ToTextSpan();
         }
@@ -693,7 +746,7 @@ namespace VsVim
 
         #region _DTE
 
-        internal static IEnumerable<Project> GetProjects(this _DTE dte)
+        public static IEnumerable<Project> GetProjects(this _DTE dte)
         {
             var list = dte.Solution.Projects;
             for (int i = 1; i <= list.Count; i++)
@@ -702,7 +755,7 @@ namespace VsVim
             }
         }
 
-        internal static IEnumerable<ProjectItem> GetProjectItems(this _DTE dte, string fileName)
+        public static IEnumerable<ProjectItem> GetProjectItems(this _DTE dte, string fileName)
         {
             foreach (var cur in dte.GetProjects())
             {
@@ -718,7 +771,7 @@ namespace VsVim
 
         #region Project
 
-        internal static IEnumerable<ProjectItem> GetProjecItems(this Project project)
+        public static IEnumerable<ProjectItem> GetProjecItems(this Project project)
         {
             var items = project.ProjectItems;
             for (int i = 1; i <= items.Count; i++)
@@ -727,7 +780,7 @@ namespace VsVim
             }
         }
 
-        internal static bool TryGetProjectItem(this Project project, string fileName, out ProjectItem item)
+        public static bool TryGetProjectItem(this Project project, string fileName, out ProjectItem item)
         {
             try
             {
@@ -745,7 +798,7 @@ namespace VsVim
 
         #region ObservableCollection<T>
 
-        internal static void AddRange<T>(this ObservableCollection<T> col, IEnumerable<T> enumerable)
+        public static void AddRange<T>(this ObservableCollection<T> col, IEnumerable<T> enumerable)
         {
             foreach (var cur in enumerable)
             {
@@ -757,7 +810,7 @@ namespace VsVim
 
         #region IEnumerable<T>
 
-        internal static void ForEach<T>(this IEnumerable<T> enumerable, Action<T> del)
+        public static void ForEach<T>(this IEnumerable<T> enumerable, Action<T> del)
         {
             foreach (var cur in enumerable)
             {
@@ -765,7 +818,7 @@ namespace VsVim
             }
         }
 
-        internal static IEnumerable<T> GetValues<T>(this IEnumerable<Result<T>> enumerable)
+        public static IEnumerable<T> GetValues<T>(this IEnumerable<Result<T>> enumerable)
         {
             foreach (var cur in enumerable)
             {
@@ -783,7 +836,7 @@ namespace VsVim
         /// <summary>
         /// Is the F# option both Some and equal to the provided value?
         /// </summary>
-        internal static bool IsSome<T>(this FSharpOption<T> option, T value)
+        public static bool IsSome<T>(this FSharpOption<T> option, T value)
         {
             return option.IsSome() && EqualityComparer<T>.Default.Equals(option.Value, value);
         }

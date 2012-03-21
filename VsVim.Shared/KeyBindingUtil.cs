@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using EnvDTE;
 using Vim;
@@ -10,15 +9,17 @@ namespace VsVim
     {
         private readonly CommandsSnapshot _snapshot;
         private readonly HashSet<string> _importantScopeSet;
+        private readonly ILegacySettings _legacySettings;
 
-        internal KeyBindingUtil(CommandsSnapshot snapshot, HashSet<string> importantScopeSet)
+        internal KeyBindingUtil(CommandsSnapshot snapshot, HashSet<string> importantScopeSet, ILegacySettings legacySettings)
         {
             _snapshot = snapshot;
             _importantScopeSet = importantScopeSet;
+            _legacySettings = legacySettings;
         }
 
-        internal KeyBindingUtil(_DTE dte, HashSet<string> importantScopeSet)
-            : this(new CommandsSnapshot(dte), importantScopeSet)
+        internal KeyBindingUtil(_DTE dte, HashSet<string> importantScopeSet, ILegacySettings legacySettings)
+            : this(new CommandsSnapshot(dte), importantScopeSet, legacySettings)
         {
 
         }
@@ -89,7 +90,7 @@ namespace VsVim
         /// </summary>
         internal List<CommandKeyBinding> FindRemovedKeyBindings()
         {
-            return FindKeyBindingsMarkedAsRemoved().Where(x => !_snapshot.IsKeyBindingActive(x.KeyBinding)).ToList();
+            return _legacySettings.FindKeyBindingsMarkedAsRemoved().Where(x => !_snapshot.IsKeyBindingActive(x.KeyBinding)).ToList();
         }
 
         /// <summary>
@@ -124,31 +125,6 @@ namespace VsVim
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// Find all of the key bindings which have been removed
-        /// </summary>
-        internal static List<CommandKeyBinding> FindKeyBindingsMarkedAsRemoved()
-        {
-            var list = new List<CommandKeyBinding>();
-            var settings = Settings.Settings.Default;
-            if (!settings.HaveUpdatedKeyBindings)
-            {
-                return list;
-            }
-
-            var source = settings.RemovedBindings.Select(x => Tuple.Create(x.Name, x.CommandString));
-            foreach (var tuple in source)
-            {
-                KeyBinding binding;
-                if (KeyBinding.TryParse(tuple.Item2, out binding))
-                {
-                    list.Add(new CommandKeyBinding(tuple.Item1, binding));
-                }
-            }
-
-            return list;
         }
     }
 }

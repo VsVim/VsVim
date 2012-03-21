@@ -47,6 +47,7 @@ namespace VsVim
         private readonly IVsAdapter _adapter;
         private readonly IProtectedOperations _protectedOperations;
         private readonly IVimBufferCoordinatorFactory _bufferCoordinatorFactory;
+        private readonly ILegacySettings _legacySettings;
 
         [ImportingConstructor]
         public HostFactory(
@@ -61,7 +62,8 @@ namespace VsVim
             IDisplayWindowBrokerFactoryService displayWindowBrokerFactoryService,
             IVsAdapter adapter,
             IProtectedOperations protectedOperations,
-            IVimBufferCoordinatorFactory bufferCoordinatorFactory)
+            IVimBufferCoordinatorFactory bufferCoordinatorFactory,
+            ILegacySettings legacySettings)
         {
             _vim = vim;
             _keyBindingService = keyBindingService;
@@ -74,6 +76,7 @@ namespace VsVim
             _adapter = adapter;
             _protectedOperations = protectedOperations;
             _bufferCoordinatorFactory = bufferCoordinatorFactory;
+            _legacySettings = legacySettings;
 
             _vim.AutoLoadVimRc = false;
         }
@@ -115,9 +118,11 @@ namespace VsVim
             Action doCheck = () =>
             {
                 // Run the key binding check now
+                //
+                // TODO: Move this into the key binding service.  Not sure why it's here
                 if (_keyBindingService.ConflictingKeyBindingState == ConflictingKeyBindingState.HasNotChecked)
                 {
-                    if (Settings.Settings.Default.IgnoredConflictingKeyBinding)
+                    if (_legacySettings.IgnoredConflictingKeyBinding)
                     {
                         _keyBindingService.IgnoreAnyConflicts();
                     }

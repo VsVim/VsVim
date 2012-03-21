@@ -16,19 +16,21 @@ namespace VsVim.Implementation
         private readonly IVim _vim;
         private readonly IKeyBindingService _keyBindingService;
         private readonly IEditorFormatMapService _formatMapService;
+        private readonly ILegacySettings _legacySettings;
 
         [ImportingConstructor]
-        internal ConflictingKeyBindingMarginProvider(IVim vim, IKeyBindingService keyBindingService, IEditorFormatMapService formatMapService)
+        internal ConflictingKeyBindingMarginProvider(IVim vim, IKeyBindingService keyBindingService, IEditorFormatMapService formatMapService, ILegacySettings legacySettings)
         {
             _vim = vim;
             _keyBindingService = keyBindingService;
             _formatMapService = formatMapService;
+            _legacySettings = legacySettings;
         }
 
         public IWpfTextViewMargin CreateMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
         {
             var map = _formatMapService.GetEditorFormatMap(wpfTextViewHost.TextView);
-            return new ConflictingKeyBindingMargin(_keyBindingService, map);
+            return new ConflictingKeyBindingMargin(_keyBindingService, map, _legacySettings);
         }
     }
 }

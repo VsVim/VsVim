@@ -17,6 +17,7 @@ namespace VsVim.UnitTest
         private Mock<IOptionsDialogService> _optionsDialogService;
         private KeyBindingService _serviceRaw;
         private IKeyBindingService _service;
+        private ILegacySettings _legacySettings;
 
         private void Create(params string[] args)
         {
@@ -25,7 +26,8 @@ namespace VsVim.UnitTest
                 Tuple.Create(typeof(SDTE), (object)(_dte.Object)),
                 Tuple.Create(typeof(SVsShell), (object)(new Mock<IVsShell>(MockBehavior.Strict)).Object));
             _optionsDialogService = new Mock<IOptionsDialogService>(MockBehavior.Strict);
-            _serviceRaw = new KeyBindingService(sp.Object, _optionsDialogService.Object);
+            _legacySettings = new VsVim.Settings.LegacySettings();
+            _serviceRaw = new KeyBindingService(sp.Object, _optionsDialogService.Object, _legacySettings);
             _service = _serviceRaw;
         }
 

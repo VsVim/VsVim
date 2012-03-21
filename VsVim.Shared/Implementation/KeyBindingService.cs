@@ -20,16 +20,18 @@ namespace VsVim.Implementation
         private readonly _DTE _dte;
         private readonly IVsShell _vsShell;
         private readonly IOptionsDialogService _optionsDialogService;
+        private readonly ILegacySettings _legacySettings;
         private HashSet<string> _importantScopeSet;
         private ConflictingKeyBindingState _state;
         private CommandKeyBindingSnapshot _snapshot;
 
         [ImportingConstructor]
-        internal KeyBindingService(SVsServiceProvider serviceProvider, IOptionsDialogService service)
+        internal KeyBindingService(SVsServiceProvider serviceProvider, IOptionsDialogService service, ILegacySettings legacySettings)
         {
             _dte = serviceProvider.GetService<SDTE, _DTE>();
             _vsShell = serviceProvider.GetService<SVsShell, IVsShell>();
             _optionsDialogService = service;
+            _legacySettings = legacySettings;
         }
 
         internal void UpdateConflictingState(ConflictingKeyBindingState state, CommandKeyBindingSnapshot snapshot)
@@ -59,7 +61,7 @@ namespace VsVim.Implementation
 
         internal CommandKeyBindingSnapshot CreateCommandKeyBindingSnapshot(IVimBuffer vimBuffer)
         {
-            var util = new KeyBindingUtil(_dte, GetOrCreateImportantScopeSet());
+            var util = new KeyBindingUtil(_dte, GetOrCreateImportantScopeSet(), _legacySettings);
             return util.CreateCommandKeyBindingSnapshot(vimBuffer);
         }
 
@@ -78,7 +80,7 @@ namespace VsVim.Implementation
                 return;
             }
 
-            var util = new KeyBindingUtil(_dte, GetOrCreateImportantScopeSet());
+            var util = new KeyBindingUtil(_dte, GetOrCreateImportantScopeSet(), _legacySettings);
             var set = new HashSet<KeyInput>(neededInputs);
             _snapshot = util.CreateCommandKeyBindingSnapshot(set);
             ConflictingKeyBindingState = _snapshot.Conflicting.Any()

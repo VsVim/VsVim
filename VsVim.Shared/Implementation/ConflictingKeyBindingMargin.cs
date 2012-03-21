@@ -13,11 +13,13 @@ namespace VsVim.Implementation
 
         private readonly IKeyBindingService _keyBindingService;
         private readonly ConflictingKeyBindingMarginControl _control;
+        private readonly ILegacySettings _legacySettings;
         private bool _enabled = true;
 
-        internal ConflictingKeyBindingMargin(IKeyBindingService service, IEditorFormatMap formatMap)
+        internal ConflictingKeyBindingMargin(IKeyBindingService service, IEditorFormatMap formatMap, ILegacySettings legacySettings)
         {
             _keyBindingService = service;
+            _legacySettings = legacySettings;
             _control = new ConflictingKeyBindingMarginControl();
             _control.Background = GetBackgroundColor(formatMap);
 
@@ -51,15 +53,15 @@ namespace VsVim.Implementation
         private void OnConfigureClick(object sender, EventArgs e)
         {
             _keyBindingService.ResolveAnyConflicts();
-            Settings.Settings.Default.IgnoredConflictingKeyBinding = true;
-            Settings.Settings.Default.Save();
+            _legacySettings.IgnoredConflictingKeyBinding = true;
+            _legacySettings.Save();
         }
 
         private void OnIgnoreClick(object sender, EventArgs e)
         {
             _keyBindingService.IgnoreAnyConflicts();
-            Settings.Settings.Default.IgnoredConflictingKeyBinding = true;
-            Settings.Settings.Default.Save();
+            _legacySettings.IgnoredConflictingKeyBinding = true;
+            _legacySettings.Save();
         }
 
         private void OnStateChanged(object sender, EventArgs e)

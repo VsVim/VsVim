@@ -15,11 +15,13 @@ namespace VsVim.Implementation
         {
             private readonly IKeyBindingService _keyBindingService;
             private readonly IServiceProvider _serviceProvider;
+            private readonly ILegacySettings _legacySettings;
 
-            internal Provider(IKeyBindingService keyBindingService, IServiceProvider serviceProvider)
+            internal Provider(IKeyBindingService keyBindingService, IServiceProvider serviceProvider, ILegacySettings legacySettings)
             {
                 _keyBindingService = keyBindingService;
                 _serviceProvider = serviceProvider;
+                _legacySettings = legacySettings;
             }
 
             public void ShowDialog(IVimBuffer vimBuffer)
@@ -27,7 +29,7 @@ namespace VsVim.Implementation
                 try
                 {
                     var snapshot = _keyBindingService.CreateCommandKeyBindingSnapshot(vimBuffer);
-                    new UI.ConflictingKeyBindingDialog(snapshot).ShowDialog();
+                    new UI.ConflictingKeyBindingDialog(snapshot, _legacySettings).ShowDialog();
                 }
                 catch (Exception)
                 {
@@ -49,17 +51,19 @@ namespace VsVim.Implementation
 
         private readonly IKeyBindingService _keyBindingService;
         private readonly IServiceProvider _serviceProvider;
+        private readonly ILegacySettings _legacySettings;
 
         [ImportingConstructor]
-        internal OptionsProviderFatory(IKeyBindingService keyBindingService, SVsServiceProvider provider)
+        internal OptionsProviderFatory(IKeyBindingService keyBindingService, SVsServiceProvider provider, ILegacySettings legacySettings)
         {
             _keyBindingService = keyBindingService;
             _serviceProvider = provider;
+            _legacySettings = legacySettings;
         }
 
         public IOptionsProvider CreateOptionsProvider()
         {
-            return new Provider(_keyBindingService, _serviceProvider);
+            return new Provider(_keyBindingService, _serviceProvider, _legacySettings);
         }
     }
 }

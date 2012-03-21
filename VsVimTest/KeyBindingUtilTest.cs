@@ -12,6 +12,8 @@ namespace VsVim.UnitTest
     [TestFixture()]
     public class KeyBindingUtilTest
     {
+        private static ILegacySettings _legacySettings = new LegacySettings();
+
         private static CommandKeyBinding CreateCommandKeyBinding(KeyInput input, KeyModifiers modifiers = KeyModifiers.None, string name = "again", string scope = "Global")
         {
             var stroke = new KeyStroke(input, modifiers);
@@ -23,7 +25,7 @@ namespace VsVim.UnitTest
         {
             var all = MockObjectFactory.CreateCommandList(args).Select(x => x.Object);
             var snapshot = new CommandsSnapshot(all);
-            return new KeyBindingUtil(snapshot, KeyBindingService.GetDefaultImportantScopeSet());
+            return new KeyBindingUtil(snapshot, KeyBindingService.GetDefaultImportantScopeSet(), _legacySettings);
         }
 
         [Test()]
@@ -130,19 +132,6 @@ namespace VsVim.UnitTest
             var binding = CreateCommandKeyBinding(KeyInputUtil.VimKeyToKeyInput(VimKey.F2));
             var util = Create();
             Assert.IsFalse(util.ShouldSkip(binding));
-        }
-
-        [Test]
-        public void FindRemovedKeyBindings1()
-        {
-            global::VsVim.Settings.Settings.Default.HaveUpdatedKeyBindings = true;
-            global::VsVim.Settings.Settings.Default.RemovedBindings = new CommandBindingSetting[] {
-                new CommandBindingSetting() { Name="foo", CommandString = "Scope::Ctrl+J" },
-                new CommandBindingSetting() { Name="bar", CommandString = "Scope::Ctrl+J" } };
-            var list = KeyBindingUtil.FindKeyBindingsMarkedAsRemoved();
-            Assert.AreEqual(2, list.Count);
-            Assert.AreEqual("foo", list[0].Name);
-            Assert.AreEqual("bar", list[1].Name);
         }
     }
 }

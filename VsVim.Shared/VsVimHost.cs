@@ -1,14 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
-using System.Linq;
 using EditorUtils;
 using EnvDTE;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
@@ -17,7 +14,6 @@ using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
-using VsVim.Properties;
 
 namespace VsVim
 {
@@ -318,7 +314,7 @@ namespace VsVim
         /// </summary>
         public override HostResult SplitViewVertically(ITextView value)
         {
-            return HostResult.NewError(Resources.UnsupportedInVisualStudio);
+            return HostResult.NewError("Unsupported in Visual Studio");
         }
 
         public override void MoveViewDown(ITextView textView)

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows;
 using Microsoft.VisualStudio.PlatformUI;
 using Vim;
+using EditorUtils;
 
 namespace VsVim.UI
 {
@@ -16,12 +17,14 @@ namespace VsVim.UI
         private readonly ObservableCollection<KeyBindingData> _keyBindingList = new ObservableCollection<KeyBindingData>();
         private readonly CommandKeyBindingSnapshot _snapshot;
         private readonly HashSet<KeyBindingData> _advancedSet = new HashSet<KeyBindingData>();
+        private readonly ILegacySettings _legacySettings;
 
-        public ConflictingKeyBindingDialog(CommandKeyBindingSnapshot snapshot)
+        public ConflictingKeyBindingDialog(CommandKeyBindingSnapshot snapshot, ILegacySettings legacySettings)
         {
             InitializeComponent();
 
             _snapshot = snapshot;
+            _legacySettings = legacySettings;
             ComputeKeyBindings();
 
             BindingsListBox.ItemsSource = _keyBindingList;
@@ -147,13 +150,12 @@ namespace VsVim.UI
                 }
             }
 
-            var settings = Settings.Settings.Default;
-            settings.RemovedBindings =
+            _legacySettings.RemovedBindings =
                 _keyBindingList.Where(binding => binding.HandledByVsVim).SelectMany(data => data.Bindings)
-                .Select(x => new Settings.CommandBindingSetting() { Name = x.Name, CommandString = x.KeyBinding.CommandString })
-                .ToArray();
-            settings.HaveUpdatedKeyBindings = true;
-            settings.Save();
+                .Select(x => new CommandBindingSetting(x.Name, x.KeyBinding.CommandString))
+                .ToReadOnlyCollection();
+            _legacySettings.HaveUpdatedKeyBindings = true;
+            _legacySettings.Save();
         }
     }
 }
