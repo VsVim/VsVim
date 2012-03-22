@@ -39,6 +39,8 @@ VsVim.sln.docstates
 # Directories 
 */obj/
 */bin/
+*/bin10/
+*/bin11/
 TestResults/
 */Debug/
 */Release/
