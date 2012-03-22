@@ -1,6 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using EnvDTE;
 
 namespace VsVim.Implementation
 {
@@ -10,9 +13,12 @@ namespace VsVim.Implementation
         private ISharedServiceVersionFactory _factory;
 
         [ImportingConstructor]
-        internal SharedServiceFactory([ImportMany]IEnumerable<ISharedServiceVersionFactory> factories)
+        internal SharedServiceFactory(
+            SVsServiceProvider serviceProvider, 
+            [ImportMany]IEnumerable<ISharedServiceVersionFactory> factories)
         {
-            var version = CalculateVisualStudioVersion();
+            var dte = serviceProvider.GetService<SDTE, _DTE>();
+            var version = CalculateVisualStudioVersion(dte);
             var factory = factories.FirstOrDefault(x => x.Version == version);
             if (factory == null)
             {
@@ -22,12 +28,25 @@ namespace VsVim.Implementation
             _factory = factory;
         }
 
-        /// <summary>
-        /// Todo: Find the appropriate way to do this
-        /// </summary>
-        VisualStudioVersion CalculateVisualStudioVersion()
+        private static VisualStudioVersion CalculateVisualStudioVersion(_DTE dte)
         {
-            return VisualStudioVersion.Dev11;
+            var version = dte.Version;
+            var parts = version.Split('.');
+
+            if (parts.Length == 0)
+            {
+                return VisualStudioVersion.Unknown;
+            }
+
+            switch (parts[0])
+            {
+                case "10":
+                    return VisualStudioVersion.Dev10;
+                case "11":
+                    return VisualStudioVersion.Dev11;
+                default:
+                    return VisualStudioVersion.Unknown;
+            }
         }
 
         #region ISharedServiceFactory
