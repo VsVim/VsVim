@@ -4,16 +4,14 @@ using System.Linq;
 using NUnit.Framework;
 using Vim;
 using VsVim.Implementation;
-using VsVim.Settings;
 using VsVim.UnitTest.Mock;
+using Moq;
 
 namespace VsVim.UnitTest
 {
     [TestFixture()]
-    public class KeyBindingUtilTest
+    public sealed class KeyBindingUtilTest
     {
-        private static ILegacySettings _legacySettings = new LegacySettings();
-
         private static CommandKeyBinding CreateCommandKeyBinding(KeyInput input, KeyModifiers modifiers = KeyModifiers.None, string name = "again", string scope = "Global")
         {
             var stroke = new KeyStroke(input, modifiers);
@@ -25,7 +23,10 @@ namespace VsVim.UnitTest
         {
             var all = MockObjectFactory.CreateCommandList(args).Select(x => x.Object);
             var snapshot = new CommandsSnapshot(all);
-            return new KeyBindingUtil(snapshot, KeyBindingService.GetDefaultImportantScopeSet(), _legacySettings);
+            return new KeyBindingUtil(
+                snapshot, 
+                KeyBindingService.GetDefaultImportantScopeSet(), 
+                new Mock<ILegacySettings>().Object);
         }
 
         [Test()]

@@ -11,13 +11,12 @@ using VsVim.UnitTest.Mock;
 namespace VsVim.UnitTest
 {
     [TestFixture]
-    public class KeyBindingServiceTest
+    public sealed class KeyBindingServiceTest
     {
         private Mock<_DTE> _dte;
         private Mock<IOptionsDialogService> _optionsDialogService;
         private KeyBindingService _serviceRaw;
         private IKeyBindingService _service;
-        private ILegacySettings _legacySettings;
 
         private void Create(params string[] args)
         {
@@ -26,8 +25,7 @@ namespace VsVim.UnitTest
                 Tuple.Create(typeof(SDTE), (object)(_dte.Object)),
                 Tuple.Create(typeof(SVsShell), (object)(new Mock<IVsShell>(MockBehavior.Strict)).Object));
             _optionsDialogService = new Mock<IOptionsDialogService>(MockBehavior.Strict);
-            _legacySettings = new VsVim.Settings.LegacySettings();
-            _serviceRaw = new KeyBindingService(sp.Object, _optionsDialogService.Object, _legacySettings);
+            _serviceRaw = new KeyBindingService(sp.Object, _optionsDialogService.Object, new Mock<ILegacySettings>().Object);
             _service = _serviceRaw;
         }
 

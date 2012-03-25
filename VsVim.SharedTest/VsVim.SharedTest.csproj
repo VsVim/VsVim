@@ -8,8 +8,8 @@
     <ProjectGuid>{0C79E8E6-EBBF-4342-B4C2-DCCF212A776B}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>VsVim.UnitTest</RootNamespace>
-    <AssemblyName>VsVim.UnitTest</AssemblyName>
+    <RootNamespace>VsVim.Shared.UnitTest</RootNamespace>
+    <AssemblyName>VsVim.Shared.UnitTest</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -147,11 +147,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResharperExternalEditAdapterTest.cs" />
     <Compile Include="SnippetExternalEditAdapterTest.cs" />
-    <Compile Include="TestResources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>TestResources.resx</DependentUpon>
-    </Compile>
     <Compile Include="TextManagerTest.cs" />
     <Compile Include="Utils\CharPointer.cs" />
     <Compile Include="Utils\VsSimulation.cs" />
@@ -191,16 +186,6 @@
       <Project>{979DEDC6-25E2-494B-9E8F-6E42078C601C}</Project>
       <Name>VsVim.Shared</Name>
     </ProjectReference>
-    <ProjectReference Include="..\VsVim\VsVim.csproj">
-      <Project>{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}</Project>
-      <Name>VsVim</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="TestResources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>TestResources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
