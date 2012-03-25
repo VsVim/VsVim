@@ -31,8 +31,12 @@ namespace VsVim.Implementation
         private static VisualStudioVersion CalculateVisualStudioVersion(_DTE dte)
         {
             var version = dte.Version;
-            var parts = version.Split('.');
+            if (string.IsNullOrEmpty(dte.Version))
+            {
+                return VisualStudioVersion.Unknown;
+            }
 
+            var parts = version.Split('.');
             if (parts.Length == 0)
             {
                 return VisualStudioVersion.Unknown;

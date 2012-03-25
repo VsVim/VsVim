@@ -18,6 +18,7 @@ using Vim;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
 using VsVim.UnitTest.Mock;
+using System.Collections.ObjectModel;
 
 namespace VsVim.UnitTest
 {
@@ -137,6 +138,23 @@ namespace VsVim.UnitTest
             }
         }
 
+        [Export(typeof(ILegacySettings))]
+        private sealed class LegacySettings : ILegacySettings
+        {
+            public bool HaveUpdatedKeyBindings { get; set; }
+            public bool IgnoredConflictingKeyBinding { get; set; }
+            public ReadOnlyCollection<CommandBindingSetting> RemovedBindings  
+            {
+                get { return new ReadOnlyCollection<CommandBindingSetting>(new CommandBindingSetting[] {}); }
+                set { }
+            }
+
+            public void Save()
+            {
+
+            }
+        }
+
         #endregion
 
         /// <summary>
@@ -170,7 +188,8 @@ namespace VsVim.UnitTest
                 list.Add(new TypeCatalog(
                     typeof(Vim.UnitTest.Exports.VimErrorDetector),
                     typeof(VsVim.UnitTest.MemoryLeakTest.ServiceProvider),
-                    typeof(VsVim.UnitTest.MemoryLeakTest.VsEditorAdaptersFactoryService)));
+                    typeof(VsVim.UnitTest.MemoryLeakTest.VsEditorAdaptersFactoryService),
+                    typeof(VsVim.UnitTest.MemoryLeakTest.LegacySettings)));
 
                 var catalog = new AggregateCatalog(list.ToArray());
                 _compositionContainer = new CompositionContainer(catalog);
