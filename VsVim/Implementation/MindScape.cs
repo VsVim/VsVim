@@ -54,6 +54,13 @@ namespace VsVim.Implementation
                 return;
             }
 
+            // Restrict this fix to the file types in which it occurs
+            var contentType = vimBuffer.TextBuffer.ContentType;
+            if (!contentType.IsOfType("scss") && !contentType.IsOfType("less"))
+            {
+                return;
+            }
+
             vimBuffer.KeyInputProcessed += (sender, e) => OnKeyInputProcessed(vimBuffer, e);
         }
 
