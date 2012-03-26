@@ -36,6 +36,19 @@ namespace VsVim.UnitTest
             _creationListener = _mindScape;
         }
 
+        private IVimBuffer CreateVimBufferForMindScape(params string[] lines)
+        {
+            var contentType = ContentTypeRegistryService.GetContentType("scss");
+            if (contentType == null)
+            {
+                contentType = ContentTypeRegistryService.AddContentType("scss", new[] { "text " });
+            }
+
+            var textBuffer = CreateTextBuffer(contentType, lines);
+            var textView = TextEditorFactoryService.CreateTextView(textBuffer);
+            return Vim.CreateVimBuffer(textView);
+        }
+
         /// <summary>
         /// If it's not installed then don't listen to any key strokes
         /// </summary>
@@ -43,7 +56,7 @@ namespace VsVim.UnitTest
         public void NotInstalled()
         {
             Create(isInstalled: false);
-            var vimBuffer = CreateVimBuffer("");
+            var vimBuffer = CreateVimBufferForMindScape("");
             _creationListener.VimBufferCreated(vimBuffer);
             vimBuffer.Process('c');
             _completionBroker.Verify();
@@ -56,7 +69,7 @@ namespace VsVim.UnitTest
         public void IgnoreWhenNoCompletionActive()
         {
             Create(isInstalled: true);
-            var vimBuffer = CreateVimBuffer("hello world");
+            var vimBuffer = CreateVimBufferForMindScape("hello world");
             _creationListener.VimBufferCreated(vimBuffer);
             _completionBroker.Setup(x => x.IsCompletionActive(vimBuffer.TextView)).Returns(false).Verifiable();
             vimBuffer.Process('l');
@@ -71,7 +84,7 @@ namespace VsVim.UnitTest
         public void DismissCompletionInNormalMode()
         {
             Create(isInstalled: true);
-            var vimBuffer = CreateVimBuffer("hello world");
+            var vimBuffer = CreateVimBufferForMindScape("hello world");
             _creationListener.VimBufferCreated(vimBuffer);
             _completionBroker.Setup(x => x.IsCompletionActive(vimBuffer.TextView)).Returns(true).Verifiable();
             _completionBroker.Setup(x => x.DismissAllSessions(vimBuffer.TextView)).Verifiable();
@@ -87,7 +100,7 @@ namespace VsVim.UnitTest
         public void DismissCompletionInTransitionToInsert()
         {
             Create(isInstalled: true);
-            var vimBuffer = CreateVimBuffer("hello world");
+            var vimBuffer = CreateVimBufferForMindScape("hello world");
             _creationListener.VimBufferCreated(vimBuffer);
             _completionBroker.Setup(x => x.IsCompletionActive(vimBuffer.TextView)).Returns(true).Verifiable();
             _completionBroker.Setup(x => x.DismissAllSessions(vimBuffer.TextView)).Verifiable();
@@ -102,7 +115,7 @@ namespace VsVim.UnitTest
         public void DontDismissInInsert()
         {
             Create(isInstalled: true);
-            var vimBuffer = CreateVimBuffer("hello world");
+            var vimBuffer = CreateVimBufferForMindScape("hello world");
             vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _creationListener.VimBufferCreated(vimBuffer);
             _completionBroker.Setup(x => x.IsCompletionActive(vimBuffer.TextView)).Returns(true).Verifiable();

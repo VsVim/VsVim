@@ -153,6 +153,14 @@ namespace EditorUtils.UnitTest
         }
 
         /// <summary>
+        /// Create an ITextBuffer instance with the given IContentType
+        /// </summary>
+        protected ITextBuffer CreateTextBuffer(IContentType contentType, params string[] lines)
+        {
+            return _textBufferFactoryService.CreateTextBuffer(contentType, lines);
+        }
+
+        /// <summary>
         /// Create a simple IProjectionBuffer from the specified SnapshotSpan values
         /// </summary>
         protected IProjectionBuffer CreateProjectionBuffer(params SnapshotSpan[] spans)
