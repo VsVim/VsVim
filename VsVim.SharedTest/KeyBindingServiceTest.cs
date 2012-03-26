@@ -7,6 +7,7 @@ using NUnit.Framework;
 using VsVim;
 using VsVim.Implementation;
 using VsVim.UnitTest.Mock;
+using Vim.UI.Wpf;
 
 namespace VsVim.UnitTest
 {
@@ -25,7 +26,11 @@ namespace VsVim.UnitTest
                 Tuple.Create(typeof(SDTE), (object)(_dte.Object)),
                 Tuple.Create(typeof(SVsShell), (object)(new Mock<IVsShell>(MockBehavior.Strict)).Object));
             _optionsDialogService = new Mock<IOptionsDialogService>(MockBehavior.Strict);
-            _serviceRaw = new KeyBindingService(sp.Object, _optionsDialogService.Object, new Mock<ILegacySettings>().Object);
+            _serviceRaw = new KeyBindingService(
+                sp.Object, 
+                _optionsDialogService.Object, 
+                new Mock<IProtectedOperations>().Object,
+                new Mock<ILegacySettings>().Object);
             _service = _serviceRaw;
         }
 

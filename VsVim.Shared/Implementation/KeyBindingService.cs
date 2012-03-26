@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.Win32;
 using Vim;
+using Vim.UI.Wpf;
 
 namespace VsVim.Implementation
 {
@@ -15,22 +16,25 @@ namespace VsVim.Implementation
     /// Responsible for dealing with the conflicting key bindings inside of Visual Studio
     /// </summary>
     [Export(typeof(IKeyBindingService))]
-    internal sealed class KeyBindingService : IKeyBindingService
+    [Export(typeof(IVimBufferCreationListener))]
+    internal sealed class KeyBindingService : IKeyBindingService, IVimBufferCreationListener
     {
         private readonly _DTE _dte;
         private readonly IVsShell _vsShell;
         private readonly IOptionsDialogService _optionsDialogService;
+        private readonly IProtectedOperations _protectedOperations;
         private readonly ILegacySettings _legacySettings;
         private HashSet<string> _importantScopeSet;
         private ConflictingKeyBindingState _state;
         private CommandKeyBindingSnapshot _snapshot;
 
         [ImportingConstructor]
-        internal KeyBindingService(SVsServiceProvider serviceProvider, IOptionsDialogService service, ILegacySettings legacySettings)
+        internal KeyBindingService(SVsServiceProvider serviceProvider, IOptionsDialogService service, IProtectedOperations protectedOperations, ILegacySettings legacySettings)
         {
             _dte = serviceProvider.GetService<SDTE, _DTE>();
             _vsShell = serviceProvider.GetService<SVsShell, IVsShell>();
             _optionsDialogService = service;
+            _protectedOperations = protectedOperations;
             _legacySettings = legacySettings;
         }
 
@@ -249,6 +253,32 @@ namespace VsVim.Implementation
         void IKeyBindingService.IgnoreAnyConflicts()
         {
             IgnoreAnyConflicts();
+        }
+
+        #endregion
+
+        #region IVimBufferCreationListener
+
+        void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
+        {
+            Action doCheck = () =>
+            {
+                if (ConflictingKeyBindingState == ConflictingKeyBindingState.HasNotChecked)
+                {
+                    if (_legacySettings.IgnoredConflictingKeyBinding)
+                    {
+                        IgnoreAnyConflicts();
+                    }
+                    else
+                    {
+                        RunConflictingKeyBindingStateCheck(vimBuffer, (x, y) => { });
+                    }
+                }
+            };
+
+            // Don't block startup by immediately running a key binding check.  Schedule it 
+            // for the future
+            _protectedOperations.BeginInvoke(doCheck);
         }
 
         #endregion

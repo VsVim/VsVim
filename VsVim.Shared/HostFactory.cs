@@ -47,7 +47,6 @@ namespace VsVim
         private readonly IVsAdapter _adapter;
         private readonly IProtectedOperations _protectedOperations;
         private readonly IVimBufferCoordinatorFactory _bufferCoordinatorFactory;
-        private readonly ILegacySettings _legacySettings;
 
         [ImportingConstructor]
         public HostFactory(
@@ -62,8 +61,7 @@ namespace VsVim
             IDisplayWindowBrokerFactoryService displayWindowBrokerFactoryService,
             IVsAdapter adapter,
             IProtectedOperations protectedOperations,
-            IVimBufferCoordinatorFactory bufferCoordinatorFactory,
-            ILegacySettings legacySettings)
+            IVimBufferCoordinatorFactory bufferCoordinatorFactory)
         {
             _vim = vim;
             _keyBindingService = keyBindingService;
@@ -76,7 +74,6 @@ namespace VsVim
             _adapter = adapter;
             _protectedOperations = protectedOperations;
             _bufferCoordinatorFactory = bufferCoordinatorFactory;
-            _legacySettings = legacySettings;
 
             _vim.AutoLoadVimRc = false;
         }
@@ -114,26 +111,6 @@ namespace VsVim
                 Number = buffer.LocalSettings.Number
             };
             _bufferMap[buffer] = bufferData;
-
-            Action doCheck = () =>
-            {
-                // Run the key binding check now
-                //
-                // TODO: Move this into the key binding service.  Not sure why it's here
-                if (_keyBindingService.ConflictingKeyBindingState == ConflictingKeyBindingState.HasNotChecked)
-                {
-                    if (_legacySettings.IgnoredConflictingKeyBinding)
-                    {
-                        _keyBindingService.IgnoreAnyConflicts();
-                    }
-                    else
-                    {
-                        _keyBindingService.RunConflictingKeyBindingStateCheck(buffer, (x, y) => { });
-                    }
-                }
-            };
-
-            _protectedOperations.BeginInvoke(doCheck);
         }
 
         void IVimBufferCreationListener.VimBufferCreated(IVimBuffer buffer)
