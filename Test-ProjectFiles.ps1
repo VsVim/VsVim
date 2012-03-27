@@ -8,9 +8,13 @@
 $script:scriptPath = split-path -parent $MyInvocation.MyCommand.Definition 
 $script:projectFiles = @{
     "EditorUtils.csproj" = "all";
+    "EditorUtilsTest.csproj" = "test";
     "VimCore.fsproj" = "all";
+    "VimCoreTest.csproj" = "test";
     "VimWpf.csproj" = "all";
+    "VimWpfTest.csproj" = "test";
     "VsVimShared.csproj" = "all";
+    "VsVimSharedTest.csproj" = "test";
     "VsVim.csproj" = "all";
     "VsVim10.csproj" = "all";
     "VsVim11.csproj" = "all";
@@ -66,7 +70,7 @@ $script:listAll = @(
 # Types specific to Dev10
 $script:list10 = @(
     "Microsoft.VisualStudio.Platform.WindowManagement=10.0.0.0",
-    "Microsoft.VisualStudio.Shell.ViewManager=11.0.0.0"
+    "Microsoft.VisualStudio.Shell.ViewManager=10.0.0.0"
 )
 $script:list10 = $list10 + $listAll
 
@@ -78,7 +82,31 @@ $script:list11 = @(
 )
 $script:list11 = $list11 + $listAll
 
-function Check-Include() {
+# Test assemblies are allowed to reference a couple of DLL's needed
+# to host the editor but aren't legal / recomended for noraml 
+# code.  These DLL's don't version and should be accessed instead
+# through other interfaces
+$script:listTest = @(
+    "Microsoft.VisualStudio.Platform.VSEditor=10.0.0.0",
+    "Moq=4.0.10827.0",
+    "nunit.framework=2.5.7.10213"
+)
+$script:listTest = $listTest + $listAll + $list10
+
+function Test-Reference() {
+    param ([string]$dll = $(throw "Need a dll name to check"),
+           $list = $(throw "Need a target list"))
+
+    foreach ($validDll in $list) {
+        if ($validDll -eq $dll) {
+            return $true;
+        }
+    }
+
+    return $false;
+}
+
+function Test-Include() {
     param ([string]$project = $(throw "Need a project string"),
            [string]$reference = $(throw "Need a reference string"),
            $list = $(throw "Need a target list"))
@@ -93,21 +121,23 @@ function Check-Include() {
     }
 
     $dll = "{0}={1}" -f $dll, $version;
-    if (-not ($list.Contains($dll))) {
+    if (-not (Test-Reference $dll $list)) {
         write-host "Invalid reference $dll in $project"
     }
 }
 
-function Check-ProjectFile() {
+function Test-ProjectFile() {
     param ([string]$path = $(throw "Need a project file path"),
            $list = $(throw "Need a target list"))
 
-    $data = [xml](gc $path)
     $count = 0;
     $name = split-path -leaf $path
-    foreach ($data in $data.Project.ItemGroup.Reference.Include) {
-        Check-Include $name $data $list
-        $count += 1
+    write-host "Checking $name"
+    foreach ($line in gc $path) {
+        if ($line -match "<Reference Include=`"([^`"]*)`"") {
+            Test-Include $name $matches[1] $list
+            $count += 1
+        }
     }
 
     if ($count -eq 0) {
@@ -116,16 +146,13 @@ function Check-ProjectFile() {
 }
 
 foreach ($projectFile in gci -re -in *proj) {
-    if ($projectFile -match "Test.csproj$") {
-        continue;
-    }
-
     $name = $projectFile.Name
     $fullName = $projectFile.FullName
     switch ($projectFiles[$name]) {
-        "all" { Check-ProjectFile $fullName $listAll }
-        "Dev10" { Check-ProjectFile $fullName $list10 }
-        "Dev11" { Check-ProjectFile $fullName $list11 }
+        "all" { Test-ProjectFile $fullName $listAll }
+        "test" { Test-ProjectFile $fullName $listTest }
+        "Dev10" { Test-ProjectFile $fullName $list10 }
+        "Dev11" { Test-ProjectFile $fullName $list11 }
         default { write-error "Unrecognized file: $name" }
     }
 }
