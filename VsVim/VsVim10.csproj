@@ -165,13 +165,13 @@
       <Project>{65A749E0-F1B1-4E43-BE73-25072EE398C6}</Project>
       <Name>VimWpf</Name>
     </ProjectReference>
-    <ProjectReference Include="..\VsVim.Shared\VsVim.Shared.csproj">
+    <ProjectReference Include="..\VsVimShared\VsVimShared.csproj">
       <Project>{979DEDC6-25E2-494B-9E8F-6E42078C601C}</Project>
       <Name>VsVim.Shared</Name>
       <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3b</IncludeOutputGroupsInVSIX>
       <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
     </ProjectReference>
-    <ProjectReference Include="..\VsVim.Specific\VsVim.Dev10.csproj">
+    <ProjectReference Include="..\VsVimSpecific\VsVimDev10.csproj">
       <Project>{0DE4170C-224D-47CF-BE00-B88AA14EC804}</Project>
       <Name>VsVim.Dev10</Name>
       <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3b</IncludeOutputGroupsInVSIX>
