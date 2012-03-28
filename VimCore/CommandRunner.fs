@@ -314,7 +314,7 @@ type internal CommandRunner
                 BindResult.Complete data
             | BindResult.Cancelled ->
                 x.ResetState()
-                BindResult.Error
+                BindResult.Cancelled
             | BindResult.Error ->
                 x.ResetState()
                 BindResult.Error

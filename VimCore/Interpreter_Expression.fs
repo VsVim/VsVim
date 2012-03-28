@@ -208,12 +208,13 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Close of bool
 
     /// Copy the specific line range to the given position.  The first line range is the 
-    /// source and the second is the desitination
-    | CopyTo of LineRangeSpecifier * LineRangeSpecifier
+    /// source and the second is the desitination.  The last entry is an optional count
+    /// which can be specified
+    | CopyTo of LineRangeSpecifier * LineRangeSpecifier * int option
 
     /// Move the specific line range to the given position.  The first line range is the 
     /// source and the second is the desitination
-    | MoveTo of LineRangeSpecifier * LineRangeSpecifier
+    | MoveTo of LineRangeSpecifier * LineRangeSpecifier * int option
 
     /// The :delete command
     | Delete of LineRangeSpecifier * RegisterName option

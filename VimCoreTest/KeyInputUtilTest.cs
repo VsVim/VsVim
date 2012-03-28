@@ -39,6 +39,36 @@ namespace Vim.UnitTest
             Assert.AreEqual(VimKey.Tab, keyInput.Key);
         }
 
+        /// <summary>
+        /// There is a large set of characters for which normal input can't produce a shift modifier
+        /// </summary>
+        [Test]
+        public void ApplyModifiers_ShiftToSpecialChar()
+        {
+            var list = new[] { '<', '>', '(', '}' };
+            foreach (var cur in list)
+            {
+                var keyInput = KeyInputUtil.CharToKeyInput(cur);
+                keyInput = KeyInputUtil.ApplyModifiers(keyInput, KeyModifiers.Shift);
+                Assert.AreEqual(KeyModifiers.None, keyInput.KeyModifiers);
+            }
+        }
+
+        /// <summary>
+        /// Check for the special inputs which have chars to which shift is special
+        /// </summary>
+        [Test]
+        public void ApplyModifiers_ShiftToNonSpecialChar()
+        {
+            var list = new[] { VimKey.Back, VimKey.Escape, VimKey.Tab };
+            foreach (var cur in list)
+            {
+                var keyInput = KeyInputUtil.VimKeyToKeyInput(cur);
+                keyInput = KeyInputUtil.ApplyModifiers(keyInput, KeyModifiers.Shift);
+                Assert.AreEqual(KeyModifiers.Shift, keyInput.KeyModifiers);
+            }
+        }
+
         [Test]
         public void CoreCharList1()
         {
@@ -226,7 +256,7 @@ namespace Vim.UnitTest
             {
                 var lower = KeyInputUtil.CharToKeyInput(letter);
                 var upper = KeyInputUtil.CharToKeyInput(Char.ToUpper(letter));
-                var lowerWithShift = KeyInputUtil.ChangeKeyModifiers(lower, KeyModifiers.Shift);
+                var lowerWithShift = KeyInputUtil.ChangeKeyModifiersDangerous(lower, KeyModifiers.Shift);
                 Assert.AreNotEqual(lowerWithShift, upper);
             }
         }
@@ -238,7 +268,7 @@ namespace Vim.UnitTest
             {
                 var lower = KeyInputUtil.CharToKeyInput(letter);
                 var upper = KeyInputUtil.CharToKeyInput(Char.ToUpper(letter));
-                var upperNoShift = KeyInputUtil.ChangeKeyModifiers(upper, KeyModifiers.None);
+                var upperNoShift = KeyInputUtil.ChangeKeyModifiersDangerous(upper, KeyModifiers.None);
                 Assert.AreNotEqual(lower, upperNoShift);
             }
         }
@@ -247,7 +277,7 @@ namespace Vim.UnitTest
         public void ChangeKeyModifiers_WontChangeChar()
         {
             var ki = KeyInputUtil.VimKeyToKeyInput(VimKey.OpenBracket);
-            var ki2 = KeyInputUtil.ChangeKeyModifiers(ki, KeyModifiers.Shift);
+            var ki2 = KeyInputUtil.ChangeKeyModifiersDangerous(ki, KeyModifiers.Shift);
             Assert.AreEqual(ki.Char, ki2.Char);
         }
 

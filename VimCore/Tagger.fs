@@ -116,7 +116,7 @@ type internal IncrementalSearchTaggerProvider
                 null
             | true, Some vimBuffer ->
                 let taggerSource = new IncrementalSearchTaggerSource(vimBuffer)
-                let tagger = _taggerFactory.CreateBasicTagger taggerSource
+                let tagger = _taggerFactory.CreateBasicTaggerRaw taggerSource
                 tagger :> obj :?> ITagger<'T>
 
 type HighlightSearchData = {
@@ -317,7 +317,7 @@ type HighlightIncrementalSearchTaggerProvider
             | true, None -> 
                 null
             | true, Some vimTextBuffer ->
-                let tagger = _taggerFactory.CreateAsyncTaggerCounted(_key, textView.Properties, fun () ->
+                let tagger = _taggerFactory.CreateAsyncTagger(textView.Properties, _key, fun () ->
                     let wordNavigator = vimTextBuffer.WordNavigator
                     let taggerSource = new HighlightSearchTaggerSource(textView, vimTextBuffer.GlobalSettings, _vim.VimData, _vim.VimHost)
                     taggerSource :> IAsyncTaggerSource<HighlightSearchData , TextMarkerTag>)
@@ -381,7 +381,7 @@ type SubstituteConfirmTaggerProvider
                 null
             | true, Some buffer ->
                 let taggerSource = new SubstituteConfirmTaggerSource(textBuffer, buffer.SubstituteConfirmMode)
-                let tagger = _taggerFactory.CreateBasicTagger(taggerSource)
+                let tagger = _taggerFactory.CreateBasicTaggerRaw(taggerSource)
                 tagger :> obj :?> ITagger<'T>
 
 /// Fold tagger for the IOutliningRegion tags created by folds.  Note that folds work
@@ -438,7 +438,7 @@ type FoldTaggerProvider
 
     interface ITaggerProvider with 
         member x.CreateTagger<'T when 'T :> ITag> textBuffer =
-            let tagger = _taggerFactory.CreateBasicTaggerCounted(_key, textBuffer.Properties, fun() ->
+            let tagger = _taggerFactory.CreateBasicTagger(textBuffer.Properties, _key, fun() ->
                 let foldData = _factory.GetFoldData textBuffer
                 let taggerSource = new FoldTaggerSource(foldData)
                 taggerSource :> IBasicTaggerSource<OutliningRegionTag>)

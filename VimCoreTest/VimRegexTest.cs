@@ -596,6 +596,17 @@ namespace Vim.UnitTest
             Assert.IsTrue(regex.IsNone());
         }
 
+        /// <summary>
+        /// Make sure that \1 can be used to match the previous group specified
+        /// </summary>
+        [Test]
+        public void Group_MatchPreviousGroup()
+        {
+            VerifyMatches(@"\(dog\)::\1", "dog::dog");
+            VerifyMatches(@"\(dog\)::cat::\1", "dog::cat::dog");
+            VerifyNotMatches(@"\(dog\)::\1", "dog::cat");
+        }
+
         [Test]
         public void Separator1()
         {
@@ -683,6 +694,18 @@ namespace Vim.UnitTest
         public void Replace_EscapedBackSlashes()
         {
             VerifyReplace("b", "abc", @"\\\\", @"a\\c");
+        }
+
+        /// <summary>
+        /// Don't treat an escaped backslash in front of a 'n' character as a new line. 
+        /// 
+        /// Issue #779
+        /// </summary>
+        [Test]
+        public void Replace_EscapedBackSlashNotNewLine()
+        {
+            VerifyReplace("b", "abc", @"\\n\\", @"a\n\c");
+            VerifyReplace("$", "dog", @"\\n\\", @"dog\n\");
         }
 
         /// <summary>

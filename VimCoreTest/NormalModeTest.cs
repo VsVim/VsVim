@@ -167,7 +167,7 @@ namespace Vim.UnitTest
         public void CanProcess_DontHandleControlTab()
         {
             Create("");
-            Assert.IsFalse(_mode.CanProcess(KeyInputUtil.ChangeKeyModifiers(KeyInputUtil.TabKey, KeyModifiers.Control)));
+            Assert.IsFalse(_mode.CanProcess(KeyInputUtil.ChangeKeyModifiersDangerous(KeyInputUtil.TabKey, KeyModifiers.Control)));
         }
 
         #endregion

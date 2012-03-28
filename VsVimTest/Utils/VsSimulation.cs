@@ -665,7 +665,7 @@ namespace VsVim.UnitTest.Utils
             if (Char.IsUpper(keyInput.Char))
             {
                 var lowerKeyInput = KeyInputUtil.CharToKeyInput(Char.ToLower(keyInput.Char));
-                keyInput = KeyInputUtil.ChangeKeyModifiers(lowerKeyInput, keyInput.KeyModifiers | KeyModifiers.Shift);
+                keyInput = KeyInputUtil.ChangeKeyModifiersDangerous(lowerKeyInput, keyInput.KeyModifiers | KeyModifiers.Shift);
             }
 
             Key key;

@@ -72,6 +72,14 @@ namespace Vim.UI.Wpf
         /// </summary>
         private void UpdateCaretDisplay()
         {
+            // The caret should be invisible during incremental search no matter what mode we are
+            // in
+            if (_buffer.IncrementalSearch.InSearch)
+            {
+                _blockCaret.CaretDisplay = CaretDisplay.Invisible;
+                return;
+            }
+
             var kind = CaretDisplay.Block;
             switch (_buffer.ModeKind)
             {
@@ -85,10 +93,6 @@ namespace Vim.UI.Wpf
                         else if (mode.KeyRemapMode == KeyRemapMode.OperatorPending)
                         {
                             kind = CaretDisplay.HalfBlock;
-                        }
-                        else if (_buffer.IncrementalSearch.InSearch)
-                        {
-                            kind = CaretDisplay.Invisible;
                         }
                         else
                         {

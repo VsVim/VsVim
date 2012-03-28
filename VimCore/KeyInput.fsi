@@ -104,9 +104,11 @@ module KeyInputUtil =
     /// Change the KeyModifiers associated with this KeyInput.  Will not change the value
     /// of the underlying char.  Although it may produce a KeyInput that makes no 
     /// sense.  For example it's very possible to have KeyInput('a', KeyModifiers.Shift) but
-    /// it will be extremely hard to produce that in a keyboard.  This seems odd at first 
-    /// but it's a scenario that Vim supports (or doesn't support depending on how you 
-    val ChangeKeyModifiers : KeyInput -> KeyModifiers -> KeyInput
+    /// it will be extremely hard to produce that in a keyboard (if possible at all).  
+    ///
+    /// This method should be avoided.  If you need to apply modifiers then use
+    /// ApplyModifiers which uses Vim semantics when deciding how to apply the modifiers
+    val ChangeKeyModifiersDangerous : KeyInput -> KeyModifiers -> KeyInput
 
     /// Given a KeyInput value which is an Alternate KeyInput return the value it as an
     /// alternate for

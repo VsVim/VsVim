@@ -35,11 +35,6 @@ namespace Vim.UnitTest
         private ICommonOperations _operations;
         private CommonOperations _operationsRaw;
 
-        private Register UnnamedRegister
-        {
-            get { return Vim.RegisterMap.GetRegister(RegisterName.Unnamed); }
-        }
-
         public void Create(params string[] lines)
         {
             _textView = CreateTextView(lines);

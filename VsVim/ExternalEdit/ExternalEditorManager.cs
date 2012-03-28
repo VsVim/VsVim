@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
-using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
@@ -113,9 +112,7 @@ namespace VsVim.ExternalEdit
 
         private bool CheckResharperInstalled()
         {
-            var guid = Resharper5Guid;
-            int isInstalled;
-            return ErrorHandler.Succeeded(_vsShell.IsPackageInstalled(ref guid, out isInstalled)) && 1 == isInstalled;
+            return _vsShell.IsPackageInstalled(Resharper5Guid);
         }
     }
 }

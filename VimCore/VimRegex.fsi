@@ -61,14 +61,17 @@ type VimRegex =
     /// The Case Specifier for this VimRegex
     member CaseSpecifier : CaseSpecifier
 
-    /// Vim Pattern of the Regular expression
-    member VimPattern : string
+    /// The pattern includes a new line reference (\n not $).  
+    member IncludesNewLine : bool
 
     /// Pattern of the BCL version of the regular expression
     member RegexPattern : string
 
     /// The underlying BCL Regex expression.  
     member Regex : Regex
+
+    /// Vim Pattern of the Regular expression
+    member VimPattern : string
 
     /// Does the string match the text
     member IsMatch : pattern : string -> bool

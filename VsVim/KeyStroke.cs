@@ -59,7 +59,7 @@ namespace VsVim
         /// </summary>
         public KeyInput AggregateKeyInput
         {
-            get { return KeyInputUtil.ChangeKeyModifiers(_keyInput, _keyModifiers | _keyInput.KeyModifiers); }
+            get { return KeyInputUtil.ApplyModifiers(_keyInput, _keyModifiers | _keyInput.KeyModifiers); }
         }
 
         public KeyStroke(KeyInput keyInput, KeyModifiers modifiers)

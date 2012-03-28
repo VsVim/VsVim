@@ -292,10 +292,16 @@ type internal NormalMode
                 |> Seq.filter (fun command -> command.KeyInputSet.StartsWith name)
                 |> SeqUtil.isNotEmpty
 
-            if _runner.IsWaitingForMoreInput then  true
-            elif doesCommandStartWith ki then true
-            elif Option.isSome ki.RawChar && KeyModifiers.None = ki.KeyModifiers && Set.contains ki.Char _coreCharSet then true
-            else false
+            if _runner.IsWaitingForMoreInput then 
+                true
+            elif doesCommandStartWith ki then 
+                true
+            elif Option.isSome ki.RawChar && KeyModifiers.None = ki.KeyModifiers then
+                // We can process any letter (think international input) or any character
+                // which is part of the standard Vim input set
+                CharUtil.IsLetter ki.Char || Set.contains ki.Char _coreCharSet
+            else 
+                false
 
         member this.Process ki = this.ProcessCore ki
         member this.OnEnter arg = 

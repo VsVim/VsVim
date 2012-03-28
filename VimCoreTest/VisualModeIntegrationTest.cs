@@ -21,11 +21,6 @@ namespace Vim.UnitTest
         private IVimGlobalSettings _globalSettings;
         private TestableSynchronizationContext _context;
 
-        internal Register UnnamedRegister
-        {
-            get { return _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed); }
-        }
-
         internal Register TestRegister
         {
             get { return _vimBuffer.RegisterMap.GetRegister('c'); }
@@ -681,6 +676,45 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// An incremental search operation shouldn't change the location of the caret until the search is
+        /// completed
+        /// </summary>
+        [Test]
+        public void IncrementalSearch_DontChangeCaret()
+        {
+            Create("cat", "dog", "tree");
+            _vimBuffer.Process("v/do");
+            Assert.AreEqual(0, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Make sure that Escape will properly exit the incremental search and return us to the previous
+        /// visual mode state (with the same selection)
+        /// </summary>
+        [Test]
+        public void IncrementalSearch_EscapeShouldExitSearch()
+        {
+            Create("cat", "dog", "tree");
+            _vimBuffer.ProcessNotation("vl/dog<Esc>");
+            Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+            Assert.IsFalse(_vimBuffer.IncrementalSearch.InSearch);
+            Assert.AreEqual("ca", _textView.GetSelectionSpan().GetText());
+        }
+
+        /// <summary>
+        /// Make sure that enter completes the search which includes updating the caret
+        /// </summary>
+        [Test]
+        public void IncrementalSearch_EnterShouldCompleteSearch()
+        {
+            Create("cat", "dog", "tree");
+            _vimBuffer.ProcessNotation("vl/dog<Enter>");
+            Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+            Assert.IsFalse(_vimBuffer.IncrementalSearch.InSearch);
+            Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
         /// Enter visual mode with the InitialVisualSelection argument which is a character span
         /// </summary>
         [Test]
@@ -782,6 +816,25 @@ namespace Vim.UnitTest
             Create("cat", "", "dog");
             _vimBuffer.Process("vjj");
             Assert.AreEqual(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Test the movement of the caret over a shorter line and then back to a line long
+        /// enough
+        /// </summary>
+        [Test]
+        public void Move_Block_OverShortLine()
+        {
+            Create("really long line", "short", "really long line");
+            _textView.MoveCaretTo(7);
+            _vimBuffer.ProcessNotation("<C-v>lll");
+            Assert.AreEqual("long", _textView.Selection.SelectedSpans[0].GetText());
+            _vimBuffer.ProcessNotation("jj");
+            var spans = _textView.Selection.SelectedSpans;
+            Assert.AreEqual(3, spans.Count);
+            Assert.AreEqual("long", spans[0].GetText());
+            Assert.AreEqual("", spans[1].GetText());
+            Assert.AreEqual("long", spans[2].GetText());
         }
 
         /// <summary>

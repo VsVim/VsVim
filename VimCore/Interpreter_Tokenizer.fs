@@ -219,4 +219,6 @@ type internal Tokenizer
 
     member x.MoveNextChar() = x.MoveNextCharEx NextTokenFlags.None
 
+    member x.ResetAtIndex flags = x.MoveToIndexEx x.Index flags
+
 

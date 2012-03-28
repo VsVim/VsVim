@@ -14,6 +14,7 @@ namespace Vim.UI.Wpf.UnitTest
         private Mock<IBlockCaret> _caret;
         private Mock<IVimGlobalSettings> _settings;
         private Mock<IVimLocalSettings> _localSettings;
+        private Mock<IIncrementalSearch> _incrementalSearch;
         private BlockCaretController _controller;
 
         [SetUp]
@@ -23,10 +24,13 @@ namespace Vim.UI.Wpf.UnitTest
             _textView = _factory.Create<ITextView>(MockBehavior.Strict);
             _settings = _factory.Create<IVimGlobalSettings>(MockBehavior.Loose);
             _localSettings = MockObjectFactory.CreateLocalSettings(global: _settings.Object, factory: _factory);
+            _incrementalSearch = _factory.Create<IIncrementalSearch>();
+            _incrementalSearch.SetupGet(x => x.InSearch).Returns(false);
             _buffer = _factory.Create<IVimBuffer>(MockBehavior.Strict);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Command);
             _buffer.SetupGet(x => x.TextView).Returns(_textView.Object);
             _buffer.SetupGet(x => x.LocalSettings).Returns(_localSettings.Object);
+            _buffer.SetupGet(x => x.IncrementalSearch).Returns(_incrementalSearch.Object);
             _caret = _factory.Create<IBlockCaret>(MockBehavior.Strict);
             _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Invisible);
             _caret.SetupSet(x => x.CaretOpacity = It.IsAny<double>());
@@ -90,10 +94,8 @@ namespace Vim.UI.Wpf.UnitTest
         public void NormalMode1()
         {
             var mode = new Mock<INormalMode>();
-            var search = new Mock<IIncrementalSearch>();
             _buffer.SetupGet(x => x.NormalMode).Returns(mode.Object);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
-            _buffer.SetupGet(x => x.IncrementalSearch).Returns(search.Object);
 
             _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Block).Verifiable();
             _controller.Update();
@@ -104,11 +106,9 @@ namespace Vim.UI.Wpf.UnitTest
         public void NormalMode2()
         {
             var mode = new Mock<INormalMode>();
-            var search = new Mock<IIncrementalSearch>();
             _buffer.SetupGet(x => x.NormalMode).Returns(mode.Object);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
-            _buffer.SetupGet(x => x.IncrementalSearch).Returns(search.Object);
-            search.SetupGet(x => x.InSearch).Returns(true);
+            _incrementalSearch.SetupGet(x => x.InSearch).Returns(true);
 
             _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Invisible).Verifiable();
             _controller.Update();
@@ -156,6 +156,20 @@ namespace Vim.UI.Wpf.UnitTest
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualLine);
             _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Block);
             _controller.Update();
+        }
+
+        /// <summary>
+        /// The caret should be invisible for incremental search even in visual mode
+        /// </summary>
+        [Test]
+        public void VisualMode_InIncrementalSearch()
+        {
+            _incrementalSearch.SetupGet(x => x.InSearch).Returns(true);
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualCharacter);
+
+            _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Invisible).Verifiable();
+            _controller.Update();
+            _caret.Verify();
         }
 
         [Test]

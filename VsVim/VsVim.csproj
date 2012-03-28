@@ -137,6 +137,7 @@
     <Compile Include="ExternalEdit\ResharperExternalEditAdapter.cs" />
     <Compile Include="ExternalEdit\SnippetExternalEditAdapter.cs" />
     <Compile Include="IExternalEditorManager.cs" />
+    <Compile Include="Implementation\MindScape.cs" />
     <Compile Include="Implementation\TextManager.cs" />
     <Compile Include="Implementation\VimBufferCoordinator.cs" />
     <Compile Include="Implementation\VsAdapter.cs" />

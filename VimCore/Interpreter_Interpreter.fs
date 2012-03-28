@@ -258,9 +258,12 @@ type Interpreter
             // cd is given no options
             _statusUtil.OnStatus x.CurrentDirectory
         | Some directoryPath ->
-            if not (System.IO.Path.IsPathRooted directoryPath) then
-                _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "Relative paths")
-            elif not (System.IO.Directory.Exists directoryPath) then
+            let directoryPath = 
+                if not (System.IO.Path.IsPathRooted directoryPath) then
+                    System.IO.Path.GetFullPath(System.IO.Path.Combine(_vimData.CurrentDirectory, directoryPath))
+                else directoryPath
+
+            if not (System.IO.Directory.Exists directoryPath) then
                 // Not a fan of this function but we need to emulate the Vim behavior here
                 _statusUtil.OnError (Resources.Interpreter_CantFindDirectory directoryPath)
             else
@@ -277,9 +280,12 @@ type Interpreter
             // cd is given no options
             _statusUtil.OnStatus x.CurrentDirectory
         | Some directoryPath ->
-            if not (System.IO.Path.IsPathRooted directoryPath) then
-                _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "Relative paths")
-            elif not (System.IO.Directory.Exists directoryPath) then
+            let directoryPath = 
+                if not (System.IO.Path.IsPathRooted directoryPath) then
+                    System.IO.Path.GetFullPath(System.IO.Path.Combine(_vimData.CurrentDirectory, directoryPath))
+                else directoryPath
+
+            if not (System.IO.Directory.Exists directoryPath) then
                 // Not a fan of this function but we need to emulate the Vim behavior here
                 _statusUtil.OnError (Resources.Interpreter_CantFindDirectory directoryPath)
             else
@@ -287,7 +293,7 @@ type Interpreter
                 _vimBuffer.CurrentDirectory <- Some directoryPath
         RunResult.Completed
 
-    member x.RunCopyOrMoveTo sourceLineRange destLineRange transactionName editOperation = 
+    member x.RunCopyOrMoveTo sourceLineRange destLineRange count transactionName editOperation = 
 
         x.RunWithLineRangeOrDefault sourceLineRange DefaultLineRange.CurrentLine (fun sourceLineRange ->
 
@@ -297,43 +303,56 @@ type Interpreter
                 match destLineRange with 
                 | LineRangeSpecifier.None -> None
                 | LineRangeSpecifier.EntireBuffer -> None
-                | LineRangeSpecifier.Range (left, _ , _) -> x.GetLine left
-                | LineRangeSpecifier.SingleLine line -> x.GetLine line
                 | LineRangeSpecifier.WithEndCount _ -> None
                 | LineRangeSpecifier.Join _ -> None
-    
+                | LineRangeSpecifier.Range (left, _ , _) -> x.GetLine left
+                | LineRangeSpecifier.SingleLine line -> 
+
+                    // If a single line and a count is specified then we need to apply the count to
+                    // the line
+                    let line = x.GetLine line
+                    match line, count with
+                    | Some line, Some count -> SnapshotUtil.TryGetLine x.CurrentSnapshot (line.LineNumber + count)
+                    | _ -> line
+
             match destLine with
             | None -> _statusUtil.OnError Resources.Common_InvalidAddress
             | Some destLine -> 
 
+                let text = 
+                    if destLine.LineBreakLength = 0 then
+                        // Last line in the ITextBuffer.  Inserted text must begin with a line 
+                        // break to force a new line and additionally don't use the final new
+                        // line from the source as it would add an extra line to the buffer
+                        let newLineText = _commonOperations.GetNewLineText destLine.EndIncludingLineBreak
+                        newLineText + (sourceLineRange.GetText())
+                    elif sourceLineRange.LastLine.LineBreakLength = 0 then
+                        // Last line in the source doesn't have a new line (last line).  Need
+                        // to add one to create a break for line after
+                        let newLineText = _commonOperations.GetNewLineText destLine.EndIncludingLineBreak
+                        (sourceLineRange.GetText()) + newLineText 
+                    else
+                        sourceLineRange.GetTextIncludingLineBreak()
+
                 // Use an undo transaction so that the caret move and insert is a single
                 // operation
-                _undoRedoOperations.EditWithUndoTransaction transactionName (fun() -> editOperation sourceLineRange destLine)
-    
+                _undoRedoOperations.EditWithUndoTransaction transactionName (fun() -> editOperation sourceLineRange destLine text)
+
             RunResult.Completed)
 
-    member x.TextToInsert (sourceLineRange : SnapshotLineRange) (destLine : ITextSnapshotLine) = 
-        let text = sourceLineRange.GetTextIncludingLineBreak()
-        if destLine.GetTextIncludingLineBreak().EndsWith "\n" then
-            text
-        else
-            System.Environment.NewLine + text
-
     /// Copy the text from the source address to the destination address
-    member x.RunCopyTo sourceLineRange destLineRange =
-        x.RunCopyOrMoveTo sourceLineRange destLineRange "CopyTo" (fun sourceLineRange destLine ->
+    member x.RunCopyTo sourceLineRange destLineRange count =
+        x.RunCopyOrMoveTo sourceLineRange destLineRange count "CopyTo" (fun sourceLineRange destLine text ->
             let destPosition = destLine.EndIncludingLineBreak.Position
-            let textToInsert = x.TextToInsert sourceLineRange destLine
 
-            _textBuffer.Insert(destPosition, textToInsert) |> ignore
+            _textBuffer.Insert(destPosition, text) |> ignore
             TextViewUtil.MoveCaretToPosition _textView destPosition)
 
-    member x.RunMoveTo sourceLineRange destLineRange =
-        x.RunCopyOrMoveTo sourceLineRange destLineRange "MoveTo" (fun sourceLineRange destLine ->
+    member x.RunMoveTo sourceLineRange destLineRange count =
+        x.RunCopyOrMoveTo sourceLineRange destLineRange count "MoveTo" (fun sourceLineRange destLine text ->
             let destPosition = destLine.EndIncludingLineBreak.Position
-            let textToInsert = x.TextToInsert sourceLineRange destLine
 
-            _textBuffer.Insert(destPosition, textToInsert) |> ignore
+            _textBuffer.Insert(destPosition, text) |> ignore
             _textBuffer.Delete(sourceLineRange.ExtentIncludingLineBreak.Span) |> ignore
             TextViewUtil.MoveCaretToPosition _textView destLine.End.Position)
 
@@ -1029,7 +1048,7 @@ type Interpreter
         let doRun command = 
 
             let file = _globalSettings.Shell
-            let output = _vimHost.RunCommand _globalSettings.Shell command
+            let output = _vimHost.RunCommand _globalSettings.Shell command _vimData
             _statusUtil.OnStatus output
 
         // Build up the actual command replacing any non-escaped ! with the previous
@@ -1241,7 +1260,7 @@ type Interpreter
         match lineCommand with
         | LineCommand.ChangeDirectory path -> x.RunChangeDirectory path
         | LineCommand.ChangeLocalDirectory path -> x.RunChangeLocalDirectory path
-        | LineCommand.CopyTo (sourceLineRange, destLineRange) -> x.RunCopyTo sourceLineRange destLineRange
+        | LineCommand.CopyTo (sourceLineRange, destLineRange, count) -> x.RunCopyTo sourceLineRange destLineRange count
         | LineCommand.ClearKeyMap (keyRemapModes, mapArgumentList) -> x.RunClearKeyMap keyRemapModes mapArgumentList
         | LineCommand.Close hasBang -> x.RunClose hasBang
         | LineCommand.Edit (hasBang, fileOptions, commandOption, filePath) -> x.RunEdit hasBang fileOptions commandOption filePath
@@ -1260,7 +1279,7 @@ type Interpreter
         | LineCommand.JumpToLine number -> x.RunJumpToLine number
         | LineCommand.Make (hasBang, arguments) -> x.RunMake hasBang arguments
         | LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap, mapArgumentList) -> x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList
-        | LineCommand.MoveTo (sourceLineRange, destLineRange) -> x.RunMoveTo sourceLineRange destLineRange
+        | LineCommand.MoveTo (sourceLineRange, destLineRange, count) -> x.RunMoveTo sourceLineRange destLineRange count
         | LineCommand.NoHighlightSearch -> x.RunNoHighlightSearch()
         | LineCommand.Nop -> RunResult.Completed
         | LineCommand.Print (lineRange, lineCommandFlags)-> x.RunPrint lineRange lineCommandFlags

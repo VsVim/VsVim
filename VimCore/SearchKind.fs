@@ -11,7 +11,7 @@ type Direction =
     | Left
     | Right
 
-type Path = 
+type Path =
     | Forward
     | Backward
 

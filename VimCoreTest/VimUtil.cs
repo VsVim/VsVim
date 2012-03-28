@@ -244,7 +244,7 @@ namespace Vim.UnitTest
             MotionResultFlags flags = MotionResultFlags.None)
         {
             motionKind = motionKind ?? MotionKind.CharacterWiseInclusive;
-            return new MotionResult(span, isForward, motionKind, flags);
+            return new MotionResult(span, span, isForward, motionKind, flags);
         }
 
         internal static CommandData CreateCommandData(

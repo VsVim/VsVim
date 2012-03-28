@@ -103,6 +103,16 @@ namespace Vim.UnitTest
             get { return true; }
         }
 
+        protected IRegisterMap RegisterMap
+        {
+            get { return Vim.RegisterMap; }
+        }
+
+        protected Register UnnamedRegister
+        {
+            get { return RegisterMap.GetRegister(RegisterName.Unnamed); }
+        }
+
         public override void SetupBase()
         {
             base.SetupBase();

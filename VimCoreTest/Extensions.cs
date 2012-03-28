@@ -785,6 +785,14 @@ namespace Vim.UnitTest
             return VisualSpan.NewBlock(blockSpanData);
         }
 
+        public static IEnumerable<string> GetLines(this ITextBuffer textBuffer)
+        {
+            foreach (var line in textBuffer.CurrentSnapshot.Lines)
+            {
+                yield return line.GetText();
+            }
+        }
+
         #endregion
 
         #region ITextView

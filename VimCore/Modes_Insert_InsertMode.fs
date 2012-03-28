@@ -197,7 +197,7 @@ type internal InsertMode
                     // Certain keys such as Delete, Esc, etc ... have the same behavior when invoked
                     // with or without any modifiers.  The modifiers must be considered because they
                     // do participate in key mapping.  Once we get here though we must discard them
-                    let alternateKeyInput = KeyInputUtil.ChangeKeyModifiers keyInput KeyModifiers.None
+                    let alternateKeyInput = KeyInputUtil.ChangeKeyModifiersDangerous keyInput KeyModifiers.None
                     match Map.tryFind alternateKeyInput _commandMap with
                     | Some rawInsertCommand -> Some rawInsertCommand
                     | None -> getDirectInsert()
@@ -206,7 +206,7 @@ type internal InsertMode
 
     /// Get the Span for the word we are trying to complete if there is one
     member x.GetWordCompletionSpan () =
-        if SnapshotLineUtil.IsBlank x.CaretLine then
+        if SnapshotLineUtil.IsBlankOrEmpty x.CaretLine then
             // Have to special case a bit here.  Blank lines are actually words but we
             // don't want to replace the new line when doing a completion
             None

@@ -130,6 +130,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MindScapeTest.cs" />
     <Compile Include="ResultTest.cs" />
     <Compile Include="UnitTestExtensions.cs" />
     <Compile Include="ExternalEditMonitorTest.cs" />

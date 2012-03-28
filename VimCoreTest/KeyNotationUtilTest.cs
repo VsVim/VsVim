@@ -160,7 +160,7 @@ namespace Vim.UnitTest
         public void StringToKeyInput8()
         {
             var ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Space);
-            ki = KeyInputUtil.ChangeKeyModifiers(ki, KeyModifiers.Shift);
+            ki = KeyInputUtil.ChangeKeyModifiersDangerous(ki, KeyModifiers.Shift);
             var all = new string[] { "<S-space>", "<S-SPACE>" };
             foreach (var cur in all)
             {
