@@ -135,7 +135,6 @@
     <Compile Include="ExtensionsTest.cs" />
     <Compile Include="KeyBindingDataTest.cs" />
     <Compile Include="KeyBindingServiceTest.cs" />
-    <Compile Include="KeyBindingUtilTest.cs" />
     <Compile Include="KeyBindingTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResharperExternalEditAdapterTest.cs" />

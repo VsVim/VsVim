@@ -146,7 +146,6 @@
     <Compile Include="ITextManager.cs" />
     <Compile Include="IVimBufferCoordinator.cs" />
     <Compile Include="KeyBinding.cs" />
-    <Compile Include="KeyBindingUtil.cs" />
     <Compile Include="KeyStroke.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="OleCommandData.cs" />

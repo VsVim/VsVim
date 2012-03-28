@@ -24,7 +24,7 @@ namespace VsVim.Implementation
         private readonly IOptionsDialogService _optionsDialogService;
         private readonly IProtectedOperations _protectedOperations;
         private readonly ILegacySettings _legacySettings;
-        private HashSet<string> _importantScopeSet;
+        private Lazy<HashSet<string>> _importantScopeSet;
         private ConflictingKeyBindingState _state;
         private CommandKeyBindingSnapshot _snapshot;
 
@@ -36,6 +36,7 @@ namespace VsVim.Implementation
             _optionsDialogService = service;
             _protectedOperations = protectedOperations;
             _legacySettings = legacySettings;
+            _importantScopeSet = new Lazy<HashSet<string>>(GetDefaultImportantScopeSet);
         }
 
         internal void UpdateConflictingState(ConflictingKeyBindingState state, CommandKeyBindingSnapshot snapshot)
@@ -63,12 +64,6 @@ namespace VsVim.Implementation
 
         internal event EventHandler ConflictingKeyBindingStateChanged;
 
-        internal CommandKeyBindingSnapshot CreateCommandKeyBindingSnapshot(IVimBuffer vimBuffer)
-        {
-            var util = new KeyBindingUtil(_dte, GetOrCreateImportantScopeSet(), _legacySettings);
-            return util.CreateCommandKeyBindingSnapshot(vimBuffer);
-        }
-
         internal void RunConflictingKeyBindingStateCheck(IVimBuffer buffer, Action<ConflictingKeyBindingState, CommandKeyBindingSnapshot> onComplete)
         {
             var needed = buffer.AllModes.Select(x => x.CommandNames).SelectMany(x => x).ToList();
@@ -84,10 +79,9 @@ namespace VsVim.Implementation
                 return;
             }
 
-            var util = new KeyBindingUtil(_dte, GetOrCreateImportantScopeSet(), _legacySettings);
             var set = new HashSet<KeyInput>(neededInputs);
-            _snapshot = util.CreateCommandKeyBindingSnapshot(set);
-            ConflictingKeyBindingState = _snapshot.Conflicting.Any()
+            var snapshot = CreateCommandKeyBindingSnapshot(set);
+            ConflictingKeyBindingState = snapshot.Conflicting.Any()
                 ? ConflictingKeyBindingState.FoundConflicts
                 : ConflictingKeyBindingState.ConflictsIgnoredOrResolved;
         }
@@ -118,15 +112,109 @@ namespace VsVim.Implementation
             _snapshot = null;
         }
 
-        private HashSet<string> GetOrCreateImportantScopeSet()
+        /// <summary>
+        /// Compute the set of keys that conflict with and have been already been removed.
+        /// </summary>
+        internal CommandKeyBindingSnapshot CreateCommandKeyBindingSnapshot(IVimBuffer buffer)
         {
-            if (_importantScopeSet != null)
+            // Get the list of all KeyInputs that are the first key of a VsVim command
+            var hashSet = new HashSet<KeyInput>(
+                buffer.AllModes
+                .Select(x => x.CommandNames)
+                .SelectMany(x => x)
+                .Where(x => x.KeyInputs.Length > 0)
+                .Select(x => x.KeyInputs.First()));
+
+            // Need to get the custom key bindings in the list.  It's very common for users 
+            // to use for example function keys (<F2>, <F3>, etc ...) in their mappings which
+            // are often bound to other Visual Studio commands.
+            var keyMap = buffer.Vim.KeyMap;
+            foreach (var keyRemapMode in KeyRemapMode.All)
             {
-                return _importantScopeSet;
+                foreach (var keyMapping in keyMap.GetKeyMappingsForMode(keyRemapMode))
+                {
+                    keyMapping.Left.KeyInputs.ForEach(keyInput => hashSet.Add(keyInput));
+                }
             }
 
-            _importantScopeSet = CreateImportantScopeSet();
-            return _importantScopeSet;
+            // Include the key used to disable VsVim
+            hashSet.Add(buffer.LocalSettings.GlobalSettings.DisableAllCommand);
+
+            return CreateCommandKeyBindingSnapshot(hashSet);
+        }
+
+        internal CommandKeyBindingSnapshot CreateCommandKeyBindingSnapshot(HashSet<KeyInput> needed)
+        {
+            var commandsSnapshot = new CommandsSnapshot(_dte);
+            var conflicting = FindConflictingCommandKeyBindings(commandsSnapshot, needed);
+            var removed = FindRemovedKeyBindings(commandsSnapshot);
+            return new CommandKeyBindingSnapshot(
+                commandsSnapshot,
+                removed,
+                conflicting);
+        }
+
+        /// <summary>
+        /// Find all of the Command instances (which represent Visual Studio commands) which would conflict with any
+        /// VsVim commands that use the keys in neededInputs.
+        /// </summary>
+        internal List<CommandKeyBinding> FindConflictingCommandKeyBindings(CommandsSnapshot commandsSnapshot, HashSet<KeyInput> neededInputs)
+        {
+            var list = new List<CommandKeyBinding>();
+            var all = commandsSnapshot.CommandKeyBindings.Where(x => !ShouldSkip(x));
+            foreach (var binding in all)
+            {
+                var input = binding.KeyBinding.FirstKeyStroke.AggregateKeyInput;
+                if (neededInputs.Contains(input))
+                {
+                    list.Add(binding);
+                }
+            }
+
+            return list;
+        }
+
+        /// <summary>
+        /// Returns the list of commands that were previously removed by the user and are no longer currently active.
+        /// </summary>
+        internal List<CommandKeyBinding> FindRemovedKeyBindings(CommandsSnapshot commandsSnapshot)
+        {
+            return _legacySettings.FindKeyBindingsMarkedAsRemoved().Where(x => !commandsSnapshot.IsKeyBindingActive(x.KeyBinding)).ToList();
+        }
+
+        /// <summary>
+        /// Should this be skipped when removing conflicting bindings?
+        /// </summary>
+        internal bool ShouldSkip(CommandKeyBinding binding)
+        {
+            var scope = binding.KeyBinding.Scope;
+            var importantScopeSet = _importantScopeSet.Value;
+            if (!importantScopeSet.Contains(scope))
+            {
+                return true;
+            }
+
+            if (!binding.KeyBinding.KeyStrokes.Any())
+            {
+                return true;
+            }
+
+            var first = binding.KeyBinding.FirstKeyStroke;
+
+            // We don't want to remove any mappings which don't include a modifier key 
+            // because it removes too many mappings.  Without this check we would for
+            // example remove Delete in insert mode, arrow keys for intellisense and 
+            // general navigation, space bar for completion, etc ...
+            //
+            // One exception is function keys.  They are only bound in Vim to key 
+            // mappings and should win over VS commands since users explicitly 
+            // want them to occur
+            if (first.KeyModifiers == KeyModifiers.None && !first.KeyInput.IsFunctionKey)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>

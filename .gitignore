@@ -28,7 +28,7 @@ EditorUtils.VisualState.xml
 VsVim.sln.VisualState.xml
 VimCoreTest.csproj.VisualState.xml
 VimWpfTest.csproj.VisualState.xml
-VsVim.SharedTest.csproj.VisualState.xml
+VsVimSharedTest.csproj.VisualState.xml
 
 # Resharper
 _ReSharper.*
