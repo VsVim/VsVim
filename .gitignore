@@ -28,7 +28,7 @@ EditorUtils.VisualState.xml
 VsVim.sln.VisualState.xml
 VimCoreTest.csproj.VisualState.xml
 VimWpfTest.csproj.VisualState.xml
-VsVimTest.csproj.VisualState.xml
+VsVimSharedTest.csproj.VisualState.xml
 
 # Resharper
 _ReSharper.*
@@ -39,6 +39,8 @@ VsVim.sln.docstates
 # Directories 
 */obj/
 */bin/
+*/bin10/
+*/bin11/
 TestResults/
 */Debug/
 */Release/
@@ -61,6 +63,9 @@ Microsoft.VisualStudio.Text.UI.dll
 Microsoft.VisualStudio.Text.UI.Wpf.dll
 Microsoft.VisualStudio.UI.Undo.dll
 FSharp.Core.dll
+
+# Copied into a source directory for ease of build
+VsVim.Dev11.dll
 
 # Profiling Output
 *.vsp

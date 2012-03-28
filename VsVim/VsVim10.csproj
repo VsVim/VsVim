@@ -142,7 +142,7 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </None>
-    <None Include="source.extension.vsixmanifest">
+    <None Include="Dev10\source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>
   </ItemGroup>
@@ -174,10 +174,6 @@
       <Name>VsVim.Dev10</Name>
       <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3b</IncludeOutputGroupsInVSIX>
       <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
-    </ProjectReference>
-    <ProjectReference Include="..\VsVimSpecific\VsVimDev11.csproj">
-      <Project>{60316861-7561-4B07-8A16-212E00A2856E}</Project>
-      <Name>VsVim.Dev11</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

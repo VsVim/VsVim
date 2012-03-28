@@ -33,6 +33,5 @@
     <MefComponent>|EditorUtils|</MefComponent>
     <MefComponent>|VsVim.Shared|</MefComponent>
     <MefComponent>|VsVim.Dev10|</MefComponent>
-    <MefComponent>|VsVim.Dev11|</MefComponent>
   </Content>
 </Vsix>
