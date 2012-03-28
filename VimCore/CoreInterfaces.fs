@@ -622,6 +622,14 @@ type Motion =
     /// Implements the f, F, t and T motions
     | CharSearch of CharSearchKind * Path * char
 
+    /// Get the span of "count" display lines upward.  Display lines can differ when
+    /// wrap is enabled
+    | DisplayLineUp
+
+    /// Get the span of "count" display lines downward.  Display lines can differ when
+    /// wrap is enabled
+    | DisplayLineDown
+
     /// Implement the 'e' motion.  This goes to the end of the current word.  If we're
     /// not currently on a word it will find the next word and then go to the end of that
     | EndOfWord of WordKind

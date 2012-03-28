@@ -1022,6 +1022,28 @@ type MoveCaretFlags =
     | ClearSelection = 0x2
     | All = 0xffffffff
 
+module EditorOptionsUtil =
+
+    /// Get the option value if it exists
+    let GetOptionValue (opts : IEditorOptions) (key : EditorOptionKey<'a>) =
+        try
+            if opts.IsOptionDefined(key, false) then 
+                opts.GetOptionValue(key) |> Some
+            else 
+                None
+        with
+            | :? System.ArgumentException-> None
+            | :? System.InvalidOperationException -> None
+
+    let GetOptionValueOrDefault opts key defaultValue = 
+        match GetOptionValue opts key with
+        | Some value -> value
+        | None -> defaultValue
+
+    let SetOptionValue (opts : IEditorOptions) (key : EditorOptionKey<'a>) value =
+        opts.SetOptionValue(key, value)
+
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module TextViewUtil =
@@ -1046,14 +1068,20 @@ module TextViewUtil =
 
     let GetCaretPointAndLine textView = (GetCaretPoint textView),(GetCaretLine textView)
 
-    /// Get the count of Visible lines in the ITextView
-    let GetVisibleLineCount (textView : ITextView) = 
+    /// Get the set of ITextViewLines for the ITextView
+    let GetTextViewLines (textView : ITextView) =
         try
-            textView.TextViewLines.Count
+            textView.TextViewLines |> Some
         with 
             // TextViewLines can throw if the view is being laid out.  Highly unlikely we'd hit
             // that inside of Vim but need to be careful
-            | _ -> 50
+            | _ -> None
+
+    /// Get the count of Visible lines in the ITextView
+    let GetVisibleLineCount textView = 
+        match GetTextViewLines textView with
+        | None -> 50
+        | Some textViewLines -> textViewLines.Count
 
     /// Return the overaching SnapshotLineRange for the visible lines in the ITextView
     let GetVisibleSnapshotLineRange (textView : ITextView) =
@@ -1164,6 +1192,14 @@ module TextViewUtil =
         | Some snapshotData -> snapshotData
         | None -> GetEditSnapshotData textView
 
+    /// Is word wrap enabled for this ITextView
+    let IsWordWrapEnabled (textView : ITextView) = 
+        let editorOptions = textView.Options
+        match EditorOptionsUtil.GetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId with
+        | None -> false
+        | Some WordWrapStyles.WordWrap -> true
+        | Some _ -> false
+
 module TextSelectionUtil = 
 
     /// Returns the SnapshotSpan which represents the total of the selection.  This is a SnapshotSpan of the left
@@ -1179,29 +1215,8 @@ module TextSelectionUtil =
     /// Gets the selection of the editor
     let GetStreamSelectionSpan (selection:ITextSelection) = selection.StreamSelectionSpan
 
-module EditorOptionsUtil =
-
-    /// Get the option value if it exists
-    let GetOptionValue (opts : IEditorOptions) (key : EditorOptionKey<'a>) =
-        try
-            if opts.IsOptionDefined(key, false) then 
-                opts.GetOptionValue(key) |> Some
-            else 
-                None
-        with
-            | :? System.ArgumentException-> None
-            | :? System.InvalidOperationException -> None
-
-    let GetOptionValueOrDefault opts key defaultValue = 
-        match GetOptionValue opts key with
-        | Some value -> value
-        | None -> defaultValue
-
-    let SetOptionValue (opts : IEditorOptions) (key : EditorOptionKey<'a>) value =
-        opts.SetOptionValue(key, value)
-
 module TrackingPointUtil =
-    
+
     let GetPoint (snapshot : ITextSnapshot) (point : ITrackingPoint) =
         try
             point.GetPoint(snapshot) |> Some

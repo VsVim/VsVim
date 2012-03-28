@@ -466,6 +466,60 @@ type internal MotionUtil
             let snapshotData = TextViewUtil.GetEditSnapshotData _textView
             action snapshotData
 
+    /// Motion for "count" display line downwards
+    member x.DisplayLineDown count = 
+        match TextViewUtil.IsWordWrapEnabled _textView, TextViewUtil.GetTextViewLines _textView with
+        | true, Some textViewLines ->
+
+            let startLine = textViewLines.GetTextViewLineContainingBufferPosition x.CaretPoint
+            let lastLine = 
+                let index = textViewLines.GetIndexOfTextLine startLine
+                let index = index + count 
+                let index = min index (textViewLines.Count - 1)
+                textViewLines.[index]
+
+            // The point we use must be the same offset as the caret position in the final line.  Make
+            // sure not to jump off the line here though.  Also remember the column is the offset 
+            // from the display line, not the offset of the buffer line
+            let endPoint = 
+                let column = x.CaretPoint.Position - startLine.Start.Position
+                let column = min column lastLine.Length
+                match SnapshotPointUtil.TryAdd column lastLine.Start with
+                | Some point -> point
+                | None -> lastLine.End
+
+            let span = SnapshotSpan(x.CaretPoint, endPoint)
+            MotionResult.Create span true MotionKind.CharacterWiseExclusive |> Some
+
+        | _ -> x.LineDown count
+
+    /// Motion for "count" display line upwards
+    member x.DisplayLineUp count = 
+        match TextViewUtil.IsWordWrapEnabled _textView, TextViewUtil.GetTextViewLines _textView with
+        | true, Some textViewLines ->
+
+            let bottomLine = textViewLines.GetTextViewLineContainingBufferPosition x.CaretPoint
+            let topLine = 
+                let index = textViewLines.GetIndexOfTextLine bottomLine
+                let index = index - count 
+                let index = max index 0
+                textViewLines.[index]
+
+            // The point we use must be the same offset as the caret position in the final line.  Make
+            // sure not to jump off the line here though.  Also remember the column is the offset 
+            // from the display line, not the offset of the buffer line
+            let topPoint = 
+                let column = x.CaretPoint.Position - bottomLine.Start.Position
+                let column = min column topLine.Length
+                match SnapshotPointUtil.TryAdd column topLine.Start with
+                | Some point -> point
+                | None -> topLine.End
+
+            let span = SnapshotSpan(topPoint, x.CaretPoint)
+            MotionResult.Create span false MotionKind.CharacterWiseExclusive |> Some
+
+        | _ -> x.LineDown count
+
     /// Get the motion between the provided two lines.  The motion will be linewise
     /// and have a column of the first non-whitespace character.  If the 'startofline'
     /// option is not set it will keep the original column
@@ -2287,6 +2341,8 @@ type internal MotionUtil
             | Motion.CharLeft -> x.CharLeft motionArgument.Count |> Some
             | Motion.CharRight -> x.CharRight motionArgument.Count |> Some
             | Motion.CharSearch (kind, direction, c) -> x.CharSearch c motionArgument.Count kind direction
+            | Motion.DisplayLineDown -> x.DisplayLineDown motionArgument.Count
+            | Motion.DisplayLineUp -> x.DisplayLineUp motionArgument.Count
             | Motion.EndOfLine -> x.EndOfLine motionArgument.Count |> Some
             | Motion.EndOfWord wordKind -> x.EndOfWord wordKind motionArgument.Count |> Some
             | Motion.FirstNonBlankOnCurrentLine -> x.FirstNonBlankOnCurrentLine() |> Some
