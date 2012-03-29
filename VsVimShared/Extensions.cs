@@ -36,16 +36,29 @@ namespace VsVim
                 throw new ArgumentException("command");
             }
 
-            var bindings = command.Bindings as object[];
-            if (bindings != null)
+            object bindings;
+            try
             {
-                return bindings
+                bindings = command.Bindings;
+            }
+            catch (Exception)
+            {
+                // Several user reports indicate the above call can throw.  Most commonly
+                // this throws an OutOfMemoryException.  Either way we don't care what the
+                // error is.  We just can't get bindings for this element
+                return Enumerable.Empty<string>();
+            }
+
+            var bindingsArray = bindings as object[];
+            if (bindingsArray != null)
+            {
+                return bindingsArray
                     .Where(x => x is string)
                     .Cast<string>()
                     .Where(x => !String.IsNullOrEmpty(x));
             }
 
-            var singleBinding = command.Bindings as string;
+            var singleBinding = bindings as string;
             if (singleBinding != null)
             {
                 return Enumerable.Repeat(singleBinding, 1);
