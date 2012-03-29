@@ -208,5 +208,62 @@ namespace Vim.UnitTest
             Assert.That(_insertUtilRaw.CaretColumn, Is.EqualTo(2));
             Assert.That(_textView.Caret.Position.VirtualSpaces, Is.EqualTo(0));
         }
+
+		[Test]
+		public void MoveCaretByWord_Backward_FromMiddleOfWord()
+		{
+			Create("dogs look bad with greasy fur");
+			_textView.MoveCaretTo(7);
+
+			_insertUtilRaw.MoveCaretByWord(Direction.Left);
+
+            Assert.That(_insertUtilRaw.CaretColumn, Is.EqualTo(5));
+		}
+
+		[Test]
+		public void MoveCaretByWord_Backward_Twice()
+		{
+			Create("dogs look bad with greasy fur");
+			_textView.MoveCaretTo(7);
+
+			_insertUtilRaw.MoveCaretByWord(Direction.Left);
+			_insertUtilRaw.MoveCaretByWord(Direction.Left);
+
+            Assert.That(_insertUtilRaw.CaretColumn, Is.EqualTo(0));
+		}
+
+		[Test]
+		public void MoveCaretByWord_Forward_FromMiddleOfWord_ItLandsAtBeginningOfNextWord()
+		{
+			Create("dogs look bad with greasy fur");
+			_textView.MoveCaretTo(7);
+
+			_insertUtilRaw.MoveCaretByWord(Direction.Right);
+
+            Assert.That(_insertUtilRaw.CaretColumn, Is.EqualTo(10));
+		}
+
+		[Test]
+		public void MoveCaretByWord_Forward_Twice()
+		{
+			Create("dogs look bad with greasy fur");
+			_textView.MoveCaretTo(7);
+
+			_insertUtilRaw.MoveCaretByWord(Direction.Right);
+			_insertUtilRaw.MoveCaretByWord(Direction.Right);
+
+            Assert.That(_insertUtilRaw.CaretColumn, Is.EqualTo(14));
+		}
+
+		[Test]
+		public void MoveCaretByWord_Forward_NextLine()
+		{
+			Create("dogs", "look bad with greasy fur");
+			_textView.MoveCaretTo(0);
+
+			_insertUtilRaw.MoveCaretByWord(Direction.Right);
+
+            Assert.That(_textView.GetCaretPoint().Position, Is.EqualTo(6));
+		}
     }
 }

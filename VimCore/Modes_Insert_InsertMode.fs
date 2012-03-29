@@ -92,6 +92,8 @@ type internal InsertMode
             ("<C-m>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-t>", InsertCommand.ShiftLineRight, CommandFlags.Repeatable)
             ("<C-w>", InsertCommand.DeleteWordBeforeCursor, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+            ("<C-Left>", InsertCommand.MoveCaretByWord Direction.Left, CommandFlags.Movement)
+            ("<C-Right>", InsertCommand.MoveCaretByWord Direction.Right, CommandFlags.Movement)
         ]
 
     do
@@ -578,6 +580,7 @@ type internal InsertMode
             | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine _editorOptions))
             | InsertCommand.InsertTab -> Some (TextChange.Insert "\t")
             | InsertCommand.MoveCaret _ -> None
+            | InsertCommand.MoveCaretByWord _ -> None
             | InsertCommand.ShiftLineLeft -> None
             | InsertCommand.ShiftLineRight -> None
 
