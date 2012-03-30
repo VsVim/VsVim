@@ -73,7 +73,7 @@ namespace VsVim
                 _dte.ExecuteCommand(command, args);
                 return true;
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 return false;
             }
@@ -314,7 +314,16 @@ namespace VsVim
         /// </summary>
         public override HostResult SplitViewVertically(ITextView value)
         {
-            return HostResult.NewError("Unsupported in Visual Studio");
+            try
+            {
+                _dte.ExecuteCommand("Window.NewWindow");
+                _dte.ExecuteCommand("Window.NewVerticalTabGroup");
+                return HostResult.Success;
+            }
+            catch (Exception e)
+            {
+                return HostResult.NewError(e.Message);
+            }
         }
 
         public override void MoveViewDown(ITextView textView)

@@ -353,7 +353,10 @@ and [<RequireQualifiedAccess>] LineCommand =
     ///    doesn't specify a range can be used here but usage indicates it can
     ///  - The provided ++opt
     ///  - The provided +cmd
-    | Split of LineRangeSpecifier * FileOption list * CommandOption option
+    | HorizontalSplit of LineRangeSpecifier * FileOption list * CommandOption option
+
+    /// Process the 'vsplit' command. Values are as per HorizontalSplit
+    | VerticalSplit of LineRangeSpecifier * FileOption list * CommandOption option
 
     /// The :substitute command.  The argument order is range, pattern, replace,
     /// substitute flags and count
