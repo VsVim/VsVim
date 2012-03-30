@@ -11,9 +11,9 @@ using Vim.UI.Wpf;
 
 namespace VsVim.ExternalEdit
 {
-    [Export(typeof(IExternalEditorManager))]
+    [Export(typeof(IResharperUtil))]
     [Export(typeof(IVimBufferCreationListener))]
-    internal sealed class ExternalEditorManager : IExternalEditorManager, IVimBufferCreationListener
+    internal sealed class ExternalEditorManager : IResharperUtil, IVimBufferCreationListener
     {
         private static readonly Guid Resharper5Guid = new Guid("0C6E6407-13FC-4878-869A-C8B4016C57FE");
         private static readonly string ResharperTaggerName = "VsDocumentMarkupTaggerProvider";
@@ -32,14 +32,6 @@ namespace VsVim.ExternalEdit
         [ImportMany(typeof(ITaggerProvider))]
         internal List<Lazy<ITaggerProvider>> TaggerProviders { get; set; }
 
-        /// <summary>
-        /// Is R# installed
-        /// </summary>
-        public bool IsResharperInstalled
-        {
-            get { return _isResharperInstalled; }
-        }
-
         [ImportingConstructor]
         internal ExternalEditorManager(SVsServiceProvider serviceProvider, IVsAdapter vsAdapter, IProtectedOperations protectedOperations)
         {
@@ -57,7 +49,7 @@ namespace VsVim.ExternalEdit
         public void VimBufferCreated(IVimBuffer buffer)
         {
             Result<ITagger<ITag>> tagger = Result.Error;
-            if (IsResharperInstalled)
+            if (_isResharperInstalled)
             {
                 tagger = GetResharperTagger(buffer.TextBuffer);
             }
@@ -76,7 +68,7 @@ namespace VsVim.ExternalEdit
         /// </summary>
         private Result<ITagger<ITag>> GetResharperTagger(ITextBuffer textBuffer)
         {
-            Contract.Assert(IsResharperInstalled);
+            Contract.Assert(_isResharperInstalled);
 
             // This is available as a post construction MEF import so it's very possible
             // that this is null if it's not initialized
@@ -113,6 +105,11 @@ namespace VsVim.ExternalEdit
         private bool CheckResharperInstalled()
         {
             return _vsShell.IsPackageInstalled(Resharper5Guid);
+        }
+
+        bool IResharperUtil.IsInstalled
+        {
+            get { return _isResharperInstalled; }
         }
     }
 }

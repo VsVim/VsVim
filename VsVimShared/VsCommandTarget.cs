@@ -50,14 +50,14 @@ namespace VsVim
         private readonly ITextBuffer _textBuffer;
         private readonly IVsAdapter _vsAdapter;
         private readonly IDisplayWindowBroker _broker;
-        private readonly IExternalEditorManager _externalEditManager;
+        private readonly IResharperUtil _resharperUtil;
         private IOleCommandTarget _nextTarget;
 
         private VsCommandTarget(
             IVimBufferCoordinator bufferCoordinator,
             IVsAdapter vsAdapter,
             IDisplayWindowBroker broker,
-            IExternalEditorManager externalEditorManager)
+            IResharperUtil resharperUtil)
         {
             _vimBuffer = bufferCoordinator.VimBuffer;
             _vim = _vimBuffer.Vim;
@@ -65,7 +65,7 @@ namespace VsVim
             _textBuffer = _vimBuffer.TextBuffer;
             _vsAdapter = vsAdapter;
             _broker = broker;
-            _externalEditManager = externalEditorManager;
+            _resharperUtil = resharperUtil;
         }
 
         /// <summary>
@@ -218,7 +218,7 @@ namespace VsVim
         private bool IsDisplayWindowKey(KeyInput keyInput)
         {
             // Consider normal completion
-            if (_broker.IsCompletionActive || _externalEditManager.IsResharperInstalled)
+            if (_broker.IsCompletionActive || _resharperUtil.IsInstalled)
             {
                 return
                     keyInput.IsArrowKey ||
@@ -280,7 +280,7 @@ namespace VsVim
                 // The one exception to this rule is R#.  We can't accurately determine if 
                 // R# has intellisense active or not so we have to pretend like it always 
                 // does.  We limit this to insert mode only though. 
-                if (!_externalEditManager.IsResharperInstalled || _vimBuffer.ModeKind != ModeKind.Insert)
+                if (!_resharperUtil.IsInstalled || _vimBuffer.ModeKind != ModeKind.Insert)
                 {
                     return _vimBuffer.Process(keyInput).IsAnyHandled;
                 }
@@ -437,7 +437,7 @@ namespace VsVim
                 else if (editCommand.HasKeyInput && _vimBuffer.CanProcess(editCommand.KeyInput))
                 {
                     action = CommandStatus.Enable;
-                    if (_externalEditManager.IsResharperInstalled)
+                    if (_resharperUtil.IsInstalled)
                     {
                         action = QueryStatusInResharper(editCommand.KeyInput) ?? CommandStatus.Enable;
                     }
@@ -533,9 +533,9 @@ namespace VsVim
             IVsTextView vsTextView,
             IVsAdapter adapter,
             IDisplayWindowBroker broker,
-            IExternalEditorManager externalEditorManager)
+            IResharperUtil resharperUtil)
         {
-            var vsCommandTarget = new VsCommandTarget(bufferCoordinator, adapter, broker, externalEditorManager);
+            var vsCommandTarget = new VsCommandTarget(bufferCoordinator, adapter, broker, resharperUtil);
             var hresult = vsTextView.AddCommandFilter(vsCommandTarget, out vsCommandTarget._nextTarget);
             var result = Result.CreateSuccessOrError(vsCommandTarget, hresult);
             if (result.IsSuccess)

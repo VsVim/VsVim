@@ -39,7 +39,7 @@ namespace VsVim
         private readonly ITextBufferFactoryService _bufferFactoryService;
         private readonly ITextEditorFactoryService _editorFactoryService;
         private readonly IEditorOptionsFactoryService _editorOptionsFactoryService;
-        private readonly IExternalEditorManager _externalEditorManager;
+        private readonly IResharperUtil  _resharperUtil;
         private readonly IDisplayWindowBrokerFactoryService _displayWindowBrokerFactoryServcie;
         private readonly IVim _vim;
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
@@ -57,7 +57,7 @@ namespace VsVim
             IKeyBindingService keyBindingService,
             SVsServiceProvider serviceProvider,
             IVsEditorAdaptersFactoryService adaptersFactory,
-            IExternalEditorManager externalEditorManager,
+            IResharperUtil resharperUtil,
             IDisplayWindowBrokerFactoryService displayWindowBrokerFactoryService,
             IVsAdapter adapter,
             IProtectedOperations protectedOperations,
@@ -68,7 +68,7 @@ namespace VsVim
             _bufferFactoryService = bufferFactoryService;
             _editorFactoryService = editorFactoryService;
             _editorOptionsFactoryService = editorOptionsFactoryService;
-            _externalEditorManager = externalEditorManager;
+            _resharperUtil = resharperUtil;
             _displayWindowBrokerFactoryServcie = displayWindowBrokerFactoryService;
             _adaptersFactory = adaptersFactory;
             _adapter = adapter;
@@ -176,7 +176,7 @@ namespace VsVim
 
             var broker = _displayWindowBrokerFactoryServcie.CreateDisplayWindowBroker(textView);
             var bufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(buffer);
-            var result = VsCommandTarget.Create(bufferCoordinator, vsView, _adapter, broker, _externalEditorManager);
+            var result = VsCommandTarget.Create(bufferCoordinator, vsView, _adapter, broker, _resharperUtil);
             if (result.IsSuccess)
             {
                 // Store the value for debugging

@@ -2197,6 +2197,7 @@ type InsertCommand  =
             | InsertNewLine -> EditUtil.NewLine editorOptions |> Some
             | InsertTab -> Some "\t"
             | MoveCaret _ -> None
+            | MoveCaretByWord _ -> None
             | ShiftLineLeft -> None
             | ShiftLineRight -> None
             | ExtraTextChange textChange -> textChange.InsertText 
