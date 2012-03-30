@@ -30,7 +30,7 @@ namespace VsVim.ExternalEdit
         private readonly ITextView _textView;
         private readonly IProtectedOperations _protectedOperations;
         private readonly Result<IVsTextLines> _vsTextLines;
-        private readonly Result<ITagger<ITag>> _tagger;
+        private readonly ReadOnlyCollection<ITagger<ITag>> _taggerCollection;
         private readonly ReadOnlyCollection<IExternalEditAdapter> _externalEditorAdapters;
         private readonly List<ITrackingSpan> _ignoredExternalEditSpans = new List<ITrackingSpan>();
         private CheckKind? _queuedCheckKind;
@@ -58,30 +58,30 @@ namespace VsVim.ExternalEdit
             IVimBuffer buffer,
             IProtectedOperations protectedOperations,
             Result<IVsTextLines> vsTextLines,
-            Result<ITagger<ITag>> tagger,
+            ReadOnlyCollection<ITagger<ITag>> taggerCollection,
             ReadOnlyCollection<IExternalEditAdapter> externalEditorAdapters)
         {
             _vsTextLines = vsTextLines;
             _protectedOperations = protectedOperations;
             _externalEditorAdapters = externalEditorAdapters;
-            _tagger = tagger;
+            _taggerCollection = taggerCollection;
             _buffer = buffer;
             _buffer.TextView.LayoutChanged += OnLayoutChanged;
             _buffer.SwitchedMode += OnSwitchedMode;
             _textView = _buffer.TextView;
 
-            if (_tagger.IsSuccess)
+            foreach (var tagger in _taggerCollection)
             {
-                _tagger.Value.TagsChanged += OnTagsChanged;
+                tagger.TagsChanged += OnTagsChanged;
             }
         }
 
         internal void Close()
         {
             _buffer.TextView.LayoutChanged -= OnLayoutChanged;
-            if (_tagger.IsSuccess)
+            foreach (var tagger in _taggerCollection)
             {
-                _tagger.Value.TagsChanged -= OnTagsChanged;
+                tagger.TagsChanged -= OnTagsChanged;
             }
         }
 
@@ -290,20 +290,23 @@ namespace VsVim.ExternalEdit
         /// </summary>
         private void GetExternalEditSpansFromTags(SnapshotSpan span, List<SnapshotSpan> list)
         {
-            if (!_tagger.IsSuccess)
+            if (_taggerCollection.Count == 0)
             {
                 return;
             }
 
             var collection = new NormalizedSnapshotSpanCollection(span);
-            var tags = _tagger.Value.GetTags(collection);
-            foreach (var cur in tags)
+            foreach (var tagger in _taggerCollection)
             {
-                foreach (var adapter in _externalEditorAdapters)
+                var tags = tagger.GetTags(collection);
+                foreach (var cur in tags)
                 {
-                    if (adapter.IsExternalEditTag(cur.Tag))
+                    foreach (var adapter in _externalEditorAdapters)
                     {
-                        list.Add(cur.Span);
+                        if (adapter.IsExternalEditTag(cur.Tag))
+                        {
+                            list.Add(cur.Span);
+                        }
                     }
                 }
             }
