@@ -2919,6 +2919,20 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// An 'o' command which starts on a folded line should insert the line after the fold
+            /// </summary>
+            [Test]
+            public void InsertLineBelowCaret_FromFold()
+            {
+                Create("cat", "dog", "fish", "tree");
+                _foldManager.CreateFold(_textView.GetLineRange(1, 2));
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("o");
+                Assert.AreEqual("fish", _textBuffer.GetLine(2).GetText());
+                Assert.AreEqual("", _textBuffer.GetLine(3).GetText());
+            }
+
+            /// <summary>
             /// Make sure the text is repeated
             /// </summary>
             [Test]

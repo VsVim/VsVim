@@ -1112,17 +1112,29 @@ type internal CommandUtil
         //  2. After the Edit but in the Transaction (Redo)
         //  3. For the eventual user edit
 
-        let savedCaretPoint = x.CaretPoint
         let savedCaretLine = x.CaretLine
-        _undoRedoOperations.EditWithUndoTransaction  "InsertLineBelow" (fun () -> 
-            let span = new SnapshotSpan(savedCaretLine.EndIncludingLineBreak, 0)
+        let savedCaretPoint = x.CaretPoint
+
+        // The the line below needs to be calculated agaist the visual snapshot.
+        let visualLineEndIncludingLineBreak, newLineText  = 
+            let visualSnapshotData = TextViewUtil.GetVisualSnapshotDataOrEdit _textView
             let newLineText = _commonOperations.GetNewLineText x.CaretPoint
-            _textBuffer.Replace(span.Span, newLineText) |> ignore
+            visualSnapshotData.CaretLine.EndIncludingLineBreak, newLineText
 
-            TextViewUtil.MoveCaretToPosition _textView savedCaretPoint.Position)
+        match BufferGraphUtil.MapPointDownToSnapshotStandard _bufferGraph visualLineEndIncludingLineBreak x.CurrentSnapshot with
+        | None -> ()
+        | Some point -> 
 
-        let newLine = SnapshotUtil.GetLine x.CurrentSnapshot (savedCaretLine.LineNumber + 1)
-        x.MoveCaretToNewLineIndent savedCaretLine newLine
+            _undoRedoOperations.EditWithUndoTransaction  "InsertLineBelow" (fun () -> 
+                let span = SnapshotSpan(point, 0)
+                _textBuffer.Replace(span.Span, newLineText) |> ignore
+
+                TextViewUtil.MoveCaretToPosition _textView savedCaretPoint.Position)
+
+            let newLine = 
+                let newPoint = SnapshotPoint(x.CurrentSnapshot, point.Position)
+                SnapshotPointUtil.GetContainingLine newPoint
+            x.MoveCaretToNewLineIndent savedCaretLine newLine
 
         let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCountAndNewLine count)
         CommandResult.Completed switch
