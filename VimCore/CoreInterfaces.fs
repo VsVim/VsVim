@@ -2163,6 +2163,9 @@ type InsertCommand  =
     /// Move the caret in the given direction
     | MoveCaret of Direction
 
+    /// Move the caret in the given direction by a whole word
+    | MoveCaretByWord of Direction
+
     /// Shift the current line one indent width to the left
     | ShiftLineLeft 
 

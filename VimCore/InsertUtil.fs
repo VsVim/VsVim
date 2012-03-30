@@ -328,6 +328,39 @@ type internal InsertUtil
         | Direction.Left -> moveLeft()
         | Direction.Right -> moveRight()
 
+    member x.MoveCaretByWord direction = 
+        let moveLeft () = 
+            if x.CaretPoint.Position > x.CaretLine.Start.Position then
+                let point = 
+                    let defaultIfNotFound = SnapshotUtil.GetStartPoint x.CurrentSnapshot
+                    _wordUtil.GetWords WordKind.NormalWord Path.Backward x.CaretPoint
+                    |> Seq.map SnapshotSpanUtil.GetStartPoint
+                    |> SeqUtil.headOrDefault defaultIfNotFound
+                _operations.MoveCaretToPointAndEnsureVisible point
+                CommandResult.Completed ModeSwitch.NoSwitch
+            else
+                _operations.Beep()
+                CommandResult.Error
+
+        let moveRight () = 
+            if x.CaretPoint.Position < x.CaretLine.End.Position then
+                let point = 
+                    let defaultIfNotFound = SnapshotUtil.GetStartPoint x.CurrentSnapshot
+                    _wordUtil.GetWords WordKind.NormalWord Path.Forward x.CaretPoint
+                    |> Seq.skip 1
+                    |> Seq.map SnapshotSpanUtil.GetStartPoint
+                    |> SeqUtil.headOrDefault defaultIfNotFound
+                _operations.MoveCaretToPointAndEnsureVisible point
+                CommandResult.Completed ModeSwitch.NoSwitch
+            else
+                _operations.Beep()
+                CommandResult.Error
+
+        match direction with
+        | Direction.Left -> moveLeft()
+        | Direction.Right -> moveRight()
+        | _ -> CommandResult.Error
+
     /// Repeat the given edit InsertCommand.  This is used at the exit of insert mode to
     /// apply the edits again and again
     member x.RepeatEdit textChange addNewLines overwrite count = 
@@ -395,6 +428,7 @@ type internal InsertUtil
             | InsertCommand.InsertNewLine -> x.InsertNewLine()
             | InsertCommand.InsertTab -> x.InsertTab()
             | InsertCommand.MoveCaret direction -> x.MoveCaret direction
+            | InsertCommand.MoveCaretByWord direction -> x.MoveCaretByWord direction
             | InsertCommand.ShiftLineLeft -> x.ShiftLineLeft ()
             | InsertCommand.ShiftLineRight -> x.ShiftLineRight ()
             | InsertCommand.ExtraTextChange textChange -> x.ExtraTextChange textChange addNewLines
