@@ -310,7 +310,7 @@ namespace VsVim
         }
 
         /// <summary>
-        /// Verticaly window splits are not supported in visual studio
+        /// Perform a vertical buffer split, which is essentially just another window in a different tab group.
         /// </summary>
         public override HostResult SplitViewVertically(ITextView value)
         {
@@ -337,19 +337,19 @@ namespace VsVim
         }
 
         /// <summary>
-        /// Vertical splits are not supported in Visual Studio so this method is not applicable
+        /// Not yet implemented!
         /// </summary>
         public override void MoveViewLeft(ITextView value)
         {
-            // Unsupported
+            // Not yet implemented!
         }
 
         /// <summary>
-        /// Vertical splits are not supported in Visual Studio so this method is not applicable
+        /// Not yet implemented!
         /// </summary>
         public override void MoveViewRight(ITextView value)
         {
-            // Unsupported
+            // Not yet implemented!
         }
 
         public override bool GoToGlobalDeclaration(ITextView textView, string target)
