@@ -186,14 +186,6 @@ type internal VimBufferFactory
         let bufferRaw = VimBuffer(vimBufferData, incrementalSearch, motionUtil, wordNav, vimBufferData.WindowSettings)
         let buffer = bufferRaw :> IVimBuffer
 
-        /// Create the selection change tracker so that it will begin to monitor
-        /// selection events.  
-        ///
-        /// TODO: This feels wrong.  Either the result should be stored somewhere
-        /// or it should be exposed as a MEF service that listens to buffer 
-        /// creation events.
-        let selectionChangeTracker = SelectionChangeTracker(buffer)
-
         let vim = vimBufferData.Vim
         let createCommandRunner kind = CommandRunner (textView, vim.RegisterMap, capture, commandUtil, vimBufferData.StatusUtil, kind) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker textView

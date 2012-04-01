@@ -17,7 +17,8 @@ open System.Collections.Generic
 /// inside on
 type internal SelectionChangeTracker
     ( 
-        _vimBuffer : IVimBuffer 
+        _vimBuffer : IVimBuffer,
+        _selectionOverrideList : IVisualModeSelectionOverride list
     ) as this =
 
     let _textView = _vimBuffer.TextView
@@ -48,10 +49,18 @@ type internal SelectionChangeTracker
 
     member x.IsAnyVisualMode = VisualKind.IsAnyVisual _vimBuffer.ModeKind
 
+    member x.ShouldIgnoreSelectionChange() = 
+        _selectionOverrideList
+        |> Seq.exists (fun x -> x.IsInsertModePreferred _textView)
+
     /// Raised when the selection changes.  
     member x.OnSelectionChanged() = 
         if _syncingSelection then
             // Ignore selection changes when we are explicitly updating it
+            ()
+        elif _vimBuffer.ModeKind = ModeKind.Insert && x.ShouldIgnoreSelectionChange() then
+            // If one of the IVisualModeSelectionOverride instances wants us to ignore the
+            // event then we will
             ()
         elif _vimBuffer.ModeKind = ModeKind.Disabled || _vimBuffer.ModeKind = ModeKind.ExternalEdit then
             // If the selection changes while Vim is disabled then don't update
@@ -118,4 +127,23 @@ type internal SelectionChangeTracker
             let context = System.Threading.SynchronizationContext.Current
             if context <> null then context.Post( (fun _ -> doUpdate()), null)
             else doUpdate()
+
+[<Export(typeof<IVimBufferCreationListener>)>]
+type internal SelectionChangeTrackerFactory
+    [<ImportingConstructor>]
+    (
+        [<ImportMany>] _selectionOverrideList : IVisualModeSelectionOverride seq
+    ) =
+
+    let _selectionOverrideList = _selectionOverrideList |> List.ofSeq
+
+    interface IVimBufferCreationListener with
+        member x.VimBufferCreated vimBuffer = 
+
+            // It's OK to just ignore this after creation.  It subscribes to several 
+            // event handlers which will keep it alive for the duration of the 
+            // IVimBuffer
+            let selectionTracker = SelectionChangeTracker(vimBuffer, _selectionOverrideList)
+            ()
+
 

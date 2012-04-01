@@ -132,6 +132,7 @@
     <Compile Include="ILegacySettings.cs" />
     <Compile Include="Implementation\ConflictingKeyBindingMargin.cs" />
     <Compile Include="Implementation\ConflictingKeyBindingMarginProvider.cs" />
+    <Compile Include="Implementation\CSharpAdapter.cs" />
     <Compile Include="Implementation\EditorFormatDefinitions.cs" />
     <Compile Include="Implementation\KeyBindingService.cs" />
     <Compile Include="Implementation\MindScape.cs" />

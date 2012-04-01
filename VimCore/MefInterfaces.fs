@@ -362,3 +362,14 @@ type ICommonOperationsFactory =
 
     /// Get the ICommonOperations instance for this IVimBuffer
     abstract GetCommonOperations : IVimBufferData -> ICommonOperations
+
+/// This interface is used to prevent the transition from insert to visual mode
+/// when a selection occurs.  In the majority case a selection of text should result
+/// in a transition to visual mode.  In some cases though, C# event handlers being
+/// the most notable, the best experience is for the buffer to remain in insert 
+/// mode
+type IVisualModeSelectionOverride =
+
+    /// Is insert mode preferred for the current state of the buffer
+    abstract IsInsertModePreferred : textView : ITextView -> bool
+
