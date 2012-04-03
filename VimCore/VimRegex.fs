@@ -231,6 +231,13 @@ module VimRegexFactory =
                     RegexOptions.None
                 else 
                     RegexOptions.Compiled
+
+            let regexOptions = 
+                if data.IncludesNewLine then
+                    regexOptions
+                else
+                    regexOptions ||| RegexOptions.Multiline
+                    
             if data.MatchCase then
                 regexOptions
             else
@@ -260,7 +267,10 @@ module VimRegexFactory =
         | '}' -> if data.IsRangeOpen then data.EndRange() else data.AppendChar '}'
         | '|' -> data.AppendChar '|'
         | '^' -> if data.IsStartOfPattern || data.IsStartOfGrouping then data.AppendChar '^' else data.AppendEscapedChar '^'
-        | '$' -> if data.IsEndOfPattern then data.AppendChar '$' else data.AppendEscapedChar '$'
+        | '$' -> 
+            if data.IsEndOfPattern then 
+                data.AppendString @"\r?$" 
+            else data.AppendEscapedChar '$'
         | '<' -> data.AppendString @"\b"
         | '>' -> data.AppendString @"\b"
         | '[' -> data.BeginGrouping()
