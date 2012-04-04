@@ -1108,5 +1108,13 @@ namespace Vim.UnitTest
             VerifyReplace(@"\n", "hello\r\nworld", " ", "hello world");
             VerifyReplace(@"\n", "hello\rworld", " ", "hello world");
         }
+
+        [Test]
+        public void Newline_DollarSignMatchesEndOfLine()
+        {
+            VerifyMatches(@"foo$", "foo\r\nbar");
+            VerifyMatches(@"foo$", "foo\nbar");
+            VerifyMatches(@"foo$", "foo");
+        }
     }
 }
