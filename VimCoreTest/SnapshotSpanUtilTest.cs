@@ -181,14 +181,18 @@ namespace Vim.UnitTest
             Assert.AreEqual(0, endLine.LineNumber);
         }
 
+        /// <summary>
+        /// When the last line is empty it is indistinguishable from including the line
+        /// above.  In the majority of cases you don't want the last line to be the empty
+        /// one.  Those few places can special case the movement
+        /// </summary>
         [Test]
-        [Description("0 length end of buffer line")]
         public void GetLastLine4()
         {
             Create("a", "");
             var span = new SnapshotSpan(_buffer.CurrentSnapshot, 0, _buffer.CurrentSnapshot.Length);
             var endLine = SnapshotSpanUtil.GetLastLine(span);
-            Assert.AreEqual(1, endLine.LineNumber);
+            Assert.AreEqual(0, endLine.LineNumber);
         }
 
         [Test]

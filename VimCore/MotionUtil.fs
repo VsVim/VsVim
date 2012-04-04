@@ -1909,10 +1909,21 @@ type internal MotionUtil
             if x.CaretLine.LineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot then
                 None
             else
-                let endLine = SnapshotUtil.GetLineOrLast x.CurrentSnapshot (x.CaretLine.LineNumber + count)
-                let span = SnapshotSpan(x.CaretLine.Start, endLine.EndIncludingLineBreak)
+                let snapshot = x.CurrentSnapshot
+                let lineCount = snapshot.LineCount 
+                let lineNumber = x.CaretLine.LineNumber + count
+                let lastLine = SnapshotUtil.GetLineOrLast snapshot lineNumber
+                let flags = 
+                    let flags = MotionResultFlags.MaintainCaretColumn
+                    if lastLine.LineNumber + 1 = lineCount then
+                        // Make sure to note we wanted to include the last line if it's 
+                        // empty
+                        MotionResultFlags.IncludeEmptyLastLine ||| flags
+                    else
+                        flags
+                let span = SnapshotSpan(x.CaretLine.Start, lastLine.EndIncludingLineBreak)
                 let column = x.CaretPoint |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
-                MotionResult.CreateEx span true (MotionKind.LineWise column) MotionResultFlags.MaintainCaretColumn |> Some)
+                MotionResult.CreateEx span true (MotionKind.LineWise column) flags |> Some)
 
     /// Implements the 'gg' motion.  
     ///

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Projection;
@@ -7,8 +8,6 @@ using NUnit.Framework;
 using Vim.Extensions;
 using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
-using EditorUtils;
-using EditorUtils.UnitTest;
 
 namespace Vim.UnitTest
 {
@@ -273,6 +272,39 @@ namespace Vim.UnitTest
                 Create("cat", "    ", "  dog");
                 _vimBuffer.Process("w");
                 Assert.AreEqual(_textBuffer.GetLine(2).Start.Add(2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// When the last line in the buffer is empty make sure that we can move down to the 
+            /// second to last line. 
+            /// </summary>
+            [Test]
+            public void DownToLastLineBeforeEmpty()
+            {
+                Create("a", "b", "");
+                _vimBuffer.Process("j");
+                Assert.AreEqual(1, _textView.GetCaretLine().LineNumber);
+                Assert.AreEqual('b', _textView.GetCaretPoint().GetChar());
+            }
+
+            /// <summary>
+            /// Make sure we can move to the empty last line with the 'j' command
+            /// </summary>
+            [Test]
+            public void DownToEmptyLastLine()
+            {
+                Create("a", "b", "");
+                _vimBuffer.Process("jj");
+                Assert.AreEqual(2, _textView.GetCaretLine().LineNumber);
+            }
+
+            [Test]
+            public void UpFromEmptyLastLine()
+            {
+                Create("a", "b", "");
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.Process("kk");
+                Assert.AreEqual(0, _textView.GetCaretLine().LineNumber);
             }
         }
 

@@ -430,6 +430,12 @@ type MotionResultFlags =
     /// setting.
     | MaintainCaretColumn = 0x4
 
+    /// This flag is needed to disambiguate the cases which come up when there
+    /// is an empty last line in the buffer.  When that happens it's ambiguous 
+    /// if a line wise motion meant to include the last line or merely just 
+    /// the line above.  The End is the same in both cases.
+    | IncludeEmptyLastLine = 0x8
+
 /// Information about the type of the motion this was.
 [<RequireQualifiedAccess>]
 type MotionKind =
@@ -500,7 +506,13 @@ type MotionResult = {
     /// The Start or Last line depending on whether tho motion is forward or not
     member x.DirectionLastLine = 
         if x.IsForward then
-            SnapshotSpanUtil.GetLastLine x.Span
+            // Need to handle the empty last line case here.  If the flag to include
+            // the empty last line is set and we are at the empty line then it gets
+            // included as the last line
+            if SnapshotPointUtil.IsEndPoint x.Span.End && Util.IsFlagSet x.MotionResultFlags MotionResultFlags.IncludeEmptyLastLine then
+                SnapshotPointUtil.GetContainingLine x.Span.End
+            else
+                SnapshotSpanUtil.GetLastLine x.Span
         else
             SnapshotSpanUtil.GetStartLine x.Span
 

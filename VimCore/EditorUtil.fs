@@ -52,6 +52,12 @@ module SnapshotUtil =
         let length = tss.Length
         span.Start < tss.Length && span.End <= tss.Length
 
+    /// Is the last line in the ITextSnapshot empty
+    let IsLastLineEmpty (snapshot : ITextSnapshot) = 
+        let endPoint = GetEndPoint snapshot
+        let line = endPoint.GetContainingLine()
+        line.Length = 0
+
     /// Get a valid line for the specified number if it's valid and the last line if it's
     /// not
     let GetLineOrLast tss lineNumber =

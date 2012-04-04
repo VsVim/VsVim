@@ -872,17 +872,36 @@ namespace Vim.UnitTest
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
 
+        /// <summary>
+        /// Make sure we move to the empty last line if the flag is specified
+        /// </summary>
         [Test]
-        [Description("Motion to empty last line")]
-        public void MoveCaretToMotionResult7()
+        public void MoveCaretToMotionResult_EmptyLastLine()
         {
             Create("foo", "bar", "");
             var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, _textBuffer.CurrentSnapshot.Length),
                 true,
-                MotionKind.NewLineWise(CaretColumn.None));
+                MotionKind.NewLineWise(CaretColumn.None),
+                MotionResultFlags.IncludeEmptyLastLine);
             _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(2, _textView.GetCaretPoint().GetContainingLine().LineNumber);
+        }
+
+        /// <summary>
+        /// Don't move to the empty last line if it's not specified
+        /// </summary>
+        [Test]
+        public void MoveCaretToMotionResult_IgnoreEmptyLastLine()
+        {
+            Create("foo", "bar", "");
+            var data = VimUtil.CreateMotionResult(
+                new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, _textBuffer.CurrentSnapshot.Length),
+                true,
+                MotionKind.NewLineWise(CaretColumn.None),
+                MotionResultFlags.None);
+            _operations.MoveCaretToMotionResult(data);
+            Assert.AreEqual(1, _textView.GetCaretPoint().GetContainingLine().LineNumber);
         }
 
         [Test]
