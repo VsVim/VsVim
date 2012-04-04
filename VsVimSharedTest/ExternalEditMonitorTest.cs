@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Threading;
+using EditorUtils;
 using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -50,6 +50,7 @@ namespace VsVim.UnitTest
             _adapter = _factory.Create<IExternalEditAdapter>(MockBehavior.Strict);
             _adapter.Setup(x => x.IsExternalEditTag(It.IsAny<ITag>())).Returns(false);
             _adapter.Setup(x => x.IsExternalEditMarker(It.IsAny<IVsTextLineMarker>())).Returns(false);
+            var adapterList = new List<IExternalEditAdapter> { _adapter.Object };
 
             Result<IVsTextLines> textLines = Result.Error;
             if (hasTextLines)
@@ -59,22 +60,20 @@ namespace VsVim.UnitTest
                 textLines = Result.CreateSuccess(_vsTextLines.Object);
             }
 
-            Result<ITagger<ITag>> tagger = Result.Error;
+            var taggerList = new List<ITagger<ITag>>();
             if (hasTagger)
             {
                 _tagger = _factory.Create<ITagger<ITag>>(MockBehavior.Loose);
                 _tagger.Setup(x => x.GetTags(It.IsAny<NormalizedSnapshotSpanCollection>())).Returns(new List<ITagSpan<ITag>>());
-                tagger = Result.CreateSuccess(_tagger.Object);
+                taggerList.Add(_tagger.Object);
             }
 
-            var list = new List<IExternalEditAdapter> { _adapter.Object };
-            var adapters = new ReadOnlyCollection<IExternalEditAdapter>(list);
             _monitor = new ExternalEditMonitor(
                 _buffer,
                 ProtectedOperations,
                 textLines,
-                tagger,
-                adapters);
+                taggerList.ToReadOnlyCollectionShallow(),
+                adapterList.ToReadOnlyCollectionShallow());
         }
 
         [TearDown]

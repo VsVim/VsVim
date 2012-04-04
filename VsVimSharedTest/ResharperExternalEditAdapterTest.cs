@@ -27,10 +27,13 @@ namespace VsVim.UnitTest
         {
             _textBuffer = CreateTextBuffer(lines);
             _factory = new MockRepository(MockBehavior.Strict);
-            _adapterRaw = new ResharperExternalEditAdapter();
+            _adapterRaw = new ResharperExternalEditAdapter(true);
             _adapter = _adapterRaw;
         }
 
+        /// <summary>
+        /// Ensure that the R# adapter doesn't pick up on IVsTextMarker instances
+        /// </summary>
         [Test]
         public void IsExternalEditMarker_None()
         {
@@ -39,7 +42,7 @@ namespace VsVim.UnitTest
             {
                 var span = _textBuffer.GetLineRange(0).Extent.ToTextSpan();
                 var marker = MockObjectFactory.CreateVsTextLineMarker(span, i, _factory);
-                Assert.IsFalse(_adapterRaw.IsExternalEditMarker(marker.Object));
+                Assert.IsFalse(_adapter.IsExternalEditMarker(marker.Object));
             }
         }
 

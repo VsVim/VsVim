@@ -23,7 +23,7 @@ namespace VsVim.UnitTest
         private IVim _vim;
         private ITextView _textView;
         private Mock<IVsAdapter> _vsAdapter;
-        private Mock<IExternalEditorManager> _externalEditorManager;
+        private Mock<IResharperUtil> _resharperUtil;
         private Mock<IOleCommandTarget> _nextTarget;
         private Mock<IDisplayWindowBroker> _broker;
         private VsCommandTarget _targetRaw;
@@ -39,8 +39,8 @@ namespace VsVim.UnitTest
             _factory = new MockRepository(MockBehavior.Strict);
 
             // By default Resharper isn't loaded
-            _externalEditorManager = _factory.Create<IExternalEditorManager>();
-            _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(false);
+            _resharperUtil = _factory.Create<IResharperUtil>();
+            _resharperUtil.SetupGet(x => x.IsInstalled).Returns(false);
 
             _nextTarget = _factory.Create<IOleCommandTarget>(MockBehavior.Strict);
             _vsAdapter = _factory.Create<IVsAdapter>();
@@ -59,7 +59,7 @@ namespace VsVim.UnitTest
                 vsTextView.Object,
                 _vsAdapter.Object,
                 _broker.Object,
-                _externalEditorManager.Object);
+                _resharperUtil.Object);
             Assert.IsTrue(result.IsSuccess);
             _targetRaw = result.Value;
             _target = _targetRaw;
@@ -195,7 +195,7 @@ namespace VsVim.UnitTest
             var count = 0;
             _buffer.KeyInputProcessed += delegate { count++; };
             _buffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
-            _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(true).Verifiable();
+            _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
             RunQueryStatus(KeyInputUtil.EscapeKey);
             Assert.AreEqual(0, count);
             _factory.Verify();
@@ -212,7 +212,7 @@ namespace VsVim.UnitTest
             var count = 0;
             _buffer.KeyInputProcessed += delegate { count++; };
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-            _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(true).Verifiable();
+            _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
             Assert.IsTrue(RunQueryStatus(KeyInputUtil.EscapeKey));
             Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsSome(KeyInputUtil.EscapeKey));
             Assert.AreEqual(1, count);
@@ -231,7 +231,7 @@ namespace VsVim.UnitTest
             var count = 0;
             _buffer.KeyInputProcessed += delegate { count++; };
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(true).Verifiable();
+            _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
             Assert.IsTrue(_buffer.CanProcessAsCommand(backKeyInput));
             Assert.IsFalse(RunQueryStatus(backKeyInput));
             Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsSome(backKeyInput));
@@ -251,7 +251,7 @@ namespace VsVim.UnitTest
             var count = 0;
             _buffer.KeyInputProcessed += delegate { count++; };
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-            _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(true).Verifiable();
+            _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
             Assert.IsTrue(_buffer.CanProcessAsCommand(backKeyInput));
             Assert.IsTrue(RunQueryStatus(backKeyInput));
             Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsNone());
@@ -269,7 +269,7 @@ namespace VsVim.UnitTest
             var count = 0;
             _buffer.KeyInputProcessed += delegate { count++; };
             _buffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
-            _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(true).Verifiable();
+            _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
             Assert.IsTrue(RunQueryStatus(KeyInputUtil.EscapeKey));
             Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsSome(KeyInputUtil.EscapeKey));
             Assert.AreEqual(1, count);
@@ -285,7 +285,7 @@ namespace VsVim.UnitTest
             var count = 0;
             _buffer.KeyInputProcessed += delegate { count++; };
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(true).Verifiable();
+            _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
             Assert.IsTrue(RunQueryStatus(KeyInputUtil.VimKeyToKeyInput(VimKey.PageUp)));
             Assert.AreEqual(0, count);
             _factory.Verify();
@@ -302,7 +302,7 @@ namespace VsVim.UnitTest
         {
             _textView.SetText("cat", "dog");
             _textView.MoveCaretTo(0);
-            _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(true).Verifiable();
+            _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             Assert.IsTrue(_buffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
             Assert.IsFalse(RunQueryStatus(KeyInputUtil.EnterKey));
@@ -322,7 +322,7 @@ namespace VsVim.UnitTest
             _textView.SetText("cat", "dog");
             _textView.MoveCaretTo(0);
             var savedSnapshot = _textView.TextSnapshot;
-            _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(true).Verifiable();
+            _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             Assert.IsTrue(_buffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
             Assert.IsTrue(RunQueryStatus(KeyInputUtil.EnterKey));

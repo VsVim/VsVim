@@ -391,7 +391,7 @@ namespace VsVim.UnitTest.Utils
         private readonly MockRepository _factory;
         private readonly Mock<IVsAdapter> _vsAdapter;
         private readonly Mock<IDisplayWindowBroker> _displayWindowBroker;
-        private readonly Mock<IExternalEditorManager> _externalEditorManager;
+        private readonly Mock<IResharperUtil> _resharperUtil;
         private readonly TestableSynchronizationContext _testableSynchronizationContext;
         private bool _simulateStandardKeyMappings;
 
@@ -421,8 +421,8 @@ namespace VsVim.UnitTest.Utils
             _vsAdapter.Setup(x => x.IsReadOnly(It.IsAny<ITextBuffer>())).Returns(false);
             _vsAdapter.Setup(x => x.IsIncrementalSearchActive(_wpfTextView)).Returns(false);
 
-            _externalEditorManager = _factory.Create<IExternalEditorManager>();
-            _externalEditorManager.SetupGet(x => x.IsResharperInstalled).Returns(simulateResharper);
+            _resharperUtil = _factory.Create<IResharperUtil>();
+            _resharperUtil.SetupGet(x => x.IsInstalled).Returns(simulateResharper);
 
             _displayWindowBroker = _factory.Create<IDisplayWindowBroker>();
             _displayWindowBroker.SetupGet(x => x.IsCompletionActive).Returns(false);
@@ -449,7 +449,7 @@ namespace VsVim.UnitTest.Utils
                 vsTextView.Object,
                 _vsAdapter.Object,
                 _displayWindowBroker.Object,
-                _externalEditorManager.Object).Value;
+                _resharperUtil.Object).Value;
 
             // Time to setup the start command target.  If we are simulating R# then put them ahead of VsVim
             // on the IOleCommandTarget chain.  VsVim doesn't try to fight R# and prefers instead to be 

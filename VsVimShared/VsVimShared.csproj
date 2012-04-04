@@ -128,11 +128,11 @@
     <Compile Include="ExternalEdit\ResharperExternalEditAdapter.cs" />
     <Compile Include="ExternalEdit\SnippetExternalEditAdapter.cs" />
     <Compile Include="HostFactory.cs" />
-    <Compile Include="IExternalEditorManager.cs" />
     <Compile Include="IKeyBindingService.cs" />
     <Compile Include="ILegacySettings.cs" />
     <Compile Include="Implementation\ConflictingKeyBindingMargin.cs" />
     <Compile Include="Implementation\ConflictingKeyBindingMarginProvider.cs" />
+    <Compile Include="Implementation\CSharpAdapter.cs" />
     <Compile Include="Implementation\EditorFormatDefinitions.cs" />
     <Compile Include="Implementation\KeyBindingService.cs" />
     <Compile Include="Implementation\MindScape.cs" />
@@ -143,6 +143,7 @@
     <Compile Include="Implementation\VsAdapter.cs" />
     <Compile Include="Implementation\VsKeyProcessorProvider.cs" />
     <Compile Include="IOptionsDialogService.cs" />
+    <Compile Include="IResharperUtil.cs" />
     <Compile Include="ITextManager.cs" />
     <Compile Include="IVimBufferCoordinator.cs" />
     <Compile Include="KeyBinding.cs" />

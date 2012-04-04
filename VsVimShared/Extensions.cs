@@ -566,6 +566,14 @@ namespace VsVim
         }
 
         /// <summary>
+        /// Does this IContentType represent C#
+        /// </summary>
+        public static bool IsCSharp(this IContentType ct)
+        {
+            return ct.IsOfType(Constants.CSharpContentType);
+        }
+
+        /// <summary>
         /// Is this IContentType of any of the specified types
         /// </summary>
         public static bool IsOfAnyType(this IContentType contentType, IEnumerable<string> types)

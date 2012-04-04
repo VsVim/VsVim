@@ -1,8 +1,11 @@
-﻿using Microsoft.VisualStudio.Text.Tagging;
+﻿using System.ComponentModel.Composition;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 
 namespace VsVim.ExternalEdit
 {
+    [Export(typeof(IExternalEditAdapter))]
     internal sealed class SnippetExternalEditAdapter : IExternalEditAdapter
     {
         public bool IsExternalEditMarker(IVsTextLineMarker marker)
@@ -32,16 +35,31 @@ namespace VsVim.ExternalEdit
                     return true;
                 case 25:
                     // Kind currently unknown.  
+                    // Used at least for brace matching
                     return false;
                 default:
                     return false;
             }
         }
 
+        #region IExternalEditAdapter
 
-        public bool IsExternalEditTag(ITag tag)
+        bool IExternalEditAdapter.IsInterested(ITextView textView, out ITagger<ITag> tagger)
+        {
+            tagger = null;
+            return true;
+        }
+
+        bool IExternalEditAdapter.IsExternalEditMarker(IVsTextLineMarker marker)
+        {
+            return IsExternalEditMarker(marker);
+        }
+
+        bool IExternalEditAdapter.IsExternalEditTag(ITag tag)
         {
             return false;
         }
+
+        #endregion
     }
 }

@@ -1,118 +1,61 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Text;
+using System.Linq;
+using EditorUtils;
 using Microsoft.VisualStudio.Text.Tagging;
 using Vim;
 using Vim.UI.Wpf;
 
 namespace VsVim.ExternalEdit
 {
-    [Export(typeof(IExternalEditorManager))]
     [Export(typeof(IVimBufferCreationListener))]
-    internal sealed class ExternalEditorManager : IExternalEditorManager, IVimBufferCreationListener
+    internal sealed class ExternalEditorManager : IVimBufferCreationListener
     {
-        private static readonly Guid Resharper5Guid = new Guid("0C6E6407-13FC-4878-869A-C8B4016C57FE");
-        private static readonly string ResharperTaggerName = "VsDocumentMarkupTaggerProvider";
-
         private readonly IProtectedOperations _protectedOperations;
         private readonly IVsAdapter _vsAdapter;
-        private readonly IVsShell _vsShell;
         private readonly List<IExternalEditAdapter> _adapterList = new List<IExternalEditAdapter>();
         private readonly Dictionary<IVimBuffer, ExternalEditMonitor> _monitorMap = new Dictionary<IVimBuffer, ExternalEditMonitor>();
-        private readonly bool _isResharperInstalled;
-
-        /// <summary>
-        /// Need to have an Import on a property vs. a constructor parameter to break a dependency
-        /// loop.
-        /// </summary>
-        [ImportMany(typeof(ITaggerProvider))]
-        internal List<Lazy<ITaggerProvider>> TaggerProviders { get; set; }
-
-        /// <summary>
-        /// Is R# installed
-        /// </summary>
-        public bool IsResharperInstalled
-        {
-            get { return _isResharperInstalled; }
-        }
 
         [ImportingConstructor]
-        internal ExternalEditorManager(SVsServiceProvider serviceProvider, IVsAdapter vsAdapter, IProtectedOperations protectedOperations)
+        internal ExternalEditorManager(
+            IVsAdapter vsAdapter, 
+            IProtectedOperations protectedOperations,
+            [ImportMany] IEnumerable<IExternalEditAdapter> adapters)
         {
             _vsAdapter = vsAdapter;
             _protectedOperations = protectedOperations;
-            _vsShell = serviceProvider.GetService<SVsShell, IVsShell>();
-            _adapterList.Add(new SnippetExternalEditAdapter());
-            _isResharperInstalled = CheckResharperInstalled();
-            if (_isResharperInstalled)
-            {
-                _adapterList.Add(new ResharperExternalEditAdapter());
-            }
+            _adapterList = adapters.ToList();
         }
 
-        public void VimBufferCreated(IVimBuffer buffer)
+        public void VimBufferCreated(IVimBuffer vimBuffer)
         {
-            Result<ITagger<ITag>> tagger = Result.Error;
-            if (IsResharperInstalled)
+            var taggerList = new List<ITagger<ITag>>();
+            var bufferAdapterList = new List<IExternalEditAdapter>();
+            var textView = vimBuffer.TextView;
+
+            foreach (var adapter in _adapterList)
             {
-                tagger = GetResharperTagger(buffer.TextBuffer);
-            }
-
-            _monitorMap[buffer] = new ExternalEditMonitor(
-                buffer,
-                _protectedOperations,
-                _vsAdapter.GetTextLines(buffer.TextBuffer),
-                tagger,
-                new ReadOnlyCollection<IExternalEditAdapter>(_adapterList));
-            buffer.Closed += delegate { _monitorMap.Remove(buffer); };
-        }
-
-        /// <summary>
-        /// Get the R# tagger for the ITextBuffer if it exists
-        /// </summary>
-        private Result<ITagger<ITag>> GetResharperTagger(ITextBuffer textBuffer)
-        {
-            Contract.Assert(IsResharperInstalled);
-
-            // This is available as a post construction MEF import so it's very possible
-            // that this is null if it's not initialized
-            if (TaggerProviders == null)
-            {
-                return Result.Error;
-            }
-
-            // R# exposes it's ITaggerProvider instances for the "text" content type.  As much as
-            // I would like to query to make sure they always support the content type we don't
-            // have access to the metadata and have to hard code "text" here
-            if (!textBuffer.ContentType.IsOfType("text"))
-            {
-                return Result.Error;
-            }
-
-            foreach (var pair in TaggerProviders)
-            {
-                var provider = pair.Value;
-                var name = provider.GetType().Name;
-                if (name == ResharperTaggerName)
+                ITagger<ITag> tagger;
+                if (adapter.IsInterested(textView, out tagger))
                 {
-                    var tagger = provider.SafeCreateTagger<ITag>(textBuffer);
-                    if (tagger.IsSuccess)
+                    bufferAdapterList.Add(adapter);
+                    if (tagger != null)
                     {
-                        return tagger;
+                        taggerList.Add(tagger);
                     }
                 }
             }
 
-            return Result.Error;
-        }
-
-        private bool CheckResharperInstalled()
-        {
-            return _vsShell.IsPackageInstalled(Resharper5Guid);
+            if (bufferAdapterList.Count > 0)
+            {
+                _monitorMap[vimBuffer] = new ExternalEditMonitor(
+                    vimBuffer,
+                    _protectedOperations,
+                    _vsAdapter.GetTextLines(vimBuffer.TextBuffer),
+                    taggerList.ToReadOnlyCollectionShallow(),
+                    bufferAdapterList.ToReadOnlyCollectionShallow());
+                vimBuffer.Closed += delegate { _monitorMap.Remove(vimBuffer); };
+            }
         }
     }
 }
