@@ -2441,11 +2441,15 @@ type internal CommandUtil
             match _vimTextBuffer.ModeKind |> VisualKind.OfModeKind with
             | None -> badOperation ()
             | Some currentVisualKind -> 
-                let caretPoint = x.CaretPoint
-                let newVisualSelection = VisualSelection.CreateForPoints newVisualKind anchorPoint caretPoint
-                let modeArgument = ModeArgument.InitialVisualSelection (newVisualSelection, Some anchorPoint)
+                if currentVisualKind = newVisualKind then
+                    // Switching to the same mode just goes back to normal
+                    x.SwitchMode ModeKind.Normal ModeArgument.None
+                else
+                    let caretPoint = x.CaretPoint
+                    let newVisualSelection = VisualSelection.CreateForPoints newVisualKind anchorPoint caretPoint
+                    let modeArgument = ModeArgument.InitialVisualSelection (newVisualSelection, Some anchorPoint)
 
-                x.SwitchMode newVisualSelection.ModeKind modeArgument
+                    x.SwitchMode newVisualSelection.ModeKind modeArgument
 
     /// Undo count operations in the ITextBuffer
     member x.Undo count = 
