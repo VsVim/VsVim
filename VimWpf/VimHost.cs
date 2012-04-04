@@ -71,69 +71,20 @@ namespace Vim.UI.Wpf
         /// </summary>
         public void EnsureVisible(ITextView textView, SnapshotPoint point)
         {
-            const double roundOff = 0.01;
-            var textViewLine = textView.GetTextViewLineContainingBufferPosition(point);
-
-            switch (textViewLine.VisibilityState)
+            try
             {
-                case VisibilityState.FullyVisible:
-                    // If the line is fully visible then no scrolling needs to occur
-                    break;
-
-                case VisibilityState.Hidden:
-                case VisibilityState.PartiallyVisible:
-                    {
-                        ViewRelativePosition? pos = null;
-                        if (textViewLine.Height <= textView.ViewportHeight + roundOff)
-                        {
-                            // The line fits into the view.  Figure out if it needs to be at the top 
-                            // or the bottom
-                            pos = textViewLine.Top < textView.ViewportTop
-                                ? ViewRelativePosition.Top
-                                : ViewRelativePosition.Bottom;
-                        }
-                        else if (textViewLine.Bottom < textView.ViewportBottom)
-                        {
-                            // Line does not fit into view but we can use more space at the bottom 
-                            // of the view
-                            pos = ViewRelativePosition.Bottom;
-                        }
-                        else if (textViewLine.Top > textView.ViewportTop)
-                        {
-                            pos = ViewRelativePosition.Top;
-                        }
-
-                        if (pos.HasValue)
-                        {
-                            textView.DisplayTextLineContainingBufferPosition(point, 0.0, pos.Value);
-                        }
-                    }
-                    break;
-                case VisibilityState.Unattached:
-                    {
-                        var pos = textViewLine.Start < textView.TextViewLines.FormattedSpan.Start && textViewLine.Height <= textView.ViewportHeight + roundOff
-                                      ? ViewRelativePosition.Top
-                                      : ViewRelativePosition.Bottom;
-                        textView.DisplayTextLineContainingBufferPosition(point, 0.0, pos);
-                    }
-                    break;
+                // Intentionally breaking up these tasks into different steps.  The act of making the 
+                // line visible can actually invalidate the ITextViewLine instance and cause it to 
+                // throw when we access it for making the point visible.  Breaking it into separate
+                // steps so each one has to requery the current and valid information
+                EnsureLineVisible(textView, point);
+                EnsureLinePointVisible(textView, point);
             }
-
-            // Now that the line is visible we need to potentially do some horizontal scrolling
-            // take make sure that it's on screen
-            const double horizontalPadding = 2.0;
-            const double scrollbarPadding = 200.0;
-            var scroll = Math.Max(
-                horizontalPadding,
-                Math.Min(scrollbarPadding, textView.ViewportWidth / 4));
-            var bounds = textViewLine.GetCharacterBounds(point);
-            if (bounds.Left - horizontalPadding < textView.ViewportLeft)
+            catch (Exception)
             {
-                textView.ViewportLeft = bounds.Left - scroll;
-            }
-            else if (bounds.Right + horizontalPadding > textView.ViewportRight)
-            {
-                textView.ViewportLeft = (bounds.Right + scroll) - textView.ViewportWidth;
+                // The ITextViewLine implementation can throw if this code runs in the middle of 
+                // a layout or if the line believes itself to be invalid.  Hard to completely guard
+                // against this
             }
         }
 
@@ -291,6 +242,83 @@ namespace Vim.UI.Wpf
             }
         }
 
+        /// <summary>
+        /// Do the vertical scrolling necessary to make sure the line is visible
+        /// </summary>
+        private void EnsureLineVisible(ITextView textView, SnapshotPoint point)
+        {
+            const double roundOff = 0.01;
+            var textViewLine = textView.GetTextViewLineContainingBufferPosition(point);
+
+            switch (textViewLine.VisibilityState)
+            {
+                case VisibilityState.FullyVisible:
+                    // If the line is fully visible then no scrolling needs to occur
+                    break;
+
+                case VisibilityState.Hidden:
+                case VisibilityState.PartiallyVisible:
+                    {
+                        ViewRelativePosition? pos = null;
+                        if (textViewLine.Height <= textView.ViewportHeight + roundOff)
+                        {
+                            // The line fits into the view.  Figure out if it needs to be at the top 
+                            // or the bottom
+                            pos = textViewLine.Top < textView.ViewportTop
+                                ? ViewRelativePosition.Top
+                                : ViewRelativePosition.Bottom;
+                        }
+                        else if (textViewLine.Bottom < textView.ViewportBottom)
+                        {
+                            // Line does not fit into view but we can use more space at the bottom 
+                            // of the view
+                            pos = ViewRelativePosition.Bottom;
+                        }
+                        else if (textViewLine.Top > textView.ViewportTop)
+                        {
+                            pos = ViewRelativePosition.Top;
+                        }
+
+                        if (pos.HasValue)
+                        {
+                            textView.DisplayTextLineContainingBufferPosition(point, 0.0, pos.Value);
+                        }
+                    }
+                    break;
+                case VisibilityState.Unattached:
+                    {
+                        var pos = textViewLine.Start < textView.TextViewLines.FormattedSpan.Start && textViewLine.Height <= textView.ViewportHeight + roundOff
+                                      ? ViewRelativePosition.Top
+                                      : ViewRelativePosition.Bottom;
+                        textView.DisplayTextLineContainingBufferPosition(point, 0.0, pos);
+                    }
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Do the horizontal scolling necessary to make the column of the given point visible
+        /// </summary>
+        private void EnsureLinePointVisible(ITextView textView, SnapshotPoint point)
+        {
+            var textViewLine = textView.GetTextViewLineContainingBufferPosition(point);
+
+            const double horizontalPadding = 2.0;
+            const double scrollbarPadding = 200.0;
+            var scroll = Math.Max(
+                horizontalPadding,
+                Math.Min(scrollbarPadding, textView.ViewportWidth / 4));
+            var bounds = textViewLine.GetCharacterBounds(point);
+            if (bounds.Left - horizontalPadding < textView.ViewportLeft)
+            {
+                textView.ViewportLeft = bounds.Left - scroll;
+            }
+            else if (bounds.Right + horizontalPadding > textView.ViewportRight)
+            {
+                textView.ViewportLeft = (bounds.Right + scroll) - textView.ViewportWidth;
+            }
+        }
+
         #region IWpfTextViewCreationListener
 
         /// <summary>
@@ -300,13 +328,15 @@ namespace Vim.UI.Wpf
         {
             _textViewList.Add(textView);
 
-            DependencyPropertyChangedEventHandler isVisibleHandler = delegate {
+            DependencyPropertyChangedEventHandler isVisibleHandler = delegate
+            {
                 RaiseIsVisibleChanged(textView);
             };
             textView.VisualElement.IsVisibleChanged += isVisibleHandler;
 
-            textView.Closed += delegate { 
-                _textViewList.Remove(textView); 
+            textView.Closed += delegate
+            {
+                _textViewList.Remove(textView);
                 textView.VisualElement.IsVisibleChanged -= isVisibleHandler;
             };
         }
