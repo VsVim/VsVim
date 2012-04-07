@@ -715,6 +715,17 @@ namespace Vim.UnitTest
                 testMapClear("cmapc", new[] { KeyRemapMode.Command });
             }
 
+            [Test]
+            public void Move_BackOneLine()
+            {
+                Create("fish", "cat", "dog", "tree");
+                _textView.MoveCaretToLine(2);
+                ParseAndRun("move -2");
+                Assert.AreEqual("fish", _textView.GetLine(0).GetText());
+                Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+                Assert.AreEqual("cat", _textView.GetLine(2).GetText());
+                Assert.AreEqual("tree", _textView.GetLine(3).GetText());
+            }
 
             [Test]
             public void PrintCurrentDirectory_Global()

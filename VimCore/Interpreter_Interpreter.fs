@@ -352,8 +352,10 @@ type Interpreter
         x.RunCopyOrMoveTo sourceLineRange destLineRange count "MoveTo" (fun sourceLineRange destLine text ->
             let destPosition = destLine.EndIncludingLineBreak.Position
 
-            _textBuffer.Insert(destPosition, text) |> ignore
-            _textBuffer.Delete(sourceLineRange.ExtentIncludingLineBreak.Span) |> ignore
+            use edit = _textBuffer.CreateEdit()
+            edit.Insert(destPosition, text) |> ignore
+            edit.Delete(sourceLineRange.ExtentIncludingLineBreak.Span) |> ignore
+            edit.Apply() |> ignore
             TextViewUtil.MoveCaretToPosition _textView destLine.End.Position)
 
     /// Clear out the key map for the given modes
