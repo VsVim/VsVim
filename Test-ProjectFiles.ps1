@@ -89,7 +89,7 @@ $script:list11 = $list11 + $listAll
 $script:listTest = @(
     "Microsoft.VisualStudio.Platform.VSEditor=10.0.0.0",
     "Moq=4.0.10827.0",
-    "nunit.framework=2.5.7.10213"
+    "nunit.framework=2.6.0.12051"
 )
 $script:listTest = $listTest + $listAll + $list10
 
