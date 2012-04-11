@@ -1,5 +1,4 @@
 ﻿using System;
-using Microsoft.FSharp.Control;
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -83,6 +82,27 @@ namespace Vim.UI.Wpf.Implementation
             return true;
         }
 
+        /// <summary>
+        /// Move the selection up or down.  If we're at the end of the selection then wrap around to
+        /// the other side of the list
+        /// </summary>
+        private bool MoveWithWrap(bool moveNext)
+        {
+            var originalCompletion = _wordCompletionSet.SelectionStatus != null
+                ? _wordCompletionSet.SelectionStatus.Completion
+                : null;
+            var ret = SendCommand(moveNext ? IntellisenseKeyboardCommand.Down : IntellisenseKeyboardCommand.Up);
+            var currentCompletion = _wordCompletionSet.SelectionStatus != null
+                ? _wordCompletionSet.SelectionStatus.Completion
+                : null;
+            if (originalCompletion != null && currentCompletion == originalCompletion)
+            {
+                ret = SendCommand(moveNext ? IntellisenseKeyboardCommand.TopLine : IntellisenseKeyboardCommand.BottomLine);
+            }
+
+            return ret;
+        }
+
         #region IWordCompletionSession
 
         ITextView IWordCompletionSession.TextView
@@ -109,12 +129,12 @@ namespace Vim.UI.Wpf.Implementation
 
         bool IWordCompletionSession.MoveNext()
         {
-            return SendCommand(IntellisenseKeyboardCommand.Down);
+            return MoveWithWrap(moveNext: true);
         }
 
         bool IWordCompletionSession.MovePrevious()
         {
-            return SendCommand(IntellisenseKeyboardCommand.Up);
+            return MoveWithWrap(moveNext: false);
         }
 
         #endregion
