@@ -31,7 +31,7 @@
     <MefComponent>|VimCore|</MefComponent>
     <MefComponent>|VimWpf|</MefComponent>
     <MefComponent>|EditorUtils|</MefComponent>
-    <MefComponent>|VsVim.Shared|</MefComponent>
-    <MefComponent>|VsVim.Dev10|</MefComponent>
+    <MefComponent>|VsVimShared|</MefComponent>
+    <MefComponent>|VsVimDev10|</MefComponent>
   </Content>
 </Vsix>
