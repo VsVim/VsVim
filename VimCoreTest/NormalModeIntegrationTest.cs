@@ -221,7 +221,7 @@ namespace Vim.UnitTest
             public void SearchForTab()
             {
                 Create("dog", "hello\tworld");
-                _vimBuffer.ProcessNotation(@"/\\t<Enter>");
+                _vimBuffer.ProcessNotation(@"/\t<Enter>");
                 Assert.AreEqual(_textView.GetPointInLine(1, 5), _textView.GetCaretPoint());
             }
 
@@ -441,6 +441,19 @@ namespace Vim.UnitTest
                 Create("{ try", "{", "try");
                 _vimBuffer.Process("*");
                 Assert.AreEqual(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// The _ character is a word character and hence a full word match should be
+            /// done when doing a * search
+            /// </summary>
+            [Test]
+            public void NextWord_UnderscoreIsWord()
+            {
+                Create("last_item", "hello");
+                _assertOnWarningMessage = false;
+                _vimBuffer.Process("*");
+                Assert.AreEqual(PatternUtil.CreateWholeWord("last_item"), _vimData.LastPatternData.Pattern);
             }
 
             /// <summary>

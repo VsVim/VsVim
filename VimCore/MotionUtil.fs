@@ -2270,7 +2270,7 @@ type internal MotionUtil
             // Can only do whole words on actual words.  If it's not an actual word then
             // we revert back to non-whole word match
             let isWholeWord = 
-                let isWord = word |> Seq.forall (fun c -> CharUtil.IsLetter c || CharUtil.IsDigit c)
+                let isWord = word |> Seq.forall (TextUtil.IsWordChar WordKind.NormalWord)
                 isWholeWord && isWord
 
             let pattern = if isWholeWord then PatternUtil.CreateWholeWord word else word
