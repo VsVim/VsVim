@@ -979,6 +979,12 @@ module KeyInputSetUtil =
 
     let OfString (str:string) = str |> Seq.map KeyInputUtil.CharToKeyInput |> OfSeq
 
+    let OfVimKeyArray ([<System.ParamArray>] arr) = 
+        arr 
+        |> Seq.ofArray 
+        |> Seq.map KeyInputUtil.VimKeyToKeyInput
+        |> OfSeq
+
     let Combine (left : KeyInputSet) (right : KeyInputSet) =
         let all = left.KeyInputs @ right.KeyInputs
         OfList all

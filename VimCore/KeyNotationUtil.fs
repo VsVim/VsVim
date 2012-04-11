@@ -101,25 +101,22 @@ module KeyNotationUtil =
         |> Map.ofSeq
 
     /// Break up a string into a set of key notation entries
-    let SplitIntoKeyNotationEntries (data:string) =
+    let SplitIntoKeyNotationEntries (data : string) =
 
-        let rec inner (rest:char list) withData =
+        let rec inner (rest : char list) withData =
 
             // Check and see if a list starts with a given prefix 
-            let rec startsWith prefix target =
-                match ListUtil.tryHead prefix, ListUtil.tryHead target with
-                | Some(prefixHead,prefixTail),Some(targetHead,targetTail) ->
-                    if CharUtil.IsEqualIgnoreCase prefixHead targetHead then startsWith prefixTail targetTail
-                    else false
-                | None,_ -> true
-                | Some(_),None -> false
+            let rec startsWith c = 
+                match rest with
+                | [] -> false
+                | h :: _ -> c =h 
 
             // Just finishes the continuation.  Consider throwing here in the future
             let error() = 
                 let str = rest |> StringUtil.ofCharList
                 withData [str]
 
-            if startsWith ['<'] rest then 
+            if startsWith '<' then
 
                 // When a '<' char there are a couple of possibilities to consider. 
                 //
@@ -164,11 +161,7 @@ module KeyNotationUtil =
             else 
                 match ListUtil.tryHead rest with
                 | None -> withData []
-                | Some ('\\', []) -> withData [@"\"]
-                | Some ('\\', h::t) -> 
-                    let str = h |> StringUtil.ofChar
-                    inner t (fun next -> withData (str :: next))
-                | Some(h,t) -> 
+                | Some (h, t) -> 
                     let str = h |> StringUtil.ofChar
                     inner t (fun next -> withData (str :: next))
 

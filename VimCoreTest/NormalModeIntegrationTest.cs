@@ -306,6 +306,181 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("kk");
                 Assert.AreEqual(0, _textView.GetCaretLine().LineNumber);
             }
+
+            [Test]
+            public void EndOfWord_SeveralLines()
+            {
+                Create("the dog kicked the", "ball. The end. Bear");
+                for (var i = 0; i < 10; i++)
+                {
+                    _vimBuffer.Process("e");
+                }
+                Assert.AreEqual(_textView.GetLine(1).End.Subtract(1), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Trying a move caret left at the start of the line should cause a beep 
+            /// to be produced
+            /// </summary>
+            [Test]
+            public void CharLeftAtStartOfLine()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("h");
+                Assert.AreEqual(1, _vimHost.BeepCount);
+            }
+
+            /// <summary>
+            /// Beep when moving a character right at the end of the line
+            /// </summary>
+            [Test]
+            public void CharRightAtLastOfLine()
+            {
+                Create("cat", "dog");
+                _globalSettings.VirtualEdit = String.Empty;  // Ensure not 'OneMore'
+                _textView.MoveCaretTo(2);
+                _vimBuffer.Process("l");
+                Assert.AreEqual(1, _vimHost.BeepCount);
+                Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Succeed in moving when the 'onemore' option is set 
+            /// </summary>
+            [Test]
+            public void CharRightAtLastOfLineWithOneMore()
+            {
+                Create("cat", "dog");
+                _globalSettings.VirtualEdit = "onemore";
+                _textView.MoveCaretTo(2);
+                _vimBuffer.Process("l");
+                Assert.AreEqual(0, _vimHost.BeepCount);
+                Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Fail at moving one more right when in the end 
+            /// </summary>
+            [Test]
+            public void CharRightAtEndOfLine()
+            {
+                Create("cat", "dog");
+                _globalSettings.VirtualEdit = "onemore";
+                _textView.MoveCaretTo(3);
+                _vimBuffer.Process("l");
+                Assert.AreEqual(1, _vimHost.BeepCount);
+                Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// This should beep 
+            /// </summary>
+            [Test]
+            public void UpFromFirstLine()
+            {
+                Create("cat");
+                _vimBuffer.Process("k");
+                Assert.AreEqual(1, _vimHost.BeepCount);
+                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// This should beep
+            /// </summary>
+            [Test]
+            public void DownFromLastLine()
+            {
+                Create("cat");
+                _vimBuffer.Process("j");
+                Assert.AreEqual(1, _vimHost.BeepCount);
+                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// The '*' movement should update the search history for the buffer
+            /// </summary>
+            [Test]
+            public void NextWord()
+            {
+                Create("cat", "dog", "cat");
+                _vimBuffer.Process("*");
+                Assert.AreEqual(PatternUtil.CreateWholeWord("cat"), _vimData.SearchHistory.Items.Head);
+            }
+
+            /// <summary>
+            /// The'*' motion should work for non-words as well as words.  When dealing with non-words
+            /// the whole word portion is not considered
+            /// </summary>
+            [Test]
+            public void NextWord_NonWord()
+            {
+                Create("{", "cat", "{", "dog");
+                _vimBuffer.Process('*');
+                Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// The '*' motion should process multiple characters and properly match them
+            /// </summary>
+            [Test]
+            public void NextWord_BigNonWord()
+            {
+                Create("{{", "cat{", "{{{{", "dog");
+                _vimBuffer.Process('*');
+                Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// If the caret is positioned an a non-word character but there is a word 
+            /// later on the line then the '*' should target that word
+            /// </summary>
+            [Test]
+            public void NextWord_JumpToWord()
+            {
+                Create("{ try", "{", "try");
+                _vimBuffer.Process("*");
+                Assert.AreEqual(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// If the caret is positioned an a non-word character but there is a word 
+            /// later on the line then the 'g*' should target that word
+            /// </summary>
+            [Test]
+            public void NextPartialWord_JumpToWord()
+            {
+                Create("{ try", "{", "trying");
+                _vimBuffer.Process("g*");
+                Assert.AreEqual(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// When moving a line down over a fold it should not be expanded and the entire fold
+            /// should count as a single line
+            /// </summary>
+            [Test]
+            public void LineDown_OverFold()
+            {
+                Create("cat", "dog", "tree", "fish");
+                var range = _textView.GetLineRange(1, 2);
+                _foldManager.CreateFold(range);
+                _vimBuffer.Process('j');
+                Assert.AreEqual(1, _textView.GetCaretLine().LineNumber);
+                _vimBuffer.Process('j');
+                Assert.AreEqual(3, _textView.GetCaretLine().LineNumber);
+            }
+
+            /// <summary>
+            /// The 'g*' movement should update the search history for the buffer
+            /// </summary>
+            [Test]
+            public void NextPartialWordUnderCursor()
+            {
+                Create("cat", "dog", "cat");
+                _vimBuffer.Process("g*");
+                Assert.AreEqual("cat", _vimData.SearchHistory.Items.Head);
+            }
         }
 
         [TestFixture]
@@ -625,6 +800,93 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("y2y");
                 Assert.AreEqual("cat" + Environment.NewLine + "dog" + Environment.NewLine, UnnamedRegister.StringValue);
                 Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
+            }
+        }
+
+        [TestFixture]
+        public sealed class Map : NormalModeIntegrationTest
+        {
+            [Test]
+            public void ToCharDoesNotUseMap()
+            {
+                Create("bear; again: dog");
+                _vimBuffer.Process(":map ; :", enter: true);
+                _vimBuffer.Process("dt;");
+                Assert.AreEqual("; again: dog", _textView.GetLine(0).GetText());
+            }
+
+            [Test]
+            public void AlphaToRightMotion()
+            {
+                Create("dog");
+                _vimBuffer.Process(":map a l", enter: true);
+                _vimBuffer.Process("aa");
+                Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+            }
+
+            [Test]
+            public void OperatorPendingWithAmbiguousCommandPrefix()
+            {
+                Create("dog chases the ball");
+                _vimBuffer.Process(":map a w", enter: true);
+                _vimBuffer.Process("da");
+                Assert.AreEqual("chases the ball", _textView.GetLine(0).GetText());
+            }
+
+            [Test]
+            public void ReplaceDoesntUseNormalMap()
+            {
+                Create("dog");
+                _vimBuffer.Process(":map f g", enter: true);
+                _vimBuffer.Process("rf");
+                Assert.AreEqual("fog", _textView.GetLine(0).GetText());
+            }
+
+            [Test]
+            public void IncrementalSearchUsesCommandMap()
+            {
+                Create("dog");
+                _vimBuffer.Process(":cmap a o", enter: true);
+                _vimBuffer.Process("/a", enter: true);
+                Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+            }
+
+            [Test]
+            public void ReverseIncrementalSearchUsesCommandMap()
+            {
+                Create("dog");
+                _textView.MoveCaretTo(_textView.TextSnapshot.GetEndPoint());
+                _vimBuffer.Process(":cmap a o", enter: true);
+                _vimBuffer.Process("?a", enter: true);
+                Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Ensure that we don't regress issue 522 which is a recursive key mapping problem
+            /// </summary>
+            [Test]
+            public void Issue522()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process(":map j 3j", enter: true);
+                _vimBuffer.Process(":ounmap j", enter: true);
+                _vimBuffer.Process(":map k 3k", enter: true);
+                _vimBuffer.Process(":ounmap k", enter: true);
+                _vimBuffer.Process("k");
+                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// By default the '\' isn't special in mappings
+            /// </summary>
+            [Test]
+            public void BackslashIsntSpecial()
+            {
+                Create("");
+                _vimBuffer.Process(@":map / /\v", enter: true);
+                _vimBuffer.Process("/");
+                Assert.AreEqual(@"/\v", _vimBuffer.NormalMode.Command);
             }
         }
 
@@ -1885,155 +2147,6 @@ namespace Vim.UnitTest
                 Assert.AreEqual("ar tree", _textView.GetLine(0).GetText());
             }
 
-            [Test]
-            public void Map_ToCharDoesNotUseMap()
-            {
-                Create("bear; again: dog");
-                _vimBuffer.Process(":map ; :", enter: true);
-                _vimBuffer.Process("dt;");
-                Assert.AreEqual("; again: dog", _textView.GetLine(0).GetText());
-            }
-
-            [Test]
-            public void Map_AlphaToRightMotion()
-            {
-                Create("dog");
-                _vimBuffer.Process(":map a l", enter: true);
-                _vimBuffer.Process("aa");
-                Assert.AreEqual(2, _textView.GetCaretPoint().Position);
-            }
-
-            [Test]
-            public void Map_OperatorPendingWithAmbiguousCommandPrefix()
-            {
-                Create("dog chases the ball");
-                _vimBuffer.Process(":map a w", enter: true);
-                _vimBuffer.Process("da");
-                Assert.AreEqual("chases the ball", _textView.GetLine(0).GetText());
-            }
-
-            [Test]
-            public void Map_ReplaceDoesntUseNormalMap()
-            {
-                Create("dog");
-                _vimBuffer.Process(":map f g", enter: true);
-                _vimBuffer.Process("rf");
-                Assert.AreEqual("fog", _textView.GetLine(0).GetText());
-            }
-
-            [Test]
-            public void Map_IncrementalSearchUsesCommandMap()
-            {
-                Create("dog");
-                _vimBuffer.Process(":cmap a o", enter: true);
-                _vimBuffer.Process("/a", enter: true);
-                Assert.AreEqual(1, _textView.GetCaretPoint().Position);
-            }
-
-            [Test]
-            public void Map_ReverseIncrementalSearchUsesCommandMap()
-            {
-                Create("dog");
-                _textView.MoveCaretTo(_textView.TextSnapshot.GetEndPoint());
-                _vimBuffer.Process(":cmap a o", enter: true);
-                _vimBuffer.Process("?a", enter: true);
-                Assert.AreEqual(1, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// Ensure that we don't regress issue 522 which is a recursive key mapping problem
-            /// </summary>
-            [Test]
-            public void Map_Issue522()
-            {
-                Create("cat", "dog");
-                _textView.MoveCaretToLine(1);
-                _vimBuffer.Process(":map j 3j", enter: true);
-                _vimBuffer.Process(":ounmap j", enter: true);
-                _vimBuffer.Process(":map k 3k", enter: true);
-                _vimBuffer.Process(":ounmap k", enter: true);
-                _vimBuffer.Process("k");
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-            }
-
-            [Test]
-            public void Move_EndOfWord_SeveralLines()
-            {
-                Create("the dog kicked the", "ball. The end. Bear");
-                for (var i = 0; i < 10; i++)
-                {
-                    _vimBuffer.Process("e");
-                }
-                Assert.AreEqual(_textView.GetLine(1).End.Subtract(1), _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// Trying a move caret left at the start of the line should cause a beep 
-            /// to be produced
-            /// </summary>
-            [Test]
-            public void Move_CharLeftAtStartOfLine()
-            {
-                Create("cat", "dog");
-                _textView.MoveCaretToLine(1);
-                _vimBuffer.Process("h");
-                Assert.AreEqual(1, _vimHost.BeepCount);
-            }
-
-            /// <summary>
-            /// Beep when moving a character right at the end of the line
-            /// </summary>
-            [Test]
-            public void Move_CharRightAtLastOfLine()
-            {
-                Create("cat", "dog");
-                _globalSettings.VirtualEdit = String.Empty;  // Ensure not 'OneMore'
-                _textView.MoveCaretTo(2);
-                _vimBuffer.Process("l");
-                Assert.AreEqual(1, _vimHost.BeepCount);
-                Assert.AreEqual(2, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// Succeed in moving when the 'onemore' option is set 
-            /// </summary>
-            [Test]
-            public void Move_CharRightAtLastOfLineWithOneMore()
-            {
-                Create("cat", "dog");
-                _globalSettings.VirtualEdit = "onemore";
-                _textView.MoveCaretTo(2);
-                _vimBuffer.Process("l");
-                Assert.AreEqual(0, _vimHost.BeepCount);
-                Assert.AreEqual(3, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// Fail at moving one more right when in the end 
-            /// </summary>
-            [Test]
-            public void Move_CharRightAtEndOfLine()
-            {
-                Create("cat", "dog");
-                _globalSettings.VirtualEdit = "onemore";
-                _textView.MoveCaretTo(3);
-                _vimBuffer.Process("l");
-                Assert.AreEqual(1, _vimHost.BeepCount);
-                Assert.AreEqual(3, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// This should beep 
-            /// </summary>
-            [Test]
-            public void Move_UpFromFirstLine()
-            {
-                Create("cat");
-                _vimBuffer.Process("k");
-                Assert.AreEqual(1, _vimHost.BeepCount);
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-            }
-
             /// <summary>
             /// Simple yank of a () block 
             /// </summary>
@@ -2070,102 +2183,6 @@ namespace Vim.UnitTest
                 Assert.AreEqual("dog", UnnamedRegister.StringValue);
             }
 
-            /// <summary>
-            /// This should beep
-            /// </summary>
-            [Test]
-            public void Move_DownFromLastLine()
-            {
-                Create("cat");
-                _vimBuffer.Process("j");
-                Assert.AreEqual(1, _vimHost.BeepCount);
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// The '*' movement should update the search history for the buffer
-            /// </summary>
-            [Test]
-            public void Move_NextWord()
-            {
-                Create("cat", "dog", "cat");
-                _vimBuffer.Process("*");
-                Assert.AreEqual(PatternUtil.CreateWholeWord("cat"), _vimData.SearchHistory.Items.Head);
-            }
-
-            /// <summary>
-            /// The'*' motion should work for non-words as well as words.  When dealing with non-words
-            /// the whole word portion is not considered
-            /// </summary>
-            [Test]
-            public void Move_NextWord_NonWord()
-            {
-                Create("{", "cat", "{", "dog");
-                _vimBuffer.Process('*');
-                Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// The '*' motion should process multiple characters and properly match them
-            /// </summary>
-            [Test]
-            public void Move_NextWord_BigNonWord()
-            {
-                Create("{{", "cat{", "{{{{", "dog");
-                _vimBuffer.Process('*');
-                Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// If the caret is positioned an a non-word character but there is a word 
-            /// later on the line then the '*' should target that word
-            /// </summary>
-            [Test]
-            public void Move_NextWord_JumpToWord()
-            {
-                Create("{ try", "{", "try");
-                _vimBuffer.Process("*");
-                Assert.AreEqual(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// If the caret is positioned an a non-word character but there is a word 
-            /// later on the line then the 'g*' should target that word
-            /// </summary>
-            [Test]
-            public void Move_NextPartialWord_JumpToWord()
-            {
-                Create("{ try", "{", "trying");
-                _vimBuffer.Process("g*");
-                Assert.AreEqual(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// When moving a line down over a fold it should not be expanded and the entire fold
-            /// should count as a single line
-            /// </summary>
-            [Test]
-            public void Move_LineDown_OverFold()
-            {
-                Create("cat", "dog", "tree", "fish");
-                var range = _textView.GetLineRange(1, 2);
-                _foldManager.CreateFold(range);
-                _vimBuffer.Process('j');
-                Assert.AreEqual(1, _textView.GetCaretLine().LineNumber);
-                _vimBuffer.Process('j');
-                Assert.AreEqual(3, _textView.GetCaretLine().LineNumber);
-            }
-
-            /// <summary>
-            /// The 'g*' movement should update the search history for the buffer
-            /// </summary>
-            [Test]
-            public void Move_NextPartialWordUnderCursor()
-            {
-                Create("cat", "dog", "cat");
-                _vimBuffer.Process("g*");
-                Assert.AreEqual("cat", _vimData.SearchHistory.Items.Head);
-            }
 
             /// <summary>
             /// Make sure the cursor positions correctly on the next line 
