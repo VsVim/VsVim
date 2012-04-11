@@ -392,9 +392,11 @@ type internal CommonOperations
     /// Move the caret to the proper indentation on a newly created line.  The context line 
     /// is provided to calculate an indentation off of
     member x.GetNewLineIndent  (contextLine : ITextSnapshotLine) (newLine : ITextSnapshotLine) =
+        let doAutoIndent() = contextLine |> SnapshotLineUtil.GetIndentPoint |> SnapshotPointUtil.GetColumn |> Some
+
         let doVimIndent() = 
             if _localSettings.AutoIndent then
-                contextLine |> SnapshotLineUtil.GetIndentPoint |> SnapshotPointUtil.GetColumn |> Some
+                doAutoIndent()
             else
                 None
 
@@ -403,7 +405,14 @@ type internal CommonOperations
             if indent.HasValue then 
                 indent.Value |> Some
             else
-               doVimIndent()
+                // If the user wanted editor indentation but the editor doesn't support indentation
+                // even though it proffers an indentation service then fall back to what auto
+                // indent would do if it were enabled (don't care if it actually is)
+                //
+                // Several editors like XAML offer the indentation service but don't actually 
+                // provide information.  User clearly wants indent there since the editor indent
+                // is enabled.  Do a best effort and us Vim style indenting
+                doAutoIndent()
         else 
             doVimIndent()
 
