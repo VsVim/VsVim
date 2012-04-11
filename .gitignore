@@ -36,6 +36,10 @@ _ReSharper.*
 # Productivity Power Tools
 VsVim.sln.docstates
 
+# This solution uses NuGet package restore so don't check in
+# the actual binaries
+packages/
+
 # Directories 
 */obj/
 */bin/
