@@ -4,6 +4,8 @@ using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Text;
 using EditorUtils.UnitTest.Utils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -232,8 +234,12 @@ namespace EditorUtils.UnitTest
             var list = new List<ComposablePartCatalog>();
             if (!TryGetEditorCatalog(list))
             {
-                var msg = "Could not locate the editor components.  Make sure you have run PopulateReferences.ps1";
-                throw new Exception(msg);
+                var uri = new Uri(typeof(EditorTestBase).Assembly.CodeBase);
+                var root = Path.GetDirectoryName(uri.LocalPath);
+                var builder = new StringBuilder();
+                builder.AppendLine("Could not locate the editor components.  Make sure you have run PopulateReferences.ps1");
+                builder.AppendLine("Code Base: " + root);
+                throw new Exception(builder.ToString());
             }
 
             // There is no default IUndoHistoryRegistry provided so I need to provide it here just to 
@@ -250,15 +256,17 @@ namespace EditorUtils.UnitTest
             return list;
         }
 
-        /// <summary>
-        /// Look for the editor components in the given directory.  
-        /// </summary>
         private static bool TryGetEditorCatalog(List<ComposablePartCatalog> list)
+        {
+            return TryGetEditorCatalogFromDisk(list) || TryGetEditorCatalogFromGac(list);
+        }
+
+        private static bool TryGetEditorCatalogFromDisk(List<ComposablePartCatalog> list)
         {
             // First look for the editor components in the same directory as the unit test assembly
             var uri = new Uri(typeof(EditorTestBase).Assembly.CodeBase);
             var root = Path.GetDirectoryName(uri.LocalPath);
-            if (TryGetEditorCatalog(root, list))
+            if (TryGetEditorCatalogFromDirectory(root, list))
             {
                 return true;
             }
@@ -269,7 +277,7 @@ namespace EditorUtils.UnitTest
             while (root != null)
             {
                 var referencesPath = Path.Combine(root, "References");
-                if (Directory.Exists(referencesPath) && TryGetEditorCatalog(referencesPath, list))
+                if (Directory.Exists(referencesPath) && TryGetEditorCatalogFromDirectory(referencesPath, list))
                 {
                     return true;
                 }
@@ -283,7 +291,7 @@ namespace EditorUtils.UnitTest
         /// <summary>
         /// Look for the editor components in the given directory.  
         /// </summary>
-        private static bool TryGetEditorCatalog(string root, List<ComposablePartCatalog> list)
+        private static bool TryGetEditorCatalogFromDirectory(string root, List<ComposablePartCatalog> list)
         {
             // Make sure they all exist in the given path
             var componentPaths = s_editorComponents.Select(x => Path.Combine(root, x));
@@ -298,6 +306,26 @@ namespace EditorUtils.UnitTest
             }
 
             return false;
+        }
+
+        private static bool TryGetEditorCatalogFromGac(List<ComposablePartCatalog> list)
+        {
+            try
+            {
+                foreach (var name in s_editorComponents)
+                {
+                    var simpleName = name.Substring(0, name.Length - 4);
+                    var qualifiedName = simpleName + ", Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL";
+                    var assembly = Assembly.Load(qualifiedName);
+                    list.Add(new AssemblyCatalog(assembly));
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }
