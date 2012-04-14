@@ -275,6 +275,28 @@ namespace Vim.UnitTest
                 return _interpreter.GetLineRange(lineRange).Value;
             }
 
+            [Test]
+            public void Behave_Mswin()
+            {
+                Create("");
+                ParseAndRun("behave mswin");
+                Assert.AreEqual(SelectModeOptions.Keyboard | SelectModeOptions.Mouse, _globalSettings.SelectModeOptions);
+                Assert.AreEqual("popup", _globalSettings.MouseModel);
+                Assert.AreEqual(KeyModelOptions.StartSelection | KeyModelOptions.StopSelection, _globalSettings.KeyModelOptions);
+                Assert.AreEqual("exclusive", _globalSettings.Selection);
+            }
+
+            [Test]
+            public void Behave_Xterm()
+            {
+                Create("");
+                ParseAndRun("behave xterm");
+                Assert.AreEqual(SelectModeOptions.None, _globalSettings.SelectModeOptions);
+                Assert.AreEqual("extend", _globalSettings.MouseModel);
+                Assert.AreEqual(KeyModelOptions.None, _globalSettings.KeyModelOptions);
+                Assert.AreEqual("inclusive", _globalSettings.Selection);
+            }
+
             /// <summary>
             /// Don't execute a line that starts with a comment
             /// </summary>

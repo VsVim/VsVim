@@ -60,6 +60,7 @@ type Parser
 
     /// The set of supported line commands paired with their abbreviation
     static let s_LineCommandNamePair = [
+        ("behave", "be")
         ("cd", "cd")
         ("chdir", "chd")
         ("close", "clo")
@@ -442,6 +443,16 @@ type Parser
                     inner (flags ||| newFlag) (index + 1)
 
         inner SubstituteFlags.None 0
+
+    /// Parse out the :behave command.  The mode argument is required
+    member x.ParseBehave() =
+        x.SkipBlanks()
+        if _tokenizer.IsAtEndOfLine then
+            ParseResult.Failed Resources.Parser_Error
+        else
+            let mode = _tokenizer.CurrentToken.TokenText
+            _tokenizer.MoveNextToken()
+            ParseResult.Succeeded (LineCommand.Behave mode)
 
     /// Parse out the change directory command.  The path here is optional
     member x.ParseChangeDirectory() =
@@ -1223,6 +1234,7 @@ type Parser
         let doParse name = 
             let parseResult = 
                 match name with
+                | "behave" -> noRange x.ParseBehave
                 | "cd" -> noRange x.ParseChangeDirectory
                 | "chdir" -> noRange x.ParseChangeDirectory
                 | "close" -> noRange x.ParseClose

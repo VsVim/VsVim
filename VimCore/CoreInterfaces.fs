@@ -2947,7 +2947,9 @@ module GlobalSettingNames =
     let IgnoreCaseName = "ignorecase"
     let IncrementalSearchName = "incsearch"
     let JoinSpacesName = "joinspaces"
+    let KeyModelName = "keymodel"
     let MagicName = "magic"
+    let MouseModelName = "mousemodel"
     let ParagraphsName = "paragraphs"
     let ScrollOffsetName = "scrolloff"
     let SectionsName = "sections"
@@ -3012,6 +3014,12 @@ type SelectModeOptions =
     | Keyboard = 0x2
     | Command = 0x4
 
+/// The options which can be set in the 'keymodel' setting
+type KeyModelOptions =
+    | None = 0
+    | StartSelection = 0x1
+    | StopSelection = 0x2
+
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property
 /// names tend to have more familiar camel case names
@@ -3052,7 +3060,7 @@ and IVimGlobalSettings =
     abstract Clipboard : string with get, set
 
     /// The parsed set of clipboard options
-    abstract ClipboardOptions : ClipboardOptions
+    abstract ClipboardOptions : ClipboardOptions with get, set
 
     /// Whether or not to highlight previous search patterns matching cases
     abstract HighlightSearch : bool with get,set
@@ -3094,6 +3102,15 @@ and IVimGlobalSettings =
     /// Whether or not to insert two spaces after certain constructs in a 
     /// join operation
     abstract JoinSpaces : bool with get, set
+
+    /// The 'keymodel' setting
+    abstract KeyModel : string with get, set
+
+    /// The 'keymodel' in a type safe form
+    abstract KeyModelOptions : KeyModelOptions with get, set
+
+    /// The 'mousemodel' setting
+    abstract MouseModel : string with get, set
 
     /// The nrooff macros that separate paragraphs
     abstract Paragraphs : string with get, set
@@ -3140,7 +3157,7 @@ and IVimGlobalSettings =
     abstract SelectMode : string with get, set 
 
     /// The options which are set via select mode
-    abstract SelectModeOptions : SelectModeOptions
+    abstract SelectModeOptions : SelectModeOptions with get, set
 
     /// Overrides the IgnoreCase setting in certain cases if the pattern contains
     /// any upper case letters

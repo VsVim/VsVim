@@ -194,6 +194,9 @@ and [<RequireQualifiedAccess>] Expression =
 
 and [<RequireQualifiedAccess>] LineCommand =
 
+    /// The :behave command to set common behaviors in certain environments
+    | Behave of string
+
     /// Change the current directory to the given value
     | ChangeDirectory of string option
 

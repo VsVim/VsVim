@@ -250,6 +250,23 @@ type Interpreter
         | Some count -> count
         | None -> 1
 
+    /// Run the behave command
+    member x.RunBehave model = 
+        match model with 
+        | "mswin" ->
+            _globalSettings.SelectModeOptions <- (SelectModeOptions.Mouse ||| SelectModeOptions.Keyboard)
+            _globalSettings.MouseModel <- "popup"
+            _globalSettings.KeyModelOptions <- (KeyModelOptions.StartSelection ||| KeyModelOptions.StopSelection)
+            _globalSettings.Selection <- "exclusive"
+        | "xterm" ->
+            _globalSettings.SelectModeOptions <- SelectModeOptions.None
+            _globalSettings.MouseModel <- "extend"
+            _globalSettings.KeyModelOptions <- KeyModelOptions.None
+            _globalSettings.Selection <- "inclusive"
+        | _ -> _statusUtil.OnError (Resources.Interpreter_InvalidArgument model)
+
+        RunResult.Completed
+
     /// Change the directory to the given value
     member x.RunChangeDirectory directoryPath = 
         match directoryPath with
@@ -1260,6 +1277,7 @@ type Interpreter
             |> _registerMap.GetRegister
 
         match lineCommand with
+        | LineCommand.Behave model -> x.RunBehave model
         | LineCommand.ChangeDirectory path -> x.RunChangeDirectory path
         | LineCommand.ChangeLocalDirectory path -> x.RunChangeLocalDirectory path
         | LineCommand.CopyTo (sourceLineRange, destLineRange, count) -> x.RunCopyTo sourceLineRange destLineRange count

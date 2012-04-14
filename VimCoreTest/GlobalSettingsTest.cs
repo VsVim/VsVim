@@ -136,5 +136,18 @@ namespace Vim.UnitTest
             Assert.AreEqual(ClipboardOptions.Unnamed | ClipboardOptions.AutoSelect, global.ClipboardOptions);
             Assert.AreEqual("unnamed,autoselect", global.Clipboard);
         }
+
+        /// <summary>
+        /// Make sure the get / set logic for parsing out the options is complete
+        /// </summary>
+        [Test]
+        public void SelectModeOptions_Simple()
+        {
+            var global = CreateGlobal();
+            global.SelectModeOptions = SelectModeOptions.Keyboard | SelectModeOptions.Mouse;
+            Assert.AreEqual("mouse,key", global.SelectMode);
+            global.SelectModeOptions = SelectModeOptions.Keyboard;
+            Assert.AreEqual("key", global.SelectMode);
+        }
     }
 }

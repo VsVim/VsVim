@@ -130,7 +130,9 @@ type internal GlobalSettings() =
             (IncrementalSearchName, "is", ToggleKind, ToggleValue(false))
             (IgnoreCaseName,"ic", ToggleKind, ToggleValue(false))
             (JoinSpacesName, "js", ToggleKind, ToggleValue(true))
+            (KeyModelName, "km", StringKind, StringValue(""))
             (MagicName, MagicName, ToggleKind, ToggleValue(true))
+            (MouseModelName, "mousem", StringKind, StringValue("popup"))
             (ParagraphsName, "para", StringKind, StringValue("IPLPPPQPP TPHPLIPpLpItpplpipbp"))
             (SectionsName, "sect", StringKind, StringValue "SHNHH HUnhsh")
             (SelectionName, "sel", StringKind, StringValue("inclusive"))
@@ -158,38 +160,73 @@ type internal GlobalSettings() =
 
     let _map = SettingsMap(_globalSettings, true)
 
-    let IsCommaSubOptionPresent optionName suboptionName =
+    /// Mappings between the setting names and the actual options
+    static let ClipboardOptionsMapping = 
+        [
+            ("unnamed", ClipboardOptions.Unnamed)
+            ("autoselect", ClipboardOptions.AutoSelect)
+            ("autoselectml", ClipboardOptions.AutoSelectMl)
+        ]
+
+    /// Mappings between the setting names and the actual options
+    static let SelectModeOptionsMapping = 
+        [  
+            ("mouse", SelectModeOptions.Mouse)
+            ("key", SelectModeOptions.Keyboard)
+            ("cmd", SelectModeOptions.Command)
+        ]
+
+    /// Mappings between the setting names and the actual options
+    static let SelectKindMapping = 
+        [
+            ("exclusive", SelectionKind.Exclusive)
+            ("old", SelectionKind.Exclusive)
+            ("inclusive", SelectionKind.Inclusive)
+        ]
+
+    /// Mappings between the setting names and the actual options
+    static let KeyModelOptionsMapping =
+        [
+            ("startsel", KeyModelOptions.StartSelection)
+            ("stopsel", KeyModelOptions.StopSelection)
+        ]
+
+    static member DisableAllCommand = _disableAllCommand
+
+    member x.IsCommaSubOptionPresent optionName suboptionName =
         _map.GetStringValue optionName
         |> StringUtil.split ','
         |> Seq.exists (fun x -> StringUtil.isEqual suboptionName x)
 
-    static member DisableAllCommand = _disableAllCommand
+
+    /// Convert a comma separated option into a set of type safe options
+    member x.GetCommaOptions name mappingList emptyOption combineFunc = 
+        _map.GetStringValue name 
+        |> StringUtil.split ',' 
+        |> Seq.fold (fun (options : 'a) (current : string)->
+            match List.tryFind (fun (name, _) -> name = current) mappingList with
+            | None -> options
+            | Some (_, value) -> combineFunc options value) emptyOption
+
+    /// Convert a type safe set of options into a comma separated string
+    member x.SetCommaOptions name mappingList options testFunc = 
+        let settingValue = 
+            mappingList
+            |> Seq.ofList
+            |> Seq.map (fun (name, value) ->
+                if testFunc options value then 
+                    Some name
+                else 
+                    None)
+            |> SeqUtil.filterToSome
+            |> String.concat ","
+        _map.TrySetValue name (StringValue(settingValue)) |> ignore
 
     member x.SelectionKind = 
         match _map.GetStringValue SelectionName with
         | "inclusive" -> SelectionKind.Inclusive
         | "old" -> SelectionKind.Exclusive
         | _ -> SelectionKind.Exclusive
-
-    member x.ClipboardOptions = 
-        _map.GetStringValue ClipboardName
-        |> StringUtil.split ','
-        |> Seq.fold (fun options current ->
-            match current with 
-            | "unnamed" -> options ||| ClipboardOptions.Unnamed
-            | "autoselect" -> options ||| ClipboardOptions.AutoSelect
-            | "autoselectml" -> options ||| ClipboardOptions.AutoSelectMl
-            | _ -> options) ClipboardOptions.None
-
-    member x.SelectModeOptions = 
-        _map.GetStringValue SelectModeName
-        |> StringUtil.split ','
-        |> Seq.fold (fun options current ->
-            match current with
-            | "mouse" -> options ||| SelectModeOptions.Mouse
-            | "key" -> options ||| SelectModeOptions.Keyboard
-            | "cmd" -> options ||| SelectModeOptions.Command
-            | _ -> options) SelectModeOptions.None
 
     interface IVimGlobalSettings with
         // IVimSettings
@@ -209,7 +246,9 @@ type internal GlobalSettings() =
         member x.Clipboard
             with get() = _map.GetStringValue ClipboardName
             and set value = _map.TrySetValue ClipboardName (StringValue value) |> ignore
-        member x.ClipboardOptions = x.ClipboardOptions
+        member x.ClipboardOptions
+            with get() = x.GetCommaOptions ClipboardName ClipboardOptionsMapping ClipboardOptions.None (fun x y -> x ||| y)
+            and set value = x.SetCommaOptions ClipboardName ClipboardOptionsMapping value Util.IsFlagSet
         member x.HighlightSearch
             with get() = _map.GetBoolValue HighlightSearchName
             and set value = _map.TrySetValue HighlightSearchName (ToggleValue(value)) |> ignore
@@ -231,9 +270,18 @@ type internal GlobalSettings() =
         member x.JoinSpaces 
             with get() = _map.GetBoolValue JoinSpacesName
             and set value = _map.TrySetValue JoinSpacesName (ToggleValue value) |> ignore
+        member x.KeyModel 
+            with get() = _map.GetStringValue KeyModelName
+            and set value = _map.TrySetValue KeyModelName (StringValue value) |> ignore
+        member x.KeyModelOptions
+            with get() = x.GetCommaOptions KeyModelName KeyModelOptionsMapping KeyModelOptions.None (fun x y -> x ||| y)
+            and set value = x.SetCommaOptions KeyModelName KeyModelOptionsMapping value Util.IsFlagSet
         member x.Magic
             with get() = _map.GetBoolValue MagicName
             and set value = _map.TrySetValue MagicName (ToggleValue(value)) |> ignore
+        member x.MouseModel 
+            with get() = _map.GetStringValue MouseModelName
+            and set value = _map.TrySetValue MouseModelName (StringValue(value)) |> ignore
         member x.Paragraphs
             with get() = _map.GetStringValue ParagraphsName
             and set value = _map.TrySetValue ParagraphsName (StringValue(value)) |> ignore
@@ -250,7 +298,9 @@ type internal GlobalSettings() =
         member x.SelectMode 
             with get() = _map.GetStringValue SelectModeName
             and set value = _map.TrySetValue SelectModeName (StringValue(value)) |> ignore
-        member x.SelectModeOptions = x.SelectModeOptions
+        member x.SelectModeOptions 
+            with get() = x.GetCommaOptions SelectModeName SelectModeOptionsMapping SelectModeOptions.None (fun x y -> x ||| y) 
+            and set value = x.SetCommaOptions SelectModeName SelectModeOptionsMapping value Util.IsFlagSet
         member x.ShiftWidth  
             with get() = _map.GetNumberValue ShiftWidthName
             and set value = _map.TrySetValue ShiftWidthName (NumberValue(value)) |> ignore
@@ -303,10 +353,10 @@ type internal GlobalSettings() =
             with get() = _map.GetBoolValue WrapScanName
             and set value = _map.TrySetValue WrapScanName (ToggleValue(value)) |> ignore
         member x.DisableAllCommand = _disableAllCommand
-        member x.IsBackspaceEol = IsCommaSubOptionPresent BackspaceName "eol"
-        member x.IsBackspaceIndent = IsCommaSubOptionPresent BackspaceName "indent"
-        member x.IsBackspaceStart = IsCommaSubOptionPresent BackspaceName "start"
-        member x.IsVirtualEditOneMore = IsCommaSubOptionPresent VirtualEditName "onemore"
+        member x.IsBackspaceEol = x.IsCommaSubOptionPresent BackspaceName "eol"
+        member x.IsBackspaceIndent = x.IsCommaSubOptionPresent BackspaceName "indent"
+        member x.IsBackspaceStart = x.IsCommaSubOptionPresent BackspaceName "start"
+        member x.IsVirtualEditOneMore = x.IsCommaSubOptionPresent VirtualEditName "onemore"
 
         [<CLIEvent>]
         member x.SettingChanged = _map.SettingChanged
