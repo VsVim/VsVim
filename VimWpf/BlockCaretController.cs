@@ -103,6 +103,7 @@ namespace Vim.UI.Wpf
                 case ModeKind.VisualBlock:
                 case ModeKind.VisualCharacter:
                 case ModeKind.VisualLine:
+                case ModeKind.Select:
 
                     // In visual mode we change the caret based on what the selection mode
                     // is

@@ -789,12 +789,13 @@ type ModeKind =
     | VisualBlock = 6 
     | Replace = 7
     | SubstituteConfirm = 8
-    | ExternalEdit = 9
+    | Select = 9
+    | ExternalEdit = 10
 
     /// Initial mode for an IVimBuffer.  It will maintain this mode until the underyling
     /// ITextView completes it's initialization and allows the IVimBuffer to properly 
     /// transition to the mode matching it's underlying IVimTextBuffer
-    | Uninitialized = 10
+    | Uninitialized = 11
 
     /// Mode when Vim is disabled.  It won't interact with events it otherwise would such
     /// as selection changes
@@ -829,8 +830,9 @@ type VisualKind =
         | ModeKind.VisualCharacter -> VisualKind.Character |> Some
         | _ -> None
 
-
     static member IsAnyVisual kind = VisualKind.OfModeKind kind |> Option.isSome
+
+    static member IsAnyVisualOrSelect kind = VisualKind.IsAnyVisual kind || kind = ModeKind.Select
 
 /// The actual command name.  This is a wrapper over the collection of KeyInput 
 /// values which make up a command name.  
@@ -2886,7 +2888,6 @@ type KeyInputProcessedEventArgs(_keyInput : KeyInput, _processResult : ProcessRe
     member x.KeyInput = _keyInput
 
     member x.ProcessResult = _processResult
-    
 
 type SettingKind =
     | NumberKind
@@ -2951,6 +2952,7 @@ module GlobalSettingNames =
     let ScrollOffsetName = "scrolloff"
     let SectionsName = "sections"
     let SelectionName = "selection"
+    let SelectModeName = "selectmode"
     let ShellName = "shell"
     let ShellFlagName = "shellcmdflag"
     let ShiftWidthName = "shiftwidth"
@@ -3002,6 +3004,13 @@ type ClipboardOptions =
     | Unnamed = 0x1 
     | AutoSelect = 0x2
     | AutoSelectMl = 0x4
+
+/// The options which can be set in the 'selectmode' setting
+type SelectModeOptions =
+    | None = 0
+    | Mouse = 0x1
+    | Keyboard = 0x2
+    | Command = 0x4
 
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property
@@ -3119,13 +3128,19 @@ and IVimGlobalSettings =
 
     /// Holds the scroll offset value which is the number of lines to keep visible
     /// above the cursor after a move operation
-    abstract ScrollOffset : int with get,set
+    abstract ScrollOffset : int with get, set
 
     /// Holds the Selection option
-    abstract Selection : string with get,set
+    abstract Selection : string with get, set
 
     /// Get the SelectionKind for the current settings
     abstract SelectionKind : SelectionKind
+
+    /// Options for how select mode is entered
+    abstract SelectMode : string with get, set 
+
+    /// The options which are set via select mode
+    abstract SelectModeOptions : SelectModeOptions
 
     /// Overrides the IgnoreCase setting in certain cases if the pattern contains
     /// any upper case letters

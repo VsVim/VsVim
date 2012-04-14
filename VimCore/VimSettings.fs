@@ -134,6 +134,7 @@ type internal GlobalSettings() =
             (ParagraphsName, "para", StringKind, StringValue("IPLPPPQPP TPHPLIPpLpItpplpipbp"))
             (SectionsName, "sect", StringKind, StringValue "SHNHH HUnhsh")
             (SelectionName, "sel", StringKind, StringValue("inclusive"))
+            (SelectModeName, "slm", StringKind, StringValue(""))
             (ScrollOffsetName, "so", NumberKind, NumberValue(0))
             (ShiftWidthName, "sw", NumberKind, NumberValue(4))
             (ShellName, "sh", StringKind, "ComSpec" |> SystemUtil.GetEnvironmentVariable |> StringValue)
@@ -179,6 +180,16 @@ type internal GlobalSettings() =
             | "autoselect" -> options ||| ClipboardOptions.AutoSelect
             | "autoselectml" -> options ||| ClipboardOptions.AutoSelectMl
             | _ -> options) ClipboardOptions.None
+
+    member x.SelectModeOptions = 
+        _map.GetStringValue SelectModeName
+        |> StringUtil.split ','
+        |> Seq.fold (fun options current ->
+            match current with
+            | "mouse" -> options ||| SelectModeOptions.Mouse
+            | "key" -> options ||| SelectModeOptions.Keyboard
+            | "cmd" -> options ||| SelectModeOptions.Command
+            | _ -> options) SelectModeOptions.None
 
     interface IVimGlobalSettings with
         // IVimSettings
@@ -236,6 +247,10 @@ type internal GlobalSettings() =
             with get() = _map.GetStringValue SelectionName
             and set value = _map.TrySetValue SelectionName (StringValue(value)) |> ignore
         member x.SelectionKind = x.SelectionKind
+        member x.SelectMode 
+            with get() = _map.GetStringValue SelectModeName
+            and set value = _map.TrySetValue SelectModeName (StringValue(value)) |> ignore
+        member x.SelectModeOptions = x.SelectModeOptions
         member x.ShiftWidth  
             with get() = _map.GetNumberValue ShiftWidthName
             and set value = _map.TrySetValue ShiftWidthName (NumberValue(value)) |> ignore

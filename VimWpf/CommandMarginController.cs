@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Media;
+using Microsoft.VisualStudio.Text.Classification;
 using Vim.Extensions;
 using Vim.UI.Wpf.Properties;
-using Microsoft.VisualStudio.Text.Classification;
-using System.Windows.Media;
 
 namespace Vim.UI.Wpf
 {
@@ -131,6 +131,9 @@ namespace Vim.UI.Wpf
                     _margin.StatusLine = String.IsNullOrEmpty(oneTimeArgument)
                         ? Resources.VisualLineBanner
                         : String.Format(Resources.VisualLineOneTimeCommandBanner, oneTimeArgument);
+                    break;
+                case ModeKind.Select:
+                    _margin.StatusLine = Resources.SelectBanner;
                     break;
                 case ModeKind.ExternalEdit:
                     _margin.StatusLine = Resources.ExternalEditBanner;

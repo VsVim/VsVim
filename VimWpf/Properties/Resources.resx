@@ -129,6 +129,9 @@
   <data name="ReplaceBanner" xml:space="preserve">
     <value>-- REPLACE --</value>
   </data>
+  <data name="SelectBanner" xml:space="preserve">
+    <value>-- SELECT --</value>
+  </data>
   <data name="SubstituteConfirmBannerFormat" xml:space="preserve">
     <value>replace with {0} (y/n/a/q/l/^E/^Y)?</value>
   </data>

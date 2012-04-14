@@ -21,6 +21,7 @@ type internal SelectionChangeTracker
         _selectionOverrideList : IVisualModeSelectionOverride list
     ) as this =
 
+    let _globalSettings = _vimBuffer.GlobalSettings
     let _textView = _vimBuffer.TextView
     let _bag = DisposableBag()
 
@@ -47,7 +48,7 @@ type internal SelectionChangeTracker
         |> Observable.subscribe (fun args -> this.OnKeyInputFinished() )
         |> _bag.Add
 
-    member x.IsAnyVisualMode = VisualKind.IsAnyVisual _vimBuffer.ModeKind
+    member x.IsAnyVisualOrSelectMode = VisualKind.IsAnyVisualOrSelect _vimBuffer.ModeKind
 
     member x.ShouldIgnoreSelectionChange() = 
         _selectionOverrideList
@@ -66,9 +67,9 @@ type internal SelectionChangeTracker
             // If the selection changes while Vim is disabled then don't update
             () 
         elif _vimBuffer.IsProcessingInput then
-            if x.IsAnyVisualMode then 
+            if x.IsAnyVisualOrSelectMode then 
                 // Do nothing.  Selection changes that occur while processing input during
-                // visual mode are the responsibility of Visual Mode to handle. 
+                // visual or select mode are the responsibility of the mode to handle
                 _selectionDirty <- false
             else 
                 _selectionDirty <- true
@@ -91,11 +92,17 @@ type internal SelectionChangeTracker
         let desiredMode () = 
             let inner = 
                 if _textView.Selection.IsEmpty then 
-                    if x.IsAnyVisualMode then Some ModeKind.Normal
-                    else None
+                    if x.IsAnyVisualOrSelectMode then 
+                        Some ModeKind.Normal
+                    else 
+                        None
+                elif Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
+                    Some ModeKind.Select
                 elif _textView.Selection.Mode = TextSelectionMode.Stream then 
-                    if _vimBuffer.ModeKind = ModeKind.VisualLine then Some ModeKind.VisualLine
-                    else Some ModeKind.VisualCharacter 
+                    if _vimBuffer.ModeKind = ModeKind.VisualLine then 
+                        Some ModeKind.VisualLine
+                    else 
+                        Some ModeKind.VisualCharacter 
                 else Some ModeKind.VisualBlock
             match inner with 
             | None -> None
@@ -113,7 +120,7 @@ type internal SelectionChangeTracker
         | None ->
             // No mode change is desired.  However the selection has changed and Visual Mode 
             // caches information about the original selection.  Update that information now
-            if x.IsAnyVisualMode then
+            if VisualKind.IsAnyVisual _vimBuffer.ModeKind then
                 let mode = _vimBuffer.Mode :?> IVisualMode
 
                 try

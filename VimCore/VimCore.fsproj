@@ -83,6 +83,8 @@
     <Compile Include="Modes_Visual_SelectionTracker.fs" />
     <Compile Include="Modes_Visual_VisualMode.fsi" />
     <Compile Include="Modes_Visual_VisualMode.fs" />
+    <Compile Include="Modes_Visual_SelectMode.fsi" />
+    <Compile Include="Modes_Visual_SelectMode.fs" />
     <Compile Include="Modes_SubstituteConfirm_SubstituteConfirmMode.fsi" />
     <Compile Include="Modes_SubstituteConfirm_SubstituteConfirmMode.fs" />
     <Compile Include="IncrementalSearch.fsi" />
