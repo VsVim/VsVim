@@ -177,14 +177,6 @@ type internal GlobalSettings() =
         ]
 
     /// Mappings between the setting names and the actual options
-    static let SelectKindMapping = 
-        [
-            ("exclusive", SelectionKind.Exclusive)
-            ("old", SelectionKind.Exclusive)
-            ("inclusive", SelectionKind.Inclusive)
-        ]
-
-    /// Mappings between the setting names and the actual options
     static let KeyModelOptionsMapping =
         [
             ("startsel", KeyModelOptions.StartSelection)

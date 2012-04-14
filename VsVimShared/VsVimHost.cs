@@ -160,7 +160,21 @@ namespace VsVim
 
         public override bool GoToDefinition()
         {
-            return GoToDefinitionCore(_textManager.ActiveTextViewOptional, null);
+            if (!GoToDefinitionCore(_textManager.ActiveTextViewOptional, null))
+            {
+                return false;
+            }
+
+            // Certian language services, VB.Net for example, will select the word after
+            // the go to definition is implemented.  Need to clear that out to prevent the
+            // go to definition from switching us to Visual Mode
+            var optionalTextView = _textManager.ActiveTextViewOptional;
+            if (optionalTextView != null && !optionalTextView.Selection.IsEmpty)
+            {
+                optionalTextView.Selection.Clear();
+            }
+
+            return true;
         }
 
         /// <summary>
