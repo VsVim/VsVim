@@ -47,9 +47,17 @@ type internal FileSystem() =
         |> SeqUtil.filterToSome
 
     member x.GetVimRcFilePaths() =
-        x.GetVimRcDirectories()
-        |> Seq.map (fun path -> _fileNames |> Seq.map (fun name -> Path.Combine(path,name)))
-        |> Seq.concat
+
+        let standard = 
+            x.GetVimRcDirectories()
+            |> Seq.map (fun path -> _fileNames |> Seq.map (fun name -> Path.Combine(path,name)))
+            |> Seq.concat
+
+        // If the MYVIMRC environment variable is set then prefer that path over the standard
+        // paths
+        match SystemUtil.TryGetEnvironmentVariable "MYVIMRC" with
+        | None -> standard
+        | Some filePath -> Seq.append [ filePath ] standard
 
     member x.LoadVimRcContents () = 
         let readLines path = 
