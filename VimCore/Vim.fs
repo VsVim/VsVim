@@ -191,16 +191,14 @@ type internal VimBufferFactory
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker textView
         let bufferOptions = _editorOptionsFactoryService.GetOptions(textView.TextBuffer)
         let interpreter = Interpreter.Interpreter(buffer, commonOperations, foldManager, FileSystem() :> IFileSystem, _bufferTrackingService)
-        let visualOptsFactory kind = 
-            let kind = VisualKind.OfModeKind kind |> Option.get
-            Modes.Visual.SelectionTracker(textView, vim.GlobalSettings, incrementalSearch, kind) :> Modes.Visual.ISelectionTracker
+        let visualOptsFactory visualKind = Modes.Visual.SelectionTracker(textView, vim.GlobalSettings, incrementalSearch, visualKind) :> Modes.Visual.ISelectionTracker
 
         let visualModeList =
             [ ModeKind.VisualBlock; ModeKind.VisualCharacter; ModeKind.VisualLine ]
             |> Seq.ofList
             |> Seq.map (fun kind -> 
-                let tracker = visualOptsFactory kind
                 let visualKind = VisualKind.OfModeKind kind |> Option.get
+                let tracker = visualOptsFactory visualKind
                 ((Modes.Visual.VisualMode(vimBufferData, commonOperations, motionUtil, kind, createCommandRunner visualKind, capture, tracker)) :> IMode) )
             |> List.ofSeq
 
@@ -214,7 +212,7 @@ type internal VimBufferFactory
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, false, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, true, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
                 ((Modes.SubstituteConfirm.SubstituteConfirmMode(vimBufferData, commonOperations) :> IMode))
-                (Modes.Visual.SelectMode(vimBufferData, commonOperations) :> IMode)
+                (Modes.Visual.SelectMode(vimBufferData, commonOperations, undoRedoOperations, visualOptsFactory VisualKind.Character) :> IMode)
                 (DisabledMode(vimBufferData) :> IMode)
                 (ExternalEditMode(vimBufferData) :> IMode)
             ] @ visualModeList

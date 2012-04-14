@@ -168,6 +168,7 @@ type internal VimBuffer
     member x.CommandMode = _modeMap.GetMode ModeKind.Command :?> ICommandMode
     member x.InsertMode = _modeMap.GetMode ModeKind.Insert  :?> IInsertMode
     member x.ReplaceMode = _modeMap.GetMode ModeKind.Replace :?> IInsertMode
+    member x.SelectMode = _modeMap.GetMode ModeKind.Select :?> ISelectMode
     member x.SubstituteConfirmMode = _modeMap.GetMode ModeKind.SubstituteConfirm :?> ISubstituteConfirmMode
     member x.DisabledMode = _modeMap.GetMode ModeKind.Disabled :?> IDisabledMode
     member x.ExternalEditMode = _modeMap.GetMode ModeKind.ExternalEdit 
@@ -508,6 +509,7 @@ type internal VimBuffer
         member x.CommandMode = x.CommandMode
         member x.InsertMode = x.InsertMode
         member x.ReplaceMode = x.ReplaceMode
+        member x.SelectMode = x.SelectMode
         member x.SubstituteConfirmMode = x.SubstituteConfirmMode
         member x.ExternalEditMode = x.ExternalEditMode
         member x.DisabledMode = x.DisabledMode

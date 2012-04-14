@@ -28,6 +28,7 @@ namespace Vim.UnitTest.Mock
         public IIncrementalSearch IncrementalSearchImpl;
         public IInsertMode InsertModeImpl;
         public IInsertMode ReplaceModeImpl;
+        public ISelectMode SelectModeImpl;
         public IMode ExternalEditModeImpl;
         public bool IsProcessingInputImpl;
         public PropertyCollection PropertiesImpl;
@@ -305,6 +306,11 @@ namespace Vim.UnitTest.Mock
         public ISubstituteConfirmMode SubstituteConfirmMode
         {
             get { return SubstituteConfirmModeImpl; }
+        }
+
+        public ISelectMode SelectMode
+        {
+            get { return SelectModeImpl; }
         }
 
         public IMode ExternalEditMode

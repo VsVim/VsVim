@@ -3780,6 +3780,9 @@ and IVimBuffer =
     /// IInsertMode instance for replace mode
     abstract ReplaceMode : IInsertMode
 
+    /// ISelectMode instance for select mode
+    abstract SelectMode: ISelectMode
+
     /// ISubstituteConfirmDoe instance for substitute confirm mode
     abstract SubstituteConfirmMode : ISubstituteConfirmMode
 
@@ -3966,6 +3969,13 @@ and IDisabledMode =
     
     /// Help message to display 
     abstract HelpMessage : string 
+
+    inherit IMode
+
+and ISelectMode = 
+
+    /// Sync the selection with the current state
+    abstract SyncSelection : unit -> unit
 
     inherit IMode
 

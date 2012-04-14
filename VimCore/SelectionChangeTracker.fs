@@ -118,16 +118,21 @@ type internal SelectionChangeTracker
 
         match desiredMode() with
         | None ->
+
             // No mode change is desired.  However the selection has changed and Visual Mode 
             // caches information about the original selection.  Update that information now
-            if VisualKind.IsAnyVisual _vimBuffer.ModeKind then
-                let mode = _vimBuffer.Mode :?> IVisualMode
-
-                try
-                    _syncingSelection <- true
+            let doSync () = 
+                if VisualKind.IsAnyVisual _vimBuffer.ModeKind then
+                    let mode = _vimBuffer.Mode :?> IVisualMode
                     mode.SyncSelection()
-                finally
-                    _syncingSelection <- false
+                elif _vimBuffer.ModeKind = ModeKind.Select then
+                    _vimBuffer.SelectMode.SyncSelection()
+
+            try
+                _syncingSelection <- true
+                doSync()
+            finally
+                _syncingSelection <- false
         | Some _ -> 
             // It's not guaranteed that this will be set.  Visual Studio for instance will
             // null this out in certain WPF designer scenarios

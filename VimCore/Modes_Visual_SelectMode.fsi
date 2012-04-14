@@ -6,6 +6,6 @@ open Vim
 open Vim.Modes
 
 type internal SelectMode =
-    interface IMode
-    new : IVimBufferData * ICommonOperations -> SelectMode
+    interface ISelectMode
+    new : IVimBufferData * ICommonOperations * IUndoRedoOperations * ISelectionTracker -> SelectMode
 
