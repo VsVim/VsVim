@@ -39,14 +39,14 @@ namespace Vim.UnitTest
             selectionList.Add(_selectionOverride.Object);
 
             _context = new TestableSynchronizationContext();
-            SynchronizationContext.SetSynchronizationContext(_context);
+            _context.Install();
             _tracker = new SelectionChangeTracker(_vimBuffer.Object, selectionList.ToFSharpList());
         }
 
         [TearDown]
         public void TearDown()
         {
-            SynchronizationContext.SetSynchronizationContext(null);
+            _context.Uninstall();
         }
 
         /// <summary>

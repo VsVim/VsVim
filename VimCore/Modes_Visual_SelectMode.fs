@@ -30,13 +30,14 @@ type internal SelectMode
             edit.Delete(span.Span) |> ignore
             edit.Insert(span.End.Position, text) |> ignore
 
-            // Now move the caret one past the insert point in the new snapshot
+            // Now move the caret past the insert point in the new snapshot. We don't need to 
+            // add one here (or even the length of the insert text).  The insert occurred at
+            // the exact point we are tracking and we chose PointTrackingMode.Positive so this 
+            // will push the point past the insert
             let snapshot = edit.Apply()
             match TrackingPointUtil.GetPointInSnapshot span.End PointTrackingMode.Positive snapshot with
             | None -> ()
-            | Some point ->
-                let point = SnapshotPointUtil.AddOneOrCurrent point
-                TextViewUtil.MoveCaretToPoint _textView point)
+            | Some point -> TextViewUtil.MoveCaretToPoint _textView point)
 
         ProcessResult.Handled (ModeSwitch.SwitchMode ModeKind.Insert)
 

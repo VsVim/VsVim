@@ -1071,6 +1071,12 @@ namespace Vim.UnitTest
             return span;
         }
 
+        public static void Select(this ITextSelection selection, int start, int length)
+        {
+            var snapshotSpan = new SnapshotSpan(selection.TextView.TextSnapshot, start, length);
+            selection.Select(snapshotSpan);
+        }
+
         public static void Select(this ITextSelection selection, SnapshotPoint startPoint, SnapshotPoint endPoint)
         {
             selection.Select(new VirtualSnapshotPoint(startPoint), new VirtualSnapshotPoint(endPoint));
