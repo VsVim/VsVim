@@ -140,8 +140,10 @@
     <Compile Include="Implementation\OptionsProvider.cs" />
     <Compile Include="Implementation\TextManager.cs" />
     <Compile Include="Implementation\VimBufferCoordinator.cs" />
+    <Compile Include="Implementation\VisualAssist\IVisualAssistUtil.cs" />
     <Compile Include="Implementation\VisualAssist\VisualAssistKeyProcessor.cs" />
     <Compile Include="Implementation\VisualAssist\VisualAssistListener.cs" />
+    <Compile Include="Implementation\VisualAssist\VisualAssistSelectionAdapter.cs" />
     <Compile Include="Implementation\VsAdapter.cs" />
     <Compile Include="Implementation\VsKeyProcessorProvider.cs" />
     <Compile Include="IOptionsDialogService.cs" />

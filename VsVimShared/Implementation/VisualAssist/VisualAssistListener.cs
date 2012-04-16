@@ -17,7 +17,8 @@ namespace VsVim.Implementation.VisualAssist
     [ContentType(Vim.Constants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Document)]
     [Export(typeof(IVsTextViewCreationListener))]
-    internal sealed class VisualAssistListener : IVsTextViewCreationListener
+    [Export(typeof(IVisualAssistUtil))]
+    internal sealed class VisualAssistListener : IVsTextViewCreationListener, IVisualAssistUtil
     {
         private static readonly Guid VisualAssistPackageId = new Guid("{44630d46-96b5-488c-8df9-26e21db8c1a3}");
 
@@ -68,6 +69,11 @@ namespace VsVim.Implementation.VisualAssist
             }
 
             _protectedOperations.BeginInvoke(SubclassMainWindow, DispatcherPriority.Background);
+        }
+
+        bool IVisualAssistUtil.IsInstalled
+        {
+            get { return _isVisualAssistInstalled; }
         }
     }
 }
