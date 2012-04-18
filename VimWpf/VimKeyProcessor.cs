@@ -14,10 +14,8 @@ namespace Vim.UI.Wpf
     /// http://blogs.msdn.com/b/michkap/archive/2006/04/13/575500.aspx
     ///
     /// Or simply read the keyboard feed on the same blog page.  It will humble you
-    /// 
-    /// TODO: Rename this type.  Very confusing to have this be KeyProcessor as well
     /// </summary>
-    public class KeyProcessor : Microsoft.VisualStudio.Text.Editor.KeyProcessor
+    public class VimKeyProcessor : KeyProcessor
     {
         private readonly IVimBuffer _buffer;
 
@@ -36,7 +34,7 @@ namespace Vim.UI.Wpf
             get { return _buffer.TextView; }
         }
 
-        public KeyProcessor(IVimBuffer buffer)
+        public VimKeyProcessor(IVimBuffer buffer)
         {
             _buffer = buffer;
         }

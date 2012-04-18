@@ -1,14 +1,10 @@
 ﻿using System;
 using System.ComponentModel.Composition;
-using System.Windows.Threading;
-using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
-using Vim.UI.Wpf;
 
 namespace VsVim.Implementation.VisualAssist
 {
@@ -43,7 +39,7 @@ namespace VsVim.Implementation.VisualAssist
             get { return _isVisualAssistInstalled; }
         }
 
-        Microsoft.VisualStudio.Text.Editor.KeyProcessor IKeyProcessorProvider.GetAssociatedProcessor(IWpfTextView wpfTextView)
+        KeyProcessor IKeyProcessorProvider.GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
             if (!_isVisualAssistInstalled)
             {

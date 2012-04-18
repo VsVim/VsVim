@@ -4,13 +4,14 @@ using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
 using Vim;
+using Vim.UI.Wpf.UnitTest;
 using Vim.UnitTest.Mock;
 using VsVim.Implementation;
 
 namespace VsVim.UnitTest
 {
     [TestFixture]
-    public sealed class VsKeyProcessorTest : Vim.UI.Wpf.UnitTest.KeyProcessorTest
+    public sealed class VsKeyProcessorTest : VimKeyProcessorTest
     {
         private Mock<IVsAdapter> _adapter;
         private Mock<ITextBuffer> _textBuffer;
