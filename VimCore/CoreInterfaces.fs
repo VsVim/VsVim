@@ -3481,6 +3481,9 @@ type IVimBufferData =
     abstract Vim : IVim
 
 /// Vim instance.  Global for a group of buffers
+///
+/// TODO: Change all of the MEF components to use a host controlled GetOrCreate 
+/// method for IVimBuffer instances
 and IVim =
 
     /// Buffer actively processing input.  This has no relation to the IVimBuffer
