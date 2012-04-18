@@ -20,7 +20,7 @@ if (-not (test-path $vsixInstaller)) {
 gps devenv -ErrorAction SilentlyContinue | kill
 & $vsixInstaller /quiet /uninstall:VsVim.Microsoft.e214908b-0458-4ae2-a583-4310f29687c3
 
-$target = resolve-path ~\Dogfood
+$target = join-path (resolve-path ~\) 'Dogfood'
 mkdir $target -ErrorAction SilentlyContinue
 pushd $scriptPath
 copy VsVim\bin\Debug\* $target
