@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Classification;
 
 namespace VsVim.Implementation.VisualAssist
 {
@@ -11,11 +12,13 @@ namespace VsVim.Implementation.VisualAssist
         private readonly IVisualAssistUtil _visualAssistUtil;
         private bool _isPrimary;
 
-        internal VisualAssistMargin(IVisualAssistUtil visualAssistUtil)
+        internal VisualAssistMargin(IVisualAssistUtil visualAssistUtil, IEditorFormatMap editorFormatMap)
         {
             _visualAssistUtil = visualAssistUtil;
             _visualAssistUtil.RegistryFixCompleted += OnRegistryFixCompleted;
             InitializeComponent();
+
+            Background = editorFormatMap.GetBackgroundBrush(EditorFormatDefinitionNames.Margin, MarginFormatDefinition.DefaultColor);
         }
 
         private void OnYesClick(object sender, EventArgs e)

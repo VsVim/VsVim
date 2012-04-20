@@ -7,19 +7,19 @@ namespace VsVim.Implementation
 {
     internal static class EditorFormatDefinitionNames
     {
-        internal const string ConflictingKeyBindingMargin = "vsvim_conflictingkeybindingmargin";
+        internal const string Margin = "vsvim_margin";
     }
 
     [Export(typeof(EditorFormatDefinition))]
-    [Name(EditorFormatDefinitionNames.ConflictingKeyBindingMargin)]
+    [Name(EditorFormatDefinitionNames.Margin)]
     [UserVisible(true)]
-    internal sealed class ConflictingKeyBindingMarginFormatDefinition : EditorFormatDefinition
+    internal sealed class MarginFormatDefinition : EditorFormatDefinition
     {
         internal static Color DefaultColor = Colors.Wheat;
 
-        internal ConflictingKeyBindingMarginFormatDefinition()
+        internal MarginFormatDefinition()
         {
-            DisplayName = "VsVim Conflicting Key Binding Margin";
+            DisplayName = "VsVim Margins";
             BackgroundColor = DefaultColor;
         }
     }

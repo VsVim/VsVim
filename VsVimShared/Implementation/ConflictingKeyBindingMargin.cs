@@ -21,26 +21,13 @@ namespace VsVim.Implementation
             _keyBindingService = service;
             _legacySettings = legacySettings;
             _control = new ConflictingKeyBindingMarginControl();
-            _control.Background = GetBackgroundColor(formatMap);
+            _control.Background = formatMap.GetBackgroundBrush(EditorFormatDefinitionNames.Margin, MarginFormatDefinition.DefaultColor);
 
             _control.ConfigureClick += OnConfigureClick;
             _control.IgnoreClick += OnIgnoreClick;
             _keyBindingService.ConflictingKeyBindingStateChanged += OnStateChanged;
 
             OnStateChanged(this, EventArgs.Empty);
-        }
-
-        private static Brush GetBackgroundColor(IEditorFormatMap map)
-        {
-            var properties = map.GetProperties(EditorFormatDefinitionNames.ConflictingKeyBindingMargin);
-            var key = EditorFormatDefinition.BackgroundColorId;
-            var color = ConflictingKeyBindingMarginFormatDefinition.DefaultColor;
-            if (properties != null && properties.Contains(key))
-            {
-                color = (Color)properties[key];
-            }
-
-            return new SolidColorBrush(color);
         }
 
         private void Unsubscribe()

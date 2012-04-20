@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using Microsoft.Win32;
 using Vim;
+using Microsoft.VisualStudio.Text.Classification;
 
 namespace VsVim.Implementation.VisualAssist
 {
@@ -29,6 +30,7 @@ namespace VsVim.Implementation.VisualAssist
 
         private readonly IVim _vim;
         private readonly bool _isVisualAssistInstalled;
+        private readonly IEditorFormatMapService _editorFormatMapService;
         private readonly VisualStudioVersion _visualStudioVersion;
         private bool _isRegistryFixed;
         private EventHandler _registryFixCompleted;
@@ -36,9 +38,11 @@ namespace VsVim.Implementation.VisualAssist
         [ImportingConstructor]
         internal VisualAssistUtil(
             SVsServiceProvider serviceProvider,
-            IVim vim)
+            IVim vim,
+            IEditorFormatMapService editorFormatMapService)
         {
             _vim = vim;
+            _editorFormatMapService = editorFormatMapService;
 
             var vsShell = serviceProvider.GetService<SVsShell, IVsShell>();
             _isVisualAssistInstalled = vsShell.IsPackageInstalled(VisualAssistPackageId);
@@ -186,7 +190,8 @@ namespace VsVim.Implementation.VisualAssist
                 return null;
             }
 
-            return new VisualAssistMargin(this);
+            var editorFormatMap = _editorFormatMapService.GetEditorFormatMap(wpfTextViewHost.TextView);
+            return new VisualAssistMargin(this, editorFormatMap);
         }
 
         #endregion

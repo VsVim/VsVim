@@ -18,6 +18,8 @@ using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
 using Command = EnvDTE.Command;
+using System.Windows.Media;
+using Microsoft.VisualStudio.Text.Classification;
 
 namespace VsVim
 {
@@ -930,6 +932,29 @@ namespace VsVim
                 oleCommandData.VariantIn);
             command = cmds[0];
             return result;
+        }
+
+        #endregion
+
+        #region IEditorFormatMap
+
+        public static Color GetBackgroundColor(this IEditorFormatMap map, string name, Color defaultColor)
+        {
+            var properties = map.GetProperties(name);
+            var key = EditorFormatDefinition.BackgroundColorId;
+            var color = defaultColor;
+            if (properties != null && properties.Contains(key))
+            {
+                color = (Color)properties[key];
+            }
+
+            return color;
+        }
+
+        public static Brush GetBackgroundBrush(this IEditorFormatMap map, string name, Color defaultColor)
+        {
+            var color = GetBackgroundColor(map, name, defaultColor);
+            return new SolidColorBrush(color);
         }
 
         #endregion
