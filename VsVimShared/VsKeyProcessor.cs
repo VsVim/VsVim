@@ -16,7 +16,7 @@ namespace VsVim
     /// buffer is readonly the event will be swallowed (sometimes loud, sometimes silently).  This
     /// behavior needs to be special cased here so Vim commands don't trigger the loud behavior
     /// </summary>
-    internal sealed class VsKeyProcessor : KeyProcessor
+    internal sealed class VsKeyProcessor : VimKeyProcessor
     {
         private static readonly HashSet<char> CoreCharacterSet = new HashSet<char>(KeyInputUtil.VimKeyCharList);
         private readonly IVsAdapter _adapter;

@@ -6,8 +6,8 @@ using Vim;
 namespace VsVim.Implementation
 {
     [Export(typeof(IKeyProcessorProvider))]
-    [Order(Before = "VisualStudioKeyProcessor")]
-    [Name("VsVim")]
+    [Order(Before = Constants.VisualStudioKeyProcessorName)]
+    [Name(Constants.VsKeyProcessorName)]
     [TextViewRole(PredefinedTextViewRoles.Document)]
     [ContentType(Vim.Constants.ContentType)]
     internal sealed class VsKeyProcessorProvider : IKeyProcessorProvider

@@ -183,7 +183,7 @@ namespace VsVim.UnitTest
             {
                 var list = GetEditorUtilsCatalog();
                 list.Add(new AssemblyCatalog(typeof(Vim.IVim).Assembly));
-                list.Add(new AssemblyCatalog(typeof(Vim.UI.Wpf.KeyProcessor).Assembly));
+                list.Add(new AssemblyCatalog(typeof(Vim.UI.Wpf.VimKeyProcessor).Assembly));
                 list.Add(new AssemblyCatalog(typeof(VsVim.VsCommandTarget).Assembly));
                 list.Add(new TypeCatalog(
                     typeof(Vim.UnitTest.Exports.VimErrorDetector),

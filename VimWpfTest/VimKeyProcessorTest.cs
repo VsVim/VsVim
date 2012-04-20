@@ -7,12 +7,12 @@ using Vim.UnitTest.Mock;
 namespace Vim.UI.Wpf.UnitTest
 {
     [TestFixture]
-    public class KeyProcessorTest
+    public class VimKeyProcessorTest
     {
         protected IntPtr _keyboardId;
         protected MockRepository _factory;
         protected Mock<IVimBuffer> _buffer;
-        protected KeyProcessor _processor;
+        protected VimKeyProcessor _processor;
 
         [SetUp]
         public void Setup()
@@ -38,7 +38,7 @@ namespace Vim.UI.Wpf.UnitTest
 
             _factory = new MockRepository(MockBehavior.Strict);
             _buffer = _factory.Create<IVimBuffer>();
-            _processor = new KeyProcessor(_buffer.Object);
+            _processor = new VimKeyProcessor(_buffer.Object);
         }
 
         [TearDown]

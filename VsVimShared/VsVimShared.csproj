@@ -140,6 +140,13 @@
     <Compile Include="Implementation\OptionsProvider.cs" />
     <Compile Include="Implementation\TextManager.cs" />
     <Compile Include="Implementation\VimBufferCoordinator.cs" />
+    <Compile Include="Implementation\VisualAssist\IVisualAssistUtil.cs" />
+    <Compile Include="Implementation\VisualAssist\VisualAssistKeyProcessor.cs" />
+    <Compile Include="Implementation\VisualAssist\VisualAssistMargin.xaml.cs">
+      <DependentUpon>VisualAssistMargin.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Implementation\VisualAssist\VisualAssistUtil.cs" />
+    <Compile Include="Implementation\VisualAssist\VisualAssistSelectionAdapter.cs" />
     <Compile Include="Implementation\VsAdapter.cs" />
     <Compile Include="Implementation\VsKeyProcessorProvider.cs" />
     <Compile Include="IOptionsDialogService.cs" />
@@ -187,6 +194,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Page Include="Implementation\VisualAssist\VisualAssistMargin.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="UI\ConflictingKeyBindingDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

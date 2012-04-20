@@ -106,7 +106,7 @@
     <Compile Include="IOptionsProviderFactory.cs" />
     <Compile Include="IProtectedOperations.cs" />
     <Compile Include="KeyboardMap.cs" />
-    <Compile Include="KeyProcessor.cs" />
+    <Compile Include="VimKeyProcessor.cs" />
     <Compile Include="KeyUtil.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

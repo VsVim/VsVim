@@ -15,7 +15,7 @@ namespace Vim.UI.Wpf
     ///
     /// Or simply read the keyboard feed on the same blog page.  It will humble you
     /// </summary>
-    public class KeyProcessor : Microsoft.VisualStudio.Text.Editor.KeyProcessor
+    public class VimKeyProcessor : KeyProcessor
     {
         private readonly IVimBuffer _buffer;
 
@@ -34,7 +34,7 @@ namespace Vim.UI.Wpf
             get { return _buffer.TextView; }
         }
 
-        public KeyProcessor(IVimBuffer buffer)
+        public VimKeyProcessor(IVimBuffer buffer)
         {
             _buffer = buffer;
         }

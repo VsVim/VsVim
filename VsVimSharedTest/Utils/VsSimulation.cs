@@ -38,7 +38,7 @@ namespace VsVim.UnitTest.Utils
         /// Visual Studio inserts a KeyProcess into the chain which turns TextInput events
         /// into TypeChar commands.  Simulate that here
         /// </summary>
-        private sealed class SimulationKeyProcessor : Microsoft.VisualStudio.Text.Editor.KeyProcessor
+        private sealed class SimulationKeyProcessor : KeyProcessor
         {
             private readonly ITextView _textView;
 
