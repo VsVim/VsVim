@@ -15,21 +15,11 @@ namespace VsVim.Implementation.VisualAssist
         /// <summary>
         /// Does the registry need to be updated to suppor VsVim in Visual Assist
         /// </summary>
-        bool IsRegistryFixNeeed { get; }
+        bool IsRegistryFixNeeed { get; set; }
 
         /// <summary>
         /// Raised when the registry check is completed
         /// </summary>
-        event EventHandler RegistryFixCompleted;
-
-        /// <summary>
-        /// Fix the registry entry related to VsVim
-        /// </summary>
-        void FixRegistry();
-
-        /// <summary>
-        /// Ignore the registry entry related to VsVim
-        /// </summary>
-        void IgnoreRegistry();
+        event EventHandler IsRegistryFixNeededChanged;
     }
 }

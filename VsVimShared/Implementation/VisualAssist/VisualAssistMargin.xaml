@@ -7,31 +7,18 @@
              d:DesignHeight="25" 
              d:DesignWidth="453"
              x:ClassModifier="internal">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
 
-        <StackPanel Name="_fixRegistryPanel" Orientation="Horizontal" Grid.Row="0">
-            <Label Margin="0,0,5,0">Enable Visual Assist support for VsVim?</Label>
+    <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
+        <TextBlock>
+            <Label>Visual Assist needs a setting change to enable VsVim support.</Label>
+            <Hyperlink 
+                Name="_faqHyperlink"
+                NavigateUri="http://www.wholetomato.com/forum/topic.asp?TOPIC_ID=10253" 
+                RequestNavigate="OnRequestNavigate"
+                BaselineAlignment="Center">FAQ Entry</Hyperlink>
+        </TextBlock>
 
-            <Button 
-                Click="OnYesClick"
-                Margin="0,0,5,0">Yes</Button>
+        <Button Margin="5,0,0,0" Click="OnCloseClick">Close</Button>
+    </StackPanel>
 
-            <Button 
-                Click="OnNoClick"
-                Margin="0,0,5,0">No</Button>
-
-        </StackPanel>
-
-        <StackPanel Name="_restartPanel" Orientation="Horizontal" Grid.Row="0" Visibility="Collapsed">
-            <Label Margin="0,0,5,0">Visual Studio must be restarted for this setting to take effect</Label>
-
-            <Button 
-                Click="OnCloseClick"
-                Margin="0,0,5,0">Close</Button>
-        </StackPanel>
-
-    </Grid>
 </UserControl>

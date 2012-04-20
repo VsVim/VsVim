@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Classification;
+using System.Diagnostics;
 
 namespace VsVim.Implementation.VisualAssist
 {
@@ -10,53 +11,37 @@ namespace VsVim.Implementation.VisualAssist
     {
         private const string MarginName = "Visual Assist Enabled Margin";
         private readonly IVisualAssistUtil _visualAssistUtil;
-        private bool _isPrimary;
 
         internal VisualAssistMargin(IVisualAssistUtil visualAssistUtil, IEditorFormatMap editorFormatMap)
         {
             _visualAssistUtil = visualAssistUtil;
-            _visualAssistUtil.RegistryFixCompleted += OnRegistryFixCompleted;
+            _visualAssistUtil.IsRegistryFixNeededChanged += IsRegistryFixNeededChanged;
             InitializeComponent();
 
             Background = editorFormatMap.GetBackgroundBrush(EditorFormatDefinitionNames.Margin, MarginFormatDefinition.DefaultColor);
         }
 
-        private void OnYesClick(object sender, EventArgs e)
-        {
-            _isPrimary = true;
-            _visualAssistUtil.FixRegistry();
-        }
-
-        private void OnNoClick(object sender, EventArgs e)
-        {
-            _visualAssistUtil.IgnoreRegistry();
-        }
-
         private void OnCloseClick(object sender, EventArgs e)
         {
-            Visibility = Visibility.Collapsed;
+            _visualAssistUtil.IsRegistryFixNeeed = false;
         }
 
-        private void OnRegistryFixCompleted(object sender, EventArgs e)
+        private void OnRequestNavigate(object sender, RoutedEventArgs e)
+        {
+            var uri = _faqHyperlink.NavigateUri;
+            Process.Start(uri.ToString());
+            e.Handled = true;
+        }
+
+        private void IsRegistryFixNeededChanged(object sender, EventArgs e)
         {
             Unsubscribe();
-
-            if (_isPrimary)
-            {
-                // This control will appear in every buffer until it is addressed.  If this is the one
-                // where the user actually clicked yes on we need to display the restart banner as well
-                _fixRegistryPanel.Visibility = Visibility.Collapsed;
-                _restartPanel.Visibility = Visibility.Visible;
-            }
-            else 
-            {
-                Visibility = Visibility.Collapsed;
-            }
+            Visibility = Visibility.Collapsed;
         }
 
         private void Unsubscribe()
         {
-            _visualAssistUtil.RegistryFixCompleted += OnRegistryFixCompleted;
+            _visualAssistUtil.IsRegistryFixNeededChanged -= IsRegistryFixNeededChanged;
         }
 
         #region IWpfTextViewMargin

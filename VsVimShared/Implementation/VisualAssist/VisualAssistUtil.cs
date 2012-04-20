@@ -32,8 +32,8 @@ namespace VsVim.Implementation.VisualAssist
         private readonly bool _isVisualAssistInstalled;
         private readonly IEditorFormatMapService _editorFormatMapService;
         private readonly VisualStudioVersion _visualStudioVersion;
-        private bool _isRegistryFixed;
-        private EventHandler _registryFixCompleted;
+        private bool _isRegistryFixedNeeded;
+        private EventHandler _isRegistryFixNeededChanged;
 
         [ImportingConstructor]
         internal VisualAssistUtil(
@@ -50,12 +50,12 @@ namespace VsVim.Implementation.VisualAssist
             {
                 var dte = serviceProvider.GetService<SDTE, _DTE>();
                 _visualStudioVersion = dte.GetVisualStudioVersion();
-                _isRegistryFixed = CheckRegistryKey(_visualStudioVersion);
+                _isRegistryFixedNeeded = !CheckRegistryKey(_visualStudioVersion);
             }
             else
             {
                 // If Visual Assist isn't installed then don't do any extra work
-                _isRegistryFixed = true;
+                _isRegistryFixedNeeded = false;
                 _visualStudioVersion = VisualStudioVersion.Unknown;
             }
         }
@@ -99,40 +99,11 @@ namespace VsVim.Implementation.VisualAssist
             }
         }
 
-        private static void FixRegistryKey(VisualStudioVersion version)
+        private void RaiseIsRegistryFixNeededChanged()
         {
-            try
+            if (_isRegistryFixNeededChanged != null)
             {
-                var keyName = GetRegistryKeyName(version);
-                using (var key = Registry.CurrentUser.OpenSubKey(keyName, true))
-                {
-                    var value = new byte[] { 1 };
-                    key.SetValue(RegistryValueName, value, RegistryValueKind.Binary);
-                }
-            }
-            catch
-            {
-                // If the registry can't be accessed don't crash the process
-            }
-        }
-
-        private void FixRegistry()
-        {
-            FixRegistryKey(_visualStudioVersion);
-            RaiseRegistryFixCompleted();
-        }
-
-        private void IgnoreRegistry()
-        {
-            RaiseRegistryFixCompleted();
-        }
-
-        private void RaiseRegistryFixCompleted()
-        {
-            _isRegistryFixed = true;
-            if (_registryFixCompleted != null)
-            {
-                _registryFixCompleted(this, EventArgs.Empty);
+                _isRegistryFixNeededChanged(this, EventArgs.Empty);
             }
         }
 
@@ -145,23 +116,22 @@ namespace VsVim.Implementation.VisualAssist
 
         bool IVisualAssistUtil.IsRegistryFixNeeed
         {
-            get { return !_isRegistryFixed; }
+            get { return _isRegistryFixedNeeded; }
+            set
+            {
+                var changed = _isRegistryFixedNeeded != value;
+                _isRegistryFixedNeeded = value;
+                if (changed)
+                {
+                    RaiseIsRegistryFixNeededChanged();
+                }
+            }
         }
 
-        event EventHandler IVisualAssistUtil.RegistryFixCompleted
+        event EventHandler IVisualAssistUtil.IsRegistryFixNeededChanged
         {
-            add { _registryFixCompleted += value; }
-            remove { _registryFixCompleted -= value; }
-        }
-
-        void IVisualAssistUtil.FixRegistry()
-        {
-            FixRegistry();
-        }
-
-        void IVisualAssistUtil.IgnoreRegistry()
-        {
-            IgnoreRegistry();
+            add { _isRegistryFixNeededChanged += value; }
+            remove { _isRegistryFixNeededChanged -= value; }
         }
 
         #endregion
@@ -185,7 +155,7 @@ namespace VsVim.Implementation.VisualAssist
 
         IWpfTextViewMargin IWpfTextViewMarginProvider.CreateMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
         {
-            if (!_isVisualAssistInstalled || _isRegistryFixed)
+            if (!_isVisualAssistInstalled || !_isRegistryFixedNeeded)
             {
                 return null;
             }
