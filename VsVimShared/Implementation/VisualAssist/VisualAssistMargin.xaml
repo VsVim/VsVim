@@ -1,0 +1,37 @@
+﻿<UserControl x:Class="VsVim.Implementation.VisualAssist.VisualAssistMargin"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="25" 
+             d:DesignWidth="453"
+             x:ClassModifier="internal">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Name="_fixRegistryPanel" Orientation="Horizontal" Grid.Row="0">
+            <Label Margin="0,0,5,0">Enable Visual Assist support for VsVim?</Label>
+
+            <Button 
+                Click="OnYesClick"
+                Margin="0,0,5,0">Yes</Button>
+
+            <Button 
+                Click="OnNoClick"
+                Margin="0,0,5,0">No</Button>
+
+        </StackPanel>
+
+        <StackPanel Name="_restartPanel" Orientation="Horizontal" Grid.Row="0" Visibility="Collapsed">
+            <Label Margin="0,0,5,0">Visual Studio must be restarted for this setting to take effect</Label>
+
+            <Button 
+                Click="OnCloseClick"
+                Margin="0,0,5,0">Close</Button>
+        </StackPanel>
+
+    </Grid>
+</UserControl>
