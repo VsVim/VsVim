@@ -92,10 +92,10 @@ namespace Vim.UI.Wpf
 
         public abstract string GetName(ITextBuffer value);
 
-        public virtual FSharpOption<ITextView> GetFocusedTextView()
+        public virtual bool TryGetFocusedTextView(out ITextView textView)
         {
-            var textView = _textViewList.FirstOrDefault(x => x.HasAggregateFocus);
-            return FSharpOption.CreateForReference(textView);
+            textView = _textViewList.FirstOrDefault(x => x.HasAggregateFocus);
+            return textView != null;
         }
 
         public abstract bool GoToDefinition();
@@ -382,7 +382,10 @@ namespace Vim.UI.Wpf
 
         FSharpOption<ITextView> IVimHost.GetFocusedTextView()
         {
-            return GetFocusedTextView();
+            ITextView textView;
+            return TryGetFocusedTextView(out textView)
+                ? FSharpOption.Create(textView)
+                : FSharpOption<ITextView>.None;
         }
 
         string IVimHost.GetName(ITextBuffer textBuffer)

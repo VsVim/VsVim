@@ -17,9 +17,10 @@ namespace VsVim.Implementation
 
             }
 
-            FSharpOption<ITextView> ISharedService.GetFocusedTextView()
+            bool ISharedService.TryGetFocusedTextView(out ITextView textView)
             {
-                return FSharpOption<ITextView>.None;
+                textView = null;
+                return false;
             }
         }
 

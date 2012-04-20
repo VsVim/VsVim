@@ -16,7 +16,7 @@ namespace VsVim
         /// macro containing the 'gt' command.  Unfortunately these don't fully process through Visual
         /// Studio until the next UI thread pump so we instead have to go straight to the view controller
         /// </summary>
-        FSharpOption<ITextView> GetFocusedTextView();
+        bool TryGetFocusedTextView(out ITextView textView);
 
         /// <summary>
         /// Go to the next tab in the specified direction

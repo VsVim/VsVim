@@ -299,9 +299,9 @@ namespace VsVim
             return HostResult.Success;
         }
 
-        public override FSharpOption<ITextView> GetFocusedTextView()
+        public override bool TryGetFocusedTextView(out ITextView textView)
         {
-            return _sharedService.GetFocusedTextView();
+            return _sharedService.TryGetFocusedTextView(out textView);
         }
 
         public override void Quit()

@@ -107,13 +107,14 @@ namespace VsVim.Dev11
             return group.VisibleChildren.OfType<View>().ToList();
         }
 
-        internal FSharpOption<ITextView> GetFocusedTextView()
+        internal bool TryGetFocusedTextView(out ITextView textView)
         {
             var activeView = ViewManager.Instance.ActiveView;
             var result = _vsAdapter.GetWindowFrames();
             if (result.IsError)
             {
-                return FSharpOption<ITextView>.None;
+                textView = null;
+                return false;
             }
 
             IVsWindowFrame activeWindowFrame = null;
@@ -129,19 +130,21 @@ namespace VsVim.Dev11
 
             if (activeWindowFrame == null)
             {
-                return FSharpOption<ITextView>.None;
+                textView = null;
+                return false;
             }
 
             // TODO: Should try and pick the ITextView which is actually focussed as 
             // there could be several in a split screen
             try
             {
-                ITextView textView = activeWindowFrame.GetCodeWindow().Value.GetPrimaryTextView(_editorAdaptersFactoryService).Value;
-                return FSharpOption.Create(textView);
+                textView = activeWindowFrame.GetCodeWindow().Value.GetPrimaryTextView(_editorAdaptersFactoryService).Value;
+                return textView != null;
             }
             catch
             {
-                return FSharpOption<ITextView>.None;
+                textView = null;
+                return false;
             }
         }
 
@@ -157,9 +160,9 @@ namespace VsVim.Dev11
             GoToTab(index);
         }
 
-        FSharpOption<ITextView> ISharedService.GetFocusedTextView()
+        bool ISharedService.TryGetFocusedTextView(out ITextView textView)
         {
-            return GetFocusedTextView();
+            return TryGetFocusedTextView(out textView);
         }
 
         #endregion
