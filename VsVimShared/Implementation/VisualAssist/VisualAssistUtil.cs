@@ -1,11 +1,12 @@
 ﻿using System;
 using System.ComponentModel.Composition;
+using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
-using Vim;
 using Microsoft.Win32;
+using Vim;
 
 namespace VsVim.Implementation.VisualAssist
 {
@@ -21,13 +22,14 @@ namespace VsVim.Implementation.VisualAssist
     [Name("VisualAssistKeyProcessor")]
     internal sealed class VisualAssistUtil : IKeyProcessorProvider, IVisualAssistUtil, IWpfTextViewMarginProvider
     {
-        private const string RegistryKeyName = @"Software\Whole Tomato\Visual Assist X\VANet10";
+        private const string RegistryBaseKeyName = @"Software\Whole Tomato\Visual Assist X\";
         private const string RegistryValueName = @"TrackCaretVisibility";
 
         private static readonly Guid VisualAssistPackageId = new Guid("{44630d46-96b5-488c-8df9-26e21db8c1a3}");
 
         private readonly IVim _vim;
         private readonly bool _isVisualAssistInstalled;
+        private readonly VisualStudioVersion _visualStudioVersion;
         private bool _isRegistryFixed;
         private EventHandler _registryFixCompleted;
 
@@ -40,19 +42,50 @@ namespace VsVim.Implementation.VisualAssist
 
             var vsShell = serviceProvider.GetService<SVsShell, IVsShell>();
             _isVisualAssistInstalled = vsShell.IsPackageInstalled(VisualAssistPackageId);
-            _isRegistryFixed = _isVisualAssistInstalled
-                ? CheckRegistryKey()
-                : true;
+            if (_isVisualAssistInstalled)
+            {
+                var dte = serviceProvider.GetService<SDTE, _DTE>();
+                _visualStudioVersion = dte.GetVisualStudioVersion();
+                _isRegistryFixed = CheckRegistryKey(_visualStudioVersion);
+            }
+            else
+            {
+                // If Visual Assist isn't installed then don't do any extra work
+                _isRegistryFixed = true;
+                _visualStudioVersion = VisualStudioVersion.Unknown;
+            }
         }
 
-        private bool CheckRegistryKey()
+        private static string GetRegistryKeyName(VisualStudioVersion version)
+        {
+            string subKey;
+            switch (version)
+            {
+                case VisualStudioVersion.Dev10:
+                    subKey = "VANet10";
+                    break;
+                case VisualStudioVersion.Dev11:
+                    subKey = "VANet11";
+                    break;
+                case VisualStudioVersion.Unknown:
+                default:
+                    // Default to the Dev10 version
+                    subKey = "VANet10";
+                    break;
+            }
+
+            return RegistryBaseKeyName + subKey;
+        }
+
+        private static bool CheckRegistryKey(VisualStudioVersion version)
         {
             try
             {
-                using (var key = Registry.CurrentUser.OpenSubKey(RegistryKeyName))
+                var keyName = GetRegistryKeyName(version);
+                using (var key = Registry.CurrentUser.OpenSubKey(keyName))
                 {
-                    var value = (int)key.GetValue(RegistryValueName);
-                    return value != 0;
+                    var value = (byte[])key.GetValue(RegistryValueName);
+                    return value.Length > 0 && value[0] != 0;
                 }
             }
             catch
@@ -62,13 +95,15 @@ namespace VsVim.Implementation.VisualAssist
             }
         }
 
-        private void FixRegistryKey()
+        private static void FixRegistryKey(VisualStudioVersion version)
         {
             try
             {
-                using (var key = Registry.CurrentUser.OpenSubKey(RegistryKeyName, true))
+                var keyName = GetRegistryKeyName(version);
+                using (var key = Registry.CurrentUser.OpenSubKey(keyName, true))
                 {
-                    key.SetValue(RegistryValueName, 1);
+                    var value = new byte[] { 1 };
+                    key.SetValue(RegistryValueName, value, RegistryValueKind.Binary);
                 }
             }
             catch
@@ -79,7 +114,7 @@ namespace VsVim.Implementation.VisualAssist
 
         private void FixRegistry()
         {
-            FixRegistryKey();
+            FixRegistryKey(_visualStudioVersion);
             RaiseRegistryFixCompleted();
         }
 
