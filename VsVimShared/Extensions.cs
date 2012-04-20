@@ -128,9 +128,18 @@ namespace VsVim
         /// </summary>
         public static void SafeSetBindings(this Command command, KeyBinding binding)
         {
+            SafeSetBindings(command, new[] { binding.CommandString });
+        }
+
+        /// <summary>
+        /// Safely reset the bindings on this Command to the provided KeyBinding value
+        /// </summary>
+        public static void SafeSetBindings(this Command command, IEnumerable<string> commandBindings)
+        {
             try
             {
-                command.Bindings = new object[] { binding.CommandString };
+                var bindings = commandBindings.Cast<object>().ToArray();
+                command.Bindings = bindings;
             }
             catch (COMException)
             {

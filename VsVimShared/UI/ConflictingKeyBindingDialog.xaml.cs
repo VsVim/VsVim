@@ -3,9 +3,10 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
+using EditorUtils;
 using Microsoft.VisualStudio.PlatformUI;
 using Vim;
-using EditorUtils;
+using System;
 
 namespace VsVim.UI
 {
@@ -146,7 +147,18 @@ namespace VsVim.UI
                 var tuple = _snapshot.TryGetCommand(cur.Name);
                 if (tuple.Item1)
                 {
-                    tuple.Item2.SafeSetBindings(cur.KeyBinding);
+                    var command = tuple.Item2;
+
+                    // It's very possible that the user has added new mappings to a given key since we stored
+                    // the original mappings.  Make sure we don't erase those values here and instead append the
+                    // previous binding we stored back to the command
+                    var bindingList = command.GetBindings().ToList();
+                    var commandString = cur.KeyBinding.CommandString;
+                    if (!bindingList.Contains(commandString, StringComparer.OrdinalIgnoreCase))
+                    {
+                        bindingList.Add(commandString);
+                        command.SafeSetBindings(bindingList);
+                    }
                 }
             }
 
