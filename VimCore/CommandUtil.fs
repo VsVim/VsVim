@@ -504,6 +504,12 @@ type internal CommandUtil
         _foldManager.CloseAllFolds span
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Close the IVimBuffer.  This is an implementation of the ZZ command and won't check
+    /// for a dirty buffer
+    member x.CloseBuffer() =
+        _vimHost.Close _textView 
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Delete 'count' characters after the cursor on the current line.  Caret should 
     /// remain at it's original position 
     member x.DeleteCharacterAtCaret count register =
@@ -2002,6 +2008,7 @@ type internal CommandUtil
         | NormalCommand.ChangeTillEndOfLine -> x.ChangeTillEndOfLine count register
         | NormalCommand.CloseAllFolds -> x.CloseAllFolds()
         | NormalCommand.CloseAllFoldsUnderCaret -> x.CloseAllFoldsUnderCaret()
+        | NormalCommand.CloseBuffer -> x.CloseBuffer()
         | NormalCommand.CloseFoldUnderCaret -> x.CloseFoldUnderCaret count
         | NormalCommand.DeleteAllFoldsInBuffer -> x.DeleteAllFoldsInBuffer()
         | NormalCommand.DeleteAllFoldsUnderCaret -> x.DeleteAllFoldsUnderCaret()

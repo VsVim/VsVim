@@ -1855,6 +1855,9 @@ type NormalCommand =
     /// Close all folds under the caret
     | CloseAllFoldsUnderCaret
 
+    /// Close the IVimBuffer and don't bother to save
+    | CloseBuffer
+
     /// Close 'count' folds under the caret
     | CloseFoldUnderCaret
 

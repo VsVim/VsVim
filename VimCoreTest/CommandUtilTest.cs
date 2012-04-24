@@ -163,6 +163,32 @@ namespace Vim.UnitTest
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
 
+        /// <summary>
+        /// Don't save the buffer on a close command even if it's dirty
+        /// </summary>
+        [Test]
+        public void CloseBuffer_Dirty()
+        {
+            Create("");
+            _vimHost.IsDirtyFunc = _ => true;
+            _commandUtil.CloseBuffer();
+            Assert.IsNull(_vimHost.LastSaved);
+            Assert.AreEqual(_textView, _vimHost.LastClosed);
+        }
+
+        /// <summary>
+        /// Saving a non-dirty buffer is the same as saving a dirty one
+        /// </summary>
+        [Test]
+        public void CloseBuffer_NotDirty()
+        {
+            Create("");
+            _vimHost.IsDirtyFunc = _ => false;
+            _commandUtil.CloseBuffer();
+            Assert.IsNull(_vimHost.LastSaved);
+            Assert.AreEqual(_textView, _vimHost.LastClosed);
+        }
+
         [Test]
         public void ReplaceChar1()
         {

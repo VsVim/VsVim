@@ -93,6 +93,7 @@ type internal NormalMode
                 yield ("zF", CommandFlags.Special, NormalCommand.FoldLines)
                 yield ("zM", CommandFlags.Special, NormalCommand.CloseAllFolds)
                 yield ("zR", CommandFlags.Special, NormalCommand.OpenAllFolds)
+                yield ("ZQ", CommandFlags.Special, NormalCommand.CloseBuffer)
                 yield ("ZZ", CommandFlags.Special, NormalCommand.WriteBufferAndQuit)
                 yield ("<Insert>", CommandFlags.None, NormalCommand.InsertBeforeCaret)
                 yield ("<C-a>", CommandFlags.Repeatable, NormalCommand.AddToWord)
