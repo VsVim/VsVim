@@ -26,8 +26,11 @@ namespace Vim.UnitTest.Mock
         public bool? IsTextViewVisible { get; set; }
         public Func<ITextView, InsertCommand, bool> TryCustomProcessFunc { get; set; }
         public Func<ITextView> CreateHiddenTextViewFunc { get; set; }
+        public Func<ITextBuffer, bool> IsDirtyFunc { get; set; }
         public Func<string, string, IVimData, string> RunCommandFunc { get; set; }
         public Action<string, string> RunVisualStudioCommandFunc { get; set; }
+        public ITextBuffer LastSaved { get; set; }
+        public ITextView LastClosed { get; set; }
 
         /// <summary>
         /// Data from the last GoToNextTab call
@@ -65,6 +68,9 @@ namespace Vim.UnitTest.Mock
             CreateHiddenTextViewFunc = delegate { throw new NotImplementedException(); };
             RunCommandFunc = delegate { throw new NotImplementedException(); };
             RunVisualStudioCommandFunc = delegate { throw new NotImplementedException(); };
+            IsDirtyFunc = null;
+            LastClosed = null;
+            LastSaved = null;
         }
 
         void IVimHost.Beep()
@@ -96,7 +102,7 @@ namespace Vim.UnitTest.Mock
 
         void IVimHost.Close(ITextView textView)
         {
-            throw new NotImplementedException();
+            LastClosed = textView;
         }
 
         ITextView IVimHost.CreateHiddenTextView()
@@ -106,7 +112,8 @@ namespace Vim.UnitTest.Mock
 
         bool IVimHost.Save(ITextBuffer textBuffer)
         {
-            throw new NotImplementedException();
+            LastSaved = textBuffer;
+            return true;
         }
 
         bool IVimHost.SaveTextAs(string text, string filePath)
@@ -156,6 +163,11 @@ namespace Vim.UnitTest.Mock
 
         bool IVimHost.IsDirty(ITextBuffer value)
         {
+            if (IsDirtyFunc != null)
+            {
+                return IsDirtyFunc(value);
+            }
+
             return false;
         }
 

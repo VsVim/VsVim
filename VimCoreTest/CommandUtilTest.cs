@@ -1854,6 +1854,33 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Make sure that we write out the buffer and close if it's dirty
+        /// </summary>
+        [Test]
+        public void WriteBufferAndQuit_Dirty()
+        {
+            Create("");
+            _vimHost.IsDirtyFunc = _ => true;
+            _commandUtil.WriteBufferAndQuit();
+            Assert.AreEqual(_textBuffer, _vimHost.LastSaved);
+            Assert.AreEqual(_textView, _vimHost.LastClosed);
+        }
+
+        /// <summary>
+        /// Make sure that we don't write out the buffer and simply close when the buffer
+        /// isn't dirty
+        /// </summary>
+        [Test]
+        public void WriteBufferAndQuit_NotDirty()
+        {
+            Create("");
+            _vimHost.IsDirtyFunc = _ => false;
+            _commandUtil.WriteBufferAndQuit();
+            Assert.IsNull(_vimHost.LastSaved);
+            Assert.AreEqual(_textView, _vimHost.LastClosed);
+        }
+
+        /// <summary>
         /// Ensure that yank lines does a line wise yank of the 'count' lines
         /// from the caret
         /// </summary>
