@@ -56,23 +56,6 @@ module internal CommonUtil =
 
             statusUtil.OnError (format searchData.Pattern)
 
-    /// The caret sometimes needs to be adjusted after an Up or Down movement.  Caret position
-    /// and virtual space is actually quite a predicament for VsVim because of how Vim standard 
-    /// works.  Vim has no concept of Virtual Space and is designed to work in a fixed width
-    /// font buffer.  Visual Studio has essentially the exact opposite.  Non-fixed width fonts are
-    /// the most problematic because it makes the natural Vim motion of column based up and down
-    /// make little sense visually.  Instead we rely on the core editor for up and down motions.
-    ///
-    /// The one exception has to do with the VirtualEdit setting.  By default the 'l' motion will 
-    /// only move you to the last character on the line and no further.  Visual Studio up and down
-    /// though acts like virtualedit=onemore.  We correct this here
-    let MoveCaretForVirtualEdit textView (settings : IVimGlobalSettings) =
-        if not settings.IsVirtualEditOneMore then 
-            let point = TextViewUtil.GetCaretPoint textView
-            let line = SnapshotPointUtil.GetContainingLine point
-            if point.Position >= line.End.Position && line.Length > 0 then 
-                TextViewUtil.MoveCaretToPoint textView (line.End.Subtract(1))
-
 type internal CommonOperations
     (
         _vimBufferData : IVimBufferData,
@@ -190,6 +173,29 @@ type internal CommonOperations
                 line.GetLineBreakText()
             else
                 _editorOptions.GetNewLineCharacter()
+
+    /// The caret sometimes needs to be adjusted after an Up or Down movement.  Caret position
+    /// and virtual space is actually quite a predicament for VsVim because of how Vim standard 
+    /// works.  Vim has no concept of Virtual Space and is designed to work in a fixed width
+    /// font buffer.  Visual Studio has essentially the exact opposite.  Non-fixed width fonts are
+    /// the most problematic because it makes the natural Vim motion of column based up and down
+    /// make little sense visually.  Instead we rely on the core editor for up and down motions.
+    ///
+    /// The two exceptions to this are the Virtual Edit and exclusive setting in Visual Mode.  By
+    /// default the 'l' motion will only move you to the last character on the line and no 
+    /// further.  Visual Studio up and down though acts like virtualedit=onemore.  We correct 
+    /// this here
+    member x.AdjustCaretPostMove() =
+
+        let allowPastEndOfLine = 
+            _globalSettings.IsVirtualEditOneMore ||
+            (_globalSettings.SelectionKind = SelectionKind.Exclusive && VisualKind.IsAnyVisual _vimTextBuffer.ModeKind)
+
+        if not allowPastEndOfLine then
+            let point = TextViewUtil.GetCaretPoint _textView
+            let line = SnapshotPointUtil.GetContainingLine point
+            if point.Position >= line.End.Position && line.Length > 0 then 
+                TextViewUtil.MoveCaretToPoint _textView (line.End.Subtract(1))
 
     /// Delete count lines from the cursor.  The caret should be positioned at the start
     /// of the first line for both undo / redo
@@ -380,14 +386,14 @@ type internal CommonOperations
             // Character wise motions should expand regions
             x.MoveCaretToPointAndEnsureVisible point
 
-        CommonUtil.MoveCaretForVirtualEdit _textView _globalSettings
+        x.AdjustCaretPostMove()
         _editorOperations.ResetSelection()
 
     /// Move the caret to the specified point but adjust the result if it's in virtual space
     /// and current settings disallow that
     member x.MoveCaretToPointAndCheckVirtualSpace point =
         TextViewUtil.MoveCaretToPoint _textView point
-        CommonUtil.MoveCaretForVirtualEdit _textView _globalSettings
+        x.AdjustCaretPostMove()
 
     /// Move the caret to the proper indentation on a newly created line.  The context line 
     /// is provided to calculate an indentation off of
