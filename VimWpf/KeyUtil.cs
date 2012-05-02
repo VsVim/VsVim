@@ -23,6 +23,14 @@ namespace Vim.UI.Wpf
         }
 
         /// <summary>
+        /// Is this a known dead key
+        /// </summary>
+        public static bool IsDeadKey(Key key)
+        {
+            return GetOrCreateKeyboardMap().IsDeadKey(key, ModifierKeys.None);
+        }
+
+        /// <summary>
         /// Is this the AltGr key combination.  This is not directly representable in WPF
         /// logic but the best that can be done is to check for Alt + Control
         /// </summary>

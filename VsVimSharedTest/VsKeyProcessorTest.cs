@@ -13,7 +13,7 @@ namespace VsVim.UnitTest
     [TestFixture]
     public sealed class VsKeyProcessorTest : VimKeyProcessorTest
     {
-        private Mock<IVsAdapter> _adapter;
+        private Mock<IVsAdapter> _vsAdapter;
         private Mock<ITextBuffer> _textBuffer;
         private IVimBufferCoordinator _bufferCoordinator;
         private VsKeyProcessor _vsProcessor;
@@ -24,12 +24,14 @@ namespace VsVim.UnitTest
             base.Setup(languageId);
             _factory = new MockRepository(MockBehavior.Strict);
             _textBuffer = _factory.Create<ITextBuffer>();
-            _adapter = _factory.Create<IVsAdapter>();
-            _adapter.Setup(x => x.IsReadOnly(_textBuffer.Object)).Returns(false);
-            _adapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(false);
+            _vsAdapter = _factory.Create<IVsAdapter>();
+            _vsAdapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(false);
             _buffer = MockObjectFactory.CreateVimBuffer(_textBuffer.Object);
+            _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true);
+            _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             _bufferCoordinator = new VimBufferCoordinator(_buffer.Object);
-            _vsProcessor = new VsKeyProcessor(_adapter.Object, _bufferCoordinator);
+            _vsProcessor = new VsKeyProcessor(_vsAdapter.Object, _bufferCoordinator);
             _processor = _vsProcessor;
             _device = new MockKeyboardDevice();
         }
@@ -51,94 +53,45 @@ namespace VsVim.UnitTest
             Assert.AreEqual(shouldHandle, args.Handled, "Did not handle {0} + {1}", key, modKeys);
         }
 
+        /// <summary>
+        /// Don't handle the AltGr scenarios here.  The AltGr key is just too ambiguous to handle in the 
+        /// KeyDown event
+        /// </summary>
         [Test]
-        public void EditableKeyDown1()
+        public void KeyDown_AltGr()
         {
-            _adapter.Setup(x => x.IsReadOnly(_textBuffer.Object)).Returns(false).Verifiable();
-            VerifyNotHandle(Key.A);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void EditableKeyDown2()
-        {
-            _adapter.Setup(x => x.IsReadOnly(_textBuffer.Object)).Returns(false).Verifiable();
-            VerifyNotHandle(Key.D);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void EditableKeyDown3()
-        {
-            _adapter.Setup(x => x.IsReadOnly(_textBuffer.Object)).Returns(false).Verifiable();
             VerifyNotHandle(Key.D, ModifierKeys.Alt | ModifierKeys.Control);
-            _factory.Verify();
         }
 
+        /// <summary>
+        /// Make sure that we handle alpha input when the buffer is marked as readonly. 
+        /// </summary>
         [Test]
-        [Description("Handle input when it's readonly")]
-        public void ReadOnlyKeyDown1()
+        public void KeyDown_AlphaReadOnly()
         {
-            _adapter.Setup(x => x.IsReadOnly(_textBuffer.Object)).Returns(true).Verifiable();
-            _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
-            _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
             VerifyHandle(Key.A);
             VerifyHandle(Key.B);
             VerifyHandle(Key.D1);
             VerifyHandle(Key.A, ModifierKeys.Shift);
             VerifyHandle(Key.B, ModifierKeys.Shift);
             VerifyHandle(Key.D1, ModifierKeys.Shift);
-            _factory.Verify();
         }
 
-        [Test]
-        [Description("Don't handle non-input when the buffer is readonly")]
-        public void ReadOnlyKeyDown2()
-        {
-            _adapter.Setup(x => x.IsReadOnly(_textBuffer.Object)).Returns(true).Verifiable();
-            VerifyNotHandle(Key.LeftCtrl);
-            VerifyNotHandle(Key.RightCtrl);
-            VerifyNotHandle(Key.LeftAlt);
-            VerifyNotHandle(Key.RightAlt);
-            VerifyNotHandle(Key.LeftShift);
-            VerifyNotHandle(Key.RightShift);
-        }
-
-        [Test]
-        [Description("Handle all characters in read only")]
-        public void ReadOnlyKeyDown3()
-        {
-            _adapter.Setup(x => x.IsReadOnly(_textBuffer.Object)).Returns(true).Verifiable();
-            _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
-            _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
-            for (var i = 0; i < 26; i++)
-            {
-                var key = (Key)((int)Key.A + i);
-                VerifyHandle(key);
-            }
-        }
-
-        [Test]
-        [Description("Don't handle AltGr combos")]
-        public void ReadOnlyKeyDown4()
-        {
-            _adapter.Setup(x => x.IsReadOnly(_textBuffer.Object)).Returns(true).Verifiable();
-            for (var i = 0; i < 26; i++)
-            {
-                var key = (Key)((int)Key.A + i);
-                VerifyNotHandle(key, ModifierKeys.Control | ModifierKeys.Alt);
-            }
-        }
-
+        /// <summary>
+        /// If incremental search is active then we don't want to route input to VsVim.  Instead we 
+        /// want to let it get processed by incremental search
+        /// </summary>
         [Test]
         public void KeyDown_DontHandleIfIncrementalSearchActive()
         {
-            _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
-            _buffer.Setup(x => x.CanProcessAsCommand(It.IsAny<KeyInput>())).Returns(true).Verifiable();
-            _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
-            VerifyHandle(Key.Enter);
-            _adapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(true);
-            VerifyNotHandle(Key.Enter);
+            var all = new[] { Key.Enter, Key.A };
+            foreach (var key in all)
+            {
+                _vsAdapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(false);
+                VerifyHandle(key);
+                _vsAdapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(true);
+                VerifyNotHandle(key);
+            }
         }
     }
 }

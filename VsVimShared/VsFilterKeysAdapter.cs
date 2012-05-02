@@ -87,7 +87,6 @@ namespace VsVim
             field.SetValue(_codeWindow, _filterKeys);
         }
 
-
         /// <summary>
         /// Try and install the IVsFilterKeys adapter for the given ITextView.
         /// </summary>

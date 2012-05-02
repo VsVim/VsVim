@@ -55,19 +55,6 @@ namespace Vim.UI.Wpf
         }
 
         /// <summary>
-        /// Try and process the given KeyInput with the IVimBuffer as a command.  This is called
-        /// from situations where we have to guess at the KeyInput a bit.  It may be a key in a
-        /// multi-key character and hence we only want to process if it's bound to a command
-        ///
-        /// This is overridable by derived classes in order for them to prevent any KeyInput from 
-        /// reaching the IVimBuffer
-        /// </summary>
-        protected virtual bool TryProcessAsCommand(KeyInput keyInput)
-        {
-            return _buffer.CanProcessAsCommand(keyInput) && _buffer.Process(keyInput).IsAnyHandled;
-        }
-
-        /// <summary>
         /// Last chance at custom handling of user input.  At this point we have the 
         /// advantage that WPF has properly converted the user input into a char which 
         /// can be effeciently mapped to a KeyInput value.  
@@ -75,15 +62,21 @@ namespace Vim.UI.Wpf
         public override void TextInput(TextCompositionEventArgs args)
         {
             bool handled = false;
-            if (!String.IsNullOrEmpty(args.Text) && 1 == args.Text.Length)
+
+            var text = args.Text;
+            if (!String.IsNullOrEmpty(text))
             {
-                // Only want to intercept text coming from the keyboard.  Let other 
-                // components edit without having to come through us
+                // In the case of a failed dead key mapping (pressing the accent key twice for
+                // example) we will recieve a multi-length string here.  One character for every
+                // one of the mappings.  Make sure to handle each of them
                 var keyboard = args.Device as KeyboardDevice;
                 if (keyboard != null)
                 {
-                    var keyInput = KeyUtil.CharAndModifiersToKeyInput(args.Text[0], keyboard.Modifiers);
-                    handled = TryProcess(keyInput);
+                    for (var i = 0; i < text.Length; i++)
+                    {
+                        var keyInput = KeyUtil.CharAndModifiersToKeyInput(text[i], keyboard.Modifiers);
+                        handled = TryProcess(keyInput);
+                    }
                 }
             }
 
@@ -97,11 +90,6 @@ namespace Vim.UI.Wpf
         /// translated into actual text input will be done so much more accurately by
         /// WPF and will end up in the TextInput event.
         /// 
-        /// Attempting to manually translate the arguments here from a Key and KeyModifiers
-        /// to a char **will** fail because we lack enough information (dead keys, etc ...)
-        /// This is why we prefer the TextInput event.  It does the heavy lifting for
-        /// us
-        ///
         /// An example of why this handler is needed is for key combinations like 
         /// Shift+Escape.  This combination won't translate to an actual character in most
         /// (possibly all) keyboard layouts.  This means it won't ever make it to the
@@ -117,10 +105,15 @@ namespace Vim.UI.Wpf
         public override void KeyDown(KeyEventArgs args)
         {
             bool handled;
-            if (!KeyUtil.IsInputKey(args.Key))
+            if (KeyUtil.IsDeadKey(args.Key) || args.Key == Key.DeadCharProcessed)
             {
-                // Non input keys such as Alt, Control, etc ... by themselves are uninteresting
-                // to Vim
+                // When a dead key combination is pressed we will get the key down events in 
+                // sequence after the combination is complete.  The dead keys will come first
+                // and be followed by the final key which produces the char.  That final key 
+                // is marked as DeadCharProcessed.
+                //
+                // All of these should be ignored.  They will produce a TextInput value which
+                // we can process in the TextInput event
                 handled = false;
             }
             else if (KeyUtil.IsAltGr(args.KeyboardDevice.Modifiers))
@@ -131,30 +124,20 @@ namespace Vim.UI.Wpf
                 // to process it
                 handled = false;
             }
-            else if (args.KeyboardDevice.Modifiers == ModifierKeys.None || args.KeyboardDevice.Modifiers == ModifierKeys.Shift)
-            {
-                // When there are no keyboard modifiers or simply shift then we only want to 
-                // process input which isn't mapped by a char.  If it is mapped by a char value 
-                // then it will appear in TextInput and we can do a much more definitive mapping
-                // from that result
-                KeyInput keyInput;
-                var tryProcess =
-                    KeyUtil.TryConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out keyInput) &&
-                    !KeyUtil.IsMappedByChar(keyInput.Key);
-                handled = tryProcess ? TryProcessAsCommand(keyInput) : false;
-            }
-            else if (0 != (args.KeyboardDevice.Modifiers & (ModifierKeys.Control | ModifierKeys.Alt)))
-            {
-                // There is a modifier and it's not just shift.  Attempt to convert the input 
-                // and see if can be handled by Vim
-                KeyInput keyInput;
-                handled =
-                    KeyUtil.TryConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out keyInput) &&
-                    TryProcessAsCommand(keyInput);
-            }
             else
             {
-                handled = false;
+                // Attempt to map the key information into a KeyInput value which can be processed
+                // by Vim.  If this worksa nd the key is processed then the input is considered
+                // to be handled
+                KeyInput keyInput;
+                if (KeyUtil.TryConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out keyInput))
+                {
+                    handled = TryProcess(keyInput);
+                }
+                else
+                {
+                    handled = false;
+                }
             }
 
             args.Handled = handled;
