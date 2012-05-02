@@ -100,6 +100,21 @@ namespace VsVim.UnitTest
         }
 
         /// <summary>
+        /// Regression test for issue #663.  Previously the ; was being seen as part of a possible dead
+        /// key combination and mapping wasn't kicking in.  Now that we know it can't be part of a dead
+        /// key mapping we process it promptly as it should be 
+        /// </summary>
+        [Test]
+        public void KeyMap_DoubleSemicolon()
+        {
+            Create("cat", "dog");
+            _vimBuffer.Process(":imap ;; <Esc>", enter: true);
+            _vimBuffer.Process("i");
+            _simulation.Run(";;");
+            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
+        }
+
+        /// <summary>
         /// Make sure that Escape dismisses intellisense even in normal mode
         /// </summary>
         [Test]
