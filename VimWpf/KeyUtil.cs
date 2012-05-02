@@ -69,11 +69,6 @@ namespace Vim.UI.Wpf
             return !IsNonInputKey(k);
         }
 
-        public static bool IsMappedByChar(VimKey vimKey)
-        {
-            return KeyboardMap.IsMappedByCharacter(vimKey);
-        }
-
         public static KeyInput CharAndModifiersToKeyInput(char c, ModifierKeys modifierKeys)
         {
             return GetOrCreateKeyboardMap().GetKeyInput(c, IsAltGr(modifierKeys) ? ModifierKeys.None : modifierKeys);

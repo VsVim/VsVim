@@ -78,11 +78,6 @@ namespace Vim.UI.Wpf
         /// </summary>
         private readonly Dictionary<KeyInput, KeyState> _keyInputToWpfKeyDataMap;
 
-        /// <summary>
-        /// Cache of the char and the modifiers needed to build the char 
-        /// </summary>
-        private readonly Dictionary<char, ModifierKeys> _charToModifierMap;
-
         internal IntPtr KeyboardId
         {
             get { return _keyboardId; }
@@ -101,32 +96,18 @@ namespace Vim.UI.Wpf
             _keyboardId = keyboardId;
 
             var builder = new Builder(keyboardId);
-            builder.Create(out _keyStateToVimKeyDataMap, out _keyInputToWpfKeyDataMap, out _charToModifierMap);
+            builder.Create(out _keyStateToVimKeyDataMap, out _keyInputToWpfKeyDataMap);
         }
 
         /// <summary>
-        /// Try and get the KeyInput for the specified char and ModifierKeys.  This will 
-        /// check and see if this is a well known char.  Many well known chars are expected
-        /// to come with certain modifiers (for instance on US keyboard # is expected to
-        /// have Shift applied).  These will be removed from the ModifierKeys passed in and
-        /// whatever is left will be applied to the resulting KeyInput.  
+        /// Get the KeyInput for the specified character and Modifier keys.  This will properly
+        /// unify the WPF modifiers with the expected Vim ones
         /// </summary>
         internal KeyInput GetKeyInput(char c, ModifierKeys modifierKeys)
         {
             var keyInput = KeyInputUtil.CharToKeyInput(c);
-            ModifierKeys expected;
-            if (_charToModifierMap.TryGetValue(c, out expected))
-            {
-                modifierKeys &= ~expected;
-            }
-
-            if (modifierKeys != ModifierKeys.None)
-            {
-                var keyModifiers = ConvertToKeyModifiers(modifierKeys);
-                keyInput = KeyInputUtil.ApplyModifiers(keyInput, keyModifiers);
-            }
-
-            return keyInput;
+            var keyModifiers = ConvertToKeyModifiers(modifierKeys);
+            return KeyInputUtil.ApplyModifiers(keyInput, keyModifiers);
         }
 
         /// <summary>
@@ -226,25 +207,6 @@ namespace Vim.UI.Wpf
             key = Key.None;
             modifierKeys = ModifierKeys.None;
             return false;
-        }
-
-        /// <summary>
-        /// Under the hood we map KeyInput values into actual input by one of two mechanisms
-        ///
-        ///  1. Straight mapping of a VimKey to a Virtual Key Code.
-        ///  2. Mapping of the character to a virtual key code and set of modifier keys
-        ///
-        /// This method will return true if the VimKey is mapped using method 2
-        ///
-        /// Generally speaking a KeyInput is mapped by character if it has an associated 
-        /// char value.  This is not true for certain special cases like Enter, Tab and 
-        /// the Keypad values.
-        ///
-        /// TODO: Delete this method.  This is an odd heuristic to use
-        /// </summary>
-        internal static bool IsMappedByCharacter(VimKey vimKey)
-        {
-            return Builder.IsSpecialVimKey(vimKey);
         }
 
         internal static KeyModifiers ConvertToKeyModifiers(ModifierKeys keys)

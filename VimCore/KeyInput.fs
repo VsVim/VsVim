@@ -382,7 +382,6 @@ module KeyInputUtil =
         AlternateKeyInputPairList 
         |> List.tryPick (fun (target, alternate) -> if alternate = ki then Some target else None)
 
-
     /// There is a set of characters to which the shift modifier is meaningless.  When the shift
     /// key is held down for these keys it's essentially ignored
     ///
@@ -428,7 +427,7 @@ module KeyInputUtil =
                 // either of the following
                 //
                 //  - Lower case 'a' + shift
-                //  - Upper case 'a' with no shift
+                //  - Upper case 'A' with no shift
                 //
                 // Vim doesn't distinguish between these two and unifies internally.  This can be 
                 // demonstrated by playing with key mapping combinations (<S-A> and A).  It's 
@@ -443,7 +442,7 @@ module KeyInputUtil =
                         let upperKeyInput = CharToKeyInput c 
                         ChangeKeyModifiersDangerous upperKeyInput keyInput.KeyModifiers
                     else
-                        // Ignore the shift modifier on an upper letter
+                        // Ignore the shift modifier on anything which is not considered lower
                         keyInput
 
                 // Apply the remaining modifiers

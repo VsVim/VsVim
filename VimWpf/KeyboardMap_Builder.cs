@@ -29,7 +29,6 @@ namespace Vim.UI.Wpf
             private readonly byte[] _keyboardStateArray = new byte[KeyBoardArrayLength];
             private Dictionary<KeyState, VimKeyData> _keyStateToVimKeyDataMap;
             private Dictionary<KeyInput, KeyState> _keyInputToWpfKeyDataMap;
-            private Dictionary<char, ModifierKeys> _charToKeyModifiersMap;
 
             internal Builder(IntPtr keyboardId)
             {
@@ -38,19 +37,16 @@ namespace Vim.UI.Wpf
 
             internal void Create(
                 out Dictionary<KeyState, VimKeyData> keyStateToVimKeyDataMap,
-                out Dictionary<KeyInput, KeyState> keyInputToWpfKeyDataMap,
-                out Dictionary<char, ModifierKeys> charToKeyModifiersMap)
+                out Dictionary<KeyInput, KeyState> keyInputToWpfKeyDataMap)
             {
                 _keyStateToVimKeyDataMap = new Dictionary<KeyState, VimKeyData>();
                 _keyInputToWpfKeyDataMap = new Dictionary<KeyInput, KeyState>();
-                _charToKeyModifiersMap = new Dictionary<char, ModifierKeys>();
 
                 BuildKeyInputData();
                 BuildDeadKeyData();
 
                 keyStateToVimKeyDataMap = _keyStateToVimKeyDataMap;
                 keyInputToWpfKeyDataMap = _keyInputToWpfKeyDataMap;
-                charToKeyModifiersMap = _charToKeyModifiersMap;
             }
 
             /// <summary>
@@ -65,14 +61,6 @@ namespace Vim.UI.Wpf
                     if (!TryGetVirtualKeyAndModifiers(current, out virtualKey, out modKeys))
                     {
                         continue;
-                    }
-
-                    // If this is backed by a real character then store the modifiers which are needed
-                    // to produce this char.  Later we can compare the current modifiers to this value
-                    // and find the extra modifiers to apply to the KeyInput given to Vim
-                    if (current.KeyModifiers == KeyModifiers.None && IsMappedByCharacter(current.Key))
-                    {
-                        _charToKeyModifiersMap[current.Char] = modKeys;
                     }
 
                     // Only processing items which can map to actual keys
@@ -238,22 +226,14 @@ namespace Vim.UI.Wpf
             {
                 if (TrySpecialVimKeyToVirtualKey(keyInput.Key, out virtualKeyCode))
                 {
-                    Debug.Assert(!IsMappedByCharacter(keyInput.Key));
                     modKeys = ModifierKeys.None;
                     return true;
                 }
                 else
                 {
-                    Debug.Assert(IsMappedByCharacter(keyInput.Key));
                     Debug.Assert(keyInput.KeyModifiers == KeyModifiers.None);
                     return TryMapCharToVirtualKeyAndModifiers(keyInput.Char, out virtualKeyCode, out modKeys);
                 }
-            }
-
-            internal static bool IsSpecialVimKey(VimKey vimKey)
-            {
-                uint virtualKey;
-                return !TrySpecialVimKeyToVirtualKey(vimKey, out virtualKey);
             }
 
             /// <summary>

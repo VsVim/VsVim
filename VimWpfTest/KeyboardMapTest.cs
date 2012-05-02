@@ -158,6 +158,17 @@ namespace Vim.UI.Wpf.UnitTest
             AssertGetKeyInput('>', '>', ModifierKeys.Shift);
         }
 
+        /// <summary>
+        /// Vim doesn't distinguish between a # and a Shift+# key.  Ensure that this logic holds up at 
+        /// this layer
+        /// </summary>
+        [Test]
+        public void GetKeyInput_PoundWithShift()
+        {
+            Setup();
+            Assert.AreEqual(KeyInputUtil.VimKeyToKeyInput(VimKey.Pound), _map.GetKeyInput('#', ModifierKeys.Shift));
+        }
+
         [Test]
         public void IsDeadKey_French_Accent()
         {
