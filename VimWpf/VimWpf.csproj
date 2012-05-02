@@ -80,6 +80,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BlockCaretController.cs" />
+    <Compile Include="KeyboardMap_Builder.cs" />
     <Compile Include="EditorFormatDefinitionNames.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="CommandMarginController.cs" />

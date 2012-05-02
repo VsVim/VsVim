@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Windows.Input;
 
 namespace Vim.UI.Wpf
@@ -9,16 +8,47 @@ namespace Vim.UI.Wpf
     /// Class responsible for handling the low level details for mapping WPF's 
     /// view of the Keyboard to Vim's understanding
     /// </summary>
-    internal sealed class KeyboardMap
+    internal sealed partial class KeyboardMap
     {
-        private struct KeyType
+        private struct KeyState
         {
             internal readonly Key Key;
             internal readonly ModifierKeys ModifierKeys;
-            internal KeyType(Key key, ModifierKeys modKeys)
+            internal KeyState(Key key, ModifierKeys modKeys)
             {
                 Key = key;
                 ModifierKeys = modKeys;
+            }
+        }
+
+        private sealed class VimKeyData
+        {
+            internal static readonly VimKeyData DeadKey = new VimKeyData();
+
+            internal readonly KeyInput KeyInputOptional;
+            internal readonly bool IsDeadKey;
+            internal VimKeyData(KeyInput keyInput)
+            {
+                Contract.Assert(keyInput != null);
+                KeyInputOptional = keyInput;
+                IsDeadKey = false;
+            }
+
+            private VimKeyData()
+            {
+                IsDeadKey = true;
+            }
+        }
+
+        private sealed class WpfKeyData
+        {
+            internal readonly Key Key;
+            internal readonly ModifierKeys ModifierKeys;
+
+            internal WpfKeyData(Key key, ModifierKeys modifierKeys)
+            {
+                Key = key;
+                ModifierKeys = modifierKeys;
             }
         }
 
@@ -28,9 +58,14 @@ namespace Vim.UI.Wpf
         private readonly IntPtr _keyboardId;
 
         /// <summary>
-        /// Cache of Key + Modifiers to a KeyInput for the current keyboard layout
+        /// Cache of Key + Modifiers to Vim key information
         /// </summary>
-        private readonly Dictionary<KeyType, KeyInput> _keyTypeToKeyInputMap;
+        private readonly Dictionary<KeyState, VimKeyData> _keyStateToVimKeyDataMap;
+
+        /// <summary>
+        /// Cache of KeyInput to WPF key information
+        /// </summary>
+        private readonly Dictionary<KeyInput, WpfKeyData> _keyInputToWpfKeyDataMap;
 
         /// <summary>
         /// Cache of the char and the modifiers needed to build the char 
@@ -53,7 +88,9 @@ namespace Vim.UI.Wpf
         internal KeyboardMap(IntPtr keyboardId)
         {
             _keyboardId = keyboardId;
-            CreateCache(keyboardId, out _keyTypeToKeyInputMap, out _charToModifierMap);
+
+            var builder = new Builder(keyboardId);
+            builder.Create(out _keyStateToVimKeyDataMap, out _keyInputToWpfKeyDataMap, out _charToModifierMap);
         }
 
         /// <summary>
@@ -98,29 +135,46 @@ namespace Vim.UI.Wpf
         /// </summary>
         internal bool TryGetKeyInput(Key key, ModifierKeys modifierKeys, out KeyInput keyInput)
         {
+            VimKeyData vimKeyData;
+            if (TryGetKeyInput(key, modifierKeys, out vimKeyData) && vimKeyData.KeyInputOptional != null)
+            {
+                keyInput = vimKeyData.KeyInputOptional;
+                return true;
+            }
+
+            keyInput = null;
+            return false;
+        }
+
+        private bool TryGetKeyInput(Key key, ModifierKeys modifierKeys, out VimKeyData vimKeyData)
+        {
             // First just check and see if there is a direct mapping
-            var keyType = new KeyType(key, modifierKeys);
-            if (_keyTypeToKeyInputMap.TryGetValue(keyType, out keyInput))
+            var keyState = new KeyState(key, modifierKeys);
+            if (_keyStateToVimKeyDataMap.TryGetValue(keyState, out vimKeyData))
             {
                 return true;
             }
 
             // Next consider only the shift key part of the requested modifier.  We can 
             // re-apply the original modifiers later 
-            keyType = new KeyType(key, modifierKeys & ModifierKeys.Shift);
-            if (_keyTypeToKeyInputMap.TryGetValue(keyType, out keyInput))
+            keyState = new KeyState(key, modifierKeys & ModifierKeys.Shift);
+            if (_keyStateToVimKeyDataMap.TryGetValue(keyState, out vimKeyData) && 
+                vimKeyData.KeyInputOptional != null)
             {
                 // Reapply the modifiers
-                keyInput = KeyInputUtil.ApplyModifiers(keyInput, ConvertToKeyModifiers(modifierKeys));
+                var keyInput = KeyInputUtil.ApplyModifiers(vimKeyData.KeyInputOptional, ConvertToKeyModifiers(modifierKeys));
+                vimKeyData = new VimKeyData(keyInput);
                 return true;
             }
 
             // Last consider it without any modifiers and reapply
-            keyType = new KeyType(key, ModifierKeys.None);
-            if (_keyTypeToKeyInputMap.TryGetValue(keyType, out keyInput))
+            keyState = new KeyState(key, ModifierKeys.None);
+            if (_keyStateToVimKeyDataMap.TryGetValue(keyState, out vimKeyData) &&
+                vimKeyData.KeyInputOptional != null)
             {
                 // Reapply the modifiers
-                keyInput = KeyInputUtil.ApplyModifiers(keyInput, ConvertToKeyModifiers(modifierKeys));
+                var keyInput = KeyInputUtil.ApplyModifiers(vimKeyData.KeyInputOptional, ConvertToKeyModifiers(modifierKeys));
+                vimKeyData = new VimKeyData(keyInput);
                 return true;
             }
 
@@ -133,15 +187,19 @@ namespace Vim.UI.Wpf
         internal bool TryGetKey(VimKey vimKey, out Key key, out ModifierKeys modifierKeys)
         {
             var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
-            int virtualKeyCode;
-            if (!TryGetVirtualKeyAndModifiers(_keyboardId, keyInput, out virtualKeyCode, out modifierKeys))
+
+            WpfKeyData wpfKeyData;
+            if (_keyInputToWpfKeyDataMap.TryGetValue(keyInput, out wpfKeyData))
             {
-                key = Key.None;
-                return false;
+                key = wpfKeyData.Key;
+                modifierKeys = wpfKeyData.ModifierKeys;
+                return true;
             }
 
-            key = KeyInterop.KeyFromVirtualKey(virtualKeyCode);
-            return true;
+
+            key = Key.None;
+            modifierKeys = ModifierKeys.None;
+            return false;
         }
 
         /// <summary>
@@ -155,11 +213,12 @@ namespace Vim.UI.Wpf
         /// Generally speaking a KeyInput is mapped by character if it has an associated 
         /// char value.  This is not true for certain special cases like Enter, Tab and 
         /// the Keypad values.
+        ///
+        /// TODO: Delete this method.  This is an odd heuristic to use
         /// </summary>
         internal static bool IsMappedByCharacter(VimKey vimKey)
         {
-            int virtualKey;
-            return !TrySpecialVimKeyToVirtualKey(vimKey, out virtualKey);
+            return Builder.IsSpecialVimKey(vimKey);
         }
 
         internal static KeyModifiers ConvertToKeyModifiers(ModifierKeys keys)
@@ -178,157 +237,6 @@ namespace Vim.UI.Wpf
                 res = res | KeyModifiers.Control;
             }
             return res;
-        }
-
-        private static Dictionary<KeyType, KeyInput> CreateCache(
-            IntPtr keyboardId,
-            out Dictionary<KeyType, KeyInput> cache,
-            out Dictionary<char, ModifierKeys> charToKeyModifiersMap)
-        {
-            cache = new Dictionary<KeyType, KeyInput>();
-            charToKeyModifiersMap = new Dictionary<char, ModifierKeys>();
-
-            foreach (var current in KeyInputUtil.VimKeyInputList)
-            {
-                int virtualKeyCode;
-                ModifierKeys modKeys;
-                if (!TryGetVirtualKeyAndModifiers(keyboardId, current, out virtualKeyCode, out modKeys))
-                {
-                    continue;
-                }
-
-                // If this is backed by a real character then store the modifiers which are needed
-                // to produce this char.  Later we can compare the current modifiers to this value
-                // and find the extra modifiers to apply to the KeyInput given to Vim
-                if (current.KeyModifiers == KeyModifiers.None && IsMappedByCharacter(current.Key))
-                {
-                    charToKeyModifiersMap[current.Char] = modKeys;
-                }
-
-                // Only processing items which can map to actual keys
-                var key = KeyInterop.KeyFromVirtualKey(virtualKeyCode);
-                if (Key.None == key)
-                {
-                    continue;
-                }
-
-                var keyType = new KeyType(key, modKeys);
-                cache[keyType] = current;
-            }
-
-            return cache;
-        }
-
-        /// <summary>
-        /// Try and get the Virtual Key Code and Modifiers for the given KeyInput.  
-        /// </summary>
-        private static bool TryGetVirtualKeyAndModifiers(IntPtr hkl, KeyInput keyInput, out int virtualKeyCode, out ModifierKeys modKeys)
-        {
-            if (TrySpecialVimKeyToVirtualKey(keyInput.Key, out virtualKeyCode))
-            {
-                Debug.Assert(!IsMappedByCharacter(keyInput.Key));
-                modKeys = ModifierKeys.None;
-                return true;
-            }
-            else
-            {
-                Debug.Assert(IsMappedByCharacter(keyInput.Key));
-                Debug.Assert(keyInput.KeyModifiers == KeyModifiers.None);
-                return TryMapCharToVirtualKeyAndModifiers(hkl, keyInput.Char, out virtualKeyCode, out modKeys);
-            }
-        }
-
-        /// <summary>
-        /// Get the virtual key code for the provided VimKey.  This will only work for Vim keys which
-        /// are meant for very specific keys.  It doesn't work for alphas
-        ///
-        /// All constant values derived from the list at the following 
-        /// location
-        ///   http://msdn.microsoft.com/en-us/library/ms645540(VS.85).aspx
-        ///
-        /// </summary>
-        private static bool TrySpecialVimKeyToVirtualKey(VimKey vimKey, out int virtualKeyCode)
-        {
-            var found = true;
-            switch (vimKey)
-            {
-                case VimKey.Enter: virtualKeyCode = 0xD; break;
-                case VimKey.Tab: virtualKeyCode = 0x9; break;
-                case VimKey.Escape: virtualKeyCode = 0x1B; break;
-                case VimKey.LineFeed: virtualKeyCode = 0; break;
-                case VimKey.Back: virtualKeyCode = 0x8; break;
-                case VimKey.Delete: virtualKeyCode = 0x2E; break;
-                case VimKey.Left: virtualKeyCode = 0x25; break;
-                case VimKey.Up: virtualKeyCode = 0x26; break;
-                case VimKey.Right: virtualKeyCode = 0x27; break;
-                case VimKey.Down: virtualKeyCode = 0x28; break;
-                case VimKey.Help: virtualKeyCode = 0x2F; break;
-                case VimKey.Insert: virtualKeyCode = 0x2D; break;
-                case VimKey.Home: virtualKeyCode = 0x24; break;
-                case VimKey.End: virtualKeyCode = 0x23; break;
-                case VimKey.PageUp: virtualKeyCode = 0x21; break;
-                case VimKey.PageDown: virtualKeyCode = 0x22; break;
-                case VimKey.Break: virtualKeyCode = 0x03; break;
-                case VimKey.F1: virtualKeyCode = 0x70; break;
-                case VimKey.F2: virtualKeyCode = 0x71; break;
-                case VimKey.F3: virtualKeyCode = 0x72; break;
-                case VimKey.F4: virtualKeyCode = 0x73; break;
-                case VimKey.F5: virtualKeyCode = 0x74; break;
-                case VimKey.F6: virtualKeyCode = 0x75; break;
-                case VimKey.F7: virtualKeyCode = 0x76; break;
-                case VimKey.F8: virtualKeyCode = 0x77; break;
-                case VimKey.F9: virtualKeyCode = 0x78; break;
-                case VimKey.F10: virtualKeyCode = 0x79; break;
-                case VimKey.F11: virtualKeyCode = 0x7a; break;
-                case VimKey.F12: virtualKeyCode = 0x7b; break;
-                case VimKey.KeypadMultiply: virtualKeyCode = 0x6A; break;
-                case VimKey.KeypadPlus: virtualKeyCode = 0x6B; break;
-                case VimKey.KeypadMinus: virtualKeyCode = 0x6D; break;
-                case VimKey.KeypadDecimal: virtualKeyCode = 0x6E; break;
-                case VimKey.KeypadDivide: virtualKeyCode = 0x6F; break;
-                case VimKey.Keypad0: virtualKeyCode = 0x60; break;
-                case VimKey.Keypad1: virtualKeyCode = 0x61; break;
-                case VimKey.Keypad2: virtualKeyCode = 0x62; break;
-                case VimKey.Keypad3: virtualKeyCode = 0x63; break;
-                case VimKey.Keypad4: virtualKeyCode = 0x64; break;
-                case VimKey.Keypad5: virtualKeyCode = 0x65; break;
-                case VimKey.Keypad6: virtualKeyCode = 0x66; break;
-                case VimKey.Keypad7: virtualKeyCode = 0x67; break;
-                case VimKey.Keypad8: virtualKeyCode = 0x68; break;
-                case VimKey.Keypad9: virtualKeyCode = 0x69; break;
-                default:
-                    virtualKeyCode = 0;
-                    found = false;
-                    break;
-            }
-
-            return found;
-        }
-
-        /// <summary>
-        /// Map the given char to a virtual key code and the associated necessary modifier keys for
-        /// the provided keyboard layout
-        /// </summary>
-        private static bool TryMapCharToVirtualKeyAndModifiers(IntPtr hkl, char c, out int virtualKeyCode, out ModifierKeys modKeys)
-        {
-            var res = NativeMethods.VkKeyScanEx(c, hkl);
-
-            // The virtual key code is the low byte and the shift state is the high byte
-            var virtualKey = res & 0xff;
-            var state = ((res >> 8) & 0xff);
-            if (virtualKey == -1 || state == -1)
-            {
-                virtualKeyCode = 0;
-                modKeys = ModifierKeys.None;
-                return false;
-            }
-
-            var shiftMod = (state & 0x1) != 0 ? ModifierKeys.Shift : ModifierKeys.None;
-            var controlMod = (state & 0x2) != 0 ? ModifierKeys.Control : ModifierKeys.None;
-            var altMod = (state & 0x4) != 0 ? ModifierKeys.Alt : ModifierKeys.None;
-            virtualKeyCode = virtualKey;
-            modKeys = shiftMod | controlMod | altMod;
-            return true;
         }
     }
 }

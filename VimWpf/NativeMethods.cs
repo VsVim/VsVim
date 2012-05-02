@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Vim.UI.Wpf
 {
@@ -15,6 +16,11 @@ namespace Vim.UI.Wpf
         internal const uint KLF_ACTIVATE = 0x1;
 
         internal const uint KL_NAMELENGTH = 9;
+
+        /// <summary>
+        /// Virtual key code for decimal
+        /// </summary>
+        internal const uint VK_DECIMAL = 0x6E;
 
         internal const uint INFINITE = 0xffffffff;
 
@@ -48,7 +54,7 @@ namespace Vim.UI.Wpf
         internal static extern short VkKeyScanEx(char ch, IntPtr hkl);
 
         [DllImport("user32.dll")]
-        internal static extern uint MapVirtualKey(uint code, uint mapType);
+        internal static extern uint MapVirtualKeyEx(uint code, uint mapType, IntPtr keyboardId);
 
         [DllImport("user32.dll")]
         internal static extern IntPtr GetKeyboardLayout(uint idThread);
@@ -61,6 +67,16 @@ namespace Vim.UI.Wpf
 
         [DllImport("user32.dll")]
         internal static extern IntPtr LoadKeyboardLayout([In] string id, uint flags);
+
+        [DllImport("user32.dll", CharSet=CharSet.Unicode)]
+        internal static extern int ToUnicodeEx(
+            uint virtualKey,
+            uint scanCode,
+            byte[] keyState,
+            StringBuilder buffer,
+            int bufferSize,
+            uint flags,
+            IntPtr keyboardLayout);
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
