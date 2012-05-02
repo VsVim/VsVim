@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace Vim.UI.Wpf
@@ -56,11 +57,44 @@ namespace Vim.UI.Wpf
         internal static extern bool GetKeyboardLayoutName(char[] name);
 
         [DllImport("user32.dll")]
+        public static extern uint GetKeyboardLayoutList(int count, [Out, MarshalAs(UnmanagedType.LPArray)] IntPtr[] list);
+
+        [DllImport("user32.dll")]
         internal static extern IntPtr LoadKeyboardLayout([In] string id, uint flags);
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool UnloadKeyboardLayout(IntPtr keyboardId);
+
+        /// <summary>
+        /// Load the IntPtr for the given keyboard layout.  Returns a bool as to whether or not the 
+        /// layout needs to be unloaded when you are through with it 
+        /// </summary>
+        internal static IntPtr LoadKeyboardLayout(string id, uint flags, out bool needUnload)
+        {
+            var previous = GetKeyboardLayoutList();
+            var layout = LoadKeyboardLayout(id, flags);
+
+            needUnload = layout != IntPtr.Zero && !previous.Contains(layout);
+            return layout;
+        }
+
+        internal static IntPtr[] GetKeyboardLayoutList()
+        {
+            var count = (int)GetKeyboardLayoutList(0, null);
+            if (count == 0)
+            {
+                return new IntPtr[] { };
+            }
+
+            var array = new IntPtr[count];
+            if (GetKeyboardLayoutList(count, array) == 0)
+            {
+                return new IntPtr[] { };
+            }
+
+            return array;
+        }
 
         internal static int HiWord(int number)
         {

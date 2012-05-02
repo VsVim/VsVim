@@ -5,9 +5,10 @@ using NUnit.Framework;
 namespace Vim.UI.Wpf.UnitTest
 {
     [TestFixture]
-    public class KeyboardMapTest
+    public sealed class KeyboardMapTest
     {
         private IntPtr _customId;
+        private bool _mustUnloadLayout;
         private KeyboardMap _map;
 
         [SetUp]
@@ -25,7 +26,7 @@ namespace Vim.UI.Wpf.UnitTest
             }
             else
             {
-                _customId = NativeMethods.LoadKeyboardLayout(id, 0);
+                _customId = NativeMethods.LoadKeyboardLayout(id, 0, out _mustUnloadLayout);
                 Assert.AreNotEqual(IntPtr.Zero, _customId);
                 _map = new KeyboardMap(_customId);
             }
@@ -36,7 +37,11 @@ namespace Vim.UI.Wpf.UnitTest
         {
             if (_customId != IntPtr.Zero)
             {
-                Assert.IsTrue(NativeMethods.UnloadKeyboardLayout(_customId));
+                if (_mustUnloadLayout)
+                {
+                    Assert.IsTrue(NativeMethods.UnloadKeyboardLayout(_customId));
+                }
+
                 NativeMethods.LoadKeyboardLayout(NativeMethods.LayoutEnglish, NativeMethods.KLF_ACTIVATE);
             }
             _customId = IntPtr.Zero;

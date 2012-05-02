@@ -10,6 +10,7 @@ namespace Vim.UI.Wpf.UnitTest
     public class VimKeyProcessorTest
     {
         protected IntPtr _keyboardId;
+        protected bool _mustUnloadLayout;
         protected MockRepository _factory;
         protected Mock<IVimBuffer> _buffer;
         protected VimKeyProcessor _processor;
@@ -28,7 +29,7 @@ namespace Vim.UI.Wpf.UnitTest
         {
             if (!String.IsNullOrEmpty(languageId))
             {
-                _keyboardId = NativeMethods.LoadKeyboardLayout(languageId, NativeMethods.KLF_ACTIVATE);
+                _keyboardId = NativeMethods.LoadKeyboardLayout(languageId, NativeMethods.KLF_ACTIVATE, out _mustUnloadLayout);
                 Assert.AreNotEqual(_keyboardId, IntPtr.Zero);
             }
             else
@@ -46,7 +47,11 @@ namespace Vim.UI.Wpf.UnitTest
         {
             if (_keyboardId != IntPtr.Zero)
             {
-                Assert.IsTrue(NativeMethods.UnloadKeyboardLayout(_keyboardId));
+                if (_mustUnloadLayout)
+                {
+                    Assert.IsTrue(NativeMethods.UnloadKeyboardLayout(_keyboardId));
+                }
+
                 NativeMethods.LoadKeyboardLayout(NativeMethods.LayoutEnglish, NativeMethods.KLF_ACTIVATE);
             }
             _keyboardId = IntPtr.Zero;
