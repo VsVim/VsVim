@@ -3497,6 +3497,20 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// The caret should be returned to the original first line when undoing a 'dd'
+            /// command
+            /// </summary>
+            [Test]
+            public void DeleteLines_Undo()
+            {
+                Create("cat", "dog", "fish");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("ddu");
+                CollectionAssert.AreEqual(new [] { "cat", "dog", "fish" }, _textBuffer.GetLines());
+                Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
             /// A yank of a jump motion should update the jump list
             /// </summary>
             [Test]

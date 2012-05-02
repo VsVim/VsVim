@@ -108,12 +108,17 @@ namespace Vim.UnitTest
             Assert.IsTrue(_map.MapWithNoRemap("<", "pound", KeyRemapMode.Normal));
         }
 
+        /// <summary>
+        /// By default the '\' character isn't special in key mappings.  It's treated like any
+        /// other character.  It only achieves special meaning when 'B' is excluded from the 
+        /// 'cpoptions' setting
+        /// </summary>
         [Test]
         public void MapWithNoRemap_EscapeLessThanSymbol()
         {
             Assert.IsTrue(_map.MapWithNoRemap("a", @"\<Home>", KeyRemapMode.Normal));
             var result = _map.GetKeyMappingResult("a", KeyRemapMode.Normal);
-            Assert.AreEqual(KeyInputSetUtil.OfString("<Home>"), result.AsMapped().Item);
+            Assert.AreEqual(KeyInputSetUtil.OfVimKeyArray(VimKey.Backslash, VimKey.Home), result.AsMapped().Item);
         }
 
         [Test]
