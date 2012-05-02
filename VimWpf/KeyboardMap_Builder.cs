@@ -28,7 +28,7 @@ namespace Vim.UI.Wpf
             private readonly StringBuilder _normalBuilder = new StringBuilder(UnicodeBufferLength);
             private readonly byte[] _keyboardStateArray = new byte[KeyBoardArrayLength];
             private Dictionary<KeyState, VimKeyData> _keyStateToVimKeyDataMap;
-            private Dictionary<KeyInput, WpfKeyData> _keyInputToWpfKeyDataMap;
+            private Dictionary<KeyInput, KeyState> _keyInputToWpfKeyDataMap;
             private Dictionary<char, ModifierKeys> _charToKeyModifiersMap;
 
             internal Builder(IntPtr keyboardId)
@@ -38,11 +38,11 @@ namespace Vim.UI.Wpf
 
             internal void Create(
                 out Dictionary<KeyState, VimKeyData> keyStateToVimKeyDataMap,
-                out Dictionary<KeyInput, WpfKeyData> keyInputToWpfKeyDataMap,
+                out Dictionary<KeyInput, KeyState> keyInputToWpfKeyDataMap,
                 out Dictionary<char, ModifierKeys> charToKeyModifiersMap)
             {
                 _keyStateToVimKeyDataMap = new Dictionary<KeyState, VimKeyData>();
-                _keyInputToWpfKeyDataMap = new Dictionary<KeyInput, WpfKeyData>();
+                _keyInputToWpfKeyDataMap = new Dictionary<KeyInput, KeyState>();
                 _charToKeyModifiersMap = new Dictionary<char, ModifierKeys>();
 
                 BuildKeyInputData();
@@ -60,9 +60,9 @@ namespace Vim.UI.Wpf
             {
                 foreach (var current in KeyInputUtil.VimKeyInputList)
                 {
-                    uint virtualKeyCode;
+                    uint virtualKey;
                     ModifierKeys modKeys;
-                    if (!TryGetVirtualKeyAndModifiers(current, out virtualKeyCode, out modKeys))
+                    if (!TryGetVirtualKeyAndModifiers(current, out virtualKey, out modKeys))
                     {
                         continue;
                     }
@@ -76,15 +76,21 @@ namespace Vim.UI.Wpf
                     }
 
                     // Only processing items which can map to actual keys
-                    var key = KeyInterop.KeyFromVirtualKey((int)virtualKeyCode);
+                    var key = KeyInterop.KeyFromVirtualKey((int)virtualKey);
                     if (Key.None == key)
                     {
                         continue;
                     }
 
+                    string text;
+                    if (!TryGetText(virtualKey, ModifierKeys.None, out text))
+                    {
+                        text = "";
+                    }
+
                     var keyState = new KeyState(key, modKeys);
-                    _keyStateToVimKeyDataMap[keyState] = new VimKeyData(current);
-                    _keyInputToWpfKeyDataMap[current] = new WpfKeyData(key, modKeys);
+                    _keyStateToVimKeyDataMap[keyState] = new VimKeyData(current, text);
+                    _keyInputToWpfKeyDataMap[current] = keyState;
                 }
             }
 
@@ -96,30 +102,109 @@ namespace Vim.UI.Wpf
                 foreach (Key key in Enum.GetValues(typeof(Key)))
                 {
                     var virtualKey = (uint)KeyInterop.VirtualKeyFromKey(key);
-                    var scanCode = NativeMethods.MapVirtualKeyEx((uint)virtualKey, 0, _keyboardId);
+                    var scanCode = NativeMethods.MapVirtualKeyEx(virtualKey, 0, _keyboardId);
                     if (scanCode == 0)
                     {
                         continue;
                     }
 
+                    _normalBuilder.Length = 0;
                     var value = NativeMethods.ToUnicodeEx(
                         virtualKey,
                         scanCode,
                         _keyboardStateArray,
                         _normalBuilder,
-                        _normalBuilder.Length,
+                        _normalBuilder.Capacity,
                         0,
                         _keyboardId);
                     if (value < 0)
                     {
-                        // It's a dead key.  Before logging make sure to clear out the key board state 
-                        // from the dead key press
+                        // It's a dead key. Make sure to clear out the cached state
                         ClearKeyboardBuffer();
 
                         var keyState = new KeyState(key, ModifierKeys.None);
                         _keyStateToVimKeyDataMap[keyState] = VimKeyData.DeadKey;
                     }
                 }
+            }
+
+            /// <summary>
+            /// Simple mechanism for getting the text for the given virtual key code and the specified
+            /// modifiers
+            /// </summary>
+            private bool TryGetText(uint virtualKey, ModifierKeys modifierKeys, out string text)
+            {
+                var scanCode = NativeMethods.MapVirtualKeyEx(virtualKey, 0, _keyboardId);
+                if (scanCode == 0)
+                {
+                    text = null;
+                    return false;
+                }
+
+                try
+                {
+                    _normalBuilder.Length = 0;
+                    SetKeyState(modifierKeys);
+                    var value = NativeMethods.ToUnicodeEx(
+                        virtualKey,
+                        scanCode,
+                        _keyboardStateArray,
+                        _normalBuilder,
+                        _normalBuilder.Capacity,
+                        0,
+                        _keyboardId);
+                    if (value < 0)
+                    {
+                        // It's a dead key. Make sure to clear out the cached state
+                        ClearKeyboardBuffer();
+                        text = null;
+                        return false;
+                    }
+                    else if (value > 0)
+                    {
+                        text = _normalBuilder.ToString();
+                        return true;
+                    }
+                    else
+                    {
+                        text = null;
+                        return false;
+                    }
+                }
+                finally
+                {
+                    ClearKeyState();
+                }
+            }
+
+            private void SetKeyState(ModifierKeys modifierKeys, bool capslock = false)
+            {
+                const byte SetValue = 0x80;
+
+                if (0 != (modifierKeys & ModifierKeys.Control))
+                {
+                    _keyboardStateArray[NativeMethods.VK_CONTROL] = SetValue;
+                }
+
+                if (0 != (modifierKeys & ModifierKeys.Alt))
+                {
+                    _keyboardStateArray[NativeMethods.VK_MENU] = SetValue;
+                }
+
+                if (0 != (modifierKeys & ModifierKeys.Shift))
+                {
+                    _keyboardStateArray[NativeMethods.VK_SHIFT] = SetValue;
+                }
+
+                if (capslock)
+                {
+                    _keyboardStateArray[NativeMethods.VK_CAPITAL] = 0x1;
+                }
+            }
+
+            private void ClearKeyState()
+            {
+                Array.Clear(_keyboardStateArray, 0, _keyboardStateArray.Length);
             }
 
             /// <summary>

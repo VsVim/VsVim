@@ -17,10 +17,15 @@ namespace Vim.UI.Wpf
 
         internal const uint KL_NAMELENGTH = 9;
 
-        /// <summary>
-        /// Virtual key code for decimal
-        /// </summary>
         internal const uint VK_DECIMAL = 0x6E;
+
+        internal const uint VK_SHIFT = 0x10;
+
+        internal const uint VK_CONTROL = 0x11;
+
+        internal const uint VK_MENU = 0x12;
+
+        internal const uint VK_CAPITAL = 0x14;
 
         internal const uint INFINITE = 0xffffffff;
 
@@ -43,6 +48,11 @@ namespace Vim.UI.Wpf
         /// Keyboard code for the TurkishF layout
         /// </summary>
         internal const string LayoutTurkishF = "00001055";
+
+        /// <summary>
+        /// Keyboard code for the French layout
+        /// </summary>
+        internal const string LayoutFrench = "0000040C";
 
         [DllImport("user32.dll")]
         internal static extern uint GetCaretBlinkTime();

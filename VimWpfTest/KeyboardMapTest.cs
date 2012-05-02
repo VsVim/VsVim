@@ -158,5 +158,11 @@ namespace Vim.UI.Wpf.UnitTest
             AssertGetKeyInput('>', '>', ModifierKeys.Shift);
         }
 
+        [Test]
+        public void IsDeadKey_French_Accent()
+        {
+            Setup(NativeMethods.LayoutFrench);
+            Assert.IsTrue(_map.IsDeadKey(Key.Oem6, ModifierKeys.None));
+        }
     }
 }

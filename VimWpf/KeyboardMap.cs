@@ -19,6 +19,16 @@ namespace Vim.UI.Wpf
                 Key = key;
                 ModifierKeys = modKeys;
             }
+
+            public override string ToString()
+            {
+                if (ModifierKeys == ModifierKeys.None)
+                {
+                    return Key.ToString();
+                }
+
+                return String.Format("{0}+{1}", Key, ModifierKeys);
+            }
         }
 
         private sealed class VimKeyData
@@ -26,11 +36,14 @@ namespace Vim.UI.Wpf
             internal static readonly VimKeyData DeadKey = new VimKeyData();
 
             internal readonly KeyInput KeyInputOptional;
+            internal readonly string TextOptional;
             internal readonly bool IsDeadKey;
-            internal VimKeyData(KeyInput keyInput)
+
+            internal VimKeyData(KeyInput keyInput, string text)
             {
                 Contract.Assert(keyInput != null);
                 KeyInputOptional = keyInput;
+                TextOptional = text;
                 IsDeadKey = false;
             }
 
@@ -38,17 +51,15 @@ namespace Vim.UI.Wpf
             {
                 IsDeadKey = true;
             }
-        }
 
-        private sealed class WpfKeyData
-        {
-            internal readonly Key Key;
-            internal readonly ModifierKeys ModifierKeys;
-
-            internal WpfKeyData(Key key, ModifierKeys modifierKeys)
+            public override string ToString()
             {
-                Key = key;
-                ModifierKeys = modifierKeys;
+                if (IsDeadKey)
+                {
+                    return "<dead key>";
+                }
+
+                return String.Format("{0} - {1}", KeyInputOptional, TextOptional);
             }
         }
 
@@ -65,7 +76,7 @@ namespace Vim.UI.Wpf
         /// <summary>
         /// Cache of KeyInput to WPF key information
         /// </summary>
-        private readonly Dictionary<KeyInput, WpfKeyData> _keyInputToWpfKeyDataMap;
+        private readonly Dictionary<KeyInput, KeyState> _keyInputToWpfKeyDataMap;
 
         /// <summary>
         /// Cache of the char and the modifiers needed to build the char 
@@ -146,6 +157,21 @@ namespace Vim.UI.Wpf
             return false;
         }
 
+        /// <summary>
+        /// Is the specified key information a dead key
+        /// </summary>
+        internal bool IsDeadKey(Key key, ModifierKeys modifierKeys)
+        {
+            var keyState = new KeyState(key, modifierKeys);
+            VimKeyData vimKeyData;
+            if (!_keyStateToVimKeyDataMap.TryGetValue(keyState, out vimKeyData))
+            {
+                return false;
+            }
+
+            return vimKeyData.IsDeadKey;
+        }
+
         private bool TryGetKeyInput(Key key, ModifierKeys modifierKeys, out VimKeyData vimKeyData)
         {
             // First just check and see if there is a direct mapping
@@ -163,7 +189,7 @@ namespace Vim.UI.Wpf
             {
                 // Reapply the modifiers
                 var keyInput = KeyInputUtil.ApplyModifiers(vimKeyData.KeyInputOptional, ConvertToKeyModifiers(modifierKeys));
-                vimKeyData = new VimKeyData(keyInput);
+                vimKeyData = new VimKeyData(keyInput, vimKeyData.TextOptional);
                 return true;
             }
 
@@ -174,7 +200,7 @@ namespace Vim.UI.Wpf
             {
                 // Reapply the modifiers
                 var keyInput = KeyInputUtil.ApplyModifiers(vimKeyData.KeyInputOptional, ConvertToKeyModifiers(modifierKeys));
-                vimKeyData = new VimKeyData(keyInput);
+                vimKeyData = new VimKeyData(keyInput, vimKeyData.TextOptional);
                 return true;
             }
 
@@ -188,7 +214,7 @@ namespace Vim.UI.Wpf
         {
             var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
 
-            WpfKeyData wpfKeyData;
+            KeyState wpfKeyData;
             if (_keyInputToWpfKeyDataMap.TryGetValue(keyInput, out wpfKeyData))
             {
                 key = wpfKeyData.Key;
