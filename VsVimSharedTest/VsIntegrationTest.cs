@@ -89,6 +89,16 @@ namespace VsVim.UnitTest
             Assert.AreEqual("dog", _textBuffer.GetLine(2).GetText());
         }
 
+        [Test]
+        public void KeyMap_ShiftAndEnter()
+        {
+            Create("cat", "dog");
+            _vimBuffer.Process(":inoremap <S-CR> <Esc>", enter: true);
+            _vimBuffer.Process("i");
+            _simulation.Run(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Enter, KeyModifiers.Shift));
+            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
+        }
+
         /// <summary>
         /// Make sure that Escape dismisses intellisense even in normal mode
         /// </summary>
