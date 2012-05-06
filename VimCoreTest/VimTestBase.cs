@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
 using System.Linq;
-using EditorUtils.UnitTest;
+using EditorUtils;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -23,7 +23,7 @@ namespace Vim.UnitTest
     ///   - Remove any key mappings 
     /// </summary>
     [TestFixture]
-    public abstract class VimTestBase : EditorTestBase
+    public abstract class VimTestBase : EditorHost
     {
         [ThreadStatic]
         private static CompositionContainer _vimCompositionContainer;
@@ -43,17 +43,17 @@ namespace Vim.UnitTest
         /// An IProtectedOperations value which will be properly checked in the context of this
         /// test case
         /// </summary>
-        protected IProtectedOperations ProtectedOperations
+        public IProtectedOperations ProtectedOperations
         {
             get { return _protectedOperations; }
         }
 
-        protected IVim Vim
+        public IVim Vim
         {
             get { return _vim; }
         }
 
-        protected IVimData VimData
+        public IVimData VimData
         {
             get { return _vim.VimData; }
         }
@@ -63,59 +63,58 @@ namespace Vim.UnitTest
             get { return _vimBufferFactory; }
         }
 
-        protected MockVimHost VimHost
+        public MockVimHost VimHost
         {
             get { return (MockVimHost)_vim.VimHost; }
         }
 
-        protected ICommonOperationsFactory CommonOperationsFactory
+        public ICommonOperationsFactory CommonOperationsFactory
         {
             get { return _commonOperationsFactory; }
         }
 
-        protected IWordUtilFactory WordUtilFactory
+        public IWordUtilFactory WordUtilFactory
         {
             get { return _wordUtilFactory; }
         }
 
-        protected IFoldManagerFactory FoldManagerFactory
+        public IFoldManagerFactory FoldManagerFactory
         {
             get { return _foldManagerFactory; }
         }
 
-        protected IBufferTrackingService BufferTrackingService
+        public IBufferTrackingService BufferTrackingService
         {
             get { return _bufferTrackingService; }
         }
 
-        protected IKeyMap KeyMap
+        public IKeyMap KeyMap
         {
             get { return _vim.KeyMap; }
         }
 
-        protected IClipboardDevice ClipboardDevice
+        public IClipboardDevice ClipboardDevice
         {
             get { return _clipboardDevice; }
         }
 
-        protected virtual bool TrackTextViewHistory
+        public virtual bool TrackTextViewHistory
         {
             get { return true; }
         }
 
-        protected IRegisterMap RegisterMap
+        public IRegisterMap RegisterMap
         {
             get { return Vim.RegisterMap; }
         }
 
-        protected Register UnnamedRegister
+        public Register UnnamedRegister
         {
             get { return RegisterMap.GetRegister(RegisterName.Unnamed); }
         }
 
-        public override void SetupBase()
+        protected VimTestBase()
         {
-            base.SetupBase();
             _vim = CompositionContainer.GetExportedValue<IVim>();
             _vimBufferFactory = CompositionContainer.GetExportedValue<IVimBufferFactory>();
             _vimErrorDetector = CompositionContainer.GetExportedValue<IVimErrorDetector>();
@@ -125,8 +124,12 @@ namespace Vim.UnitTest
             _foldManagerFactory = CompositionContainer.GetExportedValue<IFoldManagerFactory>();
             _bulkOperations = CompositionContainer.GetExportedValue<IBulkOperations>();
             _clipboardDevice = CompositionContainer.GetExportedValue<IClipboardDevice>();
-            _vimErrorDetector.Clear();
             _protectedOperations = new ProtectedOperations(_vimErrorDetector);
+        }
+
+        [SetUp]
+        public virtual void SetupBase()
+        {
             _clipboardDevice.Text = String.Empty;
 
             // One setting we do differ on for a default is 'timeout'.  We don't want them interferring
@@ -136,15 +139,11 @@ namespace Vim.UnitTest
 
             // Don't let the personal VimRc of the user interfere with the unit tests
             _vim.AutoLoadVimRc = false;
-
-            _vim.VimData.LastShellCommand = FSharpOption<string>.None;
-            _vim.VimData.LastCommand = FSharpOption<StoredCommand>.None;
         }
 
-        public override void  TearDownBase()
+        [TearDown]
+        public virtual void  TearDownBase()
         {
-            base.TearDownBase();
-
             if (_vimErrorDetector.HasErrors())
             {
                 var msg = String.Format("Extension Exception: {0}", _vimErrorDetector.GetErrors().First().Message);
@@ -155,6 +154,7 @@ namespace Vim.UnitTest
             _vim.VimData.SearchHistory.Clear();
             _vim.VimData.CommandHistory.Clear();
             _vim.VimData.LastCommand = FSharpOption<StoredCommand>.None;
+            _vim.VimData.LastShellCommand = FSharpOption<string>.None;
 
             _vim.KeyMap.ClearAll();
             _vim.MarkMap.ClearGlobalMarks();

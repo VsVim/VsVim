@@ -1,5 +1,5 @@
 ﻿using System.Linq;
-using EditorUtils.UnitTest;
+using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
 using Vim.Extensions;

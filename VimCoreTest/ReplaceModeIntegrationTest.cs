@@ -1,4 +1,4 @@
-﻿using EditorUtils.UnitTest;
+﻿using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 
@@ -9,10 +9,12 @@ namespace Vim.UnitTest
     {
         private IVimBuffer _vimBuffer;
         private ITextView _textView;
+        private ITextBuffer _textBuffer;
 
         private void Create(params string[] lines)
         {
             _textView = CreateTextView(lines);
+            _textBuffer = _textView.TextBuffer;
             _vimBuffer = Vim.CreateVimBuffer(_textView);
         }
 
@@ -25,7 +27,7 @@ namespace Vim.UnitTest
             Create("hello world");
             _vimBuffer.SwitchMode(ModeKind.Replace, ModeArgument.None);
             _vimBuffer.Process("again");
-            Assert.AreEqual("again world", _textView.GetLine(0).GetText());
+            Assert.AreEqual("again world", _textBuffer.GetLine(0).GetText());
             Assert.AreEqual(5, _textView.GetCaretPoint().Position);
         }
 
@@ -38,8 +40,8 @@ namespace Vim.UnitTest
             Create("cat", "dog");
             _vimBuffer.SwitchMode(ModeKind.Replace, ModeArgument.None);
             _vimBuffer.Process("big tree");
-            Assert.AreEqual("big tree", _textView.GetLine(0).GetText());
-            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual("big tree", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textBuffer.GetLine(1).GetText());
         }
 
         /// <summary>
@@ -52,7 +54,7 @@ namespace Vim.UnitTest
             _vimBuffer.SwitchMode(ModeKind.Replace, ModeArgument.NewInsertWithCount(2));
             _vimBuffer.Process("cat");
             _vimBuffer.Process(VimKey.Escape);
-            Assert.AreEqual("catcat", _textView.GetLine(0).GetText());
+            Assert.AreEqual("catcat", _textBuffer.GetLine(0).GetText());
             Assert.AreEqual(5, _textView.GetCaretPoint().Position);
         }
 
@@ -66,7 +68,7 @@ namespace Vim.UnitTest
             _vimBuffer.SwitchMode(ModeKind.Replace, ModeArgument.NewInsertWithCount(2));
             _vimBuffer.Process("cat");
             _vimBuffer.Process(VimKey.Escape);
-            Assert.AreEqual("catcatree", _textView.GetLine(0).GetText());
+            Assert.AreEqual("catcatree", _textBuffer.GetLine(0).GetText());
             Assert.AreEqual(5, _textView.GetCaretPoint().Position);
         }
     }

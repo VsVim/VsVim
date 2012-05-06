@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-using EditorUtils.UnitTest.Utils;
+using EditorUtils;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;

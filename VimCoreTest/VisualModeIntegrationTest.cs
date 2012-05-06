@@ -1,6 +1,5 @@
 ﻿using System.Threading;
-using EditorUtils.UnitTest;
-using EditorUtils.UnitTest.Utils;
+using EditorUtils;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -444,7 +443,7 @@ namespace Vim.UnitTest
             public void Delete_CharacterWise_LineContents()
             {
                 Create("cat", "dog");
-                EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 3));
+                EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 3));
                 _vimBuffer.Process("x");
                 Assert.AreEqual("", _textView.GetLine(0).GetText());
                 Assert.AreEqual("dog", _textView.GetLine(1).GetText());

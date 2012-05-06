@@ -104,7 +104,7 @@ type internal IncrementalSearchTaggerProvider
     [<ImportingConstructor>]
     (
         _vim : IVim,
-        _taggerFactory : ITaggerFactory
+        [<Import(EditorUtils.Constants.ContractName)>] _taggerFactory : ITaggerFactory
     ) = 
 
     interface IViewTaggerProvider with 
@@ -304,7 +304,7 @@ type HighlightIncrementalSearchTaggerProvider
     [<ImportingConstructor>]
     ( 
         _vim : IVim,
-        _taggerFactory : ITaggerFactory
+        [<Import(EditorUtils.Constants.ContractName)>] _taggerFactory : ITaggerFactory
     ) = 
 
     let _key = obj()
@@ -369,7 +369,7 @@ type SubstituteConfirmTaggerProvider
     [<ImportingConstructor>]
     ( 
         _vim : IVim,
-        _taggerFactory : ITaggerFactory
+        [<Import(EditorUtils.Constants.ContractName)>] _taggerFactory : ITaggerFactory
     ) = 
 
     interface IViewTaggerProvider with 
@@ -431,7 +431,7 @@ type FoldTaggerProvider
     [<ImportingConstructor>]
     (
         _factory : IFoldManagerFactory,
-        _taggerFactory : ITaggerFactory
+        [<Import(EditorUtils.Constants.ContractName)>] _taggerFactory : ITaggerFactory
     ) =
 
     let _key = obj()

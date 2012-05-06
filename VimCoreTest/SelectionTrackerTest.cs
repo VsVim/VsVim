@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
-using EditorUtils.UnitTest;
-using EditorUtils.UnitTest.Utils;
+using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;

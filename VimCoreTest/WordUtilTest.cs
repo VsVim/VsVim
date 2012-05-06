@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using EditorUtils.UnitTest;
+using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;

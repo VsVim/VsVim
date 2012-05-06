@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using EditorUtils.UnitTest;
+using EditorUtils;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim.Extensions;
 using Vim.Interpreter;
+using Size=System.Windows.Size;
 
 namespace Vim.UnitTest
 {
@@ -765,7 +766,46 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region ITextSnapshot
+
+        public static ITextSnapshotLine GetLine(this ITextSnapshot snapshot, int lineNumber)
+        {
+            return snapshot.GetLineFromLineNumber(lineNumber);
+        }
+
+        public static ITextSnapshotLine GetFirstLine(this ITextSnapshot snapshot)
+        {
+            return GetLine(snapshot, 0);
+        }
+
+        public static ITextSnapshotLine GetLastLine(this ITextSnapshot snapshot)
+        {
+            return GetLine(snapshot, snapshot.LineCount - 1);
+        }
+
+        #endregion
+
         #region ITextBuffer
+
+        public static SnapshotPoint GetStartPoint(this ITextBuffer textBuffer)
+        {
+            return textBuffer.CurrentSnapshot.GetStartPoint();
+        }
+
+        public static SnapshotPoint GetEndPoint(this ITextBuffer textBuffer)
+        {
+            return textBuffer.CurrentSnapshot.GetEndPoint();
+        }
+
+        public static ITextSnapshotLine GetLineFromLineNumber(this ITextBuffer buffer, int line)
+        {
+            return buffer.CurrentSnapshot.GetLineFromLineNumber(line);
+        }
+
+        public static ITextSnapshotLine GetLine(this ITextBuffer textBuffer, int lineNumber)
+        {
+            return textBuffer.CurrentSnapshot.GetLineFromLineNumber(lineNumber);
+        }
 
         public static BlockSpan GetBlockSpan(this ITextBuffer textBuffer, int column, int length, int startLine = 0, int lineCount = 1)
         {
@@ -793,9 +833,60 @@ namespace Vim.UnitTest
             }
         }
 
+        public static SnapshotSpan GetLineSpan(this ITextBuffer buffer, int lineNumber, int length)
+        {
+            return GetLineSpan(buffer, lineNumber, 0, length);
+        }
+
+        public static SnapshotSpan GetLineSpan(this ITextBuffer buffer, int lineNumber, int column, int length)
+        {
+            var line = buffer.GetLine(lineNumber);
+            return new SnapshotSpan(line.Start.Add(column), length);
+        }
+
         #endregion
 
         #region ITextView
+
+        public static SnapshotPoint GetStartPoint(this ITextView textView)
+        {
+            return textView.TextBuffer.CurrentSnapshot.GetStartPoint();
+        }
+
+        public static SnapshotPoint GetEndPoint(this ITextView textView)
+        {
+            return textView.TextBuffer.CurrentSnapshot.GetEndPoint();
+        }
+
+        public static SnapshotPoint GetPoint(this ITextView textView, int position)
+        {
+            return textView.TextBuffer.GetPoint(position);
+        }
+
+        public static SnapshotPoint GetPointInLine(this ITextView textView, int lineNumber, int column)
+        {
+            return textView.TextBuffer.GetPointInLine(lineNumber, column);
+        }
+
+        public static SnapshotLineRange GetLineRange(this ITextView textView, int startLine, int endLine = -1)
+        {
+            return textView.TextBuffer.GetLineRange(startLine, endLine);
+        }
+
+        public static ITextSnapshotLine GetLine(this ITextView textView, int lineNumber)
+        {
+            return textView.TextBuffer.GetLine(lineNumber);
+        }
+
+        public static SnapshotSpan GetLineSpan(this ITextView textView, int lineNumber, int length)
+        {
+            return GetLineSpan(textView, lineNumber, 0, length);
+        }
+
+        public static SnapshotSpan GetLineSpan(this ITextView textView, int lineNumber, int column, int length)
+        {
+            return GetLineSpan(textView.TextBuffer, lineNumber, column, length);
+        }
 
         /// <summary>
         /// Change the selection to be the specified SnapshotSpan value and update the caret to be on the
@@ -821,6 +912,48 @@ namespace Vim.UnitTest
         public static NonEmptyCollection<SnapshotSpan> GetBlock(this ITextView textView, int column, int length, int startLine = 0, int lineCount = 1)
         {
             return GetBlock(textView.TextBuffer, column, length, startLine, lineCount);
+        }
+
+        public static ITextSnapshotLine GetLastLine(this ITextView textView)
+        {
+            return textView.TextSnapshot.GetLastLine();
+        }
+
+        public static ITextSnapshotLine GetFirstLine(this ITextView textView)
+        {
+            return textView.TextSnapshot.GetFirstLine();
+        }
+
+        public static void SetText(this ITextView textView, params string[] lines)
+        {
+            textView.TextBuffer.SetText(lines);
+        }
+
+        public static void SetText(this ITextView textView, string text, int? caret)
+        {
+            textView.TextBuffer.SetText(text);
+            if (caret.HasValue)
+            {
+                textView.MoveCaretTo(caret.Value);
+            }
+        }
+
+        #endregion
+
+        #region IWpfTextView
+
+        /// <summary>
+        /// Make only a single line visible in the IWpfTextView.  This is really useful when testing
+        /// actions like scrolling
+        /// </summary>
+        /// <param name="textView"></param>
+        public static void MakeOneLineVisible(this IWpfTextView wpfTextView)
+        {
+            var oldSize = wpfTextView.VisualElement.RenderSize;
+            var size = new Size(
+                oldSize.Width,
+                wpfTextView.TextViewLines.FirstVisibleLine.Height);
+            wpfTextView.VisualElement.RenderSize = size;
         }
 
         #endregion
@@ -1186,6 +1319,12 @@ namespace Vim.UnitTest
             Assert.IsTrue(option.IsSome());
             Assert.IsTrue(func(option.Value));
             return true;
+        }
+
+        public static int GetColumn(this SnapshotPoint point)
+        {
+            var line = point.GetContainingLine();
+            return point.Position - line.Start.Position;
         }
     }
 }

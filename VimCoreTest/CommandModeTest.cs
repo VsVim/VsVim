@@ -1,5 +1,5 @@
 ﻿using System;
-using EditorUtils.UnitTest;
+using EditorUtils;
 using Microsoft.FSharp.Collections;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;

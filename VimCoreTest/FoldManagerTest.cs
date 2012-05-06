@@ -1,5 +1,4 @@
 ﻿using EditorUtils;
-using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Outlining;
@@ -22,6 +21,7 @@ namespace Vim.UnitTest
     public sealed class FoldManagerTest : VimTestBase
     {
         private ITextView _textView;
+        private ITextBuffer _textBuffer;
         private IFoldData _foldData;
         private FoldManager _foldManagerRaw;
         private IFoldManager _foldManager;
@@ -33,6 +33,7 @@ namespace Vim.UnitTest
         private void Create(params string[] lines)
         {
             _textView = CreateTextView(lines);
+            _textBuffer = _textView.TextBuffer;
             _visualBuffer = _textView.TextViewModel.VisualBuffer;
             _adhocOutliner = AdhocOutlinerFactory.GetAdhocOutliner(_textView.TextBuffer);
             _outliningeManager = OutliningManagerService.GetOutliningManager(_textView);
@@ -53,7 +54,7 @@ namespace Vim.UnitTest
         public void CreateFold_ShouldClose()
         {
             Create("cat", "dog", "bear", "fish");
-            _foldManager.CreateFold(_textView.GetLineRange(1, 2));
+            _foldManager.CreateFold(_textBuffer.GetLineRange(1, 2));
             Assert.AreEqual(3, _visualBuffer.CurrentSnapshot.LineCount);
             Assert.AreEqual("cat", _visualBuffer.GetLine(0).GetText());
             Assert.AreEqual("fish", _visualBuffer.GetLine(2).GetText());
@@ -67,7 +68,7 @@ namespace Vim.UnitTest
         public void CreateFold_OneLine()
         {
             Create("cat", "dog", "bear");
-            _foldManager.CreateFold(_textView.GetLineRange(0, 0));
+            _foldManager.CreateFold(_textBuffer.GetLineRange(0, 0));
             Assert.AreEqual(3, _visualBuffer.CurrentSnapshot.LineCount);
         }
 
@@ -79,8 +80,8 @@ namespace Vim.UnitTest
         public void OpenFold_AdhocPartialLine()
         {
             Create("cat dog", "fish tree");
-            _adhocOutliner.CreateOutliningRegion(_textView.GetLineSpan(0, 3, 4), "", "");
-            _outliningeManager.CollapseAll(_textView.GetLine(0).ExtentIncludingLineBreak, _ => true);
+            _adhocOutliner.CreateOutliningRegion(_textBuffer.GetLineSpan(0, 3, 4), "", "");
+            _outliningeManager.CollapseAll(_textBuffer.GetLine(0).ExtentIncludingLineBreak, _ => true);
             Assert.AreEqual("cat", _visualBuffer.GetLine(0).GetText());
             _foldManager.OpenFold(_textView.GetPoint(0), 1);
             Assert.AreEqual("cat dog", _visualBuffer.GetLine(0).GetText());
@@ -93,12 +94,12 @@ namespace Vim.UnitTest
         public void OpenFold_PreferFirstFold()
         {
             Create("dog", "cat", "fish", "bear", "tree", "pig");
-            _foldManager.CreateFold(_textView.GetLineRange(2, 3));
-            _foldManager.CreateFold(_textView.GetLineRange(1, 4));
+            _foldManager.CreateFold(_textBuffer.GetLineRange(2, 3));
+            _foldManager.CreateFold(_textBuffer.GetLineRange(1, 4));
             Assert.AreEqual(3, _visualBuffer.CurrentSnapshot.LineCount);
-            _foldManager.OpenFold(_textView.GetLine(2).Start, 1);
+            _foldManager.OpenFold(_textBuffer.GetLine(2).Start, 1);
             Assert.AreEqual("cat", _visualBuffer.GetLine(1).GetText());
-            _foldManager.OpenFold(_textView.GetLine(2).Start, 1);
+            _foldManager.OpenFold(_textBuffer.GetLine(2).Start, 1);
             Assert.AreEqual("fish", _visualBuffer.GetLine(2).GetText());
         }
 
@@ -110,7 +111,7 @@ namespace Vim.UnitTest
         public void CloseFold_AdhocPartialLine()
         {
             Create("cat dog", "fish tree");
-            _adhocOutliner.CreateOutliningRegion(_textView.GetLineSpan(0, 3, 4), "", "");
+            _adhocOutliner.CreateOutliningRegion(_textBuffer.GetLineSpan(0, 3, 4), "", "");
             _foldManager.CloseFold(_textView.GetPoint(0), 1);
             Assert.AreEqual("cat", _visualBuffer.GetLine(0).GetText());
         }

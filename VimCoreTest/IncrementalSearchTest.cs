@@ -1,4 +1,4 @@
-﻿using EditorUtils.UnitTest;
+﻿using EditorUtils;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;

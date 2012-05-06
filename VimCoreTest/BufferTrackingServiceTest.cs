@@ -1,5 +1,5 @@
 ﻿using System;
-using EditorUtils.UnitTest;
+using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
 using Vim.Extensions;
@@ -83,7 +83,7 @@ namespace Vim.UnitTest
         {
             var buffer = CreateTextBuffer("foo", "bar");
             var tlc = Create(buffer, 0, 0);
-            buffer.Delete(buffer.GetLineFromLineNumber(0).ExtentIncludingLineBreak.Span);
+            buffer.Delete(buffer.GetLine(0).ExtentIncludingLineBreak.Span);
             Assert.IsTrue(tlc.Point.IsNone());
             Assert.IsTrue(tlc.VirtualPoint.IsNone());
         }
@@ -96,7 +96,7 @@ namespace Vim.UnitTest
         {
             var buffer = CreateTextBuffer("foo", "bar");
             var tlc = Create(buffer, 0, 2);
-            buffer.Delete(buffer.GetLineFromLineNumber(1).ExtentIncludingLineBreak.Span);
+            buffer.Delete(buffer.GetLine(1).ExtentIncludingLineBreak.Span);
             AssertPoint(tlc, 0, 2);
         }
 
@@ -108,7 +108,7 @@ namespace Vim.UnitTest
         {
             var buffer = CreateTextBuffer("foo", "bar", "baz");
             var tlc = Create(buffer, 1, 2);
-            buffer.Delete(buffer.GetLineFromLineNumber(0).ExtentIncludingLineBreak.Span);
+            buffer.Delete(buffer.GetLine(0).ExtentIncludingLineBreak.Span);
             AssertPoint(tlc, 0, 2);
         }
 
@@ -126,7 +126,7 @@ namespace Vim.UnitTest
         {
             var buffer = CreateTextBuffer("foo bar baz");
             var tlc = Create(buffer, 0, 5);
-            buffer.Replace(buffer.GetLineFromLineNumber(0).ExtentIncludingLineBreak, "");
+            buffer.Replace(buffer.GetLine(0).ExtentIncludingLineBreak, "");
             AssertPoint(tlc, 0, 0);
         }
 

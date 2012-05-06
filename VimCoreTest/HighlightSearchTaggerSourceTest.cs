@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Threading;
 using EditorUtils;
-using EditorUtils.UnitTest;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;

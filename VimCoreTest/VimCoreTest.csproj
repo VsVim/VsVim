@@ -57,6 +57,9 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="EditorUtils">
+      <HintPath>..\packages\EditorUtils.1.0.0.1\lib\net40\EditorUtils.dll</HintPath>
+    </Reference>
     <Reference Include="FSharp.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>..\References\FSharp.Core.dll</HintPath>
@@ -142,6 +145,7 @@
     <Compile Include="SelectModeIntegrationTest.cs" />
     <Compile Include="SystemUtilTest.cs" />
     <Compile Include="TestableBulkOperations.cs" />
+    <Compile Include="TestableSynchronizationContext.cs" />
     <Compile Include="TextChangeTest.cs" />
     <Compile Include="TokenizerTest.cs" />
     <Compile Include="VisualSpanTest.cs" />
@@ -249,17 +253,9 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\EditorUtilsTest\EditorUtilsTest.csproj">
-      <Project>{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}</Project>
-      <Name>EditorUtilsTest</Name>
-    </ProjectReference>
     <ProjectReference Include="..\VimCore\VimCore.fsproj">
       <Project>{06BE08E7-8626-40BD-877B-8D2DCA6BA451}</Project>
       <Name>VimCore</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\EditorUtils\EditorUtils.csproj">
-      <Project>{FB418222-C105-4942-8EEB-832DDCFFD89D}</Project>
-      <Name>EditorUtils</Name>
     </ProjectReference>
     <ProjectReference Include="..\VimWpf\VimWpf.csproj">
       <Project>{65A749E0-F1B1-4E43-BE73-25072EE398C6}</Project>

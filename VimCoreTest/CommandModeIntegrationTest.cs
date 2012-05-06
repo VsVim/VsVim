@@ -1,5 +1,5 @@
 ﻿using System;
-using EditorUtils.UnitTest;
+using EditorUtils;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim.Extensions;
@@ -53,10 +53,10 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "bear");
                 RunCommand("co 1");
-                Assert.AreEqual("cat", _textView.GetLine(0).GetText());
-                Assert.AreEqual("cat", _textView.GetLine(1).GetText());
-                Assert.AreEqual("dog", _textView.GetLine(2).GetText());
-                Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+                Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
+                Assert.AreEqual("cat", _textBuffer.GetLine(1).GetText());
+                Assert.AreEqual("dog", _textBuffer.GetLine(2).GetText());
+                Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
             }
 
             [Test]
@@ -64,10 +64,10 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "bear");
                 RunCommand("co 2");
-                Assert.AreEqual("cat", _textView.GetLine(0).GetText());
-                Assert.AreEqual("dog", _textView.GetLine(1).GetText());
-                Assert.AreEqual("cat", _textView.GetLine(2).GetText());
-                Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+                Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
+                Assert.AreEqual("dog", _textBuffer.GetLine(1).GetText());
+                Assert.AreEqual("cat", _textBuffer.GetLine(2).GetText());
+                Assert.AreEqual(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
             }
 
             /// <summary>
@@ -78,10 +78,10 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "bear");
                 RunCommand("t 2");
-                Assert.AreEqual("cat", _textView.GetLine(0).GetText());
-                Assert.AreEqual("dog", _textView.GetLine(1).GetText());
-                Assert.AreEqual("cat", _textView.GetLine(2).GetText());
-                Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+                Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
+                Assert.AreEqual("dog", _textBuffer.GetLine(1).GetText());
+                Assert.AreEqual("cat", _textBuffer.GetLine(2).GetText());
+                Assert.AreEqual(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
             }
 
             /// <summary>
@@ -93,9 +93,9 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "bear");
                 RunCommand("co 1,2");
-                Assert.AreEqual("cat", _textView.GetLine(0).GetText());
-                Assert.AreEqual("cat", _textView.GetLine(1).GetText());
-                Assert.AreEqual("dog", _textView.GetLine(2).GetText());
+                Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
+                Assert.AreEqual("cat", _textBuffer.GetLine(1).GetText());
+                Assert.AreEqual("dog", _textBuffer.GetLine(2).GetText());
             }
 
             [Test]
@@ -104,10 +104,10 @@ namespace Vim.UnitTest
                 Create("cat", "dog", "bear");
                 _textView.MoveCaretToLine(1);
                 RunCommand("co .");
-                Assert.AreEqual("cat", _textView.GetLine(0).GetText());
-                Assert.AreEqual("dog", _textView.GetLine(1).GetText());
-                Assert.AreEqual("dog", _textView.GetLine(2).GetText());
-                Assert.AreEqual("bear", _textView.GetLine(3).GetText());
+                Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
+                Assert.AreEqual("dog", _textBuffer.GetLine(1).GetText());
+                Assert.AreEqual("dog", _textBuffer.GetLine(2).GetText());
+                Assert.AreEqual("bear", _textBuffer.GetLine(3).GetText());
             }
 
             [Test]
@@ -115,10 +115,10 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "bear");
                 RunCommand("co +1");
-                Assert.AreEqual("cat", _textView.GetLine(0).GetText());
-                Assert.AreEqual("dog", _textView.GetLine(1).GetText());
-                Assert.AreEqual("cat", _textView.GetLine(2).GetText());
-                Assert.AreEqual("bear", _textView.GetLine(3).GetText());
+                Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
+                Assert.AreEqual("dog", _textBuffer.GetLine(1).GetText());
+                Assert.AreEqual("cat", _textBuffer.GetLine(2).GetText());
+                Assert.AreEqual("bear", _textBuffer.GetLine(3).GetText());
             }
 
             [Test]
@@ -128,10 +128,10 @@ namespace Vim.UnitTest
                 Create("cat", "dog", "bear", "goose");
                 _textView.MoveCaretToLine(2);
                 RunCommand("co -2");
-                Assert.AreEqual("cat", _textView.GetLine(0).GetText());
-                Assert.AreEqual("bear", _textView.GetLine(1).GetText());
-                Assert.AreEqual("dog", _textView.GetLine(2).GetText());
-                Assert.AreEqual("bear", _textView.GetLine(3).GetText());
+                Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
+                Assert.AreEqual("bear", _textBuffer.GetLine(1).GetText());
+                Assert.AreEqual("dog", _textBuffer.GetLine(2).GetText());
+                Assert.AreEqual("bear", _textBuffer.GetLine(3).GetText());
             }
 
             [Test]
@@ -139,10 +139,10 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "bear");
                 RunCommand("co 3");
-                Assert.AreEqual("cat", _textView.GetLine(0).GetText());
-                Assert.AreEqual("dog", _textView.GetLine(1).GetText());
-                Assert.AreEqual("bear", _textView.GetLine(2).GetText());
-                Assert.AreEqual("cat", _textView.GetLine(3).GetText());
+                Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
+                Assert.AreEqual("dog", _textBuffer.GetLine(1).GetText());
+                Assert.AreEqual("bear", _textBuffer.GetLine(2).GetText());
+                Assert.AreEqual("cat", _textBuffer.GetLine(3).GetText());
             }
 
         }
@@ -156,9 +156,9 @@ namespace Vim.UnitTest
                 Create("cat", "dog", "bear");
 
                 RunCommand("m 2");
-                Assert.That(_textView.GetLine(0).GetText(), Is.EqualTo("dog"));
-                Assert.That(_textView.GetLine(1).GetText(), Is.EqualTo("cat"));
-                Assert.That(_textView.GetLine(2).GetText(), Is.EqualTo("bear"));
+                Assert.That(_textBuffer.GetLine(0).GetText(), Is.EqualTo("dog"));
+                Assert.That(_textBuffer.GetLine(1).GetText(), Is.EqualTo("cat"));
+                Assert.That(_textBuffer.GetLine(2).GetText(), Is.EqualTo("bear"));
             }
 
             /// <summary>
@@ -171,9 +171,9 @@ namespace Vim.UnitTest
                 Create("cat", "dog", "bear");
 
                 RunCommand("m 3");
-                Assert.That(_textView.GetLine(0).GetText(), Is.EqualTo("dog"));
-                Assert.That(_textView.GetLine(1).GetText(), Is.EqualTo("bear"));
-                Assert.That(_textView.GetLine(2).GetText(), Is.EqualTo("cat"));
+                Assert.That(_textBuffer.GetLine(0).GetText(), Is.EqualTo("dog"));
+                Assert.That(_textBuffer.GetLine(1).GetText(), Is.EqualTo("bear"));
+                Assert.That(_textBuffer.GetLine(2).GetText(), Is.EqualTo("cat"));
             }
 
         }
@@ -274,8 +274,8 @@ namespace Vim.UnitTest
         {
             Create("cat bat", "dag");
             RunCommand("s/a/o/g 2");
-            Assert.AreEqual("cot bot", _textView.GetLine(0).GetText());
-            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual("cot bot", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textBuffer.GetLine(1).GetText());
         }
 
         [Test]
@@ -285,8 +285,8 @@ namespace Vim.UnitTest
             Create("cat bat", "dag");
             _vimBuffer.VimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "o", SubstituteFlags.None));
             RunCommand("s g 2");
-            Assert.AreEqual("cot bot", _textView.GetLine(0).GetText());
-            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual("cot bot", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textBuffer.GetLine(1).GetText());
         }
 
         [Test]
@@ -330,7 +330,7 @@ namespace Vim.UnitTest
         {
             Create(@"\\\\abc\\\\def");
             RunCommand(@"s/\\\{4\}/\\\\/g");
-            Assert.AreEqual(@"\\abc\\def", _textView.GetLine(0).GetText());
+            Assert.AreEqual(@"\\abc\\def", _textBuffer.GetLine(0).GetText());
         }
 
         /// <summary>
@@ -341,7 +341,7 @@ namespace Vim.UnitTest
         {
             Create("    ");
             RunCommand(@"s/  /\t");
-            Assert.AreEqual("\t  ", _textView.GetLine(0).GetText());
+            Assert.AreEqual("\t  ", _textBuffer.GetLine(0).GetText());
         }
 
         /// <summary>
@@ -352,9 +352,9 @@ namespace Vim.UnitTest
         {
             Create("dog chases cat");
             RunCommand(@"s/ /\r/g");
-            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
-            Assert.AreEqual("chases", _textView.GetLine(1).GetText());
-            Assert.AreEqual("cat", _textView.GetLine(2).GetText());
+            Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("chases", _textBuffer.GetLine(1).GetText());
+            Assert.AreEqual("cat", _textBuffer.GetLine(2).GetText());
         }
 
         /// <summary>
@@ -366,7 +366,7 @@ namespace Vim.UnitTest
         {
             Create("cat", "dog", "cat", "fish");
             RunCommand("1,2/cat");
-            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+            Assert.AreEqual(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
         }
 
         [Test]
@@ -374,8 +374,8 @@ namespace Vim.UnitTest
         {
             Create("a.c", "abc");
             RunCommand(@"%s/a\.c/replaced/g");
-            Assert.That(_textView.GetLine(0).GetText(), Is.EqualTo("replaced"));
-            Assert.That(_textView.GetLine(1).GetText(), Is.EqualTo("abc"));
+            Assert.That(_textBuffer.GetLine(0).GetText(), Is.EqualTo("replaced"));
+            Assert.That(_textBuffer.GetLine(1).GetText(), Is.EqualTo("abc"));
         }
 
         /// <summary>
@@ -394,7 +394,7 @@ namespace Vim.UnitTest
         {
             Create("foo", "bar");
             RunCommand(@"%s/\n/ /");
-            Assert.That(_textView.GetLine(0).GetText(), Is.EqualTo("foo bar"));
+            Assert.That(_textBuffer.GetLine(0).GetText(), Is.EqualTo("foo bar"));
         }
 
         /// <summary>
@@ -448,7 +448,7 @@ namespace Vim.UnitTest
             RunCommandRaw("/bar");
             RunCommandRaw(":%s//baz");
 
-            Assert.That(_textView.GetLine(1).Extent.GetText(), Is.EqualTo("baz"));
+            Assert.That(_textBuffer.GetLine(1).Extent.GetText(), Is.EqualTo("baz"));
         }
 
         [Test]
@@ -461,7 +461,7 @@ namespace Vim.UnitTest
             // Do same substitute as the last substitute, but global this time
             RunCommandRaw(":%&g");
 
-            Assert.That(_textView.GetLine(0).Extent.GetText(), Is.EqualTo("bar bar bar"));
+            Assert.That(_textBuffer.GetLine(0).Extent.GetText(), Is.EqualTo("bar bar bar"));
         }
 
         /// <summary>
@@ -475,7 +475,7 @@ namespace Vim.UnitTest
             RunCommandRaw(":%s/foo/foos");
             RunCommandRaw(":%s//baz");
 
-            Assert.That(_textView.GetLine(0).Extent.GetText(), Is.EqualTo("bazs"));
+            Assert.That(_textBuffer.GetLine(0).Extent.GetText(), Is.EqualTo("bazs"));
         }
 
         [Test]
