@@ -924,11 +924,6 @@ namespace Vim.UnitTest
             return textView.TextSnapshot.GetFirstLine();
         }
 
-        public static void SetText(this ITextView textView, params string[] lines)
-        {
-            textView.TextBuffer.SetText(lines);
-        }
-
         public static void SetText(this ITextView textView, string text, int? caret)
         {
             textView.TextBuffer.SetText(text);
@@ -1276,11 +1271,6 @@ namespace Vim.UnitTest
             var col = NonEmptyCollectionUtil.OfSeq(value).Value;
             var data = StringData.NewBlock(col);
             reg.RegisterValue = RegisterValue.NewString(data, OperationKind.CharacterWise);
-        }
-
-        public static SnapshotPoint GetCaretPoint(this ITextView view)
-        {
-            return view.Caret.Position.BufferPosition;
         }
 
         public static VirtualSnapshotPoint GetCaretVirtualPoint(this ITextView view)

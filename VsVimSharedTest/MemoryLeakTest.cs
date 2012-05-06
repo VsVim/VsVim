@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.Windows.Threading;
-using EditorUtils.UnitTest;
+using EditorUtils;
 using EnvDTE;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
@@ -18,7 +19,6 @@ using Vim;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
 using VsVim.UnitTest.Mock;
-using System.Collections.ObjectModel;
 
 namespace VsVim.UnitTest
 {

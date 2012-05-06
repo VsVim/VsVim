@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Windows.Input;
-using EditorUtils.UnitTest;
+using EditorUtils;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Text.Editor;

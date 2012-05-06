@@ -34,6 +34,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="EditorUtils, Version=1.0.0.1, Culture=neutral, PublicKeyToken=3d1514c4742e0252, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\EditorUtils.1.0.0.1\lib\net40\EditorUtils.dll</HintPath>
+    </Reference>
     <Reference Include="EnvDTE, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <SpecificVersion>True</SpecificVersion>
       <EmbedInteropTypes>False</EmbedInteropTypes>
@@ -154,10 +158,6 @@
     <Compile Include="VsVimHostTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\EditorUtilsTest\EditorUtilsTest.csproj">
-      <Project>{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}</Project>
-      <Name>EditorUtilsTest</Name>
-    </ProjectReference>
     <ProjectReference Include="..\VimCoreTest\VimCoreTest.csproj">
       <Project>{B4FC7C81-E500-47C8-A884-2DBB7CA77123}</Project>
       <Name>VimCoreTest</Name>
@@ -165,10 +165,6 @@
     <ProjectReference Include="..\VimCore\VimCore.fsproj">
       <Project>{06BE08E7-8626-40BD-877B-8D2DCA6BA451}</Project>
       <Name>VimCore</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\EditorUtils\EditorUtils.csproj">
-      <Project>{FB418222-C105-4942-8EEB-832DDCFFD89D}</Project>
-      <Name>EditorUtils</Name>
     </ProjectReference>
     <ProjectReference Include="..\VimWpfTest\VimWpfTest.csproj">
       <Project>{797C1463-3984-47BE-8CD2-4FF68D1E30DA}</Project>

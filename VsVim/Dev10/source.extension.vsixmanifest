@@ -30,8 +30,8 @@
     <MefComponent>|%CurrentProject%|</MefComponent>
     <MefComponent>|VimCore|</MefComponent>
     <MefComponent>|VimWpf|</MefComponent>
-    <MefComponent>|EditorUtils|</MefComponent>
     <MefComponent>|VsVimShared|</MefComponent>
     <MefComponent>|VsVimDev10|</MefComponent>
+    <MefComponent>EditorUtils.dll</MefComponent>
   </Content>
 </Vsix>

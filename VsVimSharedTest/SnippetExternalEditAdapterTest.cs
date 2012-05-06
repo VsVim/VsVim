@@ -1,4 +1,4 @@
-﻿using EditorUtils.UnitTest;
+﻿using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;

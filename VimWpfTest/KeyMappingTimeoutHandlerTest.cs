@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using System.Windows.Threading;
-using EditorUtils.UnitTest;
 using NUnit.Framework;
 using Vim.UI.Wpf.Implementation;
 using Vim.UnitTest;

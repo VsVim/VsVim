@@ -1,4 +1,4 @@
-﻿using EditorUtils.UnitTest;
+﻿using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
@@ -7,7 +7,7 @@ using VsVim.Implementation;
 namespace VsVim.UnitTest
 {
     [TestFixture]
-    public sealed class CSharpAdapterTest : EditorUtils.UnitTest.EditorTestBase
+    public sealed class CSharpAdapterTest : EditorUtils.EditorHost
     {
         private CSharpAdapter _adapter;
 

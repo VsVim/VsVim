@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
+using EditorUtils;
 
 namespace Vim.UnitTest
 {
