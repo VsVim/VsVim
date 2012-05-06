@@ -458,18 +458,27 @@ type internal CommandUtil
     /// transaction. 
     member x.ChangeSelection register (visualSpan : VisualSpan) = 
 
-        // For block and character modes the change selection command is simply a 
-        // delete of the span and move into insert mode.  
-        let editSelection () = 
+        match visualSpan with
+        | VisualSpan.Character _ -> 
+            // For block and character modes the change selection command is simply a 
+            // delete of the span and move into insert mode.  
+            //
             // Caret needs to be positioned at the front of the span in undo so move it
             // before we create the transaction
             TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
             x.EditWithLinkedChange "ChangeSelection" (fun() -> 
                 x.DeleteSelection register visualSpan |> ignore)
+        | VisualSpan.Block blockSpan ->  
+            // Change in block mode has behavior very similar to Shift + Insert.  It needs
+            // to be a change followed by a transition into insert where the insert actions
+            // are repeated across the block span
 
-        match visualSpan with
-        | VisualSpan.Character _ -> editSelection()
-        | VisualSpan.Block _ ->  editSelection()
+            // Caret needs to be positioned at the front of the span in undo so move it
+            // before we create the transaction
+            TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
+            x.EditBlockWithLinkedChange "Change Block" blockSpan (fun () ->
+                x.DeleteSelection register visualSpan |> ignore)
+
         | VisualSpan.Line range -> x.ChangeLinesCore range register
 
     /// Close a single fold under the caret
@@ -785,6 +794,24 @@ type internal CommandUtil
                 reraise()
 
         let arg = ModeArgument.InsertWithTransaction transaction
+        CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
+
+    /// Used for the several commands which make an edit here and need the edit to be linked
+    /// with the next insert mode change.  
+    member x.EditBlockWithLinkedChange name blockSpan action =
+        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
+
+        try
+            x.EditWithUndoTransaciton name action
+        with
+            | _ ->
+                // If the above throws we can't leave the transaction open else it will
+                // break undo / redo in the ITextBuffer.  Close it here and
+                // re-raise the exception
+                transaction.Dispose()
+                reraise()
+
+        let arg = ModeArgument.InsertBlock (blockSpan, transaction)
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
 
     /// Used for commands which need to operate on the visual buffer and produce a SnapshotSpan
@@ -1699,7 +1726,7 @@ type internal CommandUtil
                     | ModeArgument.None -> ()
                     | ModeArgument.FromVisual -> ()
                     | ModeArgument.InitialVisualSelection _ -> ()
-                    | ModeArgument.InsertBlock _ -> ()
+                    | ModeArgument.InsertBlock (_, transaction) -> transaction.Complete()
                     | ModeArgument.InsertWithCount _ -> ()
                     | ModeArgument.InsertWithCountAndNewLine _ -> ()
                     | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
@@ -2421,14 +2448,14 @@ type internal CommandUtil
         // The insert begins at column 0 of the first line of the visual selection.  Any
         // undo should move the caret back to this position so do the move inside of 
         // an undo transaction
-        x.EditWithUndoTransaciton "Visual Insert" (fun () -> TextViewUtil.MoveCaretToPoint _textView visualSpan.Start)
+        let moveCaret () = TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
 
-        let argument = 
-            match _vimTextBuffer.ModeKind = ModeKind.VisualBlock, visualSpan with
-            | true, VisualSpan.Block blockSpan -> ModeArgument.InsertBlock blockSpan
-            | _ -> ModeArgument.None
-
-        x.SwitchMode ModeKind.Insert argument
+        match _vimTextBuffer.ModeKind = ModeKind.VisualBlock, visualSpan with
+        | true, VisualSpan.Block blockSpan -> 
+            x.EditBlockWithLinkedChange "Visual Insert" blockSpan moveCaret
+        | _ -> 
+            x.EditWithUndoTransaciton "Visual Insert" moveCaret
+            x.SwitchMode ModeKind.Insert ModeArgument.None
 
     /// Switch from the current visual mode into the specified visual mode
     member x.SwitchModeVisual newVisualKind = 

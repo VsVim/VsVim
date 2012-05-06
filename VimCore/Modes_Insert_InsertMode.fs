@@ -642,8 +642,7 @@ type internal InsertMode
         // lump edits and their repeats together
         let transaction, insertKind =
             match arg with
-            | ModeArgument.InsertBlock blockSpan ->
-                let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
+            | ModeArgument.InsertBlock (blockSpan, transaction) ->
                 Some transaction, InsertKind.Block blockSpan
             | ModeArgument.InsertWithCount count ->
                 if count > 1 then

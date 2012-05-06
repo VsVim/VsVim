@@ -1685,8 +1685,9 @@ type ModeArgument =
     /// caret point is used
     | InitialVisualSelection of VisualSelection * SnapshotPoint option
 
-    /// Begins a block insertion
-    | InsertBlock of BlockSpan
+    /// Begins a block insertion.  This can possibly have a linked undo transaction that needs
+    /// to be carried forward through the insert
+    | InsertBlock of BlockSpan * ILinkedUndoTransaction
 
     /// Begins insert mode with a specified count.  This means the text inserted should
     /// be repeated a total of 'count - 1' times when insert mode exits

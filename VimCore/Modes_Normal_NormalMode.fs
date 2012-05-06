@@ -315,7 +315,7 @@ type internal NormalMode
             | ModeArgument.FromVisual -> ()
             | ModeArgument.Substitute(_) -> ()
             | ModeArgument.InitialVisualSelection _ -> ()
-            | ModeArgument.InsertBlock _ -> ()
+            | ModeArgument.InsertBlock (_, transaction) -> transaction.Complete()
             | ModeArgument.InsertWithCount _ -> ()
             | ModeArgument.InsertWithCountAndNewLine _ -> ()
             | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()

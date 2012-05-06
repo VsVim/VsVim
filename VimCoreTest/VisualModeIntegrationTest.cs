@@ -312,13 +312,13 @@ namespace Vim.UnitTest
         }
 
         [TestFixture]
-        public sealed class Misc : VisualModeIntegrationTest
+        public sealed class BlockInsert : VisualModeIntegrationTest
         {
             /// <summary>
             /// The block insert should add the text to every column
             /// </summary>
             [Test]
-            public void BlockInsert_Simple()
+            public void Simple()
             {
                 Create("dog", "cat", "fish");
                 _vimBuffer.ProcessNotation("<C-q>j<S-i>the <Esc>");
@@ -331,7 +331,7 @@ namespace Vim.UnitTest
             /// starts
             /// </summary>
             [Test]
-            public void BlockInsert_CaretPosition()
+            public void CaretPosition()
             {
                 Create("dog", "cat", "fish");
                 _vimBuffer.ProcessNotation("<C-q>jl<S-i>");
@@ -344,7 +344,7 @@ namespace Vim.UnitTest
             /// the original selection
             /// </summary>
             [Test]
-            public void BlockInsert_EmptyColumn()
+            public void EmptyColumn()
             {
                 Create("dog", "", "fish");
                 _vimBuffer.ProcessNotation("l<C-q>jjl<S-i> the <Esc>");
@@ -358,7 +358,7 @@ namespace Vim.UnitTest
             /// The undo of a block insert should undo all of the inserts
             /// </summary>
             [Test]
-            public void BlockInsert_Undo()
+            public void Undo()
             {
                 Create("dog", "cat", "fish");
                 _vimBuffer.ProcessNotation("<C-q>j<S-i>the <Esc>");
@@ -374,14 +374,59 @@ namespace Vim.UnitTest
             /// Delete actions aren't repeated
             /// </summary>
             [Test]
-            public void BlockInsert_DontRepeatDelete()
+            public void DontRepeatDelete()
             {
                 Create("dog", "cat", "fish");
                 _vimBuffer.ProcessNotation("<C-q>j<S-i><Del><Esc>");
                 Assert.AreEqual("og", _textView.GetLine(0).GetText());
                 Assert.AreEqual("cat", _textView.GetLine(1).GetText());
             }
+        }
 
+        [TestFixture]
+        public sealed class BlockChange : VisualModeIntegrationTest
+        {
+            /// <summary>
+            /// The block insert should add the text to every column
+            /// </summary>
+            [Test]
+            public void Simple()
+            {
+                Create("dog", "cat", "fish");
+                _vimBuffer.ProcessNotation("<C-q>jcthe <Esc>");
+                Assert.AreEqual("the og", _textBuffer.GetLine(0).GetText());
+                Assert.AreEqual("the at", _textBuffer.GetLine(1).GetText());
+            }
+
+            /// <summary>
+            /// Make sure an undo of a block edit goes back to the original text and replaces
+            /// the cursor at the start of the block
+            /// </summary>
+            [Test]
+            public void Undo()
+            {
+                Create("dog", "cat", "fish");
+                _vimBuffer.ProcessNotation("<C-q>jcthe <Esc>u");
+                CollectionAssert.AreEqual(
+                    new[] { "dog", "cat", "fish" },
+                    _textBuffer.GetLines());
+                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            }
+
+            [Test]
+            public void RenameFunction()
+            {
+                Create("foo()", "foo()");
+                _vimBuffer.ProcessNotation("<C-q>jllcbar<Esc>");
+                CollectionAssert.AreEqual(
+                    new[] { "bar()", "bar()" },
+                    _textBuffer.GetLines());
+            }
+        }
+
+        [TestFixture]
+        public sealed class Misc : VisualModeIntegrationTest
+        {
             /// <summary>
             /// When changing a line wise selection one blank line should be left remaining in the ITextBuffer
             /// </summary>
