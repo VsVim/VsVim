@@ -2178,6 +2178,9 @@ type InsertCommand  =
     /// Direct insert of the specified char
     | DirectInsert of char
 
+    /// Direct replacement of the spceified char
+    | DirectReplace of char
+
     /// Insert a new line into the ITextBuffer
     | InsertNewLine
 
@@ -2218,6 +2221,7 @@ type InsertCommand  =
             | DeleteAllIndent -> None
             | DeleteWordBeforeCursor -> None
             | DirectInsert c -> Some (c.ToString())
+            | DirectReplace c -> Some (c.ToString())
             | InsertNewLine -> EditUtil.NewLine editorOptions |> Some
             | InsertTab -> Some "\t"
             | MoveCaret _ -> None
@@ -2445,7 +2449,7 @@ type internal IInsertUtil =
     abstract RunInsertCommand : InsertCommand -> CommandResult
 
     /// Repeat the given edit series. 
-    abstract RepeatEdit : textChange : TextChange -> addNewLines : bool -> overwrite : bool -> count : int -> unit
+    abstract RepeatEdit : textChange : TextChange -> addNewLines : bool -> count : int -> unit
 
     /// Repeat the given edit series. 
     abstract RepeatBlock : InsertCommand -> blockSpan : BlockSpan -> unit

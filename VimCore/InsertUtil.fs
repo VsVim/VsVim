@@ -67,7 +67,7 @@ type internal InsertUtil
                 reraise()
 
     /// Apply the TextChange to the ITextBuffer 'count' times as a single operation.
-    member x.ApplyTextChange textChange addNewLines overwrite =
+    member x.ApplyTextChange textChange addNewLines =
 
         // Apply a single change to the ITextBuffer as a transaction 
         let rec applyChange textChange = 
@@ -82,17 +82,7 @@ type internal InsertUtil
                         text
 
                 let caretPoint = TextViewUtil.GetCaretPoint _textView
-
-                // If this is an overwrite operation then replace vs. insert
-                let span = 
-                    if overwrite then
-                        let snapshot = x.CurrentSnapshot
-                        let position = min snapshot.Length (caretPoint.Position + text.Length)
-                        let endPoint = SnapshotPoint(snapshot, position)
-                        SnapshotSpan(caretPoint, endPoint)
-                    else
-                        SnapshotSpan(caretPoint, 0)
-
+                let span = SnapshotSpan(caretPoint, 0)
                 _textBuffer.Replace(span.Span, text) |> ignore
 
                 // Now make sure to position the caret at the end of the inserted
@@ -219,6 +209,21 @@ type internal InsertUtil
             CommandResult.Completed ModeSwitch.NoSwitch
         else
             CommandResult.Error
+
+    /// Do a replacement under the caret of the specified char
+    member x.DirectReplace (c : char) =
+        // Typically we have the overwrite option set for all of replace mode so this
+        // is a redundant check.  But during repeat we only see the commands and not
+        // the mode changes so we need to check here
+        let oldValue = EditorOptionsUtil.GetOptionValueOrDefault _editorOptions DefaultTextViewOptions.OverwriteModeId true
+        if not oldValue then
+            EditorOptionsUtil.SetOptionValue _editorOptions DefaultTextViewOptions.OverwriteModeId true
+
+        try
+            x.DirectInsert c
+        finally 
+            if not oldValue then
+                EditorOptionsUtil.SetOptionValue _editorOptions DefaultTextViewOptions.OverwriteModeId false
 
     /// Insert a new line into the ITextBuffer.  Make sure to indent the text
     member x.InsertNewLine() =
@@ -363,14 +368,14 @@ type internal InsertUtil
 
     /// Repeat the given edit InsertCommand.  This is used at the exit of insert mode to
     /// apply the edits again and again
-    member x.RepeatEdit textChange addNewLines overwrite count = 
+    member x.RepeatEdit textChange addNewLines count = 
 
         // Create a transaction so the textChange is applied as a single edit and to 
         // maintain caret position 
         _undoRedoOperations.EditWithUndoTransaction "Repeat Edits" (fun () -> 
 
             for i = 1 to count do
-                x.ApplyTextChange textChange addNewLines overwrite)
+                x.ApplyTextChange textChange addNewLines)
 
     /// Repeat the edits for the other lines in the block span.
     member x.RepeatBlock (command : InsertCommand) (blockSpan : BlockSpan) =
@@ -425,6 +430,7 @@ type internal InsertUtil
             | InsertCommand.DeleteAllIndent -> x.DeleteAllIndent() 
             | InsertCommand.DeleteWordBeforeCursor -> x.DeleteWordBeforeCursor()
             | InsertCommand.DirectInsert c -> x.DirectInsert c
+            | InsertCommand.DirectReplace c -> x.DirectReplace c
             | InsertCommand.InsertNewLine -> x.InsertNewLine()
             | InsertCommand.InsertTab -> x.InsertTab()
             | InsertCommand.MoveCaret direction -> x.MoveCaret direction
@@ -477,12 +483,12 @@ type internal InsertUtil
         CommandResult.Error
 
     member x.ExtraTextChange textChange addNewLines = 
-        x.ApplyTextChange textChange addNewLines false
+        x.ApplyTextChange textChange addNewLines 
         CommandResult.Completed ModeSwitch.NoSwitch
 
     interface IInsertUtil with
 
         member x.RunInsertCommand command = x.RunInsertCommand command
-        member x.RepeatEdit textChange addNewLines overwrite count = x.RepeatEdit textChange addNewLines overwrite count
+        member x.RepeatEdit textChange addNewLines count = x.RepeatEdit textChange addNewLines count
         member x.RepeatBlock command blockSpan = x.RepeatBlock command blockSpan
 

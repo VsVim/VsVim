@@ -1049,7 +1049,6 @@ module EditorOptionsUtil =
     let SetOptionValue (opts : IEditorOptions) (key : EditorOptionKey<'a>) value =
         opts.SetOptionValue(key, value)
 
-
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module TextViewUtil =

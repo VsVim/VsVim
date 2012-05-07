@@ -3,16 +3,14 @@ using System.ComponentModel.Composition;
 using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using Microsoft.Win32;
 using Vim;
-using Microsoft.VisualStudio.Text.Classification;
 
 namespace VsVim.Implementation.VisualAssist
 {
-    // TODO: Clean up the native method code.  Need to use HandleRef and make sure I have IntPtr vs. int correct
-    // TODO: Need to coordinate the key handling with IVimBufferCoordinator
     [ContentType(Vim.Constants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Document)]
     [Order(Before = Constants.VisualStudioKeyProcessorName, After = Constants.VsKeyProcessorName)]

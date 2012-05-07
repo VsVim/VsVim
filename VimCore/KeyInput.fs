@@ -94,8 +94,12 @@ type KeyInput
             None
 
     /// In general Vim keys compare ordinally.  The one exception is when the control
-    /// modifier is applied to a letter key.  In that case the keys compare in a case insensitive
-    /// fashion
+    /// modifier is applied to a letter key.  In that case the keys compare in a case 
+    /// insensitive fashion.  
+    ///
+    /// This is demonstratable in a couple of areas.  One simple one is using the 
+    /// the CTRL-F command (scroll down).  It has the same behavior with capital 
+    /// or lower case F.
     member x.CompareTo (right : KeyInput) =
 
         let maybeGetAlternate (x : KeyInput) = 

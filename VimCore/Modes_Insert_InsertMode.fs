@@ -188,9 +188,14 @@ type internal InsertMode
             | None -> None
             | Some c ->
 
-                // Since the char is not mapped to a particular command then it's a direct insert
+                // Since the char is not mapped to a particular command then it's a direct insert or
+                // replace 
                 let getDirectInsert () =
-                    let command = InsertCommand.DirectInsert c
+                    let command = 
+                        if _isReplace then
+                            InsertCommand.DirectReplace c
+                        else
+                            InsertCommand.DirectInsert c
                     let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
                     let keyInputSet = KeyInputSet.OneKeyInput keyInput
                     RawInsertCommand.InsertCommand (keyInputSet, command, commandFlags) |> Some
@@ -298,6 +303,7 @@ type internal InsertMode
             | RawInsertCommand.InsertCommand (_, insertCommand, _) ->
                 match insertCommand with
                 | InsertCommand.DirectInsert _ -> true
+                | InsertCommand.DirectReplace _ -> true
                 | _ -> false
             | RawInsertCommand.CustomCommand _ -> false
 
@@ -311,7 +317,7 @@ type internal InsertMode
         try
             match _sessionData.InsertKind with
             | InsertKind.Normal -> ()
-            | InsertKind.Repeat (count, addNewLines, textChange)-> _insertUtil.RepeatEdit textChange addNewLines _isReplace (count - 1)
+            | InsertKind.Repeat (count, addNewLines, textChange)-> _insertUtil.RepeatEdit textChange addNewLines (count - 1)
             | InsertKind.Block blockSpan -> 
                 match _sessionData.CombinedEditCommand with
                 | None -> ()
@@ -576,6 +582,7 @@ type internal InsertMode
             | InsertCommand.DeleteAllIndent -> None
             | InsertCommand.DeleteWordBeforeCursor -> None
             | InsertCommand.DirectInsert c -> Some (TextChange.Insert (c.ToString()))
+            | InsertCommand.DirectReplace c -> Some (TextChange.Combination ((TextChange.DeleteRight 1), (TextChange.Insert (c.ToString()))))
             | InsertCommand.ExtraTextChange textChange -> Some textChange
             | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine _editorOptions))
             | InsertCommand.InsertTab -> Some (TextChange.Insert "\t")
