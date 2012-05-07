@@ -20,10 +20,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimWpf", "VimWpf\VimWpf.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimWpfTest", "VimWpfTest\VimWpfTest.csproj", "{797C1463-3984-47BE-8CD2-4FF68D1E30DA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EditorUtils", "EditorUtils\EditorUtils.csproj", "{FB418222-C105-4942-8EEB-832DDCFFD89D}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EditorUtilsTest", "EditorUtilsTest\EditorUtilsTest.csproj", "{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VsVimShared", "VsVimShared\VsVimShared.csproj", "{979DEDC6-25E2-494B-9E8F-6E42078C601C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VsVimDev10", "VsVimSpecific\VsVimDev10.csproj", "{0DE4170C-224D-47CF-BE00-B88AA14EC804}"
@@ -103,26 +99,6 @@ Global
 		{797C1463-3984-47BE-8CD2-4FF68D1E30DA}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{797C1463-3984-47BE-8CD2-4FF68D1E30DA}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{797C1463-3984-47BE-8CD2-4FF68D1E30DA}.Release|x86.ActiveCfg = Release|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Release|x86.ActiveCfg = Release|Any CPU
-		{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}.Release|x86.ActiveCfg = Release|Any CPU
 		{979DEDC6-25E2-494B-9E8F-6E42078C601C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{979DEDC6-25E2-494B-9E8F-6E42078C601C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{979DEDC6-25E2-494B-9E8F-6E42078C601C}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
