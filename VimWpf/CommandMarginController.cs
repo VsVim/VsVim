@@ -150,34 +150,43 @@ namespace Vim.UI.Wpf
             }
         }
 
+        /// <summary>
+        /// Update the status line at the end of a key press event which didn't result in 
+        /// a mode change
+        /// </summary>
         private void UpdateForNoEvent()
         {
+            var search = _buffer.IncrementalSearch;
+            if (search.InSearch && search.CurrentSearchData.IsSome())
+            {
+                var data = search.CurrentSearchData.Value;
+                var prefix = data.Kind.IsAnyForward ? "/" : "?";
+                _margin.StatusLine = prefix + data.Pattern;
+                return;
+            }
+
             switch (_buffer.ModeKind)
             {
                 case ModeKind.Command:
                     _margin.StatusLine = ":" + _buffer.CommandMode.Command;
                     break;
                 case ModeKind.Normal:
-                    {
-                        var mode = _buffer.NormalMode;
-                        var search = _buffer.IncrementalSearch;
-                        if (search.InSearch && search.CurrentSearchData.IsSome())
-                        {
-                            var data = search.CurrentSearchData.Value;
-                            var prefix = data.Kind.IsAnyForward ? "/" : "?";
-                            _margin.StatusLine = prefix + data.Pattern;
-                        }
-                        else
-                        {
-                            _margin.StatusLine = mode.Command;
-                        }
-                    }
+                    _margin.StatusLine = _buffer.NormalMode.Command;
                     break;
                 case ModeKind.SubstituteConfirm:
                     UpdateSubstituteConfirmMode();
                     break;
                 case ModeKind.Disabled:
                     _margin.StatusLine = _buffer.DisabledMode.HelpMessage;
+                    break;
+                case ModeKind.VisualBlock:
+                    _margin.StatusLine = Resources.VisualBlockBanner;
+                    break;
+                case ModeKind.VisualCharacter:
+                    _margin.StatusLine = Resources.VisualCharacterBanner;
+                    break;
+                case ModeKind.VisualLine:
+                    _margin.StatusLine = Resources.VisualLineBanner;
                     break;
             }
         }

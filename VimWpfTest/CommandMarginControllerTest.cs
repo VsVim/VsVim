@@ -25,6 +25,7 @@ namespace Vim.UI.Wpf.UnitTest
         {
             _factory = new MockRepository(MockBehavior.Strict);
             _search = _factory.Create<IIncrementalSearch>();
+            _search.SetupGet(x => x.InSearch).Returns(false);
             _vimBuffer = new MockVimBuffer();
             _vimBuffer.IncrementalSearchImpl = _search.Object;
             _vimBuffer.VimImpl = MockObjectFactory.CreateVim(factory: _factory).Object;
@@ -41,11 +42,20 @@ namespace Vim.UI.Wpf.UnitTest
                 new List<Lazy<IOptionsProviderFactory>>());
         }
 
-        private void SimulatKeystroke()
+        private void SimulateKeystroke()
         {
             var ki = KeyInputUtil.CharToKeyInput('a');
             _vimBuffer.RaiseKeyInputStart(ki);
             _vimBuffer.RaiseKeyInputEnd(ki);
+        }
+
+        private void SimulateSearch(string pattern, SearchKind searchKind = null, SearchOptions searchOptions = SearchOptions.None)
+        {
+            searchKind = searchKind ?? SearchKind.Forward;
+
+            var data = new SearchData(pattern, searchKind, searchOptions);
+            _search.SetupGet(x => x.InSearch).Returns(true).Verifiable();
+            _search.SetupGet(x => x.CurrentSearchData).Returns(FSharpOption.Create(data)).Verifiable();
         }
 
         [Test]
@@ -76,7 +86,7 @@ namespace Vim.UI.Wpf.UnitTest
             var mode = new Mock<IMode>();
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
             _marginControl.StatusLine = String.Empty;
-            _vimBuffer.RaiseKeyInputStart(KeyInputUtil.CharToKeyInput('c'));
+           _vimBuffer.RaiseKeyInputStart(KeyInputUtil.CharToKeyInput('c'));
             _vimBuffer.RaiseSwitchedMode(new SwitchModeEventArgs(FSharpOption<IMode>.None, mode.Object));
             Assert.AreEqual(String.Empty, _marginControl.StatusLine);
         }
@@ -288,7 +298,7 @@ namespace Vim.UI.Wpf.UnitTest
             _vimBuffer.ModeKindImpl = ModeKind.Normal;
             _vimBuffer.NormalModeImpl = mode.Object;
 
-            SimulatKeystroke();
+            SimulateKeystroke();
             Assert.AreEqual("foo", _marginControl.StatusLine);
             mode.Verify();
             _factory.Verify();
@@ -302,7 +312,7 @@ namespace Vim.UI.Wpf.UnitTest
             _vimBuffer.ModeKindImpl = ModeKind.Command;
             _vimBuffer.CommandModeImpl = mode.Object;
 
-            SimulatKeystroke();
+            SimulateKeystroke();
             Assert.AreEqual(":foo", _marginControl.StatusLine);
             mode.Verify();
         }
@@ -315,37 +325,80 @@ namespace Vim.UI.Wpf.UnitTest
             _vimBuffer.ModeKindImpl = ModeKind.Disabled;
             _vimBuffer.DisabledModeImpl = mode.Object;
 
-            SimulatKeystroke();
+            SimulateKeystroke();
             Assert.AreEqual("foo", _marginControl.StatusLine);
             mode.Verify();
         }
 
+        /// <summary>
+        /// Ensure the status line is updated for a normal mode search
+        /// </summary>
         [Test]
-        public void Search1()
+        public void Search_Normal_Forward()
         {
             var mode = _factory.Create<INormalMode>();
             _vimBuffer.NormalModeImpl = mode.Object;
             _vimBuffer.ModeKindImpl = ModeKind.Normal;
-            var data = new SearchData("cat", SearchKind.Forward, SearchOptions.None);
-            _search.SetupGet(x => x.InSearch).Returns(true).Verifiable();
-            _search.SetupGet(x => x.CurrentSearchData).Returns(FSharpOption.Create(data)).Verifiable();
-            SimulatKeystroke();
+            SimulateSearch("cat");
+            SimulateKeystroke();
             Assert.AreEqual("/cat", _marginControl.StatusLine);
             _factory.Verify();
         }
 
         [Test]
-        public void Search2()
+        public void Search_Normal_Backward()
         {
             var mode = _factory.Create<INormalMode>();
             _vimBuffer.NormalModeImpl = mode.Object;
             _vimBuffer.ModeKindImpl = ModeKind.Normal;
-            var data = new SearchData("cat", SearchKind.Backward, SearchOptions.None);
-            _search.SetupGet(x => x.InSearch).Returns(true).Verifiable();
-            _search.SetupGet(x => x.CurrentSearchData).Returns(FSharpOption.Create(data)).Verifiable();
-            SimulatKeystroke();
+            SimulateSearch("cat", SearchKind.Backward);
+            SimulateKeystroke();
             Assert.AreEqual("?cat", _marginControl.StatusLine);
             _factory.Verify();
+        }
+
+        /// <summary>
+        /// Ensure the status line is updated for a visual mode search
+        /// </summary>
+        [Test]
+        public void Search_Visual_Forward()
+        {
+            var mode = _factory.Create<IVisualMode>();
+            _vimBuffer.VisualCharacterModeImpl = mode.Object;
+            _vimBuffer.ModeKindImpl = ModeKind.VisualCharacter;
+            SimulateSearch("cat");
+            SimulateKeystroke();
+            Assert.AreEqual("/cat", _marginControl.StatusLine);
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Search_Visual_Backward()
+        {
+            var mode = _factory.Create<IVisualMode>();
+            _vimBuffer.VisualCharacterModeImpl = mode.Object;
+            _vimBuffer.ModeKindImpl = ModeKind.VisualCharacter;
+            SimulateSearch("cat", SearchKind.Backward);
+            SimulateKeystroke();
+            Assert.AreEqual("?cat", _marginControl.StatusLine);
+            _factory.Verify();
+        }
+
+        /// <summary>
+        /// Once a visual search is complete we should go back to the standard
+        /// visual mode banner
+        /// </summary>
+        [Test]
+        public void Search_Visual_Complete()
+        {
+            var mode = _factory.Create<IVisualMode>();
+            _vimBuffer.VisualCharacterModeImpl = mode.Object;
+            _vimBuffer.ModeKindImpl = ModeKind.VisualCharacter;
+            SimulateSearch("cat", SearchKind.Backward);
+            SimulateKeystroke();
+            _search.SetupGet(x => x.InSearch).Returns(false);
+            SimulateKeystroke();
+            Assert.AreEqual(Resources.VisualCharacterBanner, _marginControl.StatusLine);
         }
     }
 }
