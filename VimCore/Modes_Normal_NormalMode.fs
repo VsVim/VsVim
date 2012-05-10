@@ -180,7 +180,7 @@ type internal NormalMode
             let complexSeq = 
                 seq {
                     yield ("r", CommandFlags.Repeatable, x.BindReplaceChar ())
-                    yield ("'", CommandFlags.Movement, x.BindMark NormalCommand.JumpToMark)
+                    yield ("'", CommandFlags.Movement, x.BindMark NormalCommand.JumpToMarkLine)
                     yield ("`", CommandFlags.Movement, x.BindMark NormalCommand.JumpToMark)
                     yield ("m", CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar None NormalCommand.SetMarkToCaret)
                     yield ("@", CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar None NormalCommand.RunMacro)

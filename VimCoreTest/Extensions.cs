@@ -1184,6 +1184,17 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region IMarkMap
+
+        public static void SetLocalMark(this IMarkMap markMap, char c, IVimBufferData vimBufferData, int line, int column)
+        {
+            var letter = Letter.OfChar(c).Value;
+            var mark = Mark.NewLocalMark(LocalMark.NewLetter(letter));
+            markMap.SetMark(mark, vimBufferData, line, column);
+        }
+
+        #endregion
+
         /// <summary>
         /// Run the specified motion with default arguments
         /// </summary>

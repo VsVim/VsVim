@@ -1944,6 +1944,9 @@ type NormalCommand =
     /// Jump to the specified mark 
     | JumpToMark of Mark
 
+    /// Jump to the start of the line for the specified mark
+    | JumpToMarkLine of Mark
+
     /// Jump to the next older item in the tag list
     | JumpToOlderPosition
 

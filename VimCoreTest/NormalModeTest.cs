@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using EditorUtils;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -1149,7 +1148,7 @@ namespace Vim.UnitTest
         public void Bind_JumpToMark()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewJumpToMark(Mark.OfChar('a').Value));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewJumpToMarkLine(Mark.OfChar('a').Value));
             _mode.Process("'a");
         }
 

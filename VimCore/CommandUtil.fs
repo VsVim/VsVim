@@ -1193,12 +1193,23 @@ type internal CommandUtil
             x.JumpToTagCore ()
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Jump to the specified mark
-    member x.JumpToMark mark =
+    /// Jump to the specified mark.  Most motions are mapped to caret movements in MotionUtil.fs 
+    /// since they embed caret information.  Marks are special though because they have the ability
+    /// to cross files hence we special case them here
+    member x.JumpToMarkCore mark exact =
         let before = x.CaretPoint
 
         // Jump to the given point in the ITextBuffer
         let jumpLocal (point : VirtualSnapshotPoint) = 
+            let point = 
+                if exact then
+                    point
+                else
+                    point
+                    |> VirtualSnapshotPointUtil.GetContainingLine
+                    |> SnapshotLineUtil.GetFirstNonBlankOrStart
+                    |> VirtualSnapshotPointUtil.OfPoint
+
             _commonOperations.MoveCaretToPointAndEnsureVisible point.Position
             _jumpList.Add before |> ignore
             CommandResult.Completed ModeSwitch.NoSwitch
@@ -1231,6 +1242,14 @@ type internal CommandUtil
             match _jumpList.LastJumpLocation with
             | None -> markNotSet()
             | Some point -> jumpLocal point
+
+    /// Jump to the specified mark
+    member x.JumpToMark mark = 
+        x.JumpToMarkCore mark true
+
+    /// Jump to the start of the line containing the specified mark
+    member x.JumpToMarkLine mark = 
+        x.JumpToMarkCore mark false
 
     /// Jumps to the specified 
     member x.JumpToTagCore () =
@@ -2064,6 +2083,7 @@ type internal CommandUtil
         | NormalCommand.InsertLineBelow -> x.InsertLineBelow count
         | NormalCommand.JoinLines kind -> x.JoinLines kind count
         | NormalCommand.JumpToMark c -> x.JumpToMark c
+        | NormalCommand.JumpToMarkLine c -> x.JumpToMarkLine c
         | NormalCommand.JumpToOlderPosition -> x.JumpToOlderPosition count
         | NormalCommand.JumpToNewerPosition -> x.JumpToNewerPosition count
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
