@@ -2465,16 +2465,22 @@ type internal CommandUtil
     /// will start a block insertion
     member x.SwitchModeInsert (visualSpan : VisualSpan) = 
 
-        // The insert begins at column 0 of the first line of the visual selection.  Any
-        // undo should move the caret back to this position so do the move inside of 
-        // an undo transaction
-        let moveCaret () = TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
-
-        match _vimTextBuffer.ModeKind = ModeKind.VisualBlock, visualSpan with
-        | true, VisualSpan.Block blockSpan -> 
-            x.EditBlockWithLinkedChange "Visual Insert" blockSpan moveCaret
+        match visualSpan with
+        | VisualSpan.Block blockSpan ->
+            // The insert begins at the start of the block collection.  Any undo should move
+            // the caret back to this position so make sure to move it before we start the 
+            // transaction so that it will be properly positioned on undo
+            TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
+            x.EditBlockWithLinkedChange "Visual Insert" blockSpan (fun _ -> ())
         | _ -> 
-            x.EditWithUndoTransaciton "Visual Insert" moveCaret
+            // For all other visual mode inserts the caret moves to column 0 on the first
+            // line of the selection.  It should be positioned there after an undor so move
+            // it now before the undo transaction
+            visualSpan.Start
+            |> SnapshotPointUtil.GetContainingLine
+            |> SnapshotLineUtil.GetStart
+            |> TextViewUtil.MoveCaretToPoint _textView
+            x.EditWithUndoTransaciton "Visual Insert" (fun _ -> ())
             x.SwitchMode ModeKind.Insert ModeArgument.None
 
     /// Switch from the current visual mode into the specified visual mode
