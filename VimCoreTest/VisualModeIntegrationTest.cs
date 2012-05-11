@@ -12,6 +12,7 @@ namespace Vim.UnitTest
     public abstract class VisualModeIntegrationTest : VimTestBase
     {
         private IVimBuffer _vimBuffer;
+        private IVimBufferData _vimBufferData;
         private IVimTextBuffer _vimTextBuffer;
         private IWpfTextView _textView;
         private ITextBuffer _textBuffer;
@@ -32,6 +33,7 @@ namespace Vim.UnitTest
             _textBuffer = _textView.TextBuffer;
             _vimBuffer = Vim.CreateVimBuffer(_textView);
             _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            _vimBufferData = _vimBuffer.VimBufferData;
             _vimTextBuffer = _vimBuffer.VimTextBuffer;
             _registerMap = _vimBuffer.RegisterMap;
             _globalSettings = _vimBuffer.LocalSettings.GlobalSettings;
@@ -421,6 +423,36 @@ namespace Vim.UnitTest
                 CollectionAssert.AreEqual(
                     new[] { "bar()", "bar()" },
                     _textBuffer.GetLines());
+            }
+        }
+
+        [TestFixture]
+        public sealed class Move : VisualModeIntegrationTest
+        {
+            /// <summary>
+            /// Jump to a mark and make sure that the selection correctly updates
+            /// </summary>
+            [Test]
+            public void JumpMarkLine_Character()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.MarkMap.SetLocalMark('b', _vimBufferData, 1, 1);
+                _vimBuffer.Process("v'b");
+                Assert.AreEqual("at\r\nd", _textView.GetSelectionSpan().GetText());
+            }
+
+            /// <summary>
+            /// Jump to a mark and make sure that the selection correctly updates
+            /// </summary>
+            [Test]
+            public void JumpMark_Character()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.MarkMap.SetLocalMark('b', _vimBufferData, 1, 1);
+                _vimBuffer.Process("v`b");
+                Assert.AreEqual("at\r\ndo", _textView.GetSelectionSpan().GetText());
             }
         }
 

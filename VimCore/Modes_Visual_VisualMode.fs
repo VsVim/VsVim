@@ -30,6 +30,17 @@ type internal VisualMode
         | ModeKind.VisualLine -> (OperationKind.LineWise, VisualKind.Line)
         | _ -> failwith "Invalid"
 
+    /// Get a mark and us the provided 'func' to create a Motion value
+    static let BindMark func = 
+        let bindFunc (keyInput : KeyInput) =
+            match Mark.OfChar keyInput.Char with
+            | None -> BindResult<NormalCommand>.Error
+            | Some localMark -> BindResult<_>.Complete (func localMark)
+        let bindData = {
+            KeyRemapMode = None
+            BindFunction = bindFunc }
+        BindDataStorage<_>.Simple bindData
+
     static let SharedCommands = 
         let visualSeq = 
             seq {
@@ -98,8 +109,17 @@ type internal VisualMode
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.NormalBinding (keyInputSet, flags, command))
 
+        let normalComplexSeq = 
+            seq {
+                yield ("'", CommandFlags.Movement, BindMark NormalCommand.JumpToMarkLine)
+                yield ("`", CommandFlags.Movement, BindMark NormalCommand.JumpToMark)
+            } |> Seq.map (fun (str, flags, storage) -> 
+                let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
+                CommandBinding.ComplexNormalBinding (keyInputSet, flags, storage))
+
         Seq.append visualSeq complexSeq 
         |> Seq.append normalSeq
+        |> Seq.append normalComplexSeq
         |> List.ofSeq
 
     let mutable _builtCommands = false
