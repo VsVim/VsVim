@@ -1021,6 +1021,134 @@ namespace Vim.UnitTest
         }
 
         [TestFixture]
+        public sealed class ChangeLines : NormalModeIntegrationTest
+        {
+            /// <summary>
+            /// Caret should maintain position but the text should be deleted.  The caret 
+            /// exists in virtual space
+            /// </summary>
+            [Test]
+            public void AutoIndentShouldPreserveOnSingle()
+            {
+                Create("  dog", "  cat", "  tree");
+                _vimBuffer.LocalSettings.AutoIndent = true;
+                _vimBuffer.Process("cc");
+                Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.AreEqual(2, _textView.GetCaretVirtualPoint().VirtualSpaces);
+                Assert.AreEqual("", _textView.GetLine(0).GetText());
+            }
+
+            [Test]
+            public void NoAutoIndentShouldRemoveAllOnSingle()
+            {
+                Create("  dog", "  cat");
+                _vimBuffer.LocalSettings.AutoIndent = false;
+                _vimBuffer.Process("cc");
+                Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+                Assert.AreEqual("", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Caret position should be preserved in virtual space
+            /// </summary>
+            [Test]
+            public void AutoIndentShouldPreserveOnMultiple()
+            {
+                Create("  dog", "  cat", "  tree");
+                _vimBuffer.LocalSettings.AutoIndent = true;
+                _vimBuffer.Process("2cc");
+                Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.AreEqual(2, _textView.GetCaretVirtualPoint().VirtualSpaces);
+                Assert.AreEqual("", _textView.GetLine(0).GetText());
+                Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
+            }
+
+            /// <summary>
+            /// Caret point should be preserved in virtual space
+            /// </summary>
+            [Test]
+            public void AutoIndentShouldPreserveFirstOneOnMultiple()
+            {
+                Create("    dog", "  cat", "  tree");
+                _vimBuffer.LocalSettings.AutoIndent = true;
+                _vimBuffer.Process("2cc");
+                Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.AreEqual(4, _textView.GetCaretVirtualPoint().VirtualSpaces);
+                Assert.AreEqual("", _textView.GetLine(0).GetText());
+                Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
+            }
+
+            [Test]
+            public void NoAutoIndentShouldRemoveAllOnMultiple()
+            {
+                Create("  dog", "  cat", "  tree");
+                _vimBuffer.LocalSettings.AutoIndent = false;
+                _vimBuffer.Process("2cc");
+                Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+                Assert.AreEqual("", _textView.GetLine(0).GetText());
+                Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
+            }
+
+            /// <summary>
+            /// When 'autoindent' is on we need to keep tabs and spaces at the start of the line
+            /// </summary>
+            [Test]
+            public void AutoIndent_KeepTabsAndSpaces()
+            {
+                Create("\t  dog", "\t  cat");
+                _localSettings.AutoIndent = true;
+                _localSettings.TabStop = 4;
+                _localSettings.ExpandTab = false;
+                _vimBuffer.Process("ccb");
+                Assert.AreEqual("\t  b", _textView.GetLine(0).GetText());
+                Assert.AreEqual("\t  cat", _textView.GetLine(1).GetText());
+                Assert.AreEqual(_textView.GetPoint(4), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// When 'autoindent' is on we need to keep tabs at the start of the line
+            /// </summary>
+            [Test]
+            public void AutoIndent_KeepTabs()
+            {
+                Create("\tdog", "\tcat");
+                _localSettings.AutoIndent = true;
+                _localSettings.TabStop = 4;
+                _localSettings.ExpandTab = false;
+                _vimBuffer.Process("ccb");
+                Assert.AreEqual("\tb", _textView.GetLine(0).GetText());
+                Assert.AreEqual("\tcat", _textView.GetLine(1).GetText());
+                Assert.AreEqual(_textView.GetPoint(2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// When there are tabs involved the virtual space position of the caret after a 
+            /// 'cc' operation should be (tabs * tabWidth + spaces)
+            /// </summary>
+            [Test]
+            public void AutoIndent_VirtualSpace()
+            {
+                Create("\t  dog", "\t cat");
+                _localSettings.AutoIndent = true;
+                _localSettings.TabStop = 4;
+                _vimBuffer.Process("cc");
+                Assert.AreEqual(6, _textView.GetCaretVirtualPoint().VirtualSpaces);
+            }
+
+            /// <summary>
+            /// The 'cc' command should indent if run on a blank line and 'autoindent' is set to 
+            /// true
+            /// </summary>
+            [Test]
+            public void AutoIndent_BlankLine()
+            {
+
+            }
+        }
+
+        [TestFixture]
         public sealed class Misc : NormalModeIntegrationTest
         {
             /// <summary>
@@ -1062,119 +1190,6 @@ namespace Vim.UnitTest
                 Assert.AreEqual(_textView.GetLine(1).Start.Add(5), _textView.GetCaretPoint());
             }
 
-            /// <summary>
-            /// Caret should maintain position but the text should be deleted.  The caret 
-            /// exists in virtual space
-            /// </summary>
-            [Test]
-            public void ChangeLines_AutoIndentShouldPreserveOnSingle()
-            {
-                Create("  dog", "  cat", "  tree");
-                _vimBuffer.LocalSettings.AutoIndent = true;
-                _vimBuffer.Process("cc");
-                Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
-                Assert.AreEqual(2, _textView.GetCaretVirtualPoint().VirtualSpaces);
-                Assert.AreEqual("", _textView.GetLine(0).GetText());
-            }
-
-            [Test]
-            public void ChangeLines_NoAutoIndentShouldRemoveAllOnSingle()
-            {
-                Create("  dog", "  cat");
-                _vimBuffer.LocalSettings.AutoIndent = false;
-                _vimBuffer.Process("cc");
-                Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-                Assert.AreEqual("", _textView.GetLine(0).GetText());
-            }
-
-            /// <summary>
-            /// Caret position should be preserved in virtual space
-            /// </summary>
-            [Test]
-            public void ChangeLines_AutoIndentShouldPreserveOnMultiple()
-            {
-                Create("  dog", "  cat", "  tree");
-                _vimBuffer.LocalSettings.AutoIndent = true;
-                _vimBuffer.Process("2cc");
-                Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
-                Assert.AreEqual(2, _textView.GetCaretVirtualPoint().VirtualSpaces);
-                Assert.AreEqual("", _textView.GetLine(0).GetText());
-                Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
-            }
-
-            /// <summary>
-            /// Caret point should be preserved in virtual space
-            /// </summary>
-            [Test]
-            public void ChangeLines_AutoIndentShouldPreserveFirstOneOnMultiple()
-            {
-                Create("    dog", "  cat", "  tree");
-                _vimBuffer.LocalSettings.AutoIndent = true;
-                _vimBuffer.Process("2cc");
-                Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
-                Assert.AreEqual(4, _textView.GetCaretVirtualPoint().VirtualSpaces);
-                Assert.AreEqual("", _textView.GetLine(0).GetText());
-                Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
-            }
-
-            [Test]
-            public void ChangeLines_NoAutoIndentShouldRemoveAllOnMultiple()
-            {
-                Create("  dog", "  cat", "  tree");
-                _vimBuffer.LocalSettings.AutoIndent = false;
-                _vimBuffer.Process("2cc");
-                Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-                Assert.AreEqual("", _textView.GetLine(0).GetText());
-                Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
-            }
-
-            /// <summary>
-            /// When 'autoindent' is on we need to keep tabs and spaces at the start of the line
-            /// </summary>
-            [Test]
-            public void ChangeLines_AutoIndent_KeepTabsAndSpaces()
-            {
-                Create("\t  dog", "\t  cat");
-                _localSettings.AutoIndent = true;
-                _localSettings.TabStop = 4;
-                _localSettings.ExpandTab = false;
-                _vimBuffer.Process("ccb");
-                Assert.AreEqual("\t  b", _textView.GetLine(0).GetText());
-                Assert.AreEqual("\t  cat", _textView.GetLine(1).GetText());
-                Assert.AreEqual(_textView.GetPoint(4), _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// When 'autoindent' is on we need to keep tabs at the start of the line
-            /// </summary>
-            [Test]
-            public void ChangeLines_AutoIndent_KeepTabs()
-            {
-                Create("\tdog", "\tcat");
-                _localSettings.AutoIndent = true;
-                _localSettings.TabStop = 4;
-                _localSettings.ExpandTab = false;
-                _vimBuffer.Process("ccb");
-                Assert.AreEqual("\tb", _textView.GetLine(0).GetText());
-                Assert.AreEqual("\tcat", _textView.GetLine(1).GetText());
-                Assert.AreEqual(_textView.GetPoint(2), _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// When there are tabs involved the virtual space position of the caret after a 
-            /// 'cc' operation should be (tabs * tabWidth + spaces)
-            /// </summary>
-            [Test]
-            public void ChangeLines_AutoIndent_VirtualSpace()
-            {
-                Create("\t  dog", "\t cat");
-                _localSettings.AutoIndent = true;
-                _localSettings.TabStop = 4;
-                _vimBuffer.Process("cc");
-                Assert.AreEqual(6, _textView.GetCaretVirtualPoint().VirtualSpaces);
-            }
 
             /// <summary>
             /// Test the repeat of a repeated command.  Essentially ensure the act of repeating doesn't
