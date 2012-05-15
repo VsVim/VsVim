@@ -2960,6 +2960,7 @@ module GlobalSettingNames =
     let JoinSpacesName = "joinspaces"
     let KeyModelName = "keymodel"
     let MagicName = "magic"
+    let MaxMapDepth=  "maxmapdepth"
     let MouseModelName = "mousemodel"
     let ParagraphsName = "paragraphs"
     let ScrollOffsetName = "scrolloff"
@@ -3081,6 +3082,9 @@ and IVimGlobalSettings =
 
     /// Whether or not the magic option is set
     abstract Magic : bool with get,set
+
+    /// Maximum number of recursive depths which occur for a mapping
+    abstract MaxMapDepth : int with get, set
 
     /// Whether or not we should be ignoring case in the ITextBuffer
     abstract IgnoreCase : bool with get, set

@@ -7,13 +7,15 @@ namespace Vim.UnitTest
     [TestFixture]
     public sealed class KeyMapTest
     {
+        private IVimGlobalSettings _globalSettings;
         private KeyMap _mapRaw;
         private IKeyMap _map;
 
         [SetUp]
         public void SetUp()
         {
-            _mapRaw = new KeyMap();
+            _globalSettings = new GlobalSettings();
+            _mapRaw = new KeyMap(_globalSettings);
             _map = _mapRaw;
         }
 
@@ -149,6 +151,43 @@ namespace Vim.UnitTest
             Assert.AreEqual(KeyInputUtil.CharToKeyInput('1'), ret);
             ret = _map.GetKeyMapping("<A-A>", KeyRemapMode.Normal).Single();
             Assert.AreEqual(KeyInputUtil.CharToKeyInput('2'), ret);
+        }
+
+        /// <summary>
+        /// When two mappnigs have the same prefix then they are ambiguous and require a
+        /// tie breaker input
+        /// </summary>
+        [Test]
+        public void MapWithNoRemap_Ambiguous()
+        {
+            Assert.IsTrue(_map.MapWithNoRemap("aa", "foo", KeyRemapMode.Normal));
+            Assert.IsTrue(_map.MapWithNoRemap("aaa", "bar", KeyRemapMode.Normal));
+            var ret = _map.GetKeyMappingResult("aa", KeyRemapMode.Normal);
+            Assert.IsTrue(ret.IsNeedsMoreInput);
+        }
+
+        /// <summary>
+        /// Resloving the ambiguity should cause both the original plus the next input to be 
+        /// returned
+        /// </summary>
+        [Test]
+        public void MapWithNoRemap_Ambiguous_ResolveShorter()
+        {
+            Assert.IsTrue(_map.MapWithNoRemap("aa", "foo", KeyRemapMode.Normal));
+            Assert.IsTrue(_map.MapWithNoRemap("aaa", "bar", KeyRemapMode.Normal));
+            var ret = _map.GetKeyMappingResult("aab", KeyRemapMode.Normal);
+            Assert.IsTrue(ret.IsMapped);
+            Assert.AreEqual(KeyInputSetUtil.OfString("foob"), ret.AsMapped().Item);
+        }
+
+        [Test]
+        public void MapWithNoRemap_Ambiguous_ResolveLonger()
+        {
+            Assert.IsTrue(_map.MapWithNoRemap("aa", "foo", KeyRemapMode.Normal));
+            Assert.IsTrue(_map.MapWithNoRemap("aaa", "bar", KeyRemapMode.Normal));
+            var ret = _map.GetKeyMappingResult("aaa", KeyRemapMode.Normal);
+            Assert.IsTrue(ret.IsMapped);
+            Assert.AreEqual(KeyInputSetUtil.OfString("bar"), ret.AsMapped().Item);
         }
 
         [Test]

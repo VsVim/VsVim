@@ -6,8 +6,8 @@ namespace Vim
 /// the RHS should be remapped as part of an expansion
 type internal RemapModeMap = Map<KeyInputSet, KeyMapping>
 
-type internal KeyMap() =
-    
+type internal KeyMap(_globalSettings : IVimGlobalSettings) =
+
     let mutable _map : Map<KeyRemapMode, RemapModeMap> = Map.empty
 
     member x.MapWithNoRemap lhs rhs mode = x.MapCore lhs rhs mode false
@@ -180,7 +180,7 @@ type internal KeyMap() =
             let current = KeyInputSet.OneKeyInput head
             let remaining = KeyInputSetUtil.OfList keyInputSet.Rest
             inner current remaining KeyInputSet.Empty false None Set.empty
-    
+
     interface IKeyMap with
         member x.GetKeyMappingsForMode mode = x.GetKeyMappingsForMode mode 
         member x.GetKeyMapping ki mode = x.GetKeyMapping ki mode

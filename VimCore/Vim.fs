@@ -312,7 +312,7 @@ type internal Vim
             listeners,
             globalSettings,
             markMap :> IMarkMap,
-            KeyMap() :> IKeyMap,
+            KeyMap(globalSettings) :> IKeyMap,
             clipboard,
             SearchService(search, globalSettings) :> ISearchService,
             fileSystem,

@@ -18,7 +18,7 @@ namespace Vim.UnitTest
         private Mock<ISearchService> _searchInfo;
         private Mock<IFileSystem> _fileSystem;
         private IKeyMap _keyMap;
-        private IVimGlobalSettings _settings;
+        private IVimGlobalSettings _globalSettings;
         private IVimBufferFactory _bufferFactory;
         private Vim _vimRaw;
         private IVim _vim;
@@ -27,18 +27,18 @@ namespace Vim.UnitTest
         public void Setup()
         {
             _factory = new MockRepository(MockBehavior.Strict);
-            _settings = new GlobalSettings();
+            _globalSettings = new GlobalSettings();
             _markMap = _factory.Create<IMarkMap>(MockBehavior.Strict);
             _fileSystem = _factory.Create<IFileSystem>(MockBehavior.Strict);
             _bufferFactory = VimBufferFactory;
-            _keyMap = new KeyMap();
+            _keyMap = new KeyMap(_globalSettings);
             _vimHost = _factory.Create<IVimHost>(MockBehavior.Strict);
             _searchInfo = _factory.Create<ISearchService>(MockBehavior.Strict);
             _vimRaw = new Vim(
                 _vimHost.Object,
                 _bufferFactory,
                 FSharpList<Lazy<IVimBufferCreationListener>>.Empty,
-                _settings,
+                _globalSettings,
                 _markMap.Object,
                 _keyMap,
                 MockObjectFactory.CreateClipboardDevice().Object,
@@ -246,14 +246,14 @@ namespace Vim.UnitTest
         [Test]
         public void LoadVimRc1()
         {
-            _settings.VimRc = "invalid";
-            _settings.VimRcPaths = "invalid";
+            _globalSettings.VimRc = "invalid";
+            _globalSettings.VimRcPaths = "invalid";
             _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { }).Verifiable();
             _fileSystem.Setup(x => x.LoadVimRcContents()).Returns(FSharpOption<FileContents>.None).Verifiable();
             Assert.IsFalse(_vim.LoadVimRc());
             _fileSystem.Verify();
-            Assert.AreEqual("", _settings.VimRc);
-            Assert.AreEqual("", _settings.VimRcPaths);
+            Assert.AreEqual("", _globalSettings.VimRc);
+            Assert.AreEqual("", _globalSettings.VimRcPaths);
         }
 
         [Test]
@@ -262,8 +262,8 @@ namespace Vim.UnitTest
             _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { "foo" }).Verifiable();
             _fileSystem.Setup(x => x.LoadVimRcContents()).Returns(FSharpOption<FileContents>.None).Verifiable();
             Assert.IsFalse(_vim.LoadVimRc());
-            Assert.AreEqual("", _settings.VimRc);
-            Assert.AreEqual("foo", _settings.VimRcPaths);
+            Assert.AreEqual("", _globalSettings.VimRc);
+            Assert.AreEqual("foo", _globalSettings.VimRcPaths);
             _fileSystem.Verify();
         }
 

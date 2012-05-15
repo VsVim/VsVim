@@ -69,7 +69,7 @@ namespace Vim.UnitTest.Mock
             map = map ?? new MarkMap(new BufferTrackingService());
             settings = settings ?? new GlobalSettings();
             host = host ?? new MockVimHost();
-            keyMap = keyMap ?? (new KeyMap());
+            keyMap = keyMap ?? (new KeyMap(settings));
             macroRecorder = macroRecorder ?? CreateMacroRecorder(factory: factory).Object;
             searchService = searchService ?? factory.Create<ISearchService>().Object;
             keyboardDevice = keyboardDevice ?? (factory.Create<IKeyboardDevice>(MockBehavior.Loose)).Object;

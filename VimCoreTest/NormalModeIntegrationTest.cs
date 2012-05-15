@@ -1136,16 +1136,6 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("cc");
                 Assert.AreEqual(6, _textView.GetCaretVirtualPoint().VirtualSpaces);
             }
-
-            /// <summary>
-            /// The 'cc' command should indent if run on a blank line and 'autoindent' is set to 
-            /// true
-            /// </summary>
-            [Test]
-            public void AutoIndent_BlankLine()
-            {
-
-            }
         }
 
         [TestFixture]

@@ -5,5 +5,5 @@ type internal KeyMap =
 
     interface IKeyMap
 
-    new : unit -> KeyMap 
+    new : settings : IVimGlobalSettings -> KeyMap 
 
