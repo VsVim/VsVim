@@ -381,6 +381,16 @@ module internal StringBuilderExtensions =
         member x.AppendNumber (number : int) =
             x.Append(number) |> ignore
 
+module internal CollectionExtensions = 
+
+    type System.Collections.Generic.Stack<'T> with
+        member x.PushRange (col : 'T seq) = 
+            col |> Seq.iter (fun item -> x.Push(item))
+
+    type System.Collections.Generic.Queue<'T> with
+        member x.EnqueueRange (col : 'T seq) = 
+            col |> Seq.iter (fun item -> x.Enqueue(item))
+
 module internal NullableUtil = 
 
     let (|HasValue|Null|) (x : System.Nullable<_>) =

@@ -334,6 +334,46 @@ namespace Vim.UnitTest
                 Map("c", "d");
                 AssertMapping("a", "bd");
             }
+
+            /// <summary>
+            /// Make sure we don't fall for the recursive prefix trick.  
+            ///
+            ///  :imap ab abcd
+            /// 
+            /// Typing 'ab' in insert mode shouldn't produce an infinite or recursive mapping.  The
+            /// prefix should be ignored here (:help recursive_mapping)
+            /// </summary>
+            [Test]
+            public void RecursivePrefix()
+            {
+                Map("ab", "abcd");
+                AssertMapping("ab", "abcd");
+            }
+
+            /// <summary>
+            /// Mutually recursive mappings should cause a recursive result once we hit the 
+            /// maxmapdept number of recursions (:help recursive_mapping)
+            /// </summary>
+            [Test]
+            public void RecursiveMutually()
+            {
+                // Make the depth high in the unit tests to ensure that we aren't doing head recursion 
+                // here
+                _globalSettings.MaxMapDepth = 1000;
+                Map("k", "j");
+                Map("j", "k");
+                Assert.IsTrue(_map.GetKeyMappingResult("k", KeyRemapMode.Normal).IsRecursive);
+                Assert.IsTrue(_map.GetKeyMappingResult("j", KeyRemapMode.Normal).IsRecursive);
+            }
+
+            [Test]
+            public void CleverMap()
+            {
+                Map("a", "b");
+                Map("aa", "none");
+                Map("bc", "done");
+                AssertMapping("ac", "done");
+            }
         }
 
         [TestFixture]
