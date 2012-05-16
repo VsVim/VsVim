@@ -76,34 +76,22 @@ type Mapper
         let failed = ref false
         let failedResult = ref KeyMappingResult.Recursive
         let depth = ref 0
-        let mapCount = ref 0
-        let anyMapped = ref false
         let toMapList = ref _keyInputSet.KeyInputs
 
         let needsMoreInput () = 
             if _mappedList.Count = 0 then
                 failedResult := KeyMappingResult.NeedsMoreInput _keyInputSet
+                failed := true
             else
-                let mappedSet = KeyInputSetUtil.OfSeq _mappedList
-                let ambiguousSet = KeyInputSetUtil.OfList toMapList.Value
-                failedResult := KeyMappingResult.MappedAndNeedsMoreInput (mappedSet, ambiguousSet)
-
-            failed := true
+                // At least one mapped so that's good enough for now
+                _mappedList.AddRange toMapList.Value
+                toMapList := List.empty
 
         let processMapping lhs keyMapping =
-            anyMapped := true
             depth := depth.Value + 1
-            mapCount := mapCount.Value + 1
             if depth.Value = _globalSettings.MaxMapDepth then
                 // Exceeded the maximum depth of recursive mappings.  Break out of this with 
                 // Recursive
-                failedResult := KeyMappingResult.Recursive
-                failed := true
-            elif mapCount.Value = _globalSettings.MaxMapCount then
-                // This is a non-standard feature.  This is meant to handle the case where the 
-                // user types the errant mapping ':map g jg'.  This will expand infinitely in gVim
-                // and cause a hang.  VsVim behavior differs here and will bail out after MaxMapCount
-                // total mappings.
                 failedResult := KeyMappingResult.Recursive
                 failed := true
             else
@@ -128,14 +116,9 @@ type Mapper
                 if brokenMatchArray.Length = 1 then
                     processMapping lhs brokenMatchArray.[0].Value
                 else
-                    // If there is more than one item in the {lhs} then we need to attempt to 
-                    // map the remainder.
-                    let head, tail = ListUtil.divide toMapList.Value
-                    _mappedList.Add(head)
-                    toMapList := tail
-
-                    // Reset the depth at this point.  Not doing a recursive mapping anymore
-                    depth := 0
+                    // No more mappings for this prefix so we are done 
+                    _mappedList.AddRange(toMapList.Value)
+                    toMapList := List.empty
             | [| pair |] -> 
                 if pair.Key = lhs then
                     processMapping lhs pair.Value
@@ -145,11 +128,8 @@ type Mapper
 
         if failed.Value then
             failedResult.Value
-        elif anyMapped.Value then
-            _mappedList |> KeyInputSetUtil.OfSeq |> KeyMappingResult.Mapped
         else
-            _mappedList |> KeyInputSetUtil.OfSeq |> KeyMappingResult.NoMapping
-
+            _mappedList |> KeyInputSetUtil.OfSeq |> KeyMappingResult.Mapped
 
 type internal KeyMap(_globalSettings : IVimGlobalSettings) =
 

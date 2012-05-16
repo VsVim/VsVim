@@ -1200,7 +1200,7 @@ namespace Vim.UnitTest
         public void KeyRemapMode_DefaultIsNormal()
         {
             Create("foo bar");
-            Assert.AreEqual(KeyRemapMode.Normal, _mode.KeyRemapMode);
+            Assert.AreEqual(KeyRemapMode.Normal, _mode.KeyRemapMode.Value);
         }
 
         [Test]
@@ -1211,7 +1211,7 @@ namespace Vim.UnitTest
                 .Setup(x => x.Begin(Path.Forward))
                 .Returns(VimUtil.CreateBindData<SearchResult>(remapMode: KeyRemapMode.Command));
             _mode.Process('/');
-            Assert.AreEqual(KeyRemapMode.Command, _mode.KeyRemapMode);
+            Assert.AreEqual(KeyRemapMode.Command, _mode.KeyRemapMode.Value);
         }
 
         [Test]
@@ -1219,7 +1219,7 @@ namespace Vim.UnitTest
         {
             Create("");
             _mode.Process('y');
-            Assert.AreEqual(KeyRemapMode.OperatorPending, _mode.KeyRemapMode);
+            Assert.AreEqual(KeyRemapMode.OperatorPending, _mode.KeyRemapMode.Value);
         }
 
         [Test]
@@ -1227,7 +1227,7 @@ namespace Vim.UnitTest
         {
             Create("");
             _mode.Process('d');
-            Assert.AreEqual(KeyRemapMode.OperatorPending, _mode.KeyRemapMode);
+            Assert.AreEqual(KeyRemapMode.OperatorPending, _mode.KeyRemapMode.Value);
         }
 
         [Test]
@@ -1235,7 +1235,21 @@ namespace Vim.UnitTest
         {
             Create("");
             _mode.Process("df");
-            Assert.AreEqual(KeyRemapMode.Language, _mode.KeyRemapMode);
+            Assert.AreEqual(KeyRemapMode.Language, _mode.KeyRemapMode.Value);
+        }
+
+        /// <summary>
+        /// The 'g' keystroke can match multiple commands.  When this happens the second 
+        /// keys stroke won't go through further mapping.  
+        /// 
+        /// The same behavior can be viewed for 'z'
+        /// </summary>
+        [Test]
+        public void KeyRemapMode_AfterG()
+        {
+            Create("");
+            _mode.Process("g");
+            Assert.IsTrue(_mode.KeyRemapMode.IsNone());
         }
 
         [Test]

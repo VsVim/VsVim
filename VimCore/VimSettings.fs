@@ -132,7 +132,7 @@ type internal GlobalSettings() =
             (JoinSpacesName, "js", ToggleKind, ToggleValue(true))
             (KeyModelName, "km", StringKind, StringValue(""))
             (MagicName, MagicName, ToggleKind, ToggleValue(true))
-            (MaxMapCount, MaxMapCount, NumberKind, NumberValue(20000))
+            (MaxMapCount, MaxMapCount, NumberKind, NumberValue(1000))
             (MaxMapDepth, "mmd", NumberKind, NumberValue(1000))
             (MouseModelName, "mousem", StringKind, StringValue("popup"))
             (ParagraphsName, "para", StringKind, StringValue("IPLPPPQPP TPHPLIPpLpItpplpipbp"))

@@ -68,7 +68,7 @@ namespace Vim.UI.Wpf.Implementation
                 _timer.Stop();
             }
 
-            private void OnKeyInputBuffered(object sender, KeyInputEventArgs args)
+            private void OnKeyInputBuffered(object sender, KeyInputSetEventArgs args)
             {
                 try
                 {

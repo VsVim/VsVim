@@ -191,7 +191,7 @@ type internal CommandRunner
                     let previousCommandName = commandName
                     let commandName = previousCommandName.Add keyInput
                     inner commandName previousCommandName keyInput
-                BindResult.NeedMoreInput { KeyRemapMode = keyRemapMode ; BindFunction = inner }
+                BindResult.NeedMoreInput { KeyRemapMode = keyRemapMode; BindFunction = inner }
 
             match Map.tryFind commandName _commandMap with
             | Some commandBinding ->

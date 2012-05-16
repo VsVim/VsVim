@@ -165,9 +165,10 @@ type internal NormalMode
     member this.CaretPoint = this.TextView.Caret.Position.BufferPosition
     member this.IsCommandRunnerPopulated = _runner.Commands |> SeqUtil.isNotEmpty
     member this.KeyRemapMode = 
-        match _runner.KeyRemapMode with
-        | Some remapMode -> remapMode
-        | None -> KeyRemapMode.Normal
+        if _runner.IsWaitingForMoreInput then
+            _runner.KeyRemapMode
+        else
+            Some KeyRemapMode.Normal
     member this.Command = _data.Command
     member this.Commands = 
         this.EnsureCommands()

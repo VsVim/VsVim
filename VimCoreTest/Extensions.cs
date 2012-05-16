@@ -597,12 +597,6 @@ namespace Vim.UnitTest
             return (KeyMappingResult.Mapped)res;
         }
 
-        public static KeyMappingResult.MappedAndNeedsMoreInput AsMappedAndNeedsMoreInput(this KeyMappingResult res)
-        {
-            Assert.IsTrue(res.IsMappedAndNeedsMoreInput);
-            return (KeyMappingResult.MappedAndNeedsMoreInput)res;
-        }
-
         #endregion
 
         #region SettingValue

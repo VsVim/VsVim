@@ -32,7 +32,7 @@ namespace Vim.UnitTest
         {
             var mode = _factory.Create<INormalMode>(behavior);
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
-            mode.SetupGet(x => x.KeyRemapMode).Returns(KeyRemapMode.Normal);
+            mode.SetupGet(x => x.KeyRemapMode).Returns(FSharpOption.Create(KeyRemapMode.Normal));
             _vimBufferRaw.RemoveMode(_vimBufferRaw.NormalMode);
             _vimBufferRaw.AddMode(mode.Object);
             return mode;
@@ -261,7 +261,7 @@ namespace Vim.UnitTest
             _vimBuffer.KeyInputBuffered +=
                 (b, args) =>
                 {
-                    Assert.AreEqual('l', args.KeyInput.Char);
+                    Assert.AreEqual('l', args.KeyInputSet.FirstKeyInput.Value.Char);
                     Assert.IsTrue(start && !end);
                     buffered = true;
                 };
@@ -469,7 +469,7 @@ namespace Vim.UnitTest
             _textView.SetText("cat dog", 0);
             _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             _vimBuffer.Process("d");
-            Assert.IsTrue(_vimBuffer.NormalMode.KeyRemapMode.IsOperatorPending);
+            Assert.IsTrue(_vimBuffer.NormalMode.KeyRemapMode.Value.IsOperatorPending);
             _vimBuffer.Process("z");
             Assert.AreEqual("dog", _textView.GetLine(0).GetText());
         }

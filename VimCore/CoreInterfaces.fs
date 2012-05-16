@@ -1025,27 +1025,13 @@ type KeyRemapMode =
         | Command -> "Command"
         | Language -> "Language"
 
+// TODO: Thinking again that either mapped or nomapping should go
 [<RequireQualifiedAccess>]
 type KeyMappingResult =
 
-    /// No mapping exists and the original input KeyInputSet value is returned
-    | NoMapping of KeyInputSet
-
-    /// Mapped to the specified KeyInputSet
-    | Mapped of KeyInputSet 
-
-    /// Part of the input was successfully mapped but the remainder needs more
-    /// input to complete.  These occurs in the case where you have double 
-    /// ambiguous mappings
-    ///
-    ///  :imap aa one
-    ///  :imap aaa two
-    ///  :imap b three
-    ///  :imap bb four
-    ///
-    /// If you type 'aab' in insert mode it should immediately result in 
-    /// one being input followed by buffering 'b' waiting for more input
-    | MappedAndNeedsMoreInput of KeyInputSet * KeyInputSet
+    /// The values were successfully mapped to the specified mapping. This 
+    /// could be the result of a no-op mapping
+    | Mapped of KeyInputSet
 
     /// The mapping encountered a recursive element that had to be broken 
     | Recursive
@@ -2901,10 +2887,15 @@ type StringEventArgs(_message : string) =
 
     member x.Message = _message
 
-type KeyInputEventArgs(_keyInput : KeyInput) = 
+type KeyInputEventArgs (_keyInput : KeyInput) = 
     inherit System.EventArgs()
 
     member x.KeyInput = _keyInput
+
+type KeyInputSetEventArgs (_keyInputSet : KeyInputSet) = 
+    inherit System.EventArgs()
+
+    member x.KeyInputSet = _keyInputSet
 
 type KeyInputProcessedEventArgs(_keyInput : KeyInput, _processResult : ProcessResult) =
     inherit System.EventArgs()
@@ -3908,7 +3899,7 @@ and IVimBuffer =
     /// Raised when a key is received but not immediately processed.  Occurs when a
     /// key remapping has more than one source key strokes
     [<CLIEvent>]
-    abstract KeyInputBuffered : IDelegateEvent<System.EventHandler<KeyInputEventArgs>>
+    abstract KeyInputBuffered : IDelegateEvent<System.EventHandler<KeyInputSetEventArgs>>
 
     /// Raised when a KeyInput is completed processing within the IVimBuffer.  This happens 
     /// if the KeyInput is buffered or processed
@@ -3970,7 +3961,7 @@ and INormalMode =
     abstract CommandRunner : ICommandRunner 
 
     /// Mode keys need to be remapped with currently
-    abstract KeyRemapMode : KeyRemapMode
+    abstract KeyRemapMode : KeyRemapMode option
 
     /// Is normal mode in the middle of a character replace operation
     abstract IsInReplace : bool

@@ -819,8 +819,76 @@ namespace Vim.UnitTest
         }
 
         [TestFixture]
-        public sealed class Map : NormalModeIntegrationTest
+        public sealed class KeyMapping : NormalModeIntegrationTest
         {
+            /// <summary>
+            /// When two mappnigs have the same prefix then they are ambiguous and require a
+            /// tie breaker input.
+            /// </summary>
+            [Test]
+            public void Ambiguous()
+            {
+                Create("");
+                _vimBuffer.Process(":map aa foo", enter: true);
+                _vimBuffer.Process(":map aaa bar", enter: true);
+                _vimBuffer.Process("aa");
+                Assert.AreEqual(KeyInputSetUtil.OfString("aa"), KeyInputSetUtil.OfList(_vimBuffer.BufferedKeyInputs));
+            }
+
+            /// <summary>
+            /// Resloving the ambiguity should cause both the original plus the next input to be 
+            /// returned
+            /// </summary>
+            [Test]
+            public void Ambiguous_ResolveShorter()
+            {
+                Create("");
+                _vimBuffer.Process(":map aa ifoo", enter: true);
+                _vimBuffer.Process(":map aaa ibar", enter: true);
+                _vimBuffer.Process("aab");
+                Assert.AreEqual("foob", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Test]
+            public void Ambiguous_ResolveLonger()
+            {
+                Create("");
+                _vimBuffer.Process(":map aa ifoo", enter: true);
+                _vimBuffer.Process(":map aaa ibar", enter: true);
+                _vimBuffer.Process("aaa");
+                Assert.AreEqual("bar", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// In the ambiguous double resolve case we should reslove the first but still 
+            /// buffer the input for the second one
+            /// </summary>
+            [Test]
+            public void Ambiguous_Double()
+            {
+                Create("");
+                _vimBuffer.Process(":imap aa one", enter: true);
+                _vimBuffer.Process(":imap aaa two", enter: true);
+                _vimBuffer.Process(":imap b three", enter: true);
+                _vimBuffer.Process(":imap bb four", enter: true);
+                _vimBuffer.Process("iaab");
+                Assert.AreEqual("one", _textBuffer.GetLine(0).GetText());
+                Assert.AreEqual(KeyInputSetUtil.OfString("b"), KeyInputSetUtil.OfList(_vimBuffer.BufferedKeyInputs));
+            }
+
+            [Test]
+            public void Ambiguous_DoubleResolved()
+            {
+                Create("");
+                _vimBuffer.Process(":imap aa one", enter: true);
+                _vimBuffer.Process(":imap aaa two", enter: true);
+                _vimBuffer.Process(":imap b three", enter: true);
+                _vimBuffer.Process(":imap bb four", enter: true);
+                _vimBuffer.Process("iaabb");
+                Assert.AreEqual("onefour", _textBuffer.GetLine(0).GetText());
+                Assert.AreEqual(0, _vimBuffer.BufferedKeyInputs.Length);
+            }
+
             [Test]
             public void ToCharDoesNotUseMap()
             {
@@ -877,19 +945,18 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Ensure that we don't regress issue 522 which is a recursive key mapping problem
+            /// Ensure that accidental recursive key mappings don't cause VsVim to hang 
+            /// indefinitely.  In gVim this will actually cause infinite mapping recursion
+            /// but because we don't implemente CTRL-C as a break command yet we use a custom
+            /// count to back out of the infinite mappings
             /// </summary>
             [Test]
-            public void Issue522()
+            public void InfiniteMappingHueristic()
             {
                 Create("cat", "dog");
-                _textView.MoveCaretToLine(1);
-                _vimBuffer.Process(":map j 3j", enter: true);
-                _vimBuffer.Process(":ounmap j", enter: true);
-                _vimBuffer.Process(":map k 3k", enter: true);
-                _vimBuffer.Process(":ounmap k", enter: true);
-                _vimBuffer.Process("k");
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+                _assertOnErrorMessage = false;
+                _vimBuffer.Process(":imap l 3l", enter: true);
+                _vimBuffer.Process("il");  // Will recurse or break out and complete
             }
 
             /// <summary>
@@ -902,6 +969,129 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(@":map / /\v", enter: true);
                 _vimBuffer.Process("/");
                 Assert.AreEqual(@"/\v", _vimBuffer.NormalMode.Command);
+            }
+
+            /// <summary>
+            /// This is a mapping operation which takes multiple stages to complete.  Round 1 
+            /// will map '5' to 'd8'.  The 'd' has no mapping hence control passes back to the 
+            /// IVimBuffer where it consumes 'd' and moves to operator pending mode.  The '8' 
+            /// is then reconsidered and because we are now in operator pending mode it is 
+            /// translated to 'w' instead of 'l'
+            /// </summary>
+            [Test]
+            public void MultiStepMapBetweenModes()
+            {
+                Create("cat dog");
+                _vimBuffer.Process(":omap 8 w", enter: true);
+                _vimBuffer.Process(":nmap 8 l", enter: true);
+                _vimBuffer.Process(":nmap 5 d8", enter: true);
+                _vimBuffer.Process("5");
+                Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// This is undocumented behavior that I reversed engineered through testing.  It shows 
+            /// up though for every normal mode command which has a prefix shared with another normal
+            /// mode command (both g and z).
+            ///
+            /// In this mode no mapping occurs on the specified input.  Instead it will be processed
+            /// as is 
+            /// </summary>
+            [Test]
+            public void MultiStepMapWithAmbiguousInput()
+            {
+                Create("");
+                _vimBuffer.Process(":map j ifoo", enter: true);
+                _vimBuffer.Process("gj");
+                Assert.AreEqual("", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// KeyInput values like 'g' and 'z' are ambiguous commands in normal mode.  They could
+            /// be the start of several commands.  After pressing 'g' or 'z' the next key stroke 
+            /// won't participate in normal mode mapping.  
+            /// 
+            /// Note: This is completely undocumented behavior as far as I can tell.  But you can
+            /// easily prove it with the below code 
+            /// </summary>
+            [Test]
+            public void TwoKeyCommandsHaveNoRemapAfterFirstKey()
+            {
+                Create("cat");
+                _vimBuffer.Process(":map j I", enter: true);
+                _vimBuffer.Process("gj");
+                Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
+                _vimBuffer.Process("gI");
+                Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+            }
+
+            /// <summary>
+            /// Scenario from above but explicitly verify the KeyRemapMode
+            /// </summary>
+            [Test]
+            public void TwoKeyCommandsHaveNoRemapAfterFirstKey_Mode()
+            {
+                Create("cat");
+                _vimBuffer.Process("g");
+                Assert.IsTrue(_vimBuffer.NormalMode.KeyRemapMode.IsNone());
+            }
+
+            /// <summary>
+            /// Make sure that we don't regress issue 522.  In this particular case the user
+            /// has defined apparent recursive mappings and we need to make sure they aren't
+            /// treated as such
+            ///
+            /// Strictly speaking the ounmap calls aren't necessary but keeping them here for 
+            /// completeness with the sample
+            /// </summary>
+            [Test]
+            public void Regression_Issue522()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process(":map j gj", enter: true);
+                _vimBuffer.Process(":ounmap j", enter: true);
+                _vimBuffer.Process(":map k gk", enter: true);
+                _vimBuffer.Process(":ounmap k", enter: true);
+                _vimBuffer.Process("j");
+                Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            [Test]
+            public void ProcessBufferedKeyInputsShouldMap()
+            {
+                Create("");
+                _vimBuffer.Process(":imap x short", enter: true);
+                _vimBuffer.Process(":imap xx long", enter: true);
+                _vimBuffer.Process("ix");
+                Assert.AreEqual(1, _vimBuffer.BufferedKeyInputs.Length);
+                _vimBuffer.ProcessBufferedKeyInputs();
+                Assert.AreEqual("short", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure the ambiguous case (:help map-ambiguous) is done correctly in the
+            /// face of operators
+            /// </summary>
+            [Test]
+            public void Regression_Issue880_Part1()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process(":nnoremap c y", enter: true);
+                _vimBuffer.Process(":nnoremap cc yy", enter: true);
+                _vimBuffer.Process("cc");
+                Assert.AreEqual("cat\r\n", UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
+            /// Make sure that we properly handle the mapping during operator pending
+            /// </summary>
+            [Test]
+            public void Regression_Issue880_Part3()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process(":nnoremap w e", enter: true);
+                _vimBuffer.Process("yw");
+                Assert.AreEqual("cat", UnnamedRegister.StringValue);
             }
         }
 

@@ -222,11 +222,11 @@ namespace Vim.UnitTest.Mock
             }
         }
 
-        public void RaiseKeyInputBuffered(KeyInput ki)
+        public void RaiseKeyInputBuffered(KeyInputSet keyInputSet)
         {
             if (KeyInputBuffered != null)
             {
-                KeyInputBuffered(this, new KeyInputEventArgs(ki));
+                KeyInputBuffered(this, new KeyInputSetEventArgs(keyInputSet));
             }
         }
 
@@ -240,7 +240,7 @@ namespace Vim.UnitTest.Mock
 
         public event EventHandler<KeyInputEventArgs> KeyInputEnd;
 
-        public event EventHandler<KeyInputEventArgs> KeyInputBuffered;
+        public event EventHandler<KeyInputSetEventArgs> KeyInputBuffered;
 
         public event EventHandler<SwitchModeEventArgs> SwitchedMode;
 

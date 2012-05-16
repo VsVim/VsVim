@@ -1,4 +1,5 @@
 ﻿using System;
+using Vim.Extensions;
 
 namespace Vim.UI.Wpf
 {
@@ -90,7 +91,7 @@ namespace Vim.UI.Wpf
                         {
                             kind = CaretDisplay.QuarterBlock;
                         }
-                        else if (mode.KeyRemapMode == KeyRemapMode.OperatorPending)
+                        else if (mode.KeyRemapMode.Is(KeyRemapMode.OperatorPending))
                         {
                             kind = CaretDisplay.HalfBlock;
                         }

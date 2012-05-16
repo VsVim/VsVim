@@ -18,20 +18,34 @@ namespace Vim.UnitTest
             _map = _mapRaw;
         }
 
-        protected void AssertMapping(string lhs, string expected)
+        protected void AssertNoMapping(string lhs, KeyRemapMode mode = null)
         {
-            AssertMapping(KeyNotationUtil.StringToKeyInputSet(lhs), expected);
+            AssertNoMapping(KeyNotationUtil.StringToKeyInputSet(lhs), mode);
         }
 
-        protected void AssertMapping(KeyInputSet lhs, string expected)
+        protected void AssertNoMapping(KeyInputSet lhs, KeyRemapMode mode = null)
         {
-            var ret = _map.GetKeyMappingResult(lhs, KeyRemapMode.Normal);
+            Assert.IsFalse(_map.GetKeyMappingsForMode(mode).Any(keyMapping => keyMapping.Left == lhs));
+
+            // When there is no mapping it should also be an identity function 
+            Assert.AreEqual(lhs, _map.GetKeyMappingResult(lhs, mode).AsMapped().Item);
+        }
+
+        protected void AssertMapping(string lhs, string expected, KeyRemapMode mode = null)
+        {
+            AssertMapping(KeyNotationUtil.StringToKeyInputSet(lhs), expected, mode);
+        }
+
+        protected void AssertMapping(KeyInputSet lhs, string expected, KeyRemapMode mode = null)
+        {
+            mode = mode ?? KeyRemapMode.Normal;
+            var ret = _map.GetKeyMappingResult(lhs, mode);
             Assert.IsTrue(ret.IsMapped);
             Assert.AreEqual(KeyInputSetUtil.OfString(expected), ret.AsMapped().Item);
         }
 
         [TestFixture]
-        public sealed class MapWithNoRemap : KeyMapTest
+        public sealed class MapWithNoRemapTest : KeyMapTest
         {
             private void Map(string lhs, string rhs)
             {
@@ -100,27 +114,27 @@ namespace Vim.UnitTest
             [Test]
             public void ShiftPromotesAlpha()
             {
-                Assert.IsTrue(_map.MapWithNoRemap("<S-a>", "#", KeyRemapMode.Normal));
-                Assert.IsTrue(_map.GetKeyMappingResult('a', KeyRemapMode.Normal).IsNoMapping);
-                Assert.IsTrue(_map.GetKeyMappingResult('A', KeyRemapMode.Normal).IsMapped);
+                Map("<S-a>", "#");
+                AssertNoMapping("a");
+                AssertMapping("A", "#");
             }
 
             [Test]
             public void ShiftWithUpperAlphaIsJustUpperAlpha()
             {
-                Assert.IsTrue(_map.MapWithNoRemap("<S-A>", "#", KeyRemapMode.Normal));
-                Assert.IsTrue(_map.GetKeyMappingResult('a', KeyRemapMode.Normal).IsNoMapping);
-                Assert.IsTrue(_map.GetKeyMappingResult('A', KeyRemapMode.Normal).IsMapped);
+                Map("<S-a>", "#");
+                AssertNoMapping("a");
+                AssertMapping("A", "#");
             }
 
             [Test]
             public void ShiftSymbolDoesNotChangeChar()
             {
-                Assert.IsTrue(_map.MapWithNoRemap("<S-#>", "pound", KeyRemapMode.Normal));
-
+                Map("<S-#>", "pound");
+                AssertNoMapping("#");
                 var keyInput = KeyInputUtil.CharToKeyInput('#');
-                Assert.IsTrue(_map.GetKeyMappingResult(keyInput, KeyRemapMode.Normal).IsNoMapping);
-                Assert.IsTrue(_map.GetKeyMappingResult(KeyInputUtil.ChangeKeyModifiersDangerous(keyInput, KeyModifiers.Shift), KeyRemapMode.Normal).IsMapped);
+                keyInput = KeyInputUtil.ChangeKeyModifiersDangerous(keyInput, KeyModifiers.Shift);
+                Assert.IsTrue(_map.GetKeyMappingResult(keyInput, KeyRemapMode.Normal).IsMapped);
             }
 
             [Test]
@@ -209,6 +223,11 @@ namespace Vim.UnitTest
                 Assert.AreEqual(KeyInputSetUtil.OfString("bar"), ret.AsMapped().Item);
             }
 
+            /// <summary>
+            /// In the ambiguous double case we will end up with the best possible mapping
+            /// for the given input here.  The first mapping can be resolved but not the
+            /// second
+            /// </summary>
             [Test]
             public void Ambiguous_Double()
             {
@@ -216,10 +235,8 @@ namespace Vim.UnitTest
                 Map("aaa", "two");
                 Map("b", "three");
                 Map("bb", "four");
-                var ret = _map.GetKeyMappingResult("aab", KeyRemapMode.Normal).AsMappedAndNeedsMoreInput();
-                Assert.IsTrue(ret.IsMappedAndNeedsMoreInput);
-                Assert.AreEqual(KeyInputSetUtil.OfString("one"), ret.Item1);
-                Assert.AreEqual(KeyInputSetUtil.OfString("b"), ret.Item2);
+                AssertMapping("aab", "oneb");
+                AssertMapping("aaa", "two");
             }
 
             [Test]
@@ -234,7 +251,7 @@ namespace Vim.UnitTest
         }
 
         [TestFixture]
-        public sealed class MapWithRemap : KeyMapTest
+        public sealed class MapWithRemapTest : KeyMapTest
         {
             private void Map(string lhs, string rhs)
             {
@@ -276,15 +293,20 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// According to gVim this should actually produce an infinitely recursive expansion.  Can't
-            /// except emmulating a hang here so VsVim will bail out after the non-standar setting 
-            /// MaxMapCount
+            /// When considering the full expansion in key input processing this particular combination
+            /// posses a problem because it causes infinite mapping.  
+            ///
+            ///  - Step 1: maps 'j' to '3j'
+            ///  - Step 2: processes '3'
+            ///  - Step 3: maps 'j' to '3j'
+            ///
+            /// In just the mapping case though it's completely resolvable
             /// </summary>
             [Test]
-            public void MapWithRemap_SameKey()
+            public void MapWithRemapSameKey()
             {
-                Map("j", "gj");
-                Assert.IsTrue(_map.GetKeyMappingResult("j", KeyRemapMode.Normal).IsRecursive);
+                Map("j", "3j");
+                AssertMapping("j", "3j");
             }
 
             /// <summary>
@@ -322,14 +344,16 @@ namespace Vim.UnitTest
 
             /// <summary>
             /// When processing a remap if the {rhs} doesn't map and has length greater
-            /// than 0 then we should consider the remainder of the {rhs} for mapping
+            /// than 0 then we shouldn't be considering the remainder here.  Once the {lhs} isn't 
+            /// mappable at column 0 we are done.  It's up to the IVimBuffer to give us back the 
+            /// remainder in the proper mode based on the processing of the first value
             /// </summary>
             [Test]
             public void RightSecondKeyHasMap()
             {
                 Map("a", "bc");
                 Map("c", "d");
-                AssertMapping("a", "bd");
+                AssertMapping("a", "bc");
             }
 
             /// <summary>
@@ -376,6 +400,11 @@ namespace Vim.UnitTest
         [TestFixture]
         public sealed class Misc : KeyMapTest
         {
+            private void MapWithRemap(string lhs, string rhs)
+            {
+                Assert.IsTrue(_map.MapWithRemap(lhs, rhs, KeyRemapMode.Normal));
+            }
+
             [Test]
             public void GetKeyMapping1()
             {
@@ -394,11 +423,15 @@ namespace Vim.UnitTest
                 Assert.IsTrue(ret.IsRecursive);
             }
 
+            /// <summary>
+            /// If a particular value isn't mapped then the GetKeyMappingResult functions 
+            /// should just be an identity function
+            /// </summary>
             [Test]
             public void GetKeyMappingResult2()
             {
-                var ret = _map.GetKeyMappingResult(KeyInputUtil.CharToKeyInput('b'), KeyRemapMode.Normal);
-                Assert.IsTrue(ret.IsNoMapping);
+                AssertNoMapping("b");
+                AssertNoMapping("a");
             }
 
             [Test]
@@ -430,14 +463,20 @@ namespace Vim.UnitTest
                 Assert.IsTrue(res.IsNeedsMoreInput);
             }
 
+            /// <summary>
+            /// Once the mapping is cleared it goes back to an identity mapping since there isn't anything
+            /// </summary>
             [Test]
             public void Clear1()
             {
-                Assert.IsTrue(_map.MapWithNoRemap("a", "b", KeyRemapMode.Normal));
+                MapWithRemap("a", "b");
                 _map.Clear(KeyRemapMode.Normal);
-                Assert.IsTrue(_map.GetKeyMappingResult(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal).IsNoMapping);
+                AssertNoMapping("a");
             }
 
+            /// <summary>
+            /// Make sure we only clear the specified mode 
+            /// </summary>
             [Test, Description("Only clear the specified mode")]
             public void Clear2()
             {
@@ -455,19 +494,19 @@ namespace Vim.UnitTest
                 Assert.IsTrue(_map.MapWithNoRemap("a", "b", KeyRemapMode.Normal));
                 Assert.IsTrue(_map.MapWithNoRemap("a", "b", KeyRemapMode.Insert));
                 _map.ClearAll();
-                var res = _map.GetKeyMappingResult(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Insert);
-                Assert.IsTrue(res.IsNoMapping);
-                res = _map.GetKeyMappingResult(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal);
-                Assert.IsTrue(res.IsNoMapping);
-
+                AssertNoMapping("a", KeyRemapMode.Normal);
+                AssertNoMapping("a", KeyRemapMode.Insert);
             }
 
+            /// <summary>
+            /// Unmapping a specific entry removes it completely
+            /// </summary>
             [Test]
             public void Unmap1()
             {
                 Assert.IsTrue(_map.MapWithNoRemap("a", "b", KeyRemapMode.Normal));
                 Assert.IsTrue(_map.Unmap("a", KeyRemapMode.Normal));
-                Assert.IsTrue(_map.GetKeyMappingResult(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal).IsNoMapping);
+                AssertNoMapping("a");
             }
 
             [Test]
@@ -486,7 +525,7 @@ namespace Vim.UnitTest
             {
                 Assert.IsTrue(_map.MapWithNoRemap("cat", "dog", KeyRemapMode.Insert));
                 Assert.IsTrue(_map.UnmapByMapping("dog", KeyRemapMode.Insert));
-                Assert.IsTrue(_map.GetKeyMappingResult("cat", KeyRemapMode.Insert).IsNoMapping);
+                AssertNoMapping("cat");
             }
 
             /// <summary>

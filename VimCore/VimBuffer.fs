@@ -115,6 +115,7 @@ type internal VimBuffer
     let _properties = PropertyCollection()
     let _bag = DisposableBag()
     let _modeMap = ModeMap()
+    let _keyMap = _vim.KeyMap
     let mutable _processingInputCount = 0
     let mutable _isClosed = false
 
@@ -130,7 +131,7 @@ type internal VimBuffer
     let _keyInputProcessedEvent = StandardEvent<KeyInputProcessedEventArgs>()
     let _keyInputStartEvent = StandardEvent<KeyInputEventArgs>()
     let _keyInputEndEvent = StandardEvent<KeyInputEventArgs>()
-    let _keyInputBufferedEvent = StandardEvent<KeyInputEventArgs>()
+    let _keyInputBufferedEvent = StandardEvent<KeyInputSetEventArgs>()
     let _errorMessageEvent = StandardEvent<StringEventArgs>()
     let _warningMessageEvent = StandardEvent<StringEventArgs>()
     let _statusMessageEvent = StandardEvent<StringEventArgs>()
@@ -178,7 +179,7 @@ type internal VimBuffer
         match _modeMap.Mode.ModeKind with
         | ModeKind.Insert -> Some (KeyRemapMode.Insert)
         | ModeKind.Replace -> Some (KeyRemapMode.Insert)
-        | ModeKind.Normal -> Some x.NormalMode.KeyRemapMode
+        | ModeKind.Normal -> x.NormalMode.KeyRemapMode
         | ModeKind.Command -> Some(KeyRemapMode.Command)
         | ModeKind.VisualBlock -> Some(KeyRemapMode.Visual)
         | ModeKind.VisualCharacter -> Some(KeyRemapMode.Visual)
@@ -220,19 +221,9 @@ type internal VimBuffer
             else
                 false
 
-        let keyMappingResult, (keyInputSet : KeyInputSet) = x.GetKeyInputMappingCore keyInput
-        match keyMappingResult with
+        match x.GetKeyInputMapping keyInput with
         | KeyMappingResult.Mapped keyInputSet -> 
-            match keyInputSet.FirstKeyInput with
-            | Some keyInput -> canProcess keyInput
-            | None -> false
-        | KeyMappingResult.MappedAndNeedsMoreInput (keyInputSet, _) ->
-            match keyInputSet.FirstKeyInput with
-            | Some keyInput -> canProcess keyInput
-            | None -> false
-        | KeyMappingResult.NoMapping _ -> 
-            // Simplest case.  There is no mapping so just consider the first character
-            // of the input.  
+            // Simplest case.  Mapped to a set of values so just consider the first one
             //
             // Note: This is not necessarily the provided KeyInput.  There could be several
             // buffered KeyInput values which are around because the matched the prefix of a
@@ -281,27 +272,18 @@ type internal VimBuffer
             // Stop listening to events
             _bag.DisposeAll()
 
-    /// Returns both the mapping of the KeyInput value and the set of inputs which were
-    /// considered to get the mapping.  This does account for buffered KeyInput values
-    member x.GetKeyInputMappingCore keyInput =
-        match _bufferedKeyInput, x.KeyRemapMode with
-        | Some buffered, Some remapMode -> 
-            let keyInputSet = buffered.Add keyInput
-            (_vim.KeyMap.GetKeyMapping keyInputSet remapMode), keyInputSet
-        | Some buffered, None -> 
-            let keyInputSet = buffered.Add keyInput
-            (KeyMappingResult.Mapped keyInputSet), keyInputSet
-        | None, Some remapMode -> 
-            let keyInputSet = OneKeyInput keyInput
-            _vim.KeyMap.GetKeyMapping keyInputSet remapMode, keyInputSet
-        | None, None -> 
-            let keyInputSet = OneKeyInput keyInput
-            (KeyMappingResult.Mapped keyInputSet), keyInputSet
-
     /// Get the correct mapping of the given KeyInput value in the current state of the 
     /// IVimBuffer.  This will consider any buffered KeyInput values 
     member x.GetKeyInputMapping keyInput =
-        x.GetKeyInputMappingCore keyInput |> fst
+
+        let keyInputSet = 
+            match _bufferedKeyInput with
+            | None -> KeyInputSet.OneKeyInput keyInput
+            | Some bufferedKeyInputSet -> bufferedKeyInputSet.Add keyInput
+
+        match x.KeyRemapMode with
+        | None -> KeyMappingResult.Mapped keyInputSet
+        | Some keyRemapMode -> _keyMap.GetKeyMapping keyInputSet keyRemapMode
 
     member x.OnVimTextBufferSwitchedMode modeKind modeArgument =
         if x.Mode.ModeKind <> modeKind then
@@ -309,7 +291,7 @@ type internal VimBuffer
 
     /// Process the single KeyInput value.  No mappings are considered here.  The KeyInput is 
     /// simply processed directly
-    member x.ProcessCore (keyInput : KeyInput) =
+    member x.ProcessOneKeyInput (keyInput : KeyInput) =
 
         let processResult = 
             _processingInputCount <- _processingInputCount + 1
@@ -374,6 +356,57 @@ type internal VimBuffer
         _keyInputProcessedEvent.Trigger x args
         processResult
 
+    /// Process the provided KeyInputSet until completion or until a point where an 
+    /// ambiguous mapping is reached
+    member x.ProcessCore (keyInputSet : KeyInputSet) = 
+        Contract.Assert(Option.isNone _bufferedKeyInput)
+
+        let mapCount = ref 0
+        let remainingSet = ref keyInputSet
+        let processResult = ref (ProcessResult.Handled ModeSwitch.NoSwitch)
+
+        let processSet (keyInputSet : KeyInputSet) = 
+            match keyInputSet.FirstKeyInput with
+            | Some keyInput -> 
+                remainingSet := keyInputSet.KeyInputs |> ListUtil.skip 1 |> KeyInputSetUtil.OfList
+                processResult := x.ProcessOneKeyInput keyInput
+            | None -> 
+                remainingSet := KeyInputSet.Empty
+                processResult := ProcessResult.Handled ModeSwitch.NoSwitch
+
+        let processRecursive () = 
+            x.RaiseErrorMessage Resources.Vim_RecursiveMapping
+            processResult := ProcessResult.Error
+            remainingSet := KeyInputSet.Empty
+
+        while remainingSet.Value.Length > 0 do
+            match x.KeyRemapMode with
+            | None -> processSet remainingSet.Value
+            | Some keyRemapMode ->
+                let keyMappingResult = _keyMap.GetKeyMapping remainingSet.Value keyRemapMode
+                match keyMappingResult with
+                | KeyMappingResult.Mapped mappedKeyInputSet -> 
+                    mapCount := mapCount.Value + 1
+
+                    // The MaxMapCount value is a hueristic which VsVim implements to avoid an infinite
+                    // loop processing recursive input.  In a perfect world we would implement 
+                    // Ctrl-C support and allow users to break out of this loop but right now we don't
+                    // and this is a hueristic to prevent hanging the IDE until then
+                    if mapCount.Value = _vim.GlobalSettings.MaxMapCount then
+                        processRecursive()
+                    else
+                        processSet mappedKeyInputSet
+                | KeyMappingResult.NeedsMoreInput keyInputSet -> 
+                    _bufferedKeyInput <- Some keyInputSet
+                    let args = KeyInputSetEventArgs(keyInputSet)
+                    _keyInputBufferedEvent.Trigger x args
+                    processResult := ProcessResult.Handled ModeSwitch.NoSwitch
+                    remainingSet := KeyInputSet.Empty
+                | KeyMappingResult.Recursive ->
+                    processRecursive()
+
+        processResult.Value
+
     /// Actually process the input key.  Raise the change event on an actual change
     member x.Process (keyInput : KeyInput) =
 
@@ -382,31 +415,17 @@ type internal VimBuffer
         _keyInputStartEvent.Trigger x args
 
         try
-            let remapResult, keyInputSet = x.GetKeyInputMappingCore keyInput
 
-            // Clear out the _bufferedKeyInput at this point.  It will be reset if the mapping needs more 
-            // data
+            // Combine this KeyInput with the buffered KeyInput values and clear it out.  If 
+            // this KeyInput needs more input then it will be rebuffered
+            let keyInputSet = 
+                match _bufferedKeyInput with
+                | None -> KeyInputSet.OneKeyInput keyInput
+                | Some bufferedKeyInputSet -> bufferedKeyInputSet.Add keyInput
             _bufferedKeyInput <- None
 
-            match remapResult with
-            | KeyMappingResult.NoMapping _ -> 
-                // No mapping so just process the KeyInput values.  Don't forget previously
-                // buffered values which are now known to not be a part of a mapping
-                keyInputSet.KeyInputs |> Seq.map x.ProcessCore |> SeqUtil.last
-            | KeyMappingResult.NeedsMoreInput _ -> 
-                _bufferedKeyInput <- Some keyInputSet
-                _keyInputBufferedEvent.Trigger x args
-                ProcessResult.Handled ModeSwitch.NoSwitch
-            | KeyMappingResult.Recursive ->
-                x.RaiseErrorMessage Resources.Vim_RecursiveMapping
-                ProcessResult.Error
-            | KeyMappingResult.Mapped keyInputSet -> 
-                keyInputSet.KeyInputs |> Seq.map x.ProcessCore |> SeqUtil.last
-            | KeyMappingResult.MappedAndNeedsMoreInput (keyInputSet, ambiguousSet) -> 
-                let result = keyInputSet.KeyInputs |> Seq.map x.ProcessCore |> SeqUtil.last
-                _bufferedKeyInput <- Some ambiguousSet
-                _keyInputBufferedEvent.Trigger x args
-                result
+            x.ProcessCore keyInputSet
+
         finally 
             _keyInputEndEvent.Trigger x args
 
@@ -414,11 +433,30 @@ type internal VimBuffer
     member x.ProcessBufferedKeyInputs() = 
         match _bufferedKeyInput with
         | None -> ()
-        | Some keyInputs ->
+        | Some keyInputSet ->
             _bufferedKeyInput <- None
-    
-            keyInputs.KeyInputs
-            |> Seq.iter (fun keyInput -> x.ProcessCore keyInput |> ignore)
+
+            // If there is an exact match in the KeyMap then we will use that to do a 
+            // mapping.  This isn't documented anywhere but can be demonstrated as follows
+            //
+            //  :imap i short
+            //  :imap ii long
+            //
+            // Then type 'i' in insert mode and wait for the time out.  It will print 'short'
+            let keyInputSet = 
+                match x.KeyRemapMode with
+                | None -> keyInputSet
+                | Some keyRemapMode ->
+                    let keyMapping = 
+                        keyRemapMode
+                        |> _keyMap.GetKeyMappingsForMode 
+                        |> Seq.tryFind (fun keyMapping -> keyMapping.Left = keyInputSet)
+                    match keyMapping with
+                    | None -> keyInputSet
+                    | Some keyMapping -> keyMapping.Right
+
+            keyInputSet.KeyInputs
+            |> Seq.iter (fun keyInput -> x.ProcessOneKeyInput keyInput |> ignore)
 
     member x.RaiseErrorMessage msg = 
         let args = StringEventArgs(msg)
