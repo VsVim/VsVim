@@ -181,9 +181,9 @@ type internal VimBuffer
         | ModeKind.Replace -> Some (KeyRemapMode.Insert)
         | ModeKind.Normal -> x.NormalMode.KeyRemapMode
         | ModeKind.Command -> Some(KeyRemapMode.Command)
-        | ModeKind.VisualBlock -> Some(KeyRemapMode.Visual)
-        | ModeKind.VisualCharacter -> Some(KeyRemapMode.Visual)
-        | ModeKind.VisualLine -> Some(KeyRemapMode.Visual)
+        | ModeKind.VisualBlock -> x.VisualBlockMode.KeyRemapMode
+        | ModeKind.VisualCharacter -> x.VisualCharacterMode.KeyRemapMode
+        | ModeKind.VisualLine -> x.VisualLineMode.KeyRemapMode
         | _ -> None
 
     member x.VimBufferData = _vimBufferData

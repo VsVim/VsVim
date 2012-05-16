@@ -4001,6 +4001,9 @@ and IVisualMode =
     /// The ICommandRunner implementation associated with NormalMode
     abstract CommandRunner : ICommandRunner 
 
+    /// Mode keys need to be remapped with currently
+    abstract KeyRemapMode : KeyRemapMode option
+
     /// The current Visual Selection
     abstract VisualSelection : VisualSelection
 

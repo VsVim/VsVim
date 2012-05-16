@@ -132,6 +132,12 @@ type internal VisualMode
         x.EnsureCommandsBuilt()
         _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
 
+    member this.KeyRemapMode = 
+        if _runner.IsWaitingForMoreInput then
+            _runner.KeyRemapMode
+        else
+            Some KeyRemapMode.Visual
+
     member x.SelectedSpan = (TextSelectionUtil.GetStreamSelectionSpan _textView.Selection).SnapshotSpan
 
     member x.EnsureCommandsBuilt() =
@@ -315,6 +321,7 @@ type internal VisualMode
 
     interface IVisualMode with
         member x.CommandRunner = _runner
+        member x.KeyRemapMode = x.KeyRemapMode
         member x.VisualSelection = VisualSelection.CreateForSelection _textView _visualKind _globalSettings.SelectionKind
         member x.SyncSelection () = x.SyncSelection()
 
