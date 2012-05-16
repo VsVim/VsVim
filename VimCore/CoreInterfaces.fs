@@ -1025,12 +1025,10 @@ type KeyRemapMode =
         | Command -> "Command"
         | Language -> "Language"
 
-// TODO: Should merge Mapped and NoMapping.  What's the difference.  It succeeded
-// or it failed.  Other states are essentially meaningless
 [<RequireQualifiedAccess>]
 type KeyMappingResult =
 
-    /// No mapping exists 
+    /// No mapping exists and the original input KeyInputSet value is returned
     | NoMapping of KeyInputSet
 
     /// Mapped to the specified KeyInputSet

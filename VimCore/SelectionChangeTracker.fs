@@ -44,10 +44,6 @@ type internal SelectionChangeTracker
         |> Observable.subscribe (fun args -> this.OnKeyInputFinished() )
         |> _bag.Add
 
-        _vimBuffer.KeyInputBuffered
-        |> Observable.subscribe (fun args -> this.OnKeyInputFinished() )
-        |> _bag.Add
-
     member x.IsAnyVisualOrSelectMode = VisualKind.IsAnyVisualOrSelect _vimBuffer.ModeKind
 
     member x.ShouldIgnoreSelectionChange() = 

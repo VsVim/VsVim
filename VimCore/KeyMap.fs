@@ -1,12 +1,20 @@
 ﻿#light
 
 namespace Vim
-open CollectionExtensions
 
 /// Map of a LHS of a mapping to the RHS.  The bool is used to indicate whether or not 
 /// the RHS should be remapped as part of an expansion
 type RemapModeMap = Map<KeyInputSet, KeyMapping>
 
+/// The type responsible for actually converting the mapping.  This is naturally a recursive
+/// process but is done here iteratively.  There are many Vim scenarios which call for 
+/// extremely deep mappings (several thousands).  Much too deep for the natural head recursive
+/// method
+///
+/// I coded up a continuation passing style version but I found the logic was very hard to 
+/// follow and very easy to break with a simple error.  This process is already fairly
+/// complex and I didn't want to make it more so.  Eventually I went with the iterative 
+/// approach because it's easy to follow and meets the specs
 type Mapper
     (
         _keyInputSet : KeyInputSet,
