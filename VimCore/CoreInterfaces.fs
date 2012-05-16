@@ -2975,7 +2975,8 @@ module GlobalSettingNames =
     let JoinSpacesName = "joinspaces"
     let KeyModelName = "keymodel"
     let MagicName = "magic"
-    let MaxMapDepth=  "maxmapdepth"
+    let MaxMapCount =  "vsvim_maxmapcount"
+    let MaxMapDepth =  "maxmapdepth"
     let MouseModelName = "mousemodel"
     let ParagraphsName = "paragraphs"
     let ScrollOffsetName = "scrolloff"
@@ -3097,6 +3098,11 @@ and IVimGlobalSettings =
 
     /// Whether or not the magic option is set
     abstract Magic : bool with get,set
+
+    /// Maximum number of maps which can occur for a key map.  This is not a standard vim or gVim
+    /// setting.  It's a hueristic setting meant to prevent infinite recursion in the specific cases
+    /// that maxmapdepth can't or won't catch (see :help maxmapdepth).  
+    abstract MaxMapCount : int with get, set
 
     /// Maximum number of recursive depths which occur for a mapping
     abstract MaxMapDepth : int with get, set

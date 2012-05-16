@@ -68,6 +68,7 @@ type Mapper
         let failed = ref false
         let failedResult = ref KeyMappingResult.Recursive
         let depth = ref 0
+        let mapCount = ref 0
         let anyMapped = ref false
         let toMapList = ref _keyInputSet.KeyInputs
 
@@ -84,7 +85,17 @@ type Mapper
         let processMapping lhs keyMapping =
             anyMapped := true
             depth := depth.Value + 1
+            mapCount := mapCount.Value + 1
             if depth.Value = _globalSettings.MaxMapDepth then
+                // Exceeded the maximum depth of recursive mappings.  Break out of this with 
+                // Recursive
+                failedResult := KeyMappingResult.Recursive
+                failed := true
+            elif mapCount.Value = _globalSettings.MaxMapCount then
+                // This is a non-standard feature.  This is meant to handle the case where the 
+                // user types the errant mapping ':map g jg'.  This will expand infinitely in gVim
+                // and cause a hang.  VsVim behavior differs here and will bail out after MaxMapCount
+                // total mappings.
                 failedResult := KeyMappingResult.Recursive
                 failed := true
             else

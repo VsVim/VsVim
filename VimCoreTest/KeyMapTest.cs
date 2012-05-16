@@ -277,17 +277,14 @@ namespace Vim.UnitTest
 
             /// <summary>
             /// According to gVim this should actually produce an infinitely recursive expansion.  Can't
-            /// except emmulating a hang here.  Need to come up with a solid story for this
+            /// except emmulating a hang here so VsVim will bail out after the non-standar setting 
+            /// MaxMapCount
             /// </summary>
             [Test]
-            [Ignore]
             public void MapWithRemap_SameKey()
             {
-                Assert.IsTrue(_map.MapWithRemap("j", "gj", KeyRemapMode.Normal));
-                var ret = _map.GetKeyMapping('j', KeyRemapMode.Normal).ToList();
-                CollectionAssert.AreEquivalent(
-                    new[] { 'g', 'j' },
-                    ret.Select(x => x.Char).ToList());
+                Map("j", "gj");
+                Assert.IsTrue(_map.GetKeyMappingResult("j", KeyRemapMode.Normal).IsRecursive);
             }
 
             /// <summary>
@@ -379,8 +376,7 @@ namespace Vim.UnitTest
         [TestFixture]
         public sealed class Misc : KeyMapTest
         {
-            [Test, Description("Recursive mappings should not follow the recursion here")]
-            [Ignore]
+            [Test]
             public void GetKeyMapping1()
             {
                 Assert.IsTrue(_map.MapWithRemap("a", "b", KeyRemapMode.Normal));
@@ -390,7 +386,6 @@ namespace Vim.UnitTest
             }
 
             [Test]
-            [Ignore]
             public void GetKeyMappingResult1()
             {
                 Assert.IsTrue(_map.MapWithRemap("a", "b", KeyRemapMode.Normal));
