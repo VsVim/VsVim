@@ -101,7 +101,15 @@ module internal ListUtil =
         if count <= 0 then l
         else 
             let _,tail = l |> divide
-            skip (count-1) tail
+            skip (count - 1) tail
+
+    let rec skipMax count l = 
+        if count <= 0 then 
+            l
+        else
+            match l with 
+            | [] -> []
+            | _ :: tail -> skipMax (count - 1) tail
 
     let rec skipWhile predicate l = 
         match l with

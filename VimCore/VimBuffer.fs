@@ -226,7 +226,11 @@ type internal VimBuffer
             match keyInputSet.FirstKeyInput with
             | Some keyInput -> canProcess keyInput
             | None -> false
-        | KeyMappingResult.NoMapping -> 
+        | KeyMappingResult.MappedAndNeedsMoreInput (keyInputSet, _) ->
+            match keyInputSet.FirstKeyInput with
+            | Some keyInput -> canProcess keyInput
+            | None -> false
+        | KeyMappingResult.NoMapping _ -> 
             // Simplest case.  There is no mapping so just consider the first character
             // of the input.  
             //
@@ -237,7 +241,7 @@ type internal VimBuffer
             match keyInputSet.FirstKeyInput with
             | Some keyInput -> canProcess keyInput
             | None -> false
-        | KeyMappingResult.NeedsMoreInput -> 
+        | KeyMappingResult.NeedsMoreInput _ -> 
             // If this will simply further a key mapping then yes it can be processed
             // now
             true
@@ -385,11 +389,11 @@ type internal VimBuffer
             _bufferedKeyInput <- None
 
             match remapResult with
-            | KeyMappingResult.NoMapping -> 
+            | KeyMappingResult.NoMapping _ -> 
                 // No mapping so just process the KeyInput values.  Don't forget previously
                 // buffered values which are now known to not be a part of a mapping
                 keyInputSet.KeyInputs |> Seq.map x.ProcessCore |> SeqUtil.last
-            | KeyMappingResult.NeedsMoreInput -> 
+            | KeyMappingResult.NeedsMoreInput _ -> 
                 _bufferedKeyInput <- Some keyInputSet
                 _keyInputBufferedEvent.Trigger x args
                 ProcessResult.Handled ModeSwitch.NoSwitch
@@ -398,6 +402,11 @@ type internal VimBuffer
                 ProcessResult.Error
             | KeyMappingResult.Mapped keyInputSet -> 
                 keyInputSet.KeyInputs |> Seq.map x.ProcessCore |> SeqUtil.last
+            | KeyMappingResult.MappedAndNeedsMoreInput (keyInputSet, ambiguousSet) -> 
+                let result = keyInputSet.KeyInputs |> Seq.map x.ProcessCore |> SeqUtil.last
+                _bufferedKeyInput <- Some ambiguousSet
+                _keyInputBufferedEvent.Trigger x args
+                result
         finally 
             _keyInputEndEvent.Trigger x args
 

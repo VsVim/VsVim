@@ -20,14 +20,24 @@ namespace Vim.UnitTest
 
         protected void AssertMapping(string lhs, string expected)
         {
+            AssertMapping(KeyNotationUtil.StringToKeyInputSet(lhs), expected);
+        }
+
+        protected void AssertMapping(KeyInputSet lhs, string expected)
+        {
             var ret = _map.GetKeyMappingResult(lhs, KeyRemapMode.Normal);
             Assert.IsTrue(ret.IsMapped);
-            Assert.AreEqual(KeyInputSetUtil.OfString(lhs), ret.AsMapped().Item);
+            Assert.AreEqual(KeyInputSetUtil.OfString(expected), ret.AsMapped().Item);
         }
 
         [TestFixture]
         public sealed class MapWithNoRemap : KeyMapTest
         {
+            private void Map(string lhs, string rhs)
+            {
+                Assert.IsTrue(_map.MapWithNoRemap(lhs, rhs, KeyRemapMode.Normal));
+            }
+
             [Test]
             public void AlphaToAlpha()
             {
@@ -198,55 +208,79 @@ namespace Vim.UnitTest
                 Assert.IsTrue(ret.IsMapped);
                 Assert.AreEqual(KeyInputSetUtil.OfString("bar"), ret.AsMapped().Item);
             }
+
+            [Test]
+            public void Ambiguous_Double()
+            {
+                Map("aa", "one");
+                Map("aaa", "two");
+                Map("b", "three");
+                Map("bb", "four");
+                var ret = _map.GetKeyMappingResult("aab", KeyRemapMode.Normal).AsMappedAndNeedsMoreInput();
+                Assert.IsTrue(ret.IsMappedAndNeedsMoreInput);
+                Assert.AreEqual(KeyInputSetUtil.OfString("one"), ret.Item1);
+                Assert.AreEqual(KeyInputSetUtil.OfString("b"), ret.Item2);
+            }
+
+            [Test]
+            public void Ambiguous_DoubleResolve()
+            {
+                Map("aa", "one");
+                Map("aaa", "two");
+                Map("b", "three");
+                Map("bb", "four");
+                AssertMapping("aabc", "onethreec");
+            }
         }
 
         [TestFixture]
         public sealed class MapWithRemap : KeyMapTest
         {
-            [Test]
-            public void MapWithRemap1()
+            private void Map(string lhs, string rhs)
             {
-                Assert.IsTrue(_map.MapWithRemap("a", "b", KeyRemapMode.Normal));
-                var ret = _map.GetKeyMapping(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal).Single();
-                Assert.AreEqual('b', ret.Char);
-            }
-
-            [Test]
-            public void MapWithRemap2()
-            {
-                Assert.IsTrue(_map.MapWithNoRemap("a", "bcd", KeyRemapMode.Normal));
-                var ret = _map.GetKeyMapping(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal).ToList();
-                Assert.AreEqual(3, ret.Count);
-                Assert.AreEqual('b', ret[0].Char);
-                Assert.AreEqual('c', ret[1].Char);
-                Assert.AreEqual('d', ret[2].Char);
-            }
-
-            [Test]
-            public void MapWithRemap3()
-            {
-                Assert.IsTrue(_map.MapWithRemap("a", "b", KeyRemapMode.Normal));
-                Assert.IsTrue(_map.MapWithRemap("b", "c", KeyRemapMode.Normal));
-                var ret = _map.GetKeyMapping(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal).Single();
-                Assert.AreEqual('c', ret.Char);
-            }
-
-            [Test]
-            public void MapWithRemap4()
-            {
-                Assert.IsTrue(_map.MapWithRemap("a", "bc", KeyRemapMode.Normal));
-                Assert.IsTrue(_map.MapWithRemap("b", "d", KeyRemapMode.Normal));
-                var ret = _map.GetKeyMapping(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal).ToList();
-                Assert.AreEqual(2, ret.Count);
-                Assert.AreEqual('d', ret[0].Char);
-                Assert.AreEqual('c', ret[1].Char);
+                Assert.IsTrue(_map.MapWithRemap(lhs, rhs, KeyRemapMode.Normal));
             }
 
             /// <summary>
-            /// When expanding a given key mapping that particular key should not be scanned for remapping 
-            /// on the RHS.  For example ":map j gj" is not recursive.  
+            /// Simple mapping with no remap involved
             /// </summary>
             [Test]
+            public void Simple()
+            {
+                Map("a", "b");
+                AssertMapping("a", "b");
+            }
+
+            [Test]
+            public void SimpleLong()
+            {
+                Map("a", "bcd");
+                AssertMapping("a", "bcd");
+            }
+
+            [Test]
+            public void SimpleChain()
+            {
+                Map("a", "b");
+                Map("b", "c");
+                AssertMapping("a", "c");
+                AssertMapping("b", "c");
+            }
+
+            [Test]
+            public void RemapOfPartOfRight()
+            {
+                Map("a", "bc");
+                Map("b", "d");
+                AssertMapping("a", "dc");
+            }
+
+            /// <summary>
+            /// According to gVim this should actually produce an infinitely recursive expansion.  Can't
+            /// except emmulating a hang here.  Need to come up with a solid story for this
+            /// </summary>
+            [Test]
+            [Ignore]
             public void MapWithRemap_SameKey()
             {
                 Assert.IsTrue(_map.MapWithRemap("j", "gj", KeyRemapMode.Normal));
@@ -257,30 +291,48 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// When expanding a given key mapping that particular key should not be scanned for remapping 
-            /// on the RHS.  For example ":map j gj" is not recursive.  
+            /// If the rhs begins with the lhs then it shouldn't produce an infinite recursive 
+            /// mapping.  
             /// </summary>
             [Test]
-            public void MapWithRemap_SameKeyPair()
+            public void RightStartsWithLeft()
             {
-                Assert.IsTrue(_map.MapWithRemap("jk", "jkg", KeyRemapMode.Normal));
-                var ret = _map.GetKeyMapping("jk", KeyRemapMode.Normal).ToList();
-                CollectionAssert.AreEquivalent(
-                    new[] { 'j', 'k', 'g' },
-                    ret.Select(x => x.Char).ToList());
+                Map("a", "ab");
+                AssertMapping("a", "ab");
+            }
+
+            /// <summary>
+            /// If the rhs begins with the lhs then only the first character shouldn't be considered
+            /// on the rhs for mapping.  Starting immediately with the second character remapping 
+            /// should occur
+            /// </summary>
+            [Test]
+            public void RightStartsWithLeftComplex()
+            {
+                Map("ab", "abcd");
+                Map("b", "hit");
+                AssertMapping("ab", "ahitcd");
             }
 
             [Test]
-            public void MapWithRemap_HandleCommandKey()
+            public void HandleCommandKey()
             {
-                Assert.IsTrue(_map.MapWithRemap("<D-k>", "gk", KeyRemapMode.Normal));
+                Map("<D-k>", "gk");
                 var ki = new KeyInput(VimKey.LowerK, KeyModifiers.Command, FSharpOption.Create('k'));
                 var kiSet = KeyInputSet.NewOneKeyInput(ki);
-                var ret = _map.GetKeyMapping(kiSet, KeyRemapMode.Normal);
-                Assert.IsTrue(ret.IsMapped);
-                var all = ret.AsMapped().Item.KeyInputs.Select(x => x.Char).ToList();
-                Assert.AreEqual('g', all[0]);
-                Assert.AreEqual('k', all[1]);
+                AssertMapping(kiSet, "gk");
+            }
+
+            /// <summary>
+            /// When processing a remap if the {rhs} doesn't map and has length greater
+            /// than 0 then we should consider the remainder of the {rhs} for mapping
+            /// </summary>
+            [Test]
+            public void RightSecondKeyHasMap()
+            {
+                Map("a", "bc");
+                Map("c", "d");
+                AssertMapping("a", "bd");
             }
         }
 
@@ -288,6 +340,7 @@ namespace Vim.UnitTest
         public sealed class Misc : KeyMapTest
         {
             [Test, Description("Recursive mappings should not follow the recursion here")]
+            [Ignore]
             public void GetKeyMapping1()
             {
                 Assert.IsTrue(_map.MapWithRemap("a", "b", KeyRemapMode.Normal));
@@ -297,6 +350,7 @@ namespace Vim.UnitTest
             }
 
             [Test]
+            [Ignore]
             public void GetKeyMappingResult1()
             {
                 Assert.IsTrue(_map.MapWithRemap("a", "b", KeyRemapMode.Normal));

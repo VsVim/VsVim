@@ -900,7 +900,7 @@ type KeyInputSet =
         | ManyKeyInputs(list) -> ManyKeyInputs (list @ [ki])
 
     /// Does the name start with the given KeyInputSet
-    member x.StartsWith (targetName:KeyInputSet) = 
+    member x.StartsWith (targetName : KeyInputSet) = 
         match targetName,x with
         | Empty, _ -> true
         | OneKeyInput(leftKi), OneKeyInput(rightKi) ->  leftKi = rightKi
@@ -908,7 +908,7 @@ type KeyInputSet =
         | _ -> 
             let left = targetName.KeyInputs 
             let right = x.KeyInputs
-            if left.Length < right.Length then
+            if left.Length <= right.Length then
                 SeqUtil.contentsEqual (left |> Seq.ofList) (right |> Seq.ofList |> Seq.take left.Length)
             else false
 
@@ -1025,20 +1025,35 @@ type KeyRemapMode =
         | Command -> "Command"
         | Language -> "Language"
 
+// TODO: Should merge Mapped and NoMapping.  What's the difference.  It succeeded
+// or it failed.  Other states are essentially meaningless
 [<RequireQualifiedAccess>]
 type KeyMappingResult =
 
     /// No mapping exists 
-    | NoMapping 
+    | NoMapping of KeyInputSet
 
     /// Mapped to the specified KeyInputSet
     | Mapped of KeyInputSet 
 
+    /// Part of the input was successfully mapped but the remainder needs more
+    /// input to complete.  These occurs in the case where you have double 
+    /// ambiguous mappings
+    ///
+    ///  :imap aa one
+    ///  :imap aaa two
+    ///  :imap b three
+    ///  :imap bb four
+    ///
+    /// If you type 'aab' in insert mode it should immediately result in 
+    /// one being input followed by buffering 'b' waiting for more input
+    | MappedAndNeedsMoreInput of KeyInputSet * KeyInputSet
+
     /// The mapping encountered a recursive element that had to be broken 
     | Recursive
 
-    /// More input is needed to resolve this mapping
-    | NeedsMoreInput
+    /// More input is needed to resolve this mapping.
+    | NeedsMoreInput of KeyInputSet
 
 /// Flags for the substitute command
 [<System.Flags>]
