@@ -1093,6 +1093,20 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("yw");
                 Assert.AreEqual("cat", UnnamedRegister.StringValue);
             }
+
+            /// <summary>
+            /// Verify that the :omap command only takes affect when we are in operator
+            /// pending mode
+            /// </summary>
+            [Test]
+            public void OperatorPendingWithDelete()
+            {
+                Create("cat dog");
+                _vimBuffer.Process(":omap l w", enter: true);
+                _vimBuffer.Process("dll");
+                Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
+                Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+            }
         }
 
         [TestFixture]
