@@ -126,12 +126,47 @@ namespace Vim.UnitTest
         /// Ensure creating a VisualSpan for an empty points results in an empty selection
         /// </summary>
         [Test]
-        public void CreateForAllPoints_Block_Empty()
+        public void CreateForSelectionPoints_Block_Empty()
         {
             Create("dog cat");
             var point = _textBuffer.GetPoint(2);
-            var visualSpan = VisualSpan.CreateForAllPoints(VisualKind.Block, point, point);
+            var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Block, point, point);
             var blockSpan = new BlockSpan(point, 0, 1);
+            Assert.AreEqual(blockSpan, visualSpan.AsBlock().Item);
+        }
+
+        [Test]
+        public void CreateForSelectionPoints_Block_Backwards()
+        {
+            Create("big cat", "big dog");
+            var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Block, _textBuffer.GetPoint(2), _textBuffer.GetPoint(0));
+            var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 2, 1);
+            Assert.AreEqual(blockSpan, visualSpan.AsBlock().Item);
+        }
+
+        /// <summary>
+        /// Make sure that we properly handle the backward block selection which spans 
+        /// multiple lines
+        /// </summary>
+        [Test]
+        public void CreateForSelectionPoints_Block_BackwardsMultipleLines()
+        {
+            Create("big cat", "big dog");
+            var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Block, _textBuffer.GetPoint(2), _textBuffer.GetPointInLine(1, 1));
+            var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), 1, 2);
+            Assert.AreEqual(blockSpan, visualSpan.AsBlock().Item);
+        }
+
+        /// <summary>
+        /// Make sure that we properly handle the forward block selection which spans 
+        /// multiple lines
+        /// </summary>
+        [Test]
+        public void CreateForSelectionPoints_Block_ForwardsMultipleLines()
+        {
+            Create("big cat", "big dog");
+            var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Block, _textBuffer.GetPoint(1), _textBuffer.GetPointInLine(1, 3));
+            var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), 2, 2);
             Assert.AreEqual(blockSpan, visualSpan.AsBlock().Item);
         }
 
@@ -139,11 +174,11 @@ namespace Vim.UnitTest
         /// Ensure creating a VisualSpan for an empty points results in an empty selection
         /// </summary>
         [Test]
-        public void CreateForAllPoints_Character_Empty()
+        public void CreateForSelectionPoints_Character_Empty()
         {
             Create("dog cat");
             var point = _textBuffer.GetPoint(2);
-            var visualSpan = VisualSpan.CreateForAllPoints(VisualKind.Character, point, point);
+            var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Character, point, point);
             Assert.AreEqual(point, visualSpan.AsCharacter().Item.Start);
             Assert.AreEqual(0, visualSpan.AsCharacter().Item.Length);
         }
@@ -154,11 +189,11 @@ namespace Vim.UnitTest
         /// containing the points
         /// </summary>
         [Test]
-        public void CreateForAllPoints_Line_SamePoint()
+        public void CreateForSelectionPoints_Line_SamePoint()
         {
             Create("cat", "dog", "tree");
             var point = _textBuffer.GetLine(1).Start;
-            var visualSpan = VisualSpan.CreateForAllPoints(VisualKind.Line, point, point);
+            var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Line, point, point);
             Assert.AreEqual(_textBuffer.GetLineRange(1), visualSpan.AsLine().LineRange);
         }
 
@@ -167,11 +202,11 @@ namespace Vim.UnitTest
         /// ITextSnapshot.  Should return the last line
         /// </summary>
         [Test]
-        public void CreateForAllPoints_Line_EndOfSnapshot()
+        public void CreateForSelectionPoints_Line_EndOfSnapshot()
         {
             Create("cat", "dog");
             var point = new SnapshotPoint(_textBuffer.CurrentSnapshot, _textBuffer.CurrentSnapshot.Length);
-            var visualSpan = VisualSpan.CreateForAllPoints(VisualKind.Line, point, point);
+            var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Line, point, point);
             Assert.AreEqual(1, visualSpan.AsLine().LineRange.LastLineNumber);
         }
     }

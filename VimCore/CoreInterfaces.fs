@@ -1367,15 +1367,17 @@ type VisualSpan =
         | VisualSpan.Block blockSpan -> sprintf "Block: %O" blockSpan
 
     /// Create the VisualSpan based on the specified points.  The activePoint is assumed
-    /// to be the end of the selection (just as it is in ITextSelection)
-    static member CreateForAllPoints visualKind (anchorPoint : SnapshotPoint) (activePoint : SnapshotPoint) =
-        let startPoint, endPoint = SnapshotPointUtil.OrderAscending anchorPoint activePoint
+    /// to be the end of the selection and hence not included (exclusive) just as it is 
+    /// in ITextSelection
+    static member CreateForSelectionPoints visualKind (anchorPoint : SnapshotPoint) (activePoint : SnapshotPoint) =
 
         match visualKind with
         | VisualKind.Character ->
+            let startPoint, endPoint = SnapshotPointUtil.OrderAscending anchorPoint activePoint
             SnapshotSpan(startPoint, endPoint) |> CharacterSpan.CreateForSpan |> Character
         | VisualKind.Line ->
 
+            let startPoint, endPoint = SnapshotPointUtil.OrderAscending anchorPoint activePoint
             let startLine = SnapshotPointUtil.GetContainingLine startPoint
 
             // If endPoint is EndIncludingLineBreak we would get the line after and be 
@@ -1390,25 +1392,26 @@ type VisualSpan =
 
         | VisualKind.Block -> 
 
-            if startPoint = endPoint then
+            if activePoint = anchorPoint then
                 // Special case of an empty selection.  The math below is predicated
                 // on an non-empty selection.  Catch that case here
-                BlockSpan(startPoint, 0, 1) |> Block
+                BlockSpan(activePoint, 0, 1) |> Block
             else
+                let anchorLine, anchorColumn = SnapshotPointUtil.GetLineColumn anchorPoint
+                let activeLine, activeColumn = SnapshotPointUtil.GetLineColumn activePoint
 
-                let lastLine, lastColumn = 
-                    let lastPoint = SnapshotPointUtil.SubtractOneOrCurrent endPoint
-                    SnapshotPointUtil.GetLineColumn lastPoint
-                let startLine, startColumn = SnapshotPointUtil.GetLineColumn startPoint
-    
-                let width = 
-                    let width = startColumn - lastColumn
-                    (abs width) + 1
-    
-                let height =
-                    let height = startLine - lastLine
+                let width = activeColumn - anchorColumn |> abs
+                let height = 
+                    let height = anchorLine - activeLine
                     (abs height) + 1
-    
+
+                let startPoint =
+                    let startLine = 
+                        let number = min anchorLine activeLine
+                        SnapshotUtil.GetLine anchorPoint.Snapshot number
+                    let startColumn = min anchorColumn activeColumn
+                    SnapshotLineUtil.GetOffsetOrEnd startColumn startLine
+
                 BlockSpan(startPoint, width, height) |> Block
 
     /// Create a VisualSelection based off of the current selection.  If no selection is present
@@ -1417,11 +1420,11 @@ type VisualSpan =
         let selection = textView.Selection
         if selection.IsEmpty then
             let caretPoint = TextViewUtil.GetCaretPoint textView
-            VisualSpan.CreateForAllPoints visualKind caretPoint caretPoint
+            VisualSpan.CreateForSelectionPoints visualKind caretPoint caretPoint
         else
             let anchorPoint = selection.AnchorPoint.Position
             let activePoint = selection.ActivePoint.Position 
-            VisualSpan.CreateForAllPoints visualKind anchorPoint activePoint
+            VisualSpan.CreateForSelectionPoints visualKind anchorPoint activePoint
 
     static member CreateForSpan (span : SnapshotSpan) visualKind =
         match visualKind with
@@ -1592,23 +1595,42 @@ type VisualSelection =
     /// Create a VisualSelection for the given anchor point and caret.  The caret is assumed to 
     /// be the last point included in the selection (inclusive)
     static member CreateForPoints visualKind (anchorPoint : SnapshotPoint) (caretPoint : SnapshotPoint) =
-        let path = 
-            if anchorPoint.Position <= caretPoint.Position then
-                Path.Forward
-            else 
-                Path.Backward
 
-        let visualSpan = 
+        let createBlock () =
+            let anchorColumn = SnapshotPointUtil.GetColumn anchorPoint
+            let caretColumn = SnapshotPointUtil.GetColumn caretPoint
+            if anchorColumn <= caretColumn then
+                // It's a forward block selection.  The active point needs to be one column past the 
+                // caret in order to ensure the caret is selected 
+                let activePoint = SnapshotPointUtil.AddOneOrCurrent caretPoint
+                VisualSpan.CreateForSelectionPoints VisualKind.Block anchorPoint activePoint, Path.Forward
+            else
+                // It's a backward selection.  The caretPoint is in a lesser column and hence will
+                // be included.  Need to adjust the anchor point though by one to put it in the 
+                // selection
+                let anchorPoint = SnapshotPointUtil.AddOneOrCurrent anchorPoint
+                VisualSpan.CreateForSelectionPoints VisualKind.Block anchorPoint caretPoint, Path.Backward
+
+        let createNormal () = 
+
+            let isForward = anchorPoint.Position <= caretPoint.Position
             let anchorPoint, activePoint = 
-
-                if path.IsPathForward then
+                if isForward then
                     let activePoint = SnapshotPointUtil.AddOneOrCurrent caretPoint
                     anchorPoint, activePoint
                 else
                     let activePoint = SnapshotPointUtil.AddOneOrCurrent anchorPoint
                     caretPoint, activePoint
 
-            VisualSpan.CreateForAllPoints visualKind anchorPoint activePoint
+            let path = Path.Create isForward
+            VisualSpan.CreateForSelectionPoints visualKind anchorPoint activePoint, path
+
+        let visualSpan, path = 
+            match visualKind with
+            | VisualKind.Block -> createBlock ()
+            | VisualKind.Line -> createNormal ()
+            | VisualKind.Character -> createNormal ()
+
         VisualSelection.Create visualSpan path caretPoint
 
     /// Create a VisualSelection based off of the current selection and position of the caret.  The

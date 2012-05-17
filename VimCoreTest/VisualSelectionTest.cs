@@ -273,6 +273,19 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Get the selection for a backwards block that spans multiple lines.  In this case the 
+        /// point is actually ahead of the anchor point in the position sense but the selection is 
+        /// still backwards
+        /// </summary>
+        [Test]
+        public void CreateForPoints_Block_BackwardSeveralLines()
+        {
+            Create("big cat", "big dog");
+            var visualSelection = VisualSelection.CreateForPoints(VisualKind.Block, _textBuffer.GetPoint(2), _textBuffer.GetPointInLine(1, 1));
+            Assert.AreEqual(_textBuffer.GetBlockSpan(1, 2, 0, 2), visualSelection.AsBlock().Item1);
+        }
+
+        /// <summary>
         /// Block selection of width 1 with exclusive selection should still have a single
         /// column.  Even though normal block selections are shrunk by a column
         /// </summary>

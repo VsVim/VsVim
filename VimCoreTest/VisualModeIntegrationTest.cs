@@ -696,6 +696,20 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// A left movement in block selection should move the selection to the left
+            /// </summary>
+            [Test]
+            public void Select_Block_Backwards()
+            {
+                Create("big cats", "big dogs");
+                _textView.MoveCaretTo(2);
+                _vimBuffer.ProcessNotation("<C-Q>jh");
+                Assert.AreEqual(ModeKind.VisualBlock, _vimBuffer.ModeKind);
+                var blockSpan = new BlockSpan(_textView.GetPoint(1), 2, 2);
+                Assert.AreEqual(blockSpan, _textView.GetSelectionBlockSpan());
+            }
+
+            /// <summary>
             /// When selection is exclusive there should still be a single column selected in block
             /// mode even if the original width is 1
             /// </summary>

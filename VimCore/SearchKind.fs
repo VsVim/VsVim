@@ -29,6 +29,10 @@ type Path =
         | Path.Forward -> Path.Backward
         | Path.Backward -> Path.Forward
 
+    static member Create isForward = 
+        if isForward then Path.Forward 
+        else Path.Backward
+
 
 type SearchKind = 
      | Forward
