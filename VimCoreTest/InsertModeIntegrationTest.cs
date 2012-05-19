@@ -106,6 +106,16 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("icat");
                 Assert.AreEqual("hello world", _textBuffer.GetLine(0).GetText());
             }
+
+            [Test]
+            public void DoubleQuotesInRight()
+            {
+                Create("");
+                _vimBuffer.Process(VimKey.Escape);
+                _vimBuffer.Process(@":imap d ""hey""", enter: true);
+                _vimBuffer.Process("id");
+                Assert.AreEqual(@"""hey""", _textBuffer.GetLine(0).GetText());
+            }
         }
 
         [TestFixture]

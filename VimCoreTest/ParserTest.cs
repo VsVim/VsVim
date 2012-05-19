@@ -662,6 +662,30 @@ namespace Vim.UnitTest
                 AssertMap("no! l h", "l", "h", modes);
             }
 
+            /// <summary>
+            /// Make sure that we can handle a double quote in the left side of an argument and 
+            /// that it's not interpreted as a comment
+            /// </summary>
+            [Test]
+            public void DoubleQuotesInLeft()
+            {
+                AssertMapWithRemap(@"imap "" dog", @"""", "dog", KeyRemapMode.Insert);
+                AssertMapWithRemap(@"imap ""h dog", @"""h", "dog", KeyRemapMode.Insert);
+                AssertMapWithRemap(@"imap a""h dog", @"a""h", "dog", KeyRemapMode.Insert);
+            }
+
+            /// <summary>
+            /// Make sure that we can handle a double quote in the right side of an argument and 
+            /// that it's not interpreted as a comment
+            /// </summary>
+            [Test]
+            public void DoubleQuotesInRight()
+            {
+                AssertMapWithRemap(@"imap d """, "d", @"""", KeyRemapMode.Insert);
+                AssertMapWithRemap(@"imap d h""", "d", @"h""", KeyRemapMode.Insert);
+                AssertMapWithRemap(@"imap d h""a", "d", @"h""a", KeyRemapMode.Insert);
+            }
+
             [Test]
             public void Normal()
             {
@@ -803,7 +827,6 @@ namespace Vim.UnitTest
                 AssertUnmap("lunm a ", "a", KeyRemapMode.Language);
                 AssertUnmap("unmap! a ", "a", KeyRemapMode.Insert, KeyRemapMode.Command);
             }
-
         }
 
         [TestFixture]

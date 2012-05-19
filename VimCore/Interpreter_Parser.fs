@@ -189,7 +189,9 @@ type Parser
     /// Parse out the text until the given predicate returns false or the end
     /// of the line is reached.  None is return if the current token when
     /// called doesn't match the predicate
-    member x.ParseWhile predicate =
+    member x.ParseWhileEx flags predicate =
+        _tokenizer.ResetAtIndex flags
+
         let builder = System.Text.StringBuilder()
         let rec inner () =
             let token = _tokenizer.CurrentToken
@@ -197,7 +199,7 @@ type Parser
                 ()
             elif predicate token then
                 builder.AppendString token.TokenText
-                _tokenizer.MoveNextToken()
+                _tokenizer.MoveNextTokenEx flags
                 inner ()
             else
                 ()
@@ -207,6 +209,8 @@ type Parser
             None
         else
             builder.ToString() |> Some
+
+    member x.ParseWhile predicate = x.ParseWhileEx NextTokenFlags.None predicate
 
     member x.ParseNumber() =
         match _tokenizer.CurrentTokenKind with
@@ -223,7 +227,7 @@ type Parser
     /// Parse out a key notation argument.  Different than a word because it can accept items
     /// which are not letters such as numbers, <, >, etc ...
     member x.ParseKeyNotation() = 
-        x.ParseWhile (fun token -> 
+        x.ParseWhileEx NextTokenFlags.AllowDoubleQuote (fun token -> 
             match token.TokenKind with 
             | TokenKind.Blank -> false
             | _ -> true)
@@ -266,7 +270,9 @@ type Parser
             LineCommand.DisplayKeyMap (keyRemapModes, None) |> ParseResult.Succeeded
         | Some leftKeyNotation -> 
             x.SkipBlanks()
-            let rightKeyNotation = x.ParseRestOfLine()
+
+            let rightKeyNotation = x.ParseWhileEx NextTokenFlags.AllowDoubleQuote (fun _ -> true)
+            let rightKeyNotation = OptionUtil.getOrDefault "" rightKeyNotation
             if StringUtil.isBlanks rightKeyNotation then
                 LineCommand.DisplayKeyMap (keyRemapModes, Some leftKeyNotation) |> ParseResult.Succeeded
             else
