@@ -214,6 +214,16 @@ namespace VsVim.Implementation
                 return true;
             }
 
+            // In Vim ctlr+shift+f is exactly the same command as ctrl+f.  Vim simply ignores the 
+            // shift key when processing a control command with an alpha character.  Visual Studio
+            // though does differentiate.  Ctrl+f is differente than Ctrl+Shift+F.  So don't 
+            // process any alpha commands which have both Ctrl and Shift as Vim wouldn't 
+            // ever hit them
+            if (Char.IsLetter(first.Char) && first.KeyModifiers == (KeyModifiers.Shift | KeyModifiers.Control))
+            {
+                return true;
+            }
+
             return false;
         }
 

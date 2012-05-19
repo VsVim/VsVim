@@ -205,6 +205,21 @@ namespace VsVim.UnitTest
             Assert.AreEqual(0, list.Count);
         }
 
+        /// <summary>
+        /// In Vim ctlr+shift+f is exactly the same command as ctrl+f.  Vim simply ignores the 
+        /// shift key when processing a control command with an alpha character.  Visual Studio
+        /// though does differentiate.  Ctrl+f is differente than Ctrl+Shift+F.  So make sure
+        /// we don't remove a Ctrl+Shift+F else find all will be disabled by default
+        /// </summary>
+        [Test]
+        public void FindConflictingCommands_IgnoreControlPlusShift()
+        {
+            Create("::ctrl+shift+f", "::ctrl+f");
+            var inputs = new[] { KeyInputUtil.CharWithControlToKeyInput('f') };
+            var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandsSnapshot, new HashSet<KeyInput>(inputs));
+            Assert.AreEqual(1, list.Count);
+        }
+
         [Test]
         public void IsImportantScope1()
         {
