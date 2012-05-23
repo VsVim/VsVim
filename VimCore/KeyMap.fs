@@ -22,35 +22,30 @@ type Mapper
         _globalSettings : IVimGlobalSettings
     ) =
 
-    let _mappedList = System.Collections.Generic.List<KeyInput>()
-
     /// During the processing of mapping input we found a match for the inputKeySet to the 
-    /// specified KeyMapping entry.  This needs to be processed
+    /// specified KeyMapping entry.  Return the KeyInputSet which this definitively mapped
+    /// to (and requires no remapping) and the set of keys which still must be considered
+    /// for mapping
     member x.ProcessMapping (lhs : KeyInputSet) (keyMapping : KeyMapping) = 
 
-        let toMapList = 
+        let mappedSet, remainingSet = 
             if keyMapping.AllowRemap then
                 // Need to remap the {rhs} of the match here.  Check for the matching prefix
                 // case to prevent infinite remaps (:help recursive_mapping)
-                let rhs = 
-                    match lhs.FirstKeyInput, keyMapping.Right.FirstKeyInput with
-                    | Some leftKey, Some rightKey ->
-                        if leftKey = rightKey then
-                            _mappedList.Add(leftKey)
-                            keyMapping.Right.KeyInputs |> List.tail |> KeyInputSetUtil.OfList
-                        else
-                            keyMapping.Right
-                    | _ -> keyMapping.Right
-
-                /// Still need to map the {rhs}
-                rhs.KeyInputs
+                match lhs.FirstKeyInput, keyMapping.Right.FirstKeyInput with
+                | Some leftKey, Some rightKey ->
+                    if leftKey = rightKey then
+                        let mappedSet = KeyInputSet.OneKeyInput leftKey
+                        let remainingSet = keyMapping.Right.KeyInputs |> List.tail |> KeyInputSetUtil.OfList
+                        mappedSet, remainingSet
+                    else
+                        KeyInputSet.Empty, keyMapping.Right
+                | _ -> KeyInputSet.Empty, keyMapping.Right
 
             else
                 // No remapping case.  All of the {rhs} is simple a part of the output 
-                // here 
-                _mappedList.AddRange(keyMapping.Right.KeyInputs)
-
-                List.empty
+                // here and require no further mapping
+                keyMapping.Right, KeyInputSet.Empty
 
         // It's possible that the {lhs} doesn't fully match the {lhs} of the mode mapping
         // for the mapping.  This happens when we have an ambiguous mapping and need a 
@@ -61,45 +56,59 @@ type Mapper
         //
         // The user can then type aak and we will end up with a remaining KeyInputSet of k 
         // here which must still be mapped
-        let toMapList = 
+        let remainingSet = 
             if lhs.Length > keyMapping.Left.Length then
-                let list = lhs.KeyInputs |> ListUtil.skip keyMapping.Left.Length 
-                List.append toMapList list
+                let extraSet = 
+                    lhs.KeyInputs 
+                    |> Seq.ofList
+                    |> Seq.skip keyMapping.Left.Length
+                    |> KeyInputSetUtil.OfSeq
+                KeyInputSetUtil.Combine remainingSet extraSet
             else
-                toMapList
+                remainingSet
 
-        toMapList
+        mappedSet, remainingSet
 
     /// Get the mapping for the specified lhs in the particular map
     member x.GetKeyMapping()  =
 
-        let failed = ref false
-        let failedResult = ref KeyMappingResult.Recursive
+        let isDone = ref false
+        let result = ref KeyMappingResult.Recursive
         let depth = ref 0
-        let toMapList = ref _keyInputSet.KeyInputs
+        let mappedSet = ref KeyInputSet.Empty
+        let remainingSet = ref _keyInputSet
 
         let needsMoreInput () = 
-            if _mappedList.Count = 0 then
-                failedResult := KeyMappingResult.NeedsMoreInput _keyInputSet
-                failed := true
-            else
-                // At least one mapped so that's good enough for now
-                _mappedList.AddRange toMapList.Value
-                toMapList := List.empty
+            result := KeyMappingResult.NeedsMoreInput _keyInputSet
+            isDone := true
 
         let processMapping lhs keyMapping =
             depth := depth.Value + 1
             if depth.Value = _globalSettings.MaxMapDepth then
                 // Exceeded the maximum depth of recursive mappings.  Break out of this with 
                 // Recursive
-                failedResult := KeyMappingResult.Recursive
-                failed := true
+                result := KeyMappingResult.Recursive
+                isDone := true
             else
-                toMapList := x.ProcessMapping lhs keyMapping
+                let mapped, remaining = x.ProcessMapping lhs keyMapping
+                mappedSet := mapped
+                remainingSet := remaining
 
-        while toMapList.Value.Length > 0 && not failed.Value do
+                if mappedSet.Value.Length > 0 then
+                    // Once we mapped something definitively then we are done.  The rest of 
+                    // the mapping (if there is any) shouldn't be processed until the definitively
+                    // mapped keys are processed
+                    if remainingSet.Value.Length = 0 then
+                        result := KeyMappingResult.Mapped mappedSet.Value
+                    else
+                        result := KeyMappingResult.PartiallyMapped (mappedSet.Value, remainingSet.Value)
 
-            let lhs = toMapList.Value |> KeyInputSetUtil.OfSeq
+                    isDone := true
+
+        while not isDone.Value do
+            Contract.Assert(mappedSet.Value.Length = 0)
+
+            let lhs = remainingSet.Value
             let prefixMatchArray = 
                 _modeMap
                 |> Seq.filter (fun pair -> pair.Key.StartsWith(lhs))
@@ -115,21 +124,28 @@ type Mapper
                     |> Array.ofSeq
                 if brokenMatchArray.Length = 1 then
                     processMapping lhs brokenMatchArray.[0].Value
+                elif lhs.Length = 1 then
+                    // No mappings for the lhs so we are done
+                    result := KeyMappingResult.Mapped lhs
+                    isDone := true
                 else
-                    // No more mappings for this prefix so we are done 
-                    _mappedList.AddRange(toMapList.Value)
-                    toMapList := List.empty
+                    // First character is unmappable but the rest is still eligable for 
+                    // mapping after that character is complete 
+                    let mapped = KeyInputSet.OneKeyInput lhs.FirstKeyInput.Value
+                    let remaining = lhs.Rest |> KeyInputSetUtil.OfList
+                    result := KeyMappingResult.PartiallyMapped (mapped, remaining)
+                    isDone := true
+
             | [| pair |] -> 
                 if pair.Key = lhs then
                     processMapping lhs pair.Value
                 else
                     needsMoreInput()
-            | _ -> needsMoreInput()
+            | _ -> 
+                // More than one match so we need more input to disambiguate 
+                needsMoreInput()
 
-        if failed.Value then
-            failedResult.Value
-        else
-            _mappedList |> KeyInputSetUtil.OfSeq |> KeyMappingResult.Mapped
+        result.Value
 
 type internal KeyMap(_globalSettings : IVimGlobalSettings) =
 

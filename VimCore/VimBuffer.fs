@@ -221,8 +221,7 @@ type internal VimBuffer
             else
                 false
 
-        match x.GetKeyInputMapping keyInput with
-        | KeyMappingResult.Mapped keyInputSet -> 
+        let mapped (keyInputSet : KeyInputSet) =
             // Simplest case.  Mapped to a set of values so just consider the first one
             //
             // Note: This is not necessarily the provided KeyInput.  There could be several
@@ -232,6 +231,14 @@ type internal VimBuffer
             match keyInputSet.FirstKeyInput with
             | Some keyInput -> canProcess keyInput
             | None -> false
+
+        match x.GetKeyInputMapping keyInput with
+        | KeyMappingResult.Mapped keyInputSet -> 
+            mapped keyInputSet
+
+        | KeyMappingResult.PartiallyMapped (keyInputSet, _) ->
+            mapped keyInputSet
+
         | KeyMappingResult.NeedsMoreInput _ -> 
             // If this will simply further a key mapping then yes it can be processed
             // now
@@ -365,14 +372,11 @@ type internal VimBuffer
         let remainingSet = ref keyInputSet
         let processResult = ref (ProcessResult.Handled ModeSwitch.NoSwitch)
 
+        // Process the KeyInput values in the given set to completion without considering
+        // any further key mappings
         let processSet (keyInputSet : KeyInputSet) = 
-            match keyInputSet.FirstKeyInput with
-            | Some keyInput -> 
-                remainingSet := keyInputSet.KeyInputs |> ListUtil.skip 1 |> KeyInputSetUtil.OfList
+            for keyInput in keyInputSet.KeyInputs do
                 processResult := x.ProcessOneKeyInput keyInput
-            | None -> 
-                remainingSet := KeyInputSet.Empty
-                processResult := ProcessResult.Handled ModeSwitch.NoSwitch
 
         let processRecursive () = 
             x.RaiseErrorMessage Resources.Vim_RecursiveMapping
@@ -381,29 +385,42 @@ type internal VimBuffer
 
         while remainingSet.Value.Length > 0 do
             match x.KeyRemapMode with
-            | None -> processSet remainingSet.Value
+            | None -> 
+                // There is no mode for the current key stroke but may be for the subsequent
+                // ones in the set.  Process the first one only here 
+                remainingSet.Value.FirstKeyInput.Value |> KeyInputSet.OneKeyInput |> processSet
+                remainingSet := remainingSet.Value.Rest |> KeyInputSetUtil.OfList
             | Some keyRemapMode ->
                 let keyMappingResult = _keyMap.GetKeyMapping remainingSet.Value keyRemapMode
-                match keyMappingResult with
-                | KeyMappingResult.Mapped mappedKeyInputSet -> 
-                    mapCount := mapCount.Value + 1
-
-                    // The MaxMapCount value is a hueristic which VsVim implements to avoid an infinite
-                    // loop processing recursive input.  In a perfect world we would implement 
-                    // Ctrl-C support and allow users to break out of this loop but right now we don't
-                    // and this is a hueristic to prevent hanging the IDE until then
-                    if mapCount.Value = _vim.GlobalSettings.MaxMapCount then
-                        processRecursive()
-                    else
+                remainingSet := 
+                    match keyMappingResult with
+                    | KeyMappingResult.Mapped mappedKeyInputSet -> 
+                        mapCount := mapCount.Value + 1
                         processSet mappedKeyInputSet
-                | KeyMappingResult.NeedsMoreInput keyInputSet -> 
-                    _bufferedKeyInput <- Some keyInputSet
-                    let args = KeyInputSetEventArgs(keyInputSet)
-                    _keyInputBufferedEvent.Trigger x args
-                    processResult := ProcessResult.Handled ModeSwitch.NoSwitch
+                        KeyInputSet.Empty
+                    | KeyMappingResult.PartiallyMapped (mappedKeyInputSet, remainingSet) ->
+                        mapCount := mapCount.Value + 1
+                        processSet mappedKeyInputSet
+                        remainingSet
+                    | KeyMappingResult.NeedsMoreInput keyInputSet -> 
+                        _bufferedKeyInput <- Some keyInputSet
+                        let args = KeyInputSetEventArgs(keyInputSet)
+                        _keyInputBufferedEvent.Trigger x args
+                        processResult := ProcessResult.Handled ModeSwitch.NoSwitch
+                        KeyInputSet.Empty
+                    | KeyMappingResult.Recursive ->
+                        x.RaiseErrorMessage Resources.Vim_RecursiveMapping
+                        processResult := ProcessResult.Error
+                        KeyInputSet.Empty
+
+                // The MaxMapCount value is a hueristic which VsVim implements to avoid an infinite
+                // loop processing recursive input.  In a perfect world we would implement 
+                // Ctrl-C support and allow users to break out of this loop but right now we don't
+                // and this is a hueristic to prevent hanging the IDE until then
+                if remainingSet.Value.Length > 0 && mapCount.Value = _vim.GlobalSettings.MaxMapCount then
+                    x.RaiseErrorMessage Resources.Vim_RecursiveMapping
+                    processResult := ProcessResult.Error
                     remainingSet := KeyInputSet.Empty
-                | KeyMappingResult.Recursive ->
-                    processRecursive()
 
         processResult.Value
 

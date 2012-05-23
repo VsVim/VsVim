@@ -1057,6 +1057,18 @@ namespace Vim.UnitTest
             }
 
             [Test]
+            public void Regression_Issue896()
+            {
+                Create("");
+                _vimBuffer.Process(":nnoremap <Esc> :nohl<Enter><Esc>", enter: true);
+
+                var ran = false;
+                _vimData.HighlightSearchOneTimeDisabled += delegate { ran = true; };
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.IsTrue(ran);
+            }
+
+            [Test]
             public void ProcessBufferedKeyInputsShouldMap()
             {
                 Create("");
@@ -1106,6 +1118,22 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("dll");
                 Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
                 Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// In the case where the remapping is not considered for the first character becuase 
+            /// of the matching prefix problem (:nmap a ab) make sure that the remapping of the  
+            /// latter characters is considered in the mode which occurs after processing the 
+            /// first character
+            /// </summary>
+            [Test]
+            public void MatchingPrefixWithModeSwitch()
+            {
+                Create("");
+                _vimBuffer.Process(":nmap i ia", enter: true);
+                _vimBuffer.Process(":imap a hit", enter: true);
+                _vimBuffer.Process("i");
+                Assert.AreEqual("hit", _textBuffer.GetLine(0).GetText());
             }
         }
 

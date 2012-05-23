@@ -597,6 +597,23 @@ namespace Vim.UnitTest
             return (KeyMappingResult.Mapped)res;
         }
 
+        public static KeyMappingResult.PartiallyMapped AsPartiallyMapped(this KeyMappingResult res)
+        {
+            Assert.IsTrue(res.IsPartiallyMapped);
+            return (KeyMappingResult.PartiallyMapped)res;
+        }
+
+        public static KeyInputSet GetMappedKeyInputs(this KeyMappingResult res)
+        {
+            if (res.IsMapped)
+            {
+                return res.AsMapped().Item;
+            }
+
+            var partialMap = res.AsPartiallyMapped();
+            return KeyInputSetUtil.Combine(partialMap.item1, partialMap.item2);
+        }
+
         #endregion
 
         #region SettingValue

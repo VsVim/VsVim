@@ -1025,13 +1025,18 @@ type KeyRemapMode =
         | Command -> "Command"
         | Language -> "Language"
 
-// TODO: Thinking again that either mapped or nomapping should go
 [<RequireQualifiedAccess>]
 type KeyMappingResult =
 
-    /// The values were successfully mapped to the specified mapping. This 
-    /// could be the result of a no-op mapping
+    /// The values were mappend completely and require no further mapping. This 
+    /// could be a result of a no-op mapping though
     | Mapped of KeyInputSet
+
+    /// The values were partially mapped but further mapping is required once the
+    /// keys which were mapped are processed.  The values are 
+    ///
+    ///  mapped KeyInputSet * remaining KeyInputSet
+    | PartiallyMapped of KeyInputSet * KeyInputSet
 
     /// The mapping encountered a recursive element that had to be broken 
     | Recursive

@@ -116,6 +116,20 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("id");
                 Assert.AreEqual(@"""hey""", _textBuffer.GetLine(0).GetText());
             }
+
+            /// <summary>
+            /// Make sure that we properly don't cause recursion in the scenario where a 
+            /// noremap mapping refers back to itself in the non-0 position 
+            /// </summary>
+            [Test]
+            public void RecursiveInNoRemap()
+            {
+                Create("");
+                _vimBuffer.Process(VimKey.Escape);
+                _vimBuffer.Process(@":inoremap x axa", enter: true);
+                _vimBuffer.Process("ix");
+                Assert.AreEqual("axa", _textBuffer.GetLine(0).GetText());
+            }
         }
 
         [TestFixture]

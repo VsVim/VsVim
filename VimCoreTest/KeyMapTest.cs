@@ -27,8 +27,20 @@ namespace Vim.UnitTest
         {
             Assert.IsFalse(_map.GetKeyMappingsForMode(mode).Any(keyMapping => keyMapping.Left == lhs));
 
-            // When there is no mapping it should also be an identity function 
-            Assert.AreEqual(lhs, _map.GetKeyMappingResult(lhs, mode).AsMapped().Item);
+            mode = mode ?? KeyRemapMode.Normal;
+            var result = _map.GetKeyMappingResult(lhs, mode);
+            if (lhs.Length == 1)
+            {
+                Assert.IsTrue(result.IsMapped);
+            }
+            else 
+            {
+                Assert.IsTrue(result.IsPartiallyMapped);
+                Assert.AreEqual(lhs.FirstKeyInput.Value, result.AsPartiallyMapped().Item1.FirstKeyInput.Value);
+                Assert.AreEqual(1, result.AsPartiallyMapped().Item1.Length);
+            }
+
+            Assert.AreEqual(lhs, result.GetMappedKeyInputs());
         }
 
         protected void AssertMapping(string lhs, string expected, KeyRemapMode mode = null)
@@ -41,7 +53,23 @@ namespace Vim.UnitTest
             mode = mode ?? KeyRemapMode.Normal;
             var ret = _map.GetKeyMappingResult(lhs, mode);
             Assert.IsTrue(ret.IsMapped);
-            Assert.AreEqual(KeyInputSetUtil.OfString(expected), ret.AsMapped().Item);
+            Assert.AreEqual(KeyInputSetUtil.OfString(expected), ret.GetMappedKeyInputs());
+        }
+
+        protected void AssertPartialMapping(string lhs, string expectedMapped, string expectedRemaining, KeyRemapMode mode = null)
+        {
+            AssertPartialMapping(KeyInputSetUtil.OfString(lhs), expectedMapped, expectedRemaining, mode);
+        }
+
+        protected void AssertPartialMapping(KeyInputSet lhs, string expectedMapped, string expectedRemaining, KeyRemapMode mode = null)
+        {
+            mode = mode ?? KeyRemapMode.Normal;
+            var ret = _map.GetKeyMappingResult(lhs, mode);
+            Assert.IsTrue(ret.IsPartiallyMapped);
+
+            var partiallyMapped = ret.AsPartiallyMapped();
+            Assert.AreEqual(KeyInputSetUtil.OfString(expectedMapped), partiallyMapped.Item1);
+            Assert.AreEqual(KeyInputSetUtil.OfString(expectedRemaining), partiallyMapped.Item2);
         }
 
         [TestFixture]
@@ -208,9 +236,7 @@ namespace Vim.UnitTest
             {
                 Assert.IsTrue(_map.MapWithNoRemap("aa", "foo", KeyRemapMode.Normal));
                 Assert.IsTrue(_map.MapWithNoRemap("aaa", "bar", KeyRemapMode.Normal));
-                var ret = _map.GetKeyMappingResult("aab", KeyRemapMode.Normal);
-                Assert.IsTrue(ret.IsMapped);
-                Assert.AreEqual(KeyInputSetUtil.OfString("foob"), ret.AsMapped().Item);
+                AssertPartialMapping("aab", "foo", "b");
             }
 
             [Test]
@@ -235,7 +261,7 @@ namespace Vim.UnitTest
                 Map("aaa", "two");
                 Map("b", "three");
                 Map("bb", "four");
-                AssertMapping("aab", "oneb");
+                AssertPartialMapping("aab", "one", "b");
                 AssertMapping("aaa", "two");
             }
 
@@ -246,7 +272,7 @@ namespace Vim.UnitTest
                 Map("aaa", "two");
                 Map("b", "three");
                 Map("bb", "four");
-                AssertMapping("aabc", "onethreec");
+                AssertPartialMapping("aabc", "one", "bc");
             }
         }
 
@@ -272,7 +298,7 @@ namespace Vim.UnitTest
             public void SimpleLong()
             {
                 Map("a", "bcd");
-                AssertMapping("a", "bcd");
+                AssertPartialMapping("a", "b", "cd");
             }
 
             [Test]
@@ -289,7 +315,7 @@ namespace Vim.UnitTest
             {
                 Map("a", "bc");
                 Map("b", "d");
-                AssertMapping("a", "dc");
+                AssertPartialMapping("a", "d", "c");
             }
 
             /// <summary>
@@ -306,7 +332,7 @@ namespace Vim.UnitTest
             public void MapWithRemapSameKey()
             {
                 Map("j", "3j");
-                AssertMapping("j", "3j");
+                AssertPartialMapping("j", "3", "j");
             }
 
             /// <summary>
@@ -317,7 +343,7 @@ namespace Vim.UnitTest
             public void RightStartsWithLeft()
             {
                 Map("a", "ab");
-                AssertMapping("a", "ab");
+                AssertPartialMapping("a", "a", "b");
             }
 
             /// <summary>
@@ -330,7 +356,7 @@ namespace Vim.UnitTest
             {
                 Map("ab", "abcd");
                 Map("b", "hit");
-                AssertMapping("ab", "ahitcd");
+                AssertPartialMapping("ab", "a", "bcd");
             }
 
             [Test]
@@ -339,7 +365,7 @@ namespace Vim.UnitTest
                 Map("<D-k>", "gk");
                 var ki = new KeyInput(VimKey.LowerK, KeyModifiers.Command, FSharpOption.Create('k'));
                 var kiSet = KeyInputSet.NewOneKeyInput(ki);
-                AssertMapping(kiSet, "gk");
+                AssertPartialMapping(kiSet, "g", "k");
             }
 
             /// <summary>
@@ -353,7 +379,7 @@ namespace Vim.UnitTest
             {
                 Map("a", "bc");
                 Map("c", "d");
-                AssertMapping("a", "bc");
+                AssertPartialMapping("a", "b", "c");
             }
 
             /// <summary>
@@ -368,7 +394,7 @@ namespace Vim.UnitTest
             public void RecursivePrefix()
             {
                 Map("ab", "abcd");
-                AssertMapping("ab", "abcd");
+                AssertPartialMapping("ab", "a", "bcd");
             }
 
             /// <summary>
@@ -393,7 +419,30 @@ namespace Vim.UnitTest
                 Map("a", "b");
                 Map("aa", "none");
                 Map("bc", "done");
-                AssertMapping("ac", "done");
+                AssertPartialMapping("ac", "d", "one");
+            }
+
+            /// <summary>
+            /// When a remap operation completes and has length greater than 0 the remainder 
+            /// should be remappable
+            /// </summary>
+            [Test]
+            public void RestShouldBeRemappable()
+            {
+                Map("a", "could");
+                AssertPartialMapping("a", "c", "ould");
+            }
+
+            /// <summary>
+            /// If a remap operation resolves to a single value which itself is unmappable then 
+            /// the mapping is complete
+            /// </summary>
+            [Test]
+            public void SingleIsComplete()
+            {
+                Map("cat", "a");
+                Map("a", "b");
+                AssertMapping("cat", "b");
             }
         }
 
@@ -461,6 +510,18 @@ namespace Vim.UnitTest
                 Assert.IsTrue(_map.MapWithNoRemap("aa", "b", KeyRemapMode.Normal));
                 var res = _map.GetKeyMappingResult(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal);
                 Assert.IsTrue(res.IsNeedsMoreInput);
+            }
+
+            /// <summary>
+            /// If GetKeyMapping is called with a string that has no mapping then only the first
+            /// key is considered unmappable.  The rest is still eligable for mapping 
+            /// </summary>
+            [Test]
+            public void GetKeyMappingResult_RemainderIsMappable()
+            {
+                var result = _map.GetKeyMappingResult("dog", KeyRemapMode.Normal).AsPartiallyMapped();
+                Assert.AreEqual(KeyInputSetUtil.OfString("d"), result.Item1);
+                Assert.AreEqual(KeyInputSetUtil.OfString("og"), result.Item2);
             }
 
             /// <summary>
