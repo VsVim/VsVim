@@ -191,6 +191,15 @@ type internal VimBuffer
     /// Add an IMode into the IVimBuffer instance
     member x.AddMode mode = _modeMap.AddMode mode
 
+    /// Vim treats keypad keys exactly like thier non-keypad equivalent (keypad 
+    /// + is the same as a normal +).  The keypad does participate in key mapping
+    /// but once key mapping is finished the keypad keys are mapped back to their
+    /// non-keypad equivalent for processing
+    member x.GetNonKeypadEquivalent keyInput = 
+        match KeyInputUtil.GetNonKeypadEquivalent keyInput with
+        | None -> keyInput
+        | Some keyInput -> keyInput
+
     /// Can the KeyInput value be processed in the given the current state of the
     /// IVimBuffer
     member x.CanProcessCore keyInput allowDirectInsert =  
@@ -229,7 +238,7 @@ type internal VimBuffer
             // mapping which this KeyInput has broken.  So the first KeyInput we would
             // process is the first buffered KeyInput
             match keyInputSet.FirstKeyInput with
-            | Some keyInput -> canProcess keyInput
+            | Some keyInput -> keyInput |> x.GetNonKeypadEquivalent |> canProcess 
             | None -> false
 
         match x.GetKeyInputMapping keyInput with
@@ -376,6 +385,7 @@ type internal VimBuffer
         // any further key mappings
         let processSet (keyInputSet : KeyInputSet) = 
             for keyInput in keyInputSet.KeyInputs do
+                let keyInput = x.GetNonKeypadEquivalent keyInput
                 processResult := x.ProcessOneKeyInput keyInput
 
         let processRecursive () = 

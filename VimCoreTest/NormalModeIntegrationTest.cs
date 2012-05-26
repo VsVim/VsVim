@@ -1135,6 +1135,19 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("i");
                 Assert.AreEqual("hit", _textBuffer.GetLine(0).GetText());
             }
+
+            /// <summary>
+            /// Even though keypad divide is processed as simply / it should still go through key
+            /// mapping as kDivide
+            /// </summary>
+            [Test]
+            public void KeypadDivideMustMap()
+            {
+                Create("cat dog");
+                _vimBuffer.Process(":nmap <kDivide> i", enter: true);
+                _vimBuffer.Process(VimKey.KeypadDivide);
+                Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+            }
         }
 
         [TestFixture]
@@ -1367,6 +1380,167 @@ namespace Vim.UnitTest
                 _localSettings.TabStop = 4;
                 _vimBuffer.Process("cc");
                 Assert.AreEqual(6, _textView.GetCaretVirtualPoint().VirtualSpaces);
+            }
+        }
+
+        [TestFixture]
+        public sealed class IncrementalSearch : NormalModeIntegrationTest
+        {
+            [Test]
+            public void VeryNoMagic()
+            {
+                Create("dog", "cat");
+                _vimBuffer.Process(@"/\Vog", enter: true);
+                Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Make sure the caret goes to column 0 on the next line even if one of the 
+            /// motion adjustment applies (:help exclusive-linewise)
+            /// </summary>
+            [Test]
+            public void CaretOnColumnZero()
+            {
+                Create("hello", "world");
+                _textView.MoveCaretTo(2);
+                _vimBuffer.Process("/world", enter: true);
+                Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Make sure we respect the \c marker over the 'ignorecase' option even if it appears
+            /// at the end of the string
+            /// </summary>
+            [Test]
+            public void CaseInsensitiveAtEndOfSearhString()
+            {
+                Create("cat dog bear");
+                _vimBuffer.Process("/DOG");
+                Assert.IsTrue(_vimBuffer.IncrementalSearch.CurrentSearchResult.Value.IsNotFound);
+                _vimBuffer.Process(@"\c", enter: true);
+                Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Make sure we respect the \c marker over the 'ignorecase' option even if it appears
+            /// in the middle of the string
+            /// </summary>
+            [Test]
+            public void CaseInsensitiveInMiddleOfSearhString()
+            {
+                Create("cat dog bear");
+                _vimBuffer.Process(@"/D\cOG", enter: true);
+                Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+            }
+
+            [Test]
+            public void CaseSensitive()
+            {
+                Create("dogDOG", "cat");
+                _vimBuffer.Process(@"/\COG", enter: true);
+                Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// The case option in the search string should take precedence over the 
+            /// ignore case option
+            /// </summary>
+            [Test]
+            public void CaseSensitiveAgain()
+            {
+                Create("hello dog DOG");
+                _globalSettings.IgnoreCase = true;
+                _vimBuffer.Process(@"/\CDOG", enter: true);
+                Assert.AreEqual(10, _textView.GetCaretPoint());
+            }
+
+            [Test]
+            public void HandlesEscape()
+            {
+                Create("dog");
+                _vimBuffer.Process("/do");
+                _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            }
+
+            [Test]
+            public void HandlesEscapeInOperator()
+            {
+                Create("dog");
+                _vimBuffer.Process("d/do");
+                _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            }
+
+            [Test]
+            public void UsedAsOperatorMotion()
+            {
+                Create("dog cat tree");
+                _vimBuffer.Process("d/cat", enter: true);
+                Assert.AreEqual("cat tree", _textView.GetLine(0).GetText());
+                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            }
+
+            [Test]
+            public void DontMoveCaretDuringSearch()
+            {
+                Create("dog cat tree");
+                _vimBuffer.Process("/cat");
+                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            }
+
+            [Test]
+            public void MoveCaretAfterEnter()
+            {
+                Create("dog cat tree");
+                _vimBuffer.Process("/cat", enter: true);
+                Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Verify a couple of searches for {} work as expected
+            /// </summary>
+            [Test]
+            public void Braces()
+            {
+                Create("func() {   }");
+                Action<string, int> doSearch =
+                    (pattern, position) =>
+                    {
+                        _textView.MoveCaretTo(0);
+                        _vimBuffer.Process(pattern);
+                        _vimBuffer.Process(VimKey.Enter);
+                        Assert.AreEqual(position, _textView.GetCaretPoint().Position);
+                    };
+                doSearch(@"/{", 7);
+                doSearch(@"/}", 11);
+
+                _assertOnErrorMessage = false;
+                doSearch(@"/\<{\>", 0);  // Should fail
+                doSearch(@"/\<}\>", 0);  // Should fail
+            }
+
+            /// <summary>
+            /// Verify we can use the \1 in an incremental search for matches
+            /// </summary>
+            [Test]
+            public void GroupingMatch()
+            {
+                Create("dog", "dog::dog", "dog");
+                _vimBuffer.Process(@"/\(dog\)::\1", enter: true);
+                Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Unless kDivide is mapped to another key it should be processed exactly as 
+            /// / is processed
+            /// </summary>
+            [Test]
+            public void KeypadDivideShouldBeginSearch()
+            {
+                Create("cat dog");
+                _vimBuffer.ProcessNotation("<kDivide>a", enter: true);
+                Assert.AreEqual(1, _textView.GetCaretPoint().Position);
             }
         }
 
@@ -3047,151 +3221,6 @@ namespace Vim.UnitTest
                 _textView.MoveCaretToLine(1);
                 _vimBuffer.Process("yG");
                 Assert.AreEqual("cat" + Environment.NewLine + "bear", _vimBuffer.GetRegister(RegisterName.Unnamed).StringValue);
-            }
-
-            [Test]
-            public void IncrementalSearch_VeryNoMagic()
-            {
-                Create("dog", "cat");
-                _vimBuffer.Process(@"/\Vog", enter: true);
-                Assert.AreEqual(1, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// Make sure the caret goes to column 0 on the next line even if one of the 
-            /// motion adjustment applies (:help exclusive-linewise)
-            /// </summary>
-            [Test]
-            public void IncrementalSearch_CaretOnColumnZero()
-            {
-                Create("hello", "world");
-                _textView.MoveCaretTo(2);
-                _vimBuffer.Process("/world", enter: true);
-                Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// Make sure we respect the \c marker over the 'ignorecase' option even if it appears
-            /// at the end of the string
-            /// </summary>
-            [Test]
-            public void IncrementalSearch_CaseInsensitiveAtEndOfSearhString()
-            {
-                Create("cat dog bear");
-                _vimBuffer.Process("/DOG");
-                Assert.IsTrue(_vimBuffer.IncrementalSearch.CurrentSearchResult.Value.IsNotFound);
-                _vimBuffer.Process(@"\c", enter: true);
-                Assert.AreEqual(4, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// Make sure we respect the \c marker over the 'ignorecase' option even if it appears
-            /// in the middle of the string
-            /// </summary>
-            [Test]
-            public void IncrementalSearch_CaseInsensitiveInMiddleOfSearhString()
-            {
-                Create("cat dog bear");
-                _vimBuffer.Process(@"/D\cOG", enter: true);
-                Assert.AreEqual(4, _textView.GetCaretPoint().Position);
-            }
-
-            [Test]
-            public void IncrementalSearch_CaseSensitive()
-            {
-                Create("dogDOG", "cat");
-                _vimBuffer.Process(@"/\COG", enter: true);
-                Assert.AreEqual(4, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// The case option in the search string should take precedence over the 
-            /// ignore case option
-            /// </summary>
-            [Test]
-            public void IncrementalSearch_CaseSensitiveAgain()
-            {
-                Create("hello dog DOG");
-                _globalSettings.IgnoreCase = true;
-                _vimBuffer.Process(@"/\CDOG", enter: true);
-                Assert.AreEqual(10, _textView.GetCaretPoint());
-            }
-
-            [Test]
-            public void IncrementalSearch_HandlesEscape()
-            {
-                Create("dog");
-                _vimBuffer.Process("/do");
-                _vimBuffer.Process(KeyInputUtil.EscapeKey);
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-            }
-
-            [Test]
-            public void IncrementalSearch_HandlesEscapeInOperator()
-            {
-                Create("dog");
-                _vimBuffer.Process("d/do");
-                _vimBuffer.Process(KeyInputUtil.EscapeKey);
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-            }
-
-            [Test]
-            public void IncrementalSearch_UsedAsOperatorMotion()
-            {
-                Create("dog cat tree");
-                _vimBuffer.Process("d/cat", enter: true);
-                Assert.AreEqual("cat tree", _textView.GetLine(0).GetText());
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-            }
-
-            [Test]
-            public void IncrementalSearch_DontMoveCaretDuringSearch()
-            {
-                Create("dog cat tree");
-                _vimBuffer.Process("/cat");
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-            }
-
-            [Test]
-            public void IncrementalSearch_MoveCaretAfterEnter()
-            {
-                Create("dog cat tree");
-                _vimBuffer.Process("/cat", enter: true);
-                Assert.AreEqual(4, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// Verify a couple of searches for {} work as expected
-            /// </summary>
-            [Test]
-            public void IncrementalSearch_Braces()
-            {
-                Create("func() {   }");
-                Action<string, int> doSearch =
-                    (pattern, position) =>
-                    {
-                        _textView.MoveCaretTo(0);
-                        _vimBuffer.Process(pattern);
-                        _vimBuffer.Process(VimKey.Enter);
-                        Assert.AreEqual(position, _textView.GetCaretPoint().Position);
-                    };
-                doSearch(@"/{", 7);
-                doSearch(@"/}", 11);
-
-                _assertOnErrorMessage = false;
-                doSearch(@"/\<{\>", 0);  // Should fail
-                doSearch(@"/\<}\>", 0);  // Should fail
-            }
-
-            /// <summary>
-            /// Verify we can use the \1 in an incremental search for matches
-            /// </summary>
-            [Test]
-            public void IncrementalSearch_GroupingMatch()
-            {
-                Create("dog", "dog::dog", "dog");
-                _vimBuffer.Process(@"/\(dog\)::\1", enter: true);
-                Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
             }
 
             [Test]

@@ -465,3 +465,25 @@ module KeyInputUtil =
         let keyInput = VimKeyToKeyInput vimKey
         ApplyModifiers keyInput modifiers
 
+    let GetNonKeypadEquivalent (keyInput : KeyInput) = 
+
+        let apply vimKey = ApplyModifiersToVimKey vimKey keyInput.KeyModifiers |> Some
+
+        match keyInput.Key with
+        | VimKey.Keypad0 -> apply VimKey.Number0
+        | VimKey.Keypad1 -> apply VimKey.Number1
+        | VimKey.Keypad2 -> apply VimKey.Number2
+        | VimKey.Keypad3 -> apply VimKey.Number3
+        | VimKey.Keypad4 -> apply VimKey.Number4
+        | VimKey.Keypad5 -> apply VimKey.Number5
+        | VimKey.Keypad6 -> apply VimKey.Number6
+        | VimKey.Keypad7 -> apply VimKey.Number7
+        | VimKey.Keypad8 -> apply VimKey.Number8
+        | VimKey.Keypad9 -> apply VimKey.Number9
+        | VimKey.KeypadDecimal -> apply VimKey.Period
+        | VimKey.KeypadDivide -> apply VimKey.Forwardslash
+        | VimKey.KeypadMinus -> apply VimKey.Minus
+        | VimKey.KeypadMultiply -> apply VimKey.Asterick
+        | VimKey.KeypadPlus -> apply VimKey.Plus
+        | _ -> None
+

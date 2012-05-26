@@ -97,6 +97,8 @@ type internal SelectionChangeTracker
                 elif _textView.Selection.Mode = TextSelectionMode.Stream then 
                     if _vimBuffer.ModeKind = ModeKind.VisualLine then 
                         Some ModeKind.VisualLine
+                    elif _vimBuffer.ModeKind = ModeKind.Select then
+                        Some ModeKind.Select
                     else 
                         Some ModeKind.VisualCharacter 
                 else Some ModeKind.VisualBlock

@@ -33,6 +33,8 @@ namespace Vim.UnitTest
             var mode = _factory.Create<INormalMode>(behavior);
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             mode.SetupGet(x => x.KeyRemapMode).Returns(FSharpOption.Create(KeyRemapMode.Normal));
+            mode.Setup(x => x.OnLeave());
+            mode.Setup(x => x.OnClose());
             _vimBufferRaw.RemoveMode(_vimBufferRaw.NormalMode);
             _vimBufferRaw.AddMode(mode.Object);
             return mode;
@@ -42,6 +44,8 @@ namespace Vim.UnitTest
         {
             var mode = _factory.Create<IInsertMode>(behavior);
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
+            mode.Setup(x => x.OnLeave());
+            mode.Setup(x => x.OnClose());
             _vimBufferRaw.RemoveMode(_vimBuffer.InsertMode);
             _vimBufferRaw.AddMode(mode.Object);
             return mode;
@@ -51,6 +55,8 @@ namespace Vim.UnitTest
         {
             var mode = _factory.Create<IVisualMode>(behavior);
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualLine);
+            mode.Setup(x => x.OnLeave());
+            mode.Setup(x => x.OnClose());
             _vimBufferRaw.RemoveMode(_vimBuffer.VisualLineMode);
             _vimBufferRaw.AddMode(mode.Object);
             return mode;
@@ -573,6 +579,56 @@ namespace Vim.UnitTest
                 _vimBuffer.SwitchMode(mode.ModeKind, ModeArgument.None);
                 Assert.IsTrue(_vimBuffer.CanProcess(VimKey.Nop));
             }
+        }
+
+        /// <summary>
+        /// Make sure that we can handle keypad divide in normal mode as it's simply 
+        /// processed as a divide 
+        /// </summary>
+        [Test]
+        public void CanProcess_KeypadDivide()
+        {
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            Assert.IsTrue(_vimBuffer.CanProcess(VimKey.KeypadDivide));
+        }
+
+        /// <summary>
+        /// Make sure that the underlying mode doesn't see Keypad divide but instead sees 
+        /// divide as this is how Vim handles keys post mapping
+        /// </summary>
+        [Test]
+        public void CanProcess_KeypadDivideAsForwardSlash()
+        {
+            var normalMode = CreateAndAddNormalMode();
+            normalMode.Setup(x => x.OnEnter(ModeArgument.None)).Verifiable();
+            normalMode.Setup(x => x.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Forwardslash))).Returns(true);
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            Assert.IsTrue(_vimBuffer.CanProcess(VimKey.KeypadDivide));
+        }
+
+        /// <summary>
+        /// Make sure that we can handle keypad divide in normal mode as it's simply 
+        /// processed as a divide 
+        /// </summary>
+        [Test]
+        public void CanProcessAsCommand_KeypadDivide()
+        {
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            Assert.IsTrue(_vimBuffer.CanProcessAsCommand(VimKey.KeypadDivide));
+        }
+
+        /// <summary>
+        /// Make sure that the underlying mode doesn't see Keypad divide but instead sees 
+        /// divide as this is how Vim handles keys post mapping
+        /// </summary>
+        [Test]
+        public void CanProcessAsCommand_KeypadDivideAsForwardSlash()
+        {
+            var normalMode = CreateAndAddNormalMode();
+            normalMode.Setup(x => x.OnEnter(ModeArgument.None)).Verifiable();
+            normalMode.Setup(x => x.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Forwardslash))).Returns(true);
+            _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            Assert.IsTrue(_vimBuffer.CanProcess(VimKey.KeypadDivide));
         }
 
         /// <summary>

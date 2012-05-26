@@ -36,7 +36,6 @@
     <BootstrapperEnabled>true</BootstrapperEnabled>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
-
     <VisualStudioTarget>test</VisualStudioTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -144,6 +143,7 @@
     <Compile Include="CommandProcessorLegacyTest.cs" />
     <Compile Include="CommandRunnerTest.cs" />
     <Compile Include="CommandUtilTest.cs" />
+    <Compile Include="VimBufferTest.cs" />
     <Compile Include="SelectModeIntegrationTest.cs" />
     <Compile Include="SystemUtilTest.cs" />
     <Compile Include="TestableBulkOperations.cs" />
@@ -237,7 +237,6 @@
     <Compile Include="UndoRedoOperationsTest.cs" />
     <Compile Include="UndoTransactionTest.cs" />
     <Compile Include="VimBufferFactoryIntegrationTest.cs" />
-    <Compile Include="VimBufferTest.cs" />
     <Compile Include="VimIntegrationTests.cs" />
     <Compile Include="VimTest.cs" />
     <Compile Include="VisualModeTest.cs" />

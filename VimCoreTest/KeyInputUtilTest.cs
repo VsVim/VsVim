@@ -337,5 +337,32 @@ namespace Vim.UnitTest
                 }
             }
         }
+
+        [Test]
+        public void GetNonKeypadEquivalent_Numbers()
+        {
+            foreach (var i in Enumerable.Range(0, 10))
+            {
+                var keypadName = "Keypad" + i;
+                var keypad = (VimKey)Enum.Parse(typeof(VimKey), keypadName);
+                var equivalent = KeyInputUtil.GetNonKeypadEquivalent(KeyInputUtil.VimKeyToKeyInput(keypad));
+                Assert.AreEqual("Number" + i, equivalent.Value.Key.ToString());
+            }
+        }
+
+        [Test]
+        public void GetNonKeypadEquivalent_Divide()
+        {
+            var equivalent = KeyInputUtil.GetNonKeypadEquivalent(KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadDivide));
+            Assert.AreEqual(VimKey.Forwardslash, equivalent.Value.Key);
+        }
+
+        [Test]
+        public void GetNonKeypadEquivalent_PreserveModifiers()
+        {
+            var keyInput = KeyInputUtil.ApplyModifiersToVimKey(VimKey.KeypadDivide, KeyModifiers.Control);
+            var equivalent = KeyInputUtil.GetNonKeypadEquivalent(keyInput);
+            Assert.AreEqual(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Forwardslash, KeyModifiers.Control), equivalent.Value);
+        }
     }
 }

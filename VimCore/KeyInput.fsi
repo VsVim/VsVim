@@ -117,4 +117,7 @@ module KeyInputUtil =
     /// Given an alternate KeyInput get the value it targets
     val GetAlternateTarget : KeyInput -> KeyInput option
 
+    /// Get the alternate key for the given KeyInput if it's a key from the keypad 
+    val GetNonKeypadEquivalent : KeyInput -> KeyInput option 
+
 

@@ -757,6 +757,7 @@ namespace Vim.UnitTest
                 var i = KeyInputUtil.CharToKeyInput(c);
                 buf.Process(i);
             }
+
             if (enter)
             {
                 buf.Process(KeyInputUtil.EnterKey);
@@ -766,12 +767,17 @@ namespace Vim.UnitTest
         /// <summary>
         /// Process the full notation as a series of KeyInput values
         /// </summary>
-        public static void ProcessNotation(this IVimBuffer vimBuffer, string notation)
+        public static void ProcessNotation(this IVimBuffer vimBuffer, string notation, bool enter = false)
         {
             var keyInputSet = KeyNotationUtil.StringToKeyInputSet(notation);
             foreach (var keyInput in keyInputSet.KeyInputs)
             {
                 vimBuffer.Process(keyInput);
+            }
+
+            if (enter)
+            {
+                vimBuffer.Process(KeyInputUtil.EnterKey);
             }
         }
 
