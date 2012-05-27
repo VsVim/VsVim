@@ -73,7 +73,7 @@ namespace VsVim
                 _dte.ExecuteCommand(command, args);
                 return true;
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 return false;
             }
@@ -324,11 +324,20 @@ namespace VsVim
         }
 
         /// <summary>
-        /// Verticaly window splits are not supported in visual studio
+        /// Perform a vertical buffer split, which is essentially just another window in a different tab group.
         /// </summary>
         public override HostResult SplitViewVertically(ITextView value)
         {
-            return HostResult.NewError("Unsupported in Visual Studio");
+            try
+            {
+                _dte.ExecuteCommand("Window.NewWindow");
+                _dte.ExecuteCommand("Window.NewVerticalTabGroup");
+                return HostResult.Success;
+            }
+            catch (Exception e)
+            {
+                return HostResult.NewError(e.Message);
+            }
         }
 
         public override void MoveViewDown(ITextView textView)
@@ -342,19 +351,19 @@ namespace VsVim
         }
 
         /// <summary>
-        /// Vertical splits are not supported in Visual Studio so this method is not applicable
+        /// Not yet implemented!
         /// </summary>
         public override void MoveViewLeft(ITextView value)
         {
-            // Unsupported
+            // Not yet implemented!
         }
 
         /// <summary>
-        /// Vertical splits are not supported in Visual Studio so this method is not applicable
+        /// Not yet implemented!
         /// </summary>
         public override void MoveViewRight(ITextView value)
         {
-            // Unsupported
+            // Not yet implemented!
         }
 
         public override bool GoToGlobalDeclaration(ITextView textView, string target)

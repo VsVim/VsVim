@@ -1138,15 +1138,23 @@ type Interpreter
         RunResult.Completed
 
     /// Split the window
-    member x.RunSplit lineRange fileOptions commandOption = 
-        if not (List.isEmpty fileOptions) then
-            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
-        elif Option.isSome commandOption then
-            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++cmd]")
-        else
-            match _vimHost.SplitViewHorizontally _textView with
+    member x.RunSplit behavior fileOptions commandOption = 
+        let SplitArgumentsAreValid fileOptions commandOption =
+            if not (List.isEmpty fileOptions) then
+                _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
+                false
+            elif Option.isSome commandOption then
+                _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++cmd]")
+                false
+            else
+                true
+
+        if SplitArgumentsAreValid fileOptions commandOption then
+            match behavior _textView with
             | HostResult.Success -> ()
             | HostResult.Error msg -> _statusUtil.OnError msg
+        else
+            ()
 
         RunResult.Completed
 
@@ -1294,6 +1302,7 @@ type Interpreter
         | LineCommand.GoToLastTab -> x.RunGoToLastTab()
         | LineCommand.GoToNextTab count -> x.RunGoToNextTab count
         | LineCommand.GoToPreviousTab count -> x.RunGoToPreviousTab count
+        | LineCommand.HorizontalSplit (lineRange, fileOptions, commandOptions) -> x.RunSplit _vimHost.SplitViewHorizontally fileOptions commandOptions
         | LineCommand.Join (lineRange, joinKind) -> x.RunJoin lineRange joinKind
         | LineCommand.JumpToLastLine -> x.RunJumpToLastLine()
         | LineCommand.JumpToLine number -> x.RunJumpToLine number
@@ -1319,11 +1328,11 @@ type Interpreter
         | LineCommand.ShiftLeft lineRange -> x.RunShiftLeft lineRange
         | LineCommand.ShiftRight lineRange -> x.RunShiftRight lineRange
         | LineCommand.Source (hasBang, filePath) -> x.RunSource hasBang filePath
-        | LineCommand.Split (lineRange, fileOptions, commandOptions) -> x.RunSplit lineRange fileOptions commandOptions
         | LineCommand.Substitute (lineRange, pattern, replace, flags) -> x.RunSubstitute lineRange pattern replace flags
         | LineCommand.SubstituteRepeat (lineRange, substituteFlags) -> x.RunSubstituteRepeatLast lineRange substituteFlags
         | LineCommand.Undo -> x.RunUndo()
         | LineCommand.UnmapKeys (keyNotation, keyRemapModes, mapArgumentList) -> x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList
+        | LineCommand.VerticalSplit (lineRange, fileOptions, commandOptions) -> x.RunSplit _vimHost.SplitViewVertically fileOptions commandOptions
         | LineCommand.VisualStudioCommand (command, argument) -> x.RunVisualStudioCommand command argument
         | LineCommand.Write (lineRange, hasBang, fileOptionList, filePath) -> x.RunWrite lineRange hasBang fileOptionList filePath
         | LineCommand.WriteAll hasBang -> x.RunWriteAll hasBang
