@@ -105,6 +105,7 @@ type Parser
         ("undo", "u")
         ("vglobal", "v")
         ("vscmd", "vsc")
+        ("vsplit", "vsp")
         ("write","w")
         ("wq", "")
         ("wall", "wa")
@@ -1163,14 +1164,14 @@ type Parser
         ParseResult.Succeeded (LineCommand.Source (hasBang, fileName))
 
     /// Parse out the :split commnad
-    member x.ParseSplit lineRange =
+    member x.ParseSplit splitType lineRange =
         x.SkipBlanks()
         let fileOptionList = x.ParseFileOptions()
 
         x.SkipBlanks()
         let commandOption = x.ParseCommandOption()
 
-        ParseResult.Succeeded (LineCommand.Split (lineRange, fileOptionList, commandOption))
+        ParseResult.Succeeded (splitType (lineRange, fileOptionList, commandOption))
 
     /// Parse out the :qal and :quitall commands
     member x.ParseQuitAll () =
@@ -1292,7 +1293,7 @@ type Parser
                 | "registers" -> noRange x.ParseDisplayRegisters 
                 | "set" -> noRange x.ParseSet
                 | "source" -> noRange x.ParseSource
-                | "split" -> x.ParseSplit lineRange
+                | "split" -> x.ParseSplit LineCommand.HorizontalSplit lineRange
                 | "substitute" -> x.ParseSubstitute lineRange (fun x -> x)
                 | "smagic" -> x.ParseSubstituteMagic lineRange
                 | "smap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Select])
@@ -1313,6 +1314,7 @@ type Parser
                 | "vmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Visual;KeyRemapMode.Select])
                 | "vmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Visual; KeyRemapMode.Select])
                 | "vscmd" -> noRange (fun () -> x.ParseVisualStudioCommand ())
+                | "vsplit" -> x.ParseSplit LineCommand.VerticalSplit lineRange
                 | "vnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Visual;KeyRemapMode.Select])
                 | "vunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Visual;KeyRemapMode.Select])
                 | "wall" -> noRange x.ParseWriteAll
