@@ -1,12 +1,11 @@
 ﻿using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Operations;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 using Vim.Extensions;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public class UndoTransactionTest
     {
         private MockRepository _factory;
@@ -31,14 +30,14 @@ namespace Vim.UnitTest
             _transaction = _transactionRaw;
         }
 
-        [Test]
+        [Fact]
         public void Complete1()
         {
             Create(haveRealTransaction: false);
             _transaction.Complete();
         }
 
-        [Test]
+        [Fact]
         public void Complete2()
         {
             Create();
@@ -47,14 +46,14 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Cancel1()
         {
             Create(haveRealTransaction: false);
             _transaction.Cancel();
         }
 
-        [Test]
+        [Fact]
         public void Cancel2()
         {
             Create();

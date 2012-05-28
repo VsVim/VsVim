@@ -1,5 +1,5 @@
 ﻿using Microsoft.VisualStudio.Text.Editor;
-using NUnit.Framework;
+using Xunit;
 
 namespace Vim.UnitTest
 {
@@ -7,17 +7,15 @@ namespace Vim.UnitTest
     /// Test the synchronization of settings from the IVimLocalSettings to the 
     /// associated IEditorOptions value
     /// </summary>
-    [TestFixture]
     public sealed class EditorToSettingSynchronizerTest : VimTestBase
     {
-        private EditorToSettingSynchronizer _synchronizer;
-        private IVimBuffer _buffer;
-        private IVimGlobalSettings _globalSettings;
-        private IVimLocalSettings _localSettings;
-        private IEditorOptions _editorOptions;
+        private readonly EditorToSettingSynchronizer _synchronizer;
+        private readonly IVimBuffer _buffer;
+        private readonly IVimGlobalSettings _globalSettings;
+        private readonly IVimLocalSettings _localSettings;
+        private readonly IEditorOptions _editorOptions;
 
-        [SetUp]
-        public void Setup()
+        public EditorToSettingSynchronizerTest()
         {
             _synchronizer = new EditorToSettingSynchronizer(EditorOptionsFactoryService, Vim);
 
@@ -27,36 +25,30 @@ namespace Vim.UnitTest
             _editorOptions = _buffer.TextView.Options;
         }
 
-        [TearDown]
-        public void TearDown()
-        {
-            _buffer.Close();
-        }
-
         /// <summary>
         /// Verify that it's synchronizing 'tabstop' between the two places
         /// </summary>
-        [Test]
+        [Fact]
         public void Sync_TabStop()
         {
             _localSettings.TabStop = 42;
-            Assert.AreEqual(42, _editorOptions.GetOptionValue(DefaultOptions.TabSizeOptionId));
+            Assert.Equal(42, _editorOptions.GetOptionValue(DefaultOptions.TabSizeOptionId));
 
             _editorOptions.SetOptionValue(DefaultOptions.TabSizeOptionId, 13);
-            Assert.AreEqual(13, _localSettings.TabStop);
+            Assert.Equal(13, _localSettings.TabStop);
         }
 
         /// <summary>
         /// Verify that it's synchronizing 'expandtab' between the two places
         /// </summary>
-        [Test]
+        [Fact]
         public void Sync_ExpandTab()
         {
             _localSettings.ExpandTab = true;
-            Assert.IsTrue(_editorOptions.GetOptionValue(DefaultOptions.ConvertTabsToSpacesOptionId));
+            Assert.True(_editorOptions.GetOptionValue(DefaultOptions.ConvertTabsToSpacesOptionId));
 
             _editorOptions.SetOptionValue(DefaultOptions.ConvertTabsToSpacesOptionId, false);
-            Assert.IsFalse(_localSettings.ExpandTab);
+            Assert.False(_localSettings.ExpandTab);
         }
     }
 }

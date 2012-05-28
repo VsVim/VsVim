@@ -1,25 +1,22 @@
 ﻿using System;
-using NUnit.Framework;
+using Xunit;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
-    public sealed class SystemUtilTest
+    public sealed class SystemUtilTest : IDisposable
     {
-        private string _savedHome;
-        private string _savedHomeDrive;
-        private string _savedHomePath;
+        private readonly string _savedHome;
+        private readonly string _savedHomeDrive;
+        private readonly string _savedHomePath;
 
-        [SetUp]
-        public void Setup()
+        public SystemUtilTest()
         {
             _savedHome = Environment.GetEnvironmentVariable("HOME");
             _savedHomeDrive = Environment.GetEnvironmentVariable("HOMEDRIVE");
             _savedHomePath = Environment.GetEnvironmentVariable("HOMEPATH");
         }
 
-        [TearDown]
-        public void TearDown()
+        public void Dispose()
         {
             Environment.SetEnvironmentVariable("HOME", _savedHome);
             Environment.SetEnvironmentVariable("HOMEDRIVE", _savedHomeDrive);
@@ -29,50 +26,50 @@ namespace Vim.UnitTest
         /// <summary>
         /// %HOME% should win here
         /// </summary>
-        [Test]
+        [Fact]
         public void GetHome_PreferHome()
         {
             Environment.SetEnvironmentVariable("HOME", @"c:\foo");
-            Assert.AreEqual(@"c:\foo", SystemUtil.GetHome());
+            Assert.Equal(@"c:\foo", SystemUtil.GetHome());
         }
 
         /// <summary>
         /// If %HOME% is not present then it should prefer %HOMEDRIVE%%HOMEPATH%
         /// </summary>
-        [Test]
+        [Fact]
         public void GetHome_ThenPreferHomePathAndDrive()
         {
             Environment.SetEnvironmentVariable("HOME", null);
             Environment.SetEnvironmentVariable("HOMEDRIVE", @"e:\");
             Environment.SetEnvironmentVariable("HOMEPATH", @"bar");
-            Assert.AreEqual(@"e:\bar", SystemUtil.GetHome());
+            Assert.Equal(@"e:\bar", SystemUtil.GetHome());
         }
 
         /// <summary>
         /// Don't resolve paths that don't start with a ~
         /// </summary>
-        [Test]
+        [Fact]
         public void ResolvePath_None()
         {
-            Assert.AreEqual(@"c:\foo", SystemUtil.ResolvePath(@"c:\foo"));
+            Assert.Equal(@"c:\foo", SystemUtil.ResolvePath(@"c:\foo"));
         }
 
-        [Test]
+        [Fact]
         public void ResolvePath_Simple()
         {
             Environment.SetEnvironmentVariable("HOME", @"c:\foo");
-            Assert.AreEqual(@"c:\foo\bar", SystemUtil.ResolvePath(@"~\bar"));
+            Assert.Equal(@"c:\foo\bar", SystemUtil.ResolvePath(@"~\bar"));
         }
 
         /// <summary>
         /// Test the cases we expect to work for CombinePath
         /// </summary>
-        [Test]
+        [Fact]
         public void CombinePath()
         {
-            Assert.AreEqual(@"c:\foo", SystemUtil.CombinePath(@"c:", @"\foo"));
-            Assert.AreEqual(@"c:\foo", SystemUtil.CombinePath(@"c:\", @"\foo"));
-            Assert.AreEqual(@"c:\foo", SystemUtil.CombinePath(@"c:\", @"foo"));
+            Assert.Equal(@"c:\foo", SystemUtil.CombinePath(@"c:", @"\foo"));
+            Assert.Equal(@"c:\foo", SystemUtil.CombinePath(@"c:\", @"\foo"));
+            Assert.Equal(@"c:\foo", SystemUtil.CombinePath(@"c:\", @"foo"));
         }
 
     }

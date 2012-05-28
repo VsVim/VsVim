@@ -1,39 +1,37 @@
 ﻿using System.Linq;
-using NUnit.Framework;
+using Xunit;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public sealed class DisabledModeTest : VimTestBase
     {
-        private DisabledMode _modeRaw;
-        private IDisabledMode _mode;
+        private readonly DisabledMode _modeRaw;
+        private readonly IDisabledMode _mode;
 
-        [SetUp]
-        public void Init()
+        public DisabledModeTest()
         {
             var vimBufferData = CreateVimBufferData(CreateTextView(""));
             _modeRaw = new DisabledMode(vimBufferData);
             _mode = _modeRaw;
         }
 
-        [Test]
+        [Fact]
         public void CanProcess1()
         {
-            Assert.IsTrue(_mode.CanProcess(GlobalSettings.DisableAllCommand));
+            Assert.True(_mode.CanProcess(GlobalSettings.DisableAllCommand));
         }
 
-        [Test]
+        [Fact]
         public void Commands1()
         {
-            Assert.IsTrue(_mode.CommandNames.First().KeyInputs.First().Equals(GlobalSettings.DisableAllCommand));
+            Assert.True(_mode.CommandNames.First().KeyInputs.First().Equals(GlobalSettings.DisableAllCommand));
         }
 
-        [Test]
+        [Fact]
         public void Process1()
         {
             var res = _mode.Process(GlobalSettings.DisableAllCommand);
-            Assert.IsTrue(res.IsSwitchMode(ModeKind.Normal));
+            Assert.True(res.IsSwitchMode(ModeKind.Normal));
         }
     }
 }

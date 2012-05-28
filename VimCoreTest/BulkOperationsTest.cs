@@ -1,19 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public sealed class BulkOperationsTest
     {
-        private Mock<IVimHost> _vimHost;
-        private BulkOperations _bulkOperationsRaw;
-        private IBulkOperations _bulkOperations;
+        private readonly Mock<IVimHost> _vimHost;
+        private readonly BulkOperations _bulkOperationsRaw;
+        private readonly IBulkOperations _bulkOperations;
 
-        [SetUp]
-        public void Setup()
+        public BulkOperationsTest()
         {
             _vimHost = new Mock<IVimHost>(MockBehavior.Loose);
             _bulkOperationsRaw = new BulkOperations(_vimHost.Object);
@@ -23,27 +21,27 @@ namespace Vim.UnitTest
         /// <summary>
         /// Make sure a single Begin sets the In value
         /// </summary>
-        [Test]
+        [Fact]
         public void BeginBulkOperations_ShouldSetIn()
         {
             using (_bulkOperations.BeginBulkOperation())
             {
-                Assert.IsTrue(_bulkOperations.InBulkOperation);
+                Assert.True(_bulkOperations.InBulkOperation);
             }
-            Assert.IsFalse(_bulkOperations.InBulkOperation);
+            Assert.False(_bulkOperations.InBulkOperation);
         }
 
         /// <summary>
         /// Ensure that nested calls to Begin function properly
         /// </summary>
-        [Test]
+        [Fact]
         public void BeginBulkOperations_Nested()
         {
             var stack = new Stack<IDisposable>();
             for (var i = 0; i < 10; i++)
             {
                 stack.Push(_bulkOperations.BeginBulkOperation());
-                Assert.IsTrue(_bulkOperations.InBulkOperation);
+                Assert.True(_bulkOperations.InBulkOperation);
             }
 
             while (stack.Count > 0)
@@ -51,13 +49,13 @@ namespace Vim.UnitTest
                 stack.Pop().Dispose();
             }
 
-            Assert.IsFalse(_bulkOperations.InBulkOperation);
+            Assert.False(_bulkOperations.InBulkOperation);
         }
 
         /// <summary>
         /// Make sure the begin / end methods are called on the host
         /// </summary>
-        [Test]
+        [Fact]
         public void BeginBulkOperations_CallHostOperations()
         {
             var beginCount = 0;
@@ -66,19 +64,19 @@ namespace Vim.UnitTest
             _vimHost.Setup(x => x.EndBulkOperation()).Callback(() => endCount++);
             using (_bulkOperations.BeginBulkOperation())
             {
-                Assert.AreEqual(1, beginCount);
-                Assert.AreEqual(0, endCount);
+                Assert.Equal(1, beginCount);
+                Assert.Equal(0, endCount);
             }
 
-            Assert.AreEqual(1, beginCount);
-            Assert.AreEqual(1, endCount);
+            Assert.Equal(1, beginCount);
+            Assert.Equal(1, endCount);
         }
 
         /// <summary>
         /// Make sure the begin / end methods are called on the host once for nested
         /// bulk operations
         /// </summary>
-        [Test]
+        [Fact]
         public void BeginBulkOperations_CallHostOperationsNested()
         {
             var beginCount = 0;
@@ -90,8 +88,8 @@ namespace Vim.UnitTest
             for (var i = 0; i < 10; i++)
             {
                 stack.Push(_bulkOperations.BeginBulkOperation());
-                Assert.AreEqual(1, beginCount);
-                Assert.AreEqual(0, endCount);
+                Assert.Equal(1, beginCount);
+                Assert.Equal(0, endCount);
             }
 
             while (stack.Count > 0)
@@ -99,8 +97,8 @@ namespace Vim.UnitTest
                 stack.Pop().Dispose();
             }
 
-            Assert.AreEqual(1, beginCount);
-            Assert.AreEqual(1, endCount);
+            Assert.Equal(1, beginCount);
+            Assert.Equal(1, endCount);
         }
     }
 }

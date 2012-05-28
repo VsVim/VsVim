@@ -5,13 +5,12 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 using Vim.Extensions;
 using Vim.Modes.SubstituteConfirm;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public sealed class SubstituteConfirmModeTest : VimTestBase
     {
         private MockRepository _factory;
@@ -59,164 +58,170 @@ namespace Vim.UnitTest
             var expectedOption = expected.HasValue
                 ? FSharpOption.Create(expected.Value)
                 : FSharpOption<SnapshotSpan>.None;
-            Assert.IsTrue(didSee);
-            Assert.AreEqual(expectedOption, _mode.CurrentMatch);
+            Assert.True(didSee);
+            Assert.Equal(expectedOption, _mode.CurrentMatch);
         }
 
-        [Test]
+        [Fact]
         public void ModeKind_IsCorrect()
         {
             Create();
-            Assert.AreEqual(ModeKind.SubstituteConfirm, _mode.ModeKind);
+            Assert.Equal(ModeKind.SubstituteConfirm, _mode.ModeKind);
         }
 
-        [Test]
-        [Description("In practice this shouldn't happen but guard against a coding error here")]
+        /// <summary>
+        /// In practice this shouldn't happen but guard against a coding error here
+        /// </summary>
+        [Fact]
         public void OnEnter_NoArgument()
         {
             Create();
             _mode.OnEnter(ModeArgument.None);
-            Assert.IsTrue(_mode.CurrentMatch.IsNone());
-            Assert.IsTrue(_mode.CurrentSubstitute.IsNone());
+            Assert.True(_mode.CurrentMatch.IsNone());
+            Assert.True(_mode.CurrentSubstitute.IsNone());
         }
 
-        [Test]
+        [Fact]
         public void OnEnter_StandardArgument()
         {
             Create("cat", "dog", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "a", "b"));
-            Assert.AreEqual(_textBuffer.GetLine(0).Extent, _mode.CurrentMatch.Value);
+            Assert.Equal(_textBuffer.GetLine(0).Extent, _mode.CurrentMatch.Value);
         }
 
-        [Test]
+        [Fact]
         public void InputYes_OnlyOneMatchInBuffer()
         {
             Create("cat", "dog", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
             _mode.Process('y');
-            Assert.AreEqual("bird", _textBuffer.GetLine(0).GetText());
+            Assert.Equal("bird", _textBuffer.GetLine(0).GetText());
         }
 
-        [Test]
+        [Fact]
         public void InputYes_OnlyOneMatchInRange()
         {
             Create("cat", "cat", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird", range: _textBuffer.GetLineRange(0)));
-            Assert.IsTrue(_mode.Process('y').IsSwitchMode(ModeKind.Normal));
-            Assert.AreEqual("bird", _textBuffer.GetLine(0).GetText());
-            Assert.AreEqual("cat", _textBuffer.GetLine(1).GetText());
+            Assert.True(_mode.Process('y').IsSwitchMode(ModeKind.Normal));
+            Assert.Equal("bird", _textBuffer.GetLine(0).GetText());
+            Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
         }
 
-        [Test]
+        [Fact]
         public void InputYes_TwoMatchesOnLineButNotReplaceAll()
         {
             Create("cat cat", "dog", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetSpan(0, 3), "cat", "bird", range: _textBuffer.GetLineRange(0)));
-            Assert.IsTrue(_mode.Process('y').IsSwitchMode(ModeKind.Normal));
-            Assert.AreEqual("bird cat", _textBuffer.GetLine(0).GetText());
+            Assert.True(_mode.Process('y').IsSwitchMode(ModeKind.Normal));
+            Assert.Equal("bird cat", _textBuffer.GetLine(0).GetText());
         }
 
-        [Test]
-        [Description("Should replace and move to next match")]
+        /// <summary>
+        /// Should replace and move to next match
+        /// </summary>
+        [Fact]
         public void InputYes_TwoMatchesOnLineAndReplaceAll()
         {
             Create("cat cat", "dog", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetSpan(0, 3), "cat", "bird", SubstituteFlags.ReplaceAll, range: _textBuffer.GetLineRange(0)));
             _operations.Setup(x => x.MoveCaretToPointAndEnsureVisible(_textBuffer.GetPoint(5))).Verifiable();
-            Assert.IsTrue(_mode.Process('y').IsHandledNoSwitch());
-            Assert.AreEqual("bird cat", _textBuffer.GetLine(0).GetText());
-            Assert.AreEqual(_textBuffer.GetSpan(5, 3), _mode.CurrentMatch.Value);
+            Assert.True(_mode.Process('y').IsHandledNoSwitch());
+            Assert.Equal("bird cat", _textBuffer.GetLine(0).GetText());
+            Assert.Equal(_textBuffer.GetSpan(5, 3), _mode.CurrentMatch.Value);
             _factory.Verify();
         }
 
-        [Test]
-        [Description("Should replace and move to next match")]
+        /// <summary>
+        /// Should replace and move to next match
+        /// </summary>
+        [Fact]
         public void InputYes_TwoMatchesInRange()
         {
             Create("cat", "cat", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird", SubstituteFlags.ReplaceAll, range: _textBuffer.GetLineRange(0, 1)));
-            Assert.IsTrue(_mode.Process('y').IsHandledNoSwitch());
-            Assert.AreEqual("bird", _textBuffer.GetLine(0).GetText());
-            Assert.AreEqual(_textBuffer.GetLine(1).Extent, _mode.CurrentMatch.Value);
+            Assert.True(_mode.Process('y').IsHandledNoSwitch());
+            Assert.Equal("bird", _textBuffer.GetLine(0).GetText());
+            Assert.Equal(_textBuffer.GetLine(1).Extent, _mode.CurrentMatch.Value);
         }
 
-        [Test]
+        [Fact]
         public void InputEscape_InMatch()
         {
             Create("cat", "dog", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
-            Assert.IsTrue(_mode.Process(KeyInputUtil.EscapeKey).IsSwitchMode(ModeKind.Normal));
+            Assert.True(_mode.Process(KeyInputUtil.EscapeKey).IsSwitchMode(ModeKind.Normal));
         }
 
-        [Test]
+        [Fact]
         public void InputQuit_InMatch()
         {
             Create("cat", "dog", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
-            Assert.IsTrue(_mode.Process('q').IsSwitchMode(ModeKind.Normal));
+            Assert.True(_mode.Process('q').IsSwitchMode(ModeKind.Normal));
         }
 
-        [Test]
+        [Fact]
         public void InputLast_OnlyOneMatch()
         {
             Create("cat", "dog", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
-            Assert.IsTrue(_mode.Process('l').IsSwitchMode(ModeKind.Normal));
-            Assert.AreEqual("bird", _textBuffer.GetLine(0).GetText());
+            Assert.True(_mode.Process('l').IsSwitchMode(ModeKind.Normal));
+            Assert.Equal("bird", _textBuffer.GetLine(0).GetText());
         }
 
-        [Test]
+        [Fact]
         public void InputLast_TwoMatchesInRange()
         {
             Create("cat", "cat", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
-            Assert.IsTrue(_mode.Process('l').IsSwitchMode(ModeKind.Normal));
-            Assert.AreEqual("bird", _textBuffer.GetLine(0).GetText());
-            Assert.AreEqual("cat", _textBuffer.GetLine(1).GetText());
+            Assert.True(_mode.Process('l').IsSwitchMode(ModeKind.Normal));
+            Assert.Equal("bird", _textBuffer.GetLine(0).GetText());
+            Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
         }
 
-        [Test]
+        [Fact]
         public void InputNo_OnlyOneMatch()
         {
             Create("cat", "dog", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
-            Assert.IsTrue(_mode.Process('n').IsSwitchMode(ModeKind.Normal));
-            Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
-            Assert.AreEqual("dog", _textBuffer.GetLine(1).GetText());
+            Assert.True(_mode.Process('n').IsSwitchMode(ModeKind.Normal));
+            Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+            Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
         }
 
-        [Test]
+        [Fact]
         public void InputNo_TwoMatchesInRange()
         {
             Create("cat", "cat", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
-            Assert.IsTrue(_mode.Process('n').IsHandledNoSwitch());
-            Assert.AreEqual(_textBuffer.GetLine(1).Extent, _mode.CurrentMatch.Value);
-            Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
-            Assert.AreEqual("cat", _textBuffer.GetLine(1).GetText());
+            Assert.True(_mode.Process('n').IsHandledNoSwitch());
+            Assert.Equal(_textBuffer.GetLine(1).Extent, _mode.CurrentMatch.Value);
+            Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+            Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
         }
 
-        [Test]
+        [Fact]
         public void InputAll_OnlyOneMatch()
         {
             Create("cat", "dog", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
-            Assert.IsTrue(_mode.Process('a').IsSwitchMode(ModeKind.Normal));
-            Assert.AreEqual("bird", _textBuffer.GetLine(0).GetText());
-            Assert.AreEqual("dog", _textBuffer.GetLine(1).GetText());
+            Assert.True(_mode.Process('a').IsSwitchMode(ModeKind.Normal));
+            Assert.Equal("bird", _textBuffer.GetLine(0).GetText());
+            Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
         }
 
-        [Test]
+        [Fact]
         public void InputAll_TwoMatchesInRange()
         {
             Create("cat", "cat", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
-            Assert.IsTrue(_mode.Process('a').IsSwitchMode(ModeKind.Normal));
-            Assert.AreEqual("bird", _textBuffer.GetLine(0).GetText());
-            Assert.AreEqual("bird", _textBuffer.GetLine(1).GetText());
+            Assert.True(_mode.Process('a').IsSwitchMode(ModeKind.Normal));
+            Assert.Equal("bird", _textBuffer.GetLine(0).GetText());
+            Assert.Equal("bird", _textBuffer.GetLine(1).GetText());
         }
 
-        [Test]
+        [Fact]
         public void CurrentMatchChanged_OnEnter()
         {
             Create("cat", "cat", "rabbit", "tree");
@@ -225,7 +230,7 @@ namespace Vim.UnitTest
                 _textBuffer.GetLine(0).Extent);
         }
 
-        [Test]
+        [Fact]
         public void CurrentMatchChanged_OnYesEnds()
         {
             Create("cat", "dog", "rabbit", "tree");
@@ -235,7 +240,7 @@ namespace Vim.UnitTest
                 expected: null);
         }
 
-        [Test]
+        [Fact]
         public void CurrentMatchChanged_OnYesGoesToNext()
         {
             Create("cat", "cat", "rabbit", "tree");
@@ -245,7 +250,7 @@ namespace Vim.UnitTest
                 () => _textBuffer.GetLine(1).Extent);
         }
 
-        [Test]
+        [Fact]
         public void CurrentMatchChanged_OnNoEnds()
         {
             Create("cat", "dog", "rabbit", "tree");
@@ -253,7 +258,7 @@ namespace Vim.UnitTest
             VeriyCurrentMatchChanged(() => { _mode.Process('n'); });
         }
 
-        [Test]
+        [Fact]
         public void CurrentMatchChanged_OnNoGoesToNext()
         {
             Create("cat", "cat", "rabbit", "tree");
@@ -261,7 +266,7 @@ namespace Vim.UnitTest
             VeriyCurrentMatchChanged(() => { _mode.Process('n'); }, _textBuffer.GetLine(1).Extent);
         }
 
-        [Test]
+        [Fact]
         public void CurrentMatchChanged_OnAll()
         {
             Create("cat", "cat", "rabbit", "tree");

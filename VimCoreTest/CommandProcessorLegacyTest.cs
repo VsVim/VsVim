@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Vim.UnitTest.Mock;
@@ -16,7 +16,6 @@ namespace Vim.UnitTest
     /// Tests from the old CommandProcessor implementation.  They have value but the majority of the functionality
     /// switched to Interpreter
     /// </summary>
-    [TestFixture]
     public sealed class CommandProcessorLegacyTest : VimTestBase
     {
         private ITextView _textView;
@@ -75,7 +74,7 @@ namespace Vim.UnitTest
             }
 
             var parseResult = Parser.ParseLineCommand(command);
-            Assert.IsTrue(parseResult.IsSucceeded);
+            Assert.True(parseResult.IsSucceeded);
             _interpreter.RunLineCommand(parseResult.AsSucceeded().Item);
         }
 
@@ -92,7 +91,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Ensure the '$' / move to last line command is implemented properly
         /// </summary>
-        [Test]
+        [Fact]
         public void LastLine()
         {
             Create("foo", "bar", "baz");
@@ -107,7 +106,7 @@ namespace Vim.UnitTest
         /// Entering just a line number should jump to the corresponding Vim line number.  Note that Vim
         /// and ITextBuffer line numbers differ as Vim begins at 1
         /// </summary>
-        [Test]
+        [Fact]
         public void Jump_UseVimLineNumber()
         {
             Create("cat", "dog", "tree");
@@ -120,7 +119,7 @@ namespace Vim.UnitTest
         /// Even though Vim line numbers begin at 1, 0 is still a valid jump to the first line number 
         /// in Vim
         /// </summary>
-        [Test]
+        [Fact]
         public void Jump_FirstLineSpecial()
         {
             Create("cat", "dog", "tree");
@@ -133,7 +132,7 @@ namespace Vim.UnitTest
         /// When the line number exceeds the number of lines in the ITextBuffer it should just go to the
         /// last line number
         /// </summary>
-        [Test]
+        [Fact]
         public void Jump_LineNumberTooBig()
         {
             Create("cat", "dog", "tree");
@@ -146,7 +145,7 @@ namespace Vim.UnitTest
         /// Whichever line is targeted the point it jumps to should be the first non space / tab character on
         /// that line
         /// </summary>
-        [Test]
+        [Fact]
         public void Jump_Indent()
         {
             Create("cat", "  dog", "tree");
@@ -155,37 +154,37 @@ namespace Vim.UnitTest
             _operations.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Yank1()
         {
             Create("foo", "bar");
             RunCommand("y");
-            Assert.AreEqual("foo" + Environment.NewLine, UnnamedRegister.StringValue);
-            Assert.AreEqual(OperationKind.LineWise, UnnamedRegister.OperationKind);
+            Assert.Equal("foo" + Environment.NewLine, UnnamedRegister.StringValue);
+            Assert.Equal(OperationKind.LineWise, UnnamedRegister.OperationKind);
         }
 
-        [Test]
+        [Fact]
         public void Yank2()
         {
             Create("foo", "bar", "baz");
             RunCommand("1,2y");
             var text = _textView.GetLineRange(0, 1).ExtentIncludingLineBreak.GetText();
-            Assert.AreEqual(text, UnnamedRegister.StringValue);
+            Assert.Equal(text, UnnamedRegister.StringValue);
         }
 
-        [Test]
+        [Fact]
         public void Yank3()
         {
             Create("foo", "bar");
             RunCommand("y c");
-            Assert.AreEqual(_textView.GetLine(0).ExtentIncludingLineBreak.GetText(), RegisterMap.GetRegister('c').StringValue);
+            Assert.Equal(_textView.GetLine(0).ExtentIncludingLineBreak.GetText(), RegisterMap.GetRegister('c').StringValue);
         }
 
         /// <summary>
         /// Ensure that an invalid line number still registers an error with commands line yank vs. chosing
         /// the last line in the ITextBuffer as it does for jump commands
         /// </summary>
-        [Test]
+        [Fact]
         public void Yank_InvalidLineNumber()
         {
             Create("hello", "world");
@@ -197,16 +196,16 @@ namespace Vim.UnitTest
         /// <summary>
         /// The count should be applied to the specified line number for yank
         /// </summary>
-        [Test]
+        [Fact]
         public void Yank_WithRangeAndCount()
         {
             Create("cat", "dog", "rabbit", "tree");
             RunCommand("2y 1");
-            Assert.AreEqual("dog" + Environment.NewLine, UnnamedRegister.StringValue);
+            Assert.Equal("dog" + Environment.NewLine, UnnamedRegister.StringValue);
         }
 
 
-        [Test]
+        [Fact]
         public void Redo1()
         {
             Create("foo bar");
@@ -215,7 +214,7 @@ namespace Vim.UnitTest
             _operations.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Redo2()
         {
             Create("foo bar");
@@ -224,7 +223,7 @@ namespace Vim.UnitTest
             _operations.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Undo1()
         {
             Create("foo");
@@ -233,7 +232,7 @@ namespace Vim.UnitTest
             _operations.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Undo2()
         {
             Create("foo");
@@ -242,7 +241,7 @@ namespace Vim.UnitTest
             _operations.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Edit_NoArgumentsShouldReload()
         {
             Create("foo");
@@ -254,7 +253,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Edit_NoArgumentsButDirtyShouldError()
         {
             Create("");
@@ -264,7 +263,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Edit_FilePathButDirtyShouldError()
         {
             Create("foo");
@@ -274,8 +273,10 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
-        [Description("Can't figure out how to make this fail so just beeping now")]
+        /// <summary>
+        /// Can't figure out how to make this fail so just beeping now
+        /// </summary>
+        [Fact]
         public void Edit_NoArgumentsReloadFailsShouldBeep()
         {
             Create("foo");
@@ -286,7 +287,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Edit_FilePathShouldLoadIntoExisting()
         {
             Create("");
@@ -296,7 +297,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void WriteQuit_NoArguments()
         {
             Create("");
@@ -306,7 +307,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void WriteQuit_WithBang()
         {
             Create("");
@@ -316,7 +317,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void WriteQuit_FileName()
         {
             Create("bar");
@@ -326,7 +327,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void WriteQuit_Range()
         {
             Create("dog", "cat", "bear");
@@ -336,7 +337,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Quit1()
         {
             Create("");
@@ -345,7 +346,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Quit2()
         {
             Create("");
@@ -354,7 +355,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Quit3()
         {
             Create("");
@@ -366,7 +367,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// When provided the ! bang option the application should just rudely exit
         /// </summary>
-        [Test]
+        [Fact]
         public void QuitAll_WithBang()
         {
             Create("");
@@ -378,7 +379,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// If there are no dirty files then we should just be exiting and not raising any messages
         /// </summary>
-        [Test]
+        [Fact]
         public void QuitAll_WithNoDirty()
         {
             Create("");
@@ -395,7 +396,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// If there are dirty buffers and the ! option is missing then an error needs to be raised
         /// </summary>
-        [Test]
+        [Fact]
         public void QuitAll_WithDirty()
         {
             Create("");
@@ -409,7 +410,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Split1()
         {
             Create("");
@@ -418,7 +419,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Split2()
         {
             Create("");
@@ -427,7 +428,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Close1()
         {
             Create("");
@@ -436,7 +437,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Close2()
         {
             Create("");
@@ -445,7 +446,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Close3()
         {
             Create("");
@@ -454,7 +455,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Join_NoArguments()
         {
             Create("dog", "cat", "tree", "rabbit");
@@ -465,7 +466,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Join_WithBang()
         {
             Create("dog", "cat", "tree", "rabbit");
@@ -476,7 +477,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Join_WithCount()
         {
             Create("dog", "cat", "tree", "rabbit");
@@ -487,7 +488,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Join_WithRangeAndCount()
         {
             Create("dog", "cat", "tree", "rabbit");
@@ -498,8 +499,10 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
-        [Description("Final count overrides the range and in case of 1 does nothing")]
+        /// <summary>
+        /// Final count overrides the range and in case of 1 does nothing
+        /// </summary>
+        [Fact]
         public void Join_WithRangeAndCountOfOne()
         {
             Create("dog", "cat", "tree", "rabbit");
@@ -510,7 +513,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Range_CurrentLineWithIncrement()
         {
             Create("dog", "cat", "bear", "fish", "tree");

@@ -1,26 +1,22 @@
 ﻿using System;
 using EditorUtils;
-using Microsoft.FSharp.Collections;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using NUnit.Framework;
 using Vim.Modes.Command;
-using Vim.UnitTest.Mock;
+using Xunit;
 
 namespace Vim.UnitTest
 {
-    [TestFixture, RequiresSTA]
     public class CommandModeTest : VimTestBase
     {
-        private ITextView _textView;
-        private IVimBuffer _vimBuffer;
-        private ITextBuffer _textBuffer;
-        private CommandMode _modeRaw;
-        private ICommandMode _mode;
+        private readonly ITextView _textView;
+        private readonly IVimBuffer _vimBuffer;
+        private readonly ITextBuffer _textBuffer;
+        private readonly CommandMode _modeRaw;
+        private readonly ICommandMode _mode;
 
-        [SetUp]
-        public void SetUp()
+        public CommandModeTest()
         {
             _textView = CreateTextView();
             _textBuffer = _textView.TextBuffer;
@@ -43,96 +39,108 @@ namespace Vim.UnitTest
             _mode.Process(input, enter: true);
         }
 
-        [Test, Description("Entering command mode should update the status")]
+        /// <summary>
+        /// Entering command mode should update the status
+        /// </summary>
+        [Fact]
         public void StatusOnColon1()
         {
             _mode.OnEnter(ModeArgument.None);
-            Assert.AreEqual("", _mode.Command);
+            Assert.Equal("", _mode.Command);
         }
 
-        [Test, Description("When leaving command mode we should not clear the status because it will remove error messages")]
+        /// <summary>
+        /// When leaving command mode we should not clear the status because it will remove error messages
+        /// </summary>
+        [Fact]
         public void StatusOnLeave()
         {
             _mode.OnLeave();
-            Assert.AreEqual("", _mode.Command);
+            Assert.Equal("", _mode.Command);
         }
 
-        [Test]
+        [Fact]
         public void Input1()
         {
             _mode.Process("fo");
-            Assert.AreEqual("fo", _modeRaw.Command);
+            Assert.Equal("fo", _modeRaw.Command);
         }
 
-        [Test]
+        [Fact]
         public void Input3()
         {
             _mode.Process("foo");
             _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Back));
-            Assert.AreEqual("fo", _modeRaw.Command);
+            Assert.Equal("fo", _modeRaw.Command);
         }
 
-        [Test]
+        [Fact]
         public void Input4()
         {
             _mode.Process("foo");
             _mode.Process(KeyInputUtil.EscapeKey);
-            Assert.AreEqual(string.Empty, _modeRaw.Command);
+            Assert.Equal(string.Empty, _modeRaw.Command);
         }
 
-        [Test, Description("Delete past the start of the command string")]
+        /// <summary>
+        /// Delete past the start of the command string
+        /// </summary>
+        [Fact]
         public void Input5()
         {
             _mode.Process('c');
             _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Back));
             _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Back));
-            Assert.AreEqual(String.Empty, _modeRaw.Command);
+            Assert.Equal(String.Empty, _modeRaw.Command);
         }
 
-        [Test, Description("Upper case letter")]
+        /// <summary>
+        /// Upper case letter
+        /// </summary>
+        [Fact]
         public void Input6()
         {
             _mode.Process("BACK");
-            Assert.AreEqual("BACK", _modeRaw.Command);
+            Assert.Equal("BACK", _modeRaw.Command);
         }
 
-        [Test]
+        [Fact]
         public void Input7()
         {
             _mode.Process("_bar");
-            Assert.AreEqual("_bar", _modeRaw.Command);
+            Assert.Equal("_bar", _modeRaw.Command);
         }
 
-        [Test]
+        [Fact]
         public void OnEnter1()
         {
             _mode.OnEnter(ModeArgument.None);
-            Assert.AreEqual(String.Empty, _modeRaw.Command);
+            Assert.Equal(String.Empty, _modeRaw.Command);
         }
 
-        [Test]
+        [Fact]
         public void OnEnter2()
         {
             _mode.OnEnter(ModeArgument.FromVisual);
-            Assert.AreEqual(CommandMode.FromVisualModeString, _modeRaw.Command);
+            Assert.Equal(CommandMode.FromVisualModeString, _modeRaw.Command);
         }
 
-        [Test]
+        [Fact]
         public void ClearSelectionOnComplete1()
         {
             _textView.SetText("hello world");
             _textView.SelectAndMoveCaret(_textBuffer.GetSpan(0, 2));
             _mode.Process(KeyInputUtil.EnterKey);
-            Assert.IsTrue(_textView.Selection.IsEmpty);
+            Assert.True(_textView.Selection.IsEmpty);
         }
 
-        [Test]
+        [Fact]
         public void ClearSelectionOnComplete2()
         {
             _textView.SetText("hello world");
             _textView.SelectAndMoveCaret(_textBuffer.GetSpan(0, 2));
             _mode.Process(KeyInputUtil.EnterKey);
-            Assert.IsTrue(_textView.Selection.IsEmpty);
+            Assert.True(_textView.Selection.IsEmpty);
         }
     }
 }

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using NUnit.Framework;
+using Xunit;
 
 namespace Vim.UnitTest
 {
@@ -111,14 +111,14 @@ namespace Vim.UnitTest
             {
                 foreach (var value in unit.EqualValues)
                 {
-                    Assert.IsTrue(_compareWithEqualityOperator(unit.Value, value));
-                    Assert.IsTrue(_compareWithEqualityOperator(value, unit.Value));
+                    Assert.True(_compareWithEqualityOperator(unit.Value, value));
+                    Assert.True(_compareWithEqualityOperator(value, unit.Value));
                 }
  
                 foreach (var value in unit.NotEqualValues)
                 {
-                    Assert.IsFalse(_compareWithEqualityOperator(unit.Value, value));
-                    Assert.IsFalse(_compareWithEqualityOperator(value, unit.Value));
+                    Assert.False(_compareWithEqualityOperator(unit.Value, value));
+                    Assert.False(_compareWithEqualityOperator(value, unit.Value));
                 }
             }
         }
@@ -134,8 +134,8 @@ namespace Vim.UnitTest
             {
                 if ( !Object.ReferenceEquals(value, null) )
                 {
-                    Assert.IsFalse(_compareWithEqualityOperator(default(T), value));
-                    Assert.IsFalse(_compareWithEqualityOperator(value, default(T)));
+                    Assert.False(_compareWithEqualityOperator(default(T), value));
+                    Assert.False(_compareWithEqualityOperator(value, default(T)));
                 }
             }
         }
@@ -146,14 +146,14 @@ namespace Vim.UnitTest
             {
                 foreach (var value in unit.EqualValues)
                 {
-                    Assert.IsFalse(_compareWithInequalityOperator(unit.Value, value));
-                    Assert.IsFalse(_compareWithInequalityOperator(value, unit.Value));
+                    Assert.False(_compareWithInequalityOperator(unit.Value, value));
+                    Assert.False(_compareWithInequalityOperator(value, unit.Value));
                 }
  
                 foreach (var value in unit.NotEqualValues)
                 {
-                    Assert.IsTrue(_compareWithInequalityOperator(unit.Value, value));
-                    Assert.IsTrue(_compareWithInequalityOperator(value, unit.Value));
+                    Assert.True(_compareWithInequalityOperator(unit.Value, value));
+                    Assert.True(_compareWithInequalityOperator(value, unit.Value));
                 }
             }
         }
@@ -168,8 +168,8 @@ namespace Vim.UnitTest
             {
                 if ( !Object.ReferenceEquals(value, null) )
                 {
-                    Assert.IsTrue(_compareWithInequalityOperator(default(T), value));
-                    Assert.IsTrue(_compareWithInequalityOperator(value, default(T)));
+                    Assert.True(_compareWithInequalityOperator(default(T), value));
+                    Assert.True(_compareWithInequalityOperator(value, default(T)));
                 }
             }
         }
@@ -178,7 +178,7 @@ namespace Vim.UnitTest
         {
             var type = typeof(T);
             var targetType = typeof(IEquatable<T>);
-            Assert.IsTrue(type.GetInterfaces().Contains(targetType));
+            Assert.True(type.GetInterfaces().Contains(targetType));
         }
  
         private void ObjectEquals()
@@ -188,8 +188,8 @@ namespace Vim.UnitTest
                 var unitValue = unit.Value;
                 foreach (var value in unit.EqualValues)
                 {
-                    Assert.IsTrue(unitValue.Equals(value));
-                    Assert.IsTrue(value.Equals(unitValue));
+                    Assert.True(unitValue.Equals(value));
+                    Assert.True(value.Equals(unitValue));
                 }
             }
         }
@@ -207,7 +207,7 @@ namespace Vim.UnitTest
             var allValues = _equalityUnits.SelectMany(x => x.AllValues);
             foreach (var value in allValues)
             {
-                Assert.IsFalse(value.Equals(null));
+                Assert.False(value.Equals(null));
             }
         }
  
@@ -219,7 +219,7 @@ namespace Vim.UnitTest
             var allValues = _equalityUnits.SelectMany(x => x.AllValues);
             foreach (var value in allValues)
             {
-                Assert.IsFalse(value.Equals(42));
+                Assert.False(value.Equals(42));
             }
         }
  
@@ -229,7 +229,7 @@ namespace Vim.UnitTest
             {
                 foreach (var value in unit.EqualValues)
                 {
-                    Assert.AreEqual(value.GetHashCode(), unit.Value.GetHashCode());
+                    Assert.Equal(value.GetHashCode(), unit.Value.GetHashCode());
                 }
             }
         }
@@ -241,16 +241,16 @@ namespace Vim.UnitTest
                 var equatableUnit = (IEquatable<T>)unit.Value;
                 foreach (var value in unit.EqualValues)
                 {
-                    Assert.IsTrue(equatableUnit.Equals(value));
+                    Assert.True(equatableUnit.Equals(value));
                     var equatableValue = (IEquatable<T>)value;
-                    Assert.IsTrue(equatableValue.Equals(unit.Value));
+                    Assert.True(equatableValue.Equals(unit.Value));
                 }
  
                 foreach (var value in unit.NotEqualValues)
                 {
-                    Assert.IsFalse(equatableUnit.Equals(value));
+                    Assert.False(equatableUnit.Equals(value));
                     var equatableValue = (IEquatable<T>)value;
-                    Assert.IsFalse(equatableValue.Equals(unit.Value));
+                    Assert.False(equatableValue.Equals(unit.Value));
                 }
             }
         }
@@ -268,7 +268,7 @@ namespace Vim.UnitTest
             foreach (var cur in _equalityUnits.SelectMany(x => x.AllValues))
             {
                 var value = (IEquatable<T>)cur;
-                Assert.IsFalse(value.Equals(null));
+                Assert.False(value.Equals(null));
             }
         }
     }

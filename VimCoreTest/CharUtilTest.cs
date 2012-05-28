@@ -1,62 +1,61 @@
-﻿using NUnit.Framework;
+﻿using Xunit;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public sealed class CharUtilTest
     {
-        [Test]
+        [Fact]
         public void Rot13_AllLettersMapBackLower()
         {
             foreach (var cur in KeyInputUtilTest.CharsLettersLower)
             {
                 var rot = CharUtil.ChangeRot13(cur);
                 var end = CharUtil.ChangeRot13(rot);
-                Assert.AreEqual(cur, end);
+                Assert.Equal(cur, end);
             }
         }
 
-        [Test]
+        [Fact]
         public void Rot13_AllLettersMapBackUpper()
         {
             foreach (var cur in KeyInputUtilTest.CharsLettersUpper)
             {
                 var rot = CharUtil.ChangeRot13(cur);
                 var end = CharUtil.ChangeRot13(rot);
-                Assert.AreEqual(cur, end);
+                Assert.Equal(cur, end);
             }
         }
 
         /// <summary>
         /// Make sure that we can handle simple add operations with alpha characters
         /// </summary>
-        [Test]
+        [Fact]
         public void AddAplha_Simple()
         {
-            Assert.AreEqual('b', CharUtil.AlphaAdd(1, 'a'));
-            Assert.AreEqual('c', CharUtil.AlphaAdd(2, 'a'));
-            Assert.AreEqual('B', CharUtil.AlphaAdd(1, 'A'));
-            Assert.AreEqual('C', CharUtil.AlphaAdd(2, 'A'));
+            Assert.Equal('b', CharUtil.AlphaAdd(1, 'a'));
+            Assert.Equal('c', CharUtil.AlphaAdd(2, 'a'));
+            Assert.Equal('B', CharUtil.AlphaAdd(1, 'A'));
+            Assert.Equal('C', CharUtil.AlphaAdd(2, 'A'));
         }
 
         /// <summary>
         /// Going past 'Z' should return simply 'Z'
         /// </summary>
-        [Test]
+        [Fact]
         public void AddAlpha_PastUpperBound()
         {
-            Assert.AreEqual('z', CharUtil.AlphaAdd(1, 'z'));
-            Assert.AreEqual('Z', CharUtil.AlphaAdd(1, 'Z'));
+            Assert.Equal('z', CharUtil.AlphaAdd(1, 'z'));
+            Assert.Equal('Z', CharUtil.AlphaAdd(1, 'Z'));
         }
 
         /// <summary>
         /// Going past 'A' should return simply 'A'
         /// </summary>
-        [Test]
+        [Fact]
         public void AddAlpha_PastLowerBound()
         {
-            Assert.AreEqual('a', CharUtil.AlphaAdd(-1, 'a'));
-            Assert.AreEqual('A', CharUtil.AlphaAdd(-1, 'A'));
+            Assert.Equal('a', CharUtil.AlphaAdd(-1, 'a'));
+            Assert.Equal('A', CharUtil.AlphaAdd(-1, 'A'));
         }
     }
 }

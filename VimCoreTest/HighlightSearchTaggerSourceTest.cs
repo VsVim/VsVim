@@ -5,11 +5,10 @@ using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
-using NUnit.Framework;
+using Xunit;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public class HighlightSearchTaggerSourceTest : VimTestBase
     {
         private HighlightSearchTaggerSource _asyncTaggerSourceRaw;
@@ -35,16 +34,10 @@ namespace Vim.UnitTest
             _asyncTaggerSource = _asyncTaggerSourceRaw;
         }
 
-        [TearDown]
-        public void TearDown()
-        {
-            _asyncTaggerSourceRaw = null;
-        }
-
         private List<ITagSpan<TextMarkerTag>> TryGetTagsPrompt(SnapshotSpan span)
         {
             IEnumerable<ITagSpan<TextMarkerTag>> tagList;
-            Assert.IsTrue(_asyncTaggerSource.TryGetTagsPrompt(span, out tagList));
+            Assert.True(_asyncTaggerSource.TryGetTagsPrompt(span, out tagList));
             return tagList.ToList();
         }
 
@@ -59,38 +52,38 @@ namespace Vim.UnitTest
         /// <summary>
         /// Do nothing if the search pattern is empty
         /// </summary>
-        [Test]
+        [Fact]
         public void GetTags_PatternEmpty()
         {
             Create("dog cat");
             _vimData.LastPatternData = VimUtil.CreatePatternData("");
             var ret = GetTags(_textBuffer.GetExtent());
-            Assert.AreEqual(0, ret.Count());
+            Assert.Equal(0, ret.Count());
         }
 
         /// <summary>
         /// Make sure the matches are returned
         /// </summary>
-        [Test]
+        [Fact]
         public void GetTags_WithMatch()
         {
             Create("foo is the bar");
             _vimData.LastPatternData = VimUtil.CreatePatternData("foo");
             var ret = GetTags(_textBuffer.GetExtent());
-            Assert.AreEqual(1, ret.Count());
-            Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3), ret.Single().Span);
+            Assert.Equal(1, ret.Count());
+            Assert.Equal(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3), ret.Single().Span);
         }
 
         /// <summary>
         /// Don't return tags outside the requested span
         /// </summary>
-        [Test]
+        [Fact]
         public void GetTags_OutSideSpan()
         {
             Create("foo is the bar");
             _vimData.LastPatternData = VimUtil.CreatePatternData("foo");
             var ret = GetTags(new SnapshotSpan(_textBuffer.CurrentSnapshot, 4, 3));
-            Assert.AreEqual(0, ret.Count());
+            Assert.Equal(0, ret.Count());
         }
 
         /// <summary>
@@ -100,13 +93,13 @@ namespace Vim.UnitTest
         /// When they are grouped thuogh return a single overarching span to avoid overloading the 
         /// editor
         /// </summary>
-        [Test]
+        [Fact]
         public void GetTags_ZeroLengthResults()
         {
             Create("cat");
             _vimData.LastPatternData = VimUtil.CreatePatternData(@"\|i\>");
             var ret = GetTags(_textBuffer.GetExtent());
-            CollectionAssert.AreEquivalent(
+            Assert.Equal(
                 new [] {"cat"},
                 ret.Select(x => x.Span.GetText()).ToList());
         }
@@ -114,63 +107,63 @@ namespace Vim.UnitTest
         /// <summary>
         /// We can promptly say nothing when highlight is disabled
         /// </summary>
-        [Test]
+        [Fact]
         public void TryGetTagsPrompt_HighlightDisabled()
         {
             Create("dog cat");
             _vimData.LastPatternData = VimUtil.CreatePatternData("dog");
             _globalSettings.HighlightSearch = false;
             var ret = TryGetTagsPrompt(_textBuffer.GetExtent());
-            Assert.AreEqual(0, ret.Count);
+            Assert.Equal(0, ret.Count);
         }
 
         /// <summary>
         /// We can promptly say nothing when in One Time disabled
         /// </summary>
-        [Test]
+        [Fact]
         public void TryGetTagsPrompt_OneTimeDisabled()
         {
             Create("dog cat");
             _vimData.LastPatternData = VimUtil.CreatePatternData("dog");
             _asyncTaggerSourceRaw._oneTimeDisabled = true;
             var ret = TryGetTagsPrompt(_textBuffer.GetExtent());
-            Assert.AreEqual(0, ret.Count);
+            Assert.Equal(0, ret.Count);
         }
 
         /// <summary>
         /// If the ITextView is not considered visible then we shouldn't be returning any
         /// tags
         /// </summary>
-        [Test]
+        [Fact]
         public void GetTagsPrompt_NotVisible()
         {
             Create("dog cat");
             _vimData.LastPatternData = VimUtil.CreatePatternData("dog");
             _asyncTaggerSourceRaw._isVisible = false;
             var ret = TryGetTagsPrompt(_textBuffer.GetExtent());
-            Assert.AreEqual(0, ret.Count);
+            Assert.Equal(0, ret.Count);
         }
 
         /// <summary>
         /// The one time disabled event should cause a Changed event and the one time disabled
         /// flag to be set
         /// </summary>
-        [Test]
+        [Fact]
         public void Changed_OneTimeDisabled_Event()
         {
             Create("");
-            Assert.IsFalse(_asyncTaggerSourceRaw._oneTimeDisabled);
+            Assert.False(_asyncTaggerSourceRaw._oneTimeDisabled);
             var raised = false;
             _asyncTaggerSource.Changed += delegate { raised = true; };
             _vimData.RaiseHighlightSearchOneTimeDisable();
-            Assert.IsTrue(raised);
-            Assert.IsTrue(_asyncTaggerSourceRaw._oneTimeDisabled);
+            Assert.True(raised);
+            Assert.True(_asyncTaggerSourceRaw._oneTimeDisabled);
         }
 
         /// <summary>
         /// The search ran should cause a Changed event if we were previously disabled
         /// </summary>
-        [Test]
+        [Fact]
         public void Changed_SearchRan_WhenDisabled()
         {
             Create("");
@@ -178,7 +171,7 @@ namespace Vim.UnitTest
             _asyncTaggerSource.Changed += delegate { raised = true; };
             _vimData.RaiseHighlightSearchOneTimeDisable();
             _vimData.RaiseSearchRanEvent();
-            Assert.IsTrue(raised);
+            Assert.True(raised);
         }
 
         /// <summary>
@@ -186,20 +179,20 @@ namespace Vim.UnitTest
         /// the pattern didn't change from the last search.  Nothing has changed at this
         /// point
         /// </summary>
-        [Test]
+        [Fact]
         public void Changed_SearchRan_NoDifference()
         {
             Create("");
             var raised = false;
             _asyncTaggerSource.Changed += delegate { raised = true; };
             _vimData.RaiseSearchRanEvent();
-            Assert.IsFalse(raised);
+            Assert.False(raised);
         }
 
         /// <summary>
         /// The SearchRan event should cause a Changed event if the Pattern changes
         /// </summary>
-        [Test]
+        [Fact]
         public void Changed_SearchRan_WhenPatternChanged()
         {
             Create("");
@@ -207,29 +200,29 @@ namespace Vim.UnitTest
             _asyncTaggerSource.Changed += delegate { raised = true; };
             _vimData.LastPatternData = new PatternData("hello", Path.Forward);
             _vimData.RaiseSearchRanEvent();
-            Assert.IsTrue(raised);
+            Assert.True(raised);
         }
 
         /// <summary>
         /// If the visibility of the ITextView changes it should cause a Changed event to be raised
         /// </summary>
-        [Test]
+        [Fact]
         public void Changed_IsVisibleChanged()
         {
             Create("");
-            Assert.IsTrue(_asyncTaggerSourceRaw._isVisible);
+            Assert.True(_asyncTaggerSourceRaw._isVisible);
             var raised = false;
             _asyncTaggerSource.Changed += delegate { raised = true; };
             VimHost.IsTextViewVisible = false;
             VimHost.RaiseIsVisibleChanged(_textView);
-            Assert.IsFalse(_asyncTaggerSourceRaw._isVisible);
-            Assert.IsTrue(raised);
+            Assert.False(_asyncTaggerSourceRaw._isVisible);
+            Assert.True(raised);
         }
 
         /// <summary>
         /// The setting of the 'hlsearch' option should raise the changed event
         /// </summary>
-        [Test]
+        [Fact]
         public void HighlightSearch_RaiseChanged()
         {
             Create("");
@@ -237,22 +230,22 @@ namespace Vim.UnitTest
             var raised = false;
             _asyncTaggerSource.Changed += delegate { raised = true; };
             _globalSettings.HighlightSearch = true;
-            Assert.IsTrue(raised);
-            Assert.IsTrue(_asyncTaggerSourceRaw.IsProvidingTags);
+            Assert.True(raised);
+            Assert.True(_asyncTaggerSourceRaw.IsProvidingTags);
         }
 
         /// <summary>
         /// The setting of the 'hlsearch' option should reset the one time disabled flag
         /// </summary>
-        [Test]
+        [Fact]
         public void HighlightSearch_ResetOneTimeDisabled()
         {
             Create("");
             _globalSettings.HighlightSearch = false;
             _asyncTaggerSourceRaw._oneTimeDisabled = true;
             _globalSettings.HighlightSearch = true;
-            Assert.IsFalse(_asyncTaggerSourceRaw._oneTimeDisabled);
-            Assert.IsTrue(_asyncTaggerSourceRaw.IsProvidingTags);
+            Assert.False(_asyncTaggerSourceRaw._oneTimeDisabled);
+            Assert.True(_asyncTaggerSourceRaw.IsProvidingTags);
         }
     }
 }

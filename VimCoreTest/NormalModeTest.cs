@@ -4,14 +4,13 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using NUnit.Framework;
 using Vim.Extensions;
 using Vim.Modes.Normal;
 using Vim.UnitTest.Mock;
+using Xunit;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public sealed class NormalModeTest : VimTestBase
     {
         private NormalMode _modeRaw;
@@ -74,49 +73,54 @@ namespace Vim.UnitTest
             _mode.OnEnter(ModeArgument.None);
         }
 
-        [TearDown]
-        public void TearDown()
-        {
-            _textView = null;
-            _mode = null;
-        }
-
-        [Test]
+        [Fact]
         public void ModeKindTest()
         {
             Create(DefaultLines);
-            Assert.AreEqual(ModeKind.Normal, _mode.ModeKind);
+            Assert.Equal(ModeKind.Normal, _mode.ModeKind);
         }
 
-        [Test, Description("Let enter go straight back to the editor in the default case")]
+        /// <summary>
+        /// Let enter go straight back to the editor in the default case
+        /// </summary>
+        [Fact]
         public void EnterProcessing()
         {
             Create(DefaultLines);
             var can = _mode.CanProcess(KeyInputUtil.EnterKey);
-            Assert.IsTrue(can);
+            Assert.True(can);
         }
 
         #region CanProcess
 
-        [Test, Description("Can process basic commands")]
+        /// <summary>
+        /// Can process basic commands
+        /// </summary>
+        [Fact]
         public void CanProcess1()
         {
             Create(DefaultLines);
-            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput('u')));
-            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput('h')));
-            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput('j')));
-            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput('i')));
+            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('u')));
+            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('h')));
+            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('j')));
+            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('i')));
         }
 
-        [Test, Description("Can process even invalid commands else they end up as input")]
+        /// <summary>
+        /// Can process even invalid commands else they end up as input
+        /// </summary>
+        [Fact]
         public void CanProcess2()
         {
             Create(DefaultLines);
-            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput('U')));
-            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput('Z')));
+            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('U')));
+            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('Z')));
         }
 
-        [Test, Description("Must be able to process numbers")]
+        /// <summary>
+        /// Must be able to process numbers
+        /// </summary>
+        [Fact]
         public void CanProcess3()
         {
             Create(DefaultLines);
@@ -124,11 +128,14 @@ namespace Vim.UnitTest
             {
                 var c = char.Parse(cur.ToString());
                 var ki = KeyInputUtil.CharToKeyInput(c);
-                Assert.IsTrue(_mode.CanProcess(ki));
+                Assert.True(_mode.CanProcess(ki));
             }
         }
 
-        [Test, Description("When in a need more state, process everything")]
+        /// <summary>
+        /// When in a need more state, process everything
+        /// </summary>
+        [Fact]
         public void CanProcess4()
         {
             Create(DefaultLines);
@@ -136,44 +143,44 @@ namespace Vim.UnitTest
                 .Setup(x => x.Begin(Path.Forward))
                 .Returns(VimUtil.CreateBindData<SearchResult>());
             _mode.Process(KeyInputUtil.CharToKeyInput('/'));
-            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput('U')));
-            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput('Z')));
+            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('U')));
+            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('Z')));
         }
 
         /// <summary>
         /// Ensure that all of the core characters are valid Normal Mode commands.  They all should
         /// be 
         /// </summary>
-        [Test]
+        [Fact]
         public void CanProcess_AllCoreCharacters()
         {
             Create(DefaultLines);
             foreach (var cur in KeyInputUtil.VimKeyCharList)
             {
-                Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput(cur)));
+                Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput(cur)));
             }
         }
 
-        [Test]
+        [Fact]
         public void CanProcess_MovementKeys()
         {
             Create(DefaultLines);
-            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.EnterKey));
-            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.TabKey));
+            Assert.True(_mode.CanProcess(KeyInputUtil.EnterKey));
+            Assert.True(_mode.CanProcess(KeyInputUtil.TabKey));
         }
 
-        [Test]
+        [Fact]
         public void CanProcess_DontHandleControlTab()
         {
             Create("");
-            Assert.IsFalse(_mode.CanProcess(KeyInputUtil.ChangeKeyModifiersDangerous(KeyInputUtil.TabKey, KeyModifiers.Control)));
+            Assert.False(_mode.CanProcess(KeyInputUtil.ChangeKeyModifiersDangerous(KeyInputUtil.TabKey, KeyModifiers.Control)));
         }
 
         #endregion
 
         #region Movement
 
-        [Test]
+        [Fact]
         public void Bind_Motion_l()
         {
             Create("");
@@ -182,7 +189,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_h()
         {
             Create("");
@@ -191,7 +198,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_BackSpace()
         {
             Create("");
@@ -200,7 +207,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_k()
         {
             Create("");
@@ -209,7 +216,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_j()
         {
             Create("");
@@ -218,7 +225,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_Left()
         {
             Create("");
@@ -227,7 +234,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_Right()
         {
             Create("");
@@ -236,7 +243,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_Up()
         {
             Create("");
@@ -245,7 +252,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_Down()
         {
             Create("");
@@ -254,7 +261,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_CtrlP()
         {
             Create("");
@@ -263,7 +270,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_CtrlN()
         {
             Create("");
@@ -272,7 +279,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_CtrlH()
         {
             Create("");
@@ -281,7 +288,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_SpaceBar()
         {
             Create("");
@@ -290,7 +297,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_Word()
         {
             Create(DefaultLines);
@@ -299,7 +306,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_BigWord()
         {
             Create(DefaultLines);
@@ -308,7 +315,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_WordBackward()
         {
             Create(DefaultLines);
@@ -317,7 +324,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_Hat()
         {
             Create("   foo bar");
@@ -326,7 +333,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_Dollar()
         {
             Create("foo", "bar");
@@ -335,7 +342,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_0()
         {
             Create("foo bar baz");
@@ -344,7 +351,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_LineOrFirst()
         {
             Create(DefaultLines);
@@ -357,7 +364,7 @@ namespace Vim.UnitTest
 
         #region Scroll
 
-        [Test]
+        [Fact]
         public void Bind_ScrollLines_Up_WithOption()
         {
             Create("");
@@ -366,7 +373,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ScrollLines_Down_WithOption()
         {
             Create("");
@@ -375,7 +382,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ScrollLines_Down()
         {
             Create("");
@@ -384,7 +391,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ScrollLines_Up()
         {
             Create("");
@@ -393,7 +400,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ScrollPages_Down()
         {
             Create("foo bar");
@@ -402,7 +409,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ScrollPages_Down_ViaShiftDown()
         {
             Create("foo bar");
@@ -411,7 +418,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ScrollPages_Down_ViaPageDown()
         {
             Create("foo bar");
@@ -420,7 +427,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ScrollPages_Up()
         {
             Create("foo bar");
@@ -429,7 +436,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ScrollPages_Up_ViaPageUp()
         {
             Create("foo bar");
@@ -438,7 +445,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ScrollPages_Up_ViaShiftUp()
         {
             Create("foo bar");
@@ -447,7 +454,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ScrollCaretLineToTop_KeepCaret()
         {
             Create("");
@@ -456,7 +463,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ScrollCaretLineToTop()
         {
             Create("");
@@ -466,7 +473,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ScrollCaretLineToMiddle()
         {
             Create("");
@@ -475,7 +482,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ScrollCaretLineToMiddle_KeepCaret()
         {
             Create("");
@@ -484,7 +491,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ScrollCaretLineToBottom()
         {
             Create("");
@@ -493,7 +500,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ScrollCaretLineToBottom_KeepCaret()
         {
             Create("");
@@ -506,7 +513,7 @@ namespace Vim.UnitTest
 
         #region Motion
 
-        [Test]
+        [Fact]
         public void Motion_Motion_Right()
         {
             Create("");
@@ -518,7 +525,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Need to make sure that G is not being given a count when used as a motion
         /// </summary>
-        [Test]
+        [Fact]
         public void Motion_G()
         {
             var util = new Mock<IMotionUtil>(MockBehavior.Strict);
@@ -541,7 +548,7 @@ namespace Vim.UnitTest
 
         #region Edits
 
-        [Test]
+        [Fact]
         public void Bind_InsertLineBelow()
         {
             Create("how is", "foo");
@@ -550,7 +557,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_InsertLineAbove()
         {
             Create("how is", "foo");
@@ -559,7 +566,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_DeleteCharacterBeforeCaret()
         {
             Create("");
@@ -568,7 +575,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_DeleteCharacterBeforeCaret_WithCountAndRegister()
         {
             Create("");
@@ -577,7 +584,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ReplaceChar_Simple()
         {
             Create("the dog chased the cat");
@@ -585,7 +592,7 @@ namespace Vim.UnitTest
             _mode.Process("rb");
         }
 
-        [Test]
+        [Fact]
         public void Bind_ReplaceChar_WithCount()
         {
             Create("the dog chased the cat");
@@ -593,7 +600,7 @@ namespace Vim.UnitTest
             _mode.Process("2rb");
         }
 
-        [Test]
+        [Fact]
         public void Bind_DeleteCharacterAtCaret()
         {
             Create("");
@@ -602,7 +609,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_DeleteCharacterAtCaret_WithCountAndRegister()
         {
             Create("");
@@ -611,7 +618,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_DeleteCharacterAtCaret_ViaDelete()
         {
             Create("");
@@ -620,7 +627,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ChangeMotion()
         {
             Create("the dog chases the ball");
@@ -629,7 +636,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ChangeLines()
         {
             Create("");
@@ -638,7 +645,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ChangeLines_ViaS()
         {
             Create("foo", "bar", "baz");
@@ -647,7 +654,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ChangeTillEndOfLine()
         {
             Create("foo", "bar", "baz");
@@ -656,7 +663,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_SubstituteCharacterAtCaret()
         {
             Create("");
@@ -665,7 +672,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ChangeCaseCaretPoint_Tilde()
         {
             Create("foo");
@@ -677,7 +684,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// When tildeop is set this becomes a motion command
         /// </summary>
-        [Test]
+        [Fact]
         public void Bind_TildeMotion()
         {
             Create("foo");
@@ -687,7 +694,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ChangeCaseLine_Upper1()
         {
             Create("again");
@@ -696,7 +703,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ChangeCaseLine_Upper2()
         {
             Create("again");
@@ -706,7 +713,7 @@ namespace Vim.UnitTest
         }
 
 
-        [Test]
+        [Fact]
         public void Bind_ChangeCaseLine_Lower1()
         {
             Create("again");
@@ -715,7 +722,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ChangeCaseLine_Lower2()
         {
             Create("again");
@@ -724,7 +731,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ChangeCaseLine_Rot13_1()
         {
             Create("again");
@@ -733,7 +740,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ChangeCaseLine_Rot13_2()
         {
             Create("again");
@@ -746,7 +753,7 @@ namespace Vim.UnitTest
 
         #region Yank
 
-        [Test]
+        [Fact]
         public void Bind_Yank()
         {
             Create("");
@@ -755,7 +762,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_YankLines()
         {
             Create("");
@@ -764,7 +771,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_YankLines_ViaY()
         {
             Create("");
@@ -777,7 +784,7 @@ namespace Vim.UnitTest
 
         #region Paste
 
-        [Test]
+        [Fact]
         public void Bind_PutAfterCaret()
         {
             Create("foo");
@@ -786,7 +793,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_PutAfterCaretWithIndent()
         {
             Create("");
@@ -795,7 +802,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_PutBeforeCaret()
         {
             Create("foo");
@@ -804,7 +811,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_PutBeforeCaretWithIndent()
         {
             Create("");
@@ -813,7 +820,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_PutBeforeCaretWithIndent_ViaCapitalP()
         {
             Create("");
@@ -822,7 +829,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_PutAfterCaret_WithMove()
         {
             Create("foo");
@@ -831,7 +838,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_PutBeforeCaret_WithMove()
         {
             Create("foo");
@@ -844,7 +851,7 @@ namespace Vim.UnitTest
 
         #region Delete
 
-        [Test]
+        [Fact]
         public void Bind_DeleteLines()
         {
             Create("foo", "bar");
@@ -853,7 +860,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_DeleteMotion()
         {
             Create("hello world");
@@ -866,17 +873,17 @@ namespace Vim.UnitTest
         /// Make sure that escape will cause the CommandRunner to exit when waiting
         /// for a Motion to complete
         /// </summary>
-        [Test]
+        [Fact]
         public void Process_EscapeShouldExitMotion()
         {
             Create(DefaultLines);
             _mode.Process('d');
-            Assert.IsTrue(_mode.CommandRunner.IsWaitingForMoreInput);
+            Assert.True(_mode.CommandRunner.IsWaitingForMoreInput);
             _mode.Process(KeyInputUtil.EscapeKey);
-            Assert.IsFalse(_mode.CommandRunner.IsWaitingForMoreInput);
+            Assert.False(_mode.CommandRunner.IsWaitingForMoreInput);
         }
 
-        [Test]
+        [Fact]
         public void Bind_DeleteTillEndOfLine()
         {
             Create("foo bar");
@@ -892,7 +899,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Make sure the incremental search begins when the '/' is typed
         /// </summary>
-        [Test]
+        [Fact]
         public void IncrementalSearch_BeginOnForwardSearchChar()
         {
             Create("foo bar");
@@ -907,7 +914,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Make sure the incremental search beigns when the '?' is typed
         /// </summary>
-        [Test]
+        [Fact]
         public void IncrementalSearch_BeginOnBackwardSearchChar()
         {
             Create("foo bar");
@@ -922,7 +929,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Once incremental search begins, make sure it handles any keystroke
         /// </summary>
-        [Test]
+        [Fact]
         public void IncrementalSearch_HandlesAnyKey()
         {
             Create("foo bar");
@@ -940,7 +947,7 @@ namespace Vim.UnitTest
 
         #region Next / Previous Word
 
-        [Test]
+        [Fact]
         public void Bind_Motion_NextWord_Forward()
         {
             Create("");
@@ -949,7 +956,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_NextWord_Backward()
         {
             Create("");
@@ -958,7 +965,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_NextPartialWord_Forward()
         {
             Create("");
@@ -967,7 +974,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_NextPartialWord_Backward()
         {
             Create("");
@@ -978,7 +985,7 @@ namespace Vim.UnitTest
 
         #endregion
 
-        [Test]
+        [Fact]
         public void Bind_Motion_LastSearch_Forward()
         {
             Create("");
@@ -987,7 +994,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_LastSearch_Backward()
         {
             Create("");
@@ -998,7 +1005,7 @@ namespace Vim.UnitTest
 
         #region Shift
 
-        [Test]
+        [Fact]
         public void Bind_ShiftRight()
         {
             Create("foo");
@@ -1007,14 +1014,14 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ShiftMotionRight()
         {
             Create("foo", "bar");
             /// REPEAT TODO: Add tests for this
         }
 
-        [Test]
+        [Fact]
         public void Bind_ShiftLeft()
         {
             Create("foo");
@@ -1023,7 +1030,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ShiftMotionLeft()
         {
             /// REPEAT TODO: Add tests for this
@@ -1034,7 +1041,7 @@ namespace Vim.UnitTest
 
         #region Misc
 
-        [Test]
+        [Fact]
         public void Bind_Undo()
         {
             Create("");
@@ -1043,7 +1050,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Redo()
         {
             Create("");
@@ -1052,7 +1059,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_JoinLines()
         {
             Create("");
@@ -1061,7 +1068,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_JoinLines_KeepEmptySpaces()
         {
             Create("");
@@ -1070,7 +1077,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_GoToDefinition()
         {
             Create("");
@@ -1079,17 +1086,17 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void GoToDefinition2()
         {
             Create(DefaultLines);
             var def = KeyInputUtil.CharWithControlToKeyInput(']');
             var name = KeyInputSet.NewOneKeyInput(def);
-            Assert.IsTrue(_mode.CanProcess(def));
-            Assert.IsTrue(_mode.CommandNames.Contains(name));
+            Assert.True(_mode.CanProcess(def));
+            Assert.True(_mode.CommandNames.Contains(name));
         }
 
-        [Test]
+        [Fact]
         public void Bind_GoToLocalDeclaration()
         {
             Create("");
@@ -1098,7 +1105,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_GoToGlobalDeclaration()
         {
             Create("");
@@ -1107,7 +1114,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_GoToFileUnderCaret()
         {
             Create("");
@@ -1116,26 +1123,26 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void SetMark_CanProcessM()
         {
             Create("");
-            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput('m')));
-            Assert.IsTrue(_mode.CommandNames.Any(x => x.KeyInputs.First().Char == 'm'));
+            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('m')));
+            Assert.True(_mode.CommandNames.Any(x => x.KeyInputs.First().Char == 'm'));
         }
 
         /// <summary>
         /// Inside mark mode we can process anything
         /// </summary>
-        [Test, Description("Once we are in mark mode we can process anything")]
+        [Fact]
         public void SetMark_CanProcessAnything()
         {
             Create("");
             _mode.Process(KeyInputUtil.CharToKeyInput('m'));
-            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharWithControlToKeyInput('c')));
+            Assert.True(_mode.CanProcess(KeyInputUtil.CharWithControlToKeyInput('c')));
         }
 
-        [Test]
+        [Fact]
         public void Bind_SetMark()
         {
             Create("");
@@ -1144,7 +1151,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_JumpToMark()
         {
             Create("");
@@ -1152,7 +1159,7 @@ namespace Vim.UnitTest
             _mode.Process("'a");
         }
 
-        [Test]
+        [Fact]
         public void Bind_JumpToMark_BackTick()
         {
             Create("");
@@ -1160,7 +1167,7 @@ namespace Vim.UnitTest
             _mode.Process("`a");
         }
 
-        [Test]
+        [Fact]
         public void Bind_JumpToNewerPosition()
         {
             Create("");
@@ -1169,7 +1176,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_JumpToOlderPosition()
         {
             Create("");
@@ -1178,7 +1185,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_InsertAtEndOfLine()
         {
             Create("foo bar");
@@ -1187,7 +1194,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_InsertAfterCaret()
         {
             Create("foo bar");
@@ -1196,14 +1203,14 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void KeyRemapMode_DefaultIsNormal()
         {
             Create("foo bar");
-            Assert.AreEqual(KeyRemapMode.Normal, _mode.KeyRemapMode.Value);
+            Assert.Equal(KeyRemapMode.Normal, _mode.KeyRemapMode.Value);
         }
 
-        [Test]
+        [Fact]
         public void KeyRemapMode_CommandInIncrementalSearch()
         {
             Create("foobar");
@@ -1211,31 +1218,31 @@ namespace Vim.UnitTest
                 .Setup(x => x.Begin(Path.Forward))
                 .Returns(VimUtil.CreateBindData<SearchResult>(remapMode: KeyRemapMode.Command));
             _mode.Process('/');
-            Assert.AreEqual(KeyRemapMode.Command, _mode.KeyRemapMode.Value);
+            Assert.Equal(KeyRemapMode.Command, _mode.KeyRemapMode.Value);
         }
 
-        [Test]
+        [Fact]
         public void KeyRemapMode_OperatorPendingAfterY()
         {
             Create("");
             _mode.Process('y');
-            Assert.AreEqual(KeyRemapMode.OperatorPending, _mode.KeyRemapMode.Value);
+            Assert.Equal(KeyRemapMode.OperatorPending, _mode.KeyRemapMode.Value);
         }
 
-        [Test]
+        [Fact]
         public void KeyRemapMode_OperatorPendingAfterD()
         {
             Create("");
             _mode.Process('d');
-            Assert.AreEqual(KeyRemapMode.OperatorPending, _mode.KeyRemapMode.Value);
+            Assert.Equal(KeyRemapMode.OperatorPending, _mode.KeyRemapMode.Value);
         }
 
-        [Test]
+        [Fact]
         public void KeyRemapMode_LanguageAfterF()
         {
             Create("");
             _mode.Process("df");
-            Assert.AreEqual(KeyRemapMode.Language, _mode.KeyRemapMode.Value);
+            Assert.Equal(KeyRemapMode.Language, _mode.KeyRemapMode.Value);
         }
 
         /// <summary>
@@ -1244,22 +1251,22 @@ namespace Vim.UnitTest
         /// 
         /// The same behavior can be viewed for 'z'
         /// </summary>
-        [Test]
+        [Fact]
         public void KeyRemapMode_AfterG()
         {
             Create("");
             _mode.Process("g");
-            Assert.IsTrue(_mode.KeyRemapMode.IsNone());
+            Assert.True(_mode.KeyRemapMode.IsNone());
         }
 
-        [Test]
+        [Fact]
         public void IsWaitingForInput1()
         {
             Create("foobar");
-            Assert.IsFalse(_mode.CommandRunner.IsWaitingForMoreInput);
+            Assert.False(_mode.CommandRunner.IsWaitingForMoreInput);
         }
 
-        [Test]
+        [Fact]
         public void IsWaitingForInput2()
         {
             Create("foobar");
@@ -1267,77 +1274,80 @@ namespace Vim.UnitTest
                 .Setup(x => x.Begin(Path.Forward))
                 .Returns(VimUtil.CreateBindData<SearchResult>());
             _mode.Process('/');
-            Assert.IsTrue(_mode.CommandRunner.IsWaitingForMoreInput);
+            Assert.True(_mode.CommandRunner.IsWaitingForMoreInput);
         }
 
-        [Test]
+        [Fact]
         public void IsWaitingForInput3()
         {
             Create("");
             _mode.Process('y');
-            Assert.IsTrue(_mode.CommandRunner.IsWaitingForMoreInput);
+            Assert.True(_mode.CommandRunner.IsWaitingForMoreInput);
         }
 
-        [Test]
+        [Fact]
         public void Command1()
         {
             Create("foo");
             _mode.Process("\"a");
-            Assert.AreEqual("\"a", _modeRaw.Command);
+            Assert.Equal("\"a", _modeRaw.Command);
         }
 
-        [Test]
+        [Fact]
         public void Command2()
         {
             Create("bar");
             _mode.Process("\"f");
-            Assert.AreEqual("\"f", _modeRaw.Command);
+            Assert.Equal("\"f", _modeRaw.Command);
         }
 
-        [Test]
+        [Fact]
         public void Command4()
         {
             Create(DefaultLines);
             _mode.Process('2');
-            Assert.AreEqual("2", _mode.Command);
+            Assert.Equal("2", _mode.Command);
         }
 
-        [Test]
+        [Fact]
         public void Command5()
         {
             Create(DefaultLines);
             _mode.Process("2d");
-            Assert.AreEqual("2d", _mode.Command);
+            Assert.Equal("2d", _mode.Command);
         }
 
-        [Test]
+        [Fact]
         public void Commands1()
         {
             Create("foo");
             var found = _modeRaw.Commands.Single(x => x.KeyInputSet.Equals(KeyNotationUtil.StringToKeyInputSet("D")));
-            Assert.AreEqual(CommandFlags.Repeatable, found.CommandFlags);
+            Assert.Equal(CommandFlags.Repeatable, found.CommandFlags);
         }
 
-        [Test]
+        /// <summary>
+        /// Movements shouldn't be repeatable
+        /// </summary>
+        [Fact]
         public void Commands2()
         {
             Create("foo");
             var found = _modeRaw.Commands.Single(x => x.KeyInputSet.Equals(KeyNotationUtil.StringToKeyInputSet("h")));
-            Assert.AreNotEqual(CommandFlags.Repeatable, found.CommandFlags, "Movements should not be repeatable");
+            Assert.NotEqual(CommandFlags.Repeatable, found.CommandFlags);
         }
 
-        [Test]
+        [Fact]
         public void Commands3()
         {
             Create("foo", "bar", "baz");
             var found = _modeRaw.Commands.Single(x => x.KeyInputSet.Equals(KeyNotationUtil.StringToKeyInputSet("dd")));
-            Assert.AreEqual(CommandFlags.Repeatable, found.CommandFlags);
+            Assert.Equal(CommandFlags.Repeatable, found.CommandFlags);
         }
 
         /// <summary>
         /// Sanity check to ensure certain commands are not in fact repeatable
         /// </summary>
-        [Test]
+        [Fact]
         public void VerifyCommandsNotRepeatable()
         {
             Create(String.Empty);
@@ -1345,7 +1355,7 @@ namespace Vim.UnitTest
             {
                 var keyInputSet = KeyNotationUtil.StringToKeyInputSet(str);
                 var command = _modeRaw.Commands.Where(x => x.KeyInputSet == keyInputSet).Single();
-                Assert.IsTrue(CommandFlags.None == (command.CommandFlags & CommandFlags.Repeatable));
+                Assert.True(CommandFlags.None == (command.CommandFlags & CommandFlags.Repeatable));
             };
 
             verify("n");
@@ -1374,15 +1384,15 @@ namespace Vim.UnitTest
             verify("<C-PageUp>");
         }
 
-        [Test]
+        [Fact]
         public void Escape1()
         {
             Create(string.Empty);
             var res = _mode.Process(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(res.IsHandled);
+            Assert.True(res.IsHandled);
         }
 
-        [Test]
+        [Fact]
         public void Bind_ReplaceAtCaret()
         {
             Create(string.Empty);
@@ -1391,7 +1401,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_RepeatLastSubstitute_WithNoFlags()
         {
             Create("foo bar");
@@ -1401,7 +1411,7 @@ namespace Vim.UnitTest
         }
 
 
-        [Test]
+        [Fact]
         public void Bind_RepeatLastSubstitute_WithFlags()
         {
             Create("foo bar");
@@ -1410,7 +1420,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_WriteBufferAndQuit()
         {
             Create("");
@@ -1423,7 +1433,7 @@ namespace Vim.UnitTest
 
         #region Visual Mode
 
-        [Test]
+        [Fact]
         public void Bind_SwitchMode_VisualCharacter()
         {
             Create("");
@@ -1432,7 +1442,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_SwitchMode_VisualLine()
         {
             Create("");
@@ -1441,7 +1451,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_SwitchMode_VisualBlock()
         {
             Create("");
@@ -1450,7 +1460,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_I()
         {
             Create(DefaultLines);
@@ -1459,7 +1469,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_GoToNextTab_Forward()
         {
             Create("");
@@ -1468,7 +1478,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_GoToNextTab_ForwardViaPageDown()
         {
             Create("");
@@ -1477,7 +1487,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_GoToNextTab_Backward()
         {
             Create("");
@@ -1486,7 +1496,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_GoToNextTab_BackwardViaPageUp()
         {
             Create("");
@@ -1495,7 +1505,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_FormatLines()
         {
             Create("foo", "bar");
@@ -1504,7 +1514,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_FormatMotion()
         {
             Create("the dog chased the ball");
@@ -1517,7 +1527,7 @@ namespace Vim.UnitTest
 
         #region Folding
 
-        [Test]
+        [Fact]
         public void Bind_OpenFoldUnderCaret()
         {
             Create(DefaultLines);
@@ -1526,7 +1536,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_CloseFoldUnderCaret()
         {
             Create(DefaultLines);
@@ -1535,7 +1545,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_OpenAllFoldsUnderCaret()
         {
             Create("");
@@ -1544,7 +1554,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_CloseAllFoldsUnderCaret()
         {
             Create("");
@@ -1553,7 +1563,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_FoldMotion()
         {
             Create("");
@@ -1562,7 +1572,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_FoldLines()
         {
             Create("");
@@ -1571,7 +1581,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_DeleteFoldUnderCaret()
         {
             Create("");
@@ -1580,7 +1590,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_DeleteAllFoldsUnderCaret()
         {
             Create("");
@@ -1589,7 +1599,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_DeleteAllFoldsInBuffer()
         {
             Create("");
@@ -1602,7 +1612,7 @@ namespace Vim.UnitTest
 
         #region Split View
 
-        [Test]
+        [Fact]
         public void Bind_GoToView_Down()
         {
             Create(string.Empty);
@@ -1612,7 +1622,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_GoToView_Right()
         {
             Create(string.Empty);
@@ -1622,7 +1632,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_GoToView_Left()
         {
             Create(string.Empty);
@@ -1632,7 +1642,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_GoToView_Up()
         {
             Create(string.Empty);
@@ -1642,7 +1652,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_GoToView_Up2()
         {
             Create(string.Empty);

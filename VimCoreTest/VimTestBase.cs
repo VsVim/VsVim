@@ -8,7 +8,7 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
-using NUnit.Framework;
+using Xunit;
 using Vim.UI.Wpf;
 using Vim.UI.Wpf.Implementation;
 using Vim.UnitTest.Exports;
@@ -22,8 +22,7 @@ namespace Vim.UnitTest
     ///   - No silent swallowed MEF errors
     ///   - Remove any key mappings 
     /// </summary>
-    [TestFixture]
-    public abstract class VimTestBase : EditorHost
+    public abstract class VimTestBase : EditorHost, IDisposable
     {
         [ThreadStatic]
         private static CompositionContainer _vimCompositionContainer;
@@ -125,11 +124,7 @@ namespace Vim.UnitTest
             _bulkOperations = CompositionContainer.GetExportedValue<IBulkOperations>();
             _clipboardDevice = CompositionContainer.GetExportedValue<IClipboardDevice>();
             _protectedOperations = new ProtectedOperations(_vimErrorDetector);
-        }
 
-        [SetUp]
-        public virtual void SetupBase()
-        {
             _clipboardDevice.Text = String.Empty;
 
             // One setting we do differ on for a default is 'timeout'.  We don't want them interferring
@@ -141,13 +136,12 @@ namespace Vim.UnitTest
             _vim.AutoLoadVimRc = false;
         }
 
-        [TearDown]
-        public virtual void  TearDownBase()
+        public virtual void Dispose()
         {
             if (_vimErrorDetector.HasErrors())
             {
                 var msg = String.Format("Extension Exception: {0}", _vimErrorDetector.GetErrors().First().Message);
-                Assert.Fail(msg);
+                throw new Exception(msg);
             }
             _vimErrorDetector.Clear();
 

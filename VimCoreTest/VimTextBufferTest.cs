@@ -1,11 +1,10 @@
 ﻿using EditorUtils;
 using Microsoft.VisualStudio.Text;
-using NUnit.Framework;
+using Xunit;
 using Vim.Extensions;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public sealed class VimTextBufferTest : VimTestBase
     {
         private IVimTextBuffer _vimTextBuffer;
@@ -21,46 +20,46 @@ namespace Vim.UnitTest
         /// <summary>
         /// Requesting a LocalMark which isn't set should produce an empty option
         /// </summary>
-        [Test]
+        [Fact]
         public void GetLocalMark_NotSet()
         {
             Create("");
-            Assert.IsTrue(_vimTextBuffer.GetLocalMark(_localMarkA).IsNone());
+            Assert.True(_vimTextBuffer.GetLocalMark(_localMarkA).IsNone());
         }
 
         /// <summary>
         /// Sanity check to ensure we can get and set a local mark 
         /// </summary>
-        [Test]
+        [Fact]
         public void SetLocalMark_FirstLine()
         {
             Create("hello world");
-            Assert.IsTrue(_vimTextBuffer.SetLocalMark(_localMarkA, 0, 1));
-            Assert.AreEqual(1, _vimTextBuffer.GetLocalMark(_localMarkA).Value.Position.Position);
+            Assert.True(_vimTextBuffer.SetLocalMark(_localMarkA, 0, 1));
+            Assert.Equal(1, _vimTextBuffer.GetLocalMark(_localMarkA).Value.Position.Position);
         }
 
         /// <summary>
         /// Sanity check to ensure we can get and set a local mark 
         /// </summary>
-        [Test]
+        [Fact]
         public void SetLocalMark_SecondLine()
         {
             Create("hello", "world");
-            Assert.IsTrue(_vimTextBuffer.SetLocalMark(_localMarkA, 1, 1));
-            Assert.AreEqual(_textBuffer.GetLine(1).Start.Add(1).Position, _vimTextBuffer.GetLocalMark(_localMarkA).Value.Position.Position);
+            Assert.True(_vimTextBuffer.SetLocalMark(_localMarkA, 1, 1));
+            Assert.Equal(_textBuffer.GetLine(1).Start.Add(1).Position, _vimTextBuffer.GetLocalMark(_localMarkA).Value.Position.Position);
         }
 
         /// <summary>
         /// Attempting to set a read only mark should return false and not update the mark
         /// </summary>
-        [Test]
+        [Fact]
         public void SetLocalMark_ReadOnlyMark()
         {
             Create("hello", "world");
             var visualSpan = VisualSpan.NewCharacter(new CharacterSpan(_textBuffer.GetPoint(0), 1, 2));
             _vimTextBuffer.LastVisualSelection = FSharpOption.Create(VisualSelection.CreateForward(visualSpan));
-            Assert.IsFalse(_vimTextBuffer.SetLocalMark(LocalMark.LastSelectionStart, 0, 4));
-            Assert.AreEqual(0, _vimTextBuffer.GetLocalMark(LocalMark.LastSelectionStart).Value.Position.Position);
+            Assert.False(_vimTextBuffer.SetLocalMark(LocalMark.LastSelectionStart, 0, 4));
+            Assert.Equal(0, _vimTextBuffer.GetLocalMark(LocalMark.LastSelectionStart).Value.Position.Position);
         }
     }
 }

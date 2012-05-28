@@ -1,21 +1,19 @@
 ﻿using System;
 using System.Linq;
 using Microsoft.FSharp.Core;
-using NUnit.Framework;
+using Xunit;
 using Vim.Extensions;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public sealed class VimRegexTest
     {
         private static readonly string[] LowerCaseLetters = TestConstants.LowerCaseLetters.Select(x => x.ToString()).ToArray();
         private static readonly string[] UpperCaseLetters = TestConstants.UpperCaseLetters.Select(x => x.ToString()).ToArray();
         private static readonly string[] Digits = TestConstants.Digits.Select(x => x.ToString()).ToArray();
-        private IVimGlobalSettings _globalSettings;
+        private readonly IVimGlobalSettings _globalSettings;
 
-        [SetUp]
-        public void Setup()
+        public VimRegexTest()
         {
             _globalSettings = new GlobalSettings();
             _globalSettings.IgnoreCase = true;
@@ -35,17 +33,17 @@ namespace Vim.UnitTest
         private void VerifyMatches(VimRegexOptions options, string pattern, params string[] inputArray)
         {
             var opt = VimRegexFactory.Create(pattern, options);
-            Assert.IsTrue(opt.IsSome());
+            Assert.True(opt.IsSome());
             var regex = opt.Value;
             foreach (var cur in inputArray)
             {
-                Assert.IsTrue(regex.IsMatch(cur));
+                Assert.True(regex.IsMatch(cur));
             }
         }
 
         private void VerifyNotRegex(string pattern)
         {
-            Assert.IsTrue(Create(pattern).IsNone());
+            Assert.True(Create(pattern).IsNone());
         }
 
         private void VerifyNotMatches(string pattern, params string[] inputArray)
@@ -56,21 +54,21 @@ namespace Vim.UnitTest
         private void VerifyNotMatches(VimRegexOptions options, string pattern, params string[] inputArray)
         {
             var opt = VimRegexFactory.Create(pattern, options);
-            Assert.IsTrue(opt.IsSome());
+            Assert.True(opt.IsSome());
             var regex = opt.Value;
             foreach (var cur in inputArray)
             {
-                Assert.IsFalse(regex.IsMatch(cur));
+                Assert.False(regex.IsMatch(cur));
             }
         }
 
         private void VerifyMatchIs(string pattern, string input, string toMatch)
         {
             var regex = Create(pattern);
-            Assert.IsTrue(regex.IsSome());
+            Assert.True(regex.IsSome());
             var match = regex.Value.Regex.Match(input);
-            Assert.IsTrue(match.Success);
-            Assert.AreEqual(toMatch, match.Value);
+            Assert.True(match.Success);
+            Assert.Equal(toMatch, match.Value);
         }
 
         private void VerifyReplace(string pattern, string input, string replace, string result)
@@ -81,14 +79,14 @@ namespace Vim.UnitTest
         private void VerifyReplace(VimRegexOptions options, string pattern, string input, string replace, string result)
         {
             var regex = VimRegexFactory.Create(pattern, options);
-            Assert.IsTrue(regex.IsSome());
+            Assert.True(regex.IsSome());
 
             var noMagic = VimRegexOptions.NoMagic == (options & VimRegexOptions.NoMagic);
             var replaceData = new ReplaceData(Environment.NewLine, !noMagic, 1);
-            Assert.AreEqual(result, regex.Value.ReplaceAll(input, replace, replaceData));
+            Assert.Equal(result, regex.Value.ReplaceAll(input, replace, replaceData));
         }
 
-        [Test]
+        [Fact]
         public void Case_Simple()
         {
             VerifyMatches(VimRegexOptions.IgnoreCase, "a", "a", "A");
@@ -98,7 +96,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Make sure the parsing is case sensitive by default
         /// </summary>
-        [Test]
+        [Fact]
         public void Case_RespectIgnoreCase()
         {
             VerifyMatches("a", "a");
@@ -107,7 +105,7 @@ namespace Vim.UnitTest
             VerifyNotMatches("b", "B");
         }
 
-        [Test]
+        [Fact]
         public void Case_SensitiveSpecifier()
         {
             VerifyMatches(@"\Ca", "a");
@@ -119,19 +117,19 @@ namespace Vim.UnitTest
         /// <summary>
         /// Make sure we support the \C specifier anywhere in the search string
         /// </summary>
-        [Test]
+        [Fact]
         public void Case_SensitiveSpecifierInMiddleOfString()
         {
             var regex = Create(@"d\Cog").Value;
-            Assert.IsTrue(regex.CaseSpecifier.IsOrdinalCase);
-            Assert.AreEqual(@"d\Cog", regex.VimPattern);
-            Assert.AreEqual("dog", regex.RegexPattern);
+            Assert.True(regex.CaseSpecifier.IsOrdinalCase);
+            Assert.Equal(@"d\Cog", regex.VimPattern);
+            Assert.Equal("dog", regex.RegexPattern);
         }
 
         /// <summary>
         /// The \C modifier takes precedence over ignorecase option
         /// </summary>
-        [Test]
+        [Fact]
         public void Case_SensitiveSpecifierBeatsIgonreCase()
         {
             VerifyMatches(VimRegexOptions.IgnoreCase, @"\Ca", "a");
@@ -140,7 +138,7 @@ namespace Vim.UnitTest
             VerifyNotMatches(VimRegexOptions.IgnoreCase, @"\Cb", "B");
         }
 
-        [Test]
+        [Fact]
         public void Case_InsensitiveSpecifier()
         {
             VerifyMatches(@"\ca", "a", "A");
@@ -150,19 +148,19 @@ namespace Vim.UnitTest
         /// <summary>
         /// Make sure we support the \c specifier anywhere in the search string
         /// </summary>
-        [Test]
+        [Fact]
         public void Case_InsensitiveSpecifierInMiddleOfString()
         {
             var regex = Create(@"D\cOG").Value;
-            Assert.IsTrue(regex.CaseSpecifier.IsIgnoreCase);
-            Assert.AreEqual(@"D\cOG", regex.VimPattern);
-            Assert.AreEqual("DOG", regex.RegexPattern);
+            Assert.True(regex.CaseSpecifier.IsIgnoreCase);
+            Assert.Equal(@"D\cOG", regex.VimPattern);
+            Assert.Equal("DOG", regex.RegexPattern);
         }
 
         /// <summary>
         /// The \c modifier takes precedence over the ignore case option
         /// </summary>
-        [Test]
+        [Fact]
         public void Case_InsensitiveSpecifierBeatsDefault()
         {
             VerifyMatches(@"\ca", "a", "A");
@@ -172,7 +170,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// SmartCase should match both if only lower
         /// </summary>
-        [Test]
+        [Fact]
         public void SmartCase_Simple()
         {
             VerifyMatches(VimRegexOptions.SmartCase | VimRegexOptions.IgnoreCase, "a", "A", "a");
@@ -182,7 +180,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// SmartCase is case sensitive if any are upper
         /// </summary>
-        [Test]
+        [Fact]
         public void SmartCase_WithUpper()
         {
             VerifyMatches(VimRegexOptions.SmartCase, "A", "A");
@@ -194,7 +192,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// The \c modifier beats smart case as well
         /// </summary>
-        [Test]
+        [Fact]
         public void SmartCase_InsensitiveSpecifierWins()
         {
             VerifyMatches(VimRegexOptions.SmartCase, @"\cFoo", "foo", "FOO", "fOO");
@@ -204,7 +202,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// The \C modifier beats smart case as well
         /// </summary>
-        [Test]
+        [Fact]
         public void SmartCase_SensitiveSpecifierWins()
         {
             var options = VimRegexOptions.SmartCase | VimRegexOptions.IgnoreCase;
@@ -214,18 +212,18 @@ namespace Vim.UnitTest
             VerifyNotMatches(options, @"\CBAR", "bar");
         }
 
-        [Test]
+        [Fact]
         public void CreateRegexOptions_NoMagic()
         {
             _globalSettings.Magic = false;
             var options = VimRegexFactory.CreateRegexOptions(_globalSettings);
-            Assert.AreEqual(VimRegexOptions.NoMagic, options & VimRegexOptions.NoMagic);
+            Assert.Equal(VimRegexOptions.NoMagic, options & VimRegexOptions.NoMagic);
         }
 
         /// <summary>
         /// Magic should the default setting
         /// </summary>
-        [Test]
+        [Fact]
         public void Magic_ShouldBeDefault()
         {
             VerifyMatches(".", "a", "b", "c");
@@ -234,7 +232,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// The \m should override the NoMagic option on the regex
         /// </summary>
-        [Test]
+        [Fact]
         public void Magic_MagicSpecifierHasPrecedence()
         {
             VerifyMatches(VimRegexOptions.NoMagic, @"\m.", "a", "b", "c");
@@ -243,7 +241,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// The \M should oveerride the default VimRegexOptions
         /// </summary>
-        [Test]
+        [Fact]
         public void Magic_NoMagicSpecifierHasPrecedence()
         {
             VerifyNotMatches(@"\M.", "a", "b", "c");
@@ -253,40 +251,40 @@ namespace Vim.UnitTest
         /// <summary>
         /// The \M should oveerride the default VimRegexOptions
         /// </summary>
-        [Test]
+        [Fact]
         public void Magic_MagicSpecifierInMiddle()
         {
             VerifyMatches(VimRegexOptions.NoMagic, @"a\m.", "ab", "ac");
         }
 
-        [Test]
+        [Fact]
         public void Magic_NoMagicSpecifierInMiddle()
         {
             VerifyNotMatches(@"a\M.", "ab", "ac");
             VerifyMatches(@"a\M.", "a.");
         }
 
-        [Test]
+        [Fact]
         public void VeryMagic1()
         {
             VerifyMatches(VimRegexOptions.NoMagic, @"\v.", "a", "b");
         }
 
-        [Test]
+        [Fact]
         public void VeryMagic2()
         {
             VerifyNotMatches(@"\V.", "a", "b");
             VerifyMatches(@"\V\.", "a", "b");
         }
 
-        [Test]
+        [Fact]
         public void VeryNoMagicDotIsNotSpecial()
         {
             VerifyNotMatches(@"\V.", "a");
             VerifyMatches(@"\V.", ".");
         }
 
-        [Test]
+        [Fact]
         public void ItemStar1()
         {
             VerifyMatchIs(@"ab*", "abb", "abb");
@@ -294,7 +292,7 @@ namespace Vim.UnitTest
             VerifyMatchIs(@"ab*", "cabb", "abb");
         }
 
-        [Test]
+        [Fact]
         public void ItemStar2()
         {
             VerifyMatchIs(@"\Mab*", "ab*", "ab*");
@@ -303,7 +301,7 @@ namespace Vim.UnitTest
             VerifyMatchIs(@"\Mab\*", "cabb", "abb");
         }
 
-        [Test]
+        [Fact]
         public void ItemStar3()
         {
             VerifyMatchIs(@"\mab*", "abb", "abb");
@@ -311,7 +309,7 @@ namespace Vim.UnitTest
             VerifyMatchIs(@"\mab*", "cabb", "abb");
         }
 
-        [Test]
+        [Fact]
         public void ItemQuestion1()
         {
             VerifyMatchIs(@"ab?", "ab?", "ab?");
@@ -320,7 +318,7 @@ namespace Vim.UnitTest
             VerifyMatchIs(@"ab\?", "adc", "a");
         }
 
-        [Test]
+        [Fact]
         public void ItemQuestion2()
         {
             VerifyMatchIs(@"\Mab?", "ab?", "ab?");
@@ -328,7 +326,7 @@ namespace Vim.UnitTest
             VerifyMatchIs(@"\Mab\?", "abc", "ab");
         }
 
-        [Test]
+        [Fact]
         public void ItemQuestion3()
         {
             VerifyMatchIs(@"\vab?", "ad", "a");
@@ -336,7 +334,7 @@ namespace Vim.UnitTest
             VerifyMatchIs(@"\vab?", "abc", "ab");
         }
 
-        [Test]
+        [Fact]
         public void ItemEqual1()
         {
             VerifyMatchIs(@"ab\=", "a", "a");
@@ -344,7 +342,7 @@ namespace Vim.UnitTest
             VerifyMatchIs(@"ab\=", "abc", "ab");
         }
 
-        [Test]
+        [Fact]
         public void ItemEqual2()
         {
             VerifyMatchIs(@"\Mab=", "ab=", "ab=");
@@ -353,7 +351,7 @@ namespace Vim.UnitTest
             VerifyMatchIs(@"\Mab\=", "adc", "a");
         }
 
-        [Test]
+        [Fact]
         public void ItemEqual3()
         {
             VerifyMatchIs(@"\vab=", "a", "a");
@@ -361,43 +359,45 @@ namespace Vim.UnitTest
             VerifyMatchIs(@"\vab=", "abc", "ab");
         }
 
-        [Test]
+        [Fact]
         public void AtomHat1()
         {
             VerifyMatches(@"^m", "m");
             VerifyMatches(@"^", "aoeu");
         }
 
-        [Test]
+        [Fact]
         public void AtomHat2()
         {
             VerifyMatches(@"\M^m", "m");
             VerifyMatches(@"\M^", "aoeu");
         }
 
-        [Test]
+        [Fact]
         public void AtomHat3()
         {
             VerifyMatches(@"\v^m", "m");
             VerifyMatches(@"\v^", "aoeu");
         }
 
-        [Test]
-        [Description("Only use ^ as magic at the start of a pattern")]
+        /// <summary>
+        /// Only use ^ as magic at the start of a pattern
+        /// </summary>
+        [Fact]
         public void AtomHat4()
         {
             VerifyMatchIs(@"a^", "a^", "a^");
             VerifyMatchIs(@"\Ma^", "a^", "a^");
         }
 
-        [Test]
+        [Fact]
         public void AtomHat5()
         {
             VerifyMatches(@"\V^m", "a^m");
             VerifyMatches(@"\V^", "a^aoeu");
         }
 
-        [Test]
+        [Fact]
         public void AtomBackslashHat1()
         {
             VerifyMatchIs(@"\^", "^", "^");
@@ -406,14 +406,14 @@ namespace Vim.UnitTest
             VerifyNotMatches(@"\^", "a");
         }
 
-        [Test]
+        [Fact]
         public void AtomBackslashHat2()
         {
             VerifyMatches(@"\V\^m", "m");
             VerifyMatches(@"\V\^", "aoeu");
         }
 
-        [Test]
+        [Fact]
         public void AtomBackslashHat3()
         {
             VerifyMatchIs(@"\M\^", "^", "^");
@@ -422,7 +422,7 @@ namespace Vim.UnitTest
             VerifyNotMatches(@"\M\^", "a");
         }
 
-        [Test]
+        [Fact]
         public void AtomBackslashHat4()
         {
             VerifyMatchIs(@"\v\^", "^", "^");
@@ -431,21 +431,21 @@ namespace Vim.UnitTest
             VerifyNotMatches(@"\v\^", "a");
         }
 
-        [Test]
+        [Fact]
         public void AtomBackslashUnderscoreHat1()
         {
             VerifyNotRegex(@"\_");
             VerifyNotRegex(@"ab\_");
         }
 
-        [Test]
+        [Fact]
         public void AtomBackslashUnderscoreHat2()
         {
             VerifyNotRegex(@"\M\_");
             VerifyNotRegex(@"\M\_");
         }
 
-        [Test]
+        [Fact]
         public void AtomBackslashUnderscoreHat3()
         {
             VerifyMatches(@"\_^", "abc");
@@ -453,7 +453,7 @@ namespace Vim.UnitTest
             VerifyMatches(@"c\?\_^ab", "ab");
         }
 
-        [Test]
+        [Fact]
         public void AtomBackslashUnderscoreHat4()
         {
             VerifyMatches(@"\M\_^", "abc");
@@ -461,7 +461,7 @@ namespace Vim.UnitTest
             VerifyMatches(@"\Mc\?\_^ab", "ab");
         }
 
-        [Test]
+        [Fact]
         public void AtomDollar1()
         {
             VerifyMatches(@"$", "");
@@ -469,28 +469,28 @@ namespace Vim.UnitTest
             VerifyMatches(@"\M$", "aoe");
         }
 
-        [Test]
+        [Fact]
         public void AtomDollar2()
         {
             VerifyMatchIs(@"a$", "baaa", "a");
             VerifyMatchIs(@"a*$", "baaa", "aaa");
         }
 
-        [Test]
+        [Fact]
         public void AtomDollar3()
         {
             VerifyMatchIs(@"\Ma$", "baaa", "a");
             VerifyMatchIs(@"\Ma\*$", "baaa", "aaa");
         }
 
-        [Test]
+        [Fact]
         public void AtomDollar4()
         {
             VerifyMatchIs(@"\Ma$b", "a$bz", "a$b");
             VerifyMatchIs(@"\Ma\*$b", "aa$bz", "aa$b");
         }
 
-        [Test]
+        [Fact]
         public void AtomBackslashDollar1()
         {
             VerifyNotMatches(@"\$", "");
@@ -498,108 +498,110 @@ namespace Vim.UnitTest
             VerifyNotMatches(@"\M\$", "aoe");
         }
 
-        [Test]
+        [Fact]
         public void AtomBackslashDollar2()
         {
             VerifyMatchIs(@"\$", "$", "$");
             VerifyMatchIs(@"\$ab", "$ab", "$ab");
         }
 
-        [Test]
+        [Fact]
         public void AtomBackslashUnderscoreDollar1()
         {
             VerifyMatchIs(@"\$", "$", "$");
             VerifyMatchIs(@"\$ab", "$ab", "$ab");
         }
 
-        [Test]
+        [Fact]
         public void AtomBackslashUnderscoreDollar2()
         {
             VerifyNotRegex(@"\_");
         }
 
-        [Test]
+        [Fact]
         public void AtomBackslashUnderscoreDollar3()
         {
             VerifyMatchIs(@"\Ma\_$", "baaa", "a");
             VerifyMatchIs(@"\Ma\*\_$", "baaa", "aaa");
         }
 
-        [Test]
+        [Fact]
         public void WordBoundary1()
         {
             VerifyNotMatches(@"\<word", "aword");
             VerifyNotMatches(@"\M\<word", "aword");
         }
 
-        [Test]
+        [Fact]
         public void WordBoundary2()
         {
             VerifyMatches(@"\<word", "a word");
             VerifyMatches(@"\M\<word", "a word");
         }
 
-        [Test]
+        [Fact]
         public void WordBoundary3()
         {
             VerifyMatchIs(@"\<word", "a word", "word");
             VerifyMatchIs(@"\M\<word", "a word", "word");
         }
 
-        [Test]
+        [Fact]
         public void WordBoundary4()
         {
             VerifyNotMatches(@"word\>", "words");
             VerifyNotMatches(@"\Mword\>", "words");
         }
 
-        [Test]
+        [Fact]
         public void WordBoundary5()
         {
             VerifyMatches(@"word\>", "a word again");
             VerifyMatches(@"\Mword\>", "a word again");
         }
 
-        [Test]
-        [Description("Boundary at the end of a line")]
+        /// <summary>
+        /// Boundary at the end of a line
+        /// </summary>
+        [Fact]
         public void WordBoundary6()
         {
             VerifyMatches(@"word\>", "a word");
             VerifyMatches(@"\Mword\>", "a word");
         }
 
-        [Test]
+        [Fact]
         public void Grouping1()
         {
             VerifyMatchIs(@"(a)", "foo(a)", "(a)");
             VerifyMatchIs(@"(abc)", "foo(abc)", "(abc)");
         }
 
-        [Test]
+        [Fact]
         public void Grouping2()
         {
             VerifyMatchIs(@"\(ab\)", "foo(ab)", "ab");
             VerifyMatchIs(@"\(ab\)", "abc", "ab");
         }
 
-        [Test]
+        [Fact]
         public void Grouping3()
         {
             VerifyMatchIs(@"\v(a)", "foo(a)", "a");
             VerifyMatchIs(@"\v(abc)", "foo(abc)", "abc");
         }
 
-        [Test]
+        [Fact]
         public void Grouping4()
         {
             var regex = Create(@"\(");
-            Assert.IsTrue(regex.IsNone());
+            Assert.True(regex.IsNone());
         }
 
         /// <summary>
         /// Make sure that \1 can be used to match the previous group specified
         /// </summary>
-        [Test]
+        [Fact]
         public void Group_MatchPreviousGroup()
         {
             VerifyMatches(@"\(dog\)::\1", "dog::dog");
@@ -607,14 +609,14 @@ namespace Vim.UnitTest
             VerifyNotMatches(@"\(dog\)::\1", "dog::cat");
         }
 
-        [Test]
+        [Fact]
         public void Separator1()
         {
             VerifyMatchIs(@"a\|b", "foob", "b");
             VerifyMatchIs(@"a\|b", "acat", "a");
         }
 
-        [Test]
+        [Fact]
         public void Separator2()
         {
             VerifyMatchIs(@"ab\|c", "abod", "ab");
@@ -622,7 +624,7 @@ namespace Vim.UnitTest
             VerifyMatchIs(@"ab\|c", "bacod", "c");
         }
 
-        [Test]
+        [Fact]
         public void Separator3()
         {
             VerifyMatchIs(@"\vab|c", "abod", "ab");
@@ -630,23 +632,23 @@ namespace Vim.UnitTest
             VerifyMatchIs(@"\vab|c", "bacod", "c");
         }
 
-        [Test]
-        [Description("Simple no-magic replace")]
+        /// <summary>
+        /// Simple no-magic replace
+        /// </summary>
+        [Fact]
         public void Replace1()
         {
             VerifyReplace(@"foo", "foo bar", "bar", "bar bar");
             VerifyReplace(@"foo", "foo bar baz", "bar", "bar bar baz");
         }
 
-        [Test]
-        [Description("Atom match and replace")]
+        [Fact]
         public void Replace2()
         {
             VerifyReplace(@"a\|b", "cat", "o", "cot");
         }
 
-        [Test]
-        [Description("Word boundary replacements")]
+        [Fact]
         public void Replace3()
         {
             VerifyReplace(@"\<foo\>", "foo bar", "bar", "bar bar");
@@ -654,7 +656,7 @@ namespace Vim.UnitTest
             VerifyReplace(@"\<foo\>", "foo bar baz", "bar", "bar bar baz");
         }
 
-        [Test]
+        [Fact]
         public void Replace4()
         {
             VerifyReplace(@"(ab)", "foo(ab)", "()", "foo()");
@@ -662,7 +664,7 @@ namespace Vim.UnitTest
             VerifyReplace(@"foo()", "foo(ab)", "()", "foo(ab)");
         }
 
-        [Test]
+        [Fact]
         public void Replace5()
         {
             VerifyReplace(@"\(ab\)", "ab", "", "");
@@ -670,16 +672,14 @@ namespace Vim.UnitTest
             VerifyReplace(@"\(ab\)", "c(ab)", "", "c()");
         }
 
-        [Test]
-        [Description("Replacement using the group specifier")]
+        [Fact]
         public void Replace6()
         {
             VerifyReplace(@"foo\(\.*\)", "foobar", @"\1", "bar");
             VerifyReplace(@"jaz\(\.*\)", "jaz123", @"\1", "123");
         }
 
-        [Test]
-        [Description("Replacement using the group specifier")]
+        [Fact]
         public void Replace7()
         {
             VerifyReplace(@"\(\.*\)b\(\.*\)", "abc", @"\2", "ac");
@@ -690,7 +690,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Escaped back slashes should appear as normal back slashes in the replacement string
         /// </summary>
-        [Test]
+        [Fact]
         public void Replace_EscapedBackSlashes()
         {
             VerifyReplace("b", "abc", @"\\\\", @"a\\c");
@@ -701,7 +701,7 @@ namespace Vim.UnitTest
         /// 
         /// Issue #779
         /// </summary>
-        [Test]
+        [Fact]
         public void Replace_EscapedBackSlashNotNewLine()
         {
             VerifyReplace("b", "abc", @"\\n\\", @"a\n\c");
@@ -712,7 +712,7 @@ namespace Vim.UnitTest
         /// When the '&' character is used in the replacement string it should replace with 
         /// the entire matched pattern
         /// </summary>
-        [Test]
+        [Fact]
         public void Replace_Ampersand()
         {
             VerifyReplace("a", "cat", @"o&", "coat");
@@ -723,7 +723,7 @@ namespace Vim.UnitTest
         /// When there is no magic then the ampersand is not special and should replace 
         /// as normal
         /// </summary>
-        [Test]
+        [Fact]
         public void Replace_Ampersand_NoMagic()
         {
             VerifyReplace(VimRegexOptions.NoMagic, "a", "cat", @"o&", "co&t");
@@ -733,7 +733,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// When escaped with magic it should behave simply as an ampersand
         /// </summary>
-        [Test]
+        [Fact]
         public void Replace_EscapedAmpersand()
         {
             VerifyReplace("a", "cat", @"o\&", "co&t");
@@ -744,7 +744,7 @@ namespace Vim.UnitTest
         /// The '\0' pattern is used to match the entire matched pattern.  It acts exactly 
         /// as '&' does in the replacement string
         /// </summary>
-        [Test]
+        [Fact]
         public void Replace_EscapedZero()
         {
             VerifyReplace("a", "cat", @"o\0", "coat");
@@ -754,7 +754,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// The '\t' replacement string should insert a tab
         /// </summary>
-        [Test]
+        [Fact]
         public void Replace_Escaped_T()
         {
             VerifyReplace("a", "a", @"\t", "\t");
@@ -764,28 +764,27 @@ namespace Vim.UnitTest
         /// <summary>
         /// The '\r' replacement should insert a carriage return
         /// </summary>
-        [Test]
+        [Fact]
         public void Replace_Escaped_R()
         {
             VerifyReplace("a", "a", @"\r", Environment.NewLine);
         }
 
-        [Test]
+        [Fact]
         public void CharacterSequence1()
         {
             VerifyMatches(@"[abc]", "a", "b", "c");
             VerifyMatches(@"\M\[abc]", "a", "b", "c");
         }
 
-        [Test]
-        [Description("Range support")]
+        [Fact]
         public void CharacterSequence2()
         {
             VerifyMatches(@"[a-z]", "a", "b", "c", "z");
             VerifyMatches(@"\M\[a-c]", "a", "b", "c");
         }
 
-        [Test]
+        [Fact]
         public void AtomDigits()
         {
             VerifyMatches(@"\d", "1", "2");
@@ -793,7 +792,7 @@ namespace Vim.UnitTest
             VerifyNotMatches(@"\d", "a");
         }
 
-        [Test]
+        [Fact]
         public void AtomNonDigits()
         {
             VerifyMatches(@"\D", "a", "b");
@@ -801,7 +800,7 @@ namespace Vim.UnitTest
             VerifyNotMatches(@"\M\D", "1", "2");
         }
 
-        [Test]
+        [Fact]
         public void AtomWordCharacter()
         {
             VerifyMatches(@"\w", "a", "A", "_", "1", "4");
@@ -810,7 +809,7 @@ namespace Vim.UnitTest
             VerifyNotMatches(@"\M\w", "%");
         }
 
-        [Test]
+        [Fact]
         public void AtomNonWordCharacter()
         {
             VerifyNotMatches(@"\W", "a", "A", "_", "1", "4");
@@ -819,35 +818,35 @@ namespace Vim.UnitTest
             VerifyMatches(@"\M\W", "%");
         }
 
-        [Test]
+        [Fact]
         public void AtomHexDigit()
         {
             VerifyMatches(@"\x", "0123456789abcdef".Select(x => x.ToString()).ToArray());
             VerifyNotMatches(@"\x", "%", "^", "g", "h");
         }
 
-        [Test]
+        [Fact]
         public void AtomNonHexDigit()
         {
             VerifyNotMatches(@"\X", "0123456789abcdef".Select(x => x.ToString()).ToArray());
             VerifyMatches(@"\X", "%", "^", "g", "h");
         }
 
-        [Test]
+        [Fact]
         public void AtomOctal()
         {
             VerifyMatches(@"\o", "01234567".Select(x => x.ToString()).ToArray());
             VerifyNotMatches(@"\o", "%", "^", "g", "h", "8", "9");
         }
 
-        [Test]
+        [Fact]
         public void AtomNonOctal()
         {
             VerifyNotMatches(@"\O", "01234567".Select(x => x.ToString()).ToArray());
             VerifyMatches(@"\O", "%", "^", "g", "h", "8", "9");
         }
 
-        [Test]
+        [Fact]
         public void AtomHeadOfWord()
         {
             VerifyMatches(@"\h", LowerCaseLetters);
@@ -856,7 +855,7 @@ namespace Vim.UnitTest
             VerifyNotMatches(@"\h", Digits);
         }
 
-        [Test]
+        [Fact]
         public void AtomNonHeadOfWord()
         {
             VerifyNotMatches(@"\H", LowerCaseLetters);
@@ -865,7 +864,7 @@ namespace Vim.UnitTest
             VerifyMatches(@"\H", Digits);
         }
 
-        [Test]
+        [Fact]
         public void AtomAlphabeticChar()
         {
             VerifyMatches(@"\a", LowerCaseLetters);
@@ -873,7 +872,7 @@ namespace Vim.UnitTest
             VerifyNotMatches(@"\a", Digits);
         }
 
-        [Test]
+        [Fact]
         public void AtomNonAlphabeticChar()
         {
             VerifyNotMatches(@"\A", LowerCaseLetters);
@@ -882,7 +881,7 @@ namespace Vim.UnitTest
             VerifyMatches(@"\A", Digits);
         }
 
-        [Test]
+        [Fact]
         public void AtomLowerLetters()
         {
             _globalSettings.IgnoreCase = false;
@@ -891,7 +890,7 @@ namespace Vim.UnitTest
             VerifyNotMatches(@"\l", Digits);
         }
 
-        [Test]
+        [Fact]
         public void AtomNonLowerLetters()
         {
             _globalSettings.IgnoreCase = false;
@@ -901,7 +900,7 @@ namespace Vim.UnitTest
             VerifyMatches(@"\L", Digits);
         }
 
-        [Test]
+        [Fact]
         public void AtomUpperLetters()
         {
             _globalSettings.IgnoreCase = false;
@@ -910,7 +909,7 @@ namespace Vim.UnitTest
             VerifyNotMatches(@"\u", Digits);
         }
 
-        [Test]
+        [Fact]
         public void AtomNonUpperLetters()
         {
             _globalSettings.IgnoreCase = false;
@@ -920,7 +919,7 @@ namespace Vim.UnitTest
             VerifyMatches(@"\U", Digits);
         }
 
-        [Test]
+        [Fact]
         public void AtomPlus()
         {
             _globalSettings.Magic = true;
@@ -929,7 +928,7 @@ namespace Vim.UnitTest
             VerifyMatchIs(@"\va+", "aa", "aa");
         }
 
-        [Test]
+        [Fact]
         public void AtomCount()
         {
             _globalSettings.Magic = true;
@@ -940,7 +939,7 @@ namespace Vim.UnitTest
             VerifyNotMatches(@"a\{3}", "a");
         }
 
-        [Test]
+        [Fact]
         public void AtomStar_Magic()
         {
             _globalSettings.Magic = true;
@@ -948,7 +947,7 @@ namespace Vim.UnitTest
             VerifyMatchIs(@"a\*", "a*", "a*");
         }
 
-        [Test]
+        [Fact]
         public void AtomStar_NoMagic()
         {
             _globalSettings.Magic = false;
@@ -956,7 +955,7 @@ namespace Vim.UnitTest
             VerifyMatchIs(@"a\*", "aaa", "aaa");
         }
 
-        [Test]
+        [Fact]
         public void AtomGroup_GroupAllBut()
         {
             _globalSettings.Magic = true;
@@ -964,7 +963,7 @@ namespace Vim.UnitTest
             VerifyMatchIs(@"""[^""]*", @"b""cd", @"""cd");
         }
 
-        [Test]
+        [Fact]
         public void AtomWhitespace_NoMagic()
         {
             _globalSettings.Magic = false;
@@ -973,7 +972,7 @@ namespace Vim.UnitTest
             VerifyMatchIs(@"hello\s\*world", "hello   world", "hello   world");
         }
 
-        [Test]
+        [Fact]
         public void AtomWhitespace_Magic()
         {
             _globalSettings.Magic = true;
@@ -982,14 +981,14 @@ namespace Vim.UnitTest
             VerifyMatchIs(@"hello\s*world", "hello   world", "hello   world");
         }
 
-        [Test]
+        [Fact]
         public void AtomWhitespace_MultipleWithStarQualifier()
         {
             _globalSettings.Magic = true;
             VerifyMatchIs(@"TCHAR\s\s*buff", "TCHAR buff", "TCHAR buff");
         }
 
-        [Test]
+        [Fact]
         public void AtomNonWhitespace_NoMagic()
         {
             _globalSettings.Magic = false;
@@ -997,7 +996,7 @@ namespace Vim.UnitTest
             VerifyMatchIs(@"hello\Sworld", "hello!world", "hello!world");
         }
 
-        [Test]
+        [Fact]
         public void AtomNonWhitespace_Magic()
         {
             _globalSettings.Magic = true;
@@ -1008,7 +1007,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// The '{' should match as a literal even when magic is on 
         /// </summary>
-        [Test]
+        [Fact]
         public void AtomOpenCurly_Magic()
         {
             _globalSettings.Magic = true;
@@ -1019,7 +1018,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// The '{' should register as a count open when very magic is on
         /// </summary>
-        [Test]
+        [Fact]
         public void AtomOpenCurly_VeryMagic()
         {
             _globalSettings.Magic = true;
@@ -1029,7 +1028,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Make sure a few items are not actually regexs
         /// </summary>
-        [Test]
+        [Fact]
         public void AtomOpenCurly_Bad()
         {
             VerifyNotRegex(@"\{");
@@ -1040,7 +1039,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// The '}' should register as a literal even when very magic is on. 
         /// </summary>
-        [Test]
+        [Fact]
         public void AtomCloseCurly_VeryMagic()
         {
             _globalSettings.Magic = true;
@@ -1052,7 +1051,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// The "\{}" is an exact match count
         /// </summary>
-        [Test]
+        [Fact]
         public void Count_Exact()
         {
             VerifyMatches(@"a\{2}", "aa", "aaa");
@@ -1064,7 +1063,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// The "\{,}" is a range
         /// </summary>
-        [Test]
+        [Fact]
         public void Count_Range()
         {
             VerifyMatches(@"a\{2,3}", "aa", "aaa");
@@ -1076,7 +1075,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// It's Ok for the final } to be escaped with a \ as well
         /// </summary>
-        [Test]
+        [Fact]
         public void Count_ExtraBackslash()
         {
             VerifyMatches(@"a\{2\}", "aa");
@@ -1086,7 +1085,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// A \t should be able to match a tab
         /// </summary>
-        [Test]
+        [Fact]
         public void Tab()
         {
             VerifyMatches(@"\t", "hello\tworld", "\t");
@@ -1095,13 +1094,13 @@ namespace Vim.UnitTest
         /// <summary>
         /// A \n should be able to match a newline, any newline 
         /// </summary>
-        [Test]
+        [Fact]
         public void NewLine_Match()
         {
             VerifyMatches(@"\n", "hello\r\n", "hello\n", "hello\r");
         }
 
-        [Test]
+        [Fact]
         public void NewLine_Replace()
         {
             VerifyReplace(@"\n", "hello\nworld", " ", "hello world");
@@ -1109,7 +1108,7 @@ namespace Vim.UnitTest
             VerifyReplace(@"\n", "hello\rworld", " ", "hello world");
         }
 
-        [Test]
+        [Fact]
         public void Newline_DollarSignMatchesEndOfLine()
         {
             VerifyMatches(@"foo$", "foo\r\nbar");
