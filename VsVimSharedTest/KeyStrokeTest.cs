@@ -1,46 +1,45 @@
-﻿using NUnit.Framework;
+﻿using Xunit;
 using Vim;
 using Vim.UnitTest;
 
 namespace VsVim.UnitTest
 {
-    [TestFixture]
     public sealed class KeyStrokeTest
     {
-        [Test]
+        [Fact]
         public void Constructor_WithNoModifier()
         {
             var stroke = new KeyStroke(
                 KeyInputUtil.CharToKeyInput('c'),
                 KeyModifiers.None);
-            Assert.AreEqual(KeyInputUtil.CharToKeyInput('c'), stroke.KeyInput);
-            Assert.AreEqual(KeyInputUtil.CharToKeyInput('c'), stroke.AggregateKeyInput);
-            Assert.AreEqual('c', stroke.Char);
+            Assert.Equal(KeyInputUtil.CharToKeyInput('c'), stroke.KeyInput);
+            Assert.Equal(KeyInputUtil.CharToKeyInput('c'), stroke.AggregateKeyInput);
+            Assert.Equal('c', stroke.Char);
         }
 
-        [Test]
+        [Fact]
         public void Constructor_WithShiftModifier()
         {
             var stroke = new KeyStroke(
                 KeyInputUtil.CharToKeyInput('#'),
                 KeyModifiers.Shift);
-            Assert.AreEqual(KeyInputUtil.CharToKeyInput('#'), stroke.KeyInput);
-            Assert.AreEqual(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Pound, KeyModifiers.Shift), stroke.AggregateKeyInput);
-            Assert.AreEqual('#', stroke.Char);
+            Assert.Equal(KeyInputUtil.CharToKeyInput('#'), stroke.KeyInput);
+            Assert.Equal(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Pound, KeyModifiers.Shift), stroke.AggregateKeyInput);
+            Assert.Equal('#', stroke.Char);
         }
 
-        [Test]
+        [Fact]
         public void KeyStroke_WithShiftAndControlModifier()
         {
             var stroke = new KeyStroke(
                 KeyInputUtil.CharToKeyInput('#'),
                 KeyModifiers.Shift | KeyModifiers.Control);
-            Assert.AreEqual(KeyInputUtil.CharToKeyInput('#'), stroke.KeyInput);
-            Assert.AreEqual(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Pound, KeyModifiers.Shift | KeyModifiers.Control), stroke.AggregateKeyInput);
-            Assert.AreEqual('#', stroke.Char);
+            Assert.Equal(KeyInputUtil.CharToKeyInput('#'), stroke.KeyInput);
+            Assert.Equal(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Pound, KeyModifiers.Shift | KeyModifiers.Control), stroke.AggregateKeyInput);
+            Assert.Equal('#', stroke.Char);
         }
 
-        [Test]
+        [Fact]
         public void Equals1()
         {
             var stroke1 = new KeyStroke(
@@ -49,12 +48,12 @@ namespace VsVim.UnitTest
             var stroke2 = new KeyStroke(
                 KeyInputUtil.CharToKeyInput('c'),
                 KeyModifiers.Shift | KeyModifiers.Control);
-            Assert.AreEqual(stroke1, stroke2);
-            Assert.IsTrue(stroke1 == stroke2);
-            Assert.IsFalse(stroke1 != stroke2);
+            Assert.Equal(stroke1, stroke2);
+            Assert.True(stroke1 == stroke2);
+            Assert.False(stroke1 != stroke2);
         }
 
-        [Test]
+        [Fact]
         public void Equals2()
         {
             var stroke1 = new KeyStroke(
@@ -63,12 +62,12 @@ namespace VsVim.UnitTest
             var stroke2 = new KeyStroke(
                 KeyInputUtil.CharToKeyInput('c'),
                 KeyModifiers.Shift | KeyModifiers.Control);
-            Assert.AreNotEqual(stroke1, stroke2);
-            Assert.IsFalse(stroke1 == stroke2);
-            Assert.IsTrue(stroke1 != stroke2);
+            Assert.NotEqual(stroke1, stroke2);
+            Assert.False(stroke1 == stroke2);
+            Assert.True(stroke1 != stroke2);
         }
 
-        [Test]
+        [Fact]
         public void Equals3()
         {
             var value = EqualityUnit

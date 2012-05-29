@@ -2,7 +2,7 @@
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 using Vim;
 using Vim.UI.Wpf.UnitTest;
 using Vim.UnitTest.Mock;
@@ -10,7 +10,6 @@ using VsVim.Implementation;
 
 namespace VsVim.UnitTest
 {
-    [TestFixture]
     public sealed class VsKeyProcessorTest : VimKeyProcessorTest
     {
         private Mock<IVsAdapter> _vsAdapter;
@@ -50,14 +49,14 @@ namespace VsVim.UnitTest
         {
             var args = _device.CreateKeyEventArgs(key, modKeys);
             _vsProcessor.KeyDown(args);
-            Assert.AreEqual(shouldHandle, args.Handled, "Did not handle {0} + {1}", key, modKeys);
+            Assert.Equal(shouldHandle, args.Handled);
         }
 
         /// <summary>
         /// Don't handle the AltGr scenarios here.  The AltGr key is just too ambiguous to handle in the 
         /// KeyDown event
         /// </summary>
-        [Test]
+        [Fact]
         public void KeyDown_AltGr()
         {
             VerifyNotHandle(Key.D, ModifierKeys.Alt | ModifierKeys.Control);
@@ -66,7 +65,7 @@ namespace VsVim.UnitTest
         /// <summary>
         /// Make sure that we handle alpha input when the buffer is marked as readonly. 
         /// </summary>
-        [Test]
+        [Fact]
         public void KeyDown_AlphaReadOnly()
         {
             VerifyHandle(Key.A);
@@ -81,7 +80,7 @@ namespace VsVim.UnitTest
         /// If incremental search is active then we don't want to route input to VsVim.  Instead we 
         /// want to let it get processed by incremental search
         /// </summary>
-        [Test]
+        [Fact]
         public void KeyDown_DontHandleIfIncrementalSearchActive()
         {
             var all = new[] { Key.Enter, Key.A };

@@ -7,26 +7,24 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 using Vim.UnitTest.Mock;
 using VsVim.Implementation;
 using Microsoft.VisualStudio.Text.IncrementalSearch;
 
 namespace VsVim.UnitTest
 {
-    [TestFixture]
-    public class VsAdapterTest
+    public sealed class VsAdapterTest
     {
-        private MockRepository _factory;
-        private Mock<IVsEditorAdaptersFactoryService> _editorAdapterFactory;
-        private Mock<IEditorOptionsFactoryService> _editorOptionsFactory;
-        private Mock<IIncrementalSearchFactoryService> _incrementalSearchFactoryService;
-        private Mock<SVsServiceProvider> _serviceProvider;
-        private VsAdapter _adapterRaw;
-        private IVsAdapter _adapter;
+        private readonly MockRepository _factory;
+        private readonly Mock<IVsEditorAdaptersFactoryService> _editorAdapterFactory;
+        private readonly Mock<IEditorOptionsFactoryService> _editorOptionsFactory;
+        private readonly Mock<IIncrementalSearchFactoryService> _incrementalSearchFactoryService;
+        private readonly Mock<SVsServiceProvider> _serviceProvider;
+        private readonly VsAdapter _adapterRaw;
+        private readonly IVsAdapter _adapter;
 
-        [SetUp]
-        public void Setup()
+        public VsAdapterTest()
         {
             _factory = new MockRepository(MockBehavior.Loose);
             _editorAdapterFactory = _factory.Create<IVsEditorAdaptersFactoryService>();
@@ -44,7 +42,7 @@ namespace VsVim.UnitTest
             _adapter = _adapterRaw;
         }
 
-        [Test]
+        [Fact]
         public void IsReadOnly1()
         {
             var buffer = _factory.Create<ITextBuffer>();
@@ -58,11 +56,11 @@ namespace VsVim.UnitTest
                 .Throws(new ArgumentException())
                 .Verifiable();
             _editorAdapterFactory.MakeBufferAdapter(buffer.Object, _factory);
-            Assert.IsFalse(_adapter.IsReadOnly(buffer.Object));
+            Assert.False(_adapter.IsReadOnly(buffer.Object));
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void IsReadOnly2()
         {
             var buffer = _factory.Create<ITextBuffer>();
@@ -76,11 +74,11 @@ namespace VsVim.UnitTest
                 .Throws(new InvalidOperationException())
                 .Verifiable();
             _editorAdapterFactory.MakeBufferAdapter(buffer.Object, _factory);
-            Assert.IsFalse(_adapter.IsReadOnly(buffer.Object));
+            Assert.False(_adapter.IsReadOnly(buffer.Object));
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void IsReadOnly3()
         {
             var buffer = _factory.Create<ITextBuffer>();
@@ -93,11 +91,11 @@ namespace VsVim.UnitTest
                 .Setup(x => x.GetOptionValue<bool>(DefaultTextViewOptions.ViewProhibitUserInputId))
                 .Returns(true)
                 .Verifiable();
-            Assert.IsTrue(_adapter.IsReadOnly(buffer.Object));
+            Assert.True(_adapter.IsReadOnly(buffer.Object));
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void IsReadOnly4()
         {
             var buffer = _factory.Create<ITextBuffer>();
@@ -115,11 +113,11 @@ namespace VsVim.UnitTest
             textLines
                 .Setup(x => x.GetStateFlags(out flags))
                 .Returns(VSConstants.E_FAIL);
-            Assert.IsFalse(_adapter.IsReadOnly(buffer.Object));
+            Assert.False(_adapter.IsReadOnly(buffer.Object));
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void IsReadOnly5()
         {
             var buffer = _factory.Create<ITextBuffer>();
@@ -137,11 +135,11 @@ namespace VsVim.UnitTest
             textLines
                 .Setup(x => x.GetStateFlags(out flags))
                 .Returns(VSConstants.S_OK);
-            Assert.IsFalse(_adapter.IsReadOnly(buffer.Object));
+            Assert.False(_adapter.IsReadOnly(buffer.Object));
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void IsReadOnly6()
         {
             var buffer = _factory.Create<ITextBuffer>();
@@ -159,7 +157,7 @@ namespace VsVim.UnitTest
             textLines
                 .Setup(x => x.GetStateFlags(out flags))
                 .Returns(VSConstants.S_OK);
-            Assert.IsTrue(_adapter.IsReadOnly(buffer.Object));
+            Assert.True(_adapter.IsReadOnly(buffer.Object));
             _factory.Verify();
         }
 

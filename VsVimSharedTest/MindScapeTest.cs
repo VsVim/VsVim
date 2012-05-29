@@ -2,7 +2,7 @@
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 using Vim;
 using Vim.UnitTest;
 using VsVim.Implementation;
@@ -10,7 +10,6 @@ using EditorUtils;
 
 namespace VsVim.UnitTest
 {
-    [TestFixture]
     public sealed class MindScapeTest : VimTestBase
     {
         private MindScape _mindScape;
@@ -53,7 +52,7 @@ namespace VsVim.UnitTest
         /// <summary>
         /// If it's not installed then don't listen to any key strokes
         /// </summary>
-        [Test]
+        [Fact]
         public void NotInstalled()
         {
             Create(isInstalled: false);
@@ -66,7 +65,7 @@ namespace VsVim.UnitTest
         /// <summary>
         /// Do nothing if there is no completion active
         /// </summary>
-        [Test]
+        [Fact]
         public void IgnoreWhenNoCompletionActive()
         {
             Create(isInstalled: true);
@@ -75,13 +74,13 @@ namespace VsVim.UnitTest
             _completionBroker.Setup(x => x.IsCompletionActive(vimBuffer.TextView)).Returns(false).Verifiable();
             vimBuffer.Process('l');
             _completionBroker.Verify();
-            Assert.AreEqual(1, vimBuffer.TextView.GetCaretPoint());
+            Assert.Equal(1, vimBuffer.TextView.GetCaretPoint());
         }
 
         /// <summary>
         /// Dismiss intellisense if it shows up during normal mode
         /// </summary>
-        [Test]
+        [Fact]
         public void DismissCompletionInNormalMode()
         {
             Create(isInstalled: true);
@@ -91,13 +90,13 @@ namespace VsVim.UnitTest
             _completionBroker.Setup(x => x.DismissAllSessions(vimBuffer.TextView)).Verifiable();
             vimBuffer.Process('l');
             _completionBroker.Verify();
-            Assert.AreEqual(1, vimBuffer.TextView.GetCaretPoint());
+            Assert.Equal(1, vimBuffer.TextView.GetCaretPoint());
         }
 
         /// <summary>
         /// Dismiss intellisense if it pops up in the transition to insert mode
         /// </summary>
-        [Test]
+        [Fact]
         public void DismissCompletionInTransitionToInsert()
         {
             Create(isInstalled: true);
@@ -112,7 +111,7 @@ namespace VsVim.UnitTest
         /// <summary>
         /// Don't dismiss during insert mode
         /// </summary>
-        [Test]
+        [Fact]
         public void DontDismissInInsert()
         {
             Create(isInstalled: true);

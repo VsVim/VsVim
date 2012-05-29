@@ -6,7 +6,7 @@ using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
@@ -14,23 +14,21 @@ using VsVim.Implementation;
 
 namespace VsVim.UnitTest
 {
-    [TestFixture]
     public sealed class VsCommandTargetTest : VimTestBase
     {
-        private MockRepository _factory;
-        private IVimBuffer _buffer;
-        private IVimBufferCoordinator _bufferCoordinator;
-        private IVim _vim;
-        private ITextView _textView;
-        private Mock<IVsAdapter> _vsAdapter;
-        private Mock<IResharperUtil> _resharperUtil;
-        private Mock<IOleCommandTarget> _nextTarget;
-        private Mock<IDisplayWindowBroker> _broker;
-        private VsCommandTarget _targetRaw;
-        private IOleCommandTarget _target;
+        private readonly MockRepository _factory;
+        private readonly IVimBuffer _buffer;
+        private readonly IVimBufferCoordinator _bufferCoordinator;
+        private readonly IVim _vim;
+        private readonly ITextView _textView;
+        private readonly Mock<IVsAdapter> _vsAdapter;
+        private readonly Mock<IResharperUtil> _resharperUtil;
+        private readonly Mock<IOleCommandTarget> _nextTarget;
+        private readonly Mock<IDisplayWindowBroker> _broker;
+        private readonly VsCommandTarget _targetRaw;
+        private readonly IOleCommandTarget _target;
 
-        [SetUp]
-        public void SetUp()
+        public VsCommandTargetTest()
         {
             _textView = CreateTextView("");
             _buffer = Vim.CreateVimBuffer(_textView);
@@ -60,7 +58,7 @@ namespace VsVim.UnitTest
                 _vsAdapter.Object,
                 _broker.Object,
                 _resharperUtil.Object);
-            Assert.IsTrue(result.IsSuccess);
+            Assert.True(result.IsSuccess);
             _targetRaw = result.Value;
             _target = _targetRaw;
         }
@@ -68,9 +66,9 @@ namespace VsVim.UnitTest
         /// <summary>
         /// Make sure to clear the KeyMap map on tear down so we don't mess up other tests
         /// </summary>
-        [TearDown]
-        public void TearDown()
+        public override void Dispose()
         {
+            base.Dispose();
             _vim.KeyMap.ClearAll();
         }
 
@@ -80,7 +78,7 @@ namespace VsVim.UnitTest
         private void RunExec(KeyInput keyInput)
         {
             OleCommandData data;
-            Assert.IsTrue(OleCommandUtil.TryConvert(keyInput, out data));
+            Assert.True(OleCommandUtil.TryConvert(keyInput, out data));
             try
             {
                 _target.Exec(data);
@@ -112,7 +110,7 @@ namespace VsVim.UnitTest
         private bool RunQueryStatus(KeyInput keyInput)
         {
             OleCommandData data;
-            Assert.IsTrue(OleCommandUtil.TryConvert(keyInput, out data));
+            Assert.True(OleCommandUtil.TryConvert(keyInput, out data));
             try
             {
                 OLECMD command;
@@ -138,58 +136,58 @@ namespace VsVim.UnitTest
         private void AssertCannotConvert2K(VSConstants.VSStd2KCmdID id)
         {
             KeyInput ki;
-            Assert.IsFalse(_targetRaw.TryConvert(VSConstants.VSStd2K, (uint)id, IntPtr.Zero, out ki));
+            Assert.False(_targetRaw.TryConvert(VSConstants.VSStd2K, (uint)id, IntPtr.Zero, out ki));
         }
 
         private void AssertCanConvert2K(VSConstants.VSStd2KCmdID id, KeyInput expected)
         {
             KeyInput ki;
-            Assert.IsTrue(_targetRaw.TryConvert(VSConstants.VSStd2K, (uint)id, IntPtr.Zero, out ki));
-            Assert.AreEqual(expected, ki);
+            Assert.True(_targetRaw.TryConvert(VSConstants.VSStd2K, (uint)id, IntPtr.Zero, out ki));
+            Assert.Equal(expected, ki);
         }
 
-        [Test]
+        [Fact]
         public void TryConvert_Tab()
         {
             AssertCanConvert2K(VSConstants.VSStd2KCmdID.TAB, KeyInputUtil.TabKey);
         }
 
-        [Test]
+        [Fact]
         public void TryConvert_InAutomationShouldFail()
         {
             _vsAdapter.Setup(x => x.InAutomationFunction).Returns(true);
             AssertCannotConvert2K(VSConstants.VSStd2KCmdID.TAB);
         }
 
-        [Test]
+        [Fact]
         public void TryConvert_InIncrementalSearchShouldFail()
         {
             _vsAdapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(true);
             AssertCannotConvert2K(VSConstants.VSStd2KCmdID.TAB);
         }
 
-        [Test]
+        [Fact]
         public void QueryStatus_IgnoreEscapeIfCantProcess()
         {
             _buffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
-            Assert.IsFalse(_buffer.CanProcess(KeyInputUtil.EscapeKey));
+            Assert.False(_buffer.CanProcess(KeyInputUtil.EscapeKey));
             _nextTarget.SetupQueryStatus().Verifiable();
             RunQueryStatus(KeyInputUtil.EscapeKey);
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void QueryStatus_EnableEscapeButDontHandleNormally()
         {
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-            Assert.IsTrue(_buffer.CanProcess(VimKey.Escape));
-            Assert.IsTrue(RunQueryStatus(KeyInputUtil.EscapeKey));
+            Assert.True(_buffer.CanProcess(VimKey.Escape));
+            Assert.True(RunQueryStatus(KeyInputUtil.EscapeKey));
         }
 
         /// <summary>
         /// Don't actually run the Escape in the QueryStatus command if we're in visual mode
         /// </summary>
-        [Test]
+        [Fact]
         public void QueryStatus_EnableEscapeAndDontHandleInResharperPlusVisualMode()
         {
             var count = 0;
@@ -197,7 +195,7 @@ namespace VsVim.UnitTest
             _buffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
             _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
             RunQueryStatus(KeyInputUtil.EscapeKey);
-            Assert.AreEqual(0, count);
+            Assert.Equal(0, count);
             _factory.Verify();
         }
 
@@ -206,16 +204,16 @@ namespace VsVim.UnitTest
         /// it on to R#.  R# will intercept escape and never give it to us and we'll think 
         /// we're still in insert.  
         /// </summary>
-        [Test]
+        [Fact]
         public void QueryStatus_Resharper_EnableAndHandleEscape()
         {
             var count = 0;
             _buffer.KeyInputProcessed += delegate { count++; };
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
-            Assert.IsTrue(RunQueryStatus(KeyInputUtil.EscapeKey));
-            Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsSome(KeyInputUtil.EscapeKey));
-            Assert.AreEqual(1, count);
+            Assert.True(RunQueryStatus(KeyInputUtil.EscapeKey));
+            Assert.True(_bufferCoordinator.DiscardedKeyInput.IsSome(KeyInputUtil.EscapeKey));
+            Assert.Equal(1, count);
             _factory.Verify();
         }
 
@@ -224,7 +222,7 @@ namespace VsVim.UnitTest
         /// it from R#.  Back in R# is used to do special parens delete and we don't want that
         /// overriding a command
         /// </summary>
-        [Test]
+        [Fact]
         public void QueryStatus_Reshaper_BackspaceAsCommand()
         {
             var backKeyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Back);
@@ -232,10 +230,10 @@ namespace VsVim.UnitTest
             _buffer.KeyInputProcessed += delegate { count++; };
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
-            Assert.IsTrue(_buffer.CanProcessAsCommand(backKeyInput));
-            Assert.IsFalse(RunQueryStatus(backKeyInput));
-            Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsSome(backKeyInput));
-            Assert.AreEqual(1, count);
+            Assert.True(_buffer.CanProcessAsCommand(backKeyInput));
+            Assert.False(RunQueryStatus(backKeyInput));
+            Assert.True(_bufferCoordinator.DiscardedKeyInput.IsSome(backKeyInput));
+            Assert.Equal(1, count);
             _factory.Verify();
         }
 
@@ -244,7 +242,7 @@ namespace VsVim.UnitTest
         /// it go back to R# for processing.  They special case Back during edit to do actions
         /// like matched paren deletion that we want to enable.
         /// </summary>
-        [Test]
+        [Fact]
         public void QueryStatus_Reshaper_BackspaceInInsert()
         {
             var backKeyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Back);
@@ -252,10 +250,10 @@ namespace VsVim.UnitTest
             _buffer.KeyInputProcessed += delegate { count++; };
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
-            Assert.IsTrue(_buffer.CanProcessAsCommand(backKeyInput));
-            Assert.IsTrue(RunQueryStatus(backKeyInput));
-            Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsNone());
-            Assert.AreEqual(0, count);
+            Assert.True(_buffer.CanProcessAsCommand(backKeyInput));
+            Assert.True(RunQueryStatus(backKeyInput));
+            Assert.True(_bufferCoordinator.DiscardedKeyInput.IsNone());
+            Assert.Equal(0, count);
             _factory.Verify();
         }
 
@@ -263,31 +261,31 @@ namespace VsVim.UnitTest
         /// Make sure we process Escape during QueryStatus if we're in insert mode.  R# will
         /// intercept escape and never give it to us and we'll think we're still in insert
         /// </summary>
-        [Test]
+        [Fact]
         public void QueryStatus_EnableAndHandleEscapeInResharperPlusExternalEdit()
         {
             var count = 0;
             _buffer.KeyInputProcessed += delegate { count++; };
             _buffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
             _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
-            Assert.IsTrue(RunQueryStatus(KeyInputUtil.EscapeKey));
-            Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsSome(KeyInputUtil.EscapeKey));
-            Assert.AreEqual(1, count);
+            Assert.True(RunQueryStatus(KeyInputUtil.EscapeKey));
+            Assert.True(_bufferCoordinator.DiscardedKeyInput.IsSome(KeyInputUtil.EscapeKey));
+            Assert.Equal(1, count);
             _factory.Verify();
         }
 
         /// <summary>
         /// The PageUp key isn't special so don't special case it in R#
         /// </summary>
-        [Test]
+        [Fact]
         public void QueryStatus_Reshaprer_HandlePageUpNormally()
         {
             var count = 0;
             _buffer.KeyInputProcessed += delegate { count++; };
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
-            Assert.IsTrue(RunQueryStatus(KeyInputUtil.VimKeyToKeyInput(VimKey.PageUp)));
-            Assert.AreEqual(0, count);
+            Assert.True(RunQueryStatus(KeyInputUtil.VimKeyToKeyInput(VimKey.PageUp)));
+            Assert.Equal(0, count);
             _factory.Verify();
         }
 
@@ -297,17 +295,17 @@ namespace VsVim.UnitTest
         /// are suppressing it's action.  We want to process this directly though if Vim believes
         /// Enter to be a command and not an edit, for example in normal mode
         /// </summary>
-        [Test]
+        [Fact]
         public void QueryStatus_Resharper_EnterAsCommand()
         {
             _textView.SetText("cat", "dog");
             _textView.MoveCaretTo(0);
             _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            Assert.IsTrue(_buffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
-            Assert.IsFalse(RunQueryStatus(KeyInputUtil.EnterKey));
-            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsSome(KeyInputUtil.EnterKey));
+            Assert.True(_buffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
+            Assert.False(RunQueryStatus(KeyInputUtil.EnterKey));
+            Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            Assert.True(_bufferCoordinator.DiscardedKeyInput.IsSome(KeyInputUtil.EnterKey));
             _factory.Verify();
         }
 
@@ -316,7 +314,7 @@ namespace VsVim.UnitTest
         /// mode for R#.  It would be an edit and we don't want to interfere with R#'s handling 
         /// of edits
         /// </summary>
-        [Test]
+        [Fact]
         public void QueryStatus_Resharper_EnterInInsert()
         {
             _textView.SetText("cat", "dog");
@@ -324,19 +322,19 @@ namespace VsVim.UnitTest
             var savedSnapshot = _textView.TextSnapshot;
             _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-            Assert.IsTrue(_buffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
-            Assert.IsTrue(RunQueryStatus(KeyInputUtil.EnterKey));
-            Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsNone());
-            Assert.AreEqual(_textView.GetLine(0).Start, _textView.GetCaretPoint());
-            Assert.AreSame(savedSnapshot, _textView.TextSnapshot);
+            Assert.True(_buffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
+            Assert.True(RunQueryStatus(KeyInputUtil.EnterKey));
+            Assert.True(_bufferCoordinator.DiscardedKeyInput.IsNone());
+            Assert.Equal(_textView.GetLine(0).Start, _textView.GetCaretPoint());
+            Assert.Same(savedSnapshot, _textView.TextSnapshot);
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Exec_PassOnIfCantHandle()
         {
             _buffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
-            Assert.IsFalse(_buffer.CanProcess(VimKey.Enter));
+            Assert.False(_buffer.CanProcess(VimKey.Enter));
             _nextTarget.SetupExec().Verifiable();
             RunExec(KeyInputUtil.EnterKey);
             _factory.Verify();
@@ -348,12 +346,12 @@ namespace VsVim.UnitTest
         ///
         /// Also make sure that the Exec clears the discarded KeyInput
         /// </summary>
-        [Test]
+        [Fact]
         public void Exec_DiscardedKeyInput()
         {
             _bufferCoordinator.DiscardedKeyInput = FSharpOption.Create(KeyInputUtil.EscapeKey);
             RunExec(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsNone());
+            Assert.True(_bufferCoordinator.DiscardedKeyInput.IsNone());
             _factory.Verify();
         }
 
@@ -367,25 +365,25 @@ namespace VsVim.UnitTest
         /// along with a different KeyInput then clearly another KeyInput has happened and we 
         /// are done
         /// </summary>
-        [Test]
+        [Fact]
         public void Exec_ClearDiscardedKeyInput()
         {
             _bufferCoordinator.DiscardedKeyInput = FSharpOption.Create(KeyInputUtil.EnterKey);
 
             // Make sur Ecape isn't handled so it will go to the next IOleCommandTarget
-            Assert.IsTrue(_buffer.CanProcess(KeyInputUtil.EscapeKey));
+            Assert.True(_buffer.CanProcess(KeyInputUtil.EscapeKey));
             RunExec(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(_bufferCoordinator.DiscardedKeyInput.IsNone());
+            Assert.True(_bufferCoordinator.DiscardedKeyInput.IsNone());
         }
 
-        [Test]
+        [Fact]
         public void Exec_HandleEscapeNormally()
         {
             var count = 0;
             _buffer.KeyInputProcessed += delegate { count++; };
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             RunExec(KeyInputUtil.EscapeKey);
-            Assert.AreEqual(1, count);
+            Assert.Equal(1, count);
         }
 
         /// <summary>
@@ -394,32 +392,32 @@ namespace VsVim.UnitTest
         /// chain.  It should be passed directly to the IVimBuffer if it can be handled else 
         /// it shouldn't be handled
         /// </summary>
-        [Test]
+        [Fact]
         public void Exec_WithUnmatchedBufferedInput()
         {
             _vim.KeyMap.MapWithNoRemap("jj", "hello", KeyRemapMode.Insert);
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             RunExec('j');
-            Assert.IsFalse(_buffer.BufferedKeyInputs.IsEmpty);
+            Assert.False(_buffer.BufferedKeyInputs.IsEmpty);
             RunExec('a');
-            Assert.AreEqual("ja", _textView.GetLine(0).GetText());
-            Assert.IsTrue(_buffer.BufferedKeyInputs.IsEmpty);
+            Assert.Equal("ja", _textView.GetLine(0).GetText());
+            Assert.True(_buffer.BufferedKeyInputs.IsEmpty);
         }
 
         /// <summary>
         /// Make sure in the case that the next input matches the final expansion of a 
         /// buffered input that it's processed correctly
         /// </summary>
-        [Test]
+        [Fact]
         public void Exec_WithMatchedBufferedInput()
         {
             _vim.KeyMap.MapWithNoRemap("jj", "hello", KeyRemapMode.Insert);
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             RunExec('j');
-            Assert.IsFalse(_buffer.BufferedKeyInputs.IsEmpty);
+            Assert.False(_buffer.BufferedKeyInputs.IsEmpty);
             RunExec('j');
-            Assert.AreEqual("hello", _textView.GetLine(0).GetText());
-            Assert.IsTrue(_buffer.BufferedKeyInputs.IsEmpty);
+            Assert.Equal("hello", _textView.GetLine(0).GetText());
+            Assert.True(_buffer.BufferedKeyInputs.IsEmpty);
         }
 
         /// <summary>
@@ -427,23 +425,23 @@ namespace VsVim.UnitTest
         /// it into a single value then we need to make sure we pass both values onto the IVimBuffer
         /// so the remapping can occur
         /// </summary>
-        [Test]
+        [Fact]
         public void Exec_CollapseBufferedInputToSingleKeyInput()
         {
             _vim.KeyMap.MapWithNoRemap("jj", "z", KeyRemapMode.Insert);
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             RunExec('j');
-            Assert.IsFalse(_buffer.BufferedKeyInputs.IsEmpty);
+            Assert.False(_buffer.BufferedKeyInputs.IsEmpty);
             RunExec('j');
-            Assert.AreEqual("z", _textView.GetLine(0).GetText());
-            Assert.IsTrue(_buffer.BufferedKeyInputs.IsEmpty);
+            Assert.Equal("z", _textView.GetLine(0).GetText());
+            Assert.True(_buffer.BufferedKeyInputs.IsEmpty);
         }
 
         /// <summary>
         /// If parameter info is up then the arrow keys should be routed to parameter info and
         /// not to the IVimBuffer
         /// </summary>
-        [Test]
+        [Fact]
         public void Exec_SignatureHelp_ArrowGoToCommandTarget()
         {
             _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(true);
@@ -456,7 +454,7 @@ namespace VsVim.UnitTest
                 RunExec(VimKey.Down);
             }
 
-            Assert.AreEqual(2, count);
+            Assert.Equal(2, count);
         }
     }
 }
