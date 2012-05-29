@@ -79,3 +79,7 @@ VsVim.Dev11.dll
 
 # Profiling Output
 *.vsp
+
+# Hosting
+VimHost/
+VimHost.sln
