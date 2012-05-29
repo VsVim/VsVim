@@ -105,6 +105,7 @@ namespace Vim.UnitTest
         [Fact]
         public void OnLeave1()
         {
+            Create();
             _tracker.Setup(x => x.Stop()).Verifiable();
             _mode.OnLeave();
             _tracker.Verify();

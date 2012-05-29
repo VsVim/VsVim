@@ -418,7 +418,7 @@ namespace Vim.UnitTest
         {
             Create("foo", "bar", "baz");
             var points = SnapshotPointUtil.GetPointsOnContainingLineFrom(_textBuffer.GetLine(0).Start).Select(x => x.GetChar());
-            Assert.Equal("foo", points);
+            Assert.Equal("foo".Cast<char>(), points);
         }
 
         [Fact]
@@ -426,7 +426,7 @@ namespace Vim.UnitTest
         {
             Create("foo", "bar", "baz");
             var points = SnapshotPointUtil.GetPointsOnContainingLineFrom(_textBuffer.GetLine(0).Start.Add(1)).Select(x => x.GetChar());
-            Assert.Equal("oo", points);
+            Assert.Equal("oo".Cast<char>(), points);
         }
 
         [Fact]
@@ -434,7 +434,7 @@ namespace Vim.UnitTest
         {
             Create("foo", "bar", "baz");
             var points = SnapshotPointUtil.GetPointsOnContainingLineBackwardsFrom(_textBuffer.GetLine(0).End).Select(x => x.GetChar());
-            Assert.Equal("oof", points);
+            Assert.Equal("oof".Cast<char>(), points);
         }
 
         [Fact]
@@ -442,7 +442,7 @@ namespace Vim.UnitTest
         {
             Create("foo", "bar", "baz");
             var points = SnapshotPointUtil.GetPointsOnContainingLineBackwardsFrom(_textBuffer.GetLine(1).End).Select(x => x.GetChar());
-            Assert.Equal("rab", points);
+            Assert.Equal("rab".Cast<char>(), points);
         }
 
         [Fact]
@@ -450,7 +450,7 @@ namespace Vim.UnitTest
         {
             Create("foo", "bar", "baz");
             var points = SnapshotPointUtil.GetPointsOnContainingLineBackwardsFrom(_textBuffer.GetLine(1).End.Subtract(2)).Select(x => x.GetChar());
-            Assert.Equal("ab", points);
+            Assert.Equal("ab".Cast<char>(), points);
         }
     }
 }

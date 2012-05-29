@@ -533,6 +533,7 @@ namespace Vim.UnitTest
         [Fact]
         public void RepeatLastCommand_GuardAgainstStacOverflow()
         {
+            Create();
             var didRun = false;
             SetLastCommand(VimUtil.CreatePing(data =>
             {
@@ -598,6 +599,7 @@ namespace Vim.UnitTest
         [Fact]
         public void RepeatLastCommand_CallBulkOperations()
         {
+            Create();
             SetLastCommand(VimUtil.CreatePing(
                 _ =>
                 {

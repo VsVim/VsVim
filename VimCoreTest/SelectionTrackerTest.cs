@@ -4,9 +4,9 @@ using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using Xunit;
-using Vim.Modes.Visual;
 using Vim.Extensions;
+using Vim.Modes.Visual;
+using Xunit;
 
 namespace Vim.UnitTest
 {
@@ -18,6 +18,19 @@ namespace Vim.UnitTest
         private Mock<IIncrementalSearch> _incrementalSearch;
         private TestableSynchronizationContext _context;
         private SynchronizationContext _before;
+
+        public SelectionTrackerTest()
+        {
+            _before = SynchronizationContext.Current;
+            _context = new TestableSynchronizationContext();
+            SynchronizationContext.SetSynchronizationContext(_context);
+        }
+
+        public override void  Dispose()
+        {
+            base.Dispose();
+            SynchronizationContext.SetSynchronizationContext(_before);
+        }
 
         private void Create(VisualKind kind, params string[] lines)
         {
@@ -32,19 +45,6 @@ namespace Vim.UnitTest
             _incrementalSearch = new Mock<IIncrementalSearch>(MockBehavior.Loose);
             _tracker = new SelectionTracker(_textView, _globalSettings, _incrementalSearch.Object, kind);
             _tracker.Start();
-        }
-
-        public SelectionTrackerTest()
-        {
-            _before = SynchronizationContext.Current;
-            _context = new TestableSynchronizationContext();
-            SynchronizationContext.SetSynchronizationContext(_context);
-        }
-
-        public override void  Dispose()
-        {
-            base.Dispose();
-            SynchronizationContext.SetSynchronizationContext(_before);
         }
 
         [Fact]
@@ -88,6 +88,7 @@ namespace Vim.UnitTest
         [Fact]
         public void Start_DontResetSelection()
         {
+            Create(VisualKind.Character, "");
             var realView = CreateTextView("foo bar baz");
             var selection = new Mock<ITextSelection>(MockBehavior.Strict);
             selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
@@ -109,6 +110,7 @@ namespace Vim.UnitTest
         [Fact]
         public void Start4()
         {
+            Create(VisualKind.Character);
             var view = CreateTextView("foo bar baz");
             view.Selection.Select(new SnapshotSpan(view.TextSnapshot, 1, 3), false);
             var tracker = new SelectionTracker(view, _globalSettings, _incrementalSearch.Object, VisualKind.Character);
