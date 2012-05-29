@@ -261,7 +261,7 @@ namespace Vim.UnitTest
             Create("test", "ccrook cat caturday");
             var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.GetLine(1).Start, 1));
             Assert.Equal(
-                new[] { "cat", "caturday", "crook" },
+                new[] { "crook", "cat", "caturday" },
                 words.ToList());
         }
 

@@ -710,6 +710,7 @@ namespace Vim.UnitTest
             [Fact]
             public void MapKeys_Clear()
             {
+                Create("");
                 Action<string, KeyRemapMode[]> testMapClear =
                     (command, toClearModes) =>
                     {
@@ -721,7 +722,6 @@ namespace Vim.UnitTest
 
                 _keyMap.ClearAll();
 
-                Create("");
                 testMapClear("mapc", new[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Command, KeyRemapMode.OperatorPending });
                 testMapClear("nmapc", new[] { KeyRemapMode.Normal });
                 testMapClear("vmapc", new[] { KeyRemapMode.Visual, KeyRemapMode.Select });
