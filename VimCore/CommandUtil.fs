@@ -1012,11 +1012,9 @@ type internal CommandUtil
 
     /// GoTo the ITextView in the specified direction
     member x.GoToView direction = 
-        match direction with
-        | Direction.Up -> _vimHost.MoveViewUp _textView
-        | Direction.Down -> _vimHost.MoveViewDown _textView
-        | Direction.Left -> _vimHost.MoveViewLeft _textView
-        | Direction.Right -> _vimHost.MoveViewRight _textView
+        match _vimHost.MoveFocus _textView direction with
+        | HostResult.Success -> ()
+        | HostResult.Error msg -> _statusUtil.OnError msg
 
         CommandResult.Completed ModeSwitch.NoSwitch
 

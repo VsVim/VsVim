@@ -131,12 +131,7 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        void IVimHost.MoveViewDown(ITextView textView)
-        {
-            throw new NotImplementedException();
-        }
-
-        void IVimHost.MoveViewUp(ITextView textView)
+        HostResult IVimHost.MoveFocus(ITextView textView, Direction direction)
         {
             throw new NotImplementedException();
         }
@@ -192,16 +187,6 @@ namespace Vim.UnitTest.Mock
         }
 
         void IVimHost.GoToTab(int index)
-        {
-            throw new NotImplementedException();
-        }
-
-        void IVimHost.MoveViewLeft(ITextView value)
-        {
-            throw new NotImplementedException();
-        }
-
-        void IVimHost.MoveViewRight(ITextView value)
         {
             throw new NotImplementedException();
         }

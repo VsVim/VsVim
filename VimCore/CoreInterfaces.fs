@@ -3472,17 +3472,8 @@ type IVimHost =
     /// Run the host specific make operation
     abstract Make : jumpToFirstError : bool -> arguments : string -> HostResult
 
-    /// Move to the view above the current one
-    abstract MoveViewUp : ITextView -> unit
-
-    /// Move to the view below the current one
-    abstract MoveViewDown : ITextView -> unit
-
-    /// Move to the view to the right of the current one
-    abstract MoveViewRight : ITextView -> unit
-
-    /// Move to the view to the right of the current one
-    abstract MoveViewLeft : ITextView -> unit
+    /// Move the focus to the ITextView in the open document in the specified direction
+    abstract MoveFocus : textView : ITextView -> direction : Direction -> HostResult
 
     abstract NavigateTo : point : VirtualSnapshotPoint -> bool
 

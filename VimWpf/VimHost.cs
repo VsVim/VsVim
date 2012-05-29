@@ -150,13 +150,7 @@ namespace Vim.UI.Wpf
 
         public abstract HostResult Make(bool jumpToFirstError, string arguments);
 
-        public abstract void MoveViewDown(ITextView value);
-
-        public abstract void MoveViewUp(ITextView value);
-
-        public abstract void MoveViewLeft(ITextView value);
-
-        public abstract void MoveViewRight(ITextView value);
+        public abstract HostResult MoveFocus(ITextView textView, Direction direction);
 
         public abstract bool NavigateTo(VirtualSnapshotPoint point);
 
@@ -443,24 +437,9 @@ namespace Vim.UI.Wpf
             return Make(jumpToFirstError, arguments);
         }
 
-        void IVimHost.MoveViewDown(ITextView value)
+        HostResult IVimHost.MoveFocus(ITextView textView, Direction direction)
         {
-            MoveViewDown(value);
-        }
-
-        void IVimHost.MoveViewLeft(ITextView value)
-        {
-            MoveViewLeft(value);
-        }
-
-        void IVimHost.MoveViewRight(ITextView value)
-        {
-            MoveViewRight(value);
-        }
-
-        void IVimHost.MoveViewUp(ITextView value)
-        {
-            MoveViewUp(value);
+            return MoveFocus(textView, direction);
         }
 
         bool IVimHost.NavigateTo(VirtualSnapshotPoint point)
