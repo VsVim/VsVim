@@ -126,8 +126,10 @@ namespace VsVim.UnitTest
             Assert.IsFalse(_manager.MoveViewUp(view));
         }
 
+        /// <summary>
+        /// Secondary view on top, can't move up
+        /// </summary>
         [Test]
-        [Description("Secondary view on top, can't move up")]
         public void MoveViewUp2()
         {
             var view1 = _factory.Create<IWpfTextView>();

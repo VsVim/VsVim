@@ -15,8 +15,10 @@ namespace Vim.UI.Wpf.UnitTest
             _deviceImpl = new KeyboardDeviceImpl();
         }
 
+        /// <summary>
+        /// Don't throw on the None case
+        /// </summary>
         [Test]
-        [Description("Don't throw on the None case")]
         public void IsKeyDown1()
         {
             Assert.IsFalse(_deviceImpl.IsKeyDown(Key.None));

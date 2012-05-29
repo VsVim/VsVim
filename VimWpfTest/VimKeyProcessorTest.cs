@@ -65,8 +65,10 @@ namespace Vim.UI.Wpf.UnitTest
             return device.CreateKeyEventArgs(key, modKeys);
         }
 
+        /// <summary>
+        /// Don't handle AltGR keys
+        /// </summary>
         [Test]
-        [Description("Don't handle AltGR keys")]
         public void KeyDown1()
         {
             Setup(NativeMethods.LayoutPortuguese);
@@ -75,8 +77,10 @@ namespace Vim.UI.Wpf.UnitTest
             Assert.IsFalse(arg.Handled);
         }
 
+        /// <summary>
+        /// Don't handle non-input keys
+        /// </summary>
         [Test]
-        [Description("Don't handle non-input keys")]
         public void KeyDown2()
         {
             foreach (var cur in new[] { Key.LeftAlt, Key.RightAlt, Key.LeftCtrl, Key.RightCtrl, Key.LeftShift, Key.RightShift })
@@ -105,8 +109,10 @@ namespace Vim.UI.Wpf.UnitTest
             }
         }
 
+        /// <summary>
+        /// Do handle non printable characters here
+        /// </summary>
         [Test]
-        [Description("Do handle non printable characters here")]
         public void KeyDown4()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
@@ -123,8 +129,10 @@ namespace Vim.UI.Wpf.UnitTest
             _factory.Verify();
         }
 
+        /// <summary>
+        /// Do pass non-printable charcaters onto the IVimBuffer
+        /// </summary>
         [Test]
-        [Description("Do pass non-printable charcaters onto the IVimBuffer")]
         public void KeyDown5()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(false).Verifiable();
@@ -140,8 +148,10 @@ namespace Vim.UI.Wpf.UnitTest
             _factory.Verify();
         }
 
+        /// <summary>
+        /// Do pass Control and Alt modified input onto the IVimBuffer
+        /// </summary>
         [Test]
-        [Description("Do pass Control and Alt modified input onto the IVimBuffer")]
         public void KeyDown6()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(false).Verifiable();
@@ -161,8 +171,10 @@ namespace Vim.UI.Wpf.UnitTest
             _factory.Verify();
         }
 
+        /// <summary>
+        /// Control + char won't end up as TextInput so we handle it directly
+        /// </summary>
         [Test]
-        [Description("Control + char won't end up as TextInput so we handle it directly")]
         public void KeyDown_PassControlLetterToBuffer()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();

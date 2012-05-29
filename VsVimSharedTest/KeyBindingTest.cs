@@ -681,7 +681,10 @@ Transact-SQL Editor::Ctrl+J
             Assert.AreEqual(VimKey.F2, b.FirstKeyStroke.KeyInput.Key);
         }
 
-        [Test, Description("Parse a keybinding with , correctly")]
+        /// <summary>
+        /// Parse a keybinding with , correctly
+        /// </summary>
+        [Test]
         public void Parse4()
         {
             var b = KeyBinding.Parse("::,");
@@ -689,7 +692,10 @@ Transact-SQL Editor::Ctrl+J
             Assert.AreEqual(KeyModifiers.None, b.FirstKeyStroke.KeyModifiers);
         }
 
-        [Test, Description("Double modifier")]
+        /// <summary>
+        /// Double modifier
+        /// </summary>
+        [Test]
         public void Parse5()
         {
             var b = KeyBinding.Parse("::ctrl+shift+f");
@@ -698,7 +704,10 @@ Transact-SQL Editor::Ctrl+J
             Assert.IsTrue(0 != (KeyModifiers.Control & b.FirstKeyStroke.KeyModifiers));
         }
 
-        [Test, Description("Don't carry shift keys for letters")]
+        /// <summary>
+        /// Don't carry shift keys for letters
+        /// </summary>
+        [Test]
         public void Parse6()
         {
             var b = KeyBinding.Parse("::ctrl+D");
@@ -713,7 +722,10 @@ Transact-SQL Editor::Ctrl+J
             Assert.AreEqual(2, b.KeyStrokes.Count());
         }
 
-        [Test, Description("With a comma key")]
+        /// <summary>
+        /// With a comma key
+        /// </summary>
+        [Test]
         public void ParseMultiple2()
         {
             var b = KeyBinding.Parse("::,, f");
@@ -804,8 +816,10 @@ Transact-SQL Editor::Ctrl+J
             Assert.AreEqual(VimKey.KeypadMultiply, b.FirstKeyStroke.Key);
         }
 
+        /// <summary>
+        /// Ensure we can parse all available Visual Studio commands
+        /// </summary>
         [Test]
-        [Description("Ensure we can parse all available Visual Studio commands")]
         public void ParseAllVsCommands()
         {
             foreach (var line in SampleCommands.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries))
@@ -815,8 +829,10 @@ Transact-SQL Editor::Ctrl+J
             }
         }
 
+        /// <summary>
+        /// Ensure the re-generated strings all match the original
+        /// </summary>
         [Test]
-        [Description("Ensure the re-generated strings all match the original")]
         public void CommandStringAllVsCommands()
         {
             foreach (var line in SampleCommands.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries))

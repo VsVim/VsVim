@@ -58,8 +58,10 @@ namespace Vim.UI.Wpf.UnitTest
             _search.SetupGet(x => x.CurrentSearchData).Returns(FSharpOption.Create(data)).Verifiable();
         }
 
+        /// <summary>
+        /// A switch mode with no messages should display the banner
+        /// </summary>
         [Test]
-        [Description("A switch mode with no messages should display the banner")]
         public void SwitchMode1()
         {
             var mode = new Mock<INormalMode>();
@@ -69,8 +71,10 @@ namespace Vim.UI.Wpf.UnitTest
             Assert.AreEqual(String.Empty, _marginControl.StatusLine);
         }
 
+        /// <summary>
+        /// A switch mode with no messages should display the banner
+        /// </summary>
         [Test]
-        [Description("A switch mode with no messages should display the banner")]
         public void SwitchMode2()
         {
             var mode = new Mock<IMode>();
@@ -79,8 +83,10 @@ namespace Vim.UI.Wpf.UnitTest
             Assert.AreEqual(Resources.InsertBanner, _marginControl.StatusLine);
         }
 
+        /// <summary>
+        /// Status line shouldn't be updated until a KeyInput event completes
+        /// </summary>
         [Test]
-        [Description("Status line shouldn't be updated until a KeyInput event completes")]
         public void SwitchMode3()
         {
             var mode = new Mock<IMode>();
@@ -91,8 +97,10 @@ namespace Vim.UI.Wpf.UnitTest
             Assert.AreEqual(String.Empty, _marginControl.StatusLine);
         }
 
+        /// <summary>
+        /// Status line shouldn't be updated until a KeyInput event completes
+        /// </summary>
         [Test]
-        [Description("Status line shouldn't be updated until a KeyInput event completes")]
         public void SwitchMode4()
         {
             var mode = new Mock<IMode>();
@@ -106,8 +114,10 @@ namespace Vim.UI.Wpf.UnitTest
             Assert.AreEqual(Resources.InsertBanner, _marginControl.StatusLine);
         }
 
+        /// <summary>
+        /// A switch to command mode should start the status bar with a :.
+        /// </summary>
         [Test]
-        [Description("A switch to command mode should start the status bar with a :.")]
         public void SwitchMode5()
         {
             var mode = new Mock<ICommandMode>();
@@ -118,8 +128,10 @@ namespace Vim.UI.Wpf.UnitTest
             Assert.AreEqual(":", _marginControl.StatusLine);
         }
 
+        /// <summary>
+        /// A switch to command mode should start the status bar with a :. + the command
+        /// </summary>
         [Test]
-        [Description("A switch to command mode should start the status bar with a :. + the command")]
         public void SwitchMode6()
         {
             var mode = new Mock<ICommandMode>();
@@ -170,8 +182,10 @@ namespace Vim.UI.Wpf.UnitTest
             Assert.AreEqual("foo", _marginControl.StatusLine);
         }
 
+        /// <summary>
+        /// Don't add it until the end of a KeyInput event
+        /// </summary>
         [Test]
-        [Description("Don't add it until the end of a KeyInput event")]
         public void StatusMessage2()
         {
             var ki = KeyInputUtil.CharToKeyInput('c');
@@ -180,8 +194,10 @@ namespace Vim.UI.Wpf.UnitTest
             Assert.AreEqual(String.Empty, _marginControl.StatusLine);
         }
 
+        /// <summary>
+        /// Don't add it until the end of a KeyInput event
+        /// </summary>
         [Test]
-        [Description("Don't add it until the end of a KeyInput event")]
         public void StatusMessage3()
         {
             var ki = KeyInputUtil.CharToKeyInput('c');
@@ -191,8 +207,10 @@ namespace Vim.UI.Wpf.UnitTest
             Assert.AreEqual("foo", _marginControl.StatusLine);
         }
 
+        /// <summary>
+        /// Status message should win over mode switch.  Think :setting ignorecase.  Both status + switch mode
+        /// </summary>
         [Test]
-        [Description("Status message should win over mode switch.  Think :setting ignorecase.  Both status + switch mode")]
         public void StatusMessage4()
         {
             var mode = new Mock<IMode>();
@@ -212,8 +230,10 @@ namespace Vim.UI.Wpf.UnitTest
             Assert.AreEqual("foo" + Environment.NewLine + "bar", _marginControl.StatusLine);
         }
 
+        /// <summary>
+        /// Don't update in the middle of an KeyInput event
+        /// </summary>
         [Test]
-        [Description("Don't update in the middle of an KeyInput event")]
         public void StatusMessage6()
         {
             var ki = KeyInputUtil.CharToKeyInput('c');
@@ -222,8 +242,10 @@ namespace Vim.UI.Wpf.UnitTest
             Assert.AreEqual(String.Empty, _marginControl.StatusLine);
         }
 
+        /// <summary>
+        /// Don't update in the middle of an KeyInput event
+        /// </summary>
         [Test]
-        [Description("Don't update in the middle of an KeyInput event")]
         public void StatusMessage7()
         {
             var ki = KeyInputUtil.CharToKeyInput('c');
@@ -233,8 +255,10 @@ namespace Vim.UI.Wpf.UnitTest
             Assert.AreEqual("foo" + Environment.NewLine + "bar", _marginControl.StatusLine);
         }
 
+        /// <summary>
+        /// StatusMessageLong wins over SwitchMode
+        /// </summary>
         [Test]
-        [Description("StatusMessageLong wins over SwitchMode")]
         public void StatusMessage8()
         {
             var mode = new Mock<IMode>();
@@ -254,8 +278,10 @@ namespace Vim.UI.Wpf.UnitTest
             Assert.AreEqual("foo", _marginControl.StatusLine);
         }
 
+        /// <summary>
+        /// Don't add it until the end of a KeyInput event
+        /// </summary>
         [Test]
-        [Description("Don't add it until the end of a KeyInput event")]
         public void ErrorMessage2()
         {
             var ki = KeyInputUtil.CharToKeyInput('c');
@@ -264,8 +290,10 @@ namespace Vim.UI.Wpf.UnitTest
             Assert.AreEqual(String.Empty, _marginControl.StatusLine);
         }
 
+        /// <summary>
+        /// Don't add it until the end of a KeyInput event
+        /// </summary>
         [Test]
-        [Description("Don't add it until the end of a KeyInput event")]
         public void ErrorMessage3()
         {
             var ki = KeyInputUtil.CharToKeyInput('c');
@@ -275,8 +303,10 @@ namespace Vim.UI.Wpf.UnitTest
             Assert.AreEqual("foo", _marginControl.StatusLine);
         }
 
+        /// <summary>
+        /// Status message should win over mode switch.  Think :setting ignorecase.  Both status + switch mode
+        /// </summary>
         [Test]
-        [Description("Status message should win over mode switch.  Think :setting ignorecase.  Both status + switch mode")]
         public void ErrorMessage4()
         {
             var mode = new Mock<IMode>();

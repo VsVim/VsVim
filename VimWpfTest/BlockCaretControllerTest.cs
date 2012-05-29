@@ -1,8 +1,8 @@
 ﻿using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
-using Vim.UnitTest.Mock;
 using Vim.Extensions;
+using Vim.UnitTest.Mock;
 
 namespace Vim.UI.Wpf.UnitTest
 {
@@ -51,8 +51,10 @@ namespace Vim.UI.Wpf.UnitTest
             _caret.Verify();
         }
 
-
-        [Test, Description("Other modes shouldn't even consider operator pending")]
+        /// <summary>
+        /// Other modes shouldn't even consider operator pending
+        /// </summary>
+        [Test]
         public void OperatorPending2()
         {
             var mode = new Mock<INormalMode>();
@@ -77,7 +79,10 @@ namespace Vim.UI.Wpf.UnitTest
             _caret.Verify();
         }
 
-        [Test, Description("Replace wins over operator pending")]
+        /// <summary>
+        /// Replace wins over operator pending
+        /// </summary>
+        [Test]
         public void IsInReplace2()
         {
             var mode = new Mock<INormalMode>();

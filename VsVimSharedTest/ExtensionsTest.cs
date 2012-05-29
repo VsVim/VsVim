@@ -22,7 +22,10 @@ namespace VsVim.UnitTest
         [TestFixture]
         public sealed class KeyBindingTest
         {
-            [Test, Description("Bindings as an array")]
+            /// <summary>
+            /// Bindings as an array
+            /// </summary>
+            [Test]
             public void GetKeyBindings1()
             {
                 var com = new Mock<EnvDTE.Command>();
@@ -48,7 +51,10 @@ namespace VsVim.UnitTest
                 Assert.AreEqual("bar", list[1].KeyBinding.Scope);
             }
 
-            [Test, Description("Bindings as a string which is what the documentation indicates it should be")]
+            /// <summary>
+            /// Bindings as a string which is what the documentation indicates it should be
+            /// </summary>
+            [Test]
             public void GetKeyBindings3()
             {
                 var com = new Mock<EnvDTE.Command>();
@@ -60,7 +66,10 @@ namespace VsVim.UnitTest
                 Assert.AreEqual(String.Empty, list[0].KeyBinding.Scope);
             }
 
-            [Test, Description("A bad key binding should just return as an empty result set")]
+            /// <summary>
+            /// A bad key binding should just return as an empty result set
+            /// </summary>
+            [Test]
             public void GetKeyBindings4()
             {
                 var com = new Mock<EnvDTE.Command>();
@@ -95,7 +104,10 @@ namespace VsVim.UnitTest
                 mock.Verify();
             }
 
-            [Test, Description("Some Command implementations return E_FAIL, just ignore it")]
+            /// <summary>
+            /// Some Command implementations return E_FAIL, just ignore it
+            /// </summary>
+            [Test]
             public void SafeResetKeyBindings2()
             {
                 var mock = new Mock<Command>(MockBehavior.Strict);

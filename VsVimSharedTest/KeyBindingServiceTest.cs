@@ -94,7 +94,10 @@ namespace VsVim.UnitTest
             Assert.IsTrue(didSee);
         }
 
-        [Test, Description("Nothing should change since we haven't checked yet")]
+        /// <summary>
+        /// Nothing should change since we haven't checked yet
+        /// </summary>
+        [Test]
         public void ResolveAnyConflicts1()
         {
             Create();
@@ -103,7 +106,10 @@ namespace VsVim.UnitTest
             Assert.AreEqual(ConflictingKeyBindingState.HasNotChecked, _serviceRaw.ConflictingKeyBindingState);
         }
 
-        [Test, Description("Nothing should change if they're ignored or resolved")]
+        /// <summary>
+        /// Nothing should change if they're ignored or resolved
+        /// </summary>
+        [Test]
         public void ResolveAnyConflicts2()
         {
             Create();
@@ -158,7 +164,10 @@ namespace VsVim.UnitTest
             Assert.AreEqual(0, list.Count);
         }
 
-        [Test, Description("Conflicting key on first")]
+        /// <summary>
+        /// Conflicting key on first
+        /// </summary>
+        [Test]
         public void FindConflictingCommands3()
         {
             Create("::ctrl+z, h");
@@ -167,7 +176,10 @@ namespace VsVim.UnitTest
             Assert.AreEqual(1, list.Count);
         }
 
-        [Test, Description("Only check first key")]
+        /// <summary>
+        /// Only check first key
+        /// </summary>
+        [Test]
         public void FindConflictingCommands4()
         {
             Create("::h, z");
