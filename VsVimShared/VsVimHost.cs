@@ -3,7 +3,6 @@ using System.ComponentModel.Composition;
 using System.IO;
 using EditorUtils;
 using EnvDTE;
-using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
