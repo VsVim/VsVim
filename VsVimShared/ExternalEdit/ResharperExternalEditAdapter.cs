@@ -19,12 +19,13 @@ namespace VsVim.ExternalEdit
         internal const string ExternalEditAttribute1 = "ReSharper Template Editor Template Keyword";
         internal const string ExternalEditAttribute2 = "ReSharper LiveTemplates Current HotSpot";
         internal const string ExternalEditAttribute3 = "ReSharper LiveTemplates Current HotSpot mirror";
+        internal const string ResharperTaggerProviderName = "VsDocumentMarkupTaggerProvider";
+        internal const string ResharperAssembylName = "JetBrains.Platform.ReSharper.VsIntegration.DevTen";
 
         private static readonly Guid Resharper5Guid = new Guid("0C6E6407-13FC-4878-869A-C8B4016C57FE");
-        private static readonly string ResharperTaggerName = "VsDocumentMarkupTaggerProvider";
         private static FieldInfo AttributeIdFieldInfo;
 
-        private readonly Dictionary<Type,bool> _tagMap = new Dictionary<Type,bool>();
+        private readonly Dictionary<Type, bool> _tagMap = new Dictionary<Type, bool>();
         private readonly bool _isResharperInstalled;
 
         /// <summary>
@@ -99,17 +100,53 @@ namespace VsVim.ExternalEdit
                 return false;
             }
 
+            // The various JetBrains products reuse at a code base level certain constructs
+            // such as ITagger<T> implementations.  For example both R# and dotTrace and 
+            // dotCover use the VsDocumentMarkerTaggerProvider.  If multiple products are
+            // installed then MEF composition will return them in a non-deterministic 
+            // order.  They all have the same fully qualified name.  The only way to 
+            // distinguish them is to look at the assembly name containing the type
+            bool sawName = false;
             foreach (var pair in TaggerProviders)
             {
                 var provider = pair.Value;
-                var name = provider.GetType().Name;
-                if (name == ResharperTaggerName)
+                var providerType = provider.GetType();
+                if (providerType.Name == ResharperTaggerProviderName)
                 {
-                    var taggerResult = provider.SafeCreateTagger<ITag>(textBuffer);
-                    if (taggerResult.IsSuccess)
+                    if (providerType.Assembly.FullName.StartsWith(ResharperAssembylName))
                     {
-                        tagger = taggerResult.Value;
-                        return true;
+                        var taggerResult = provider.SafeCreateTagger<ITag>(textBuffer);
+                        if (taggerResult.IsSuccess)
+                        {
+                            tagger = taggerResult.Value;
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        sawName = true;
+                    }
+                }
+            }
+
+            // It's unclear if the Dev10 portion changes in R# builds for Dev11 or not.  Once
+            // a R# 7.0 build is available we can verify this to be the case or not.  Until then
+            // assume the name does change and bind to the short name here.  Will at least 
+            // work for customers with only R# installed on VS11
+            if (sawName)
+            {
+                foreach (var pair in TaggerProviders)
+                {
+                    var provider = pair.Value;
+                    var providerType = provider.GetType();
+                    if (providerType.Name == ResharperTaggerProviderName)
+                    {
+                        var taggerResult = provider.SafeCreateTagger<ITag>(textBuffer);
+                        if (taggerResult.IsSuccess)
+                        {
+                            tagger = taggerResult.Value;
+                            return true;
+                        }
                     }
                 }
             }

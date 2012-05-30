@@ -3,7 +3,6 @@ using System.ComponentModel.Composition;
 using System.IO;
 using EditorUtils;
 using EnvDTE;
-using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
@@ -73,7 +72,7 @@ namespace VsVim
                 _dte.ExecuteCommand(command, args);
                 return true;
             }
-            catch (Exception e)
+            catch
             {
                 return false;
             }
