@@ -210,6 +210,15 @@ namespace Vim.UI.Wpf
             return true;
         }
 
+        /// <summary>
+        /// All ITextView instances are elligable for an IVimBuffer by default.  Let the actual
+        /// host override this method an reject IVimBuffer instances that it doesn't like
+        /// </summary>
+        public virtual bool ShouldCreateVimBuffer(ITextView textView)
+        {
+            return true;
+        }
+
         public abstract bool SaveTextAs(string text, string filePath);
 
         public abstract void ShowOpenFileDialog();
@@ -217,6 +226,7 @@ namespace Vim.UI.Wpf
         public abstract HostResult SplitViewHorizontally(ITextView value);
 
         public abstract HostResult SplitViewVertically(ITextView value);
+
 
         /// <summary>
         /// Custom processing of an insert command is a host specific operation.  By default
@@ -480,6 +490,11 @@ namespace Vim.UI.Wpf
         void IVimHost.ShowOpenFileDialog()
         {
             ShowOpenFileDialog();
+        }
+
+        bool IVimHost.ShouldCreateVimBuffer(ITextView textView)
+        {
+            return true;
         }
 
         HostResult IVimHost.SplitViewHorizontally(ITextView value)

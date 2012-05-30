@@ -787,5 +787,6 @@ namespace Vim.UnitTest
             _vimBuffer.SimulateProcessed(KeyInputUtil.CharToKeyInput('a'));
             Assert.IsTrue(_vimBuffer.BufferedKeyInputs.IsEmpty);
         }
+
     }
 }

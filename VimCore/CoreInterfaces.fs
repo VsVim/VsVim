@@ -3494,21 +3494,26 @@ type IVimHost =
     abstract Save : ITextBuffer -> bool 
 
     /// Save the current document as a new file with the specified name
-    abstract SaveTextAs : text:string -> filePath:string -> bool 
+    abstract SaveTextAs : text:string -> filePath : string -> bool 
+
+    /// Called by Vim when it encounters a new ITextView and needs to know if it should 
+    /// create an IVimBuffer for it
+    abstract ShouldCreateVimBuffer : textView : ITextView -> bool
 
     /// Display the open file dialog 
     abstract ShowOpenFileDialog : unit -> unit
-
-    /// Allow the host to custom process the insert command.  Hosts often have
-    /// special non-vim semantics for certain types of edits (Enter for 
-    /// example).  This override allows them to do this processing
-    abstract TryCustomProcess : textView : ITextView -> command : InsertCommand -> bool
 
     /// Split the views horizontally
     abstract SplitViewHorizontally : ITextView -> HostResult
 
     /// Split the views horizontally
     abstract SplitViewVertically: ITextView -> HostResult
+
+    /// Allow the host to custom process the insert command.  Hosts often have
+    /// special non-vim semantics for certain types of edits (Enter for 
+    /// example).  This override allows them to do this processing
+    abstract TryCustomProcess : textView : ITextView -> command : InsertCommand -> bool
+
 
     /// Raised when the visibility of an ITextView changes
     [<CLIEvent>]
@@ -3556,9 +3561,6 @@ type IVimBufferData =
     abstract Vim : IVim
 
 /// Vim instance.  Global for a group of buffers
-///
-/// TODO: Change all of the MEF components to use a host controlled GetOrCreate 
-/// method for IVimBuffer instances
 and IVim =
 
     /// Buffer actively processing input.  This has no relation to the IVimBuffer
@@ -3625,6 +3627,15 @@ and IVim =
 
     /// Get or create an IVimBuffer for the given ITextView
     abstract GetOrCreateVimBuffer : ITextView -> IVimBuffer
+
+    /// Get or create an IVimBuffer for the given ITextView.  The creation of the IVimBuffer will
+    /// only occur if the host returns true from IVimHost::ShouldCreateVimBuffer.  
+    ///
+    /// MEF component load ordering isn't defined and it's very possible that components like the 
+    /// ITagger implementations will be called long before the host has a chance to create the 
+    /// IVimBuffer instance.  This method removes the ordering concerns and maintains control of 
+    /// creation in the IVimHost
+    abstract GetOrCreateVimBufferForHost : ITextView -> IVimBuffer option
 
     /// Get or create an IVimTextBuffer for the given ITextBuffer
     abstract GetOrCreateVimTextBuffer : ITextBuffer -> IVimTextBuffer

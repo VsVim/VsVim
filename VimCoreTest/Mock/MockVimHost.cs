@@ -31,6 +31,7 @@ namespace Vim.UnitTest.Mock
         public Action<string, string> RunVisualStudioCommandFunc { get; set; }
         public ITextBuffer LastSaved { get; set; }
         public ITextView LastClosed { get; set; }
+        public bool ShouldCreateVimBufferImpl { get; set; }
 
         /// <summary>
         /// Data from the last GoToNextTab call
@@ -71,6 +72,7 @@ namespace Vim.UnitTest.Mock
             IsDirtyFunc = null;
             LastClosed = null;
             LastSaved = null;
+            ShouldCreateVimBufferImpl = true;
         }
 
         void IVimHost.Beep()
@@ -256,6 +258,11 @@ namespace Vim.UnitTest.Mock
         void IVimHost.EndBulkOperation()
         {
 
+        }
+
+        bool IVimHost.ShouldCreateVimBuffer(ITextView textView)
+        {
+            return true;
         }
     }
 }
