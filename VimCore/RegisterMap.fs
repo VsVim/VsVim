@@ -63,20 +63,20 @@ type internal RegisterMap (_map: Map<RegisterName, Register>) =
         // registers
         let map = 
             let originalMap = map
-            let names =  RegisterName.All |> Seq.filter isAppendRegister
-            let foldFunc map (name : RegisterName) =
-                let backingName = 
-                    name.Char 
-                    |> Option.get 
-                    |> CharUtil.ToLower 
-                    |> NamedRegister.OfChar
-                    |> Option.get
-                    |> RegisterName.Named
-                let backingRegister = Map.find backingName originalMap
-                let value = AppendRegisterValueBacking(backingRegister)
-                let register = Register(name, value)
-                Map.add name register map
-            Seq.fold foldFunc originalMap names 
+            RegisterName.All
+            |> Seq.filter isAppendRegister
+            |> Seq.fold (fun map (name : RegisterName) ->
+                match name.Char with
+                | None -> map
+                | Some c ->
+                    let c = CharUtil.ToLower c 
+                    match NamedRegister.OfChar c |> Option.map RegisterName.Named with
+                    | None -> map
+                    | Some backingRegisterName ->
+                        let backingRegister = Map.find backingRegisterName map
+                        let value = AppendRegisterValueBacking(backingRegister)
+                        let register = Register(name, value)
+                        Map.add name register map) originalMap
 
         RegisterMap(map)
 
