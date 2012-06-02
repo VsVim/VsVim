@@ -36,7 +36,7 @@ namespace VsVim.Implementation
             _optionsDialogService = service;
             _protectedOperations = protectedOperations;
             _legacySettings = legacySettings;
-            _importantScopeSet = new Lazy<HashSet<string>>(GetDefaultImportantScopeSet);
+            _importantScopeSet = new Lazy<HashSet<string>>(CreateImportantScopeSet);
         }
 
         internal void UpdateConflictingState(ConflictingKeyBindingState state, CommandKeyBindingSnapshot snapshot)
@@ -265,7 +265,7 @@ namespace VsVim.Implementation
             }
             catch (Exception)
             {
-                return GetDefaultImportantScopeSet();
+                return CreateDefaultImportantScopeSet();
             }
         }
 
@@ -301,7 +301,7 @@ namespace VsVim.Implementation
         /// Get the default English version of the scopes we care about.  This is a fallback from
         /// getting any errors in calculating them
         /// </summary>
-        internal static HashSet<string> GetDefaultImportantScopeSet()
+        internal static HashSet<string> CreateDefaultImportantScopeSet()
         {
             var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             set.Add("Global");
