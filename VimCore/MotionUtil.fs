@@ -518,7 +518,7 @@ type internal MotionUtil
             let span = SnapshotSpan(topPoint, x.CaretPoint)
             MotionResult.Create span false MotionKind.CharacterWiseExclusive |> Some
 
-        | _ -> x.LineDown count
+        | _ -> x.LineUp count
 
     /// Get the motion between the provided two lines.  The motion will be linewise
     /// and have a column of the first non-whitespace character.  If the 'startofline'

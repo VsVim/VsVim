@@ -234,18 +234,18 @@ namespace VsVim.UnitTest
         [Fact]
         public void IsImportantScope1()
         {
-            var set = KeyBindingService.GetDefaultImportantScopeSet();
-            Assert.True(set.Contains("Global"));
-            Assert.True(set.Contains("Text Editor"));
-            Assert.True(set.Contains(String.Empty));
+            var set = KeyBindingService.CreateDefaultImportantScopeSet();
+            Assert.IsTrue(set.Contains("Global"));
+            Assert.IsTrue(set.Contains("Text Editor"));
+            Assert.IsTrue(set.Contains(String.Empty));
         }
 
         [Fact]
         public void IsImportantScope2()
         {
-           var set = KeyBindingService.GetDefaultImportantScopeSet();
-            Assert.False(set.Contains("blah"));
-            Assert.False(set.Contains("VC Image Editor"));
+            var set = KeyBindingService.CreateDefaultImportantScopeSet();
+            Assert.IsFalse(set.Contains("blah"));
+            Assert.IsFalse(set.Contains("VC Image Editor"));
         }
 
         /// <summary>
