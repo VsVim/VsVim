@@ -4,17 +4,17 @@
   <SelectedNode>[0-1000]C:\Users\jaredpar\Documents\VsVim\VsVim10.sln</SelectedNode>
   <ExcludeCategories>false</ExcludeCategories>
   <Nodes>
-    <Node UniqueName="[0-1000]C:\Users\jaredpar\Documents\VsVim\VsVim10.sln" Expanded="true" Checked="true" />
+    <Node UniqueName="[0-1000]C:\Users\jaredpar\Documents\VsVim\VsVim10.sln" Expanded="true" />
     <Node UniqueName="[0-3543]C:\Users\jaredpar\Documents\VsVim\VimCoreTest\bin\Debug\Vim.Core.UnitTest.dll" Expanded="true" />
     <Node UniqueName="[0-3544]Vim" Expanded="true" />
     <Node UniqueName="[0-3545]Vim.UnitTest" Expanded="true" />
-    <Node UniqueName="[0-3754]C:\Users\jaredpar\Documents\VsVim\VsVimSharedTest\bin\Debug\VsVim.Shared.UnitTest.dll" Expanded="true" />
-    <Node UniqueName="[0-3755]VsVim" Expanded="true" />
-    <Node UniqueName="[0-3756]VsVim.UnitTest" Expanded="true" />
-    <Node UniqueName="[0-3862]C:\Users\jaredpar\Documents\VsVim\VimWpfTest\bin\Debug\Vim.UI.Wpf.UnitTest.dll" Expanded="true" />
-    <Node UniqueName="[0-3863]Vim" Expanded="true" />
-    <Node UniqueName="[0-3864]Vim.UI" Expanded="true" />
-    <Node UniqueName="[0-3865]Vim.UI.Wpf" Expanded="true" />
-    <Node UniqueName="[0-3866]Vim.UI.Wpf.UnitTest" Expanded="true" />
+    <Node UniqueName="[0-3756]C:\Users\jaredpar\Documents\VsVim\VsVimSharedTest\bin\Debug\VsVim.Shared.UnitTest.dll" Expanded="true" />
+    <Node UniqueName="[0-3757]VsVim" Expanded="true" />
+    <Node UniqueName="[0-3758]VsVim.UnitTest" Expanded="true" />
+    <Node UniqueName="[0-3864]C:\Users\jaredpar\Documents\VsVim\VimWpfTest\bin\Debug\Vim.UI.Wpf.UnitTest.dll" Expanded="true" />
+    <Node UniqueName="[0-3865]Vim" Expanded="true" />
+    <Node UniqueName="[0-3866]Vim.UI" Expanded="true" />
+    <Node UniqueName="[0-3867]Vim.UI.Wpf" Expanded="true" />
+    <Node UniqueName="[0-3868]Vim.UI.Wpf.UnitTest" Expanded="true" />
   </Nodes>
 </VisualState>
