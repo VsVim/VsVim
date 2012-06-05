@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.Text.Operations;
-using NUnit.Framework;
+using Xunit;
 using Moq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -14,7 +14,7 @@ namespace Vim.UI.Wpf.UnitTest
     {
         public class RunCommandTests
         {
-            [Test]
+            [Fact]
             public void ItUsesWorkingDirectoryFromVimData()
             {
                 const string cwd = @"C:\Windows";

@@ -3,15 +3,14 @@ using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 using Vim.UnitTest.Mock;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public sealed class TextViewUtilTest : VimTestBase
     {
-        [Test]
+        [Fact]
         public void MoveCaretToVirtualPoint()
         {
             var buffer = CreateTextBuffer("foo","bar");
@@ -34,26 +33,28 @@ namespace Vim.UnitTest
             factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void GetVisibleSnapshotLines1()
         {
             var buffer = CreateTextBuffer("foo", "bar", "dog", "jazz");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
             var lines = TextViewUtil.GetVisibleSnapshotLines(tuple.Item1.Object).ToList();
-            CollectionAssert.AreEqual(new int[] { 0, 1, 2}, lines.Select(x => x.LineNumber));
+            Assert.Equal(new int[] { 0, 1, 2}, lines.Select(x => x.LineNumber));
         }
 
-        [Test]
+        [Fact]
         public void GetVisibleSnapshotLines2()
         {
             var buffer = CreateTextBuffer("foo", "bar", "dog", "jazz");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 1, 2);
             var lines = TextViewUtil.GetVisibleSnapshotLines(tuple.Item1.Object).ToList();
-            CollectionAssert.AreEqual(new int[] { 1, 2}, lines.Select(x => x.LineNumber));
+            Assert.Equal(new int[] { 1, 2}, lines.Select(x => x.LineNumber));
         }
 
-        [Test]
-        [Description("During a layout just return an empty sequence")]
+        /// <summary>
+        /// During a layout just return an empty sequence
+        /// </summary>
+        [Fact]
         public void GetVisibleSnapshotLines3()
         {
             var buffer = CreateTextBuffer("foo", "bar", "dog", "jazz");
@@ -61,7 +62,7 @@ namespace Vim.UnitTest
             var view = tuple.Item1;
             view.SetupGet(x => x.InLayout).Returns(true);
             var lines = TextViewUtil.GetVisibleSnapshotLines(view.Object).ToList();
-            Assert.AreEqual(0, lines.Count);
+            Assert.Equal(0, lines.Count);
         }
 
     }

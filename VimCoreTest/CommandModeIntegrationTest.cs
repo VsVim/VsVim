@@ -1,7 +1,7 @@
 ﻿using System;
 using EditorUtils;
 using Microsoft.VisualStudio.Text.Editor;
-using NUnit.Framework;
+using Xunit;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
 using Microsoft.VisualStudio.Text;
@@ -40,7 +40,6 @@ namespace Vim.UnitTest
     /// <summary>
     /// Summary description for CommandModeTest
     /// </summary>
-    [TestFixture]
     public sealed class CommandModeIntegrationTest : CommandModeIntegrationTestBase
     {
         public sealed class CopyToTests : CommandModeIntegrationTestBase
@@ -48,101 +47,101 @@ namespace Vim.UnitTest
             /// <summary>
             /// Copying a line to a given line should put it at that given line
             /// </summary>
-            [Test]
+            [Fact]
             public void ItDisplacesToTheLineBelowWhenTargetedAtCurrentLine()
             {
                 Create("cat", "dog", "bear");
                 RunCommand("co 1");
-                Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("cat", _textBuffer.GetLine(1).GetText());
-                Assert.AreEqual("dog", _textBuffer.GetLine(2).GetText());
-                Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(2).GetText());
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
             }
 
-            [Test]
+            [Fact]
             public void ItCanJumpLongRanges()
             {
                 Create("cat", "dog", "bear");
                 RunCommand("co 2");
-                Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("dog", _textBuffer.GetLine(1).GetText());
-                Assert.AreEqual("cat", _textBuffer.GetLine(2).GetText());
-                Assert.AreEqual(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(2).GetText());
+                Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
             }
 
             /// <summary>
             /// Check the copy command via the 't' synonym
             /// </summary>
-            [Test]
+            [Fact]
             public void The_t_SynonymWorksAlso()
             {
                 Create("cat", "dog", "bear");
                 RunCommand("t 2");
-                Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("dog", _textBuffer.GetLine(1).GetText());
-                Assert.AreEqual("cat", _textBuffer.GetLine(2).GetText());
-                Assert.AreEqual(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(2).GetText());
+                Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
             }
 
             /// <summary>
             /// Copying a line to a range should cause it to copy to the first line 
             /// in the range
             /// </summary>
-            [Test]
+            [Fact]
             public void CopyingASingleLineToARangeDuplicatesTheLine()
             {
                 Create("cat", "dog", "bear");
                 RunCommand("co 1,2");
-                Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("cat", _textBuffer.GetLine(1).GetText());
-                Assert.AreEqual("dog", _textBuffer.GetLine(2).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(2).GetText());
             }
 
-            [Test]
+            [Fact]
             public void PositiveRelativeReferencesUsingDotWork()
             {
                 Create("cat", "dog", "bear");
                 _textView.MoveCaretToLine(1);
                 RunCommand("co .");
-                Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("dog", _textBuffer.GetLine(1).GetText());
-                Assert.AreEqual("dog", _textBuffer.GetLine(2).GetText());
-                Assert.AreEqual("bear", _textBuffer.GetLine(3).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(2).GetText());
+                Assert.Equal("bear", _textBuffer.GetLine(3).GetText());
             }
 
-            [Test]
+            [Fact]
             public void PositiveRelativeReferencesWork()
             {
                 Create("cat", "dog", "bear");
                 RunCommand("co +1");
-                Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("dog", _textBuffer.GetLine(1).GetText());
-                Assert.AreEqual("cat", _textBuffer.GetLine(2).GetText());
-                Assert.AreEqual("bear", _textBuffer.GetLine(3).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(2).GetText());
+                Assert.Equal("bear", _textBuffer.GetLine(3).GetText());
             }
 
-            [Test]
+            [Fact]
             public void NegativeRelativeReferencesWork()
             {
                 // Added goose to simplify this test case. Look further for an issue with last line endlines 
                 Create("cat", "dog", "bear", "goose");
                 _textView.MoveCaretToLine(2);
                 RunCommand("co -2");
-                Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("bear", _textBuffer.GetLine(1).GetText());
-                Assert.AreEqual("dog", _textBuffer.GetLine(2).GetText());
-                Assert.AreEqual("bear", _textBuffer.GetLine(3).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("bear", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(2).GetText());
+                Assert.Equal("bear", _textBuffer.GetLine(3).GetText());
             }
 
-            [Test]
+            [Fact]
             public void CopyingPastLastLineInsertsAnImplicitNewline()
             {
                 Create("cat", "dog", "bear");
                 RunCommand("co 3");
-                Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("dog", _textBuffer.GetLine(1).GetText());
-                Assert.AreEqual("bear", _textBuffer.GetLine(2).GetText());
-                Assert.AreEqual("cat", _textBuffer.GetLine(3).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("bear", _textBuffer.GetLine(2).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(3).GetText());
             }
 
         }
@@ -150,258 +149,270 @@ namespace Vim.UnitTest
         public sealed class MoveToTests : CommandModeIntegrationTestBase
         {
 
-            [Test]
+            [Fact]
             public void SimpleCaseOfMovingLineOneBelow()
             {
                 Create("cat", "dog", "bear");
 
                 RunCommand("m 2");
-                Assert.That(_textBuffer.GetLine(0).GetText(), Is.EqualTo("dog"));
-                Assert.That(_textBuffer.GetLine(1).GetText(), Is.EqualTo("cat"));
-                Assert.That(_textBuffer.GetLine(2).GetText(), Is.EqualTo("bear"));
+                Assert.Equal(_textBuffer.GetLine(0).GetText(), "dog");
+                Assert.Equal(_textBuffer.GetLine(1).GetText(), "cat");
+                Assert.Equal(_textBuffer.GetLine(2).GetText(), "bear");
             }
 
             /// <summary>
             /// The last line in the file seems to be an exception because it doesn't have a 
             /// newline at the end
             /// </summary>
-            [Test]
+            [Fact]
             public void MoveToLastLineInFile()
             {
                 Create("cat", "dog", "bear");
 
                 RunCommand("m 3");
-                Assert.That(_textBuffer.GetLine(0).GetText(), Is.EqualTo("dog"));
-                Assert.That(_textBuffer.GetLine(1).GetText(), Is.EqualTo("bear"));
-                Assert.That(_textBuffer.GetLine(2).GetText(), Is.EqualTo("cat"));
+                Assert.Equal(_textBuffer.GetLine(0).GetText(), "dog");
+                Assert.Equal(_textBuffer.GetLine(1).GetText(), "bear");
+                Assert.Equal(_textBuffer.GetLine(2).GetText(), "cat");
             }
 
         }
 
-        [Test]
+        [Fact]
         public void JumpLine1()
         {
             Create("a", "b", "c", "d");
             RunCommand("0");
-            Assert.AreEqual(0, _textView.Caret.Position.BufferPosition.Position);
+            Assert.Equal(0, _textView.Caret.Position.BufferPosition.Position);
             RunCommand("1");
-            Assert.AreEqual(0, _textView.Caret.Position.BufferPosition.Position);
+            Assert.Equal(0, _textView.Caret.Position.BufferPosition.Position);
         }
 
         /// <summary>
         /// Non-first line
         /// </summary>
-        [Test]
+        [Fact]
         public void JumpLine2()
         {
             Create("a", "b", "c", "d");
             RunCommand("2");
-            Assert.AreEqual(_textView.TextSnapshot.GetLineFromLineNumber(1).Start, _textView.Caret.Position.BufferPosition);
+            Assert.Equal(_textView.TextSnapshot.GetLineFromLineNumber(1).Start, _textView.Caret.Position.BufferPosition);
         }
 
-        [Test]
+        [Fact]
         public void JumpLineLastWithNoWhiteSpace()
         {
             Create("dog", "cat", "tree");
             RunCommand("$");
             var tss = _textView.TextSnapshot;
             var last = tss.GetLineFromLineNumber(tss.LineCount - 1);
-            Assert.AreEqual(last.Start, _textView.GetCaretPoint());
+            Assert.Equal(last.Start, _textView.GetCaretPoint());
         }
 
-        [Test]
+        [Fact]
         public void JumpLineLastWithWhiteSpace()
         {
             Create("dog", "cat", "  tree");
             RunCommand("$");
             var tss = _textView.TextSnapshot;
             var last = tss.GetLineFromLineNumber(tss.LineCount - 1);
-            Assert.AreEqual(last.Start.Add(2), _textView.GetCaretPoint());
+            Assert.Equal(last.Start.Add(2), _textView.GetCaretPoint());
         }
 
         /// <summary>
         /// Make sure that we don't crash or print anything when :map is run with no mappings
         /// </summary>
-        [Test]
+        [Fact]
         public void KeyMap_NoMappings()
         {
             Create("");
             RunCommand("map");
-            Assert.AreEqual("", _lastStatus);
+            Assert.Equal("", _lastStatus);
         }
 
         /// <summary>
         /// In Vim it's legal to unmap a key command with the expansion
         /// </summary>
-        [Test]
+        [Fact]
         public void KeyMap_UnmapByExpansion()
         {
             Create("");
             RunCommand("imap cat dog");
-            Assert.AreEqual(1, KeyMap.GetKeyMappingsForMode(KeyRemapMode.Insert).Length);
+            Assert.Equal(1, KeyMap.GetKeyMappingsForMode(KeyRemapMode.Insert).Length);
             RunCommand("iunmap dog");
-            Assert.AreEqual(0, KeyMap.GetKeyMappingsForMode(KeyRemapMode.Insert).Length);
+            Assert.Equal(0, KeyMap.GetKeyMappingsForMode(KeyRemapMode.Insert).Length);
         }
 
         /// <summary>
         /// The ! in unmap should cause it to umap command and insert commands.  Make sure it
         /// works for unmap by expansion as well
         /// </summary>
-        [Test]
+        [Fact]
         public void KeyMap_UnmapByExpansionUsingBang()
         {
             Create("");
             RunCommand("imap cat dog");
-            Assert.AreEqual(1, KeyMap.GetKeyMappingsForMode(KeyRemapMode.Insert).Length);
+            Assert.Equal(1, KeyMap.GetKeyMappingsForMode(KeyRemapMode.Insert).Length);
             RunCommand("unmap! dog");
-            Assert.AreEqual(0, KeyMap.GetKeyMappingsForMode(KeyRemapMode.Insert).Length);
+            Assert.Equal(0, KeyMap.GetKeyMappingsForMode(KeyRemapMode.Insert).Length);
         }
 
-        [Test]
-        [Description("Suppress errors shouldn't print anything")]
+        /// <summary>
+        /// Suppress errors shouldn't print anything
+        /// </summary>
+        [Fact]
         public void Substitute1()
         {
             Create("cat", "dog");
             var sawError = false;
             _vimBuffer.ErrorMessage += delegate { sawError = true; };
             RunCommand("s/z/o/e");
-            Assert.IsFalse(sawError);
+            Assert.False(sawError);
         }
 
-        [Test]
-        [Description("Simple search and replace")]
+        /// <summary>
+        /// Simple search and replace
+        /// </summary>
+        [Fact]
         public void Substitute2()
         {
             Create("cat bat", "dag");
             RunCommand("s/a/o/g 2");
-            Assert.AreEqual("cot bot", _textBuffer.GetLine(0).GetText());
-            Assert.AreEqual("dog", _textBuffer.GetLine(1).GetText());
+            Assert.Equal("cot bot", _textBuffer.GetLine(0).GetText());
+            Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
         }
 
-        [Test]
-        [Description("Repeat of the last search with a new flag")]
+        /// <summary>
+        /// Repeat of the last search with a new flag
+        /// </summary>
+        [Fact]
         public void Substitute3()
         {
             Create("cat bat", "dag");
             _vimBuffer.VimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "o", SubstituteFlags.None));
             RunCommand("s g 2");
-            Assert.AreEqual("cot bot", _textBuffer.GetLine(0).GetText());
-            Assert.AreEqual("dog", _textBuffer.GetLine(1).GetText());
+            Assert.Equal("cot bot", _textBuffer.GetLine(0).GetText());
+            Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
         }
 
-        [Test]
-        [Description("Testing the print option")]
+        /// <summary>
+        /// Testing the print option
+        /// </summary>
+        [Fact]
         public void Substitute4()
         {
             Create("cat bat", "dag");
             var message = String.Empty;
             _vimBuffer.StatusMessage += (_, e) => { message = e.Message; };
             RunCommand("s/a/b/p");
-            Assert.AreEqual("cbt bat", message);
+            Assert.Equal("cbt bat", message);
         }
 
-        [Test]
-        [Description("Testing the print number option")]
+        /// <summary>
+        /// Testing the print number option
+        /// </summary>
+        [Fact]
         public void Substitute6()
         {
             Create("cat bat", "dag");
             var message = String.Empty;
             _vimBuffer.StatusMessage += (_, e) => { message = e.Message; };
             RunCommand("s/a/b/#");
-            Assert.AreEqual("  1 cbt bat", message);
+            Assert.Equal("  1 cbt bat", message);
         }
 
-        [Test]
-        [Description("Testing the print list option")]
+        /// <summary>
+        /// Testing the print list option
+        /// </summary>
+        [Fact]
         public void Substitute7()
         {
             Create("cat bat", "dag");
             var message = String.Empty;
             _vimBuffer.StatusMessage += (_, e) => { message = e.Message; };
             RunCommand("s/a/b/l");
-            Assert.AreEqual("cbt bat$", message);
+            Assert.Equal("cbt bat$", message);
         }
 
         /// <summary>
         /// Verify we handle escaped back slashes correctly
         /// </summary>
-        [Test]
+        [Fact]
         public void Substitute_WithBackslashes()
         {
             Create(@"\\\\abc\\\\def");
             RunCommand(@"s/\\\{4\}/\\\\/g");
-            Assert.AreEqual(@"\\abc\\def", _textBuffer.GetLine(0).GetText());
+            Assert.Equal(@"\\abc\\def", _textBuffer.GetLine(0).GetText());
         }
 
         /// <summary>
         /// Convert a set of spaces into tabs with the '\t' replacement
         /// </summary>
-        [Test]
+        [Fact]
         public void Substitute_TabsForSpaces()
         {
             Create("    ");
             RunCommand(@"s/  /\t");
-            Assert.AreEqual("\t  ", _textBuffer.GetLine(0).GetText());
+            Assert.Equal("\t  ", _textBuffer.GetLine(0).GetText());
         }
 
         /// <summary>
         /// Convert spaces into new lines with the '\r' replacement
         /// </summary>
-        [Test]
+        [Fact]
         public void Substitute_SpacesToNewLine()
         {
             Create("dog chases cat");
             RunCommand(@"s/ /\r/g");
-            Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
-            Assert.AreEqual("chases", _textBuffer.GetLine(1).GetText());
-            Assert.AreEqual("cat", _textBuffer.GetLine(2).GetText());
+            Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+            Assert.Equal("chases", _textBuffer.GetLine(1).GetText());
+            Assert.Equal("cat", _textBuffer.GetLine(2).GetText());
         }
 
         /// <summary>
         /// Using the search forward feature which hits a match.  Search should start after the range
         /// so the first match will be after it 
         /// </summary>
-        [Test]
+        [Fact]
         public void Search_ForwardWithMatch()
         {
             Create("cat", "dog", "cat", "fish");
             RunCommand("1,2/cat");
-            Assert.AreEqual(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+            Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
         }
 
-        [Test]
+        [Fact]
         public void Substitute_DefaultsToMagicMode()
         {
             Create("a.c", "abc");
             RunCommand(@"%s/a\.c/replaced/g");
-            Assert.That(_textBuffer.GetLine(0).GetText(), Is.EqualTo("replaced"));
-            Assert.That(_textBuffer.GetLine(1).GetText(), Is.EqualTo("abc"));
+            Assert.Equal(_textBuffer.GetLine(0).GetText(), "replaced");
+            Assert.Equal(_textBuffer.GetLine(1).GetText(), "abc");
         }
 
         /// <summary>
         /// Make sure the "\1" does a group substitution instead of pushing in the literal 1
         /// </summary>
-        [Test]
+        [Fact]
         public void Substitute_ReplaceWithGroup()
         {
             Create(@"cat (dog)");
             RunCommand(@"s/(\(\w\+\))/\1/");
-            Assert.AreEqual(@"cat dog", _textBuffer.GetLine(0).GetText());
+            Assert.Equal(@"cat dog", _textBuffer.GetLine(0).GetText());
         }
 
-        [Test]
+        [Fact]
         public void Substitute_NewlinesCanBeReplaced()
         {
             Create("foo", "bar");
             RunCommand(@"%s/\n/ /");
-            Assert.That(_textBuffer.GetLine(0).GetText(), Is.EqualTo("foo bar"));
+            Assert.Equal(_textBuffer.GetLine(0).GetText(), "foo bar");
         }
 
         /// <summary>
         /// Using the search forward feature which doesn't hit a match in the specified path.  Should 
         /// raise a warning
         /// </summary>
-        [Test]
+        [Fact]
         public void Search_ForwardWithNoMatchInPath()
         {
             Create("cat", "dog", "cat", "fish");
@@ -410,17 +421,17 @@ namespace Vim.UnitTest
             _vimBuffer.ErrorMessage +=
                 (sender, args) =>
                 {
-                    Assert.AreEqual(Resources.Common_SearchHitBottomWithout("cat"), args.Message);
+                    Assert.Equal(Resources.Common_SearchHitBottomWithout("cat"), args.Message);
                     didHit = true;
                 };
             RunCommand("1,3/cat");
-            Assert.IsTrue(didHit);
+            Assert.True(didHit);
         }
 
         /// <summary>
         /// No match in the buffer should raise a different message
         /// </summary>
-        [Test]
+        [Fact]
         public void Search_ForwardWithNoMatchInBuffer()
         {
             Create("cat", "dog", "cat", "fish");
@@ -428,18 +439,18 @@ namespace Vim.UnitTest
             _vimBuffer.ErrorMessage +=
                 (sender, args) =>
                 {
-                    Assert.AreEqual(Resources.Common_PatternNotFound("pig"), args.Message);
+                    Assert.Equal(Resources.Common_PatternNotFound("pig"), args.Message);
                     didHit = true;
                 };
             RunCommand("1,2/pig");
-            Assert.IsTrue(didHit);
+            Assert.True(didHit);
         }
 
         /// <summary>
         /// Covers #763 where the default search for substitute uses the last substitute
         /// instead of the last search
         /// </summary>
-        [Test]
+        [Fact]
         public void SubstituteThenSearchThenSubstitute_UsesPatternFromLastSearch()
         {
             Create("foo", "bar");
@@ -448,10 +459,10 @@ namespace Vim.UnitTest
             RunCommandRaw("/bar");
             RunCommandRaw(":%s//baz");
 
-            Assert.That(_textBuffer.GetLine(1).Extent.GetText(), Is.EqualTo("baz"));
+            Assert.Equal(_textBuffer.GetLine(1).Extent.GetText(), "baz");
         }
 
-        [Test]
+        [Fact]
         public void SubstituteThenSearchThenSubstitute_UsesPatternFromLastSubstitute()
         {
             Create("foo foo foo");
@@ -461,13 +472,13 @@ namespace Vim.UnitTest
             // Do same substitute as the last substitute, but global this time
             RunCommandRaw(":%&g");
 
-            Assert.That(_textBuffer.GetLine(0).Extent.GetText(), Is.EqualTo("bar bar bar"));
+            Assert.Equal(_textBuffer.GetLine(0).Extent.GetText(), "bar bar bar");
         }
 
         /// <summary>
         /// Baseline to make sure I don't break anything while fixing #763
         /// </summary>
-        [Test]
+        [Fact]
         public void SubstituteThenSubstitute_UsesPatternFromLastSubstitute()
         {
             Create("foo", "bar");
@@ -475,42 +486,42 @@ namespace Vim.UnitTest
             RunCommandRaw(":%s/foo/foos");
             RunCommandRaw(":%s//baz");
 
-            Assert.That(_textBuffer.GetLine(0).Extent.GetText(), Is.EqualTo("bazs"));
+            Assert.Equal(_textBuffer.GetLine(0).Extent.GetText(), "bazs");
         }
 
-        [Test]
+        [Fact]
         public void SwitchTo()
         {
             Create("");
             _vimBuffer.Process(':');
-            Assert.AreEqual(ModeKind.Command, _vimBuffer.ModeKind);
+            Assert.Equal(ModeKind.Command, _vimBuffer.ModeKind);
         }
 
-        [Test]
+        [Fact]
         public void SwitchOut()
         {
             Create("");
             RunCommand("e foo");
-            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
+            Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
         }
 
-        [Test]
+        [Fact]
         public void SwitchOutFromBackspace()
         {
             Create("");
             _vimBuffer.Process(':');
             _vimBuffer.Process(VimKey.Back);
-            Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
+            Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
         }
 
-        [Test]
+        [Fact]
         public void Yank_WithRange()
         {
             Create("cat", "dog", "fish");
             _vimBuffer.VimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.A), 0, 0);
             _vimBuffer.VimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.B), 1, 0);
             RunCommand("'a,'by");
-            Assert.AreEqual("cat" + Environment.NewLine + "dog" + Environment.NewLine, Vim.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
+            Assert.Equal("cat" + Environment.NewLine + "dog" + Environment.NewLine, Vim.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
         }
 
     }

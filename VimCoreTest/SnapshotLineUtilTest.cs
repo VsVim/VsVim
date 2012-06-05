@@ -2,11 +2,10 @@
 using System.Linq;
 using EditorUtils;
 using Microsoft.VisualStudio.Text;
-using NUnit.Framework;
+using Xunit;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public class SnapshotLineUtilTest : VimTestBase
     {
         static string[] s_lines = new string[]
@@ -25,36 +24,29 @@ namespace Vim.UnitTest
             _snapshot = _buffer.CurrentSnapshot;
         }
 
-        [TearDown]
-        public void TearDown()
-        {
-            _buffer = null;
-            _snapshot = null;
-        }
-
-        [Test]
+        [Fact]
         public void GetPoints1()
         {
             Create("foo");
             var points = SnapshotLineUtil.GetPoints(Path.Forward, _buffer.CurrentSnapshot.GetLineFromLineNumber(0));
             var text = points.Select(x => x.GetChar().ToString()).Aggregate((x, y) => x + y);
-            Assert.AreEqual("foo",text);
+            Assert.Equal("foo",text);
         }
 
-        [Test]
+        [Fact]
         public void GetExtent1()
         {
             Create("foo");
             var span = SnapshotLineUtil.GetExtent(_buffer.GetLine(0));
-            Assert.AreEqual("foo", span.GetText());
+            Assert.Equal("foo", span.GetText());
         }
 
-        [Test]
+        [Fact]
         public void GetExtentIncludingLineBreak1()
         {
             Create("foo", "baz");
             var span = SnapshotLineUtil.GetExtentIncludingLineBreak(_buffer.GetLine(0));
-            Assert.AreEqual("foo" + Environment.NewLine, span.GetText());
+            Assert.Equal("foo" + Environment.NewLine, span.GetText());
         }
 
 

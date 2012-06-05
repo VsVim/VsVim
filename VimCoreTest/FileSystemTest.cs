@@ -1,19 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using NUnit.Framework;
+using Xunit;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
-    public class FileSystemTest
+    public class FileSystemTest : IDisposable
     {
         private Dictionary<string, string> _savedEnvVariables;
         private FileSystem _fileSystemRaw;
         private IFileSystem _fileSystem;
 
-        [SetUp]
-        public void SetUp()
+        public FileSystemTest()
         {
             _fileSystemRaw = new FileSystem();
             _fileSystem = _fileSystemRaw;
@@ -26,8 +24,7 @@ namespace Vim.UnitTest
             }
         }
 
-        [TearDown]
-        public void TearDown()
+        public void Dispose()
         {
             foreach (var pair in _savedEnvVariables)
             {
@@ -35,54 +32,54 @@ namespace Vim.UnitTest
             }
         }
 
-        [Test]
+        [Fact]
         public void GetVimRcDirectories1()
         {
-            Assert.AreEqual(0, _fileSystem.GetVimRcDirectories().Count());
+            Assert.Equal(0, _fileSystem.GetVimRcDirectories().Count());
         }
 
-        [Test]
+        [Fact]
         public void GetVimRcDirectories2()
         {
             Environment.SetEnvironmentVariable("HOME", @"c:\temp");
-            Assert.AreEqual(@"c:\temp", _fileSystem.GetVimRcDirectories().Single());
+            Assert.Equal(@"c:\temp", _fileSystem.GetVimRcDirectories().Single());
         }
 
-        [Test]
+        [Fact]
         public void GetVimRcFilePaths1()
         {
             Environment.SetEnvironmentVariable("HOME", @"c:\temp");
             var list = _fileSystem.GetVimRcFilePaths().ToList();
-            Assert.AreEqual(@"c:\temp\.vsvimrc", list[0]);
-            Assert.AreEqual(@"c:\temp\_vsvimrc", list[1]);
-            Assert.AreEqual(@"c:\temp\.vimrc", list[2]);
-            Assert.AreEqual(@"c:\temp\_vimrc", list[3]);
+            Assert.Equal(@"c:\temp\.vsvimrc", list[0]);
+            Assert.Equal(@"c:\temp\_vsvimrc", list[1]);
+            Assert.Equal(@"c:\temp\.vimrc", list[2]);
+            Assert.Equal(@"c:\temp\_vimrc", list[3]);
         }
 
         /// <summary>
         /// If the MYVIMRC environment variable is set then prefer that over the standard
         /// paths
         /// </summary>
-        [Test]
+        [Fact]
         public void GetVimRcFilePaths_MyVimRc()
         {
             Environment.SetEnvironmentVariable("MYVIMRC", @"c:\temp\.vimrc");
             var filePath = _fileSystem.GetVimRcFilePaths().First();
-            Assert.AreEqual(@"c:\temp\.vimrc", filePath);
+            Assert.Equal(@"c:\temp\.vimrc", filePath);
             Environment.SetEnvironmentVariable("MYVIMRC", null);
         }
 
-        [Test]
+        [Fact]
         public void HomeDrivePathTakesPrecedenceOverUserProfile()
         {
             Environment.SetEnvironmentVariable("HOMEDRIVE", "c:");
             Environment.SetEnvironmentVariable("HOMEPATH", "\\temp");
             Environment.SetEnvironmentVariable("USERPROFILE", "c:\\Users");
             var list = _fileSystem.GetVimRcFilePaths().ToList();
-            Assert.AreEqual(@"c:\temp\.vsvimrc", list[0]);
-            Assert.AreEqual(@"c:\temp\_vsvimrc", list[1]);
-            Assert.AreEqual(@"c:\temp\.vimrc", list[2]);
-            Assert.AreEqual(@"c:\temp\_vimrc", list[3]);
+            Assert.Equal(@"c:\temp\.vsvimrc", list[0]);
+            Assert.Equal(@"c:\temp\_vsvimrc", list[1]);
+            Assert.Equal(@"c:\temp\.vimrc", list[2]);
+            Assert.Equal(@"c:\temp\_vimrc", list[3]);
         }
 
     }

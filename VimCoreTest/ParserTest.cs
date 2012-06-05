@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Linq;
-using NUnit.Framework;
 using Vim.Extensions;
 using Vim.Interpreter;
+using Xunit;
 
 namespace Vim.UnitTest
 {
@@ -14,57 +14,55 @@ namespace Vim.UnitTest
         protected void AssertParseLineCommandError(string command, string error)
         {
             var parseResult = Parser.ParseLineCommand(command);
-            Assert.IsTrue(parseResult.IsFailed);
-            Assert.AreEqual(error, parseResult.AsFailed().Item);
+            Assert.True(parseResult.IsFailed);
+            Assert.Equal(error, parseResult.AsFailed().Item);
         }
 
         protected LineCommand ParseLineCommand(string text)
         {
             var parseResult = Parser.ParseLineCommand(text);
-            Assert.IsTrue(parseResult.IsSucceeded);
+            Assert.True(parseResult.IsSucceeded);
             return parseResult.AsSucceeded().Item;
         }
 
-        [TestFixture]
         public sealed class StringLiteral : ParserTest
         {
             public string ParseStringLiteral(string text)
             {
                 var parser = new Parser(text);
                 var parseResult = parser.ParseStringLiteral();
-                Assert.IsTrue(parseResult.IsSucceeded);
+                Assert.True(parseResult.IsSucceeded);
                 return parseResult.AsSucceeded().Item.AsConstantValue().Item.AsString().Item;
             }
 
-            [Test]
+            [Fact]
             public void Simple()
             {
-                Assert.AreEqual("hello", ParseStringLiteral(@"'hello'"));
+                Assert.Equal("hello", ParseStringLiteral(@"'hello'"));
             }
 
-            [Test]
+            [Fact]
             public void SingleBackslash()
             {
-                Assert.AreEqual(@"\hello", ParseStringLiteral(@"'\hello'"));
+                Assert.Equal(@"\hello", ParseStringLiteral(@"'\hello'"));
             }
 
-            [Test]
+            [Fact]
             public void EscapedQuote()
             {
-                Assert.AreEqual(@"'a", ParseStringLiteral(@"'\'a'"));
+                Assert.Equal(@"'a", ParseStringLiteral(@"'\'a'"));
             }
 
             /// <summary>
             /// Make sure we can handle a double quote inside a string literal
             /// </summary>
-            [Test]
+            [Fact]
             public void DoubleQuote()
             {
-                Assert.AreEqual(@"""", ParseStringLiteral(@"'""'"));
+                Assert.Equal(@"""", ParseStringLiteral(@"'""'"));
             }
         }
 
-        [TestFixture]
         public sealed class StringConstant : ParserTest
         {
             public string ParseStringConstant(string text)
@@ -72,24 +70,23 @@ namespace Vim.UnitTest
                 var parser = new Parser(text);
                 parser.Tokenizer.MoveToIndexEx(parser.Tokenizer.Index, NextTokenFlags.AllowDoubleQuote);
                 var parseResult = parser.ParseStringConstant();
-                Assert.IsTrue(parseResult.IsSucceeded);
+                Assert.True(parseResult.IsSucceeded);
                 return parseResult.AsSucceeded().Item.AsConstantValue().Item.AsString().Item;
             }
 
-            [Test]
+            [Fact]
             public void Simple()
             {
-                Assert.AreEqual("hello", ParseStringConstant(@"""hello"""));
+                Assert.Equal("hello", ParseStringConstant(@"""hello"""));
             }
 
-            [Test]
+            [Fact]
             public void TabEscape()
             {
-                Assert.AreEqual("\t", ParseStringConstant(@"""\t"""));
+                Assert.Equal("\t", ParseStringConstant(@"""\t"""));
             }
         }
 
-        [TestFixture]
         public sealed class SubstituteTest : ParserTest
         {
             /// <summary>
@@ -98,13 +95,13 @@ namespace Vim.UnitTest
             private void AssertSubstitute(string command, string pattern, string replace, SubstituteFlags? flags = null)
             {
                 var subCommand = ParseLineCommand(command).AsSubstitute();
-                Assert.AreEqual(pattern, subCommand.Item2);
-                Assert.AreEqual(replace, subCommand.Item3);
+                Assert.Equal(pattern, subCommand.Item2);
+                Assert.Equal(replace, subCommand.Item3);
 
                 // Verify flags if it was passed
                 if (flags.HasValue)
                 {
-                    Assert.AreEqual(flags.Value, subCommand.Item4);
+                    Assert.Equal(flags.Value, subCommand.Item4);
                 }
             }
 
@@ -114,13 +111,13 @@ namespace Vim.UnitTest
             private void AssertSubstituteRepeat(string command, SubstituteFlags flags)
             {
                 var subCommand = ParseLineCommand(command).AsSubstituteRepeat();
-                Assert.AreEqual(flags, subCommand.Item2);
+                Assert.Equal(flags, subCommand.Item2);
             }
 
             /// <summary>
             /// Verify the substitute commands.  Simple replaces with no options
             /// </summary>
-            [Test]
+            [Fact]
             public void Simple()
             {
                 AssertSubstitute("s/f/b", "f", "b", SubstituteFlags.None);
@@ -133,7 +130,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Support alternate separators in the substitute command
             /// </summary>
-            [Test]
+            [Fact]
             public void AlternateSeparators()
             {
                 AssertSubstitute("s,f,b", "f", "b", SubstituteFlags.None);
@@ -147,7 +144,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that we handle escaped separators properly
             /// </summary>
-            [Test]
+            [Fact]
             public void EscapedSeparator()
             {
                 AssertSubstitute(@"s/and\/or/then", "and/or", "then", SubstituteFlags.None);
@@ -156,7 +153,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simple substitute commands which provide specific flags
             /// </summary>
-            [Test]
+            [Fact]
             public void WithFlags()
             {
                 AssertSubstitute("s/foo/bar/g", "foo", "bar", SubstituteFlags.ReplaceAll);
@@ -179,7 +176,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Without a trailing delimiter a count won't ever be considered
             /// </summary>
-            [Test]
+            [Fact]
             public void CountMustHaveFinalDelimiter()
             {
                 AssertSubstitute("s/a/b 2", "a", "b 2", SubstituteFlags.None);
@@ -188,7 +185,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simple substitute with count
             /// </summary>
-            [Test]
+            [Fact]
             public void WithCount()
             {
                 AssertSubstitute("s/a/b/g 2", "a", "b", SubstituteFlags.ReplaceAll);
@@ -197,7 +194,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The backslashes need to be preserved for the regex engine
             /// </summary>
-            [Test]
+            [Fact]
             public void Backslashes()
             {
                 AssertSubstitute(@"s/a/\\\\", "a", @"\\\\", SubstituteFlags.None);
@@ -207,7 +204,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The & flag can only appear as the first flag.  In any other position it's a parser error
             /// </summary>
-            [Test]
+            [Fact]
             public void BadUsePreviousFlags()
             {
                 AssertParseLineCommandError("s/a/b/g&", Resources.CommandMode_TrailingCharacters);
@@ -216,7 +213,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Can't have a space between flag values
             /// </summary>
-            [Test]
+            [Fact]
             public void BadSpaceBetweenFlags()
             {
                 AssertParseLineCommandError("s/a/b/g &", Resources.CommandMode_TrailingCharacters);
@@ -225,7 +222,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure we can handle double quotes in both places
             /// </summary>
-            [Test]
+            [Fact]
             public void DoubleQuotes()
             {
                 AssertSubstitute(@"s/""cat""/dog", @"""cat""", "dog");
@@ -235,7 +232,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that we properly parse out the group specifier in the replace string
             /// </summary>
-            [Test]
+            [Fact]
             public void ReplaceHasGroupSpecifier()
             {
                 AssertSubstitute(@"s/cat/\1", "cat", @"\1");
@@ -248,13 +245,13 @@ namespace Vim.UnitTest
             /// Make sure this scenario isn't treated as a new line.  The backslashes need to all
             /// be preserved and handled by the regex engine
             /// </summary>
-            [Test]
+            [Fact]
             public void EscapedBackslashInReplace()
             {
                 AssertSubstitute(@"s/$/\\n\\/", "$", @"\\n\\");
             }
 
-            [Test]
+            [Fact]
             public void RepeatWithCount()
             {
                 AssertSubstituteRepeat("& 3", SubstituteFlags.None);
@@ -263,7 +260,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Parse the snomagic form of substitute
             /// </summary>
-            [Test]
+            [Fact]
             public void NoMagic()
             {
                 AssertSubstitute("snomagic/a/b", "a", "b", SubstituteFlags.Nomagic);
@@ -273,14 +270,14 @@ namespace Vim.UnitTest
             /// <summary>
             /// Parse the smagic form of substitute
             /// </summary>
-            [Test]
+            [Fact]
             public void Magic()
             {
                 AssertSubstitute("smagic/a/b", "a", "b", SubstituteFlags.Magic);
                 AssertSubstitute("smagic/a/b/g", "a", "b", SubstituteFlags.ReplaceAll | SubstituteFlags.Magic);
             }
 
-            [Test]
+            [Fact]
             public void RepeatSimple()
             {
                 AssertSubstituteRepeat("s", SubstituteFlags.None);
@@ -297,7 +294,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Parse the snomagic form of substitute repeat
             /// </summary>
-            [Test]
+            [Fact]
             public void RepeatNoMagic()
             {
                 AssertSubstituteRepeat("snomagic", SubstituteFlags.Nomagic);
@@ -307,7 +304,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Parse the smagic form of substitute repeat
             /// </summary>
-            [Test]
+            [Fact]
             public void RepeatMagic()
             {
                 AssertSubstituteRepeat("smagic", SubstituteFlags.Magic);
@@ -315,194 +312,192 @@ namespace Vim.UnitTest
             }
         }
 
-        [TestFixture]
         public sealed class SetTest : ParserTest
         {
             /// <summary>
             /// Make sure we can parse out the short version of the ":set" command
             /// </summary>
-            [Test]
+            [Fact]
             public void ShortName()
             {
                 var command = ParseLineCommand("se");
-                Assert.IsTrue(command.IsSet);
+                Assert.True(command.IsSet);
             }
 
             /// <summary>
             /// Make sure we can parse out the 'all' modifier on the ":set" command
             /// </summary>
-            [Test]
+            [Fact]
             public void All()
             {
                 var command = ParseLineCommand("set all").AsSet();
-                Assert.IsTrue(command.Item.Single().IsDisplayAllButTerminal);
+                Assert.True(command.Item.Single().IsDisplayAllButTerminal);
             }
 
             /// <summary>
             /// Make sure we can parse out the display setting argument to ":set"
             /// </summary>
-            [Test]
+            [Fact]
             public void DisplaySetting()
             {
                 var command = ParseLineCommand("set example?").AsSet();
                 var option = command.Item.Single().AsDisplaySetting();
-                Assert.AreEqual("example", option.Item);
+                Assert.Equal("example", option.Item);
             }
 
             /// <summary>
             /// Make sure we can parse out the use setting argument to ":set"
             /// </summary>
-            [Test]
+            [Fact]
             public void UseSetting()
             {
                 var command = ParseLineCommand("set example").AsSet();
                 var option = command.Item.Single().AsUseSetting();
-                Assert.AreEqual("example", option.Item);
+                Assert.Equal("example", option.Item);
             }
 
             /// <summary>
             /// Make sure we can parse out the toggle setting argument to ":set"
             /// </summary>
-            [Test]
+            [Fact]
             public void ToggleOffSetting()
             {
                 var command = ParseLineCommand("set noexample").AsSet();
                 var option = command.Item.Single().AsToggleOffSetting();
-                Assert.AreEqual("example", option.Item);
+                Assert.Equal("example", option.Item);
             }
 
             /// <summary>
             /// Make sure we can parse out the invert setting argument to ":set"
             /// </summary>
-            [Test]
+            [Fact]
             public void InvertSetting()
             {
                 var command = ParseLineCommand("set example!").AsSet();
                 var option = command.Item.Single().AsInvertSetting();
-                Assert.AreEqual("example", option.Item);
+                Assert.Equal("example", option.Item);
             }
 
             /// <summary>
             /// Make sure we can parse out the invert setting argument to ":set" using the alternate
             /// syntax
             /// </summary>
-            [Test]
+            [Fact]
             public void InvertSetting_AlternateSyntax()
             {
                 var command = ParseLineCommand("set invexample").AsSet();
                 var option = command.Item.Single().AsInvertSetting();
-                Assert.AreEqual("example", option.Item);
+                Assert.Equal("example", option.Item);
             }
 
             /// <summary>
             /// Make sure we can parse out the assign setting argument to ":set"
             /// </summary>
-            [Test]
+            [Fact]
             public void AssignSetting()
             {
                 var command = ParseLineCommand("set x=y").AsSet();
                 var option = command.Item.Single().AsAssignSetting();
-                Assert.AreEqual("x", option.Item1);
-                Assert.AreEqual("y", option.Item2);
+                Assert.Equal("x", option.Item1);
+                Assert.Equal("y", option.Item2);
             }
 
             /// <summary>
             /// Make sure we can parse out the assign setting argument to ":set" using the alternate 
             /// syntax
             /// </summary>
-            [Test]
+            [Fact]
             public void AssignSetting_AlternateSyntax()
             {
                 var command = ParseLineCommand("set x:y").AsSet();
                 var option = command.Item.Single().AsAssignSetting();
-                Assert.AreEqual("x", option.Item1);
-                Assert.AreEqual("y", option.Item2);
+                Assert.Equal("x", option.Item1);
+                Assert.Equal("y", option.Item2);
             }
 
             /// <summary>
             /// It's a legal parse for the value to be empty.  This is used with the terminal settings (t_vb)
             /// </summary>
-            [Test]
+            [Fact]
             public void AssignNoValue()
             {
                 var command = ParseLineCommand("set vb=").AsSet();
                 var option = command.Item.Single().AsAssignSetting();
-                Assert.AreEqual("vb", option.Item1);
-                Assert.AreEqual("", option.Item2);
+                Assert.Equal("vb", option.Item1);
+                Assert.Equal("", option.Item2);
             }
 
             /// <summary>
             /// Make sure we can parse out the add setting argument to ":set"
             /// </summary>
-            [Test]
+            [Fact]
             public void AddSetting()
             {
                 var command = ParseLineCommand("set x+=y").AsSet();
                 var option = command.Item.Single().AsAddSetting();
-                Assert.AreEqual("x", option.Item1);
-                Assert.AreEqual("y", option.Item2);
+                Assert.Equal("x", option.Item1);
+                Assert.Equal("y", option.Item2);
             }
 
             /// <summary>
             /// Make sure we can parse out the subtract setting argument to ":set"
             /// </summary>
-            [Test]
+            [Fact]
             public void SubtractSetting()
             {
                 var command = ParseLineCommand("set x-=y").AsSet();
                 var option = command.Item.Single().AsSubtractSetting();
-                Assert.AreEqual("x", option.Item1);
-                Assert.AreEqual("y", option.Item2);
+                Assert.Equal("x", option.Item1);
+                Assert.Equal("y", option.Item2);
             }
 
             /// <summary>
             /// A space after an = terminates the current set and begins a new one
             /// </summary>
-            [Test]
+            [Fact]
             public void AssignWithSpaceAfter()
             {
                 var command = ParseLineCommand("set vb= ai").AsSet();
-                Assert.AreEqual(2, command.Item.Length);
+                Assert.Equal(2, command.Item.Length);
 
                 var set = command.Item[0];
-                Assert.AreEqual("vb", set.AsAssignSetting().Item1);
-                Assert.AreEqual("", set.AsAssignSetting().Item2);
+                Assert.Equal("vb", set.AsAssignSetting().Item1);
+                Assert.Equal("", set.AsAssignSetting().Item2);
 
                 set = command.Item[1];
-                Assert.AreEqual("ai", set.AsUseSetting().Item);
+                Assert.Equal("ai", set.AsUseSetting().Item);
             }
 
             /// <summary>
             /// Make sure we can parse out the multiply setting argument to ":set"
             /// </summary>
-            [Test]
+            [Fact]
             public void MultiplySetting()
             {
                 var command = ParseLineCommand("set x^=y").AsSet();
                 var option = command.Item.Single().AsMultiplySetting();
-                Assert.AreEqual("x", option.Item1);
-                Assert.AreEqual("y", option.Item2);
+                Assert.Equal("x", option.Item1);
+                Assert.Equal("y", option.Item2);
             }
 
             /// <summary>
             /// Make sure we can parse out a set with a trailing comment
             /// </summary>
-            [Test]
+            [Fact]
             public void TrailingComment()
             {
                 var command = ParseLineCommand("set ai \"hello world");
-                Assert.IsTrue(command.IsSet);
+                Assert.True(command.IsSet);
             }
         }
 
-        [TestFixture]
         public sealed class Address : ParserTest
         {
             private LineRangeSpecifier ParseLineRange(string text)
             {
                 var parser = new Parser(text);
                 var lineRange = parser.ParseLineRange();
-                Assert.IsFalse(lineRange.IsNone);
+                Assert.False(lineRange.IsNone);
                 return lineRange;
             }
 
@@ -510,112 +505,111 @@ namespace Vim.UnitTest
             {
                 var parser = new Parser(text);
                 var option = parser.ParseLineSpecifier();
-                Assert.IsTrue(option.IsSome());
+                Assert.True(option.IsSome());
                 return option.Value;
             }
 
             /// <summary>
             /// Make sure we can parse out the '%' range
             /// </summary>
-            [Test]
+            [Fact]
             public void EntireBuffer()
             {
                 var lineRange = ParseLineRange("%");
-                Assert.IsTrue(lineRange.IsEntireBuffer);
+                Assert.True(lineRange.IsEntireBuffer);
             }
 
             /// <summary>
             /// Make sure we can parse out a single line number range
             /// </summary>
-            [Test]
+            [Fact]
             public void SingleLineNumber()
             {
                 var lineRange = ParseLineRange("42");
-                Assert.IsTrue(lineRange.IsSingleLine);
-                Assert.IsTrue(lineRange.AsSingleLine().Item.IsNumber(42));
+                Assert.True(lineRange.IsSingleLine);
+                Assert.True(lineRange.AsSingleLine().Item.IsNumber(42));
             }
 
             /// <summary>
             /// Make sure we can parse out a range of the current line and itself
             /// </summary>
-            [Test]
+            [Fact]
             public void RangeOfCurrentLine()
             {
                 var lineRange = ParseLineRange(".,.");
-                Assert.IsTrue(lineRange.AsRange().Item1.IsCurrentLine);
-                Assert.IsTrue(lineRange.AsRange().Item2.IsCurrentLine);
-                Assert.IsFalse(lineRange.AsRange().item3);
+                Assert.True(lineRange.AsRange().Item1.IsCurrentLine);
+                Assert.True(lineRange.AsRange().Item2.IsCurrentLine);
+                Assert.False(lineRange.AsRange().item3);
             }
 
             /// <summary>
             /// Make sure we can parse out a range of numbers
             /// </summary>
-            [Test]
+            [Fact]
             public void RangeOfNumbers()
             {
                 var lineRange = ParseLineRange("1,2");
-                Assert.IsTrue(lineRange.AsRange().Item1.IsNumber(1));
-                Assert.IsTrue(lineRange.AsRange().Item2.IsNumber(2));
-                Assert.IsFalse(lineRange.AsRange().item3);
+                Assert.True(lineRange.AsRange().Item1.IsNumber(1));
+                Assert.True(lineRange.AsRange().Item2.IsNumber(2));
+                Assert.False(lineRange.AsRange().item3);
             }
 
             /// <summary>
             /// Make sure we can parse out a range of numbers with the adjust caret 
             /// option specified
             /// </summary>
-            [Test]
+            [Fact]
             public void RangeOfNumbersWithAdjustCaret()
             {
                 var lineRange = ParseLineRange("1;2");
-                Assert.IsTrue(lineRange.AsRange().Item1.IsNumber(1));
-                Assert.IsTrue(lineRange.AsRange().Item2.IsNumber(2));
-                Assert.IsTrue(lineRange.AsRange().item3);
+                Assert.True(lineRange.AsRange().Item1.IsNumber(1));
+                Assert.True(lineRange.AsRange().Item2.IsNumber(2));
+                Assert.True(lineRange.AsRange().item3);
             }
 
             /// <summary>
             /// Make sure that it can handle a mark range
             /// </summary>
-            [Test]
+            [Fact]
             public void Marks()
             {
                 var lineRange = ParseLineRange("'a,'b");
-                Assert.IsTrue(lineRange.AsRange().Item1.IsMarkLine);
-                Assert.IsTrue(lineRange.AsRange().Item2.IsMarkLine);
+                Assert.True(lineRange.AsRange().Item1.IsMarkLine);
+                Assert.True(lineRange.AsRange().Item2.IsMarkLine);
             }
 
             /// <summary>
             /// Make sure that it can handle a mark range with trailing text
             /// </summary>
-            [Test]
+            [Fact]
             public void MarksWithTrailing()
             {
                 var lineRange = ParseLineRange("'a,'bc");
-                Assert.IsTrue(lineRange.AsRange().Item1.IsMarkLine);
-                Assert.IsTrue(lineRange.AsRange().Item2.IsMarkLine);
+                Assert.True(lineRange.AsRange().Item1.IsMarkLine);
+                Assert.True(lineRange.AsRange().Item2.IsMarkLine);
             }
 
             /// <summary>
             /// Ensure we can parse out a simple next pattern
             /// </summary>
-            [Test]
+            [Fact]
             public void NextPatternSpecifier()
             {
                 var lineSpecifier = ParseLineSpecifier("/dog/");
-                Assert.AreEqual("dog", lineSpecifier.AsNextLineWithPattern().Item);
+                Assert.Equal("dog", lineSpecifier.AsNextLineWithPattern().Item);
             }
 
             /// <summary>
             /// Ensure we can parse out a simple previous pattern
             /// </summary>
-            [Test]
+            [Fact]
             public void PreviousPatternSpecifier()
             {
                 var lineSpecifier = ParseLineSpecifier("?dog?");
-                Assert.AreEqual("dog", lineSpecifier.AsPreviousLineWithPattern().Item);
+                Assert.Equal("dog", lineSpecifier.AsPreviousLineWithPattern().Item);
             }
         }
 
-        [TestFixture]
         public sealed class Map : ParserTest
         {
             private void AssertMap(string command, string lhs, string rhs, params KeyRemapMode[] keyRemapModes)
@@ -631,20 +625,20 @@ namespace Vim.UnitTest
             private void AssertMapCore(string command, string lhs, string rhs, bool allowRemap, params KeyRemapMode[] keyRemapModes)
             {
                 var map = ParseLineCommand(command).AsMapKeys();
-                Assert.AreEqual(lhs, map.Item1);
-                Assert.AreEqual(rhs, map.Item2);
-                CollectionAssert.AreEqual(keyRemapModes, map.Item3.ToArray());
-                Assert.AreEqual(allowRemap, map.Item4);
+                Assert.Equal(lhs, map.Item1);
+                Assert.Equal(rhs, map.Item2);
+                Assert.Equal(keyRemapModes, map.Item3.ToArray());
+                Assert.Equal(allowRemap, map.Item4);
             }
 
             private void AssertUnmap(string command, string keyNotation, params KeyRemapMode[] keyRemapModes)
             {
                 var map = ParseLineCommand(command).AsUnmapKeys();
-                Assert.AreEqual(keyNotation, map.Item1);
-                CollectionAssert.AreEqual(keyRemapModes, map.Item2.ToArray());
+                Assert.Equal(keyNotation, map.Item1);
+                Assert.Equal(keyRemapModes, map.Item2.ToArray());
             }
 
-            [Test]
+            [Fact]
             public void Default()
             {
                 var modes = new KeyRemapMode[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Select, KeyRemapMode.OperatorPending };
@@ -653,7 +647,7 @@ namespace Vim.UnitTest
                 AssertMap("no l h", "l", "h", modes);
             }
 
-            [Test]
+            [Fact]
             public void DefaultWithBang()
             {
                 var modes = new KeyRemapMode[] { KeyRemapMode.Insert, KeyRemapMode.Command };
@@ -666,7 +660,7 @@ namespace Vim.UnitTest
             /// Make sure that we can handle a double quote in the left side of an argument and 
             /// that it's not interpreted as a comment
             /// </summary>
-            [Test]
+            [Fact]
             public void DoubleQuotesInLeft()
             {
                 AssertMapWithRemap(@"imap "" dog", @"""", "dog", KeyRemapMode.Insert);
@@ -678,7 +672,7 @@ namespace Vim.UnitTest
             /// Make sure that we can handle a double quote in the right side of an argument and 
             /// that it's not interpreted as a comment
             /// </summary>
-            [Test]
+            [Fact]
             public void DoubleQuotesInRight()
             {
                 AssertMapWithRemap(@"imap d """, "d", @"""", KeyRemapMode.Insert);
@@ -686,7 +680,7 @@ namespace Vim.UnitTest
                 AssertMapWithRemap(@"imap d h""a", "d", @"h""a", KeyRemapMode.Insert);
             }
 
-            [Test]
+            [Fact]
             public void Normal()
             {
                 AssertMap("nnoremap l h", "l", "h", KeyRemapMode.Normal);
@@ -694,7 +688,7 @@ namespace Vim.UnitTest
                 AssertMap("nn l h", "l", "h", KeyRemapMode.Normal);
             }
 
-            [Test]
+            [Fact]
             public void VirtualAndSelect()
             {
                 AssertMap("vnoremap a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
@@ -702,25 +696,25 @@ namespace Vim.UnitTest
                 AssertMap("vn a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
             }
 
-            [Test]
+            [Fact]
             public void Visual()
             {
                 AssertMap("xnoremap b c", "b", "c", KeyRemapMode.Visual);
             }
 
-            [Test]
+            [Fact]
             public void Select()
             {
                 AssertMap("snoremap a b", "a", "b", KeyRemapMode.Select);
             }
 
-            [Test]
+            [Fact]
             public void OperatorPending()
             {
                 AssertMap("onoremap a b", "a", "b", KeyRemapMode.OperatorPending);
             }
 
-            [Test]
+            [Fact]
             public void Insert()
             {
                 AssertMap("inoremap a b", "a", "b", KeyRemapMode.Insert);
@@ -729,7 +723,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the map commands can handle the special argument
             /// </summary>
-            [Test]
+            [Fact]
             public void Arguments()
             {
                 Action<string, KeyMapArgument> action =
@@ -737,8 +731,8 @@ namespace Vim.UnitTest
                     {
                         var command = ParseLineCommand(commandText).AsMapKeys();
                         var mapArguments = command.Item5;
-                        Assert.AreEqual(1, mapArguments.Length);
-                        Assert.AreEqual(mapArgument, mapArguments.Head);
+                        Assert.Equal(1, mapArguments.Length);
+                        Assert.Equal(mapArgument, mapArguments.Head);
                     };
                 action("map <buffer> a b", KeyMapArgument.Buffer);
                 action("map <silent> a b", KeyMapArgument.Silent);
@@ -749,7 +743,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure we can parse out all of the map special argument values
             /// </summary>
-            [Test]
+            [Fact]
             public void ArgumentsAll()
             {
                 var all = new[] { "buffer", "silent", "expr", "unique", "special" };
@@ -757,37 +751,37 @@ namespace Vim.UnitTest
                 {
                     var parser = new Parser("<" + cur + ">");
                     var list = parser.ParseMapArguments();
-                    Assert.AreEqual(1, list.Length);
+                    Assert.Equal(1, list.Length);
                 }
             }
 
             /// <summary>
             /// Make sure we can parse out several items in a row and in the correct order
             /// </summary>
-            [Test]
+            [Fact]
             public void ArgumentsMultiple()
             {
                 var text = "<buffer> <silent>";
                 var parser = new Parser(text);
                 var list = parser.ParseMapArguments().ToList();
-                CollectionAssert.AreEquivalent(
+                Assert.Equal(
                     new[] { KeyMapArgument.Buffer, KeyMapArgument.Silent },
                     list);
             }
 
-            [Test]
+            [Fact]
             public void RemapStandard()
             {
                 AssertMapWithRemap("map a bc", "a", "bc", KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Select, KeyRemapMode.OperatorPending);
             }
 
-            [Test]
+            [Fact]
             public void RemapNormal()
             {
                 AssertMapWithRemap("nmap a b", "a", "b", KeyRemapMode.Normal);
             }
 
-            [Test]
+            [Fact]
             public void RemapMany()
             {
                 AssertMapWithRemap("vmap a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
@@ -809,7 +803,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Parse out the unmapping of keys
             /// </summary>
-            [Test]
+            [Fact]
             public void UnmapSimple()
             {
                 AssertUnmap("vunmap a ", "a", KeyRemapMode.Visual, KeyRemapMode.Select);
@@ -829,250 +823,249 @@ namespace Vim.UnitTest
             }
         }
 
-        [TestFixture]
         public sealed class Misc : ParserTest
         {
             /// <summary>
             /// Change directory with an empty path
             /// </summary>
-            [Test]
+            [Fact]
             public void Parse_ChangeDirectory_Empty()
             {
                 var command = ParseLineCommand("cd").AsChangeDirectory();
-                Assert.IsTrue(command.Item.IsNone());
+                Assert.True(command.Item.IsNone());
             }
 
             /// <summary>
             /// Change directory with a path
             /// </summary>
-            [Test]
+            [Fact]
             public void Parse_ChangeDirectory_Path()
             {
                 var command = ParseLineCommand("cd test.txt").AsChangeDirectory();
-                Assert.AreEqual("test.txt", command.Item.Value);
+                Assert.Equal("test.txt", command.Item.Value);
             }
 
             /// <summary>
             /// Change directory with a path and a bang.  The bang is ignored but legal in 
             /// the grammar
             /// </summary>
-            [Test]
+            [Fact]
             public void Parse_ChangeDirectory_PathAndBang()
             {
                 var command = ParseLineCommand("cd! test.txt").AsChangeDirectory();
-                Assert.AreEqual("test.txt", command.Item.Value);
+                Assert.Equal("test.txt", command.Item.Value);
             }
 
             /// <summary>
             /// ChangeLocal directory with an empty path
             /// </summary>
-            [Test]
+            [Fact]
             public void Parse_ChangeLocalDirectory_Empty()
             {
                 var command = ParseLineCommand("lcd").AsChangeLocalDirectory();
-                Assert.IsTrue(command.Item.IsNone());
+                Assert.True(command.Item.IsNone());
             }
 
             /// <summary>
             /// ChangeLocal directory with a path
             /// </summary>
-            [Test]
+            [Fact]
             public void Parse_ChangeLocalDirectory_Path()
             {
                 var command = ParseLineCommand("lcd test.txt").AsChangeLocalDirectory();
-                Assert.AreEqual("test.txt", command.Item.Value);
+                Assert.Equal("test.txt", command.Item.Value);
             }
 
             /// <summary>
             /// ChangeLocal directory with a path and a bang.  The bang is ignored but legal in 
             /// the grammar
             /// </summary>
-            [Test]
+            [Fact]
             public void Parse_ChangeLocalDirectory_PathAndBang()
             {
                 var command = ParseLineCommand("lcd! test.txt").AsChangeLocalDirectory();
-                Assert.AreEqual("test.txt", command.Item.Value);
+                Assert.Equal("test.txt", command.Item.Value);
             }
 
             /// <summary>
             /// Make sure we can parse out the close command
             /// </summary>
-            [Test]
+            [Fact]
             public void Parse_Close_NoBang()
             {
                 var command = ParseLineCommand("close");
-                Assert.IsTrue(command.IsClose);
+                Assert.True(command.IsClose);
             }
             /// <summary>
             /// Make sure we can parse out the close wit bang
             /// </summary>
-            [Test]
+            [Fact]
             public void Parse_Close_WithBang()
             {
                 var command = ParseLineCommand("close!");
-                Assert.IsTrue(command.IsClose);
-                Assert.IsTrue(command.AsClose().Item);
+                Assert.True(command.IsClose);
+                Assert.True(command.AsClose().Item);
             }
 
             /// <summary>
             /// Make sure that we detect the trailing characters in the close command
             /// </summary>
-            [Test]
+            [Fact]
             public void Parse_Close_Trailing()
             {
                 var parseResult = Parser.ParseLineCommand("close foo");
-                Assert.IsTrue(parseResult.IsFailed(Resources.CommandMode_TrailingCharacters));
+                Assert.True(parseResult.IsFailed(Resources.CommandMode_TrailingCharacters));
             }
 
             /// <summary>
             /// A line consisting of only a comment should parse as a nop
             /// </summary>
-            [Test]
+            [Fact]
             public void Parse_Nop_CommentLine()
             {
-                Assert.IsTrue(ParseLineCommand(@" "" hello world").IsNop);
+                Assert.True(ParseLineCommand(@" "" hello world").IsNop);
             }
 
 
             /// <summary>
             /// A line consisting of nothing should parse as a nop
             /// </summary>
-            [Test]
+            [Fact]
             public void Parse_Nop_EmptyLine()
             {
-                Assert.IsTrue(ParseLineCommand(@"").IsNop);
+                Assert.True(ParseLineCommand(@"").IsNop);
             }
 
             /// <summary>
             /// Make sure we can handle the count argument of :delete
             /// </summary>
-            [Test]
+            [Fact]
             public void Parse_Delete_WithCount()
             {
                 var lineCommand = ParseLineCommand("delete 2");
                 var lineRange = lineCommand.AsDelete().Item1;
-                Assert.AreEqual(2, lineRange.AsWithEndCount().Item2.Value);
+                Assert.Equal(2, lineRange.AsWithEndCount().Item2.Value);
             }
 
-            [Test]
+            [Fact]
             public void Parse_PrintCurrentDirectory()
             {
                 var command = ParseLineCommand("pwd");
-                Assert.IsTrue(command.IsPrintCurrentDirectory);
+                Assert.True(command.IsPrintCurrentDirectory);
             }
 
-            [Test]
+            [Fact]
             public void Parse_ReadCommand_Simple()
             {
                 var command = ParseLineCommand("read !echo bar").AsReadCommand();
-                Assert.AreEqual("echo bar", command.Item2);
+                Assert.Equal("echo bar", command.Item2);
             }
 
-            [Test]
+            [Fact]
             public void Parse_ReadFile_Simple()
             {
                 var command = ParseLineCommand("read test.txt").AsReadFile();
-                Assert.AreEqual("test.txt", command.Item3);
+                Assert.Equal("test.txt", command.Item3);
             }
 
-            [Test]
+            [Fact]
             public void Parse_Shift_Left()
             {
                 var command = ParseLineCommand("<");
-                Assert.IsTrue(command.IsShiftLeft);
+                Assert.True(command.IsShiftLeft);
             }
 
-            [Test]
+            [Fact]
             public void Parse_Shift_Right()
             {
                 var command = ParseLineCommand(">");
-                Assert.IsTrue(command.IsShiftRight);
+                Assert.True(command.IsShiftRight);
             }
 
             /// <summary>
             /// Parse out a source command with the specified name and no bang flag
             /// </summary>
-            [Test]
+            [Fact]
             public void Parse_Source_Simple()
             {
                 var command = ParseLineCommand("source test.txt").AsSource();
-                Assert.IsFalse(command.Item1);
-                Assert.AreEqual("test.txt", command.Item2);
+                Assert.False(command.Item1);
+                Assert.Equal("test.txt", command.Item2);
             }
 
             /// <summary>
             /// Parse out a source command with the specified name and bang flag
             /// </summary>
-            [Test]
+            [Fact]
             public void Parse_Source_WithBang()
             {
                 var command = ParseLineCommand("source! test.txt").AsSource();
-                Assert.IsTrue(command.Item1);
-                Assert.AreEqual("test.txt", command.Item2);
+                Assert.True(command.Item1);
+                Assert.Equal("test.txt", command.Item2);
             }
 
-            [Test]
+            [Fact]
             public void Parse_Write_Simple()
             {
                 var write = ParseLineCommand("w").AsWrite();
-                Assert.IsTrue(write.Item1.IsNone);
-                Assert.IsFalse(write.Item2);
-                Assert.IsTrue(write.Item4.IsNone());
+                Assert.True(write.Item1.IsNone);
+                Assert.False(write.Item2);
+                Assert.True(write.Item4.IsNone());
             }
 
             /// <summary>
             /// Parse out the write command given a file option
             /// </summary>
-            [Test]
+            [Fact]
             public void Parse_Write_ToFile()
             {
                 var write = ParseLineCommand("w example.txt").AsWrite();
-                Assert.IsTrue(write.Item1.IsNone);
-                Assert.IsFalse(write.Item2);
-                Assert.AreEqual("example.txt", write.Item4.Value);
+                Assert.True(write.Item1.IsNone);
+                Assert.False(write.Item2);
+                Assert.Equal("example.txt", write.Item4.Value);
             }
 
-            [Test]
+            [Fact]
             public void Parse_WriteAll_Simple()
             {
                 var writeAll = ParseLineCommand("wall").AsWriteAll();
-                Assert.IsFalse(writeAll.Item);
+                Assert.False(writeAll.Item);
             }
 
             /// <summary>
             /// Parse out the :wall command with the ! option
             /// </summary>
-            [Test]
+            [Fact]
             public void Parse_WriteAll_WithBang()
             {
                 var writeAll = ParseLineCommand("wall!").AsWriteAll();
-                Assert.IsTrue(writeAll.Item);
+                Assert.True(writeAll.Item);
             }
 
             /// <summary>
             /// Verify that we can parse out a yank command with a corresponding range
             /// </summary>
-            [Test]
+            [Fact]
             public void Parse_Yank_WithRange()
             {
                 var yank = ParseLineCommand("'a,'by");
-                Assert.IsTrue(yank.IsYank);
+                Assert.True(yank.IsYank);
             }
 
             /// <summary>
             /// When we pass in a full command name to try expand it shouldn't have any effect
             /// </summary>
-            [Test]
+            [Fact]
             public void TryExpand_Full()
             {
                 var parser = new Parser("");
-                Assert.AreEqual("close", parser.TryExpand("close"));
+                Assert.Equal("close", parser.TryExpand("close"));
             }
 
             /// <summary>
             /// Make sure the abbreviation can be expanded
             /// </summary>
-            [Test]
+            [Fact]
             public void TryExpand_Abbrevation()
             {
                 var parser = new Parser("");
@@ -1080,7 +1073,7 @@ namespace Vim.UnitTest
                 {
                     if (!String.IsNullOrEmpty(tuple.Item2))
                     {
-                        Assert.AreEqual(tuple.Item1, parser.TryExpand(tuple.Item2));
+                        Assert.Equal(tuple.Item1, parser.TryExpand(tuple.Item2));
                     }
                 }
             }

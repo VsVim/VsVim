@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Linq;
 using Microsoft.VisualStudio.Text.Editor;
-using NUnit.Framework;
+using Xunit;
 using Vim.Extensions;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public sealed class CommandRunnerTest : VimTestBase
     {
         private ICommandUtil _commandUtil;
@@ -50,16 +49,16 @@ namespace Vim.UnitTest
             return last;
         }
 
-        [Test]
+        [Fact]
         public void Add1()
         {
             Create(String.Empty);
             var command1 = VimUtil.CreateNormalBinding("foo", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
             _runner.Add(command1);
-            Assert.AreSame(command1, _runner.Commands.Single());
+            Assert.Same(command1, _runner.Commands.Single());
         }
 
-        [Test]
+        [Fact]
         public void Add2()
         {
             Create(String.Empty);
@@ -67,72 +66,72 @@ namespace Vim.UnitTest
             var command2 = VimUtil.CreateNormalBinding("bar", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
             _runner.Add(command1);
             _runner.Add(command2);
-            Assert.AreEqual(2, _runner.Commands.Count());
-            Assert.IsTrue(_runner.Commands.Contains(command1));
-            Assert.IsTrue(_runner.Commands.Contains(command2));
+            Assert.Equal(2, _runner.Commands.Count());
+            Assert.True(_runner.Commands.Contains(command1));
+            Assert.True(_runner.Commands.Contains(command2));
         }
 
-        [Test]
-        [ExpectedException(typeof(ArgumentException))]
+        [Fact]
         public void Add3()
         {
             Create(String.Empty);
             var command1 = VimUtil.CreateNormalBinding("foo", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
             _runner.Add(command1);
-            _runner.Add(command1);
+            Assert.Throws<ArgumentException>(() => _runner.Add(command1));
         }
 
-        [Test]
-        [ExpectedException(typeof(ArgumentException))]
+        [Fact]
         public void Add4()
         {
             Create(String.Empty);
             var command1 = VimUtil.CreateNormalBinding("foo", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
             var command2 = VimUtil.CreateNormalBinding("foo");
             _runner.Add(command1);
-            _runner.Add(command2);
+            Assert.Throws<ArgumentException>(() => _runner.Add(command2));
         }
 
-        [Test]
+        [Fact]
         public void Remove1()
         {
             Create(String.Empty);
             var command1 = VimUtil.CreateNormalBinding("foo", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
             _runner.Add(command1);
             _runner.Remove(command1.KeyInputSet);
-            Assert.AreEqual(0, _runner.Commands.Count());
+            Assert.Equal(0, _runner.Commands.Count());
         }
 
-        [Test]
-        [Description("Don't throw when removing a command that's not present")]
+        /// <summary>
+        /// Don't throw when removing a command that's not present
+        /// </summary>
+        [Fact]
         public void Remove2()
         {
             Create(String.Empty);
             _runner.Remove(KeyNotationUtil.StringToKeyInputSet("foo"));
-            Assert.AreEqual(0, _runner.Commands.Count());
+            Assert.Equal(0, _runner.Commands.Count());
         }
 
-        [Test]
+        [Fact]
         public void Run_CommandMatch1()
         {
             Create(String.Empty);
             var count1 = 0;
             _runner.Add(VimUtil.CreateNormalBinding("a", data => { count1++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
             Run("a");
-            Assert.AreEqual(1, count1);
+            Assert.Equal(1, count1);
         }
 
-        [Test]
+        [Fact]
         public void Run_CommandMatch2()
         {
             Create(String.Empty);
             var count1 = 0;
             _runner.Add(VimUtil.CreateNormalBinding("a", data => { count1++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
             Run("b");
-            Assert.AreEqual(0, count1);
+            Assert.Equal(0, count1);
         }
 
-        [Test]
+        [Fact]
         public void Run_CommandMatch3()
         {
             Create(String.Empty);
@@ -141,11 +140,11 @@ namespace Vim.UnitTest
             var count2 = 0;
             _runner.Add(VimUtil.CreateNormalBinding("b", data => { count2++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
             Run("b");
-            Assert.AreEqual(0, count1);
-            Assert.AreEqual(1, count2);
+            Assert.Equal(0, count1);
+            Assert.Equal(1, count2);
         }
 
-        [Test]
+        [Fact]
         public void Run_CommandMatch4()
         {
             Create(String.Empty);
@@ -154,12 +153,14 @@ namespace Vim.UnitTest
             var count2 = 0;
             _runner.Add(VimUtil.CreateNormalBinding("b", data => { count2++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
             Run("ab");
-            Assert.AreEqual(1, count1);
-            Assert.AreEqual(0, count2);
+            Assert.Equal(1, count1);
+            Assert.Equal(0, count2);
         }
 
-        [Test]
-        [Description("Prefix is ambiguous and neither should match")]
+        /// <summary>
+        /// Prefix is ambiguous and neither should match
+        /// </summary>
+        [Fact]
         public void Run_CommandMatch5()
         {
             Create(String.Empty);
@@ -168,11 +169,11 @@ namespace Vim.UnitTest
             var count2 = 0;
             _runner.Add(VimUtil.CreateNormalBinding("aab", data => { count2++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
             Run("aa");
-            Assert.AreEqual(0, count1);
-            Assert.AreEqual(0, count2);
+            Assert.Equal(0, count1);
+            Assert.Equal(0, count2);
         }
 
-        [Test]
+        [Fact]
         public void Run_CommandMatch6()
         {
             Create(String.Empty);
@@ -181,11 +182,11 @@ namespace Vim.UnitTest
             var count2 = 0;
             _runner.Add(VimUtil.CreateNormalBinding("aab", data => { count2++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
             Run("aab");
-            Assert.AreEqual(0, count1);
-            Assert.AreEqual(1, count2);
+            Assert.Equal(0, count1);
+            Assert.Equal(1, count2);
         }
 
-        [Test]
+        [Fact]
         public void Run_CommandMatch7()
         {
             Create("foo bar");
@@ -194,182 +195,182 @@ namespace Vim.UnitTest
             var count2 = 0;
             _runner.Add(VimUtil.CreateNormalBinding("aab", data => { count2++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
             Run("aaw");
-            Assert.AreEqual(1, count1);
-            Assert.AreEqual(0, count2);
+            Assert.Equal(1, count1);
+            Assert.Equal(0, count2);
         }
 
-        [Test]
+        [Fact]
         public void Run_Count1()
         {
             Create(String.Empty);
             var didRun = false;
             _runner.Add(VimUtil.CreateNormalBinding("a", data =>
                 {
-                    Assert.IsTrue(data.Count.IsNone());
+                    Assert.True(data.Count.IsNone());
                     didRun = true;
                     return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
                 }));
             Run("a");
-            Assert.IsTrue(didRun);
+            Assert.True(didRun);
         }
 
-        [Test]
+        [Fact]
         public void Run_Count2()
         {
             Create(String.Empty);
             var didRun = false;
             _runner.Add(VimUtil.CreateNormalBinding("a", data =>
                 {
-                    Assert.IsTrue(data.Count.IsSome());
-                    Assert.AreEqual(1, data.Count.Value);
+                    Assert.True(data.Count.IsSome());
+                    Assert.Equal(1, data.Count.Value);
                     didRun = true;
                     return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
                 }));
             Run("1a");
-            Assert.IsTrue(didRun);
+            Assert.True(didRun);
         }
 
-        [Test]
+        [Fact]
         public void Run_Count3()
         {
             Create(String.Empty);
             var didRun = false;
             _runner.Add(VimUtil.CreateNormalBinding("a", data =>
                 {
-                    Assert.IsTrue(data.Count.IsSome());
-                    Assert.AreEqual(42, data.Count.Value);
+                    Assert.True(data.Count.IsSome());
+                    Assert.Equal(42, data.Count.Value);
                     didRun = true;
                     return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
                 }));
             Run("42a");
-            Assert.IsTrue(didRun);
+            Assert.True(didRun);
         }
 
         /// <summary>
         /// 0 is not a valid command
         /// </summary>
-        [Test]
+        [Fact]
         public void Run_Count4()
         {
             Create(string.Empty);
             var didRun = false;
             _runner.Add(VimUtil.CreateNormalBinding("a", () => { didRun = true; }));
-            Assert.IsTrue(_runner.Run('0').IsError);
-            Assert.IsFalse(didRun);
+            Assert.True(_runner.Run('0').IsError);
+            Assert.False(didRun);
         }
 
-        [Test]
+        [Fact]
         public void Run_Register1()
         {
             Create(String.Empty);
             var didRun = false;
             _runner.Add(VimUtil.CreateNormalBinding("a", data =>
                 {
-                    Assert.AreEqual(RegisterName.Unnamed, data.GetRegisterNameOrDefault());
+                    Assert.Equal(RegisterName.Unnamed, data.GetRegisterNameOrDefault());
                     didRun = true;
                     return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
                 }));
             Run("a");
-            Assert.IsTrue(didRun);
+            Assert.True(didRun);
         }
 
-        [Test]
+        [Fact]
         public void Run_Register2()
         {
             Create(String.Empty);
             var didRun = false;
             _runner.Add(VimUtil.CreateNormalBinding("a", data =>
                 {
-                    Assert.AreSame(_registerMap.GetRegister('c'), data.GetRegister(_registerMap));
+                    Assert.Same(_registerMap.GetRegister('c'), data.GetRegister(_registerMap));
                     didRun = true;
                     return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
                 }));
             Run("\"ca");
-            Assert.IsTrue(didRun);
+            Assert.True(didRun);
         }
 
-        [Test]
+        [Fact]
         public void Run_Register3()
         {
             Create(String.Empty);
             var didRun = false;
             _runner.Add(VimUtil.CreateNormalBinding("a", data =>
                 {
-                    Assert.AreSame(_registerMap.GetRegister('d'), data.GetRegister(_registerMap));
+                    Assert.Same(_registerMap.GetRegister('d'), data.GetRegister(_registerMap));
                     didRun = true;
                     return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
                 }));
             Run("\"da");
-            Assert.IsTrue(didRun);
+            Assert.True(didRun);
         }
 
-        [Test]
+        [Fact]
         public void Run_CountAndRegister1()
         {
             Create(String.Empty);
             var didRun = false;
             _runner.Add(VimUtil.CreateNormalBinding("a", data =>
                 {
-                    Assert.IsTrue(data.Count.IsSome());
-                    Assert.AreEqual(2, data.Count.Value);
-                    Assert.AreSame(_registerMap.GetRegister('d'), data.GetRegister(_registerMap));
+                    Assert.True(data.Count.IsSome());
+                    Assert.Equal(2, data.Count.Value);
+                    Assert.Same(_registerMap.GetRegister('d'), data.GetRegister(_registerMap));
                     didRun = true;
                     return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
                 }));
             Run("\"d2a");
-            Assert.IsTrue(didRun);
+            Assert.True(didRun);
         }
 
-        [Test]
+        [Fact]
         public void Run_CountAndRegister2()
         {
             Create(String.Empty);
             var didRun = false;
             _runner.Add(VimUtil.CreateNormalBinding("a", data =>
                 {
-                    Assert.IsTrue(data.Count.IsSome());
-                    Assert.AreEqual(2, data.Count.Value);
-                    Assert.AreSame(_registerMap.GetRegister('d'), data.GetRegister(_registerMap));
+                    Assert.True(data.Count.IsSome());
+                    Assert.Equal(2, data.Count.Value);
+                    Assert.Same(_registerMap.GetRegister('d'), data.GetRegister(_registerMap));
                     didRun = true;
                     return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
                 }));
             Run("2\"da");
-            Assert.IsTrue(didRun);
+            Assert.True(didRun);
         }
 
-        [Test]
+        [Fact]
         public void Run_NoMatchingCommand1()
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateNormalBinding("cat", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
-            Assert.IsTrue(_runner.Run('b').IsError);
+            Assert.True(_runner.Run('b').IsError);
         }
 
-        [Test]
+        [Fact]
         public void Run_NoMatchingCommand2()
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateNormalBinding("cat", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
-            Assert.IsTrue(_runner.Run('c').IsNeedMoreInput);
-            Assert.IsTrue(_runner.Run('b').IsError);
+            Assert.True(_runner.Run('c').IsNeedMoreInput);
+            Assert.True(_runner.Run('b').IsError);
         }
 
-        [Test]
+        [Fact]
         public void Run_NoMatchingCommand3()
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateNormalBinding("cot", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             _runner.Add(VimUtil.CreateNormalBinding("cook", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
-            Assert.IsTrue(_runner.Run('c').IsNeedMoreInput);
-            Assert.IsTrue(_runner.Run('o').IsNeedMoreInput);
-            Assert.IsTrue(_runner.Run('b').IsError);
+            Assert.True(_runner.Run('c').IsNeedMoreInput);
+            Assert.True(_runner.Run('o').IsNeedMoreInput);
+            Assert.True(_runner.Run('b').IsError);
         }
 
         /// <summary>
         /// A BindData should be passed an Escape if it does set the handle
         /// escape flag
         /// </summary>
-        [Test]
+        [Fact]
         public void Run_RespectDontHandleEscapeFlag()
         {
             Create("hello world");
@@ -385,14 +386,14 @@ namespace Vim.UnitTest
                 flags: CommandFlags.HandlesEscape));
             _runner.Run('c');
             _runner.Run(VimKey.Escape);
-            Assert.IsTrue(didEscape);
-            Assert.IsTrue(didRun);
+            Assert.True(didEscape);
+            Assert.True(didRun);
         }
 
         /// <summary>
         /// A BindData shouldn be passed an Escape if it set the handle escape falg
         /// </summary>
-        [Test]
+        [Fact]
         public void Run_RespectHandleEscapeFlag()
         {
             Create("hello world");
@@ -408,63 +409,65 @@ namespace Vim.UnitTest
                 CommandFlags.HandlesEscape));
             _runner.Run('c');
             _runner.Run(VimKey.Escape);
-            Assert.IsTrue(didEscape);
-            Assert.IsTrue(didRun);
+            Assert.True(didEscape);
+            Assert.True(didRun);
         }
 
-        [Test]
+        [Fact]
         public void IsWaitingForMoreInput1()
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateNormalBinding("cat", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
-            Assert.IsTrue(Run("c").IsNeedMoreInput);
-            Assert.IsTrue(_runner.IsWaitingForMoreInput);
+            Assert.True(Run("c").IsNeedMoreInput);
+            Assert.True(_runner.IsWaitingForMoreInput);
         }
 
-        [Test]
+        [Fact]
         public void IsWaitingForMoreInput2()
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateNormalBinding("cat", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
-            Assert.IsTrue(Run("ca").IsNeedMoreInput);
-            Assert.IsTrue(_runner.IsWaitingForMoreInput);
+            Assert.True(Run("ca").IsNeedMoreInput);
+            Assert.True(_runner.IsWaitingForMoreInput);
         }
 
-        [Test]
+        [Fact]
         public void IsWaitingForMoreInput3()
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateNormalBinding("cat", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
-            Assert.IsTrue(Run("cat").IsComplete);
-            Assert.IsFalse(_runner.IsWaitingForMoreInput);
+            Assert.True(Run("cat").IsComplete);
+            Assert.False(_runner.IsWaitingForMoreInput);
         }
 
-        [Test]
+        [Fact]
         public void IsWaitingForMoreInput4()
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateNormalBinding("cat", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
-            Assert.IsTrue(Run("ca").IsNeedMoreInput);
-            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCancelled);
-            Assert.IsFalse(_runner.IsWaitingForMoreInput);
+            Assert.True(Run("ca").IsNeedMoreInput);
+            Assert.True(_runner.Run(KeyInputUtil.EscapeKey).IsCancelled);
+            Assert.False(_runner.IsWaitingForMoreInput);
         }
 
-        [Test]
-        [Description("Cancel in a motion")]
+        /// <summary>
+        /// Cancel in a motion
+        /// </summary>
+        [Fact]
         public void IsWaitingForMoreInput5()
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateMotionBinding("cat"));
-            Assert.IsTrue(Run("cata").IsNeedMoreInput);
-            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCancelled);
-            Assert.IsFalse(_runner.IsWaitingForMoreInput);
+            Assert.True(Run("cata").IsNeedMoreInput);
+            Assert.True(_runner.Run(KeyInputUtil.EscapeKey).IsCancelled);
+            Assert.False(_runner.IsWaitingForMoreInput);
         }
 
         /// <summary>
         /// Make sure we are properly able to distinguish between motion and non-motion commands
         /// which have similar prefix matches
         /// </summary>
-        [Test]
+        [Fact]
         public void Run_MotionMixedWithNonMotion()
         {
             Create("the dog chased the ball");
@@ -484,30 +487,30 @@ namespace Vim.UnitTest
             foreach (var cur in simple)
             {
                 // Make sure we can run them all
-                Assert.IsTrue(_runner.Run(cur).IsComplete);
+                Assert.True(_runner.Run(cur).IsComplete);
             }
 
             foreach (var cur in motion)
             {
                 // Make sure we can run them all
-                Assert.IsTrue(_runner.Run(cur).IsNeedMoreInput);
+                Assert.True(_runner.Run(cur).IsNeedMoreInput);
                 _runner.ResetState();
             }
 
         }
 
-        [Test]
+        [Fact]
         public void Reset1()
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateNormalBinding("abc", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             Run("a");
-            Assert.IsTrue(_runner.IsWaitingForMoreInput);
+            Assert.True(_runner.IsWaitingForMoreInput);
             _runner.ResetState();
-            Assert.IsFalse(_runner.IsWaitingForMoreInput);
+            Assert.False(_runner.IsWaitingForMoreInput);
         }
 
-        [Test]
+        [Fact]
         public void ComplexCommand_EnsureItLoops()
         {
             Create("hello world");
@@ -519,14 +522,14 @@ namespace Vim.UnitTest
             };
 
             _runner.Add(VimUtil.CreateComplexNormalBinding("f", func));
-            Assert.IsTrue(_runner.Run("food").IsComplete);
-            Assert.AreEqual("ood", seen);
+            Assert.True(_runner.Run("food").IsComplete);
+            Assert.Equal("ood", seen);
         }
 
         /// <summary>
         /// Disallow Run calls during a bind operation
         /// </summary>
-        [Test]
+        [Fact]
         public void NestedRun_DontAllowRunDuringBind()
         {
             Create("hello world");
@@ -536,18 +539,18 @@ namespace Vim.UnitTest
                 _ =>
                 {
                     var res = _runner.Run(KeyInputUtil.CharToKeyInput('b'));
-                    Assert.IsTrue(res.IsError);
+                    Assert.True(res.IsError);
                 }));
 
             var res2 = _runner.Run("ab");
-            Assert.IsTrue(res2.IsComplete);
+            Assert.True(res2.IsComplete);
         }
 
         /// <summary>
         /// It's OK for a Command to call back into the ICommandRunner::Run which ran it
         /// so long as the binding is complete.  This is necessary for Macros
         /// </summary>
-        [Test]
+        [Fact]
         public void NestedRun_AllowMultipleRuns()
         {
             Create("");
@@ -557,19 +560,19 @@ namespace Vim.UnitTest
                 _ =>
                 {
                     ran1 = true;
-                    Assert.IsTrue(_runner.Run('b').IsComplete);
+                    Assert.True(_runner.Run('b').IsComplete);
                 })));
             _runner.Add(VimUtil.CreateNormalBinding("b", command: VimUtil.CreatePing(
                 _ =>
                 {
                     ran2 = true;
                 })));
-            Assert.IsTrue(_runner.Run('a').IsComplete);
-            Assert.IsTrue(ran1);
-            Assert.IsTrue(ran2);
+            Assert.True(_runner.Run('a').IsComplete);
+            Assert.True(ran1);
+            Assert.True(ran2);
         }
 
-        [Test]
+        [Fact]
         public void CommandRan1()
         {
             Create("hello world");
@@ -578,15 +581,15 @@ namespace Vim.UnitTest
             _runner.Add(command1);
             _runner.CommandRan += (notUsed, args) =>
                 {
-                    Assert.AreSame(command1, args.CommandRunData.CommandBinding);
-                    Assert.IsTrue(args.CommandRunData.CommandResult.IsCompleted);
+                    Assert.Same(command1, args.CommandRunData.CommandBinding);
+                    Assert.True(args.CommandRunData.CommandResult.IsCompleted);
                     didSee = true;
                 };
             _runner.Run('c');
-            Assert.IsTrue(didSee);
+            Assert.True(didSee);
         }
 
-        [Test]
+        [Fact]
         public void CommandRan2()
         {
             Create("hello world");
@@ -595,15 +598,15 @@ namespace Vim.UnitTest
             _runner.Add(command1);
             _runner.CommandRan += (notUsed, args) =>
                 {
-                    Assert.AreSame(command1, args.CommandRunData.CommandBinding);
+                    Assert.Same(command1, args.CommandRunData.CommandBinding);
                     didSee = true;
                 };
             _runner.Run('2');
             _runner.Run('c');
-            Assert.IsTrue(didSee);
+            Assert.True(didSee);
         }
 
-        [Test]
+        [Fact]
         public void CommandRan3()
         {
             Create("hello world");
@@ -616,75 +619,75 @@ namespace Vim.UnitTest
                 };
             _runner.Run('c');
             _runner.Run(KeyInputUtil.EscapeKey);
-            Assert.IsFalse(didSee);
+            Assert.False(didSee);
         }
 
-        [Test]
+        [Fact]
         public void KeyRemapMode_DefaultIsNone()
         {
             Create("hello world");
-            Assert.IsTrue(_runner.KeyRemapMode.IsNone());
+            Assert.True(_runner.KeyRemapMode.IsNone());
         }
 
-        [Test]
+        [Fact]
         public void KeyRemapMode_NoneWhileFindingCommand()
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateNormalBinding("cat"));
             _runner.Run('c');
-            Assert.IsTrue(_runner.KeyRemapMode.IsNone());
+            Assert.True(_runner.KeyRemapMode.IsNone());
         }
 
-        [Test]
+        [Fact]
         public void KeyRemapMode_OperatorPendingWhenWaitingForMotionLegacy()
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateMotionBinding("d"));
             _runner.Run('d');
-            Assert.IsTrue(_runner.KeyRemapMode.IsSome(KeyRemapMode.OperatorPending));
+            Assert.True(_runner.KeyRemapMode.IsSome(KeyRemapMode.OperatorPending));
         }
 
-        [Test]
+        [Fact]
         public void KeyRemapMode_OperatorPendingWhenWaitingForMotion()
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateMotionBinding("d"));
             _runner.Run('d');
-            Assert.IsTrue(_runner.KeyRemapMode.IsSome(KeyRemapMode.OperatorPending));
+            Assert.True(_runner.KeyRemapMode.IsSome(KeyRemapMode.OperatorPending));
         }
 
-        [Test]
+        [Fact]
         public void KeyRemapMode_OperatorPendingWhenAmbiguousBetweenMotionAndCommand()
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateMotionBinding("d"));
             _runner.Add(VimUtil.CreateNormalBinding("dd"));
             _runner.Run('d');
-            Assert.IsTrue(_runner.KeyRemapMode.IsSome(KeyRemapMode.OperatorPending));
+            Assert.True(_runner.KeyRemapMode.IsSome(KeyRemapMode.OperatorPending));
         }
 
-        [Test]
+        [Fact]
         public void KeyRemapMode_LanguageInToArgument()
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateMotionBinding("d"));
             _runner.Run('d');
             _runner.Run('f');
-            Assert.AreEqual(KeyRemapMode.Language, _runner.KeyRemapMode.Value);
+            Assert.Equal(KeyRemapMode.Language, _runner.KeyRemapMode.Value);
         }
 
         /// <summary>
         /// In a complex binding we need to use the KeyRemapMode specified in that binding
         /// </summary>
-        [Test]
+        [Fact]
         public void KeyRemapMode_LongCommandPropagateMode()
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateComplexNormalBinding("a", x => true, KeyRemapMode.Language));
             _runner.Run('a');
-            Assert.IsTrue(_runner.KeyRemapMode.IsSome(KeyRemapMode.Language));
+            Assert.True(_runner.KeyRemapMode.IsSome(KeyRemapMode.Language));
             _runner.Run('b');
-            Assert.IsTrue(_runner.KeyRemapMode.IsSome(KeyRemapMode.Language));
+            Assert.True(_runner.KeyRemapMode.IsSome(KeyRemapMode.Language));
         }
     }
 }

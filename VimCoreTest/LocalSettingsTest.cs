@@ -1,8 +1,7 @@
-﻿using NUnit.Framework;
+﻿using Xunit;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public class LocalSettingsTest : SettingsCommonTest
     {
         protected override string ToggleSettingName { get { return LocalSettingNames.NumberName; } }
@@ -16,26 +15,17 @@ namespace Vim.UnitTest
         private LocalSettings _localRaw;
         private IVimLocalSettings _local;
 
-        [SetUp]
-        public void SetUp()
+        public LocalSettingsTest()
         {
             _global = new GlobalSettings();
             _localRaw = new LocalSettings(_global);
             _local = _localRaw;
         }
 
-        [TearDown]
-        public void TearDown()
-        {
-            _global = null;
-            _localRaw = null;
-            _local = null;
-        }
-
-        [Test]
+        [Fact]
         public void Sanity1()
         {
-            Assert.AreSame(_global, _local.GlobalSettings);
+            Assert.Same(_global, _local.GlobalSettings);
         }
     }
 }

@@ -14,11 +14,11 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
-using NUnit.Framework;
 using Vim;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
 using VsVim.UnitTest.Mock;
+using Xunit;
 
 namespace VsVim.UnitTest
 {
@@ -28,7 +28,6 @@ namespace VsVim.UnitTest
     /// integration without starting Visual Studio.  But this should at least help me catch
     /// a portion of them. 
     /// </summary>
-    [TestFixture]
     public sealed class MemoryLeakTest : VimTestBase
     {
         #region Exports
@@ -168,7 +167,7 @@ namespace VsVim.UnitTest
 
         private void RunGarbageCollector()
         {
-            for (var i = 0; i < 10; i++)
+            for (var i = 0; i < 15; i++)
             {
                 Dispatcher.CurrentDispatcher.DoEvents();
                 GC.Collect();
@@ -206,7 +205,7 @@ namespace VsVim.UnitTest
 
             // Verify we actually created the IVimBuffer instance 
             var vimBuffer = Vim.GetOrCreateVimBuffer(textView);
-            Assert.IsNotNull(vimBuffer);
+            Assert.NotNull(vimBuffer);
 
             // Do one round of DoEvents since several services queue up actions to 
             // take immediately after the IVimBuffer is created
@@ -223,7 +222,7 @@ namespace VsVim.UnitTest
         /// and closed without leaking memory that doesn't involve the creation of an 
         /// IVimBuffer
         /// </summary>
-        [Test]
+        [Fact]
         public void TextViewOnly()
         {
             var container = GetOrCreateCompositionContainer();
@@ -234,7 +233,7 @@ namespace VsVim.UnitTest
             textView = null;
 
             RunGarbageCollector();
-            Assert.IsNull(weakReference.Target);
+            Assert.Null(weakReference.Target);
         }
 
         /// <summary>
@@ -242,7 +241,7 @@ namespace VsVim.UnitTest
         /// and closed without leaking memory that doesn't involve the creation of an
         /// IVimBuffer
         /// </summary>
-        [Test]
+        [Fact]
         public void TextViewHostOnly()
         {
             var container = GetOrCreateCompositionContainer();
@@ -255,10 +254,10 @@ namespace VsVim.UnitTest
             textViewHost = null;
 
             RunGarbageCollector();
-            Assert.IsNull(weakReference.Target);
+            Assert.Null(weakReference.Target);
         }
 
-        [Test]
+        [Fact]
         public void VimWpfDoesntHoldBuffer()
         {
             var container = GetOrCreateCompositionContainer();
@@ -268,7 +267,7 @@ namespace VsVim.UnitTest
             // Verify we actually created the IVimBuffer instance 
             var vim = container.GetExport<IVim>().Value;
             var vimBuffer = vim.GetOrCreateVimBuffer(textView);
-            Assert.IsNotNull(vimBuffer);
+            Assert.NotNull(vimBuffer);
 
             var weakVimBuffer = new WeakReference(vimBuffer);
             var weakTextView = new WeakReference(textView);
@@ -276,15 +275,15 @@ namespace VsVim.UnitTest
             // Clean up 
             textView.Close();
             textView = null;
-            Assert.IsTrue(vimBuffer.IsClosed);
+            Assert.True(vimBuffer.IsClosed);
             vimBuffer = null;
 
             RunGarbageCollector();
-            Assert.IsNull(weakVimBuffer.Target);
-            Assert.IsNull(weakTextView.Target);
+            Assert.Null(weakVimBuffer.Target);
+            Assert.Null(weakTextView.Target);
         }
 
-        [Test]
+        [Fact]
         public void VsVimDoesntHoldBuffer()
         {
             var vimBuffer = CreateVimBuffer();
@@ -296,11 +295,11 @@ namespace VsVim.UnitTest
             vimBuffer = null;
 
             RunGarbageCollector();
-            Assert.IsNull(weakVimBuffer.Target);
-            Assert.IsNull(weakTextView.Target);
+            Assert.Null(weakVimBuffer.Target);
+            Assert.Null(weakTextView.Target);
         }
 
-        [Test]
+        [Fact]
         public void SetGlobalMarkAndClose()
         {
             var vimBuffer = CreateVimBuffer();
@@ -315,16 +314,16 @@ namespace VsVim.UnitTest
             vimBuffer = null;
 
             RunGarbageCollector();
-            Assert.IsNull(weakVimBuffer.Target);
-            Assert.IsNull(weakTextView.Target);
-            Assert.IsNotNull(localSettings);
+            Assert.Null(weakVimBuffer.Target);
+            Assert.Null(weakTextView.Target);
+            Assert.NotNull(localSettings);
         }
 
         /// <summary>
         /// Change tracking is currently IVimBuffer specific.  Want to make sure it's
         /// not indirectly holding onto an IVimBuffer reference
         /// </summary>
-        [Test]
+        [Fact]
         public void ChangeTrackerDoesntHoldTheBuffer()
         {
             var vimBuffer = CreateVimBuffer();
@@ -338,8 +337,8 @@ namespace VsVim.UnitTest
             vimBuffer = null;
 
             RunGarbageCollector();
-            Assert.IsNull(weakVimBuffer.Target);
-            Assert.IsNull(weakTextView.Target);
+            Assert.Null(weakVimBuffer.Target);
+            Assert.Null(weakTextView.Target);
         }
 
     }

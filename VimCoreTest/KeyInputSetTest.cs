@@ -1,33 +1,32 @@
 ﻿using Microsoft.FSharp.Collections;
-using NUnit.Framework;
 using Vim.Extensions;
+using Xunit;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public sealed class KeyInputSetTest
     {
-        [Test]
+        [Fact]
         public void Compare_AlternateKeyInputShouldBeEqual()
         {
             var left = KeyInputSet.NewOneKeyInput(KeyInputUtil.EnterKey);
             var right = KeyInputSet.NewOneKeyInput(KeyInputUtil.AlternateEnterKey);
-            Assert.IsTrue(0 == left.CompareTo(right));
-            Assert.IsTrue(0 == right.CompareTo(left));
+            Assert.True(0 == left.CompareTo(right));
+            Assert.True(0 == right.CompareTo(left));
         }
 
-        [Test]
+        [Fact]
         public void Compare_AlternateKeyInputShouldBeEqualInMap()
         {
             var left = KeyInputSet.NewOneKeyInput(KeyInputUtil.EnterKey);
             var right = KeyInputSet.NewOneKeyInput(KeyInputUtil.AlternateEnterKey);
             var map = MapModule.Empty<KeyInputSet, bool>().Add(left, true);
             var result = MapModule.TryFind(right, map);
-            Assert.IsTrue(result.IsSome());
+            Assert.True(result.IsSome());
 
             map = MapModule.Empty<KeyInputSet, bool>().Add(right, true);
             result = MapModule.TryFind(left, map);
-            Assert.IsTrue(result.IsSome());
+            Assert.True(result.IsSome());
         }
     }
 }

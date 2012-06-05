@@ -6,17 +6,16 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using NUnit.Framework;
 using Vim.Extensions;
 using Vim.Modes.Insert;
 using Vim.UnitTest.Mock;
+using Xunit;
 
 namespace Vim.UnitTest
 {
     /// <summary>
     /// Tests to verify the operation of Insert / Replace Mode
     /// </summary>
-    [TestFixture]
     public sealed class InsertModeTest : VimTestBase
     {
         private MockRepository _factory;
@@ -38,16 +37,9 @@ namespace Vim.UnitTest
         private Mock<IWordCompletionSessionFactoryService> _wordCompletionSessionFactoryService;
         private Mock<IWordCompletionSession> _activeWordCompletionSession;
 
-        [SetUp]
-        public void SetUp()
+        public InsertModeTest()
         {
             Create(insertMode: true);
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _lastCommandRan = null;
         }
 
         private void Create(params string[] lines)
@@ -138,22 +130,22 @@ namespace Vim.UnitTest
         /// If the active IWordCompletionSession is dismissed via the API it should cause the 
         /// ActiveWordCompletionSession value to be reset as well
         /// </summary>
-        [Test]
+        [Fact]
         public void ActiveWordCompletionSession_Dismissed()
         {
             Create("");
             SetupActiveWordCompletionSession();
             _activeWordCompletionSession.Raise(x => x.Dismissed += null, EventArgs.Empty);
-            Assert.IsTrue(_mode.ActiveWordCompletionSession.IsNone());
+            Assert.True(_mode.ActiveWordCompletionSession.IsNone());
         }
 
         /// <summary>
         /// Make sure we can process escape
         /// </summary>
-        [Test]
+        [Fact]
         public void CanProcess_Escape()
         {
-            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.EscapeKey));
+            Assert.True(_mode.CanProcess(KeyInputUtil.EscapeKey));
         }
 
         /// <summary>
@@ -161,48 +153,48 @@ namespace Vim.UnitTest
         /// the word completion session can only process a limited set of key strokes.  The extra key 
         /// strokes are used to cancel the session and then be processed as normal
         /// </summary>
-        [Test]
+        [Fact]
         public void CanProcess_ActiveWordCompletion()
         {
             Create("");
             SetupActiveWordCompletionSession();
-            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput('a')));
+            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('a')));
         }
 
         /// <summary>
         /// After a word should return the entire word 
         /// </summary>
-        [Test]
+        [Fact]
         public void GetWordCompletionSpan_AfterWord()
         {
             Create("cat dog");
             _textView.MoveCaretTo(3);
-            Assert.AreEqual("cat", _modeRaw.GetWordCompletionSpan().Value.GetText());
+            Assert.Equal("cat", _modeRaw.GetWordCompletionSpan().Value.GetText());
         }
 
         /// <summary>
         /// In the middle of the word should only consider the word up till the caret for the 
         /// completion section
         /// </summary>
-        [Test]
+        [Fact]
         public void GetWordCompletionSpan_MiddleOfWord()
         {
             Create("cat dog");
             _textView.MoveCaretTo(1);
-            Assert.AreEqual("c", _modeRaw.GetWordCompletionSpan().Value.GetText());
+            Assert.Equal("c", _modeRaw.GetWordCompletionSpan().Value.GetText());
         }
 
         /// <summary>
         /// When the caret is on a closing paren and after a word the completion should be for the
         /// word and not for the paren
         /// </summary>
-        [Test]
+        [Fact]
         public void GetWordCompletionSpan_OnParen()
         {
             Create("m(arg)");
             _textView.MoveCaretTo(5);
-            Assert.AreEqual(')', _textView.GetCaretPoint().GetChar());
-            Assert.AreEqual("arg", _modeRaw.GetWordCompletionSpan().Value.GetText());
+            Assert.Equal(')', _textView.GetCaretPoint().GetChar());
+            Assert.Equal("arg", _modeRaw.GetWordCompletionSpan().Value.GetText());
         }
 
         /// <summary>
@@ -210,25 +202,25 @@ namespace Vim.UnitTest
         /// test should be for the character immediately preceding the caret position.  Here it's 
         /// a blank and there should be nothing returned
         /// </summary>
-        [Test]
+        [Fact]
         public void GetWordCompletionSpan_OnParenWithBlankBefore()
         {
             Create("m(arg )");
             _textView.MoveCaretTo(6);
-            Assert.AreEqual(')', _textView.GetCaretPoint().GetChar());
-            Assert.IsTrue(_modeRaw.GetWordCompletionSpan().IsNone());
+            Assert.Equal(')', _textView.GetCaretPoint().GetChar());
+            Assert.True(_modeRaw.GetWordCompletionSpan().IsNone());
         }
 
         /// <summary>
         /// When provided an empty SnapshotSpan the words should be returned in order from the given
         /// point
         /// </summary>
-        [Test]
+        [Fact]
         public void GetWordCompletions_All()
         {
             Create("cat dog tree");
             var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 3, 0));
-            CollectionAssert.AreEquivalent(
+            Assert.Equal(
                 new[] { "dog", "tree", "cat" },
                 words.ToList());
         }
@@ -236,12 +228,12 @@ namespace Vim.UnitTest
         /// <summary>
         /// Don't include any comments or non-words when getting the words from the buffer
         /// </summary>
-        [Test]
+        [Fact]
         public void GetWordCompletions_All_JustWords()
         {
             Create("cat dog // tree &&");
             var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 3, 0));
-            CollectionAssert.AreEquivalent(
+            Assert.Equal(
                 new[] { "dog", "tree", "cat" },
                 words.ToList());
         }
@@ -249,12 +241,12 @@ namespace Vim.UnitTest
         /// <summary>
         /// When given a word span only include strings which start with the given prefix
         /// </summary>
-        [Test]
+        [Fact]
         public void GetWordCompletions_Prefix()
         {
             Create("c cat dog // tree && copter");
             var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 0, 1));
-            CollectionAssert.AreEquivalent(
+            Assert.Equal(
                 new[] { "cat", "copter" },
                 words.ToList());
         }
@@ -263,25 +255,25 @@ namespace Vim.UnitTest
         /// Starting from the middle of a word should consider the part of the word to the right of 
         /// the caret as a word
         /// </summary>
-        [Test]
+        [Fact]
         public void GetWordCompletions_MiddleOfWord()
         {
             Create("test", "ccrook cat caturday");
             var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.GetLine(1).Start, 1));
-            CollectionAssert.AreEquivalent(
-                new[] { "cat", "caturday", "crook" },
+            Assert.Equal(
+                new[] { "crook", "cat", "caturday" },
                 words.ToList());
         }
 
         /// <summary>
         /// Don't include any one length values in the return because Vim doesn't include them
         /// </summary>
-        [Test]
+        [Fact]
         public void GetWordCompletions_ExcludeOneLengthValues()
         {
             Create("c cat dog // tree && copter a b c");
             var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 0, 1));
-            CollectionAssert.AreEquivalent(
+            Assert.Equal(
                 new[] { "cat", "copter" },
                 words.ToList());
         }
@@ -290,14 +282,14 @@ namespace Vim.UnitTest
         /// Ensure that all known character values are considered direct input.  They cause direct
         /// edits to the buffer.  They are not commands.
         /// </summary>
-        [Test]
+        [Fact]
         public void IsDirectInput_Chars()
         {
             foreach (var cur in KeyInputUtilTest.CharsAll)
             {
                 var input = KeyInputUtil.CharToKeyInput(cur);
-                Assert.IsTrue(_mode.CanProcess(input));
-                Assert.IsTrue(_mode.IsDirectInsert(input));
+                Assert.True(_mode.CanProcess(input));
+                Assert.True(_mode.IsDirectInsert(input));
             }
         }
 
@@ -306,18 +298,18 @@ namespace Vim.UnitTest
         /// and given specific values based on settings.  While they cause edits the values passed down
         /// don't directly go to the buffer
         /// </summary>
-        [Test]
+        [Fact]
         public void IsDirectInput_SpecialKeys()
         {
-            Assert.IsFalse(_mode.IsDirectInsert(KeyInputUtil.EnterKey));
-            Assert.IsFalse(_mode.IsDirectInsert(KeyInputUtil.AlternateEnterKey));
-            Assert.IsFalse(_mode.IsDirectInsert(KeyInputUtil.VimKeyToKeyInput(VimKey.Tab)));
+            Assert.False(_mode.IsDirectInsert(KeyInputUtil.EnterKey));
+            Assert.False(_mode.IsDirectInsert(KeyInputUtil.AlternateEnterKey));
+            Assert.False(_mode.IsDirectInsert(KeyInputUtil.VimKeyToKeyInput(VimKey.Tab)));
         }
 
         /// <summary>
         /// Make sure to move the caret left when exiting insert mode
         /// </summary>
-        [Test]
+        [Fact]
         public void Escape_MoveCaretLeftOnExit()
         {
             _textView.SetText("hello world", 3);
@@ -326,7 +318,7 @@ namespace Vim.UnitTest
             _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(false).Verifiable();
             SetupRunCompleteMode(true);
             var res = _mode.Process(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(res.IsSwitchMode(ModeKind.Normal));
+            Assert.True(res.IsSwitchMode(ModeKind.Normal));
             _factory.Verify();
         }
 
@@ -334,7 +326,7 @@ namespace Vim.UnitTest
         /// Make sure that Escape in insert mode runs a command even if the caret is in virtual 
         /// space
         /// </summary>
-        [Test]
+        [Fact]
         public void Escape_RunCommand()
         {
             _textView.SetText("hello world", "", "again");
@@ -350,7 +342,7 @@ namespace Vim.UnitTest
         /// to presambly normal mode.  The unanimous user feedback is that Escape should leave 
         /// insert mode no matter what.  
         /// </summary>
-        [Test]
+        [Fact]
         public void Escape_DismissCompletionWindows()
         {
             _textView.SetText("hello world", 1);
@@ -363,19 +355,19 @@ namespace Vim.UnitTest
                 .Verifiable();
             SetupRunCompleteMode(true);
             var res = _mode.Process(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(res.IsSwitchMode(ModeKind.Normal));
+            Assert.True(res.IsSwitchMode(ModeKind.Normal));
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Control_OpenBracket1()
         {
             var ki = KeyInputUtil.CharWithControlToKeyInput('[');
             var name = KeyInputSet.NewOneKeyInput(ki);
-            Assert.IsTrue(_mode.CommandNames.Contains(name));
+            Assert.True(_mode.CommandNames.Contains(name));
         }
 
-        [Test]
+        [Fact]
         public void Control_OpenBracket2()
         {
             _broker
@@ -388,37 +380,37 @@ namespace Vim.UnitTest
             SetupRunCompleteMode(true);
             var ki = KeyInputUtil.CharWithControlToKeyInput('[');
             var res = _mode.Process(ki);
-            Assert.IsTrue(res.IsSwitchMode(ModeKind.Normal));
+            Assert.True(res.IsSwitchMode(ModeKind.Normal));
             _factory.Verify();
         }
 
         /// <summary>
         /// Make sure we bind the shift left command
         /// </summary>
-        [Test]
+        [Fact]
         public void Command_ShiftLeft()
         {
             _textView.SetText("hello world");
             _insertUtil.Setup(x => x.RunInsertCommand(InsertCommand.ShiftLineLeft)).Returns(CommandResult.NewCompleted(ModeSwitch.NoSwitch)).Verifiable();
             var res = _mode.Process(KeyInputUtil.CharWithControlToKeyInput('d'));
-            Assert.IsTrue(res.IsHandledNoSwitch());
+            Assert.True(res.IsHandledNoSwitch());
             _factory.Verify();
         }
 
         /// <summary>
         /// Make sure we bind the shift right command
         /// </summary>
-        [Test]
+        [Fact]
         public void Command_ShiftRight()
         {
-            SetUp();
+            Create(insertMode: true, lines: "");
             _textView.SetText("hello world");
             _insertUtil.Setup(x => x.RunInsertCommand(InsertCommand.ShiftLineRight)).Returns(CommandResult.NewCompleted(ModeSwitch.NoSwitch)).Verifiable();
             _mode.Process(KeyNotationUtil.StringToKeyInput("<C-T>"));
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void OnLeave1()
         {
             _mode.OnLeave();
@@ -428,21 +420,21 @@ namespace Vim.UnitTest
         /// <summary>
         /// The CTRL-O command should bind to a one time command for normal mode
         /// </summary>
-        [Test]
+        [Fact]
         public void OneTimeCommand()
         {
             var res = _mode.Process(KeyNotationUtil.StringToKeyInput("<C-o>"));
-            Assert.IsTrue(res.IsSwitchModeOneTimeCommand());
+            Assert.True(res.IsSwitchModeOneTimeCommand());
         }
 
-        [Test]
+        [Fact]
         public void ReplaceMode1()
         {
             Create(insertMode: false);
-            Assert.AreEqual(ModeKind.Replace, _mode.ModeKind);
+            Assert.Equal(ModeKind.Replace, _mode.ModeKind);
         }
 
-        [Test]
+        [Fact]
         public void ReplaceMode2()
         {
             Create(insertMode: false);
@@ -456,7 +448,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// When the caret moves due to the mouse being clicked that should complete the current text change
         /// </summary>
-        [Test]
+        [Fact]
         public void TextChange_CaretMoveFromClickShouldComplete()
         {
             Create("the quick brown fox");
@@ -470,7 +462,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// When the caret moves as a part of the edit then it shouldn't cause the change to complete
         /// </summary>
-        [Test]
+        [Fact]
         public void TextChange_CaretMoveFromEdit()
         {
             Create("the quick brown fox");
@@ -484,7 +476,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Ensure that CTRL-N is mapped to MoveNext in the IWordCompletionSession
         /// </summary>
-        [Test]
+        [Fact]
         public void Process_WordCompletion_CtrlN()
         {
             Create("hello world");
@@ -497,7 +489,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Ensure that down is mapped to MoveeNext in the IWordCompletionSession
         /// </summary>
-        [Test]
+        [Fact]
         public void Process_WordCompletion_Down()
         {
             Create("hello world");
@@ -510,7 +502,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Ensure that CTRL-N is mapped to MovePrevious in the IWordCompletionSession
         /// </summary>
-        [Test]
+        [Fact]
         public void Process_WordCompletion_CtrlP()
         {
             Create("hello world");
@@ -523,7 +515,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Ensure that up is mapped to MovePrevious in the IWordCompletionSession
         /// </summary>
-        [Test]
+        [Fact]
         public void Process_WordCompletion_Up()
         {
             Create("hello world");
@@ -537,7 +529,7 @@ namespace Vim.UnitTest
         /// Typing any character should cause the IWordCompletionSession to be dismissed and 
         /// be processed as a normal char
         /// </summary>
-        [Test]
+        [Fact]
         public void Process_WordCompletion_Char()
         {
             Create("hello world");
@@ -548,37 +540,37 @@ namespace Vim.UnitTest
             _mode.Process('c');
             _activeWordCompletionSession.Verify();
             _insertUtil.Verify();
-            Assert.IsTrue(_mode.ActiveWordCompletionSession.IsNone());
+            Assert.True(_mode.ActiveWordCompletionSession.IsNone());
         }
 
         /// <summary>
         /// Ensure that Enter maps to the appropriate InsertCommand and shows up as the LastCommand
         /// after processing
         /// </summary>
-        [Test]
+        [Fact]
         public void Process_InsertNewLine()
         {
             Create("");
             SetupInsertCommand(InsertCommand.InsertNewLine);
             _mode.Process(VimKey.Enter);
             _insertUtil.Verify();
-            Assert.IsTrue(_modeRaw._sessionData.CombinedEditCommand.IsSome());
-            Assert.IsTrue(_modeRaw._sessionData.CombinedEditCommand.Value.IsInsertNewLine);
+            Assert.True(_modeRaw._sessionData.CombinedEditCommand.IsSome());
+            Assert.True(_modeRaw._sessionData.CombinedEditCommand.Value.IsInsertNewLine);
         }
 
         /// <summary>
         /// Ensure that a character maps to the DirectInsert and shows up as the LastCommand
         /// after processing
         /// </summary>
-        [Test]
+        [Fact]
         public void Process_DirectInsert()
         {
             Create("");
             SetupInsertCommand(InsertCommand.NewDirectInsert('c'));
             _mode.Process('c');
             _insertUtil.Verify();
-            Assert.IsTrue(_modeRaw._sessionData.CombinedEditCommand.IsSome());
-            Assert.IsTrue(_modeRaw._sessionData.CombinedEditCommand.Value.IsDirectInsert);
+            Assert.True(_modeRaw._sessionData.CombinedEditCommand.IsSome());
+            Assert.True(_modeRaw._sessionData.CombinedEditCommand.Value.IsDirectInsert);
         }
     }
 }

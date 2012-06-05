@@ -3,24 +3,22 @@ using System.Linq;
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 using Vim.UI.Wpf.Implementation;
 
 namespace Vim.UI.Wpf.UnitTest
 {
-    [TestFixture]
     public class DisplayWindowBrokerTest
     {
-        private Mock<ISmartTagBroker> _smartTagBroker;
-        private Mock<ICompletionBroker> _completionBroker;
-        private Mock<ISignatureHelpBroker> _signatureBroker;
-        private Mock<IQuickInfoBroker> _quickInfoBroker;
-        private Mock<ITextView> _textView;
-        private DisplayWindowBroker _brokerRaw;
-        private IDisplayWindowBroker _broker;
+        private readonly Mock<ISmartTagBroker> _smartTagBroker;
+        private readonly Mock<ICompletionBroker> _completionBroker;
+        private readonly Mock<ISignatureHelpBroker> _signatureBroker;
+        private readonly Mock<IQuickInfoBroker> _quickInfoBroker;
+        private readonly Mock<ITextView> _textView;
+        private readonly DisplayWindowBroker _brokerRaw;
+        private readonly IDisplayWindowBroker _broker;
 
-        [SetUp]
-        public void SetUp()
+        public DisplayWindowBrokerTest()
         {
             _smartTagBroker = new Mock<ISmartTagBroker>();
             _completionBroker = new Mock<ICompletionBroker>();
@@ -36,15 +34,15 @@ namespace Vim.UI.Wpf.UnitTest
             _broker = _brokerRaw;
         }
 
-        [Test]
+        [Fact]
         public void IsSmartTagSessionActive1()
         {
             _smartTagBroker.Setup(x => x.IsSmartTagActive(_textView.Object)).Returns(false).Verifiable();
-            Assert.IsFalse(_broker.IsSmartTagSessionActive);
+            Assert.False(_broker.IsSmartTagSessionActive);
             _smartTagBroker.Verify();
         }
 
-        [Test]
+        [Fact]
         public void IsSmartTagSessionActive2()
         {
             _smartTagBroker.Setup(x => x.IsSmartTagActive(_textView.Object)).Returns(true).Verifiable();
@@ -52,11 +50,11 @@ namespace Vim.UI.Wpf.UnitTest
                 .Setup(x => x.GetSessions(_textView.Object))
                 .Returns((new List<ISmartTagSession>()).AsReadOnly())
                 .Verifiable();
-            Assert.IsFalse(_broker.IsSmartTagSessionActive);
+            Assert.False(_broker.IsSmartTagSessionActive);
             _smartTagBroker.Verify();
         }
 
-        [Test]
+        [Fact]
         public void IsSmartTagSessionActive3()
         {
             var session = new Mock<ISmartTagSession>();
@@ -67,11 +65,11 @@ namespace Vim.UI.Wpf.UnitTest
                 .Setup(x => x.GetSessions(_textView.Object))
                 .Returns(list)
                 .Verifiable();
-            Assert.IsFalse(_broker.IsSmartTagSessionActive);
+            Assert.False(_broker.IsSmartTagSessionActive);
             _smartTagBroker.Verify();
         }
 
-        [Test]
+        [Fact]
         public void IsSmartTagSessionActive4()
         {
             var session = new Mock<ISmartTagSession>();
@@ -82,11 +80,11 @@ namespace Vim.UI.Wpf.UnitTest
                 .Setup(x => x.GetSessions(_textView.Object))
                 .Returns(list)
                 .Verifiable();
-            Assert.IsTrue(_broker.IsSmartTagSessionActive);
+            Assert.True(_broker.IsSmartTagSessionActive);
             _smartTagBroker.Verify();
         }
 
-        [Test]
+        [Fact]
         public void DismissDisplayWindows1()
         {
             _quickInfoBroker.Setup(x => x.IsQuickInfoActive(_textView.Object)).Returns(true).Verifiable();

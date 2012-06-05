@@ -2,13 +2,12 @@
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 using Vim.UI.Wpf.Implementation;
 using Vim.UnitTest;
 
 namespace Vim.UI.Wpf.UnitTest
 {
-    [TestFixture]
     public class BlockCaretTest : VimTestBase
     {
         private Mock<ITextView> _textview;
@@ -29,24 +28,27 @@ namespace Vim.UI.Wpf.UnitTest
             _blockCaret = _blockCaretRaw;
         }
 
-        [Test]
+        [Fact]
         public void TextView1()
         {
             Create();
-            Assert.AreSame(_textview.Object, _blockCaret.TextView);
+            Assert.Same(_textview.Object, _blockCaret.TextView);
         }
 
-        [Test, Description("Don't throw when ContaintingTextViewLine throws")]
+        /// <summary>
+        /// Don't throw when ContaintingTextViewLine throws
+        /// </summary>
+        [Fact]
         public void Show1()
         {
             Create();
             _caret.SetupGet(x => x.ContainingTextViewLine).Throws(new InvalidOperationException());
             _blockCaret.CaretDisplay = CaretDisplay.HalfBlock;
             _caret.Verify();
-            Assert.AreEqual(CaretDisplay.HalfBlock, _blockCaret.CaretDisplay);
+            Assert.Equal(CaretDisplay.HalfBlock, _blockCaret.CaretDisplay);
         }
 
-        [Test]
+        [Fact]
         public void Hide1()
         {
             Create();

@@ -8,13 +8,12 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 using Vim;
 using Vim.UnitTest;
 
 namespace VsVim.UnitTest
 {
-    [TestFixture]
     public sealed class VsVimHostTest : VimTestBase
     {
         private VsVimHost _hostRaw;
@@ -61,50 +60,40 @@ namespace VsVim.UnitTest
             _host = _hostRaw;
         }
 
-
-        [TearDown]
-        public void TearDown()
-        {
-            _statusBar = null;
-            _dte = null;
-            _host = null;
-            _hostRaw = null;
-        }
-
-        [Test]
+        [Fact]
         public void GotoDefinition1()
         {
             Create();
             var textView = CreateTextView("");
             _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
-            Assert.IsFalse(_host.GoToDefinition());
+            Assert.False(_host.GoToDefinition());
         }
 
-        [Test]
+        [Fact]
         public void GotoDefinition2()
         {
             Create();
             var textView = CreateTextView("");
             _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, String.Empty)).Throws(new Exception());
-            Assert.IsFalse(_host.GoToDefinition());
+            Assert.False(_host.GoToDefinition());
         }
 
-        [Test]
+        [Fact]
         public void GotoDefinition3()
         {
             Create();
             var textView = CreateTextView("");
             _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, String.Empty));
-            Assert.IsTrue(_host.GoToDefinition());
+            Assert.True(_host.GoToDefinition());
         }
 
         /// <summary>
         /// The C++ implementation of the goto definition command requires that the word which 
         /// it should target be passed along as an argument to the command
         /// </summary>
-        [Test]
+        [Fact]
         public void GotoDefinition_CPlusPlus()
         {
             Create();
@@ -113,14 +102,14 @@ namespace VsVim.UnitTest
             var wordUtil = WordUtilFactory.GetWordUtil(textView.TextBuffer);
             _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, "hello"));
-            Assert.IsTrue(_host.GoToDefinition());
+            Assert.True(_host.GoToDefinition());
         }
 
         /// <summary>
         /// For most languages the word which is targeted should not be included in the 
         /// command
         /// </summary>
-        [Test]
+        [Fact]
         public void GotoDefinition_Normal()
         {
             Create();
@@ -128,10 +117,10 @@ namespace VsVim.UnitTest
             var textView = CreateTextView(ct, "hello world");
             _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, ""));
-            Assert.IsTrue(_host.GoToDefinition());
+            Assert.True(_host.GoToDefinition());
         }
 
-        [Test]
+        [Fact]
         public void NavigateTo1()
         {
             Create();
@@ -142,16 +131,16 @@ namespace VsVim.UnitTest
             _textManager.Verify();
         }
 
-        [Test]
+        [Fact]
         public void GetName1()
         {
             Create();
             var buffer = new Mock<ITextBuffer>();
             _editorAdaptersFactoryService.Setup(x => x.GetBufferAdapter(buffer.Object)).Returns((IVsTextBuffer)null);
-            Assert.AreEqual("", _host.GetName(buffer.Object));
+            Assert.Equal("", _host.GetName(buffer.Object));
         }
 
-        [Test]
+        [Fact]
         public void GetName2()
         {
             Create();
@@ -162,7 +151,7 @@ namespace VsVim.UnitTest
             object ret = "foo";
             userData.Setup(x => x.GetData(ref moniker, out ret)).Returns(0);
             _editorAdaptersFactoryService.Setup(x => x.GetBufferAdapter(buffer.Object)).Returns(vsTextBuffer.Object);
-            Assert.AreEqual("foo", _host.GetName(buffer.Object));
+            Assert.Equal("foo", _host.GetName(buffer.Object));
         }
 
         public object VimUtil { get; set; }

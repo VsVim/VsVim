@@ -1,11 +1,10 @@
 ﻿using System;
 using Microsoft.FSharp.Core;
-using NUnit.Framework;
+using Xunit;
 using Vim.Extensions;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public class CountCaptureTest
     {
         /// <summary>
@@ -26,34 +25,34 @@ namespace Vim.UnitTest
         /// <summary>
         /// Letters don't count as a count
         /// </summary>
-        [Test]
+        [Fact]
         public void GetCount_NoCount()
         {
             var tuple = GetComplete("a");
-            Assert.IsTrue(tuple.Item1.IsNone());
-            Assert.AreEqual(VimKey.LowerA, tuple.Item2.Key);
+            Assert.True(tuple.Item1.IsNone());
+            Assert.Equal(VimKey.LowerA, tuple.Item2.Key);
         }
 
         /// <summary>
         /// Zero is not actually a count it is instead a motion.
         /// </summary>
-        [Test]
+        [Fact]
         public void GetCount_Zero()
         {
             var tuple = GetComplete("0");
-            Assert.IsTrue(tuple.Item1.IsNone());
-            Assert.AreEqual(VimKey.Number0, tuple.Item2.Key);
+            Assert.True(tuple.Item1.IsNone());
+            Assert.Equal(VimKey.Number0, tuple.Item2.Key);
         }
 
         /// <summary>
         /// Test with a simple count followed by a value
         /// </summary>
-        [Test]
+        [Fact]
         public void GetCount_Simple()
         {
             var tuple = GetComplete("42a");
-            Assert.IsTrue(tuple.Item1.IsSome(42));
-            Assert.AreEqual(VimKey.LowerA, tuple.Item2.Key);
+            Assert.True(tuple.Item1.IsSome(42));
+            Assert.Equal(VimKey.LowerA, tuple.Item2.Key);
         }
     }
 }

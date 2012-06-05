@@ -3,14 +3,13 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
-using NUnit.Framework;
 using Vim.UnitTest;
 using VsVim.ExternalEdit;
 using VsVim.UnitTest.Mock;
+using Xunit;
 
 namespace VsVim.UnitTest
 {
-    [TestFixture]
     public sealed class ResharperExternalEditAdapterTest : VimTestBase
     {
         sealed class VsTextAdornmentTag : ITag
@@ -34,7 +33,7 @@ namespace VsVim.UnitTest
         /// <summary>
         /// Ensure that the R# adapter doesn't pick up on IVsTextMarker instances
         /// </summary>
-        [Test]
+        [Fact]
         public void IsExternalEditMarker_None()
         {
             Create("cat", "dog", "tree");
@@ -42,20 +41,22 @@ namespace VsVim.UnitTest
             {
                 var span = _textBuffer.GetLineRange(0).Extent.ToTextSpan();
                 var marker = MockObjectFactory.CreateVsTextLineMarker(span, i, _factory);
-                Assert.IsFalse(_adapter.IsExternalEditMarker(marker.Object));
+                Assert.False(_adapter.IsExternalEditMarker(marker.Object));
             }
         }
 
-        [Test]
+        [Fact]
         public void IsExternalEditMarker_NormalTagIsNot()
         {
+            Create("");
             var tag = _factory.Create<ITag>();
-            Assert.IsFalse(_adapter.IsExternalEditTag(tag.Object));
+            Assert.False(_adapter.IsExternalEditTag(tag.Object));
         }
 
-        [Test]
+        [Fact]
         public void IsExternalEditMarker_RightTagWithAttributes()
         {
+            Create("");
             var array = new[]
                             {
                                 ResharperExternalEditAdapter.ExternalEditAttribute1,
@@ -65,18 +66,19 @@ namespace VsVim.UnitTest
             foreach (var item in array)
             {
                 var tag = new VsTextAdornmentTag {myAttributeId = item};
-                Assert.IsTrue(_adapter.IsExternalEditTag(tag));
+                Assert.True(_adapter.IsExternalEditTag(tag));
             }
         }
 
-        [Test]
+        [Fact]
         public void IsExternalEditMarker_RightTagWithWrongAttributes()
         {
+            Create("");
             var array = new[] {"dog", "cat"};
             foreach (var item in array)
             {
                 var tag = new VsTextAdornmentTag {myAttributeId = item};
-                Assert.IsFalse(_adapter.IsExternalEditTag(tag));
+                Assert.False(_adapter.IsExternalEditTag(tag));
             }
         }
     }

@@ -4,22 +4,20 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 using Vim.Extensions;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public class SubstituteConfirmTaggerSourceTest : VimTestBase
     {
-        private MockRepository _factory;
-        private Mock<ISubstituteConfirmMode> _mode;
-        private ITextBuffer _textBuffer;
-        private SubstituteConfirmTaggerSource _taggerSourceRaw;
-        private IBasicTaggerSource<TextMarkerTag> _taggerSource;
+        private readonly MockRepository _factory;
+        private readonly Mock<ISubstituteConfirmMode> _mode;
+        private readonly ITextBuffer _textBuffer;
+        private readonly SubstituteConfirmTaggerSource _taggerSourceRaw;
+        private readonly IBasicTaggerSource<TextMarkerTag> _taggerSource;
 
-        [SetUp]
-        public void SetUp()
+        public SubstituteConfirmTaggerSourceTest()
         {
             _factory = new MockRepository(MockBehavior.Loose);
             _mode = _factory.Create<ISubstituteConfirmMode>();
@@ -40,46 +38,46 @@ namespace Vim.UnitTest
             _mode.Raise(x => x.CurrentMatchChanged += null, null, option);
         }
 
-        [Test]
+        [Fact]
         public void GetTags_Initial()
         {
-            Assert.IsFalse(_taggerSourceRaw.GetTags(new NormalizedSnapshotSpanCollection()).Any());
+            Assert.False(_taggerSourceRaw.GetTags(new NormalizedSnapshotSpanCollection()).Any());
         }
 
-        [Test]
+        [Fact]
         public void GetTags_WithCurrent()
         {
             var span = _textBuffer.GetLine(0).Extent;
             SetAndRaiseCurrentMatch(span);
 
             var tagSpan = _taggerSourceRaw.GetTags(new NormalizedSnapshotSpanCollection()).Single();
-            Assert.AreEqual(span, tagSpan.Span);
+            Assert.Equal(span, tagSpan.Span);
         }
 
-        [Test]
+        [Fact]
         public void GetTags_WithCurrentReset()
         {
             SetAndRaiseCurrentMatch(_textBuffer.GetLine(0).Extent);
             SetAndRaiseCurrentMatch(null);
-            Assert.IsFalse(_taggerSourceRaw.GetTags(new NormalizedSnapshotSpanCollection()).Any());
+            Assert.False(_taggerSourceRaw.GetTags(new NormalizedSnapshotSpanCollection()).Any());
         }
 
-        [Test]
+        [Fact]
         public void Changed_OnCurrentChanged()
         {
             var didSee = false;
             _taggerSource.Changed += delegate { didSee = true; };
             SetAndRaiseCurrentMatch(_textBuffer.GetLine(0).Extent);
-            Assert.IsTrue(didSee);
+            Assert.True(didSee);
         }
 
-        [Test]
+        [Fact]
         public void Changed_OnCurrentReset()
         {
             var didSee = false;
             _taggerSource.Changed += delegate { didSee = true; };
             SetAndRaiseCurrentMatch(null);
-            Assert.IsTrue(didSee);
+            Assert.True(didSee);
         }
     }
 }

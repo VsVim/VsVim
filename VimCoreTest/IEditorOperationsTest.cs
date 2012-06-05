@@ -2,11 +2,10 @@
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
-using NUnit.Framework;
+using Xunit;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public sealed class IEditorOperationsTest : VimTestBase
     {
         private ITextView _view;
@@ -20,7 +19,10 @@ namespace Vim.UnitTest
             _operations = EditorOperationsFactoryService.GetEditorOperations(_view);
         }
 
-        [Test, Description("Be wary the 0 length last line")]
+        /// <summary>
+        /// Be wary the 0 length last line
+        /// </summary>
+        [Fact]
         public void MoveCaretDown1()
         {
             CreateLines("foo", String.Empty);
@@ -30,14 +32,17 @@ namespace Vim.UnitTest
             _operations.MoveLineDown(false);
         }
 
-        [Test, Description("Move caret down should maintain column")]
+        /// <summary>
+        /// Move caret down should maintain column
+        /// </summary>
+        [Fact]
         public void MoveCaretDown2()
         {
             CreateLines("foo", "bar");
             var tss = _view.TextSnapshot;
             _view.Caret.MoveTo(tss.GetLineFromLineNumber(0).Start.Add(1));
             _operations.MoveLineDown(false);
-            Assert.AreEqual(tss.GetLineFromLineNumber(1).Start.Add(1), _view.Caret.Position.BufferPosition);
+            Assert.Equal(tss.GetLineFromLineNumber(1).Start.Add(1), _view.Caret.Position.BufferPosition);
         }
     }
 }

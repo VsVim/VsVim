@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 using Vim;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
@@ -21,7 +21,6 @@ namespace VsVim.UnitTest
     /// Tests for the ExternalEditorMonitor implementation.  Need to really hammer the scenarios here
     /// as this component in past forms is a frequent source of user hangs
     /// </summary>
-    [TestFixture]
     public sealed class ExternalEditMonitorTest : VimTestBase
     {
         private MockRepository _factory;
@@ -75,11 +74,10 @@ namespace VsVim.UnitTest
                 adapterList.ToReadOnlyCollectionShallow());
         }
 
-        [TearDown]
-        public void TearDown()
+        public override void Dispose()
         {
+            base.Dispose();
             Dispatcher.CurrentDispatcher.DoEvents();
-            _buffer.Close();
         }
 
         /// <summary>
@@ -145,47 +143,47 @@ namespace VsVim.UnitTest
         /// Ensure that ITag values which aren't interesting to us aren't returned 
         /// as an external edit span
         /// </summary>
-        [Test]
+        [Fact]
         public void GetExternalEditSpans_Tags_NoiseValues()
         {
             Create("cat", "tree", "dog");
             CreateTags(_textBuffer.GetLine(0).Extent);
             var externalEditSpans = _monitor.GetExternalEditSpans(ExternalEditMonitor.CheckKind.All);
-            Assert.AreEqual(0, externalEditSpans.Count);
+            Assert.Equal(0, externalEditSpans.Count);
         }
 
         /// <summary>
         /// Ensure edit tags register as such
         /// </summary>
-        [Test]
+        [Fact]
         public void GetExternalEditSpans_Tags_EditTag()
         {
             Create("cat", "tree", "dog");
             CreateTags(_textBuffer.GetLine(0).Extent);
             _adapter.Setup(x => x.IsExternalEditTag(It.IsAny<ITag>())).Returns(true);
             var externalEditSpans = _monitor.GetExternalEditSpans(ExternalEditMonitor.CheckKind.All);
-            Assert.AreEqual(1, externalEditSpans.Count);
-            Assert.AreEqual(_textBuffer.GetLine(0).Extent, externalEditSpans[0]);
+            Assert.Equal(1, externalEditSpans.Count);
+            Assert.Equal(_textBuffer.GetLine(0).Extent, externalEditSpans[0]);
         }
 
         /// <summary>
         /// When we aren't passed the Tags check flag don't actually check tags
         /// </summary>
-        [Test]
+        [Fact]
         public void GetExternalEditSpans_Tags_WrongFlag()
         {
             Create("cat", "tree", "dog");
             CreateTags(_textBuffer.GetLine(0).Extent);
             _adapter.Setup(x => x.IsExternalEditTag(It.IsAny<ITag>())).Returns(true);
             var externalEditSpans = _monitor.GetExternalEditSpans(ExternalEditMonitor.CheckKind.Markers);
-            Assert.AreEqual(0, externalEditSpans.Count);
+            Assert.Equal(0, externalEditSpans.Count);
         }
 
         /// <summary>
         /// Verify we don't do anything special like saving external edit tags when switching
         /// out of a mode other than external edit
         /// </summary>
-        [Test]
+        [Fact]
         public void SwitchMode_NoActionOutsideExternalEdit()
         {
             Create("cat", "tree", "dog");
@@ -193,17 +191,17 @@ namespace VsVim.UnitTest
 
             CreateTags(_textBuffer.GetLine(0).Extent);
             _adapter.Setup(x => x.IsExternalEditTag(It.IsAny<ITag>())).Returns(true);
-            Assert.AreEqual(1, _monitor.GetExternalEditSpans(ExternalEditMonitor.CheckKind.Tags).Count);
+            Assert.Equal(1, _monitor.GetExternalEditSpans(ExternalEditMonitor.CheckKind.Tags).Count);
 
             _buffer.SwitchMode(ModeKind.Command, ModeArgument.None);
-            Assert.AreEqual(0, _monitor.IgnoredExternalEditSpans.Count());
+            Assert.Equal(0, _monitor.IgnoredExternalEditSpans.Count());
         }
 
         /// <summary>
         /// This is a very important test because we often see the transition to visual mode
         /// before the layout and hence would ignore valid edit tags
         /// </summary>
-        [Test]
+        [Fact]
         public void SwitchMode_OldModeIsExternalThenSaveIgnoreTags()
         {
             Create("cat", "tree", "dog");
@@ -211,14 +209,14 @@ namespace VsVim.UnitTest
             _adapter.Setup(x => x.IsExternalEditTag(It.IsAny<ITag>())).Returns(true);
             _buffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
             _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-            Assert.AreEqual(1, _monitor.IgnoredExternalEditSpans.Count());
+            Assert.Equal(1, _monitor.IgnoredExternalEditSpans.Count());
         }
 
         /// <summary>
         /// If we perform the check for external edit starts and there are indeed tags 
         /// then transition into external edit
         /// </summary>
-        [Test]
+        [Fact]
         public void PerformCheck_Tags_WithExternalEditTags()
         {
             Create("cat", "tree", "dog");
@@ -226,14 +224,14 @@ namespace VsVim.UnitTest
             CreateTags(_textBuffer.GetLine(0).Extent);
             _adapter.Setup(x => x.IsExternalEditTag(It.IsAny<ITag>())).Returns(true);
             _monitor.PerformCheck(ExternalEditMonitor.CheckKind.All);
-            Assert.AreEqual(ModeKind.ExternalEdit, _buffer.ModeKind);
+            Assert.Equal(ModeKind.ExternalEdit, _buffer.ModeKind);
         }
 
         /// <summary>
         /// If we perform the check for external edit starts and there are indeed tags 
         /// but we're only looking for markers then don't take any action
         /// </summary>
-        [Test]
+        [Fact]
         public void PerformCheck_Marks_WithExternalEditTags()
         {
             Create("cat", "tree", "dog");
@@ -241,20 +239,20 @@ namespace VsVim.UnitTest
             CreateTags(_textBuffer.GetLine(0).Extent);
             _adapter.Setup(x => x.IsExternalEditTag(It.IsAny<ITag>())).Returns(true);
             _monitor.PerformCheck(ExternalEditMonitor.CheckKind.Markers);
-            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
+            Assert.Equal(ModeKind.Normal, _buffer.ModeKind);
         }
 
         /// <summary>
         /// If we run the check and there are no more external edit tags we should transition 
         /// out of external edit mode and back into insert
         /// </summary>
-        [Test]
+        [Fact]
         public void PerformCheck_Tags_NoMoreExternalEdits()
         {
             Create("cat", "tree", "dog");
             _buffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
             _monitor.PerformCheck(ExternalEditMonitor.CheckKind.All);
-            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            Assert.Equal(ModeKind.Insert, _buffer.ModeKind);
         }
     }
 }

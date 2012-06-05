@@ -3,14 +3,13 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 using Vim.UnitTest;
 using VsVim.ExternalEdit;
 using VsVim.UnitTest.Mock;
 
 namespace VsVim.UnitTest
 {
-    [TestFixture]
     public class SnippetExternalEditAdapterTest : VimTestBase
     {
         private ITextBuffer _textBuffer;
@@ -26,14 +25,14 @@ namespace VsVim.UnitTest
             _adapter = _adapterRaw;
         }
 
-        [Test]
+        [Fact]
         public void IsExternalEditTag_NoneMatter()
         {
             Create();
-            Assert.IsFalse(_adapter.IsExternalEditTag(_factory.Create<ITag>().Object));
+            Assert.False(_adapter.IsExternalEditTag(_factory.Create<ITag>().Object));
         }
 
-        [Test]
+        [Fact]
         public void IsExternalEditMarker_PredefinedTypeIsNotSnippetRelated()
         {
             Create("cat", "dog", "tree");
@@ -41,11 +40,11 @@ namespace VsVim.UnitTest
             {
                 var span = _textBuffer.GetLineRange(0).Extent.ToTextSpan();
                 var marker = MockObjectFactory.CreateVsTextLineMarker(span, i, _factory);
-                Assert.IsFalse(_adapterRaw.IsExternalEditMarker(marker.Object));
+                Assert.False(_adapterRaw.IsExternalEditMarker(marker.Object));
             }
         }
 
-        [Test]
+        [Fact]
         public void IsExternalEditMarker_SnippetTypesAreExternalEdits()
         {
             Create("cat", "dog", "tree");
@@ -54,11 +53,11 @@ namespace VsVim.UnitTest
             {
                 var span = _textBuffer.GetLineRange(0).Extent.ToTextSpan();
                 var marker = MockObjectFactory.CreateVsTextLineMarker(span, item, _factory);
-                Assert.IsTrue(_adapterRaw.IsExternalEditMarker(marker.Object));
+                Assert.True(_adapterRaw.IsExternalEditMarker(marker.Object));
             }
         }
 
-        [Test]
+        [Fact]
         public void IsExternalEditMarker_OtherTypesAreNotExternalEdits()
         {
             Create("cat", "dog", "tree");
@@ -67,7 +66,7 @@ namespace VsVim.UnitTest
             {
                 var span = _textBuffer.GetLineRange(0).Extent.ToTextSpan();
                 var marker = MockObjectFactory.CreateVsTextLineMarker(span, item, _factory);
-                Assert.IsFalse(_adapterRaw.IsExternalEditMarker(marker.Object));
+                Assert.False(_adapterRaw.IsExternalEditMarker(marker.Object));
             }
         }
     }

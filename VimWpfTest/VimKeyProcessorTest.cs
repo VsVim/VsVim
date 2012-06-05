@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Windows.Input;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 using Vim.UnitTest.Mock;
 
 namespace Vim.UI.Wpf.UnitTest
 {
-    [TestFixture]
-    public class VimKeyProcessorTest
+    public class VimKeyProcessorTest : IDisposable
     {
         protected IntPtr _keyboardId;
         protected bool _mustUnloadLayout;
@@ -15,8 +14,7 @@ namespace Vim.UI.Wpf.UnitTest
         protected Mock<IVimBuffer> _buffer;
         protected VimKeyProcessor _processor;
 
-        [SetUp]
-        public void Setup()
+        public VimKeyProcessorTest()
         {
             Setup(null);
         }
@@ -30,7 +28,7 @@ namespace Vim.UI.Wpf.UnitTest
             if (!String.IsNullOrEmpty(languageId))
             {
                 _keyboardId = NativeMethods.LoadKeyboardLayout(languageId, NativeMethods.KLF_ACTIVATE, out _mustUnloadLayout);
-                Assert.AreNotEqual(_keyboardId, IntPtr.Zero);
+                Assert.NotEqual(_keyboardId, IntPtr.Zero);
             }
             else
             {
@@ -42,14 +40,13 @@ namespace Vim.UI.Wpf.UnitTest
             _processor = new VimKeyProcessor(_buffer.Object);
         }
 
-        [TearDown]
-        public void TearDown()
+        public void Dispose()
         {
             if (_keyboardId != IntPtr.Zero)
             {
                 if (_mustUnloadLayout)
                 {
-                    Assert.IsTrue(NativeMethods.UnloadKeyboardLayout(_keyboardId));
+                    Assert.True(NativeMethods.UnloadKeyboardLayout(_keyboardId));
                 }
 
                 NativeMethods.LoadKeyboardLayout(NativeMethods.LayoutEnglish, NativeMethods.KLF_ACTIVATE);
@@ -65,32 +62,36 @@ namespace Vim.UI.Wpf.UnitTest
             return device.CreateKeyEventArgs(key, modKeys);
         }
 
-        [Test]
-        [Description("Don't handle AltGR keys")]
+        /// <summary>
+        /// Don't handle AltGR keys
+        /// </summary>
+        [Fact]
         public void KeyDown1()
         {
             Setup(NativeMethods.LayoutPortuguese);
             var arg = CreateKeyEventArgs(Key.D8, ModifierKeys.Alt | ModifierKeys.Control);
             _processor.KeyDown(arg);
-            Assert.IsFalse(arg.Handled);
+            Assert.False(arg.Handled);
         }
 
-        [Test]
-        [Description("Don't handle non-input keys")]
+        /// <summary>
+        /// Don't handle non-input keys
+        /// </summary>
+        [Fact]
         public void KeyDown2()
         {
             foreach (var cur in new[] { Key.LeftAlt, Key.RightAlt, Key.LeftCtrl, Key.RightCtrl, Key.LeftShift, Key.RightShift })
             {
                 var arg = CreateKeyEventArgs(cur);
                 _processor.KeyDown(arg);
-                Assert.IsFalse(arg.Handled);
+                Assert.False(arg.Handled);
             }
         }
 
         /// <summary>
         /// If alpha characters can be definitively mapped then handle them here
         /// </summary>
-        [Test]
+        [Fact]
         public void KeyDown_Alpha()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
@@ -101,12 +102,14 @@ namespace Vim.UI.Wpf.UnitTest
                 var key = (Key)((int)Key.A + i);
                 var arg = CreateKeyEventArgs(key);
                 _processor.KeyDown(arg);
-                Assert.IsTrue(arg.Handled);
+                Assert.True(arg.Handled);
             }
         }
 
-        [Test]
-        [Description("Do handle non printable characters here")]
+        /// <summary>
+        /// Do handle non printable characters here
+        /// </summary>
+        [Fact]
         public void KeyDown4()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
@@ -117,14 +120,16 @@ namespace Vim.UI.Wpf.UnitTest
             {
                 var arg = CreateKeyEventArgs(cur);
                 _processor.KeyDown(arg);
-                Assert.IsTrue(arg.Handled);
+                Assert.True(arg.Handled);
             }
 
             _factory.Verify();
         }
 
-        [Test]
-        [Description("Do pass non-printable charcaters onto the IVimBuffer")]
+        /// <summary>
+        /// Do pass non-printable charcaters onto the IVimBuffer
+        /// </summary>
+        [Fact]
         public void KeyDown5()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(false).Verifiable();
@@ -134,14 +139,16 @@ namespace Vim.UI.Wpf.UnitTest
             {
                 var arg = CreateKeyEventArgs(cur);
                 _processor.KeyDown(arg);
-                Assert.IsFalse(arg.Handled);
+                Assert.False(arg.Handled);
             }
 
             _factory.Verify();
         }
 
-        [Test]
-        [Description("Do pass Control and Alt modified input onto the IVimBuffer")]
+        /// <summary>
+        /// Do pass Control and Alt modified input onto the IVimBuffer
+        /// </summary>
+        [Fact]
         public void KeyDown6()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(false).Verifiable();
@@ -151,18 +158,20 @@ namespace Vim.UI.Wpf.UnitTest
                 var key = (Key)((int)Key.A + i);
                 var arg = CreateKeyEventArgs(key, ModifierKeys.Alt);
                 _processor.KeyDown(arg);
-                Assert.IsFalse(arg.Handled);
+                Assert.False(arg.Handled);
 
                 arg = CreateKeyEventArgs(key, ModifierKeys.Control);
                 _processor.KeyDown(arg);
-                Assert.IsFalse(arg.Handled);
+                Assert.False(arg.Handled);
             }
 
             _factory.Verify();
         }
 
-        [Test]
-        [Description("Control + char won't end up as TextInput so we handle it directly")]
+        /// <summary>
+        /// Control + char won't end up as TextInput so we handle it directly
+        /// </summary>
+        [Fact]
         public void KeyDown_PassControlLetterToBuffer()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
@@ -173,7 +182,7 @@ namespace Vim.UI.Wpf.UnitTest
                 var key = (Key)((int)Key.A + i);
                 var arg = CreateKeyEventArgs(key, ModifierKeys.Control);
                 _processor.KeyDown(arg);
-                Assert.IsTrue(arg.Handled);
+                Assert.True(arg.Handled);
             }
 
             _factory.Verify();
@@ -182,7 +191,7 @@ namespace Vim.UI.Wpf.UnitTest
         /// <summary>
         /// Need to handle 'Alt+char' in KeyDown since it won't end up as TextInput.
         /// </summary>
-        [Test]
+        [Fact]
         public void KeyDown_PassAltLetterToBuffer()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
@@ -193,13 +202,13 @@ namespace Vim.UI.Wpf.UnitTest
                 var key = (Key)((int)Key.A + i);
                 var arg = CreateKeyEventArgs(key, ModifierKeys.Alt);
                 _processor.KeyDown(arg);
-                Assert.IsTrue(arg.Handled);
+                Assert.True(arg.Handled);
             }
 
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void KeyDown_PassNonCharOnlyToBuffer()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
@@ -213,12 +222,12 @@ namespace Vim.UI.Wpf.UnitTest
                 {
                     var arg = CreateKeyEventArgs(key, mod);
                     _processor.KeyDown(arg);
-                    Assert.IsTrue(arg.Handled);
+                    Assert.True(arg.Handled);
                 }
             }
         }
 
-        [Test]
+        [Fact]
         public void KeyDown_NonCharWithModifierShouldCarryModifier()
         {
             var ki = KeyInputUtil.ApplyModifiersToVimKey(VimKey.Left, KeyModifiers.Shift);
@@ -227,7 +236,7 @@ namespace Vim.UI.Wpf.UnitTest
 
             var arg = CreateKeyEventArgs(Key.Left, ModifierKeys.Shift);
             _processor.KeyDown(arg);
-            Assert.IsTrue(arg.Handled);
+            Assert.True(arg.Handled);
             _buffer.Verify();
         }
 
@@ -236,16 +245,16 @@ namespace Vim.UI.Wpf.UnitTest
         /// event.  It shouldn't be processed though in insert mode since it maps to a character
         /// and would rendere as invisible data if processed as an ITextBuffer edit
         /// </summary>
-        [Test]
+        [Fact]
         public void KeyDown_ShiftPlusEscape()
         {
             KeyInput ki;
-            Assert.IsTrue(KeyUtil.TryConvertToKeyInput(Key.Escape, ModifierKeys.Shift, out ki));
+            Assert.True(KeyUtil.TryConvertToKeyInput(Key.Escape, ModifierKeys.Shift, out ki));
             _buffer.Setup(x => x.CanProcess(ki)).Returns(false).Verifiable();
 
             var arg = CreateKeyEventArgs(Key.Escape, ModifierKeys.Shift);
             _processor.KeyDown(arg);
-            Assert.IsFalse(arg.Handled);
+            Assert.False(arg.Handled);
             _buffer.Verify();
         }
     }

@@ -2,13 +2,12 @@
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 using Vim.Modes.Visual;
 using Vim.UnitTest.Mock;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public sealed class VisualModeTest : VimTestBase
     {
         private ITextView _textView;
@@ -58,7 +57,10 @@ namespace Vim.UnitTest
             _mode.OnEnter(ModeArgument.None);
         }
 
-        [Test, Description("Movement commands")]
+        /// <summary>
+        /// Movement commands
+        /// </summary>
+        [Fact]
         public void Commands1()
         {
             Create("foo");
@@ -80,45 +82,52 @@ namespace Vim.UnitTest
             }
         }
 
-        [Test]
+        [Fact]
         public void Process1()
         {
             Create("foo");
             var res = _mode.Process(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(res.IsSwitchPreviousMode());
+            Assert.True(res.IsSwitchPreviousMode());
         }
 
-        [Test, Description("Escape should always escape even if we're processing an inner key sequence")]
+        /// <summary>
+        /// Escape should always escape even if we're processing an inner key sequence
+        /// </summary>
+        [Fact]
         public void Process2()
         {
             Create("foo");
             _mode.Process('g');
             var res = _mode.Process(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(res.IsSwitchPreviousMode());
+            Assert.True(res.IsSwitchPreviousMode());
         }
 
-        [Test]
+        [Fact]
         public void OnLeave1()
         {
+            Create();
             _tracker.Setup(x => x.Stop()).Verifiable();
             _mode.OnLeave();
             _tracker.Verify();
         }
 
-        [Test, Description("Must handle arbitrary input to prevent changes but don't list it as a command")]
+        /// <summary>
+        /// Must handle arbitrary input to prevent changes but don't list it as a command
+        /// </summary>
+        [Fact]
         public void PreventInput1()
         {
             Create(lines: "foo");
             var input = KeyInputUtil.CharToKeyInput('@');
             _operations.Setup(x => x.Beep()).Verifiable();
-            Assert.IsFalse(_mode.CommandNames.Any(x => x.KeyInputs.First().Char == input.Char));
-            Assert.IsTrue(_mode.CanProcess(input));
+            Assert.False(_mode.CommandNames.Any(x => x.KeyInputs.First().Char == input.Char));
+            Assert.True(_mode.CanProcess(input));
             var ret = _mode.Process(input);
-            Assert.IsTrue(ret.IsHandledNoSwitch());
+            Assert.True(ret.IsHandledNoSwitch());
             _operations.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_YankSelection()
         {
             Create("");
@@ -127,7 +136,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_YankLineSelection()
         {
             Create("");
@@ -136,7 +145,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_DeleteSelectedText()
         {
             Create("");
@@ -145,7 +154,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_DeleteSelectedText_ViaDelete()
         {
             Create("");
@@ -154,7 +163,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_DeleteSelectedText_ViaX()
         {
             Create("");
@@ -163,7 +172,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Join_RemoveEmptySpaces()
         {
             Create("");
@@ -172,7 +181,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Join_KeepEmptySpaces()
         {
             Create("");
@@ -181,7 +190,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ChangeSelection()
         {
             Create("");
@@ -190,7 +199,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ChangeSelection_ViaS()
         {
             Create("");
@@ -199,7 +208,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ChangeLineSelection()
         {
             Create("");
@@ -208,7 +217,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ChangeLineSelection_ViaS()
         {
             Create("");
@@ -217,7 +226,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ChangeLineSelection_ViaR()
         {
             Create("");
@@ -226,7 +235,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ChangeCase_Tilde()
         {
             Create("foo bar", "baz");
@@ -235,7 +244,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ShiftLeft()
         {
             Create("foo bar baz");
@@ -244,7 +253,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ShiftRight()
         {
             Create("foo bar baz");
@@ -253,7 +262,7 @@ namespace Vim.UnitTest
             _operations.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_DeleteLineSelection()
         {
             Create("cat", "tree", "dog");
@@ -262,7 +271,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_PutOverSelection()
         {
             Create("");
@@ -271,7 +280,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_PutOverCaret_WithCaretMove()
         {
             Create("");
@@ -280,7 +289,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_PutOverSelectio_ViaP()
         {
             Create("");
@@ -289,7 +298,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_PutPutOverSelection_WithCaretMoveViaP()
         {
             Create("");
@@ -298,7 +307,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ReplaceSelection()
         {
             Create("");
@@ -308,7 +317,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_DeleteLineSelection_ViaX()
         {
             Create("cat", "tree", "dog");
@@ -317,7 +326,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_OpenFoldInSelection()
         {
             Create("");
@@ -326,7 +335,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_OpenAllFoldsInSelection()
         {
             Create("");
@@ -335,7 +344,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_CloseAllFoldsInSelection()
         {
             Create("");
@@ -344,7 +353,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_FoldSelection()
         {
             Create("foo bar");
@@ -353,7 +362,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_DeleteFoldInSelection()
         {
             Create("");
@@ -362,7 +371,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_DeleteAlLFoldsInSelection()
         {
             Create("");
@@ -371,7 +380,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_DeleteAllFoldsInBuffer()
         {
             Create("");
@@ -380,7 +389,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_SwitchMode_Command()
         {
             Create("");
@@ -389,7 +398,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ScrollPages_Up()
         {
             Create("");
@@ -398,7 +407,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_ScrollPages_Down()
         {
             Create("");
@@ -407,7 +416,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_FormatLines()
         {
             Create("");
@@ -416,7 +425,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_LastSearch()
         {
             Create("");
@@ -425,7 +434,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Test]
+        [Fact]
         public void Bind_Motion_LastSearchReverse()
         {
             Create("");

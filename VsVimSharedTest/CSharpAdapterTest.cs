@@ -1,18 +1,16 @@
 ﻿using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using NUnit.Framework;
+using Xunit;
 using VsVim.Implementation;
 
 namespace VsVim.UnitTest
 {
-    [TestFixture]
-    public sealed class CSharpAdapterTest : EditorUtils.EditorHost
+    public sealed class CSharpAdapterTest : EditorHost
     {
-        private CSharpAdapter _adapter;
+        private readonly CSharpAdapter _adapter;
 
-        [SetUp]
-        public void SetUp()
+        public CSharpAdapterTest()
         {
             _adapter = new CSharpAdapter();
         }
@@ -27,17 +25,17 @@ namespace VsVim.UnitTest
         /// <summary>
         /// If there is no selection then nothing to override
         /// </summary>
-        [Test]
+        [Fact]
         public void IsInsertModePreferred_NoSelection()
         {
             var textView = CreateCSharpTextView();
-            Assert.IsFalse(_adapter.IsInsertModePreferred(textView));
+            Assert.False(_adapter.IsInsertModePreferred(textView));
         }
 
         /// <summary>
         /// Set of patterns which should match
         /// </summary>
-        [Test]
+        [Fact]
         public void IsInsertModePreferred_EventPattern_Is()
         {
             var all = new[] 
@@ -57,14 +55,14 @@ namespace VsVim.UnitTest
                 textView.SetText(text);
                 var span = new SnapshotSpan(textView.TextSnapshot, text.Length - item.NameLength - 1, item.NameLength);
                 textView.Selection.Select(span, isReversed: false);
-                Assert.IsTrue(_adapter.IsInsertModePreferred(textView));
+                Assert.True(_adapter.IsInsertModePreferred(textView));
             }
         }
 
         /// <summary>
         /// Set of patterns which shouldn't match
         /// </summary>
-        [Test]
+        [Fact]
         public void IsInsertModePreferred_EventPattern_Not()
         {
             var all = new[] 
@@ -81,7 +79,7 @@ namespace VsVim.UnitTest
                 textView.SetText(text);
                 var span = new SnapshotSpan(textView.TextSnapshot, text.Length - item.NameLength, item.NameLength);
                 textView.Selection.Select(span, isReversed: false);
-                Assert.IsFalse(_adapter.IsInsertModePreferred(textView));
+                Assert.False(_adapter.IsInsertModePreferred(textView));
             }
         }
     }

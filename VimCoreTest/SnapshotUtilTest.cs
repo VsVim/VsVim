@@ -1,9 +1,8 @@
 ﻿using Microsoft.VisualStudio.Text;
-using NUnit.Framework;
+using Xunit;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public class SnapshotUtilTest : VimTestBase
     {
         static string[] s_lines = new string[]
@@ -22,29 +21,22 @@ namespace Vim.UnitTest
             _snapshot = _buffer.CurrentSnapshot;
         }
 
-        [TearDown]
-        public void TearDown()
-        {
-            _buffer = null;
-            _snapshot = null;
-        }
-
-        [Test]
+        [Fact]
         public void GetStartPoint()
         {
             Create("foo bar");
             var start = SnapshotUtil.GetStartPoint(_buffer.CurrentSnapshot);
             var line = _buffer.CurrentSnapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual(line.Start, start);
+            Assert.Equal(line.Start, start);
         }
 
-        [Test]
+        [Fact]
         public void GetEndPoint()
         {
             Create("foo bar");
             var end = SnapshotUtil.GetEndPoint(_buffer.CurrentSnapshot);
             var line = _buffer.CurrentSnapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual(line.End, end);
+            Assert.Equal(line.End, end);
         }
     }
 }

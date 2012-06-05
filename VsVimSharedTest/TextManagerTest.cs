@@ -6,23 +6,21 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 using VsVim.Implementation;
 
 namespace VsVim.UnitTest
 {
-    [TestFixture]
     public class TextManagerTest
     {
-        private MockRepository _factory;
-        private Mock<IVsAdapter> _adapter;
-        private Mock<SVsServiceProvider> _serviceProvider;
-        private Mock<IVsRunningDocumentTable> _table;
-        private TextManager _managerRaw;
-        private ITextManager _manager;
+        private readonly MockRepository _factory;
+        private readonly Mock<IVsAdapter> _adapter;
+        private readonly Mock<SVsServiceProvider> _serviceProvider;
+        private readonly Mock<IVsRunningDocumentTable> _table;
+        private readonly TextManager _managerRaw;
+        private readonly ITextManager _manager;
 
-        [SetUp]
-        public void Setup()
+        public TextManagerTest()
         {
             _factory = new MockRepository(MockBehavior.Loose);
             _adapter = _factory.Create<IVsAdapter>();
@@ -40,23 +38,23 @@ namespace VsVim.UnitTest
             _manager = _managerRaw;
         }
 
-        [Test]
+        [Fact]
         public void SplitView1()
         {
             var view = _factory.Create<IWpfTextView>();
-            Assert.IsFalse(_manager.SplitView(view.Object));
+            Assert.False(_manager.SplitView(view.Object));
         }
 
-        [Test]
+        [Fact]
         public void SplitView2()
         {
             var view = _factory.Create<IWpfTextView>();
             var codeWindow = _adapter.MakeCodeWindow(view.Object, _factory);
-            Assert.IsFalse(_manager.SplitView(view.Object));
+            Assert.False(_manager.SplitView(view.Object));
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void SplitView3()
         {
             var view = _factory.Create<IWpfTextView>();
@@ -68,24 +66,24 @@ namespace VsVim.UnitTest
                 .Setup(x => x.Exec(ref id, It.IsAny<uint>(), It.IsAny<uint>(), IntPtr.Zero, IntPtr.Zero))
                 .Returns(VSConstants.S_OK)
                 .Verifiable();
-            Assert.IsTrue(_manager.SplitView(view.Object));
+            Assert.True(_manager.SplitView(view.Object));
             _factory.Verify();
         }
 
         /// <summary>
         /// If there is no frame present then the call should fail
         /// </summary>
-        [Test]
+        [Fact]
         public void CloseView_NoWindowFrame()
         {
             var view = _factory.Create<IWpfTextView>().Object;
-            Assert.IsFalse(_manager.CloseView(view));
+            Assert.False(_manager.CloseView(view));
         }
 
         /// <summary>
         /// If the frame is split then close should just remove the split
         /// </summary>
-        [Test]
+        [Fact]
         public void CloseView_Split()
         {
             var view = _factory.Create<IWpfTextView>().Object;
@@ -97,7 +95,7 @@ namespace VsVim.UnitTest
                 .Setup(x => x.Exec(ref id, It.IsAny<uint>(), It.IsAny<uint>(), IntPtr.Zero, IntPtr.Zero))
                 .Returns(VSConstants.S_OK)
                 .Verifiable();
-            Assert.IsTrue(_manager.CloseView(view));
+            Assert.True(_manager.CloseView(view));
             _factory.Verify();
         }
 
@@ -105,7 +103,7 @@ namespace VsVim.UnitTest
         /// The CloseView method shouldn't cause a save.  It should simply force close the
         /// ITextView
         /// </summary>
-        [Test]
+        [Fact]
         public void CloseView_DontSave()
         {
             var textView = _factory.Create<IWpfTextView>();
@@ -115,19 +113,21 @@ namespace VsVim.UnitTest
                 .Setup(x => x.CloseFrame((uint)__FRAMECLOSE.FRAMECLOSE_NoSave))
                 .Returns(VSConstants.S_OK)
                 .Verifiable();
-            Assert.IsTrue(_manager.CloseView(textView.Object));
+            Assert.True(_manager.CloseView(textView.Object));
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void MoveViewUp1()
         {
             var view = _factory.Create<IWpfTextView>().Object;
-            Assert.IsFalse(_manager.MoveViewUp(view));
+            Assert.False(_manager.MoveViewUp(view));
         }
 
-        [Test]
-        [Description("Secondary view on top, can't move up")]
+        /// <summary>
+        /// Secondary view on top, can't move up
+        /// </summary>
+        [Fact]
         public void MoveViewUp2()
         {
             var view1 = _factory.Create<IWpfTextView>();
@@ -135,10 +135,10 @@ namespace VsVim.UnitTest
             var codeWindow = _adapter.MakeCodeWindow(view1.Object, _factory);
             codeWindow.MakePrimaryView(_adapter, view1.Object, _factory);
             codeWindow.MakeSecondaryView(_adapter, view2.Object, _factory);
-            Assert.IsFalse(_manager.MoveViewUp(view2.Object));
+            Assert.False(_manager.MoveViewUp(view2.Object));
         }
 
-        [Test]
+        [Fact]
         public void MoveViewUp3()
         {
             var view1 = _factory.Create<IWpfTextView>();
@@ -147,11 +147,11 @@ namespace VsVim.UnitTest
             var vsView1 = codeWindow.MakePrimaryView(_adapter, view1.Object, _factory);
             var vsView2 = codeWindow.MakeSecondaryView(_adapter, view2.Object, _factory);
             vsView2.Setup(x => x.SendExplicitFocus()).Returns(VSConstants.E_FAIL).Verifiable();
-            Assert.IsFalse(_manager.MoveViewUp(view1.Object));
+            Assert.False(_manager.MoveViewUp(view1.Object));
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void MoveViewUp4()
         {
             var view1 = _factory.Create<IWpfTextView>();
@@ -160,11 +160,11 @@ namespace VsVim.UnitTest
             var vsView1 = codeWindow.MakePrimaryView(_adapter, view1.Object, _factory);
             var vsView2 = codeWindow.MakeSecondaryView(_adapter, view2.Object, _factory);
             vsView2.Setup(x => x.SendExplicitFocus()).Returns(VSConstants.S_OK).Verifiable();
-            Assert.IsTrue(_manager.MoveViewUp(view1.Object));
+            Assert.True(_manager.MoveViewUp(view1.Object));
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void MoveViewDown1()
         {
             var view1 = _factory.Create<IWpfTextView>();
@@ -173,11 +173,11 @@ namespace VsVim.UnitTest
             var vsView1 = codeWindow.MakePrimaryView(_adapter, view1.Object, _factory);
             var vsView2 = codeWindow.MakeSecondaryView(_adapter, view2.Object, _factory);
             vsView1.Setup(x => x.SendExplicitFocus()).Returns(VSConstants.E_FAIL).Verifiable();
-            Assert.IsFalse(_manager.MoveViewDown(view2.Object));
+            Assert.False(_manager.MoveViewDown(view2.Object));
             _factory.Verify();
         }
 
-        [Test]
+        [Fact]
         public void MoveViewDown2()
         {
             var view1 = _factory.Create<IWpfTextView>();
@@ -186,7 +186,7 @@ namespace VsVim.UnitTest
             var vsView1 = codeWindow.MakePrimaryView(_adapter, view1.Object, _factory);
             var vsView2 = codeWindow.MakeSecondaryView(_adapter, view2.Object, _factory);
             vsView1.Setup(x => x.SendExplicitFocus()).Returns(VSConstants.S_OK).Verifiable();
-            Assert.IsTrue(_manager.MoveViewDown(view2.Object));
+            Assert.True(_manager.MoveViewDown(view2.Object));
             _factory.Verify();
         }
     }

@@ -1,17 +1,15 @@
 ﻿using Moq;
-using NUnit.Framework;
 using Vim.Interpreter;
+using Xunit;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public sealed class ExpressionInterpreterTest
     {
-        private ExpressionInterpreter _interpreter;
-        private Mock<IStatusUtil> _statusUtil;
+        private readonly ExpressionInterpreter _interpreter;
+        private readonly Mock<IStatusUtil> _statusUtil;
 
-        [SetUp]
-        public void Setup()
+        public ExpressionInterpreterTest()
         {
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _interpreter = new ExpressionInterpreter(_statusUtil.Object);
@@ -20,20 +18,20 @@ namespace Vim.UnitTest
         private Value Run(string expr)
         {
             var parseResult = Parser.ParseExpression(expr);
-            Assert.IsTrue(parseResult.IsSucceeded);
+            Assert.True(parseResult.IsSucceeded);
             return _interpreter.RunExpression(parseResult.AsSucceeded().Item);
         }
 
         private void Run(string expr, int number)
         {
             var value = Run(expr);
-            Assert.AreEqual(number, value.AsNumber().Item);
+            Assert.Equal(number, value.AsNumber().Item);
         }
 
         /// <summary>
         /// Add two numbers together and test the result
         /// </summary>
-        [Test]
+        [Fact]
         public void Add_SimpleNumber()
         {
             Run("1 + 2", 3);

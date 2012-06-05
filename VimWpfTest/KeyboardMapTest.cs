@@ -1,18 +1,16 @@
 ﻿using System;
 using System.Windows.Input;
-using NUnit.Framework;
+using Xunit;
 
 namespace Vim.UI.Wpf.UnitTest
 {
-    [TestFixture]
-    public sealed class KeyboardMapTest
+    public sealed class KeyboardMapTest : IDisposable
     {
         private IntPtr _customId;
         private bool _mustUnloadLayout;
         private KeyboardMap _map;
 
-        [SetUp]
-        public void Setup()
+        public KeyboardMapTest()
         {
             Setup(null);
         }
@@ -27,19 +25,18 @@ namespace Vim.UI.Wpf.UnitTest
             else
             {
                 _customId = NativeMethods.LoadKeyboardLayout(id, 0, out _mustUnloadLayout);
-                Assert.AreNotEqual(IntPtr.Zero, _customId);
+                Assert.NotEqual(IntPtr.Zero, _customId);
                 _map = new KeyboardMap(_customId);
             }
         }
 
-        [TearDown]
-        public void TearDown()
+        public void Dispose()
         {
             if (_customId != IntPtr.Zero)
             {
                 if (_mustUnloadLayout)
                 {
-                    Assert.IsTrue(NativeMethods.UnloadKeyboardLayout(_customId));
+                    Assert.True(NativeMethods.UnloadKeyboardLayout(_customId));
                 }
 
                 NativeMethods.LoadKeyboardLayout(NativeMethods.LayoutEnglish, NativeMethods.KLF_ACTIVATE);
@@ -59,48 +56,48 @@ namespace Vim.UI.Wpf.UnitTest
 
         private void AssertGetKeyInput(KeyInput keyInput, char c, ModifierKeys modifierKeys)
         {
-            Assert.AreEqual(keyInput, _map.GetKeyInput(c, modifierKeys));
+            Assert.Equal(keyInput, _map.GetKeyInput(c, modifierKeys));
         }
 
         private KeyInput GetKeyInput(Key key)
         {
             KeyInput ki;
-            Assert.IsTrue(_map.TryGetKeyInput(key, out ki));
+            Assert.True(_map.TryGetKeyInput(key, out ki));
             return ki;
         }
 
         private KeyInput GetKeyInput(Key key, ModifierKeys modKeys)
         {
             KeyInput ki;
-            Assert.IsTrue(_map.TryGetKeyInput(key, modKeys, out ki));
+            Assert.True(_map.TryGetKeyInput(key, modKeys, out ki));
             return ki;
         }
 
-        [Test]
+        [Fact]
         public void TryGetKeyInput1()
         {
             KeyInput ki = GetKeyInput(Key.F12);
-            Assert.AreEqual(VimKey.F12, ki.Key);
-            Assert.AreEqual(KeyModifiers.None, ki.KeyModifiers);
+            Assert.Equal(VimKey.F12, ki.Key);
+            Assert.Equal(KeyModifiers.None, ki.KeyModifiers);
         }
 
-        [Test]
+        [Fact]
         public void TryGetKeyInput2()
         {
             KeyInput ki = GetKeyInput(Key.F12, ModifierKeys.Shift);
-            Assert.AreEqual(VimKey.F12, ki.Key);
-            Assert.AreEqual(KeyModifiers.Shift, ki.KeyModifiers);
+            Assert.Equal(VimKey.F12, ki.Key);
+            Assert.Equal(KeyModifiers.Shift, ki.KeyModifiers);
         }
 
-        [Test]
+        [Fact]
         public void TryGetKeyInput3()
         {
             Setup(NativeMethods.LayoutPortuguese);
             KeyInput ki = GetKeyInput(Key.D8, ModifierKeys.Control | ModifierKeys.Alt);
-            Assert.AreEqual('[', ki.Char);
+            Assert.Equal('[', ki.Char);
         }
 
-        [Test]
+        [Fact]
         public void GetKeyInput_EnglishAlpha()
         {
             AssertGetKeyInput('a', 'a', ModifierKeys.None);
@@ -111,7 +108,7 @@ namespace Vim.UI.Wpf.UnitTest
             AssertGetKeyInput(KeyInputUtil.CharWithControlToKeyInput('A'), 'A', ModifierKeys.Control | ModifierKeys.Shift);
         }
 
-        [Test]
+        [Fact]
         public void GetKeyInput_EnglishSymbol()
         {
             var list = "!@#$%^&*()";
@@ -124,17 +121,17 @@ namespace Vim.UI.Wpf.UnitTest
             }
         }
 
-        [Test]
+        [Fact]
         public void GetKeyInput_EnglishAlternateKeys()
         {
             Action<VimKey, Key> verifyFunc = (vimKey, key) =>
             {
                 KeyInput ki;
-                Assert.IsTrue(_map.TryGetKeyInput(key, out ki));
-                Assert.AreEqual(vimKey, ki.Key);
-                Assert.IsTrue(_map.TryGetKeyInput(key, ModifierKeys.Control, out ki));
-                Assert.AreEqual(vimKey, ki.Key);
-                Assert.AreEqual(KeyModifiers.Control, ki.KeyModifiers);
+                Assert.True(_map.TryGetKeyInput(key, out ki));
+                Assert.Equal(vimKey, ki.Key);
+                Assert.True(_map.TryGetKeyInput(key, ModifierKeys.Control, out ki));
+                Assert.Equal(vimKey, ki.Key);
+                Assert.Equal(KeyModifiers.Control, ki.KeyModifiers);
             };
 
             verifyFunc(VimKey.Enter, Key.Enter);
@@ -142,7 +139,7 @@ namespace Vim.UI.Wpf.UnitTest
             verifyFunc(VimKey.Escape, Key.Escape);
         }
 
-        [Test]
+        [Fact]
         public void GetKeyInput_TurkishFAlpha()
         {
             Setup(NativeMethods.LayoutTurkishF);
@@ -150,7 +147,7 @@ namespace Vim.UI.Wpf.UnitTest
             AssertGetKeyInput('ö', 'ö', ModifierKeys.None);
         }
 
-        [Test]
+        [Fact]
         public void GetKeyInput_TurkishFSymbol()
         {
             Setup(NativeMethods.LayoutTurkishF);
@@ -162,18 +159,17 @@ namespace Vim.UI.Wpf.UnitTest
         /// Vim doesn't distinguish between a # and a Shift+# key.  Ensure that this logic holds up at 
         /// this layer
         /// </summary>
-        [Test]
+        [Fact]
         public void GetKeyInput_PoundWithShift()
         {
-            Setup();
-            Assert.AreEqual(KeyInputUtil.VimKeyToKeyInput(VimKey.Pound), _map.GetKeyInput('#', ModifierKeys.Shift));
+            Assert.Equal(KeyInputUtil.VimKeyToKeyInput(VimKey.Pound), _map.GetKeyInput('#', ModifierKeys.Shift));
         }
 
-        [Test]
+        [Fact]
         public void IsDeadKey_French_Accent()
         {
             Setup(NativeMethods.LayoutFrench);
-            Assert.IsTrue(_map.IsDeadKey(Key.Oem6, ModifierKeys.None));
+            Assert.True(_map.IsDeadKey(Key.Oem6, ModifierKeys.None));
         }
     }
 }

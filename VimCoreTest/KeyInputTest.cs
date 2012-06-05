@@ -1,38 +1,37 @@
 ﻿using System;
 using System.Linq;
-using NUnit.Framework;
 using Vim.Extensions;
+using Xunit;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public class KeyInputTest
     {
-        [Test]
+        [Fact]
         public void IsDigit1()
         {
             var input = KeyInputUtil.CharToKeyInput('0');
-            Assert.IsTrue(input.IsDigit);
+            Assert.True(input.IsDigit);
         }
 
-        [Test]
+        [Fact]
         public void IsDigit2()
         {
             var input = KeyInputUtil.EnterKey;
-            Assert.IsFalse(input.IsDigit);
+            Assert.False(input.IsDigit);
         }
 
-        [Test]
+        [Fact]
         public void IsFunction_Not()
         {
             foreach (var cur in KeyInputUtil.VimKeyCharList)
             {
                 var keyInput = KeyInputUtil.CharToKeyInput(cur);
-                Assert.IsFalse(keyInput.IsFunctionKey);
+                Assert.False(keyInput.IsFunctionKey);
             }
         }
 
-        [Test]
+        [Fact]
         public void IsFunction_All()
         {
             foreach (var number in Enumerable.Range(1, 12))
@@ -40,7 +39,7 @@ namespace Vim.UnitTest
                 var name = "F" + number;
                 var vimKey = (VimKey)(Enum.Parse(typeof(VimKey), name));
                 var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
-                Assert.IsTrue(keyInput.IsFunctionKey);
+                Assert.True(keyInput.IsFunctionKey);
             }
         }
 
@@ -48,52 +47,55 @@ namespace Vim.UnitTest
         /// The key pad should register as digits.  Otherwise it won't be included as count
         /// values
         /// </summary>
-        [Test]
+        [Fact]
         public void IsDigit_KeyPad()
         {
             foreach (var cur in Enum.GetValues(typeof(VimKey)).Cast<VimKey>().Where(VimKeyUtil.IsKeypadNumberKey))
             {
                 var keyInput = KeyInputUtil.VimKeyToKeyInput(cur);
-                Assert.IsTrue(keyInput.IsDigit);
-                Assert.IsTrue(keyInput.RawChar.IsSome());
-                Assert.IsTrue(CharUtil.IsDigit(keyInput.Char));
+                Assert.True(keyInput.IsDigit);
+                Assert.True(keyInput.RawChar.IsSome());
+                Assert.True(CharUtil.IsDigit(keyInput.Char));
             }
         }
 
-        [Test]
+        [Fact]
         public void Equality1()
         {
             var i1 = VimUtil.CreateKeyInput(c: 'c');
-            Assert.AreEqual(i1, VimUtil.CreateKeyInput(c: 'c'));
-            Assert.AreNotEqual(i1, VimUtil.CreateKeyInput(c: 'd'));
-            Assert.AreNotEqual(i1, VimUtil.CreateKeyInput(c: 'c', mod: KeyModifiers.Shift));
-            Assert.AreNotEqual(i1, VimUtil.CreateKeyInput(c: 'c', mod: KeyModifiers.Alt));
+            Assert.Equal(i1, VimUtil.CreateKeyInput(c: 'c'));
+            Assert.NotEqual(i1, VimUtil.CreateKeyInput(c: 'd'));
+            Assert.NotEqual(i1, VimUtil.CreateKeyInput(c: 'c', mod: KeyModifiers.Shift));
+            Assert.NotEqual(i1, VimUtil.CreateKeyInput(c: 'c', mod: KeyModifiers.Alt));
         }
 
-        [Test, Description("Boundary condition")]
+        /// <summary>
+        /// Boundary condition
+        /// </summary>
+        [Fact]
         public void Equality2()
         {
             var i1 = VimUtil.CreateKeyInput(c: 'c');
-            Assert.AreNotEqual(i1, 42);
+            Assert.NotEqual<object>(i1, 42);
         }
 
-        [Test]
+        [Fact]
         public void Equality3()
         {
-            Assert.IsTrue(KeyInputUtil.CharToKeyInput('a') == KeyInputUtil.CharToKeyInput('a'));
-            Assert.IsTrue(KeyInputUtil.CharToKeyInput('b') == KeyInputUtil.CharToKeyInput('b'));
-            Assert.IsTrue(KeyInputUtil.CharToKeyInput('c') == KeyInputUtil.CharToKeyInput('c'));
+            Assert.True(KeyInputUtil.CharToKeyInput('a') == KeyInputUtil.CharToKeyInput('a'));
+            Assert.True(KeyInputUtil.CharToKeyInput('b') == KeyInputUtil.CharToKeyInput('b'));
+            Assert.True(KeyInputUtil.CharToKeyInput('c') == KeyInputUtil.CharToKeyInput('c'));
         }
 
-        [Test]
+        [Fact]
         public void Equality4()
         {
-            Assert.IsTrue(KeyInputUtil.CharToKeyInput('a') != KeyInputUtil.CharToKeyInput('b'));
-            Assert.IsTrue(KeyInputUtil.CharToKeyInput('b') != KeyInputUtil.CharToKeyInput('c'));
-            Assert.IsTrue(KeyInputUtil.CharToKeyInput('c') != KeyInputUtil.CharToKeyInput('d'));
+            Assert.True(KeyInputUtil.CharToKeyInput('a') != KeyInputUtil.CharToKeyInput('b'));
+            Assert.True(KeyInputUtil.CharToKeyInput('b') != KeyInputUtil.CharToKeyInput('c'));
+            Assert.True(KeyInputUtil.CharToKeyInput('c') != KeyInputUtil.CharToKeyInput('d'));
         }
 
-        [Test]
+        [Fact]
         public void Equality5()
         {
             var values = EqualityUnit
@@ -107,7 +109,7 @@ namespace Vim.UnitTest
                 values: values);
         }
 
-        [Test]
+        [Fact]
         public void Equality_ControlLetterIsCaseInsensitive()
         {
             var unit = EqualityUnit.Create(KeyInputUtil.CharWithControlToKeyInput('a'))
@@ -119,14 +121,14 @@ namespace Vim.UnitTest
                 values: unit);
         }
 
-        [Test]
+        [Fact]
         public void Equality_AlternatesNotEquivalentWhenModifierPresent()
         {
             Action<KeyInput, KeyInput> func = (left, right) =>
             {
-                Assert.AreNotEqual(KeyInputUtil.ChangeKeyModifiersDangerous(left, KeyModifiers.Control), right);
-                Assert.AreNotEqual(KeyInputUtil.ChangeKeyModifiersDangerous(left, KeyModifiers.Alt), right);
-                Assert.AreNotEqual(KeyInputUtil.ChangeKeyModifiersDangerous(left, KeyModifiers.Shift), right);
+                Assert.NotEqual(KeyInputUtil.ChangeKeyModifiersDangerous(left, KeyModifiers.Control), right);
+                Assert.NotEqual(KeyInputUtil.ChangeKeyModifiersDangerous(left, KeyModifiers.Alt), right);
+                Assert.NotEqual(KeyInputUtil.ChangeKeyModifiersDangerous(left, KeyModifiers.Shift), right);
             };
 
             foreach (var cur in KeyInputUtil.AlternateKeyInputPairList)
@@ -135,7 +137,7 @@ namespace Vim.UnitTest
             }
         }
 
-        [Test]
+        [Fact]
         public void Equality_AlternatesAreEqual()
         {
             foreach (var pair in KeyInputUtil.AlternateKeyInputPairList)
@@ -148,16 +150,16 @@ namespace Vim.UnitTest
             }
         }
 
-        [Test]
+        [Fact]
         public void CompareTo1()
         {
             var i1 = KeyInputUtil.CharToKeyInput('c');
-            Assert.IsTrue(i1.CompareTo(KeyInputUtil.CharToKeyInput('z')) < 0);
-            Assert.IsTrue(i1.CompareTo(KeyInputUtil.CharToKeyInput('c')) == 0);
-            Assert.IsTrue(i1.CompareTo(KeyInputUtil.CharToKeyInput('a')) > 0);
+            Assert.True(i1.CompareTo(KeyInputUtil.CharToKeyInput('z')) < 0);
+            Assert.True(i1.CompareTo(KeyInputUtil.CharToKeyInput('c')) == 0);
+            Assert.True(i1.CompareTo(KeyInputUtil.CharToKeyInput('a')) > 0);
         }
 
-        [Test]
+        [Fact]
         public void CompareSemantics()
         {
             var allKeyInputs = Enumerable.Concat(KeyInputUtil.VimKeyInputList, KeyInputUtil.AlternateKeyInputList);
@@ -178,53 +180,53 @@ namespace Vim.UnitTest
                     var result2 = right.CompareTo(left);
                     if (result1 == result2)
                     {
-                        Assert.AreEqual(0, result1);
-                        Assert.AreEqual(left.GetHashCode(), right.GetHashCode());
+                        Assert.Equal(0, result1);
+                        Assert.Equal(left.GetHashCode(), right.GetHashCode());
                         if (altLeft.IsSome())
                         {
-                            Assert.AreEqual(0, altLeft.Value.CompareTo(right));
+                            Assert.Equal(0, altLeft.Value.CompareTo(right));
                         }
                         if (altRight.IsSome())
                         {
-                            Assert.AreEqual(0, left.CompareTo(altRight.Value));
+                            Assert.Equal(0, left.CompareTo(altRight.Value));
                         }
                     }
                     else if (result1 < 0)
                     {
-                        Assert.IsTrue(result2 > 0);
+                        Assert.True(result2 > 0);
                         if (altLeft.IsSome())
                         {
-                            Assert.IsTrue(altLeft.Value.CompareTo(right) < 0);
-                            Assert.IsTrue(right.CompareTo(altLeft.Value) > 0);
+                            Assert.True(altLeft.Value.CompareTo(right) < 0);
+                            Assert.True(right.CompareTo(altLeft.Value) > 0);
                         }
                     }
                     else if (result2 < 0)
                     {
-                        Assert.IsTrue(result1 > 0);
+                        Assert.True(result1 > 0);
                         if (altLeft.IsSome())
                         {
-                            Assert.IsTrue(altLeft.Value.CompareTo(right) > 0);
-                            Assert.IsTrue(right.CompareTo(altLeft.Value) < 0);
+                            Assert.True(altLeft.Value.CompareTo(right) > 0);
+                            Assert.True(right.CompareTo(altLeft.Value) < 0);
                         }
                     }
                     else
                     {
-                        Assert.Fail();
+                        throw new Exception("failed");
                     }
                 }
             }
         }
 
-        [Test]
+        [Fact]
         public void GetHashCode_ControlLetterIsCaseInsensitive()
         {
-            Assert.AreEqual(KeyInputUtil.CharWithControlToKeyInput('a').GetHashCode(), KeyInputUtil.CharWithControlToKeyInput('A').GetHashCode());
+            Assert.Equal(KeyInputUtil.CharWithControlToKeyInput('a').GetHashCode(), KeyInputUtil.CharWithControlToKeyInput('A').GetHashCode());
         }
 
-        [Test]
+        [Fact]
         public void GetHashCode_ControlLetterIsCaseInsensitive2()
         {
-            Assert.AreEqual(KeyInputUtil.CharWithControlToKeyInput('T').GetHashCode(), KeyInputUtil.CharWithControlToKeyInput('t').GetHashCode());
+            Assert.Equal(KeyInputUtil.CharWithControlToKeyInput('T').GetHashCode(), KeyInputUtil.CharWithControlToKeyInput('t').GetHashCode());
         }
 
     }

@@ -1,21 +1,19 @@
 ﻿using System;
 using System.Threading;
 using System.Windows.Threading;
-using NUnit.Framework;
+using Xunit;
 using Vim.UI.Wpf.Implementation;
 using Vim.UnitTest;
 
 namespace Vim.UI.Wpf.UnitTest
 {
-    [TestFixture]
     public sealed class KeyMappingTimeoutHandlerTest : VimTestBase
     {
-        private KeyMappingTimeoutHandler _keyMappingTimeoutHandler;
-        private IVimBuffer _vimBuffer;
+        private readonly KeyMappingTimeoutHandler _keyMappingTimeoutHandler;
+        private readonly IVimBuffer _vimBuffer;
 
-        public override void SetupBase()
+        public KeyMappingTimeoutHandlerTest()
         {
-            base.SetupBase();
             _keyMappingTimeoutHandler = new KeyMappingTimeoutHandler(ProtectedOperations);
             Vim.GlobalSettings.Timeout = true;
             Vim.GlobalSettings.TimeoutLength = 100;
@@ -43,42 +41,42 @@ namespace Vim.UI.Wpf.UnitTest
             }
 
             _keyMappingTimeoutHandler.Tick -= handler;
-            Assert.IsTrue(happened);
+            Assert.True(happened);
         }
 
         /// <summary>
         /// A timeout after a single key stroke should cause the keystroke to 
         /// be processed
         /// </summary>
-        [Test]
+        [Fact]
         public void Timeout_Single()
         {
             _vimBuffer.Vim.KeyMap.MapWithNoRemap("cat", "chase the cat", KeyRemapMode.Insert);
             _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _vimBuffer.Process('c');
-            Assert.AreEqual("", _vimBuffer.TextBuffer.GetLine(0).GetText());
+            Assert.Equal("", _vimBuffer.TextBuffer.GetLine(0).GetText());
             WaitForTimer();
-            Assert.AreEqual("c", _vimBuffer.TextBuffer.GetLine(0).GetText());
+            Assert.Equal("c", _vimBuffer.TextBuffer.GetLine(0).GetText());
         }
 
         /// <summary>
         /// A timeout after a double key stroke should cause the buffered keystrokes to 
         /// be processed
         /// </summary>
-        [Test]
+        [Fact]
         public void Timeout_Double()
         {
             _vimBuffer.Vim.KeyMap.MapWithNoRemap("cat", "chase the cat", KeyRemapMode.Insert);
             _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _vimBuffer.Process('c');
-            Assert.AreEqual("", _vimBuffer.TextBuffer.GetLine(0).GetText());
+            Assert.Equal("", _vimBuffer.TextBuffer.GetLine(0).GetText());
             _vimBuffer.Process('a');
-            Assert.AreEqual("", _vimBuffer.TextBuffer.GetLine(0).GetText());
+            Assert.Equal("", _vimBuffer.TextBuffer.GetLine(0).GetText());
             WaitForTimer();
-            Assert.AreEqual("ca", _vimBuffer.TextBuffer.GetLine(0).GetText());
+            Assert.Equal("ca", _vimBuffer.TextBuffer.GetLine(0).GetText());
         }
 
-        [Test]
+        [Fact]
         public void NoTimeout()
         {
             _vimBuffer.Vim.GlobalSettings.TimeoutLength = 1000;
@@ -87,9 +85,9 @@ namespace Vim.UI.Wpf.UnitTest
             _vimBuffer.Process('c');
             _vimBuffer.Process('a');
             Thread.Sleep(50);
-            Assert.AreEqual("", _vimBuffer.TextBuffer.GetLine(0).GetText());
+            Assert.Equal("", _vimBuffer.TextBuffer.GetLine(0).GetText());
             _vimBuffer.Process('t');
-            Assert.AreEqual("chase the cat", _vimBuffer.TextBuffer.GetLine(0).GetText());
+            Assert.Equal("chase the cat", _vimBuffer.TextBuffer.GetLine(0).GetText());
         }
     }
 }
