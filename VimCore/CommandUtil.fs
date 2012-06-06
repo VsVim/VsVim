@@ -1994,7 +1994,16 @@ type internal CommandUtil
                             true
                         | keyInput :: tail -> 
 
-                            match _vim.FocusedBuffer with
+                            // Prefer the focussed IVimBuffer over the current.  It's possible for the 
+                            // macro playback switch the active buffer via gt, gT, etc ... and playback 
+                            // should continue on the newly focussed IVimBuffer.  Should the host API
+                            // fail to return an active IVimBuffer continue using the original one
+                            let buffer = 
+                                match _vim.FocusedBuffer with
+                                | Some buffer -> Some buffer
+                                | None -> _vim.GetVimBuffer _textView
+
+                            match buffer with
                             | None -> 
                                 // Nothing to do if we don't have an ITextBuffer with focus
                                 false
