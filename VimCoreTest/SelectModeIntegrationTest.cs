@@ -1,7 +1,7 @@
-﻿using Microsoft.VisualStudio.Text;
+﻿using EditorUtils;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
-using EditorUtils;
 
 namespace Vim.UnitTest
 {
@@ -97,6 +97,38 @@ namespace Vim.UnitTest
                 Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
                 CollectionAssert.AreEqual(new[] { "dog ", "time" }, _textBuffer.GetLines());
                 Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// The delete key should delete the selection and not insert any text into the 
+            /// line
+            ///
+            /// issue #911
+            /// </summary>
+            [Test]
+            public void DeleteKey()
+            {
+                Create("dog cat bear");
+                EnterSelect(0, 4);
+                _vimBuffer.Process(VimKey.Delete);
+                Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.AreEqual("cat bear", _textBuffer.GetLine(0).GetText());
+                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// The backspace key should delete the selection and not insert any text into the 
+            /// line
+            /// </summary>
+            [Test]
+            public void BackspaceKey()
+            {
+                Create("dog cat bear");
+                EnterSelect(0, 4);
+                _vimBuffer.Process(VimKey.Back);
+                Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.AreEqual("cat bear", _textBuffer.GetLine(0).GetText());
+                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
             }
         }
 

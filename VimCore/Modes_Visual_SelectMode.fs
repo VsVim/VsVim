@@ -49,6 +49,8 @@ type internal SelectMode
                 let caretPoint = TextViewUtil.GetCaretPoint _textView
                 let text = _commonOperations.GetNewLineText caretPoint
                 x.ProcessInput text
+            elif keyInput.Key = VimKey.Delete || keyInput.Key = VimKey.Back then
+                x.ProcessInput ""
             elif Option.isSome keyInput.RawChar then
                 x.ProcessInput (StringUtil.ofChar keyInput.Char)
             else
