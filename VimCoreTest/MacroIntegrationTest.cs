@@ -29,7 +29,7 @@ namespace Vim.UnitTest
             _vimBuffer = Vim.CreateVimBuffer(_textView);
             _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             _globalSettings = _vimBuffer.LocalSettings.GlobalSettings;
-            ((MockVimHost)_vimBuffer.Vim.VimHost).FocusedTextView = _textView;
+            VimHost.FocusedTextView = _textView;
         }
 
         /// <summary>
@@ -112,6 +112,20 @@ namespace Vim.UnitTest
                 var line = String.Format("{0}. Heading", i + 1);
                 Assert.Equal(line, _textView.GetLine(i).GetText());
             }
+        }
+
+        /// <summary>
+        /// If there is no focussed IVimBuffer then the macro playback should use the original IVimBuffer
+        /// </summary>
+        [Test]
+        public void RunMacro_NoFocusedView()
+        {
+            Create("world");
+            VimHost.FocusedTextView = null;
+            TestRegister.UpdateValue("ihello ");
+            _vimBuffer.Process("@c");
+            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+            Assert.AreEqual("hello world", _textView.GetLine(0).GetText());
         }
 
         /// <summary>

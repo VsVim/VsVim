@@ -29,7 +29,7 @@ namespace VsVim
         /// </summary>
         protected override bool TryProcess(KeyInput keyInput)
         {
-            if (TryProcessCore(keyInput))
+            if (IsDiscardedKeyInput(keyInput))
             {
                 return true;
             }
@@ -44,7 +44,7 @@ namespace VsVim
             // be routed through Visual Studio and IOleCommandTarget in order to get intellisense
             // properly hooked up.  Not handling it in this KeyProcessor will eventually cause
             // it to be routed through IOleCommandTarget if it's input
-            if (VimBuffer.ModeKind.IsAnyInsert() && VimBuffer.InsertMode.IsDirectInsert(keyInput))
+            if (VimBuffer.ModeKind.IsAnyInsert() && !VimBuffer.CanProcessAsCommand(keyInput))
             {
                 return false;
             }
@@ -53,19 +53,18 @@ namespace VsVim
         }
 
         /// <summary>
-        /// Implement the common logic for TryProcess as it relates to Visual Studio specific 
-        /// input
+        /// Is this KeyInput value to be discarded based on previous KeyInput values
         /// </summary>
-        private bool TryProcessCore(KeyInput keyInput)
+        private bool IsDiscardedKeyInput(KeyInput keyInput)
         {
             // Check to see if we should be discarding this KeyInput value.  If the KeyInput matches
             // then we mark the KeyInput as handled since it's the value we want to discard.  In either
             // case though we clear out the discarded KeyInput value.  This value is only meant to
             // last for a single key stroke.
-            var handled = _bufferCoordinator.DiscardedKeyInput.IsSome(keyInput);
+            var isDiscarded = _bufferCoordinator.DiscardedKeyInput.IsSome(keyInput);
             _bufferCoordinator.DiscardedKeyInput = FSharpOption<KeyInput>.None;
 
-            return handled;
+            return isDiscarded;
         }
 
         /// <summary>

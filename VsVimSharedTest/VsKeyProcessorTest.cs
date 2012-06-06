@@ -92,5 +92,33 @@ namespace VsVim.UnitTest
                 VerifyNotHandle(key);
             }
         }
+
+        /// <summary>
+        /// When presented with a KeyInput the TryProcess command should consider if the mapped key
+        /// is a direct insert not the provided key.  
+        /// </summary>
+        [Test]
+        public void KeyDown_InsertCheckShouldConsiderMapped()
+        {
+            var keyInput = KeyInputUtil.CharWithControlToKeyInput('e');
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
+            _buffer.Setup(x => x.CanProcessAsCommand(keyInput)).Returns(true).Verifiable();
+            VerifyHandle(Key.E, ModifierKeys.Control);
+            _factory.Verify();
+        }
+
+        /// <summary>
+        /// We only do the CanProcessAsCommand check in insert mode.  The justification is that direct
+        /// insert commands should go through IOleCommandTarget in order to trigger intellisense and
+        /// the like.  If we're not in insert mode we don't consider intellisense in the key 
+        /// processor
+        /// </summary>
+        [Test]
+        public void KeyDown_NonInsertShouldntCheckForCommand()
+        {
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
+            VerifyHandle(Key.E, ModifierKeys.Control);
+            _factory.Verify();
+        }
     }
 }
