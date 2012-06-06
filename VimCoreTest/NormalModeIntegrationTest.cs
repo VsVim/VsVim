@@ -495,6 +495,23 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("g*");
                 Assert.Equal("cat", _vimData.SearchHistory.Items.Head);
             }
+
+            /// <summary>
+            /// The S-Space command isn't documented that I can find but it appears to be 
+            /// an alias for the word forward motion.  Ad-hoc testing shows they have the 
+            /// same behavior
+            ///
+            /// Issue #910
+            /// </summary>
+            [Fact]
+            public void NextWordViaShiftSpace()
+            {
+                Create("cat dog bear tree");
+                _vimBuffer.ProcessNotation("<S-Space>");
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<S-Space>");
+                Assert.Equal(8, _textView.GetCaretPoint().Position);
+            }
         }
 
         public sealed class Yank : NormalModeIntegrationTest
@@ -681,6 +698,14 @@ namespace Vim.UnitTest
                 Create("cat", "  dog");
                 _vimBuffer.Process("yw");
                 Assert.Equal("cat", UnnamedRegister.StringValue);
+            }
+
+            [Fact]
+            public void WordViaShiftPlusSpace()
+            {
+                Create("cat dog bear");
+                _vimBuffer.ProcessNotation("y<S-Space>");
+                Assert.Equal("cat ", UnnamedRegister.StringValue);
             }
 
             /// <summary>

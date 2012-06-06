@@ -82,6 +82,7 @@ type internal MotionCapture
                 yield ("<C-p>", MotionFlags.CaretMovement, Motion.LineUp)
                 yield ("<Down>", MotionFlags.CaretMovement, Motion.LineDown)
                 yield ("<S-Left>", MotionFlags.CaretMovement, Motion.WordBackward WordKind.NormalWord)
+                yield ("<S-Space>", MotionFlags.CaretMovement, Motion.WordForward WordKind.NormalWord)
                 yield ("<S-Right>", MotionFlags.CaretMovement, Motion.WordForward WordKind.NormalWord)
                 yield ("<Left>", MotionFlags.CaretMovement, Motion.CharLeft)
                 yield ("<Bs>", MotionFlags.CaretMovement, Motion.CharLeft)
