@@ -167,7 +167,9 @@ type internal VisualMode
             | ModeArgument.InitialVisualSelection (visualSelection, caretPoint) ->
 
                 if visualSelection.ModeKind = _modeKind then
-                    visualSelection.SelectAndMoveCaret _textView _vimTextBuffer.GlobalSettings.SelectionKind
+                    visualSelection.Select _textView
+                    let visualCaretPoint = visualSelection.GetCaretPoint _globalSettings.SelectionKind
+                    TextViewUtil.MoveCaretToPointRaw _textView visualCaretPoint MoveCaretFlags.EnsureOnScreen
                     caretPoint
                 else
                     None

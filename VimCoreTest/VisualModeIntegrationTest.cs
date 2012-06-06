@@ -3,9 +3,9 @@ using EditorUtils;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using Xunit;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
+using Xunit;
 
 namespace Vim.UnitTest
 {
@@ -175,6 +175,30 @@ namespace Vim.UnitTest
                 Create("cat", "dog");
                 _vimBuffer.Process("vlll");
                 Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// The entire word should be selected 
+            /// </summary>
+            [Fact]
+            public void InnerWord()
+            {
+                Create("cat   dog");
+                _vimBuffer.Process("viw");
+                Assert.Equal("cat", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// The entire word plus the trailing white space should be selected
+            /// </summary>
+            [Fact]
+            public void AllWord()
+            {
+                Create("cat   dog");
+                _vimBuffer.Process("vaw");
+                Assert.Equal("cat   ", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
             }
         }
 
@@ -1496,7 +1520,7 @@ namespace Vim.UnitTest
                 EnterMode(ModeKind.VisualLine, span);
                 _vimBuffer.Process('y');
                 Assert.True(_vimTextBuffer.LastVisualSelection.IsSome());
-                Assert.Equal(span, _vimTextBuffer.LastVisualSelection.Value.GetEditSpan(SelectionKind.Inclusive).OverarchingSpan);
+                Assert.Equal(span, _vimTextBuffer.LastVisualSelection.Value.VisualSpan.EditSpan.OverarchingSpan);
             }
 
             /// <summary>

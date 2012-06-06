@@ -136,26 +136,26 @@ namespace Vim.UnitTest
         /// Get the appropriate Caret SnapshotPoint for a forward character span
         /// </summary>
         [Fact]
-        public void CaretPoint_Character_Forward()
+        public void GetCaretPoint_Character_Forward()
         {
             Create("cats", "dogs");
             var visualSelection = VisualSelection.NewCharacter(
                 CharacterSpan.CreateForSpan(_textBuffer.GetSpan(0, 2)),
                 Path.Forward);
-            Assert.Equal(_textBuffer.GetPoint(1), visualSelection.CaretPoint);
+            Assert.Equal(_textBuffer.GetPoint(1), visualSelection.GetCaretPoint(SelectionKind.Inclusive));
         }
 
         /// <summary>
         /// Get the appropriate Caret SnapshotPoint for a backward character span
         /// </summary>
         [Fact]
-        public void CaretPoint_Character_Backward()
+        public void GetCaretPoint_Character_Backward()
         {
             Create("cats", "dogs");
             var visualSelection = VisualSelection.NewCharacter(
                 CharacterSpan.CreateForSpan(_textBuffer.GetSpan(0, 2)),
                 Path.Backward);
-            Assert.Equal(_textBuffer.GetPoint(0), visualSelection.CaretPoint);
+            Assert.Equal(_textBuffer.GetPoint(0), visualSelection.GetCaretPoint(SelectionKind.Inclusive));
         }
 
         /// <summary>
@@ -164,37 +164,37 @@ namespace Vim.UnitTest
         /// break instead of the start of the line
         /// </summary>
         [Fact]
-        public void CaretPoint_Character_EmptyLastLine()
+        public void GetCaretPoint_Character_EmptyLastLine()
         {
             Create("cat", "", "dog");
             var visualSelection = VisualSelection.NewCharacter(
                 new CharacterSpan(_textBuffer.GetPoint(0), 2, 1),
                 Path.Forward);
-            Assert.Equal(_textBuffer.GetLine(1).Start, visualSelection.CaretPoint);
+            Assert.Equal(_textBuffer.GetLine(1).Start, visualSelection.GetCaretPoint(SelectionKind.Inclusive));
         }
 
         /// <summary>
         /// Get the appropriate Caret SnapshotPoint for a top right block selection
         /// </summary>
         [Fact]
-        public void CaretPoint_Block_TopRight()
+        public void GetCaretPoint_Block_TopRight()
         {
             Create("cats", "dogs", "fish");
             var blockSpan = _textBuffer.GetBlockSpan(1, 2, 0, 2);
             var visualSelection = VisualSelection.NewBlock(blockSpan, BlockCaretLocation.TopRight);
-            Assert.Equal(_textBuffer.GetPoint(2), visualSelection.CaretPoint);
+            Assert.Equal(_textBuffer.GetPoint(2), visualSelection.GetCaretPoint(SelectionKind.Inclusive));
         }
 
         /// <summary>
         /// Ensure the caret point is appropriately on the bottom right for a block selection
         /// </summary>
         [Fact]
-        public void CaretPoint_Block_BottomRight()
+        public void GetCaretPoint_Block_BottomRight()
         {
             Create("big dog", "big cat", "big tree", "big fish");
             var blockSpan = _textBuffer.GetBlockSpan(1, 1, 0, 2);
             var visualSelection = VisualSelection.NewBlock(blockSpan, BlockCaretLocation.BottomRight);
-            Assert.Equal(_textView.GetPointInLine(1, 1), visualSelection.CaretPoint);
+            Assert.Equal(_textView.GetPointInLine(1, 1), visualSelection.GetCaretPoint(SelectionKind.Inclusive));
         }
 
         /// <summary>
@@ -207,7 +207,7 @@ namespace Vim.UnitTest
             var span = new SnapshotSpan(_textView.GetLine(0).Start, 2);
             _textView.SelectAndMoveCaret(span);
             var visualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive);
-            Assert.Equal(span, visualSelection.GetVisualSpan(SelectionKind.Inclusive).EditSpan.OverarchingSpan);
+            Assert.Equal(span, visualSelection.VisualSpan.EditSpan.OverarchingSpan);
             Assert.Equal(ModeKind.VisualCharacter, visualSelection.ModeKind);
             Assert.True(visualSelection.IsCharacterForward);
         }
@@ -221,8 +221,8 @@ namespace Vim.UnitTest
             Create("cat", "dog");
             var visualSpan = VisualSpan.NewBlock(_textView.GetBlockSpan(0, 2, 0, 2));
             var visualSelection = VisualSelection.CreateForward(visualSpan);
-            Assert.Equal(_textView.GetLine(1).Start.Add(1), visualSelection.CaretPoint);
-            Assert.Equal(visualSpan, visualSelection.GetVisualSpan(SelectionKind.Inclusive));
+            Assert.Equal(_textView.GetLine(1).Start.Add(1), visualSelection.GetCaretPoint(SelectionKind.Inclusive));
+            Assert.Equal(visualSpan, visualSelection.VisualSpan);
         }
 
         /// <summary>
@@ -233,7 +233,7 @@ namespace Vim.UnitTest
         {
             Create("cats dogs");
             var visualSelection = VisualSelection.CreateForPoints(VisualKind.Character, _textBuffer.GetPoint(3), _textBuffer.GetPoint(1));
-            Assert.Equal("ats", visualSelection.GetEditSpan(SelectionKind.Inclusive).OverarchingSpan.GetText());
+            Assert.Equal("ats", visualSelection.VisualSpan.EditSpan.OverarchingSpan.GetText());
         }
 
         /// <summary>
@@ -289,29 +289,44 @@ namespace Vim.UnitTest
         /// column.  Even though normal block selections are shrunk by a column
         /// </summary>
         [Fact]
-        public void GetVisualSpan_Block_SingleColumnExclusive()
+        public void AdjustForSelectionKind_Block_SingleColumnExclusive()
         {
             Create("cats", "dogs", "trees");
             var blockSpan = _textBuffer.GetBlockSpan(1, 1, 0, 2);
             var visualSpan = VisualSpan.NewBlock(blockSpan);
             var visualSelection = VisualSelection.CreateForward(visualSpan);
-            Assert.Equal(visualSpan, visualSelection.GetVisualSpan(SelectionKind.Exclusive));
+            Assert.Equal(visualSelection, visualSelection.AdjustForSelectionKind(SelectionKind.Exclusive));
         }
 
         /// <summary>
         /// Block selection should lose a column in Exclusive
         /// </summary>
         [Fact]
-        public void GetVisualSpan_Block_MultiColumnExclusive()
+        public void AdjustForSelectionKind_Block_MultiColumnExclusive()
         {
             Create("cats", "dogs", "trees");
             var blockSpan = _textBuffer.GetBlockSpan(1, 2, 0, 2);
             var visualSpan = VisualSpan.NewBlock(blockSpan);
             var visualSelection = VisualSelection.CreateForward(visualSpan);
-            var otherBlockSpan = visualSelection.GetVisualSpan(SelectionKind.Exclusive).AsBlock().Item;
+            var otherVisualSelection = visualSelection.AdjustForSelectionKind(SelectionKind.Exclusive);
+            var otherBlockSpan = otherVisualSelection.AsBlock().Item1;
             Assert.Equal(blockSpan.Start, otherBlockSpan.Start);
             Assert.Equal(1, otherBlockSpan.Width);
             Assert.Equal(2, otherBlockSpan.Height);
         }
+
+        /// <summary>
+        /// A character span should lose one if we adjust it for exclusive 
+        /// </summary>
+        [Fact]
+        public void AdjustForSelectionKind_Character_Forward()
+        {
+            Create("cat dog bear");
+            var characterSpan = CharacterSpan.CreateForSpan(_textBuffer.GetSpan(0, 4));
+            var visualSpan = VisualSpan.NewCharacter(characterSpan);
+            var visualSelection = VisualSelection.CreateForward(visualSpan);
+            Assert.Equal("cat", visualSelection.AdjustForSelectionKind(SelectionKind.Exclusive).VisualSpan.EditSpan.OverarchingSpan.GetText());
+        }
+
     }
 }

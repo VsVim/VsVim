@@ -47,7 +47,8 @@ namespace Vim.UnitTest
 
         public static void SelectAndMoveCaret(this VisualSelection selection, ITextView textView)
         {
-            selection.SelectAndMoveCaret(textView, SelectionKind.Inclusive);
+            selection.Select(textView);
+            TextViewUtil.MoveCaretToPointRaw(textView, selection.GetCaretPoint(SelectionKind.Inclusive), MoveCaretFlags.EnsureOnScreen);
         }
 
         #endregion

@@ -1461,14 +1461,74 @@ type VisualSelection =
 
     with
 
-    /// Gets the SnapshotPoint for the caret as it should appear in the given VisualSelection
-    member x.CaretPoint = 
+    member x.IsCharacterForward =
+        match x with
+        | Character (_, path) -> path.IsPathForward
+        | _ -> false
+
+    member x.IsLineForward = 
+        match x with
+        | Line (_, path, _) -> path.IsPathForward
+        | _ -> false
+
+    /// Get the ModeKind for the VisualSelection
+    member x.ModeKind = 
+        match x with
+        | Character _ -> ModeKind.VisualCharacter
+        | Line _ -> ModeKind.VisualLine
+        | Block _ -> ModeKind.VisualBlock
+
+    /// The underlying VisualSpan
+    member x.VisualSpan =
+        match x with 
+        | Character (characterSpan, _) -> VisualSpan.Character characterSpan
+        | Line (lineRange, _, _) -> VisualSpan.Line lineRange
+        | Block (blockSpan, _) -> VisualSpan.Block blockSpan
+
+    /// Get the VisualSelection information adjusted for the given selection kind.  This is only useful 
+    /// when a VisualSelection is created from the caret position and the selection needs to be adjusted
+    /// to include or exclude the caret.  
+    /// 
+    /// It's incorrect to use when creating from an actual physical selection
+    member x.AdjustForSelectionKind selectionKind = 
+        match selectionKind with
+        | SelectionKind.Inclusive -> x
+        | SelectionKind.Exclusive -> 
+            match x with
+            | Character (characterSpan, path) -> 
+                // The span decreases by a single character in exclusive 
+                let endPoint = characterSpan.Last |> OptionUtil.getOrDefault characterSpan.Start
+                let characterSpan = SnapshotSpan(characterSpan.Start, endPoint) |> CharacterSpan.CreateForSpan
+                VisualSelection.Character (characterSpan, path)
+            | Line _ ->
+                // The span isn't effected
+                x
+            | Block (blockSpan, blockCaretLocation) -> 
+                // The width of a block span decreases by 1 in exclusive.  The minimum though
+                // is still 1
+                let width = max (blockSpan.Width - 1) 1
+                let blockSpan = BlockSpan(blockSpan.Start, width, blockSpan.Height)
+                VisualSelection.Block (blockSpan, blockCaretLocation)
+
+    /// Gets the SnapshotPoint for the caret as it should appear in the given VisualSelection with the 
+    /// specified SelectionKind.  
+    member x.GetCaretPoint selectionKind = 
+
+        let getAdjustedEnd (span : SnapshotSpan) = 
+            match selectionKind with
+            | SelectionKind.Exclusive -> span.End
+            | SelectionKind.Inclusive -> 
+                if span.Length > 0 then
+                    SnapshotPointUtil.SubtractOne span.End
+                else
+                    span.End
+
         match x with
         | Character (characterSpan, path) ->
             // The caret is either positioned at the start or the end of the selected
             // SnapshotSpan
             if path.IsPathForward && characterSpan.Length > 0 then
-                SnapshotPointUtil.SubtractOne characterSpan.End
+                getAdjustedEnd characterSpan.Span
             else
                 characterSpan.Start
 
@@ -1489,78 +1549,21 @@ type VisualSelection =
 
         | Block (blockSpan, blockCaretLocation) ->
 
-            let getSpanEnd (span : SnapshotSpan) =
-                if span.Length = 0 then
-                    span.End
-                else
-                    span.End.Subtract 1
-
             match blockCaretLocation with
             | BlockCaretLocation.TopLeft -> blockSpan.Start
-            | BlockCaretLocation.TopRight -> getSpanEnd blockSpan.BlockSpans.Head
+            | BlockCaretLocation.TopRight -> getAdjustedEnd blockSpan.BlockSpans.Head
             | BlockCaretLocation.BottomLeft -> blockSpan.BlockSpans |> SeqUtil.last |> SnapshotSpanUtil.GetStartPoint
-            | BlockCaretLocation.BottomRight -> blockSpan.BlockSpans |> SeqUtil.last |> getSpanEnd
+            | BlockCaretLocation.BottomRight -> blockSpan.BlockSpans |> SeqUtil.last |> getAdjustedEnd
 
-    member x.IsCharacterForward =
-        match x with
-        | Character (_, path) -> path.IsPathForward
-        | _ -> false
-
-    member x.IsLineForward = 
-        match x with
-        | Line (_, path, _) -> path.IsPathForward
-        | _ -> false
-
-    /// Get the ModeKind for the VisualSelection
-    member x.ModeKind = 
-        match x with
-        | Character _ -> ModeKind.VisualCharacter
-        | Line _ -> ModeKind.VisualLine
-        | Block _ -> ModeKind.VisualBlock
-
-    /// Get the corresponding VisualSpan for the specified SelectionKind
-    member x.GetVisualSpan selectionKind = 
-        match x with
-        | Character (characterSpan, _) -> 
-            // The span decreases by a single character in exclusive 
-            match selectionKind with
-            | SelectionKind.Inclusive -> VisualSpan.Character characterSpan
-            | SelectionKind.Exclusive ->
-                let endPoint = characterSpan.Last |> OptionUtil.getOrDefault characterSpan.Start
-                let characterSpan = SnapshotSpan(characterSpan.Start, endPoint) |> CharacterSpan.CreateForSpan
-                VisualSpan.Character characterSpan
-        | Line (lineRange, _, _) -> 
-            // The span isn't effected
-            VisualSpan.Line lineRange
-        | Block (blockSpan, _) -> 
-            // The width of a block span decreases by 1 in exclusive.  The minimum though
-            // is still 1
-            match selectionKind with
-            | SelectionKind.Inclusive -> VisualSpan.Block blockSpan
-            | SelectionKind.Exclusive -> 
-                let width = max (blockSpan.Width - 1) 1
-                let blockSpan = BlockSpan(blockSpan.Start, width, blockSpan.Height)
-                VisualSpan.Block blockSpan
-
-    member x.GetEditSpan selectionKind = 
-        let visualSpan = x.GetVisualSpan selectionKind
-        visualSpan.EditSpan
 
     /// Select the given VisualSpan in the ITextView
-    member x.Select (textView : ITextView) selectionKind =
+    member x.Select (textView : ITextView) =
         let path = 
             match x with
             | Character (_, path) -> path
             | Line (_, path, _) -> path
             | Block _ -> Path.Forward
-        let visualSpan = x.GetVisualSpan selectionKind
-        visualSpan.Select textView path
-
-    /// Select the given VisualSelection in the ITextView and place the caret in the correct
-    /// position
-    member x.SelectAndMoveCaret textView selectionKind =
-        x.Select textView selectionKind
-        TextViewUtil.MoveCaretToPointRaw textView x.CaretPoint MoveCaretFlags.EnsureOnScreen
+        x.VisualSpan.Select textView path
 
     /// Create for the given VisualSpan.  Assumes this was a forward created VisualSpan
     static member CreateForward visualSpan = 
