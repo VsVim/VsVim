@@ -97,7 +97,7 @@ namespace VsVim.UnitTest
         /// When presented with a KeyInput the TryProcess command should consider if the mapped key
         /// is a direct insert not the provided key.  
         /// </summary>
-        [Test]
+        [Fact]
         public void KeyDown_InsertCheckShouldConsiderMapped()
         {
             var keyInput = KeyInputUtil.CharWithControlToKeyInput('e');
@@ -113,7 +113,7 @@ namespace VsVim.UnitTest
         /// the like.  If we're not in insert mode we don't consider intellisense in the key 
         /// processor
         /// </summary>
-        [Test]
+        [Fact]
         public void KeyDown_NonInsertShouldntCheckForCommand()
         {
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();

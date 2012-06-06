@@ -103,30 +103,30 @@ namespace Vim.UnitTest
             ///
             /// issue #911
             /// </summary>
-            [Test]
+            [Fact]
             public void DeleteKey()
             {
                 Create("dog cat bear");
                 EnterSelect(0, 4);
                 _vimBuffer.Process(VimKey.Delete);
-                Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
-                Assert.AreEqual("cat bear", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal("cat bear", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// The backspace key should delete the selection and not insert any text into the 
             /// line
             /// </summary>
-            [Test]
+            [Fact]
             public void BackspaceKey()
             {
                 Create("dog cat bear");
                 EnterSelect(0, 4);
                 _vimBuffer.Process(VimKey.Back);
-                Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
-                Assert.AreEqual("cat bear", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal("cat bear", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
         }
 

@@ -117,15 +117,15 @@ namespace Vim.UnitTest
         /// <summary>
         /// If there is no focussed IVimBuffer then the macro playback should use the original IVimBuffer
         /// </summary>
-        [Test]
+        [Fact]
         public void RunMacro_NoFocusedView()
         {
             Create("world");
             VimHost.FocusedTextView = null;
             TestRegister.UpdateValue("ihello ");
             _vimBuffer.Process("@c");
-            Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
-            Assert.AreEqual("hello world", _textView.GetLine(0).GetText());
+            Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+            Assert.Equal("hello world", _textView.GetLine(0).GetText());
         }
 
         /// <summary>
