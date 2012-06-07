@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Windows.Media;
 using EditorUtils;
 using EnvDTE;
 using Microsoft.FSharp.Core;
@@ -11,6 +12,7 @@ using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
@@ -18,8 +20,6 @@ using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
 using Command = EnvDTE.Command;
-using System.Windows.Media;
-using Microsoft.VisualStudio.Text.Classification;
 
 namespace VsVim
 {
@@ -460,6 +460,46 @@ namespace VsVim
             }
 
             return Result.CreateSuccess(textBuffer);
+        }
+
+        /// <summary>
+        /// IVsWindowFrame which contains this IVsWindowFrame.  They are allowed to nested arbitrarily 
+        /// </summary>
+        public static bool TryGetParent(this IVsWindowFrame vsWindowFrame, out IVsWindowFrame parentWindowFrame)
+        {
+            try
+            {
+                object parentObj;
+                int hresult = vsWindowFrame.GetProperty((int)__VSFPROPID2.VSFPROPID_ParentFrame, out parentObj);
+                if (!ErrorHandler.Succeeded(hresult))
+                {
+                    parentWindowFrame = null;
+                    return false;
+                }
+
+                parentWindowFrame = parentObj as IVsWindowFrame;
+                return parentWindowFrame != null;
+            }
+            catch (Exception)
+            {
+                parentWindowFrame = null;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// IVsWindowFrame instances can nest within each other.  This method will get the top most IVsWindowFrame
+        /// in the nesting
+        /// </summary>
+        public static IVsWindowFrame GetTopMost(this IVsWindowFrame vsWindowFrame)
+        {
+            IVsWindowFrame parent;
+            if (vsWindowFrame.TryGetParent(out parent))
+            {
+                return GetTopMost(parent);
+            }
+
+            return vsWindowFrame;
         }
 
         #endregion

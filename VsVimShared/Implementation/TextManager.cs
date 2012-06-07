@@ -165,6 +165,10 @@ namespace VsVim.Implementation
                 return false;
             }
 
+            // It's possible for IVsWindowFrame elements to nest within each other.  When closing we want to 
+            // close the actual tab in the editor so get the top most item
+            vsWindowFrame = vsWindowFrame.GetTopMost();
+
             var value = __FRAMECLOSE.FRAMECLOSE_NoSave;
             return ErrorHandler.Succeeded(vsWindowFrame.CloseFrame((uint)value));
         }
