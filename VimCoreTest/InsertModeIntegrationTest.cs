@@ -1,4 +1,5 @@
-﻿using EditorUtils;
+﻿using System;
+using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
@@ -128,6 +129,75 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(@":inoremap x axa", enter: true);
                 _vimBuffer.Process("ix");
                 Assert.Equal("axa", _textBuffer.GetLine(0).GetText());
+            }
+        }
+
+        public sealed class Paste : InsertModeIntegrationTest
+        {
+            [Fact]
+            public void Simple()
+            {
+                Create("world");
+                _register.UpdateValue("hello ");
+                _vimBuffer.ProcessNotation("<C-R>c");
+                Assert.Equal("hello world", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Test out the literal pasting with RR 
+            /// </summary>
+            [Fact]
+            public void SpecialLiteralAndFormatting()
+            {
+                Create("world");
+                _register.UpdateValue("hello ");
+                _vimBuffer.ProcessNotation("<C-R><C-R>c");
+                Assert.Equal("hello world", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Test out the literal + no indent pasting with RO
+            /// </summary>
+            [Fact]
+            public void SpecialLiteralAndNoIndent()
+            {
+                Create("world");
+                _register.UpdateValue("hello ");
+                _vimBuffer.ProcessNotation("<C-R><C-O>c");
+                Assert.Equal("hello world", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Test out the literal + indent pasting with RO
+            /// </summary>
+            [Fact]
+            public void SpecialLiteralAndIndent()
+            {
+                Create("world");
+                _register.UpdateValue("hello ");
+                _vimBuffer.ProcessNotation("<C-R><C-P>c");
+                Assert.Equal("hello world", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Linewise should be inserted literally.  Unlike a normal mode paste the new line isn't
+            /// inserted before the text.  Instead it's inserted after which is exactly how it's stored
+            /// in the register
+            /// </summary>
+            [Fact]
+            public void Linewise()
+            {
+                Create("dog");
+                _register.UpdateValue("cat" + Environment.NewLine, OperationKind.LineWise);
+                _vimBuffer.ProcessNotation("<C-R>c");
+                Assert.Equal(
+                    new[] { "cat", "dog" },
+                    _textBuffer.GetLines());
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint().Position);
             }
         }
 

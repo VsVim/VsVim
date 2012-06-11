@@ -284,6 +284,21 @@ type internal InsertUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Insert the specified text into the ITextBuffer at the current caret position and then move
+    /// the cursor to the end of the insert
+    member x.InsertText (text : string)=
+
+        x.EditWithUndoTransaciton "Insert Text" (fun () -> 
+
+            let position = x.CaretPoint.Position + text.Length
+            _textBuffer.Insert(x.CaretPoint.Position, text) |> ignore
+
+            // Move the caret to the end of the insertion in the current ITextSnapshot
+            let point = SnapshotPoint(x.CurrentSnapshot, position)
+            _operations.MoveCaretToPoint point)
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Move the caret in the given direction
     member x.MoveCaret direction = 
 
@@ -433,6 +448,7 @@ type internal InsertUtil
             | InsertCommand.DirectReplace c -> x.DirectReplace c
             | InsertCommand.InsertNewLine -> x.InsertNewLine()
             | InsertCommand.InsertTab -> x.InsertTab()
+            | InsertCommand.InsertText text -> x.InsertText text
             | InsertCommand.MoveCaret direction -> x.MoveCaret direction
             | InsertCommand.MoveCaretByWord direction -> x.MoveCaretByWord direction
             | InsertCommand.ShiftLineLeft -> x.ShiftLineLeft ()

@@ -18,6 +18,41 @@ type InsertKind =
 
     | Block of BlockSpan
 
+/// The CTRL-R command comes in a number of varieties which really come down to just the 
+/// following options.  Detailed information is available on ':help i_CTRL-R_CTRL-R'
+[<RequireQualifiedAccess>]
+[<System.Flags>]
+type PasteFlags =
+
+    | None = 0x0
+
+    /// The text should be properly intended
+    | Indent = 0x1
+
+    /// Both textwith and formatoptions apply
+    | Formatting = 0x2
+
+    /// The text should be processed as if it were typed
+    | TextAsTyped = 0x4
+
+/// Certain types of edits type predecence over the normal insert commands and are 
+/// represented here
+[<RequireQualifiedAccess>]
+type ActiveEditItem = 
+
+    /// In the middle of a word completion session
+    | WordCompletion of IWordCompletionSession 
+
+    /// In the middle of a paste operation.  Waiting for the register to paste from
+    | Paste 
+
+    /// In the middle of one of the special paste operations.  The provided flags should 
+    /// be passed along to the final Paste operation
+    | PasteSpecial of PasteFlags
+
+    /// No active items
+    | None
+
 /// Data relating to a particular Insert mode session
 type InsertSessionData = {
 
@@ -33,8 +68,8 @@ type InsertSessionData = {
     /// This is the current InsertCommand being built up
     CombinedEditCommand : InsertCommand option
 
-    /// This is the active IWordCompletionSession if one exists
-    ActiveWordCompletionSession : IWordCompletionSession option
+    /// The Active edit item 
+    ActiveEditItem : ActiveEditItem
 }
 
 [<RequireQualifiedAccess>]
@@ -63,7 +98,7 @@ type internal InsertMode
         InsertTextChange = None
         Transaction = None
         CombinedEditCommand = None
-        ActiveWordCompletionSession = None
+        ActiveEditItem = ActiveEditItem.None
     }
 
     let _bag = DisposableBag()
@@ -102,9 +137,10 @@ type internal InsertMode
                 ("<Esc>", RawInsertCommand.CustomCommand this.ProcessEscape)
                 ("<Insert>", RawInsertCommand.CustomCommand this.ProcessInsert)
                 ("<C-c>", RawInsertCommand.CustomCommand this.ProcessEscape)
+                ("<C-n>", RawInsertCommand.CustomCommand this.ProcessWordCompletionNext)
                 ("<C-o>", RawInsertCommand.CustomCommand this.ProcessNormalModeOneCommand)
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
-                ("<C-n>", RawInsertCommand.CustomCommand this.ProcessWordCompletionNext)
+                ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
             ]
 
         let mappedCommands : (string * RawInsertCommand) list = 
@@ -133,7 +169,10 @@ type internal InsertMode
         |> Observable.subscribe (fun args -> this.OnTextChangeCompleted args)
         |> _bag.Add
 
-    member x.ActiveWordCompletionSession = _sessionData.ActiveWordCompletionSession
+    member x.ActiveWordCompletionSession = 
+        match _sessionData.ActiveEditItem with
+        | ActiveEditItem.WordCompletion wordCompletionSession -> Some wordCompletionSession
+        | _ -> None
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
@@ -151,14 +190,13 @@ type internal InsertMode
     /// Cancel the active IWordCompletionSession if there is such a session 
     /// active
     member x.CancelWordCompletionSession () = 
-        match _sessionData.ActiveWordCompletionSession with
-        | None -> 
-            ()
-        | Some wordCompletionSession -> 
+        match _sessionData.ActiveEditItem with
+        | ActiveEditItem.WordCompletion wordCompletionSession -> 
             if not wordCompletionSession.IsDismissed then
                 wordCompletionSession.Dismiss()
 
-            _sessionData <- { _sessionData with ActiveWordCompletionSession = None }
+            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
+        | _ -> ()
 
     /// Can Insert mode handle this particular KeyInput value 
     member x.CanProcess keyInput = x.GetRawInsertCommand keyInput |> Option.isSome
@@ -231,7 +269,6 @@ type internal InsertMode
             match _wordUtil.GetFullWordSpan WordKind.NormalWord point with
             | None -> None
             | Some span -> SnapshotSpan(span.Start, x.CaretPoint) |> Some
-
 
     /// Get the word completions for the given word text in the ITextBuffer
     member x.GetWordCompletions (wordSpan : SnapshotSpan) =
@@ -412,7 +449,8 @@ type internal InsertMode
                 wordCompletionSession.Dismissed
                 |> Event.add (fun _ -> x.CancelWordCompletionSession())
 
-                _sessionData <- { _sessionData with ActiveWordCompletionSession = Some wordCompletionSession }
+                let activeEditItem = ActiveEditItem.WordCompletion
+                _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.WordCompletion wordCompletionSession }
 
         ProcessResult.Handled ModeSwitch.NoSwitch
 
@@ -464,6 +502,34 @@ type internal InsertMode
             _commandRanEvent.Trigger x args
 
         ProcessResult.OfCommandResult result
+
+    /// Paste the contents of the specified register with the given flags 
+    ///
+    /// TODO: Right now PasteFlags are ignored.  With better formatting support these should
+    /// be respected.  Since we let the host control formatting at this point there isn't a lot
+    /// that can be done now
+    member x.Paste (keyInput : KeyInput) (flags : PasteFlags) = 
+
+        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
+
+        let text = 
+            keyInput.RawChar
+            |> OptionUtil.map2 RegisterName.OfChar
+            |> Option.map _vimBuffer.RegisterMap.GetRegister
+            |> OptionUtil.map2 (fun register -> 
+                let value = register.StringValue
+                match value with
+                | "" -> None
+                | _ -> Some value)
+
+        match text with
+        | None -> 
+            _operations.Beep()
+            ProcessResult.Handled ModeSwitch.NoSwitch
+        | Some text -> 
+            let keyInputSet = KeyInputSet.OneKeyInput keyInput
+            let insertCommand = InsertCommand.InsertText text
+            x.RunInsertCommand insertCommand keyInputSet CommandFlags.None
 
     /// Try and process the KeyInput by considering the current text edit in Insert Mode
     member x.ProcessWithCurrentChange keyInput = 
@@ -529,14 +595,45 @@ type internal InsertMode
             x.CancelWordCompletionSession()
             x.Process keyInput
 
+    /// Start a paste session in insert mode
+    member x.ProcessPasteStart() =
+        x.CancelWordCompletionSession()
+        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Paste }
+        ProcessResult.Handled ModeSwitch.NoSwitch
+
+    /// Process the second key of a paste operation.  
+    member x.ProcessPaste keyInput = 
+
+        let pasteSpecial flags = 
+            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.PasteSpecial flags }
+            ProcessResult.Handled ModeSwitch.NoSwitch
+
+        // Get the text to be inserted.
+        if keyInput = KeyInputUtil.CharWithControlToKeyInput 'r' then
+            let flags = PasteFlags.Formatting ||| PasteFlags.Indent
+            pasteSpecial flags
+        elif keyInput = KeyInputUtil.CharWithControlToKeyInput 'o' then
+            let flags = PasteFlags.None
+            pasteSpecial flags
+        elif keyInput = KeyInputUtil.CharWithControlToKeyInput 'p' then
+            let flags = PasteFlags.Indent
+            pasteSpecial flags
+        else
+            let flags = PasteFlags.Formatting ||| PasteFlags.Indent ||| PasteFlags.TextAsTyped
+            x.Paste keyInput flags
+
     /// Process the KeyInput value
     member x.Process keyInput = 
 
-        match _sessionData.ActiveWordCompletionSession with
-        | Some wordCompletionSession -> 
+        match _sessionData.ActiveEditItem with
+        | ActiveEditItem.WordCompletion wordCompletionSession ->
             x.ProcessWithWordCompletionSession wordCompletionSession keyInput
-        | None -> 
-    
+        | ActiveEditItem.Paste ->
+            x.ProcessPaste keyInput
+        | ActiveEditItem.PasteSpecial pasteFlags ->
+            x.Paste keyInput pasteFlags
+        | ActiveEditItem.None -> 
+
             // Next try and process by examining the current change
             match x.ProcessWithCurrentChange keyInput with
             | Some result ->
@@ -586,6 +683,7 @@ type internal InsertMode
             | InsertCommand.ExtraTextChange textChange -> Some textChange
             | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine _editorOptions))
             | InsertCommand.InsertTab -> Some (TextChange.Insert "\t")
+            | InsertCommand.InsertText text -> Some (TextChange.Insert text)
             | InsertCommand.MoveCaret _ -> None
             | InsertCommand.MoveCaretByWord _ -> None
             | InsertCommand.ShiftLineLeft -> None
@@ -689,7 +787,7 @@ type internal InsertMode
             InsertKind = insertKind
             InsertTextChange = None
             CombinedEditCommand = None
-            ActiveWordCompletionSession = None
+            ActiveEditItem = ActiveEditItem.None
         }
 
         // If this is replace mode then go ahead and setup overwrite

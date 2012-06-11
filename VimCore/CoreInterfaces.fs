@@ -2219,6 +2219,9 @@ type InsertCommand  =
     /// Insert a tab into the ITextBuffer
     | InsertTab
 
+    /// Insert the specified text into the ITextBuffer
+    | InsertText of string
+
     /// Move the caret in the given direction
     | MoveCaret of Direction
 
@@ -2256,6 +2259,7 @@ type InsertCommand  =
             | DirectReplace c -> Some (c.ToString())
             | InsertNewLine -> EditUtil.NewLine editorOptions |> Some
             | InsertTab -> Some "\t"
+            | InsertText text -> Some text
             | MoveCaret _ -> None
             | MoveCaretByWord _ -> None
             | ShiftLineLeft -> None
