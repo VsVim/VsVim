@@ -7,8 +7,9 @@ Building
 ===
 
 1. Install the Visual Studio SDK 
-2. Open the Solution VsVim.sln
-3. Build
+2. Run Populate-References.ps1
+3. Open the Solution VsVim.sln
+4. Build
 
 VsVim.sln will only work on machines with both Visual Studio 2010 and 2012 installed.  For machines with only one or the other installed use VsVim10 and VsVim11 respectively.
 
