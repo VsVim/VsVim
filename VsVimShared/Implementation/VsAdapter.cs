@@ -27,6 +27,7 @@ namespace VsVim.Implementation
         private readonly RunningDocumentTable _table;
         private readonly IServiceProvider _serviceProvider;
         private readonly IVsMonitorSelection _monitorSelection;
+        private readonly IPowerToolsUtil _powerToolsUtil;
 
         internal bool InDebugMode
         {
@@ -62,6 +63,7 @@ namespace VsVim.Implementation
             IVsEditorAdaptersFactoryService editorAdaptersFactoryService,
             IEditorOptionsFactoryService editorOptionsFactoryService,
             IIncrementalSearchFactoryService incrementalSearchFactoryService,
+            IPowerToolsUtil powerToolsUtil,
             SVsServiceProvider serviceProvider)
         {
             _incrementalSearchFactoryService = incrementalSearchFactoryService;
@@ -72,6 +74,7 @@ namespace VsVim.Implementation
             _table = new RunningDocumentTable(_serviceProvider);
             _uiShell = _serviceProvider.GetService<SVsUIShell, IVsUIShell>();
             _monitorSelection = _serviceProvider.GetService<SVsShellMonitorSelection, IVsMonitorSelection>();
+            _powerToolsUtil = powerToolsUtil;
         }
 
         internal Result<IVsTextLines> GetTextLines(ITextBuffer textBuffer)
@@ -289,7 +292,12 @@ namespace VsVim.Implementation
         internal bool IsIncrementalSearchActive(ITextView textView)
         {
             var search = _incrementalSearchFactoryService.GetIncrementalSearch(textView);
-            return search != null && search.IsActive;
+            if (search != null && search.IsActive)
+            {
+                return true;
+            }
+
+            return _powerToolsUtil.IsQuickFindActive;
         }
 
         #region IVsAdapter

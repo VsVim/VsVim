@@ -20,6 +20,7 @@ namespace VsVim.UnitTest
         private readonly Mock<IVsEditorAdaptersFactoryService> _editorAdapterFactory;
         private readonly Mock<IEditorOptionsFactoryService> _editorOptionsFactory;
         private readonly Mock<IIncrementalSearchFactoryService> _incrementalSearchFactoryService;
+        private readonly Mock<IPowerToolsUtil> _powerToolsUtil;
         private readonly Mock<SVsServiceProvider> _serviceProvider;
         private readonly VsAdapter _adapterRaw;
         private readonly IVsAdapter _adapter;
@@ -30,6 +31,7 @@ namespace VsVim.UnitTest
             _editorAdapterFactory = _factory.Create<IVsEditorAdaptersFactoryService>();
             _editorOptionsFactory = _factory.Create<IEditorOptionsFactoryService>();
             _incrementalSearchFactoryService = _factory.Create<IIncrementalSearchFactoryService>();
+            _powerToolsUtil = _factory.Create<IPowerToolsUtil>();
             _serviceProvider = _factory.Create<SVsServiceProvider>();
             _serviceProvider.MakeService<SVsTextManager, IVsTextManager>(_factory);
             _serviceProvider.MakeService<SVsUIShell, IVsUIShell>(_factory);
@@ -38,6 +40,7 @@ namespace VsVim.UnitTest
                 _editorAdapterFactory.Object,
                 _editorOptionsFactory.Object,
                 _incrementalSearchFactoryService.Object,
+                _powerToolsUtil.Object,
                 _serviceProvider.Object);
             _adapter = _adapterRaw;
         }
@@ -161,5 +164,16 @@ namespace VsVim.UnitTest
             _factory.Verify();
         }
 
+        /// <summary>
+        /// The power tools quick find is considered an incremental search 
+        /// </summary>
+        [Fact]
+        public void IsIncrementalSearchActive_PowerTools()
+        {
+            _powerToolsUtil.SetupGet(x => x.IsQuickFindActive).Returns(true);
+
+            var textView = _factory.Create<ITextView>().Object;
+            Assert.True(_adapter.IsIncrementalSearchActive(textView));
+        }
     }
 }
