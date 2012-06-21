@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.Text.Classification;
 using Moq;
 using Xunit;
 using Vim.Extensions;
+using Vim.UI.Wpf.Implementation.CommandMargin;
 using Vim.UI.Wpf.Properties;
 using Vim.UnitTest.Mock;
 

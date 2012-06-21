@@ -3,8 +3,9 @@ using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Xunit;
-using Vim.UI.Wpf.Implementation;
 using Vim.UnitTest;
+using Vim.UI.Wpf.Implementation;
+using Vim.UI.Wpf.Implementation.BlockCaret;
 
 namespace Vim.UI.Wpf.UnitTest
 {

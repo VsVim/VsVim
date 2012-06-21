@@ -1,7 +1,7 @@
 ﻿using System;
 using Vim.Extensions;
 
-namespace Vim.UI.Wpf
+namespace Vim.UI.Wpf.Implementation.BlockCaret
 {
     internal sealed class BlockCaretController
     {

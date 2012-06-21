@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.Text.Classification;
 using Vim.Extensions;
 using Vim.UI.Wpf.Properties;
 
-namespace Vim.UI.Wpf
+namespace Vim.UI.Wpf.Implementation.CommandMargin
 {
     internal sealed class CommandMarginController
     {

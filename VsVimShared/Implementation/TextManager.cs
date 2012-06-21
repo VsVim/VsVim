@@ -47,17 +47,22 @@ namespace VsVim.Implementation
             get { return TextBuffers.Select(x => GetTextViews(x)).SelectMany(x => x); }
         }
 
-        internal ITextView ActiveTextView
+        internal ITextView ActiveTextViewOptional
         {
             get
             {
                 IVsTextView vsTextView;
                 IWpfTextView textView = null;
-                ErrorHandler.ThrowOnFailure(_textManager.GetActiveView(0, null, out vsTextView));
-                textView = _vsAdapter.EditorAdapter.GetWpfTextView(vsTextView);
-                if (textView == null)
+                try
                 {
-                    throw new InvalidOperationException();
+                    ErrorHandler.ThrowOnFailure(_textManager.GetActiveView(0, null, out vsTextView));
+                    textView = _vsAdapter.EditorAdapter.GetWpfTextView(vsTextView);
+                }
+                catch
+                {
+                    // Both ThrowOnFailure and GetWpfTextView can throw an exception.  The latter will
+                    // throw even if a non-null value is passed into it 
+                    textView = null;
                 }
                 return textView;
             }
@@ -250,7 +255,7 @@ namespace VsVim.Implementation
 
         ITextView ITextManager.ActiveTextViewOptional
         {
-            get { return ActiveTextView; }
+            get { return ActiveTextViewOptional; }
         }
 
         IEnumerable<ITextView> ITextManager.GetTextViews(ITextBuffer textBuffer)

@@ -4,7 +4,7 @@ using System.Windows;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Classification;
 
-namespace Vim.UI.Wpf
+namespace Vim.UI.Wpf.Implementation.CommandMargin
 {
     internal sealed class CommandMargin : IWpfTextViewMargin
     {

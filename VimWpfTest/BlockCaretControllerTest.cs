@@ -3,6 +3,7 @@ using Moq;
 using Xunit;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
+using Vim.UI.Wpf.Implementation.BlockCaret;
 
 namespace Vim.UI.Wpf.UnitTest
 {

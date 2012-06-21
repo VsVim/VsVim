@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using Microsoft.VisualStudio.Text.Classification;
 
-namespace Vim.UI.Wpf
+namespace Vim.UI.Wpf.Implementation.CommandMargin
 {
     /// <summary>
     /// Factory for creating the margin for Vim

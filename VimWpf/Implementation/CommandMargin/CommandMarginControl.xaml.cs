@@ -4,7 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace Vim.UI.Wpf
+namespace Vim.UI.Wpf.Implementation.CommandMargin
 {
     /// <summary>
     /// Interaction logic for CommandMarginControl.xaml

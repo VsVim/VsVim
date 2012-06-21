@@ -3,10 +3,10 @@ using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 
-namespace Vim.UI.Wpf.Implementation
+namespace Vim.UI.Wpf.Implementation.BlockCaret
 {
-    [Export(typeof(IBlockCaretFactoryService))]
-    internal sealed class BlockCaretFactoryService : IBlockCaretFactoryService
+    [Export(typeof(IVimBufferCreationListener))]
+    internal sealed class BlockCaretFactoryService : IVimBufferCreationListener
     {
         internal const string BlockCaretAdornmentLayerName = "BlockCaretAdornmentLayer";
 
@@ -27,10 +27,27 @@ namespace Vim.UI.Wpf.Implementation
             _protectedOperations = protectedOperations;
         }
 
-        public IBlockCaret CreateBlockCaret(IWpfTextView textView)
+        private IBlockCaret CreateBlockCaret(IWpfTextView textView)
         {
             var formatMap = _formatMapService.GetEditorFormatMap(textView);
             return new BlockCaret(textView, BlockCaretAdornmentLayerName, formatMap, _protectedOperations);
         }
+
+        #region IVimBufferCreationListener
+
+        void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
+        {
+            var textView = vimBuffer.TextView as IWpfTextView;
+            if (textView == null)
+            {
+                return;
+            }
+
+            // Setup the block caret 
+            var caret = CreateBlockCaret(textView);
+            var caretController = new BlockCaretController(vimBuffer, caret);
+        }
+
+        #endregion
     }
 }
