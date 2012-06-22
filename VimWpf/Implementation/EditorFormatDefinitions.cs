@@ -28,29 +28,4 @@ namespace Vim.UI.Wpf.Implementation
             this.Fill = new SolidColorBrush(Colors.LightBlue);
         }
     }
-
-    [Export(typeof(EditorFormatDefinition))]
-    [Name(EditorFormatDefinitionNames.BlockCaret)]
-    [UserVisible(true)]
-    internal sealed class BlockCaretMarkerDefinition : EditorFormatDefinition
-    {
-        internal BlockCaretMarkerDefinition()
-        {
-            this.DisplayName = "VsVim Block Caret";
-            this.ForegroundColor = Colors.Black;
-        }
-    }
-
-    [Export(typeof(EditorFormatDefinition))]
-    [Name(EditorFormatDefinitionNames.CommandMargin)]
-    [UserVisible(true)]
-    internal sealed class CommandMarginDefinition : EditorFormatDefinition
-    {
-        internal CommandMarginDefinition()
-        {
-            this.DisplayName = "VsVim Command Window";
-            this.ForegroundColor = Colors.Black;
-            this.BackgroundColor = Colors.White;
-        }
-    }
 }

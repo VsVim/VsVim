@@ -210,7 +210,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// </summary>
         private void UpdateTextColor()
         {
-            var propertyMap = _editorFormatMap.GetProperties(EditorFormatDefinitionNames.CommandMargin);
+            var propertyMap = _editorFormatMap.GetProperties(CommandMarginFormatDefinition.Name);
             if (propertyMap.Contains(EditorFormatDefinition.ForegroundBrushId))
             {
                 _margin.TextForeground = (Brush)propertyMap[EditorFormatDefinition.ForegroundBrushId];
