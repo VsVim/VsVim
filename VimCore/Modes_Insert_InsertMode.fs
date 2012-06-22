@@ -174,6 +174,12 @@ type internal InsertMode
         | ActiveEditItem.WordCompletion wordCompletionSession -> Some wordCompletionSession
         | _ -> None
 
+    member x.IsInPaste =
+        match _sessionData.ActiveEditItem with
+        | ActiveEditItem.Paste -> true
+        | ActiveEditItem.PasteSpecial _ -> true
+        | _ -> false
+
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
     member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
@@ -826,6 +832,7 @@ type internal InsertMode
 
     interface IInsertMode with 
         member x.ActiveWordCompletionSession = x.ActiveWordCompletionSession
+        member x.IsInPaste = x.IsInPaste
         member x.VimTextBuffer = _vimBuffer.VimTextBuffer
         member x.CommandNames =  _commandMap |> Seq.map (fun p -> p.Key) |> Seq.map OneKeyInput
         member x.ModeKind = x.ModeKind

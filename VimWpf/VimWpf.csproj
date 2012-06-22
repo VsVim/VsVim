@@ -55,6 +55,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Implementation\BlockCaret\BlockCaretController.cs" />
+    <Compile Include="Implementation\Paste\PasteAdornment.cs" />
+    <Compile Include="Implementation\Paste\PasteController.cs" />
+    <Compile Include="Implementation\Paste\PasteFactoryService.cs" />
     <Compile Include="KeyboardMap_Builder.cs" />
     <Compile Include="EditorFormatDefinitionNames.cs" />
     <Compile Include="Extensions.cs" />

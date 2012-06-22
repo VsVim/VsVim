@@ -4008,6 +4008,9 @@ and IInsertMode =
     /// The active IWordCompletionSession if one is active
     abstract ActiveWordCompletionSession : IWordCompletionSession option
 
+    /// Is insert mode currently in a paste operation
+    abstract IsInPaste : bool
+
     /// Is this KeyInput value considered to be a direct insert command in the current
     /// state of the IVimBuffer.  This does not apply to commands which edit the buffer
     /// like 'CTRL-D' but instead commands like 'a', 'b' which directly edit the 
