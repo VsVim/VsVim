@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
-using System.Windows.Media;
 using Microsoft.VisualStudio.Text.Classification;
 using Vim.Extensions;
 using Vim.UI.Wpf.Properties;
@@ -211,15 +210,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private void UpdateTextColor()
         {
             var propertyMap = _editorFormatMap.GetProperties(CommandMarginFormatDefinition.Name);
-            if (propertyMap.Contains(EditorFormatDefinition.ForegroundBrushId))
-            {
-                _margin.TextForeground = (Brush)propertyMap[EditorFormatDefinition.ForegroundBrushId];
-            }
-
-            if (propertyMap.Contains(EditorFormatDefinition.BackgroundColorId))
-            {
-                _margin.TextBackground = (Brush)propertyMap[EditorFormatDefinition.BackgroundBrushId];
-            }
+            _margin.TextForeground = propertyMap.GetForegroundBrush(SystemColors.WindowTextBrush);
+            _margin.TextForeground = propertyMap.GetForegroundBrush(SystemColors.WindowBrush);
         }
 
         #region Event Handlers

@@ -683,6 +683,23 @@ namespace Vim.UnitTest
             return last;
         }
 
+        /// <summary>
+        /// Process the full notation as a series of KeyInput values
+        /// </summary>
+        public static void ProcessNotation(this IMode mode, string notation, bool enter = false)
+        {
+            var keyInputSet = KeyNotationUtil.StringToKeyInputSet(notation);
+            foreach (var keyInput in keyInputSet.KeyInputs)
+            {
+                mode.Process(keyInput);
+            }
+
+            if (enter)
+            {
+                mode.Process(KeyInputUtil.EnterKey);
+            }
+        }
+
         #endregion
 
         #region IVimBufferFactory

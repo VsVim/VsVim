@@ -199,6 +199,18 @@ namespace Vim.UnitTest
                     _textBuffer.GetLines());
                 Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint().Position);
             }
+
+            /// <summary>
+            /// The Esc key should only leave the paste part of the operation and not leave insert 
+            /// mode itself
+            /// </summary>
+            [Fact]
+            public void EscapeShouldStayInInsert()
+            {
+                Create("dog");
+                _vimBuffer.ProcessNotation("<C-R><Esc>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+            }
         }
 
         public sealed class Misc : InsertModeIntegrationTest

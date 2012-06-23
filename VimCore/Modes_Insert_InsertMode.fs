@@ -518,24 +518,27 @@ type internal InsertMode
 
         _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
 
-        let text = 
-            keyInput.RawChar
-            |> OptionUtil.map2 RegisterName.OfChar
-            |> Option.map _vimBuffer.RegisterMap.GetRegister
-            |> OptionUtil.map2 (fun register -> 
-                let value = register.StringValue
-                match value with
-                | "" -> None
-                | _ -> Some value)
-
-        match text with
-        | None -> 
-            _operations.Beep()
+        if keyInput = KeyInputUtil.EscapeKey then
             ProcessResult.Handled ModeSwitch.NoSwitch
-        | Some text -> 
-            let keyInputSet = KeyInputSet.OneKeyInput keyInput
-            let insertCommand = InsertCommand.InsertText text
-            x.RunInsertCommand insertCommand keyInputSet CommandFlags.None
+        else
+            let text = 
+                keyInput.RawChar
+                |> OptionUtil.map2 RegisterName.OfChar
+                |> Option.map _vimBuffer.RegisterMap.GetRegister
+                |> OptionUtil.map2 (fun register -> 
+                    let value = register.StringValue
+                    match value with
+                    | "" -> None
+                    | _ -> Some value)
+
+            match text with
+            | None -> 
+                _operations.Beep()
+                ProcessResult.Handled ModeSwitch.NoSwitch
+            | Some text -> 
+                let keyInputSet = KeyInputSet.OneKeyInput keyInput
+                let insertCommand = InsertCommand.InsertText text
+                x.RunInsertCommand insertCommand keyInputSet CommandFlags.None
 
     /// Try and process the KeyInput by considering the current text edit in Insert Mode
     member x.ProcessWithCurrentChange keyInput = 
