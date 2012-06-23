@@ -255,6 +255,141 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class Set : InterpreterTest
+        {
+            /// <summary>
+            /// Print out the modified settings
+            /// </summary>
+            [Fact]
+            public void PrintModifiedSettings()
+            {
+                Create("");
+                _localSettings.ExpandTab = true;
+                ParseAndRun("set");
+                Assert.Equal("notimeout" + Environment.NewLine + "expandtab", _statusUtil.LastStatus);
+            }
+
+            /// <summary>
+            /// Test the assignment of a string value
+            /// </summary>
+            [Fact]
+            public void Assign_StringValue_Global()
+            {
+                Create("");
+                ParseAndRun(@"set sections=cat");
+                Assert.Equal("cat", _globalSettings.Sections);
+            }
+
+            /// <summary>
+            /// Test the assignment of a local string value
+            /// </summary>
+            [Fact]
+            public void Assign_StringValue_Local()
+            {
+                Create("");
+                ParseAndRun(@"set nrformats=alpha");
+                Assert.Equal("alpha", _localSettings.NumberFormats);
+            }
+
+            /// <summary>
+            /// Make sure we can use set for a numbered value setting
+            /// </summary>
+            [Fact]
+            public void Assign_NumberValue()
+            {
+                Create("");
+                ParseAndRun(@"set ts=42");
+                Assert.Equal(42, _localSettings.TabStop);
+            }
+
+            /// <summary>
+            /// Assign multiple values and verify it works
+            /// </summary>
+            [Fact]
+            public void Assign_Many()
+            {
+                Create("");
+                ParseAndRun(@"set ai vb ts=42");
+                Assert.Equal(42, _localSettings.TabStop);
+                Assert.True(_localSettings.AutoIndent);
+                Assert.True(_globalSettings.VisualBell);
+            }
+
+            /// <summary>
+            /// Make sure that if there are mulitple assignments and one is unsupported that the
+            /// others work
+            /// 
+            /// Raised in issue #764
+            /// </summary>
+            [Fact]
+            public void Assign_ManyUnsupported()
+            {
+                Create("");
+                ParseAndRun(@"set vb t_vb=");
+                Assert.True(_globalSettings.VisualBell);
+            }
+
+            /// <summary>
+            /// Toggle a toggle option off
+            /// </summary>
+            [Fact]
+            public void Toggle_Off()
+            {
+                Create("");
+                _localSettings.ExpandTab = true;
+                ParseAndRun(@"set noet");
+                Assert.False(_localSettings.ExpandTab);
+            }
+
+            /// <summary>
+            /// Invert a toggle setting to on
+            /// </summary
+            [Fact]
+            public void Toggle_InvertOn()
+            {
+                Create("");
+                _localSettings.ExpandTab = false;
+                ParseAndRun(@"set et!");
+                Assert.True(_localSettings.ExpandTab);
+            }
+
+            /// <summary>
+            /// Make sure that we can toggle the options that have an underscore in them
+            /// </summary>
+            [Fact]
+            public void Toggle_OptionWithUnderscore()
+            {
+                Create("");
+                Assert.True(_globalSettings.UseEditorIndent);
+                ParseAndRun(@"set novsvim_useeditorindent");
+                Assert.False(_globalSettings.UseEditorIndent);
+            }
+
+            /// <summary>
+            /// Make sure we can deal with a trailing comment
+            /// </summary>
+            [Fact]
+            public void Toggle_TrailingComment()
+            {
+                Create("");
+                _localSettings.AutoIndent = false;
+                ParseAndRun(@"set ai ""what's going on?");
+                Assert.True(_localSettings.AutoIndent);
+            }
+
+            /// <summary>
+            /// Invert a toggle setting to off
+            /// </summary
+            [Fact]
+            public void Toggle_InvertOff()
+            {
+                Create("");
+                _localSettings.ExpandTab = true;
+                ParseAndRun(@"set et!");
+                Assert.False(_localSettings.ExpandTab);
+            }
+        }
+
         public sealed class Misc : InterpreterTest
         {
             private LineRangeSpecifier ParseLineRange(string lineRangeText)
@@ -819,138 +954,6 @@ namespace Vim.UnitTest
                 ParseAndRun("retab!");
                 Assert.Equal("\tcat", _textBuffer.GetLine(0).GetText());
                 Assert.Equal("\tdog", _textBuffer.GetLine(1).GetText());
-            }
-
-            /// <summary>
-            /// Print out the modified settings
-            /// </summary>
-            [Fact]
-            public void Set_PrintModifiedSettings()
-            {
-                Create("");
-                _localSettings.ExpandTab = true;
-                ParseAndRun("set");
-                Assert.Equal("notimeout" + Environment.NewLine + "expandtab", _statusUtil.LastStatus);
-            }
-
-            /// <summary>
-            /// Test the assignment of a string value
-            /// </summary>
-            [Fact]
-            public void Set_Assign_StringValue_Global()
-            {
-                Create("");
-                ParseAndRun(@"set sections=cat");
-                Assert.Equal("cat", _globalSettings.Sections);
-            }
-
-            /// <summary>
-            /// Test the assignment of a local string value
-            /// </summary>
-            [Fact]
-            public void Set_Assign_StringValue_Local()
-            {
-                Create("");
-                ParseAndRun(@"set nrformats=alpha");
-                Assert.Equal("alpha", _localSettings.NumberFormats);
-            }
-
-            /// <summary>
-            /// Make sure we can use set for a numbered value setting
-            /// </summary>
-            [Fact]
-            public void Set_Assign_NumberValue()
-            {
-                Create("");
-                ParseAndRun(@"set ts=42");
-                Assert.Equal(42, _localSettings.TabStop);
-            }
-
-            /// <summary>
-            /// Assign multiple values and verify it works
-            /// </summary>
-            [Fact]
-            public void Set_Assign_Many()
-            {
-                Create("");
-                ParseAndRun(@"set ai vb ts=42");
-                Assert.Equal(42, _localSettings.TabStop);
-                Assert.True(_localSettings.AutoIndent);
-                Assert.True(_globalSettings.VisualBell);
-            }
-
-            /// <summary>
-            /// Make sure that if there are mulitple assignments and one is unsupported that the
-            /// others work
-            /// 
-            /// Raised in issue #764
-            /// </summary>
-            [Fact]
-            public void Set_Assign_ManyUnsupported()
-            {
-                Create("");
-                ParseAndRun(@"set vb t_vb=");
-                Assert.True(_globalSettings.VisualBell);
-            }
-
-            /// <summary>
-            /// Toggle a toggle option off
-            /// </summary>
-            [Fact]
-            public void Set_Toggle_Off()
-            {
-                Create("");
-                _localSettings.ExpandTab = true;
-                ParseAndRun(@"set noet");
-                Assert.False(_localSettings.ExpandTab);
-            }
-
-            /// <summary>
-            /// Invert a toggle setting to on
-            /// </summary
-            [Fact]
-            public void Set_Toggle_InvertOn()
-            {
-                Create("");
-                _localSettings.ExpandTab = false;
-                ParseAndRun(@"set et!");
-                Assert.True(_localSettings.ExpandTab);
-            }
-
-            /// <summary>
-            /// Make sure that we can toggle the options that have an underscore in them
-            /// </summary>
-            [Fact]
-            public void Set_Toggle_OptionWithUnderscore()
-            {
-                Create("");
-                Assert.True(_globalSettings.UseEditorIndent);
-                ParseAndRun(@"set novsvim_useeditorindent");
-                Assert.False(_globalSettings.UseEditorIndent);
-            }
-
-            /// <summary>
-            /// Make sure we can deal with a trailing comment
-            /// </summary>
-            [Fact]
-            public void Set_Toggle_TrailingComment()
-            {
-                Create("");
-                _localSettings.AutoIndent = false;
-                ParseAndRun(@"set ai ""what's going on?");
-                Assert.True(_localSettings.AutoIndent);
-            }
-
-            /// <summary>
-            /// Invert a toggle setting to off
-            /// </summary
-            [Fact]
-            public void Set_Toggle_InvertOff()
-            {
-                Create("");
-                _localSettings.ExpandTab = true;
-                ParseAndRun(@"set et!");
-                Assert.False(_localSettings.ExpandTab);
             }
 
             /// <summary>
