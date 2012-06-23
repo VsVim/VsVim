@@ -21,6 +21,7 @@ namespace Vim.UnitTest
         protected TestableStatusUtil _statusUtil;
         protected IVimGlobalSettings _globalSettings;
         protected IVimLocalSettings _localSettings;
+        protected IVimWindowSettings _windowSettings;
         protected IKeyMap _keyMap;
 
         /// <summary>
@@ -48,6 +49,7 @@ namespace Vim.UnitTest
                 statusUtil: _statusUtil);
             _vimBuffer = CreateVimBuffer(_vimBufferData);
             _vimTextBuffer = _vimBufferData.VimTextBuffer;
+            _windowSettings = _vimBufferData.WindowSettings;
             _localSettings = _vimBufferData.LocalSettings;
             _globalSettings = _localSettings.GlobalSettings;
             _textBuffer = _vimBufferData.TextBuffer;
@@ -387,6 +389,17 @@ namespace Vim.UnitTest
                 _localSettings.ExpandTab = true;
                 ParseAndRun(@"set et!");
                 Assert.False(_localSettings.ExpandTab);
+            }
+
+            /// <summary>
+            /// Make sure that we can handle window settings as well in the interpreter
+            /// </summary>
+            [Fact]
+            public void Toggle_WindowSetting()
+            {
+                Create("");
+                ParseAndRun(@"set cursorline");
+                Assert.True(_windowSettings.CursorLine);
             }
         }
 
