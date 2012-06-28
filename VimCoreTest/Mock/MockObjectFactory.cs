@@ -416,11 +416,19 @@ namespace Vim.UnitTest.Mock
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
             var mock = factory.Create<IServiceProvider>();
-            foreach (var tuple in serviceList)
-            {
-                var localTuple = tuple;
-                mock.Setup(x => x.GetService(localTuple.Item1)).Returns(localTuple.Item2);
-            }
+            mock
+                .Setup(x => x.GetService(It.IsAny<Type>()))
+                .Returns<Type>(type =>
+                    {
+                        foreach (var tuple in serviceList)
+                        {
+                            if (tuple.Item1 == type)
+                            {
+                                return tuple.Item2;
+                            }
+                        }
+                        return null;
+                    });
 
             return mock;
         }
