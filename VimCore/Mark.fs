@@ -134,6 +134,7 @@ type Letter =
 [<NoComparison>]
 type LocalMark =
     | Letter of Letter
+    | LastInsertExit
     | LastSelectionStart
     | LastSelectionEnd
 
@@ -144,6 +145,7 @@ type LocalMark =
         | Letter letter -> letter.Char
         | LastSelectionStart -> '<'
         | LastSelectionEnd -> '>'
+        | LastInsertExit -> '^'
 
     static member All =
         seq {
@@ -161,6 +163,7 @@ type LocalMark =
             match c with 
             | '<' -> Some LocalMark.LastSelectionStart
             | '>' -> Some LocalMark.LastSelectionEnd
+            | '^' -> Some LocalMark.LastInsertExit
             | _ -> None
 
 [<RequireQualifiedAccess>]

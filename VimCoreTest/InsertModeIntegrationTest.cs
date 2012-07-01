@@ -213,6 +213,141 @@ namespace Vim.UnitTest
             }
         }
 
+        /// <summary>
+        /// Test the behavior of the '^ and `^ motion in insert mode
+        /// </summary>
+        public sealed class LastCaretEditMark : InsertModeIntegrationTest
+        {
+            [Fact]
+            public void Simple()
+            {
+                Create("cat", "dog", "fish");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("big <Esc>");
+                _textView.MoveCaretToLine(0);
+                _vimBuffer.ProcessNotation("'^");
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// When using the `^ marker make sure we go to the exact caret position of the 
+            /// last edit.  This is the position before insert mode moved it one to the left
+            /// as a result of hitting Esc
+            /// </summary>
+            [Fact]
+            public void SimpleExact()
+            {
+                Create("cat", "dog", "fish");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("big <Esc>");
+                _textView.MoveCaretToLine(0);
+                _vimBuffer.ProcessNotation("`^");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 4), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// When a line is added above the '^ marker needs to move down a line and follow
+            /// it
+            /// </summary>
+            [Fact]
+            public void AddLineAbove()
+            {
+                Create("cat", "dog", "fish");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("big <Esc>");
+                UnnamedRegister.UpdateValue("tree" + Environment.NewLine, OperationKind.LineWise);
+                _textView.MoveCaretToLine(0);
+                _vimBuffer.ProcessNotation("p");
+                _vimBuffer.ProcessNotation("'^");
+                Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Adding a line below the '^ mark shouldn't be affected by a line that is added below
+            /// it
+            /// </summary>
+            [Fact]
+            public void AddLineBelow()
+            {
+                Create("cat", "dog", "fish");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("big <Esc>");
+                UnnamedRegister.UpdateValue("tree" + Environment.NewLine, OperationKind.LineWise);
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.ProcessNotation("p");
+                _vimBuffer.ProcessNotation("'^");
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// When an edit occurs to the last edit line the column position should be unaffected.  This
+            /// stands in contracts to editting lines which does pay attention to tracking the offsets
+            /// </summary>
+            [Fact]
+            public void EditTheEditLine()
+            {
+                Create("cat", "dog", "fish");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("big <Esc>");
+                UnnamedRegister.UpdateValue("cat ", OperationKind.CharacterWise);
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("P");
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.ProcessNotation("`^");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 4), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// When the edit line is shrunk so that the tracked caret position isn't possible on that line
+            /// anymore it should just put it in the last possible position
+            /// </summary>
+            [Fact]
+            public void ClearTheEditLine()
+            {
+                Create("cat", "dog", "fish");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("big<Esc>");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("dw");
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.ProcessNotation("`^");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// The last edit line is shared across different IVimBuffer instances
+            /// </summary>
+            [Fact]
+            public void SharedAcrossBuffers()
+            {
+                Create("cat", "dog", "fish");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("big <Esc>");
+
+                var textViewRoleSet = TextEditorFactoryService.CreateTextViewRoleSet(
+                    PredefinedTextViewRoles.PrimaryDocument,
+                    PredefinedTextViewRoles.Document,
+                    PredefinedTextViewRoles.Interactive,
+                    PredefinedTextViewRoles.Editable);
+                var altTextView = TextEditorFactoryService.CreateTextView(_textBuffer, textViewRoleSet);
+                var altVimBuffer = CreateVimBuffer(CreateVimBufferData(altTextView));
+                altVimBuffer.ProcessNotation("'^");
+                Assert.Equal(_textBuffer.GetLine(1).Start, altTextView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// The ^ mark doesn't survive deletes of the line that contains it
+            /// </summary>
+            [Fact]
+            public void DoesntSurviveDeletes()
+            {
+                Create("cat", "dog", "fish");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("big <Esc>dd");
+                Assert.True(_vimBuffer.VimTextBuffer.LastInsertExitPoint.IsNone());
+            }
+        }
+
         public sealed class Misc : InsertModeIntegrationTest
         {
             /// <summary>

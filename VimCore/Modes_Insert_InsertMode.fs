@@ -402,6 +402,9 @@ type internal InsertMode
         if _broker.IsCompletionActive || _broker.IsSignatureHelpActive || _broker.IsQuickInfoActive then
             _broker.DismissDisplayWindows()
 
+        // Save the last edit point before moving the column to the left
+        _vimBuffer.VimTextBuffer.LastInsertExitPoint <- Some x.CaretPoint
+
         // Don't move the caret for block inserts.  It's explicitly positioned 
         let moveCaretLeft = 
             match _sessionData.InsertKind with

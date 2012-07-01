@@ -3715,6 +3715,9 @@ and IVimTextBuffer =
     /// and the SnapshotPoint within the span where the caret should be positioned
     abstract LastVisualSelection : VisualSelection option with get, set
 
+    /// The point the caret occupied when Insert mode was exitted 
+    abstract LastInsertExitPoint : SnapshotPoint option with get, set
+
     /// The set of active local marks in the ITextBuffer
     abstract LocalMarks : (LocalMark * VirtualSnapshotPoint) seq
 
