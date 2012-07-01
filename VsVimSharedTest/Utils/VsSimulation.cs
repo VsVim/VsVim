@@ -13,6 +13,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Vim;
+using Vim.Extensions;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
 
@@ -412,6 +413,7 @@ namespace VsVim.UnitTest.Utils
             _factory = new MockRepository(MockBehavior.Strict);
             _defaultKeyboardDevice = new DefaultKeyboardDevice(InputManager.Current);
             _testableSynchronizationContext = new TestableSynchronizationContext();
+            _simulateStandardKeyMappings = simulateStandardKeyMappings;
 
             // Create the IVsAdapter and pick reasonable defaults here.  Consumers can modify 
             // this via an exposed property
@@ -433,11 +435,6 @@ namespace VsVim.UnitTest.Utils
             _defaultCommandTarget = new DefaultCommandTarget(
                 bufferCoordinator.VimBuffer.TextView,
                 editorOperationsFactoryService.GetEditorOperations(bufferCoordinator.VimBuffer.TextView));
-
-            // Visual Studio hides the default IOleCommandTarget inside of the IWpfTextView property
-            // bag.  The default KeyProcessor implementation looks here for IOleCommandTarget to 
-            // process text input
-            _wpfTextView.Properties[typeof(IOleCommandTarget)] = _defaultCommandTarget;
 
             // Create the VsCommandTarget.  It's next is the final and default Visual Studio 
             // command target
@@ -463,6 +460,15 @@ namespace VsVim.UnitTest.Utils
             {
                 _commandTarget = vsCommandTarget;
             }
+
+            // Visual Studio hides the default IOleCommandTarget inside of the IWpfTextView property
+            // bag.  The default KeyProcessor implementation looks here for IOleCommandTarget to 
+            // process text input.  
+            //
+            // This should always point to the head of the IOleCommandTarget chain.  In the implementation
+            // it actually points to the IVsTextView implementation which then immediately routes to the
+            // IOleCommandTarget head
+            _wpfTextView.Properties[typeof(IOleCommandTarget)] = _commandTarget;
 
             // Create the input controller.  Make sure that the VsVim one is ahead in the list
             // from the default Visual Studio one.  We can guarantee this is true due to MEF 
@@ -540,26 +546,16 @@ namespace VsVim.UnitTest.Utils
         }
 
         /// <summary>
-        /// Run the KeyInput through IOleCommandTarget
+        /// Run the KeyInput through IOleCommandTarget.  This is the primary entry point for 
         /// </summary>
         private bool RunInOleCommandTarget(KeyInput keyInput)
         {
             var oleCommandData = OleCommandData.Empty;
             try
             {
-                // It appears that Visual Studio will not use IOleCommandTarget to process alpha
-                // characters when they are combined with the control key unless they are mapped
-                // to a command.  Instead it will just push the input to the window directly.
-                //
-                // TODO: Need to investigate why this is the case.  
-                if (Char.IsLetter(keyInput.Char) && keyInput.KeyModifiers == KeyModifiers.Control)
+                if (!TryConvertToOleCommandData(keyInput, out oleCommandData))
                 {
                     return false;
-                }
-
-                if (!OleCommandUtil.TryConvert(keyInput, SimulateStandardKeyMappings, out oleCommandData))
-                {
-                    throw new Exception("Couldn't convert the KeyInput into OleCommandData");
                 }
 
                 if (!RunQueryStatus(oleCommandData))
@@ -703,6 +699,27 @@ namespace VsVim.UnitTest.Utils
                 key);
             keyUpEventArgs.RoutedEvent = UIElement.KeyUpEvent;
             _defaultInputController.HandleKeyUp(this, keyUpEventArgs);
+        }
+
+        /// <summary>
+        /// Try and convert the provided KeyInput value into OleCommandData.  This conversion is meant
+        /// to simulate the standard converison of key input into OLE information in Visual Studio. This
+        /// means we need to reproduce all of the behavior including not converting textual input
+        /// here (unless it maps to a command).  Textual input typcially gets routed through WPF and 
+        /// is routed to IOleCommandTarget in the default handler
+        /// </summary>
+        private bool TryConvertToOleCommandData(KeyInput keyInput, out OleCommandData oleCommandData)
+        {
+            if (keyInput.RawChar.IsSome())
+            {
+                if (Char.IsLetterOrDigit(keyInput.Char))
+                {
+                    oleCommandData = OleCommandData.Empty;
+                    return false;
+                }
+            }
+
+            return OleCommandUtil.TryConvert(keyInput, SimulateStandardKeyMappings, out oleCommandData);
         }
     }
 }
