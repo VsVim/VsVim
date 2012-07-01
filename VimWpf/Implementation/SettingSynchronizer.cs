@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.Composition;
+﻿using System;
+using System.ComponentModel.Composition;
+using System.Windows.Threading;
 using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.UI.Wpf.Implementation
@@ -9,18 +11,43 @@ namespace Vim.UI.Wpf.Implementation
     [Export(typeof(IVimBufferCreationListener))]
     internal sealed class SettingSynchronizer : IVimBufferCreationListener
     {
-        private void OnSettingChanged(IVimBuffer buffer, SettingEventArgs args)
+        IProtectedOperations _protectedOperations;
+
+        [ImportingConstructor]
+        internal SettingSynchronizer(IProtectedOperations protectedOperations)
+        {
+            _protectedOperations = protectedOperations;
+        }
+
+        private void OnSettingChanged(IVimBuffer vimBuffer, SettingEventArgs args)
         {
             var setting = args.Setting;
-            if (setting.Name == WindowSettingNames.CursorLineName && buffer.TextView.Options != null)
+            if (setting.Name == WindowSettingNames.CursorLineName)
             {
-                buffer.TextView.Options.SetOptionValue(DefaultWpfViewOptions.EnableHighlightCurrentLineId, buffer.WindowSettings.CursorLine);
+                SyncVimToEditor(vimBuffer);
             }
+        }
+
+        private void SyncVimToEditor(IVimBuffer vimBuffer)
+        {
+            var options = vimBuffer.TextView.Options;
+            if (options == null)
+            {
+                return;
+            }
+
+            options.SetOptionValue(DefaultWpfViewOptions.EnableHighlightCurrentLineId, vimBuffer.WindowSettings.CursorLine);
         }
 
         void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
         {
             vimBuffer.WindowSettings.SettingChanged += (_, args) => OnSettingChanged(vimBuffer, args);
+
+            // On startup enforce the vim cursor line setting over any Visual Studio default.  This is important
+            // because the default changes between Dev10 (off) and Dev11 (on).  Need to be consistent here and
+            // choose the Vim setting
+            Action action = () => SyncVimToEditor(vimBuffer);
+            _protectedOperations.BeginInvoke(action, DispatcherPriority.Loaded);
         }
     }
 }
