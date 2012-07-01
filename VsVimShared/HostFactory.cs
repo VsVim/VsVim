@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.Diagnostics;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
@@ -76,6 +77,10 @@ namespace VsVim
             _bufferCoordinatorFactory = bufferCoordinatorFactory;
 
             _vim.AutoLoadVimRc = false;
+
+#if DEBUG
+            VimTrace.TraceSwitch.Level = TraceLevel.Info;
+#endif
         }
 
         private void MaybeLoadVimRc()

@@ -32,7 +32,7 @@ namespace VsVim.UnitTest.Utils
     /// </summary>
     internal sealed class VsSimulation
     {
-        #region KeyProcessor
+        #region SimulationKeyProcessor
 
         /// <summary>
         /// Visual Studio inserts a KeyProcess into the chain which turns TextInput events

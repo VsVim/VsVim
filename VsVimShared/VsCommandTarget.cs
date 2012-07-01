@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using EditorUtils;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;
@@ -365,6 +366,7 @@ namespace VsVim
                 EditCommand editCommand;
                 if (TryConvert(commandGroup, commandId, variantIn, out editCommand))
                 {
+                    VimTrace.TraceInfo("VsCommandTarget::Exec {0}", editCommand);
                     if (editCommand.IsUndo)
                     {
                         // The user hit the undo button.  Don't attempt to map anything here and instead just 
@@ -410,6 +412,8 @@ namespace VsVim
             EditCommand editCommand;
             if (1 == cCmds && TryConvert(pguidCmdGroup, prgCmds[0].cmdID, pCmdText, out editCommand))
             {
+                VimTrace.TraceInfo("VsCommandTarget::QueryStatus {0}", editCommand);
+
                 _bufferCoordinator.DiscardedKeyInput = FSharpOption<KeyInput>.None;
 
                 var action = CommandStatus.PassOn;
@@ -437,6 +441,8 @@ namespace VsVim
                     case CommandStatus.PassOn:
                         return _nextTarget.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText);
                 }
+
+                VimTrace.TraceInfo("VsCommandTarget::QueryStatus ", action);
             }
 
             return _nextTarget.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText);
