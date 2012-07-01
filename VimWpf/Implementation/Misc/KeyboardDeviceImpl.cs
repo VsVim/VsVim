@@ -2,7 +2,7 @@
 using System.ComponentModel.Composition;
 using System.Windows.Input;
 
-namespace Vim.UI.Wpf.Implementation
+namespace Vim.UI.Wpf.Implementation.Misc
 {
     [Export(typeof(IKeyboardDevice))]
     internal sealed class KeyboardDeviceImpl : IKeyboardDevice

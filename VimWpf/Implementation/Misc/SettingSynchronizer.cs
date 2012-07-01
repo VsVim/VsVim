@@ -3,7 +3,7 @@ using System.ComponentModel.Composition;
 using System.Windows.Threading;
 using Microsoft.VisualStudio.Text.Editor;
 
-namespace Vim.UI.Wpf.Implementation
+namespace Vim.UI.Wpf.Implementation.Misc
 {
     /// <summary>
     /// Used to synchronize certain Vim setting changes with the equivalent WPF ones

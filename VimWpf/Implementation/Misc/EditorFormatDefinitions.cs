@@ -3,7 +3,7 @@ using System.Windows.Media;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Utilities;
 
-namespace Vim.UI.Wpf.Implementation
+namespace Vim.UI.Wpf.Implementation.Misc
 {
     [Export(typeof(EditorFormatDefinition))]
     [Name(Constants.IncrementalSearchTagName)]

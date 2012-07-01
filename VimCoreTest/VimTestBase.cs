@@ -13,6 +13,8 @@ using Vim.UI.Wpf;
 using Vim.UI.Wpf.Implementation;
 using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
+using Vim.UI.Wpf.Implementation.WordCompletion;
+using Vim.UI.Wpf.Implementation.Misc;
 
 namespace Vim.UnitTest
 {

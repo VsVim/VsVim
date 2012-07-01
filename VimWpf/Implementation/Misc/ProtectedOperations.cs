@@ -6,7 +6,7 @@ using System.Linq;
 using System.Windows.Threading;
 using Microsoft.VisualStudio.Text;
 
-namespace Vim.UI.Wpf.Implementation
+namespace Vim.UI.Wpf.Implementation.Misc
 {
     /// <summary>
     /// Implements the safe dispatching interface which prevents application crashes for 

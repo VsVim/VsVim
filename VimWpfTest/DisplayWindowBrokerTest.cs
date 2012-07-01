@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Xunit;
-using Vim.UI.Wpf.Implementation;
+using Vim.UI.Wpf.Implementation.Misc;
 
 namespace Vim.UI.Wpf.UnitTest
 {

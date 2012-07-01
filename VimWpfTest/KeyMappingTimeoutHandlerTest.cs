@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Windows.Threading;
 using Xunit;
-using Vim.UI.Wpf.Implementation;
+using Vim.UI.Wpf.Implementation.Misc;
 using Vim.UnitTest;
 
 namespace Vim.UI.Wpf.UnitTest

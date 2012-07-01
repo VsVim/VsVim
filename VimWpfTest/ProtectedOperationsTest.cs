@@ -3,7 +3,7 @@ using System.Windows.Threading;
 using Microsoft.VisualStudio.Text;
 using Moq;
 using Xunit;
-using Vim.UI.Wpf.Implementation;
+using Vim.UI.Wpf.Implementation.Misc;
 
 namespace Vim.UI.Wpf.UnitTest
 {

@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.Composition;
 using System.Windows.Input;
 
-namespace Vim.UI.Wpf.Implementation
+namespace Vim.UI.Wpf.Implementation.Misc
 {
     [Export(typeof(IMouseDevice))]
     internal sealed class MouseDeviceImpl : IMouseDevice
