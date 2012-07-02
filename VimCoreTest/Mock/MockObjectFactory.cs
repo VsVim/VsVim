@@ -198,6 +198,7 @@ namespace Vim.UnitTest.Mock
             mock.SetupGet(x => x.WordNavigator).Returns(wordNavigator);
             mock.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             mock.SetupProperty(x => x.LastVisualSelection);
+            mock.SetupProperty(x => x.LastInsertExitPoint);
             mock.Setup(x => x.SwitchMode(It.IsAny<ModeKind>(), It.IsAny<ModeArgument>()));
             return mock;
         }
