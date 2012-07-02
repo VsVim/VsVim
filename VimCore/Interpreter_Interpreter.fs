@@ -771,6 +771,16 @@ type Interpreter
     
             RunResult.Completed)
 
+    member x.RunQuickFixNext count hasBang =
+        let count = OptionUtil.getOrDefault 1 count 
+        _vimHost.GoToQuickFix QuickFix.Next count hasBang
+        RunResult.Completed
+
+    member x.RunQuickFixPrevious count hasBang =
+        let count = OptionUtil.getOrDefault 1 count 
+        _vimHost.GoToQuickFix QuickFix.Previous count hasBang
+        RunResult.Completed
+
     /// Run the quit command
     member x.RunQuit hasBang =
         x.RunClose hasBang
@@ -1319,6 +1329,8 @@ type Interpreter
         | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()
         | LineCommand.PutAfter (lineRange, registerName) -> x.RunPut lineRange (getRegister registerName) true
         | LineCommand.PutBefore (lineRange, registerName) -> x.RunPut lineRange (getRegister registerName) false
+        | LineCommand.QuickFixNext (count, hasBang) -> x.RunQuickFixNext count hasBang
+        | LineCommand.QuickFixPrevious (count, hasBang) -> x.RunQuickFixPrevious count hasBang
         | LineCommand.Quit hasBang -> x.RunQuit hasBang
         | LineCommand.QuitAll hasBang -> x.RunQuitAll hasBang
         | LineCommand.QuitWithWrite (lineRange, hasBang, fileOptions, filePath) -> x.RunQuitWithWrite lineRange hasBang fileOptions filePath

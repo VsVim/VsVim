@@ -167,6 +167,22 @@ namespace Vim.UnitTest
             return (LineCommand.WriteAll)lineCommand;
         }
 
+        /// <summary>
+        /// LineCommand as QuickFixNext
+        /// </summary>
+        public static LineCommand.QuickFixNext AsQuickFixNext(this LineCommand lineCommand)
+        {
+            return (LineCommand.QuickFixNext)lineCommand;
+        }
+
+        /// <summary>
+        /// LineCommand as QuickFixPrevious
+        /// </summary>
+        public static LineCommand.QuickFixPrevious AsQuickFixPrevious(this LineCommand lineCommand)
+        {
+            return (LineCommand.QuickFixPrevious)lineCommand;
+        }
+
         #endregion
 
         #region SetArgument

@@ -403,6 +403,43 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class QuickFixTest : InterpreterTest
+        {
+            private void AssertQuickFix(string command, QuickFix quickFix, int count, bool hasBang)
+            {
+                var didRun = false;
+                VimHost.RunQuickFixFunc = 
+                    (qf, c, h) =>
+                    {
+                        Assert.Equal(quickFix, qf);
+                        Assert.Equal(count, c);
+                        Assert.Equal(hasBang, h);
+                        didRun = true;
+                    };
+                Create("");
+                ParseAndRun(command); 
+                Assert.True(didRun);
+            }
+
+            [Fact]
+            public void Next()
+            {
+                AssertQuickFix("cn", QuickFix.Next, 1, hasBang: false);
+                AssertQuickFix("1cn", QuickFix.Next, 1, hasBang: false);
+                AssertQuickFix("2cn", QuickFix.Next, 2, hasBang: false);
+                AssertQuickFix("2cn!", QuickFix.Next, 2, hasBang: true);
+            }
+
+            [Fact]
+            public void Previous()
+            {
+                AssertQuickFix("cp", QuickFix.Previous, 1, hasBang: false);
+                AssertQuickFix("1cp", QuickFix.Previous, 1, hasBang: false);
+                AssertQuickFix("2cp", QuickFix.Previous, 2, hasBang: false);
+                AssertQuickFix("2cp!", QuickFix.Previous, 2, hasBang: true);
+            }
+        }
+
         public sealed class Misc : InterpreterTest
         {
             private LineRangeSpecifier ParseLineRange(string lineRangeText)

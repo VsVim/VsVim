@@ -63,6 +63,41 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class QuickFixTest : ParserTest
+        {
+            [Fact]
+            public void NextSimple()
+            {
+                var quickFix = ParseLineCommand("cn").AsQuickFixNext();
+                Assert.True(quickFix.Item1.IsNone());
+                Assert.False(quickFix.item2);
+            }
+
+            [Fact]
+            public void NextWithArgs()
+            {
+                var quickFix = ParseLineCommand("2cn!").AsQuickFixNext();
+                Assert.Equal(2, quickFix.Item1.Value);
+                Assert.True(quickFix.Item2);
+            }
+
+            [Fact]
+            public void PreviousSimple()
+            {
+                var quickFix = ParseLineCommand("cp").AsQuickFixPrevious();
+                Assert.True(quickFix.Item1.IsNone());
+                Assert.False(quickFix.item2);
+            }
+
+            [Fact]
+            public void PreviousWithArgs()
+            {
+                var quickFix = ParseLineCommand("2cp!").AsQuickFixPrevious();
+                Assert.Equal(2, quickFix.Item1.Value);
+                Assert.True(quickFix.Item2);
+            }
+        }
+
         public sealed class StringConstant : ParserTest
         {
             public string ParseStringConstant(string text)

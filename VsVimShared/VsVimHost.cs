@@ -292,6 +292,19 @@ namespace VsVim
             _sharedService.GoToTab(index);
         }
 
+        public override void GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        {
+            // This implementation could be much more riguorous but for next a simple navigation
+            // of the next and previous error will suffice
+            var command = quickFix.IsNext
+                ? "View.NextError"
+                : "View.PreviousError";
+            for (var i = 0; i < count; i++)
+            {
+                SafeExecuteCommand(command);
+            }
+        }
+
         public override HostResult Make(bool jumpToFirstError, string arguments)
         {
             SafeExecuteCommand("Build.BuildSolution");

@@ -108,6 +108,8 @@ namespace Vim.UI.Wpf
 
         public abstract void GoToTab(int index);
 
+        public abstract void GoToQuickFix(QuickFix quickFix, int count, bool hasBang);
+
         public virtual bool IsDirty(ITextBuffer textbuffer)
         {
             ITextDocument document;
@@ -418,6 +420,11 @@ namespace Vim.UI.Wpf
             GoToTab(index);
         }
 
+        void IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        {
+            GoToQuickFix(quickFix, count, hasBang);
+        }
+
         bool IVimHost.IsDirty(ITextBuffer textBuffer)
         {
             return IsDirty(textBuffer);
@@ -530,6 +537,7 @@ namespace Vim.UI.Wpf
         }
 
         #endregion
+
 
     }
 }

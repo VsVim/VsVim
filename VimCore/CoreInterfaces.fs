@@ -3414,6 +3414,11 @@ type IVimData =
     [<CLIEvent>]
     abstract HighlightSearchOneTimeDisabled : IDelegateEvent<System.EventHandler>
 
+[<RequireQualifiedAccess>]
+type QuickFix =
+    | Next
+    | Previous
+
 type IVimHost =
 
     abstract Beep : unit -> unit
@@ -3457,6 +3462,9 @@ type IVimHost =
 
     /// Go the nth tab.  The first tab can be accessed with both 0 and 1
     abstract GoToTab : index : int -> unit
+
+    /// Go to the specified entry in the quick fix list
+    abstract GoToQuickFix : quickFix : QuickFix -> count : int -> hasBang : bool -> unit
 
     /// Get the name of the given ITextBuffer
     abstract GetName : textBuffer : ITextBuffer -> string

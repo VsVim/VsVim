@@ -261,6 +261,13 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Go to the previous tab
     | GoToPreviousTab of int option
 
+    /// Process the 'split' command.  The values range as follows
+    ///  - Height of the window if specified.  Expressed as a range.  The actual documentation
+    ///    doesn't specify a range can be used here but usage indicates it can
+    ///  - The provided ++opt
+    ///  - The provided +cmd
+    | HorizontalSplit of LineRangeSpecifier * FileOption list * CommandOption option
+
     /// Join the lines in the specified range.  Optionally provides a count of lines to 
     /// start the join after the line range
     | Join of LineRangeSpecifier * JoinKind
@@ -299,6 +306,12 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Put the contents of the given register before the line identified by the
     /// LineRange (defaults to current)
     | PutBefore of LineRangeSpecifier * RegisterName option
+
+    /// Next error in the quick fix list.  int is for count and bool is for the bang option
+    | QuickFixNext of int option * bool
+
+    /// Previous error in the quick fix list.  int is for count and bool is for the bang option
+    | QuickFixPrevious of int option * bool
 
     /// Quit the curren window without writing it's content.  If the boolean option
     /// is present (for !) then don't warn about a dirty window
@@ -350,13 +363,6 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// Process the 'source' command.  
     | Source of bool * string
-
-    /// Process the 'split' command.  The values range as follows
-    ///  - Height of the window if specified.  Expressed as a range.  The actual documentation
-    ///    doesn't specify a range can be used here but usage indicates it can
-    ///  - The provided ++opt
-    ///  - The provided +cmd
-    | HorizontalSplit of LineRangeSpecifier * FileOption list * CommandOption option
 
     /// Process the 'vsplit' command. Values are as per HorizontalSplit
     | VerticalSplit of LineRangeSpecifier * FileOption list * CommandOption option
