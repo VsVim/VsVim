@@ -81,14 +81,14 @@
     <Compile Include="HostFactory.cs" />
     <Compile Include="IKeyBindingService.cs" />
     <Compile Include="ILegacySettings.cs" />
-    <Compile Include="Implementation\ConflictingKeyBindingMargin.cs" />
-    <Compile Include="Implementation\ConflictingKeyBindingMarginProvider.cs" />
+    <Compile Include="Implementation\ConflictingKey\ConflictingKeyBindingMargin.cs" />
+    <Compile Include="Implementation\ConflictingKey\ConflictingKeyBindingMarginProvider.cs" />
     <Compile Include="Implementation\CSharpAdapter.cs" />
     <Compile Include="Implementation\EditorFormatDefinitions.cs" />
     <Compile Include="Implementation\KeyBindingService.cs" />
     <Compile Include="Implementation\MindScape.cs" />
-    <Compile Include="Implementation\OptionsDialogService.cs" />
-    <Compile Include="Implementation\OptionsProvider.cs" />
+    <Compile Include="Implementation\ConflictingKey\OptionsDialogService.cs" />
+    <Compile Include="Implementation\ConflictingKey\OptionsProvider.cs" />
     <Compile Include="Implementation\PowerToolsUtil.cs" />
     <Compile Include="Implementation\TextManager.cs" />
     <Compile Include="Implementation\VimBufferCoordinator.cs" />
@@ -111,21 +111,21 @@
     <Compile Include="NativeMethods.cs" />
     <Compile Include="OleCommandData.cs" />
     <Compile Include="OleCommandUtil.cs" />
-    <Compile Include="Implementation\DefaultSharedServiceFactory.cs" />
-    <Compile Include="Implementation\SharedServiceFactory.cs" />
+    <Compile Include="Implementation\SharedService\DefaultSharedServiceFactory.cs" />
+    <Compile Include="Implementation\SharedService\SharedServiceFactory.cs" />
     <Compile Include="ISharedService.cs" />
     <Compile Include="IVsAdapter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Result.cs" />
-    <Compile Include="UI\ComboBoxTemplateSelector.cs" />
-    <Compile Include="UI\ConflictingKeyBindingDialog.xaml.cs">
+    <Compile Include="Implementation\ConflictingKey\ComboBoxTemplateSelector.cs" />
+    <Compile Include="Implementation\ConflictingKey\ConflictingKeyBindingDialog.xaml.cs">
       <DependentUpon>ConflictingKeyBindingDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="UI\ConflictingKeyBindingMarginControl.xaml.cs">
+    <Compile Include="Implementation\ConflictingKey\ConflictingKeyBindingMarginControl.xaml.cs">
       <DependentUpon>ConflictingKeyBindingMarginControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="UI\KeyBindingData.cs" />
-    <Compile Include="UI\KeyBindingHandledByOption.cs" />
+    <Compile Include="Implementation\ConflictingKey\KeyBindingData.cs" />
+    <Compile Include="Implementation\ConflictingKey\KeyBindingHandledByOption.cs" />
     <Compile Include="VisualStudioVersion.cs" />
     <Compile Include="VsCommandTarget.cs" />
     <Compile Include="VsFilterKeysAdapter.cs" />
@@ -147,11 +147,11 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="UI\ConflictingKeyBindingDialog.xaml">
+    <Page Include="Implementation\ConflictingKey\ConflictingKeyBindingDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="UI\ConflictingKeyBindingMarginControl.xaml">
+    <Page Include="Implementation\ConflictingKey\ConflictingKeyBindingMarginControl.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

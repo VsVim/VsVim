@@ -160,19 +160,22 @@ type internal NormalMode
         let settings = _globalSettings :> IVimSettings
         settings.SettingChanged.Subscribe this.OnGlobalSettingsChanged |> _eventHandlers.Add
 
-    member this.TextView = _vimBufferData.TextView
-    member this.TextBuffer = _vimTextBuffer.TextBuffer
-    member this.CaretPoint = this.TextView.Caret.Position.BufferPosition
-    member this.IsCommandRunnerPopulated = _runner.Commands |> SeqUtil.isNotEmpty
-    member this.KeyRemapMode = 
+    member x.TextView = _vimBufferData.TextView
+    member x.TextBuffer = _vimTextBuffer.TextBuffer
+    member x.CaretPoint = this.TextView.Caret.Position.BufferPosition
+    member x.IsCommandRunnerPopulated = _runner.Commands |> SeqUtil.isNotEmpty
+    member x.KeyRemapMode = 
         if _runner.IsWaitingForMoreInput then
             _runner.KeyRemapMode
         else
             Some KeyRemapMode.Normal
-    member this.Command = _data.Command
-    member this.Commands = 
+    member x.Command = _data.Command
+    member x.Commands = 
         this.EnsureCommands()
         _runner.Commands
+    member x.CommandNames = 
+        x.EnsureCommands()
+        _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
 
     member x.EnsureCommands() = 
         if not x.IsCommandRunnerPopulated then
@@ -254,74 +257,72 @@ type internal NormalMode
         name, command
 
     /// Create the CommandBinding instances for the supported NormalCommand values
-    member this.Reset() =
+    member x.Reset() =
         _runner.ResetState()
         _data <- _emptyData
+
+    member x.CanProcess (keyInput : KeyInput) =
+        let doesCommandStartWith keyInput =
+            let name = OneKeyInput keyInput
+            _runner.Commands 
+            |> Seq.filter (fun command -> command.KeyInputSet.StartsWith name)
+            |> SeqUtil.isNotEmpty
+
+        if _runner.IsWaitingForMoreInput then 
+            true
+        elif doesCommandStartWith keyInput then 
+            true
+        elif Option.isSome keyInput.RawChar && KeyModifiers.None = keyInput.KeyModifiers then
+            // We can process any letter (think international input) or any character
+            // which is part of the standard Vim input set
+            CharUtil.IsLetter keyInput.Char || Set.contains keyInput.Char _coreCharSet
+        else 
+            false
     
-    member this.ProcessCore (ki:KeyInput) =
-        let command = _data.Command + ki.Char.ToString()
+    member x.Process (keyInput : KeyInput) = 
+        let command = _data.Command + keyInput.Char.ToString()
         _data <- { _data with Command = command }
 
-        match _runner.Run ki with
+        match _runner.Run keyInput with
         | BindResult.NeedMoreInput _ -> 
             ProcessResult.HandledNeedMoreInput
         | BindResult.Complete commandData -> 
-            this.Reset()
+            x.Reset()
             ProcessResult.OfCommandResult commandData.CommandResult
         | BindResult.Error -> 
-            this.Reset()
+            x.Reset()
             ProcessResult.Handled ModeSwitch.NoSwitch
         | BindResult.Cancelled -> 
-            this.Reset()
+            x.Reset()
             ProcessResult.Handled ModeSwitch.NoSwitch
 
+    member x.OnEnter arg =
+        x.EnsureCommands()
+        x.Reset()
+
+        // Process the argument if it's applicable
+        match arg with 
+        | ModeArgument.None -> ()
+        | ModeArgument.FromVisual -> ()
+        | ModeArgument.Substitute(_) -> ()
+        | ModeArgument.InitialVisualSelection _ -> ()
+        | ModeArgument.InsertBlock (_, transaction) -> transaction.Complete()
+        | ModeArgument.InsertWithCount _ -> ()
+        | ModeArgument.InsertWithCountAndNewLine _ -> ()
+        | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
+
     interface INormalMode with 
-        member this.KeyRemapMode = this.KeyRemapMode
-        member this.IsInReplace = _data.IsInReplace
-        member this.VimTextBuffer = _vimTextBuffer
-        member this.Command = this.Command
-        member this.CommandRunner = _runner
-        member this.CommandNames = 
-            this.EnsureCommands()
-            _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
-
-        member this.ModeKind = ModeKind.Normal
-
-        member this.CanProcess (ki : KeyInput) =
-            let doesCommandStartWith ki =
-                let name = OneKeyInput ki
-                _runner.Commands 
-                |> Seq.filter (fun command -> command.KeyInputSet.StartsWith name)
-                |> SeqUtil.isNotEmpty
-
-            if _runner.IsWaitingForMoreInput then 
-                true
-            elif doesCommandStartWith ki then 
-                true
-            elif Option.isSome ki.RawChar && KeyModifiers.None = ki.KeyModifiers then
-                // We can process any letter (think international input) or any character
-                // which is part of the standard Vim input set
-                CharUtil.IsLetter ki.Char || Set.contains ki.Char _coreCharSet
-            else 
-                false
-
-        member this.Process ki = this.ProcessCore ki
-        member this.OnEnter arg = 
-            this.EnsureCommands()
-            this.Reset()
-
-            // Process the argument if it's applicable
-            match arg with 
-            | ModeArgument.None -> ()
-            | ModeArgument.FromVisual -> ()
-            | ModeArgument.Substitute(_) -> ()
-            | ModeArgument.InitialVisualSelection _ -> ()
-            | ModeArgument.InsertBlock (_, transaction) -> transaction.Complete()
-            | ModeArgument.InsertWithCount _ -> ()
-            | ModeArgument.InsertWithCountAndNewLine _ -> ()
-            | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
-
-        member this.OnLeave () = ()
-        member this.OnClose() = _eventHandlers.DisposeAll()
+        member x.KeyRemapMode = x.KeyRemapMode
+        member x.IsInReplace = _data.IsInReplace
+        member x.VimTextBuffer = _vimTextBuffer
+        member x.Command = x.Command
+        member x.CommandRunner = _runner
+        member x.CommandNames = x.CommandNames
+        member x.ModeKind = ModeKind.Normal
+        member x.CanProcess keyInput = x.CanProcess keyInput
+        member x.Process keyInput = x.Process keyInput
+        member x.OnEnter arg = x.OnEnter arg
+        member x.OnLeave () = ()
+        member x.OnClose() = _eventHandlers.DisposeAll()
     
 

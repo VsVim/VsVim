@@ -3,9 +3,8 @@ using System.Windows;
 using System.Windows.Media;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
-using VsVim.UI;
 
-namespace VsVim.Implementation
+namespace VsVim.Implementation.ConflictingKey
 {
     internal sealed class ConflictingKeyBindingMargin : IWpfTextViewMargin
     {

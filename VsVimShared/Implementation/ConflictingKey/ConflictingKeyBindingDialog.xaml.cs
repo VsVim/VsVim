@@ -5,10 +5,10 @@ using System.Linq;
 using System.Windows;
 using EditorUtils;
 using Microsoft.VisualStudio.PlatformUI;
-using Vim;
 using System;
+using Vim;
 
-namespace VsVim.UI
+namespace VsVim.Implementation.ConflictingKey
 {
     /// <summary>
     /// Interaction logic for ConflictingKeyBindingDialog.xaml

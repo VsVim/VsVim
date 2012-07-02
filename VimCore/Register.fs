@@ -22,7 +22,6 @@ type StringData =
         | Simple str -> str
         | Block col -> col.Head
 
-    // TODO: Delete this and force the use of individual values
     member x.String =
         match x with 
         | Simple(str) -> str

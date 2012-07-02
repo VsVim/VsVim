@@ -1,7 +1,8 @@
 ﻿
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.FSharp.Core;
-namespace VsVim.Implementation
+
+namespace VsVim.Implementation.SharedService
 {
     internal sealed class DefaultSharedServiceFactory : ISharedServiceVersionFactory
     {

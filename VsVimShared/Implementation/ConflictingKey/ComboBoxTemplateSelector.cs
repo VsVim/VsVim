@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 
-namespace VsVim.UI
+namespace VsVim.Implementation.ConflictingKey
 {
     /// <summary>
     /// Selects the appropriate expanded/collapsed template when showing a KeyBindingOption
