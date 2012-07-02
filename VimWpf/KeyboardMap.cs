@@ -10,24 +10,73 @@ namespace Vim.UI.Wpf
     /// </summary>
     internal sealed partial class KeyboardMap
     {
+        private const int KeyBoardArrayLength = 256;
+        private const byte KeySetValue = 0x80;
+        private const byte KeyToggledValue = 0x01;
+
+        /// <summary>
+        /// Bit flags for the modifier keys that can be returned from VkKeyScanEx.  These 
+        /// values *must* match up with the bits that can be returned from that function
+        /// </summary>
+        [Flags]
+        private enum VirtualKeyModifiers
+        {
+            None = 0,
+            Alt = 0x1,
+            Control = 0x2,
+            Shift = 0x4,
+            Windows = 0x8,
+            Oem1 = 0x10,
+            Oem2 = 0x20,
+
+            Regular = Alt | Control | Shift,
+            Extended = Windows | Oem1 | Oem2,
+        }
+
         private struct KeyState
         {
             internal readonly Key Key;
-            internal readonly ModifierKeys ModifierKeys;
-            internal KeyState(Key key, ModifierKeys modKeys)
+            internal readonly VirtualKeyModifiers Modifiers;
+
+            internal bool HasExtendedModifiers
+            {
+                get { return 0 != (Modifiers & VirtualKeyModifiers.Extended); }
+            }
+
+            internal ModifierKeys ModifierKeys
+            {
+                get
+                {
+                    var val = (int)Modifiers & 0xf;
+                    return (ModifierKeys)val;
+                }
+            }
+
+            internal KeyState(Key key, VirtualKeyModifiers modifiers)
             {
                 Key = key;
-                ModifierKeys = modKeys;
+                Modifiers = modifiers;
+            }
+
+            internal KeyState(Key key, ModifierKeys modifierKeys)
+            {
+                Key = key;
+                Modifiers = GetVirtualKeyModifiers(modifierKeys);
+            }
+
+            internal static VirtualKeyModifiers GetVirtualKeyModifiers(ModifierKeys modifierKeys)
+            {
+                return (VirtualKeyModifiers)modifierKeys;
             }
 
             public override string ToString()
             {
-                if (ModifierKeys == ModifierKeys.None)
+                if (Modifiers == VirtualKeyModifiers.None)
                 {
                     return Key.ToString();
                 }
 
-                return String.Format("{0}+{1}", Key, ModifierKeys);
+                return String.Format("{0}+{1}", Key, Modifiers);
             }
         }
 
@@ -78,6 +127,21 @@ namespace Vim.UI.Wpf
         /// </summary>
         private readonly Dictionary<KeyInput, KeyState> _keyInputToWpfKeyDataMap;
 
+        /// <summary>
+        /// True if this keyboard layout has at least a single extended modifier key
+        /// </summary>
+        private readonly bool _hasExtendedVirtualKeyModifier;
+
+        /// <summary>
+        /// The virtual key which represents VirtualKeyModifiers.Oem1
+        /// </summary>
+        private readonly uint? _oem1ModifierVirtualKey;
+
+        /// <summary>
+        /// The virtual key which represents VirtualKeyModifiers.Oem2
+        /// </summary>
+        private readonly uint? _oem2ModifierVirtualKey;
+
         internal IntPtr KeyboardId
         {
             get { return _keyboardId; }
@@ -96,7 +160,7 @@ namespace Vim.UI.Wpf
             _keyboardId = keyboardId;
 
             var builder = new Builder(keyboardId);
-            builder.Create(out _keyStateToVimKeyDataMap, out _keyInputToWpfKeyDataMap);
+            builder.Create(out _keyStateToVimKeyDataMap, out _keyInputToWpfKeyDataMap, out _hasExtendedVirtualKeyModifier, out _oem1ModifierVirtualKey, out _oem2ModifierVirtualKey);
         }
 
         /// <summary>
@@ -155,8 +219,14 @@ namespace Vim.UI.Wpf
 
         private bool TryGetKeyInput(Key key, ModifierKeys modifierKeys, out VimKeyData vimKeyData)
         {
+            VirtualKeyModifiers virtualkeyModifiers;
+            if (!_hasExtendedVirtualKeyModifier || !TryGetModifiersExtended(modifierKeys, out virtualkeyModifiers))
+            {
+                virtualkeyModifiers = KeyState.GetVirtualKeyModifiers(modifierKeys);
+            }
+
             // First just check and see if there is a direct mapping
-            var keyState = new KeyState(key, modifierKeys);
+            var keyState = new KeyState(key, virtualkeyModifiers);
             if (_keyStateToVimKeyDataMap.TryGetValue(keyState, out vimKeyData))
             {
                 return true;
@@ -164,8 +234,8 @@ namespace Vim.UI.Wpf
 
             // Next consider only the shift key part of the requested modifier.  We can 
             // re-apply the original modifiers later 
-            keyState = new KeyState(key, modifierKeys & ModifierKeys.Shift);
-            if (_keyStateToVimKeyDataMap.TryGetValue(keyState, out vimKeyData) && 
+            keyState = new KeyState(key, virtualkeyModifiers & VirtualKeyModifiers.Shift);
+            if (_keyStateToVimKeyDataMap.TryGetValue(keyState, out vimKeyData) &&
                 vimKeyData.KeyInputOptional != null)
             {
                 // Reapply the modifiers
@@ -175,13 +245,54 @@ namespace Vim.UI.Wpf
             }
 
             // Last consider it without any modifiers and reapply
-            keyState = new KeyState(key, ModifierKeys.None);
+            keyState = new KeyState(key, VirtualKeyModifiers.None);
             if (_keyStateToVimKeyDataMap.TryGetValue(keyState, out vimKeyData) &&
                 vimKeyData.KeyInputOptional != null)
             {
                 // Reapply the modifiers
                 var keyInput = KeyInputUtil.ApplyModifiers(vimKeyData.KeyInputOptional, ConvertToKeyModifiers(modifierKeys));
                 vimKeyData = new VimKeyData(keyInput, vimKeyData.TextOptional);
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool TryGetModifiersExtended(ModifierKeys modifierKeys, out VirtualKeyModifiers virtualKeyModifiers)
+        {
+            virtualKeyModifiers = KeyState.GetVirtualKeyModifiers(modifierKeys);
+            if (_oem1ModifierVirtualKey.HasValue && IsKeySet(_oem1ModifierVirtualKey.Value))
+            {
+                virtualKeyModifiers |= VirtualKeyModifiers.Oem1;
+            }
+
+            if (_oem2ModifierVirtualKey.HasValue && IsKeySet(_oem2ModifierVirtualKey.Value))
+            {
+                virtualKeyModifiers |= VirtualKeyModifiers.Oem2;
+            }
+
+            return true;
+        }
+
+        private bool IsKeySet(uint virtualKey)
+        {
+            var state = NativeMethods.GetKeyState(virtualKey);
+            return 0 != (state & KeySetValue);
+        }
+
+        /// <summary>
+        /// Is the given virtual key set or toggled on the active keyboard
+        /// </summary>
+        private bool IsKeySetOrToggled(uint virtualKey)
+        {
+            var state = NativeMethods.GetKeyState(virtualKey);
+            if (0 != (state & KeySetValue))
+            {
+                return true;
+            }
+
+            if (0 != (state & KeyToggledValue))
+            {
                 return true;
             }
 
@@ -195,14 +306,13 @@ namespace Vim.UI.Wpf
         {
             var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
 
-            KeyState wpfKeyData;
-            if (_keyInputToWpfKeyDataMap.TryGetValue(keyInput, out wpfKeyData))
+            KeyState keyState;
+            if (_keyInputToWpfKeyDataMap.TryGetValue(keyInput, out keyState))
             {
-                key = wpfKeyData.Key;
-                modifierKeys = wpfKeyData.ModifierKeys;
+                key = keyState.Key;
+                modifierKeys = keyState.ModifierKeys;
                 return true;
             }
-
 
             key = Key.None;
             modifierKeys = ModifierKeys.None;

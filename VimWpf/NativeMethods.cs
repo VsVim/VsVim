@@ -73,12 +73,19 @@ namespace Vim.UI.Wpf
         internal static extern bool GetKeyboardLayoutName(char[] name);
 
         [DllImport("user32.dll")]
-        public static extern uint GetKeyboardLayoutList(int count, [Out, MarshalAs(UnmanagedType.LPArray)] IntPtr[] list);
+        internal static extern uint GetKeyboardLayoutList(int count, [Out, MarshalAs(UnmanagedType.LPArray)] IntPtr[] list);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool GetKeyboardState(byte[] keyState);
+
+        [DllImport("user32.dll")]
+        internal static extern short GetKeyState(uint virtualKey);
 
         [DllImport("user32.dll")]
         internal static extern IntPtr LoadKeyboardLayout([In] string id, uint flags);
 
-        [DllImport("user32.dll", CharSet=CharSet.Unicode)]
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         internal static extern int ToUnicodeEx(
             uint virtualKey,
             uint scanCode,
