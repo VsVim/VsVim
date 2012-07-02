@@ -1563,6 +1563,69 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class InsertLineBelowCaret : NormalModeIntegrationTest
+        {
+            /// <summary>
+            /// Ensure the text inserted is repeated after the Escape
+            /// </summary>
+            [Fact]
+            public void WithCount()
+            {
+                Create("dog", "bear");
+                _vimBuffer.Process("2o");
+                _vimBuffer.Process("cat");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("dog", _textView.GetLine(0).GetText());
+                Assert.Equal("cat", _textView.GetLine(1).GetText());
+                Assert.Equal("cat", _textView.GetLine(2).GetText());
+                Assert.Equal("bear", _textView.GetLine(3).GetText());
+                Assert.Equal(_textView.GetLine(2).Start.Add(2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Make sure that we use the proper line ending when inserting a new line vs. simply choosing 
+            /// to use Environment.NewLine
+            /// </summary>
+            [Fact]
+            public void AlternateNewLine()
+            {
+                Create("");
+                _textBuffer.Replace(new Span(0, 0), "cat\ndog");
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process("o");
+                Assert.Equal("cat\n", _textBuffer.GetLine(0).ExtentIncludingLineBreak.GetText());
+                Assert.Equal("\n", _textBuffer.GetLine(1).ExtentIncludingLineBreak.GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(2).ExtentIncludingLineBreak.GetText());
+            }
+
+            /// <summary>
+            /// An 'o' command which starts on a folded line should insert the line after the fold
+            /// </summary>
+            [Fact]
+            public void FromFold()
+            {
+                Create("cat", "dog", "fish", "tree");
+                _foldManager.CreateFold(_textView.GetLineRange(1, 2));
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("o");
+                Assert.Equal("fish", _textBuffer.GetLine(2).GetText());
+                Assert.Equal("", _textBuffer.GetLine(3).GetText());
+            }
+
+            /// <summary>
+            /// The 'o' command should always position the caret on the line below even when it's the
+            /// last line in the buffer
+            /// </summary>
+            [Fact]
+            public void LastLine()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("o");
+                Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+            }
+        }
+
         public sealed class Misc : NormalModeIntegrationTest
         {
             /// <summary>
@@ -3281,53 +3344,6 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("3J");
                 Assert.Equal("cat dog bear", _textView.GetLine(0).GetText());
                 Assert.Equal(7, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// Ensure the text inserted is repeated after the Escape
-            /// </summary>
-            [Fact]
-            public void InsertLineBelowCaret_WithCount()
-            {
-                Create("dog", "bear");
-                _vimBuffer.Process("2o");
-                _vimBuffer.Process("cat");
-                _vimBuffer.Process(VimKey.Escape);
-                Assert.Equal("dog", _textView.GetLine(0).GetText());
-                Assert.Equal("cat", _textView.GetLine(1).GetText());
-                Assert.Equal("cat", _textView.GetLine(2).GetText());
-                Assert.Equal("bear", _textView.GetLine(3).GetText());
-                Assert.Equal(_textView.GetLine(2).Start.Add(2), _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// Make sure that we use the proper line ending when inserting a new line vs. simply choosing 
-            /// to use Environment.NewLine
-            /// </summary>
-            [Fact]
-            public void InsertLineBelowCaret_AlternateNewLine()
-            {
-                Create("");
-                _textBuffer.Replace(new Span(0, 0), "cat\ndog");
-                _textView.MoveCaretTo(0);
-                _vimBuffer.Process("o");
-                Assert.Equal("cat\n", _textBuffer.GetLine(0).ExtentIncludingLineBreak.GetText());
-                Assert.Equal("\n", _textBuffer.GetLine(1).ExtentIncludingLineBreak.GetText());
-                Assert.Equal("dog", _textBuffer.GetLine(2).ExtentIncludingLineBreak.GetText());
-            }
-
-            /// <summary>
-            /// An 'o' command which starts on a folded line should insert the line after the fold
-            /// </summary>
-            [Fact]
-            public void InsertLineBelowCaret_FromFold()
-            {
-                Create("cat", "dog", "fish", "tree");
-                _foldManager.CreateFold(_textView.GetLineRange(1, 2));
-                _textView.MoveCaretToLine(1);
-                _vimBuffer.Process("o");
-                Assert.Equal("fish", _textBuffer.GetLine(2).GetText());
-                Assert.Equal("", _textBuffer.GetLine(3).GetText());
             }
 
             /// <summary>
