@@ -54,7 +54,8 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="KeyboardMap_VirtualKeyboard.cs" />
+    <Compile Include="KeyboardMap_IVirtualKeyboard.cs" />
+    <Compile Include="KeyboardMap_StandardVirtualKeyboard.cs" />
     <Compile Include="Implementation\BlockCaret\BlockCaretController.cs" />
     <Compile Include="Implementation\Paste\PasteAdornment.cs" />
     <Compile Include="Implementation\Paste\PasteController.cs" />

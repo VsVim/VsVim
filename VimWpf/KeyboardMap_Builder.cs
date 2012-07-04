@@ -21,34 +21,28 @@ namespace Vim.UI.Wpf
         /// </summary>
         private sealed class Builder
         {
-            private const int UnicodeBufferLength = 10;
-
-            private readonly IntPtr _keyboardId;
-            private readonly StringBuilder _clearBuilder = new StringBuilder(UnicodeBufferLength);
-            private readonly StringBuilder _normalBuilder = new StringBuilder(UnicodeBufferLength);
-            private readonly byte[] _keyboardStateArray = new byte[KeyBoardArrayLength];
+            private readonly IVirtualKeyboard _virtualKeyboard;
+            private readonly Keyboard _keyboard;
             private Dictionary<KeyState, VimKeyData> _keyStateToVimKeyDataMap;
             // TODO: This could be a 1 - N mapping
             private Dictionary<KeyInput, KeyState> _keyInputToWpfKeyDataMap;
-            private bool _hasExtendedVirtualKeyModifier;
             private Lazy<List<uint>> _possibleModifierVirtualKey;
-            private uint? _oem1ModifierVirtualKey;
             private bool _lookedForOem1ModifierVirtualKey;
-            private uint? _oem2ModifierVirtualKey;
             private bool _lookedForOem2ModifierVirtualKey;
 
-            internal Builder(IntPtr keyboardId)
+            internal Builder(IVirtualKeyboard virtualKeyboard)
             {
-                _keyboardId = keyboardId;
+                _virtualKeyboard = virtualKeyboard;
+                _keyboard = _virtualKeyboard.Keyboard;
+                _lookedForOem1ModifierVirtualKey = _keyboard.Oem1ModifierVirtualKey.HasValue;
+                _lookedForOem2ModifierVirtualKey = _keyboard.Oem2ModifierVirtualKey.HasValue;
                 _possibleModifierVirtualKey = new Lazy<List<uint>>(GetPossibleVirtualKeyModifiers);
+                _keyboard = new Keyboard();
             }
 
             internal void Create(
                 out Dictionary<KeyState, VimKeyData> keyStateToVimKeyDataMap,
-                out Dictionary<KeyInput, KeyState> keyInputToWpfKeyDataMap,
-                out bool hasExtendedVirtualKeyModifier,
-                out uint? oem1ModifierVirtualKey,
-                out uint? oem2ModifierVirtualKey)
+                out Dictionary<KeyInput, KeyState> keyInputToWpfKeyDataMap)
             {
                 _keyStateToVimKeyDataMap = new Dictionary<KeyState, VimKeyData>();
                 _keyInputToWpfKeyDataMap = new Dictionary<KeyInput, KeyState>();
@@ -58,9 +52,6 @@ namespace Vim.UI.Wpf
 
                 keyStateToVimKeyDataMap = _keyStateToVimKeyDataMap;
                 keyInputToWpfKeyDataMap = _keyInputToWpfKeyDataMap;
-                hasExtendedVirtualKeyModifier = _hasExtendedVirtualKeyModifier;
-                oem1ModifierVirtualKey = _oem1ModifierVirtualKey;
-                oem2ModifierVirtualKey = _oem2ModifierVirtualKey;
             }
 
             /// <summary>
@@ -83,7 +74,7 @@ namespace Vim.UI.Wpf
                         // now.  Even though we don't care about text for this key it's possible that the
                         // layout maps it to text (I believe).  
                         string text;
-                        if (TryGetText(virtualKey, VirtualKeyModifiers.None, out text))
+                        if (_virtualKeyboard.TryGetText(virtualKey, VirtualKeyModifiers.None, out text))
                         {
                             text = String.Empty;
                         }
@@ -106,10 +97,9 @@ namespace Vim.UI.Wpf
 
                         // Do a quick check to see if we have an extended shift state modifier in our midst.
                         VirtualKeyModifiers virtualKeyModifiers;
-                        if (TryMapCharToVirtualKeyAndModifiers(current.Char, out virtualKey, out virtualKeyModifiers) &&
+                        if (_virtualKeyboard.TryMapChar(current.Char, out virtualKey, out virtualKeyModifiers) &&
                             0 != (virtualKeyModifiers & VirtualKeyModifiers.Extended))
                         {
-                            _hasExtendedVirtualKeyModifier = true;
                             LookForOemModifiers(current.Char, virtualKey, virtualKeyModifiers);
                         }
 
@@ -133,7 +123,7 @@ namespace Vim.UI.Wpf
                         var virtualKey = (uint)KeyInterop.VirtualKeyFromKey(key);
                         bool isDeadKey;
                         string text;
-                        if (TryGetText(virtualKey, shiftStateModifier, out text, out isDeadKey))
+                        if (_virtualKeyboard.TryGetText(virtualKey, shiftStateModifier, out text, out isDeadKey))
                         {
                             KeyInput keyInput;
                             if (text.Length == 1 && map.TryGetValue(text[0], out keyInput))
@@ -169,7 +159,7 @@ namespace Vim.UI.Wpf
                 list.Add(VirtualKeyModifiers.Control);
                 list.Add(VirtualKeyModifiers.Control | VirtualKeyModifiers.Alt);
 
-                if (_oem1ModifierVirtualKey.HasValue)
+                if (_keyboard.Oem1ModifierVirtualKey.HasValue)
                 {
                     list.Add(VirtualKeyModifiers.Oem1);
                     list.Add(VirtualKeyModifiers.Oem1 | VirtualKeyModifiers.Shift);
@@ -181,7 +171,7 @@ namespace Vim.UI.Wpf
                     list.Add(VirtualKeyModifiers.Oem1 | VirtualKeyModifiers.Alt);
                 }
 
-                if (_oem2ModifierVirtualKey.HasValue)
+                if (_keyboard.Oem2ModifierVirtualKey.HasValue)
                 {
                     list.Add(VirtualKeyModifiers.Oem2);
                     list.Add(VirtualKeyModifiers.Oem2 | VirtualKeyModifiers.Shift);
@@ -193,7 +183,7 @@ namespace Vim.UI.Wpf
                     list.Add(VirtualKeyModifiers.Oem2 | VirtualKeyModifiers.Alt);
                 }
 
-                if (_oem1ModifierVirtualKey.HasValue && _oem2ModifierVirtualKey.HasValue)
+                if (_keyboard.Oem1ModifierVirtualKey.HasValue && _keyboard.Oem2ModifierVirtualKey.HasValue)
                 {
                     list.Add(VirtualKeyModifiers.Oem1 | VirtualKeyModifiers.Oem2);
                     list.Add(VirtualKeyModifiers.Oem1 | VirtualKeyModifiers.Oem2 | VirtualKeyModifiers.Shift);
@@ -209,131 +199,6 @@ namespace Vim.UI.Wpf
                 _keyStateToVimKeyDataMap[keyState] = new VimKeyData(keyInput, text);
                 _keyInputToWpfKeyDataMap[keyInput] = keyState;
             }
-
-            /// <summary>
-            /// Simple mechanism for getting the text for the given virtual key code and the specified
-            /// modifiers
-            ///
-            /// This method is intended to leave the values in the keyboard state array set that are
-            /// set before calling.  It will clear out the keyboard state after calling though
-            /// </summary>
-            private bool TryGetText(uint virtualKey, VirtualKeyModifiers virtualKeyModifiers, out string text)
-            {
-                bool unused;
-                return TryGetText(virtualKey, virtualKeyModifiers, out text, out unused);
-            }
-
-            private bool TryGetText(uint virtualKey, VirtualKeyModifiers virtualKeyModifiers, out string text, out bool isDeadKey)
-            {
-                var scanCode = NativeMethods.MapVirtualKeyEx(virtualKey, 0, _keyboardId);
-                if (scanCode == 0)
-                {
-                    text = String.Empty;
-                    isDeadKey = false;
-                    return false;
-                }
-
-                try
-                {
-                    SetKeyState(virtualKeyModifiers);
-                    _normalBuilder.Length = 0;
-                    var value = NativeMethods.ToUnicodeEx(
-                        virtualKey,
-                        scanCode,
-                        _keyboardStateArray,
-                        _normalBuilder,
-                        _normalBuilder.Capacity,
-                        0,
-                        _keyboardId);
-                    if (value < 0)
-                    {
-                        // It's a dead key. Make sure to clear out the cached state
-                        ClearKeyboardBuffer();
-                        isDeadKey = true;
-                        text = String.Empty;
-                        return false;
-                    }
-                    else if (value > 0)
-                    {
-                        isDeadKey = false;
-                        text = _normalBuilder.ToString();
-                        return true;
-                    }
-                    else
-                    {
-                        isDeadKey = false;
-                        text = String.Empty;
-                        return false;
-                    }
-                }
-                finally
-                {
-                    ClearKeyState();
-                }
-            }
-
-            private void SetKeyState(VirtualKeyModifiers virtualKeyModifiers, bool capslock = false)
-            {
-                if (0 != (virtualKeyModifiers & VirtualKeyModifiers.Control))
-                {
-                    _keyboardStateArray[NativeMethods.VK_CONTROL] = KeySetValue;
-                }
-
-                if (0 != (virtualKeyModifiers & VirtualKeyModifiers.Alt))
-                {
-                    _keyboardStateArray[NativeMethods.VK_MENU] = KeySetValue;
-                }
-
-                if (0 != (virtualKeyModifiers & VirtualKeyModifiers.Shift))
-                {
-                    _keyboardStateArray[NativeMethods.VK_SHIFT] = KeySetValue;
-                }
-
-                if (0 != (virtualKeyModifiers & VirtualKeyModifiers.Oem1) && _oem1ModifierVirtualKey.HasValue)
-                {
-                    _keyboardStateArray[_oem1ModifierVirtualKey.Value] = KeySetValue;
-                }
-
-                if (0 != (virtualKeyModifiers & VirtualKeyModifiers.Oem2) && _oem2ModifierVirtualKey.HasValue)
-                {
-                    _keyboardStateArray[_oem2ModifierVirtualKey.Value] = KeySetValue;
-                }
-
-                if (capslock)
-                {
-                    _keyboardStateArray[NativeMethods.VK_CAPITAL] = 0x1;
-                }
-            }
-
-            private void ClearKeyState()
-            {
-                Array.Clear(_keyboardStateArray, 0, _keyboardStateArray.Length);
-            }
-
-            /// <summary>
-            /// This method is used to clear the keyboard layout of any existing key states.  This 
-            /// method is taken directly from Michael Kaplan's blog entry
-            /// 
-            /// http://blogs.msdn.com/b/michkap/archive/2007/10/27/5717859.aspx 
-            /// </summary>
-            private void ClearKeyboardBuffer(uint virtualKey, uint scanCode)
-            {
-                int value;
-                do
-                {
-                    value = NativeMethods.ToUnicodeEx(virtualKey, scanCode, _keyboardStateArray, _clearBuilder, _clearBuilder.Capacity, 0, _keyboardId);
-                } while (value < 0);
-            }
-
-            private void ClearKeyboardBuffer()
-            {
-                var scanCode = NativeMethods.MapVirtualKeyEx(NativeMethods.VK_DECIMAL, 0, _keyboardId);
-                if (scanCode != 0)
-                {
-                    ClearKeyboardBuffer(NativeMethods.VK_DECIMAL, scanCode);
-                }
-            }
-
 
             /// <summary>
             /// Get the virtual key code for the provided VimKey.  This will only work for Vim keys which
@@ -402,29 +267,6 @@ namespace Vim.UI.Wpf
                 return found;
             }
 
-            /// <summary>
-            /// Map the given char to a virtual key code and the associated necessary modifier keys for
-            /// the provided keyboard layout
-            /// </summary>
-            private bool TryMapCharToVirtualKeyAndModifiers(char c, out uint virtualKeyCode, out VirtualKeyModifiers virtualKeyModifiers)
-            {
-                var res = NativeMethods.VkKeyScanEx(c, _keyboardId);
-
-                // The virtual key code is the low byte and the shift state is the high byte
-                var virtualKey = res & 0xff;
-                var state = ((res >> 8) & 0xff);
-                if (virtualKey == -1 || state == -1)
-                {
-                    virtualKeyCode = 0;
-                    virtualKeyModifiers = VirtualKeyModifiers.None;
-                    return false;
-                }
-
-                virtualKeyCode = (uint)virtualKey;
-                virtualKeyModifiers = (VirtualKeyModifiers)state;
-                return true;
-            }
-
             private void LookForOemModifiers(char c, uint virtualKey, VirtualKeyModifiers virtualKeyModifiers)
             {
                 // These are flags but we can only search one at a time here.  If both are present it's not
@@ -437,38 +279,37 @@ namespace Vim.UI.Wpf
                         if (!_lookedForOem1ModifierVirtualKey)
                         {
                             _lookedForOem1ModifierVirtualKey = true;
-                            LookForOemModifiers(c, virtualKey, regular, out _oem1ModifierVirtualKey);
+                            _keyboard.Oem1ModifierVirtualKey = LookForOemModifiersSingle(c, virtualKey, regular);
                         }
                         break;
                     case VirtualKeyModifiers.Oem2:
                         if (!_lookedForOem2ModifierVirtualKey)
                         {
                             _lookedForOem2ModifierVirtualKey = true;
-                            LookForOemModifiers(c, virtualKey, regular, out _oem2ModifierVirtualKey);
+                            _keyboard.Oem2ModifierVirtualKey = LookForOemModifiersSingle(c, virtualKey, regular);
                         }
                         break;
                 }
             }
 
-            private void LookForOemModifiers(char c, uint virtualKey, VirtualKeyModifiers regularKeyModifiers, out uint? oemModifierVirtualKey)
+            private uint? LookForOemModifiersSingle(char c, uint virtualKey, VirtualKeyModifiers regularKeyModifiers)
             {
                 var target = c.ToString();
-                ClearKeyState();
+                _keyboard.Clear();
                 foreach (var code in _possibleModifierVirtualKey.Value)
                 {
                     // Set the keyboard state 
-                    _keyboardStateArray[code] = KeySetValue;
+                    _keyboard.SetKey(code);
 
                     // Now try to get the text value with the previous key down
                     string text;
-                    if (TryGetText(virtualKey, regularKeyModifiers, out text) && text == target)
+                    if (_virtualKeyboard.TryGetText(virtualKey, regularKeyModifiers, out text) && text == target)
                     {
-                        oemModifierVirtualKey = code;
-                        return;
+                        return code;
                     }
                 }
 
-                oemModifierVirtualKey = null;
+                return null;
             }
 
             /// <summary>
@@ -483,7 +324,7 @@ namespace Vim.UI.Wpf
                 {
                     bool isDeadKey;
                     string unused;
-                    if (!TryGetText(i, VirtualKeyModifiers.None, out unused, out isDeadKey) && !isDeadKey)
+                    if (!_virtualKeyboard.TryGetText(i, VirtualKeyModifiers.None, out unused, out isDeadKey) && !isDeadKey)
                     {
                         list.Add(i);
                     }
