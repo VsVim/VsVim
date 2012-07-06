@@ -1,7 +1,9 @@
 ﻿using System.Windows.Input;
+using Vim.UI.Wpf.Implementation.Keyboard;
 
 namespace Vim.UI.Wpf
 {
+    // TODO: KeyUtil is an ambient authority and it needs to be expressed as a MEF interface
     public static class KeyUtil
     {
         private static KeyboardMap _keyboardMap;

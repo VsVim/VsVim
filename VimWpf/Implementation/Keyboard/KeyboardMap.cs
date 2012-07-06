@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Windows.Input;
 
-namespace Vim.UI.Wpf
+namespace Vim.UI.Wpf.Implementation.Keyboard
 {
     /// <summary>
     /// Class responsible for handling the low level details for mapping WPF's 
@@ -10,85 +10,6 @@ namespace Vim.UI.Wpf
     /// </summary>
     internal sealed partial class KeyboardMap
     {
-        internal struct KeyState
-        {
-            internal readonly Key Key;
-            internal readonly VirtualKeyModifiers Modifiers;
-
-            internal bool HasExtendedModifiers
-            {
-                get { return 0 != (Modifiers & VirtualKeyModifiers.Extended); }
-            }
-
-            internal ModifierKeys ModifierKeys
-            {
-                get
-                {
-                    var val = (int)Modifiers & 0xf;
-                    return (ModifierKeys)val;
-                }
-            }
-
-            internal KeyState(Key key, VirtualKeyModifiers modifiers)
-            {
-                Key = key;
-                Modifiers = modifiers;
-            }
-
-            internal KeyState(Key key, ModifierKeys modifierKeys)
-            {
-                Key = key;
-                Modifiers = GetVirtualKeyModifiers(modifierKeys);
-            }
-
-            internal static VirtualKeyModifiers GetVirtualKeyModifiers(ModifierKeys modifierKeys)
-            {
-                return (VirtualKeyModifiers)modifierKeys;
-            }
-
-            public override string ToString()
-            {
-                if (Modifiers == VirtualKeyModifiers.None)
-                {
-                    return Key.ToString();
-                }
-
-                return String.Format("{0}+{1}", Key, Modifiers);
-            }
-        }
-
-        private sealed class VimKeyData
-        {
-            internal static readonly VimKeyData DeadKey = new VimKeyData();
-
-            internal readonly KeyInput KeyInputOptional;
-            internal readonly string TextOptional;
-            internal readonly bool IsDeadKey;
-
-            internal VimKeyData(KeyInput keyInput, string text)
-            {
-                Contract.Assert(keyInput != null);
-                KeyInputOptional = keyInput;
-                TextOptional = text;
-                IsDeadKey = false;
-            }
-
-            private VimKeyData()
-            {
-                IsDeadKey = true;
-            }
-
-            public override string ToString()
-            {
-                if (IsDeadKey)
-                {
-                    return "<dead key>";
-                }
-
-                return String.Format("{0} - {1}", KeyInputOptional, TextOptional);
-            }
-        }
-
         /// <summary>
         /// The Id of the Keyboard 
         /// </summary>
@@ -132,7 +53,7 @@ namespace Vim.UI.Wpf
             _keyboardId = keyboardId;
             _virtualKeyboard = virtualKeyboard;
 
-            var builder = new Builder(_virtualKeyboard);
+            var builder = new KeyboardMapBuilder(_virtualKeyboard);
             builder.Create(out _keyStateToVimKeyDataMap, out _keyInputToWpfKeyDataMap);
         }
 
