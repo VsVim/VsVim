@@ -2,7 +2,7 @@
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text.Editor;
 
-namespace Vim.UI.Wpf.Implementation
+namespace Vim.UI.Wpf.Implementation.Misc
 {
     /// <summary>
     /// Standard implementation of the IDisplayWindowBroker interface.  This acts as a single

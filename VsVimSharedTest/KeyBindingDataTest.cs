@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using Xunit;
 using VsVim;
-using VsVim.UI;
+using VsVim.Implementation.ConflictingKey;
 
 namespace VsVim.UnitTest
 {

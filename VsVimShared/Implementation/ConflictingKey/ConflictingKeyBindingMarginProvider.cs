@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 
-namespace VsVim.Implementation
+namespace VsVim.Implementation.ConflictingKey
 {
     [Export(typeof(IWpfTextViewMarginProvider))]
     [MarginContainer(PredefinedMarginNames.Top)]

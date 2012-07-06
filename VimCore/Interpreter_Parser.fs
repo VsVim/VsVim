@@ -64,6 +64,8 @@ type Parser
         ("cd", "cd")
         ("chdir", "chd")
         ("close", "clo")
+        ("cnext", "cn")
+        ("cprevious", "cp")
         ("copy", "co")
         ("delete","d")
         ("display","di")
@@ -908,6 +910,14 @@ type Parser
         let count = x.ParseNumber()
         ParseResult.Succeeded (LineCommand.GoToPreviousTab count)
 
+    member x.ParseQuickFixNext count =
+        let hasBang = x.ParseBang()
+        ParseResult.Succeeded (LineCommand.QuickFixNext (count, hasBang))
+
+    member x.ParseQuickFixPrevious count =
+        let hasBang = x.ParseBang()
+        ParseResult.Succeeded (LineCommand.QuickFixPrevious (count, hasBang))
+
     /// Parse out the quit and write command.  This includes 'wq', 'xit' and 'exit' commands.
     member x.ParseQuitAndWrite lineRange = 
         let hasBang = x.ParseBang()
@@ -1238,6 +1248,14 @@ type Parser
                 else
                     parseResult
 
+        let handleCount parseFunc = 
+            match lineRange with
+            | LineRangeSpecifier.SingleLine lineSpecifier ->
+                match lineSpecifier with
+                | LineSpecifier.Number count -> parseFunc (Some count)
+                | _ -> parseFunc None
+            | _ -> parseFunc None
+
         let doParse name = 
             let parseResult = 
                 match name with
@@ -1248,6 +1266,8 @@ type Parser
                 | "cmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Command])
                 | "cmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Command])
                 | "cnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Command])
+                | "cnext" -> handleCount x.ParseQuickFixNext
+                | "cprevious" -> handleCount x.ParseQuickFixPrevious
                 | "copy" -> x.ParseCopyTo lineRange 
                 | "cunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Command])
                 | "delete" -> x.ParseDelete lineRange

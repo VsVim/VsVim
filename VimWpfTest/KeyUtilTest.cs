@@ -41,7 +41,7 @@ namespace Vim.UI.Wpf.UnitTest
         }
 
         [Fact]
-        public void KeyToKeyInput()
+        public void KeyToKeyInputMatchesExpected()
         {
             KeyToKeyInput(' ', Key.Space);
             KeyToKeyInput(';', Key.OemSemicolon);
@@ -64,7 +64,7 @@ namespace Vim.UI.Wpf.UnitTest
         }
 
         [Fact]
-        public void WellKnownBothWays()
+        public void WellKnownBothWaysMatchesExpected()
         {
             WellKnownBothWays(VimKey.Left, Key.Left);
             WellKnownBothWays(VimKey.Right, Key.Right);

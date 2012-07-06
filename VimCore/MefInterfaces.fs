@@ -94,7 +94,7 @@ type ITrackingVisualSelection =
 type IBufferTrackingService = 
 
     /// Create an ITrackingLineColumn at the given position in the buffer.  
-    abstract CreateLineColumn : ITextBuffer -> line:int -> column: int -> LineColumnTrackingMode -> ITrackingLineColumn
+    abstract CreateLineColumn : ITextBuffer -> line : int -> column : int -> LineColumnTrackingMode -> ITrackingLineColumn
 
     /// Create an ITrackingVisualSpan for the given VisualSpan
     abstract CreateVisualSpan : VisualSpan -> ITrackingVisualSpan

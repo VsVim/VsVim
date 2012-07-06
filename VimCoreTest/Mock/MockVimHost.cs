@@ -29,6 +29,7 @@ namespace Vim.UnitTest.Mock
         public Func<ITextBuffer, bool> IsDirtyFunc { get; set; }
         public Func<string, string, IVimData, string> RunCommandFunc { get; set; }
         public Action<string, string> RunVisualStudioCommandFunc { get; set; }
+        public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
         public ITextBuffer LastSaved { get; set; }
         public ITextView LastClosed { get; set; }
 
@@ -68,6 +69,7 @@ namespace Vim.UnitTest.Mock
             CreateHiddenTextViewFunc = delegate { throw new NotImplementedException(); };
             RunCommandFunc = delegate { throw new NotImplementedException(); };
             RunVisualStudioCommandFunc = delegate { throw new NotImplementedException(); };
+            RunQuickFixFunc = delegate { throw new NotImplementedException(); };
             IsDirtyFunc = null;
             LastClosed = null;
             LastSaved = null;
@@ -271,6 +273,11 @@ namespace Vim.UnitTest.Mock
         void IVimHost.EndBulkOperation()
         {
 
+        }
+
+        void IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        {
+            RunQuickFixFunc(quickFix, count, hasBang);
         }
     }
 }

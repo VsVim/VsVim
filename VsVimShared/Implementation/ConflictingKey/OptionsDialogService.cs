@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.Composition;
 
-namespace VsVim.Implementation
+namespace VsVim.Implementation.ConflictingKey
 {
     [Export(typeof(IOptionsDialogService))]
     internal sealed class OptionsDialogService : IOptionsDialogService
@@ -15,7 +15,7 @@ namespace VsVim.Implementation
 
         public bool ShowConflictingKeyBindingsDialog(CommandKeyBindingSnapshot snapshot)
         {
-            return new UI.ConflictingKeyBindingDialog(snapshot, _legacySettings).ShowDialog().Value;
+            return new ConflictingKeyBindingDialog(snapshot, _legacySettings).ShowDialog().Value;
         }
     }
 }

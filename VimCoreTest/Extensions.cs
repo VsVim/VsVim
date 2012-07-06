@@ -167,6 +167,22 @@ namespace Vim.UnitTest
             return (LineCommand.WriteAll)lineCommand;
         }
 
+        /// <summary>
+        /// LineCommand as QuickFixNext
+        /// </summary>
+        public static LineCommand.QuickFixNext AsQuickFixNext(this LineCommand lineCommand)
+        {
+            return (LineCommand.QuickFixNext)lineCommand;
+        }
+
+        /// <summary>
+        /// LineCommand as QuickFixPrevious
+        /// </summary>
+        public static LineCommand.QuickFixPrevious AsQuickFixPrevious(this LineCommand lineCommand)
+        {
+            return (LineCommand.QuickFixPrevious)lineCommand;
+        }
+
         #endregion
 
         #region SetArgument
@@ -681,6 +697,23 @@ namespace Vim.UnitTest
             }
 
             return last;
+        }
+
+        /// <summary>
+        /// Process the full notation as a series of KeyInput values
+        /// </summary>
+        public static void ProcessNotation(this IMode mode, string notation, bool enter = false)
+        {
+            var keyInputSet = KeyNotationUtil.StringToKeyInputSet(notation);
+            foreach (var keyInput in keyInputSet.KeyInputs)
+            {
+                mode.Process(keyInput);
+            }
+
+            if (enter)
+            {
+                mode.Process(KeyInputUtil.EnterKey);
+            }
         }
 
         #endregion

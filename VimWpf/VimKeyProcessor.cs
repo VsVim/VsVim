@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -61,6 +62,7 @@ namespace Vim.UI.Wpf
         /// </summary>
         public override void TextInput(TextCompositionEventArgs args)
         {
+            VimTrace.TraceInfo("VimKeyProcessor::TextInput {0}", args.Text);
             bool handled = false;
 
             var text = args.Text;
@@ -104,6 +106,8 @@ namespace Vim.UI.Wpf
         /// </summary>
         public override void KeyDown(KeyEventArgs args)
         {
+            VimTrace.TraceInfo("VimKeyProcessor::KeyDown {0} {1}", args.Key, args.KeyboardDevice.Modifiers);
+
             bool handled;
             if (KeyUtil.IsDeadKey(args.Key) || args.Key == Key.DeadCharProcessed)
             {
@@ -140,8 +144,16 @@ namespace Vim.UI.Wpf
                 }
             }
 
+            VimTrace.TraceInfo("VimKeyProcessor::KeyDown Handled = {0}", handled);
             args.Handled = handled;
             base.KeyDown(args);
+        }
+
+        public override void KeyUp(KeyEventArgs args)
+        {
+            VimTrace.TraceInfo("VimKeyProcessor::KeyUp {0} {1}", args.Key, args.KeyboardDevice.Modifiers);
+            VimTrace.TraceInfo("VimKeyProcessor::KeyUp Handled = {0}", args.Handled);
+            base.KeyUp(args);
         }
     }
 }

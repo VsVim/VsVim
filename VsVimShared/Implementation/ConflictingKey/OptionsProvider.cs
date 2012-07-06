@@ -6,7 +6,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Vim;
 using Vim.UI.Wpf;
 
-namespace VsVim.Implementation
+namespace VsVim.Implementation.ConflictingKey
 {
     [Export(typeof(IOptionsProviderFactory))]
     internal sealed class OptionsProviderFatory : IOptionsProviderFactory
@@ -29,7 +29,7 @@ namespace VsVim.Implementation
                 try
                 {
                     var snapshot = _keyBindingService.CreateCommandKeyBindingSnapshot(vimBuffer);
-                    new UI.ConflictingKeyBindingDialog(snapshot, _legacySettings).ShowDialog();
+                    new ConflictingKeyBindingDialog(snapshot, _legacySettings).ShowDialog();
                 }
                 catch (Exception)
                 {

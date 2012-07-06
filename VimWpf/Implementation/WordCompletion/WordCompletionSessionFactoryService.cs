@@ -9,7 +9,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 
-namespace Vim.UI.Wpf.Implementation
+namespace Vim.UI.Wpf.Implementation.WordCompletion
 {
     /// <summary>
     /// This type is responsible for providing word completion sessions over a given ITextView

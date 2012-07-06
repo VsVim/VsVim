@@ -1165,7 +1165,14 @@ type internal CommandUtil
                 TextViewUtil.MoveCaretToPosition _textView savedCaretPoint.Position)
 
             let newLine = 
-                let newPoint = SnapshotPoint(x.CurrentSnapshot, point.Position)
+                let newPoint = 
+                    // When this command is run on the last line of the file then point will still
+                    // refer to the original line.  In that case we need to move to the end of the
+                    // ITextSnapshot
+                    if SnapshotPointUtil.IsEndPoint point then
+                        SnapshotUtil.GetEndPoint x.CurrentSnapshot
+                    else
+                        SnapshotPoint(x.CurrentSnapshot, point.Position)
                 SnapshotPointUtil.GetContainingLine newPoint
             x.MoveCaretToNewLineIndent savedCaretLine newLine
 

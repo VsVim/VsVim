@@ -23,8 +23,9 @@ namespace VsVim.UnitTest.Mock
             return mock.As<SVsServiceProvider>();
         }
 
-        public static IEnumerable<Mock<EnvDTE.Command>> CreateCommandList(params string[] args)
+        public static List<Mock<EnvDTE.Command>> CreateCommandList(params string[] args)
         {
+            var list = new List<Mock<EnvDTE.Command>>();
             foreach (var binding in args)
             {
                 var localBinding = binding;
@@ -32,22 +33,31 @@ namespace VsVim.UnitTest.Mock
                 mock.Setup(x => x.Bindings).Returns(localBinding);
                 mock.Setup(x => x.Name).Returns("example command");
                 mock.Setup(x => x.LocalizedName).Returns("example command");
-                yield return mock;
+                list.Add(mock);
             }
+
+            return list;
         }
 
-        public static Mock<EnvDTE.Commands> CreateCommands(IEnumerable<EnvDTE.Command> commands)
+        public static Mock<EnvDTE.Commands> CreateCommands(List<EnvDTE.Command> commands)
         {
             var mock = new Mock<EnvDTE.Commands>(MockBehavior.Strict);
             var enumMock = mock.As<IEnumerable>();
-            mock.Setup(x => x.GetEnumerator()).Returns(commands.GetEnumerator());
-            enumMock.Setup(x => x.GetEnumerator()).Returns(commands.GetEnumerator());
+            mock.Setup(x => x.GetEnumerator()).Returns(() =>
+                {
+                    return commands.GetEnumerator();
+                });
+            mock.SetupGet(x => x.Count).Returns(commands.Count);
+            enumMock.Setup(x => x.GetEnumerator()).Returns(() =>
+                {
+                    return commands.GetEnumerator();
+                });
             return mock;
         }
 
         public static Mock<_DTE> CreateDteWithCommands(params string[] args)
         {
-            var commandList = CreateCommandList(args).Select(x => x.Object);
+            var commandList = CreateCommandList(args).Select(x => x.Object).ToList();
             var commands = CreateCommands(commandList);
             var dte = new Mock<_DTE>();
             dte.SetupGet(x => x.Commands).Returns(commands.Object);

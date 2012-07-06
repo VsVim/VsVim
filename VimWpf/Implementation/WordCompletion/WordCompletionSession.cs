@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 
-namespace Vim.UI.Wpf.Implementation
+namespace Vim.UI.Wpf.Implementation.WordCompletion
 {
     /// <summary>
     /// Implementation of the IWordCompletionSession interface.  Wraps an ICompletionSession

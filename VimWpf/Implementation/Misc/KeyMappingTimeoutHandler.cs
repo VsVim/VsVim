@@ -2,7 +2,7 @@
 using System.ComponentModel.Composition;
 using System.Windows.Threading;
 
-namespace Vim.UI.Wpf.Implementation
+namespace Vim.UI.Wpf.Implementation.Misc
 {
     /// <summary>
     /// This class is responsible for handling the timeout of key mappings for a given

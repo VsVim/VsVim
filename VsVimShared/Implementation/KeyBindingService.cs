@@ -28,6 +28,11 @@ namespace VsVim.Implementation
         private ConflictingKeyBindingState _state;
         private CommandKeyBindingSnapshot _snapshot;
 
+        internal CommandKeyBindingSnapshot CommandKeyBindingSnapshotOptional
+        {
+            get { return _snapshot; }
+        }
+
         [ImportingConstructor]
         internal KeyBindingService(SVsServiceProvider serviceProvider, IOptionsDialogService service, IProtectedOperations protectedOperations, ILegacySettings legacySettings)
         {
@@ -64,24 +69,17 @@ namespace VsVim.Implementation
 
         internal event EventHandler ConflictingKeyBindingStateChanged;
 
-        internal void RunConflictingKeyBindingStateCheck(IVimBuffer buffer, Action<ConflictingKeyBindingState, CommandKeyBindingSnapshot> onComplete)
+        internal void RunConflictingKeyBindingStateCheck(IVimBuffer buffer)
         {
+            // Create the set of KeyInput values which are handled by VsVim
             var needed = buffer.AllModes.Select(x => x.CommandNames).SelectMany(x => x).ToList();
             needed.Add(KeyInputSet.NewOneKeyInput(buffer.LocalSettings.GlobalSettings.DisableAllCommand));
-            RunConflictingKeyBindingStateCheck(needed.Select(x => x.KeyInputs.First()), onComplete);
-        }
+            var set = new HashSet<KeyInput>(needed.Select(x => x.KeyInputs.First()));
 
-        internal void RunConflictingKeyBindingStateCheck(IEnumerable<KeyInput> neededInputs, Action<ConflictingKeyBindingState, CommandKeyBindingSnapshot> onComplete)
-        {
-            if (_snapshot != null)
-            {
-                onComplete(_state, _snapshot);
-                return;
-            }
-
-            var set = new HashSet<KeyInput>(neededInputs);
-            var snapshot = CreateCommandKeyBindingSnapshot(set);
-            ConflictingKeyBindingState = snapshot.Conflicting.Any()
+            // Take a snapshot based on the current state of the DTE commands and store it
+            // and the conflicting state
+            _snapshot = CreateCommandKeyBindingSnapshot(set);
+            ConflictingKeyBindingState = _snapshot.Conflicting.Any()
                 ? ConflictingKeyBindingState.FoundConflicts
                 : ConflictingKeyBindingState.ConflictsIgnoredOrResolved;
         }
@@ -102,14 +100,12 @@ namespace VsVim.Implementation
             if (_optionsDialogService.ShowConflictingKeyBindingsDialog(_snapshot))
             {
                 ConflictingKeyBindingState = ConflictingKeyBindingState.ConflictsIgnoredOrResolved;
-                _snapshot = null;
             }
         }
 
         internal void IgnoreAnyConflicts()
         {
             ConflictingKeyBindingState = ConflictingKeyBindingState.ConflictsIgnoredOrResolved;
-            _snapshot = null;
         }
 
         /// <summary>
@@ -328,14 +324,9 @@ namespace VsVim.Implementation
             return CreateCommandKeyBindingSnapshot(vimBuffer);
         }
 
-        void IKeyBindingService.RunConflictingKeyBindingStateCheck(IVimBuffer buffer, Action<ConflictingKeyBindingState, CommandKeyBindingSnapshot> onComplete)
+        void IKeyBindingService.RunConflictingKeyBindingStateCheck(IVimBuffer buffer)
         {
-            RunConflictingKeyBindingStateCheck(buffer, onComplete);
-        }
-
-        void IKeyBindingService.RunConflictingKeyBindingStateCheck(IEnumerable<KeyInput> neededInputs, Action<ConflictingKeyBindingState, CommandKeyBindingSnapshot> onComplete)
-        {
-            RunConflictingKeyBindingStateCheck(neededInputs, onComplete);
+            RunConflictingKeyBindingStateCheck(buffer);
         }
 
         void IKeyBindingService.ResetConflictingKeyBindingState()
@@ -369,7 +360,7 @@ namespace VsVim.Implementation
                     }
                     else
                     {
-                        RunConflictingKeyBindingStateCheck(vimBuffer, (x, y) => { });
+                        RunConflictingKeyBindingStateCheck(vimBuffer);
                     }
                 }
             };

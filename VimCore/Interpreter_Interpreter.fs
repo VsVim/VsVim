@@ -94,6 +94,7 @@ type Interpreter
     let _registerMap = _vimBufferData.Vim.RegisterMap
     let _undoRedoOperations = _vimBufferData.UndoRedoOperations
     let _localSettings = _vimBufferData.LocalSettings
+    let _windowSettings = _vimBufferData.WindowSettings
     let _globalSettings = _localSettings.GlobalSettings
     let _searchService = _vim.SearchService
 
@@ -770,6 +771,16 @@ type Interpreter
     
             RunResult.Completed)
 
+    member x.RunQuickFixNext count hasBang =
+        let count = OptionUtil.getOrDefault 1 count 
+        _vimHost.GoToQuickFix QuickFix.Next count hasBang
+        RunResult.Completed
+
+    member x.RunQuickFixPrevious count hasBang =
+        let count = OptionUtil.getOrDefault 1 count 
+        _vimHost.GoToQuickFix QuickFix.Previous count hasBang
+        RunResult.Completed
+
     /// Run the quit command
     member x.RunQuit hasBang =
         x.RunClose hasBang
@@ -939,10 +950,13 @@ type Interpreter
     member x.RunSet setArguments =
 
         // Get the setting for the specified name
-        let withSetting name msg func =
+        let withSetting name msg (func : Setting -> IVimSettings -> unit) =
             match _localSettings.GetSetting name with
-            | None -> _statusUtil.OnError (Resources.Interpreter_UnknownOption msg)
-            | Some setting -> func setting
+            | None -> 
+                match _windowSettings.GetSetting name with
+                | None -> _statusUtil.OnError (Resources.Interpreter_UnknownOption msg)
+                | Some setting -> func setting _windowSettings
+            | Some setting -> func setting _localSettings
 
         // Display the specified setting 
         let getSettingDisplay setting = 
@@ -973,8 +987,8 @@ type Interpreter
         // Assign the given value to the setting with the specified name
         let assignSetting name value = 
             let msg = sprintf "%s=%s" name value
-            withSetting name msg (fun setting ->
-                if not (_localSettings.TrySetValueFromString setting.Name value) then
+            withSetting name msg (fun setting container ->
+                if not (container.TrySetValueFromString setting.Name value) then
                     _statusUtil.OnError (Resources.Interpreter_InvalidArgument msg))
 
         // Display all of the setings which don't have the default value
@@ -1003,18 +1017,18 @@ type Interpreter
 
         // Use the specifiec setting
         let useSetting name =
-            withSetting name name (fun setting ->
+            withSetting name name (fun setting container ->
                 match setting.Kind with
-                | SettingKind.ToggleKind -> _localSettings.TrySetValue setting.Name (SettingValue.ToggleValue true) |> ignore
+                | SettingKind.ToggleKind -> container.TrySetValue setting.Name (SettingValue.ToggleValue true) |> ignore
                 | SettingKind.NumberKind -> displaySetting name
                 | SettingKind.StringKind -> displaySetting name)
 
         // Invert the setting of the specified name
         let invertSetting name = 
             let msg = "!" + name
-            withSetting name msg (fun setting -> 
+            withSetting name msg (fun setting container -> 
                 match setting.Kind, setting.AggregateValue with
-                | ToggleKind,ToggleValue(b) -> _localSettings.TrySetValue setting.Name (ToggleValue(not b)) |> ignore
+                | ToggleKind,ToggleValue(b) -> container.TrySetValue setting.Name (ToggleValue(not b)) |> ignore
                 | _ -> msg |> Resources.CommandMode_InvalidArgument |> _statusUtil.OnError)
 
         // Reset all settings to their default settings
@@ -1030,11 +1044,11 @@ type Interpreter
         // Toggle the specified value off
         let toggleOffSetting name = 
             let msg = "no" + name
-            withSetting name msg (fun setting -> 
+            withSetting name msg (fun setting container -> 
                 match setting.Kind with
                 | SettingKind.NumberKind -> _statusUtil.OnError (Resources.Interpreter_InvalidArgument msg)
                 | SettingKind.StringKind -> _statusUtil.OnError (Resources.Interpreter_InvalidArgument msg)
-                | SettingKind.ToggleKind -> _localSettings.TrySetValue setting.Name (SettingValue.ToggleValue false) |> ignore)
+                | SettingKind.ToggleKind -> container.TrySetValue setting.Name (SettingValue.ToggleValue false) |> ignore)
 
         match setArguments with
         | [] -> 
@@ -1315,6 +1329,8 @@ type Interpreter
         | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()
         | LineCommand.PutAfter (lineRange, registerName) -> x.RunPut lineRange (getRegister registerName) true
         | LineCommand.PutBefore (lineRange, registerName) -> x.RunPut lineRange (getRegister registerName) false
+        | LineCommand.QuickFixNext (count, hasBang) -> x.RunQuickFixNext count hasBang
+        | LineCommand.QuickFixPrevious (count, hasBang) -> x.RunQuickFixPrevious count hasBang
         | LineCommand.Quit hasBang -> x.RunQuit hasBang
         | LineCommand.QuitAll hasBang -> x.RunQuitAll hasBang
         | LineCommand.QuitWithWrite (lineRange, hasBang, fileOptions, filePath) -> x.RunQuitWithWrite lineRange hasBang fileOptions filePath

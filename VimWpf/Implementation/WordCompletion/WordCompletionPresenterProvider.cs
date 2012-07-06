@@ -11,7 +11,7 @@ using Microsoft.VisualStudio.Text.Adornments;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 
-namespace Vim.UI.Wpf.Implementation
+namespace Vim.UI.Wpf.Implementation.WordCompletion
 {
     /// <summary>
     /// This class is responsible for creating IIntellisensePresenter instances for presented 

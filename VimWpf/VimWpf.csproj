@@ -57,19 +57,20 @@
     <Compile Include="KeyboardMap_IVirtualKeyboard.cs" />
     <Compile Include="KeyboardMap_StandardVirtualKeyboard.cs" />
     <Compile Include="Implementation\BlockCaret\BlockCaretController.cs" />
+    <Compile Include="Implementation\BlockCaret\BlockCaretFormatDefinition.cs" />
+    <Compile Include="Implementation\CommandMargin\CommandMarginFormatDefinition.cs" />
     <Compile Include="Implementation\Paste\PasteAdornment.cs" />
     <Compile Include="Implementation\Paste\PasteController.cs" />
     <Compile Include="Implementation\Paste\PasteFactoryService.cs" />
     <Compile Include="KeyboardMap_Builder.cs" />
-    <Compile Include="EditorFormatDefinitionNames.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Implementation\CommandMargin\CommandMarginController.cs" />
-    <Compile Include="Implementation\ClipboardDevice.cs" />
-    <Compile Include="Implementation\KeyMappingTimeoutHandler.cs" />
-    <Compile Include="Implementation\WordCompletionPresenterProvider.cs" />
-    <Compile Include="Implementation\WordCompletionSessionFactoryService.cs" />
-    <Compile Include="Implementation\DisplayWindowBroker.cs" />
-    <Compile Include="Implementation\EditorFormatDefinitions.cs" />
+    <Compile Include="Implementation\Misc\ClipboardDevice.cs" />
+    <Compile Include="Implementation\Misc\KeyMappingTimeoutHandler.cs" />
+    <Compile Include="Implementation\WordCompletion\WordCompletionPresenterProvider.cs" />
+    <Compile Include="Implementation\WordCompletion\WordCompletionSessionFactoryService.cs" />
+    <Compile Include="Implementation\Misc\DisplayWindowBroker.cs" />
+    <Compile Include="Implementation\Misc\EditorFormatDefinitions.cs" />
     <Compile Include="Implementation\BlockCaret\BlockCaret.cs" />
     <Compile Include="Implementation\BlockCaret\BlockCaretFactoryService.cs" />
     <Compile Include="Implementation\CommandMargin\CommandMargin.cs" />
@@ -78,10 +79,10 @@
     </Compile>
     <Compile Include="Implementation\CommandMargin\CommandMarginProvider.cs" />
     <Compile Include="IBlockCaret.cs" />
-    <Compile Include="Implementation\KeyboardDeviceImpl.cs" />
-    <Compile Include="Implementation\MouseDeviceImpl.cs" />
-    <Compile Include="Implementation\ProtectedOperations.cs" />
-    <Compile Include="Implementation\WordCompletionSession.cs" />
+    <Compile Include="Implementation\Misc\KeyboardDeviceImpl.cs" />
+    <Compile Include="Implementation\Misc\MouseDeviceImpl.cs" />
+    <Compile Include="Implementation\Misc\ProtectedOperations.cs" />
+    <Compile Include="Implementation\WordCompletion\WordCompletionSession.cs" />
     <Compile Include="IOptionsProvider.cs" />
     <Compile Include="IOptionsProviderFactory.cs" />
     <Compile Include="IProtectedOperations.cs" />
@@ -95,7 +96,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Implementation\SettingSynchronizer.cs" />
+    <Compile Include="Implementation\Misc\SettingSynchronizer.cs" />
     <Compile Include="VimHost.cs" />
   </ItemGroup>
   <ItemGroup>

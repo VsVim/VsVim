@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 
-namespace VsVim.UI
+namespace VsVim.Implementation.ConflictingKey
 {
     public sealed class KeyBindingData : DependencyObject
     {
