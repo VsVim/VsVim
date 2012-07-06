@@ -122,10 +122,15 @@ namespace Vim.UI.Wpf
             get { return NativeMethods.LoWord(_keyboardId.ToInt32()); }
         }
 
-        internal KeyboardMap(IntPtr keyboardId)
+        internal KeyboardMap(IntPtr keyboardId) : this(keyboardId, new StandardVirtualKeyboard(keyboardId))
+        {
+
+        }
+
+        internal KeyboardMap(IntPtr keyboardId, IVirtualKeyboard virtualKeyboard)
         {
             _keyboardId = keyboardId;
-            _virtualKeyboard = new StandardVirtualKeyboard(keyboardId);
+            _virtualKeyboard = virtualKeyboard;
 
             var builder = new Builder(_virtualKeyboard);
             builder.Create(out _keyStateToVimKeyDataMap, out _keyInputToWpfKeyDataMap);

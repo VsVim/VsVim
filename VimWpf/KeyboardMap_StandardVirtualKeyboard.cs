@@ -204,12 +204,6 @@ namespace Vim.UI.Wpf
                 return TryMapChar(c, out virtualKey, out virtualKeyModifiers);
             }
 
-            bool IVirtualKeyboard.TryGetText(uint virtualKey, VirtualKeyModifiers virtualKeyModifiers, out string text)
-            {
-                bool unused;
-                return TryGetText(virtualKey, virtualKeyModifiers, out text, out unused);
-            }
-
             bool IVirtualKeyboard.TryGetText(uint virtualKey, VirtualKeyModifiers virtualKeyModifiers, out string text, out bool isDeadKey)
             {
                 return TryGetText(virtualKey, virtualKeyModifiers, out text, out isDeadKey);

@@ -68,8 +68,6 @@ namespace Vim.UI.Wpf
             /// set before calling.  It will clear out the keyboard state after calling though
             /// </summary>
             bool TryGetText(uint virtualKey, VirtualKeyModifiers virtualKeyModifiers, out string text, out bool isDeadKey);
-
-            bool TryGetText(uint virtualKey, VirtualKeyModifiers virtualKeyModifiers, out string text);
         }
 
         /// <summary>

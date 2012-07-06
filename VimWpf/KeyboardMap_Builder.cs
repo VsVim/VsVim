@@ -74,7 +74,8 @@ namespace Vim.UI.Wpf
                         // now.  Even though we don't care about text for this key it's possible that the
                         // layout maps it to text (I believe).  
                         string text;
-                        if (_virtualKeyboard.TryGetText(virtualKey, VirtualKeyModifiers.None, out text))
+                        bool unused;
+                        if (_virtualKeyboard.TryGetText(virtualKey, VirtualKeyModifiers.None, out text, out unused))
                         {
                             text = String.Empty;
                         }
@@ -303,7 +304,8 @@ namespace Vim.UI.Wpf
 
                     // Now try to get the text value with the previous key down
                     string text;
-                    if (_virtualKeyboard.TryGetText(virtualKey, regularKeyModifiers, out text) && text == target)
+                    bool unused;
+                    if (_virtualKeyboard.TryGetText(virtualKey, regularKeyModifiers, out text, out unused) && text == target)
                     {
                         return code;
                     }
