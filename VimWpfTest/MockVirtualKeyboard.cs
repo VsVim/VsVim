@@ -1,46 +1,97 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
+using System.Windows.Input;
+using Vim.UI.Wpf.Implementation.Keyboard;
 
 namespace Vim.UI.Wpf.UnitTest
 {
-    internal class MockVirtualKeyboard : KeyboardMap.IVirtualKeyboard
+    internal class MockVirtualKeyboard : IVirtualKeyboard
     {
-        internal KeyboardMap.Keyboard Keyboard { get; set; }
+        private readonly Dictionary<KeyState, string> _keyMap = new Dictionary<KeyState,string>();
+        private readonly KeyboardState _keyboardState = new KeyboardState();
+
+        internal KeyboardState KeyboardState { get { return _keyboardState; } }
         internal bool UsesExtendedModifiers { get; set; }
         internal bool IsCapsLockToggled { get; set; }
+        internal VirtualKeyModifiers VirtualKeyModifiersExtended { get; set; }
+        internal Dictionary<KeyState, string> KeyMap { get; set; }
+
+        internal MockVirtualKeyboard()
+        {
+            // Build up a simple subset of a QWERTY keyboard 
+            int start = (int)Key.A;
+            int end = (int)Key.Z;
+            for (int i = start; i <= end; i++)
+            {
+                var key = (Key)i;
+
+                // Lower case 
+                var keyState = new KeyState(key, VirtualKeyModifiers.None);
+                _keyMap[keyState] = key.ToString().ToLower();
+
+                // Upper case
+                var upper = key.ToString().ToUpper();
+                _keyMap[new KeyState(key, VirtualKeyModifiers.Shift)] = upper;
+                _keyMap[new KeyState(key, VirtualKeyModifiers.CapsLock)] = upper;
+            }
+
+            // Add in some keys which don't change on caps lock for good measure
+            start = (int)Key.D0;
+            end = (int)Key.D9;
+            for (int i = start; i <= end; i++)
+            {
+                var number = i - start;
+                var key = (Key)i;
+                var text = number.ToString();
+                _keyMap[new KeyState(key, VirtualKeyModifiers.None)] = text;
+                _keyMap[new KeyState(key, VirtualKeyModifiers.CapsLock)] = text;
+            }
+        }
 
         #region IVirtualKeyboard
 
-        KeyboardMap.Keyboard KeyboardMap.IVirtualKeyboard.Keyboard
+        KeyboardState IVirtualKeyboard.KeyboardState
         {
-            get { throw new NotImplementedException(); }
+            get { return KeyboardState; }
         }
 
-        bool KeyboardMap.IVirtualKeyboard.UsesExtendedModifiers
+        bool IVirtualKeyboard.UsesExtendedModifiers
         {
-            get { throw new NotImplementedException(); }
+            get { return UsesExtendedModifiers; }
         }
 
-        bool KeyboardMap.IVirtualKeyboard.IsCapsLockToggled
+        bool IVirtualKeyboard.IsCapsLockToggled
         {
-            get { throw new NotImplementedException(); }
+            get { return IsCapsLockToggled; }
         }
 
-        KeyboardMap.VirtualKeyModifiers KeyboardMap.IVirtualKeyboard.VirtualKeyModifiersExtended
+        VirtualKeyModifiers IVirtualKeyboard.VirtualKeyModifiersExtended
         {
-            get { throw new NotImplementedException(); }
+            get { return VirtualKeyModifiersExtended; }
         }
 
-        bool KeyboardMap.IVirtualKeyboard.TryMapChar(char c, out uint virtualKey, out KeyboardMap.VirtualKeyModifiers virtualKeyModifiers)
+        bool IVirtualKeyboard.TryMapChar(char c, out uint virtualKey, out VirtualKeyModifiers virtualKeyModifiers)
         {
-            throw new NotImplementedException();
+            foreach (var pair in _keyMap)
+            {
+                if (pair.Value[0] == c)
+                {
+                    virtualKey = (uint)KeyInterop.VirtualKeyFromKey(pair.Key.Key);
+                    virtualKeyModifiers = pair.Key.Modifiers;
+                    return true;
+                }
+            }
+
+            virtualKey = 0;
+            virtualKeyModifiers = VirtualKeyModifiers.None;
+            return false;
         }
 
-        bool KeyboardMap.IVirtualKeyboard.TryGetText(uint virtualKey, KeyboardMap.VirtualKeyModifiers virtualKeyModifiers, out string text, out bool isDeadKey)
+        bool IVirtualKeyboard.TryGetText(uint virtualKey, VirtualKeyModifiers virtualKeyModifiers, out string text, out bool isDeadKey)
         {
-            throw new NotImplementedException();
+            var key = KeyInterop.KeyFromVirtualKey((int)virtualKey);
+            var keyState = new KeyState(key, virtualKeyModifiers);
+            isDeadKey = false;
+            return _keyMap.TryGetValue(keyState, out text);
         }
 
         #endregion

@@ -23,7 +23,7 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
         /// <summary>
         /// Cache of KeyInput to WPF key information
         /// </summary>
-        private readonly Dictionary<KeyInput, KeyState> _keyInputToWpfKeyDataMap;
+        private readonly Dictionary<KeyInput, FrugalList<KeyState>> _keyInputToWpfKeyDataMap;
 
         /// <summary>
         /// The IVirtualKeyboard for the current layout 
@@ -119,6 +119,11 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
                 virtualKeyModifiers |= _virtualKeyboard.VirtualKeyModifiersExtended;
             }
 
+            if (_virtualKeyboard.IsCapsLockToggled)
+            {
+                virtualKeyModifiers |= VirtualKeyModifiers.CapsLock;
+            }
+
             // First just check and see if there is a direct mapping
             var keyState = new KeyState(key, virtualKeyModifiers);
             if (_keyStateToVimKeyDataMap.TryGetValue(keyState, out vimKeyData))
@@ -153,22 +158,21 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
         }
 
         /// <summary>
-        /// Try and get the WPF key for the given VimKey value
+        /// Try and get the WPF keys which are associated with the given VimKey value.  There
+        /// can be multiple as several key combinations can map to a single WPF key
         /// </summary>
-        internal bool TryGetKey(VimKey vimKey, out Key key, out ModifierKeys modifierKeys)
+        internal bool TryGetKey(VimKey vimKey, out IEnumerable<KeyState> keys)
         {
             var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
 
-            KeyState keyState;
-            if (_keyInputToWpfKeyDataMap.TryGetValue(keyInput, out keyState))
+            FrugalList<KeyState> frugalList;
+            if (_keyInputToWpfKeyDataMap.TryGetValue(keyInput, out frugalList))
             {
-                key = keyState.Key;
-                modifierKeys = keyState.ModifierKeys;
+                keys = frugalList.GetValues();
                 return true;
             }
 
-            key = Key.None;
-            modifierKeys = ModifierKeys.None;
+            keys = null;
             return false;
         }
 

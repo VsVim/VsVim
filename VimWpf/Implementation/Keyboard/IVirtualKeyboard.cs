@@ -16,6 +16,7 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
         Windows = 0x8,
         Oem1 = 0x10,
         Oem2 = 0x20,
+        CapsLock = 0x40,
 
         Regular = Alt | Control | Shift,
         Extended = Windows | Oem1 | Oem2,
@@ -26,7 +27,7 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
         /// <summary>
         /// The Keyboard instance the IVirtualKeyboard is using when it queries the real keyboard buffer
         /// </summary>
-        Keyboard Keyboard { get; }
+        KeyboardState KeyboardState { get; }
 
         /// <summary>
         /// Does this given virtual keyboard layout make use of extended modifiers

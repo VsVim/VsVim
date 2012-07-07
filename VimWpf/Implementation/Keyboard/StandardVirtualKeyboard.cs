@@ -14,12 +14,12 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
 
         private readonly StringBuilder _clearBuilder = new StringBuilder(UnicodeBufferLength);
         private readonly StringBuilder _normalBuilder = new StringBuilder(UnicodeBufferLength);
-        private readonly Keyboard _keyboard = new Keyboard();
+        private readonly KeyboardState _keyboardState = new KeyboardState();
         private readonly IntPtr _keyboardId;
 
-        internal Keyboard Keyboard
+        internal KeyboardState KeyboardState
         {
-            get { return _keyboard; }
+            get { return _keyboardState; }
         }
 
         internal bool IsCapsLockToggled
@@ -32,12 +32,12 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
             get
             {
                 var virtualKeyModifiers = VirtualKeyModifiers.None;
-                if (_keyboard.Oem1ModifierVirtualKey.HasValue && IsKeySet(_keyboard.Oem1ModifierVirtualKey.Value))
+                if (_keyboardState.Oem1ModifierVirtualKey.HasValue && IsKeySet(_keyboardState.Oem1ModifierVirtualKey.Value))
                 {
                     virtualKeyModifiers |= VirtualKeyModifiers.Oem1;
                 }
 
-                if (_keyboard.Oem2ModifierVirtualKey.HasValue && IsKeySet(_keyboard.Oem2ModifierVirtualKey.Value))
+                if (_keyboardState.Oem2ModifierVirtualKey.HasValue && IsKeySet(_keyboardState.Oem2ModifierVirtualKey.Value))
                 {
                     virtualKeyModifiers |= VirtualKeyModifiers.Oem2;
                 }
@@ -48,7 +48,7 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
 
         internal bool UsesExtendedModifiers
         {
-            get { return _keyboard.Oem1ModifierVirtualKey.HasValue || _keyboard.Oem2ModifierVirtualKey.HasValue; }
+            get { return _keyboardState.Oem1ModifierVirtualKey.HasValue || _keyboardState.Oem2ModifierVirtualKey.HasValue; }
         }
 
         internal StandardVirtualKeyboard(IntPtr keyboardId)
@@ -98,12 +98,12 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
 
             try
             {
-                _keyboard.SetShiftState(virtualKeyModifiers);
+                _keyboardState.SetShiftState(virtualKeyModifiers);
                 _normalBuilder.Length = 0;
                 var value = NativeMethods.ToUnicodeEx(
                     virtualKey,
                     scanCode,
-                    _keyboard.KeyboardState,
+                    _keyboardState.State,
                     _normalBuilder,
                     _normalBuilder.Capacity,
                     0,
@@ -131,20 +131,20 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
             }
             finally
             {
-                _keyboard.Clear();
+                _keyboardState.Clear();
             }
         }
 
         private bool IsKeyToggled(uint virtualKey)
         {
             var state = NativeMethods.GetKeyState(virtualKey);
-            return 0 != (state & Keyboard.KeyToggledValue);
+            return 0 != (state & KeyboardState.KeyToggledValue);
         }
 
         private bool IsKeySet(uint virtualKey)
         {
             var state = NativeMethods.GetKeyState(virtualKey);
-            return 0 != (state & Keyboard.KeySetValue);
+            return 0 != (state & KeyboardState.KeySetValue);
         }
 
         /// <summary>
@@ -158,7 +158,8 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
             int value;
             do
             {
-                value = NativeMethods.ToUnicodeEx(virtualKey, scanCode, _keyboard.KeyboardState, _clearBuilder, _clearBuilder.Capacity, 0, _keyboardId);
+                value = NativeMethods.ToUnicodeEx(virtualKey, scanCode, _keyboardState.State, _clearBuilder, _clearBuilder.Capacity, 0, _keyboardId);
+                _clearBuilder.Length = 0;
             } while (value < 0);
         }
 
@@ -173,9 +174,9 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
 
         #region IVirtualKeyboard
 
-        Keyboard IVirtualKeyboard.Keyboard
+        KeyboardState IVirtualKeyboard.KeyboardState
         {
-            get { return Keyboard; }
+            get { return KeyboardState; }
         }
 
         bool IVirtualKeyboard.IsCapsLockToggled

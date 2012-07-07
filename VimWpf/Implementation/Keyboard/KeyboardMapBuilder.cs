@@ -19,10 +19,9 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
     internal sealed class KeyboardMapBuilder
     {
         private readonly IVirtualKeyboard _virtualKeyboard;
-        private readonly Keyboard _keyboard;
+        private readonly KeyboardState _keyboard;
         private Dictionary<KeyState, VimKeyData> _keyStateToVimKeyDataMap;
-        // TODO: This could be a 1 - N mapping
-        private Dictionary<KeyInput, KeyState> _keyInputToWpfKeyDataMap;
+        private Dictionary<KeyInput, FrugalList<KeyState>> _keyInputToWpfKeyDataMap;
         private Lazy<List<uint>> _possibleModifierVirtualKey;
         private bool _lookedForOem1ModifierVirtualKey;
         private bool _lookedForOem2ModifierVirtualKey;
@@ -30,19 +29,19 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
         internal KeyboardMapBuilder(IVirtualKeyboard virtualKeyboard)
         {
             _virtualKeyboard = virtualKeyboard;
-            _keyboard = _virtualKeyboard.Keyboard;
+            _keyboard = _virtualKeyboard.KeyboardState;
             _lookedForOem1ModifierVirtualKey = _keyboard.Oem1ModifierVirtualKey.HasValue;
             _lookedForOem2ModifierVirtualKey = _keyboard.Oem2ModifierVirtualKey.HasValue;
             _possibleModifierVirtualKey = new Lazy<List<uint>>(GetPossibleVirtualKeyModifiers);
-            _keyboard = new Keyboard();
+            _keyboard = new KeyboardState();
         }
 
         internal void Create(
             out Dictionary<KeyState, VimKeyData> keyStateToVimKeyDataMap,
-            out Dictionary<KeyInput, KeyState> keyInputToWpfKeyDataMap)
+            out Dictionary<KeyInput, FrugalList<KeyState>> keyInputToWpfKeyDataMap)
         {
             _keyStateToVimKeyDataMap = new Dictionary<KeyState, VimKeyData>();
-            _keyInputToWpfKeyDataMap = new Dictionary<KeyInput, KeyState>();
+            _keyInputToWpfKeyDataMap = new Dictionary<KeyInput, FrugalList<KeyState>>();
 
             var map = BuildKeyInputData();
             BuildRemainingData(map);
@@ -72,7 +71,7 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
                     // layout maps it to text (I believe).  
                     string text;
                     bool unused;
-                    if (_virtualKeyboard.TryGetText(virtualKey, VirtualKeyModifiers.None, out text, out unused))
+                    if (!_virtualKeyboard.TryGetText(virtualKey, VirtualKeyModifiers.None, out text, out unused))
                     {
                         text = String.Empty;
                     }
@@ -119,10 +118,14 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
                 foreach (var shiftStateModifier in shiftStateModifiers)
                 {
                     var virtualKey = (uint)KeyInterop.VirtualKeyFromKey(key);
+
                     bool isDeadKey;
                     string text;
                     if (_virtualKeyboard.TryGetText(virtualKey, shiftStateModifier, out text, out isDeadKey))
                     {
+                        // TODO: This is wrong.  Since certain Keypad entries have the same char as 
+                        // a non-keypad char this will overwrite the key pad with non-keypad data.  Need
+                        // to fix this
                         KeyInput keyInput;
                         if (text.Length == 1 && map.TryGetValue(text[0], out keyInput))
                         {
@@ -156,6 +159,7 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
             list.Add(VirtualKeyModifiers.Shift | VirtualKeyModifiers.Control | VirtualKeyModifiers.Alt);
             list.Add(VirtualKeyModifiers.Control);
             list.Add(VirtualKeyModifiers.Control | VirtualKeyModifiers.Alt);
+            list.Add(VirtualKeyModifiers.CapsLock);
 
             if (_keyboard.Oem1ModifierVirtualKey.HasValue)
             {
@@ -195,7 +199,16 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
         private void AddMapping(KeyState keyState, KeyInput keyInput, string text)
         {
             _keyStateToVimKeyDataMap[keyState] = new VimKeyData(keyInput, text);
-            _keyInputToWpfKeyDataMap[keyInput] = keyState;
+
+            FrugalList<KeyState> list;
+            if (!_keyInputToWpfKeyDataMap.TryGetValue(keyInput, out list))
+            {
+                _keyInputToWpfKeyDataMap[keyInput] = new FrugalList<KeyState>(keyState);
+            }
+            else
+            {
+                list.Add(keyState);
+            }
         }
 
         /// <summary>

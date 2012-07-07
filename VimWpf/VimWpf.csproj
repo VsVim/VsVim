@@ -54,7 +54,8 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Implementation\Keyboard\Keyboard.cs" />
+    <Compile Include="Implementation\Keyboard\FrugalList.cs" />
+    <Compile Include="Implementation\Keyboard\KeyboardState.cs" />
     <Compile Include="Implementation\Keyboard\IVirtualKeyboard.cs" />
     <Compile Include="Implementation\Keyboard\StandardVirtualKeyboard.cs" />
     <Compile Include="Implementation\BlockCaret\BlockCaretController.cs" />

@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace Vim.UI.Wpf.Implementation.Keyboard
 {
@@ -9,22 +6,22 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
     /// Holds the key states for a keyboard.  This is a scratch buffer and doesn't represent the live state
     /// of the keyboard. 
     /// </summary>
-    internal sealed class Keyboard
+    internal sealed class KeyboardState
     {
         internal const byte KeySetValue = 0x80;
         internal const byte KeyToggledValue = 0x01;
         private const int KeyBoardArrayLength = 256;
 
-        private readonly byte[] _keyboardStateArray = new byte[KeyBoardArrayLength];
+        private readonly byte[] _stateArray = new byte[KeyBoardArrayLength];
         private uint? _oem1ModifierVirtualKey;
         private uint? _oem2ModifierVirtualKey;
 
         /// <summary>
         /// The raw value for the state of the keyboard
         /// </summary>
-        internal byte[] KeyboardState
+        internal byte[] State
         {
-            get { return _keyboardStateArray; }
+            get { return _stateArray; }
         }
 
         /// <summary>
@@ -48,45 +45,45 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
         internal void SetKey(uint virtualKey)
         {
             Contract.Assert(virtualKey < KeyBoardArrayLength);
-            _keyboardStateArray[virtualKey] = KeySetValue;
+            _stateArray[virtualKey] = KeySetValue;
         }
 
-        internal void SetShiftState(VirtualKeyModifiers virtualKeyModifiers, bool capslock = false)
+        internal void SetShiftState(VirtualKeyModifiers virtualKeyModifiers)
         {
             if (0 != (virtualKeyModifiers & VirtualKeyModifiers.Control))
             {
-                _keyboardStateArray[NativeMethods.VK_CONTROL] = KeySetValue;
+                _stateArray[NativeMethods.VK_CONTROL] = KeySetValue;
             }
 
             if (0 != (virtualKeyModifiers & VirtualKeyModifiers.Alt))
             {
-                _keyboardStateArray[NativeMethods.VK_MENU] = KeySetValue;
+                _stateArray[NativeMethods.VK_MENU] = KeySetValue;
             }
 
             if (0 != (virtualKeyModifiers & VirtualKeyModifiers.Shift))
             {
-                _keyboardStateArray[NativeMethods.VK_SHIFT] = KeySetValue;
+                _stateArray[NativeMethods.VK_SHIFT] = KeySetValue;
+            }
+
+            if (0 != (virtualKeyModifiers & VirtualKeyModifiers.CapsLock))
+            {
+                _stateArray[NativeMethods.VK_CAPITAL] = KeyToggledValue;
             }
 
             if (0 != (virtualKeyModifiers & VirtualKeyModifiers.Oem1) && _oem1ModifierVirtualKey.HasValue)
             {
-                _keyboardStateArray[_oem1ModifierVirtualKey.Value] = KeySetValue;
+                _stateArray[_oem1ModifierVirtualKey.Value] = KeySetValue;
             }
 
             if (0 != (virtualKeyModifiers & VirtualKeyModifiers.Oem2) && _oem2ModifierVirtualKey.HasValue)
             {
-                _keyboardStateArray[_oem2ModifierVirtualKey.Value] = KeySetValue;
-            }
-
-            if (capslock)
-            {
-                _keyboardStateArray[NativeMethods.VK_CAPITAL] = KeyToggledValue;
+                _stateArray[_oem2ModifierVirtualKey.Value] = KeySetValue;
             }
         }
 
         internal void Clear()
         {
-            Array.Clear(_keyboardStateArray, 0, KeyBoardArrayLength);
+            Array.Clear(_stateArray, 0, KeyBoardArrayLength);
         }
     }
 }

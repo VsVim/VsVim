@@ -1,5 +1,7 @@
-﻿using System.Windows.Input;
+﻿using System.Linq;
+using System.Windows.Input;
 using Vim.UI.Wpf.Implementation.Keyboard;
+using System.Collections.Generic;
 
 namespace Vim.UI.Wpf
 {
@@ -92,8 +94,16 @@ namespace Vim.UI.Wpf
         /// </summary>
         public static bool TryConvertToKeyOnly(VimKey vimKey, out Key key)
         {
-            ModifierKeys modifierKeys;
-            return TryConvertToKey(vimKey, out key, out modifierKeys) && modifierKeys == ModifierKeys.None;
+            IEnumerable<KeyState> keyStates;
+            if (GetOrCreateKeyboardMap().TryGetKey(vimKey, out keyStates))
+            {
+                var keyState = keyStates.FirstOrDefault(x => x.ModifierKeys == ModifierKeys.None);
+                key = keyState.Key;
+                return key != default(Key);
+            }
+
+            key = default(Key);
+            return false;
         }
 
         /// <summary>
@@ -101,18 +111,17 @@ namespace Vim.UI.Wpf
         /// will be dropped.  So for example UpperN will still map to Key.N but the fidelity of
         /// shift will be lost
         /// </summary>
-        public static bool TryConvertToKey(VimKey vimKey, out Key key)
+        public static bool TryConvertToKey(VimKey vimKey, out IEnumerable<Key> keys)
         {
-            ModifierKeys modifierKeys;
-            return TryConvertToKey(vimKey, out key, out modifierKeys);
-        }
+            IEnumerable<KeyState> keyStates;
+            if (GetOrCreateKeyboardMap().TryGetKey(vimKey, out keyStates))
+            {
+                keys = keyStates.Select(x => x.Key);
+                return true;
+            }
 
-        /// <summary>
-        /// Try and convert the VimKey to a WPF key and the associated modifiers
-        /// </summary>
-        public static bool TryConvertToKey(VimKey vimKey, out Key key, out ModifierKeys modifierKeys)
-        {
-            return GetOrCreateKeyboardMap().TryGetKey(vimKey, out key, out modifierKeys);
+            keys = null;
+            return false;
         }
     }
 }
