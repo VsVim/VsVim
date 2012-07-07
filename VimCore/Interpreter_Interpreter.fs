@@ -432,7 +432,7 @@ type Interpreter
 
             let inner (ki:KeyInput) = 
 
-                let ki = ki |> KeyInputUtil.GetAlternateTarget |> OptionUtil.getOrDefault ki
+                let ki = ki |> KeyInputUtil.GetPrimary |> OptionUtil.getOrDefault ki
 
                 // Build up the prefix for the specified modifiers
                 let rec getPrefix modifiers = 

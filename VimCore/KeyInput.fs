@@ -13,16 +13,22 @@ type KeyInput
         _literal:char option 
     ) =
 
-    static let _alternateEnterKeyInput = KeyInput(VimKey.LowerM, KeyModifiers.Control, Some 'm')
-    static let _alternateEscapeKeyInput = KeyInput(VimKey.OpenBracket, KeyModifiers.Control, Some '[')
-    static let _alternateLineFeedKeyInput = KeyInput(VimKey.LowerJ, KeyModifiers.Control, Some 'j')
-    static let _alternateTabKeyInput = KeyInput(VimKey.LowerI, KeyModifiers.Control, Some 'i')
+    static let _alternateNullKeyInput = KeyInput(VimKey.AtSign, KeyModifiers.Control, Some (CharUtil.OfAsciiValue 0uy))
+    static let _alternateBackspaceKeyInput = KeyInput(VimKey.LowerH, KeyModifiers.Control, Some (CharUtil.OfAsciiValue 8uy))
+    static let _alternateTabKeyInput = KeyInput(VimKey.LowerI, KeyModifiers.Control, Some (CharUtil.OfAsciiValue 9uy))
+    static let _alternateLineFeedKeyInput = KeyInput(VimKey.LowerJ, KeyModifiers.Control, Some (CharUtil.OfAsciiValue 10uy))
+    static let _alternateFormFeedKeyInput = KeyInput(VimKey.LowerL, KeyModifiers.Control, Some (CharUtil.OfAsciiValue 12uy))
+    static let _alternateEnterKeyInput = KeyInput(VimKey.LowerM, KeyModifiers.Control, Some (CharUtil.OfAsciiValue 13uy))
+    static let _alternateEscapeKeyInput = KeyInput(VimKey.OpenBracket, KeyModifiers.Control, Some (CharUtil.OfAsciiValue 27uy))
     static let _alternateKeyInputList = 
         [
-            _alternateEnterKeyInput
-            _alternateEscapeKeyInput
+            _alternateNullKeyInput
+            _alternateBackspaceKeyInput
             _alternateTabKeyInput
             _alternateLineFeedKeyInput
+            _alternateFormFeedKeyInput
+            _alternateEnterKeyInput
+            _alternateEscapeKeyInput
         ]
 
     member x.Char = _literal |> OptionUtil.getOrDefault CharUtil.MinValue
@@ -85,9 +91,12 @@ type KeyInput
     member x.GetAlternate () = 
         if x.KeyModifiers = KeyModifiers.None then
             match x.Key with
+            | VimKey.Null -> Some _alternateNullKeyInput
+            | VimKey.Back -> Some _alternateBackspaceKeyInput
             | VimKey.Enter -> Some _alternateEnterKeyInput
             | VimKey.Escape -> Some _alternateEscapeKeyInput
             | VimKey.LineFeed -> Some _alternateLineFeedKeyInput
+            | VimKey.FormFeed -> Some _alternateFormFeedKeyInput
             | VimKey.Tab -> Some _alternateTabKeyInput
             | _ -> None
         else
@@ -104,7 +113,7 @@ type KeyInput
 
         let maybeGetAlternate (x : KeyInput) = 
             match x.GetAlternate() with
-            | Some(alternate) -> alternate
+            | Some alternate -> alternate
             | None -> x
         let left = maybeGetAlternate x
         let right = maybeGetAlternate right
@@ -126,7 +135,7 @@ type KeyInput
                     
     override x.GetHashCode() = 
         match x.GetAlternate() with
-        | Some(alternate) -> 
+        | Some alternate -> 
             alternate.GetHashCode()
         | None -> 
             let c = if x.IsControlAndLetter then CharUtil.ToLower x.Char else x.Char
@@ -143,12 +152,15 @@ type KeyInput
     static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<KeyInput>.Default.Equals(this,other)
     static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<KeyInput>.Default.Equals(this,other))
 
-    static member AlternateEnterKey = _alternateEnterKeyInput
-    static member AlternateEscapeKey = _alternateEscapeKeyInput
-    static member AlternateTabKey = _alternateTabKeyInput
-    static member AlternateLineFeedKey = _alternateLineFeedKeyInput
+    static member AlternateNullKeyInput = _alternateNullKeyInput
+    static member AlternateBackspaceKeyInput = _alternateBackspaceKeyInput
+    static member AlternateTabKeyInput = _alternateTabKeyInput
+    static member AlternateLineFeedKeyInput = _alternateLineFeedKeyInput
+    static member AlternateFormFeedKeyInput = _alternateFormFeedKeyInput
+    static member AlternateEnterKeyInput = _alternateEnterKeyInput
+    static member AlternateEscapeKeyInput = _alternateEscapeKeyInput
     static member AlternateKeyInputList = _alternateKeyInputList
-   
+
     interface System.IComparable with
         member x.CompareTo yObj =
             match yObj with
@@ -167,13 +179,13 @@ module KeyInputUtil =
     let VimKeyRawData = [
         (VimKey.Back, Some '\b')
         (VimKey.FormFeed, Some '\f')
-        (VimKey.Enter, Some '\n')
-        (VimKey.Escape, 27uy |> CharUtil.OfAsciiValue |> Some)
+        (VimKey.Enter, Some (CharUtil.OfAsciiValue 13uy))
+        (VimKey.Escape, Some (CharUtil.OfAsciiValue 27uy))
         (VimKey.Left, None)
         (VimKey.Up, None)
         (VimKey.Right, None)
         (VimKey.Down, None)
-        (VimKey.Delete, 127uy |> CharUtil.OfAsciiValue |> Some)
+        (VimKey.Delete, Some (CharUtil.OfAsciiValue 127uy))
         (VimKey.Help, None)
         (VimKey.End, None)
         (VimKey.PageUp, None)
@@ -304,13 +316,70 @@ module KeyInputUtil =
         (VimKey.Space, Some ' ')
         (VimKey.Dollar, Some '$')
         (VimKey.Tab, Some '\t')
-        (VimKey.LineFeed, None) 
+        (VimKey.LineFeed, Some (CharUtil.OfAsciiValue 10uy))
+        (VimKey.Null, Some (CharUtil.OfAsciiValue 0uy))
         (VimKey.Nop, None)]
 
-    let VimKeyInputList  = 
-        VimKeyRawData 
-        |> Seq.map (fun (key,charOpt) -> KeyInput(key, KeyModifiers.None, charOpt )) 
-        |> List.ofSeq
+    /// This is a mapping of the supported control character mappings in vim.  The list of
+    /// supported items is described here
+    ///
+    /// http://vimhelp.appspot.com/vim_faq.txt.html#faq-20.5
+    let VimKeyWithControlToCharMap = 
+
+        // First build up the alpha characters
+        let alpha = 
+            seq {
+                let baseKey = int VimKey.LowerA
+                let baseCode = 0x1
+                for i = 0 to 25 do
+                    let key : VimKey = 
+                        let code = baseKey + i
+                        enum code
+                    let c = 
+                        let code = baseCode + i
+                        CharUtil.OfAsciiValue (byte code)
+
+                    let isAlternate = 
+                        match key with 
+                        | VimKey.LowerH -> true
+                        | VimKey.LowerI -> true
+                        | VimKey.LowerJ -> true
+                        | VimKey.LowerL -> true
+                        | VimKey.LowerM -> true
+                        | _ -> false
+
+                    yield (key, (c, isAlternate))
+            }
+
+        let other = 
+            [
+                (VimKey.AtSign, 0x00, true)
+                (VimKey.OpenBracket, 0x1B, true)
+                (VimKey.Backslash, 0x1C, false)
+                (VimKey.CloseBracket, 0x1D, false)
+                (VimKey.Caret, 0x1E, false)
+                (VimKey.Underscore, 0x1F, false)
+                (VimKey.Question, 0x7F, true)
+            ]
+            |> Seq.map (fun (key, code, isAlternate) -> (key, ((CharUtil.OfAsciiValue (byte code)), isAlternate)))
+
+        Seq.append alpha other
+        |> Map.ofSeq
+
+    /// This is the set of predefined KeyInput values that Vim chars about 
+    let VimKeyInputList = 
+        let standardSeq = 
+            VimKeyRawData 
+            |> Seq.map (fun (key,charOpt) -> KeyInput(key, KeyModifiers.None, charOpt)) 
+
+        // When mapping the control keys only take the primary keys.  Don't take any alternates because their
+        // character is owned by a combination in the standard sequence
+        let controlSeq =
+            VimKeyWithControlToCharMap
+            |> Seq.filter (fun pair -> not (snd pair.Value))
+            |> Seq.map (fun pair -> KeyInput(pair.Key, KeyModifiers.Control, Some (fst pair.Value)))
+
+        Seq.append standardSeq controlSeq |> List.ofSeq
 
     let VimKeyCharList = 
         VimKeyInputList
@@ -323,14 +392,25 @@ module KeyInputUtil =
     /// may map to the same character their should be a primary KeyInput for every 
     /// char.  This map holds that mapping
     let CharToKeyInputMap = 
-
         let inputs = 
             VimKeyInputList
             |> Seq.map (fun ki -> OptionUtil.combine ki.RawChar ki )
             |> SeqUtil.filterToSome
             |> Seq.filter (fun (_,ki) -> not (VimKeyUtil.IsKeypadKey ki.Key))
+            |> List.ofSeq
+
+#if DEBUG
+        let mutable debugMap : Map<char, KeyInput> = Map.empty
+        for tuple in inputs do
+            let c = fst tuple
+            let found = Map.containsKey c debugMap
+            if found then
+                System.Diagnostics.Debug.Fail("This is the failure")
+            debugMap <- Map.add c (snd tuple) debugMap
+#endif
+
         let map = inputs |> Map.ofSeq
-        if map.Count <> Seq.length inputs then 
+        if map.Count <> inputs.Length then
             failwith Resources.KeyInput_DuplicateCharRepresentation
         map
 
@@ -342,7 +422,7 @@ module KeyInputUtil =
     /// Map of the VimKey to KeyInput values.  
     let VimKeyToKeyInputMap =
         VimKeyInputList
-        |> Seq.map (fun ki -> ki.Key,ki)
+        |> Seq.map (fun ki -> ki.Key, ki)
         |> Map.ofSeq
 
     let VimKeyToKeyInput vimKey = 
@@ -361,30 +441,40 @@ module KeyInputUtil =
         let ki = ch |> CharToKeyInput 
         ChangeKeyModifiersDangerous ki (ki.KeyModifiers ||| KeyModifiers.Alt)
 
-    let AlternateEnterKey = KeyInput.AlternateEnterKey
-    let AlternateEscapeKey = KeyInput.AlternateEscapeKey
-    let AlternateLineFeedKey = KeyInput.AlternateLineFeedKey
-    let AlternateTabKey = KeyInput.AlternateTabKey
-    let EscapeKey = VimKeyToKeyInput VimKey.Escape
+    let AlternateNullKeyInput = KeyInput.AlternateNullKeyInput
+    let AlternateBackspaceKeyInput = KeyInput.AlternateBackspaceKeyInput
+    let AlternateTabKey = KeyInput.AlternateTabKeyInput
+    let AlternateLineFeedKey = KeyInput.AlternateLineFeedKeyInput
+    let AlternateFormFeedKey = KeyInput.AlternateFormFeedKeyInput
+    let AlternateEnterKey = KeyInput.AlternateEnterKeyInput
+    let AlternateEscapeKey = KeyInput.AlternateEscapeKeyInput
+
+    let NullKey = VimKeyToKeyInput VimKey.Null
+    let BackspaceKey = VimKeyToKeyInput VimKey.Back
     let TabKey = VimKeyToKeyInput VimKey.Tab
     let LineFeedKey = VimKeyToKeyInput VimKey.LineFeed
+    let FormFeedKey = VimKeyToKeyInput VimKey.FormFeed
+    let EscapeKey = VimKeyToKeyInput VimKey.Escape
     let EnterKey = VimKeyToKeyInput VimKey.Enter
 
     let AlternateKeyInputList = KeyInput.AlternateKeyInputList
 
     let AlternateKeyInputPairList = 
         [
-            (EscapeKey, AlternateEscapeKey)
+            (NullKey, AlternateNullKeyInput)
+            (BackspaceKey, AlternateBackspaceKeyInput)
             (TabKey, AlternateTabKey)
             (LineFeedKey, AlternateLineFeedKey)
+            (FormFeedKey, AlternateFormFeedKey)
+            (EscapeKey, AlternateEscapeKey)
             (EnterKey, AlternateEnterKey)
         ]
 
-    let GetAlternate (ki : KeyInput) = ki.GetAlternate()
+    let GetAlternate (keyInput : KeyInput) = keyInput.GetAlternate()
 
-    let GetAlternateTarget (ki : KeyInput) = 
+    let GetPrimary (keyInput : KeyInput) = 
         AlternateKeyInputPairList 
-        |> List.tryPick (fun (target, alternate) -> if alternate = ki then Some target else None)
+        |> List.tryPick (fun (target, alternate) -> if alternate = keyInput then Some target else None)
 
     /// There is a set of characters to which the shift modifier is meaningless.  When the shift
     /// key is held down for these keys it's essentially ignored
@@ -421,45 +511,90 @@ module KeyInputUtil =
     /// Apply the modifiers to the given KeyInput and determine the result.  This will
     /// not necessarily return a KeyInput with the modifier set.  It attempts to unify 
     /// certain ambiguous combinations.
-    let ApplyModifiers (keyInput : KeyInput) (modifiers : KeyModifiers) =
-        if modifiers = KeyModifiers.None then
-            keyInput
-        elif Util.IsFlagSet modifiers KeyModifiers.Shift && Option.isSome keyInput.RawChar then
+    let ApplyModifiers (keyInput : KeyInput) (targetModifiers : KeyModifiers) =
 
-            if CharUtil.IsLetter keyInput.Char then
-                // The shift key and letters is ambiguous.  It can be represented equally well as 
-                // either of the following
-                //
-                //  - Lower case 'a' + shift
-                //  - Upper case 'A' with no shift
-                //
-                // Vim doesn't distinguish between these two and unifies internally.  This can be 
-                // demonstrated by playing with key mapping combinations (<S-A> and A).  It's 
-                // convenient to have upper 'A' as a stand alone VimKey hence we choose to represent
-                // that way and remove the shift modifier here
-                let modifiers = Util.UnsetFlag modifiers KeyModifiers.Shift
-                let keyInput = 
-                    if CharUtil.IsLower keyInput.Char then
+        let normalizeShift (keyInput : KeyInput) =
+            match keyInput.RawChar with
+            | None -> keyInput
+            | Some c ->
+                if CharUtil.IsLetter c then
+                    // The shift key and letters is ambiguous.  It can be represented equally well as 
+                    // either of the following
+                    //
+                    //  - Lower case 'a' + shift
+                    //  - Upper case 'A' with no shift
+                    //
+                    // Vim doesn't distinguish between these two and unifies internally.  This can be 
+                    // demonstrated by playing with key mapping combinations (<S-A> and A).  It's 
+                    // convenient to have upper 'A' as a stand alone VimKey hence we choose to represent
+                    // that way and remove the shift modifier here
+                    let modifiers = Util.UnsetFlag keyInput.KeyModifiers KeyModifiers.Shift
+                    let keyInput = 
+                        if CharUtil.IsLower keyInput.Char then
 
-                        // The shift modifier should promote a letter into the upper form 
-                        let c = CharUtil.ToUpper keyInput.Char
-                        let upperKeyInput = CharToKeyInput c 
-                        ChangeKeyModifiersDangerous upperKeyInput keyInput.KeyModifiers
-                    else
-                        // Ignore the shift modifier on anything which is not considered lower
-                        keyInput
+                            // The shift modifier should promote a letter into the upper form 
+                            let c = CharUtil.ToUpper keyInput.Char
+                            let upperKeyInput = CharToKeyInput c 
+                            ChangeKeyModifiersDangerous upperKeyInput keyInput.KeyModifiers
+                        else
+                            // Ignore the shift modifier on anything which is not considered lower
+                            keyInput
 
-                // Apply the remaining modifiers
-                ChangeKeyModifiersDangerous keyInput modifiers
-            elif Set.contains keyInput.Char ModifierSpecialCharSet then
-                // There is a set of chars for which the Shift modifier has no effect.  If this is one of them then
-                // don't apply the shift modifier to the final KeyInput
-                let modifiers = Util.UnsetFlag modifiers KeyModifiers.Shift
-                ChangeKeyModifiersDangerous keyInput modifiers
+                    // Apply the remaining modifiers
+                    ChangeKeyModifiersDangerous keyInput modifiers
+                elif Set.contains keyInput.Char ModifierSpecialCharSet then
+                    // There is a set of chars for which the Shift modifier has no effect.  If this is one of them then
+                    // don't apply the shift modifier to the final KeyInput
+                    let modifiers = Util.UnsetFlag keyInput.KeyModifiers KeyModifiers.Shift
+                    ChangeKeyModifiersDangerous keyInput modifiers
+                else
+                    // Nothing special to do here
+                    keyInput
+
+        let normalizeControl (keyInput : KeyInput) = 
+            if Util.IsFlagSet keyInput.KeyModifiers KeyModifiers.Alt then
+                keyInput
             else
-                ChangeKeyModifiersDangerous keyInput modifiers
-        else
-            ChangeKeyModifiersDangerous keyInput modifiers
+                // When searching for the control keys make sure to look at the lower case
+                // letters if this is a case of the shift modifier
+                let searchKey = 
+                    if CharUtil.IsUpperLetter keyInput.Char then
+                        let lower = CharUtil.ToLower keyInput.Char
+                        let lowerKeyInput = CharToKeyInput lower
+                        lowerKeyInput.Key
+                    else
+                        keyInput.Key
+
+                // Map the known control cases back to the Vim defined behavior.  This mapping intentionally removes any
+                // Shift modifiers.  No matter how CTRL-Q is produced the shift modifier isn't present on the vim key
+                match Map.tryFind searchKey VimKeyWithControlToCharMap with
+                | None -> keyInput
+                | Some (c, isAlternate) -> 
+                    // If this is an alternate for a standard key then use the primary when doing the lookup
+                    if isAlternate then
+                        match Map.tryFind c CharToKeyInputMap with
+                        | Some keyInput -> keyInput 
+                        | None -> keyInput
+                    else
+                        KeyInput(searchKey, KeyModifiers.Control, Some c)
+
+        let keyInput = ChangeKeyModifiersDangerous keyInput targetModifiers
+
+        // First normalize the shift case
+        let keyInput = 
+            if Util.IsFlagSet targetModifiers KeyModifiers.Shift then
+                normalizeShift keyInput
+            else 
+                keyInput
+
+        // Next normalize the control case
+        let keyInput = 
+            if Util.IsFlagSet targetModifiers KeyModifiers.Control then
+                normalizeControl keyInput
+            else
+                keyInput
+
+        keyInput
 
     let ApplyModifiersToVimKey vimKey modifiers = 
         let keyInput = VimKeyToKeyInput vimKey

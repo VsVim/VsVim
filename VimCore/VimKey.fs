@@ -146,9 +146,10 @@ type VimKey =
     | Tab = 139
     | LineFeed = 140
     | Nop = 141             // no-op.  Does nothing
+    | Null = 142            // (char)0
 
     // The character is real it's simply an unknown quantity to Vim
-    | RawCharacter = 142
+    | RawCharacter = 143
 
 module VimKeyUtil =
 

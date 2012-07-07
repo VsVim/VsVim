@@ -19,6 +19,14 @@ namespace Vim.UnitTest
             CharsLettersUpper +
             CharsRest;
 
+        private KeyInput MaybeGetAlternate(KeyInput keyInput)
+        {
+            var value = KeyInputUtil.GetAlternate(keyInput);
+            return value.IsSome()
+                ? value.Value
+                : keyInput;
+        }
+
         /// <summary>
         /// Verify that we properly unify upper case character combinations.
         /// </summary>
@@ -68,6 +76,51 @@ namespace Vim.UnitTest
             }
         }
 
+        /// <summary>
+        /// Make sure that our control plus alpha case is properly handled 
+        /// </summary>
+        [Fact]
+        public void ApplyModifiers_ControlToAlpha()
+        {
+            var baseCharCode = 0x1;
+            for (var i = 0; i < CharsLettersLower.Length; i++)
+            {
+                var target = (char)(baseCharCode + i);
+                var keyInput = KeyInputUtil.CharToKeyInput(CharsLettersLower[i]);
+                var found = KeyInputUtil.ApplyModifiers(keyInput, KeyModifiers.Control);
+
+                // The ApplyModifiers function will always return the primary key here but
+                // we are interested in the alternate key in some cases
+                found = MaybeGetAlternate(found);
+
+                Assert.Equal(target, found.Char);
+                Assert.Equal(keyInput.Key, found.Key);
+                Assert.Equal(KeyModifiers.Control, found.KeyModifiers);
+            }
+        }
+
+        /// <summary>
+        /// Make sure that our control plus alpha case is properly handled 
+        /// </summary>
+        [Fact]
+        public void ApplyModifiers_ControlToAlphaUpper()
+        {
+            var baseCharCode = 0x1;
+            for (var i = 0; i < CharsLettersUpper.Length; i++)
+            {
+                var target = (char)(baseCharCode + i);
+                var keyInput = KeyInputUtil.CharToKeyInput(CharsLettersUpper[i]);
+                var found = KeyInputUtil.ApplyModifiers(keyInput, KeyModifiers.Control);
+
+                // The ApplyModifiers function will always return the primary key here but
+                // we are interested in the alternate key in some cases
+                found = MaybeGetAlternate(found);
+                Assert.Equal(target, found.Char);
+                Assert.Equal(keyInput.Key, found.Key);
+                Assert.Equal(KeyModifiers.Control, found.KeyModifiers);
+            }
+        }
+
         [Fact]
         public void CoreCharList1()
         {
@@ -114,8 +167,12 @@ namespace Vim.UnitTest
             {
                 var ki = KeyInputUtil.CharToKeyInput(cur);
                 Assert.True(ki.RawChar.IsSome());
-                Assert.Equal(KeyModifiers.None, ki.KeyModifiers);
                 Assert.Equal(cur, ki.Char);
+
+                if (CharsAll.Contains(cur))
+                {
+                    Assert.Equal(KeyModifiers.None, ki.KeyModifiers);
+                }
             }
         }
 
@@ -225,9 +282,10 @@ namespace Vim.UnitTest
                     continue;
                 }
 
-                var ki = KeyInputUtil.ApplyModifiersToVimKey(cur, KeyModifiers.Control);
-                Assert.Equal(cur, ki.Key);
-                Assert.Equal(KeyModifiers.Control, ki.KeyModifiers & KeyModifiers.Control);
+                var keyInput = KeyInputUtil.ApplyModifiersToVimKey(cur, KeyModifiers.Control);
+                keyInput = MaybeGetAlternate(keyInput);
+                Assert.Equal(cur, keyInput.Key);
+                Assert.Equal(KeyModifiers.Control, keyInput.KeyModifiers & KeyModifiers.Control);
             }
         }
 
@@ -284,7 +342,7 @@ namespace Vim.UnitTest
         {
             foreach (var cur in KeyInputUtil.AlternateKeyInputList)
             {
-                Assert.True(KeyInputUtil.GetAlternateTarget(cur).IsSome());
+                Assert.True(KeyInputUtil.GetPrimary(cur).IsSome());
             }
         }
 
@@ -293,10 +351,18 @@ namespace Vim.UnitTest
         {
             foreach (var cur in KeyInputUtil.AlternateKeyInputList)
             {
-                var target = KeyInputUtil.GetAlternateTarget(cur).Value;
+                var target = KeyInputUtil.GetPrimary(cur).Value;
                 Assert.Equal(target, cur);
                 Assert.Equal(target.GetHashCode(), cur.GetHashCode());
             }
+        }
+
+        /// <summary>
+        /// The char values should be equal between alternate keys and their primaries
+        /// </summary>
+        public void AlternateShouldHaveSameChar()
+        {
+
         }
 
         [Fact]
@@ -308,7 +374,7 @@ namespace Vim.UnitTest
                 var alternate = cur.Item2;
                 Assert.Equal(alternate, target.GetAlternate().Value);
                 Assert.Equal(alternate, KeyInputUtil.GetAlternate(target).Value);
-                Assert.Equal(target, KeyInputUtil.GetAlternateTarget(alternate).Value);
+                Assert.Equal(target, KeyInputUtil.GetPrimary(alternate).Value);
             }
 
             Assert.Equal(KeyInputUtil.AlternateKeyInputPairList.Count(), KeyInputUtil.AlternateKeyInputList.Count());
@@ -334,6 +400,15 @@ namespace Vim.UnitTest
                     Assert.False(bruteEqual);
                 }
             }
+        }
+
+        /// <summary>
+        /// There are 7 alternate KeyInput values defined in key-notation.  We should have them all
+        /// </summary>
+        [Fact]
+        public void AlternateKeyInputComplete()
+        {
+            Assert.Equal(7, KeyInputUtil.AlternateKeyInputList.Length);
         }
 
         [Fact]
