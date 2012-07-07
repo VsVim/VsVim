@@ -118,24 +118,31 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
                 foreach (var shiftStateModifier in shiftStateModifiers)
                 {
                     var virtualKey = (uint)KeyInterop.VirtualKeyFromKey(key);
+                    var keyState = new KeyState(key, shiftStateModifier);
+
+                    // This will be true for the special vim keys which we map directly by virtual
+                    // key.  For instance the KeypadMultiply is already mapped to VK_MULTIPLY.  Yet
+                    // it has the same text a Shift+8 on a QWERTY keyboard.  This means that two 
+                    // vim key combinations map to the same character (in this case *).  Don't overwrite
+                    // the original mapping
+                    if (_keyStateToVimKeyDataMap.ContainsKey(keyState))
+                    {
+                        continue;
+                    }
 
                     bool isDeadKey;
                     string text;
                     if (_virtualKeyboard.TryGetText(virtualKey, shiftStateModifier, out text, out isDeadKey))
                     {
-                        // TODO: This is wrong.  Since certain Keypad entries have the same char as 
-                        // a non-keypad char this will overwrite the key pad with non-keypad data.  Need
-                        // to fix this
                         KeyInput keyInput;
                         if (text.Length == 1 && map.TryGetValue(text[0], out keyInput))
                         {
-                            var keyState = new KeyState(key, shiftStateModifier);
                             AddMapping(keyState, keyInput, text);
                         }
                     }
                     else if (isDeadKey)
                     {
-                        var keyState = new KeyState(key, VirtualKeyModifiers.None);
+                        keyState = new KeyState(key, VirtualKeyModifiers.None);
                         _keyStateToVimKeyDataMap[keyState] = VimKeyData.DeadKey;
                     }
                 }

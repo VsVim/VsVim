@@ -25,6 +25,11 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
             }
         }
 
+        internal KeyState(Key key) : this(key, ModifierKeys.None)
+        {
+
+        }
+
         internal KeyState(Key key, VirtualKeyModifiers modifiers)
         {
             Key = key;

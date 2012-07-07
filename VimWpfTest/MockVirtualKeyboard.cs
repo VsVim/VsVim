@@ -45,6 +45,11 @@ namespace Vim.UI.Wpf.UnitTest
                 _keyMap[new KeyState(key, VirtualKeyModifiers.None)] = text;
                 _keyMap[new KeyState(key, VirtualKeyModifiers.CapsLock)] = text;
             }
+
+            // Throw in some keys which have the same character mapping for the keypad
+            // and non-keypad combinations
+            _keyMap[new KeyState(Key.Multiply, VirtualKeyModifiers.None)] = "*";
+            _keyMap[new KeyState(Key.D8, VirtualKeyModifiers.Shift)] = "*";
         }
 
         #region IVirtualKeyboard

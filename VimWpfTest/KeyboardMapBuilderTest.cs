@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
+using System.Windows.Input;
 using Vim.UI.Wpf.Implementation.Keyboard;
 using Xunit;
-using System.Windows.Input;
 
 namespace Vim.UI.Wpf.UnitTest
 {
@@ -26,6 +23,14 @@ namespace Vim.UI.Wpf.UnitTest
             _builder.Create(out _keyStateToVimKeyDataMap, out _keyInputToWpfKeyDataMap);
         }
 
+        private void AssertMapping(KeyState keyState, string text, KeyModifiers modifiers = KeyModifiers.None)
+        {
+            VimKeyData vimKeyData;
+            Assert.True(_keyStateToVimKeyDataMap.TryGetValue(keyState, out vimKeyData));
+            Assert.Equal(text, vimKeyData.TextOptional);
+            Assert.Equal(modifiers, vimKeyData.KeyInputOptional.KeyModifiers);
+        }
+
         /// <summary>
         /// Make sure that the code discovers that a caps lock + an alpha is a particular key 
         /// mapping for letters
@@ -34,9 +39,20 @@ namespace Vim.UI.Wpf.UnitTest
         public void CapsLockAndAlpha()
         {
             Create();
-            VimKeyData vimKeyData;
-            Assert.True(_keyStateToVimKeyDataMap.TryGetValue(new KeyState(Key.A, VirtualKeyModifiers.CapsLock), out vimKeyData));
-            Assert.Equal("A", vimKeyData.TextOptional);
+            AssertMapping(new KeyState(Key.A, VirtualKeyModifiers.CapsLock), "A", KeyModifiers.None);
+            AssertMapping(new KeyState(Key.B, VirtualKeyModifiers.CapsLock), "B", KeyModifiers.None);
+        }
+
+        /// <summary>
+        /// Make sure that both cases of the asterisks are properly handled (the number pad and the
+        /// keypad)
+        /// </summary>
+        [Fact]
+        public void BothAsterisks()
+        {
+            Create();
+            AssertMapping(new KeyState(Key.Multiply, VirtualKeyModifiers.None), "*", KeyModifiers.None);
+            AssertMapping(new KeyState(Key.D8, VirtualKeyModifiers.Shift), "*", KeyModifiers.None);
         }
     }
 }
