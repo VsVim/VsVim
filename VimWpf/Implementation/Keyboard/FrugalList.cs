@@ -63,4 +63,12 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
             }
         }
     }
+
+    internal static class FrugalList
+    {
+        internal static FrugalList<T> Create<T>(T value)
+        {
+            return new FrugalList<T>(value);
+        }
+    }
 }

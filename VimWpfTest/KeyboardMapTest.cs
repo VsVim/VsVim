@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Windows.Input;
 using Vim.UI.Wpf.Implementation.Keyboard;
 using Xunit;
@@ -222,6 +223,34 @@ namespace Vim.UI.Wpf.UnitTest
             {
                 Setup(NativeMethods.LayoutFrench);
                 Assert.True(_map.IsDeadKey(Key.Oem6, ModifierKeys.None));
+            }
+
+            /// <summary>
+            /// Internally in the KeyboardMapBuilder we don't maintain a mapping to CTRL-D because it doesn't
+            /// map to a character that we reconize as valid (CTRL-D maps to (char)0x4 which isn't a printable
+            /// character).  
+            ///
+            /// But KeyboardMap is the public facing API.  It needs to produce a value when CTRL-D is pressed 
+            /// by the user
+            /// </summary>
+            [Fact]
+            public void ControlAlpha()
+            {
+                var baseCharacter = (int)'a';
+                var baseKey = (int)Key.A;
+                foreach (var i in Enumerable.Range(0, 26))
+                {
+                    var letter = (char)(baseCharacter + i);
+                    var expected = KeyInputUtil.CharWithControlToKeyInput(letter);
+
+                    var key = (Key)(baseKey + i);
+                    var found = GetKeyInput(key, ModifierKeys.Control);
+                    Assert.Equal(expected, found);
+
+                    var notation = String.Format("<C-{0}>", letter);
+                    var mapped = KeyNotationUtil.StringToKeyInput(notation);
+                    Assert.Equal(expected, mapped);
+                }
             }
         }
     }
