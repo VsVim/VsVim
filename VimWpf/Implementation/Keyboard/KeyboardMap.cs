@@ -61,7 +61,7 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
         /// Get the KeyInput for the specified character and Modifier keys.  This will properly
         /// unify the WPF modifiers with the expected Vim ones
         /// </summary>
-        internal KeyInput GetKeyInput(char c, ModifierKeys modifierKeys)
+        internal static KeyInput GetKeyInput(char c, ModifierKeys modifierKeys)
         {
             var keyInput = KeyInputUtil.CharToKeyInput(c);
             var keyModifiers = ConvertToKeyModifiers(modifierKeys);

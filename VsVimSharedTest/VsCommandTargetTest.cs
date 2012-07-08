@@ -57,7 +57,8 @@ namespace VsVim.UnitTest
                 vsTextView.Object,
                 _vsAdapter.Object,
                 _broker.Object,
-                _resharperUtil.Object);
+                _resharperUtil.Object,
+                KeyUtil);
             Assert.True(result.IsSuccess);
             _targetRaw = result.Value;
             _target = _targetRaw;

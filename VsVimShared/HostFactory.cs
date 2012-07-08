@@ -48,6 +48,7 @@ namespace VsVim
         private readonly IVsAdapter _adapter;
         private readonly IProtectedOperations _protectedOperations;
         private readonly IVimBufferCoordinatorFactory _bufferCoordinatorFactory;
+        private readonly IKeyUtil _keyUtil;
 
         [ImportingConstructor]
         public HostFactory(
@@ -62,7 +63,8 @@ namespace VsVim
             IDisplayWindowBrokerFactoryService displayWindowBrokerFactoryService,
             IVsAdapter adapter,
             IProtectedOperations protectedOperations,
-            IVimBufferCoordinatorFactory bufferCoordinatorFactory)
+            IVimBufferCoordinatorFactory bufferCoordinatorFactory,
+            IKeyUtil keyUtil)
         {
             _vim = vim;
             _keyBindingService = keyBindingService;
@@ -75,6 +77,7 @@ namespace VsVim
             _adapter = adapter;
             _protectedOperations = protectedOperations;
             _bufferCoordinatorFactory = bufferCoordinatorFactory;
+            _keyUtil = keyUtil;
 
             _vim.AutoLoadVimRc = false;
 
@@ -181,7 +184,7 @@ namespace VsVim
 
             var broker = _displayWindowBrokerFactoryServcie.CreateDisplayWindowBroker(textView);
             var bufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(buffer);
-            var result = VsCommandTarget.Create(bufferCoordinator, vsView, _adapter, broker, _resharperUtil);
+            var result = VsCommandTarget.Create(bufferCoordinator, vsView, _adapter, broker, _resharperUtil, _keyUtil);
             if (result.IsSuccess)
             {
                 // Store the value for debugging

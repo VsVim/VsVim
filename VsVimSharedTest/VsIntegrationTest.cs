@@ -42,7 +42,8 @@ namespace VsVim.UnitTest
                 _bufferCoordinator,
                 simulateResharper: simulateResharper,
                 simulateStandardKeyMappings: false,
-                editorOperationsFactoryService: EditorOperationsFactoryService);
+                editorOperationsFactoryService: EditorOperationsFactoryService,
+                keyUtil: KeyUtil);
         }
 
         /// <summary>

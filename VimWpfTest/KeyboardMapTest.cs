@@ -22,7 +22,7 @@ namespace Vim.UI.Wpf.UnitTest
 
         protected void AssertGetKeyInput(KeyInput keyInput, char c, ModifierKeys modifierKeys)
         {
-            Assert.Equal(keyInput, _map.GetKeyInput(c, modifierKeys));
+            Assert.Equal(keyInput, KeyboardMap.GetKeyInput(c, modifierKeys));
         }
 
         protected KeyInput GetKeyInput(Key key)
@@ -84,6 +84,24 @@ namespace Vim.UI.Wpf.UnitTest
                 var keyInput = GetKeyInput(Key.B, ModifierKeys.Shift);
                 Assert.Equal('B', keyInput.Char);
                 Assert.Equal(KeyModifiers.None, keyInput.KeyModifiers);
+            }
+
+            /// <summary>
+            /// We only look for the control + key combinations for keys that are standard in vim.  If 
+            /// we see a key that has a non-control binding and control is specified then we should just
+            /// apply Control to the KeyInput.  The Vim documentation is ambiguous here and actually
+            /// refers to trying this but it not being reliable. 
+            /// </summary>
+            [Fact]
+            public void UnrecognizedControl()
+            {
+                // Make sure that we are dealing with a case where the non-control is present but the
+                // control version isn't
+                Assert.False(_mockVirtualKeyboard.KeyMap.ContainsKey(new KeyState(Key.Escape, ModifierKeys.Control)));
+
+                var keyInput = GetKeyInput(Key.Escape, ModifierKeys.Control);
+                Assert.Equal(KeyModifiers.Control, keyInput.KeyModifiers);
+                Assert.Equal(VimKey.Escape, keyInput.Key);
             }
         }
 
@@ -212,7 +230,7 @@ namespace Vim.UI.Wpf.UnitTest
             [Fact]
             public void GetKeyInput_PoundWithShift()
             {
-                Assert.Equal(KeyInputUtil.VimKeyToKeyInput(VimKey.Pound), _map.GetKeyInput('#', ModifierKeys.Shift));
+                Assert.Equal(KeyInputUtil.VimKeyToKeyInput(VimKey.Pound), KeyboardMap.GetKeyInput('#', ModifierKeys.Shift));
             }
 
             [Fact]

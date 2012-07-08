@@ -52,13 +52,15 @@ namespace VsVim
         private readonly IVsAdapter _vsAdapter;
         private readonly IDisplayWindowBroker _broker;
         private readonly IResharperUtil _resharperUtil;
+        private readonly IKeyUtil _keyUtil;
         private IOleCommandTarget _nextTarget;
 
         private VsCommandTarget(
             IVimBufferCoordinator bufferCoordinator,
             IVsAdapter vsAdapter,
             IDisplayWindowBroker broker,
-            IResharperUtil resharperUtil)
+            IResharperUtil resharperUtil,
+            IKeyUtil keyUtil)
         {
             _vimBuffer = bufferCoordinator.VimBuffer;
             _vim = _vimBuffer.Vim;
@@ -67,6 +69,7 @@ namespace VsVim
             _vsAdapter = vsAdapter;
             _broker = broker;
             _resharperUtil = resharperUtil;
+            _keyUtil = keyUtil;
         }
 
         /// <summary>
@@ -343,7 +346,7 @@ namespace VsVim
                 return false;
             }
 
-            var modifiers = KeyUtil.ConvertToKeyModifiers(_vsAdapter.KeyboardDevice.Modifiers);
+            var modifiers = _keyUtil.GetKeyModifiers(_vsAdapter.KeyboardDevice.Modifiers);
             if (!OleCommandUtil.TryConvert(commandGroup, commandId, variantIn, modifiers, out editCommand))
             {
                 return false;
@@ -522,9 +525,10 @@ namespace VsVim
             IVsTextView vsTextView,
             IVsAdapter adapter,
             IDisplayWindowBroker broker,
-            IResharperUtil resharperUtil)
+            IResharperUtil resharperUtil, 
+            IKeyUtil keyUtil)
         {
-            var vsCommandTarget = new VsCommandTarget(bufferCoordinator, adapter, broker, resharperUtil);
+            var vsCommandTarget = new VsCommandTarget(bufferCoordinator, adapter, broker, resharperUtil, keyUtil);
             var hresult = vsTextView.AddCommandFilter(vsCommandTarget, out vsCommandTarget._nextTarget);
             var result = Result.CreateSuccessOrError(vsCommandTarget, hresult);
             if (result.IsSuccess)

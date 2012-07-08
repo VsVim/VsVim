@@ -571,7 +571,7 @@ module KeyInputUtil =
                     else
                         KeyInput(searchKey, KeyModifiers.Control, Some c)
 
-        let keyInput = ChangeKeyModifiersDangerous keyInput targetModifiers
+        let keyInput = ChangeKeyModifiersDangerous keyInput (targetModifiers ||| keyInput.KeyModifiers)
 
         // First normalize the shift case
         let keyInput = 

@@ -15,6 +15,7 @@ using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
 using Vim.UI.Wpf.Implementation.WordCompletion;
 using Vim.UI.Wpf.Implementation.Misc;
+using Vim.UI.Wpf.Implementation.Keyboard;
 
 namespace Vim.UnitTest
 {
@@ -39,6 +40,7 @@ namespace Vim.UnitTest
         private IProtectedOperations _protectedOperations;
         private IBulkOperations _bulkOperations;
         private IClipboardDevice _clipboardDevice;
+        private IKeyUtil _keyUtil;
 
         /// <summary>
         /// An IProtectedOperations value which will be properly checked in the context of this
@@ -94,6 +96,11 @@ namespace Vim.UnitTest
             get { return _vim.KeyMap; }
         }
 
+        public IKeyUtil KeyUtil
+        {
+            get { return _keyUtil; }
+        }
+
         public IClipboardDevice ClipboardDevice
         {
             get { return _clipboardDevice; }
@@ -125,6 +132,7 @@ namespace Vim.UnitTest
             _foldManagerFactory = CompositionContainer.GetExportedValue<IFoldManagerFactory>();
             _bulkOperations = CompositionContainer.GetExportedValue<IBulkOperations>();
             _clipboardDevice = CompositionContainer.GetExportedValue<IClipboardDevice>();
+            _keyUtil = CompositionContainer.GetExportedValue<IKeyUtil>();
             _protectedOperations = new ProtectedOperations(_vimErrorDetector);
 
             _clipboardDevice.Text = String.Empty;
@@ -330,7 +338,8 @@ namespace Vim.UnitTest
                 typeof(global::Vim.UnitTest.Exports.VimHost),
                 typeof(VimErrorDetector),
                 typeof(DisplayWindowBrokerFactoryService),
-                typeof(WordCompletionSessionFactoryService)));
+                typeof(WordCompletionSessionFactoryService),
+                typeof(KeyUtil)));
 
             return list;
         }

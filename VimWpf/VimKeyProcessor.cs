@@ -18,26 +18,28 @@ namespace Vim.UI.Wpf
     /// </summary>
     public class VimKeyProcessor : KeyProcessor
     {
-        private readonly IVimBuffer _buffer;
+        private readonly IVimBuffer _vimBuffer;
+        private readonly IKeyUtil _keyUtil;
 
         public IVimBuffer VimBuffer
         {
-            get { return _buffer; }
+            get { return _vimBuffer; }
         }
 
         public ITextBuffer TextBuffer
         {
-            get { return _buffer.TextBuffer; }
+            get { return _vimBuffer.TextBuffer; }
         }
 
         public ITextView TextView
         {
-            get { return _buffer.TextView; }
+            get { return _vimBuffer.TextView; }
         }
 
-        public VimKeyProcessor(IVimBuffer buffer)
+        public VimKeyProcessor(IVimBuffer vimBuffer, IKeyUtil keyUtil)
         {
-            _buffer = buffer;
+            _vimBuffer = vimBuffer;
+            _keyUtil = keyUtil;
         }
 
         public override bool IsInterestedInHandledEvents
@@ -52,7 +54,7 @@ namespace Vim.UI.Wpf
         /// </summary>
         protected virtual bool TryProcess(KeyInput keyInput)
         {
-            return _buffer.CanProcess(keyInput) && _buffer.Process(keyInput).IsAnyHandled;
+            return _vimBuffer.CanProcess(keyInput) && _vimBuffer.Process(keyInput).IsAnyHandled;
         }
 
         /// <summary>
@@ -76,7 +78,7 @@ namespace Vim.UI.Wpf
                 {
                     for (var i = 0; i < text.Length; i++)
                     {
-                        var keyInput = KeyUtil.CharAndModifiersToKeyInput(text[i], keyboard.Modifiers);
+                        var keyInput = _keyUtil.GetKeyInput(text[i], keyboard.Modifiers);
                         handled = TryProcess(keyInput);
                     }
                 }
@@ -109,7 +111,7 @@ namespace Vim.UI.Wpf
             VimTrace.TraceInfo("VimKeyProcessor::KeyDown {0} {1}", args.Key, args.KeyboardDevice.Modifiers);
 
             bool handled;
-            if (KeyUtil.IsDeadKey(args.Key) || args.Key == Key.DeadCharProcessed)
+            if (_keyUtil.IsDeadKey(args.Key) || args.Key == Key.DeadCharProcessed)
             {
                 // When a dead key combination is pressed we will get the key down events in 
                 // sequence after the combination is complete.  The dead keys will come first
@@ -120,7 +122,7 @@ namespace Vim.UI.Wpf
                 // we can process in the TextInput event
                 handled = false;
             }
-            else if (KeyUtil.IsAltGr(args.KeyboardDevice.Modifiers))
+            else if (_keyUtil.IsAltGr(args.KeyboardDevice.Modifiers))
             {
                 // AltGr greatly confuses things becuase it's realized in WPF as Control | Alt.  So
                 // while it's possible to use Control to further modify a key which used AltGr
@@ -134,7 +136,7 @@ namespace Vim.UI.Wpf
                 // by Vim.  If this worksa nd the key is processed then the input is considered
                 // to be handled
                 KeyInput keyInput;
-                if (KeyUtil.TryConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out keyInput))
+                if (_keyUtil.TryConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out keyInput))
                 {
                     handled = TryProcess(keyInput);
                 }

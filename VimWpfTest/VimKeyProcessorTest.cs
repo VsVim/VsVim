@@ -3,10 +3,11 @@ using System.Windows.Input;
 using Moq;
 using Xunit;
 using Vim.UnitTest.Mock;
+using Vim.UnitTest;
 
 namespace Vim.UI.Wpf.UnitTest
 {
-    public class VimKeyProcessorTest : IDisposable
+    public class VimKeyProcessorTest : VimTestBase
     {
         protected IntPtr _keyboardId;
         protected bool _mustUnloadLayout;
@@ -37,10 +38,10 @@ namespace Vim.UI.Wpf.UnitTest
 
             _factory = new MockRepository(MockBehavior.Strict);
             _buffer = _factory.Create<IVimBuffer>();
-            _processor = new VimKeyProcessor(_buffer.Object);
+            _processor = new VimKeyProcessor(_buffer.Object, KeyUtil);
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             if (_keyboardId != IntPtr.Zero)
             {

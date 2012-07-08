@@ -1,12 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Windows.Input;
+using Vim.UI.Wpf.Implementation.Keyboard;
 using Xunit;
 
 namespace Vim.UI.Wpf.UnitTest
 {
     public class KeyUtilTest
     {
+        private IKeyUtil _keyUtil;
+        private KeyUtil _keyUtilRaw;
+
+        public KeyUtilTest()
+        {
+            _keyUtilRaw = new KeyUtil();
+            _keyUtil = _keyUtilRaw;
+        }
+
         private void KeyToKeyInput(char c, Key key)
         {
             KeyToKeyInput(c, key, ModifierKeys.None);
@@ -20,7 +30,7 @@ namespace Vim.UI.Wpf.UnitTest
         private KeyInput ConvertToKeyInput(Key key, ModifierKeys modKeys)
         {
             KeyInput ki;
-            Assert.True(KeyUtil.TryConvertToKeyInput(key, modKeys, out ki));
+            Assert.True(_keyUtilRaw.TryConvertToKeyInput(key, modKeys, out ki));
             return ki;
         }
 
@@ -28,7 +38,7 @@ namespace Vim.UI.Wpf.UnitTest
         {
             var left = KeyInputUtil.CharToKeyInput(c);
             KeyInput right;
-            Assert.True(KeyUtil.TryConvertToKeyInput(key, mod, out right));
+            Assert.True(_keyUtilRaw.TryConvertToKeyInput(key, mod, out right));
             Assert.Equal(left, right);
         }
 
@@ -36,7 +46,7 @@ namespace Vim.UI.Wpf.UnitTest
         {
             var left = KeyInputUtil.VimKeyToKeyInput(wellKnownKey);
             KeyInput right;
-            Assert.True(KeyUtil.TryConvertToKeyInput(key, out right));
+            Assert.True(_keyUtilRaw.TryConvertToKeyInput(key, out right));
             Assert.Equal(left, right);
         }
 
@@ -158,10 +168,10 @@ namespace Vim.UI.Wpf.UnitTest
                 // a modifier on top of a key.  If they are put into the map a symptom will be the modifier
                 // showing up on a plain key
                 Key key;
-                if (KeyUtil.TryConvertToKeyOnly(current.Key, out key))
+                if (_keyUtilRaw.TryConvertToKeyOnly(current.Key, out key))
                 {
                     KeyInput keyInput;
-                    Assert.True(KeyUtil.TryConvertToKeyInput(key, ModifierKeys.None, out keyInput));
+                    Assert.True(_keyUtilRaw.TryConvertToKeyInput(key, ModifierKeys.None, out keyInput));
                     Assert.Equal(KeyModifiers.None, keyInput.KeyModifiers);
                 }
             }

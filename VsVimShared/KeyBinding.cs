@@ -190,6 +190,7 @@ namespace VsVim
             map.Add("F10", KeyInputUtil.VimKeyToKeyInput(VimKey.F10));
             map.Add("F11", KeyInputUtil.VimKeyToKeyInput(VimKey.F11));
             map.Add("F12", KeyInputUtil.VimKeyToKeyInput(VimKey.F12));
+            map.Add("Space", KeyInputUtil.VimKeyToKeyInput(VimKey.Space));
 
             _vsMap = map;
         }
@@ -250,53 +251,42 @@ namespace VsVim
                 return vs;
             }
 
-            try
-            {
-                var key = (Key)Enum.Parse(typeof(Key), keystroke, ignoreCase: true);
-                KeyInput ki;
-                return KeyUtil.TryConvertToKeyInput(key, out ki) ? ki : null;
-            }
-            catch (Exception)
-            {
-
-            }
-
             return null;
         }
 
         /// <summary>
-        /// Maybe convert a Visual Studio specific keystroke
+        /// Try and convert the given string into a Visual Studio specific key stroke.
         /// </summary>
-        private static bool TryConvertVsSpecificKey(string keystroke, out KeyInput ki)
+        private static bool TryConvertVsSpecificKey(string keystroke, out KeyInput keyInput)
         {
             EnsureVsMap();
-            if (_vsMap.TryGetValue(keystroke, out ki))
+            if (_vsMap.TryGetValue(keystroke, out keyInput))
             {
                 return true;
             }
 
             if (keystroke.StartsWith("Num ", StringComparison.OrdinalIgnoreCase))
             {
-                ki = null;
+                keyInput = null;
                 switch (keystroke.ToLower())
                 {
                     case "num +":
-                        ki = KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadPlus);
+                        keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadPlus);
                         break;
                     case "num /":
-                        ki = KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadDivide);
+                        keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadDivide);
                         break;
                     case "num *":
-                        ki = KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadMultiply);
+                        keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadMultiply);
                         break;
                     case "num -":
-                        ki = KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadMinus);
+                        keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadMinus);
                         break;
                 }
-                return ki != null;
+                return keyInput != null;
             }
 
-            ki = null;
+            keyInput = null;
             return false;
         }
 

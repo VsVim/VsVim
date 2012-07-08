@@ -394,6 +394,7 @@ namespace VsVim.UnitTest.Utils
         private readonly Mock<IDisplayWindowBroker> _displayWindowBroker;
         private readonly Mock<IResharperUtil> _resharperUtil;
         private readonly TestableSynchronizationContext _testableSynchronizationContext;
+        private readonly IKeyUtil _keyUtil;
         private bool _simulateStandardKeyMappings;
 
         internal bool SimulateStandardKeyMappings
@@ -407,8 +408,9 @@ namespace VsVim.UnitTest.Utils
             get { return _displayWindowBroker; }
         }
 
-        internal VsSimulation(IVimBufferCoordinator bufferCoordinator, bool simulateResharper, bool simulateStandardKeyMappings, IEditorOperationsFactoryService editorOperationsFactoryService)
+        internal VsSimulation(IVimBufferCoordinator bufferCoordinator, bool simulateResharper, bool simulateStandardKeyMappings, IEditorOperationsFactoryService editorOperationsFactoryService, IKeyUtil keyUtil)
         {
+            _keyUtil = keyUtil;
             _wpfTextView = (IWpfTextView)bufferCoordinator.VimBuffer.TextView;
             _factory = new MockRepository(MockBehavior.Strict);
             _defaultKeyboardDevice = new DefaultKeyboardDevice(InputManager.Current);
@@ -446,7 +448,8 @@ namespace VsVim.UnitTest.Utils
                 vsTextView.Object,
                 _vsAdapter.Object,
                 _displayWindowBroker.Object,
-                _resharperUtil.Object).Value;
+                _resharperUtil.Object,
+                _keyUtil).Value;
 
             // Time to setup the start command target.  If we are simulating R# then put them ahead of VsVim
             // on the IOleCommandTarget chain.  VsVim doesn't try to fight R# and prefers instead to be 
@@ -474,7 +477,7 @@ namespace VsVim.UnitTest.Utils
             // from the default Visual Studio one.  We can guarantee this is true due to MEF 
             // ordering of the components
             var keyProcessors = new List<Microsoft.VisualStudio.Text.Editor.KeyProcessor>();
-            keyProcessors.Add(new VsKeyProcessor(_vsAdapter.Object, bufferCoordinator));
+            keyProcessors.Add(new VsKeyProcessor(_vsAdapter.Object, bufferCoordinator, _keyUtil));
             keyProcessors.Add(new SimulationKeyProcessor(bufferCoordinator.VimBuffer.TextView));
             _defaultInputController = new DefaultInputController(bufferCoordinator.VimBuffer.TextView, keyProcessors);
         }
@@ -665,7 +668,7 @@ namespace VsVim.UnitTest.Utils
             }
 
             Key key;
-            if (!KeyUtil.TryConvertToKeyOnly(keyInput.Key, out key))
+            if (!_keyUtil.TryConvertToKeyOnly(keyInput.Key, out key))
             {
                 throw new Exception("Couldn't get the WPF key for the given KeyInput");
             }

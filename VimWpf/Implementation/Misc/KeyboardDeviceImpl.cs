@@ -7,12 +7,19 @@ namespace Vim.UI.Wpf.Implementation.Misc
     [Export(typeof(IKeyboardDevice))]
     internal sealed class KeyboardDeviceImpl : IKeyboardDevice
     {
-        private KeyboardDevice _keyboardDevice = InputManager.Current.PrimaryKeyboardDevice;
+        private readonly KeyboardDevice _keyboardDevice = InputManager.Current.PrimaryKeyboardDevice;
+        private readonly IKeyUtil _keyUtil;
+
+        [ImportingConstructor]
+        internal KeyboardDeviceImpl(IKeyUtil keyUtil)
+        {
+            _keyUtil = keyUtil;
+        }
 
         public bool IsKeyDown(VimKey vimKey)
         {
             Key key;
-            return KeyUtil.TryConvertToKeyOnly(vimKey, out key)
+            return _keyUtil.TryConvertToKeyOnly(vimKey, out key)
                 && IsKeyDown(key);
         }
 

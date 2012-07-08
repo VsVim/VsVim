@@ -125,6 +125,18 @@ namespace Vim.UnitTest
             }
         }
 
+        /// <summary>
+        /// If the ApplyModifiers call with less modifiers then the KeyInput shouldn't be affected
+        /// and should return the original input
+        /// </summary>
+        [Fact]
+        public void ApplyModifiers_Less()
+        {
+            var left = KeyInputUtil.CharWithControlToKeyInput('c');
+            var right = KeyInputUtil.ApplyModifiers(left, KeyModifiers.None);
+            Assert.Equal(left, right);
+        }
+
         [Fact]
         public void CoreCharList1()
         {

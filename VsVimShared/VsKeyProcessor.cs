@@ -15,8 +15,8 @@ namespace VsVim
         private readonly IVsAdapter _adapter;
         private readonly IVimBufferCoordinator _bufferCoordinator;
 
-        internal VsKeyProcessor(IVsAdapter adapter, IVimBufferCoordinator bufferCoordinator)
-            : base(bufferCoordinator.VimBuffer)
+        internal VsKeyProcessor(IVsAdapter adapter, IVimBufferCoordinator bufferCoordinator, IKeyUtil keyUtil)
+            : base(bufferCoordinator.VimBuffer, keyUtil)
         {
             _adapter = adapter;
             _bufferCoordinator = bufferCoordinator;

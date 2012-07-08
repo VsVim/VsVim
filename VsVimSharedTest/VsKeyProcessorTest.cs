@@ -30,7 +30,7 @@ namespace VsVim.UnitTest
             _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             _bufferCoordinator = new VimBufferCoordinator(_buffer.Object);
-            _vsProcessor = new VsKeyProcessor(_vsAdapter.Object, _bufferCoordinator);
+            _vsProcessor = new VsKeyProcessor(_vsAdapter.Object, _bufferCoordinator, KeyUtil);
             _processor = _vsProcessor;
             _device = new MockKeyboardDevice();
         }

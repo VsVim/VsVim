@@ -2,15 +2,16 @@
 using System.Windows.Input;
 using Vim.UI.Wpf.Implementation.Keyboard;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 
-namespace Vim.UI.Wpf
+namespace Vim.UI.Wpf.Implementation.Keyboard
 {
-    // TODO: KeyUtil is an ambient authority and it needs to be expressed as a MEF interface
-    public static class KeyUtil
+    [Export(typeof(IKeyUtil))]
+    internal sealed class KeyUtil : IKeyUtil
     {
-        private static KeyboardMap _keyboardMap;
+        private KeyboardMap _keyboardMap;
 
-        private static KeyboardMap GetOrCreateKeyboardMap()
+        private KeyboardMap GetOrCreateKeyboardMap()
         {
             var keyboardId = NativeMethods.GetKeyboardLayout(0);
             if (_keyboardMap == null || _keyboardMap.KeyboardId != keyboardId)
@@ -21,7 +22,7 @@ namespace Vim.UI.Wpf
             return _keyboardMap;
         }
 
-        public static KeyModifiers ConvertToKeyModifiers(ModifierKeys keys)
+        internal static KeyModifiers GetKeyModifiers(ModifierKeys keys)
         {
             return KeyboardMap.ConvertToKeyModifiers(keys);
         }
@@ -29,7 +30,7 @@ namespace Vim.UI.Wpf
         /// <summary>
         /// Is this a known dead key
         /// </summary>
-        public static bool IsDeadKey(Key key)
+        internal bool IsDeadKey(Key key)
         {
             return GetOrCreateKeyboardMap().IsDeadKey(key, ModifierKeys.None);
         }
@@ -38,52 +39,22 @@ namespace Vim.UI.Wpf
         /// Is this the AltGr key combination.  This is not directly representable in WPF
         /// logic but the best that can be done is to check for Alt + Control
         /// </summary>
-        public static bool IsAltGr(ModifierKeys modifierKeys)
+        internal static bool IsAltGr(ModifierKeys modifierKeys)
         {
             return modifierKeys == (ModifierKeys.Alt | ModifierKeys.Control);
         }
 
-        /// <summary>
-        /// When the user is typing we get events for every single key press.  This means that 
-        /// typing something like an upper case character will cause at least 2 events to be
-        /// generated.  
-        ///  1) LeftShift 
-        ///  2) LeftShift + b
-        /// This helps us filter out items like #1 which we don't want to process
-        /// </summary>
-        public static bool IsNonInputKey(Key k)
+        internal KeyInput GetKeyInput(char c, ModifierKeys modifierKeys)
         {
-            switch (k)
-            {
-                case Key.LeftAlt:
-                case Key.LeftCtrl:
-                case Key.LeftShift:
-                case Key.RightAlt:
-                case Key.RightCtrl:
-                case Key.RightShift:
-                case Key.System:
-                    return true;
-                default:
-                    return false;
-            }
+            return KeyboardMap.GetKeyInput(c, IsAltGr(modifierKeys) ? ModifierKeys.None : modifierKeys);
         }
 
-        public static bool IsInputKey(Key k)
-        {
-            return !IsNonInputKey(k);
-        }
-
-        public static KeyInput CharAndModifiersToKeyInput(char c, ModifierKeys modifierKeys)
-        {
-            return GetOrCreateKeyboardMap().GetKeyInput(c, IsAltGr(modifierKeys) ? ModifierKeys.None : modifierKeys);
-        }
-
-        public static bool TryConvertToKeyInput(Key key, out KeyInput keyInput)
+        internal bool TryConvertToKeyInput(Key key, out KeyInput keyInput)
         {
             return GetOrCreateKeyboardMap().TryGetKeyInput(key, out keyInput);
         }
 
-        public static bool TryConvertToKeyInput(Key key, ModifierKeys modifierKeys, out KeyInput keyInput)
+        internal bool TryConvertToKeyInput(Key key, ModifierKeys modifierKeys, out KeyInput keyInput)
         {
             return GetOrCreateKeyboardMap().TryGetKeyInput(key, modifierKeys, out keyInput);
         }
@@ -92,7 +63,7 @@ namespace Vim.UI.Wpf
         /// Try and convert the VimKey to a WPF key.  Note this is not a lossy conversion.  If any
         /// ModifierKeys would be necessary to produce the VimKey then the conversion will fail
         /// </summary>
-        public static bool TryConvertToKeyOnly(VimKey vimKey, out Key key)
+        internal bool TryConvertToKeyOnly(VimKey vimKey, out Key key)
         {
             IEnumerable<KeyState> keyStates;
             if (GetOrCreateKeyboardMap().TryGetKey(vimKey, out keyStates))
@@ -111,7 +82,7 @@ namespace Vim.UI.Wpf
         /// will be dropped.  So for example UpperN will still map to Key.N but the fidelity of
         /// shift will be lost
         /// </summary>
-        public static bool TryConvertToKey(VimKey vimKey, out IEnumerable<Key> keys)
+        internal bool TryConvertToKey(VimKey vimKey, out IEnumerable<Key> keys)
         {
             IEnumerable<KeyState> keyStates;
             if (GetOrCreateKeyboardMap().TryGetKey(vimKey, out keyStates))
@@ -123,5 +94,39 @@ namespace Vim.UI.Wpf
             keys = null;
             return false;
         }
+
+        #region IKeyUtil
+
+        bool IKeyUtil.IsDeadKey(Key key)
+        {
+            return IsDeadKey(key);
+        }
+
+        bool IKeyUtil.IsAltGr(ModifierKeys modifierKeys)
+        {
+            return IsAltGr(modifierKeys);
+        }
+
+        bool IKeyUtil.TryConvertToKeyInput(Key key, ModifierKeys modifierKeys, out KeyInput keyInput)
+        {
+            return TryConvertToKeyInput(key, modifierKeys, out keyInput);
+        }
+
+        bool IKeyUtil.TryConvertToKeyOnly(VimKey vimKey, out Key key)
+        {
+            return TryConvertToKeyOnly(vimKey, out key);
+        }
+
+        KeyInput IKeyUtil.GetKeyInput(char c, ModifierKeys modifierKeys)
+        {
+            return GetKeyInput(c, modifierKeys);
+        }
+
+        KeyModifiers IKeyUtil.GetKeyModifiers(ModifierKeys modifierKeys)
+        {
+            return GetKeyModifiers(modifierKeys);
+        }
+
+        #endregion
     }
 }
