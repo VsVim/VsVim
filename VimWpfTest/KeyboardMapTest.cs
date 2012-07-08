@@ -182,9 +182,6 @@ namespace Vim.UI.Wpf.UnitTest
                     KeyInput ki;
                     Assert.True(_map.TryGetKeyInput(key, out ki));
                     Assert.Equal(vimKey, ki.Key);
-                    Assert.True(_map.TryGetKeyInput(key, ModifierKeys.Control, out ki));
-                    Assert.Equal(vimKey, ki.Key);
-                    Assert.Equal(KeyModifiers.Control, ki.KeyModifiers);
                 };
 
                 verifyFunc(VimKey.Enter, Key.Enter);

@@ -118,9 +118,8 @@ namespace Vim.UI.Wpf.UnitTest
         [Fact]
         public void ConvertToKeyInput_AKeyAndControl()
         {
-            var ki = ConvertToKeyInput(Key.A, ModifierKeys.Control);
-            Assert.Equal('a', ki.Char);
-            Assert.Equal(KeyModifiers.Control, ki.KeyModifiers);
+            var keyInput = ConvertToKeyInput(Key.A, ModifierKeys.Control);
+            Assert.Equal(KeyInputUtil.CharWithControlToKeyInput('a'), keyInput);
         }
 
         [Fact]

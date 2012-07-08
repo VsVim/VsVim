@@ -75,7 +75,6 @@ type internal MotionCapture
                 yield ("<C-Home>", MotionFlags.CaretMovement, Motion.LineOrFirstToFirstNonBlank)
                 yield ("<C-Right>", MotionFlags.CaretMovement, Motion.WordForward WordKind.BigWord)
                 yield ("<C-Left>", MotionFlags.CaretMovement, Motion.WordBackward WordKind.BigWord)
-                yield ("<C-h>", MotionFlags.CaretMovement, Motion.CharLeft)
                 yield ("<C-j>", MotionFlags.CaretMovement, Motion.LineDown)
                 yield ("<C-m>", MotionFlags.CaretMovement, Motion.LineDownToFirstNonBlank)
                 yield ("<C-n>", MotionFlags.CaretMovement, Motion.LineDown)

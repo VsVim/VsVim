@@ -422,7 +422,8 @@ module KeyInputUtil =
     /// Map of the VimKey to KeyInput values.  
     let VimKeyToKeyInputMap =
         VimKeyInputList
-        |> Seq.map (fun ki -> ki.Key, ki)
+        |> Seq.filter (fun keyInput -> keyInput.KeyModifiers = KeyModifiers.None)
+        |> Seq.map (fun keyInput -> keyInput.Key, keyInput)
         |> Map.ofSeq
 
     let VimKeyToKeyInput vimKey = 
@@ -432,14 +433,6 @@ module KeyInputUtil =
 
     let ChangeKeyModifiersDangerous (ki:KeyInput) keyModifiers = 
         KeyInput(ki.Key, keyModifiers, ki.RawChar)
-
-    let CharWithControlToKeyInput ch = 
-        let ki = ch |> CharToKeyInput  
-        ChangeKeyModifiersDangerous ki (ki.KeyModifiers ||| KeyModifiers.Control)
-
-    let CharWithAltToKeyInput ch = 
-        let ki = ch |> CharToKeyInput 
-        ChangeKeyModifiersDangerous ki (ki.KeyModifiers ||| KeyModifiers.Alt)
 
     let AlternateNullKeyInput = KeyInput.AlternateNullKeyInput
     let AlternateBackspaceKeyInput = KeyInput.AlternateBackspaceKeyInput
@@ -599,6 +592,14 @@ module KeyInputUtil =
     let ApplyModifiersToVimKey vimKey modifiers = 
         let keyInput = VimKeyToKeyInput vimKey
         ApplyModifiers keyInput modifiers
+
+    let CharWithControlToKeyInput ch = 
+        let keyInput = ch |> CharToKeyInput  
+        ApplyModifiers keyInput KeyModifiers.Control
+
+    let CharWithAltToKeyInput ch = 
+        let keyInput = ch |> CharToKeyInput 
+        ApplyModifiers keyInput KeyModifiers.Alt
 
     let GetNonKeypadEquivalent (keyInput : KeyInput) = 
 

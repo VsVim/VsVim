@@ -7,7 +7,7 @@ namespace Vim.UnitTest
         [Fact]
         public void Rot13_AllLettersMapBackLower()
         {
-            foreach (var cur in KeyInputUtilTest.CharsLettersLower)
+            foreach (var cur in KeyInputUtilTest.CharLettersLower)
             {
                 var rot = CharUtil.ChangeRot13(cur);
                 var end = CharUtil.ChangeRot13(rot);
@@ -18,7 +18,7 @@ namespace Vim.UnitTest
         [Fact]
         public void Rot13_AllLettersMapBackUpper()
         {
-            foreach (var cur in KeyInputUtilTest.CharsLettersUpper)
+            foreach (var cur in KeyInputUtilTest.CharLettersUpper)
             {
                 var rot = CharUtil.ChangeRot13(cur);
                 var end = CharUtil.ChangeRot13(rot);

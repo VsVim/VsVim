@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Windows.Input;
 using Vim.UI.Wpf.Implementation.Keyboard;
 using Xunit;
@@ -61,6 +62,8 @@ namespace Vim.UI.Wpf.UnitTest
 
         public sealed class RealKeyboardMapBuilderTest : KeyboardMapBuilderTest
         {
+            private const string CharLettersLower = "abcdefghijklmnopqrstuvwxyz";
+
             public RealKeyboardMapBuilderTest()
             {
                 var keyboardId = NativeMethods.GetKeyboardLayout(0);
@@ -68,27 +71,42 @@ namespace Vim.UI.Wpf.UnitTest
             }
 
             /// <summary>
-            /// Make sure that CTRL-D doesn't have a direct mapping here.  It actually maps to an unprintable character
-            /// in the standard QWERTY keyboard.  One which we don't recognize in VsVim.  
+            /// Make sure that all of the alpha characters map to a version with control pressed 
+            /// that isn't the alpha character.  These are all defined in the ASCII standard and 
+            /// listed in the VIM FAQ
+            /// 
+            /// http://vimhelp.appspot.com/vim_faq.txt.html#faq-20.5
             /// </summary>
             [Fact]
-            public void ControlD()
+            public void ControlWithAlpha()
             {
                 Create();
-                var keyState = new KeyState(Key.D, VirtualKeyModifiers.Control);
-                Assert.False(_keyStateToVimKeyDataMap.ContainsKey(keyState));
+                foreach (var cur in CharLettersLower)
+                {
+                    var key = (Key)Enum.Parse(typeof(Key), Char.ToUpper(cur).ToString());
+                    var keyState = new KeyState(key, ModifierKeys.Control);
+
+                    VimKeyData vimKeyData;
+                    Assert.True(_keyStateToVimKeyDataMap.TryGetValue(keyState, out vimKeyData));
+                    Assert.Equal(KeyInputUtil.CharWithControlToKeyInput(cur), vimKeyData.KeyInputOptional);
+                }
             }
 
             /// <summary>
-            /// The normal D though should be included in the mapping 
+            /// Ensure that the standard alpha mappings apply to this given keyboard layout
             /// </summary>
             [Fact]
-            public void NormalD()
+            public void NormalAlpha()
             {
                 Create();
-                AssertMapping(new KeyState(Key.D, VirtualKeyModifiers.None), "d");
-                AssertMapping(new KeyState(Key.D, VirtualKeyModifiers.Shift), "D");
-                AssertMapping(new KeyState(Key.D, VirtualKeyModifiers.CapsLock), "D");
+                foreach (var cur in CharLettersLower)
+                {
+                    var upper = Char.ToUpper(cur).ToString();
+                    var key = (Key)Enum.Parse(typeof(Key), upper);
+                    AssertMapping(new KeyState(key, VirtualKeyModifiers.None), cur.ToString());
+                    AssertMapping(new KeyState(key, VirtualKeyModifiers.Shift), upper);
+                    AssertMapping(new KeyState(key, VirtualKeyModifiers.CapsLock), upper);
+                }
             }
         }
     }

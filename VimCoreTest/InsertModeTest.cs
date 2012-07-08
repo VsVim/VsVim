@@ -311,7 +311,7 @@ namespace Vim.UnitTest
             [Fact]
             public void IsDirectInput_Chars()
             {
-                foreach (var cur in KeyInputUtilTest.CharsAll)
+                foreach (var cur in KeyInputUtilTest.CharAll)
                 {
                     var input = KeyInputUtil.CharToKeyInput(cur);
                     Assert.True(_mode.CanProcess(input));

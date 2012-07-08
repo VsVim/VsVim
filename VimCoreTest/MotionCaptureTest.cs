@@ -4,13 +4,13 @@ using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using Xunit;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
+using Xunit;
 
 namespace Vim.UnitTest
 {
-    public class MotionCaptureTest : VimTestBase
+    public sealed class MotionCaptureTest : VimTestBase
     {
         private readonly IVimLocalSettings _localSettings;
         private readonly ITextView _textView;
@@ -411,6 +411,16 @@ namespace Vim.UnitTest
             _textView.SetText("cat\ndog\nbear");
             Assert.True(_capture.GetMotionAndCount(KeyInputUtil.AlternateEnterKey).IsComplete);
             Assert.True(_capture.GetMotionAndCount(KeyInputUtil.EnterKey).IsComplete);
+        }
+
+        [Fact]
+        public void LineDown()
+        {
+            AssertMotion(KeyNotationUtil.StringToKeyInput("<c-j>"), Motion.LineDown);
+            AssertMotion(KeyNotationUtil.StringToKeyInput("<c-n>"), Motion.LineDown);
+            AssertMotion("j", Motion.LineDown);
+            AssertMotion(VimKey.Down, Motion.LineDown);
+            AssertMotion(VimKey.LineFeed, Motion.LineDown);
         }
 
         [Fact]

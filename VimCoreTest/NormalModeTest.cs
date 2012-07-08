@@ -155,8 +155,9 @@ namespace Vim.UnitTest
         public void CanProcess_AllCoreCharacters()
         {
             Create(DefaultLines);
-            foreach (var cur in KeyInputUtil.VimKeyCharList)
+            foreach (var cur in KeyInputUtilTest.CharAll)
             {
+                var keyInput = KeyInputUtil.CharToKeyInput(cur);
                 Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput(cur)));
             }
         }

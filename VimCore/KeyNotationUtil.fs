@@ -194,8 +194,10 @@ module KeyNotationUtil =
                 // be verified experimentally
                 if Option.isSome keyInput.RawChar && CharUtil.IsLetterOrDigit keyInput.Char then
                     KeyInputUtil.ApplyModifiers keyInput modifier |> Some
-                else
+                elif Util.IsFlagSet modifier KeyModifiers.Shift then
                     KeyInputUtil.ChangeKeyModifiersDangerous keyInput modifier |> Some
+                else
+                    KeyInputUtil.ApplyModifiers keyInput modifier |> Some
 
         // Inside the <
         let rec insideLessThanGreaterThan data index modifier = 

@@ -886,25 +886,25 @@ type KeyInputSet =
     member x.Length =
         match x with
         | Empty -> 0
-        | OneKeyInput(_) -> 1
-        | TwoKeyInputs(_) -> 2
-        | ManyKeyInputs(list) -> list.Length
+        | OneKeyInput _ -> 1
+        | TwoKeyInputs _ -> 2
+        | ManyKeyInputs list -> list.Length
 
     /// Add a KeyInput to the end of this KeyInputSet and return the 
     /// resulting value
     member x.Add ki =
         match x with 
         | Empty -> OneKeyInput ki
-        | OneKeyInput(previous) -> TwoKeyInputs(previous,ki)
-        | TwoKeyInputs(p1,p2) -> ManyKeyInputs [p1;p2;ki]
-        | ManyKeyInputs(list) -> ManyKeyInputs (list @ [ki])
+        | OneKeyInput previous -> TwoKeyInputs(previous,ki)
+        | TwoKeyInputs (p1, p2) -> ManyKeyInputs [p1;p2;ki]
+        | ManyKeyInputs list -> ManyKeyInputs (list @ [ki])
 
     /// Does the name start with the given KeyInputSet
     member x.StartsWith (targetName : KeyInputSet) = 
         match targetName,x with
         | Empty, _ -> true
-        | OneKeyInput(leftKi), OneKeyInput(rightKi) ->  leftKi = rightKi
-        | OneKeyInput(leftKi), TwoKeyInputs(rightKi,_) -> leftKi = rightKi
+        | OneKeyInput leftKi, OneKeyInput rightKi ->  leftKi = rightKi
+        | OneKeyInput leftKi, TwoKeyInputs (rightKi, _) -> leftKi = rightKi
         | _ -> 
             let left = targetName.KeyInputs 
             let right = x.KeyInputs
@@ -925,9 +925,9 @@ type KeyInputSet =
     override x.GetHashCode() = 
         match x with
         | Empty -> 1
-        | OneKeyInput(ki) -> ki.GetHashCode()
-        | TwoKeyInputs(k1,k2) -> k1.GetHashCode() ^^^ k2.GetHashCode()
-        | ManyKeyInputs(list) -> 
+        | OneKeyInput ki -> ki.GetHashCode()
+        | TwoKeyInputs (k1, k2) -> k1.GetHashCode() ^^^ k2.GetHashCode()
+        | ManyKeyInputs list -> 
             list 
             |> Seq.ofList
             |> Seq.map (fun ki -> ki.GetHashCode())

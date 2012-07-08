@@ -199,8 +199,8 @@ namespace Vim.UnitTest
                 Assert.True(opt.IsSome());
                 var list = opt.Value.KeyInputs.ToList();
                 Assert.Equal(2, list.Count);
-                Assert.Equal('x', list[0].Char);
-                Assert.Equal('o', list[1].Char);
+                Assert.Equal(KeyInputUtil.CharWithControlToKeyInput('x'), list[0]);
+                Assert.Equal(KeyInputUtil.CharWithControlToKeyInput('o'), list[1]);
             }
 
             /// <summary>
