@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Windows.Input;
+using Moq;
 using Vim.UI.Wpf.Implementation.Keyboard;
 using Xunit;
 
@@ -57,6 +58,40 @@ namespace Vim.UI.Wpf.UnitTest
                 Create();
                 AssertMapping(new KeyState(Key.Multiply, VirtualKeyModifiers.None), "*", KeyModifiers.None);
                 AssertMapping(new KeyState(Key.D8, VirtualKeyModifiers.Shift), "*", KeyModifiers.None);
+            }
+
+            /// <summary>
+            /// Make sure we can discover the case where it takes an OEM specific modifier to get an known
+            /// character like slash.  The code must probe the keyboard looking for the OEM1 modifier key
+            /// because there is no way to directly query for it 
+            /// </summary>
+            [Fact]
+            public void OemModifier_Single()
+            {
+                var oem1VirtualKey = (uint)KeyInterop.VirtualKeyFromKey(Key.Oem102);
+                _mockVirtualKeyboard.Oem1Modifier = oem1VirtualKey;
+                _mockVirtualKeyboard.KeyMap[new KeyState(Key.Add, VirtualKeyModifiers.Oem1)] = "/";
+                Create();
+
+                AssertMapping(new KeyState(Key.Add, VirtualKeyModifiers.Oem1), "/");
+                Assert.Equal(oem1VirtualKey, _mockVirtualKeyboard.KeyboardState.Oem1ModifierVirtualKey.Value);
+            }
+
+            /// <summary>
+            /// Make sure we can discover the case where it takes an OEM specific modifier to get an known
+            /// character like slash.  The code must probe the keyboard looking for the OEM1 modifier key
+            /// because there is no way to directly query for it 
+            /// </summary>
+            [Fact]
+            public void OemModifier_Single2()
+            {
+                var oem2VirtualKey = (uint)KeyInterop.VirtualKeyFromKey(Key.Oem102);
+                _mockVirtualKeyboard.Oem2Modifier = oem2VirtualKey;
+                _mockVirtualKeyboard.KeyMap[new KeyState(Key.Add, VirtualKeyModifiers.Oem2)] = "/";
+                Create();
+
+                AssertMapping(new KeyState(Key.Add, VirtualKeyModifiers.Oem2), "/");
+                Assert.Equal(oem2VirtualKey, _mockVirtualKeyboard.KeyboardState.Oem2ModifierVirtualKey.Value);
             }
         }
 

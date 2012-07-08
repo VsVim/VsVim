@@ -38,7 +38,6 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
             _lookedForOem1ModifierVirtualKey = _keyboard.Oem1ModifierVirtualKey.HasValue;
             _lookedForOem2ModifierVirtualKey = _keyboard.Oem2ModifierVirtualKey.HasValue;
             _possibleModifierVirtualKey = new Lazy<List<uint>>(GetPossibleVirtualKeyModifiers);
-            _keyboard = new KeyboardState();
         }
 
         internal void Create(

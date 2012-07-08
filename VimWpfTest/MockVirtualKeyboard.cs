@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Windows.Input;
 using Vim.UI.Wpf.Implementation.Keyboard;
 
@@ -10,10 +11,12 @@ namespace Vim.UI.Wpf.UnitTest
         private readonly KeyboardState _keyboardState = new KeyboardState();
 
         internal KeyboardState KeyboardState { get { return _keyboardState; } }
+        internal Dictionary<KeyState, string> KeyMap { get { return _keyMap; } }
         internal bool UsesExtendedModifiers { get; set; }
         internal bool IsCapsLockToggled { get; set; }
         internal VirtualKeyModifiers VirtualKeyModifiersExtended { get; set; }
-        internal Dictionary<KeyState, string> KeyMap { get; set; }
+        internal uint? Oem1Modifier { get; set; }
+        internal uint? Oem2Modifier { get; set; }
 
         internal MockVirtualKeyboard()
         {
@@ -93,10 +96,47 @@ namespace Vim.UI.Wpf.UnitTest
 
         bool IVirtualKeyboard.TryGetText(uint virtualKey, VirtualKeyModifiers virtualKeyModifiers, out string text, out bool isDeadKey)
         {
-            var key = KeyInterop.KeyFromVirtualKey((int)virtualKey);
-            var keyState = new KeyState(key, virtualKeyModifiers);
-            isDeadKey = false;
-            return _keyMap.TryGetValue(keyState, out text);
+            try
+            {
+                if (VirtualKeyModifiers.Oem1 == (virtualKeyModifiers & VirtualKeyModifiers.Oem1))
+                {
+                    if (!Oem1Modifier.HasValue)
+                    {
+                        text = String.Empty;
+                        isDeadKey = false;
+                        return false;
+                    }
+                }
+
+                if (Oem1Modifier.HasValue && KeyboardState.IsKeySet(Oem1Modifier.Value))
+                {
+                    virtualKeyModifiers |= VirtualKeyModifiers.Oem1;
+                }
+
+                if (VirtualKeyModifiers.Oem2 == (virtualKeyModifiers & VirtualKeyModifiers.Oem2))
+                {
+                    if (!Oem2Modifier.HasValue)
+                    {
+                        text = String.Empty;
+                        isDeadKey = false;
+                        return false;
+                    }
+                }
+
+                if (Oem2Modifier.HasValue && KeyboardState.IsKeySet(Oem2Modifier.Value))
+                {
+                    virtualKeyModifiers |= VirtualKeyModifiers.Oem2;
+                }
+
+                var key = KeyInterop.KeyFromVirtualKey((int)virtualKey);
+                var keyState = new KeyState(key, virtualKeyModifiers);
+                isDeadKey = false;
+                return _keyMap.TryGetValue(keyState, out text);
+            }
+            finally
+            {
+                _keyboardState.Clear();
+            }
         }
 
         #endregion

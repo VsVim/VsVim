@@ -48,6 +48,12 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
             _stateArray[virtualKey] = KeySetValue;
         }
 
+        internal bool IsKeySet(uint virtualKey)
+        {
+            Contract.Assert(virtualKey < KeyBoardArrayLength);
+            return 0 != (_stateArray[virtualKey] & KeySetValue);
+        }
+
         internal void SetShiftState(VirtualKeyModifiers virtualKeyModifiers)
         {
             if (0 != (virtualKeyModifiers & VirtualKeyModifiers.Control))
