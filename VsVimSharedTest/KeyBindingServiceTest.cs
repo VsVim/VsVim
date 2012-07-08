@@ -10,6 +10,7 @@ using Vim.UI.Wpf;
 using VsVim.Implementation;
 using VsVim.UnitTest.Mock;
 using Vim.UnitTest;
+using VsVim.Implementation.Misc;
 
 namespace VsVim.UnitTest
 {

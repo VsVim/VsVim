@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.UI.Wpf;
 
-namespace VsVim.Implementation
+namespace VsVim.Implementation.Misc
 {
     [Export(typeof(IKeyProcessorProvider))]
     [Order(Before = Constants.VisualStudioKeyProcessorName)]

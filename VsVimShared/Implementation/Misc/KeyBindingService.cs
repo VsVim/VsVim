@@ -10,7 +10,7 @@ using Microsoft.Win32;
 using Vim;
 using Vim.UI.Wpf;
 
-namespace VsVim.Implementation
+namespace VsVim.Implementation.Misc
 {
     /// <summary>
     /// Responsible for dealing with the conflicting key bindings inside of Visual Studio

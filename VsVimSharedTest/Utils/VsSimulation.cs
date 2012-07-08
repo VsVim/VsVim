@@ -16,6 +16,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
+using VsVim.Implementation.Misc;
 
 namespace VsVim.UnitTest.Utils
 {

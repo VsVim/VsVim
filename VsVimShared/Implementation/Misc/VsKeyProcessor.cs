@@ -3,7 +3,7 @@ using Microsoft.FSharp.Core;
 using Vim;
 using Vim.UI.Wpf;
 
-namespace VsVim
+namespace VsVim.Implementation.Misc
 {
     /// <summary>
     /// This is the Visual Studio specific implementation of the typical Vim  key processor.  The
