@@ -6,7 +6,7 @@ using Microsoft.VisualStudio.Text.Tagging;
 using Vim;
 using Vim.UI.Wpf;
 
-namespace VsVim.ExternalEdit
+namespace VsVim.Implementation.ExternalEdit
 {
     [Export(typeof(IVimBufferCreationListener))]
     internal sealed class ExternalEditorManager : IVimBufferCreationListener

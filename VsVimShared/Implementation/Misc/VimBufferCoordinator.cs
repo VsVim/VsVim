@@ -3,7 +3,7 @@ using Microsoft.FSharp.Core;
 using Vim;
 using Vim.Extensions;
 
-namespace VsVim.Implementation
+namespace VsVim.Implementation.Misc
 {
     internal sealed class VimBufferCoordinator : IVimBufferCoordinator
     {

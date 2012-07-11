@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Xunit;
-using VsVim.Implementation;
+using VsVim.Implementation.Misc;
 
 namespace VsVim.UnitTest
 {

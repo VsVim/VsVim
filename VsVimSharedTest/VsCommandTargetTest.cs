@@ -11,6 +11,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
 using VsVim.Implementation;
+using VsVim.Implementation.Misc;
 
 namespace VsVim.UnitTest
 {

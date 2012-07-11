@@ -11,7 +11,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
 
-namespace VsVim.ExternalEdit
+namespace VsVim.Implementation.ExternalEdit
 {
     internal sealed class ExternalEditMonitor
     {

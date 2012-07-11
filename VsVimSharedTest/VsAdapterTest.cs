@@ -9,7 +9,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Xunit;
 using Vim.UnitTest.Mock;
-using VsVim.Implementation;
+using VsVim.Implementation.Misc;
 using Microsoft.VisualStudio.Text.IncrementalSearch;
 
 namespace VsVim.UnitTest

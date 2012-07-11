@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim;
 
-namespace VsVim.Implementation
+namespace VsVim.Implementation.Misc
 {
     /// <summary>
     /// Implements C# specific adaptations of VsVim

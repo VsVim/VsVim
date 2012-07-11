@@ -5,7 +5,7 @@ using Moq;
 using Xunit;
 using Vim;
 using Vim.UnitTest;
-using VsVim.Implementation;
+using VsVim.Implementation.Misc;
 using EditorUtils;
 
 namespace VsVim.UnitTest

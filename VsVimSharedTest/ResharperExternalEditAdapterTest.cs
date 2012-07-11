@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Vim.UnitTest;
-using VsVim.ExternalEdit;
+using VsVim.Implementation.ExternalEdit;
 using VsVim.UnitTest.Mock;
 using Xunit;
 

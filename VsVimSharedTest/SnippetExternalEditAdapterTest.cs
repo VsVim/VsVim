@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Xunit;
 using Vim.UnitTest;
-using VsVim.ExternalEdit;
+using VsVim.Implementation.ExternalEdit;
 using VsVim.UnitTest.Mock;
 
 namespace VsVim.UnitTest

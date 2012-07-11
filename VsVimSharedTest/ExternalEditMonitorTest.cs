@@ -12,7 +12,7 @@ using Xunit;
 using Vim;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
-using VsVim.ExternalEdit;
+using VsVim.Implementation.ExternalEdit;
 using VsVim.UnitTest.Mock;
 
 namespace VsVim.UnitTest
