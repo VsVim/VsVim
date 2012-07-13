@@ -1997,6 +1997,12 @@ type NormalCommand =
     /// Open a fold under the caret
     | OpenFoldUnderCaret
 
+    /// Toggle a fold under the caret
+    | ToggleFoldUnderCaret
+
+    /// Toggle all folds under the caret
+    | ToggleAllFolds
+
     /// Not actually a Vim Command.  This is a simple ping command which makes 
     /// testing items like complex repeats significantly easier
     | Ping of PingData
@@ -2172,6 +2178,12 @@ type VisualCommand =
 
     /// Switch to the specified visual mode
     | SwitchModeVisual of VisualKind
+
+    /// Toggle one fold in the selection
+    | ToggleFoldInSelection
+
+    /// Toggle all folds in the selection
+    | ToggleAllFoldsInSelection
 
     /// Yank the lines which are specified by the selection
     | YankLineSelection
