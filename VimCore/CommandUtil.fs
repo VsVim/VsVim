@@ -1447,6 +1447,17 @@ type internal CommandUtil
             _foldManager.OpenFold line.Start 1
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Toggle fold under the caret
+    member x.ToggleFoldUnderCaret count = 
+        _foldManager.ToggleFold x.CaretPoint count
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Toggle all folds in the buffer
+    member x.ToggleAllFolds() = 
+        let span = SnapshotUtil.GetExtent x.CurrentSnapshot
+        _foldManager.ToggleAllFolds span
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Open 'count' folds under the caret
     member x.OpenFoldUnderCaret count = 
         _foldManager.OpenFold x.CaretPoint count
@@ -2135,6 +2146,8 @@ type internal CommandUtil
         | NormalCommand.SplitViewVertically -> x.SplitViewVertically()
         | NormalCommand.SwitchMode (modeKind, modeArgument) -> x.SwitchMode modeKind modeArgument
         | NormalCommand.SwitchPreviousVisualMode -> x.SwitchPreviousVisualMode()
+        | NormalCommand.ToggleFoldUnderCaret -> x.ToggleFoldUnderCaret count
+        | NormalCommand.ToggleAllFolds -> x.ToggleAllFolds()
         | NormalCommand.Undo -> x.Undo count
         | NormalCommand.WriteBufferAndQuit -> x.WriteBufferAndQuit()
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion register)
@@ -2173,6 +2186,8 @@ type internal CommandUtil
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
         | VisualCommand.SwitchModeInsert -> x.SwitchModeInsert visualSpan 
         | VisualCommand.SwitchModeVisual visualKind -> x.SwitchModeVisual visualKind 
+        | VisualCommand.ToggleFoldInSelection -> x.ToggleFoldUnderCaret count
+        | VisualCommand.ToggleAllFoldsInSelection-> x.ToggleAllFolds()
         | VisualCommand.YankLineSelection -> x.YankLineSelection register visualSpan
         | VisualCommand.YankSelection -> x.YankSelection register visualSpan
 

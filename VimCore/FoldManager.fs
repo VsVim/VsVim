@@ -12,6 +12,7 @@ open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Utilities
 open System.ComponentModel.Composition
 open System.Collections.Generic
+open System.Linq;
 
 /// Contains the raw data used by the IFoldManager.  The fold manager needs to have 
 /// ITextView based information like the outlining manager but IOutliningRegion tags
@@ -186,6 +187,32 @@ type internal FoldManager
             outliningManager.GetCollapsedRegions(span)
             |> Seq.iter (fun region -> outliningManager.Expand(region) |> ignore))
 
+    /// Toggle the fold which corresponds to the given SnapshotPoint
+    member x.ToggleFold point count =
+        x.DoWithOutliningManager (fun outliningManager -> 
+
+           let currentRegions = outliningManager.GetAllRegions(x.GetSpanForRegions(point))
+                                   |> List.ofSeq
+                                   |> List.rev
+                                   |> Seq.truncate count
+
+           if (currentRegions.FirstOrDefault().IsCollapsed) then
+             x.OpenFold point count
+           else
+             x.CloseFold point count)
+
+    /// Toggle the fold which corresponds to the given SnapshotPoint
+    member x.ToggleAllFolds (span : SnapshotSpan) =
+        x.DoWithOutliningManager (fun outliningManager -> 
+           let currentRegions = outliningManager.GetAllRegions(span)
+                                   |> List.ofSeq
+                                   |> List.rev
+
+           if (currentRegions.First().IsCollapsed) then
+               x.OpenAllFolds span
+           else
+               x.CloseAllFolds span)
+
     interface IFoldManager with
         member x.TextView = _textView
         member x.CloseFold point count = x.CloseFold point count
@@ -193,6 +220,8 @@ type internal FoldManager
         member x.CreateFold range = x.CreateFold range
         member x.DeleteFold point = x.DeleteFold point
         member x.DeleteAllFolds span = x.DeleteAllFolds span
+        member x.ToggleFold point count = x.ToggleFold point count
+        member x.ToggleAllFolds span= x.ToggleAllFolds span
         member x.OpenFold point count = x.OpenFold point count
         member x.OpenAllFolds span = x.OpenAllFolds span
 

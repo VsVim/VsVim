@@ -83,6 +83,8 @@ type internal NormalMode
                 yield ("X", CommandFlags.Repeatable, NormalCommand.DeleteCharacterBeforeCaret)
                 yield ("Y", CommandFlags.None, NormalCommand.YankLines)
                 yield ("yy", CommandFlags.None, NormalCommand.YankLines)
+                yield ("za", CommandFlags.Special, NormalCommand.ToggleFoldUnderCaret)
+                yield ("zA", CommandFlags.Special, NormalCommand.ToggleAllFolds)
                 yield ("zo", CommandFlags.Special, NormalCommand.OpenFoldUnderCaret)
                 yield ("zO", CommandFlags.Special, NormalCommand.OpenAllFoldsUnderCaret)
                 yield ("zc", CommandFlags.Special, NormalCommand.CloseFoldUnderCaret)

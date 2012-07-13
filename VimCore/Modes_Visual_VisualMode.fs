@@ -72,6 +72,8 @@ type internal VisualMode
                 yield ("zO", CommandFlags.Special, VisualCommand.OpenAllFoldsInSelection)
                 yield ("zc", CommandFlags.Special, VisualCommand.CloseFoldInSelection)
                 yield ("zC", CommandFlags.Special, VisualCommand.CloseAllFoldsInSelection)
+                yield ("za", CommandFlags.Special, VisualCommand.ToggleFoldInSelection)
+                yield ("zA", CommandFlags.Special, VisualCommand.ToggleAllFoldsInSelection)
                 yield ("zd", CommandFlags.Special, VisualCommand.DeleteFoldInSelection)
                 yield ("zD", CommandFlags.Special, VisualCommand.DeleteAllFoldsInSelection)
                 yield ("<C-q>", CommandFlags.Special, VisualCommand.SwitchModeVisual VisualKind.Block)

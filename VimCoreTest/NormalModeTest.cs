@@ -58,9 +58,9 @@ namespace Vim.UnitTest
             var capture = new MotionCapture(vimBufferData, _incrementalSearch.Object);
             var runner = new CommandRunner(
                 _textView,
-                Vim.RegisterMap, 
-                capture, 
-                _commandUtil.Object, 
+                Vim.RegisterMap,
+                capture,
+                _commandUtil.Object,
                 vimBufferData.StatusUtil,
                 VisualKind.Character);
             _modeRaw = new NormalMode(
@@ -1561,6 +1561,24 @@ namespace Vim.UnitTest
             Create("");
             _commandUtil.SetupCommandNormal(NormalCommand.CloseAllFoldsUnderCaret);
             _mode.Process("zC");
+            _commandUtil.Verify();
+        }
+
+        [Fact]
+        public void Bind_ToggleFoldUnderCaret()
+        {
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.ToggleFoldUnderCaret);
+            _mode.Process("za");
+            _commandUtil.Verify();
+        }
+
+        [Fact]
+        public void Bind_ToggleAllFolds()
+        {
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.ToggleAllFolds);
+            _mode.Process("zA");
             _commandUtil.Verify();
         }
 
