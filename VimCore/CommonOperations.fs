@@ -492,11 +492,12 @@ type internal CommonOperations
         |> SnapshotSpanUtil.GetText
 
     member x.NavigateToPoint (point : VirtualSnapshotPoint) = 
-        let buf = point.Position.Snapshot.TextBuffer
-        if buf = _textView.TextBuffer then 
+        let textBuffer = point.Position.Snapshot.TextBuffer
+        if textBuffer = _textView.TextBuffer then 
             x.MoveCaretToPointAndEnsureVisible point.Position
             true
-        else  _vimHost.NavigateTo point 
+        else
+            _vimHost.NavigateTo point 
 
     /// Convert the provided whitespace into spaces.  The conversion of tabs into spaces will be 
     /// done based on the TabSize setting

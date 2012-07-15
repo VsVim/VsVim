@@ -342,6 +342,36 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class ChangeCase : VisualModeIntegrationTest
+        {
+            [Fact]
+            public void Upper_Character()
+            {
+                Create("cat dog");
+                _vimBuffer.ProcessNotation("vllU");
+                Assert.Equal("CAT dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().GetColumn());
+            }
+
+            [Fact]
+            public void Lower_Character()
+            {
+                Create("CAT dog");
+                _vimBuffer.ProcessNotation("vllu");
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().GetColumn());
+            }
+
+            [Fact]
+            public void Rot13_Character()
+            {
+                Create("cat dog");
+                _vimBuffer.ProcessNotation("vllg?");
+                Assert.Equal("png dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().GetColumn());
+            }
+        }
+
         public sealed class Misc : VisualModeIntegrationTest
         {
             /// <summary>

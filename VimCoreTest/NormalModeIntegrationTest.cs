@@ -122,6 +122,14 @@ namespace Vim.UnitTest
                 Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
             }
 
+            [Fact]
+            public void FirstNonBlankOnLine()
+            {
+                Create("  dog");
+                _vimBuffer.Process("_");
+                Assert.Equal(2, _textView.GetCaretPoint().GetColumn());
+            }
+
             /// <summary>
             /// Make sure the paragraph move backward goes to the appropriate location
             /// </summary>
@@ -1759,6 +1767,33 @@ namespace Vim.UnitTest
                 Assert.Equal(2, _textView.GetCaretPoint().GetColumn());
                 _vimBuffer.ProcessNotation("j");
                 Assert.Equal(3, _textView.GetCaretPoint().GetColumn());
+            }
+        }
+
+        public sealed class ChangeCaseMotion : NormalModeIntegrationTest
+        {
+            [Fact]
+            public void UpperOverWord()
+            {
+                Create("cat dog");
+                _vimBuffer.Process("gUw");
+                Assert.Equal("CAT dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void LowerOverWord()
+            {
+                Create("CAT dog");
+                _vimBuffer.Process("guw");
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void Rot13OverWord()
+            {
+                Create("cat dog");
+                _vimBuffer.Process("g?w");
+                Assert.Equal("png dog", _textBuffer.GetLine(0).GetText());
             }
         }
 
