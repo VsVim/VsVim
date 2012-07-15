@@ -436,6 +436,10 @@ type MotionResultFlags =
     /// the line above.  The End is the same in both cases.
     | IncludeEmptyLastLine = 0x8
 
+    /// Marker for the end of line motion.  This affects how the caret column
+    /// is maintained
+    | EndOfLine = 0x10
+
 /// Information about the type of the motion this was.
 [<RequireQualifiedAccess>]
 type MotionKind =

@@ -1626,6 +1626,142 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class MaintainCaretColumn : NormalModeIntegrationTest
+        {
+            /// <summary>
+            /// Simple maintain of the caret column going down
+            /// </summary>
+            [Fact]
+            public void Down()
+            {
+                Create("the dog chased the ball", "hello", "the cat climbed the tree");
+                _textView.MoveCaretTo(8);
+                _vimBuffer.Process('j');
+                Assert.Equal(_textView.GetPointInLine(1, 4), _textView.GetCaretPoint());
+                _vimBuffer.Process('j');
+                Assert.Equal(_textView.GetPointInLine(2, 8), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Simple maintain of the caret column going up
+            /// </summary>
+            [Fact]
+            public void Up()
+            {
+                Create("the dog chased the ball", "hello", "the cat climbed the tree");
+                _textView.MoveCaretTo(_textView.GetPointInLine(2, 8));
+                _vimBuffer.Process('k');
+                Assert.Equal(_textView.GetPointInLine(1, 4), _textView.GetCaretPoint());
+                _vimBuffer.Process('k');
+                Assert.Equal(_textView.GetPointInLine(0, 8), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// The column should not be maintained once the caret goes any other direction
+            /// </summary>
+            [Fact]
+            public void ResetOnMove()
+            {
+                Create("the dog chased the ball", "hello", "the cat climbed the tree");
+                _textView.MoveCaretTo(_textView.GetPointInLine(2, 8));
+                _vimBuffer.Process("kh");
+                Assert.Equal(_textView.GetPointInLine(1, 3), _textView.GetCaretPoint());
+                _vimBuffer.Process('k');
+                Assert.Equal(_textView.GetPointInLine(0, 3), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Make sure the caret column is properly maintained when we have to account for mixed
+            /// tabs and spaces on the preceeding line
+            /// </summary>
+            [Fact]
+            public void MixedTabsAndSpaces()
+            {
+                Create("    alpha", "\tbrought", "tac", "    dog");
+                _localSettings.TabStop = 4;
+                _textView.MoveCaretTo(4);
+                foreach (var c in "abcd")
+                {
+                    Assert.Equal(c.ToString(), _textView.GetCaretPoint().GetChar().ToString());
+                    _vimBuffer.Process('j');
+                }
+            }
+
+            /// <summary>
+            /// When spaces don't divide evenly into tabs the transition into a tab
+            /// should land on the tab
+            /// </summary>
+            [Fact]
+            public void SpacesDoNotDivideToTabs()
+            {
+                Create("    alpha", "\tbrought", "cat");
+                _localSettings.TabStop = 4;
+                _textView.MoveCaretTo(2);
+                Assert.Equal(' ', _textView.GetCaretPoint().GetChar());
+                _vimBuffer.Process('j');
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                _vimBuffer.Process('j');
+                Assert.Equal(_textBuffer.GetPointInLine(2, 2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// When spaces overlap a tab stop length we need to modulus and apply the 
+            /// remaining spaces
+            /// </summary>
+            [Fact]
+            public void SpacesOverlapTabs()
+            {
+                Create("    alpha", "\tbrought", "cat");
+                _localSettings.TabStop = 2;
+                _textView.MoveCaretTo(4);
+                Assert.Equal('a', _textView.GetCaretPoint().GetChar());
+                _vimBuffer.Process('j');
+                Assert.Equal(_textBuffer.GetPointInLine(1, 3), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// When using the end of line motion the caret should maintain a relative end of
+            /// line position instead of a fixed position at the current line
+            /// </summary>
+            [Fact]
+            public void EndOfLineMotionDown()
+            {
+                Create("cat", "tree");
+                _vimBuffer.ProcessNotation("$");
+                Assert.Equal(2, _textView.GetCaretPoint().GetColumn());
+                _vimBuffer.ProcessNotation("j");
+                Assert.Equal(3, _textView.GetCaretPoint().GetColumn());
+            }
+
+            [Fact]
+            public void EndOfLineMotionUp()
+            {
+                Create("tree", "cat");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("$");
+                Assert.Equal(2, _textView.GetCaretPoint().GetColumn());
+                _vimBuffer.ProcessNotation("k");
+                Assert.Equal(3, _textView.GetCaretPoint().GetColumn());
+            }
+
+            /// <summary>
+            /// The ve=onemore setting shouldn't play a role here.  The $ motion won't go past
+            /// the end of the line even if ve=onemore and the movement down and up shoudn't affect
+            /// that
+            /// </summary>
+            [Fact]
+            public void EndOfLineMotionWithVirtualEditOneMore()
+            {
+                Create("cat", "tree");
+                _globalSettings.VirtualEdit = "onemore";
+                Assert.True(_globalSettings.IsVirtualEditOneMore);
+                _vimBuffer.ProcessNotation("$");
+                Assert.Equal(2, _textView.GetCaretPoint().GetColumn());
+                _vimBuffer.ProcessNotation("j");
+                Assert.Equal(3, _textView.GetCaretPoint().GetColumn());
+            }
+        }
+
         public sealed class Misc : NormalModeIntegrationTest
         {
             /// <summary>
@@ -1784,97 +1920,6 @@ namespace Vim.UnitTest
                 Create("dog", "cat", "jazz", "band");
                 _vimBuffer.Process(KeyInputUtil.EnterKey);
                 Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// Simple maintain of the caret column going down
-            /// </summary>
-            [Fact]
-            public void MaintainCaretColumn_Down()
-            {
-                Create("the dog chased the ball", "hello", "the cat climbed the tree");
-                _textView.MoveCaretTo(8);
-                _vimBuffer.Process('j');
-                Assert.Equal(_textView.GetPointInLine(1, 4), _textView.GetCaretPoint());
-                _vimBuffer.Process('j');
-                Assert.Equal(_textView.GetPointInLine(2, 8), _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// Simple maintain of the caret column going up
-            /// </summary>
-            [Fact]
-            public void MaintainCaretColumn_Up()
-            {
-                Create("the dog chased the ball", "hello", "the cat climbed the tree");
-                _textView.MoveCaretTo(_textView.GetPointInLine(2, 8));
-                _vimBuffer.Process('k');
-                Assert.Equal(_textView.GetPointInLine(1, 4), _textView.GetCaretPoint());
-                _vimBuffer.Process('k');
-                Assert.Equal(_textView.GetPointInLine(0, 8), _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// The column should not be maintained once the caret goes any other direction
-            /// </summary>
-            [Fact]
-            public void MaintainCaretColumn_ResetOnMove()
-            {
-                Create("the dog chased the ball", "hello", "the cat climbed the tree");
-                _textView.MoveCaretTo(_textView.GetPointInLine(2, 8));
-                _vimBuffer.Process("kh");
-                Assert.Equal(_textView.GetPointInLine(1, 3), _textView.GetCaretPoint());
-                _vimBuffer.Process('k');
-                Assert.Equal(_textView.GetPointInLine(0, 3), _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// Make sure the caret column is properly maintained when we have to account for mixed
-            /// tabs and spaces on the preceeding line
-            /// </summary>
-            [Fact]
-            public void MaintainCaretColumn_MixedTabsAndSpaces()
-            {
-                Create("    alpha", "\tbrought", "tac", "    dog");
-                _localSettings.TabStop = 4;
-                _textView.MoveCaretTo(4);
-                foreach (var c in "abcd")
-                {
-                    Assert.Equal(c.ToString(), _textView.GetCaretPoint().GetChar().ToString());
-                    _vimBuffer.Process('j');
-                }
-            }
-
-            /// <summary>
-            /// When spaces don't divide evenly into tabs the transition into a tab
-            /// should land on the tab
-            /// </summary>
-            [Fact]
-            public void MaintainCaretColumn_SpacesDoNotDivideToTabs()
-            {
-                Create("    alpha", "\tbrought", "cat");
-                _localSettings.TabStop = 4;
-                _textView.MoveCaretTo(2);
-                Assert.Equal(' ', _textView.GetCaretPoint().GetChar());
-                _vimBuffer.Process('j');
-                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
-                _vimBuffer.Process('j');
-                Assert.Equal(_textBuffer.GetPointInLine(2, 2), _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// When spaces overlap a tab stop length we need to modulus and apply the 
-            /// remaining spaces
-            /// </summary>
-            [Fact]
-            public void MaintainCaretColumn_SpacesOverlapTabs()
-            {
-                Create("    alpha", "\tbrought", "cat");
-                _localSettings.TabStop = 2;
-                _textView.MoveCaretTo(4);
-                Assert.Equal('a', _textView.GetCaretPoint().GetChar());
-                _vimBuffer.Process('j');
-                Assert.Equal(_textBuffer.GetPointInLine(1, 3), _textView.GetCaretPoint());
             }
 
             /// <summary>

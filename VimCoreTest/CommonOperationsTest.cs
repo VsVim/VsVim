@@ -865,7 +865,23 @@ namespace Vim.UnitTest
                 motionKind: MotionKind.NewLineWise(CaretColumn.NewInLastLine(2)),
                 flags: MotionResultFlags.MaintainCaretColumn);
             _operations.MoveCaretToMotionResult(motionResult);
-            Assert.Equal(2, _operationsRaw.MaintainCaretColumn.Value);
+            Assert.Equal(2, _operationsRaw.MaintainCaretColumn.AsSpaces().Item);
+        }
+
+        /// <summary>
+        /// If the MotionResult specifies end of line caret maintenance then it should
+        /// be saved as that special value 
+        /// </summary>
+        [Fact]
+        public void MaintainCaretColumn_EndOfLine()
+        {
+            Create("the dog chased the ball", "hello", "the cat climbed the tree");
+            var motionResult = VimUtil.CreateMotionResult(
+                _textView.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                motionKind: MotionKind.NewLineWise(CaretColumn.NewInLastLine(2)),
+                flags: MotionResultFlags.MaintainCaretColumn | MotionResultFlags.EndOfLine);
+            _operations.MoveCaretToMotionResult(motionResult);
+            Assert.True(_operationsRaw.MaintainCaretColumn.IsEndOfLine);
         }
 
         /// <summary>

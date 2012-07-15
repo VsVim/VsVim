@@ -43,6 +43,16 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region MaintainCaretColumn
+
+        internal static MaintainCaretColumn.Spaces AsSpaces(this MaintainCaretColumn result)
+        {
+            Assert.True(result.IsSpaces);
+            return (MaintainCaretColumn.Spaces)result;
+        }
+
+        #endregion
+
         #region VisualSelection
 
         public static void SelectAndMoveCaret(this VisualSelection selection, ITextView textView)

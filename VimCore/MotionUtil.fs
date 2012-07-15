@@ -1655,7 +1655,7 @@ type internal MotionUtil
     member x.EndOfLine count = 
         let start = x.CaretPoint
         let span = SnapshotPointUtil.GetLineRangeSpan start count
-        MotionResult.Create span true MotionKind.CharacterWiseInclusive
+        MotionResult.CreateEx span true MotionKind.CharacterWiseInclusive MotionResultFlags.EndOfLine
 
     /// Find the first non-whitespace character on the current line.  
     member x.FirstNonBlankOnCurrentLine () =
