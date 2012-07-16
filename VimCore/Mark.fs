@@ -185,7 +185,7 @@ type Mark =
     member x.Char =
         match x with 
         | LocalMark localMark -> localMark.Char
-        | GlobalMark letter -> letter.Char
+        | GlobalMark letter -> CharUtil.ToUpper letter.Char
         | LastJump -> '\''
 
     static member OfChar c =

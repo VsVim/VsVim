@@ -252,19 +252,19 @@ module KeyNotationUtil =
         |> Seq.map StringToKeyInput
         |> KeyInputSetUtil.OfSeq
 
-    let TryGetSpecialKeyName (keyInput:KeyInput) = 
+    let TryGetSpecialKeyName (keyInput : KeyInput) = 
 
         let found = 
             SpecialKeyMap
-            |> Seq.tryFind (fun (pair) -> 
+            |> Seq.tryFind (fun pair -> 
                 let specialInput = pair.Value
                 specialInput.Key = keyInput.Key && 
                 specialInput.KeyModifiers = (specialInput.KeyModifiers &&& keyInput.KeyModifiers))
 
         match found with 
         | None -> None
-        | Some(pair) ->
+        | Some pair ->
             let extra : KeyModifiers = Util.UnsetFlag keyInput.KeyModifiers pair.Value.KeyModifiers
-            Some(pair.Key.Value, extra)
+            Some (pair.Key.Value, extra)
 
 

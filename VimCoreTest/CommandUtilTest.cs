@@ -4,6 +4,7 @@ using EditorUtils;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
@@ -55,7 +56,7 @@ namespace Vim.UnitTest
             _macroRecorder = Vim.MacroRecorder;
             _globalSettings = Vim.GlobalSettings;
 
-            var operations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
+            var operations = CreateCommonOperations(vimBufferData);
             _motionUtil = new MotionUtil(vimBufferData);
             _commandUtil = new CommandUtil(
                 vimBufferData,
@@ -98,7 +99,15 @@ namespace Vim.UnitTest
             return tuple.Value.Item1;
         }
 
-        protected abstract IFoldManager CreateFoldManager(ITextView textView);
+        protected virtual IFoldManager CreateFoldManager(ITextView textView)
+        {
+            return FoldManagerFactory.GetFoldManager(_textView);
+        }
+
+        internal virtual ICommonOperations CreateCommonOperations(IVimBufferData vimBufferData)
+        {
+            return CommonOperationsFactory.GetCommonOperations(vimBufferData);
+        }
 
         /// <summary>
         /// The majority of the fold functions are just pass throughs to the IFoldManager
@@ -145,6 +154,45 @@ namespace Vim.UnitTest
                 _foldManager.Verify();
             }
 
+            /// <summary>
+            /// Implementation of the zc command should close a fold for every line in the 
+            /// visual selection
+            /// </summary>
+            [Fact]
+            public void CloseFoldInSelection()
+            {
+                Create("cat", "dog", "tree");
+                var range = _textBuffer.GetLineRange(0, 1);
+                for (int i = 0; i < 2; i++)
+                {
+                    var point = _textBuffer.GetPointInLine(i, 0);
+                    _foldManager.Setup(x => x.CloseFold(point, 1)).Verifiable();
+                }
+                _commandUtil.CloseFoldInSelection(VisualSpan.CreateForSpan(range.Extent, VisualKind.Character));
+                _foldManager.Verify();
+            }
+
+            [Fact]
+            public void CloseFoldUnderCaret()
+            {
+                Create("cat", "dog", "tree");
+                _textView.MoveCaretTo(2);
+                var point = _textView.GetCaretPoint();
+                _foldManager.Setup(x => x.CloseFold(point, 3)).Verifiable();
+                _commandUtil.CloseFoldUnderCaret(3);
+                _foldManager.Verify();
+            }
+
+            [Fact]
+            public void DeleteFoldUnderCaret()
+            {
+                Create("cat", "dog");
+                var point = _textView.GetCaretPoint();
+                _foldManager.Setup(x => x.DeleteFold(point)).Verifiable();
+                _commandUtil.DeleteFoldUnderCaret();
+                _foldManager.Verify();
+            }
+
             [Fact]
             public void DeleteAllFoldsInBuffer()
             {
@@ -174,6 +222,12 @@ namespace Vim.UnitTest
                 _foldManager.Setup(x => x.DeleteAllFolds(visualSpan.LineRange.Extent)).Verifiable();
                 _commandUtil.DeleteAllFoldInSelection(visualSpan);
                 _foldManager.Verify();
+            }
+
+            [Fact]
+            public void DeleteFoldInSelection()
+            {
+                Create("cat", "dog", "tree");
             }
 
             [Fact]
@@ -209,13 +263,261 @@ namespace Vim.UnitTest
             }
         }
 
+        /// <summary>
+        /// Test the functions that mostly just pass through to the ICommonOperations
+        /// implementation
+        /// </summary>
+        public sealed class CommonOperationsFunctions : CommandUtilTest
+        {
+            Mock<ICommonOperations> _commonOperations;
+
+            internal override ICommonOperations CreateCommonOperations(IVimBufferData vimBufferData)
+            {
+                _commonOperations = _factory.Create<ICommonOperations>();
+                _commonOperations.Setup(x => x.EditorOperations).Returns(_factory.Create<IEditorOperations>().Object);
+                _commonOperations.Setup(x => x.EditorOptions).Returns(_factory.Create<IEditorOptions>().Object);
+                return _commonOperations.Object;
+            }
+
+            [Fact]
+            public void FormatLines()
+            {
+                Create("cat", "dog", "tree");
+                var range = _textBuffer.GetLineRange(0, 1);
+                _commonOperations.Setup(x => x.FormatLines(range)).Verifiable();
+                _commandUtil.FormatLines(2);
+                _commonOperations.Verify();
+            }
+
+            [Fact]
+            public void FormatLinesVisual()
+            {
+                Create("cat", "dog", "tree");
+                var range = _textBuffer.GetLineRange(0, 1);
+                var visualSpan = VisualSpan.CreateForSpan(range.Extent, VisualKind.Character);
+                _commonOperations.Setup(x => x.FormatLines(range)).Verifiable();
+                _commandUtil.FormatLinesVisual(visualSpan);
+                _commonOperations.Verify();
+            }
+
+            [Fact]
+            public void FormatLinesMotion()
+            {
+                Create("cat", "dog", "tree");
+                var range = _textBuffer.GetLineRange(0, 1);
+                var motionResult = MotionResult.Create(range.Extent, true, MotionKind.CharacterWiseExclusive);
+                _commonOperations.Setup(x => x.FormatLines(range)).Verifiable();
+                _commandUtil.FormatMotion(motionResult);
+                _commonOperations.Verify();
+            }
+
+            [Fact]
+            public void JumpToMark_Global_NotSet()
+            {
+                Create("cat", "dog");
+                _statusUtil.Setup(x => x.OnError(Resources.Common_MarkNotSet)).Verifiable();
+                _commandUtil.JumpToMark(Mark.NewGlobalMark(Letter.A));
+                _statusUtil.Verify();
+            }
+
+            [Fact]
+            public void JumpToMark_Global_InBuffer()
+            {
+                Create("cat", "dog");
+                Vim.MarkMap.SetGlobalMark(Letter.A, _vimTextBuffer, 0, 1);
+                var point = _textBuffer.GetPoint(1);
+                _commonOperations.Setup(x => x.MoveCaretToPointAndEnsureVisible(point)).Verifiable();
+                _commandUtil.JumpToMark(Mark.NewGlobalMark(Letter.A));
+                _commonOperations.Verify();
+            }
+
+            [Fact]
+            public void JumpToMark_Global_InOtherBuffer()
+            {
+                Create("cat", "dog");
+                var otherVimBuffer = CreateVimBuffer("hello");
+                Vim.MarkMap.SetGlobalMark(Letter.A, otherVimBuffer.VimTextBuffer, 0, 1);
+
+                var point = new VirtualSnapshotPoint(otherVimBuffer.TextBuffer.GetPoint(1));
+                _commonOperations.Setup(x => x.NavigateToPoint(point)).Returns(true).Verifiable();
+                _commandUtil.JumpToMark(Mark.NewGlobalMark(Letter.A));
+                _commonOperations.Verify();
+            }
+
+            [Fact]
+            public void JumpToMark_Global_NotSetInOtherBuffer()
+            {
+                Create("cat", "dog");
+                var otherVimBuffer = CreateVimBuffer("hello");
+                Vim.MarkMap.SetGlobalMark(Letter.A, otherVimBuffer.VimTextBuffer, 0, 1);
+
+                var point = new VirtualSnapshotPoint(otherVimBuffer.TextBuffer.GetPoint(1));
+                _statusUtil.Setup(x => x.OnError(Resources.Common_MarkNotSet)).Verifiable();
+                _commonOperations.Setup(x => x.NavigateToPoint(point)).Returns(false).Verifiable();
+                _commandUtil.JumpToMark(Mark.NewGlobalMark(Letter.A));
+                _commonOperations.Verify();
+                _statusUtil.Verify();
+            }
+
+            [Fact]
+            public void GoToDefinition_Succeeded()
+            {
+                Create("cat", "dog", "tree");
+                _commonOperations.Setup(x => x.GoToDefinition()).Returns(Result.Succeeded).Verifiable();
+                _commandUtil.GoToDefinition();
+                _commonOperations.Verify();
+            }
+
+            [Fact]
+            public void GoToDefinition_Failed()
+            {
+                Create("cat", "dog", "tree");
+                var msg = "This is a test";
+                _statusUtil.Setup(x => x.OnError(msg)).Verifiable();
+                _commonOperations.Setup(x => x.GoToDefinition()).Returns(Result.NewFailed(msg)).Verifiable();
+                _commandUtil.GoToDefinition();
+                _commonOperations.Verify();
+                _statusUtil.Verify();
+            }
+
+            [Fact]
+            public void GoToFileUnderCaret_NewWindow()
+            {
+                Create("");
+                _commonOperations.Setup(x => x.GoToFileInNewWindow()).Verifiable();
+                _commandUtil.GoToFileUnderCaret(true);
+                _commonOperations.Verify();
+            }
+
+            [Fact]
+            public void GoToFileUnderCaret_SameWindow()
+            {
+                Create("");
+                _commonOperations.Setup(x => x.GoToFile()).Verifiable();
+                _commandUtil.GoToFileUnderCaret(false);
+                _commonOperations.Verify();
+            }
+
+            [Fact]
+            public void GoToNextTab_ForwardNoCount()
+            {
+                Create("");
+                _commonOperations.Setup(x => x.GoToNextTab(Path.Forward, 1)).Verifiable();
+                _commandUtil.GoToNextTab(Path.Forward, FSharpOption<int>.None);
+                _commonOperations.Verify();
+            }
+
+            [Fact]
+            public void GoToNextTab_BackwardNoCount()
+            {
+                Create("");
+                _commonOperations.Setup(x => x.GoToNextTab(Path.Backward, 1)).Verifiable();
+                _commandUtil.GoToNextTab(Path.Backward, FSharpOption<int>.None);
+                _commonOperations.Verify();
+            }
+
+            [Fact]
+            public void GoToNextTab_ForwardCount()
+            {
+                Create("");
+                _commonOperations.Setup(x => x.GoToTab(2)).Verifiable();
+                _commandUtil.GoToNextTab(Path.Forward, FSharpOption.Create(2));
+                _commonOperations.Verify();
+            }
+        }
+
+        public sealed class UndoOperationsTest : CommandUtilTest
+        {
+            private Mock<IUndoRedoOperations> _undoRedoOperations;
+
+            protected override IUndoRedoOperations CreateUndoRedoOperations(IStatusUtil statusUtil = null)
+            {
+                _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
+                return _undoRedoOperations.Object;
+            }
+
+            /// <summary>
+            /// Make sure that we dispose of the linked transaction in the case where the edit 
+            /// throws an exception.  It's critical that these get disposed else they leave open
+            /// giant undo transactions
+            /// </summary>
+            [Fact]
+            public void EditWithLinkedChange_Throw()
+            {
+                Create("cat", "dog");
+                var transaction = new Mock<ILinkedUndoTransaction>(MockBehavior.Strict);
+                transaction.Setup(x => x.Dispose()).Verifiable();
+                _undoRedoOperations
+                    .Setup(x => x.CreateLinkedUndoTransaction())
+                    .Returns(transaction.Object)
+                    .Verifiable();
+                _undoRedoOperations
+                    .Setup(x => x.EditWithUndoTransaction<Unit>("Test", It.IsAny<FSharpFunc<Unit, Unit>>()))
+                    .Throws(new ArgumentException())
+                    .Verifiable();
+
+                bool caught = false;
+                Action<Unit> actionRaw = _ => { throw new ArgumentException(); };
+                var action = FSharpFuncUtil.ToFSharpFunc(actionRaw);
+                try
+                {
+                    _commandUtil.EditWithLinkedChange(
+                        "Test",
+                        FSharpFuncUtil.ToFSharpFunc<Unit>(_ => { }));
+                }
+                catch (ArgumentException)
+                {
+                    caught = true;
+                }
+                Assert.True(caught);
+            }
+
+            /// <summary>
+            /// Make sure that we dispose of the linked transaction in the case where the edit 
+            /// throws an exception.  It's critical that these get disposed else they leave open
+            /// giant undo transactions
+            /// </summary>
+            [Fact]
+            public void EditBlockSpanWithLinkedChange_Throw()
+            {
+                Create("cat", "dog");
+                var blockSpan = BlockSpan.CreateForSpan(_textBuffer.GetSpan(0, 2));
+                var transaction = new Mock<ILinkedUndoTransaction>(MockBehavior.Strict);
+                transaction.Setup(x => x.Dispose()).Verifiable();
+                _undoRedoOperations
+                    .Setup(x => x.CreateLinkedUndoTransaction())
+                    .Returns(transaction.Object)
+                    .Verifiable();
+                _undoRedoOperations
+                    .Setup(x => x.EditWithUndoTransaction<Unit>("Test", It.IsAny<FSharpFunc<Unit, Unit>>()))
+                    .Throws(new ArgumentException())
+                    .Verifiable();
+
+                bool caught = false;
+                Action<Unit> actionRaw = _ => { throw new ArgumentException(); };
+                var action = FSharpFuncUtil.ToFSharpFunc(actionRaw);
+                try
+                {
+                    _commandUtil.EditBlockWithLinkedChange(
+                        "Test",
+                        blockSpan,
+                        FSharpFuncUtil.ToFSharpFunc<Unit>(_ => { }));
+                }
+                catch (ArgumentException)
+                {
+                    caught = true;
+                }
+                Assert.True(caught);
+            }
+        }
+
         public sealed class Misc : CommandUtilTest
         {
             IFoldManager _foldManager;
 
             protected override IFoldManager CreateFoldManager(ITextView textView)
             {
-                _foldManager = FoldManagerFactory.GetFoldManager(_textView);
+                _foldManager = base.CreateFoldManager(textView);
                 return _foldManager;
             }
 
@@ -1115,6 +1417,43 @@ namespace Vim.UnitTest
                 _commandUtil.JoinLines(JoinKind.RemoveEmptySpaces, 3);
                 Assert.Equal("a b c", _textView.GetLine(0).GetText());
                 Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// If only a single line is selected it should extend down to 2 lines
+            /// </summary>
+            [Fact]
+            public void JoinSelection_ExtendDown()
+            {
+                Create("cat", "dog", "tree");
+                var visualSpan = VisualSpan.CreateForSpan(_textBuffer.GetLineRange(0, 0).Extent, VisualKind.Character);
+                _commandUtil.JoinSelection(JoinKind.RemoveEmptySpaces, visualSpan);
+                Assert.Equal(new[] { "cat dog", "tree" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Simple extend of 2 lines
+            /// </summary>
+            [Fact]
+            public void JoinSelection_Simple()
+            {
+                Create("cat", "dog", "tree");
+                var visualSpan = VisualSpan.CreateForSpan(_textBuffer.GetLineRange(0, 1).Extent, VisualKind.Character);
+                _commandUtil.JoinSelection(JoinKind.RemoveEmptySpaces, visualSpan);
+                Assert.Equal(new[] { "cat dog", "tree" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Can't join a single line and can't extend if you're on the last line
+            /// </summary>
+            [Fact]
+            public void JoinSelection_NotPossible()
+            {
+                Create("cat", "dog", "tree");
+                var visualSpan = VisualSpan.CreateForSpan(_textBuffer.GetLineRange(2, 2).Extent, VisualKind.Character);
+                _commandUtil.JoinSelection(JoinKind.KeepEmptySpaces, visualSpan);
+                Assert.Equal(1, _vimHost.BeepCount);
+                Assert.Equal(new[] { "cat", "dog", "tree" }, _textBuffer.GetLines());
             }
 
             [Fact]

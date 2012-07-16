@@ -384,7 +384,7 @@ namespace Vim.UnitTest
         public void Bind_DeleteFoldInSelection()
         {
             Create("");
-            _commandUtil.SetupCommandVisual(VisualCommand.DeleteFoldInSelection);
+            _commandUtil.SetupCommandVisual(VisualCommand.DeleteAllFoldsInSelection);
             _mode.Process("zd");
             _commandUtil.Verify();
         }

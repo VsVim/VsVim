@@ -342,6 +342,36 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class Insert : VisualModeIntegrationTest
+        {
+            /// <summary>
+            /// When switching to insert mode the caret should move to the start of the line
+            /// </summary>
+            [Fact]
+            public void MiddleOfLine()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process("vllI");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+            }
+
+            /// <summary>
+            /// In an undo the caret should go back to the start of the line.  
+            /// Disabled: Undo testing infrastructure doesn't support this yet
+            /// </summary>
+            public void Undo()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("vllIbig ");
+                Assert.Equal("big cat", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("<Esc>u");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+        }
+
         public sealed class ChangeCase : VisualModeIntegrationTest
         {
             [Fact]
@@ -477,6 +507,22 @@ namespace Vim.UnitTest
                 Create("hello", "world");
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<S-v>"));
                 Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
+            }
+
+            [Fact]
+            public void JoinSelection_KeepSpaces_Simple()
+            {
+                Create("cat", "dog", "tree");
+                _vimBuffer.Process("VjJ");
+                Assert.Equal(new [] { "cat dog", "tree" }, _textBuffer.GetLines());
+            }
+
+            [Fact]
+            public void JoinSelection_RemoveSpaces_Simple()
+            {
+                Create("cat", "dog", "tree");
+                _vimBuffer.Process("VjgJ");
+                Assert.Equal(new [] { "catdog", "tree" }, _textBuffer.GetLines());
             }
 
             [Fact]

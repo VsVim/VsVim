@@ -2133,9 +2133,6 @@ type VisualCommand =
     /// Close all folds in the selection
     | CloseAllFoldsInSelection
 
-    /// Delete a fold in the selection
-    | DeleteFoldInSelection
-
     /// Delete all folds in the selection
     | DeleteAllFoldsInSelection
 

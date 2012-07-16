@@ -449,8 +449,8 @@ type Interpreter
                 // a char this is straight forward.  Non-char KeyInput need to be special cased
                 // though
                 let prefix,output = 
-                    match (KeyNotationUtil.TryGetSpecialKeyName ki),ki.Char with
-                    | Some(name,extraModifiers), _ -> 
+                    match (KeyNotationUtil.TryGetSpecialKeyName ki), ki.Char with
+                    | Some (name,extraModifiers), _ -> 
                         (getPrefix extraModifiers, name)
                     | None, c -> 
                         let c = 
