@@ -8,19 +8,17 @@ namespace Vim.UI.Wpf.Implementation.Misc
     internal sealed class KeyboardDeviceImpl : IKeyboardDevice
     {
         private readonly KeyboardDevice _keyboardDevice = InputManager.Current.PrimaryKeyboardDevice;
-        private readonly IKeyUtil _keyUtil;
 
-        [ImportingConstructor]
-        internal KeyboardDeviceImpl(IKeyUtil keyUtil)
+        internal bool IsArrowKeyDown
         {
-            _keyUtil = keyUtil;
-        }
-
-        public bool IsKeyDown(VimKey vimKey)
-        {
-            Key key;
-            return _keyUtil.TryConvertSpecialToKeyOnly(vimKey, out key)
-                && IsKeyDown(key);
+            get
+            {
+                return
+                    IsKeyDown(Key.Left) ||
+                    IsKeyDown(Key.Up) ||
+                    IsKeyDown(Key.Right) ||
+                    IsKeyDown(Key.Down);
+            }
         }
 
         internal bool IsKeyDown(Key key)
@@ -35,5 +33,14 @@ namespace Vim.UI.Wpf.Implementation.Misc
                 return false;
             }
         }
+
+        #region IKeyboardDevice
+
+        bool IKeyboardDevice.IsArrowKeyDown
+        {
+            get { return IsArrowKeyDown; }
+        }
+
+        #endregion
     }
 }

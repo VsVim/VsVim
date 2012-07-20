@@ -112,11 +112,6 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
             return TryConvertToKeyInput(key, modifierKeys, out keyInput);
         }
 
-        bool IKeyUtil.TryConvertSpecialToKeyOnly(VimKey vimKey, out Key key)
-        {
-            return TryConvertToKeyOnly(vimKey, out key);
-        }
-
         /*
         KeyInput IKeyUtil.GetKeyInput(char c, ModifierKeys modifierKeys)
         {

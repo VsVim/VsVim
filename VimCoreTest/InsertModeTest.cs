@@ -82,7 +82,7 @@ namespace Vim.UnitTest
             // Setup the keyboard.  By default we don't say that any button is pressed.  Insert mode is usually
             // only concerned with arrow keys and we will set those up as appropriate for the typing tests
             _keyboardDevice = _factory.Create<IKeyboardDevice>();
-            _keyboardDevice.Setup(x => x.IsKeyDown(It.IsAny<VimKey>())).Returns(false);
+            _keyboardDevice.Setup(x => x.IsArrowKeyDown).Returns(false);
 
             _modeRaw = new global::Vim.Modes.Insert.InsertMode(
                 _vimBuffer.Object,

@@ -35,11 +35,5 @@ namespace Vim.UI.Wpf
         /// key
         /// </summary>
         bool TryConvertSpecialToKeyInput(Key key, ModifierKeys modifierKeys, out KeyInput keyInput);
-
-        /// <summary>
-        /// Try and convert the given VimKey to the Key value based on the active Keyboard
-        /// layout
-        /// </summary>
-        bool TryConvertSpecialToKeyOnly(VimKey vimKey, out Key key);
-    }
+   }
 }

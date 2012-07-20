@@ -138,11 +138,6 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
             return false;
         }
 
-        bool IKeyUtil.TryConvertSpecialToKeyOnly(VimKey vimKey, out Key key)
-        {
-            return _vimKeyToWpfKeyMap.TryGetValue(vimKey, out key);
-        }
-
         #endregion
     }
 }

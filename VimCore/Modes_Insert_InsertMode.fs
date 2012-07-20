@@ -672,12 +672,7 @@ type internal InsertMode
         if _mouse.IsLeftButtonPressed then 
             _textChangeTracker.CompleteChange()
         elif _vimBuffer.ModeKind = ModeKind.Insert then 
-            let keyMove = 
-                [ VimKey.Left; VimKey.Right; VimKey.Up; VimKey.Down ]
-                |> Seq.map (fun k -> KeyInputUtil.VimKeyToKeyInput k)
-                |> Seq.filter (fun k -> _keyboard.IsKeyDown k.Key)
-                |> SeqUtil.isNotEmpty
-            if keyMove then 
+            if _keyboard.IsArrowKeyDown then
                 _textChangeTracker.CompleteChange()
 
     member x.OnAfterRunInsertCommand command =

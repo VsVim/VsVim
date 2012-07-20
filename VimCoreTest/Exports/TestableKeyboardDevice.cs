@@ -5,9 +5,9 @@ namespace Vim.UnitTest.Exports
     [Export(typeof(IKeyboardDevice))]
     class TestableKeyboardDevice : IKeyboardDevice
     {
-        public bool IsKeyDown(VimKey value)
+        public bool IsArrowKeyDown
         {
-            return false;
+            get { return false; }
         }
     }
 }

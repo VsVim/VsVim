@@ -186,7 +186,7 @@ type IMouseDevice =
 type IKeyboardDevice = 
 
     /// Is the given key pressed
-    abstract IsKeyDown : VimKey -> bool
+    abstract IsArrowKeyDown : bool
 
 /// Tracks changes to the associated ITextView
 type ITextChangeTracker =
