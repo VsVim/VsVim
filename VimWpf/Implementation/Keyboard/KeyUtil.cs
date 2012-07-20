@@ -97,10 +97,12 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
 
         #region IKeyUtil
 
+        /*
         bool IKeyUtil.IsDeadKey(Key key)
         {
             return IsDeadKey(key);
         }
+        */
 
         bool IKeyUtil.IsAltGr(ModifierKeys modifierKeys)
         {

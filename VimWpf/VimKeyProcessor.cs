@@ -112,7 +112,7 @@ namespace Vim.UI.Wpf
             VimTrace.TraceInfo("VimKeyProcessor::KeyDown {0} {1}", args.Key, args.KeyboardDevice.Modifiers);
 
             bool handled;
-            if (_keyUtil.IsDeadKey(args.Key) || args.Key == Key.DeadCharProcessed)
+            if (args.Key == Key.DeadCharProcessed)
             {
                 // When a dead key combination is pressed we will get the key down events in 
                 // sequence after the combination is complete.  The dead keys will come first

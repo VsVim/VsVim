@@ -8,11 +8,6 @@ namespace Vim.UI.Wpf
     public interface IKeyUtil
     {
         /// <summary>
-        /// Is this a known dead key in the active Keyboard layout
-        /// </summary>
-        bool IsDeadKey(Key key);
-
-        /// <summary>
         /// Is this the AltGr key combination.  This is not directly representable in WPF
         /// logic but the best that can be done is to check for Alt + Control
         /// </summary>

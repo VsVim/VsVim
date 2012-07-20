@@ -109,11 +109,6 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
 
         #region IKeyUtil
 
-        bool IKeyUtil.IsDeadKey(Key key)
-        {
-            return false;
-        }
-
         bool IKeyUtil.IsAltGr(ModifierKeys modifierKeys)
         {
             return modifierKeys == (ModifierKeys.Alt | ModifierKeys.Control);
