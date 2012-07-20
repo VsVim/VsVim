@@ -161,6 +161,12 @@ type IFoldManager =
     /// Delete all of the folds which intersect the SnapshotSpan
     abstract DeleteAllFolds : SnapshotSpan -> unit
 
+    /// Toggle fold under the given SnapshotPoint
+    abstract ToggleFold : SnapshotPoint -> int -> unit
+
+    /// Toggle all folds under the given SnapshotPoint
+    abstract ToggleAllFolds : SnapshotSpan  -> unit
+
     /// Open 'count' folds under the given SnapshotPoint
     abstract OpenFold : SnapshotPoint -> int -> unit
 

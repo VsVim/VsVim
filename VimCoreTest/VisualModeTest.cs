@@ -354,6 +354,24 @@ namespace Vim.UnitTest
         }
 
         [Fact]
+        public void Bind_ToggleFoldInSelection()
+        {
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.ToggleFoldInSelection);
+            _mode.Process("za");
+            _commandUtil.Verify();
+        }
+
+        [Fact]
+        public void Bind_ToggleAllFoldsInSelection()
+        {
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.ToggleAllFoldsInSelection);
+            _mode.Process("zA");
+            _commandUtil.Verify();
+        }
+
+        [Fact]
         public void Bind_FoldSelection()
         {
             Create("foo bar");
@@ -366,7 +384,7 @@ namespace Vim.UnitTest
         public void Bind_DeleteFoldInSelection()
         {
             Create("");
-            _commandUtil.SetupCommandVisual(VisualCommand.DeleteFoldInSelection);
+            _commandUtil.SetupCommandVisual(VisualCommand.DeleteAllFoldsInSelection);
             _mode.Process("zd");
             _commandUtil.Verify();
         }

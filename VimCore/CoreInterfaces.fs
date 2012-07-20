@@ -436,6 +436,10 @@ type MotionResultFlags =
     /// the line above.  The End is the same in both cases.
     | IncludeEmptyLastLine = 0x8
 
+    /// Marker for the end of line motion.  This affects how the caret column
+    /// is maintained
+    | EndOfLine = 0x10
+
 /// Information about the type of the motion this was.
 [<RequireQualifiedAccess>]
 type MotionKind =
@@ -1997,6 +2001,12 @@ type NormalCommand =
     /// Open a fold under the caret
     | OpenFoldUnderCaret
 
+    /// Toggle a fold under the caret
+    | ToggleFoldUnderCaret
+
+    /// Toggle all folds under the caret
+    | ToggleAllFolds
+
     /// Not actually a Vim Command.  This is a simple ping command which makes 
     /// testing items like complex repeats significantly easier
     | Ping of PingData
@@ -2123,9 +2133,6 @@ type VisualCommand =
     /// Close all folds in the selection
     | CloseAllFoldsInSelection
 
-    /// Delete a fold in the selection
-    | DeleteFoldInSelection
-
     /// Delete all folds in the selection
     | DeleteAllFoldsInSelection
 
@@ -2172,6 +2179,12 @@ type VisualCommand =
 
     /// Switch to the specified visual mode
     | SwitchModeVisual of VisualKind
+
+    /// Toggle one fold in the selection
+    | ToggleFoldInSelection
+
+    /// Toggle all folds in the selection
+    | ToggleAllFoldsInSelection
 
     /// Yank the lines which are specified by the selection
     | YankLineSelection

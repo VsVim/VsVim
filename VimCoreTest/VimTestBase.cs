@@ -8,14 +8,12 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
-using Xunit;
 using Vim.UI.Wpf;
-using Vim.UI.Wpf.Implementation;
+using Vim.UI.Wpf.Implementation.Keyboard;
+using Vim.UI.Wpf.Implementation.Misc;
+using Vim.UI.Wpf.Implementation.WordCompletion;
 using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
-using Vim.UI.Wpf.Implementation.WordCompletion;
-using Vim.UI.Wpf.Implementation.Misc;
-using Vim.UI.Wpf.Implementation.Keyboard;
 
 namespace Vim.UnitTest
 {
@@ -196,7 +194,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Create an IUndoRedoOperations instance with the given IStatusUtil
         /// </summary>
-        protected IUndoRedoOperations CreateUndoRedoOperations(IStatusUtil statusUtil = null)
+        protected virtual IUndoRedoOperations CreateUndoRedoOperations(IStatusUtil statusUtil = null)
         {
             statusUtil = statusUtil ?? new StatusUtil();
             return new UndoRedoOperations(statusUtil, FSharpOption<ITextUndoHistory>.None, null);

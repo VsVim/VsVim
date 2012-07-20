@@ -865,7 +865,23 @@ namespace Vim.UnitTest
                 motionKind: MotionKind.NewLineWise(CaretColumn.NewInLastLine(2)),
                 flags: MotionResultFlags.MaintainCaretColumn);
             _operations.MoveCaretToMotionResult(motionResult);
-            Assert.Equal(2, _operationsRaw.MaintainCaretColumn.Value);
+            Assert.Equal(2, _operationsRaw.MaintainCaretColumn.AsSpaces().Item);
+        }
+
+        /// <summary>
+        /// If the MotionResult specifies end of line caret maintenance then it should
+        /// be saved as that special value 
+        /// </summary>
+        [Fact]
+        public void MaintainCaretColumn_EndOfLine()
+        {
+            Create("the dog chased the ball", "hello", "the cat climbed the tree");
+            var motionResult = VimUtil.CreateMotionResult(
+                _textView.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                motionKind: MotionKind.NewLineWise(CaretColumn.NewInLastLine(2)),
+                flags: MotionResultFlags.MaintainCaretColumn | MotionResultFlags.EndOfLine);
+            _operations.MoveCaretToMotionResult(motionResult);
+            Assert.True(_operationsRaw.MaintainCaretColumn.IsEndOfLine);
         }
 
         /// <summary>
@@ -1117,6 +1133,33 @@ namespace Vim.UnitTest
             var data = VimUtil.CreateMotionResult(_textBuffer.GetSpan(0, 3), motionKind: MotionKind.CharacterWiseInclusive);
             _operations.MoveCaretToMotionResult(data);
             Assert.Equal(3, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// If the point is within the current ITextBuffer then simply navigate to that particular
+        /// point
+        /// </summary>
+        [Fact]
+        public void NavigateToPoint_InBuffer()
+        {
+            Create("hello world");
+            _operations.NavigateToPoint(new VirtualSnapshotPoint(_textBuffer.GetPoint(3)));
+            Assert.Equal(3, _textView.GetCaretPoint().GetColumn());
+        }
+
+        /// <summary>
+        /// If the point is inside another ITextBuffer then we need to defer to the IVimHost to
+        /// do the navigation
+        /// </summary>
+        [Fact]
+        public void NavigateToPoint_InOtherBuffer()
+        {
+            Create("hello world");
+            var textBuffer = CreateTextBuffer("cat");
+            var point = new VirtualSnapshotPoint(textBuffer.GetPoint(1));
+            _vimHost.Setup(x => x.NavigateTo(point)).Returns(true).Verifiable();
+            _operations.NavigateToPoint(point);
+            _vimHost.Verify();
         }
 
         [Fact]
@@ -1375,6 +1418,20 @@ namespace Vim.UnitTest
             _operations.GoToFile();
             _statusUtil.Verify();
             _vimHost.Verify();
+        }
+
+        /// <summary>
+        /// Make sure the appropriate error is raised if the buffer is dirty 
+        /// </summary>
+        [Fact]
+        public void GoToFile_DirtyBuffer()
+        {
+            Create("foo bar");
+            _vimHost.Setup(x => x.IsDirty(It.IsAny<ITextBuffer>())).Returns(true).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.Common_NoWriteSinceLastChange)).Verifiable();
+            _operations.GoToFile();
+            _vimHost.Verify();
+            _statusUtil.Verify();
         }
 
         /// <summary>

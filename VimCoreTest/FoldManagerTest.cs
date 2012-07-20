@@ -103,6 +103,57 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// When there are multiple collapsed folds the first fold should be preferred when toggling
+        /// </summary>
+        [Fact]
+        public void ToggleFold_PreferFirstFold()
+        {
+            Create("dog", "cat", "fish", "bear", "tree", "pig");
+            _foldManager.CreateFold(_textBuffer.GetLineRange(2, 3));
+            _foldManager.CreateFold(_textBuffer.GetLineRange(1, 4));
+            Assert.Equal(3, _visualBuffer.CurrentSnapshot.LineCount);
+            _foldManager.ToggleFold(_textBuffer.GetLine(2).Start, 1);
+            Assert.Equal("cat", _visualBuffer.GetLine(1).GetText());
+            _foldManager.ToggleFold(_textBuffer.GetLine(2).Start, 1);
+            Assert.Equal("fish", _visualBuffer.GetLine(2).GetText());
+        }
+
+        /// <summary>
+        /// When there is an open fold
+        /// </summary>
+        [Fact]
+        public void ToggleFold_CloseFold()
+        {
+            Create("cat", "dog", "bear", "fish");
+            _foldManager.CreateFold(_textBuffer.GetLineRange(1, 2));
+            Assert.Equal(3, _visualBuffer.CurrentSnapshot.LineCount);
+            Assert.Equal("cat", _visualBuffer.GetLine(0).GetText());
+            Assert.Equal("fish", _visualBuffer.GetLine(2).GetText());
+            _foldManager.OpenFold(_textBuffer.GetLine(1).Start, 1);
+            Assert.Equal("cat", _visualBuffer.GetLine(0).GetText());
+            Assert.Equal("fish", _visualBuffer.GetLine(3).GetText());
+            _foldManager.ToggleFold(_textBuffer.GetLine(1).Start, 1);
+            Assert.Equal("cat", _visualBuffer.GetLine(0).GetText());
+            Assert.Equal("fish", _visualBuffer.GetLine(2).GetText());
+        }
+
+        /// <summary>
+        /// When there is a closed fold
+        /// </summary>
+        [Fact]
+        public void ToggleFold_OpenFold()
+        {
+            Create("cat", "dog", "bear", "fish");
+            _foldManager.CreateFold(_textBuffer.GetLineRange(1, 2));
+            Assert.Equal(3, _visualBuffer.CurrentSnapshot.LineCount);
+            Assert.Equal("cat", _visualBuffer.GetLine(0).GetText());
+            Assert.Equal("fish", _visualBuffer.GetLine(2).GetText());
+            _foldManager.ToggleFold(_textBuffer.GetLine(1).Start, 1);
+            Assert.Equal("cat", _visualBuffer.GetLine(0).GetText());
+            Assert.Equal("fish", _visualBuffer.GetLine(3).GetText());
+        }
+
+        /// <summary>
         /// When dealing with a non-vim outline which does not stretch the span of the line, we should 
         /// still be able to close it from any point on the line
         /// </summary>

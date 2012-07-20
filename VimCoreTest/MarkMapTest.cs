@@ -2,6 +2,8 @@
 using Microsoft.VisualStudio.Text;
 using Xunit;
 using Vim.Extensions;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Vim.UnitTest
 {
@@ -182,6 +184,33 @@ namespace Vim.UnitTest
             _markMap.SetMark(_localMarkD, vimBufferData, 0, 1);
             _markMap.ClearGlobalMarks();
             Assert.True(_markMap.GetMark(_localMarkD, vimBufferData).IsSome());
+        }
+
+        [Fact]
+        public void LocalMark_BackAndForth()
+        {
+            foreach (var localMark in LocalMark.All)
+            {
+                var c = localMark.Char;
+                var otherLocalMark = LocalMark.OfChar(c).Value;
+                Assert.Equal(localMark, otherLocalMark);
+            }
+        }
+
+        [Fact]
+        public void Mark_BackAndForth()
+        {
+            var all = new List<Mark>();
+            all.AddRange(LocalMark.All.Select(Mark.NewLocalMark));
+            all.AddRange(Letter.All.Select(Mark.NewGlobalMark));
+            all.Add(Mark.LastJump);
+
+            foreach (var mark in all)
+            {
+                var c = mark.Char;
+                var otherMark = Mark.OfChar(c).Value;
+                Assert.Equal(otherMark, mark);
+            }
         }
     }
 }

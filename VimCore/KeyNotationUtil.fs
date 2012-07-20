@@ -120,7 +120,7 @@ module KeyNotationUtil =
 
                 // When a '<' char there are a couple of possibilities to consider. 
                 //
-                //  1. Modifier combination <C-a>, <S-b>, etc ...
+                //  1. Modifier combination <C-a>, <S-b>, <CS-A>, etc ...
                 //  2. Named combination <lt>, <Home>, etc ...
                 //  3. Invalid combo <b-a>, <foo
                 //
@@ -153,7 +153,7 @@ module KeyNotationUtil =
                             // It's a valid grouping
                             processGroup()
                         else
-                            // Invalid modifier is another case of #3.  Trea them separately
+                            // Invalid modifier is another case of #3.  Treat them separately
                             inner rest.Tail (fun next -> withData ("<" :: next))
                     else 
                         // It's a word in a <> string 
@@ -200,43 +200,49 @@ module KeyNotationUtil =
                     KeyInputUtil.ApplyModifiers keyInput modifier |> Some
 
         // Inside the <
-        let rec insideLessThanGreaterThan data index modifier = 
-            if  index + 2 < String.length data && data.[index+1] = '-' then
-                let modifier = 
-                    match data.[index] |> CharUtil.ToLower with
-                    | 'c' -> KeyModifiers.Control ||| modifier |> Some
-                    | 's' -> KeyModifiers.Shift ||| modifier |> Some
-                    | 'a' -> KeyModifiers.Alt ||| modifier |> Some
-                    | 'm' -> KeyModifiers.Alt ||| modifier |> Some
-                    | 'd' -> KeyModifiers.Command ||| modifier |> Some
-                    | _ -> None
-                match modifier with
-                | Some(modifier) -> insideLessThanGreaterThan data (index + 2) modifier
-                | None -> None
-            else 
-                // Need to remove the final > before converting.  
-                let length = ((String.length data) - index) - 1 
-                let rest = data.Substring(index, length)
-                convertAndApply rest modifier
+        let rec insideLessThanGreaterThan (data : string) index modifier = 
+            let lastDashIndex = data.LastIndexOf('-')
+            let rec inner index modifier = 
+                if index >= String.length data then 
+                    None
+                else if lastDashIndex >= 0 && index <= lastDashIndex then
+                    let modifier = 
+                        match data.[index] |> CharUtil.ToLower with
+                        | 'c' -> KeyModifiers.Control ||| modifier |> Some
+                        | 's' -> KeyModifiers.Shift ||| modifier |> Some
+                        | 'a' -> KeyModifiers.Alt ||| modifier |> Some
+                        | 'm' -> KeyModifiers.Alt ||| modifier |> Some
+                        | 'd' -> KeyModifiers.Command ||| modifier |> Some
+                        | '-' -> Some modifier
+                        | _ -> None
+                    match modifier with
+                    | Some modifier -> inner (index + 1) modifier
+                    | None -> None
+                else 
+                    // Need to remove the final > before converting.  
+                    let length = ((String.length data) - index) - 1 
+                    let rest = data.Substring(index, length)
+                    convertAndApply rest modifier
+            inner index modifier
 
         match StringUtil.charAtOption 0 data with
         | None -> None
-        | Some('<') -> 
+        | Some '<' -> 
             if String.length data = 1 then VimKey.LessThan |> KeyInputUtil.VimKeyToKeyInput |> Some
             elif StringUtil.last data <> '>' then None
             else insideLessThanGreaterThan data 1 KeyModifiers.None
-        | Some(c) -> 
+        | Some c -> 
             if data.Length = 1 then KeyInputUtil.CharToKeyInput data.[0] |> Some
             else None
 
     let StringToKeyInput data = 
         match TryStringToKeyInput data with 
-        | Some(ki) -> ki
+        | Some ki -> ki
         | None -> invalidArg "data" (Resources.KeyNotationUtil_InvalidNotation data)
 
     let TryStringToKeyInputSet data = 
         match data |> SplitIntoKeyNotationEntries |> List.map TryStringToKeyInput |> SeqUtil.allOrNone with
-        | Some(list) -> list |> KeyInputSetUtil.OfList |> Some
+        | Some list -> list |> KeyInputSetUtil.OfList |> Some
         | None -> None
 
     /// Convert tho String to a KeyInputSet 
@@ -246,19 +252,19 @@ module KeyNotationUtil =
         |> Seq.map StringToKeyInput
         |> KeyInputSetUtil.OfSeq
 
-    let TryGetSpecialKeyName (keyInput:KeyInput) = 
+    let TryGetSpecialKeyName (keyInput : KeyInput) = 
 
         let found = 
             SpecialKeyMap
-            |> Seq.tryFind (fun (pair) -> 
+            |> Seq.tryFind (fun pair -> 
                 let specialInput = pair.Value
                 specialInput.Key = keyInput.Key && 
                 specialInput.KeyModifiers = (specialInput.KeyModifiers &&& keyInput.KeyModifiers))
 
         match found with 
         | None -> None
-        | Some(pair) ->
+        | Some pair ->
             let extra : KeyModifiers = Util.UnsetFlag keyInput.KeyModifiers pair.Value.KeyModifiers
-            Some(pair.Key.Value, extra)
+            Some (pair.Key.Value, extra)
 
 

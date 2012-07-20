@@ -486,7 +486,7 @@ type internal CommandUtil
         let range = visualSpan.LineRange
         let offset = range.StartLineNumber
         for i = 0 to range.Count - 1 do
-            let line = SnapshotUtil.GetLine x.CurrentSnapshot (offset + 1)
+            let line = SnapshotUtil.GetLine x.CurrentSnapshot (offset + i)
             _foldManager.CloseFold line.Start 1
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -567,15 +567,6 @@ type internal CommandUtil
         let value = RegisterValue.String (StringData.OfSpan span, OperationKind.CharacterWise)
         _registerMap.SetRegisterValue register RegisterOperation.Delete value
 
-        CommandResult.Completed ModeSwitch.NoSwitch
-
-    /// Delete a fold from the selection
-    member x.DeleteFoldInSelection (visualSpan : VisualSpan) =
-        let range = visualSpan.LineRange
-        let offset = range.StartLineNumber
-        for i = 0 to range.Count - 1 do
-            let line = SnapshotUtil.GetLine x.CurrentSnapshot (offset + 1)
-            _foldManager.DeleteFold line.Start
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete a fold under the caret
@@ -1447,6 +1438,17 @@ type internal CommandUtil
             _foldManager.OpenFold line.Start 1
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Toggle fold under the caret
+    member x.ToggleFoldUnderCaret count = 
+        _foldManager.ToggleFold x.CaretPoint count
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Toggle all folds in the buffer
+    member x.ToggleAllFolds() = 
+        let span = SnapshotUtil.GetExtent x.CurrentSnapshot
+        _foldManager.ToggleAllFolds span
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Open 'count' folds under the caret
     member x.OpenFoldUnderCaret count = 
         _foldManager.OpenFold x.CaretPoint count
@@ -2135,6 +2137,8 @@ type internal CommandUtil
         | NormalCommand.SplitViewVertically -> x.SplitViewVertically()
         | NormalCommand.SwitchMode (modeKind, modeArgument) -> x.SwitchMode modeKind modeArgument
         | NormalCommand.SwitchPreviousVisualMode -> x.SwitchPreviousVisualMode()
+        | NormalCommand.ToggleFoldUnderCaret -> x.ToggleFoldUnderCaret count
+        | NormalCommand.ToggleAllFolds -> x.ToggleAllFolds()
         | NormalCommand.Undo -> x.Undo count
         | NormalCommand.WriteBufferAndQuit -> x.WriteBufferAndQuit()
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion register)
@@ -2158,7 +2162,6 @@ type internal CommandUtil
         | VisualCommand.CloseFoldInSelection -> x.CloseFoldInSelection visualSpan
         | VisualCommand.ChangeLineSelection specialCaseBlock -> x.ChangeLineSelection register visualSpan specialCaseBlock
         | VisualCommand.DeleteAllFoldsInSelection -> x.DeleteAllFoldInSelection visualSpan
-        | VisualCommand.DeleteFoldInSelection -> x.DeleteFoldInSelection visualSpan
         | VisualCommand.DeleteSelection -> x.DeleteSelection register visualSpan
         | VisualCommand.DeleteLineSelection -> x.DeleteLineSelection register visualSpan
         | VisualCommand.FormatLines -> x.FormatLinesVisual visualSpan
@@ -2173,6 +2176,8 @@ type internal CommandUtil
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
         | VisualCommand.SwitchModeInsert -> x.SwitchModeInsert visualSpan 
         | VisualCommand.SwitchModeVisual visualKind -> x.SwitchModeVisual visualKind 
+        | VisualCommand.ToggleFoldInSelection -> x.ToggleFoldUnderCaret count
+        | VisualCommand.ToggleAllFoldsInSelection-> x.ToggleAllFolds()
         | VisualCommand.YankLineSelection -> x.YankLineSelection register visualSpan
         | VisualCommand.YankSelection -> x.YankSelection register visualSpan
 
@@ -2490,7 +2495,7 @@ type internal CommandUtil
             x.EditBlockWithLinkedChange "Visual Insert" blockSpan (fun _ -> ())
         | _ -> 
             // For all other visual mode inserts the caret moves to column 0 on the first
-            // line of the selection.  It should be positioned there after an undor so move
+            // line of the selection.  It should be positioned there after an undo so move
             // it now before the undo transaction
             visualSpan.Start
             |> SnapshotPointUtil.GetContainingLine

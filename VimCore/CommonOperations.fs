@@ -56,6 +56,23 @@ module internal CommonUtil =
 
             statusUtil.OnError (format searchData.Pattern)
 
+/// When maintaining the caret column for motion moves this represents the desired 
+/// column to jump to if there is enough space on the line
+///
+[<RequireQualifiedAccess>]
+type MaintainCaretColumn = 
+
+    /// There is no saved caret column. 
+    | None
+
+    /// This number is kept as a count of spaces.  Tabs need to be adjusted for when applying
+    /// this setting to a motion
+    | Spaces of int
+
+    /// The caret was moved with the $ motion and the further moves should move to the end of 
+    /// the line 
+    | EndOfLine
+
 type internal CommonOperations
     (
         _vimBufferData : IVimBufferData,
@@ -80,17 +97,11 @@ type internal CommonOperations
     let _undoRedoOperations = _vimBufferData.UndoRedoOperations
     let _globalSettings = _localSettings.GlobalSettings
     let _eventHandlers = new DisposableBag()
-
-    /// When maintaining the caret column for motion moves this represents the desired 
-    /// column to jump to if there is enough space on the line
-    ///
-    /// This number is kept as a count of spaces.  Tabs need to be adjusted for when applying
-    /// this setting to a motion
-    let mutable _maintainCaretColumnSpaces : int option = None
+    let mutable _maintainCaretColumn = MaintainCaretColumn.None
 
     do
         _textView.Caret.PositionChanged
-        |> Observable.subscribe (fun _ -> _maintainCaretColumnSpaces <- None)
+        |> Observable.subscribe (fun _ -> _maintainCaretColumn <- MaintainCaretColumn.None)
         |> _eventHandlers.Add
 
         _textView.Closed
@@ -104,8 +115,8 @@ type internal CommonOperations
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
 
     member x.MaintainCaretColumn 
-        with get() = _maintainCaretColumnSpaces
-        and set value = _maintainCaretColumnSpaces <- value
+        with get() = _maintainCaretColumn
+        and set value = _maintainCaretColumn <- value
 
     /// Get the spaces for the given character
     member x.GetSpacesForCharAtPoint point = 
@@ -303,9 +314,10 @@ type internal CommonOperations
             // First calculate the column in terms of spaces for the maintained caret.
             let caretColumnSpaces = 
                 let motionCaretColumnSpaces = x.GetSpacesToColumn x.CaretLine column
-                match _maintainCaretColumnSpaces with
-                | None -> motionCaretColumnSpaces
-                | Some maintainCaretColumnSpaces -> max maintainCaretColumnSpaces motionCaretColumnSpaces
+                match _maintainCaretColumn with
+                | MaintainCaretColumn.None -> motionCaretColumnSpaces
+                | MaintainCaretColumn.Spaces maintainCaretColumnSpaces -> max maintainCaretColumnSpaces motionCaretColumnSpaces
+                | MaintainCaretColumn.EndOfLine -> max 0 (result.DirectionLastLine.Length - 1)
 
             // The CaretColumn union is expressed in a position offset not a space offset 
             // which can differ with tabs.  Recalculate as appropriate.  
@@ -320,17 +332,26 @@ type internal CommonOperations
             // Complete the motion with the updated value then reset the maintain caret.  Need
             // to do the save after the caret move since the move will clear out the saved value
             x.MoveCaretToMotionResultCore result
-            _maintainCaretColumnSpaces <- Some caretColumnSpaces
+            _maintainCaretColumn <-
+                if Util.IsFlagSet result.MotionResultFlags MotionResultFlags.EndOfLine then
+                    MaintainCaretColumn.EndOfLine
+                else
+                    MaintainCaretColumn.Spaces caretColumnSpaces
 
         | _ -> 
+
             // Not maintaining caret column so just do a normal movement
             x.MoveCaretToMotionResultCore result
+
+            _maintainCaretColumn <-
+                if Util.IsFlagSet result.MotionResultFlags MotionResultFlags.EndOfLine then
+                    MaintainCaretColumn.EndOfLine
+                else
+                    MaintainCaretColumn.None
 
     /// Move the caret to the position dictated by the given MotionResult value
     member x.MoveCaretToMotionResultCore (result : MotionResult) =
 
-        let shouldMaintainCaretColumn = Util.IsFlagSet result.MotionResultFlags MotionResultFlags.MaintainCaretColumn
-        let savedCaretColumnSpaces = _maintainCaretColumnSpaces
         let point = 
 
             let line = result.DirectionLastLine
@@ -471,11 +492,12 @@ type internal CommonOperations
         |> SnapshotSpanUtil.GetText
 
     member x.NavigateToPoint (point : VirtualSnapshotPoint) = 
-        let buf = point.Position.Snapshot.TextBuffer
-        if buf = _textView.TextBuffer then 
+        let textBuffer = point.Position.Snapshot.TextBuffer
+        if textBuffer = _textView.TextBuffer then 
             x.MoveCaretToPointAndEnsureVisible point.Position
             true
-        else  _vimHost.NavigateTo point 
+        else
+            _vimHost.NavigateTo point 
 
     /// Convert the provided whitespace into spaces.  The conversion of tabs into spaces will be 
     /// done based on the TabSize setting

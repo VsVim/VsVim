@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using Vim.Extensions;
 using Xunit;
 
@@ -157,6 +158,34 @@ namespace Vim.UnitTest
                 Assert.Equal(VimKey.Nop, keyInput.Key);
                 Assert.Equal(KeyModifiers.None, keyInput.KeyModifiers);
             }
+
+            /// <summary>
+            /// The C-S notation can be abbreviated CS
+            /// </summary>
+            [Fact]
+            public void AlternateShiftAndControlWithNonPrintable()
+            {
+                Action<string, VimKey> assert = 
+                    (name, vimKey) =>
+                    {
+                        var notation = String.Format("<CS-{0}>", name);
+                        var keyInput = KeyNotationUtil.StringToKeyInput(notation);
+                        Assert.Equal(vimKey, keyInput.Key);
+                        Assert.Equal(KeyModifiers.Shift | KeyModifiers.Control, keyInput.KeyModifiers);
+                    };
+                assert("Enter", VimKey.Enter);
+                assert("F2", VimKey.F2);
+            }
+
+            /// <summary>
+            /// The CS-A syntax properly ignores the shift when it's applied to an alpha 
+            /// </summary>
+            [Fact]
+            public void AlternateShiftandControlWithAlpha()
+            {
+                var keyInput = KeyNotationUtil.StringToKeyInput("<CS-A>");
+                Assert.Equal(KeyInputUtil.CharWithControlToKeyInput('a'), keyInput);
+            }
         }
 
         public sealed class Many : KeyNotationUtilTest
@@ -217,6 +246,15 @@ namespace Vim.UnitTest
             public void LessThanEscapeLiteral()
             {
                 AssertMany(@"<lt>lt>", "<lt>");
+            }
+
+            [Fact]
+            public void AlternateControAndShift()
+            {
+                var keyInputSet = KeyNotationUtil.StringToKeyInputSet(@"<CS-A><CS-Enter>");
+                var list = keyInputSet.KeyInputs.ToList();
+                Assert.Equal(KeyInputUtil.CharWithControlToKeyInput('a'), list[0]);
+                Assert.Equal(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Enter, KeyModifiers.Control | KeyModifiers.Shift), list[1]);
             }
         }
 
