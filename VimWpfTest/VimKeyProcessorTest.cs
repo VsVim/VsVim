@@ -250,7 +250,7 @@ namespace Vim.UI.Wpf.UnitTest
         public void KeyDown_ShiftPlusEscape()
         {
             KeyInput ki;
-            Assert.True(KeyUtil.TryConvertToKeyInput(Key.Escape, ModifierKeys.Shift, out ki));
+            Assert.True(KeyUtil.TryConvertSpecialToKeyInput(Key.Escape, ModifierKeys.Shift, out ki));
             _buffer.Setup(x => x.CanProcess(ki)).Returns(false).Verifiable();
 
             var arg = CreateKeyEventArgs(Key.Escape, ModifierKeys.Shift);

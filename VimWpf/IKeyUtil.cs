@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows.Input;
+﻿using System.Windows.Input;
 
 namespace Vim.UI.Wpf
 {
@@ -25,7 +21,7 @@ namespace Vim.UI.Wpf
         /// <summary>
         /// Get the KeyInput value for the given char and ModifierKeys
         /// </summary>
-        KeyInput GetKeyInput(char c, ModifierKeys modifierKeys);
+        // KeyInput GetKeyInput(char c, ModifierKeys modifierKeys);
 
         /// <summary>
         /// Convert the given ModifierKeys into the corresponding KeyModifiers (WPF -> Vim)
@@ -38,12 +34,12 @@ namespace Vim.UI.Wpf
         /// keyboard.  In particular it will consider extra shift states and the caps lock
         /// key
         /// </summary>
-        bool TryConvertToKeyInput(Key key, ModifierKeys modifierKeys, out KeyInput keyInput);
+        bool TryConvertSpecialToKeyInput(Key key, ModifierKeys modifierKeys, out KeyInput keyInput);
 
         /// <summary>
         /// Try and convert the given VimKey to the Key value based on the active Keyboard
         /// layout
         /// </summary>
-        bool TryConvertToKeyOnly(VimKey vimKey, out Key key);
+        bool TryConvertSpecialToKeyOnly(VimKey vimKey, out Key key);
     }
 }

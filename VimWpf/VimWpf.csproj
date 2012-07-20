@@ -55,6 +55,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="IKeyUtil.cs" />
+    <Compile Include="Implementation\Keyboard\AlternateKeyUtil.cs" />
     <Compile Include="Implementation\Keyboard\FrugalList.cs" />
     <Compile Include="Implementation\Keyboard\KeyboardState.cs" />
     <Compile Include="Implementation\Keyboard\IVirtualKeyboard.cs" />

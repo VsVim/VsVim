@@ -669,7 +669,7 @@ namespace VsVim.UnitTest.Utils
             }
 
             Key key;
-            if (!_keyUtil.TryConvertToKeyOnly(keyInput.Key, out key))
+            if (!_keyUtil.TryConvertSpecialToKeyOnly(keyInput.Key, out key))
             {
                 throw new Exception("Couldn't get the WPF key for the given KeyInput");
             }

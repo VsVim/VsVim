@@ -68,19 +68,20 @@ namespace Vim.UI.Wpf
             bool handled = false;
 
             var text = args.Text;
+            if (String.IsNullOrEmpty(text))
+            {
+                text = args.ControlText;
+            }
+
             if (!String.IsNullOrEmpty(text))
             {
                 // In the case of a failed dead key mapping (pressing the accent key twice for
                 // example) we will recieve a multi-length string here.  One character for every
                 // one of the mappings.  Make sure to handle each of them
-                var keyboard = args.Device as KeyboardDevice;
-                if (keyboard != null)
+                for (var i = 0; i < text.Length; i++)
                 {
-                    for (var i = 0; i < text.Length; i++)
-                    {
-                        var keyInput = _keyUtil.GetKeyInput(text[i], keyboard.Modifiers);
-                        handled = TryProcess(keyInput);
-                    }
+                    var keyInput = KeyInputUtil.CharToKeyInput(text[i]);
+                    handled = TryProcess(keyInput);
                 }
             }
 
@@ -136,7 +137,7 @@ namespace Vim.UI.Wpf
                 // by Vim.  If this worksa nd the key is processed then the input is considered
                 // to be handled
                 KeyInput keyInput;
-                if (_keyUtil.TryConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out keyInput))
+                if (_keyUtil.TryConvertSpecialToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out keyInput))
                 {
                     handled = TryProcess(keyInput);
                 }

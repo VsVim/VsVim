@@ -339,7 +339,7 @@ namespace Vim.UnitTest
                 typeof(VimErrorDetector),
                 typeof(DisplayWindowBrokerFactoryService),
                 typeof(WordCompletionSessionFactoryService),
-                typeof(KeyUtil)));
+                typeof(AlternateKeyUtil)));
 
             return list;
         }

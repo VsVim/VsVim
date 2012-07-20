@@ -6,7 +6,7 @@ using System.ComponentModel.Composition;
 
 namespace Vim.UI.Wpf.Implementation.Keyboard
 {
-    [Export(typeof(IKeyUtil))]
+    // [Export(typeof(IKeyUtil))]
     internal sealed class KeyUtil : IKeyUtil
     {
         private KeyboardMap _keyboardMap;
@@ -107,20 +107,22 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
             return IsAltGr(modifierKeys);
         }
 
-        bool IKeyUtil.TryConvertToKeyInput(Key key, ModifierKeys modifierKeys, out KeyInput keyInput)
+        bool IKeyUtil.TryConvertSpecialToKeyInput(Key key, ModifierKeys modifierKeys, out KeyInput keyInput)
         {
             return TryConvertToKeyInput(key, modifierKeys, out keyInput);
         }
 
-        bool IKeyUtil.TryConvertToKeyOnly(VimKey vimKey, out Key key)
+        bool IKeyUtil.TryConvertSpecialToKeyOnly(VimKey vimKey, out Key key)
         {
             return TryConvertToKeyOnly(vimKey, out key);
         }
 
+        /*
         KeyInput IKeyUtil.GetKeyInput(char c, ModifierKeys modifierKeys)
         {
             return GetKeyInput(c, modifierKeys);
         }
+        */
 
         KeyModifiers IKeyUtil.GetKeyModifiers(ModifierKeys modifierKeys)
         {
