@@ -10,13 +10,13 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
     [Export(typeof(IKeyUtil))]
     internal sealed class AlternateKeyUtil : IKeyUtil
     {
-        private static readonly Dictionary<Key, VimKey> _wpfKeyToVimKeyMap;
-        private static readonly Dictionary<VimKey, Key> _vimKeyToWpfKeyMap;
+        private static readonly Dictionary<Key, VimKey> WpfKeyToVimKeyMap;
+        private static readonly Dictionary<VimKey, Key> VimKeyToWpfKeyMap;
 
         static AlternateKeyUtil()
         {
-            _wpfKeyToVimKeyMap = new Dictionary<Key, VimKey>();
-            _vimKeyToWpfKeyMap = new Dictionary<VimKey, Key>();
+            WpfKeyToVimKeyMap = new Dictionary<Key, VimKey>();
+            VimKeyToWpfKeyMap = new Dictionary<VimKey, Key>();
             foreach (var keyInput in KeyInputUtil.VimKeyInputList)
             {
                 if (keyInput.KeyModifiers != KeyModifiers.None)
@@ -36,9 +36,14 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
                     continue;
                 }
 
-                _wpfKeyToVimKeyMap[wpfKey] = keyInput.Key;
-                _vimKeyToWpfKeyMap[keyInput.Key] = wpfKey;
+                WpfKeyToVimKeyMap[wpfKey] = keyInput.Key;
+                VimKeyToWpfKeyMap[keyInput.Key] = wpfKey;
             }
+        }
+
+        internal static bool TrySpecialVimKeyToKey(VimKey vimKey, out Key key)
+        {
+            return VimKeyToWpfKeyMap.TryGetValue(vimKey, out key);
         }
 
         /// <summary>
@@ -122,7 +127,7 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
         bool IKeyUtil.TryConvertSpecialToKeyInput(Key key, ModifierKeys modifierKeys, out KeyInput keyInput)
         {
             VimKey vimKey;
-            if (_wpfKeyToVimKeyMap.TryGetValue(key, out vimKey))
+            if (WpfKeyToVimKeyMap.TryGetValue(key, out vimKey))
             {
                 var keyModifiers = KeyboardMap.ConvertToKeyModifiers(modifierKeys);
                 keyInput = KeyInputUtil.ApplyModifiersToVimKey(vimKey, keyModifiers);

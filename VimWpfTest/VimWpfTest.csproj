@@ -78,6 +78,7 @@
     <Compile Include="KeyboardMapBuilderTest.cs" />
     <Compile Include="KeyboardMapTest.cs" />
     <Compile Include="KeyMappingTimeoutHandlerTest.cs" />
+    <Compile Include="KeyProcessorSimulation.cs" />
     <Compile Include="MockVirtualKeyboard.cs" />
     <Compile Include="VimKeyProcessorTest.cs" />
     <Compile Include="KeyUtilTest.cs" />
