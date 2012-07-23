@@ -150,6 +150,23 @@ namespace Vim.UI.Wpf.UnitTest
             _presentationSource = new Mock<PresentationSource>(MockBehavior.Strict);
         }
 
+        public void Run(string text)
+        {
+            foreach (var cur in text)
+            {
+                var keyInput = KeyInputUtil.CharToKeyInput(cur);
+                Run(keyInput);
+            }
+        }
+
+        public void RunNotation(string notation)
+        {
+            foreach (var keyInput in KeyNotationUtil.StringToKeyInputSet(notation).KeyInputs)
+            {
+                Run(keyInput);
+            }
+        }
+
         public void Run(KeyInput keyInput)
         {
             Key key;

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Windows.Input;
 using Moq;
-using Xunit;
-using Vim.UnitTest.Mock;
 using Vim.UnitTest;
+using Vim.UnitTest.Mock;
+using Xunit;
 
 namespace Vim.UI.Wpf.UnitTest
 {
@@ -170,14 +170,11 @@ namespace Vim.UI.Wpf.UnitTest
         }
 
         /// <summary>
-        /// Control + char won't end up as TextInput so we handle it directly
+        /// Control + char will end up as Control text and should be passed onto TextInput
         /// </summary>
         [Fact]
         public void KeyDown_PassControlLetterToBuffer()
         {
-            _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
-            _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
-
             for (var i = 0; i < 26; i++)
             {
                 var key = (Key)((int)Key.A + i);
@@ -185,8 +182,6 @@ namespace Vim.UI.Wpf.UnitTest
                 _processor.KeyDown(arg);
                 Assert.True(arg.Handled);
             }
-
-            _factory.Verify();
         }
 
         /// <summary>

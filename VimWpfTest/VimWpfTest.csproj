@@ -71,6 +71,7 @@
   <ItemGroup>
     <Compile Include="BlockCaretControllerTest.cs" />
     <Compile Include="BlockCaretTest.cs" />
+    <Compile Include="WpfIntegrationTest.cs" />
     <Compile Include="CommandMarginControllerTest.cs" />
     <Compile Include="DisplayWindowBrokerTest.cs" />
     <Compile Include="FrugalListTest.cs" />
