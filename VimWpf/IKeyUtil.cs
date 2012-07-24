@@ -24,10 +24,9 @@ namespace Vim.UI.Wpf
         KeyModifiers GetKeyModifiers(ModifierKeys modifierKeys);
 
         /// <summary>
-        /// Convert the given Key and ModifierKeys into the appropriate KeyInput.  This method 
-        /// may take into account other ModifierKeys based on the current state of the 
-        /// keyboard.  In particular it will consider extra shift states and the caps lock
-        /// key
+        /// This method handles the cases where a Vim key is mapped directly by virtual key 
+        /// and not by a literal character.  Keys like Up, Down, Subtract, etc ... aren't done
+        /// by character but instead directly by virtual key.  They are handled by this method
         /// </summary>
         bool TryConvertSpecialToKeyInput(Key key, ModifierKeys modifierKeys, out KeyInput keyInput);
    }

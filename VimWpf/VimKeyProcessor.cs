@@ -100,11 +100,6 @@ namespace Vim.UI.Wpf
         /// TextInput event.  But it can translate to a Vim command or mapped keyboard 
         /// combination that we do want to handle.  Hence we override here specifically
         /// to capture those circumstances
-        /// 
-        /// We don't capture everything here.  Instead we limit our search to the keys 
-        /// which we have a high degree of confidence can't be mapped to textual input 
-        /// and will still be a valid Vim command.  Those are keys with control modifiers 
-        /// or those which don't map to direct input characters
         /// </summary>
         public override void KeyDown(KeyEventArgs args)
         {
