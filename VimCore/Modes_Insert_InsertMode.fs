@@ -404,6 +404,7 @@ type internal InsertMode
 
         // Save the last edit point before moving the column to the left
         _vimBuffer.VimTextBuffer.LastInsertExitPoint <- Some x.CaretPoint
+        _vimBuffer.VimTextBuffer.LastEditPoint <- Some x.CaretPoint
 
         // Don't move the caret for block inserts.  It's explicitly positioned 
         let moveCaretLeft = 

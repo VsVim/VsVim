@@ -199,6 +199,7 @@ namespace Vim.UnitTest.Mock
             mock.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             mock.SetupProperty(x => x.LastVisualSelection);
             mock.SetupProperty(x => x.LastInsertExitPoint);
+            mock.SetupProperty(x => x.LastEditPoint);
             mock.Setup(x => x.SwitchMode(It.IsAny<ModeKind>(), It.IsAny<ModeArgument>()));
             return mock;
         }
