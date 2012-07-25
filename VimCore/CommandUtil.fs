@@ -767,7 +767,21 @@ type internal CommandUtil
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
     /// an edit command manipulates the caret
     member x.EditWithUndoTransaciton<'T> (name : string) (action : unit -> 'T) : 'T = 
-        _undoRedoOperations.EditWithUndoTransaction name action
+        let result =_undoRedoOperations.EditWithUndoTransaction name action
+
+        // Prefer the focused IVimBuffer over the current.  It's possible for the 
+        // macro playback switch the active buffer via gt, gT, etc ... and playback 
+        // should continue on the newly focused IVimBuffer.  Should the host API
+        // fail to return an active IVimBuffer continue using the original one
+        let buffer = 
+            match _vim.FocusedBuffer with
+            | Some buffer -> Some buffer
+            | None -> _vim.GetVimBuffer _textView
+        match buffer with
+          | Some b -> b.VimTextBuffer.LastEditPoint <- Some x.CaretPoint
+          | None -> ()
+
+        result
 
     /// Used for the several commands which make an edit here and need the edit to be linked
     /// with the next insert mode change.  
@@ -1240,6 +1254,11 @@ type internal CommandUtil
             match _jumpList.LastJumpLocation with
             | None -> markNotSet()
             | Some point -> jumpLocal point
+        | Mark.LastEdit ->
+            match _vimTextBuffer.LastEditPoint with
+            | None -> markNotSet()
+            | Some point -> VirtualSnapshotPointUtil.OfPoint point
+                                |> jumpLocal
 
     /// Jump to the specified mark
     member x.JumpToMark mark = 

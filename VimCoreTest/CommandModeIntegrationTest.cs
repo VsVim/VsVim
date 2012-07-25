@@ -524,5 +524,26 @@ namespace Vim.UnitTest
             Assert.Equal("cat" + Environment.NewLine + "dog" + Environment.NewLine, Vim.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
         }
 
+        /// <summary>
+        /// The `. mark should go to the last edit position on the last edit line
+        /// </summary>
+        [Fact]
+        public void Replace_GoToLastEditPosition()
+        {
+            Create("cat", "dog");
+            _textView.MoveCaretToLine(1, 1);
+            _vimBuffer.ProcessNotation("ru");
+            _textView.MoveCaretToLine(0, 0);
+
+            Assert.Equal("dug", _textView.GetLine(1).GetText());
+
+            Assert.Equal(0, _textView.Caret.Position.BufferPosition.GetColumn());
+            Assert.Equal(0, _textView.GetCaretLine().LineNumber);
+
+            _vimBuffer.ProcessNotation("`.");
+
+            Assert.Equal(1, _textView.Caret.Position.BufferPosition.GetColumn());
+            Assert.Equal(1, _textView.GetCaretLine().LineNumber);
+        }
     }
 }

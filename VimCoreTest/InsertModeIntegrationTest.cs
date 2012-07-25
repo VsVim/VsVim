@@ -346,6 +346,28 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("big <Esc>dd");
                 Assert.True(_vimBuffer.VimTextBuffer.LastInsertExitPoint.IsNone());
             }
+
+            /// <summary>
+            /// The `. mark should go to the last edit position on the last edit line
+            /// </summary>
+            [Fact]
+            public void GoToLastEditPosition()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretToLine(1, 3);
+                _vimBuffer.ProcessNotation(" bird<Esc>");
+                _textView.MoveCaretToLine(0, 0);
+
+                Assert.Equal("dog bird", _textView.GetLine(1).GetText());
+
+                Assert.Equal(0, _textView.Caret.Position.BufferPosition.GetColumn());
+                Assert.Equal(0, _textView.GetCaretLine().LineNumber);
+
+                _vimBuffer.ProcessNotation("`.");
+
+                Assert.Equal(8, _textView.Caret.Position.BufferPosition.GetColumn());
+                Assert.Equal(1, _textView.GetCaretLine().LineNumber);
+            }
         }
 
         public sealed class Misc : InsertModeIntegrationTest
