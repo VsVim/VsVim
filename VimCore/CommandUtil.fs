@@ -768,19 +768,7 @@ type internal CommandUtil
     /// an edit command manipulates the caret
     member x.EditWithUndoTransaciton<'T> (name : string) (action : unit -> 'T) : 'T = 
         let result =_undoRedoOperations.EditWithUndoTransaction name action
-
-        // Prefer the focused IVimBuffer over the current.  It's possible for the 
-        // macro playback switch the active buffer via gt, gT, etc ... and playback 
-        // should continue on the newly focused IVimBuffer.  Should the host API
-        // fail to return an active IVimBuffer continue using the original one
-        let buffer = 
-            match _vim.FocusedBuffer with
-            | Some buffer -> Some buffer
-            | None -> _vim.GetVimBuffer _textView
-        match buffer with
-          | Some b -> b.VimTextBuffer.LastEditPoint <- Some x.CaretPoint
-          | None -> ()
-
+        _vimTextBuffer.LastEditPoint <- Some x.CaretPoint
         result
 
     /// Used for the several commands which make an edit here and need the edit to be linked
