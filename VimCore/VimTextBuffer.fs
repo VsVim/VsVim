@@ -25,6 +25,7 @@ type internal VimTextBuffer
     let mutable _modeKind = ModeKind.Normal
     let mutable _lastVisualSelection : ITrackingVisualSelection option = None
     let mutable _lastInsertExitPoint : ITrackingLineColumn option = None
+    let mutable _lastEditPoint : ITrackingLineColumn option = None
 
     member x.LastVisualSelection 
         with get() =
@@ -63,6 +64,26 @@ type internal VimTextBuffer
                     let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
                     Some trackingLineColumn
 
+     member x.LastEditPoint
+        with get() = 
+            match _lastEditPoint with
+            | None -> None
+            | Some _lastEditPoint -> _lastEditPoint.Point
+        and set value = 
+
+            // First clear out the previous information
+            match _lastEditPoint with
+            | None -> ()
+            | Some _lastEditPoint -> _lastEditPoint.Close()
+
+            _lastEditPoint <-
+                match value with
+                | None -> None
+                | Some point -> 
+                    let line, column = SnapshotPointUtil.GetLineColumn point
+                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
+                    Some trackingLineColumn
+
     /// Get all of the local marks in the IVimTextBuffer.
     member x.LocalMarks = 
         LocalMark.All
@@ -82,6 +103,8 @@ type internal VimTextBuffer
             |> OptionUtil.map2 (fun trackingLineColumn -> trackingLineColumn.VirtualPoint)
         | LocalMark.LastInsertExit ->
             x.LastInsertExitPoint |> Option.map VirtualSnapshotPointUtil.OfPoint
+        | LocalMark.LastEdit ->
+            x.LastEditPoint |> Option.map VirtualSnapshotPointUtil.OfPoint
         | LocalMark.LastSelectionStart ->
             x.LastVisualSelection 
             |> Option.map (fun visualSelection -> 
@@ -106,6 +129,7 @@ type internal VimTextBuffer
         | LocalMark.LastSelectionEnd -> false
         | LocalMark.LastSelectionStart -> false
         | LocalMark.LastInsertExit -> false
+        | LocalMark.LastEdit -> false
 
     /// Switch to the desired mode
     member x.SwitchMode modeKind modeArgument =
@@ -123,6 +147,9 @@ type internal VimTextBuffer
         member x.LastInsertExitPoint
             with get() = x.LastInsertExitPoint
             and set value = x.LastInsertExitPoint <- value
+        member x.LastEditPoint
+            with get() = x.LastEditPoint
+            and set value = x.LastEditPoint <- value
         member x.LocalMarks = x.LocalMarks
         member x.LocalSettings = _localSettings
         member x.ModeKind = _modeKind
