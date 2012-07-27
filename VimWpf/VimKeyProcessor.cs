@@ -83,6 +83,25 @@ namespace Vim.UI.Wpf
                     handled = TryProcess(keyInput);
                 }
             }
+            else if (!String.IsNullOrEmpty(args.SystemText))
+            {
+                // The system text needs to be processed differently than normal text.  When 'a'
+                // is pressed with control it will come in as control text as the proper control
+                // character.  When 'a' is pressed with Alt it will come in as simply 'a' and we
+                // have to rely on the currently pressed key modifiers to determine the appropriate
+                // character
+                var keyboardDevice = args.Device as KeyboardDevice;
+                var keyModifiers = keyboardDevice != null
+                    ? _keyUtil.GetKeyModifiers(keyboardDevice.Modifiers)
+                    : KeyModifiers.Alt;
+
+                text = args.SystemText;
+                for (var i = 0; i < text.Length; i++)
+                {
+                    var keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.CharToKeyInput(text[i]), keyModifiers);
+                    handled = TryProcess(keyInput);
+                }
+            }
 
             args.Handled = handled;
             base.TextInput(args);

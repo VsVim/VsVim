@@ -6,8 +6,9 @@ using System.Windows;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using Vim.UI.Wpf.Implementation.Keyboard;
 using Vim.Extensions;
+using Vim.UI.Wpf.Implementation.Keyboard;
+using Xunit;
 
 namespace Vim.UI.Wpf.UnitTest
 {
@@ -87,12 +88,18 @@ namespace Vim.UI.Wpf.UnitTest
 
         #region DefaultKeyboardDevice
 
-        private sealed class DefaultKeyboardDevice : KeyboardDevice
+        public sealed class DefaultKeyboardDevice : KeyboardDevice
         {
             /// <summary>
             /// Set of KeyModifiers which should be registered as down
             /// </summary>
             internal ModifierKeys DownKeyModifiers;
+
+            internal DefaultKeyboardDevice()
+                : this(InputManager.Current)
+            {
+
+            }
 
             internal DefaultKeyboardDevice(InputManager inputManager)
                 : base(inputManager)
@@ -236,12 +243,31 @@ namespace Vim.UI.Wpf.UnitTest
 
         private TextComposition CreateTextComposition(string text)
         {
-            var textComposition = new TextComposition(InputManager.Current, _wpfTextView.VisualElement, text);
-            if (text.Length == 1 && Char.IsControl(text[0]))
-            {
-                var type = typeof(TextComposition);
-                var method = type.GetMethod("MakeControl", BindingFlags.Instance | BindingFlags.NonPublic);
-                method.Invoke(textComposition, new object[] { });
+            return CreateTextComposition(_wpfTextView, text);
+        }
+
+        internal static TextComposition CreateTextComposition(IWpfTextView wpfTextView, string text)
+        {
+            var textComposition = new TextComposition(InputManager.Current, wpfTextView.VisualElement, text);
+            if (text.Length == 1)
+            { 
+                var c = text[0];
+                if (Char.IsControl(c))
+                {
+                    var type = typeof(TextComposition);
+                    var method = type.GetMethod("MakeControl", BindingFlags.Instance | BindingFlags.NonPublic);
+                    method.Invoke(textComposition, new object[] { });
+                    Assert.True(String.IsNullOrEmpty(textComposition.Text));
+                    Assert.Equal(text, textComposition.ControlText);
+                }
+                else if (0 != (c & 0x80))
+                {
+                    var type = typeof(TextComposition);
+                    var method = type.GetMethod("MakeSystem", BindingFlags.Instance | BindingFlags.NonPublic);
+                    method.Invoke(textComposition, new object[] { });
+                    Assert.True(String.IsNullOrEmpty(textComposition.Text));
+                    Assert.Equal(text, textComposition.SystemText);
+                }
             }
 
             return textComposition;

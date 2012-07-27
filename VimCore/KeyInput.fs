@@ -571,6 +571,23 @@ module KeyInputUtil =
                     else
                         KeyInput(searchKey, KeyModifiers.Control, Some c)
 
+        let normalizeAlt (keyInput : KeyInput) =
+            match keyInput.RawChar with
+            | None -> keyInput
+            | Some c ->
+                let number = int c
+                if number < 0x80 then
+                    // These keys are shifted to have the high bit set to include Alt.  At this point they don't
+                    // represent the original VimKey anymore (á isn't VimKey.LowerA or VimKey.UpperA) so choose
+                    // the RawCharacter instead
+                    let number = number ||| 0x80
+                    let c = char number
+                    let modifiers = Util.UnsetFlag keyInput.KeyModifiers KeyModifiers.Alt
+                    KeyInput(VimKey.RawCharacter, modifiers, Some c)
+                else
+                    // Nothing special to do here
+                    keyInput
+
         let keyInput = ChangeKeyModifiersDangerous keyInput (targetModifiers ||| keyInput.KeyModifiers)
 
         // First normalize the shift case
@@ -585,6 +602,12 @@ module KeyInputUtil =
             if Util.IsFlagSet targetModifiers KeyModifiers.Control then
                 normalizeControl keyInput
             else
+                keyInput
+
+        let keyInput =
+            if Util.IsFlagSet targetModifiers KeyModifiers.Alt then
+                normalizeAlt keyInput
+            else 
                 keyInput
 
         keyInput

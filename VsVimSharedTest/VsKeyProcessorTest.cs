@@ -13,6 +13,8 @@ namespace VsVim.UnitTest
 {
     public sealed class VsKeyProcessorTest : VimKeyProcessorTest
     {
+        private MockRepository _factory;
+        private Mock<IVimBuffer> _mockVimBuffer;
         private Mock<IVsAdapter> _vsAdapter;
         private Mock<ITextBuffer> _textBuffer;
         private IVimBufferCoordinator _bufferCoordinator;
@@ -26,14 +28,19 @@ namespace VsVim.UnitTest
             _textBuffer = _factory.Create<ITextBuffer>();
             _vsAdapter = _factory.Create<IVsAdapter>();
             _vsAdapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(false);
-            _buffer = MockObjectFactory.CreateVimBuffer(_textBuffer.Object);
-            _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true);
-            _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
-            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
-            _bufferCoordinator = new VimBufferCoordinator(_buffer.Object);
+            _mockVimBuffer = MockObjectFactory.CreateVimBuffer(_textBuffer.Object);
+            _mockVimBuffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true);
+            _mockVimBuffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
+            _mockVimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
+            _bufferCoordinator = new VimBufferCoordinator(_mockVimBuffer.Object);
             _vsProcessor = new VsKeyProcessor(_vsAdapter.Object, _bufferCoordinator, KeyUtil);
             _processor = _vsProcessor;
             _device = new MockKeyboardDevice();
+        }
+
+        protected override IVimBuffer GetOrCreateVimBufferForProcessor()
+        {
+            return _mockVimBuffer.Object;
         }
 
         private void VerifyHandle(Key key, ModifierKeys modKeys = ModifierKeys.None)
@@ -102,8 +109,8 @@ namespace VsVim.UnitTest
         public void KeyDown_InsertCheckShouldConsiderMapped()
         {
             var keyInput = KeyInputUtil.CharWithControlToKeyInput('e');
-            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
-            _buffer.Setup(x => x.CanProcessAsCommand(keyInput)).Returns(true).Verifiable();
+            _mockVimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
+            _mockVimBuffer.Setup(x => x.CanProcessAsCommand(keyInput)).Returns(true).Verifiable();
             VerifyHandle(Key.E, ModifierKeys.Control);
             _factory.Verify();
         }
@@ -117,7 +124,7 @@ namespace VsVim.UnitTest
         [Fact]
         public void KeyDown_NonInsertShouldntCheckForCommand()
         {
-            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
+            _mockVimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
             VerifyHandle(Key.E, ModifierKeys.Control);
             _factory.Verify();
         }

@@ -46,5 +46,16 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
             }
         }
+
+        public sealed class InsertTest : WpfIntegrationTest
+        {
+            [Fact]
+            public void AltInput()
+            {
+                Create("");
+                _simulation.Run("iÁ");
+                Assert.Equal("Á", _textBuffer.GetLine(0).GetText());
+            }
+        }
     }
 }
