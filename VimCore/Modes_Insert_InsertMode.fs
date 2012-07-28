@@ -479,10 +479,10 @@ type internal InsertMode
             try
                 // We don't want the edits which are executed as part of the command to be tracked through 
                 // an external / extra text change so disable tracking while executing the command
-                _textChangeTracker.Enabled <- false
+                _textChangeTracker.TrackCurrentChange <- false
                 _insertUtil.RunInsertCommand command
             finally
-                _textChangeTracker.Enabled <- true
+                _textChangeTracker.TrackCurrentChange <- true
 
         x.OnAfterRunInsertCommand command
 
@@ -749,7 +749,7 @@ type internal InsertMode
 
         // When starting insert mode we want to track the edits to the IVimBuffer as a 
         // text change
-        _textChangeTracker.Enabled <- true
+        _textChangeTracker.TrackCurrentChange <- true
 
         // On enter we need to check the 'count' and possibly set up a transaction to 
         // lump edits and their repeats together
@@ -812,7 +812,7 @@ type internal InsertMode
 
         // When leaving insert mode we complete the current change
         _textChangeTracker.CompleteChange()
-        _textChangeTracker.Enabled <- false
+        _textChangeTracker.TrackCurrentChange <- false
 
         // Possibly raise the edit command.  This will have already happened if <Esc> was used
         // to exit insert mode.  This case takes care of being asked to exit programmatically 

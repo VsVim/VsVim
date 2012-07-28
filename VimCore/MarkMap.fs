@@ -89,9 +89,6 @@ type MarkMap(_bufferTrackingService : IBufferTrackingService) =
             vimBufferData.VimTextBuffer.GetLocalMark localMark
         | Mark.LastJump -> 
             vimBufferData.JumpList.LastJumpLocation
-        | Mark.LastEdit ->
-            vimBufferData.VimTextBuffer.LastEditPoint
-            |> Option.map VirtualSnapshotPointUtil.OfPoint
 
     /// Set the given mark to the specified line and column in the context of the IVimTextBuffer
     member x.SetMark mark (vimBufferData : IVimBufferData) line column = 
@@ -105,8 +102,6 @@ type MarkMap(_bufferTrackingService : IBufferTrackingService) =
         | Mark.LastJump ->
             vimBufferData.JumpList.SetLastJumpLocation line column
             true
-        | Mark.LastEdit ->
-            false
 
     member x.ClearGlobalMarks () = 
 

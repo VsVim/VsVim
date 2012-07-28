@@ -1292,6 +1292,33 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("'a");
                 Assert.Equal(_textBuffer.GetPointInLine(1, 2), _textView.GetCaretPoint());
             }
+
+            /// <summary>
+            /// The delete character command should update the last edit point 
+            /// </summary>
+            [Fact]
+            public void LastEditPoint_DeleteCharacter()
+            {
+                Create("cat", "dog");
+                Assert.True(_vimTextBuffer.LastEditPoint.IsNone());
+                _vimBuffer.ProcessNotation("lx");
+                Assert.True(_vimTextBuffer.LastEditPoint.IsSome());
+                Assert.Equal(1, _vimTextBuffer.LastEditPoint.Value);
+            }
+
+            /// <summary>
+            /// The delete line command should update the last edit point
+            /// </summary>
+            [Fact]
+            public void LastEditPoint_DeleteLine()
+            {
+                Create("cat", "dog", "tree");
+                Assert.True(_vimTextBuffer.LastEditPoint.IsNone());
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("dd");
+                Assert.True(_vimTextBuffer.LastEditPoint.IsSome());
+                Assert.Equal(_textBuffer.GetLine(1).Start, _vimTextBuffer.LastEditPoint.Value);
+            }
         }
 
         public sealed class ChangeLines : NormalModeIntegrationTest

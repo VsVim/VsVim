@@ -2,9 +2,8 @@
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using Xunit;
 using Vim.Extensions;
-using Vim.UnitTest.Mock;
+using Xunit;
 
 namespace Vim.UnitTest
 {
@@ -13,6 +12,7 @@ namespace Vim.UnitTest
         private MockRepository _factory;
         private ITextBuffer _textBuffer;
         private ITextView _textView;
+        private Mock<IVimTextBuffer> _vimTextBuffer;
         private Mock<ICommonOperations> _operations;
         private TextChangeTracker _trackerRaw;
         private ITextChangeTracker _tracker;
@@ -24,8 +24,10 @@ namespace Vim.UnitTest
             _textBuffer = _textView.TextBuffer;
             _factory = new MockRepository(MockBehavior.Loose);
             _operations = _factory.Create<ICommonOperations>(MockBehavior.Strict);
-            _trackerRaw = new TextChangeTracker(_textView, _operations.Object);
-            _trackerRaw.Enabled = true;
+            _vimTextBuffer = _factory.Create<IVimTextBuffer>(MockBehavior.Strict);
+            _vimTextBuffer.SetupProperty(x => x.LastEditPoint);
+            _trackerRaw = new TextChangeTracker(_vimTextBuffer.Object, _textView, _operations.Object);
+            _trackerRaw.TrackCurrentChange = true;
             _tracker = _trackerRaw;
             _tracker.ChangeCompleted += (sender, args) => { _lastChange = args.TextChange; };
         }
@@ -37,7 +39,7 @@ namespace Vim.UnitTest
         public void DontTrackWhenDisabled()
         {
             Create("");
-            _tracker.Enabled = false;
+            _tracker.TrackCurrentChange = false;
             _textBuffer.Insert(0, "a");
             Assert.Null(_lastChange);
             Assert.True(_tracker.CurrentChange.IsNone());
@@ -52,7 +54,7 @@ namespace Vim.UnitTest
         {
             Create("");
             _textBuffer.Insert(0, "a");
-            _tracker.Enabled = false;
+            _tracker.TrackCurrentChange = false;
             Assert.Null(_lastChange);
             Assert.True(_tracker.CurrentChange.IsNone());
         }

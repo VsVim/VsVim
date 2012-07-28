@@ -767,9 +767,7 @@ type internal CommandUtil
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
     /// an edit command manipulates the caret
     member x.EditWithUndoTransaciton<'T> (name : string) (action : unit -> 'T) : 'T = 
-        let result =_undoRedoOperations.EditWithUndoTransaction name action
-        _vimTextBuffer.LastEditPoint <- Some x.CaretPoint
-        result
+        _undoRedoOperations.EditWithUndoTransaction name action
 
     /// Used for the several commands which make an edit here and need the edit to be linked
     /// with the next insert mode change.  
@@ -1242,11 +1240,6 @@ type internal CommandUtil
             match _jumpList.LastJumpLocation with
             | None -> markNotSet()
             | Some point -> jumpLocal point
-        | Mark.LastEdit ->
-            match _vimTextBuffer.LastEditPoint with
-            | None -> markNotSet()
-            | Some point -> VirtualSnapshotPointUtil.OfPoint point
-                                |> jumpLocal
 
     /// Jump to the specified mark
     member x.JumpToMark mark = 

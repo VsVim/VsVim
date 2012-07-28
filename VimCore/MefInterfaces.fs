@@ -202,7 +202,7 @@ type ITextChangeTracker =
 
     /// Whether or not change tracking is currently enabled.  Disabling the tracking will
     /// cause the current change to be completed
-    abstract Enabled : bool with get, set
+    abstract TrackCurrentChange : bool with get, set
 
     /// Current change
     abstract CurrentChange : TextChange option
@@ -221,7 +221,7 @@ type ITextChangeTracker =
 type ITextChangeTrackerFactory =
 
     /// Get the ITextChangeTracker associated with the given vim buffer information
-    abstract GetTextChangeTracker : IVimBufferData -> ITextChangeTracker
+    abstract GetTextChangeTracker : vimBufferData : IVimBufferData -> ITextChangeTracker
 
 /// Provides access to the system clipboard 
 type IClipboardDevice =

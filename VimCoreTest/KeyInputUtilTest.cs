@@ -188,7 +188,7 @@ namespace Vim.UnitTest
             public void AltMirror()
             {
                 const string expected = "Á°±²³´µ¶·¸¹";
-                const string source = "a0123456789";
+                const string source = "A0123456789";
                 for (var i = 0; i < source.Length; i++)
                 {
                     var left = KeyInputUtil.CharToKeyInput(expected[i]);

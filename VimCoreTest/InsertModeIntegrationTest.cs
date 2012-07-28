@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Xunit;
+using Microsoft.FSharp.Core;
 
 namespace Vim.UnitTest
 {
@@ -347,6 +348,15 @@ namespace Vim.UnitTest
                 Assert.True(_vimBuffer.VimTextBuffer.LastInsertExitPoint.IsNone());
             }
 
+        }
+
+        public sealed class LastEditPointTest : InsertModeIntegrationTest
+        {
+            private FSharpOption<SnapshotPoint> LastEditPoint
+            {
+                get { return _vimBuffer.VimTextBuffer.LastEditPoint; }
+            }
+
             /// <summary>
             /// The `. mark should go to the last edit position on the last edit line
             /// </summary>
@@ -367,6 +377,55 @@ namespace Vim.UnitTest
 
                 Assert.Equal(8, _textView.Caret.Position.BufferPosition.GetColumn());
                 Assert.Equal(1, _textView.GetCaretLine().LineNumber);
+            }
+
+            /// <summary>
+            /// When text is inserted into the buffer then the last edit point should be the
+            /// last character that was inserted
+            /// </summary>
+            [Fact]
+            public void InsertText()
+            {
+                Create("cat");
+                _vimBuffer.ProcessNotation("big ");
+                Assert.Equal(3, LastEditPoint.Value);
+            }
+
+            /// <summary>
+            /// The behavior of an insert that doesn't come from Vim isn't defined but we choose 
+            /// to interpret it as a normal insert of text and update the LastEditPoint as if it
+            /// were a Vim based edit
+            /// </summary>
+            [Fact]
+            public void InsertNonVim()
+            {
+                Create("big");
+                _textBuffer.Insert(3, " cat");
+                Assert.Equal(6, LastEditPoint.Value);
+            }
+
+            /// <summary>
+            /// When there is a deletion of text then the LastEditPoint should point to the start
+            /// of the deleted text
+            /// </summary>
+            [Fact]
+            public void DeleteText()
+            {
+                Create("dog tree");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.ProcessNotation("<Del>");
+                Assert.Equal(1, LastEditPoint.Value);
+            }
+
+            /// <summary>
+            /// As we do with insert we treat a non-Vim delete as a Vim delete
+            /// </summary>
+            [Fact]
+            public void DeleteNonVim()
+            {
+                Create("a big dog");
+                _textBuffer.Delete(new Span(2, 3));
+                Assert.Equal(2, LastEditPoint.Value);
             }
         }
 
