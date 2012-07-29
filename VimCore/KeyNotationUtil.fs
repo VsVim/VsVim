@@ -267,4 +267,53 @@ module KeyNotationUtil =
             let extra : KeyModifiers = Util.UnsetFlag keyInput.KeyModifiers pair.Value.KeyModifiers
             Some (pair.Key.Value, extra)
 
+    /// Get the display name for the specified KeyInput value.
+    let GetDisplayName (keyInput : KeyInput) = 
+
+        let inner name keyModifiers = 
+            let rec getPrefix current keyModifiers = 
+                if Util.IsFlagSet keyModifiers KeyModifiers.Control then
+                    let current = current + "C-"
+                    let keyModifiers = Util.UnsetFlag keyModifiers KeyModifiers.Control
+                    getPrefix current keyModifiers
+                elif Util.IsFlagSet keyModifiers KeyModifiers.Alt then
+                    let current = current + "A-"
+                    let keyModifiers = Util.UnsetFlag keyModifiers KeyModifiers.Alt
+                    getPrefix current keyModifiers
+                elif Util.IsFlagSet keyModifiers KeyModifiers.Shift then
+                    let current = current + "S-"
+                    let keyModifiers = Util.UnsetFlag keyModifiers KeyModifiers.Shift
+                    getPrefix current keyModifiers
+                elif Util.IsFlagSet keyModifiers KeyModifiers.Command then
+                    let current = current + "D-"
+                    let keyModifiers = Util.UnsetFlag keyModifiers KeyModifiers.Command
+                    getPrefix current keyModifiers
+                else 
+                    current
+
+            let prefix = getPrefix "" keyModifiers
+            if StringUtil.isNullOrEmpty prefix then
+                name
+            else
+                sprintf "<%s%s>" prefix name
+
+        // Check to see if this is one of the keys shifted by control for which we provide a better
+        // display
+        let checkForSpecialControl () = 
+            match keyInput.RawChar with
+            | None -> inner "" keyInput.KeyModifiers
+            | Some c ->
+                let value = int c;
+                if value >= 1 && value <= 26 then
+                    let baseCode = value - 1 
+                    let name = char ((int 'A') + baseCode) |> StringUtil.ofChar
+                    inner name keyInput.KeyModifiers
+                else
+                    inner (c |> StringUtil.ofChar) keyInput.KeyModifiers
+
+        match TryGetSpecialKeyName keyInput with 
+        | Some (name, modifiers) -> inner name modifiers
+        | None -> checkForSpecialControl ()
+
+
 

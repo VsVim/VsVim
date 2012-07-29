@@ -86,8 +86,6 @@ type KeyInput
         | VimKey.F12 -> true
         | _ -> false
 
-    member x.IsControlAndLetter = x.KeyModifiers = KeyModifiers.Control && CharUtil.IsLetter x.Char
-
     member x.GetAlternate () = 
         if x.KeyModifiers = KeyModifiers.None then
             match x.Key with
@@ -118,27 +116,19 @@ type KeyInput
         let left = maybeGetAlternate x
         let right = maybeGetAlternate right
 
-        if left.IsControlAndLetter then
-            if right.IsControlAndLetter then 
-                compare (CharUtil.ToLower left.Char) (CharUtil.ToLower right.Char)
-            else 
-                -1 
-        elif right.IsControlAndLetter then 
-            1
+        let comp = compare left.KeyModifiers right.KeyModifiers
+        if comp <> 0 then comp
         else
-            let comp = compare left.KeyModifiers right.KeyModifiers
+            let comp = compare left.Char right.Char
             if comp <> 0 then comp
-            else
-                let comp = compare left.Char right.Char
-                if comp <> 0 then comp
-                else compare left.Key right.Key
+            else compare left.Key right.Key
                     
     override x.GetHashCode() = 
         match x.GetAlternate() with
         | Some alternate -> 
             alternate.GetHashCode()
         | None -> 
-            let c = if x.IsControlAndLetter then CharUtil.ToLower x.Char else x.Char
+            let c = x.Char
             int32 c
 
     override x.Equals(obj) =

@@ -10,6 +10,8 @@ module KeyNotationUtil =
     /// guidelines specified in :help key-notation.  
     val TryStringToKeyInput : string -> KeyInput option
 
+    /// Convert the passed in string to a single KeyInput value.  In the case the string
+    /// doesn't map to a single KeyInput value then an exception will be thrown
     val StringToKeyInput : string -> KeyInput
 
     /// Try to convert the passed in string to multiple KeyInput values.  Returns true only
@@ -22,4 +24,7 @@ module KeyNotationUtil =
     /// Try and convert the passed in KeyInput into a special key name the extra set of 
     /// KeyModifiers on the original KeyInput
     val TryGetSpecialKeyName : KeyInput -> (string * KeyModifiers) option
+
+    /// Get the display name for the specified KeyInput value
+    val GetDisplayName : keyInput : KeyInput -> string
 

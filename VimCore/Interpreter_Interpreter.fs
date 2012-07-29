@@ -428,43 +428,9 @@ type Interpreter
                 | KeyRemapMode.Insert -> "i"
 
         // Get the printable format for the KeyInputSet 
-        let getKeyInputSetLine (keyInputSet:KeyInputSet) = 
+        let getKeyInputSetLine (keyInputSet : KeyInputSet) = 
 
-            let inner (ki:KeyInput) = 
-
-                let ki = ki |> KeyInputUtil.GetPrimary |> OptionUtil.getOrDefault ki
-
-                // Build up the prefix for the specified modifiers
-                let rec getPrefix modifiers = 
-                    if Util.IsFlagSet modifiers KeyModifiers.Alt then
-                        "M-" + getPrefix (Util.UnsetFlag modifiers KeyModifiers.Alt)
-                    elif Util.IsFlagSet modifiers KeyModifiers.Control then
-                        "C-" + getPrefix (Util.UnsetFlag modifiers KeyModifiers.Control)
-                    elif Util.IsFlagSet modifiers KeyModifiers.Shift then
-                        "S-" + getPrefix (Util.UnsetFlag modifiers KeyModifiers.Shift)
-                    else 
-                        ""
-
-                // Get the actual printable output for the raw KeyInput.  For a KeyInput with
-                // a char this is straight forward.  Non-char KeyInput need to be special cased
-                // though
-                let prefix,output = 
-                    match (KeyNotationUtil.TryGetSpecialKeyName ki), ki.Char with
-                    | Some (name,extraModifiers), _ -> 
-                        (getPrefix extraModifiers, name)
-                    | None, c -> 
-                        let c = 
-                            if CharUtil.IsLetter c && ki.KeyModifiers <> KeyModifiers.None then CharUtil.ToUpper c 
-                            else c
-                        (getPrefix ki.KeyModifiers, StringUtil.ofChar c)
-
-                if String.length prefix = 0 then 
-                    if String.length output = 1 then output
-                    else sprintf "<%s>" output
-                else
-                    sprintf "<%s%s>" prefix output 
-
-            keyInputSet.KeyInputs |> Seq.map inner |> String.concat ""
+            keyInputSet.KeyInputs |> Seq.map KeyNotationUtil.GetDisplayName |> String.concat ""
 
         // Get the printable line for the provided mode, left and right side
         let getLine modes lhs rhs = 

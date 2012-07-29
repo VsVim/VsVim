@@ -336,5 +336,63 @@ namespace Vim.UnitTest
                 AssertMany(@"/\v", KeyInputSetUtil.OfVimKeyArray(VimKey.Forwardslash, VimKey.Backslash, VimKey.LowerV));
             }
         }
+
+        public sealed class GetDisplayName : KeyNotationUtilTest
+        {
+            /// <summary>
+            /// When displaying the Control + alpha keys we should be displaying it in the C-X 
+            /// format and not the raw character. 
+            /// </summary>
+            [Fact]
+            public void AlphaAndControl()
+            {
+                foreach (var c in KeyInputUtilTest.CharLettersUpper)
+                {
+                    var keyInput = KeyInputUtil.CharWithControlToKeyInput(c);
+
+                    // Certain combinations like CTRL-J have a primary key which gets displayed over
+                    // them.  Don't test them here
+                    if (KeyInputUtil.GetPrimary(keyInput).IsSome())
+                    {
+                        continue;
+                    }
+
+                    var text = String.Format("<C-{0}>", c);
+                    Assert.Equal(text, KeyNotationUtil.GetDisplayName(keyInput));
+                }
+            }
+
+            [Fact]
+            public void Alpha()
+            {
+                foreach (var c in KeyInputUtilTest.CharLettersUpper)
+                {
+                    var keyInput = KeyInputUtil.CharToKeyInput(c);
+                    Assert.Equal(c.ToString(), KeyNotationUtil.GetDisplayName(keyInput));
+                }
+            }
+
+            [Fact]
+            public void AlphaLowerAndAlt()
+            {
+                foreach (var c in KeyInputUtilTest.CharLettersLower)
+                {
+                    var keyInput = KeyInputUtil.CharWithAltToKeyInput(c);
+                    var shiftedChar = (char)(0x80 | (int)c);
+                    Assert.Equal(shiftedChar.ToString(), KeyNotationUtil.GetDisplayName(keyInput));
+                }
+            }
+
+            [Fact]
+            public void NonAlphaWithControl()
+            {
+                foreach (var c in "()#")
+                {
+                    var keyInput = KeyInputUtil.CharWithControlToKeyInput(c);
+                    var text = String.Format("<C-{0}>", c);
+                    Assert.Equal(text, KeyNotationUtil.GetDisplayName(keyInput));
+                }
+            }
+        }
     }
 }
