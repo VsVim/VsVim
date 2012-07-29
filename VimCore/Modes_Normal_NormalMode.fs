@@ -181,7 +181,7 @@ type internal NormalMode
 
     member x.EnsureCommands() = 
         if not x.IsCommandRunnerPopulated then
-            let factory = Vim.Modes.CommandFactory(_operations, _capture, _motionUtil, _vimBufferData.JumpList, _localSettings)
+            let factory = CommandFactory(_operations, _capture, _motionUtil, _vimBufferData.JumpList, _localSettings)
 
             let complexSeq = 
                 seq {

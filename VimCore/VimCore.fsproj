@@ -77,8 +77,8 @@
     <Compile Include="Interpreter_Parser.fs" />
     <Compile Include="Interpreter_Interpreter.fsi" />
     <Compile Include="Interpreter_Interpreter.fs" />
-    <Compile Include="Modes_CommandFactory.fsi" />
-    <Compile Include="Modes_CommandFactory.fs" />
+    <Compile Include="CommandFactory.fsi" />
+    <Compile Include="CommandFactory.fs" />
     <Compile Include="Modes_Command_CommandMode.fsi" />
     <Compile Include="Modes_Command_CommandMode.fs" />
     <Compile Include="Modes_Normal_NormalMode.fsi" />
