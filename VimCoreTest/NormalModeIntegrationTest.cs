@@ -1178,6 +1178,20 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(VimKey.KeypadDivide);
                 Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
             }
+
+            /// <summary>
+            /// The {C-H} and {BS} key combinations aren't true equivalent keys.  They can be bound
+            /// to separate commands
+            /// </summary>
+            [Fact]
+            public void ControlHAndBackspace()
+            {
+                Create("");
+                _vimBuffer.Process(":nmap <C-H> icontrol h<Esc>", enter: true);
+                _vimBuffer.Process(":nmap <BS> a and backspace", enter: true);
+                _vimBuffer.ProcessNotation("<C-H><BS>");
+                Assert.Equal("control h and backspace", _textBuffer.GetLine(0).GetText());
+            }
         }
 
         public sealed class Marks : NormalModeIntegrationTest

@@ -198,9 +198,131 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class EquivalentKeyTest
+        {
+            /// <summary>
+            /// The ':help key-notation' page lists several key notations which have equivalent 
+            /// non-named values.  The documentation is incorrect though in 2 cases: BS and Del.  
+            /// Both of these keys have equivalent functions yet they represent different values
+            /// internally because they can have separate key mappings.  This test is used to 
+            /// confrim that we correctly implement this behavior.
+            /// 
+            /// Note: This behavior may be different for non-GUI versions of VIM.  But for 
+            /// GUI versions this behavior is as tested below
+            /// </summary>
+            [Fact]
+            public void AlternateSpecialCases()
+            {
+                Assert.NotEqual(KeyNotationUtil.StringToKeyInput("<BS>"), KeyNotationUtil.StringToKeyInput("<C-H>"));
+                Assert.NotEqual(KeyNotationUtil.StringToKeyInput("<Del>"), KeyInputUtil.CharToKeyInput((char)127));
+            }
+
+            /// <summary>
+            /// Make sure the equivalent keys are all equal to their decimal value.  This can be 
+            /// verified in gVim by using the undocumented Char- key mapping syntax.  Ex
+            ///   imap {Char-27} the escape key
+            /// </summary>
+            [Fact]
+            public void EquivalentKeysToDecimal()
+            {
+                var list = new[] 
+                { 
+                    "Nul-0",
+                    "Tab-9",
+                    "NL-10",
+                    "FF-12",
+                    "CR-13",
+                    "Return-13",
+                    "Enter-13",
+                    "Esc-27",
+                    "Space-32",
+                    "lt-60",
+                    "Bslash-92",
+                    "Bar-124" 
+                };
+
+                foreach (var entry in list)
+                {
+                    var pair = entry.Split('-');
+                    var name = String.Format("<{0}>", pair[0]);
+                    var c = (char)Int32.Parse(pair[1]);
+                    var left = KeyNotationUtil.StringToKeyInput(name);
+                    var right = KeyInputUtil.CharToKeyInput(c);
+                    Assert.Equal(left, right);
+                }
+            }
+
+            [Fact]
+            public void GetAlternateTarget_ShouldWorkWithAllValues()
+            {
+                foreach (var cur in KeyInputUtil.AlternateKeyInputList)
+                {
+                    Assert.True(KeyInputUtil.GetPrimary(cur).IsSome());
+                }
+            }
+
+            [Fact]
+            public void AllAlternatesShouldEqualTheirTarget()
+            {
+                foreach (var cur in KeyInputUtil.AlternateKeyInputList)
+                {
+                    var target = KeyInputUtil.GetPrimary(cur).Value;
+                    Assert.Equal(target, cur);
+                    Assert.Equal(target.GetHashCode(), cur.GetHashCode());
+                }
+            }
+
+            [Fact]
+            public void lternateKeyInputPairListIsComplete()
+            {
+                foreach (var cur in KeyInputUtil.AlternateKeyInputPairList)
+                {
+                    var target = cur.Item1;
+                    var alternate = cur.Item2;
+                    Assert.Equal(alternate, target.GetAlternate().Value);
+                    Assert.Equal(alternate, KeyInputUtil.GetAlternate(target).Value);
+                    Assert.Equal(target, KeyInputUtil.GetPrimary(alternate).Value);
+                }
+
+                Assert.Equal(KeyInputUtil.AlternateKeyInputPairList.Count(), KeyInputUtil.AlternateKeyInputList.Count());
+            }
+
+            /// <summary>
+            /// Too many APIs are simply not setup to handle alternate keys and hence we keep them out of the core
+            /// list.  APIs which want to include them should use the AlternateKeyInputList property directly
+            /// </summary>
+            [Fact]
+            public void AllKeyInputsShouldNotIncludeAlternateKeys()
+            {
+                foreach (var current in KeyInputUtil.AlternateKeyInputList)
+                {
+                    foreach (var core in KeyInputUtil.VimKeyInputList)
+                    {
+                        // Can't use Equals since the core version of an alternate will be equal.  Just 
+                        // check the values manually
+                        var bruteEqual =
+                            core.Key == current.Key &&
+                            core.KeyModifiers == current.KeyModifiers &&
+                            core.Char == current.Char;
+                        Assert.False(bruteEqual);
+                    }
+                }
+            }
+
+            /// <summary>
+            /// There are 6 alternate KeyInput values defined in key-notation that we support
+            /// in VsVim.  There is actually 7 defined in key-notation but one of them, backslash,
+            /// isn't actually an alternate in Windows. 
+            /// </summary>
+            [Fact]
+            public void AlternateKeyInputComplete()
+            {
+                Assert.Equal(6, KeyInputUtil.AlternateKeyInputList.Length);
+            }
+        }
+
         public sealed class MiscTest : KeyInputUtilTest
         {
-
             [Fact]
             public void CoreCharList1()
             {
@@ -271,12 +393,13 @@ namespace Vim.UnitTest
             public void CoreKeyInputList_ContainsSpecialKeys()
             {
                 var array = new[]
-            {
-                KeyInputUtil.EnterKey,
-                KeyInputUtil.EscapeKey,
-                KeyInputUtil.TabKey,
-                KeyInputUtil.LineFeedKey,
-            };
+                {
+                    KeyInputUtil.EnterKey,
+                    KeyInputUtil.EscapeKey,
+                    KeyInputUtil.TabKey,
+                    KeyInputUtil.LineFeedKey,
+                };
+
                 foreach (var cur in array)
                 {
                     Assert.True(KeyInputUtil.VimKeyInputList.Contains(cur));
@@ -424,80 +547,6 @@ namespace Vim.UnitTest
                 var ki = KeyInputUtil.VimKeyToKeyInput(VimKey.OpenBracket);
                 var ki2 = KeyInputUtil.ChangeKeyModifiersDangerous(ki, KeyModifiers.Shift);
                 Assert.Equal(ki.Char, ki2.Char);
-            }
-
-            [Fact]
-            public void GetAlternateTarget_ShouldWorkWithAllValues()
-            {
-                foreach (var cur in KeyInputUtil.AlternateKeyInputList)
-                {
-                    Assert.True(KeyInputUtil.GetPrimary(cur).IsSome());
-                }
-            }
-
-            [Fact]
-            public void AllAlternatesShouldEqualTheirTarget()
-            {
-                foreach (var cur in KeyInputUtil.AlternateKeyInputList)
-                {
-                    var target = KeyInputUtil.GetPrimary(cur).Value;
-                    Assert.Equal(target, cur);
-                    Assert.Equal(target.GetHashCode(), cur.GetHashCode());
-                }
-            }
-
-            /// <summary>
-            /// The char values should be equal between alternate keys and their primaries
-            /// </summary>
-            public void AlternateShouldHaveSameChar()
-            {
-
-            }
-
-            [Fact]
-            public void VerifyAlternateKeyInputPairListIsComplete()
-            {
-                foreach (var cur in KeyInputUtil.AlternateKeyInputPairList)
-                {
-                    var target = cur.Item1;
-                    var alternate = cur.Item2;
-                    Assert.Equal(alternate, target.GetAlternate().Value);
-                    Assert.Equal(alternate, KeyInputUtil.GetAlternate(target).Value);
-                    Assert.Equal(target, KeyInputUtil.GetPrimary(alternate).Value);
-                }
-
-                Assert.Equal(KeyInputUtil.AlternateKeyInputPairList.Count(), KeyInputUtil.AlternateKeyInputList.Count());
-            }
-
-            /// <summary>
-            /// Too many APIs are simply not setup to handle alternate keys and hence we keep them out of the core
-            /// list.  APIs which want to include them should use the AlternateKeyInputList property directly
-            /// </summary>
-            [Fact]
-            public void AllKeyInputsShouldNotIncludeAlternateKeys()
-            {
-                foreach (var current in KeyInputUtil.AlternateKeyInputList)
-                {
-                    foreach (var core in KeyInputUtil.VimKeyInputList)
-                    {
-                        // Can't use Equals since the core version of an alternate will be equal.  Just 
-                        // check the values manually
-                        var bruteEqual =
-                            core.Key == current.Key &&
-                            core.KeyModifiers == current.KeyModifiers &&
-                            core.Char == current.Char;
-                        Assert.False(bruteEqual);
-                    }
-                }
-            }
-
-            /// <summary>
-            /// There are 7 alternate KeyInput values defined in key-notation.  We should have them all
-            /// </summary>
-            [Fact]
-            public void AlternateKeyInputComplete()
-            {
-                Assert.Equal(7, KeyInputUtil.AlternateKeyInputList.Length);
             }
 
             [Fact]

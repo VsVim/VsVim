@@ -14,7 +14,6 @@ type KeyInput
     ) =
 
     static let _alternateNullKeyInput = KeyInput(VimKey.AtSign, KeyModifiers.Control, Some (CharUtil.OfAsciiValue 0uy))
-    static let _alternateBackspaceKeyInput = KeyInput(VimKey.LowerH, KeyModifiers.Control, Some (CharUtil.OfAsciiValue 8uy))
     static let _alternateTabKeyInput = KeyInput(VimKey.LowerI, KeyModifiers.Control, Some (CharUtil.OfAsciiValue 9uy))
     static let _alternateLineFeedKeyInput = KeyInput(VimKey.LowerJ, KeyModifiers.Control, Some (CharUtil.OfAsciiValue 10uy))
     static let _alternateFormFeedKeyInput = KeyInput(VimKey.LowerL, KeyModifiers.Control, Some (CharUtil.OfAsciiValue 12uy))
@@ -23,7 +22,6 @@ type KeyInput
     static let _alternateKeyInputList = 
         [
             _alternateNullKeyInput
-            _alternateBackspaceKeyInput
             _alternateTabKeyInput
             _alternateLineFeedKeyInput
             _alternateFormFeedKeyInput
@@ -90,7 +88,6 @@ type KeyInput
         if x.KeyModifiers = KeyModifiers.None then
             match x.Key with
             | VimKey.Null -> Some _alternateNullKeyInput
-            | VimKey.Back -> Some _alternateBackspaceKeyInput
             | VimKey.Enter -> Some _alternateEnterKeyInput
             | VimKey.Escape -> Some _alternateEscapeKeyInput
             | VimKey.LineFeed -> Some _alternateLineFeedKeyInput
@@ -143,7 +140,6 @@ type KeyInput
     static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<KeyInput>.Default.Equals(this,other))
 
     static member AlternateNullKeyInput = _alternateNullKeyInput
-    static member AlternateBackspaceKeyInput = _alternateBackspaceKeyInput
     static member AlternateTabKeyInput = _alternateTabKeyInput
     static member AlternateLineFeedKeyInput = _alternateLineFeedKeyInput
     static member AlternateFormFeedKeyInput = _alternateFormFeedKeyInput
@@ -165,7 +161,7 @@ type KeyInput
 
 module KeyInputUtil = 
 
-    /// Mapping of all VimKey instances with their associated char if one exists
+    /// Mapping of all VimKey instances with their associated char if one exists.  
     let VimKeyRawData = [
         (VimKey.Back, Some '\b')
         (VimKey.FormFeed, Some '\f')
@@ -331,7 +327,6 @@ module KeyInputUtil =
 
                     let isAlternate = 
                         match key with 
-                        | VimKey.LowerH -> true
                         | VimKey.LowerI -> true
                         | VimKey.LowerJ -> true
                         | VimKey.LowerL -> true
@@ -345,7 +340,6 @@ module KeyInputUtil =
             [
                 (VimKey.AtSign, 0x00, true)
                 (VimKey.OpenBracket, 0x1B, true)
-                (VimKey.Backslash, 0x1C, false)
                 (VimKey.CloseBracket, 0x1D, false)
                 (VimKey.Caret, 0x1E, false)
                 (VimKey.Underscore, 0x1F, false)
@@ -381,20 +375,29 @@ module KeyInputUtil =
     /// Map for core characters to the KeyInput representation.  While several keys 
     /// may map to the same character their should be a primary KeyInput for every 
     /// char.  This map holds that mapping
+    ///
+    /// Even though key-notation lists <Del> and <Backslash> as being equivalents for
+    /// chars they aren't in practice.  When mapping by char we don't want to bind to
+    /// these values and instead want the char version instead.  Should only hit these
+    /// when binding by name
     let CharToKeyInputMap = 
         let inputs = 
             VimKeyInputList
             |> Seq.map (fun ki -> OptionUtil.combine ki.RawChar ki )
             |> SeqUtil.filterToSome
-            |> Seq.filter (fun (_,ki) -> not (VimKeyUtil.IsKeypadKey ki.Key))
+            |> Seq.filter (fun (_,ki) -> 
+                match ki.Key with
+                | VimKey.Back -> false
+                | VimKey.Delete -> false
+                | _ -> not (VimKeyUtil.IsKeypadKey ki.Key))
             |> List.ofSeq
 
 #if DEBUG
         let mutable debugMap : Map<char, KeyInput> = Map.empty
         for tuple in inputs do
             let c = fst tuple
-            let found = Map.containsKey c debugMap
-            if found then
+            let found = Map.tryFind c debugMap
+            if Option.isSome found then
                 System.Diagnostics.Debug.Fail("This is the failure")
             debugMap <- Map.add c (snd tuple) debugMap
 #endif
@@ -425,7 +428,6 @@ module KeyInputUtil =
         KeyInput(ki.Key, keyModifiers, ki.RawChar)
 
     let AlternateNullKeyInput = KeyInput.AlternateNullKeyInput
-    let AlternateBackspaceKeyInput = KeyInput.AlternateBackspaceKeyInput
     let AlternateTabKey = KeyInput.AlternateTabKeyInput
     let AlternateLineFeedKey = KeyInput.AlternateLineFeedKeyInput
     let AlternateFormFeedKey = KeyInput.AlternateFormFeedKeyInput
@@ -433,7 +435,6 @@ module KeyInputUtil =
     let AlternateEscapeKey = KeyInput.AlternateEscapeKeyInput
 
     let NullKey = VimKeyToKeyInput VimKey.Null
-    let BackspaceKey = VimKeyToKeyInput VimKey.Back
     let TabKey = VimKeyToKeyInput VimKey.Tab
     let LineFeedKey = VimKeyToKeyInput VimKey.LineFeed
     let FormFeedKey = VimKeyToKeyInput VimKey.FormFeed
@@ -445,7 +446,6 @@ module KeyInputUtil =
     let AlternateKeyInputPairList = 
         [
             (NullKey, AlternateNullKeyInput)
-            (BackspaceKey, AlternateBackspaceKeyInput)
             (TabKey, AlternateTabKey)
             (LineFeedKey, AlternateLineFeedKey)
             (FormFeedKey, AlternateFormFeedKey)

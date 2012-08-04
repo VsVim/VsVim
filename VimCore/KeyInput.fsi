@@ -50,9 +50,6 @@ module KeyInputUtil =
     /// The Alternate Null Key : <C-@>
     val AlternateNullKeyInput : KeyInput
 
-    /// The Alternate Backspace Key : <C-H>
-    val AlternateBackspaceKeyInput : KeyInput
-
     /// The Alternate Tab Key <C-i>
     val AlternateTabKey : KeyInput 
 
@@ -73,9 +70,6 @@ module KeyInputUtil =
 
     /// The Null Key: VimKey.Null
     val NullKey : KeyInput
-
-    /// The Backspace Key: VimKey.Back
-    val BackspaceKey : KeyInput
 
     /// The LineFeed key: VimKey.LineFeed
     val LineFeedKey : KeyInput

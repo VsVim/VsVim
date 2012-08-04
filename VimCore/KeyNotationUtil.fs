@@ -88,6 +88,7 @@ module KeyNotationUtil =
 
     /// Map of the special key names to their KeyInput representation.  Does not include the <> bookends
     /// Not supported
+    /// TODO: Support these
     /// <CSI>		command sequence intro  ALT-Esc 155	*<CSI>*
     /// <xCSI>		CSI when typed in the GUI		*<xCSI>*
     /// <Undo>		undo key
@@ -270,7 +271,7 @@ module KeyNotationUtil =
     /// Get the display name for the specified KeyInput value.
     let GetDisplayName (keyInput : KeyInput) = 
 
-        let inner name keyModifiers = 
+        let inner name keyModifiers forceBookend = 
             let rec getPrefix current keyModifiers = 
                 if Util.IsFlagSet keyModifiers KeyModifiers.Control then
                     let current = current + "C-"
@@ -293,7 +294,10 @@ module KeyNotationUtil =
 
             let prefix = getPrefix "" keyModifiers
             if StringUtil.isNullOrEmpty prefix then
-                name
+                if forceBookend then
+                    sprintf "<%s>" name
+                else
+                    name
             else
                 sprintf "<%s%s>" prefix name
 
@@ -301,18 +305,18 @@ module KeyNotationUtil =
         // display
         let checkForSpecialControl () = 
             match keyInput.RawChar with
-            | None -> inner "" keyInput.KeyModifiers
+            | None -> inner "" keyInput.KeyModifiers false
             | Some c ->
                 let value = int c;
                 if value >= 1 && value <= 26 then
                     let baseCode = value - 1 
                     let name = char ((int 'A') + baseCode) |> StringUtil.ofChar
-                    inner name keyInput.KeyModifiers
+                    inner name keyInput.KeyModifiers false
                 else
-                    inner (c |> StringUtil.ofChar) keyInput.KeyModifiers
+                    inner (c |> StringUtil.ofChar) keyInput.KeyModifiers false
 
         match TryGetSpecialKeyName keyInput with 
-        | Some (name, modifiers) -> inner name modifiers
+        | Some (name, modifiers) -> inner name modifiers true
         | None -> checkForSpecialControl ()
 
 

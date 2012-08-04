@@ -393,6 +393,33 @@ namespace Vim.UnitTest
                     Assert.Equal(text, KeyNotationUtil.GetDisplayName(keyInput));
                 }
             }
+
+            [Fact]
+            public void ControlHAndBackspace()
+            {
+                var left = KeyInputUtil.CharWithControlToKeyInput('h');
+                var right = KeyNotationUtil.StringToKeyInput("<BS>");
+                Assert.Equal("<C-H>", KeyNotationUtil.GetDisplayName(left));
+                Assert.Equal("<BS>", KeyNotationUtil.GetDisplayName(right));
+            }
+
+            /// <summary>
+            /// Verify that named keys get back the proper display name
+            /// </summary>
+            [Fact]
+            public void NamedKeys()
+            {
+                Action<VimKey, string> func =
+                    (vimKey, name) =>
+                    {
+                        var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
+                        Assert.Equal(name, KeyNotationUtil.GetDisplayName(keyInput));
+                    };
+
+                func(VimKey.Enter, "<CR>");
+                func(VimKey.Escape, "<Esc>");
+                func(VimKey.Delete, "<Del>");
+            }
         }
     }
 }
