@@ -9,6 +9,7 @@ using Vim.UI.Wpf.UnitTest;
 using Vim.UnitTest.Mock;
 using VsVim.Implementation.Misc;
 using Xunit;
+using Vim.UnitTest;
 
 namespace VsVim.UnitTest
 {
@@ -109,10 +110,7 @@ namespace VsVim.UnitTest
 
             private TextCompositionEventArgs CreateTextComposition(string text)
             {
-                var textComposition = KeyProcessorSimulation.CreateTextComposition(_wpfTextView, text);
-                var args = new TextCompositionEventArgs(_device, textComposition);
-                args.RoutedEvent = UIElement.TextInputEvent;
-                return args;
+                return _wpfTextView.VisualElement.CreateTextCompositionEventArgs(text, _device);
             }
 
             private void VerifyHandle(string text)

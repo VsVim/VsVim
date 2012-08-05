@@ -9,6 +9,10 @@ using Xunit;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Size=System.Windows.Size;
+using System.Windows.Input;
+using System.Windows;
+using System.Reflection;
+using Expression = Vim.Interpreter.Expression;
 
 namespace Vim.UnitTest
 {
@@ -1258,6 +1262,46 @@ namespace Vim.UnitTest
             var letter = Letter.OfChar(c).Value;
             var mark = Mark.NewLocalMark(LocalMark.NewLetter(letter));
             markMap.SetMark(mark, vimBufferData, line, column);
+        }
+
+        #endregion
+
+        #region VisualElement
+
+        public static TextComposition CreateTextComposition(this FrameworkElement frameworkElement, string text, InputManager inputManager = null)
+        {
+            inputManager = inputManager ?? InputManager.Current;
+            var textComposition = new TextComposition(inputManager, frameworkElement, text);
+            if (text.Length == 1)
+            { 
+                var c = text[0];
+                if (Char.IsControl(c))
+                {
+                    var type = typeof(TextComposition);
+                    var method = type.GetMethod("MakeControl", BindingFlags.Instance | BindingFlags.NonPublic);
+                    method.Invoke(textComposition, new object[] { });
+                    Assert.True(String.IsNullOrEmpty(textComposition.Text));
+                    Assert.Equal(text, textComposition.ControlText);
+                }
+                else if (0 != (c & 0x80))
+                {
+                    var type = typeof(TextComposition);
+                    var method = type.GetMethod("MakeSystem", BindingFlags.Instance | BindingFlags.NonPublic);
+                    method.Invoke(textComposition, new object[] { });
+                    Assert.True(String.IsNullOrEmpty(textComposition.Text));
+                    Assert.Equal(text, textComposition.SystemText);
+                }
+            }
+
+            return textComposition;
+        }
+
+        public static TextCompositionEventArgs CreateTextCompositionEventArgs(this FrameworkElement frameworkElement, string text, InputDevice inputDevice, InputManager inputManager = null)
+        {
+            var textComposition = CreateTextComposition(frameworkElement, text, inputManager);
+            var args = new TextCompositionEventArgs(inputDevice, textComposition);
+            args.RoutedEvent = UIElement.TextInputEvent;
+            return args;
         }
 
         #endregion

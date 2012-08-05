@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Security.Permissions;
 using System.Windows;
 using System.Windows.Input;
@@ -8,7 +7,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Vim.Extensions;
 using Vim.UI.Wpf.Implementation.Keyboard;
-using Xunit;
+using Vim.UnitTest;
 
 namespace Vim.UI.Wpf.UnitTest
 {
@@ -243,34 +242,7 @@ namespace Vim.UI.Wpf.UnitTest
 
         private TextComposition CreateTextComposition(string text)
         {
-            return CreateTextComposition(_wpfTextView, text);
-        }
-
-        public static TextComposition CreateTextComposition(IWpfTextView wpfTextView, string text)
-        {
-            var textComposition = new TextComposition(InputManager.Current, wpfTextView.VisualElement, text);
-            if (text.Length == 1)
-            { 
-                var c = text[0];
-                if (Char.IsControl(c))
-                {
-                    var type = typeof(TextComposition);
-                    var method = type.GetMethod("MakeControl", BindingFlags.Instance | BindingFlags.NonPublic);
-                    method.Invoke(textComposition, new object[] { });
-                    Assert.True(String.IsNullOrEmpty(textComposition.Text));
-                    Assert.Equal(text, textComposition.ControlText);
-                }
-                else if (0 != (c & 0x80))
-                {
-                    var type = typeof(TextComposition);
-                    var method = type.GetMethod("MakeSystem", BindingFlags.Instance | BindingFlags.NonPublic);
-                    method.Invoke(textComposition, new object[] { });
-                    Assert.True(String.IsNullOrEmpty(textComposition.Text));
-                    Assert.Equal(text, textComposition.SystemText);
-                }
-            }
-
-            return textComposition;
+            return _wpfTextView.VisualElement.CreateTextComposition(text);
         }
 
         private bool TryConvert(KeyInput keyInput, out Key key, out ModifierKeys modifierKeys)
