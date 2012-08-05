@@ -18,15 +18,24 @@ if (-not (test-path $vsixInstaller)) {
 }
 
 gps devenv -ErrorAction SilentlyContinue | kill
+write-host "Uninstalling VsVim"
 & $vsixInstaller /quiet /uninstall:VsVim.Microsoft.e214908b-0458-4ae2-a583-4310f29687c3
 
-$target = join-path (resolve-path ~\) 'Dogfood'
-mkdir $target -ErrorAction SilentlyContinue
+$dest = join-path (resolve-path ~\) 'Dogfood'
+mkdir $dest -ErrorAction SilentlyContinue
 pushd $scriptPath
-copy VsVim\bin\Debug\* $target
+copy VsVim\bin\Debug\* $dest
+
+$target = join-path $dest "VsVim.vsix"
+if (-not (test-path $target)) {
+    $target = join-path $dest "VsVim10.vsix"
+}
 popd
-& $vsixInstaller /quiet (join-path $target "VsVim.vsix")
-wait-process "vsixInstaller"
+write-host "Installing VsVim"
+
+& $vsixInstaller /quiet $target
+sleep 2
+wait-process "vsixInstaller" -ErrorAction SilentlyContinue
 
 # Even though we waited for the installer to finish devenv doesn't
 # always seem to pick up the change immediately.  Wait a sec for
