@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.FSharp.Core;
-using Xunit;
 using Vim.Extensions;
+using Xunit;
 
 namespace Vim.UnitTest
 {
@@ -30,7 +30,8 @@ namespace Vim.UnitTest
         {
             var tuple = GetComplete("a");
             Assert.True(tuple.Item1.IsNone());
-            Assert.Equal(VimKey.LowerA, tuple.Item2.Key);
+            Assert.Equal(VimKey.RawCharacter, tuple.Item2.Key);
+            Assert.Equal('a', tuple.Item2.Char);
         }
 
         /// <summary>
@@ -41,7 +42,8 @@ namespace Vim.UnitTest
         {
             var tuple = GetComplete("0");
             Assert.True(tuple.Item1.IsNone());
-            Assert.Equal(VimKey.Number0, tuple.Item2.Key);
+            Assert.Equal(VimKey.RawCharacter, tuple.Item2.Key);
+            Assert.Equal('0', tuple.Item2.Char);
         }
 
         /// <summary>
@@ -52,7 +54,8 @@ namespace Vim.UnitTest
         {
             var tuple = GetComplete("42a");
             Assert.True(tuple.Item1.IsSome(42));
-            Assert.Equal(VimKey.LowerA, tuple.Item2.Key);
+            Assert.Equal(VimKey.RawCharacter, tuple.Item2.Key);
+            Assert.Equal('a', tuple.Item2.Char);
         }
     }
 }

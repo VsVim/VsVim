@@ -983,6 +983,12 @@ module KeyInputSetUtil =
 
     let OfChar c = c |> KeyInputUtil.CharToKeyInput |> OneKeyInput
 
+    let OfCharArray ([<System.ParamArray>] arr) = 
+        arr
+        |> Seq.ofArray
+        |> Seq.map KeyInputUtil.CharToKeyInput
+        |> OfSeq
+
     let OfString (str:string) = str |> Seq.map KeyInputUtil.CharToKeyInput |> OfSeq
 
     let OfVimKeyArray ([<System.ParamArray>] arr) = 

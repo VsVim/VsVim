@@ -203,7 +203,6 @@ namespace Vim.UI.Wpf.UnitTest
                 };
 
                 verifyFunc(VimKey.Enter, Key.Enter);
-                verifyFunc(VimKey.Tab, Key.Tab);
                 verifyFunc(VimKey.Escape, Key.Escape);
             }
 
@@ -221,16 +220,6 @@ namespace Vim.UI.Wpf.UnitTest
                 Setup(NativeMethods.LayoutTurkishF);
                 AssertGetKeyInput('<', '<', ModifierKeys.None);
                 AssertGetKeyInput('>', '>', ModifierKeys.Shift);
-            }
-
-            /// <summary>
-            /// Vim doesn't distinguish between a # and a Shift+# key.  Ensure that this logic holds up at 
-            /// this layer
-            /// </summary>
-            [Fact]
-            public void GetKeyInput_PoundWithShift()
-            {
-                Assert.Equal(KeyInputUtil.VimKeyToKeyInput(VimKey.Pound), KeyboardMap.GetKeyInput('#', ModifierKeys.Shift));
             }
 
             [Fact]

@@ -2,8 +2,8 @@
 using EditorUtils;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using Xunit;
 using Vim.Extensions;
+using Xunit;
 
 namespace Vim.UnitTest
 {
@@ -599,7 +599,7 @@ namespace Vim.UnitTest
         {
             var normalMode = CreateAndAddNormalMode();
             normalMode.Setup(x => x.OnEnter(ModeArgument.None)).Verifiable();
-            normalMode.Setup(x => x.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Forwardslash))).Returns(true);
+            normalMode.Setup(x => x.CanProcess(KeyInputUtil.CharToKeyInput('/'))).Returns(true);
             _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             Assert.True(_vimBuffer.CanProcess(VimKey.KeypadDivide));
         }
@@ -624,7 +624,7 @@ namespace Vim.UnitTest
         {
             var normalMode = CreateAndAddNormalMode();
             normalMode.Setup(x => x.OnEnter(ModeArgument.None)).Verifiable();
-            normalMode.Setup(x => x.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Forwardslash))).Returns(true);
+            normalMode.Setup(x => x.CanProcess(KeyInputUtil.CharToKeyInput('/'))).Returns(true);
             _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             Assert.True(_vimBuffer.CanProcess(VimKey.KeypadDivide));
         }

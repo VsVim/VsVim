@@ -33,7 +33,7 @@ module KeyNotationUtil =
 
     let ManualKeyList = 
         [
-            ("<Nul>",KeyInputUtil.ApplyModifiersToVimKey VimKey.AtSign KeyModifiers.Control)
+            ("<Nul>",KeyInputUtil.VimKeyToKeyInput VimKey.Null)
             ("<BS>", KeyInputUtil.VimKeyToKeyInput VimKey.Back)
             ("<Tab>",KeyInputUtil.TabKey)
             ("<NL>", KeyInputUtil.LineFeedKey)
@@ -97,7 +97,7 @@ module KeyNotationUtil =
     let SpecialKeyMap = 
         ManualKeyList
         |> Seq.append FunctionKeys
-        |> Seq.map (fun (k,v) -> k.Substring(1,k.Length-2),v)
+        |> Seq.map (fun (k,v) -> k.Substring(1,k.Length-2), v)
         |> Seq.map (fun (k,v) -> (ComparableString.CreateOrdinalIgnoreCase k),v)
         |> Map.ofSeq
 
@@ -229,7 +229,7 @@ module KeyNotationUtil =
         match StringUtil.charAtOption 0 data with
         | None -> None
         | Some '<' -> 
-            if String.length data = 1 then VimKey.LessThan |> KeyInputUtil.VimKeyToKeyInput |> Some
+            if String.length data = 1 then '<' |> KeyInputUtil.CharToKeyInput |> Some
             elif StringUtil.last data <> '>' then None
             else insideLessThanGreaterThan data 1 KeyModifiers.None
         | Some c -> 
@@ -260,6 +260,7 @@ module KeyNotationUtil =
             |> Seq.tryFind (fun pair -> 
                 let specialInput = pair.Value
                 specialInput.Key = keyInput.Key && 
+                specialInput.Char = keyInput.Char &&
                 specialInput.KeyModifiers = (specialInput.KeyModifiers &&& keyInput.KeyModifiers))
 
         match found with 
@@ -311,7 +312,8 @@ module KeyNotationUtil =
                 if value >= 1 && value <= 26 then
                     let baseCode = value - 1 
                     let name = char ((int 'A') + baseCode) |> StringUtil.ofChar
-                    inner name keyInput.KeyModifiers false
+                    let keyModifiers = keyInput.KeyModifiers ||| KeyModifiers.Control
+                    inner name keyModifiers false
                 else
                     inner (c |> StringUtil.ofChar) keyInput.KeyModifiers false
 

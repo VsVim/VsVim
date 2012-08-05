@@ -44,7 +44,7 @@ namespace Vim.UnitTest
             [Fact]
             public void LessThanChar()
             {
-                AssertSingle("<", VimKey.LessThan);
+                AssertSingle("<", KeyInputUtil.CharToKeyInput('<'));
             }
 
             [Fact]
@@ -63,36 +63,36 @@ namespace Vim.UnitTest
             [Fact]
             public void ShiftAlphaShouldPromote()
             {
-                AssertSingle("<S-A>", VimKey.UpperA);
-                AssertSingle("<s-a>", VimKey.UpperA);
+                AssertSingle("<S-A>", KeyInputUtil.CharToKeyInput('A'));
+                AssertSingle("<s-a>", KeyInputUtil.CharToKeyInput('A'));
             }
 
             [Fact]
             public void AlphaAloneIsCaseSensitive()
             {
-                AssertSingle("a", VimKey.LowerA);
-                AssertSingle("A", VimKey.UpperA);
+                AssertSingle("a", KeyInputUtil.CharToKeyInput('a'));
+                AssertSingle("A", KeyInputUtil.CharToKeyInput('A'));
             }
 
             [Fact]
             public void ShiftNumberShouldNotPromote()
             {
-                AssertSingle("<S-1>", KeyInputUtil.ApplyModifiersToVimKey(VimKey.Number1, KeyModifiers.Shift));
-                AssertSingle("<s-1>", KeyInputUtil.ApplyModifiersToVimKey(VimKey.Number1, KeyModifiers.Shift));
+                AssertSingle("<S-1>", KeyInputUtil.ApplyModifiersToChar('1', KeyModifiers.Shift));
+                AssertSingle("<s-1>", KeyInputUtil.ApplyModifiersToChar('1', KeyModifiers.Shift));
             }
 
             [Fact]
             public void AlphaWithControl()
             {
-                AssertSingle("<C-x>", KeyInputUtil.ApplyModifiersToVimKey(VimKey.LowerX, KeyModifiers.Control));
-                AssertSingle("<c-X>", KeyInputUtil.ApplyModifiersToVimKey(VimKey.UpperX, KeyModifiers.Control));
+                AssertSingle("<C-x>", KeyInputUtil.ApplyModifiersToChar('x', KeyModifiers.Control));
+                AssertSingle("<c-X>", KeyInputUtil.ApplyModifiersToChar('X', KeyModifiers.Control));
             }
 
             [Fact]
             public void AlphaWithAltIsCaseSensitive()
             {
-                AssertSingle("<A-b>", KeyInputUtil.ApplyModifiersToVimKey(VimKey.LowerB, KeyModifiers.Alt));
-                AssertSingle("<A-B>", KeyInputUtil.ApplyModifiersToVimKey(VimKey.UpperB, KeyModifiers.Alt));
+                AssertSingle("<A-b>", KeyInputUtil.ApplyModifiersToChar('b', KeyModifiers.Alt));
+                AssertSingle("<A-B>", KeyInputUtil.ApplyModifiersToChar('B', KeyModifiers.Alt));
             }
 
             [Fact]
@@ -104,7 +104,7 @@ namespace Vim.UnitTest
             [Fact]
             public void NotationControlAndSymbol()
             {
-                AssertSingle("<C-]>", KeyInputUtil.ApplyModifiersToVimKey(VimKey.CloseBracket, KeyModifiers.Control));
+                AssertSingle("<C-]>", KeyInputUtil.ApplyModifiersToChar(']', KeyModifiers.Control));
             }
 
             [Fact]
@@ -117,13 +117,13 @@ namespace Vim.UnitTest
             [Fact]
             public void ShiftAndControlModifier()
             {
-                AssertSingle("<C-S-A>", KeyInputUtil.ApplyModifiersToVimKey(VimKey.UpperA, KeyModifiers.Control));
+                AssertSingle("<C-S-A>", KeyInputUtil.ApplyModifiersToChar('A', KeyModifiers.Control));
             }
 
             [Fact]
             public void BackslashLiteral()
             {
-                AssertSingle(@"\", VimKey.Backslash);
+                AssertSingle(@"\", new KeyInput(VimKey.RawCharacter, KeyModifiers.None, FSharpOption.Create('\\')));
             }
 
             /// <summary>
@@ -144,8 +144,9 @@ namespace Vim.UnitTest
             public void HandleCommandKey()
             {
                 var ki = KeyNotationUtil.StringToKeyInput("<D-a>");
-                Assert.Equal(VimKey.LowerA, ki.Key);
+                Assert.Equal(VimKey.RawCharacter, ki.Key);
                 Assert.Equal(KeyModifiers.Command, ki.KeyModifiers);
+                Assert.Equal('a', ki.Char);
             }
 
             /// <summary>
@@ -239,7 +240,10 @@ namespace Vim.UnitTest
             [Fact]
             public void EscapeLessThanLiteral()
             {
-                AssertMany(@"\<home>", KeyInputSetUtil.OfVimKeyArray(VimKey.Backslash, VimKey.Home));
+                var set = KeyInputSet.NewTwoKeyInputs(
+                    KeyInputUtil.CharToKeyInput('\\'),
+                    KeyInputUtil.VimKeyToKeyInput(VimKey.Home));
+                AssertMany(@"\<home>", set);
             }
 
             [Fact]
@@ -266,7 +270,7 @@ namespace Vim.UnitTest
             [Fact]
             public void StringToKeyInput8()
             {
-                var ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Space);
+                var ki = KeyInputUtil.CharToKeyInput(' ');
                 ki = KeyInputUtil.ChangeKeyModifiersDangerous(ki, KeyModifiers.Shift);
                 var all = new string[] { "<S-space>", "<S-SPACE>" };
                 foreach (var cur in all)
@@ -333,7 +337,7 @@ namespace Vim.UnitTest
             [Fact]
             public void BackslasheInRight()
             {
-                AssertMany(@"/\v", KeyInputSetUtil.OfVimKeyArray(VimKey.Forwardslash, VimKey.Backslash, VimKey.LowerV));
+                AssertMany(@"/\v", KeyInputSetUtil.OfCharArray('/', '\\', 'v'));
             }
         }
 
@@ -352,7 +356,7 @@ namespace Vim.UnitTest
 
                     // Certain combinations like CTRL-J have a primary key which gets displayed over
                     // them.  Don't test them here
-                    if (KeyInputUtil.GetPrimary(keyInput).IsSome())
+                    if (keyInput.Key != VimKey.None)
                     {
                         continue;
                     }
@@ -419,6 +423,14 @@ namespace Vim.UnitTest
                 func(VimKey.Enter, "<CR>");
                 func(VimKey.Escape, "<Esc>");
                 func(VimKey.Delete, "<Del>");
+            }
+
+            [Fact]
+            public void Issue328()
+            {
+                var left = KeyNotationUtil.StringToKeyInput("<S-SPACE>");
+                var right = KeyInputUtil.ApplyModifiersToChar(' ', KeyModifiers.Shift);
+                Assert.Equal(left, right);
             }
         }
     }

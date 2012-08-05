@@ -328,8 +328,7 @@ namespace Vim.UnitTest
             public void IsDirectInput_SpecialKeys()
             {
                 Assert.False(_mode.IsDirectInsert(KeyInputUtil.EnterKey));
-                Assert.False(_mode.IsDirectInsert(KeyInputUtil.AlternateEnterKey));
-                Assert.False(_mode.IsDirectInsert(KeyInputUtil.VimKeyToKeyInput(VimKey.Tab)));
+                Assert.False(_mode.IsDirectInsert(KeyInputUtil.CharToKeyInput('\t')));
             }
 
             /// <summary>

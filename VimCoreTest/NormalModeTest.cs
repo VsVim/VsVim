@@ -589,7 +589,7 @@ namespace Vim.UnitTest
         public void Bind_ReplaceChar_Simple()
         {
             Create("the dog chased the cat");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewReplaceChar(KeyInputUtil.VimKeyToKeyInput(VimKey.LowerB)));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewReplaceChar(KeyInputUtil.CharToKeyInput('b')));
             _mode.Process("rb");
         }
 
@@ -597,7 +597,7 @@ namespace Vim.UnitTest
         public void Bind_ReplaceChar_WithCount()
         {
             Create("the dog chased the cat");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewReplaceChar(KeyInputUtil.VimKeyToKeyInput(VimKey.LowerB)), count: 2);
+            _commandUtil.SetupCommandNormal(NormalCommand.NewReplaceChar(KeyInputUtil.CharToKeyInput('b')), count: 2);
             _mode.Process("2rb");
         }
 

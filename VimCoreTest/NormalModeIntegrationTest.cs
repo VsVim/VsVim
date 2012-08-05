@@ -2800,7 +2800,7 @@ namespace Vim.UnitTest
             {
                 Create("the dog kicked the ball");
                 _vimBuffer.VimData.LastCommand = FSharpOption.Create(StoredCommand.NewVisualCommand(
-                    VisualCommand.NewReplaceSelection(KeyInputUtil.VimKeyToKeyInput(VimKey.LowerB)),
+                    VisualCommand.NewReplaceSelection(KeyInputUtil.CharToKeyInput('b')),
                     VimUtil.CreateCommandData(),
                     StoredVisualSpan.OfVisualSpan(VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 3))),
                     CommandFlags.None));

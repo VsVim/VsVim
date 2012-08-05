@@ -1,10 +1,10 @@
 ﻿using System;
 using EditorUtils;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Xunit;
-using Microsoft.FSharp.Core;
 
 namespace Vim.UnitTest
 {
@@ -607,10 +607,10 @@ namespace Vim.UnitTest
                 _globalSettings.ShiftWidth = 4;
                 _vimBuffer.Process(VimKey.Escape);
                 _textView.MoveCaretToLine(0, 3);
-                _vimBuffer.Process(VimKey.LowerI, VimKey.Tab, VimKey.Tab, VimKey.Escape);
+                _vimBuffer.ProcessNotation("i<Tab><Tab><Esc>");
                 Assert.Equal("int\t\t Member", _textBuffer.GetLine(0).GetText());
                 _textView.MoveCaretToLine(1, 3);
-                _vimBuffer.Process(VimKey.Number2, VimKey.LowerI, VimKey.Tab, VimKey.Escape);
+                _vimBuffer.ProcessNotation("2i<Tab><Esc>");
                 Assert.Equal("int\t\t Member", _textBuffer.GetLine(1).GetText());
             }
 
@@ -768,7 +768,7 @@ namespace Vim.UnitTest
                 _globalSettings.ShiftWidth = 4;
                 _vimBuffer.Process(VimKey.Escape);
                 _textView.MoveCaretToLine(0, 3);
-                _vimBuffer.Process(VimKey.Number3, VimKey.LowerI, VimKey.Tab, VimKey.Escape);
+                _vimBuffer.ProcessNotation("3i<Tab><Esc>");
                 Assert.Equal("int\t\t\t Member", _textBuffer.GetLine(0).GetText());
                 _textView.MoveCaretToLine(1, 3);
                 _vimBuffer.Process('.');
@@ -786,7 +786,7 @@ namespace Vim.UnitTest
                 _localSettings.ExpandTab = true;
                 _localSettings.TabStop = 4;
                 _vimBuffer.Process(VimKey.Escape);
-                _vimBuffer.Process(VimKey.LowerC, VimKey.LowerW, VimKey.Tab, VimKey.Escape);
+                _vimBuffer.ProcessNotation("cw<Tab><Esc>");
                 Assert.Equal("     world", _textView.GetLine(0).GetText());
                 _textView.MoveCaretTo(_textBuffer.GetPointInLine(1, 13));
                 _vimBuffer.Process('.');
@@ -904,8 +904,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog");
                 _vimBuffer.LocalSettings.ExpandTab = false;
-                _vimBuffer.Process(VimKey.Tab);
-                _vimBuffer.Process(VimKey.Escape);
+                _vimBuffer.ProcessNotation("<Tab><Esc>");
                 _textView.MoveCaretToLine(1);
                 _vimBuffer.Process('.');
                 Assert.Equal("\tdog", _textView.GetLine(1).GetText());
@@ -921,8 +920,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog");
                 _vimBuffer.LocalSettings.ExpandTab = false;
-                _vimBuffer.Process(VimKey.Tab);
-                _vimBuffer.Process(VimKey.Escape);
+                _vimBuffer.ProcessNotation("<Tab><Esc>");
                 _textView.MoveCaretToLine(1);
                 _vimBuffer.LocalSettings.ExpandTab = true;
                 _vimBuffer.LocalSettings.TabStop = 2;

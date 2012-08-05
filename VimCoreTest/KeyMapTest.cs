@@ -179,7 +179,7 @@ namespace Vim.UnitTest
             {
                 Assert.True(_map.MapWithNoRemap("a", @"\<Home>", KeyRemapMode.Normal));
                 var result = _map.GetKeyMappingResult("a", KeyRemapMode.Normal);
-                Assert.Equal(KeyInputSetUtil.OfVimKeyArray(VimKey.Backslash, VimKey.Home), result.AsMapped().Item);
+                Assert.Equal(KeyNotationUtil.StringToKeyInputSet(@"\<Home>"), result.AsMapped().Item);
             }
 
             [Fact]
@@ -360,7 +360,7 @@ namespace Vim.UnitTest
             public void HandleCommandKey()
             {
                 Map("<D-k>", "gk");
-                var ki = new KeyInput(VimKey.LowerK, KeyModifiers.Command, FSharpOption.Create('k'));
+                var ki = new KeyInput(VimKey.RawCharacter, KeyModifiers.Command, FSharpOption.Create('k'));
                 var kiSet = KeyInputSet.NewOneKeyInput(ki);
                 AssertPartialMapping(kiSet, "g", "k");
             }
@@ -619,7 +619,7 @@ namespace Vim.UnitTest
             public void Issue328()
             {
                 Assert.True(_map.MapWithNoRemap("<S-SPACE>", "<ESC>", KeyRemapMode.Insert));
-                var res = _map.GetKeyMapping(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Space, KeyModifiers.Shift), KeyRemapMode.Insert);
+                var res = _map.GetKeyMapping(KeyInputUtil.ApplyModifiersToChar(' ', KeyModifiers.Shift), KeyRemapMode.Insert);
                 Assert.Equal(KeyInputUtil.EscapeKey, res.Single());
             }
         }

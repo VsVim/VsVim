@@ -298,6 +298,7 @@ module internal CharUtil =
     let IsDigit x = System.Char.IsDigit(x)
     let IsWhiteSpace x = System.Char.IsWhiteSpace(x)
     let IsNotWhiteSpace x = not (System.Char.IsWhiteSpace(x))
+    let IsControl x = System.Char.IsControl x
 
     /// Is this the Vim definition of a blank character.  That is it a space
     /// or tab

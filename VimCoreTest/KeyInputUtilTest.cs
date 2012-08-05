@@ -11,21 +11,29 @@ namespace Vim.UnitTest
     /// </summary>
     public abstract class KeyInputUtilTest
     {
-        public const string CharLettersLower = "abcdefghijklmnopqrstuvwxyz";
-        public const string CharLettersUpper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        public const string CharRest = " !@#$%^&*()[]{}-_=+\\|'\",<>./?:;`~1234567890";
+        public const string CharLettersLower = KeyInputUtil.CharLettersLower;
+        public const string CharLettersUpper = KeyInputUtil.CharLettersUpper;
+        public const string CharRest = KeyInputUtil.CharLettersExtra;
         public const string CharAll =
             CharLettersLower +
             CharLettersUpper +
             CharRest;
 
-        private KeyInput MaybeGetAlternate(KeyInput keyInput)
-        {
-            var value = KeyInputUtil.GetAlternate(keyInput);
-            return value.IsSome()
-                ? value.Value
-                : keyInput;
-        }
+        public static readonly string[] AlternateArray = new []
+            {
+                @"<Nul>&<C-@>&0",
+                @"<Tab>&<C-I>&9",
+                @"<NL>&<C-J>&10",
+                @"<FF>&<C-L>&12",
+                @"<CR>&<C-M>&13",
+                @"<Enter>&<C-M>&13",
+                @"<Return>&<C-M>&13",
+                @"<Esc>&<C-[>&27",
+                @"<Space>& &32",
+                @"<lt>&<&60",
+                @"<Bslash>&\&92",
+                @"<Bar>&|&124",
+            };
 
         public sealed class ApplyModifiersTest : KeyInputUtilTest
         {
@@ -51,7 +59,8 @@ namespace Vim.UnitTest
             {
                 var keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.TabKey, KeyModifiers.Shift);
                 Assert.Equal(KeyModifiers.Shift, keyInput.KeyModifiers);
-                Assert.Equal(VimKey.Tab, keyInput.Key);
+                Assert.Equal(VimKey.RawCharacter, keyInput.Key);
+                Assert.Equal('\t', keyInput.Char);
             }
 
             /// <summary>
@@ -75,11 +84,16 @@ namespace Vim.UnitTest
             [Fact]
             public void ShiftToNonSpecialChar()
             {
-                var list = new[] { VimKey.Back, VimKey.Escape, VimKey.Tab };
-                foreach (var cur in list)
+                var list = new[] 
                 {
-                    var keyInput = KeyInputUtil.VimKeyToKeyInput(cur);
-                    keyInput = KeyInputUtil.ApplyModifiers(keyInput, KeyModifiers.Shift);
+                    KeyInputUtil.VimKeyToKeyInput(VimKey.Back),
+                    KeyInputUtil.VimKeyToKeyInput(VimKey.Escape),
+                    KeyInputUtil.TabKey
+                };
+
+                foreach (var current in list)
+                {
+                    var keyInput = KeyInputUtil.ApplyModifiers(current, KeyModifiers.Shift);
                     Assert.Equal(KeyModifiers.Shift, keyInput.KeyModifiers);
                 }
             }
@@ -97,13 +111,8 @@ namespace Vim.UnitTest
                     var keyInput = KeyInputUtil.CharToKeyInput(CharLettersLower[i]);
                     var found = KeyInputUtil.ApplyModifiers(keyInput, KeyModifiers.Control);
 
-                    // The ApplyModifiers function will always return the primary key here but
-                    // we are interested in the alternate key in some cases
-                    found = MaybeGetAlternate(found);
-
                     Assert.Equal(target, found.Char);
-                    Assert.Equal(keyInput.Key, found.Key);
-                    Assert.Equal(KeyModifiers.Control, found.KeyModifiers);
+                    Assert.Equal(KeyModifiers.None, found.KeyModifiers);
                 }
             }
 
@@ -117,19 +126,9 @@ namespace Vim.UnitTest
                 for (var i = 0; i < CharLettersUpper.Length; i++)
                 {
                     var target = (char)(baseCharCode + i);
-                    var keyInput = KeyInputUtil.CharToKeyInput(CharLettersUpper[i]);
-                    var found = KeyInputUtil.ApplyModifiers(keyInput, KeyModifiers.Control);
-
-                    // The ApplyModifiers function will always return the primary key here but
-                    // we are interested in the alternate key in some cases
-                    found = MaybeGetAlternate(found);
-                    Assert.Equal(target, found.Char);
-
-                    // Applying control to an upper case letter should normalize it to the 
-                    // lower case letter 
-                    var keyInputLower = KeyInputUtil.CharToKeyInput(Char.ToLower(keyInput.Char));
-                    Assert.Equal(keyInputLower.Key, found.Key);
-                    Assert.Equal(KeyModifiers.Control, found.KeyModifiers);
+                    var keyInputUpper = KeyInputUtil.ApplyModifiersToChar(CharLettersUpper[i], KeyModifiers.Control);
+                    var keyInputLower = KeyInputUtil.ApplyModifiersToChar(CharLettersLower[i], KeyModifiers.Control);
+                    Assert.Equal(keyInputUpper, keyInputLower);
                 }
             }
 
@@ -253,86 +252,68 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void GetAlternateTarget_ShouldWorkWithAllValues()
-            {
-                foreach (var cur in KeyInputUtil.AlternateKeyInputList)
-                {
-                    Assert.True(KeyInputUtil.GetPrimary(cur).IsSome());
-                }
-            }
-
-            [Fact]
             public void AllAlternatesShouldEqualTheirTarget()
             {
-                foreach (var cur in KeyInputUtil.AlternateKeyInputList)
+                foreach (var current in AlternateArray)
                 {
-                    var target = KeyInputUtil.GetPrimary(cur).Value;
-                    Assert.Equal(target, cur);
-                    Assert.Equal(target.GetHashCode(), cur.GetHashCode());
-                }
-            }
-
-            [Fact]
-            public void lternateKeyInputPairListIsComplete()
-            {
-                foreach (var cur in KeyInputUtil.AlternateKeyInputPairList)
-                {
-                    var target = cur.Item1;
-                    var alternate = cur.Item2;
-                    Assert.Equal(alternate, target.GetAlternate().Value);
-                    Assert.Equal(alternate, KeyInputUtil.GetAlternate(target).Value);
-                    Assert.Equal(target, KeyInputUtil.GetPrimary(alternate).Value);
-                }
-
-                Assert.Equal(KeyInputUtil.AlternateKeyInputPairList.Count(), KeyInputUtil.AlternateKeyInputList.Count());
-            }
-
-            /// <summary>
-            /// Too many APIs are simply not setup to handle alternate keys and hence we keep them out of the core
-            /// list.  APIs which want to include them should use the AlternateKeyInputList property directly
-            /// </summary>
-            [Fact]
-            public void AllKeyInputsShouldNotIncludeAlternateKeys()
-            {
-                foreach (var current in KeyInputUtil.AlternateKeyInputList)
-                {
-                    foreach (var core in KeyInputUtil.VimKeyInputList)
+                    var all = current.Split('&');
+                    var left = KeyNotationUtil.StringToKeyInput(all[0]);
+                    var right = KeyNotationUtil.StringToKeyInput(all[1]);
+                    Assert.Equal(left, right);
+                    if (!String.IsNullOrEmpty(all[2]))
                     {
-                        // Can't use Equals since the core version of an alternate will be equal.  Just 
-                        // check the values manually
-                        var bruteEqual =
-                            core.Key == current.Key &&
-                            core.KeyModifiers == current.KeyModifiers &&
-                            core.Char == current.Char;
-                        Assert.False(bruteEqual);
+                        var number = Int32.Parse(all[2]);
+                        var c = (char)number;
+                        var third = KeyInputUtil.CharToKeyInput(c);
+                        Assert.Equal(left, third);
+                        Assert.Equal(right, third);
                     }
                 }
             }
 
             /// <summary>
-            /// There are 6 alternate KeyInput values defined in key-notation that we support
-            /// in VsVim.  There is actually 7 defined in key-notation but one of them, backslash,
-            /// isn't actually an alternate in Windows. 
+            /// Vim doesn't distinguish between a # and a Shift+# key.  Ensure that this logic holds up at 
+            /// this layer
             /// </summary>
             [Fact]
-            public void AlternateKeyInputComplete()
+            public void GetKeyInput_PoundWithShift()
             {
-                Assert.Equal(6, KeyInputUtil.AlternateKeyInputList.Length);
+                var keyInput = KeyInputUtil.CharToKeyInput('#');
+                Assert.Equal(keyInput, KeyInputUtil.ApplyModifiers(keyInput, KeyModifiers.Shift));
+            }
+
+            /// <summary>
+            /// There are 3 alpha keys which are equivalent to named vim keys.  Make sure that they
+            /// properly bind
+            /// </summary>
+            [Fact]
+            public void ControlAlphaSpecial()
+            {
+                var list = new[] { 'j', 'l', 'm' };
+                foreach (var current in list)
+                {
+                    var c = (char)(0x1 + (current - 'a'));
+                    var keyInput = KeyInputUtil.CharToKeyInput(c);
+                    Assert.NotEqual(VimKey.RawCharacter, keyInput.Key);
+
+                    keyInput = KeyInputUtil.CharWithControlToKeyInput(current);
+                    Assert.NotEqual(VimKey.RawCharacter, keyInput.Key);
+                }
             }
         }
 
         public sealed class MiscTest : KeyInputUtilTest
         {
             [Fact]
-            public void CoreCharList1()
+            public void CoreCharList()
             {
                 foreach (var cur in CharAll)
                 {
                     Assert.True(KeyInputUtil.VimKeyCharList.Contains(cur));
+                    Assert.True(KeyInputUtil.CharToKeyInputMap.ContainsKey(cur));
                 }
             }
 
-            [Fact]
             public void CharToKeyInput_LowerLetters()
             {
                 foreach (var cur in CharLettersLower)
@@ -340,10 +321,7 @@ namespace Vim.UnitTest
                     var ki = KeyInputUtil.CharToKeyInput(cur);
                     Assert.Equal(cur, ki.Char);
                     Assert.Equal(KeyModifiers.None, ki.KeyModifiers);
-
-                    var offset = ((int)cur) - ((int)'a');
-                    var key = (VimKey)((int)VimKey.LowerA + offset);
-                    Assert.Equal(key, ki.Key);
+                    Assert.Equal(VimKey.RawCharacter, ki.Key);
                 }
             }
 
@@ -355,10 +333,7 @@ namespace Vim.UnitTest
                     var ki = KeyInputUtil.CharToKeyInput(cur);
                     Assert.Equal(cur, ki.Char);
                     Assert.Equal(KeyModifiers.None, ki.KeyModifiers);
-
-                    var offset = ((int)cur) - ((int)'A');
-                    var key = (VimKey)((int)VimKey.UpperA + offset);
-                    Assert.Equal(key, ki.Key);
+                    Assert.Equal(VimKey.RawCharacter, ki.Key);
                 }
             }
 
@@ -484,7 +459,7 @@ namespace Vim.UnitTest
             {
                 foreach (var cur in Enum.GetValues(typeof(VimKey)).Cast<VimKey>())
                 {
-                    if (cur == VimKey.None || cur == VimKey.RawCharacter || cur == VimKey.Question)
+                    if (cur == VimKey.None || cur == VimKey.RawCharacter)
                     {
                         continue;
                     }
@@ -495,7 +470,6 @@ namespace Vim.UnitTest
                     }
 
                     var keyInput = KeyInputUtil.ApplyModifiersToVimKey(cur, KeyModifiers.Control);
-                    keyInput = MaybeGetAlternate(keyInput);
                     Assert.Equal(cur, keyInput.Key);
                     Assert.Equal(KeyModifiers.Control, keyInput.KeyModifiers & KeyModifiers.Control);
                 }
@@ -541,10 +515,13 @@ namespace Vim.UnitTest
                 }
             }
 
+            /// <summary>
+            /// Verify that the Dangerous function does indeed act dangerously
+            /// </summary>
             [Fact]
             public void ChangeKeyModifiers_WontChangeChar()
             {
-                var ki = KeyInputUtil.VimKeyToKeyInput(VimKey.OpenBracket);
+                var ki = KeyInputUtil.CharToKeyInput('[');
                 var ki2 = KeyInputUtil.ChangeKeyModifiersDangerous(ki, KeyModifiers.Shift);
                 Assert.Equal(ki.Char, ki2.Char);
             }
@@ -557,7 +534,7 @@ namespace Vim.UnitTest
                     var keypadName = "Keypad" + i;
                     var keypad = (VimKey)Enum.Parse(typeof(VimKey), keypadName);
                     var equivalent = KeyInputUtil.GetNonKeypadEquivalent(KeyInputUtil.VimKeyToKeyInput(keypad));
-                    Assert.Equal("Number" + i, equivalent.Value.Key.ToString());
+                    Assert.Equal(i.ToString(), equivalent.Value.Char.ToString());
                 }
             }
 
@@ -565,15 +542,18 @@ namespace Vim.UnitTest
             public void GetNonKeypadEquivalent_Divide()
             {
                 var equivalent = KeyInputUtil.GetNonKeypadEquivalent(KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadDivide));
-                Assert.Equal(VimKey.Forwardslash, equivalent.Value.Key);
+                Assert.Equal('/', equivalent.Value.Char);
             }
 
+            /// <summary>
+            /// TODO: Need to verify this is the correct behavior here.  Need a real keyboard though
+            /// </summary>
             [Fact]
-            public void GetNonKeypadEquivalent_PreserveModifiers()
+            public void GetNonKeypadEquivalent_DontPreserveModifiers()
             {
                 var keyInput = KeyInputUtil.ApplyModifiersToVimKey(VimKey.KeypadDivide, KeyModifiers.Control);
                 var equivalent = KeyInputUtil.GetNonKeypadEquivalent(keyInput);
-                Assert.Equal(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Forwardslash, KeyModifiers.Control), equivalent.Value);
+                Assert.Equal(KeyInputUtil.CharToKeyInput('/'), equivalent.Value);
             }
 
             /// <summary>
@@ -599,22 +579,9 @@ namespace Vim.UnitTest
             public void CharWithControlToKeyInput_NonAlpha()
             {
                 var keyInput = KeyInputUtil.CharWithControlToKeyInput('#');
-                Assert.Equal(VimKey.Pound, keyInput.Key);
+                Assert.Equal(VimKey.RawCharacter, keyInput.Key);
                 Assert.Equal(KeyModifiers.Control, keyInput.KeyModifiers);
-            }
-
-            /// <summary>
-            /// Make sure that the alpha keys produce the correct alpha characters
-            /// </summary>
-            [Fact]
-            public void VimKeyToKeyInput_Alpha()
-            {
-                foreach (var cur in CharLettersLower)
-                {
-                    var name = String.Format("Lower{0}", Char.ToUpper(cur));
-                    var vimKey = (VimKey)Enum.Parse(typeof(VimKey), name);
-                    Assert.Equal(KeyInputUtil.CharToKeyInput(cur), KeyInputUtil.VimKeyToKeyInput(vimKey));
-                }
+                Assert.Equal('#', keyInput.Char);
             }
 
             /// <summary>
@@ -622,13 +589,31 @@ namespace Vim.UnitTest
             /// with the expectations
             /// </summary>
             [Fact]
-            public void VimKeyToKeyInput_Sanity()
+            public void SanityChecks()
             {
-                var count = Enum.GetValues(typeof(VimKey)).Length;
-
                 // There are 2 keys we don't produce raw values for: RawChar and None
+                var count = Enum.GetValues(typeof(VimKey)).Length;
                 Assert.Equal(count - 2, KeyInputUtil.VimKeyRawData.Length);
-                Assert.Equal(count - 2, KeyInputUtil.VimKeyToKeyInputMap.Count);
+
+                // 26 alpha letters plus the 6 special cases we consider
+                Assert.Equal(32, KeyInputUtil.ControlCharToKeyInputMap.Count);
+            }
+
+            /// <summary>
+            /// The KeyModifiers value on KeyInput suggests the "extra" modifiers that are attached
+            /// to an expected input.  For values such as CTRL_H the control is needed to produce the
+            /// character and hence is not "extra" hence it shoudn't be present.  In fact none of the
+            /// predefined KeyInput values should have any modifier because none of them have "extra" 
+            /// KeyModifiers 
+            /// </summary>
+            [Fact]
+            public void NoControl()
+            {
+                var all = KeyInputUtil.VimKeyInputList;
+                foreach (var keyInput in all)
+                {
+                    Assert.Equal(KeyModifiers.None, keyInput.KeyModifiers);
+                }
             }
         }
     }

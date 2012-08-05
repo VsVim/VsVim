@@ -47,27 +47,6 @@ type KeyInput =
 
 module KeyInputUtil = 
 
-    /// The Alternate Null Key : <C-@>
-    val AlternateNullKeyInput : KeyInput
-
-    /// The Alternate Tab Key <C-i>
-    val AlternateTabKey : KeyInput 
-
-    /// The alternate LineFeed key: <C-j>
-    val AlternateLineFeedKey : KeyInput
-
-    /// The alternate FormFeed key: <C-L>
-    val AlternateFormFeedKey : KeyInput
-
-    /// The Alternate Enter Key : <C-m>
-    val AlternateEnterKey : KeyInput
-
-    /// The Alternate Escape Key: <C-[>
-    val AlternateEscapeKey : KeyInput
-
-    /// The set of special keys which are alias's back into core VimKey values
-    val AlternateKeyInputList : KeyInput list
-
     /// The Null Key: VimKey.Null
     val NullKey : KeyInput
 
@@ -86,8 +65,7 @@ module KeyInputUtil =
     /// The Tab Key: VimKey.Tab
     val TabKey : KeyInput 
 
-    /// The KeyInput for every VimKey in the system (except Unknown).  This will not
-    /// include any alternate KeyInput values
+    /// The KeyInput for every VimKey in the system which is considered predefined
     val VimKeyInputList : KeyInput list
 
     /// The set of core characters as a seq
@@ -97,6 +75,9 @@ module KeyInputUtil =
     /// not necessarily return a KeyInput with the modifier set.  It attempts to unify 
     /// certain ambiguous combinations.
     val ApplyModifiers : keyInput : KeyInput -> modifiers : KeyModifiers -> KeyInput
+
+    /// Apply the modifiers to the given character
+    val ApplyModifiersToChar : c : char  -> modifiers : KeyModifiers -> KeyInput
 
     /// Apply the modifiers to the given VimKey
     val ApplyModifiersToVimKey : VimKey -> modifiers : KeyModifiers -> KeyInput
@@ -121,13 +102,6 @@ module KeyInputUtil =
     /// This method should be avoided.  If you need to apply modifiers then use
     /// ApplyModifiers which uses Vim semantics when deciding how to apply the modifiers
     val ChangeKeyModifiersDangerous : KeyInput -> KeyModifiers -> KeyInput
-
-    /// Given a KeyInput value which is an Alternate KeyInput return the value it as an
-    /// alternate for
-    val GetAlternate : KeyInput -> KeyInput option
-
-    /// Given an alternate KeyInput get the primary KeyInput it's an alternate for
-    val GetPrimary : KeyInput -> KeyInput option
 
     /// Get the alternate key for the given KeyInput if it's a key from the keypad 
     val GetNonKeypadEquivalent : KeyInput -> KeyInput option 

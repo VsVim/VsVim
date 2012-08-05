@@ -92,15 +92,6 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
                     : String.Empty;
                 var keyState = new KeyState(key, ModifierKeys.None);
                 AddMapping(keyState, current, text);
-
-                // Need to consider alternate keys here because they are often mapped differently than the
-                // primary key.  Consider CTRL-H and <BS> for example.  CTRL-H is mapped by the character 
-                // code 0x8 while <BS> is mapped by VK_BACK.  Need to build up both mappings here
-                var alternateKeyInput = KeyInputUtil.GetAlternate(current);
-                if (alternateKeyInput.IsSome())
-                {
-                    BuildKeyInputData(map, alternateKeyInput.Value);
-                }
             }
             else
             {
@@ -247,7 +238,6 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
             switch (vimKey)
             {
                 case VimKey.Enter: virtualKeyCode = 0xD; break;
-                case VimKey.Tab: virtualKeyCode = 0x9; break;
                 case VimKey.Escape: virtualKeyCode = 0x1B; break;
                 case VimKey.Back: virtualKeyCode = 0x8; break;
                 case VimKey.Delete: virtualKeyCode = 0x2E; break;
@@ -261,7 +251,6 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
                 case VimKey.End: virtualKeyCode = 0x23; break;
                 case VimKey.PageUp: virtualKeyCode = 0x21; break;
                 case VimKey.PageDown: virtualKeyCode = 0x22; break;
-                case VimKey.Break: virtualKeyCode = 0x03; break;
                 case VimKey.F1: virtualKeyCode = 0x70; break;
                 case VimKey.F2: virtualKeyCode = 0x71; break;
                 case VimKey.F3: virtualKeyCode = 0x72; break;

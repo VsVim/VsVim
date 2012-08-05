@@ -114,7 +114,7 @@ namespace Vim.UI.Wpf.UnitTest
         public void ConvertToKeyInput_AKeyAndShift()
         {
             var ki = ConvertToKeyInput(Key.A, ModifierKeys.Shift);
-            Assert.Equal(KeyInputUtil.VimKeyToKeyInput(VimKey.UpperA), ki);
+            Assert.Equal(KeyInputUtil.CharToKeyInput('A'), ki);
         }
 
         [Fact]
@@ -153,28 +153,6 @@ namespace Vim.UI.Wpf.UnitTest
             var ki = ConvertToKeyInput(Key.F12, ModifierKeys.Shift | ModifierKeys.Control);
             Assert.Equal(VimKey.F12, ki.Key);
             Assert.Equal(KeyModifiers.Shift | KeyModifiers.Control, ki.KeyModifiers);
-        }
-
-        /// <summary>
-        /// The alternate version of keys should not be stored in the map.  The map should only be storing 
-        /// the core KeyInput values.  Alternate keys are a modification on top of a core input value.
-        /// </summary>
-        [Fact]
-        public void EnsureAlternateKeysNotMapped()
-        {
-            foreach (var current in KeyInputUtil.AlternateKeyInputList)
-            {
-                // Make sure the VimKey for the KeyInput maps by itself normally.  The alternate keys are usually
-                // a modifier on top of a key.  If they are put into the map a symptom will be the modifier
-                // showing up on a plain key
-                Key key;
-                if (_keyUtilRaw.TryConvertToKeyOnly(current.Key, out key))
-                {
-                    KeyInput keyInput;
-                    Assert.True(_keyUtilRaw.TryConvertToKeyInput(key, ModifierKeys.None, out keyInput));
-                    Assert.Equal(KeyModifiers.None, keyInput.KeyModifiers);
-                }
-            }
         }
     }
 }

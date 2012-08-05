@@ -140,7 +140,7 @@ namespace Vim.UnitTest
         {
             AssertMotion("l", Motion.CharRight);
             AssertMotion(VimKey.Right, Motion.CharRight);
-            AssertMotion(VimKey.Space, Motion.CharRight);
+            AssertMotion(" ", Motion.CharRight);
         }
 
         [Fact]
@@ -409,7 +409,6 @@ namespace Vim.UnitTest
         public void LineDownToFirstNonBlank_ShouldAcceptBothEnters()
         {
             _textView.SetText("cat\ndog\nbear");
-            Assert.True(_capture.GetMotionAndCount(KeyInputUtil.AlternateEnterKey).IsComplete);
             Assert.True(_capture.GetMotionAndCount(KeyInputUtil.EnterKey).IsComplete);
         }
 
@@ -426,7 +425,6 @@ namespace Vim.UnitTest
         [Fact]
         public void CommandMapSupportsAlternateKeys()
         {
-            Assert.True(MapModule.TryFind(KeyInputSet.NewOneKeyInput(KeyInputUtil.AlternateEnterKey), _captureRaw.MotionBindingsMap).IsSome());
             Assert.True(MapModule.TryFind(KeyInputSet.NewOneKeyInput(KeyInputUtil.EnterKey), _captureRaw.MotionBindingsMap).IsSome());
         }
 
