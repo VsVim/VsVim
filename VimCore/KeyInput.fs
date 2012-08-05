@@ -133,6 +133,7 @@ module KeyInputUtil =
         (VimKey.KeypadMultiply, Some '*')
         (VimKey.LineFeed, Some (CharUtil.OfAsciiValue 10uy))
         (VimKey.Null, Some (CharUtil.OfAsciiValue 0uy))
+        (VimKey.Tab, Some '\t')
         (VimKey.Nop, None)]
 
     /// This is a mapping of the supported control character mappings in vim.  The list of
@@ -157,6 +158,7 @@ module KeyInputUtil =
                         | 'j' -> VimKey.LineFeed
                         | 'l' -> VimKey.FormFeed
                         | 'm' -> VimKey.Enter
+                        | 'i' -> VimKey.Tab
                         | _ -> VimKey.RawCharacter
 
                     let c = 

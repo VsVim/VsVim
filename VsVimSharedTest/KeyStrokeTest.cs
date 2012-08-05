@@ -1,6 +1,6 @@
-﻿using Xunit;
-using Vim;
+﻿using Vim;
 using Vim.UnitTest;
+using Xunit;
 
 namespace VsVim.UnitTest
 {
@@ -24,7 +24,7 @@ namespace VsVim.UnitTest
                 KeyInputUtil.CharToKeyInput('#'),
                 KeyModifiers.Shift);
             Assert.Equal(KeyInputUtil.CharToKeyInput('#'), stroke.KeyInput);
-            Assert.Equal(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Pound, KeyModifiers.Shift), stroke.AggregateKeyInput);
+            Assert.Equal(KeyInputUtil.ApplyModifiersToChar('#', KeyModifiers.Shift), stroke.AggregateKeyInput);
             Assert.Equal('#', stroke.Char);
         }
 
@@ -35,7 +35,7 @@ namespace VsVim.UnitTest
                 KeyInputUtil.CharToKeyInput('#'),
                 KeyModifiers.Shift | KeyModifiers.Control);
             Assert.Equal(KeyInputUtil.CharToKeyInput('#'), stroke.KeyInput);
-            Assert.Equal(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Pound, KeyModifiers.Shift | KeyModifiers.Control), stroke.AggregateKeyInput);
+            Assert.Equal(KeyInputUtil.ApplyModifiersToChar('#', KeyModifiers.Shift | KeyModifiers.Control), stroke.AggregateKeyInput);
             Assert.Equal('#', stroke.Char);
         }
 

@@ -50,7 +50,8 @@ type VimKey =
     | Nop = 44              // no-op.  Does nothing
     | Null = 45             // (char)0
     | LineFeed = 46
-    | RawCharacter = 47     // A simple character to be processed
+    | Tab = 47
+    | RawCharacter = 49     // A simple character to be processed
 
 module VimKeyUtil =
 

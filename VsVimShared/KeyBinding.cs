@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Windows.Input;
 using Vim;
-using Vim.UI.Wpf;
 
 namespace VsVim
 {
@@ -169,7 +167,7 @@ namespace VsVim
             map.Add("Ins", KeyInputUtil.VimKeyToKeyInput(VimKey.Insert));
             map.Add("Del", KeyInputUtil.VimKeyToKeyInput(VimKey.Delete));
             map.Add("Esc", KeyInputUtil.EscapeKey);
-            map.Add("Break", KeyInputUtil.VimKeyToKeyInput(VimKey.Break));
+            map.Add("Break", KeyInputUtil.CharWithControlToKeyInput('c'));
             map.Add("Num +", KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadPlus));
             map.Add("Num -", KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadMinus));
             map.Add("Num /", KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadDivide));
@@ -190,7 +188,7 @@ namespace VsVim
             map.Add("F10", KeyInputUtil.VimKeyToKeyInput(VimKey.F10));
             map.Add("F11", KeyInputUtil.VimKeyToKeyInput(VimKey.F11));
             map.Add("F12", KeyInputUtil.VimKeyToKeyInput(VimKey.F12));
-            map.Add("Space", KeyInputUtil.VimKeyToKeyInput(VimKey.Space));
+            map.Add("Space", KeyInputUtil.CharToKeyInput(' '));
 
             _vsMap = map;
         }

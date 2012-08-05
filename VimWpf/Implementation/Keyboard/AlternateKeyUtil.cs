@@ -20,8 +20,6 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
                 var keyInput = KeyInputUtil.VimKeyToKeyInput(pair.Key);
                 WpfKeyToKeyInputMap[pair.Value] = keyInput;
             }
-
-            WpfKeyToKeyInputMap[Key.Tab] = KeyInputUtil.TabKey;
         }
 
         internal static Dictionary<VimKey, Key> BuildVimKeyToWpfKeyMap()
@@ -41,6 +39,7 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
             map[VimKey.End] = Key.End;
             map[VimKey.PageUp] = Key.PageUp;
             map[VimKey.PageDown] = Key.PageDown;
+            map[VimKey.Tab] = Key.Tab;
             map[VimKey.F1] = Key.F1;
             map[VimKey.F2] = Key.F2;
             map[VimKey.F3] = Key.F3;

@@ -54,12 +54,15 @@ namespace Vim.UnitTest
                 Assert.Equal(keyInput, KeyInputUtil.ApplyModifiers(KeyInputUtil.CharToKeyInput('A'), KeyModifiers.Shift));
             }
 
+            /// <summary>
+            /// The shift key doesn't affect the display of tab
+            /// </summary>
             [Fact]
-            public void ShiftToNonAlpha()
+            public void ShiftToTab()
             {
                 var keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.TabKey, KeyModifiers.Shift);
                 Assert.Equal(KeyModifiers.Shift, keyInput.KeyModifiers);
-                Assert.Equal(VimKey.RawCharacter, keyInput.Key);
+                Assert.Equal(VimKey.Tab, keyInput.Key);
                 Assert.Equal('\t', keyInput.Char);
             }
 
@@ -289,7 +292,7 @@ namespace Vim.UnitTest
             [Fact]
             public void ControlAlphaSpecial()
             {
-                var list = new[] { 'j', 'l', 'm' };
+                var list = new[] { 'j', 'l', 'm', 'i' };
                 foreach (var current in list)
                 {
                     var c = (char)(0x1 + (current - 'a'));
@@ -613,6 +616,54 @@ namespace Vim.UnitTest
                 foreach (var keyInput in all)
                 {
                     Assert.Equal(KeyModifiers.None, keyInput.KeyModifiers);
+                }
+            }
+
+            [Fact]
+            public void TabKey()
+            {
+                Action<KeyInput> verify =
+                    keyInput =>
+                    {
+                        Assert.Equal(VimKey.Tab, keyInput.Key);
+                        Assert.Equal(KeyModifiers.None, keyInput.KeyModifiers);
+                        Assert.Equal('\t', keyInput.Char);
+                    };
+
+                verify(KeyInputUtil.TabKey);
+                verify(KeyInputUtil.CharToKeyInput('\t'));
+                verify(KeyInputUtil.VimKeyToKeyInput(VimKey.Tab));
+            }
+
+            /// <summary>
+            /// Ensure that every recognized KeyInput value can map back and forth soley
+            /// based on the character provided
+            /// </summary>
+            [Fact]
+            public void Exhaustive()
+            {
+                foreach (var current in KeyInputUtil.VimKeyInputList)
+                {
+                    if (current.RawChar.IsNone())
+                    {
+                        continue;
+                    }
+
+                    if (VimKeyUtil.IsKeypadKey(current.Key))
+                    {
+                        continue;
+                    }
+
+                    // The 2 special keys which map differently when used by name vs. when
+                    // mapped by char.  They are the keys which don't obey this rule
+                    if (current.Key == VimKey.Back ||
+                        current.Key == VimKey.Delete)
+                    {
+                        continue;
+                    }
+
+                    var keyInput = KeyInputUtil.CharToKeyInput(current.Char);
+                    Assert.Equal(current, keyInput);
                 }
             }
         }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using EditorUtils;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;
@@ -210,7 +209,7 @@ namespace VsVim
                 return
                     keyInput.IsArrowKey ||
                     keyInput == KeyInputUtil.EnterKey ||
-                    keyInput.Key == VimKey.Tab ||
+                    keyInput == KeyInputUtil.TabKey ||
                     keyInput.Key == VimKey.Back;
             }
 

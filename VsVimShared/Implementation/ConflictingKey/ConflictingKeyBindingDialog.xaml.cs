@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using EditorUtils;
 using Microsoft.VisualStudio.PlatformUI;
-using System;
 using Vim;
 
 namespace VsVim.Implementation.ConflictingKey
@@ -93,38 +93,22 @@ namespace VsVim.Implementation.ConflictingKey
         private bool IsAdvanced(KeyStroke keyStroke)
         {
             // Look for paste
-            if (keyStroke.KeyModifiers == KeyModifiers.Control &&
-                keyStroke.KeyInput.Key == VimKey.LowerV &&
-                keyStroke.KeyInput.KeyModifiers == KeyModifiers.None)
+            if (keyStroke.KeyModifiers != KeyModifiers.Control || keyStroke.KeyInput.KeyModifiers != KeyModifiers.None)
             {
-                return true;
+                return false;
             }
 
-            // Look for cut
-            if (keyStroke.KeyModifiers == KeyModifiers.Control &&
-                keyStroke.KeyInput.Key == VimKey.LowerX &&
-                keyStroke.KeyInput.KeyModifiers == KeyModifiers.None)
+            // Look for paste, cut, copy and select all
+            switch (keyStroke.KeyInput.Char)
             {
-                return true;
+                case 'v':
+                case 'x':
+                case 'c':
+                case 'a':
+                    return true;
+                default:
+                    return false;
             }
-
-            // Look for copy
-            if (keyStroke.KeyModifiers == KeyModifiers.Control &&
-                keyStroke.KeyInput.Key == VimKey.LowerC &&
-                keyStroke.KeyInput.KeyModifiers == KeyModifiers.None)
-            {
-                return true;
-            }
-
-            // Look for select all
-            if (keyStroke.KeyModifiers == KeyModifiers.Control &&
-                keyStroke.KeyInput.Key == VimKey.LowerA &&
-                keyStroke.KeyInput.KeyModifiers == KeyModifiers.None)
-            {
-                return true;
-            }
-
-            return false;
         }
 
         private void UpdateKeyBindings()

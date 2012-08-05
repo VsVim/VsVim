@@ -1,13 +1,12 @@
 ﻿using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using Xunit;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
-using VsVim.Implementation;
-using VsVim.UnitTest.Utils;
 using VsVim.Implementation.Misc;
+using VsVim.UnitTest.Utils;
+using Xunit;
 
 namespace VsVim.UnitTest
 {
@@ -83,7 +82,7 @@ namespace VsVim.UnitTest
         {
             Create("cat", "dog");
             _vimBuffer.Process(":map <S-TAB> o<Esc>", enter: true);
-            _simulation.Run(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Tab, KeyModifiers.Shift));
+            _simulation.Run(KeyInputUtil.ApplyModifiersToChar('\t', KeyModifiers.Shift));
             Assert.Equal(3, _textBuffer.CurrentSnapshot.LineCount);
             Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
             Assert.Equal("", _textBuffer.GetLine(1).GetText());
