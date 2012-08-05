@@ -1140,10 +1140,11 @@ type internal CommandUtil
         let savedCaretPoint = x.CaretPoint
 
         // The the line below needs to be calculated agaist the visual snapshot.
-        let visualLineEndIncludingLineBreak, newLineText  = 
+        let visualLineEndIncludingLineBreak, newLineText, isLastLine =
             let visualSnapshotData = TextViewUtil.GetVisualSnapshotDataOrEdit _textView
             let newLineText = _commonOperations.GetNewLineText x.CaretPoint
-            visualSnapshotData.CaretLine.EndIncludingLineBreak, newLineText
+            let isLastLine = SnapshotLineUtil.IsLastLine visualSnapshotData.CaretLine
+            visualSnapshotData.CaretLine.EndIncludingLineBreak, newLineText, isLastLine
 
         match BufferGraphUtil.MapPointDownToSnapshotStandard _bufferGraph visualLineEndIncludingLineBreak x.CurrentSnapshot with
         | None -> ()
@@ -1160,7 +1161,7 @@ type internal CommandUtil
                     // When this command is run on the last line of the file then point will still
                     // refer to the original line.  In that case we need to move to the end of the
                     // ITextSnapshot
-                    if SnapshotPointUtil.IsEndPoint point then
+                    if isLastLine then
                         SnapshotUtil.GetEndPoint x.CurrentSnapshot
                     else
                         SnapshotPoint(x.CurrentSnapshot, point.Position)

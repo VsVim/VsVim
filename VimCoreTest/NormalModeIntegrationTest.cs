@@ -1673,6 +1673,21 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("o");
                 Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
             }
+
+            /// <summary>
+            /// Make sure the caret is properly positioned on the new line and not the last
+            /// line
+            /// 
+            /// Issue 944
+            /// </summary>
+            [Fact]
+            public void LastLineBlank()
+            {
+                Create("cat", "dog", "");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("o");
+                Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+            }
         }
 
         public sealed class MaintainCaretColumn : NormalModeIntegrationTest
