@@ -36,7 +36,7 @@ namespace Vim.UI.Wpf.UnitTest
                 _keyboardId = IntPtr.Zero;
             }
 
-            _processor = new VimKeyProcessor(GetOrCreateVimBufferForProcessor(), KeyUtil);
+            _processor = CreateKeyProcessor();
         }
 
         public override void Dispose()
@@ -61,18 +61,18 @@ namespace Vim.UI.Wpf.UnitTest
             return device.CreateKeyEventArgs(key, modKeys);
         }
 
-        protected abstract IVimBuffer GetOrCreateVimBufferForProcessor();
+        protected abstract VimKeyProcessor CreateKeyProcessor();
 
         public sealed class KeyDownTest : VimKeyProcessorTest
         {
             private MockRepository _factory;
             private Mock<IVimBuffer> _mockVimBuffer;
 
-            protected override IVimBuffer GetOrCreateVimBufferForProcessor()
+            protected override Wpf.VimKeyProcessor  CreateKeyProcessor()
             {
                 _factory = new MockRepository(MockBehavior.Strict);
                 _mockVimBuffer = _factory.Create<IVimBuffer>();
-                return _mockVimBuffer.Object;
+                return new VimKeyProcessor(_mockVimBuffer.Object, KeyUtil);
             }
 
             /// <summary>
@@ -240,19 +240,19 @@ namespace Vim.UI.Wpf.UnitTest
             }
         }
 
-        public sealed class TextInput : VimKeyProcessorTest
+        public sealed class TextInputTest : VimKeyProcessorTest
         {
             private MockRepository _factory;
             private Mock<IVimBuffer> _mockVimBuffer;
             private IWpfTextView _wpfTextView;
             private InputDevice _inputDevice = new KeyProcessorSimulation.DefaultKeyboardDevice();
 
-            protected override IVimBuffer GetOrCreateVimBufferForProcessor()
+            protected override VimKeyProcessor CreateKeyProcessor()
             {
                 _factory = new MockRepository(MockBehavior.Strict);
                 _mockVimBuffer = _factory.Create<IVimBuffer>();
                 _wpfTextView = CreateTextView();
-                return _mockVimBuffer.Object;
+                return new VimKeyProcessor(_mockVimBuffer.Object, KeyUtil);
             }
 
             private TextCompositionEventArgs CreateTextComposition(string text)

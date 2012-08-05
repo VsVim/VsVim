@@ -246,7 +246,7 @@ namespace Vim.UI.Wpf.UnitTest
             return CreateTextComposition(_wpfTextView, text);
         }
 
-        internal static TextComposition CreateTextComposition(IWpfTextView wpfTextView, string text)
+        public static TextComposition CreateTextComposition(IWpfTextView wpfTextView, string text)
         {
             var textComposition = new TextComposition(InputManager.Current, wpfTextView.VisualElement, text);
             if (text.Length == 1)

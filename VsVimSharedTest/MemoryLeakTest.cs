@@ -340,6 +340,5 @@ namespace VsVim.UnitTest
             Assert.Null(weakVimBuffer.Target);
             Assert.Null(weakTextView.Target);
         }
-
     }
 }

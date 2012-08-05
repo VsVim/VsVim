@@ -66,7 +66,6 @@ namespace Vim.UI.Wpf.UnitTest
             KeyToKeyInput('{', Key.OemOpenBrackets, ModifierKeys.Shift);
             KeyToKeyInput(']', Key.OemCloseBrackets);
             KeyToKeyInput('}', Key.OemCloseBrackets, ModifierKeys.Shift);
-            KeyToKeyInput('\b', Key.Back);
             KeyToKeyInput('-', Key.OemMinus);
             KeyToKeyInput('=', Key.OemPlus);
             KeyToKeyInput('+', Key.OemPlus, ModifierKeys.Shift);

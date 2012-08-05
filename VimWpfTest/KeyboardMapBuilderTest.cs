@@ -106,28 +106,6 @@ namespace Vim.UI.Wpf.UnitTest
             }
 
             /// <summary>
-            /// Make sure that all of the alpha characters map to a version with control pressed 
-            /// that isn't the alpha character.  These are all defined in the ASCII standard and 
-            /// listed in the VIM FAQ
-            /// 
-            /// http://vimhelp.appspot.com/vim_faq.txt.html#faq-20.5
-            /// </summary>
-            [Fact]
-            public void ControlWithAlpha()
-            {
-                Create();
-                foreach (var cur in CharLettersLower)
-                {
-                    var key = (Key)Enum.Parse(typeof(Key), Char.ToUpper(cur).ToString());
-                    var keyState = new KeyState(key, ModifierKeys.Control);
-
-                    VimKeyData vimKeyData;
-                    Assert.True(_keyStateToVimKeyDataMap.TryGetValue(keyState, out vimKeyData));
-                    Assert.Equal(KeyInputUtil.CharWithControlToKeyInput(cur), vimKeyData.KeyInputOptional);
-                }
-            }
-
-            /// <summary>
             /// Ensure that the standard alpha mappings apply to this given keyboard layout
             /// </summary>
             [Fact]
