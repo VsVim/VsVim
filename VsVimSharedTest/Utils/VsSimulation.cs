@@ -335,6 +335,7 @@ namespace VsVim.UnitTest.Utils
             _vsAdapter.SetupGet(x => x.InAutomationFunction).Returns(false);
             _vsAdapter.SetupGet(x => x.KeyboardDevice).Returns(_vsKeyProcessorSimulation.KeyBoardDevice);
             _vsAdapter.Setup(x => x.IsReadOnly(It.IsAny<ITextBuffer>())).Returns(false);
+            _vsAdapter.Setup(x => x.IsReadOnly(It.IsAny<ITextView>())).Returns(false);
             _vsAdapter.Setup(x => x.IsIncrementalSearchActive(_wpfTextView)).Returns(false);
 
             _resharperUtil = _factory.Create<IResharperUtil>();

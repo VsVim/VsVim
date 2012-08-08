@@ -1,4 +1,7 @@
-﻿using System.Windows.Input;
+﻿using System;
+using System.Diagnostics;
+using System.Reflection;
+using System.Windows.Input;
 using Microsoft.FSharp.Core;
 using Vim;
 using Vim.UI.Wpf;
@@ -14,12 +17,20 @@ namespace VsVim.Implementation.Misc
     {
         private readonly IVsAdapter _adapter;
         private readonly IVimBufferCoordinator _bufferCoordinator;
+        private int _keyDownCount;
+        private Lazy<PropertyInfo> _searchInProgressInfo;
+
+        internal int KeyDownCount
+        {
+            get { return _keyDownCount; }
+        }
 
         internal VsKeyProcessor(IVsAdapter adapter, IVimBufferCoordinator bufferCoordinator, IKeyUtil keyUtil)
             : base(bufferCoordinator.VimBuffer, keyUtil)
         {
             _adapter = adapter;
             _bufferCoordinator = bufferCoordinator;
+            _searchInProgressInfo = new Lazy<PropertyInfo>(FindSearchInProgressPropertyInfo);
         }
 
         /// <summary>
@@ -53,6 +64,107 @@ namespace VsVim.Implementation.Misc
         }
 
         /// <summary>
+        /// Once the key goes up the KeyStroke is complete and we should clear out the 
+        /// DiscardedKeyInput flag as it's only relevant for a single key stroke
+        /// </summary>
+        public override void KeyUp(KeyEventArgs args)
+        {
+            OnKeyEvent(isDown: false);
+            _bufferCoordinator.DiscardedKeyInput = FSharpOption<KeyInput>.None;
+            base.KeyUp(args);
+        }
+
+        public override void KeyDown(KeyEventArgs args)
+        {
+            OnKeyEvent(isDown: true);
+            base.KeyDown(args);
+        }
+
+        /// <summary>
+        /// Called for the KeyUp and KeyDown events.  This is needed to work around a feature
+        /// of the VsCodeWindowAdapter class.  It overrides PreProcessMessage and will intercept
+        /// all WM_CHAR messages when it considers the document to be readonly.  This prevents
+        /// us from getting the TextInput event and hence we won't process a good chunk of
+        /// commands.  
+        /// 
+        /// To work around this we will temporarily suppress the PreProcessMessage call by
+        /// setting the SearchInProgress flag (this allows edit commands to go through).
+        /// </summary>
+        private void OnKeyEvent(bool isDown)
+        {
+            if (!_adapter.IsReadOnly(VimBuffer.TextView))
+            {
+                if (_keyDownCount > 0)
+                {
+                    DisablePreProcessMessageWorkaround();
+                    _keyDownCount = 0;
+                }
+
+                return;
+            }
+
+            if (_keyDownCount == 0)
+            {
+                if (isDown)
+                {
+                    EnablePreProcessMessageWorkaround();
+                    _keyDownCount = 1;
+                }
+            }
+            else if (isDown)
+            {
+                _keyDownCount++;
+            }
+            else 
+            {
+                _keyDownCount--;
+                if (_keyDownCount == 0)
+                {
+                    DisablePreProcessMessageWorkaround();
+                }
+            }
+        }
+
+        private void EnablePreProcessMessageWorkaround()
+        {
+            Debug.Assert(0 == _keyDownCount);
+            SetSearchInProgress(true);
+        }
+
+        private void DisablePreProcessMessageWorkaround()
+        {
+            SetSearchInProgress(false);
+        }
+
+        private void SetSearchInProgress(bool value)
+        {
+            try
+            {
+                var propertyInfo = _searchInProgressInfo.Value;
+                var vsTextView = _adapter.EditorAdapter.GetViewAdapter(VimBuffer.TextView);
+                if (vsTextView != null && propertyInfo != null)
+                {
+                    propertyInfo.SetValue(vsTextView, value, null);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Fail(ex.Message);
+            }
+        }
+
+        private PropertyInfo FindSearchInProgressPropertyInfo()
+        {
+            var vsTextView = _adapter.EditorAdapter.GetViewAdapter(VimBuffer.TextView);
+            if (vsTextView == null)
+            {
+                return null;
+            }
+
+            return vsTextView.GetType().GetProperty("SearchInProgress", BindingFlags.Public | BindingFlags.Instance);
+        }
+
+        /// <summary>
         /// Is this KeyInput value to be discarded based on previous KeyInput values
         /// </summary>
         private bool IsDiscardedKeyInput(KeyInput keyInput)
@@ -67,14 +179,5 @@ namespace VsVim.Implementation.Misc
             return isDiscarded;
         }
 
-        /// <summary>
-        /// Once the key goes up the KeyStroke is complete and we should clear out the 
-        /// DiscardedKeyInput flag as it's only relevant for a single key stroke
-        /// </summary>
-        public override void KeyUp(KeyEventArgs args)
-        {
-            _bufferCoordinator.DiscardedKeyInput = FSharpOption<KeyInput>.None;
-            base.KeyUp(args);
-        }
     }
 }

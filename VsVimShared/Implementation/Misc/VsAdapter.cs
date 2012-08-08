@@ -264,15 +264,20 @@ namespace VsVim.Implementation.Misc
                 && id == VSConstants.CLSID_HtmlLanguageService;
         }
 
-        internal bool IsReadOnly(ITextBuffer textBuffer)
+        internal bool IsReadOnly(ITextView textView)
         {
-            var editorOptions = _editorOptionsFactoryService.GetOptions(textBuffer);
+            var editorOptions = textView.Options;
             if (editorOptions != null
                 && EditorOptionsUtil.GetOptionValueOrDefault(editorOptions, DefaultTextViewOptions.ViewProhibitUserInputId, false))
             {
                 return true;
             }
 
+            return IsReadOnly(textView.TextBuffer);
+        }
+
+        internal bool IsReadOnly(ITextBuffer textBuffer)
+        {
             var textLines = _editorAdaptersFactoryService.GetBufferAdapter(textBuffer);
             if (textLines == null)
             {
@@ -345,6 +350,11 @@ namespace VsVim.Implementation.Misc
         bool IVsAdapter.IsVenusView(IVsTextView textView)
         {
             return IsVenusView(textView);
+        }
+
+        bool IVsAdapter.IsReadOnly(ITextView textView)
+        {
+            return IsReadOnly(textView);
         }
 
         bool IVsAdapter.IsReadOnly(ITextBuffer textBuffer)

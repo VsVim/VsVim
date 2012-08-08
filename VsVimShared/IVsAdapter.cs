@@ -66,10 +66,16 @@ namespace VsVim
         bool IsVenusView(IVsTextView textView);
 
         /// <summary>
-        /// Determine if this ITextBuffer is readonly.  This needs to mimic the behavior of 
-        /// the VsCodeWindowAdapter::IsReadOnly method.
+        /// Determine if this ITextView is readonly.  This needs to mimic the behavior of 
+        /// the VsCodeWindowAdapter::IsReadOnly method
         /// </summary>
         bool IsReadOnly(ITextBuffer textBuffer);
+
+        /// <summary>
+        /// Determine if this ITextView is readonly.  This needs to mimic the behavior of 
+        /// the VsCodeWindowAdapter::IsReadOnly method
+        /// </summary>
+        bool IsReadOnly(ITextView textView);
 
         /// <summary>
         /// Get the IVsCodeWindowFrame instances currently open

@@ -1,34 +1,245 @@
-﻿using System.Windows;
-using System.Windows.Input;
-using Microsoft.VisualStudio.Text;
+﻿using System.Windows.Input;
+using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Vim;
 using Vim.UI.Wpf;
 using Vim.UI.Wpf.UnitTest;
+using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 using VsVim.Implementation.Misc;
 using Xunit;
-using Vim.UnitTest;
 
 namespace VsVim.UnitTest
 {
     public abstract class VsKeyProcessorTest : VimKeyProcessorTest
     {
+        #region MockAdapter
+
+        internal sealed class MockAdapter : IVsTextView
+        {
+            public bool SearchInProgress { get; set; }
+
+            #region IVsTextView
+
+            int IVsTextView.AddCommandFilter(Microsoft.VisualStudio.OLE.Interop.IOleCommandTarget pNewCmdTarg, out Microsoft.VisualStudio.OLE.Interop.IOleCommandTarget ppNextCmdTarg)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.CenterColumns(int iLine, int iLeftCol, int iColCount)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.CenterLines(int iTopLine, int iCount)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.ClearSelection(int fMoveToAnchor)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.CloseView()
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.EnsureSpanVisible(TextSpan span)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.GetBuffer(out IVsTextLines ppBuffer)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.GetCaretPos(out int piLine, out int piColumn)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.GetLineAndColumn(int iPos, out int piLine, out int piIndex)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.GetLineHeight(out int piLineHeight)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.GetNearestPosition(int iLine, int iCol, out int piPos, out int piVirtualSpaces)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.GetPointOfLineColumn(int iLine, int iCol, Microsoft.VisualStudio.OLE.Interop.POINT[] ppt)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.GetScrollInfo(int iBar, out int piMinUnit, out int piMaxUnit, out int piVisibleUnits, out int piFirstVisibleUnit)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.GetSelectedText(out string pbstrText)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.GetSelection(out int piAnchorLine, out int piAnchorCol, out int piEndLine, out int piEndCol)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.GetSelectionDataObject(out Microsoft.VisualStudio.OLE.Interop.IDataObject ppIDataObject)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            TextSelMode IVsTextView.GetSelectionMode()
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.GetSelectionSpan(TextSpan[] pSpan)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.GetTextStream(int iTopLine, int iTopCol, int iBottomLine, int iBottomCol, out string pbstrText)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            System.IntPtr IVsTextView.GetWindowHandle()
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.GetWordExtent(int iLine, int iCol, uint dwFlags, TextSpan[] pSpan)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.HighlightMatchingBrace(uint dwFlags, uint cSpans, TextSpan[] rgBaseSpans)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.Initialize(IVsTextLines pBuffer, System.IntPtr hwndParent, uint InitFlags, INITVIEW[] pInitView)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.PositionCaretForEditing(int iLine, int cIndentLevels)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.RemoveCommandFilter(Microsoft.VisualStudio.OLE.Interop.IOleCommandTarget pCmdTarg)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.ReplaceTextOnLine(int iLine, int iStartCol, int iCharsToReplace, string pszNewText, int iNewLen)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.RestrictViewRange(int iMinLine, int iMaxLine, IVsViewRangeClient pClient)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.SendExplicitFocus()
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.SetBuffer(IVsTextLines pBuffer)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.SetCaretPos(int iLine, int iColumn)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.SetScrollPosition(int iBar, int iFirstVisibleUnit)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.SetSelection(int iAnchorLine, int iAnchorCol, int iEndLine, int iEndCol)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.SetSelectionMode(TextSelMode iSelMode)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.SetTopLine(int iBaseLine)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.UpdateCompletionStatus(IVsCompletionSet pCompSet, uint dwFlags)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.UpdateTipWindow(IVsTipWindow pTipWindow, uint dwFlags)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            int IVsTextView.UpdateViewFrameCaption()
+            {
+                throw new System.NotImplementedException();
+            }
+
+            #endregion
+        }
+
+        #endregion
+
         protected MockRepository _factory;
+        protected IWpfTextView _wpfTextView;
         protected Mock<IVimBuffer> _mockVimBuffer;
         protected Mock<IVsAdapter> _vsAdapter;
-        protected Mock<ITextBuffer> _textBuffer;
+        protected Mock<IVsEditorAdaptersFactoryService> _editorAdaptersFactoryService;
+        internal MockAdapter _mockAdapter;
         internal IVimBufferCoordinator _bufferCoordinator;
         protected MockKeyboardDevice _device;
+
+        internal VsKeyProcessor VsKeyProcessor
+        {
+            get { return (VsKeyProcessor)_processor; }
+        }
 
         protected override VimKeyProcessor CreateKeyProcessor()
         {
             _factory = new MockRepository(MockBehavior.Strict);
-            _textBuffer = _factory.Create<ITextBuffer>();
+            _wpfTextView = CreateTextView();
+            _mockAdapter = new MockAdapter();
+            _editorAdaptersFactoryService = _factory.Create<IVsEditorAdaptersFactoryService>();
+            _editorAdaptersFactoryService.Setup(x => x.GetViewAdapter(_wpfTextView)).Returns(_mockAdapter);
+
             _vsAdapter = _factory.Create<IVsAdapter>();
             _vsAdapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(false);
-            _mockVimBuffer = MockObjectFactory.CreateVimBuffer(_textBuffer.Object);
+            _vsAdapter.SetupGet(x => x.EditorAdapter).Returns(_editorAdaptersFactoryService.Object);
+            _vsAdapter.Setup(x => x.IsReadOnly(_wpfTextView)).Returns(false);
+            _mockVimBuffer = MockObjectFactory.CreateVimBuffer(_wpfTextView);
             _mockVimBuffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true);
             _mockVimBuffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
             _mockVimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
@@ -101,13 +312,6 @@ namespace VsVim.UnitTest
 
         public sealed class VsTextInputTest : VsKeyProcessorTest
         {
-            private IWpfTextView _wpfTextView;
-
-            public VsTextInputTest()
-            {
-                _wpfTextView = CreateTextView();
-            }
-
             private TextCompositionEventArgs CreateTextComposition(string text)
             {
                 return _wpfTextView.VisualElement.CreateTextCompositionEventArgs(text, _device);
@@ -186,6 +390,87 @@ namespace VsVim.UnitTest
                 _mockVimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
                 VerifyHandle(KeyInputUtil.CharWithControlToKeyInput('e').Char.ToString());
                 _factory.Verify();
+            }
+        }
+
+        /// <summary>
+        /// Test the work around for the VsCodeWindowAdapter::PreProcessMessage override which 
+        /// causes the TextInput event to not fire when the buffer is considered read only 
+        /// </summary>
+        public sealed class ReadOnlyTest : VsKeyProcessorTest
+        {
+            public ReadOnlyTest()
+            {
+                _vsAdapter.Setup(x => x.IsReadOnly(_wpfTextView)).Returns(true);
+            }
+
+            /// <summary>
+            /// Suppress the VsCodeWindowAdapter handling on KeyDown.  The WM_CHAR message will
+            /// come between the KeyDown and KeyUp event
+            /// </summary>
+            [Fact]
+            public void SuppressOnKeyDown()
+            {
+                var e = _device.CreateKeyEventArgs(Key.A);
+                _processor.KeyDown(e);
+                Assert.True(_mockAdapter.SearchInProgress);
+            }
+
+            /// <summary>
+            /// Restore the handling on KeyUp.  
+            /// </summary>
+            [Fact]
+            public void RestoreOnKeyUp()
+            {
+                var e = _device.CreateKeyEventArgs(Key.A);
+                _processor.KeyDown(e);
+                _processor.KeyUp(e);
+                Assert.False(_mockAdapter.SearchInProgress);
+            }
+
+            /// <summary>
+            /// So long as keys remain down we want to suppress the PreProcessMessage path
+            /// </summary>
+            [Fact]
+            public void MoreKeyDowns()
+            {
+                var e = _device.CreateKeyEventArgs(Key.A);
+                _processor.KeyDown(e);
+                _processor.KeyDown(e);
+                _processor.KeyUp(e);
+                Assert.Equal(1, VsKeyProcessor.KeyDownCount);
+                Assert.True(_mockAdapter.SearchInProgress);
+            }
+
+            /// <summary>
+            /// Possible that we entered the state with keys down that we weren't tracking and
+            /// hence we'll end up with lots of up messages.  If that happens then we just ignore
+            /// them
+            /// </summary>
+            [Fact]
+            public void MoreKeyUps()
+            {
+                var e = _device.CreateKeyEventArgs(Key.A);
+                _processor.KeyDown(e);
+                _processor.KeyUp(e);
+                _processor.KeyUp(e);
+                Assert.Equal(0, VsKeyProcessor.KeyDownCount);
+                Assert.False(_mockAdapter.SearchInProgress);
+            }
+
+            /// <summary>
+            /// Handle the case where the buffer suddenly changes to not readonly in a KeyDown
+            /// while we're in the middle of suppressing messages
+            /// </summary>
+            [Fact]
+            public void ChangeInReadOnlyOnDown()
+            {
+                var e = _device.CreateKeyEventArgs(Key.A);
+                _processor.KeyDown(e);
+                _vsAdapter.Setup(x => x.IsReadOnly(_wpfTextView)).Returns(false);
+                _processor.KeyDown(e);
+                Assert.Equal(0, VsKeyProcessor.KeyDownCount);
+                Assert.False(_mockAdapter.SearchInProgress);
             }
         }
     }
