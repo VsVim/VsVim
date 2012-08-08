@@ -1007,8 +1007,10 @@ type Interpreter
 
         // Display the inidividual setting
         let displaySetting name = 
-            // TODO: Implement
-            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "display single setting")
+            _localSettings.AllSettings
+            |> Seq.filter (fun s -> s.Name = name)
+            |> Seq.map getSettingDisplay
+            |> _statusUtil.OnStatusLong
 
         // Display the terminal options
         let displayAllTerminal() = 
