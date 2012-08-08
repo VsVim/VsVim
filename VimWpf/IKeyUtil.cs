@@ -14,11 +14,6 @@ namespace Vim.UI.Wpf
         bool IsAltGr(ModifierKeys modifierKeys);
 
         /// <summary>
-        /// Get the KeyInput value for the given char and ModifierKeys
-        /// </summary>
-        // KeyInput GetKeyInput(char c, ModifierKeys modifierKeys);
-
-        /// <summary>
         /// Convert the given ModifierKeys into the corresponding KeyModifiers (WPF -> Vim)
         /// </summary>
         KeyModifiers GetKeyModifiers(ModifierKeys modifierKeys);
