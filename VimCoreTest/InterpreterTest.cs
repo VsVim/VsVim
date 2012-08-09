@@ -401,6 +401,36 @@ namespace Vim.UnitTest
                 ParseAndRun(@"set cursorline");
                 Assert.True(_windowSettings.CursorLine);
             }
+
+            [Fact]
+            public void DisplaySingleToggleOn()
+            {
+                Create("");
+                _vimBuffer.LocalSettings.ExpandTab = true;
+                ParseAndRun(@"set et?");
+                Assert.Equal("expandtab", _statusUtil.LastStatus);
+            }
+
+            [Fact]
+            public void DisplaySingleToggleOff()
+            {
+                Create("");
+                _vimBuffer.LocalSettings.ExpandTab = false;
+                ParseAndRun(@"set et?");
+                Assert.Equal("noexpandtab", _statusUtil.LastStatus);
+            }
+
+            /// <summary>
+            /// Check that we don't throw on an invalid setting name
+            /// </summary>
+            [Fact]
+            public void DisplaySettingFake()
+            {
+                Create("");
+                _vimBuffer.LocalSettings.ExpandTab = false;
+                ParseAndRun(@"set blah?");
+                Assert.Equal(Resources.CommandMode_UnknownOption("blah"), _statusUtil.LastError);
+            }
         }
 
         public sealed class QuickFixTest : InterpreterTest

@@ -3100,16 +3100,16 @@ type IVimSettings =
 
     /// Try and set a setting to the passed in value.  This can fail if the value does not 
     /// have the correct type.  The provided name can be the full name or abbreviation
-    abstract TrySetValue : settingName:string -> value:SettingValue -> bool
+    abstract TrySetValue : settingName : string -> value : SettingValue -> bool
 
     /// Try and set a setting to the passed in value which originates in string form.  This 
     /// will fail if the setting is not found or the value cannot be converted to the appropriate
     /// value
-    abstract TrySetValueFromString : settingName:string -> strValue:string -> bool
+    abstract TrySetValueFromString : settingName : string -> strValue : string -> bool
 
     /// Get the value for the named setting.  The name can be the full setting name or an 
     /// abbreviation
-    abstract GetSetting : settingName:string -> Setting option
+    abstract GetSetting : settingName : string -> Setting option
 
     /// Raised when a Setting changes
     [<CLIEvent>]

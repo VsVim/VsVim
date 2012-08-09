@@ -973,10 +973,9 @@ type Interpreter
 
         // Display the inidividual setting
         let displaySetting name = 
-            _localSettings.AllSettings
-            |> Seq.filter (fun s -> s.Name = name)
-            |> Seq.map getSettingDisplay
-            |> _statusUtil.OnStatusLong
+            withSetting name name (fun setting _ ->
+                let display = getSettingDisplay setting
+                _statusUtil.OnStatus display)
 
         // Display the terminal options
         let displayAllTerminal() = 
