@@ -176,6 +176,15 @@ namespace VsVim.UnitTest
             }
         }
 
+        private void ClearHistory(ITextBuffer textBuffer)
+        {
+            IBasicUndoHistory basicUndoHistory;
+            if (BasicUndoHistoryRegistry.TryGetBasicUndoHistory(textBuffer, out basicUndoHistory))
+            {
+                basicUndoHistory.Clear();
+            }
+        }
+
         protected override CompositionContainer GetOrCreateCompositionContainer()
         {
             if (_compositionContainer == null)
@@ -273,6 +282,7 @@ namespace VsVim.UnitTest
             var weakTextView = new WeakReference(textView);
 
             // Clean up 
+            ClearHistory(textView.TextBuffer);
             textView.Close();
             textView = null;
             Assert.True(vimBuffer.IsClosed);
@@ -333,6 +343,7 @@ namespace VsVim.UnitTest
             var weakTextView = new WeakReference(vimBuffer.TextView);
 
             // Clean up 
+            ClearHistory(vimBuffer.TextBuffer);
             vimBuffer.TextView.Close();
             vimBuffer = null;
 
