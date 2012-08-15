@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.Composition;
 using System.Windows.Threading;
+using EditorUtils;
 
 namespace Vim.UI.Wpf.Implementation.Misc
 {
@@ -21,7 +22,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
             private readonly IProtectedOperations _protectedOperations;
             private readonly KeyMappingTimeoutHandler _keyMappingTimeoutHandler;
 
-            internal TimerData(IVimBuffer vimBuffer, IProtectedOperations protectedOperations, KeyMappingTimeoutHandler keyMappingTimeoutHandler)
+            internal TimerData(IVimBuffer vimBuffer, [EditorUtilsImport] IProtectedOperations protectedOperations, KeyMappingTimeoutHandler keyMappingTimeoutHandler)
             {
                 _protectedOperations = protectedOperations;
                 _vimBuffer = vimBuffer;

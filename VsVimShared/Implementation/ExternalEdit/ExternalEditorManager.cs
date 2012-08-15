@@ -19,7 +19,7 @@ namespace VsVim.Implementation.ExternalEdit
         [ImportingConstructor]
         internal ExternalEditorManager(
             IVsAdapter vsAdapter, 
-            IProtectedOperations protectedOperations,
+            [EditorUtilsImport] IProtectedOperations protectedOperations,
             [ImportMany] IEnumerable<IExternalEditAdapter> adapters)
         {
             _vsAdapter = vsAdapter;

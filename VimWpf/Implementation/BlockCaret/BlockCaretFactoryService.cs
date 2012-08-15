@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
+using EditorUtils;
 
 namespace Vim.UI.Wpf.Implementation.BlockCaret
 {
@@ -21,7 +22,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 #pragma warning restore 169
 
         [ImportingConstructor]
-        internal BlockCaretFactoryService(IEditorFormatMapService formatMapService, IProtectedOperations protectedOperations)
+        internal BlockCaretFactoryService(IEditorFormatMapService formatMapService, [EditorUtilsImport] IProtectedOperations protectedOperations)
         {
             _formatMapService = formatMapService;
             _protectedOperations = protectedOperations;

@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.Win32;
 using Vim;
 using Vim.UI.Wpf;
+using EditorUtils;
 
 namespace VsVim.Implementation.Misc
 {
@@ -34,7 +35,7 @@ namespace VsVim.Implementation.Misc
         }
 
         [ImportingConstructor]
-        internal KeyBindingService(SVsServiceProvider serviceProvider, IOptionsDialogService service, IProtectedOperations protectedOperations, ILegacySettings legacySettings)
+        internal KeyBindingService(SVsServiceProvider serviceProvider, IOptionsDialogService service, [EditorUtilsImport] IProtectedOperations protectedOperations, ILegacySettings legacySettings)
         {
             _dte = serviceProvider.GetService<SDTE, _DTE>();
             _vsShell = serviceProvider.GetService<SVsShell, IVsShell>();

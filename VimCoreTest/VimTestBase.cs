@@ -35,19 +35,9 @@ namespace Vim.UnitTest
         private IWordUtilFactory _wordUtilFactory;
         private IFoldManagerFactory _foldManagerFactory;
         private IBufferTrackingService _bufferTrackingService;
-        private IProtectedOperations _protectedOperations;
         private IBulkOperations _bulkOperations;
         private IClipboardDevice _clipboardDevice;
         private IKeyUtil _keyUtil;
-
-        /// <summary>
-        /// An IProtectedOperations value which will be properly checked in the context of this
-        /// test case
-        /// </summary>
-        public IProtectedOperations ProtectedOperations
-        {
-            get { return _protectedOperations; }
-        }
 
         public IVim Vim
         {
@@ -131,7 +121,6 @@ namespace Vim.UnitTest
             _bulkOperations = CompositionContainer.GetExportedValue<IBulkOperations>();
             _clipboardDevice = CompositionContainer.GetExportedValue<IClipboardDevice>();
             _keyUtil = CompositionContainer.GetExportedValue<IKeyUtil>();
-            _protectedOperations = new ProtectedOperations(_vimErrorDetector);
 
             _clipboardDevice.Text = String.Empty;
 

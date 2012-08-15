@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
+using EditorUtils;
 
 namespace VsVim.Implementation.ExternalEdit
 {

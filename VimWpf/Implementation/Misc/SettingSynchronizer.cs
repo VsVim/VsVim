@@ -2,6 +2,7 @@
 using System.ComponentModel.Composition;
 using System.Windows.Threading;
 using Microsoft.VisualStudio.Text.Editor;
+using EditorUtils;
 
 namespace Vim.UI.Wpf.Implementation.Misc
 {
@@ -14,7 +15,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
         IProtectedOperations _protectedOperations;
 
         [ImportingConstructor]
-        internal SettingSynchronizer(IProtectedOperations protectedOperations)
+        internal SettingSynchronizer([EditorUtilsImport] IProtectedOperations protectedOperations)
         {
             _protectedOperations = protectedOperations;
         }

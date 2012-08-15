@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.Composition;
+using EditorUtils;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
@@ -14,7 +15,7 @@ namespace Vim.UI.Wpf.Implementation.Paste
         private readonly IProtectedOperations _protectedOperations;
 
         [ImportingConstructor]
-        internal PasteFactoryService(IEditorFormatMapService formatMapService, IProtectedOperations protectedOperations)
+        internal PasteFactoryService(IEditorFormatMapService formatMapService, [EditorUtilsImport] IProtectedOperations protectedOperations)
         {
             _formatMapService = formatMapService;
             _protectedOperations = protectedOperations;

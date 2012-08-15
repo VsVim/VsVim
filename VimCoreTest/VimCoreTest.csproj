@@ -58,8 +58,9 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EditorUtils, Version=1.0.0.3, Culture=neutral, PublicKeyToken=3d1514c4742e0252, processorArchitecture=MSIL">
-      <HintPath>..\packages\EditorUtils.1.0.0.3\lib\net40\EditorUtils.dll</HintPath>
+    <Reference Include="EditorUtils, Version=1.0.0.6, Culture=neutral, PublicKeyToken=3d1514c4742e0252, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\EditorUtils.1.0.0.6\lib\net40\EditorUtils.dll</HintPath>
     </Reference>
     <Reference Include="FSharp.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.CoreUtility, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />

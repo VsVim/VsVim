@@ -11,6 +11,7 @@ using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
+using EditorUtils;
 
 namespace VsVim
 {
@@ -62,7 +63,7 @@ namespace VsVim
             IResharperUtil resharperUtil,
             IDisplayWindowBrokerFactoryService displayWindowBrokerFactoryService,
             IVsAdapter adapter,
-            IProtectedOperations protectedOperations,
+            [EditorUtilsImport] IProtectedOperations protectedOperations,
             IVimBufferCoordinatorFactory bufferCoordinatorFactory,
             IKeyUtil keyUtil)
         {
