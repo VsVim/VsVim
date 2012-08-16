@@ -391,6 +391,54 @@ namespace VsVim.UnitTest
                 VerifyHandle(KeyInputUtil.CharWithControlToKeyInput('e').Char.ToString());
                 _factory.Verify();
             }
+
+            /// <summary>
+            /// Visual Studio won't pass along any characters less or equal to 0x1f so we need to
+            /// handle them no matter what mode we are in
+            /// </summary>
+            [Fact]
+            public void LowerControlKeys()
+            {
+                const int max = 0x1f;
+                var count = 0;
+                _mockVimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
+                _mockVimBuffer.Setup(x => x.CanProcessAsCommand(It.IsAny<KeyInput>())).Returns(false);
+                _mockVimBuffer
+                    .Setup(x => x.Process(It.IsAny<KeyInput>()))
+                    .Callback(() => { count++; })
+                    .Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
+                for (var i = 1; i <= max; i++)
+                {
+                    var c = (char)i;
+                    var text = c.ToString();
+                    VerifyHandle(text);
+                }
+                Assert.Equal(max, count);
+            }
+
+            /// <summary>
+            /// Visual Studio will pass along other control characters so don't handle them.  Let them
+            /// go through intellisense
+            /// </summary>
+            [Fact]
+            public void UpperControlKeys()
+            {
+                const int start = 0x20;
+                var count = 0;
+                _mockVimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
+                _mockVimBuffer.Setup(x => x.CanProcessAsCommand(It.IsAny<KeyInput>())).Returns(false);
+                _mockVimBuffer
+                    .Setup(x => x.Process(It.IsAny<KeyInput>()))
+                    .Callback(() => { count++; })
+                    .Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
+                for (var i = start; i <= start + 10; i++)
+                {
+                    var c = (char)i;
+                    var text = c.ToString();
+                    VerifyNotHandle(text);
+                }
+                Assert.Equal(0, count);
+            }
         }
 
         /// <summary>
