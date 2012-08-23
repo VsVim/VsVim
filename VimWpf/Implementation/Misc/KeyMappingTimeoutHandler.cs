@@ -111,7 +111,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
         internal event EventHandler Tick;
 
         [ImportingConstructor]
-        internal KeyMappingTimeoutHandler(IProtectedOperations protectedOperations)
+        internal KeyMappingTimeoutHandler([EditorUtilsImport] IProtectedOperations protectedOperations)
         {
             _protectedOperations = protectedOperations;
         }
