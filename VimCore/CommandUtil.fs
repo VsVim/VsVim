@@ -1289,12 +1289,18 @@ type internal CommandUtil
 
     /// Move the caret to the proper indent on the newly created line
     member x.MoveCaretToNewLineIndent contextLine newLine = 
-        match _commonOperations.GetNewLineIndent contextLine newLine with
-        | None -> 
-            TextViewUtil.MoveCaretToPoint _textView newLine.Start 
-        | Some indent ->
+
+        // Calling GetNewLineIndent can cause a buffer edit.  Need to rebind
+        // the snapshot related items after calling the API
+        let indent = _commonOperations.GetNewLineIndent contextLine newLine 
+        match SnapshotUtil.TryGetLine x.CurrentSnapshot newLine.LineNumber, indent with
+        | Some newLine, Some indent -> 
             let virtualPoint = VirtualSnapshotPoint(newLine.Start, indent)
             TextViewUtil.MoveCaretToVirtualPoint _textView virtualPoint
+        | Some newLine, None ->
+            TextViewUtil.MoveCaretToPoint _textView newLine.Start 
+        | None, Some _ -> ()
+        | None, None -> ()
 
     /// The Join commands (Visual and Normal) have identical cursor positioning behavior and 
     /// it's non-trivial so it's factored out to a function here.  In short the caret should be

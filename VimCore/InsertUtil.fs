@@ -235,20 +235,23 @@ type internal InsertUtil
             // Now we need to position the caret within the new line
             let newLine = SnapshotUtil.GetLine x.CurrentSnapshot (contextLine.LineNumber + 1)
             match _operations.GetNewLineIndent contextLine newLine with
-            | None -> 
-                // Nothing to do
-                ()
+            | None -> ()
             | Some indent ->
-                // If there is actual text on this new line (enter in the middle of the
-                // line) then we need to insert white space.  Else we just put the caret
-                // into virtual space
-                let indentText = StringUtil.repeat indent " " |> _operations.NormalizeBlanks
-                if indentText.Length > 0 && newLine.Length > 0 then
-                    _textBuffer.Insert(newLine.Start.Position, indentText) |> ignore
-                    TextViewUtil.MoveCaretToPosition _textView (newLine.Start.Position + indentText.Length)
-                else
-                    let virtualPoint = VirtualSnapshotPoint(newLine.Start, indent)
-                    TextViewUtil.MoveCaretToVirtualPoint _textView virtualPoint)
+                // Calling GetNewLineIndent can cause a buffer edit.  Need to rebind all of the
+                // snapshot related items
+                match SnapshotUtil.TryGetLine x.CurrentSnapshot newLine.LineNumber with
+                | None -> ()
+                | Some newLine ->
+                    // If there is actual text on this new line (enter in the middle of the
+                    // line) then we need to insert white space.  Else we just put the caret
+                    // into virtual space
+                    let indentText = StringUtil.repeat indent " " |> _operations.NormalizeBlanks
+                    if indentText.Length > 0 && newLine.Length > 0 then
+                        _textBuffer.Insert(newLine.Start.Position, indentText) |> ignore
+                        TextViewUtil.MoveCaretToPosition _textView (newLine.Start.Position + indentText.Length)
+                    else
+                        let virtualPoint = VirtualSnapshotPoint(newLine.Start, indent)
+                        TextViewUtil.MoveCaretToVirtualPoint _textView virtualPoint)
 
         CommandResult.Completed ModeSwitch.NoSwitch
 

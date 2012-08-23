@@ -274,6 +274,12 @@ type ICommonOperations =
 
     /// Get the indentation for a newly created ITextSnasphotLine.  The context line is
     /// is provided to calcualte the indentation off of 
+    ///
+    /// Warning: Calling this API can cause the buffer to be editted.  Asking certain 
+    /// editor implementations about the indentation, in particular Razor, can cause
+    /// an edit to occur.  
+    ///
+    /// Issue #946
     abstract GetNewLineIndent : contextLine : ITextSnapshotLine -> newLine : ITextSnapshotLine -> int option
 
     /// Get the standard ReplaceData for the given SnapshotPoint
