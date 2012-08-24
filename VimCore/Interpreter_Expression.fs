@@ -364,6 +364,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Process the 'source' command.  
     | Source of bool * string
 
+    /// The version command
+    | Version
+
     /// Process the 'vsplit' command. Values are as per HorizontalSplit
     | VerticalSplit of LineRangeSpecifier * FileOption list * CommandOption option
 

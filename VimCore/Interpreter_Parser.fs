@@ -106,6 +106,7 @@ type Parser
         ("tabrewind", "tabr")
         ("undo", "u")
         ("vglobal", "v")
+        ("version", "ve")
         ("vscmd", "vsc")
         ("vsplit", "vsp")
         ("write","w")
@@ -1330,6 +1331,7 @@ type Parser
                 | "tabprevious" -> noRange x.ParseTabPrevious
                 | "undo" -> noRange (fun () -> LineCommand.Undo |> ParseResult.Succeeded)
                 | "unmap" -> noRange (fun () -> x.ParseMapUnmap true [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
+                | "version" -> noRange (fun () -> ParseResult.Succeeded LineCommand.Version)
                 | "vglobal" -> x.ParseGlobalCore lineRange false
                 | "vmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Visual;KeyRemapMode.Select])
                 | "vmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Visual; KeyRemapMode.Select])

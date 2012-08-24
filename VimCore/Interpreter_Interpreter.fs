@@ -1220,6 +1220,11 @@ type Interpreter
 
         RunResult.Completed
 
+    member x.RunVersion() = 
+        let msg = sprintf "VsVim Version %s" Constants.VersionNumber
+        _statusUtil.OnStatus msg
+        RunResult.Completed
+
     member x.RunVisualStudioCommand command argument =
         _vimHost.RunVisualStudioCommand command argument
         RunResult.Completed
@@ -1315,6 +1320,7 @@ type Interpreter
         | LineCommand.SubstituteRepeat (lineRange, substituteFlags) -> x.RunSubstituteRepeatLast lineRange substituteFlags
         | LineCommand.Undo -> x.RunUndo()
         | LineCommand.UnmapKeys (keyNotation, keyRemapModes, mapArgumentList) -> x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList
+        | LineCommand.Version -> x.RunVersion()
         | LineCommand.VerticalSplit (lineRange, fileOptions, commandOptions) -> x.RunSplit _vimHost.SplitViewVertically fileOptions commandOptions
         | LineCommand.VisualStudioCommand (command, argument) -> x.RunVisualStudioCommand command argument
         | LineCommand.Write (lineRange, hasBang, fileOptionList, filePath) -> x.RunWrite lineRange hasBang fileOptionList filePath

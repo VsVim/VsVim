@@ -1112,6 +1112,20 @@ namespace Vim.UnitTest
                     }
                 }
             }
+
+            [Fact]
+            public void Version()
+            {
+                var command = ParseLineCommand("version");
+                Assert.True(command.IsVersion);
+            }
+
+            [Fact]
+            public void Version_Short()
+            {
+                var command = ParseLineCommand("ve");
+                Assert.True(command.IsVersion);
+            }
         }
     }
 }
