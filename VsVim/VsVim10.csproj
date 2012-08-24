@@ -16,7 +16,8 @@
     <GeneratePkgDefFile>false</GeneratePkgDefFile>
     <StartAction>Program</StartAction>
     <StartProgram>$(DevEnvDir)\devenv.exe</StartProgram>
-    <StartArguments>/rootsuffix Exp</StartArguments>
+    <StartArguments>/rootsuffix ExpVsVim</StartArguments>
+    <VSSDKTargetPlatformRegRootSuffix>ExpVsVim</VSSDKTargetPlatformRegRootSuffix>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
     <VisualStudioTarget>Dev10</VisualStudioTarget>
