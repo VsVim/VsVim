@@ -270,7 +270,7 @@ type internal Vim
                 let name = _vimHost.GetName h.TextBuffer 
                 let name = System.IO.Path.GetFileName(name)
                 Some name
-        RegisterMap(_clipboardDevice, currentFileNameFunc) :> IRegisterMap
+        RegisterMap(_vimData, _clipboardDevice, currentFileNameFunc) :> IRegisterMap
 
     let _recorder = MacroRecorder(_registerMap)
 

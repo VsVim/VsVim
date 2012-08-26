@@ -44,7 +44,7 @@ namespace Vim.UnitTest
                 var result = func();
                 return string.IsNullOrEmpty(result) ? FSharpOption<string>.None : FSharpOption.Create(result);
             };
-            return new RegisterMap(device, func2.ToFSharpFunc());
+            return new RegisterMap(new VimData(), device, func2.ToFSharpFunc());
         }
 
         internal static CommandBinding CreateNormalBinding(string name)

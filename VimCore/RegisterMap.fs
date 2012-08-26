@@ -29,8 +29,14 @@ type AppendRegisterValueBacking (_register : Register) =
             with get () = _register.RegisterValue
             and set value = _register.RegisterValue <- _register.RegisterValue.Append value
 
+type LastSearchRegisterValueBacking (_vimData : IVimData) = 
+    interface IRegisterValueBacking with
+        member x.RegisterValue 
+            with get () = RegisterValue.OfString _vimData.LastPatternData.Pattern OperationKind.CharacterWise
+            and set value = _vimData.LastPatternData <- { Pattern = value.StringValue; Path = Path.Forward }
+
 type internal RegisterMap (_map: Map<RegisterName, Register>) =
-    new(clipboard : IClipboardDevice, currentFileNameFunc : unit -> string option) = 
+    new(vimData : IVimData, clipboard : IClipboardDevice, currentFileNameFunc : unit -> string option) = 
         let clipboardBacking = ClipboardRegisterValueBacking(clipboard) :> IRegisterValueBacking
         let fileNameBacking = { new IRegisterValueBacking with
             member x.RegisterValue
@@ -50,6 +56,7 @@ type internal RegisterMap (_map: Map<RegisterName, Register>) =
             | RegisterName.SelectionAndDrop(SelectionAndDropRegister.Register_Plus) -> clipboardBacking
             | RegisterName.SelectionAndDrop(SelectionAndDropRegister.Register_Star) -> clipboardBacking
             | RegisterName.ReadOnly(ReadOnlyRegister.Register_Percent) -> fileNameBacking
+            | RegisterName.LastSearchPattern -> LastSearchRegisterValueBacking(vimData) :> IRegisterValueBacking
             | _ -> DefaultRegisterValueBacking() :> IRegisterValueBacking
 
         // Create the map without the append registers

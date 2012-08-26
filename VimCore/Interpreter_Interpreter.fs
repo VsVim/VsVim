@@ -455,16 +455,24 @@ type Interpreter
     /// Display the registers.  If a particular name is specified only display that register
     member x.RunDisplayRegisters registerName =
 
+        // The value when display shouldn't contain any new lines.  They are expressed as instead
+        // ^J which is the key-notation for <NL>
+        let normalizeDisplayString (data : string) = data.Replace(System.Environment.NewLine, "^J")
+
         let names = 
             match registerName with
             | None -> 
 
-                // If no names are used then we display all named and numbered registers 
+                // The documentation for this command says that it should display only the
+                // named and numbered registers.  Experimentation shows that it should also
+                // display last search, the quote star and a few others
                 RegisterName.All
                 |> Seq.filter (fun name ->
                     match name with
                     | RegisterName.Numbered _ -> true
                     | RegisterName.Named named -> not named.IsAppend
+                    | RegisterName.SelectionAndDrop drop -> drop <> SelectionAndDropRegister.Register_Star
+                    | RegisterName.LastSearchPattern -> true
                     | _ -> false)
             | Some registerName ->
                 // Convert the remaining items to registers.  Should work with any valid 
@@ -479,7 +487,7 @@ type Interpreter
                 match register.Name.Char, StringUtil.isNullOrEmpty register.StringValue with
                 | None, _ -> None
                 | Some c, true -> None
-                | Some c, false -> Some (c, register.StringValue))
+                | Some c, false -> Some (c, normalizeDisplayString register.StringValue))
             |> SeqUtil.filterToSome
             |> Seq.map (fun (name, value) -> sprintf "\"%c   %s" name value)
         let lines = Seq.append (Seq.singleton Resources.CommandMode_RegisterBanner) lines

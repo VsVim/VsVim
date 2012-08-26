@@ -470,6 +470,105 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class Registers : InterpreterTest
+        {
+            private void AssertLineCore(string line, bool doFind)
+            {
+                var found = false;
+                foreach (var status in _statusUtil.LastStatus.Split(new [] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    if (status == line)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                Assert.Equal(doFind, found);
+            }
+
+            private void AssertLine(string line)
+            {
+                AssertLineCore(line, doFind: true);
+            }
+
+            private void AssertNotLine(string line)
+            {
+                AssertLineCore(line, doFind: false);
+            }
+
+            /// <summary>
+            /// Ensure the unnamed register is displayed if the clipboard has a value 
+            /// when the clipboard has text
+            /// </summary>
+            [Fact]
+            public void Unnamed()
+            {
+                Create("");
+                ClipboardDevice.Text = "clipboard";
+                ParseAndRun("reg");
+                AssertLine(@"""+   clipboard");
+            }
+
+            /// <summary>
+            /// The clipboard register should not be displayed via the + register
+            /// </summary>
+            [Fact]
+            public void Unnamed_ViaStar()
+            {
+                Create("");
+                ClipboardDevice.Text = "clipboard";
+                ParseAndRun("reg");
+                AssertNotLine(@"""*   clipboard");
+            }
+
+            /// <summary>
+            /// Deleting a line should cause register 1 to be filled with the contents
+            /// </summary>
+            [Fact]
+            public void Register1_DeleteLine()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("dd");
+                ParseAndRun("reg");
+                AssertLine(@"""1   cat^J");
+            }
+
+            /// <summary>
+            /// Yanking a line should cause register 0 to be filled with the contents
+            /// </summary>
+            [Fact]
+            public void Register0_YankLine()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("yy");
+                ParseAndRun("reg");
+                AssertLine(@"""0   cat^J");
+            }
+
+            [Fact]
+            public void LastSearch()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("/test", enter: true);
+                ParseAndRun("reg");
+                AssertLine(@"""/   test");
+            }
+
+            /// <summary>
+            /// The last search register should be binding to the LastPatternData member
+            /// </summary>
+            [Fact]
+            public void LastSearch_ViaLastPattern()
+            {
+                Create("");
+                _vimData.LastPatternData = new PatternData("test", Path.Forward);
+                ParseAndRun("reg");
+                AssertLine(@"""/   test");
+
+            }
+        }
+
         public sealed class Misc : InterpreterTest
         {
             private LineRangeSpecifier ParseLineRange(string lineRangeText)
