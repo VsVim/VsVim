@@ -251,6 +251,11 @@ namespace VsVim
                         kind = EditCommandKind.Redo;
                     }
                     break;
+                case VSConstants.VSStd97CmdID.GotoDecl:
+                case VSConstants.VSStd97CmdID.GotoDefn:
+                    ki = KeyInput.DefaultValue;
+                    kind = EditCommandKind.GoToDefinition;
+                    break;
             }
 
             return ki != null;
