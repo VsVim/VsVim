@@ -361,52 +361,70 @@ namespace VsVim
             return true;
         }
 
+        private bool Exec(EditCommand editCommand)
+        {
+            VimTrace.TraceInfo("VsCommandTarget::Exec {0}", editCommand);
+            if (editCommand.IsUndo)
+            {
+                // The user hit the undo button.  Don't attempt to map anything here and instead just 
+                // run a single Vim undo operation
+                _vimBuffer.UndoRedoOperations.Undo(1);
+                return true;
+            }
+            else if (editCommand.IsRedo)
+            {
+                // The user hit the redo button.  Don't attempt to map anything here and instead just 
+                // run a single Vim redo operation
+                _vimBuffer.UndoRedoOperations.Redo(1);
+                return true;
+            }
+            else if (editCommand.HasKeyInput)
+            {
+                var keyInput = editCommand.KeyInput;
+
+                // Discard the input if it's been flagged by a previous QueryStatus
+                if (_bufferCoordinator.DiscardedKeyInput.IsSome(keyInput))
+                {
+                    return true;
+                }
+
+                // Try and process the command with the IVimBuffer
+                if (TryProcessWithBuffer(keyInput))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
         {
+            EditCommand editCommand = null;
             try
             {
-                EditCommand editCommand;
-                if (TryConvert(commandGroup, commandId, variantIn, out editCommand))
+                if (TryConvert(commandGroup, commandId, variantIn, out editCommand) &&
+                    Exec(editCommand))
                 {
-                    VimTrace.TraceInfo("VsCommandTarget::Exec {0}", editCommand);
-                    if (editCommand.IsUndo)
-                    {
-                        // The user hit the undo button.  Don't attempt to map anything here and instead just 
-                        // run a single Vim undo operation
-                        _vimBuffer.UndoRedoOperations.Undo(1);
-                        return NativeMethods.S_OK;
-                    }
-                    else if (editCommand.IsRedo)
-                    {
-                        // The user hit the redo button.  Don't attempt to map anything here and instead just 
-                        // run a single Vim redo operation
-                        _vimBuffer.UndoRedoOperations.Redo(1);
-                        return NativeMethods.S_OK;
-                    }
-                    else if (editCommand.HasKeyInput)
-                    {
-                        var keyInput = editCommand.KeyInput;
-
-                        // Discard the input if it's been flagged by a previous QueryStatus
-                        if (_bufferCoordinator.DiscardedKeyInput.IsSome(keyInput))
-                        {
-                            return NativeMethods.S_OK;
-                        }
-
-                        // Try and process the command with the IVimBuffer
-                        if (TryProcessWithBuffer(keyInput))
-                        {
-                            return NativeMethods.S_OK;
-                        }
-                    }
+                    return NativeMethods.S_OK;
                 }
+
+                return _nextTarget.Exec(commandGroup, commandId, commandExecOpt, variantIn, variantOut);
             }
             finally
             {
                 _bufferCoordinator.DiscardedKeyInput = FSharpOption<KeyInput>.None;
-            }
 
-            return _nextTarget.Exec(commandGroup, commandId, commandExecOpt, variantIn, variantOut);
+                // The GoToDefinition command will often cause a selection to occur in the 
+                // buffer.  We don't want that to cause us to enter Visual Mode so clear it
+                // out 
+                if (editCommand != null && 
+                    editCommand.EditCommandKind == EditCommandKind.GoToDefinition &&
+                    !_vimBuffer.TextView.Selection.IsEmpty)
+                {
+                    _vimBuffer.TextView.Selection.Clear();
+                }
+            }
         }
 
         int IOleCommandTarget.QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
@@ -524,7 +542,7 @@ namespace VsVim
             IVsTextView vsTextView,
             IVsAdapter adapter,
             IDisplayWindowBroker broker,
-            IResharperUtil resharperUtil, 
+            IResharperUtil resharperUtil,
             IKeyUtil keyUtil)
         {
             var vsCommandTarget = new VsCommandTarget(bufferCoordinator, adapter, broker, resharperUtil, keyUtil);
