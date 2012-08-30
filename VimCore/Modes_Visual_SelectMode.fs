@@ -21,12 +21,20 @@ type internal SelectMode
     /// text and put the caret just after the insert.  This needs to be a single undo 
     /// transaction 
     member x.ProcessInput text = 
+
+        // During undo we don't want the currently selected text to be reselected as that
+        // would put the editor back into select mode.  Clear the selection now so that
+        // it's not recorderd in the undo transaction and move the caret to the selection
+        // start
+        let span = _textView.Selection.StreamSelectionSpan.SnapshotSpan
+        _textView.Selection.Clear()
+        TextViewUtil.MoveCaretToPoint _textView span.Start
+
         _undoRedoOperations.EditWithUndoTransaction "Replace" (fun () -> 
 
             use edit = _textBuffer.CreateEdit()
 
             // First step is to replace the deleted text with the new one
-            let span = _textView.Selection.StreamSelectionSpan.SnapshotSpan
             edit.Delete(span.Span) |> ignore
             edit.Insert(span.End.Position, text) |> ignore
 
