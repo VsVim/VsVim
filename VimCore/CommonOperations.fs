@@ -283,6 +283,69 @@ type internal CommonOperations
                 let stringData = range.ExtentIncludingLineBreak |> StringData.OfSpan
                 doDelete range.ExtentIncludingLineBreak range.StartLine.Start false
 
+    /// Move the caret in the given direction
+    member x.MoveCaret caretMovement = 
+
+        /// Move the caret up
+        let moveUp () =
+            match SnapshotUtil.TryGetLine x.CurrentSnapshot (x.CaretLine.LineNumber - 1) with
+            | None -> false
+            | Some line ->
+                _editorOperations.MoveLineUp(false);
+                true
+
+        /// Move the caret down
+        let moveDown () =
+            match SnapshotUtil.TryGetLine x.CurrentSnapshot (x.CaretLine.LineNumber + 1) with
+            | None -> false
+            | Some line ->
+                _editorOperations.MoveLineDown(false);
+                true
+
+        /// Move the caret left.  Don't go past the start of the line 
+        let moveLeft () = 
+            if x.CaretLine.Start.Position < x.CaretPoint.Position then
+                let point = SnapshotPointUtil.SubtractOne x.CaretPoint
+                x.MoveCaretToPointAndEnsureVisible point
+                true
+            else
+                false
+
+        /// Move the caret right.  Don't go off the end of the line
+        let moveRight () =
+            if x.CaretPoint.Position < x.CaretLine.End.Position then
+                let point = SnapshotPointUtil.AddOne x.CaretPoint
+                x.MoveCaretToPointAndEnsureVisible point
+                true
+            else
+                false
+
+        let moveHome () =
+            _editorOperations.MoveToStartOfLine(false)
+            true
+
+        let moveEnd () =
+            _editorOperations.MoveToEndOfLine(false)
+            true
+
+        let movePageUp () =
+            _editorOperations.PageUp(false)
+            true
+
+        let movePageDown () =
+            _editorOperations.PageDown(false)
+            true
+
+        match caretMovement with
+        | CaretMovement.Up -> moveUp()
+        | CaretMovement.Down -> moveDown()
+        | CaretMovement.Left -> moveLeft()
+        | CaretMovement.Right -> moveRight()
+        | CaretMovement.Home -> moveHome()
+        | CaretMovement.End -> moveEnd()
+        | CaretMovement.PageUp -> movePageUp()
+        | CaretMovement.PageDown -> movePageDown()
+
     /// Move the caret to the specified point and ensure it's visible and the surrounding 
     /// text is expanded
     ///
@@ -1001,6 +1064,7 @@ type internal CommonOperations
         member x.GoToNextTab direction count = _vimHost.GoToNextTab direction count
         member x.GoToTab index = _vimHost.GoToTab index
         member x.Join range kind = x.Join range kind
+        member x.MoveCaret caretMovement = x.MoveCaret caretMovement
         member x.MoveCaretToPoint point =  TextViewUtil.MoveCaretToPoint _textView point 
         member x.MoveCaretToPointAndEnsureVisible point = x.MoveCaretToPointAndEnsureVisible point
         member x.MoveCaretToPointAndCheckVirtualSpace point = x.MoveCaretToPointAndCheckVirtualSpace point

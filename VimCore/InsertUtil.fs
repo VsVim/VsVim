@@ -304,52 +304,12 @@ type internal InsertUtil
 
     /// Move the caret in the given direction
     member x.MoveCaret direction = 
-
-        /// Move the caret up
-        let moveUp () =
-            match SnapshotUtil.TryGetLine x.CurrentSnapshot (x.CaretLine.LineNumber - 1) with
-            | None ->
-                _operations.Beep()
-                CommandResult.Error
-            | Some line ->
-                _editorOperations.MoveLineUp(false);
-                CommandResult.Completed ModeSwitch.NoSwitch
-
-        /// Move the caret down
-        let moveDown () =
-            match SnapshotUtil.TryGetLine x.CurrentSnapshot (x.CaretLine.LineNumber + 1) with
-            | None ->
-                _operations.Beep()
-                CommandResult.Error
-            | Some line ->
-                _editorOperations.MoveLineDown(false);
-                CommandResult.Completed ModeSwitch.NoSwitch
-    
-        /// Move the caret left.  Don't go past the start of the line 
-        let moveLeft () = 
-            if x.CaretLine.Start.Position < x.CaretPoint.Position then
-                let point = SnapshotPointUtil.SubtractOne x.CaretPoint
-                _operations.MoveCaretToPointAndEnsureVisible point
-                CommandResult.Completed ModeSwitch.NoSwitch
-            else
-                _operations.Beep()
-                CommandResult.Error
-
-        /// Move the caret right.  Don't go off the end of the line
-        let moveRight () =
-            if x.CaretPoint.Position < x.CaretLine.End.Position then
-                let point = SnapshotPointUtil.AddOne x.CaretPoint
-                _operations.MoveCaretToPointAndEnsureVisible point
-                CommandResult.Completed ModeSwitch.NoSwitch
-            else
-                _operations.Beep()
-                CommandResult.Error
-
-        match direction with
-        | Direction.Up -> moveUp()
-        | Direction.Down -> moveDown()
-        | Direction.Left -> moveLeft()
-        | Direction.Right -> moveRight()
+        let caretMovement = CaretMovement.OfDirection direction
+        if _operations.MoveCaret caretMovement then
+            CommandResult.Completed ModeSwitch.NoSwitch
+        else
+            _operations.Beep()
+            CommandResult.Error
 
     member x.MoveCaretByWord direction = 
         let moveLeft () = 

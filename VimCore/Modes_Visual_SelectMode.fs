@@ -14,6 +14,7 @@ type internal SelectMode
         _selectionTracker : ISelectionTracker
     ) = 
 
+    let _globalSettings = _vimBufferData.LocalSettings.GlobalSettings
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
     let _textBuffer = _vimBufferData.TextBuffer
     let _textView = _vimBufferData.TextView
@@ -22,6 +23,41 @@ type internal SelectMode
         | VisualKind.Character -> ModeKind.SelectCharacter
         | VisualKind.Line -> ModeKind.SelectLine
         | VisualKind.Block -> ModeKind.SelectBlock
+
+    /// A 'special key' is defined in :help keymodel as any of the following keys.  Depending
+    /// on the value of the keymodel setting they can affect the selection
+    static let GetCaretMovement (keyInput : KeyInput) =
+        if keyInput.KeyModifiers <> KeyModifiers.None then
+            None
+        else
+            match keyInput.Key with
+            | VimKey.Up -> Some CaretMovement.Up
+            | VimKey.Right -> Some CaretMovement.Right
+            | VimKey.Down -> Some CaretMovement.Down
+            | VimKey.Left -> Some CaretMovement.Left
+            | VimKey.Home -> Some CaretMovement.Home
+            | VimKey.End -> Some CaretMovement.End
+            | VimKey.PageUp -> Some CaretMovement.PageUp
+            | VimKey.PageDown -> Some CaretMovement.PageDown
+            | _ -> None
+
+    member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
+
+    member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
+
+    member x.CaretLine = TextViewUtil.GetCaretLine _textView
+
+    member x.CurrentSnapshot = _textView.TextSnapshot
+
+    member x.ProcessCaretMovement caretMovement = 
+        _commonOperations.MoveCaret caretMovement |> ignore
+
+        if Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StopSelection then
+            ProcessResult.Handled ModeSwitch.SwitchPreviousMode
+        else
+            // The caret moved so we need to update the selection 
+            _selectionTracker.UpdateSelection()
+            ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// The user hit an input key.  Need to replace the current selection with the given 
     /// text and put the caret just after the insert.  This needs to be a single undo 
@@ -65,10 +101,14 @@ type internal SelectMode
                 x.ProcessInput text
             elif keyInput.Key = VimKey.Delete || keyInput.Key = VimKey.Back then
                 x.ProcessInput ""
-            elif Option.isSome keyInput.RawChar then
-                x.ProcessInput (StringUtil.ofChar keyInput.Char)
             else
-                ProcessResult.Handled ModeSwitch.NoSwitch
+                match GetCaretMovement keyInput with
+                | Some caretMovement -> x.ProcessCaretMovement caretMovement
+                | None -> 
+                    if Option.isSome keyInput.RawChar then
+                        x.ProcessInput (StringUtil.ofChar keyInput.Char)
+                    else
+                        ProcessResult.Handled ModeSwitch.NoSwitch
 
         if processResult.IsAnySwitch then
             _textView.Selection.Clear()

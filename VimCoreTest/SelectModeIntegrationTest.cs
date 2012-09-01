@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Xunit;
+using System;
 
 namespace Vim.UnitTest
 {
@@ -14,7 +15,7 @@ namespace Vim.UnitTest
         protected IVimGlobalSettings _globalSettings;
         protected TestableSynchronizationContext _context;
 
-        protected void Create(params string[] lines)
+        protected virtual void Create(params string[] lines)
         {
             _vimBuffer = CreateVimBuffer(lines);
             _textView = _vimBuffer.TextView;
@@ -151,6 +152,75 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
                 Assert.Equal("cat bear", _textBuffer.GetLine(0).GetText());
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+        }
+
+        public sealed class KeyMovementCharacter : SelectModeIntegrationTest
+        {
+            [Fact]
+            public void Right()
+            {
+                Create("cat");
+                _vimBuffer.ProcessNotation("gh<Right>");
+                Assert.Equal("ca", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void Left()
+            {
+                Create("cat");
+                _vimBuffer.ProcessNotation("lgh<Left>");
+                Assert.Equal("ca", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void Down()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("gh<Down>");
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                Assert.Equal("cat" + Environment.NewLine + "d", _textView.GetSelectionSpan().GetText());
+            }
+        }
+
+        public sealed class KeyMovementWithStopSelection : SelectModeIntegrationTest
+        {
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _globalSettings.KeyModelOptions = KeyModelOptions.StopSelection;
+            }
+
+            [Fact]
+            public void Right()
+            {
+                Create("cat");
+                _vimBuffer.ProcessNotation("gh<Right>");
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.True(_textView.Selection.IsEmpty);
+            }
+
+            [Fact]
+            public void Left()
+            {
+                Create("cat");
+                _vimBuffer.ProcessNotation("lgh<Left>");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.True(_textView.Selection.IsEmpty);
+            }
+
+            [Fact]
+            public void Down()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("gh<Down>");
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.True(_textView.Selection.IsEmpty);
             }
         }
 

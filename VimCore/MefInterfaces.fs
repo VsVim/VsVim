@@ -233,6 +233,26 @@ type Result =
     | Succeeded
     | Failed of string
 
+[<RequireQualifiedAccess>]
+type CaretMovement =
+    | Up
+    | Right
+    | Down
+    | Left
+    | Home
+    | End
+    | PageUp
+    | PageDown
+
+    with 
+
+    static member OfDirection direction =
+        match direction with
+        | Direction.Up -> CaretMovement.Up
+        | Direction.Right -> CaretMovement.Right
+        | Direction.Down -> CaretMovement.Down
+        | Direction.Left -> CaretMovement.Left
+
 /// This class abstracts out the operations that are common to normal, visual and 
 /// command mode.  It usually contains common edit and movement operations and very
 /// rarely will deal with caret operations.  That is the responsibility of the 
@@ -314,6 +334,9 @@ type ICommonOperations =
 
     /// Joins the lines in the range
     abstract Join : SnapshotLineRange -> JoinKind -> unit
+
+    /// Move the caret in the specified direction
+    abstract MoveCaret : caretMovement : CaretMovement -> bool
 
     /// Move the caret to a given point on the screen
     abstract MoveCaretToPoint : SnapshotPoint -> unit
