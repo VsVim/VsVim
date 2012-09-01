@@ -60,6 +60,30 @@ namespace Vim.UnitTest
                 _context.RunAll();
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
             }
+
+            [Fact]
+            public void CommandToCharacter()
+            {
+                Create("cat");
+                _vimBuffer.ProcessNotation("gh");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+            }
+
+            [Fact]
+            public void CommandToLine()
+            {
+                Create("cat");
+                _vimBuffer.ProcessNotation("gH");
+                Assert.Equal(ModeKind.SelectLine, _vimBuffer.ModeKind);
+            }
+
+            [Fact]
+            public void CommandToBlock()
+            {
+                Create("cat");
+                _vimBuffer.ProcessNotation("g<C-H>");
+                Assert.Equal(ModeKind.SelectBlock, _vimBuffer.ModeKind);
+            }
         }
 
         public sealed class Edit : SelectModeIntegrationTest
