@@ -8,6 +8,7 @@ open Vim.Modes
 type internal SelectMode
     (
         _vimBufferData : IVimBufferData,
+        _visualKind : VisualKind,
         _commonOperations : ICommonOperations,
         _undoRedoOperations : IUndoRedoOperations,
         _selectionTracker : ISelectionTracker
@@ -16,6 +17,11 @@ type internal SelectMode
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
     let _textBuffer = _vimBufferData.TextBuffer
     let _textView = _vimBufferData.TextView
+    let _modeKind = 
+        match _visualKind with
+        | VisualKind.Character -> ModeKind.SelectCharacter
+        | VisualKind.Line -> ModeKind.SelectLine
+        | VisualKind.Block -> ModeKind.SelectBlock
 
     /// The user hit an input key.  Need to replace the current selection with the given 
     /// text and put the caret just after the insert.  This needs to be a single undo 
@@ -85,7 +91,7 @@ type internal SelectMode
     interface IMode with
         member x.VimTextBuffer = _vimTextBuffer
         member x.CommandNames = Seq.empty
-        member x.ModeKind = ModeKind.Select
+        member x.ModeKind = _modeKind
         member x.CanProcess _ = true
         member x.Process keyInput =  x.Process keyInput
         member x.OnEnter _ = x.OnEnter()

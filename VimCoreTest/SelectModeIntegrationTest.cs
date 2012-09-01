@@ -31,7 +31,7 @@ namespace Vim.UnitTest
             var span = new SnapshotSpan(_textBuffer.CurrentSnapshot, start, length);
             _textView.SelectAndMoveCaret(span);
             _context.RunAll();
-            Assert.Equal(ModeKind.Select, _vimBuffer.ModeKind);
+            Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
         }
 
         public sealed class Enter : SelectModeIntegrationTest
@@ -42,7 +42,7 @@ namespace Vim.UnitTest
                 Create("cat dog");
                 _textSelection.Select(0, 3);
                 _context.RunAll();
-                Assert.Equal(ModeKind.Select, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
             }
 
             /// <summary>
@@ -54,11 +54,11 @@ namespace Vim.UnitTest
                 Create("cat dog");
                 _textSelection.Select(0, 3);
                 _context.RunAll();
-                Assert.Equal(ModeKind.Select, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 _textSelection.Select(0, 5);
                 Assert.False(_context.IsEmpty);
                 _context.RunAll();
-                Assert.Equal(ModeKind.Select, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
             }
         }
 

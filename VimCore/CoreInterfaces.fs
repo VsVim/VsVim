@@ -793,13 +793,15 @@ type ModeKind =
     | VisualBlock = 6 
     | Replace = 7
     | SubstituteConfirm = 8
-    | Select = 9
-    | ExternalEdit = 10
+    | SelectCharacter = 9
+    | SelectLine = 10 
+    | SelectBlock = 11
+    | ExternalEdit = 12
 
     /// Initial mode for an IVimBuffer.  It will maintain this mode until the underyling
     /// ITextView completes it's initialization and allows the IVimBuffer to properly 
     /// transition to the mode matching it's underlying IVimTextBuffer
-    | Uninitialized = 11
+    | Uninitialized = 13
 
     /// Mode when Vim is disabled.  It won't interact with events it otherwise would such
     /// as selection changes
@@ -836,7 +838,14 @@ type VisualKind =
 
     static member IsAnyVisual kind = VisualKind.OfModeKind kind |> Option.isSome
 
-    static member IsAnyVisualOrSelect kind = VisualKind.IsAnyVisual kind || kind = ModeKind.Select
+    static member IsAnySelect kind = 
+        match kind with
+        | ModeKind.SelectCharacter -> true
+        | ModeKind.SelectLine -> true
+        | ModeKind.SelectBlock -> true
+        | _ -> false
+
+    static member IsAnyVisualOrSelect kind = VisualKind.IsAnyVisual kind || VisualKind.IsAnySelect kind
 
 /// The actual command name.  This is a wrapper over the collection of KeyInput 
 /// values which make up a command name.  
@@ -3877,14 +3886,14 @@ and IVimBuffer =
     /// IDisabledMode instance for disabled mode
     abstract DisabledMode : IDisabledMode
 
+    /// IVisualMode for visual character mode
+    abstract VisualCharacterMode : IVisualMode
+
     /// IVisualMode for visual line mode
     abstract VisualLineMode : IVisualMode
 
     /// IVisualMode for visual block mode
     abstract VisualBlockMode : IVisualMode
-
-    /// IVisualMode for visual character mode
-    abstract VisualCharacterMode : IVisualMode
 
     /// IInsertMode instance for insert mode
     abstract InsertMode : IInsertMode
@@ -3892,8 +3901,14 @@ and IVimBuffer =
     /// IInsertMode instance for replace mode
     abstract ReplaceMode : IInsertMode
 
-    /// ISelectMode instance for select mode
-    abstract SelectMode: ISelectMode
+    /// ISelectMode instance for character mode
+    abstract SelectCharacterMode: ISelectMode
+
+    /// ISelectMode instance for line mode
+    abstract SelectLineMode: ISelectMode
+
+    /// ISelectMode instance for block mode
+    abstract SelectBlockMode: ISelectMode
 
     /// ISubstituteConfirmDoe instance for substitute confirm mode
     abstract SubstituteConfirmMode : ISubstituteConfirmMode

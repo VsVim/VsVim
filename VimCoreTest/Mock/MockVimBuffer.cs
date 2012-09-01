@@ -28,7 +28,9 @@ namespace Vim.UnitTest.Mock
         public IIncrementalSearch IncrementalSearchImpl;
         public IInsertMode InsertModeImpl;
         public IInsertMode ReplaceModeImpl;
-        public ISelectMode SelectModeImpl;
+        public ISelectMode SelectBlockModeImpl;
+        public ISelectMode SelectCharacterModeImpl;
+        public ISelectMode SelectLineModeImpl;
         public IMode ExternalEditModeImpl;
         public bool IsProcessingInputImpl;
         public PropertyCollection PropertiesImpl;
@@ -298,6 +300,22 @@ namespace Vim.UnitTest.Mock
             get { return VisualLineModeImpl; }
         }
 
+        public ISelectMode SelectBlockMode
+        {
+            get { return SelectBlockModeImpl; }
+        }
+
+        public ISelectMode SelectCharacterMode
+        {
+            get { return SelectCharacterModeImpl; }
+        }
+
+        public ISelectMode SelectLineMode
+        {
+            get { return SelectLineModeImpl; }
+        }
+
+
         public IVimData VimData
         {
             get { return VimDataImpl; }
@@ -306,11 +324,6 @@ namespace Vim.UnitTest.Mock
         public ISubstituteConfirmMode SubstituteConfirmMode
         {
             get { return SubstituteConfirmModeImpl; }
-        }
-
-        public ISelectMode SelectMode
-        {
-            get { return SelectModeImpl; }
         }
 
         public IMode ExternalEditMode

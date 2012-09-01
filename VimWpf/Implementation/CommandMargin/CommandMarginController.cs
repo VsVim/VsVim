@@ -131,8 +131,14 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                         ? Resources.VisualLineBanner
                         : String.Format(Resources.VisualLineOneTimeCommandBanner, oneTimeArgument);
                     break;
-                case ModeKind.Select:
-                    _margin.StatusLine = Resources.SelectBanner;
+                case ModeKind.SelectBlock:
+                    _margin.StatusLine = Resources.SelectBlockBanner;
+                    break;
+                case ModeKind.SelectCharacter:
+                    _margin.StatusLine = Resources.SelectCharacterBanner;
+                    break;
+                case ModeKind.SelectLine:
+                    _margin.StatusLine = Resources.SelectLineBanner;
                     break;
                 case ModeKind.ExternalEdit:
                     _margin.StatusLine = Resources.ExternalEditBanner;

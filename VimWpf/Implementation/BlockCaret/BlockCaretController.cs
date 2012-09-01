@@ -104,7 +104,9 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 case ModeKind.VisualBlock:
                 case ModeKind.VisualCharacter:
                 case ModeKind.VisualLine:
-                case ModeKind.Select:
+                case ModeKind.SelectBlock:
+                case ModeKind.SelectCharacter:
+                case ModeKind.SelectLine:
 
                     // In visual mode we change the caret based on what the selection mode
                     // is
