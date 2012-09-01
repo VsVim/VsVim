@@ -222,6 +222,27 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
                 Assert.True(_textView.Selection.IsEmpty);
             }
+
+            /// <summary>
+            /// Even when we have stopsel set the shifted keys should be extending the selection
+            /// </summary>
+            [Fact]
+            public void ShiftRight()
+            {
+                Create("cat");
+                _vimBuffer.ProcessNotation("gh<S-Right>");
+                Assert.Equal("ca", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ShiftLeft()
+            {
+                Create("cat");
+                _vimBuffer.ProcessNotation("lgh<S-Left>");
+                Assert.Equal("ca", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
         }
 
         public sealed class Misc : SelectModeIntegrationTest

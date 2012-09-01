@@ -27,19 +27,16 @@ type internal SelectMode
     /// A 'special key' is defined in :help keymodel as any of the following keys.  Depending
     /// on the value of the keymodel setting they can affect the selection
     static let GetCaretMovement (keyInput : KeyInput) =
-        if keyInput.KeyModifiers <> KeyModifiers.None then
-            None
-        else
-            match keyInput.Key with
-            | VimKey.Up -> Some CaretMovement.Up
-            | VimKey.Right -> Some CaretMovement.Right
-            | VimKey.Down -> Some CaretMovement.Down
-            | VimKey.Left -> Some CaretMovement.Left
-            | VimKey.Home -> Some CaretMovement.Home
-            | VimKey.End -> Some CaretMovement.End
-            | VimKey.PageUp -> Some CaretMovement.PageUp
-            | VimKey.PageDown -> Some CaretMovement.PageDown
-            | _ -> None
+        match keyInput.Key with
+        | VimKey.Up -> Some CaretMovement.Up
+        | VimKey.Right -> Some CaretMovement.Right
+        | VimKey.Down -> Some CaretMovement.Down
+        | VimKey.Left -> Some CaretMovement.Left
+        | VimKey.Home -> Some CaretMovement.Home
+        | VimKey.End -> Some CaretMovement.End
+        | VimKey.PageUp -> Some CaretMovement.PageUp
+        | VimKey.PageDown -> Some CaretMovement.PageDown
+        | _ -> None
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
@@ -49,10 +46,11 @@ type internal SelectMode
 
     member x.CurrentSnapshot = _textView.TextSnapshot
 
-    member x.ProcessCaretMovement caretMovement = 
+    member x.ProcessCaretMovement caretMovement (keyInput : KeyInput) = 
         _commonOperations.MoveCaret caretMovement |> ignore
 
-        if Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StopSelection then
+        let hasShift = Util.IsFlagSet keyInput.KeyModifiers KeyModifiers.Shift
+        if not hasShift && Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StopSelection then
             ProcessResult.Handled ModeSwitch.SwitchPreviousMode
         else
             // The caret moved so we need to update the selection 
@@ -103,7 +101,7 @@ type internal SelectMode
                 x.ProcessInput ""
             else
                 match GetCaretMovement keyInput with
-                | Some caretMovement -> x.ProcessCaretMovement caretMovement
+                | Some caretMovement -> x.ProcessCaretMovement caretMovement keyInput
                 | None -> 
                     if Option.isSome keyInput.RawChar then
                         x.ProcessInput (StringUtil.ofChar keyInput.Char)
