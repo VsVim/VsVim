@@ -114,7 +114,17 @@ type internal SelectMode
 
         processResult
 
-    member x.OnEnter() = _selectionTracker.Start()
+    member x.OnEnter modeArgument = 
+        match modeArgument with
+        | ModeArgument.InitialVisualSelection (visualSelection, caretPoint) ->
+
+            if visualSelection.VisualKind = _visualKind then
+                visualSelection.Select _textView
+                let visualCaretPoint = visualSelection.GetCaretPoint _globalSettings.SelectionKind
+                TextViewUtil.MoveCaretToPointRaw _textView visualCaretPoint MoveCaretFlags.EnsureOnScreen
+        | _ -> ()
+
+        _selectionTracker.Start()
     member x.OnLeave() = _selectionTracker.Stop()
     member x.OnClose() = ()
 
@@ -132,7 +142,7 @@ type internal SelectMode
         member x.ModeKind = _modeKind
         member x.CanProcess _ = true
         member x.Process keyInput =  x.Process keyInput
-        member x.OnEnter _ = x.OnEnter()
+        member x.OnEnter modeArgument = x.OnEnter modeArgument
         member x.OnLeave () = x.OnLeave()
         member x.OnClose() = x.OnClose()
 

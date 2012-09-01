@@ -148,5 +148,15 @@ namespace Vim.UnitTest
             global.SelectModeOptions = SelectModeOptions.Keyboard;
             Assert.Equal("key", global.SelectMode);
         }
+
+        [Fact]
+        public void SelectModeOptions_Default()
+        {
+            var global = CreateGlobal();
+            Assert.Equal("", global.SelectMode);
+            Assert.Equal(SelectModeOptions.None, global.SelectModeOptions);
+            var setting = global.GetSetting(GlobalSettingNames.SelectModeName).Value;
+            Assert.Equal("", setting.DefaultValue.AsStringValue().Item);
+        }
     }
 }

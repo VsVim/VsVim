@@ -1,8 +1,8 @@
-﻿using EditorUtils;
+﻿using System;
+using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Xunit;
-using System;
 
 namespace Vim.UnitTest
 {
@@ -84,6 +84,78 @@ namespace Vim.UnitTest
                 Create("cat");
                 _vimBuffer.ProcessNotation("g<C-H>");
                 Assert.Equal(ModeKind.SelectBlock, _vimBuffer.ModeKind);
+            }
+        }
+
+        public sealed class SpecialKeysFromNormal : SelectModeIntegrationTest
+        {
+            [Fact]
+            public void ShiftRightToSelect()
+            {
+                Create("cat");
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<S-Right>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("ca", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ShiftRightToVisual()
+            {
+                Create("cat");
+                _globalSettings.SelectModeOptions = SelectModeOptions.None;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<S-Right>");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("ca", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ShiftRightToNothing()
+            {
+                Create("cat dog");
+                _vimBuffer.ProcessNotation("<S-Right>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ShiftLeftToSelect()
+            {
+                Create("cat");
+                _textView.MoveCaretTo(1);
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<S-Left>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("ca", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ShiftLeftToVisual()
+            {
+                Create("cat");
+                _textView.MoveCaretTo(1);
+                _globalSettings.SelectModeOptions = SelectModeOptions.None;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<S-Left>");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("ca", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ShiftLeftToNothing()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("<S-Left>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
         }
 

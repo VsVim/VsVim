@@ -10,6 +10,26 @@ open Microsoft.VisualStudio.Utilities
 open System.Diagnostics
 open System.Runtime.CompilerServices
 
+[<RequireQualifiedAccess>]
+type CaretMovement =
+    | Up
+    | Right
+    | Down
+    | Left
+    | Home
+    | End
+    | PageUp
+    | PageDown
+
+    with 
+
+    static member OfDirection direction =
+        match direction with
+        | Direction.Up -> CaretMovement.Up
+        | Direction.Right -> CaretMovement.Right
+        | Direction.Down -> CaretMovement.Down
+        | Direction.Left -> CaretMovement.Left
+
 type TextViewEventArgs(_textView : ITextView) =
     inherit System.EventArgs()
 
@@ -821,11 +841,17 @@ type VisualKind =
         | Line _ -> TextSelectionMode.Stream
         | Block _ -> TextSelectionMode.Box
 
-    member x.ModeKind = 
+    member x.VisualModeKind = 
         match x with
         | Character _ -> ModeKind.VisualCharacter
         | Line _ -> ModeKind.VisualLine
         | Block _ -> ModeKind.VisualBlock
+
+    member x.SelectModeKind = 
+        match x with
+        | Character _ -> ModeKind.SelectCharacter
+        | Line _ -> ModeKind.SelectLine
+        | Block _ -> ModeKind.SelectBlock
 
     static member All = [ Character; Line; Block ] |> Seq.ofList
 
@@ -1490,12 +1516,11 @@ type VisualSelection =
         | Line (_, path, _) -> path.IsPathForward
         | _ -> false
 
-    /// Get the ModeKind for the VisualSelection
-    member x.ModeKind = 
+    member x.VisualKind = 
         match x with
-        | Character _ -> ModeKind.VisualCharacter
-        | Line _ -> ModeKind.VisualLine
-        | Block _ -> ModeKind.VisualBlock
+        | Character _ -> VisualKind.Character
+        | Line _ -> VisualKind.Line
+        | Block _ -> VisualKind.Block
 
     /// The underlying VisualSpan
     member x.VisualSpan =
@@ -2000,6 +2025,10 @@ type NormalCommand =
 
     /// Jump to the next new item in the tag list
     | JumpToNewerPosition
+
+    /// Move the caret in specifiem manner.  Called when a shifted caret movement key
+    /// is pressed
+    | MoveCaret of CaretMovement
 
     /// Move the caret to the result of the given Motion.
     | MoveCaretToMotion of Motion

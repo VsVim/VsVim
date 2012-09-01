@@ -192,7 +192,6 @@ type internal GlobalSettings() =
         |> StringUtil.split ','
         |> Seq.exists (fun x -> StringUtil.isEqual suboptionName x)
 
-
     /// Convert a comma separated option into a set of type safe options
     member x.GetCommaOptions name mappingList emptyOption combineFunc = 
         _map.GetStringValue name 

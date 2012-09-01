@@ -167,7 +167,7 @@ type internal VisualMode
             match modeArgument with
             | ModeArgument.InitialVisualSelection (visualSelection, caretPoint) ->
 
-                if visualSelection.ModeKind = _modeKind then
+                if visualSelection.VisualKind = _visualKind then
                     visualSelection.Select _textView
                     let visualCaretPoint = visualSelection.GetCaretPoint _globalSettings.SelectionKind
                     TextViewUtil.MoveCaretToPointRaw _textView visualCaretPoint MoveCaretFlags.EnsureOnScreen

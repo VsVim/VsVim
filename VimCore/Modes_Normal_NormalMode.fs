@@ -126,6 +126,8 @@ type internal NormalMode
                 yield ("<C-x>", CommandFlags.Repeatable, NormalCommand.SubtractFromWord)
                 yield ("<C-]>", CommandFlags.Special, NormalCommand.GoToDefinition)
                 yield ("<Del>", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
+                yield ("<S-Left>", CommandFlags.Repeatable, NormalCommand.MoveCaret CaretMovement.Left)
+                yield ("<S-Right>", CommandFlags.Repeatable, NormalCommand.MoveCaret CaretMovement.Right)
                 yield ("[p", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
                 yield ("[P", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
                 yield ("]p", CommandFlags.Repeatable, NormalCommand.PutAfterCaretWithIndent)
@@ -196,7 +198,6 @@ type internal NormalMode
                 } |> Seq.map (fun (str, flags, storage) -> 
                     let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                     CommandBinding.ComplexNormalBinding (keyInputSet, flags, storage))
-
 
             SharedCommands
             |> Seq.append complexSeq

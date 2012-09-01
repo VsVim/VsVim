@@ -208,7 +208,7 @@ namespace Vim.UnitTest
             _textView.SelectAndMoveCaret(span);
             var visualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive);
             Assert.Equal(span, visualSelection.VisualSpan.EditSpan.OverarchingSpan);
-            Assert.Equal(ModeKind.VisualCharacter, visualSelection.ModeKind);
+            Assert.Equal(VisualKind.Character, visualSelection.VisualKind);
             Assert.True(visualSelection.IsCharacterForward);
         }
 
