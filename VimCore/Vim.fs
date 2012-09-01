@@ -194,12 +194,10 @@ type internal VimBufferFactory
         let visualOptsFactory visualKind = Modes.Visual.SelectionTracker(textView, vim.GlobalSettings, incrementalSearch, visualKind) :> Modes.Visual.ISelectionTracker
 
         let visualModeList =
-            [ ModeKind.VisualBlock; ModeKind.VisualCharacter; ModeKind.VisualLine ]
-            |> Seq.ofList
-            |> Seq.map (fun kind -> 
-                let visualKind = VisualKind.OfModeKind kind |> Option.get
+            VisualKind.All
+            |> Seq.map (fun visualKind -> 
                 let tracker = visualOptsFactory visualKind
-                ((Modes.Visual.VisualMode(vimBufferData, commonOperations, motionUtil, kind, createCommandRunner visualKind, capture, tracker)) :> IMode) )
+                ((Modes.Visual.VisualMode(vimBufferData, commonOperations, motionUtil, visualKind, createCommandRunner visualKind, capture, tracker)) :> IMode) )
             |> List.ofSeq
 
         // Normal mode values

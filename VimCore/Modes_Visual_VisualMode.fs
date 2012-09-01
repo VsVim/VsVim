@@ -12,7 +12,7 @@ type internal VisualMode
         _vimBufferData : IVimBufferData,
         _operations : ICommonOperations,
         _motionUtil : IMotionUtil,
-        _modeKind : ModeKind,
+        _visualKind : VisualKind,
         _runner : ICommandRunner,
         _capture : IMotionCapture,
         _selectionTracker : ISelectionTracker
@@ -23,12 +23,11 @@ type internal VisualMode
     let _textBuffer = _vimTextBuffer.TextBuffer
     let _globalSettings = _vimTextBuffer.GlobalSettings
     let _eventHandlers = DisposableBag()
-    let _operationKind, _visualKind = 
-        match _modeKind with
-        | ModeKind.VisualBlock -> (OperationKind.CharacterWise, VisualKind.Block)
-        | ModeKind.VisualCharacter -> (OperationKind.CharacterWise, VisualKind.Character)
-        | ModeKind.VisualLine -> (OperationKind.LineWise, VisualKind.Line)
-        | _ -> failwith "Invalid"
+    let _operationKind, _modeKind = 
+        match _visualKind with
+        | VisualKind.Character -> (OperationKind.CharacterWise, ModeKind.VisualCharacter)
+        | VisualKind.Line -> (OperationKind.LineWise, ModeKind.VisualLine)
+        | VisualKind.Block -> (OperationKind.CharacterWise, ModeKind.VisualBlock)
 
     /// Get a mark and us the provided 'func' to create a Motion value
     static let BindMark func = 

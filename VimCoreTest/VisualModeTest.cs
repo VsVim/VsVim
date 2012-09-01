@@ -33,6 +33,7 @@ namespace Vim.UnitTest
             _textBuffer = _textView.TextBuffer;
             var vimTextBuffer = Vim.CreateVimTextBuffer(_textBuffer);
             var vimBufferData = CreateVimBufferData(vimTextBuffer, _textView);
+            var visualKind = VisualKind.OfModeKind(kind).Value;
 
             _selection = _textView.Selection;
             _factory = new MockRepository(MockBehavior.Strict);
@@ -52,7 +53,7 @@ namespace Vim.UnitTest
                 _commandUtil.Object,
                 (new Mock<IStatusUtil>()).Object,
                 VisualKind.Character);
-            _modeRaw = new VisualMode(vimBufferData, _operations.Object, motionUtil, kind, runner, capture, _tracker.Object);
+            _modeRaw = new VisualMode(vimBufferData, _operations.Object, motionUtil, visualKind, runner, capture, _tracker.Object);
             _mode = _modeRaw;
             _mode.OnEnter(ModeArgument.None);
         }
