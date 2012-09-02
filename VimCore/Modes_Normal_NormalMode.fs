@@ -27,7 +27,7 @@ type internal NormalMode
     let _statusUtil = _vimBufferData.StatusUtil
 
     /// Reset state for data in Normal Mode
-    let _emptyData = {
+    static let EmptyData = {
         Command = StringUtil.empty
         IsInReplace = false
     }
@@ -36,11 +36,16 @@ type internal NormalMode
     let _coreCharSet = KeyInputUtil.VimKeyCharList |> Set.ofList
 
     /// Contains the state information for Normal mode
-    let mutable _data = _emptyData
+    let mutable _data = EmptyData
+
+    /// This is the list of commands that have the same key binding as the selection 
+    /// commands and run when keymodel doesn't have startsel as a value
+    let mutable _selectionAlternateCommands : CommandBinding list = List.empty
 
     let _eventHandlers = DisposableBag()
 
-    static let SharedCommands =
+    /// The set of standard commands that are shared amongst all instances 
+    static let SharedStandardCommands =
         let normalSeq = 
             seq {
                 yield ("a", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.InsertAfterCaret)
@@ -126,8 +131,6 @@ type internal NormalMode
                 yield ("<C-x>", CommandFlags.Repeatable, NormalCommand.SubtractFromWord)
                 yield ("<C-]>", CommandFlags.Special, NormalCommand.GoToDefinition)
                 yield ("<Del>", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
-                yield ("<S-Left>", CommandFlags.Repeatable, NormalCommand.MoveCaret CaretMovement.Left)
-                yield ("<S-Right>", CommandFlags.Repeatable, NormalCommand.MoveCaret CaretMovement.Right)
                 yield ("[p", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
                 yield ("[P", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
                 yield ("]p", CommandFlags.Repeatable, NormalCommand.PutAfterCaretWithIndent)
@@ -160,6 +163,29 @@ type internal NormalMode
 
         Seq.append normalSeq motionSeq 
         |> List.ofSeq
+
+    /// The set of selection starting commands.  These are only enabled when 'keymodel' contains
+    /// the startsel option
+    static let SharedSelectionCommands =
+        seq {
+            yield ("<S-Up>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Up)
+            yield ("<S-Right>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Right)
+            yield ("<S-Down>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Down)
+            yield ("<S-Left>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Left)
+            yield ("<S-Home>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Home)
+            yield ("<S-End>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.End)
+            yield ("<S-PageUp>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.PageUp)
+            yield ("<S-PageDown>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.PageDown)
+        } 
+        |> Seq.map (fun (str, flags, command) -> 
+            let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
+            CommandBinding.NormalBinding (keyInputSet, flags, command))
+        |> List.ofSeq
+
+    static let SharedSelectionCommandNameSet = 
+        SharedSelectionCommands
+        |> Seq.map (fun binding -> binding.KeyInputSet)
+        |> Set.ofSeq
 
     do
         // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
@@ -199,7 +225,7 @@ type internal NormalMode
                     let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                     CommandBinding.ComplexNormalBinding (keyInputSet, flags, storage))
 
-            SharedCommands
+            SharedStandardCommands
             |> Seq.append complexSeq
             |> Seq.append (factory.CreateMovementCommands())
             |> Seq.append (factory.CreateScrollCommands())
@@ -212,15 +238,25 @@ type internal NormalMode
             // Add in the macro command
             factory.CreateMacroEditCommands _runner _vimTextBuffer.Vim.MacroRecorder _eventHandlers
 
+            // Save the alternate selection command bindings
+            _selectionAlternateCommands <-
+                _runner.Commands
+                |> Seq.filter (fun commandBinding -> Set.contains commandBinding.KeyInputSet SharedSelectionCommandNameSet)
+                |> List.ofSeq
+
+            // The command list is built without selection commands.  If selection is enabled go 
+            // ahead and switch over now 
+            if Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StartSelection then
+                x.UpdateSelectionCommands()
+
     /// Raised when a global setting is changed
     member x.OnGlobalSettingsChanged (args : SettingEventArgs) = 
-        
-        // If the 'tildeop' setting changes we need to update how we handle it
-        let setting = args.Setting
-        if StringUtil.isEqual setting.Name GlobalSettingNames.TildeOpName && x.IsCommandRunnerPopulated then
-            let name, command = x.GetTildeCommand()
-            _runner.Remove name
-            _runner.Add command
+        if x.IsCommandRunnerPopulated then
+            let setting = args.Setting
+            if StringUtil.isEqual setting.Name GlobalSettingNames.TildeOpName then
+                x.UpdateTildeCommand()
+            elif StringUtil.isEqual setting.Name GlobalSettingNames.KeyModelName then
+                x.UpdateSelectionCommands()
 
     /// Bind the character in a replace character command: 'r'.  
     member x.BindReplaceChar () =
@@ -252,7 +288,7 @@ type internal NormalMode
         BindDataStorage<_>.Simple bindData
 
     /// Get the information on how to handle the tilde command based on the current setting for 'tildeop'
-    member x.GetTildeCommand () =
+    member x.GetTildeCommand() =
         let name = KeyInputUtil.CharToKeyInput '~' |> OneKeyInput
         let flags = CommandFlags.Repeatable
         let command = 
@@ -262,10 +298,28 @@ type internal NormalMode
                 CommandBinding.NormalBinding (name, flags, NormalCommand.ChangeCaseCaretPoint ChangeCharacterKind.ToggleCase)
         name, command
 
+    /// Ensure that the correct commands are loaded for the selection KeyInput values 
+    member x.UpdateSelectionCommands() =
+
+        // Remove all of the commands with that binding
+        SharedSelectionCommandNameSet |> Seq.iter _runner.Remove
+
+        let commandList = 
+            if Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StartSelection then
+                SharedSelectionCommands
+            else
+                _selectionAlternateCommands
+        commandList |> List.iter _runner.Add
+
+    member x.UpdateTildeCommand() =
+        let name, command = x.GetTildeCommand()
+        _runner.Remove name
+        _runner.Add command
+
     /// Create the CommandBinding instances for the supported NormalCommand values
     member x.Reset() =
         _runner.ResetState()
-        _data <- _emptyData
+        _data <- EmptyData
 
     member x.CanProcess (keyInput : KeyInput) =
         let doesCommandStartWith keyInput =

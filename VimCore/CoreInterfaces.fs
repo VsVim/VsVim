@@ -2026,10 +2026,6 @@ type NormalCommand =
     /// Jump to the next new item in the tag list
     | JumpToNewerPosition
 
-    /// Move the caret in specifiem manner.  Called when a shifted caret movement key
-    /// is pressed
-    | MoveCaret of CaretMovement
-
     /// Move the caret to the result of the given Motion.
     | MoveCaretToMotion of Motion
 
@@ -2147,6 +2143,9 @@ type NormalCommand =
 
     /// Switch to the previous Visual Mode selection
     | SwitchPreviousVisualMode
+
+    /// Switch to a selection dictated by the given caret movement
+    | SwitchToSelection of CaretMovement
 
     /// Write out the ITextBuffer and quit
     | WriteBufferAndQuit

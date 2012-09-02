@@ -1320,49 +1320,6 @@ type internal CommandUtil
             let point = SnapshotPointUtil.AddOneOrCurrent point
             TextViewUtil.MoveCaretToPoint _textView point
 
-    /// Move the caret to the specified motion.  How this command is implemented is largely dependent
-    /// upon the values of 'keymodel' and 'selectmode'.  It will either move the caret potentially as 
-    /// a motion or initiate a select in the editor
-    member x.MoveCaret caretMovement =
-
-        // Start a selection with the specified caret movement command
-        let startSelection () = 
-            let anchorPoint = x.CaretPoint
-            if not (_commonOperations.MoveCaret caretMovement) then
-                CommandResult.Error
-            else
-                let visualSelection = VisualSelection.CreateForPoints VisualKind.Character anchorPoint x.CaretPoint
-                let modeKind = 
-                    if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Keyboard then
-                        ModeKind.SelectCharacter
-                    else
-                        ModeKind.VisualCharacter
-                let argument = ModeArgument.InitialVisualSelection(visualSelection, None)
-                CommandResult.Completed (ModeSwitch.SwitchModeWithArgument(modeKind, argument))
-
-        // Simply move the caret based on the motion that is associated with this key
-        // combination
-        let moveMotion () =
-            let motion = 
-                match caretMovement with
-                | CaretMovement.Left -> Motion.WordBackward WordKind.NormalWord |> Some
-                | CaretMovement.Right -> Motion.WordForward WordKind.NormalWord |> Some
-                | _ -> None
-
-            match motion with
-            | Some motion -> x.MoveCaretToMotion motion (Some 1)
-            | None ->
-                if _commonOperations.MoveCaret caretMovement then
-                    _commonOperations.Beep()
-                    CommandResult.Error
-                else
-                    CommandResult.Completed ModeSwitch.NoSwitch
-
-        if Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StartSelection then
-            startSelection ()
-        else
-            moveMotion () 
-
     /// Move the caret to the result of the motion
     member x.MoveCaretToMotion motion count = 
         let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = count}
@@ -2154,7 +2111,6 @@ type internal CommandUtil
         | NormalCommand.JumpToMarkLine c -> x.JumpToMarkLine c
         | NormalCommand.JumpToOlderPosition -> x.JumpToOlderPosition count
         | NormalCommand.JumpToNewerPosition -> x.JumpToNewerPosition count
-        | NormalCommand.MoveCaret caretMovement -> x.MoveCaret caretMovement
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
         | NormalCommand.OpenAllFolds -> x.OpenAllFolds()
         | NormalCommand.OpenAllFoldsUnderCaret -> x.OpenAllFoldsUnderCaret()
@@ -2188,6 +2144,7 @@ type internal CommandUtil
         | NormalCommand.SplitViewVertically -> x.SplitViewVertically()
         | NormalCommand.SwitchMode (modeKind, modeArgument) -> x.SwitchMode modeKind modeArgument
         | NormalCommand.SwitchPreviousVisualMode -> x.SwitchPreviousVisualMode()
+        | NormalCommand.SwitchToSelection caretMovement -> x.SwitchToSelection caretMovement
         | NormalCommand.ToggleFoldUnderCaret -> x.ToggleFoldUnderCaret count
         | NormalCommand.ToggleAllFolds -> x.ToggleAllFolds()
         | NormalCommand.Undo -> x.Undo count
@@ -2532,6 +2489,23 @@ type internal CommandUtil
             let modeKind = visualSelection.VisualKind.VisualModeKind
             let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, None)
             x.SwitchMode modeKind modeArgument
+
+    /// Move the caret to the specified motion.  How this command is implemented is largely dependent
+    /// upon the values of 'keymodel' and 'selectmode'.  It will either move the caret potentially as 
+    /// a motion or initiate a select in the editor
+    member x.SwitchToSelection caretMovement =
+        let anchorPoint = x.CaretPoint
+        if not (_commonOperations.MoveCaret caretMovement) then
+            CommandResult.Error
+        else
+            let visualSelection = VisualSelection.CreateForPoints VisualKind.Character anchorPoint x.CaretPoint
+            let modeKind = 
+                if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Keyboard then
+                    ModeKind.SelectCharacter
+                else
+                    ModeKind.VisualCharacter
+            let argument = ModeArgument.InitialVisualSelection(visualSelection, None)
+            CommandResult.Completed (ModeSwitch.SwitchModeWithArgument(modeKind, argument))
 
     /// Switch from the current visual mode into insert.  If we are in block mode this
     /// will start a block insertion
