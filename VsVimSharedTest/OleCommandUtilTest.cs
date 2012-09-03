@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Windows.Input;
 using Microsoft.VisualStudio;
-using Xunit;
 using Vim;
 using Vim.UnitTest;
 using VsVim.UnitTest.Utils;
+using Xunit;
 
 namespace VsVim.UnitTest
 {
@@ -83,6 +82,28 @@ namespace VsVim.UnitTest
             Assert.False(OleCommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, IntPtr.Zero, KeyModifiers.None, out command));
         }
 
+        /// <summary>
+        /// When processing a raw character we shouldn't be reapplying the existing modifiers.  That only needs
+        /// to be done for non-char commands
+        ///
+        /// Issue 961
+        /// </summary>
+        [Fact]
+        public void TypeChar_WithModifiers()
+        {
+            var source = @"@£$€{[]}\";
+            var modifiers = KeyModifiers.Alt | KeyModifiers.Control;
+            foreach (var c in source)
+            {
+                using (var ptr = CharPointer.Create(c))
+                {
+                    EditCommand command;
+                    Assert.True(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, ptr.IntPtr, modifiers, out command));
+                    Assert.Equal(c, command.KeyInput.Char);
+                }
+            }
+        }
+
         [Fact]
         public void ArrowKeys()
         {
@@ -90,6 +111,15 @@ namespace VsVim.UnitTest
             VerifyConvert(VSConstants.VSStd2KCmdID.RIGHT, VimKey.Right, EditCommandKind.UserInput);
             VerifyConvert(VSConstants.VSStd2KCmdID.UP, VimKey.Up, EditCommandKind.UserInput);
             VerifyConvert(VSConstants.VSStd2KCmdID.DOWN, VimKey.Down, EditCommandKind.UserInput);
+        }
+
+        [Fact]
+        public void ArrowKey_WithModifiers()
+        {
+            var modifiers = KeyModifiers.Alt | KeyModifiers.Control;
+            EditCommand command;
+            Assert.True(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.LEFT, IntPtr.Zero, modifiers, out command));
+            Assert.Equal(modifiers, command.KeyInput.KeyModifiers);
         }
 
         /// <summary>

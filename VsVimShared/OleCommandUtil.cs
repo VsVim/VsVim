@@ -12,13 +12,20 @@ namespace VsVim
         {
             KeyInput keyInput;
             EditCommandKind kind;
-            if (!TryConvert(commandGroup, commandId, pVariableIn, out keyInput, out kind))
+            bool isRawText;
+            if (!TryConvert(commandGroup, commandId, pVariableIn, out keyInput, out kind, out isRawText))
             {
                 command = null;
                 return false;
             }
 
-            keyInput = KeyInputUtil.ApplyModifiers(keyInput, modifiers);
+            // When raw text is provided it already includes the active keyboard modifiers. Don't reapply them
+            // here else it can incorrectly modify the provided character.
+            if (!isRawText)
+            {
+                keyInput = KeyInputUtil.ApplyModifiers(keyInput, modifiers);
+            }
+
             command = new EditCommand(keyInput, kind, commandGroup, commandId);
             return true;
         }
@@ -31,26 +38,34 @@ namespace VsVim
 
         internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr variantIn, out KeyInput keyInput, out EditCommandKind kind)
         {
+            bool unused;
+            return TryConvert(commandGroup, commandId, variantIn, out keyInput, out kind, out unused);
+        }
+
+        internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr variantIn, out KeyInput keyInput, out EditCommandKind kind, out bool isRawText)
+        {
             if (VSConstants.GUID_VSStandardCommandSet97 == commandGroup)
             {
-                return TryConvert((VSConstants.VSStd97CmdID)commandId, variantIn, out keyInput, out kind);
+                return TryConvert((VSConstants.VSStd97CmdID)commandId, variantIn, out keyInput, out kind, out isRawText);
             }
 
             if (VSConstants.VSStd2K == commandGroup)
             {
-                return TryConvert((VSConstants.VSStd2KCmdID)commandId, variantIn, out keyInput, out kind);
+                return TryConvert((VSConstants.VSStd2KCmdID)commandId, variantIn, out keyInput, out kind, out isRawText);
             }
 
             keyInput = null;
             kind = EditCommandKind.UserInput;
+            isRawText = false;
             return false;
         }
 
         /// <summary>
         /// Try and convert a Visual Studio 2000 style command into the associated KeyInput and EditCommand items
         /// </summary>
-        internal static bool TryConvert(VSConstants.VSStd2KCmdID cmdId, IntPtr variantIn, out KeyInput keyInput, out EditCommandKind kind)
+        internal static bool TryConvert(VSConstants.VSStd2KCmdID cmdId, IntPtr variantIn, out KeyInput keyInput, out EditCommandKind kind, out bool isRawText)
         {
+            isRawText = false;
             switch (cmdId)
             {
                 case VSConstants.VSStd2KCmdID.TYPECHAR:
@@ -65,6 +80,7 @@ namespace VsVim
                         keyInput = KeyInputUtil.CharToKeyInput(c);
                     }
                     kind = EditCommandKind.UserInput;
+                    isRawText = true;
                     break;
                 case VSConstants.VSStd2KCmdID.RETURN:
                     keyInput = KeyInputUtil.EnterKey;
@@ -198,10 +214,11 @@ namespace VsVim
         /// <summary>
         /// Try and convert the Visual Studio 97 based command into KeyInput and EditCommandKind values
         /// </summary>
-        internal static bool TryConvert(VSConstants.VSStd97CmdID cmdId, IntPtr variantIn, out KeyInput ki, out EditCommandKind kind)
+        internal static bool TryConvert(VSConstants.VSStd97CmdID cmdId, IntPtr variantIn, out KeyInput ki, out EditCommandKind kind, out bool isRawText)
         {
             ki = null;
             kind = EditCommandKind.UserInput;
+            isRawText = false;
 
             switch (cmdId)
             {
@@ -210,6 +227,7 @@ namespace VsVim
                     var c = (char)(ushort)obj;
                     ki = KeyInputUtil.CharToKeyInput(c);
                     kind = EditCommandKind.UserInput;
+                    isRawText = true;
                     break;
                 case VSConstants.VSStd97CmdID.Escape:
                     ki = KeyInputUtil.EscapeKey;
