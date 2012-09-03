@@ -25,7 +25,12 @@ module Constants =
     [<Literal>]
     let HighlightIncrementalSearchTagName = "vsvim_highlightsearch"
 
+#if DEBUG
+    [<Literal>]
+    let VersionNumber = "1.3.1 Debug"
+#else
     [<Literal>]
     let VersionNumber = "1.3.1"
+#endif
 
 
