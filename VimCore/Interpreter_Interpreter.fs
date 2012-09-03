@@ -1254,7 +1254,7 @@ type Interpreter
         for vimBuffer in _vim.VimBuffers do
             if not hasBang && _vimHost.IsReadOnly vimBuffer.TextBuffer then
                 _statusUtil.OnError Resources.Interpreter_ReadOnlyOptionIsSet
-            else
+            elif _vimHost.IsDirty vimBuffer.TextBuffer then
                 _vimHost.Save vimBuffer.TextBuffer |> ignore
         RunResult.Completed
 
