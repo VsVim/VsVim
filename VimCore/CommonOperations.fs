@@ -1059,6 +1059,7 @@ type internal CommonOperations
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
         member x.GetReplaceData point = x.GetReplaceData point
         member x.GetSpacesToPoint point = x.GetSpacesToPoint point
+        member x.GetPointForSpaces contextLine column = x.GetPointForSpaces contextLine column
         member x.GoToLocalDeclaration() = x.GoToLocalDeclaration()
         member x.GoToGlobalDeclaration () = x.GoToGlobalDeclaration()
         member x.GoToFile () = x.GoToFile()
