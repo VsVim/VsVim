@@ -676,7 +676,7 @@ type Motion =
 
     /// Find the first non-blank character as the start of the span.  This is an exclusive
     /// motion so be careful we don't go to far forward.  Providing a count to this motion has
-    /// no affect
+    /// no effect
     | FirstNonBlankOnCurrentLine
 
     /// Find the first non-blank character on the (count - 1) line below this line

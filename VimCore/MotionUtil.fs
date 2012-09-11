@@ -1876,7 +1876,7 @@ type internal MotionUtil
         let span = SnapshotSpan(startPoint, x.CaretPoint)
         MotionResult.Create span false MotionKind.CharacterWiseExclusive
 
-    /// Get the motion which is 'count' characetrs to the right of the caret 
+    /// Get the motion which is 'count' characters to the right of the caret 
     /// on the same line
     member x.CharRight count =
         let endPoint = 
@@ -1938,7 +1938,7 @@ type internal MotionUtil
             | None -> SnapshotUtil.GetFirstLine x.CurrentSnapshot
         x.LineToLineFirstNonBlankMotion x.CaretLine endLine
 
-    /// Implements the 'G" motion
+    /// Implements the 'G' motion
     ///
     /// Because this uses specific line numbers instead of counts we don't want to operate
     /// on the visual buffer here as vim line numbers always apply to the edit buffer. 
