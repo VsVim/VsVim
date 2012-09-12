@@ -58,7 +58,7 @@ namespace Vim.UnitTest
             _motionUtil = new MotionUtil(vimBufferData);
         }
 
-        public void AssertData(MotionResult data, SnapshotSpan? span, MotionKind motionKind = null)
+        public void AssertData(MotionResult data, SnapshotSpan? span, MotionKind motionKind = null, CaretColumn desiredColumn = null)
         {
             if (span.HasValue)
             {
@@ -67,6 +67,10 @@ namespace Vim.UnitTest
             if (motionKind != null)
             {
                 Assert.Equal(motionKind, data.MotionKind);
+            }
+            if (desiredColumn != null)
+            {
+                Assert.Equal(desiredColumn, data.DesiredColumn);
             }
         }
 
@@ -1685,7 +1689,8 @@ namespace Vim.UnitTest
                 AssertData(
                     data,
                     _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
-                    MotionKind.NewLineWise(CaretColumn.NewInLastLine(0)));
+                    MotionKind.LineWise,
+                    CaretColumn.NewInLastLine(0));
             }
 
             [Fact]
@@ -1696,7 +1701,8 @@ namespace Vim.UnitTest
                 AssertData(
                     data,
                     _textBuffer.GetLineRange(0, 2).ExtentIncludingLineBreak,
-                    MotionKind.NewLineWise(CaretColumn.NewInLastLine(0)));
+                    MotionKind.LineWise,
+                    CaretColumn.NewInLastLine(0));
             }
 
             [Fact]
@@ -1708,7 +1714,8 @@ namespace Vim.UnitTest
                 AssertData(
                     data,
                     _textBuffer.GetLineRange(1, 2).ExtentIncludingLineBreak,
-                    MotionKind.NewLineWise(CaretColumn.NewInLastLine(0)));
+                    MotionKind.LineWise,
+                    CaretColumn.NewInLastLine(0));
             }
 
             [Fact]
@@ -1720,7 +1727,8 @@ namespace Vim.UnitTest
                 AssertData(
                     data,
                     _textBuffer.GetLineRange(0, 2).ExtentIncludingLineBreak,
-                    MotionKind.NewLineWise(CaretColumn.NewInLastLine(0)));
+                    MotionKind.LineWise,
+                    CaretColumn.NewInLastLine(0));
             }
 
             [Fact]

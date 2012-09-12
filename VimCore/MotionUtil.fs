@@ -391,7 +391,9 @@ type internal MotionUtil
             // End version?
             let point = SnapshotLineUtil.GetFirstNonBlankOrStart lastLine
             let column = SnapshotPointUtil.GetColumn point |> CaretColumn.InLastLine
-            { motionData with MotionKind = MotionKind.LineWise column }
+            { motionData with 
+                MotionKind = MotionKind.LineWise 
+                DesiredColumn = column }
 
     /// Linewise motions often need to deal with the VisualSnapshot of the ITextView because
     /// they see folded regions as single lines vs. the many of which are actually represented
@@ -540,7 +542,7 @@ type internal MotionUtil
                 if startLine.LineNumber <= endLine.LineNumber then startLine, endLine, true 
                 else endLine, startLine, false
             (SnapshotLineRangeUtil.CreateForLineRange startLine endLine, isForward)
-        MotionResult.Create range.ExtentIncludingLineBreak isForward (MotionKind.LineWise column)
+        MotionResult.CreateExEx range.ExtentIncludingLineBreak isForward MotionKind.LineWise MotionResultFlags.None column
 
     /// Get the SnapshotSpan values for the paragraph object starting from the given SnapshotPoint
     /// in the specified direction.  
@@ -1148,14 +1150,13 @@ type internal MotionUtil
             let endLine = SnapshotPointUtil.GetContainingLine endPoint
             let range = SnapshotLineRangeUtil.CreateForLineRange startLine endLine
             let isForward = x.CaretPoint = startPoint
-            let motionKind =
+            let column =
                 virtualPoint.Position
                 |> SnapshotPointUtil.GetContainingLine
                 |> SnapshotLineUtil.GetFirstNonBlankOrStart
                 |> SnapshotPointUtil.GetColumn
                 |> CaretColumn.InLastLine
-                |> MotionKind.LineWise
-            MotionResult.Create range.ExtentIncludingLineBreak isForward motionKind |> Some
+            MotionResult.CreateExEx range.ExtentIncludingLineBreak isForward MotionKind.LineWise MotionResultFlags.None column |> Some
 
     /// Find the matching token for the next token on the current line 
     member x.MatchingToken() = 
@@ -1681,7 +1682,7 @@ type internal MotionUtil
                 SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
             let column = SnapshotLineUtil.GetFirstNonBlankOrStart endLine |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
             let range = SnapshotLineRangeUtil.CreateForLineRange startLine endLine
-            MotionResult.Create range.ExtentIncludingLineBreak true (MotionKind.LineWise column))
+            MotionResult.CreateExEx range.ExtentIncludingLineBreak true MotionKind.LineWise MotionResultFlags.None column)
 
     /// An inner block motion is just the all block motion with the start and 
     /// end character removed 
@@ -1850,7 +1851,7 @@ type internal MotionUtil
             let endLine = SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
             let column = SnapshotLineUtil.GetFirstNonBlankOrStart endLine |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
             let span = SnapshotSpan(x.CaretLine.Start, endLine.EndIncludingLineBreak)
-            MotionResult.Create span true (MotionKind.LineWise column))
+            MotionResult.CreateExEx span true MotionKind.LineWise MotionResultFlags.None column)
 
     /// Implements the '-'
     ///
@@ -1865,7 +1866,7 @@ type internal MotionUtil
                 |> SnapshotLineUtil.GetFirstNonBlankOrStart
                 |> SnapshotPointUtil.GetColumn
                 |> CaretColumn.InLastLine
-            MotionResult.Create span false (MotionKind.LineWise column))
+            MotionResult.CreateExEx span false MotionKind.LineWise MotionResultFlags.None column)
 
     /// Get the motion which is 'count' characters to the left of the caret on
     /// the same line
@@ -1900,7 +1901,7 @@ type internal MotionUtil
                 let startLine = SnapshotUtil.GetLineOrFirst x.CurrentSnapshot (x.CaretLine.LineNumber - count)
                 let span = SnapshotSpan(startLine.Start, x.CaretLine.EndIncludingLineBreak)
                 let column = x.CaretPoint |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
-                MotionResult.CreateEx span false (MotionKind.LineWise column) MotionResultFlags.MaintainCaretColumn |> Some)
+                MotionResult.CreateExEx span false MotionKind.LineWise  MotionResultFlags.MaintainCaretColumn column |> Some)
 
     /// Move a single line down from the current line.  Should fail if we are currenly 
     /// on the last line of the ITextBuffer
@@ -1923,7 +1924,7 @@ type internal MotionUtil
                         flags
                 let span = SnapshotSpan(x.CaretLine.Start, lastLine.EndIncludingLineBreak)
                 let column = x.CaretPoint |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
-                MotionResult.CreateEx span true (MotionKind.LineWise column) flags |> Some)
+                MotionResult.CreateExEx span true MotionKind.LineWise flags column |> Some)
 
     /// Implements the 'gg' motion.  
     ///
@@ -1991,7 +1992,7 @@ type internal MotionUtil
                 let startLine = lines.Head
                 SnapshotPointUtil.GetLineRangeSpan startLine.Start count
         let isForward = caretPoint.Position <= span.End.Position
-        MotionResult.Create span isForward (MotionKind.LineWise CaretColumn.None)
+        MotionResult.Create span isForward MotionKind.LineWise
         |> x.ApplyStartOfLineOption
 
     // TODO: Need to convert this to use the visual snapshot
@@ -2010,7 +2011,7 @@ type internal MotionUtil
                         let count = lines.Length - count
                         List.nth lines count
                 x.SpanAndForwardFromLines caretLine endLine
-        MotionResult.Create span isForward (MotionKind.LineWise CaretColumn.None) 
+        MotionResult.Create span isForward MotionKind.LineWise
         |> x.ApplyStartOfLineOption
 
     // TODO: Need to convert this to use the visual snapshot
@@ -2025,7 +2026,7 @@ type internal MotionUtil
                 let index = lines.Length / 2
                 List.nth lines index
         let span, isForward = x.SpanAndForwardFromLines caretLine middleLine
-        MotionResult.Create span isForward (MotionKind.LineWise CaretColumn.None) 
+        MotionResult.Create span isForward MotionKind.LineWise
         |> x.ApplyStartOfLineOption
 
     /// Implements the core portion of section backward motions
@@ -2324,9 +2325,14 @@ type internal MotionUtil
                 // is redundant and confusing for line wise motions when moving the 
                 // caret
                 let span = SnapshotSpan(startLine.Start, endLine.Start)
-                let kind = MotionKind.LineWise CaretColumn.AfterLastLine
+                let kind = MotionKind.LineWise 
                 let flags = motionResult.MotionResultFlags ||| MotionResultFlags.ExclusiveLineWise
-                { motionResult with Span = span; OriginalSpan = originalSpan; MotionKind = kind; MotionResultFlags = flags }
+                { motionResult with 
+                    Span = span
+                    OriginalSpan = originalSpan
+                    MotionKind = kind
+                    MotionResultFlags = flags 
+                    DesiredColumn = CaretColumn.AfterLastLine }
             else 
                 // Rule #1. Move this back a line.
                 let line = SnapshotUtil.GetLine originalSpan.Snapshot (endLine.LineNumber - 1)
