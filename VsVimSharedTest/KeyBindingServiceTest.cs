@@ -54,7 +54,7 @@ namespace VsVim.UnitTest
         {
             var stroke = new KeyStroke(input, modifiers);
             var key = new VsVim.KeyBinding(scope, stroke);
-            return new CommandKeyBinding(name, key);
+            return new CommandKeyBinding(new CommandId(), name, key);
         }
 
         [Fact]

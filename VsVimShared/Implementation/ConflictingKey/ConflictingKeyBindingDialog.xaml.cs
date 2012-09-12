@@ -118,21 +118,19 @@ namespace VsVim.Implementation.ConflictingKey
             // For commands being handled by VsVim, we shall remove any other bindings
             foreach (var cur in _keyBindingList.Where(binding => binding.HandledByVsVim).SelectMany(data => data.Bindings))
             {
-                var tuple = _snapshot.TryGetCommand(cur.Name);
-                if (tuple.Item1)
+                EnvDTE.Command command;
+                if (_snapshot.TryGetCommand(cur.Id, out command))
                 {
-                    tuple.Item2.SafeResetBindings();
+                    command.SafeResetBindings();
                 }
             }
 
             // Restore all commands we are not handling
             foreach (var cur in _keyBindingList.Where(binding => !binding.HandledByVsVim).SelectMany(data => data.Bindings))
             {
-                var tuple = _snapshot.TryGetCommand(cur.Name);
-                if (tuple.Item1)
+                EnvDTE.Command command;
+                if (_snapshot.TryGetCommand(cur.Id, out command))
                 {
-                    var command = tuple.Item2;
-
                     // It's very possible that the user has added new mappings to a given key since we stored
                     // the original mappings.  Make sure we don't erase those values here and instead append the
                     // previous binding we stored back to the command

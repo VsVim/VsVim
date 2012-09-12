@@ -27,6 +27,11 @@ namespace VsVim
     {
         #region Command
 
+        public static CommandId GetCommandId(this Command command)
+        {
+            return new CommandId(command.Guid, command.ID);
+        }
+
         /// <summary>
         /// Get the binding strings for this Command.  Digs through the various ways a 
         /// binding string can be stored and returns a uniform result
@@ -90,7 +95,7 @@ namespace VsVim
                 KeyBinding binding;
                 if (KeyBinding.TryParse(cur, out binding))
                 {
-                    yield return new CommandKeyBinding(command.Name, binding);
+                    yield return new CommandKeyBinding(command.GetCommandId(), command.Name, binding);
                 }
             }
         }

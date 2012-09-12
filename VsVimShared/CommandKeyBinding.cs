@@ -2,10 +2,32 @@
 namespace VsVim
 {
     /// <summary>
+    /// Id of an EnvDTE.Command object.  The Name portion of a Command is optional and doesn't
+    /// figure into the name.  The Guid and ID are unique to a command
+    /// </summary>
+    public struct CommandId
+    {
+        public readonly string Guid;
+
+        public readonly int Id;
+
+        public CommandId(string guid, int id)
+        {
+            Guid = guid;
+            Id = id;
+        }
+    }
+
+    /// <summary>
     /// Represents the KeyBinding information for a Visual Studio command
     /// </summary>
     public sealed class CommandKeyBinding
     {
+        /// <summary>
+        /// The unique id of the command
+        /// </summary>
+        public readonly CommandId Id;
+
         /// <summary>
         /// Name of the Visual Studio Command
         /// </summary>
@@ -16,8 +38,9 @@ namespace VsVim
         /// </summary>
         public readonly KeyBinding KeyBinding;
 
-        public CommandKeyBinding(string name, KeyBinding binding)
+        public CommandKeyBinding(CommandId commandId, string name, KeyBinding binding)
         {
+            Id = commandId;
             Name = name;
             KeyBinding = binding;
         }

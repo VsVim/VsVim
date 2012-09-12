@@ -14,7 +14,7 @@ namespace VsVim.UnitTest
         public void Ctor1()
         {
             var binding = KeyBinding.Parse("Global::Ctrl+Left Arrow");
-            var command = new CommandKeyBinding("Foo", binding);
+            var command = new CommandKeyBinding(new CommandId(), "Foo", binding);
             var data = new KeyBindingData(new CommandKeyBinding[] { command });
             Assert.Equal("Ctrl+Left Arrow", data.KeyName);
             Assert.False(data.HandledByVsVim);

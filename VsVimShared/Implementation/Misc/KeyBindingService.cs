@@ -2,14 +2,13 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
+using EditorUtils;
 using EnvDTE;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.Win32;
 using Vim;
-using Vim.UI.Wpf;
-using EditorUtils;
 
 namespace VsVim.Implementation.Misc
 {
@@ -176,7 +175,10 @@ namespace VsVim.Implementation.Misc
         /// </summary>
         internal List<CommandKeyBinding> FindRemovedKeyBindings(CommandsSnapshot commandsSnapshot)
         {
-            return _legacySettings.FindKeyBindingsMarkedAsRemoved().Where(x => !commandsSnapshot.IsKeyBindingActive(x.KeyBinding)).ToList();
+            return _legacySettings
+                .FindKeyBindingsMarkedAsRemoved(commandsSnapshot)
+                .Where(x => !commandsSnapshot.IsKeyBindingActive(x.KeyBinding))
+                .ToList();
         }
 
         /// <summary>
