@@ -666,6 +666,14 @@ namespace Vim.UnitTest
                     Assert.Equal(current, keyInput);
                 }
             }
+
+            [Fact]
+            public void DoubleApplyControl()
+            {
+                var keyInput1 = KeyInputUtil.CharWithControlToKeyInput(';');
+                var keyInput2 = KeyInputUtil.ApplyModifiers(keyInput1, KeyModifiers.Control);
+                Assert.Equal(keyInput1, keyInput2);
+            }
         }
     }
 }

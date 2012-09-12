@@ -8,6 +8,13 @@ namespace VsVim
 {
     internal static class OleCommandUtil
     {
+        /// <summary>
+        /// In Visual Studio 2010 this is a hidden command that is bound to "Ctrl-;".  There is no way to 
+        /// unbind this command through the UI or even at an API level.  To work around this we intercept
+        /// it at the command level and translate it to Ctlr-;.  
+        /// </summary>
+        internal static readonly CommandId HiddenCommand = new CommandId(new Guid("{5D7E7F65-A63F-46EE-84F1-990B2CAB23F9}"), 6144);
+
         internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr pVariableIn, KeyModifiers modifiers, out EditCommand command)
         {
             KeyInput keyInput;
@@ -52,6 +59,14 @@ namespace VsVim
             if (VSConstants.VSStd2K == commandGroup)
             {
                 return TryConvert((VSConstants.VSStd2KCmdID)commandId, variantIn, out keyInput, out kind, out isRawText);
+            }
+
+            if (commandGroup == HiddenCommand.Group && commandId == HiddenCommand.Id)
+            {
+                keyInput = KeyInputUtil.CharWithControlToKeyInput(';');
+                kind = EditCommandKind.UserInput;
+                isRawText = true;
+                return true;
             }
 
             keyInput = null;
