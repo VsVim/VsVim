@@ -429,6 +429,28 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class ShiftLineRigth : InsertModeIntegrationTest
+        {
+            [Fact]
+            public void Simple()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("<C-t>");
+                Assert.Equal("    cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void CustomShift()
+            {
+                Create("cat", "dog");
+                _globalSettings.ShiftWidth = 2;
+                _vimBuffer.ProcessNotation("<C-t>");
+                Assert.Equal("  cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
+        }
+
         public sealed class Misc : InsertModeIntegrationTest
         {
             /// <summary>
