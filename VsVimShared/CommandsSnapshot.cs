@@ -34,7 +34,13 @@ namespace VsVim
             var list = new List<CommandKeyBinding>();
             foreach (var command in commands)
             {
-                _commandMap[command.GetCommandId()] = command;
+                CommandId commandId;
+                if (!command.TryGetCommandId(out commandId))
+                {
+                    continue;
+                }
+
+                _commandMap[commandId] = command;
                 list.AddRange(command.GetCommandKeyBindings());
             }
             _commandKeyBindings = list.AsReadOnly();

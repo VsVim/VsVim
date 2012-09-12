@@ -264,29 +264,10 @@ namespace VsVim.UnitTest.Utils
 
         #endregion
 
-        #region CommandKey
-
-        /// <summary>
-        /// Key for a command.  Used to cache query status information
-        /// </summary>
-        private struct CommandKey
-        {
-            internal readonly Guid CommandGroup;
-            internal readonly uint CommandId;
-
-            internal CommandKey(Guid commandGroup, uint commandId)
-            {
-                CommandGroup = commandGroup;
-                CommandId = commandId;
-            }
-        }
-
-        #endregion
-
         /// <summary>
         /// Cache of QueryStatus commands
         /// </summary>
-        private readonly Dictionary<CommandKey, bool> _cachedQueryStatusMap = new Dictionary<CommandKey, bool>();
+        private readonly Dictionary<CommandId, bool> _cachedQueryStatusMap = new Dictionary<CommandId, bool>();
 
         /// <summary>
         /// Head of the IOleCommandTarget chain
@@ -482,14 +463,14 @@ namespace VsVim.UnitTest.Utils
             // and gains focus again.  These may be related
 
             bool result;
-            var key = new CommandKey(oleCommandData.CommandGroup, oleCommandData.CommandId);
-            if (_cachedQueryStatusMap.TryGetValue(key, out result))
+            var commandId = oleCommandData.CommandId;
+            if (_cachedQueryStatusMap.TryGetValue(commandId, out result))
             {
                 return result;
             }
 
             result = RunQueryStatusCore(oleCommandData);
-            _cachedQueryStatusMap[key] = result;
+            _cachedQueryStatusMap[commandId] = result;
             return result;
         }
 

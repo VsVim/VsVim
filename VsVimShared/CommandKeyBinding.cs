@@ -1,4 +1,5 @@
 ﻿
+using System;
 namespace VsVim
 {
     /// <summary>
@@ -7,13 +8,13 @@ namespace VsVim
     /// </summary>
     public struct CommandId
     {
-        public readonly string Guid;
+        public readonly Guid Group;
 
-        public readonly int Id;
+        public readonly uint Id;
 
-        public CommandId(string guid, int id)
+        public CommandId(Guid group, uint id)
         {
-            Guid = guid;
+            Group = group;
             Id = id;
         }
     }

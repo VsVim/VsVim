@@ -33,7 +33,7 @@ namespace VsVim
         internal static bool TryConvert(OleCommandData oleCommandData, out KeyInput keyInput)
         {
             EditCommandKind editCommandKind;
-            return TryConvert(oleCommandData.CommandGroup, oleCommandData.CommandId, oleCommandData.VariantIn, out keyInput, out editCommandKind);
+            return TryConvert(oleCommandData.Group, oleCommandData.Id, oleCommandData.VariantIn, out keyInput, out editCommandKind);
         }
 
         internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr variantIn, out KeyInput keyInput, out EditCommandKind kind)
