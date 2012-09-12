@@ -795,6 +795,9 @@ type Motion =
     /// Count sentences forward
     | SentenceForward
 
+    /// Move the the specific column of the current line. Typically in response to the | key. 
+    | ScreenColumn
+
     /// Implement the b/B motion
     | WordBackward of WordKind
 

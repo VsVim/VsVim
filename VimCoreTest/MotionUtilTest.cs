@@ -2820,6 +2820,88 @@ namespace Vim.UnitTest
                 },
                     ret.ToList());
             }
+
+            /// <summary>
+            /// Make sure that the bar motion goes to the specified column
+            /// </summary>
+            [Fact]
+            public void Bar_Simple()
+            {
+                Create("The quick brown fox jumps over the lazy dog.");
+                _textView.MoveCaretTo(0);
+                var data = _motionUtil.LineToColumn(4);
+                Assert.Equal("The", data.Span.GetText());
+                Assert.Equal(true, data.IsForward);
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.NewScreenColumn(3), data.DesiredColumn);
+            }
+
+            /// <summary>
+            /// Make sure that the bar motion handles backward moves properly
+            /// </summary>
+            [Fact]
+            public void Bar_Backward()
+            {
+                Create("The quick brown fox jumps over the lazy dog.");
+                _textView.MoveCaretTo(3);
+                var data = _motionUtil.LineToColumn(1);
+                Assert.Equal("The", data.Span.GetText());
+                Assert.Equal(false, data.IsForward);
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.NewScreenColumn(0), data.DesiredColumn);
+            }
+
+            /// <summary>
+            /// Make sure that the bar motion can handle ending up in the same column
+            /// </summary>
+            [Fact]
+            public void Bar_NoMove()
+            {
+                Create("The quick brown fox jumps over the lazy dog.");
+                _textView.MoveCaretTo(2);
+                var data = _motionUtil.LineToColumn(3);
+                Assert.Equal(0, data.Span.Length);
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.NewScreenColumn(2), data.DesiredColumn);
+            }
+
+            /// <summary>
+            /// Make sure that the bar motion goes to the tab that spans over the given column
+            /// </summary>
+            [Fact]
+            public void Bar_OverTabs()
+            {
+                Create("\t\t\tThe quick brown fox jumps over the lazy dog.");
+                _textView.MoveCaretTo(3);
+                _localSettings.TabStop = 4;
+
+                var data = _motionUtil.LineToColumn(2);
+
+                // Tabs are 4 spaces long; we should end up in the first tab
+                Assert.Equal(data.Span.GetText(), "\t\t\t");
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.NewScreenColumn(1), data.DesiredColumn);
+            }
+
+            /// <summary>
+            /// Make sure that the bar motion knows where it wanted to end up, even past the end of line.
+            /// </summary>
+            [Fact]
+            public void Bar_PastEnd()
+            {
+                Create("Teh");
+                _textView.MoveCaretTo(1);
+                var data = _motionUtil.LineToColumn(100);
+
+                Assert.Equal(data.Span.End, _textView.GetLine(0).End);
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.NewScreenColumn(99), data.DesiredColumn);
+            }
         }
     }
 }

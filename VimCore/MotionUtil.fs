@@ -1869,6 +1869,20 @@ type internal MotionUtil
                 |> CaretColumn.InLastLine
             MotionResult.CreateExEx span false MotionKind.LineWise MotionResultFlags.None column)
 
+    /// Implements the '|'
+    ///
+    /// Get the motion which is to the 'count'-th column on the current line.
+    member x.LineToColumn count =
+        x.MotionWithVisualSnapshot (fun x ->
+            let count = count - 1
+            let targetPoint = _commonOperations.GetPointForSpaces x.CaretLine count
+            let forward = targetPoint.Difference(x.CaretPoint) < 0
+            let span = 
+                if forward then SnapshotSpan(x.CaretPoint, targetPoint)
+                else            SnapshotSpan(targetPoint, x.CaretPoint)
+            let column = count |> CaretColumn.ScreenColumn
+            MotionResult.CreateExEx span forward MotionKind.CharacterWiseExclusive MotionResultFlags.None column)
+
     /// Get the motion which is 'count' characters to the left of the caret on
     /// the same line
     member x.CharLeft count = 
@@ -2394,6 +2408,7 @@ type internal MotionUtil
             | Motion.SectionBackwardOrOpenBrace -> x.SectionBackwardOrOpenBrace motionArgument.Count |> Some
             | Motion.SectionForward -> x.SectionForward motionArgument.MotionContext motionArgument.Count |> Some
             | Motion.SectionForwardOrCloseBrace -> x.SectionForwardOrCloseBrace motionArgument.MotionContext motionArgument.Count |> Some
+            | Motion.ScreenColumn -> x.LineToColumn motionArgument.Count |> Some
             | Motion.SentenceBackward -> x.SentenceBackward motionArgument.Count |> Some
             | Motion.SentenceForward -> x.SentenceForward motionArgument.Count |> Some
             | Motion.WordBackward wordKind -> x.WordBackward wordKind motionArgument.Count |> Some

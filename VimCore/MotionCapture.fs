@@ -92,6 +92,7 @@ type internal MotionCapture
                 yield ("$", MotionFlags.CaretMovement, Motion.EndOfLine)
                 yield ("^", MotionFlags.CaretMovement, Motion.FirstNonBlankOnCurrentLine)
                 yield ("0", MotionFlags.CaretMovement, Motion.BeginingOfLine)
+                yield ("|", MotionFlags.CaretMovement, Motion.ScreenColumn)
                 yield ("+", MotionFlags.CaretMovement, Motion.LineDownToFirstNonBlank)
                 yield ("_", MotionFlags.CaretMovement, Motion.FirstNonBlankOnLine)
                 yield ("-", MotionFlags.CaretMovement, Motion.LineUpToFirstNonBlank)
