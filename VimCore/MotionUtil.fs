@@ -340,7 +340,8 @@ type VisualMotionResult =
 
 type internal MotionUtil 
     ( 
-        _vimBufferData : IVimBufferData
+        _vimBufferData : IVimBufferData,
+        _commonOperations : ICommonOperations
     ) = 
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer

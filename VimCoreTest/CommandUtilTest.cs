@@ -57,7 +57,7 @@ namespace Vim.UnitTest
             _globalSettings = Vim.GlobalSettings;
 
             var operations = CreateCommonOperations(vimBufferData);
-            _motionUtil = new MotionUtil(vimBufferData);
+            _motionUtil = new MotionUtil(vimBufferData, operations);
             _commandUtil = new CommandUtil(
                 vimBufferData,
                 _motionUtil,

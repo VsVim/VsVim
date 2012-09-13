@@ -53,7 +53,7 @@ namespace Vim.UnitTest
             var vimTextBuffer = Vim.CreateVimTextBuffer(_textView.TextBuffer);
             var vimBufferData = CreateVimBufferData(vimTextBuffer, _textView);
             var operations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
-            motionUtil = motionUtil ?? new MotionUtil(vimBufferData);
+            motionUtil = motionUtil ?? new MotionUtil(vimBufferData, operations);
 
             var capture = new MotionCapture(vimBufferData, _incrementalSearch.Object);
             var runner = new CommandRunner(

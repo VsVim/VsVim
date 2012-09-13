@@ -292,7 +292,7 @@ namespace Vim.UnitTest
             IFoldManager foldManager = null,
             InsertUtil insertUtil = null)
         {
-            motionUtil = motionUtil ?? new MotionUtil(vimBufferData);
+            motionUtil = motionUtil ?? new MotionUtil(vimBufferData, operations);
             operations = operations ?? CommonOperationsFactory.GetCommonOperations(vimBufferData);
             foldManager = foldManager ?? VimUtil.CreateFoldManager(vimBufferData.TextView, vimBufferData.StatusUtil);
             insertUtil = insertUtil ?? new InsertUtil(vimBufferData, operations);

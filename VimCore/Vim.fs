@@ -178,7 +178,7 @@ type internal VimBufferFactory
         let capture = MotionCapture(vimBufferData, incrementalSearch) :> IMotionCapture
 
         let textChangeTracker = _textChangeTrackerFactory.GetTextChangeTracker vimBufferData
-        let motionUtil = MotionUtil(vimBufferData) :> IMotionUtil
+        let motionUtil = MotionUtil(vimBufferData, commonOperations) :> IMotionUtil
         let foldManager = _foldManagerFactory.GetFoldManager textView
         let insertUtil = InsertUtil(vimBufferData, commonOperations) :> IInsertUtil
         let commandUtil = CommandUtil(vimBufferData, motionUtil, commonOperations, foldManager, insertUtil, _bulkOperations) :> ICommandUtil

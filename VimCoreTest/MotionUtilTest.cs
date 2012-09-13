@@ -55,7 +55,8 @@ namespace Vim.UnitTest
             _vimData = vimBufferData.Vim.VimData;
             _search = vimBufferData.Vim.SearchService;
             var wordNavigator = CreateTextStructureNavigator(_textView.TextBuffer, WordKind.NormalWord);
-            _motionUtil = new MotionUtil(vimBufferData);
+            var operations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
+            _motionUtil = new MotionUtil(vimBufferData, operations);
         }
 
         public void AssertData(MotionResult data, SnapshotSpan? span, MotionKind motionKind = null, CaretColumn desiredColumn = null)

@@ -351,8 +351,16 @@ namespace Vim.UnitTest.Mock
             var textViewModel = factory.Create<ITextViewModel>();
             textViewModel.SetupGet(x => x.VisualBuffer).Returns(visualBuffer.Object);
 
+            // When creating the CommonOperations linked to the textview, 
+            // the roles are checked for the outlining manager.
+            // Pretend we don't support anything
+            var roles = factory.Create<ITextViewRoleSet>();
+            roles.Setup(x => x.Contains(It.IsAny<String>())).Returns(false);
+
+
             var properties = new PropertyCollection();
             var textView = factory.Create<ITextView>();
+            var options = factory.Create<IEditorOptions>();
             var bufferGraph = factory.Create<IBufferGraph>();
             textView.SetupGet(x => x.TextBuffer).Returns(buffer);
             textView.SetupGet(x => x.TextViewLines).Returns(lines.Object);
@@ -363,6 +371,8 @@ namespace Vim.UnitTest.Mock
             textView.SetupGet(x => x.BufferGraph).Returns(bufferGraph.Object);
             textView.SetupGet(x => x.TextViewModel).Returns(textViewModel.Object);
             textView.SetupGet(x => x.VisualSnapshot).Returns(visualBuffer.Object.CurrentSnapshot);
+            textView.SetupGet(x => x.Roles).Returns(roles.Object); 
+            textView.SetupGet(x => x.Options).Returns(options.Object); 
             return Tuple.Create(textView, factory);
         }
 
