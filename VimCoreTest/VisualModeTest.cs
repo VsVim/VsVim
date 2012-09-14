@@ -44,7 +44,7 @@ namespace Vim.UnitTest
             _operations = _factory.Create<ICommonOperations>();
             _operations.SetupGet(x => x.TextView).Returns(_textView);
             _commandUtil = _factory.Create<ICommandUtil>();
-            var motionUtil = new MotionUtil(vimBufferData);
+            var motionUtil = new MotionUtil(vimBufferData, _operations.Object);
             var capture = new MotionCapture(vimBufferData, new IncrementalSearch(vimBufferData, _operations.Object));
             var runner = new CommandRunner(
                 _textView,

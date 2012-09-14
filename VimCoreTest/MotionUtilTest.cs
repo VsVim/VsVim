@@ -55,10 +55,11 @@ namespace Vim.UnitTest
             _vimData = vimBufferData.Vim.VimData;
             _search = vimBufferData.Vim.SearchService;
             var wordNavigator = CreateTextStructureNavigator(_textView.TextBuffer, WordKind.NormalWord);
-            _motionUtil = new MotionUtil(vimBufferData);
+            var operations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
+            _motionUtil = new MotionUtil(vimBufferData, operations);
         }
 
-        public void AssertData(MotionResult data, SnapshotSpan? span, MotionKind motionKind = null)
+        public void AssertData(MotionResult data, SnapshotSpan? span, MotionKind motionKind = null, CaretColumn desiredColumn = null)
         {
             if (span.HasValue)
             {
@@ -67,6 +68,10 @@ namespace Vim.UnitTest
             if (motionKind != null)
             {
                 Assert.Equal(motionKind, data.MotionKind);
+            }
+            if (desiredColumn != null)
+            {
+                Assert.Equal(desiredColumn, data.DesiredColumn);
             }
         }
 
@@ -1685,7 +1690,8 @@ namespace Vim.UnitTest
                 AssertData(
                     data,
                     _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
-                    MotionKind.NewLineWise(CaretColumn.NewInLastLine(0)));
+                    MotionKind.LineWise,
+                    CaretColumn.NewInLastLine(0));
             }
 
             [Fact]
@@ -1696,7 +1702,8 @@ namespace Vim.UnitTest
                 AssertData(
                     data,
                     _textBuffer.GetLineRange(0, 2).ExtentIncludingLineBreak,
-                    MotionKind.NewLineWise(CaretColumn.NewInLastLine(0)));
+                    MotionKind.LineWise,
+                    CaretColumn.NewInLastLine(0));
             }
 
             [Fact]
@@ -1708,7 +1715,8 @@ namespace Vim.UnitTest
                 AssertData(
                     data,
                     _textBuffer.GetLineRange(1, 2).ExtentIncludingLineBreak,
-                    MotionKind.NewLineWise(CaretColumn.NewInLastLine(0)));
+                    MotionKind.LineWise,
+                    CaretColumn.NewInLastLine(0));
             }
 
             [Fact]
@@ -1720,7 +1728,8 @@ namespace Vim.UnitTest
                 AssertData(
                     data,
                     _textBuffer.GetLineRange(0, 2).ExtentIncludingLineBreak,
-                    MotionKind.NewLineWise(CaretColumn.NewInLastLine(0)));
+                    MotionKind.LineWise,
+                    CaretColumn.NewInLastLine(0));
             }
 
             [Fact]
@@ -2810,6 +2819,88 @@ namespace Vim.UnitTest
                     _textBuffer.GetLineRange(1,2).ExtentIncludingLineBreak
                 },
                     ret.ToList());
+            }
+
+            /// <summary>
+            /// Make sure that the bar motion goes to the specified column
+            /// </summary>
+            [Fact]
+            public void Bar_Simple()
+            {
+                Create("The quick brown fox jumps over the lazy dog.");
+                _textView.MoveCaretTo(0);
+                var data = _motionUtil.LineToColumn(4);
+                Assert.Equal("The", data.Span.GetText());
+                Assert.Equal(true, data.IsForward);
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.NewScreenColumn(3), data.DesiredColumn);
+            }
+
+            /// <summary>
+            /// Make sure that the bar motion handles backward moves properly
+            /// </summary>
+            [Fact]
+            public void Bar_Backward()
+            {
+                Create("The quick brown fox jumps over the lazy dog.");
+                _textView.MoveCaretTo(3);
+                var data = _motionUtil.LineToColumn(1);
+                Assert.Equal("The", data.Span.GetText());
+                Assert.Equal(false, data.IsForward);
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.NewScreenColumn(0), data.DesiredColumn);
+            }
+
+            /// <summary>
+            /// Make sure that the bar motion can handle ending up in the same column
+            /// </summary>
+            [Fact]
+            public void Bar_NoMove()
+            {
+                Create("The quick brown fox jumps over the lazy dog.");
+                _textView.MoveCaretTo(2);
+                var data = _motionUtil.LineToColumn(3);
+                Assert.Equal(0, data.Span.Length);
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.NewScreenColumn(2), data.DesiredColumn);
+            }
+
+            /// <summary>
+            /// Make sure that the bar motion goes to the tab that spans over the given column
+            /// </summary>
+            [Fact]
+            public void Bar_OverTabs()
+            {
+                Create("\t\t\tThe quick brown fox jumps over the lazy dog.");
+                _textView.MoveCaretTo(3);
+                _localSettings.TabStop = 4;
+
+                var data = _motionUtil.LineToColumn(2);
+
+                // Tabs are 4 spaces long; we should end up in the first tab
+                Assert.Equal(data.Span.GetText(), "\t\t\t");
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.NewScreenColumn(1), data.DesiredColumn);
+            }
+
+            /// <summary>
+            /// Make sure that the bar motion knows where it wanted to end up, even past the end of line.
+            /// </summary>
+            [Fact]
+            public void Bar_PastEnd()
+            {
+                Create("Teh");
+                _textView.MoveCaretTo(1);
+                var data = _motionUtil.LineToColumn(100);
+
+                Assert.Equal(data.Span.End, _textView.GetLine(0).End);
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.NewScreenColumn(99), data.DesiredColumn);
             }
         }
     }

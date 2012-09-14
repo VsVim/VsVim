@@ -862,11 +862,28 @@ namespace Vim.UnitTest
             Create("the dog chased the ball", "hello", "the cat climbed the tree");
             var motionResult = VimUtil.CreateMotionResult(
                 _textView.GetLineRange(0, 1).ExtentIncludingLineBreak,
-                motionKind: MotionKind.NewLineWise(CaretColumn.NewInLastLine(2)),
+                motionKind: MotionKind.LineWise,
+                desiredColumn: CaretColumn.NewInLastLine(2),
                 flags: MotionResultFlags.MaintainCaretColumn);
             _operations.MoveCaretToMotionResult(motionResult);
             Assert.Equal(2, _operationsRaw.MaintainCaretColumn.AsSpaces().Item);
         }
+
+        /// <summary>
+        /// Make sure the caret column is kept when specified
+        /// </summary>
+        [Fact]
+        public void SetCaretColumn()
+        {
+            Create("the dog chased the ball");
+            var motionResult = VimUtil.CreateMotionResult(
+                _textView.GetFirstLine().ExtentIncludingLineBreak,
+                motionKind: MotionKind.CharacterWiseExclusive,
+                desiredColumn: CaretColumn.NewScreenColumn(100));
+            _operations.MoveCaretToMotionResult(motionResult);
+            Assert.Equal(100, _operationsRaw.MaintainCaretColumn.AsSpaces().Item);
+        }
+
 
         /// <summary>
         /// If the MotionResult specifies end of line caret maintenance then it should
@@ -878,7 +895,8 @@ namespace Vim.UnitTest
             Create("the dog chased the ball", "hello", "the cat climbed the tree");
             var motionResult = VimUtil.CreateMotionResult(
                 _textView.GetLineRange(0, 1).ExtentIncludingLineBreak,
-                motionKind: MotionKind.NewLineWise(CaretColumn.NewInLastLine(2)),
+                motionKind: MotionKind.LineWise,
+                desiredColumn: CaretColumn.NewInLastLine(2),
                 flags: MotionResultFlags.MaintainCaretColumn | MotionResultFlags.EndOfLine);
             _operations.MoveCaretToMotionResult(motionResult);
             Assert.True(_operationsRaw.MaintainCaretColumn.IsEndOfLine);
@@ -893,7 +911,8 @@ namespace Vim.UnitTest
             Create("the dog chased the ball", "hello", "the cat climbed the tree");
             var motionResult = VimUtil.CreateMotionResult(
                 _textView.GetLineRange(0, 1).ExtentIncludingLineBreak,
-                motionKind: MotionKind.NewLineWise(CaretColumn.NewInLastLine(2)),
+                motionKind: MotionKind.LineWise,
+                desiredColumn: CaretColumn.NewInLastLine(2),
                 flags: MotionResultFlags.None);
             var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 1, 2),
@@ -961,7 +980,7 @@ namespace Vim.UnitTest
             var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, _textBuffer.CurrentSnapshot.Length),
                 true,
-                MotionKind.NewLineWise(CaretColumn.None),
+                MotionKind.LineWise,
                 MotionResultFlags.IncludeEmptyLastLine);
             _operations.MoveCaretToMotionResult(data);
             Assert.Equal(2, _textView.GetCaretPoint().GetContainingLine().LineNumber);
@@ -977,7 +996,7 @@ namespace Vim.UnitTest
             var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, _textBuffer.CurrentSnapshot.Length),
                 true,
-                MotionKind.NewLineWise(CaretColumn.None),
+                MotionKind.LineWise,
                 MotionResultFlags.None);
             _operations.MoveCaretToMotionResult(data);
             Assert.Equal(1, _textView.GetCaretPoint().GetContainingLine().LineNumber);
@@ -993,7 +1012,8 @@ namespace Vim.UnitTest
             var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 true,
-                MotionKind.NewLineWise(CaretColumn.NewInLastLine(1)));
+                MotionKind.LineWise,
+                desiredColumn: CaretColumn.NewInLastLine(1));
             _operations.MoveCaretToMotionResult(data);
             Assert.Equal(Tuple.Create(1, 1), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
         }
@@ -1008,7 +1028,8 @@ namespace Vim.UnitTest
             var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 true,
-                MotionKind.NewLineWise(CaretColumn.NewInLastLine(100)));
+                MotionKind.LineWise,
+                desiredColumn: CaretColumn.NewInLastLine(100));
             _operations.MoveCaretToMotionResult(data);
             Assert.Equal(Tuple.Create(1, 2), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
         }
@@ -1023,7 +1044,8 @@ namespace Vim.UnitTest
             var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 true,
-                MotionKind.NewLineWise(CaretColumn.NewInLastLine(0)));
+                MotionKind.LineWise,
+                desiredColumn: CaretColumn.NewInLastLine(0));
             _operations.MoveCaretToMotionResult(data);
             Assert.Equal(Tuple.Create(1, 0), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
         }
@@ -1053,7 +1075,8 @@ namespace Vim.UnitTest
             var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
                 false,
-                MotionKind.NewLineWise(CaretColumn.NewInLastLine(2)));
+                MotionKind.LineWise,
+                desiredColumn: CaretColumn.NewInLastLine(2));
             _operations.MoveCaretToMotionResult(data);
             Assert.Equal(Tuple.Create(0, 2), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
         }
@@ -1083,7 +1106,8 @@ namespace Vim.UnitTest
             var data = VimUtil.CreateMotionResult(
                 span: _textView.GetLineRange(0, 1).ExtentIncludingLineBreak,
                 isForward: false,
-                motionKind: MotionKind.NewLineWise(CaretColumn.NewInLastLine(1)));
+                motionKind: MotionKind.LineWise,
+                desiredColumn: CaretColumn.NewInLastLine(1));
             _operations.MoveCaretToMotionResult(data);
             Assert.Equal(1, _textView.GetCaretPoint().Position);
         }
@@ -1099,7 +1123,8 @@ namespace Vim.UnitTest
             var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0).ExtentIncludingLineBreak,
                 true,
-                MotionKind.NewLineWise(CaretColumn.AfterLastLine));
+                MotionKind.LineWise,
+                desiredColumn: CaretColumn.AfterLastLine);
             _operations.MoveCaretToMotionResult(data);
             Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
         }

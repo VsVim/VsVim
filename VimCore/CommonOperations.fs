@@ -389,8 +389,7 @@ type internal CommonOperations
                 let column = x.GetPointForSpaces lastLine caretColumnSpaces |> SnapshotPointUtil.GetColumn
                 CaretColumn.InLastLine column
             let result = 
-                let motionKind = MotionKind.LineWise caretColumn
-                { result with MotionKind = motionKind }
+                { result with DesiredColumn = caretColumn }
 
             // Complete the motion with the updated value then reset the maintain caret.  Need
             // to do the save after the caret move since the move will clear out the saved value
@@ -406,11 +405,15 @@ type internal CommonOperations
             // Not maintaining caret column so just do a normal movement
             x.MoveCaretToMotionResultCore result
 
+            //If the motion wanted to maintain a specific column for the caret, we need to
+            //save it.
             _maintainCaretColumn <-
                 if Util.IsFlagSet result.MotionResultFlags MotionResultFlags.EndOfLine then
                     MaintainCaretColumn.EndOfLine
-                else
-                    MaintainCaretColumn.None
+                else 
+                    match result.CaretColumn with
+                    | CaretColumn.ScreenColumn column -> MaintainCaretColumn.Spaces column
+                    | _ -> MaintainCaretColumn.None
 
     /// Move the caret to the position dictated by the given MotionResult value
     member x.MoveCaretToMotionResultCore (result : MotionResult) =
@@ -419,15 +422,13 @@ type internal CommonOperations
 
             let line = result.DirectionLastLine
             if not result.IsForward then
-                match result.CaretColumn with
-                | CaretColumn.None -> 
-                    // No column specified so just move to the start of the Span
-                    result.Span.Start
-                | CaretColumn.AfterLastLine ->
-                    // This is only valid going forward so pretend there isn't a column
-                    result.Span.Start
-                | CaretColumn.InLastLine column -> 
+                match result.MotionKind, result.CaretColumn with
+                | MotionKind.LineWise, CaretColumn.InLastLine column -> 
+                    // If we are moving linewise, but to a specific column, use
+                    // that column as the target of the motion
                     SnapshotLineUtil.GetOffsetOrEnd column line
+                | _, _ -> 
+                    result.Span.Start
             else
 
                 // Get the point when moving the caret after the last line in the SnapshotSpan
@@ -453,12 +454,14 @@ type internal CommonOperations
                     else
                         SnapshotPointUtil.TryGetPreviousPointOnLine result.Span.End 1 
                         |> OptionUtil.getOrDefault result.Span.End
-                | MotionKind.LineWise column -> 
-                    match column with
+                | MotionKind.LineWise -> 
+                    match result.CaretColumn with
                     | CaretColumn.None -> 
                         line.End
                     | CaretColumn.InLastLine column ->
                         SnapshotLineUtil.GetOffsetOrEnd column line
+                    | CaretColumn.ScreenColumn column ->
+                        SnapshotLineUtil.GetOffsetOrEnd (SnapshotPointUtil.GetColumn (x.GetPointForSpaces line column)) line
                     | CaretColumn.AfterLastLine ->
                         getAfterLastLine()
 
@@ -1056,6 +1059,7 @@ type internal CommonOperations
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
         member x.GetReplaceData point = x.GetReplaceData point
         member x.GetSpacesToPoint point = x.GetSpacesToPoint point
+        member x.GetPointForSpaces contextLine column = x.GetPointForSpaces contextLine column
         member x.GoToLocalDeclaration() = x.GoToLocalDeclaration()
         member x.GoToGlobalDeclaration () = x.GoToGlobalDeclaration()
         member x.GoToFile () = x.GoToFile()

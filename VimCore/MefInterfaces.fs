@@ -289,6 +289,9 @@ type ICommonOperations =
     /// specified point on it's line
     abstract GetSpacesToPoint : point : SnapshotPoint -> int
 
+    /// Get the point that visually corresponds to the specified column on its line
+    abstract GetPointForSpaces : contextLine : ITextSnapshotLine -> column : int -> SnapshotPoint
+
     /// Attempt to GoToDefinition on the current state of the buffer.  If this operation fails, an error message will 
     /// be generated as appropriate
     abstract GoToDefinition : unit -> Result
