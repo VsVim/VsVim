@@ -241,10 +241,12 @@ namespace Vim.UnitTest
             SnapshotSpan span,
             bool isForward = true,
             MotionKind motionKind = null,
-            MotionResultFlags flags = MotionResultFlags.None)
+            MotionResultFlags flags = MotionResultFlags.None,
+            CaretColumn desiredColumn = null)
         {
             motionKind = motionKind ?? MotionKind.CharacterWiseInclusive;
-            return new MotionResult(span, span, isForward, motionKind, flags);
+            desiredColumn = desiredColumn ?? CaretColumn.None;
+            return new MotionResult(span, span, isForward, motionKind, flags, desiredColumn);
         }
 
         internal static CommandData CreateCommandData(

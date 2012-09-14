@@ -57,7 +57,7 @@ namespace Vim.UnitTest
             _globalSettings = Vim.GlobalSettings;
 
             var operations = CreateCommonOperations(vimBufferData);
-            _motionUtil = new MotionUtil(vimBufferData);
+            _motionUtil = new MotionUtil(vimBufferData, operations);
             _commandUtil = new CommandUtil(
                 vimBufferData,
                 _motionUtil,
@@ -1331,7 +1331,7 @@ namespace Vim.UnitTest
                     VimUtil.CreateMotionResult(
                         _textBuffer.GetSpan(0, 5),
                         isForward: true,
-                        motionKind: MotionKind.NewLineWise(CaretColumn.None),
+                        motionKind: MotionKind.LineWise,
                         flags: MotionResultFlags.AnyWord));
                 Assert.Equal("  bar", _textBuffer.GetLineRange(0).GetText());
                 Assert.Equal("foo", UnnamedRegister.StringValue);
@@ -1350,7 +1350,7 @@ namespace Vim.UnitTest
                     VimUtil.CreateMotionResult(
                         _textBuffer.GetSpan(0, 5),
                         isForward: true,
-                        motionKind: MotionKind.NewLineWise(CaretColumn.None)));
+                        motionKind: MotionKind.LineWise));
                 Assert.Equal("bar", _textBuffer.GetLineRange(0).GetText());
             }
 

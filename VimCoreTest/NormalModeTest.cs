@@ -53,7 +53,7 @@ namespace Vim.UnitTest
             var vimTextBuffer = Vim.CreateVimTextBuffer(_textView.TextBuffer);
             var vimBufferData = CreateVimBufferData(vimTextBuffer, _textView);
             var operations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
-            motionUtil = motionUtil ?? new MotionUtil(vimBufferData);
+            motionUtil = motionUtil ?? new MotionUtil(vimBufferData, operations);
 
             var capture = new MotionCapture(vimBufferData, _incrementalSearch.Object);
             var runner = new CommandRunner(
@@ -535,7 +535,7 @@ namespace Vim.UnitTest
             var arg = new MotionArgument(MotionContext.AfterOperator, FSharpOption<int>.None, FSharpOption<int>.None);
             util
                 .Setup(x => x.GetMotion(Motion.LineOrLastToFirstNonBlank, arg))
-                .Returns(FSharpOption.Create(VimUtil.CreateMotionResult(span, motionKind: MotionKind.NewLineWise(CaretColumn.None))));
+                .Returns(FSharpOption.Create(VimUtil.CreateMotionResult(span, motionKind: MotionKind.LineWise)));
             _commandUtil
                 .Setup(x => x.RunCommand(It.Is<Command>(y => y.AsNormalCommand().Item2.Count.IsNone())))
                 .Returns(CommandResult.NewCompleted(ModeSwitch.NoSwitch))

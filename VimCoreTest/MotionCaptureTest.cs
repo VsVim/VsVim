@@ -286,6 +286,12 @@ namespace Vim.UnitTest
         }
 
         [Fact]
+        public void ScreenColumn()
+        {
+            AssertMotion("|", Motion.ScreenColumn);
+        }
+
+        [Fact]
         public void QuotedString()
         {
             AssertMotion(@"a""", Motion.NewQuotedString('"'));

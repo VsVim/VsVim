@@ -421,13 +421,20 @@ type CaretColumn =
     /// No column information was provided
     | None
 
-    /// Caret should be placed in the specified column on the last line in 
+    /// Caret should be placed in the specified character on the last line in 
     /// the MotionResult
     ///
     /// This column should be specified in terms of a character offset in the ITextBuffer
     /// and shouldn't consider items like how wide a tab is.  A tab should be a single
     /// character
     | InLastLine of int
+
+    /// Caret should be placed in the specified column on the last line in 
+    /// the MotionResult
+    ///
+    /// This column should be specified in terms number of screen columns, where 
+    /// some characters like tabs may span many columns.
+    | ScreenColumn of int
 
     /// Caret should be placed at the start of the line after the last line
     /// in the motion
@@ -468,10 +475,7 @@ type MotionKind =
 
     | CharacterWiseExclusive
 
-    /// In addition to recording the Span certain line wise operations like j and k also
-    /// record data about the desired column within the span.  This value may or may not
-    /// be a valid point within the line
-    | LineWise of CaretColumn
+    | LineWise
 
 /// Data about a complete motion operation. 
 type MotionResult = {
@@ -492,14 +496,15 @@ type MotionResult = {
     /// The flags on the MotionRelult
     MotionResultFlags : MotionResultFlags
 
+    /// In addition to recording the Span, certain motions like j, k, and | also
+    /// record data about the desired column within the span.  This value may or may not
+    /// be a valid point within the line
+    DesiredColumn : CaretColumn
+
 } with
 
     /// The possible column of the MotionResult
-    member x.CaretColumn = 
-        match x.MotionKind with
-        | MotionKind.CharacterWiseExclusive -> CaretColumn.None
-        | MotionKind.CharacterWiseInclusive -> CaretColumn.None
-        | MotionKind.LineWise column -> column
+    member x.CaretColumn = x.DesiredColumn
 
     /// The Span as an EditSpan value
     member x.EditSpan = EditSpan.Single x.Span
@@ -540,13 +545,17 @@ type MotionResult = {
         else
             SnapshotSpanUtil.GetStartLine x.Span
 
-    static member CreateEx span isForward motionKind motionResultFlags = 
+    static member CreateExEx span isForward motionKind motionResultFlags desiredColumn = 
         {
             Span = span
             OriginalSpan = span
             IsForward = isForward
             MotionKind = motionKind
-            MotionResultFlags = motionResultFlags }
+            MotionResultFlags = motionResultFlags 
+            DesiredColumn = desiredColumn }
+
+    static member CreateEx span isForward motionKind motionResultFlags = 
+        MotionResult.CreateExEx span isForward motionKind motionResultFlags CaretColumn.None
 
     static member Create span isForward motionKind = MotionResult.CreateEx span isForward motionKind MotionResultFlags.None
 
@@ -676,7 +685,7 @@ type Motion =
 
     /// Find the first non-blank character as the start of the span.  This is an exclusive
     /// motion so be careful we don't go to far forward.  Providing a count to this motion has
-    /// no affect
+    /// no effect
     | FirstNonBlankOnCurrentLine
 
     /// Find the first non-blank character on the (count - 1) line below this line
@@ -785,6 +794,9 @@ type Motion =
 
     /// Count sentences forward
     | SentenceForward
+
+    /// Move the the specific column of the current line. Typically in response to the | key. 
+    | ScreenColumn
 
     /// Implement the b/B motion
     | WordBackward of WordKind
