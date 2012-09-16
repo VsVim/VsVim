@@ -171,7 +171,7 @@ namespace VsVim
         private bool TryGetSingleMapping(KeyInput original, out KeyInput mapped)
         {
             var result = _vimBuffer.GetKeyInputMapping(original);
-            if (result.IsNeedsMoreInput || result.IsRecursive)
+            if (result.IsNeedsMoreInput || result.IsRecursive || result.IsPartiallyMapped)
             {
                 // No single mapping
                 mapped = null;
