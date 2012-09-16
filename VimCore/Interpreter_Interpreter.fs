@@ -5,6 +5,7 @@ open Microsoft.VisualStudio.Text
 open Vim
 open Vim.VimHostExtensions
 open Vim.StringBuilderExtensions
+open System.Collections.Generic
 
 [<RequireQualifiedAccess>]
 type DefaultLineRange =
@@ -97,6 +98,7 @@ type Interpreter
     let _windowSettings = _vimBufferData.WindowSettings
     let _globalSettings = _localSettings.GlobalSettings
     let _searchService = _vim.SearchService
+    let _variableMap = _vim.VariableMap
 
     /// The column of the caret
     member x.CaretColumn = SnapshotPointUtil.GetColumn x.CaretPoint
@@ -662,6 +664,11 @@ type Interpreter
             |> SnapshotLineUtil.GetFirstNonBlankOrEnd
 
         _commonOperations.MoveCaretToPointAndEnsureVisible point
+        RunResult.Completed
+
+    /// Run the let command
+    member x.RunLet name value =
+        _variableMap.[name] <- value
         RunResult.Completed
 
     /// Run the host make command 
@@ -1300,6 +1307,7 @@ type Interpreter
         | LineCommand.Join (lineRange, joinKind) -> x.RunJoin lineRange joinKind
         | LineCommand.JumpToLastLine -> x.RunJumpToLastLine()
         | LineCommand.JumpToLine number -> x.RunJumpToLine number
+        | LineCommand.Let (name, value) -> x.RunLet name value
         | LineCommand.Make (hasBang, arguments) -> x.RunMake hasBang arguments
         | LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap, mapArgumentList) -> x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList
         | LineCommand.MoveTo (sourceLineRange, destLineRange, count) -> x.RunMoveTo sourceLineRange destLineRange count

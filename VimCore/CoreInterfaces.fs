@@ -9,6 +9,7 @@ open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Utilities
 open System.Diagnostics
 open System.Runtime.CompilerServices
+open System.Collections.Generic
 
 [<RequireQualifiedAccess>]
 type CaretMovement =
@@ -3678,6 +3679,9 @@ and IVim =
 
     /// IGlobalSettings for this IVim instance
     abstract GlobalSettings : IVimGlobalSettings
+
+    /// The variable map for this IVim instance
+    abstract VariableMap : Dictionary<string, Vim.Interpreter.Value>
 
     abstract VimData : IVimData 
 
