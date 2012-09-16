@@ -440,7 +440,7 @@ namespace Vim.UnitTest
 
             public LetTest()
             {
-                _variableMap = ((Vim)Vim).VariableMap;
+                _variableMap = VariableMap;
             }
 
             private void AssertValue(string name, int value)

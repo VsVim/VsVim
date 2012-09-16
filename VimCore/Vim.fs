@@ -511,6 +511,7 @@ type internal Vim
             with get() = x.AutoLoadVimRc
             and set value = x.AutoLoadVimRc <- value
         member x.FocusedBuffer = x.FocusedBuffer
+        member x.VariableMap = x.VariableMap
         member x.VimBuffers = x.VimBuffers
         member x.VimData = _vimData
         member x.VimHost = _vimHost

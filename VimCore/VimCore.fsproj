@@ -54,6 +54,7 @@
     <Compile Include="OperationKind.fs" />
     <Compile Include="Mark.fs" />
     <Compile Include="Register.fs" />
+    <Compile Include="Interpreter_Common.fs" />
     <Compile Include="CoreInterfaces.fs" />
     <Compile Include="InternalInterfaces.fs" />
     <Compile Include="CountCapture.fs" />

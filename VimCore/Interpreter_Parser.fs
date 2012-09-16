@@ -76,6 +76,7 @@ type Parser
         ("join", "j")
         ("lcd", "lc")
         ("lchdir", "lch")
+        ("let", "let")
         ("move", "m")
         ("make", "mak")
         ("marks", "")
@@ -1013,6 +1014,15 @@ type Parser
         let joinKind = if hasBang then JoinKind.KeepEmptySpaces else JoinKind.RemoveEmptySpaces
         LineCommand.Join (lineRange, joinKind) |> ParseResult.Succeeded
 
+    /// Pares out the :let command
+    member x.ParseLet () = 
+        match _tokenizer.CurrentTokenKind with
+        | TokenKind.Word name ->
+            match x.ParseSingleValue() with
+            | ParseResult.Failed msg -> ParseResult.Failed msg
+            | ParseResult.Succeeded value -> LineCommand.Let (name, value) |> ParseResult.Succeeded
+        | _ -> ParseResult.Failed "Error"
+
     /// Parse out the :make command.  The arguments here other than ! are undefined.  Just
     /// get the text blob and let the interpreter / host deal with it 
     member x.ParseMake () = 
@@ -1282,6 +1292,7 @@ type Parser
                 | "join" -> x.ParseJoin lineRange 
                 | "lcd" -> noRange x.ParseChangeLocalDirectory
                 | "lchdir" -> noRange x.ParseChangeLocalDirectory
+                | "let" -> noRange x.ParseLet
                 | "lmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Language])
                 | "lunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Language])
                 | "lnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Language])

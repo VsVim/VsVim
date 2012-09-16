@@ -110,6 +110,11 @@ namespace Vim.UnitTest
             get { return RegisterMap.GetRegister(RegisterName.Unnamed); }
         }
 
+        public Dictionary<string, global::Vim.Interpreter.Value> VariableMap
+        {
+            get { return _vim.VariableMap; }
+        }
+
         protected VimTestBase()
         {
             _vim = CompositionContainer.GetExportedValue<IVim>();
@@ -183,6 +188,8 @@ namespace Vim.UnitTest
             {
                 vimHost.Clear();
             }
+
+            VariableMap.Clear();
         }
 
         /// <summary>
