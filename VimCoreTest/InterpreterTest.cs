@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Xunit;
+using System.Collections.Generic;
 
 namespace Vim.UnitTest
 {
@@ -430,6 +431,34 @@ namespace Vim.UnitTest
                 _vimBuffer.LocalSettings.ExpandTab = false;
                 ParseAndRun(@"set blah?");
                 Assert.Equal(Resources.CommandMode_UnknownOption("blah"), _statusUtil.LastError);
+            }
+        }
+
+        public sealed class LetTest : InterpreterTest
+        {
+            Dictionary<string, Value> _variableMap;
+
+            public LetTest()
+            {
+                _variableMap = ((Vim)Vim).VariableMap;
+            }
+
+            private void AssertValue(string name, int value)
+            {
+                AssertValue(name, Value.NewNumber(value));
+            }
+
+            private void AssertValue(string name, Value value)
+            {
+                Assert.Equal(value, _variableMap[name]);
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                Create("");
+                ParseAndRun(@"let x=42");
+                AssertValue("x", 42);
             }
         }
 

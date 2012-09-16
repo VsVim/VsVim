@@ -7,7 +7,9 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Text.Classification
 open System.ComponentModel.Composition
+open System.Collections.Generic
 open Vim.Modes
+open Vim.Interpreter
 
 [<Export(typeof<IBulkOperations>)>]
 type internal BulkOperations  
@@ -255,7 +257,10 @@ type internal Vim
 
     /// Holds an IVimBuffer and the DisposableBag for event handlers on the IVimBuffer.  This
     /// needs to be removed when we're done with the IVimBuffer to avoid leaks
-    let _bufferMap = new System.Collections.Generic.Dictionary<ITextView, IVimBuffer * DisposableBag>()
+    let _bufferMap = Dictionary<ITextView, IVimBuffer * DisposableBag>()
+
+    /// The set of active variables in Vim
+    let _variableMap = Dictionary<string, Value>()
 
     /// Holds the active stack of IVimBuffer instances
     let mutable _activeBufferStack : IVimBuffer list = List.empty
@@ -334,6 +339,8 @@ type internal Vim
         and set value = _autoLoadVimRc <- value
 
     member x.IsVimRcLoaded = not (System.String.IsNullOrEmpty(_globalSettings.VimRc))
+
+    member x.VariableMap = _variableMap
 
     member x.VimBuffers = _bufferMap.Values |> Seq.map fst |> List.ofSeq
 

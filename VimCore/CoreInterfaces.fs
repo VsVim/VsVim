@@ -3688,6 +3688,7 @@ and IVim =
     /// ISearchService for this IVim instance
     abstract SearchService : ISearchService
 
+    /// IGlobalSettings for this IVim instance
     abstract GlobalSettings : IVimGlobalSettings
 
     abstract VimData : IVimData 
