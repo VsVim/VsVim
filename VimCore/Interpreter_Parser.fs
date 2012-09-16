@@ -855,7 +855,6 @@ type Parser
                 elif c = '"' then
                     builder.ToString()
                     |> Value.String
-                    |> Expression.ConstantValue
                     |> ParseResult.Succeeded
                 else
                     builder.AppendChar c
@@ -890,7 +889,6 @@ type Parser
                 // Found the terminating character
                 builder.ToString()
                 |> Value.String
-                |> Expression.ConstantValue
                 |> ParseResult.Succeeded
             | Some c ->
                 builder.AppendChar c
@@ -1377,7 +1375,12 @@ type Parser
 
     /// Parse out a single expression
     member x.ParseSingleExpression() =
+        match x.ParseSingleValue() with
+        | ParseResult.Failed msg -> ParseResult.Failed msg
+        | ParseResult.Succeeded value -> Expression.ConstantValue value |> ParseResult.Succeeded
 
+    /// Parse out a single expression
+    member x.ParseSingleValue() =
         // Re-examine the current token based on the knowledge that double quotes are
         // legal in this context as a real token
         _tokenizer.ResetAtIndex NextTokenFlags.AllowDoubleQuote
@@ -1388,7 +1391,7 @@ type Parser
             x.ParseStringLiteral()
         | TokenKind.Number number -> 
             _tokenizer.MoveNextToken()
-            Value.Number number |> Expression.ConstantValue |> ParseResult.Succeeded
+            Value.Number number |> ParseResult.Succeeded
         | _ -> ParseResult.Failed "Invalid expression"
 
     /// Parse out a complete expression from the text.  

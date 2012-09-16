@@ -32,7 +32,7 @@ namespace Vim.UnitTest
                 var parser = new Parser(text);
                 var parseResult = parser.ParseStringLiteral();
                 Assert.True(parseResult.IsSucceeded);
-                return parseResult.AsSucceeded().Item.AsConstantValue().Item.AsString().Item;
+                return parseResult.AsSucceeded().Item.AsString().Item;
             }
 
             [Fact]
@@ -106,7 +106,7 @@ namespace Vim.UnitTest
                 parser.Tokenizer.MoveToIndexEx(parser.Tokenizer.Index, NextTokenFlags.AllowDoubleQuote);
                 var parseResult = parser.ParseStringConstant();
                 Assert.True(parseResult.IsSucceeded);
-                return parseResult.AsSucceeded().Item.AsConstantValue().Item.AsString().Item;
+                return parseResult.AsSucceeded().Item.AsString().Item;
             }
 
             [Fact]
