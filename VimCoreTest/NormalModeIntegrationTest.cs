@@ -43,7 +43,7 @@ namespace Vim.UnitTest
                 {
                     if (_assertOnErrorMessage)
                     {
-                        throw new Exception("Error Message: " + message);
+                        throw new Exception("Error Message: " + message.Message);
                     }
                 };
             _vimBuffer.WarningMessage +=
@@ -51,7 +51,7 @@ namespace Vim.UnitTest
                 {
                     if (_assertOnWarningMessage)
                     {
-                        throw new Exception("Warning Message: " + message);
+                        throw new Exception("Warning Message: " + message.Message);
                     }
                 };
             _vimBufferData = _vimBuffer.VimBufferData;
@@ -75,7 +75,7 @@ namespace Vim.UnitTest
             Assert.True(_textView.VisualSnapshot != _textView.TextSnapshot);
         }
 
-        public sealed class Move : NormalModeIntegrationTest
+        public sealed class MoveTest : NormalModeIntegrationTest
         {
             /// <summary>
             /// Blank lines are sentences
@@ -522,7 +522,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class Yank : NormalModeIntegrationTest
+        public sealed class YankTest : NormalModeIntegrationTest
         {
             /// <summary>
             /// Make sure we properly update register 0 during a yank
@@ -849,7 +849,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class KeyMapping : NormalModeIntegrationTest
+        public sealed class KeyMappingTest : NormalModeIntegrationTest
         {
             /// <summary>
             /// When two mappnigs have the same prefix then they are ambiguous and require a
@@ -1194,7 +1194,76 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class Marks : NormalModeIntegrationTest
+        public sealed class MapLeaderTest : NormalModeIntegrationTest
+        {
+            [Fact]
+            public void SimpleUpdatesVariableMap()
+            {
+                Create("");
+                _vimBuffer.Process(@":let mapleader=""x""", enter: true);
+                var value = Vim.VariableMap["mapleader"];
+                Assert.Equal("x", value.AsString().Item);
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                Create("");
+                _vimBuffer.Process(@":let mapleader=""x""", enter: true);
+                _vimBuffer.Process(@":nmap <Leader>i ihit it", enter: true);
+                _vimBuffer.Process(@"xi");
+                Assert.Equal("hit it", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+            }
+
+            /// <summary>
+            /// The mapleader value is interpreted at the point of definition.  It doesn't get
+            /// reinterpretted after a change occurs
+            /// </summary>
+            [Fact]
+            public void LeaderInterpretedAtDefintion()
+            {
+                Create("");
+                _vimBuffer.Process(@":let mapleader=""x""", enter: true);
+                _vimBuffer.Process(@":nmap <Leader>i ihit it", enter: true);
+                _vimBuffer.Process(@":let mapleader=""z""", enter: true);
+                _vimBuffer.Process(@"xi");
+                Assert.Equal("hit it", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+            }
+
+            /// <summary>
+            /// If the mapleader value is defined as a number it should be seen as string when 
+            /// we use it in a mapping
+            /// </summary>
+            [Fact]
+            public void NumberSeenAsString()
+            {
+                Create("");
+                _vimBuffer.Process(@":let mapleader=2", enter: true);
+                _vimBuffer.Process(@":nmap <Leader>i ihit it", enter: true);
+                _vimBuffer.Process(@"2i");
+                Assert.Equal("hit it", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+            }
+
+            /// <summary>
+            /// When there is no mapleader value then the Leader entry should be replaced with
+            /// a backslash
+            /// </summary>
+            [Fact]
+            public void NoMapLeaderValue()
+            {
+                Create("");
+                _vimBuffer.Process(@":nmap <Leader>i ihit it", enter: true);
+                _vimBuffer.Process(@"\i");
+                Assert.False(VariableMap.ContainsKey("mapleader"));
+                Assert.Equal("hit it", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+            }
+        }
+
+        public sealed class MarksTest : NormalModeIntegrationTest
         {
             [Fact]
             public void SelectionEndIsExclusive()
@@ -1335,7 +1404,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class ChangeLines : NormalModeIntegrationTest
+        public sealed class ChangeLinesTest : NormalModeIntegrationTest
         {
             /// <summary>
             /// Caret should maintain position but the text should be deleted.  The caret 
@@ -1452,7 +1521,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class IncrementalSearch : NormalModeIntegrationTest
+        public sealed class IncrementalSearchTest : NormalModeIntegrationTest
         {
             [Fact]
             public void VeryNoMagic()
@@ -1612,7 +1681,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class InsertLineBelowCaret : NormalModeIntegrationTest
+        public sealed class InsertLineBelowCaretTest : NormalModeIntegrationTest
         {
             /// <summary>
             /// Ensure the text inserted is repeated after the Escape
@@ -1690,7 +1759,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class MaintainCaretColumn : NormalModeIntegrationTest
+        public sealed class MaintainCaretColumnTest : NormalModeIntegrationTest
         {
             /// <summary>
             /// Simple maintain of the caret column going down
@@ -1826,7 +1895,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class ChangeCaseMotion : NormalModeIntegrationTest
+        public sealed class ChangeCaseMotionTest : NormalModeIntegrationTest
         {
             [Fact]
             public void UpperOverWord()
@@ -1853,7 +1922,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class Misc : NormalModeIntegrationTest
+        public sealed class MiscTest : NormalModeIntegrationTest
         {
             /// <summary>
             /// Make sure we jump across the blanks to get to the word and that the caret is 

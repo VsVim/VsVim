@@ -36,7 +36,7 @@ namespace Vim.UnitTest
             _localSettings = _vimBuffer.LocalSettings;
         }
 
-        public sealed class KeyMapping : InsertModeIntegrationTest
+        public sealed class KeyMappingTest : InsertModeIntegrationTest
         {
             /// <summary>
             /// Make sure that in the case where there is buffered input and we fail at the mapping 
@@ -133,7 +133,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class Paste : InsertModeIntegrationTest
+        public sealed class PasteTest : InsertModeIntegrationTest
         {
             [Fact]
             public void Simple()
@@ -217,7 +217,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Test the behavior of the '^ and `^ motion in insert mode
         /// </summary>
-        public sealed class LastCaretEditMark : InsertModeIntegrationTest
+        public sealed class LastCaretEditMarkTest : InsertModeIntegrationTest
         {
             [Fact]
             public void Simple()
@@ -429,7 +429,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class Misc : InsertModeIntegrationTest
+        public sealed class MiscTest : InsertModeIntegrationTest
         {
             /// <summary>
             /// Make sure that the ITextView isn't accessed in insert mode if it's active and the 
