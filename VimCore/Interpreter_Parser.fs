@@ -262,7 +262,7 @@ type Parser
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Number number ->
             _tokenizer.MoveNextToken()
-            number |> Value.Number |> Expression.ConstantValue |> ParseResult.Succeeded
+            number |> VariableValue.Number |> Expression.ConstantValue |> ParseResult.Succeeded
         | _ -> ParseResult.Failed "Invalid Number"
 
     /// Parse out core portion of key mappings.
@@ -855,7 +855,7 @@ type Parser
                     inner true
                 elif c = '"' then
                     builder.ToString()
-                    |> Value.String
+                    |> VariableValue.String
                     |> ParseResult.Succeeded
                 else
                     builder.AppendChar c
@@ -889,7 +889,7 @@ type Parser
             | Some '\'' ->
                 // Found the terminating character
                 builder.ToString()
-                |> Value.String
+                |> VariableValue.String
                 |> ParseResult.Succeeded
             | Some c ->
                 builder.AppendChar c
@@ -1408,7 +1408,7 @@ type Parser
             x.ParseStringLiteral()
         | TokenKind.Number number -> 
             _tokenizer.MoveNextToken()
-            Value.Number number |> ParseResult.Succeeded
+            VariableValue.Number number |> ParseResult.Succeeded
         | _ -> ParseResult.Failed "Invalid expression"
 
     /// Parse out a complete expression from the text.  

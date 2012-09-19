@@ -12,6 +12,38 @@ open System.Runtime.CompilerServices
 open System.Collections.Generic
 
 [<RequireQualifiedAccess>]
+type VariableType =
+    | Number
+    | Float
+    | String
+    | FunctionRef
+    | List
+    | Dictionary
+    | Error
+
+[<RequireQualifiedAccess>]
+type VariableValue =
+    | Number of int
+    | Float of float
+    | String of string
+    | FunctionRef of string
+    | List of VariableValue list
+    | Dictionary of Map<string, VariableValue>
+    | Error
+
+    with
+
+    member x.VariableType = 
+        match x with
+        | Number _ -> VariableType.Number
+        | Float _ -> VariableType.Float
+        | String _ -> VariableType.String
+        | FunctionRef _ -> VariableType.FunctionRef
+        | List _ -> VariableType.List
+        | Dictionary _ -> VariableType.Dictionary
+        | Error -> VariableType.Error
+
+[<RequireQualifiedAccess>]
 type CaretMovement =
     | Up
     | Right
@@ -3681,7 +3713,7 @@ and IVim =
     abstract GlobalSettings : IVimGlobalSettings
 
     /// The variable map for this IVim instance
-    abstract VariableMap : Dictionary<string, Vim.Interpreter.Value>
+    abstract VariableMap : Dictionary<string, VariableValue>
 
     abstract VimData : IVimData 
 

@@ -29,16 +29,16 @@ type ExpressionInterpreter
             None
 
         match value with 
-        | Value.Dictionary _ -> invalid ""
-        | Value.Float _ -> invalid ""
-        | Value.FunctionRef _ -> invalid ""
-        | Value.List _ -> invalid ""
-        | Value.Number number -> Some number
-        | Value.String _ -> invalid ""
-        | Value.Error -> None
+        | VariableValue.Dictionary _ -> invalid ""
+        | VariableValue.Float _ -> invalid ""
+        | VariableValue.FunctionRef _ -> invalid ""
+        | VariableValue.List _ -> invalid ""
+        | VariableValue.Number number -> Some number
+        | VariableValue.String _ -> invalid ""
+        | VariableValue.Error -> None
 
     /// Get the value of the specified expression 
-    member x.RunExpression (expr : Expression) : Value =
+    member x.RunExpression (expr : Expression) : VariableValue =
         match expr with
         | Expression.ConstantValue value -> value
         | Expression.Binary (binaryKind, leftExpr, rightExpr) -> x.RunBinaryExpression binaryKind leftExpr rightExpr
@@ -48,18 +48,18 @@ type ExpressionInterpreter
 
         let notSupported() =
             _statusUtil.OnError "Binary operation not supported at this time"
-            Value.Error
+            VariableValue.Error
 
-        let runAdd (leftValue : Value) (rightValue : Value) = 
-            if leftValue.ValueType = ValueType.List && rightValue.ValueType = ValueType.List then
+        let runAdd (leftValue : VariableValue) (rightValue : VariableValue) = 
+            if leftValue.VariableType = VariableType.List && rightValue.VariableType = VariableType.List then
                 // it's a list concatenation
                 notSupported()
             else
                 let leftNumber = x.GetValueAsNumber leftValue
                 let rightNumber = x.GetValueAsNumber rightValue
                 match leftNumber, rightNumber with
-                | Some left, Some right -> left + right |> Value.Number
-                | _ -> Value.Error
+                | Some left, Some right -> left + right |> VariableValue.Number
+                | _ -> VariableValue.Error
 
         let leftValue = x.RunExpression leftExpr
         let rightValue = x.RunExpression rightExpr

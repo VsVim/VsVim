@@ -260,7 +260,7 @@ type internal Vim
     let _bufferMap = Dictionary<ITextView, IVimBuffer * DisposableBag>()
 
     /// The set of active variables in Vim
-    let _variableMap = Dictionary<string, Value>()
+    let _variableMap = Dictionary<string, VariableValue>()
 
     /// Holds the active stack of IVimBuffer instances
     let mutable _activeBufferStack : IVimBuffer list = List.empty
