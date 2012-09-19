@@ -23,5 +23,5 @@ type Interpreter =
     member RunLineCommand : lineCommand : LineCommand -> RunResult
 
     /// Run the Expression
-    member RunExpression : expression : Expression -> Value
+    member RunExpression : expression : Expression -> VariableValue
 

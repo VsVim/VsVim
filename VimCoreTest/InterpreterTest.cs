@@ -436,7 +436,7 @@ namespace Vim.UnitTest
 
         public sealed class LetTest : InterpreterTest
         {
-            Dictionary<string, Value> _variableMap;
+            Dictionary<string, VariableValue> _variableMap;
 
             public LetTest()
             {
@@ -445,10 +445,10 @@ namespace Vim.UnitTest
 
             private void AssertValue(string name, int value)
             {
-                AssertValue(name, Value.NewNumber(value));
+                AssertValue(name, VariableValue.NewNumber(value));
             }
 
-            private void AssertValue(string name, Value value)
+            private void AssertValue(string name, VariableValue value)
             {
                 Assert.Equal(value, _variableMap[name]);
             }

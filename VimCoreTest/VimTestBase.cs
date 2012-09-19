@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
+using System.Diagnostics;
 using System.Linq;
 using EditorUtils;
 using Microsoft.FSharp.Core;
@@ -14,7 +15,6 @@ using Vim.UI.Wpf.Implementation.Misc;
 using Vim.UI.Wpf.Implementation.WordCompletion;
 using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
-using System.Diagnostics;
 
 namespace Vim.UnitTest
 {
@@ -110,7 +110,7 @@ namespace Vim.UnitTest
             get { return RegisterMap.GetRegister(RegisterName.Unnamed); }
         }
 
-        public Dictionary<string, global::Vim.Interpreter.Value> VariableMap
+        public Dictionary<string, VariableValue> VariableMap
         {
             get { return _vim.VariableMap; }
         }

@@ -158,7 +158,7 @@ and [<RequireQualifiedAccess>] Expression =
     | Binary of BinaryKind * Expression * Expression
 
     /// A constant value
-    | ConstantValue of Value 
+    | ConstantValue of VariableValue 
 
 and [<RequireQualifiedAccess>] LineCommand =
 
@@ -247,7 +247,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | JumpToLastLine
 
     // Let command.  The first item is the name and the second is the value
-    | Let of string * Value
+    | Let of string * VariableValue
 
     /// Make command.  The options are as follows
     ///   - The ! option

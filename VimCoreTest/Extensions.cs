@@ -371,22 +371,22 @@ namespace Vim.UnitTest
 
         #endregion
 
-        #region Value
+        #region VariableValue
 
         /// <summary>
         /// Number version of a value
         /// </summary>
-        public static Value.Number AsNumber(this Value value)
+        public static VariableValue.Number AsNumber(this VariableValue value)
         {
-            return (Value.Number)value;
+            return (VariableValue.Number)value;
         }
 
         /// <summary>
         /// String version of a value
         /// </summary>
-        public static Value.String AsString(this Value value)
+        public static VariableValue.String AsString(this VariableValue value)
         {
-            return (Value.String)value;
+            return (VariableValue.String)value;
         }
 
         #endregion
