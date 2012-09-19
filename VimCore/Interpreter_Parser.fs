@@ -1016,11 +1016,17 @@ type Parser
 
     /// Pares out the :let command
     member x.ParseLet () = 
+        x.SkipBlanks()
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Word name ->
-            match x.ParseSingleValue() with
-            | ParseResult.Failed msg -> ParseResult.Failed msg
-            | ParseResult.Succeeded value -> LineCommand.Let (name, value) |> ParseResult.Succeeded
+            _tokenizer.MoveNextToken()
+            match _tokenizer.CurrentChar with
+            | Some '=' ->
+                _tokenizer.MoveNextToken()
+                match x.ParseSingleValue() with
+                | ParseResult.Failed msg -> ParseResult.Failed msg
+                | ParseResult.Succeeded value -> LineCommand.Let (name, value) |> ParseResult.Succeeded
+            | _ -> ParseResult.Failed "Error"
         | _ -> ParseResult.Failed "Error"
 
     /// Parse out the :make command.  The arguments here other than ! are undefined.  Just

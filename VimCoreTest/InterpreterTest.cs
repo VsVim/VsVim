@@ -74,7 +74,7 @@ namespace Vim.UnitTest
             _interpreter.RunLineCommand(parseResult.AsSucceeded().Item);
         }
 
-        public sealed class Copy : InterpreterTest
+        public sealed class CopyTest : InterpreterTest
         {
             /// <summary>
             /// Copy to a single line
@@ -138,7 +138,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class Substitute : InterpreterTest
+        public sealed class SubstituteTest : InterpreterTest
         {
             /// <summary>
             /// When an empty string is provided for the pattern string then the pattern from the last
@@ -258,7 +258,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class Set : InterpreterTest
+        public sealed class SetTest : InterpreterTest
         {
             /// <summary>
             /// Print out the modified settings
