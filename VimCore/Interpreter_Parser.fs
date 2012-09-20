@@ -106,6 +106,7 @@ type Parser
         ("tabprevious", "tabp")
         ("tabrewind", "tabr")
         ("undo", "u")
+        ("unlet", "unl")
         ("vglobal", "v")
         ("version", "ve")
         ("vscmd", "vsc")
@@ -910,6 +911,26 @@ type Parser
         let count = x.ParseNumber()
         ParseResult.Succeeded (LineCommand.GoToPreviousTab count)
 
+    /// Parse out the unlet command.  
+    ///
+    /// Currently only names are supported.  We don't support unletting specific dictionary
+    /// or list entries
+    member x.ParseUnlet() =
+        let hasBang = x.ParseBang()
+        x.SkipBlanks()
+        let rec getNames withValue = 
+            match _tokenizer.CurrentTokenKind with
+            | TokenKind.Word name ->
+                _tokenizer.MoveNextToken()
+                x.SkipBlanks()
+                getNames (fun list -> withValue (name :: list))
+            | TokenKind.EndOfLine ->
+                let list = withValue []
+                let unlet = LineCommand.Unlet (hasBang, list)
+                ParseResult.Succeeded unlet
+            | _ -> ParseResult.Failed "Error"
+        getNames (fun x -> x)
+
     member x.ParseQuickFixNext count =
         let hasBang = x.ParseBang()
         ParseResult.Succeeded (LineCommand.QuickFixNext (count, hasBang))
@@ -1345,6 +1366,7 @@ type Parser
                 | "tabNext" -> noRange x.ParseTabPrevious
                 | "tabprevious" -> noRange x.ParseTabPrevious
                 | "undo" -> noRange (fun () -> LineCommand.Undo |> ParseResult.Succeeded)
+                | "unlet" -> noRange x.ParseUnlet
                 | "unmap" -> noRange (fun () -> x.ParseMapUnmap true [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
                 | "version" -> noRange (fun () -> ParseResult.Succeeded LineCommand.Version)
                 | "vglobal" -> x.ParseGlobalCore lineRange false

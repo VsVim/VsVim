@@ -1218,6 +1218,21 @@ type Interpreter
         _commonOperations.Undo 1
         RunResult.Completed
 
+    /// Run the unlet command
+    member x.RunUnlet ignoreMissing nameList = 
+        let rec func nameList = 
+            match nameList with
+            | [] -> RunResult.Completed
+            | name :: rest ->
+                let removed = _variableMap.Remove(name)
+                if not removed && not ignoreMissing then
+                    let msg = Resources.Interpreter_NoSuchVariable name
+                    _statusUtil.OnError msg
+                    RunResult.Completed
+                else
+                    func rest
+        func nameList
+
     /// Unmap the specified key notation in all of the listed modes
     member x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList =
         if not (List.isEmpty mapArgumentList) then
@@ -1335,6 +1350,7 @@ type Interpreter
         | LineCommand.Substitute (lineRange, pattern, replace, flags) -> x.RunSubstitute lineRange pattern replace flags
         | LineCommand.SubstituteRepeat (lineRange, substituteFlags) -> x.RunSubstituteRepeatLast lineRange substituteFlags
         | LineCommand.Undo -> x.RunUndo()
+        | LineCommand.Unlet (ignoreMissing, nameList) -> x.RunUnlet ignoreMissing nameList
         | LineCommand.UnmapKeys (keyNotation, keyRemapModes, mapArgumentList) -> x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList
         | LineCommand.Version -> x.RunVersion()
         | LineCommand.VerticalSplit (lineRange, fileOptions, commandOptions) -> x.RunSplit _vimHost.SplitViewVertically fileOptions commandOptions

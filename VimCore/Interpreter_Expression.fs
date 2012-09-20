@@ -352,6 +352,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Undo the last change
     | Undo
 
+    // Unlet a value.  
+    | Unlet of bool * string list
+
     /// Unmap the key notation in the given modes
     | UnmapKeys of string * KeyRemapMode list * KeyMapArgument list
 
