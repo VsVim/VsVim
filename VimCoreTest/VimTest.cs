@@ -6,6 +6,7 @@ using Moq;
 using Xunit;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
+using System.Collections.Generic;
 
 namespace Vim.UnitTest
 {
@@ -29,7 +30,9 @@ namespace Vim.UnitTest
             _markMap = _factory.Create<IMarkMap>(MockBehavior.Strict);
             _fileSystem = _factory.Create<IFileSystem>(MockBehavior.Strict);
             _bufferFactory = VimBufferFactory;
-            _keyMap = new KeyMap(_globalSettings);
+
+            var map = new Dictionary<string, VariableValue>();
+            _keyMap = new KeyMap(_globalSettings, map);
             _vimHost = _factory.Create<IVimHost>(MockBehavior.Strict);
             _searchInfo = _factory.Create<ISearchService>(MockBehavior.Strict);
             _vimRaw = new Vim(
@@ -43,7 +46,8 @@ namespace Vim.UnitTest
                 _searchInfo.Object,
                 _fileSystem.Object,
                 new VimData(),
-                _factory.Create<IBulkOperations>().Object);
+                _factory.Create<IBulkOperations>().Object,
+                map);
             _vim = _vimRaw;
             _vim.AutoLoadVimRc = false;
         }

@@ -1217,6 +1217,21 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// The Leader value can occur in the middle of a mapping.  Make sure that it's 
+            /// supported
+            /// </summary>
+            [Fact]
+            public void InMiddle()
+            {
+                Create("");
+                _vimBuffer.Process(@":let mapleader=""x""", enter: true);
+                _vimBuffer.Process(@":nmap i<Leader>i ihit it", enter: true);
+                _vimBuffer.Process(@"ixi");
+                Assert.Equal("hit it", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+            }
+
+            /// <summary>
             /// The mapleader value is interpreted at the point of definition.  It doesn't get
             /// reinterpretted after a change occurs
             /// </summary>

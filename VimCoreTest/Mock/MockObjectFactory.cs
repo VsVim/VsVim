@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Text.Projection;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 using Moq;
+using System.Collections.Generic;
 
 namespace Vim.UnitTest.Mock
 {
@@ -69,7 +70,7 @@ namespace Vim.UnitTest.Mock
             map = map ?? new MarkMap(new BufferTrackingService());
             settings = settings ?? new GlobalSettings();
             host = host ?? new MockVimHost();
-            keyMap = keyMap ?? (new KeyMap(settings));
+            keyMap = keyMap ?? (new KeyMap(settings, new Dictionary<string, VariableValue>()));
             macroRecorder = macroRecorder ?? CreateMacroRecorder(factory: factory).Object;
             searchService = searchService ?? factory.Create<ISearchService>().Object;
             keyboardDevice = keyboardDevice ?? (factory.Create<IKeyboardDevice>(MockBehavior.Loose)).Object;
