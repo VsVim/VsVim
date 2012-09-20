@@ -462,6 +462,55 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class UnletTest : InterpreterTest
+        {
+            private void AssertGone(string name)
+            {
+                Assert.False(VariableMap.ContainsKey(name));
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                Create();
+                ParseAndRun(@"let x=42");
+                ParseAndRun(@"unlet x");
+                AssertGone("x");
+            }
+
+            [Fact]
+            public void NotPresent()
+            {
+                Create();
+                ParseAndRun(@"unlet x");
+                Assert.Equal(Resources.Interpreter_NoSuchVariable("x"), _statusUtil.LastError);
+                Assert.Equal(0, VariableMap.Count);
+            }
+
+            /// <summary>
+            /// The ! modifier should cause us to ignore the missing variable during an unlet
+            /// </summary>
+            [Fact]
+            public void NotPresentAndIgnored()
+            {
+                Create();
+                ParseAndRun(@"unlet! x");
+                Assert.True(String.IsNullOrEmpty(_statusUtil.LastError));
+            }
+
+            [Fact]
+            public void Multiple()
+            {
+                Create();
+                ParseAndRun(@"let x=42");
+                ParseAndRun(@"let y=42");
+                ParseAndRun(@"let z=42");
+                ParseAndRun(@"unlet x y");
+                Assert.Equal(1, VariableMap.Count);
+                Assert.True(VariableMap.ContainsKey("z"));
+            }
+        }
+
         public sealed class QuickFixTest : InterpreterTest
         {
             private void AssertQuickFix(string command, QuickFix quickFix, int count, bool hasBang)
