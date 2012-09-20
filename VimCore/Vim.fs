@@ -249,7 +249,8 @@ type internal Vim
         _search : ISearchService,
         _fileSystem : IFileSystem,
         _vimData : IVimData,
-        _bulkOperations : IBulkOperations
+        _bulkOperations : IBulkOperations,
+        _variableMap : VariableMap
     ) =
 
     /// Key for IVimTextBuffer instances inside of the ITextBuffer property bag
@@ -258,9 +259,6 @@ type internal Vim
     /// Holds an IVimBuffer and the DisposableBag for event handlers on the IVimBuffer.  This
     /// needs to be removed when we're done with the IVimBuffer to avoid leaks
     let _bufferMap = Dictionary<ITextView, IVimBuffer * DisposableBag>()
-
-    /// The set of active variables in Vim
-    let _variableMap = Dictionary<string, VariableValue>()
 
     /// Holds the active stack of IVimBuffer instances
     let mutable _activeBufferStack : IVimBuffer list = List.empty
@@ -317,6 +315,7 @@ type internal Vim
         bulkOperations : IBulkOperations) =
         let markMap = MarkMap(bufferTrackingService)
         let vimData = VimData() :> IVimData
+        let variableMap = VariableMap()
         let globalSettings = GlobalSettings() :> IVimGlobalSettings
         let listeners = bufferCreationListeners |> List.ofSeq
         Vim(
@@ -325,12 +324,13 @@ type internal Vim
             listeners,
             globalSettings,
             markMap :> IMarkMap,
-            KeyMap(globalSettings) :> IKeyMap,
+            KeyMap(globalSettings, variableMap) :> IKeyMap,
             clipboard,
             SearchService(search, globalSettings) :> ISearchService,
             fileSystem,
             vimData,
-            bulkOperations)
+            bulkOperations,
+            variableMap)
 
     member x.ActiveBuffer = ListUtil.tryHeadOnly _activeBufferStack
 

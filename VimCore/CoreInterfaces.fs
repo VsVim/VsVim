@@ -33,6 +33,17 @@ type VariableValue =
 
     with
 
+    // TODO: Determine the appropriate values for List, Dictionary and Error
+    member x.StringValue =
+        match x with
+        | Number number -> number.ToString()
+        | Float number -> number.ToString()
+        | String str -> str
+        | FunctionRef name -> name
+        | List _ -> "<list>"
+        | Dictionary _  -> "<dictionary>"
+        | Error -> "<error>"
+
     member x.VariableType = 
         match x with
         | Number _ -> VariableType.Number
@@ -42,6 +53,8 @@ type VariableValue =
         | List _ -> VariableType.List
         | Dictionary _ -> VariableType.Dictionary
         | Error -> VariableType.Error
+
+type VariableMap = System.Collections.Generic.Dictionary<string, VariableValue>
 
 [<RequireQualifiedAccess>]
 type CaretMovement =
@@ -3725,7 +3738,7 @@ and IVim =
     abstract GlobalSettings : IVimGlobalSettings
 
     /// The variable map for this IVim instance
-    abstract VariableMap : Dictionary<string, VariableValue>
+    abstract VariableMap : VariableMap
 
     abstract VimData : IVimData 
 

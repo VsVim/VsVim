@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using Vim.Extensions;
 using Xunit;
+using System.Collections.Generic;
 
 namespace Vim.UnitTest
 {
@@ -13,7 +14,7 @@ namespace Vim.UnitTest
         public KeyMapTest()
         {
             _globalSettings = new GlobalSettings();
-            _mapRaw = new KeyMap(_globalSettings);
+            _mapRaw = new KeyMap(_globalSettings, new Dictionary<string,VariableValue>());
             _map = _mapRaw;
         }
 

@@ -147,7 +147,11 @@ type Mapper
 
         result.Value
 
-type internal KeyMap(_globalSettings : IVimGlobalSettings) =
+type internal KeyMap
+    (
+        _globalSettings : IVimGlobalSettings,
+        _variableMap : VariableMap
+    ) =
 
     let mutable _map : Map<KeyRemapMode, RemapModeMap> = Map.empty
 
@@ -171,9 +175,24 @@ type internal KeyMap(_globalSettings : IVimGlobalSettings) =
 
     /// Main API for adding a key mapping into our storage
     member x.MapCore (lhs : string) (rhs : string) (mode : KeyRemapMode) allowRemap = 
+
+        // Replace the <Leader> value with the appropriate replacement string
+        let replaceLeader () =
+            if lhs.Contains("<Leader>") then
+                let replace =
+                    let found, value = _variableMap.TryGetValue "mapleader"
+                    if found then 
+                        value.StringValue
+                    else
+                        "\\"
+                lhs.Replace("<Leader>", replace)
+            else
+                lhs
+
         if StringUtil.isNullOrEmpty rhs then
             false
         else
+            let lhs = replaceLeader ()
             let key = KeyNotationUtil.TryStringToKeyInputSet lhs
             let rhs = KeyNotationUtil.TryStringToKeyInputSet rhs
             match key, rhs with
