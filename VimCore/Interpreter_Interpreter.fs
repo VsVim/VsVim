@@ -1160,7 +1160,7 @@ type Interpreter
         // Called to initialize the data and move to a confirm style substitution.  Have to find the first match
         // before passing off to confirm
         let setupConfirmSubstitute (range : SnapshotLineRange) (data : SubstituteData) =
-            let regex = VimRegexFactory.CreateForSubstituteFlags data.SearchPattern data.Flags
+            let regex = VimRegexFactory.CreateForSubstituteFlags data.SearchPattern _globalSettings data.Flags
             match regex with
             | None -> 
                 _statusUtil.OnError (Resources.Common_PatternNotFound data.SearchPattern)

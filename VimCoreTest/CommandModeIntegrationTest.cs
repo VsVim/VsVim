@@ -1,10 +1,10 @@
 ﻿using System;
 using EditorUtils;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using Xunit;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
-using Microsoft.VisualStudio.Text;
+using Xunit;
 
 namespace Vim.UnitTest
 {
@@ -351,6 +351,20 @@ namespace Vim.UnitTest
                 RunCommandRaw(":%s//baz");
 
                 Assert.Equal(_textBuffer.GetLine(0).Extent.GetText(), "bazs");
+            }
+
+            /// <summary>
+            /// Integration test for issue #973.  The key problem here is that the regex built
+            /// from the substitute was ignoring the ignorecase and smartcase options.  It was 
+            /// instead creating literally from the substitute flags
+            /// </summary>
+            [Fact]
+            public void Issue973()
+            {
+                Create("vols.First()");
+                _vimBuffer.GlobalSettings.IgnoreCase = true;
+                RunCommandRaw(":%s/vols.first()/target/g");
+                Assert.Equal("target", _textBuffer.GetLine(0).GetText());
             }
         }
 

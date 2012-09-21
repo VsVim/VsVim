@@ -472,11 +472,8 @@ module VimRegexFactory =
 
         Convert data
 
-    let CreateRegexOptions (globalSettings : IVimGlobalSettings) =
+    let CreateCaseOptions (globalSettings : IVimGlobalSettings) =
         let options = VimRegexOptions.Default
-        let options =
-            if globalSettings.Magic then options
-            else VimRegexOptions.NoMagic
 
         let options = 
             if globalSettings.IgnoreCase then options ||| VimRegexOptions.IgnoreCase
@@ -488,19 +485,36 @@ module VimRegexFactory =
 
         options
 
-    let CreateForSubstituteFlags pattern (flags : SubstituteFlags) =
+    let CreateRegexOptions (globalSettings : IVimGlobalSettings) =
+        let options = VimRegexOptions.Default
+        let options =
+            if globalSettings.Magic then options
+            else VimRegexOptions.NoMagic
+
+        options ||| CreateCaseOptions globalSettings
+
+    let CreateForSubstituteFlags pattern globalSettings (flags : SubstituteFlags) =
 
         let options = VimRegexOptions.Default
 
+        let hasIgnoreCase = Util.IsFlagSet flags SubstituteFlags.IgnoreCase
+        let hasOrdinalCase = Util.IsFlagSet flags SubstituteFlags.OrdinalCase
+
         // Get the case options
         let options = 
-            if Util.IsFlagSet flags SubstituteFlags.IgnoreCase then options ||| VimRegexOptions.IgnoreCase
+            if hasIgnoreCase then options ||| VimRegexOptions.IgnoreCase
+            else options
+
+        // If there was no case option specified then draw from the global settings
+        let options = 
+            if not hasIgnoreCase && not hasOrdinalCase then options ||| CreateCaseOptions globalSettings
             else options
 
         // Get the magic options
         let options = 
             if Util.IsFlagSet flags SubstituteFlags.Nomagic then options ||| VimRegexOptions.NoMagic
             else options 
+
 
         Create pattern options 
 

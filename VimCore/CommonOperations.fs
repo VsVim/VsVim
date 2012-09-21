@@ -801,7 +801,7 @@ type internal CommonOperations
                 edit.Cancel()
                 _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
 
-        match VimRegexFactory.CreateForSubstituteFlags pattern flags with
+        match VimRegexFactory.CreateForSubstituteFlags pattern _globalSettings flags with
         | None -> 
             _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
         | Some (regex) -> 

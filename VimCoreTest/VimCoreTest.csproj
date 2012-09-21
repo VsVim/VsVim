@@ -112,6 +112,7 @@
     <Compile Include="TestableSynchronizationContext.cs" />
     <Compile Include="TextChangeTest.cs" />
     <Compile Include="TokenizerTest.cs" />
+    <Compile Include="VimRegexFactoryTest.cs" />
     <Compile Include="VisualSpanTest.cs" />
     <Compile Include="EqualityUtil.cs" />
     <Compile Include="Exports\MouseDevice.cs" />
