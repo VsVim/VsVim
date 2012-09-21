@@ -63,6 +63,7 @@ namespace Vim.UnitTest.Mock
             IVimData vimData = null,
             IMacroRecorder macroRecorder = null,
             ISearchService searchService = null,
+            Dictionary<string, VariableValue> variableMap = null,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
@@ -76,6 +77,7 @@ namespace Vim.UnitTest.Mock
             keyboardDevice = keyboardDevice ?? (factory.Create<IKeyboardDevice>(MockBehavior.Loose)).Object;
             mouseDevice = mouseDevice ?? (factory.Create<IMouseDevice>(MockBehavior.Loose)).Object;
             vimData = vimData ?? new VimData();
+            variableMap = variableMap ?? new Dictionary<string, VariableValue>();
             var mock = factory.Create<IVim>(MockBehavior.Strict);
             mock.SetupGet(x => x.RegisterMap).Returns(registerMap);
             mock.SetupGet(x => x.MarkMap).Returns(map);
@@ -85,6 +87,7 @@ namespace Vim.UnitTest.Mock
             mock.SetupGet(x => x.VimData).Returns(vimData);
             mock.SetupGet(x => x.MacroRecorder).Returns(macroRecorder);
             mock.SetupGet(x => x.SearchService).Returns(searchService);
+            mock.SetupGet(x => x.VariableMap).Returns(variableMap);
             return mock;
         }
 

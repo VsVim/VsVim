@@ -1,7 +1,7 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using Vim.Extensions;
 using Xunit;
-using System.Collections.Generic;
 
 namespace Vim.UnitTest
 {
@@ -9,12 +9,14 @@ namespace Vim.UnitTest
     {
         protected readonly IVimGlobalSettings _globalSettings;
         protected readonly IKeyMap _map;
+        protected readonly Dictionary<string, VariableValue> _variableMap;
         internal readonly KeyMap _mapRaw;
 
         public KeyMapTest()
         {
             _globalSettings = new GlobalSettings();
-            _mapRaw = new KeyMap(_globalSettings, new Dictionary<string,VariableValue>());
+            _variableMap = new Dictionary<string, VariableValue>();
+            _mapRaw = new KeyMap(_globalSettings, _variableMap);
             _map = _mapRaw;
         }
 
@@ -444,7 +446,40 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class Misc : KeyMapTest
+        public sealed class MapLeaderTest : KeyMapTest
+        {
+            [Fact]
+            public void SimpleLeft()
+            {
+                _variableMap["mapleader"] = VariableValue.NewString("x");
+                _map.MapWithNoRemap("<Leader>", "y", KeyRemapMode.Normal);
+                AssertMapping("x", "y");
+            }
+
+            [Fact]
+            public void SimpleLeftWithNoMapping()
+            {
+                _map.MapWithNoRemap("<Leader>", "y", KeyRemapMode.Normal);
+                AssertMapping(@"\", "y");
+            }
+
+            [Fact]
+            public void SimpleRight()
+            {
+                _variableMap["mapleader"] = VariableValue.NewString("y");
+                _map.MapWithNoRemap("x", "<Leader>", KeyRemapMode.Normal);
+                AssertMapping("x", "y");
+            }
+
+            [Fact]
+            public void SimpleRightWithNoMapping()
+            {
+                _map.MapWithNoRemap("x", "<Leader>", KeyRemapMode.Normal);
+                AssertMapping("x", @"\");
+            }
+        }
+
+        public sealed class MiscTest : KeyMapTest
         {
             private void MapWithRemap(string lhs, string rhs)
             {
