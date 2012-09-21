@@ -1232,6 +1232,20 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// The Leader value can also occur on the RHS of the mapping string.
+            /// </summary>
+            [Fact]
+            public void InRight()
+            {
+                Create("");
+                _vimBuffer.Process(@":let mapleader=""x""", enter: true);
+                _vimBuffer.Process(@":nmap ii ihit it<Leader>", enter: true);
+                _vimBuffer.Process(@"ii");
+                Assert.Equal("hit itx", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+            }
+
+            /// <summary>
             /// The mapleader value is interpreted at the point of definition.  It doesn't get
             /// reinterpretted after a change occurs
             /// </summary>
