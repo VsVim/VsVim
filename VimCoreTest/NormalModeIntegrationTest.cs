@@ -522,6 +522,96 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class ParagraphMotionTest : NormalModeIntegrationTest
+        {
+            [Fact]
+            public void MoveBackwards()
+            {
+                Create("cat", "dog", "", "fish", "tree");
+                _textView.MoveCaretToLine(3);
+                _vimBuffer.Process('{');
+                Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void MoveForwards()
+            {
+                Create("cat", "dog", "", "fish", "tree");
+                _textView.MoveCaretToLine(0);
+                _vimBuffer.Process('}');
+                Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void DeleteBackwards()
+            {
+                Create("cat", "dog", "", "fish", "tree");
+                _textView.MoveCaretToLine(3);
+                _vimBuffer.Process("d{");
+                Assert.Equal(
+                    new[] { "cat", "dog", "fish", "tree" },
+                    _textBuffer.GetLines());
+            }
+
+            [Fact]
+            public void DeleteBackwardsFromMiddle()
+            {
+                Create("cat", "dog", "", "fish", "tree");
+                _textView.MoveCaretToLine(3, 1);
+                _vimBuffer.Process("d{");
+                Assert.Equal(
+                    new[] { "cat", "dog", "ish", "tree" },
+                    _textBuffer.GetLines());
+            }
+
+            [Fact(Skip="Still trying to understand the Vim behavior here")]
+            public void DeleteBackwardsPastEndOfLine()
+            {
+                Create("cat", "dog", "", "fish", "tree");
+                _globalSettings.VirtualEdit = "onemore";
+                _textView.MoveCaretToLine(3, 4);
+                _vimBuffer.Process("d{");
+                Assert.Equal(
+                    new[] { "cat", "dog", "tree" },
+                    _textBuffer.GetLines());
+            }
+
+            [Fact]
+            public void DeleteForwards()
+            {
+                Create("cat", "dog", "", "fish", "tree");
+                _textView.MoveCaretToLine(0);
+                _vimBuffer.Process("d}");
+                Assert.Equal(
+                    new[] { "", "fish", "tree" },
+                    _textBuffer.GetLines());
+            }
+
+            [Fact(Skip="Still trying to understand the Vim behavior here")]
+            public void Issue978()
+            {
+                var text = @"
+        [ThreadStatic] static IScheduler _UnitTestDeferredScheduler;
+        static IScheduler _DeferredScheduler;
+
+        /// <summary>
+        /// DeferredScheduler is the scheduler used to schedule work items that
+        /// should be run ""on the UI thread"". In normal mode, this will be
+        /// DispatcherScheduler, and in Unit Test mode this will be Immediate,
+        /// to simplify writing common unit tests.
+        /// </summary>
+        public static IScheduler DeferredScheduler {
+";
+                Create(text.Split(new[] { Environment.NewLine }, StringSplitOptions.None));
+                _globalSettings.VirtualEdit = "onemore";
+                _textView.MoveCaretToLine(9);
+                _vimBuffer.Process('$');
+                Assert.Equal('>', _textView.GetCaretPoint().GetChar());
+                _vimBuffer.Process("ld{");
+                Assert.Equal("        public static IScheduler DeferredScheduler {", _textView.GetCaretLine().GetText());
+            }
+        }
+
         public sealed class YankTest : NormalModeIntegrationTest
         {
             /// <summary>
@@ -4094,7 +4184,7 @@ namespace Vim.UnitTest
                 Create("cat", "dog", "fish");
                 _textView.MoveCaretToLine(1);
                 _vimBuffer.Process("ddu");
-                Assert.Equal(new [] { "cat", "dog", "fish" }, _textBuffer.GetLines());
+                Assert.Equal(new[] { "cat", "dog", "fish" }, _textBuffer.GetLines());
                 Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
             }
 
