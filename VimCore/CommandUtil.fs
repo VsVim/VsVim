@@ -698,20 +698,42 @@ type internal CommandUtil
         // The d{motion} command has an exception listed which is visible by typing ':help d' in 
         // gVim.  In summary, if the motion is characterwise, begins and ends on different
         // lines and the start is preceeding by only whitespace and the end is followed
-        // only by whitespace then it becomes a linewise motion for those lines.  However experimentation
-        // shows that this does not appear to be the case.  For example type the following out 
-        // where ^ is the caret
+        // only by whitespace then it becomes a linewise motion for those lines.  This can be 
+        // demonstrated with the following example.  Caret is on the 'c', there is one space before
+        // every word and 4 spaces after dog
         //
-        //  ^abc
-        //   def
+        //  cat
+        //  dog    
+        //  fish
         //
-        // Then try 'd/    '.  It will not delete the final line even though this meets all of
-        // the requirements.  Choosing to ignore this exception for now until I can find
-        // a better example
+        // Now execute 'd/  ' (2 spaces after the /).  This will delete the entire cat and dog 
+        // line
+        let span, operationKind =
+            let span = result.Span
+            if result.LineRange.Count > 1 && result.OperationKind = OperationKind.CharacterWise then
+                let startLine, lastLine = SnapshotSpanUtil.GetStartAndLastLine span
+                let lastPoint = 
+                    if result.IsExclusive then result.End
+                    else result.LastOrStart
+                let endsInWhiteSpace = 
+                    lastPoint
+                    |> SnapshotPointUtil.GetPoints Path.Forward
+                    |> Seq.takeWhile (fun point -> point.Position < lastLine.End.Position)
+                    |> Seq.forall SnapshotPointUtil.IsWhiteSpace
+
+                let inIndent = 
+                    let indentPoint = SnapshotLineUtil.GetIndentPoint startLine
+                    span.Start.Position <= indentPoint.Position
+
+                if endsInWhiteSpace && inIndent then
+                    SnapshotSpanUtil.ExtendToFullLineIncludingLineBreak span, OperationKind.LineWise
+                else
+                    span, result.OperationKind
+            else
+                span, result.OperationKind
 
         // Caret should be placed at the start of the motion for both undo / redo so place it 
         // before starting the transaction
-        let span = result.Span
         TextViewUtil.MoveCaretToPoint _textView span.Start
         x.EditWithUndoTransaciton "Delete" (fun () ->
             _textBuffer.Delete(span.Span) |> ignore
@@ -723,7 +745,7 @@ type internal CommandUtil
         // Update the register with the result so long as something was actually deleted
         // from the buffer
         if not span.IsEmpty then
-            let value = RegisterValue.String (StringData.OfSpan span, result.OperationKind)
+            let value = RegisterValue.String (StringData.OfSpan span, operationKind)
             _registerMap.SetRegisterValue register RegisterOperation.Delete value
 
         CommandResult.Completed ModeSwitch.NoSwitch

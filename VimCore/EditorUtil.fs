@@ -620,7 +620,6 @@ module SnapshotPointUtil =
         | Some (point) -> point
         | None -> point
 
-
     /// Is the SnapshotPoint the provided char
     let IsChar c point =
         if IsEndPoint point then false

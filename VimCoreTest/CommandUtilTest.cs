@@ -511,6 +511,43 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class DeleteMotionTest : CommandUtilTest
+        {
+            /// <summary>
+            /// Test the special case linewise promotion which occurs for d{motion} operations
+            /// </summary>
+            [Fact]
+            public void SpecialCaseLinewisePromotion()
+            {
+                Create(" cat", " dog    ", "fish");
+                var span = new SnapshotSpan(
+                    _textBuffer.GetPoint(1),
+                    _textBuffer.GetLine(1).Start.Add(5));
+                var motion = VimUtil.CreateMotionResult(span, true, MotionKind.CharacterWiseExclusive);
+                _commandUtil.DeleteMotion(UnnamedRegister, motion);
+                Assert.Equal(OperationKind.LineWise, UnnamedRegister.OperationKind);
+                Assert.Equal("fish", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// The linewise special case scenario requires the line count be greater than 1
+            /// </summary>
+            [Fact]
+            public void SpecialCaseLineWisePromotionMustBeMoreThanOneLine()
+            {
+                Create(" cat   ", " dog    ", "fish");
+                var span = new SnapshotSpan(
+                    _textBuffer.GetPoint(1),
+                    _textBuffer.GetPoint(5));
+                var motion = VimUtil.CreateMotionResult(span, true, MotionKind.CharacterWiseExclusive);
+                _commandUtil.DeleteMotion(UnnamedRegister, motion);
+                Assert.Equal(OperationKind.CharacterWise, UnnamedRegister.OperationKind);
+                Assert.Equal(
+                    new[] { "   ", " dog    ", "fish" },
+                    _textBuffer.GetLines());
+            }
+        }
+
         public sealed class Misc : CommandUtilTest
         {
             IFoldManager _foldManager;

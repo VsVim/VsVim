@@ -591,6 +591,14 @@ type MotionResult = {
         else
             SnapshotSpanUtil.GetStartLine x.Span
 
+    member x.Start = x.Span.Start
+
+    member x.End = x.Span.End
+
+    member x.Last = SnapshotSpanUtil.GetLastIncludedPoint x.Span
+
+    member x.LastOrStart = x.Last |> OptionUtil.getOrDefault x.Start
+
     static member CreateExEx span isForward motionKind motionResultFlags desiredColumn = 
         {
             Span = span

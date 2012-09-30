@@ -564,7 +564,7 @@ namespace Vim.UnitTest
                     _textBuffer.GetLines());
             }
 
-            [Fact(Skip="Still trying to understand the Vim behavior here")]
+            [Fact]
             public void DeleteBackwardsPastEndOfLine()
             {
                 Create("cat", "dog", "", "fish", "tree");
@@ -587,7 +587,7 @@ namespace Vim.UnitTest
                     _textBuffer.GetLines());
             }
 
-            [Fact(Skip="Still trying to understand the Vim behavior here")]
+            [Fact]
             public void Issue978()
             {
                 var text = @"
@@ -936,6 +936,19 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("y2y");
                 Assert.Equal("cat" + Environment.NewLine + "dog" + Environment.NewLine, UnnamedRegister.StringValue);
                 Assert.Equal(OperationKind.LineWise, UnnamedRegister.OperationKind);
+            }
+
+            /// <summary>
+            /// Ensure that the special linewise case which applies to delete doesn't apply
+            /// to for yank operations
+            /// </summary>
+            [Fact]
+            public void DeleteSpecialCaseDoesntApply()
+            {
+                Create(" cat", " dog    ", "fish");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process("y/   ", enter: true);
+                Assert.Equal(OperationKind.CharacterWise, UnnamedRegister.OperationKind);
             }
         }
 
@@ -2679,6 +2692,21 @@ namespace Vim.UnitTest
                 _vimBuffer.Process('D');
                 Assert.Equal("c", _textView.GetLine(0).GetText());
                 Assert.Equal(1, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// At the end of the ':help d{motion}` entry it lists a special case where the command
+            /// becomes linewise.  When it's a multiline delete and there is whitespace before / after
+            /// the span.  
+            /// </summary>
+            [Fact]
+            public void DeleteMotionSpecialCase()
+            {
+                Create(" cat", " dog    ", " fish");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process("d/  ", enter: true);
+                Assert.Equal(1, _textBuffer.CurrentSnapshot.LineCount);
+                Assert.Equal(" fish", _textBuffer.GetLine(0).GetText());
             }
 
             [Fact]
