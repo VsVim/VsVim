@@ -2054,6 +2054,876 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class PutAfterTest : NormalModeIntegrationTest
+        {
+            /// <summary>
+            /// When pasting from the clipboard where the text doesn't end in a new line it
+            /// should be treated as characterwise paste
+            /// </summary>
+            [Fact]
+            public void ClipboardWithoutNewLine()
+            {
+                Create("hello world", "again");
+                _textView.MoveCaretTo(5);
+                _clipboardDevice.Text = "big ";
+                _vimBuffer.Process("\"+p");
+                Assert.Equal("hello big world", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// When pasting from the clipboard where the text does end in a new line it 
+            /// should be treated as a linewise paste
+            /// </summary>
+            [Fact]
+            public void ClipboardWithNewLine()
+            {
+                Create("hello world", "again");
+                _textView.MoveCaretTo(5);
+                _clipboardDevice.Text = "big " + Environment.NewLine;
+                _vimBuffer.Process("\"+p");
+                Assert.Equal("hello world", _textView.GetLine(0).GetText());
+                Assert.Equal("big ", _textView.GetLine(1).GetText());
+                Assert.Equal("again", _textView.GetLine(2).GetText());
+            }
+
+            /// <summary>
+            /// A putafter at the end of the line should still put the text after the caret
+            /// </summary>
+            [Fact]
+            public void EndOfLine()
+            {
+                Create("dog");
+                _textView.MoveCaretTo(2);
+                Assert.Equal('g', _textView.GetCaretPoint().GetChar());
+                UnnamedRegister.UpdateValue("cat", OperationKind.CharacterWise);
+                _vimBuffer.Process('p');
+                Assert.Equal("dogcat", _textView.GetLine(0).GetText());
+                Assert.Equal(5, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// A putafter on an empty line is the only thing that shouldn't move the caret
+            /// </summary>
+            [Fact]
+            public void EmptyLine()
+            {
+                Create("");
+                UnnamedRegister.UpdateValue("cat", OperationKind.CharacterWise);
+                _vimBuffer.Process('p');
+                Assert.Equal("cat", _textView.GetLine(0).GetText());
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Caret should be positioned at the start of the inserted line
+            /// </summary>
+            [Fact]
+            public void LineWiseSimpleString()
+            {
+                Create("dog", "cat", "bear", "tree");
+                _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig\n", OperationKind.LineWise);
+                _vimBuffer.Process("p");
+                Assert.Equal("dog", _textView.GetLine(0).GetText());
+                Assert.Equal("pig", _textView.GetLine(1).GetText());
+                Assert.Equal(_textView.GetCaretPoint(), _textView.GetLine(1).Start);
+            }
+
+            /// <summary>
+            /// Caret should be positioned at the start of the indent even when autoindent is off
+            /// </summary>
+            [Fact]
+            public void LineWiseWithIndent()
+            {
+                Create("dog", "cat", "bear", "tree");
+                UnnamedRegister.UpdateValue("  pig\n", OperationKind.LineWise);
+                _vimBuffer.LocalSettings.AutoIndent = false;
+                _vimBuffer.Process("p");
+                Assert.Equal("dog", _textView.GetLine(0).GetText());
+                Assert.Equal("  pig", _textView.GetLine(1).GetText());
+                Assert.Equal(_textView.GetCaretPoint(), _textView.GetLine(1).Start.Add(2));
+            }
+
+            /// <summary>
+            /// Caret should be positioned on the last character of the inserted text
+            /// </summary>
+            [Fact]
+            public void CharacterWiseSimpleString()
+            {
+                Create("dog", "cat", "bear", "tree");
+                _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig", OperationKind.CharacterWise);
+                _vimBuffer.Process("p");
+                Assert.Equal("dpigog", _textView.GetLine(0).GetText());
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// When putting a character wise selection which spans over multiple lines into 
+            /// the ITextBuffer the caret is positioned at the start of the text and not 
+            /// after it as it is with most put operations
+            /// </summary>
+            [Fact]
+            public void CharacterWise_MultipleLines()
+            {
+                Create("dog", "cat");
+                UnnamedRegister.UpdateValue("tree" + Environment.NewLine + "be");
+                _vimBuffer.Process("p");
+                Assert.Equal("dtree", _textView.GetLine(0).GetText());
+                Assert.Equal("beog", _textView.GetLine(1).GetText());
+                Assert.Equal("cat", _textView.GetLine(2).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Caret should be positioned after the last character of the inserted text
+            /// </summary>
+            [Fact]
+            public void CharacterWiseSimpleString_WithCaretMove()
+            {
+                Create("dog", "cat", "bear", "tree");
+                _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig", OperationKind.CharacterWise);
+                _vimBuffer.Process("gp");
+                Assert.Equal("dpigog", _textView.GetLine(0).GetText());
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// The caret should be positioned at the last character of the first block string
+            /// inserted text
+            /// </summary>
+            [Fact]
+            public void BlockOverExisting()
+            {
+                Create("dog", "cat", "bear", "tree");
+                UnnamedRegister.UpdateBlockValues("aa", "bb");
+                _vimBuffer.Process("p");
+                Assert.Equal("daaog", _textView.GetLine(0).GetText());
+                Assert.Equal("cbbat", _textView.GetLine(1).GetText());
+                Assert.Equal("bear", _textView.GetLine(2).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// The new text should be on new lines at the same indetn and the caret posion should
+            /// be the same as puting over existing lines
+            /// </summary>
+            [Fact]
+            public void BlockOnNewLines()
+            {
+                Create("dog");
+                _textView.MoveCaretTo(1);
+                UnnamedRegister.UpdateBlockValues("aa", "bb");
+                _vimBuffer.Process("p");
+                Assert.Equal("doaag", _textView.GetLine(0).GetText());
+                Assert.Equal("  bb", _textView.GetLine(1).GetText());
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// This should cause the cursor to be put on the first line after the inserted 
+            /// lines
+            /// </summary>
+            [Fact]
+            public void LineWise_WithCaretMove()
+            {
+                Create("dog", "cat");
+                UnnamedRegister.UpdateValue("pig\ntree\n", OperationKind.LineWise);
+                _vimBuffer.Process("gp");
+                Assert.Equal("dog", _textView.GetLine(0).GetText());
+                Assert.Equal("pig", _textView.GetLine(1).GetText());
+                Assert.Equal("tree", _textView.GetLine(2).GetText());
+                Assert.Equal("cat", _textView.GetLine(3).GetText());
+                Assert.Equal(_textView.GetLine(3).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Putting a word which doesn't span multiple lines with indent is simply no 
+            /// different than a typically put after command
+            /// </summary>
+            [Fact]
+            public void WithIndent_Word()
+            {
+                Create("  dog", "  cat", "fish", "tree");
+                UnnamedRegister.UpdateValue("bear", OperationKind.CharacterWise);
+                _vimBuffer.Process("]p");
+                Assert.Equal(" bear dog", _textView.GetLine(0).GetText());
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Putting a line should cause the indent to be matched in the second line irrespective
+            /// of what the original indent was
+            /// </summary>
+            [Fact]
+            public void WithIndent_SingleLine()
+            {
+                Create("  dog", "  cat", "fish", "tree");
+                UnnamedRegister.UpdateValue("bear" + Environment.NewLine, OperationKind.LineWise);
+                _vimBuffer.Process("]p");
+                Assert.Equal("  dog", _textView.GetLine(0).GetText());
+                Assert.Equal("  bear", _textView.GetLine(1).GetText());
+                Assert.Equal(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Putting a line should cause the indent to be matched in all of the pasted lines 
+            /// irrespective of their original indent
+            /// </summary>
+            [Fact]
+            public void WithIndent_MultipleLines()
+            {
+                Create("  dog", "  cat");
+                UnnamedRegister.UpdateValue("    tree" + Environment.NewLine + "    bear" + Environment.NewLine, OperationKind.LineWise);
+                _vimBuffer.Process("]p");
+                Assert.Equal("  dog", _textView.GetLine(0).GetText());
+                Assert.Equal("  tree", _textView.GetLine(1).GetText());
+                Assert.Equal("  bear", _textView.GetLine(2).GetText());
+                Assert.Equal(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Putting a character wise block of text which spans multiple lines is the trickiest
+            /// version.  It requires that the first line remain unchanged while the subsequent lines
+            /// are indeed indented to the proper level
+            /// </summary>
+            [Fact]
+            public void WithIndent_CharcterWiseOverSeveralLines()
+            {
+                Create("  dog", "  cat");
+                UnnamedRegister.UpdateValue("tree" + Environment.NewLine + "be", OperationKind.CharacterWise);
+                _vimBuffer.Process("]p");
+                Assert.Equal(" tree", _textView.GetLine(0).GetText());
+                Assert.Equal("  be dog", _textView.GetLine(1).GetText());
+                Assert.Equal("  cat", _textView.GetLine(2).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+        }
+
+        public sealed class PutBeforeTest : NormalModeIntegrationTest
+        {
+            /// <summary>
+            /// Caret should be at the start of the inserted text
+            /// </summary>
+            [Fact]
+            public void LineWiseStartOfBuffer()
+            {
+                Create("dog");
+                UnnamedRegister.UpdateValue("pig\n", OperationKind.LineWise);
+                _vimBuffer.Process("P");
+                Assert.Equal("pig", _textView.GetLine(0).GetText());
+                Assert.Equal("dog", _textView.GetLine(1).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Caret should be positioned at the start of the indented text
+            /// </summary>
+            [Fact]
+            public void LineWiseStartOfBufferWithIndent()
+            {
+                Create("dog");
+                UnnamedRegister.UpdateValue("  pig\n", OperationKind.LineWise);
+                _vimBuffer.Process("P");
+                Assert.Equal("  pig", _textView.GetLine(0).GetText());
+                Assert.Equal("dog", _textView.GetLine(1).GetText());
+                Assert.Equal(2, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Character should be on the first line of the newly inserted lines
+            /// </summary>
+            [Fact]
+            public void LineWiseMiddleOfBuffer()
+            {
+                Create("dog", "cat");
+                _textView.MoveCaretToLine(1);
+                UnnamedRegister.UpdateValue("fish\ntree\n", OperationKind.LineWise);
+                _vimBuffer.Process("P");
+                Assert.Equal("dog", _textView.GetLine(0).GetText());
+                Assert.Equal("fish", _textView.GetLine(1).GetText());
+                Assert.Equal("tree", _textView.GetLine(2).GetText());
+                Assert.Equal("cat", _textView.GetLine(3).GetText());
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Character should be on the first line after the inserted lines
+            /// </summary>
+            [Fact]
+            public void LineWise_WithCaretMove()
+            {
+                Create("dog", "cat");
+                UnnamedRegister.UpdateValue("pig\ntree\n", OperationKind.LineWise);
+                _vimBuffer.Process("gP");
+                Assert.Equal("pig", _textView.GetLine(0).GetText());
+                Assert.Equal("tree", _textView.GetLine(1).GetText());
+                Assert.Equal("dog", _textView.GetLine(2).GetText());
+                Assert.Equal("cat", _textView.GetLine(3).GetText());
+                Assert.Equal(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void CharacterWiseBlockStringOnExistingLines()
+            {
+                Create("dog", "cat", "bear", "tree");
+                _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateBlockValues("a", "b", "c");
+                _vimBuffer.Process("P");
+                Assert.Equal("adog", _textView.GetLine(0).GetText());
+                Assert.Equal("bcat", _textView.GetLine(1).GetText());
+                Assert.Equal("cbear", _textView.GetLine(2).GetText());
+                Assert.Equal(_textView.GetCaretPoint(), _textView.GetLine(0).Start);
+            }
+
+            /// <summary>
+            /// Putting a word which doesn't span multiple lines with indent is simply no 
+            /// different than a typically put after command
+            /// </summary>
+            [Fact]
+            public void WithIndent_Word()
+            {
+                Create("  dog", "  cat", "fish", "tree");
+                UnnamedRegister.UpdateValue("bear", OperationKind.CharacterWise);
+                _vimBuffer.Process("[p");
+                Assert.Equal("bear  dog", _textView.GetLine(0).GetText());
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Putting a line should cause the indent to be matched in the second line irrespective
+            /// of what the original indent was
+            /// </summary>
+            [Fact]
+            public void WithIndent_SingleLine()
+            {
+                Create("  dog", "  cat", "fish", "tree");
+                UnnamedRegister.UpdateValue("bear" + Environment.NewLine, OperationKind.LineWise);
+                _vimBuffer.Process("[p");
+                Assert.Equal("  bear", _textView.GetLine(0).GetText());
+                Assert.Equal("  dog", _textView.GetLine(1).GetText());
+                Assert.Equal(_textView.GetPointInLine(0, 2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Putting a line should cause the indent to be matched in all of the pasted lines 
+            /// irrespective of their original indent
+            /// </summary>
+            [Fact]
+            public void WithIndent_MultipleLines()
+            {
+                Create("  dog", "  cat");
+                UnnamedRegister.UpdateValue("    tree" + Environment.NewLine + "    bear" + Environment.NewLine, OperationKind.LineWise);
+                _vimBuffer.Process("[p");
+                Assert.Equal("  tree", _textView.GetLine(0).GetText());
+                Assert.Equal("  bear", _textView.GetLine(1).GetText());
+                Assert.Equal("  dog", _textView.GetLine(2).GetText());
+                Assert.Equal(_textView.GetPointInLine(0, 2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Putting a character wise block of text which spans multiple lines is the trickiest
+            /// version.  It requires that the first line remain unchanged while the subsequent lines
+            /// are indeed indented to the proper level
+            /// </summary>
+            [Fact]
+            public void WithIndent_CharcterWiseOverSeveralLines()
+            {
+                Create("  dog", "  cat");
+                UnnamedRegister.UpdateValue("tree" + Environment.NewLine + "be", OperationKind.CharacterWise);
+                _vimBuffer.Process("[p");
+                Assert.Equal("tree", _textView.GetLine(0).GetText());
+                Assert.Equal("  be  dog", _textView.GetLine(1).GetText());
+                Assert.Equal("  cat", _textView.GetLine(2).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+        }
+
+        public sealed class RepeatCommandTest : NormalModeIntegrationTest
+        {
+            [Fact]
+            public void DeleteWord1()
+            {
+                Create("the cat jumped over the dog");
+                _vimBuffer.Process("dw");
+                _vimBuffer.Process(".");
+                Assert.Equal("jumped over the dog", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure that movement doesn't reset the last edit command
+            /// </summary>
+            [Fact]
+            public void DeleteWord2()
+            {
+                Create("the cat jumped over the dog");
+                _vimBuffer.Process("dw");
+                _vimBuffer.Process(VimKey.Right);
+                _vimBuffer.Process(VimKey.Left);
+                _vimBuffer.Process(".");
+                Assert.Equal("jumped over the dog", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// "Delete word with a count
+            /// </summary>
+            [Fact]
+            public void DeleteWord3()
+            {
+                Create("the cat jumped over the dog");
+                _vimBuffer.Process("2dw");
+                _vimBuffer.Process(".");
+                Assert.Equal("the dog", _textView.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void DeleteLine1()
+            {
+                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
+                _vimBuffer.Process("dd");
+                _vimBuffer.Process(".");
+                Assert.Equal("cat", _textView.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void DeleteLine2()
+            {
+                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
+                _vimBuffer.Process("2dd");
+                _vimBuffer.Process(".");
+                Assert.Equal("fox", _textView.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void ShiftLeft1()
+            {
+                Create("    bear", "    dog", "    cat", "    zebra", "    fox", "    jazz");
+                _vimBuffer.LocalSettings.GlobalSettings.ShiftWidth = 1;
+                _vimBuffer.Process("<<");
+                _vimBuffer.Process(".");
+                Assert.Equal("  bear", _textView.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void ShiftLeft2()
+            {
+                Create("    bear", "    dog", "    cat", "    zebra", "    fox", "    jazz");
+                _vimBuffer.LocalSettings.GlobalSettings.ShiftWidth = 1;
+                _vimBuffer.Process("2<<");
+                _vimBuffer.Process(".");
+                Assert.Equal("  bear", _textView.GetLine(0).GetText());
+                Assert.Equal("  dog", _textView.GetLine(1).GetText());
+            }
+
+            [Fact]
+            public void ShiftRight1()
+            {
+                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
+                _vimBuffer.LocalSettings.GlobalSettings.ShiftWidth = 1;
+                _vimBuffer.Process(">>");
+                _vimBuffer.Process(".");
+                Assert.Equal("  bear", _textView.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void ShiftRight2()
+            {
+                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
+                _vimBuffer.LocalSettings.GlobalSettings.ShiftWidth = 1;
+                _vimBuffer.Process("2>>");
+                _vimBuffer.Process(".");
+                Assert.Equal("  bear", _textView.GetLine(0).GetText());
+                Assert.Equal("  dog", _textView.GetLine(1).GetText());
+            }
+
+            [Fact]
+            public void DeleteChar1()
+            {
+                Create("longer");
+                _vimBuffer.Process("x");
+                _vimBuffer.Process(".");
+                Assert.Equal("nger", _textView.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void DeleteChar2()
+            {
+                Create("longer");
+                _vimBuffer.Process("2x");
+                _vimBuffer.Process(".");
+                Assert.Equal("er", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// After a search operation
+            /// </summary>
+            [Fact]
+            public void DeleteChar3()
+            {
+                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
+                _vimBuffer.Process("/e", enter: true);
+                _vimBuffer.Process("x");
+                _vimBuffer.Process("n");
+                _vimBuffer.Process(".");
+                Assert.Equal("bar", _textView.GetLine(0).GetText());
+                Assert.Equal("zbra", _textView.GetLine(3).GetText());
+            }
+
+            [Fact]
+            public void Put1()
+            {
+                Create("cat");
+                _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("lo");
+                _vimBuffer.Process("p");
+                _vimBuffer.Process(".");
+                Assert.Equal("cloloat", _textView.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void Put2()
+            {
+                Create("cat");
+                _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("lo");
+                _vimBuffer.Process("2p");
+                _vimBuffer.Process(".");
+                Assert.Equal("clolololoat", _textView.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void JoinLines1()
+            {
+                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
+                _vimBuffer.Process("J");
+                _vimBuffer.Process(".");
+                Assert.Equal("bear dog cat", _textView.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void Change1()
+            {
+                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
+                _vimBuffer.Process("cl");
+                _vimBuffer.Process(VimKey.Delete);
+                _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                _vimBuffer.Process(VimKey.Down);
+                _vimBuffer.Process(".");
+                Assert.Equal("ar", _textView.GetLine(0).GetText());
+                Assert.Equal("g", _textView.GetLine(1).GetText());
+            }
+
+            [Fact]
+            public void Change2()
+            {
+                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
+                _vimBuffer.Process("cl");
+                _vimBuffer.Process("u");
+                _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                _vimBuffer.Process(VimKey.Down);
+                _vimBuffer.Process(".");
+                Assert.Equal("uear", _textView.GetLine(0).GetText());
+                Assert.Equal("uog", _textView.GetLine(1).GetText());
+            }
+
+            [Fact]
+            public void Substitute1()
+            {
+                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
+                _vimBuffer.Process("s");
+                _vimBuffer.Process("u");
+                _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                _vimBuffer.Process(VimKey.Down);
+                _vimBuffer.Process(".");
+                Assert.Equal("uear", _textView.GetLine(0).GetText());
+                Assert.Equal("uog", _textView.GetLine(1).GetText());
+            }
+
+            [Fact]
+            public void Substitute2()
+            {
+                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
+                _vimBuffer.Process("s");
+                _vimBuffer.Process("u");
+                _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                _vimBuffer.Process(VimKey.Down);
+                _vimBuffer.Process("2.");
+                Assert.Equal("uear", _textView.GetLine(0).GetText());
+                Assert.Equal("ug", _textView.GetLine(1).GetText());
+            }
+
+            [Fact]
+            public void TextInsert1()
+            {
+                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
+                _vimBuffer.Process("i");
+                _vimBuffer.Process("abc");
+                _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process(".");
+                Assert.Equal("ababccbear", _textView.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void TextInsert2()
+            {
+                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
+                _vimBuffer.Process("i");
+                _vimBuffer.Process("abc");
+                _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process(".");
+                Assert.Equal("abcabcbear", _textView.GetLine(0).GetText());
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void TextInsert3()
+            {
+                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
+                _vimBuffer.Process("i");
+                _vimBuffer.Process("abc");
+                _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process(".");
+                _vimBuffer.Process(".");
+                Assert.Equal("ababccabcbear", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Test the repeating of a command that changes white space to tabs
+            /// </summary>
+            [Fact]
+            public void TextInsert_WhiteSpaceToTab()
+            {
+                Create("    hello world", "dog");
+                _vimBuffer.LocalSettings.TabStop = 4;
+                _vimBuffer.LocalSettings.ExpandTab = false;
+                _vimBuffer.Process('i');
+                _textBuffer.Replace(new Span(0, 4), "\t\t");
+                _vimBuffer.Process(VimKey.Escape);
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process('.');
+                Assert.Equal("\tdog", _textView.GetLine(1).GetText());
+            }
+
+            /// <summary>
+            /// The first repeat of I should go to the first non-blank
+            /// </summary>
+            [Fact]
+            public void CapitalI1()
+            {
+                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
+                _vimBuffer.Process("I");
+                _vimBuffer.Process("abc");
+                _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                _textView.MoveCaretTo(_textView.GetLine(1).Start.Add(2));
+                _vimBuffer.Process(".");
+                Assert.Equal("abcdog", _textView.GetLine(1).GetText());
+                Assert.Equal(_textView.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// The first repeat of I should go to the first non-blank
+            /// </summary>
+            [Fact]
+            public void CapitalI2()
+            {
+                Create("bear", "  dog", "cat", "zebra", "fox", "jazz");
+                _vimBuffer.Process("I");
+                _vimBuffer.Process("abc");
+                _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                _textView.MoveCaretTo(_textView.GetLine(1).Start.Add(2));
+                _vimBuffer.Process(".");
+                Assert.Equal("  abcdog", _textView.GetLine(1).GetText());
+                Assert.Equal(_textView.GetLine(1).Start.Add(4), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Repeating a replace char command should move the caret to the end just like
+            /// the original command did
+            /// </summary>
+            [Fact]
+            public void ReplaceChar_ShouldMoveCaret()
+            {
+                Create("the dog kicked the ball");
+                _vimBuffer.Process("3ru");
+                Assert.Equal("uuu dog kicked the ball", _textView.GetLine(0).GetText());
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process(".");
+                Assert.Equal("uuu uuu kicked the ball", _textView.GetLine(0).GetText());
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Repeating a 
+            /// replace char command from visual mode should not move the caret
+            /// </summary>
+            [Fact]
+            public void ReplaceCharVisual_ShouldNotMoveCaret()
+            {
+                Create("the dog kicked the ball");
+                _vimBuffer.VimData.LastCommand = FSharpOption.Create(StoredCommand.NewVisualCommand(
+                    VisualCommand.NewReplaceSelection(KeyInputUtil.CharToKeyInput('b')),
+                    VimUtil.CreateCommandData(),
+                    StoredVisualSpan.OfVisualSpan(VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 3))),
+                    CommandFlags.None));
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process(".");
+                Assert.Equal("tbbbdog kicked the ball", _textView.GetLine(0).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Make sure the caret movement occurs as part of the repeat
+            /// </summary>
+            [Fact]
+            public void AppendShouldRepeat()
+            {
+                Create("{", "}");
+                _textView.MoveCaretToLine(0);
+                _vimBuffer.Process('a');
+                _vimBuffer.Process(';');
+                _vimBuffer.Process(VimKey.Escape);
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process('.');
+                Assert.Equal("};", _textView.GetLine(1).GetText());
+            }
+
+            /// <summary>
+            /// Make sure the caret movement occurs as part of the repeat
+            /// </summary>
+            [Fact]
+            public void AppendEndOfLineShouldRepeat()
+            {
+                Create("{", "}");
+                _textView.MoveCaretToLine(0);
+                _vimBuffer.Process('A');
+                _vimBuffer.Process(';');
+                _vimBuffer.Process(VimKey.Escape);
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process('.');
+                Assert.Equal("};", _textView.GetLine(1).GetText());
+            }
+
+            /// <summary>
+            /// The insert line above command should be linked the the following text change
+            /// </summary>
+            [Fact]
+            public void InsertLineAbove()
+            {
+                Create("cat", "dog", "tree");
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.Process("O  fish");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("  fish", _textView.GetLine(2).GetText());
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process(".");
+                Assert.Equal("  fish", _textView.GetLine(1).GetText());
+            }
+
+            /// <summary>
+            /// The insert line below command should be linked the the following text change
+            /// </summary>
+            [Fact]
+            public void InsertLineBelow()
+            {
+                Create("cat", "dog", "tree");
+                _vimBuffer.Process("o  fish");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("  fish", _textView.GetLine(1).GetText());
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.Process(".");
+                Assert.Equal("  fish", _textView.GetLine(3).GetText());
+            }
+
+            /// <summary>
+            /// The 'o' command used to have a bug which occured when 
+            ///
+            ///  - Insert mode made no edits
+            ///  - The 'o' command put the caret into virtual space
+            ///
+            /// In that case the next edit command would link with the insert line below 
+            /// change in the repeat infrastructure.  Normally the move caret left
+            /// operation processed on Escape moved the caret and ended a repeat.  But
+            /// the move left from virtual space didn't use a proper command and 
+            /// caused repeat to remain open
+            /// 
+            /// Regression Test for Issue #748
+            /// </summary>
+            [Fact]
+            public void InsertLineBelow_ToVirtualSpace()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process('o');
+                _textView.MoveCaretTo(_textView.GetCaretPoint().Position, 4);
+                _vimBuffer.Process(VimKey.Escape);
+                _textView.MoveCaretTo(0);
+                _vimBuffer.ProcessNotation("cwbear<Esc>");
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.Process('.');
+                Assert.Equal("bear", _textBuffer.GetLine(2).GetText());
+            }
+
+            [Fact]
+            public void DeleteWithIncrementalSearch()
+            {
+                Create("dog cat bear tree");
+                _vimBuffer.Process("d/a", enter: true);
+                _vimBuffer.Process('.');
+                Assert.Equal("ar tree", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Test the repeat of a repeated command.  Essentially ensure the act of repeating doesn't
+            /// disturb the cached LastCommand value
+            /// </summary>
+            [Fact]
+            public void Repeated()
+            {
+                Create("the fox chased the bird");
+                _vimBuffer.Process("dw");
+                Assert.Equal("fox chased the bird", _textView.TextSnapshot.GetText());
+                _vimBuffer.Process(".");
+                Assert.Equal("chased the bird", _textView.TextSnapshot.GetText());
+                _vimBuffer.Process(".");
+                Assert.Equal("the bird", _textView.TextSnapshot.GetText());
+            }
+
+            [Fact]
+            public void LinkedTextChange1()
+            {
+                Create("the fox chased the bird");
+                _vimBuffer.Process("cw");
+                _vimBuffer.Process("hey ");
+                _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process(KeyInputUtil.CharToKeyInput('.'));
+                Assert.Equal("hey hey fox chased the bird", _textView.TextSnapshot.GetText());
+            }
+
+            [Fact]
+            public void LinkedTextChange2()
+            {
+                Create("the fox chased the bird");
+                _vimBuffer.Process("cw");
+                _vimBuffer.Process("hey");
+                _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process(KeyInputUtil.CharToKeyInput('.'));
+                Assert.Equal("hey hey chased the bird", _textView.TextSnapshot.GetText());
+            }
+
+            [Fact]
+            public void LinkedTextChange3()
+            {
+                Create("the fox chased the bird");
+                _vimBuffer.Process("cw");
+                _vimBuffer.Process("hey");
+                _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process(KeyInputUtil.CharToKeyInput('.'));
+                _vimBuffer.Process(KeyInputUtil.CharToKeyInput('.'));
+                Assert.Equal("hey hehey chased the bird", _textView.TextSnapshot.GetText());
+            }
+        }
+
         public sealed class MiscTest : NormalModeIntegrationTest
         {
             /// <summary>
@@ -2093,60 +2963,6 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('a'));
                 Assert.Equal("  0x43", _textBuffer.GetLine(1).GetText());
                 Assert.Equal(_textView.GetLine(1).Start.Add(5), _textView.GetCaretPoint());
-            }
-
-
-            /// <summary>
-            /// Test the repeat of a repeated command.  Essentially ensure the act of repeating doesn't
-            /// disturb the cached LastCommand value
-            /// </summary>
-            [Fact]
-            public void RepeatCommand_Repeated()
-            {
-                Create("the fox chased the bird");
-                _vimBuffer.Process("dw");
-                Assert.Equal("fox chased the bird", _textView.TextSnapshot.GetText());
-                _vimBuffer.Process(".");
-                Assert.Equal("chased the bird", _textView.TextSnapshot.GetText());
-                _vimBuffer.Process(".");
-                Assert.Equal("the bird", _textView.TextSnapshot.GetText());
-            }
-
-            [Fact]
-            public void RepeatCommand_LinkedTextChange1()
-            {
-                Create("the fox chased the bird");
-                _vimBuffer.Process("cw");
-                _vimBuffer.Process("hey ");
-                _vimBuffer.Process(KeyInputUtil.EscapeKey);
-                _textView.MoveCaretTo(4);
-                _vimBuffer.Process(KeyInputUtil.CharToKeyInput('.'));
-                Assert.Equal("hey hey fox chased the bird", _textView.TextSnapshot.GetText());
-            }
-
-            [Fact]
-            public void RepeatCommand_LinkedTextChange2()
-            {
-                Create("the fox chased the bird");
-                _vimBuffer.Process("cw");
-                _vimBuffer.Process("hey");
-                _vimBuffer.Process(KeyInputUtil.EscapeKey);
-                _textView.MoveCaretTo(4);
-                _vimBuffer.Process(KeyInputUtil.CharToKeyInput('.'));
-                Assert.Equal("hey hey chased the bird", _textView.TextSnapshot.GetText());
-            }
-
-            [Fact]
-            public void RepeatCommand_LinkedTextChange3()
-            {
-                Create("the fox chased the bird");
-                _vimBuffer.Process("cw");
-                _vimBuffer.Process("hey");
-                _vimBuffer.Process(KeyInputUtil.EscapeKey);
-                _textView.MoveCaretTo(4);
-                _vimBuffer.Process(KeyInputUtil.CharToKeyInput('.'));
-                _vimBuffer.Process(KeyInputUtil.CharToKeyInput('.'));
-                Assert.Equal("hey hehey chased the bird", _textView.TextSnapshot.GetText());
             }
 
             /// <summary>
@@ -2709,438 +3525,6 @@ namespace Vim.UnitTest
                 Assert.Equal(" fish", _textBuffer.GetLine(0).GetText());
             }
 
-            [Fact]
-            public void RepeatCommand_DeleteWord1()
-            {
-                Create("the cat jumped over the dog");
-                _vimBuffer.Process("dw");
-                _vimBuffer.Process(".");
-                Assert.Equal("jumped over the dog", _textView.GetLine(0).GetText());
-            }
-
-            /// <summary>
-            /// Make sure that movement doesn't reset the last edit command
-            /// </summary>
-            [Fact]
-            public void RepeatCommand_DeleteWord2()
-            {
-                Create("the cat jumped over the dog");
-                _vimBuffer.Process("dw");
-                _vimBuffer.Process(VimKey.Right);
-                _vimBuffer.Process(VimKey.Left);
-                _vimBuffer.Process(".");
-                Assert.Equal("jumped over the dog", _textView.GetLine(0).GetText());
-            }
-
-            /// <summary>
-            /// "Delete word with a count
-            /// </summary>
-            [Fact]
-            public void RepeatCommand_DeleteWord3()
-            {
-                Create("the cat jumped over the dog");
-                _vimBuffer.Process("2dw");
-                _vimBuffer.Process(".");
-                Assert.Equal("the dog", _textView.GetLine(0).GetText());
-            }
-
-            [Fact]
-            public void RepeatCommand_DeleteLine1()
-            {
-                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
-                _vimBuffer.Process("dd");
-                _vimBuffer.Process(".");
-                Assert.Equal("cat", _textView.GetLine(0).GetText());
-            }
-
-            [Fact]
-            public void RepeatCommand_DeleteLine2()
-            {
-                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
-                _vimBuffer.Process("2dd");
-                _vimBuffer.Process(".");
-                Assert.Equal("fox", _textView.GetLine(0).GetText());
-            }
-
-            [Fact]
-            public void RepeatCommand_ShiftLeft1()
-            {
-                Create("    bear", "    dog", "    cat", "    zebra", "    fox", "    jazz");
-                _vimBuffer.LocalSettings.GlobalSettings.ShiftWidth = 1;
-                _vimBuffer.Process("<<");
-                _vimBuffer.Process(".");
-                Assert.Equal("  bear", _textView.GetLine(0).GetText());
-            }
-
-            [Fact]
-            public void RepeatCommand_ShiftLeft2()
-            {
-                Create("    bear", "    dog", "    cat", "    zebra", "    fox", "    jazz");
-                _vimBuffer.LocalSettings.GlobalSettings.ShiftWidth = 1;
-                _vimBuffer.Process("2<<");
-                _vimBuffer.Process(".");
-                Assert.Equal("  bear", _textView.GetLine(0).GetText());
-                Assert.Equal("  dog", _textView.GetLine(1).GetText());
-            }
-
-            [Fact]
-            public void RepeatCommand_ShiftRight1()
-            {
-                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
-                _vimBuffer.LocalSettings.GlobalSettings.ShiftWidth = 1;
-                _vimBuffer.Process(">>");
-                _vimBuffer.Process(".");
-                Assert.Equal("  bear", _textView.GetLine(0).GetText());
-            }
-
-            [Fact]
-            public void RepeatCommand_ShiftRight2()
-            {
-                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
-                _vimBuffer.LocalSettings.GlobalSettings.ShiftWidth = 1;
-                _vimBuffer.Process("2>>");
-                _vimBuffer.Process(".");
-                Assert.Equal("  bear", _textView.GetLine(0).GetText());
-                Assert.Equal("  dog", _textView.GetLine(1).GetText());
-            }
-
-            [Fact]
-            public void RepeatCommand_DeleteChar1()
-            {
-                Create("longer");
-                _vimBuffer.Process("x");
-                _vimBuffer.Process(".");
-                Assert.Equal("nger", _textView.GetLine(0).GetText());
-            }
-
-            [Fact]
-            public void RepeatCommand_DeleteChar2()
-            {
-                Create("longer");
-                _vimBuffer.Process("2x");
-                _vimBuffer.Process(".");
-                Assert.Equal("er", _textView.GetLine(0).GetText());
-            }
-
-            /// <summary>
-            /// After a search operation
-            /// </summary>
-            [Fact]
-            public void RepeatCommand_DeleteChar3()
-            {
-                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
-                _vimBuffer.Process("/e", enter: true);
-                _vimBuffer.Process("x");
-                _vimBuffer.Process("n");
-                _vimBuffer.Process(".");
-                Assert.Equal("bar", _textView.GetLine(0).GetText());
-                Assert.Equal("zbra", _textView.GetLine(3).GetText());
-            }
-
-            [Fact]
-            public void RepeatCommand_Put1()
-            {
-                Create("cat");
-                _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("lo");
-                _vimBuffer.Process("p");
-                _vimBuffer.Process(".");
-                Assert.Equal("cloloat", _textView.GetLine(0).GetText());
-            }
-
-            [Fact]
-            public void RepeatCommand_Put2()
-            {
-                Create("cat");
-                _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("lo");
-                _vimBuffer.Process("2p");
-                _vimBuffer.Process(".");
-                Assert.Equal("clolololoat", _textView.GetLine(0).GetText());
-            }
-
-            [Fact]
-            public void RepeatCommand_JoinLines1()
-            {
-                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
-                _vimBuffer.Process("J");
-                _vimBuffer.Process(".");
-                Assert.Equal("bear dog cat", _textView.GetLine(0).GetText());
-            }
-
-            [Fact]
-            public void RepeatCommand_Change1()
-            {
-                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
-                _vimBuffer.Process("cl");
-                _vimBuffer.Process(VimKey.Delete);
-                _vimBuffer.Process(KeyInputUtil.EscapeKey);
-                _vimBuffer.Process(VimKey.Down);
-                _vimBuffer.Process(".");
-                Assert.Equal("ar", _textView.GetLine(0).GetText());
-                Assert.Equal("g", _textView.GetLine(1).GetText());
-            }
-
-            [Fact]
-            public void RepeatCommand_Change2()
-            {
-                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
-                _vimBuffer.Process("cl");
-                _vimBuffer.Process("u");
-                _vimBuffer.Process(KeyInputUtil.EscapeKey);
-                _vimBuffer.Process(VimKey.Down);
-                _vimBuffer.Process(".");
-                Assert.Equal("uear", _textView.GetLine(0).GetText());
-                Assert.Equal("uog", _textView.GetLine(1).GetText());
-            }
-
-            [Fact]
-            public void RepeatCommand_Substitute1()
-            {
-                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
-                _vimBuffer.Process("s");
-                _vimBuffer.Process("u");
-                _vimBuffer.Process(KeyInputUtil.EscapeKey);
-                _vimBuffer.Process(VimKey.Down);
-                _vimBuffer.Process(".");
-                Assert.Equal("uear", _textView.GetLine(0).GetText());
-                Assert.Equal("uog", _textView.GetLine(1).GetText());
-            }
-
-            [Fact]
-            public void RepeatCommand_Substitute2()
-            {
-                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
-                _vimBuffer.Process("s");
-                _vimBuffer.Process("u");
-                _vimBuffer.Process(KeyInputUtil.EscapeKey);
-                _vimBuffer.Process(VimKey.Down);
-                _vimBuffer.Process("2.");
-                Assert.Equal("uear", _textView.GetLine(0).GetText());
-                Assert.Equal("ug", _textView.GetLine(1).GetText());
-            }
-
-            [Fact]
-            public void RepeatCommand_TextInsert1()
-            {
-                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
-                _vimBuffer.Process("i");
-                _vimBuffer.Process("abc");
-                _vimBuffer.Process(KeyInputUtil.EscapeKey);
-                Assert.Equal(2, _textView.GetCaretPoint().Position);
-                _vimBuffer.Process(".");
-                Assert.Equal("ababccbear", _textView.GetLine(0).GetText());
-            }
-
-            [Fact]
-            public void RepeatCommand_TextInsert2()
-            {
-                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
-                _vimBuffer.Process("i");
-                _vimBuffer.Process("abc");
-                _vimBuffer.Process(KeyInputUtil.EscapeKey);
-                _textView.MoveCaretTo(0);
-                _vimBuffer.Process(".");
-                Assert.Equal("abcabcbear", _textView.GetLine(0).GetText());
-                Assert.Equal(2, _textView.GetCaretPoint().Position);
-            }
-
-            [Fact]
-            public void RepeatCommand_TextInsert3()
-            {
-                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
-                _vimBuffer.Process("i");
-                _vimBuffer.Process("abc");
-                _vimBuffer.Process(KeyInputUtil.EscapeKey);
-                _textView.MoveCaretTo(0);
-                _vimBuffer.Process(".");
-                _vimBuffer.Process(".");
-                Assert.Equal("ababccabcbear", _textView.GetLine(0).GetText());
-            }
-
-            /// <summary>
-            /// Test the repeating of a command that changes white space to tabs
-            /// </summary>
-            [Fact]
-            public void RepeatCommand_TextInsert_WhiteSpaceToTab()
-            {
-                Create("    hello world", "dog");
-                _vimBuffer.LocalSettings.TabStop = 4;
-                _vimBuffer.LocalSettings.ExpandTab = false;
-                _vimBuffer.Process('i');
-                _textBuffer.Replace(new Span(0, 4), "\t\t");
-                _vimBuffer.Process(VimKey.Escape);
-                _textView.MoveCaretToLine(1);
-                _vimBuffer.Process('.');
-                Assert.Equal("\tdog", _textView.GetLine(1).GetText());
-            }
-
-            /// <summary>
-            /// The first repeat of I should go to the first non-blank
-            /// </summary>
-            [Fact]
-            public void RepeatCommand_CapitalI1()
-            {
-                Create("bear", "dog", "cat", "zebra", "fox", "jazz");
-                _vimBuffer.Process("I");
-                _vimBuffer.Process("abc");
-                _vimBuffer.Process(KeyInputUtil.EscapeKey);
-                _textView.MoveCaretTo(_textView.GetLine(1).Start.Add(2));
-                _vimBuffer.Process(".");
-                Assert.Equal("abcdog", _textView.GetLine(1).GetText());
-                Assert.Equal(_textView.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// The first repeat of I should go to the first non-blank
-            /// </summary>
-            [Fact]
-            public void RepeatCommand_CapitalI2()
-            {
-                Create("bear", "  dog", "cat", "zebra", "fox", "jazz");
-                _vimBuffer.Process("I");
-                _vimBuffer.Process("abc");
-                _vimBuffer.Process(KeyInputUtil.EscapeKey);
-                _textView.MoveCaretTo(_textView.GetLine(1).Start.Add(2));
-                _vimBuffer.Process(".");
-                Assert.Equal("  abcdog", _textView.GetLine(1).GetText());
-                Assert.Equal(_textView.GetLine(1).Start.Add(4), _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// Repeating a replace char command should move the caret to the end just like
-            /// the original command did
-            /// </summary>
-            [Fact]
-            public void RepeatCommand_ReplaceChar_ShouldMoveCaret()
-            {
-                Create("the dog kicked the ball");
-                _vimBuffer.Process("3ru");
-                Assert.Equal("uuu dog kicked the ball", _textView.GetLine(0).GetText());
-                Assert.Equal(2, _textView.GetCaretPoint().Position);
-                _textView.MoveCaretTo(4);
-                _vimBuffer.Process(".");
-                Assert.Equal("uuu uuu kicked the ball", _textView.GetLine(0).GetText());
-                Assert.Equal(6, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// Repeating a 
-            /// replace char command from visual mode should not move the caret
-            /// </summary>
-            [Fact]
-            public void RepeatCommand_ReplaceCharVisual_ShouldNotMoveCaret()
-            {
-                Create("the dog kicked the ball");
-                _vimBuffer.VimData.LastCommand = FSharpOption.Create(StoredCommand.NewVisualCommand(
-                    VisualCommand.NewReplaceSelection(KeyInputUtil.CharToKeyInput('b')),
-                    VimUtil.CreateCommandData(),
-                    StoredVisualSpan.OfVisualSpan(VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 3))),
-                    CommandFlags.None));
-                _textView.MoveCaretTo(1);
-                _vimBuffer.Process(".");
-                Assert.Equal("tbbbdog kicked the ball", _textView.GetLine(0).GetText());
-                Assert.Equal(1, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// Make sure the caret movement occurs as part of the repeat
-            /// </summary>
-            [Fact]
-            public void RepeatCommand_AppendShouldRepeat()
-            {
-                Create("{", "}");
-                _textView.MoveCaretToLine(0);
-                _vimBuffer.Process('a');
-                _vimBuffer.Process(';');
-                _vimBuffer.Process(VimKey.Escape);
-                _textView.MoveCaretToLine(1);
-                _vimBuffer.Process('.');
-                Assert.Equal("};", _textView.GetLine(1).GetText());
-            }
-
-            /// <summary>
-            /// Make sure the caret movement occurs as part of the repeat
-            /// </summary>
-            [Fact]
-            public void RepeatCommand_AppendEndOfLineShouldRepeat()
-            {
-                Create("{", "}");
-                _textView.MoveCaretToLine(0);
-                _vimBuffer.Process('A');
-                _vimBuffer.Process(';');
-                _vimBuffer.Process(VimKey.Escape);
-                _textView.MoveCaretToLine(1);
-                _vimBuffer.Process('.');
-                Assert.Equal("};", _textView.GetLine(1).GetText());
-            }
-
-            /// <summary>
-            /// The insert line above command should be linked the the following text change
-            /// </summary>
-            [Fact]
-            public void RepeatCommand_InsertLineAbove()
-            {
-                Create("cat", "dog", "tree");
-                _textView.MoveCaretToLine(2);
-                _vimBuffer.Process("O  fish");
-                _vimBuffer.Process(VimKey.Escape);
-                Assert.Equal("  fish", _textView.GetLine(2).GetText());
-                _textView.MoveCaretToLine(1);
-                _vimBuffer.Process(".");
-                Assert.Equal("  fish", _textView.GetLine(1).GetText());
-            }
-
-            /// <summary>
-            /// The insert line below command should be linked the the following text change
-            /// </summary>
-            [Fact]
-            public void RepeatCommand_InsertLineBelow()
-            {
-                Create("cat", "dog", "tree");
-                _vimBuffer.Process("o  fish");
-                _vimBuffer.Process(VimKey.Escape);
-                Assert.Equal("  fish", _textView.GetLine(1).GetText());
-                _textView.MoveCaretToLine(2);
-                _vimBuffer.Process(".");
-                Assert.Equal("  fish", _textView.GetLine(3).GetText());
-            }
-
-            /// <summary>
-            /// The 'o' command used to have a bug which occured when 
-            ///
-            ///  - Insert mode made no edits
-            ///  - The 'o' command put the caret into virtual space
-            ///
-            /// In that case the next edit command would link with the insert line below 
-            /// change in the repeat infrastructure.  Normally the move caret left
-            /// operation processed on Escape moved the caret and ended a repeat.  But
-            /// the move left from virtual space didn't use a proper command and 
-            /// caused repeat to remain open
-            /// 
-            /// Regression Test for Issue #748
-            /// </summary>
-            [Fact]
-            public void RepeatCommand_InsertLineBelow_ToVirtualSpace()
-            {
-                Create("cat", "dog");
-                _vimBuffer.Process('o');
-                _textView.MoveCaretTo(_textView.GetCaretPoint().Position, 4);
-                _vimBuffer.Process(VimKey.Escape);
-                _textView.MoveCaretTo(0);
-                _vimBuffer.ProcessNotation("cwbear<Esc>");
-                _textView.MoveCaretToLine(2);
-                _vimBuffer.Process('.');
-                Assert.Equal("bear", _textBuffer.GetLine(2).GetText());
-            }
-
-            [Fact]
-            public void Repeat_DeleteWithIncrementalSearch()
-            {
-                Create("dog cat bear tree");
-                _vimBuffer.Process("d/a", enter: true);
-                _vimBuffer.Process('.');
-                Assert.Equal("ar tree", _textView.GetLine(0).GetText());
-            }
-
             /// <summary>
             /// Simple yank of a () block 
             /// </summary>
@@ -3275,382 +3659,6 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
                 _vimBuffer.Process(VimKey.Escape);
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
-            }
-
-            /// <summary>
-            /// When pasting from the clipboard where the text doesn't end in a new line it
-            /// should be treated as characterwise paste
-            /// </summary>
-            [Fact]
-            public void PutAfter_ClipboardWithoutNewLine()
-            {
-                Create("hello world", "again");
-                _textView.MoveCaretTo(5);
-                _clipboardDevice.Text = "big ";
-                _vimBuffer.Process("\"+p");
-                Assert.Equal("hello big world", _textView.GetLine(0).GetText());
-            }
-
-            /// <summary>
-            /// When pasting from the clipboard where the text does end in a new line it 
-            /// should be treated as a linewise paste
-            /// </summary>
-            [Fact]
-            public void PutAfter_ClipboardWithNewLine()
-            {
-                Create("hello world", "again");
-                _textView.MoveCaretTo(5);
-                _clipboardDevice.Text = "big " + Environment.NewLine;
-                _vimBuffer.Process("\"+p");
-                Assert.Equal("hello world", _textView.GetLine(0).GetText());
-                Assert.Equal("big ", _textView.GetLine(1).GetText());
-                Assert.Equal("again", _textView.GetLine(2).GetText());
-            }
-
-            /// <summary>
-            /// A putafter at the end of the line should still put the text after the caret
-            /// </summary>
-            [Fact]
-            public void PutAfter_EndOfLine()
-            {
-                Create("dog");
-                _textView.MoveCaretTo(2);
-                Assert.Equal('g', _textView.GetCaretPoint().GetChar());
-                UnnamedRegister.UpdateValue("cat", OperationKind.CharacterWise);
-                _vimBuffer.Process('p');
-                Assert.Equal("dogcat", _textView.GetLine(0).GetText());
-                Assert.Equal(5, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// A putafter on an empty line is the only thing that shouldn't move the caret
-            /// </summary>
-            [Fact]
-            public void PutAfter_EmptyLine()
-            {
-                Create("");
-                UnnamedRegister.UpdateValue("cat", OperationKind.CharacterWise);
-                _vimBuffer.Process('p');
-                Assert.Equal("cat", _textView.GetLine(0).GetText());
-                Assert.Equal(2, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// Caret should be positioned at the start of the inserted line
-            /// </summary>
-            [Fact]
-            public void PutAfter_LineWiseSimpleString()
-            {
-                Create("dog", "cat", "bear", "tree");
-                _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig\n", OperationKind.LineWise);
-                _vimBuffer.Process("p");
-                Assert.Equal("dog", _textView.GetLine(0).GetText());
-                Assert.Equal("pig", _textView.GetLine(1).GetText());
-                Assert.Equal(_textView.GetCaretPoint(), _textView.GetLine(1).Start);
-            }
-
-            /// <summary>
-            /// Caret should be positioned at the start of the indent even when autoindent is off
-            /// </summary>
-            [Fact]
-            public void PutAfter_LineWiseWithIndent()
-            {
-                Create("dog", "cat", "bear", "tree");
-                UnnamedRegister.UpdateValue("  pig\n", OperationKind.LineWise);
-                _vimBuffer.LocalSettings.AutoIndent = false;
-                _vimBuffer.Process("p");
-                Assert.Equal("dog", _textView.GetLine(0).GetText());
-                Assert.Equal("  pig", _textView.GetLine(1).GetText());
-                Assert.Equal(_textView.GetCaretPoint(), _textView.GetLine(1).Start.Add(2));
-            }
-
-            /// <summary>
-            /// Caret should be positioned on the last character of the inserted text
-            /// </summary>
-            [Fact]
-            public void PutAfter_CharacterWiseSimpleString()
-            {
-                Create("dog", "cat", "bear", "tree");
-                _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig", OperationKind.CharacterWise);
-                _vimBuffer.Process("p");
-                Assert.Equal("dpigog", _textView.GetLine(0).GetText());
-                Assert.Equal(3, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// When putting a character wise selection which spans over multiple lines into 
-            /// the ITextBuffer the caret is positioned at the start of the text and not 
-            /// after it as it is with most put operations
-            /// </summary>
-            [Fact]
-            public void PutAfter_CharacterWise_MultipleLines()
-            {
-                Create("dog", "cat");
-                UnnamedRegister.UpdateValue("tree" + Environment.NewLine + "be");
-                _vimBuffer.Process("p");
-                Assert.Equal("dtree", _textView.GetLine(0).GetText());
-                Assert.Equal("beog", _textView.GetLine(1).GetText());
-                Assert.Equal("cat", _textView.GetLine(2).GetText());
-                Assert.Equal(1, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// Caret should be positioned after the last character of the inserted text
-            /// </summary>
-            [Fact]
-            public void PutAfter_CharacterWiseSimpleString_WithCaretMove()
-            {
-                Create("dog", "cat", "bear", "tree");
-                _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig", OperationKind.CharacterWise);
-                _vimBuffer.Process("gp");
-                Assert.Equal("dpigog", _textView.GetLine(0).GetText());
-                Assert.Equal(4, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// The caret should be positioned at the last character of the first block string
-            /// inserted text
-            /// </summary>
-            [Fact]
-            public void PutAfter_BlockOverExisting()
-            {
-                Create("dog", "cat", "bear", "tree");
-                UnnamedRegister.UpdateBlockValues("aa", "bb");
-                _vimBuffer.Process("p");
-                Assert.Equal("daaog", _textView.GetLine(0).GetText());
-                Assert.Equal("cbbat", _textView.GetLine(1).GetText());
-                Assert.Equal("bear", _textView.GetLine(2).GetText());
-                Assert.Equal(1, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// The new text should be on new lines at the same indetn and the caret posion should
-            /// be the same as puting over existing lines
-            /// </summary>
-            [Fact]
-            public void PutAfter_BlockOnNewLines()
-            {
-                Create("dog");
-                _textView.MoveCaretTo(1);
-                UnnamedRegister.UpdateBlockValues("aa", "bb");
-                _vimBuffer.Process("p");
-                Assert.Equal("doaag", _textView.GetLine(0).GetText());
-                Assert.Equal("  bb", _textView.GetLine(1).GetText());
-                Assert.Equal(2, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// This should cause the cursor to be put on the first line after the inserted 
-            /// lines
-            /// </summary>
-            [Fact]
-            public void PutAfter_LineWise_WithCaretMove()
-            {
-                Create("dog", "cat");
-                UnnamedRegister.UpdateValue("pig\ntree\n", OperationKind.LineWise);
-                _vimBuffer.Process("gp");
-                Assert.Equal("dog", _textView.GetLine(0).GetText());
-                Assert.Equal("pig", _textView.GetLine(1).GetText());
-                Assert.Equal("tree", _textView.GetLine(2).GetText());
-                Assert.Equal("cat", _textView.GetLine(3).GetText());
-                Assert.Equal(_textView.GetLine(3).Start, _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// Putting a word which doesn't span multiple lines with indent is simply no 
-            /// different than a typically put after command
-            /// </summary>
-            [Fact]
-            public void PutAfterWithIndent_Word()
-            {
-                Create("  dog", "  cat", "fish", "tree");
-                UnnamedRegister.UpdateValue("bear", OperationKind.CharacterWise);
-                _vimBuffer.Process("]p");
-                Assert.Equal(" bear dog", _textView.GetLine(0).GetText());
-                Assert.Equal(4, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// Putting a line should cause the indent to be matched in the second line irrespective
-            /// of what the original indent was
-            /// </summary>
-            [Fact]
-            public void PutAfterWithIndent_SingleLine()
-            {
-                Create("  dog", "  cat", "fish", "tree");
-                UnnamedRegister.UpdateValue("bear" + Environment.NewLine, OperationKind.LineWise);
-                _vimBuffer.Process("]p");
-                Assert.Equal("  dog", _textView.GetLine(0).GetText());
-                Assert.Equal("  bear", _textView.GetLine(1).GetText());
-                Assert.Equal(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// Putting a line should cause the indent to be matched in all of the pasted lines 
-            /// irrespective of their original indent
-            /// </summary>
-            [Fact]
-            public void PutAfterWithIndent_MultipleLines()
-            {
-                Create("  dog", "  cat");
-                UnnamedRegister.UpdateValue("    tree" + Environment.NewLine + "    bear" + Environment.NewLine, OperationKind.LineWise);
-                _vimBuffer.Process("]p");
-                Assert.Equal("  dog", _textView.GetLine(0).GetText());
-                Assert.Equal("  tree", _textView.GetLine(1).GetText());
-                Assert.Equal("  bear", _textView.GetLine(2).GetText());
-                Assert.Equal(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// Putting a character wise block of text which spans multiple lines is the trickiest
-            /// version.  It requires that the first line remain unchanged while the subsequent lines
-            /// are indeed indented to the proper level
-            /// </summary>
-            [Fact]
-            public void PutAfterWithIndent_CharcterWiseOverSeveralLines()
-            {
-                Create("  dog", "  cat");
-                UnnamedRegister.UpdateValue("tree" + Environment.NewLine + "be", OperationKind.CharacterWise);
-                _vimBuffer.Process("]p");
-                Assert.Equal(" tree", _textView.GetLine(0).GetText());
-                Assert.Equal("  be dog", _textView.GetLine(1).GetText());
-                Assert.Equal("  cat", _textView.GetLine(2).GetText());
-                Assert.Equal(1, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// Caret should be at the start of the inserted text
-            /// </summary>
-            [Fact]
-            public void PutBefore_LineWiseStartOfBuffer()
-            {
-                Create("dog");
-                UnnamedRegister.UpdateValue("pig\n", OperationKind.LineWise);
-                _vimBuffer.Process("P");
-                Assert.Equal("pig", _textView.GetLine(0).GetText());
-                Assert.Equal("dog", _textView.GetLine(1).GetText());
-                Assert.Equal(0, _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// Caret should be positioned at the start of the indented text
-            /// </summary>
-            [Fact]
-            public void PutBefore_LineWiseStartOfBufferWithIndent()
-            {
-                Create("dog");
-                UnnamedRegister.UpdateValue("  pig\n", OperationKind.LineWise);
-                _vimBuffer.Process("P");
-                Assert.Equal("  pig", _textView.GetLine(0).GetText());
-                Assert.Equal("dog", _textView.GetLine(1).GetText());
-                Assert.Equal(2, _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// Character should be on the first line of the newly inserted lines
-            /// </summary>
-            [Fact]
-            public void PutBefore_LineWiseMiddleOfBuffer()
-            {
-                Create("dog", "cat");
-                _textView.MoveCaretToLine(1);
-                UnnamedRegister.UpdateValue("fish\ntree\n", OperationKind.LineWise);
-                _vimBuffer.Process("P");
-                Assert.Equal("dog", _textView.GetLine(0).GetText());
-                Assert.Equal("fish", _textView.GetLine(1).GetText());
-                Assert.Equal("tree", _textView.GetLine(2).GetText());
-                Assert.Equal("cat", _textView.GetLine(3).GetText());
-                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// Character should be on the first line after the inserted lines
-            /// </summary>
-            [Fact]
-            public void PutBefore_LineWise_WithCaretMove()
-            {
-                Create("dog", "cat");
-                UnnamedRegister.UpdateValue("pig\ntree\n", OperationKind.LineWise);
-                _vimBuffer.Process("gP");
-                Assert.Equal("pig", _textView.GetLine(0).GetText());
-                Assert.Equal("tree", _textView.GetLine(1).GetText());
-                Assert.Equal("dog", _textView.GetLine(2).GetText());
-                Assert.Equal("cat", _textView.GetLine(3).GetText());
-                Assert.Equal(_textView.GetLine(2).Start, _textView.GetCaretPoint());
-            }
-
-            [Fact]
-            public void PutBefore_CharacterWiseBlockStringOnExistingLines()
-            {
-                Create("dog", "cat", "bear", "tree");
-                _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateBlockValues("a", "b", "c");
-                _vimBuffer.Process("P");
-                Assert.Equal("adog", _textView.GetLine(0).GetText());
-                Assert.Equal("bcat", _textView.GetLine(1).GetText());
-                Assert.Equal("cbear", _textView.GetLine(2).GetText());
-                Assert.Equal(_textView.GetCaretPoint(), _textView.GetLine(0).Start);
-            }
-
-            /// <summary>
-            /// Putting a word which doesn't span multiple lines with indent is simply no 
-            /// different than a typically put after command
-            /// </summary>
-            [Fact]
-            public void PutBeforeWithIndent_Word()
-            {
-                Create("  dog", "  cat", "fish", "tree");
-                UnnamedRegister.UpdateValue("bear", OperationKind.CharacterWise);
-                _vimBuffer.Process("[p");
-                Assert.Equal("bear  dog", _textView.GetLine(0).GetText());
-                Assert.Equal(3, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// Putting a line should cause the indent to be matched in the second line irrespective
-            /// of what the original indent was
-            /// </summary>
-            [Fact]
-            public void PutBeforeWithIndent_SingleLine()
-            {
-                Create("  dog", "  cat", "fish", "tree");
-                UnnamedRegister.UpdateValue("bear" + Environment.NewLine, OperationKind.LineWise);
-                _vimBuffer.Process("[p");
-                Assert.Equal("  bear", _textView.GetLine(0).GetText());
-                Assert.Equal("  dog", _textView.GetLine(1).GetText());
-                Assert.Equal(_textView.GetPointInLine(0, 2), _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// Putting a line should cause the indent to be matched in all of the pasted lines 
-            /// irrespective of their original indent
-            /// </summary>
-            [Fact]
-            public void PutBeforeWithIndent_MultipleLines()
-            {
-                Create("  dog", "  cat");
-                UnnamedRegister.UpdateValue("    tree" + Environment.NewLine + "    bear" + Environment.NewLine, OperationKind.LineWise);
-                _vimBuffer.Process("[p");
-                Assert.Equal("  tree", _textView.GetLine(0).GetText());
-                Assert.Equal("  bear", _textView.GetLine(1).GetText());
-                Assert.Equal("  dog", _textView.GetLine(2).GetText());
-                Assert.Equal(_textView.GetPointInLine(0, 2), _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// Putting a character wise block of text which spans multiple lines is the trickiest
-            /// version.  It requires that the first line remain unchanged while the subsequent lines
-            /// are indeed indented to the proper level
-            /// </summary>
-            [Fact]
-            public void PutBeforeWithIndent_CharcterWiseOverSeveralLines()
-            {
-                Create("  dog", "  cat");
-                UnnamedRegister.UpdateValue("tree" + Environment.NewLine + "be", OperationKind.CharacterWise);
-                _vimBuffer.Process("[p");
-                Assert.Equal("tree", _textView.GetLine(0).GetText());
-                Assert.Equal("  be  dog", _textView.GetLine(1).GetText());
-                Assert.Equal("  cat", _textView.GetLine(2).GetText());
-                Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
             [Fact]
