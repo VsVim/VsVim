@@ -2296,6 +2296,37 @@ namespace Vim.UnitTest
                 Assert.Equal("  cat", _textView.GetLine(2).GetText());
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
+
+            /// <summary>
+            /// The :put command should normalize the line endings during a put operation
+            /// </summary>
+            [Fact]
+            public void NormalizeLineEndingLinewise()
+            {
+                Create("tree", "pet");
+                UnnamedRegister.UpdateValue("cat\ndog\n", OperationKind.LineWise);
+                _vimBuffer.Process("p");
+                Assert.Equal(
+                    new[] { "tree", "cat", "dog", "pet" },
+                    _textBuffer.GetLines());
+                Assert.Equal(Environment.NewLine, _textBuffer.GetLine(1).GetLineBreakText());
+            }
+
+            /// <summary>
+            /// The :put command should normalize the line endings during a put operation
+            /// </summary>
+            [Fact]
+            public void NormalizeLineEndingCharacterwise()
+            {
+                Create("tree", "pet");
+                UnnamedRegister.UpdateValue("cat\ndog", OperationKind.CharacterWise);
+                _vimBuffer.Process("p");
+                Assert.Equal(
+                    new[] { "tcat", "dogree", "pet" },
+                    _textBuffer.GetLines());
+                Assert.Equal(Environment.NewLine, _textBuffer.GetLine(0).GetLineBreakText());
+                Assert.Equal(Environment.NewLine, _textBuffer.GetLine(1).GetLineBreakText());
+            }
         }
 
         public sealed class PutBeforeTest : NormalModeIntegrationTest

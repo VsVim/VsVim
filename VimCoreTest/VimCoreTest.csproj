@@ -105,6 +105,7 @@
     <Compile Include="CommandProcessorLegacyTest.cs" />
     <Compile Include="CommandRunnerTest.cs" />
     <Compile Include="CommandUtilTest.cs" />
+    <Compile Include="EditUtilTest.cs" />
     <Compile Include="VimBufferTest.cs" />
     <Compile Include="SelectModeIntegrationTest.cs" />
     <Compile Include="SystemUtilTest.cs" />

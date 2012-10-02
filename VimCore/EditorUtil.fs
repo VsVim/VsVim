@@ -1373,6 +1373,22 @@ module EditUtil =
             else
                 value.Substring(0, value.Length - length)
 
+    /// Normalize the new line values in the string to the specified value
+    let NormalizeNewLines (text : string) (newLine : string) = 
+        let builder = System.Text.StringBuilder()
+        let rec inner index = 
+            if index >= text.Length then
+                builder.ToString()
+            else
+                let length = GetLineBreakLength text index
+                if 0 = length then
+                    builder.AppendChar text.[index]
+                    inner (index + 1)
+                else
+                    builder.AppendString newLine
+                    inner (index + length)
+        inner 0
+
 /// In some cases we need to break a complete string into a series of text representations
 /// and new lines.  It's easiest to view this as a sequence of text values with their 
 /// associated line breaks

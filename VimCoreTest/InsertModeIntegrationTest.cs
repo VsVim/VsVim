@@ -212,6 +212,24 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<C-R><Esc>");
                 Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
             }
+
+            /// <summary>
+            /// Make sure that the line endings are normalized on the paste operation
+            /// </summary>
+            [Fact]
+            public void NormalizeLineEndings()
+            {
+                Create("cat", "dog");
+                RegisterMap.GetRegister('c').UpdateValue("fish\ntree\n", OperationKind.LineWise);
+                _vimBuffer.ProcessNotation("<C-R>c");
+                Assert.Equal(
+                    new[] { "fish", "tree", "cat", "dog" },
+                    _textBuffer.GetLines());
+                for (int i = 0; i < 3; i++)
+                {
+                    Assert.Equal(Environment.NewLine, _textBuffer.GetLine(i).GetLineBreakText());
+                }
+            }
         }
 
         /// <summary>

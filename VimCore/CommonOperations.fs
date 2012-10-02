@@ -910,6 +910,13 @@ type internal CommonOperations
         match stringData with
         | StringData.Simple str -> 
 
+            // Before inserting normalize the new lines in the string to the newline at the 
+            // put position in the buffer.  This doesn't appear to be documented anywhere but
+            // can be verified experimentally
+            let str = 
+                let newLine = x.GetNewLineText point
+                EditUtil.NormalizeNewLines str newLine
+
             // Simple strings can go directly in at the position.  Need to adjust the text if 
             // we are inserting at the end of the buffer
             let text = 

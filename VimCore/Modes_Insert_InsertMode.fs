@@ -540,6 +540,12 @@ type internal InsertMode
                 _operations.Beep()
                 ProcessResult.Handled ModeSwitch.NoSwitch
             | Some text -> 
+
+                // Normalize the line endings here
+                let text = 
+                    let newLine = _operations.GetNewLineText x.CaretPoint
+                    EditUtil.NormalizeNewLines text newLine
+
                 let keyInputSet = KeyInputSet.OneKeyInput keyInput
                 let insertCommand = InsertCommand.InsertText text
                 x.RunInsertCommand insertCommand keyInputSet CommandFlags.None
