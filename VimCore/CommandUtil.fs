@@ -960,12 +960,9 @@ type internal CommandUtil
             ]
             |> Seq.map (fun (func, numberFormat) ->
                 match _localSettings.IsNumberFormatSupported numberFormat, func() with
-                | false, _ ->
-                    None
-                | true, None ->
-                    None
-                | true, Some tuple ->
-                    Some tuple)
+                | false, _ -> None
+                | true, None -> None
+                | true, Some tuple -> Some tuple)
             |> SeqUtil.filterToSome
             |> SeqUtil.tryHeadOnly
 

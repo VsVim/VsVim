@@ -89,6 +89,18 @@ namespace Vim.UnitTest
             {
                 Assert.Equal(0x1a, ParseNumber("0x1a"));
             }
+
+            [Fact]
+            public void HexWithLetterStart()
+            {
+                Assert.Equal(0xf0, ParseNumber("0xf0"));
+            }
+
+            [Fact]
+            public void HexWithAllLetters()
+            {
+                Assert.Equal(0xfa, ParseNumber("0xfa"));
+            }
         }
 
         public sealed class QuickFixTest : ParserTest

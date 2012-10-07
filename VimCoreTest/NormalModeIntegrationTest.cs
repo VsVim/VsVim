@@ -2955,17 +2955,17 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class MiscTest : NormalModeIntegrationTest
+        public sealed class AddTest : NormalModeIntegrationTest
         {
             /// <summary>
             /// Make sure we jump across the blanks to get to the word and that the caret is 
             /// properly positioned
             /// </summary>
             [Fact]
-            public void AddToWord_Decimal()
+            public void Decimal()
             {
                 Create(" 999");
-                _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('a'));
+                _vimBuffer.ProcessNotation("<C-a>");
                 Assert.Equal(" 1000", _textBuffer.GetLine(0).GetText());
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
@@ -2974,10 +2974,10 @@ namespace Vim.UnitTest
             /// Negative decimal number
             /// </summary>
             [Fact]
-            public void AddToWord_Decimal_Negative()
+            public void DecimalNegative()
             {
                 Create(" -10");
-                _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('a'));
+                _vimBuffer.ProcessNotation("<C-a>");
                 Assert.Equal(" -9", _textBuffer.GetLine(0).GetText());
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
@@ -2987,15 +2987,37 @@ namespace Vim.UnitTest
             /// in the correct location
             /// </summary>
             [Fact]
-            public void AddToWord_Hex_SecondLine()
+            public void HexSecondLine()
             {
                 Create("hello", "  0x42");
                 _textView.MoveCaretToLine(1);
-                _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('a'));
+                _vimBuffer.ProcessNotation("<C-a>");
                 Assert.Equal("  0x43", _textBuffer.GetLine(1).GetText());
                 Assert.Equal(_textView.GetLine(1).Start.Add(5), _textView.GetCaretPoint());
             }
 
+            [Fact]
+            public void HexAllLetters()
+            {
+                Create("0xff");
+                _vimBuffer.ProcessNotation("<C-a>");
+                Assert.Equal("0x100", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure that we can handle the 0x1a number for add 
+            /// </summary>
+            [Fact]
+            public void Issue982()
+            {
+                Create("0x1a");
+                _vimBuffer.ProcessNotation("<C-a>");
+                Assert.Equal("0x1b", _textBuffer.GetLine(0).GetText());
+            }
+        }
+
+        public sealed class MiscTest : NormalModeIntegrationTest
+        {
             /// <summary>
             /// The backspace key should cancel a replace char
             /// </summary>
