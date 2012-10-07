@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Vim.UnitTest
 {
-    public class ParserTest
+    public abstract class ParserTest
     {
         /// <summary>
         /// Assert that parsing the given line command produces the specific error
@@ -25,7 +25,7 @@ namespace Vim.UnitTest
             return parseResult.AsSucceeded().Item;
         }
 
-        public sealed class StringLiteral : ParserTest
+        public sealed class StringLiteralTest : ParserTest
         {
             public string ParseStringLiteral(string text)
             {
@@ -60,6 +60,34 @@ namespace Vim.UnitTest
             public void DoubleQuote()
             {
                 Assert.Equal(@"""", ParseStringLiteral(@"'""'"));
+            }
+        }
+
+        public sealed class NumberTest : ParserTest
+        {
+            private VariableValue ParseNumberValue(string text)
+            {
+                var parser = new Parser(text);
+                var parseResult = parser.ParseNumberConstant();
+                Assert.True(parseResult.IsSucceeded);
+                return parseResult.AsSucceeded().Item.AsConstantValue().Item;
+            }
+
+            private int ParseNumber(string text)
+            {
+                return ParseNumberValue(text).AsNumber().Item;
+            }
+
+            [Fact]
+            public void SimpleDecimal()
+            {
+                Assert.Equal(42, ParseNumber("42"));
+            }
+
+            [Fact]
+            public void SimpleHex()
+            {
+                Assert.Equal(0x1a, ParseNumber("0x1a"));
             }
         }
 

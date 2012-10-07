@@ -37,8 +37,8 @@ type internal TokenStream
 
     member x.PeekChar count = 
         let index = _index + count
-        if _index <= _text.Length then
-            _text.[_index] |> Some
+        if index < _text.Length then
+            _text.[index] |> Some
         else
             None
 
