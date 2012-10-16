@@ -890,6 +890,9 @@ type internal CommandUtil
 
     /// Get the number value at the caret.  This is used for the CTRL-A and CTRL-X
     /// command so it will look forward on the current line for the first word
+    ///
+    /// TODO: Need to integrate the parsing functions here with that of the tokenizer
+    /// which also parses out the same set of numbers
     member x.GetNumberValueAtCaret() : (NumberValue * SnapshotSpan) option= 
 
         // Calculate the forward span of the line
@@ -934,7 +937,7 @@ type internal CommandUtil
 
         // Get the point for a hex number
         let getHex () =
-            getNumber NumberValue.Hex "(-?)0x\d+" (fun text -> 
+            getNumber NumberValue.Hex "(-?)0x[a-f0-9]+" (fun text -> 
                 let isNegative, text = 
                     if text.[0] = '-' then
                         true, text.Substring(3)
