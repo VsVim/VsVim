@@ -32,7 +32,7 @@
     <MefComponent>|VimWpf|</MefComponent>
     <MefComponent>|VsVimShared|</MefComponent>
     <MefComponent>|VsVimDev10|</MefComponent>
-    <MefComponent>|VsVimDev11|</MefComponent>
     <MefComponent>EditorUtils.dll</MefComponent>
+    <MefComponent>VsVim.Dev11.dll</MefComponent>
   </Content>
 </Vsix>

@@ -24,8 +24,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VsVimShared", "VsVimShared\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VsVimDev10", "VsVimSpecific\VsVimDev10.csproj", "{0DE4170C-224D-47CF-BE00-B88AA14EC804}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VsVimDev11", "VsVimSpecific\VsVimDev11.csproj", "{60316861-7561-4B07-8A16-212E00A2856E}"
-EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = VsVim.vsmdi
@@ -119,18 +117,6 @@ Global
 		{0DE4170C-224D-47CF-BE00-B88AA14EC804}.Release|Mixed Platforms.Build.0 = Release|x86
 		{0DE4170C-224D-47CF-BE00-B88AA14EC804}.Release|x86.ActiveCfg = Release|x86
 		{0DE4170C-224D-47CF-BE00-B88AA14EC804}.Release|x86.Build.0 = Release|x86
-		{60316861-7561-4B07-8A16-212E00A2856E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{60316861-7561-4B07-8A16-212E00A2856E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{60316861-7561-4B07-8A16-212E00A2856E}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{60316861-7561-4B07-8A16-212E00A2856E}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{60316861-7561-4B07-8A16-212E00A2856E}.Debug|x86.ActiveCfg = Debug|x86
-		{60316861-7561-4B07-8A16-212E00A2856E}.Debug|x86.Build.0 = Debug|x86
-		{60316861-7561-4B07-8A16-212E00A2856E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{60316861-7561-4B07-8A16-212E00A2856E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{60316861-7561-4B07-8A16-212E00A2856E}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{60316861-7561-4B07-8A16-212E00A2856E}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{60316861-7561-4B07-8A16-212E00A2856E}.Release|x86.ActiveCfg = Release|x86
-		{60316861-7561-4B07-8A16-212E00A2856E}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

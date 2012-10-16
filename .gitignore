@@ -70,6 +70,7 @@ Microsoft.VisualStudio.UI.Undo.dll
 
 # Copied into a source directory for ease of build
 VsVim.Dev11.dll
+VsVim.Dev11.pdb
 
 # Profiling Output
 *.vsp
