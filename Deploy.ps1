@@ -36,6 +36,51 @@ function test-vsixcontents() {
     $dest = $shellApp.NameSpace($target)
     $items = $source.Items()
     $dest.Copyhere($items, 20)
+
+    $files = gci $target | %{ $_.Name }
+    if ($files.Count -ne 13) { 
+        write-error "Found $($files.Count) but expected 13"
+    }
+
+    # The set of important files that are easy to miss 
+    #   - FSharp.Core.dll: We bind to the 4.0 version but 2012 only installs
+    #     the 4.5 version that we can't bind to
+    #   - EditorUtils.dll: Not a part of the build but necessary.  Make sure 
+    #     that it's found        
+    $expected = 
+        "FSharp.Core.dll", 
+        "EditorUtils.dll",
+        "Vim.Core.dll", 
+        "Vim.UI.Wpf.dll",
+        "VsVim.Dev10.dll",
+        "VsVim.Dev11.dll",
+        "VsVim.dll",
+        "VsVim.Shared.dll"
+
+    foreach ($item in $expected) {
+        if (-not ($files -contains $item)) { 
+            write-error "Didn't found $item in the zip file ($target)"
+        }
+    }
+}
+
+# Run all of the unit tests
+function test-unittests() { 
+    $all = 
+        "VimCoreTest\bin\Release\Vim.Core.UnitTest.dll",
+        "VimWpfTest\bin\Release\Vim.UI.Wpf.UnitTest.dll",
+        "VsVimSharedTest\bin\Release\VsVim.Shared.UnitTest.dll"
+    $xunit = join-path $scriptPath "Tools\xunit.console.clr4.x86.exe"
+
+    write-host "Running Unit Tests"
+    foreach ($file in $all) { 
+        $name = split-path -leaf $file
+        write-host -NoNewLine ("`t{0}: " -f $name)
+        $output = & $xunit $file /silent
+        test-return
+        $last = $output[$output.Count - 1] 
+        write-host $last
+    }
 }
 
 function build-clean() {
@@ -68,9 +113,15 @@ if (-not $fast) {
     }
 }
 
+# Build all of the relevant projects.  Both the deployment binaries and the 
+# test infrastructure
+write-host "Building Projects"
+build-release VimCoreTest\VimCoreTest.csproj
+build-release VimWpfTest\VimWpfTest.csproj
+build-release VsVimSharedTest\VsVimSharedTest.csproj
+
 # Next step is to build the 2012 components.  We need to get the 2010 specific DLL
 # to deploy with the standard install
-write-host "Building Projects"
 build-release VsVimSpecific\VsVimDev11.csproj
 
 # Copy the 2012 specfic components into the location expected by the build system
@@ -79,6 +130,7 @@ copy VsVimSpecific\bin11\Release\VsVim.Dev11.dll VsVim
 # Now build the final output project
 build-release VsVim\VsVim.csproj
 
+write-host "Verifying the Vsix Contents"
 $vsixPath = "VsVim\bin\Release\VsVim.vsix"
 test-vsixcontents $vsixPath
-
+test-unittests
