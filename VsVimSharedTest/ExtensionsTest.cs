@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Xunit;
+using VsVim.UnitTest.Mock;
 
 namespace VsVim.UnitTest
 {
@@ -26,9 +27,7 @@ namespace VsVim.UnitTest
             [Fact]
             public void GetKeyBindings1()
             {
-                var com = new Mock<EnvDTE.Command>();
-                com.Setup(x => x.Bindings).Returns(new object[] { "::f" });
-                com.Setup(x => x.Name).Returns("name");
+                var com = MockObjectFactory.CreateCommand(0, "name", "::f");
                 var list = Extensions.GetCommandKeyBindings(com.Object).ToList();
                 Assert.Equal(1, list.Count);
                 Assert.Equal('f', list[0].KeyBinding.FirstKeyStroke.KeyInput.Char);
@@ -38,9 +37,7 @@ namespace VsVim.UnitTest
             [Fact]
             public void GetKeyBindings2()
             {
-                var com = new Mock<EnvDTE.Command>();
-                com.Setup(x => x.Bindings).Returns(new object[] { "foo::f", "bar::b" });
-                com.Setup(x => x.Name).Returns("name");
+                var com = MockObjectFactory.CreateCommand(0, "name", "foo::f", "bar::b");
                 var list = Extensions.GetCommandKeyBindings(com.Object).ToList();
                 Assert.Equal(2, list.Count);
                 Assert.Equal('f', list[0].KeyBinding.FirstKeyStroke.KeyInput.Char);
@@ -55,9 +52,7 @@ namespace VsVim.UnitTest
             [Fact]
             public void GetKeyBindings3()
             {
-                var com = new Mock<EnvDTE.Command>();
-                com.Setup(x => x.Bindings).Returns("::f");
-                com.Setup(x => x.Name).Returns("name");
+                var com = MockObjectFactory.CreateCommand(0, "name", "::f");
                 var list = Extensions.GetCommandKeyBindings(com.Object).ToList();
                 Assert.Equal(1, list.Count);
                 Assert.Equal('f', list[0].KeyBinding.FirstKeyStroke.KeyInput.Char);
@@ -70,9 +65,7 @@ namespace VsVim.UnitTest
             [Fact]
             public void GetKeyBindings4()
             {
-                var com = new Mock<EnvDTE.Command>();
-                com.Setup(x => x.Bindings).Returns(new object[] { "::notavalidkey" });
-                com.Setup(x => x.Name).Returns("name");
+                var com = MockObjectFactory.CreateCommand(0, "name", "::notavalidkey");
                 var e = Extensions.GetCommandKeyBindings(com.Object).ToList();
                 Assert.Equal(0, e.Count);
             }

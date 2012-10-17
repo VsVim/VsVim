@@ -23,16 +23,28 @@ namespace VsVim.UnitTest.Mock
             return mock.As<SVsServiceProvider>();
         }
 
+        public static Mock<EnvDTE.Command> CreateCommand(int id, string name, params string[] bindings)
+        {
+            object binding = bindings.Length == 1
+                ? (object)bindings[0]
+                : bindings;
+            var guid = Guid.NewGuid().ToString();
+            var mock = new Mock<EnvDTE.Command>(MockBehavior.Strict);
+            mock.Setup(x => x.Bindings).Returns(binding);
+            mock.Setup(x => x.Name).Returns(name);
+            mock.Setup(x => x.LocalizedName).Returns(name);
+            mock.Setup(x => x.Guid).Returns(guid);
+            mock.Setup(x => x.ID).Returns(id);
+            return mock;
+        }
+
         public static List<Mock<EnvDTE.Command>> CreateCommandList(params string[] args)
         {
             var list = new List<Mock<EnvDTE.Command>>();
+            var count = 0;
             foreach (var binding in args)
             {
-                var localBinding = binding;
-                var mock = new Mock<EnvDTE.Command>(MockBehavior.Strict);
-                mock.Setup(x => x.Bindings).Returns(localBinding);
-                mock.Setup(x => x.Name).Returns("example command");
-                mock.Setup(x => x.LocalizedName).Returns("example command");
+                var mock = CreateCommand(++count, "example command", binding);
                 list.Add(mock);
             }
 
