@@ -9,16 +9,16 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
     {
         private static readonly Dictionary<Key, KeyInput> WpfKeyToKeyInputMap;
         private static readonly Dictionary<VimKey, Key> VimKeyToWpfKeyMap;
+        private static readonly Dictionary<KeyInput, Key> KeyInputToWpfKeyMap;
 
         static AlternateKeyUtil()
         {
             VimKeyToWpfKeyMap = BuildVimKeyToWpfKeyMap();
+            KeyInputToWpfKeyMap = BuildKeyInputToWpfKeyMap(VimKeyToWpfKeyMap);
             WpfKeyToKeyInputMap = new Dictionary<Key, KeyInput>();
-
-            foreach (var pair in VimKeyToWpfKeyMap)
+            foreach (var pair in KeyInputToWpfKeyMap)
             {
-                var keyInput = KeyInputUtil.VimKeyToKeyInput(pair.Key);
-                WpfKeyToKeyInputMap[pair.Value] = keyInput;
+                WpfKeyToKeyInputMap[pair.Value] = pair.Key;
             }
         }
 
@@ -67,6 +67,21 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
             map[VimKey.Keypad7] = Key.NumPad7;
             map[VimKey.Keypad8] = Key.NumPad8;
             map[VimKey.Keypad9] = Key.NumPad9;
+
+            return map;
+        }
+
+        internal static Dictionary<KeyInput, Key> BuildKeyInputToWpfKeyMap(Dictionary<VimKey, Key> vimKeyToWpfKeyMap)
+        {
+            var map = new Dictionary<KeyInput, Key>();
+            foreach (var pair in vimKeyToWpfKeyMap)
+            {
+                var keyInput = KeyInputUtil.VimKeyToKeyInput(pair.Key);
+                map[keyInput] = pair.Value;
+            }
+
+            map[KeyInputUtil.CharToKeyInput(' ')] = Key.Space;
+            map[KeyInputUtil.CharToKeyInput('\t')] = Key.Tab;
 
             return map;
         }
