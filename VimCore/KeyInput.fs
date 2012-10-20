@@ -117,6 +117,7 @@ module KeyInputUtil =
         (VimKey.F11, None)
         (VimKey.F12, None)
         (VimKey.KeypadDecimal, None)
+        (VimKey.KeypadEnter, None)
         (VimKey.Keypad0, Some '0')
         (VimKey.Keypad1, Some '1')
         (VimKey.Keypad2, Some '2')
@@ -425,5 +426,6 @@ module KeyInputUtil =
         | VimKey.KeypadMinus -> apply '-'
         | VimKey.KeypadMultiply -> apply '*'
         | VimKey.KeypadPlus -> apply '+'
+        | VimKey.KeypadEnter -> ApplyModifiers EnterKey keyInput.KeyModifiers |> Some
         | _ -> None
 

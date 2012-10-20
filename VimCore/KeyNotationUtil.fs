@@ -54,7 +54,6 @@ module KeyNotationUtil =
             ("<Help>", KeyInputUtil.VimKeyToKeyInput VimKey.Help)
             ("<Insert>", KeyInputUtil.VimKeyToKeyInput VimKey.Insert)
             ("<Home>", KeyInputUtil.VimKeyToKeyInput VimKey.Home)
-            ("<kHome>", KeyInputUtil.VimKeyToKeyInput VimKey.Home)
             ("<End>", KeyInputUtil.VimKeyToKeyInput VimKey.End)
             ("<PageUp>", KeyInputUtil.VimKeyToKeyInput VimKey.PageUp)
             ("<PageDown>", KeyInputUtil.VimKeyToKeyInput VimKey.PageDown)
@@ -64,9 +63,10 @@ module KeyNotationUtil =
             ("<kPageDown>", KeyInputUtil.VimKeyToKeyInput VimKey.PageDown)
             ("<kMultiply>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadMultiply)
             ("<kPlus>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadPlus)
+            ("<kMinus>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadMinus)
             ("<kDivide>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadDivide)
             ("<kPoint>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadDecimal)
-            ("<kPlus>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadPlus)
+            ("<kEnter>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadEnter)
             ("<k0>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad0)
             ("<k1>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad1)
             ("<k2>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad2)
@@ -93,7 +93,6 @@ module KeyNotationUtil =
     /// <xCSI>		CSI when typed in the GUI		*<xCSI>*
     /// <Undo>		undo key
     /// <EOL>
-    /// <kEnter>	keypad Enter			*keypad-enter*
     let SpecialKeyMap = 
         ManualKeyList
         |> Seq.append FunctionKeys

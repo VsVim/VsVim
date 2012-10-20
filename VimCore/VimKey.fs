@@ -47,11 +47,12 @@ type VimKey =
     | KeypadMinus = 41
     | KeypadDivide = 42
     | KeypadMultiply = 43
-    | Nop = 44              // no-op.  Does nothing
-    | Null = 45             // (char)0
-    | LineFeed = 46
-    | Tab = 47
-    | RawCharacter = 49     // A simple character to be processed
+    | KeypadEnter = 44
+    | Nop = 45              // no-op.  Does nothing
+    | Null = 46             // (char)0
+    | LineFeed = 47
+    | Tab = 48
+    | RawCharacter = 50     // A simple character to be processed
 
 module VimKeyUtil =
 

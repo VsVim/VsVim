@@ -57,6 +57,7 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
             map[VimKey.KeypadMinus] = Key.Subtract;
             map[VimKey.KeypadDecimal] = Key.Decimal;
             map[VimKey.KeypadDivide] = Key.Divide;
+            map[VimKey.KeypadEnter] = Key.Separator;
             map[VimKey.Keypad0] = Key.NumPad0;
             map[VimKey.Keypad1] = Key.NumPad1;
             map[VimKey.Keypad2] = Key.NumPad2;

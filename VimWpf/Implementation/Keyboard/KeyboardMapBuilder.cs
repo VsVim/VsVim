@@ -265,6 +265,7 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
                 case VimKey.F12: virtualKeyCode = 0x7b; break;
                 case VimKey.KeypadMultiply: virtualKeyCode = 0x6A; break;
                 case VimKey.KeypadPlus: virtualKeyCode = 0x6B; break;
+                case VimKey.KeypadEnter: virtualKeyCode = 0x6C; break;
                 case VimKey.KeypadMinus: virtualKeyCode = 0x6D; break;
                 case VimKey.KeypadDecimal: virtualKeyCode = 0x6E; break;
                 case VimKey.KeypadDivide: virtualKeyCode = 0x6F; break;

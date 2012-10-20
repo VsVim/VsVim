@@ -1,7 +1,7 @@
-﻿using System.Windows.Input;
+﻿using System;
+using System.Windows.Input;
 using Vim.UI.Wpf.Implementation.Keyboard;
 using Xunit;
-using System;
 
 namespace Vim.UI.Wpf.UnitTest
 {
@@ -68,6 +68,29 @@ namespace Vim.UI.Wpf.UnitTest
                 AssertMap(Key.Delete, VimKey.Delete);
                 AssertMap(Key.Home, VimKey.Home);
                 AssertMap(Key.End, VimKey.End);
+            }
+
+            /// <summary>
+            /// Several keys have multiple names, make sure they both map
+            /// </summary>
+            [Fact]
+            public void DoubleMapping()
+            {
+                AssertMap(Key.PageUp, VimKey.PageUp);
+                AssertMap(Key.Prior, VimKey.PageUp);
+                AssertMap(Key.PageDown, VimKey.PageDown);
+                AssertMap(Key.Next, VimKey.PageDown);
+            }
+
+            [Fact]
+            public void KeypadSpecial()
+            {
+                AssertMap(Key.Add, VimKey.KeypadPlus);
+                AssertMap(Key.Subtract, VimKey.KeypadMinus);
+                AssertMap(Key.Multiply, VimKey.KeypadMultiply);
+                AssertMap(Key.Divide, VimKey.KeypadDivide);
+                AssertMap(Key.Separator, VimKey.KeypadEnter);
+                AssertMap(Key.Decimal, VimKey.KeypadDecimal);
             }
 
             /// <summary>

@@ -305,6 +305,46 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class GetNonKeypadEquivalentTest : KeyInputUtilTest
+        {
+            [Fact]
+            public void Numbers()
+            {
+                foreach (var i in Enumerable.Range(0, 10))
+                {
+                    var keypadName = "Keypad" + i;
+                    var keypad = (VimKey)Enum.Parse(typeof(VimKey), keypadName);
+                    var equivalent = KeyInputUtil.GetNonKeypadEquivalent(KeyInputUtil.VimKeyToKeyInput(keypad));
+                    Assert.Equal(i.ToString(), equivalent.Value.Char.ToString());
+                }
+            }
+
+            [Fact]
+            public void Divide()
+            {
+                var equivalent = KeyInputUtil.GetNonKeypadEquivalent(KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadDivide));
+                Assert.Equal('/', equivalent.Value.Char);
+            }
+
+            /// <summary>
+            /// TODO: Need to verify this is the correct behavior here.  Need a real keyboard though
+            /// </summary>
+            [Fact]
+            public void DontPreserveModifiers()
+            {
+                var keyInput = KeyInputUtil.ApplyModifiersToVimKey(VimKey.KeypadDivide, KeyModifiers.Control);
+                var equivalent = KeyInputUtil.GetNonKeypadEquivalent(keyInput);
+                Assert.Equal(KeyInputUtil.CharToKeyInput('/'), equivalent.Value);
+            }
+
+            [Fact]
+            public void Enter()
+            {
+                var keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadEnter);
+                Assert.Equal(KeyInputUtil.EnterKey, KeyInputUtil.GetNonKeypadEquivalent(keyInput).Value);
+            }
+        }
+
         public sealed class MiscTest : KeyInputUtilTest
         {
             [Fact]
@@ -527,36 +567,6 @@ namespace Vim.UnitTest
                 var ki = KeyInputUtil.CharToKeyInput('[');
                 var ki2 = KeyInputUtil.ChangeKeyModifiersDangerous(ki, KeyModifiers.Shift);
                 Assert.Equal(ki.Char, ki2.Char);
-            }
-
-            [Fact]
-            public void GetNonKeypadEquivalent_Numbers()
-            {
-                foreach (var i in Enumerable.Range(0, 10))
-                {
-                    var keypadName = "Keypad" + i;
-                    var keypad = (VimKey)Enum.Parse(typeof(VimKey), keypadName);
-                    var equivalent = KeyInputUtil.GetNonKeypadEquivalent(KeyInputUtil.VimKeyToKeyInput(keypad));
-                    Assert.Equal(i.ToString(), equivalent.Value.Char.ToString());
-                }
-            }
-
-            [Fact]
-            public void GetNonKeypadEquivalent_Divide()
-            {
-                var equivalent = KeyInputUtil.GetNonKeypadEquivalent(KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadDivide));
-                Assert.Equal('/', equivalent.Value.Char);
-            }
-
-            /// <summary>
-            /// TODO: Need to verify this is the correct behavior here.  Need a real keyboard though
-            /// </summary>
-            [Fact]
-            public void GetNonKeypadEquivalent_DontPreserveModifiers()
-            {
-                var keyInput = KeyInputUtil.ApplyModifiersToVimKey(VimKey.KeypadDivide, KeyModifiers.Control);
-                var equivalent = KeyInputUtil.GetNonKeypadEquivalent(keyInput);
-                Assert.Equal(KeyInputUtil.CharToKeyInput('/'), equivalent.Value);
             }
 
             /// <summary>

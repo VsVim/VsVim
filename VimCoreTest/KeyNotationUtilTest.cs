@@ -187,6 +187,22 @@ namespace Vim.UnitTest
                 var keyInput = KeyNotationUtil.StringToKeyInput("<CS-A>");
                 Assert.Equal(KeyInputUtil.CharWithControlToKeyInput('a'), keyInput);
             }
+
+            [Fact]
+            public void Keypad()
+            {
+                Action<VimKey, string> func = (vimKey, name) =>
+                    {
+                        var keyInput = KeyNotationUtil.StringToKeyInput(name);
+                        Assert.Equal(vimKey, keyInput.Key);
+                    };
+                func(VimKey.KeypadEnter, "<kEnter>");
+                func(VimKey.KeypadDecimal, "<kPoint>");
+                func(VimKey.KeypadDivide, "<kDivide>");
+                func(VimKey.KeypadMinus, "<kMinus>");
+                func(VimKey.KeypadMultiply, "<kMultiply>");
+                func(VimKey.KeypadPlus, "<kPlus>");
+            }
         }
 
         public sealed class Many : KeyNotationUtilTest
@@ -423,6 +439,24 @@ namespace Vim.UnitTest
                 func(VimKey.Enter, "<CR>");
                 func(VimKey.Escape, "<Esc>");
                 func(VimKey.Delete, "<Del>");
+            }
+
+            [Fact]
+            public void KeypadKeys()
+            {
+                Action<VimKey, string> func =
+                    (vimKey, name) =>
+                    {
+                        var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
+                        Assert.Equal(name, KeyNotationUtil.GetDisplayName(keyInput));
+                    };
+
+                func(VimKey.KeypadEnter, "<kEnter>");
+                func(VimKey.KeypadDecimal, "<kPoint>");
+                func(VimKey.KeypadPlus, "<kPlus>");
+                func(VimKey.KeypadMultiply, "<kMultiply>");
+                func(VimKey.KeypadMinus, "<kMinus>");
+                func(VimKey.KeypadDivide, "<kDivide>");
             }
 
             [Fact]
