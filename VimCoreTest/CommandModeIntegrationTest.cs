@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -365,6 +366,80 @@ namespace Vim.UnitTest
                 _vimBuffer.GlobalSettings.IgnoreCase = true;
                 RunCommandRaw(":%s/vols.first()/target/g");
                 Assert.Equal("target", _textBuffer.GetLine(0).GetText());
+            }
+        }
+
+        public sealed class YankTest : CommandModeIntegrationTest
+        {
+            private void AssertLines(params string[] lines)
+            {
+                var text = lines.Select(x => x + Environment.NewLine).Aggregate((x, y) => x + y);
+                Assert.Equal(text, UnnamedRegister.StringValue);
+            }
+
+            [Fact]
+            public void Multiple()
+            {
+                Create("cat", "dog", "tree");
+                RunCommand("y2");
+                AssertLines("cat", "dog");
+            }
+
+            [Fact]
+            public void MultipleThree()
+            {
+                Create("cat", "dog", "tree", "fish");
+                RunCommand("y3");
+                AssertLines("cat", "dog", "tree");
+            }
+
+            [Fact]
+            public void Single()
+            {
+                Create("cat", "dog", "tree");
+                RunCommand("y");
+                AssertLines("cat");
+            }
+
+            /// <summary>
+            /// The first count is the range 
+            /// </summary>
+            [Fact]
+            public void RangeSingleLine()
+            {
+                Create("cat", "dog", "tree");
+                RunCommand("2y");
+                AssertLines("dog");
+            }
+
+            [Fact]
+            public void RangeMultiLine()
+            {
+                Create("cat", "dog", "tree", "fish");
+                RunCommand("2,3y");
+                AssertLines("dog", "tree");
+            }
+
+            /// <summary>
+            /// Yank a count from the specified line range
+            /// </summary>
+            [Fact]
+            public void RangeSingleLineWithCount()
+            {
+                Create("cat", "dog", "tree", "fish");
+                RunCommand("2y2");
+                AssertLines("dog", "tree");
+            }
+
+            /// <summary>
+            /// Yank a count from the end of the specified line range
+            /// </summary>
+            [Fact]
+            public void RangeMultiLineWithCount()
+            {
+                Create("cat", "dog", "tree", "fish", "rock");
+                RunCommand("2,3y2");
+                AssertLines("tree", "fish");
             }
         }
 

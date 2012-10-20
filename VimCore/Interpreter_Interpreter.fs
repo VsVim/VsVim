@@ -1282,8 +1282,16 @@ type Interpreter
 
     /// Yank the specified line range into the register.  This is done in a 
     /// linewise fashion
-    member x.RunYank lineRange register =
+    member x.RunYank register lineRange count =
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
+
+            // If the user specified a count then that count is applied to the end
+            // of the specified line range
+            let lineRange = 
+                match count with
+                | None -> lineRange
+                | Some count -> SnapshotLineRangeUtil.CreateForLineAndMaxCount lineRange.LastLine count
+
             let stringData = StringData.OfSpan lineRange.ExtentIncludingLineBreak
             let value = RegisterValue.String (stringData, OperationKind.LineWise)
             _registerMap.SetRegisterValue register RegisterOperation.Yank value
@@ -1357,7 +1365,7 @@ type Interpreter
         | LineCommand.VisualStudioCommand (command, argument) -> x.RunVisualStudioCommand command argument
         | LineCommand.Write (lineRange, hasBang, fileOptionList, filePath) -> x.RunWrite lineRange hasBang fileOptionList filePath
         | LineCommand.WriteAll hasBang -> x.RunWriteAll hasBang
-        | LineCommand.Yank (lineRange, registerName, count) -> x.RunYank lineRange (getRegister registerName)
+        | LineCommand.Yank (lineRange, registerName, count) -> x.RunYank (getRegister registerName) lineRange count
 
     member x.RunWithLineRange lineRangeSpecifier (func : SnapshotLineRange -> RunResult) = 
         x.RunWithLineRangeOrDefault lineRangeSpecifier DefaultLineRange.None func
