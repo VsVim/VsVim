@@ -522,6 +522,120 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class PragmaTest : NormalModeIntegrationTest
+        {
+            private void AssertLine(int lineNumber)
+            {
+                Assert.Equal(_textBuffer.GetLine(lineNumber).Start, _textView.GetCaretPoint());
+            }
+
+            private void AssertPattern(params int[] lineNumbers)
+            {
+                foreach (var lineNumber in lineNumbers)
+                {
+                    _vimBuffer.Process("%");
+                    AssertLine(lineNumber);
+                }
+            }
+
+            /// <summary>
+            /// The space after the # character doesn't prevent it from being recognized
+            /// as a preprocessor symbol
+            /// </summary>
+            [Fact(Skip = "Must Fix")]
+            public void SpaceAfterPoundBeforeIf()
+            {
+                Create("# if", "#else", "#endif");
+                AssertPattern(1, 2, 0);
+            }
+
+            [Fact(Skip = "Must Fix")]
+            public void SpaceAfterAll()
+            {
+                Create("# if", "# else", "# endif");
+                AssertPattern(1, 2, 0);
+            }
+
+            /// <summary>
+            /// The space before the # doesn't matter either
+            /// </summary>
+            [Fact(Skip = "Must Fix")]
+            public void SpaceBeforeAll()
+            {
+                Create("  #if", "  #else", "  #endif");
+                _vimBuffer.Process("%");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 2), _textView.GetCaretPoint());
+                _vimBuffer.Process("%");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 2), _textView.GetCaretPoint());
+                _vimBuffer.Process("%");
+                Assert.Equal(_textBuffer.GetPointInLine(0, 2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Make sure that we can jump around in a nested pragma statement
+            /// </summary>
+            [Fact(Skip = "Must Fix")]
+            public void NestedBlock()
+            {
+                Create("#if 0", "#if 1", "#else // !1", "#endif // !1", "#endif // 0");
+                _textView.MoveCaretToLine(1);
+                AssertPattern(2, 3, 1);
+            }
+
+            /// <summary>
+            /// Commented out code doesn't factor into the equation here.  The preprocessor directives
+            /// still count
+            /// </summary>
+            [Fact(Skip = "Must Fix")]
+            public void CommentsDontMatter()
+            {
+                Create("# if", "/*", "#else", "*/", "#endif");
+                AssertPattern(2, 4, 0);
+            }
+
+            /// <summary>
+            /// If there is no matchnig #endif then we get stuck on the last #elif directive
+            /// </summary>
+            [Fact(Skip = "Must Fix")]
+            public void NoEndIf()
+            {
+                Create("#if", "#elif", "#if");
+                for (int i = 0; i < 10; i++)
+                {
+                    _vimBuffer.Process("%");
+                    Assert.Equal(1, _textView.GetCaretLine().LineNumber);
+                }
+            }
+
+            /// <summary>
+            /// Make sure that we handle the nested case properly 
+            /// </summary>
+            [Fact(Skip = "Must Fix")]
+            public void Issue900()
+            {
+                Create("#if", "#if", "#elif", "#else", "#endif");
+                _textView.MoveCaretToLine(1);
+                AssertPattern(2, 3, 1);
+            }
+
+            /// <summary>
+            /// Handle white space between the # and the start of the if statement
+            /// </summary>
+            [Fact(Skip = "Must Fix")]
+            public void Issue901()
+            {
+                Create("#    if", "#      else", "#     endif");
+                AssertPattern(1, 2, 0);
+            }
+
+            [Fact(Skip = "Must Fix")]
+            public void Issue987()
+            {
+                Create("#if 0", "#if 1", "#else // !1", "#endif // !1", "#endif // 0");
+                AssertPattern(4, 0);
+            }
+        }
+
         public sealed class ParagraphMotionTest : NormalModeIntegrationTest
         {
             [Fact]
