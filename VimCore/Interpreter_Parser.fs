@@ -56,7 +56,7 @@ type Parser
     ) = 
 
     let _parserBuilder = ParserBuilder()
-    let _tokenizer = Tokenizer(_text)
+    let _tokenizer = Tokenizer(_text, TokenizerFlags.None)
 
     /// The set of supported line commands paired with their abbreviation
     static let s_LineCommandNamePair = [
@@ -196,8 +196,7 @@ type Parser
     /// of the line is reached.  None is return if the current token when
     /// called doesn't match the predicate
     member x.ParseWhileEx flags predicate =
-        _tokenizer.ResetAtIndex flags
-
+        use reset = _tokenizer.SetTokenizerFlagsScoped flags
         let builder = System.Text.StringBuilder()
         let rec inner () =
             let token = _tokenizer.CurrentToken
@@ -205,7 +204,7 @@ type Parser
                 ()
             elif predicate token then
                 builder.AppendString token.TokenText
-                _tokenizer.MoveNextTokenEx flags
+                _tokenizer.MoveNextToken()
                 inner ()
             else
                 ()
@@ -216,7 +215,7 @@ type Parser
         else
             builder.ToString() |> Some
 
-    member x.ParseWhile predicate = x.ParseWhileEx NextTokenFlags.None predicate
+    member x.ParseWhile predicate = x.ParseWhileEx TokenizerFlags.None predicate
 
     member x.ParseNumber() =
         match _tokenizer.CurrentTokenKind with
@@ -233,7 +232,7 @@ type Parser
     /// Parse out a key notation argument.  Different than a word because it can accept items
     /// which are not letters such as numbers, <, >, etc ...
     member x.ParseKeyNotation() = 
-        x.ParseWhileEx NextTokenFlags.AllowDoubleQuote (fun token -> 
+        x.ParseWhileEx TokenizerFlags.AllowDoubleQuote (fun token -> 
             match token.TokenKind with 
             | TokenKind.Blank -> false
             | _ -> true)
@@ -277,7 +276,7 @@ type Parser
         | Some leftKeyNotation -> 
             x.SkipBlanks()
 
-            let rightKeyNotation = x.ParseWhileEx NextTokenFlags.AllowDoubleQuote (fun _ -> true)
+            let rightKeyNotation = x.ParseWhileEx TokenizerFlags.AllowDoubleQuote (fun _ -> true)
             let rightKeyNotation = OptionUtil.getOrDefault "" rightKeyNotation
             if StringUtil.isBlanks rightKeyNotation then
                 LineCommand.DisplayKeyMap (keyRemapModes, Some leftKeyNotation) |> ParseResult.Succeeded
@@ -329,7 +328,7 @@ type Parser
     member x.ParseCommandOption () = 
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Character '+' ->
-            let mark = _tokenizer.Index
+            let mark = _tokenizer.Mark
 
             _tokenizer.MoveNextToken()
             match _tokenizer.CurrentTokenKind with
@@ -343,7 +342,7 @@ type Parser
             | TokenKind.Character c ->
                 match x.ParseSingleCommand() with
                 | ParseResult.Failed _ -> 
-                    _tokenizer.MoveToIndex mark
+                    _tokenizer.MoveToMark mark
                     None
                 | ParseResult.Succeeded lineCommand ->
                     CommandOption.ExecuteLineCommand lineCommand |> Some
@@ -364,11 +363,11 @@ type Parser
     member x.ParseMapArguments() = 
 
         let rec inner withResult = 
-            let mark = _tokenizer.Index
+            let mark = _tokenizer.Mark
 
             // Finish without changinging anything.
             let finish() =
-                _tokenizer.MoveToIndex mark
+                _tokenizer.MoveToMark mark
                 withResult []
 
             // The argument is mostly parsed out.  Need the closing '>' and the jump to
@@ -567,9 +566,8 @@ type Parser
 
         // Need to reset to account for the case where the pattern begins with a 
         // double quote
-        _tokenizer.ResetAtIndex NextTokenFlags.AllowDoubleQuote
-
-        let moveNextChar () = _tokenizer.MoveNextCharEx NextTokenFlags.AllowDoubleQuote
+        use reset = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
+        let moveNextChar () = _tokenizer.MoveNextChar()
         let builder = System.Text.StringBuilder()
         let rec inner () = 
             match _tokenizer.CurrentChar with
@@ -833,9 +831,11 @@ type Parser
     /// Parse out a string constant from the token stream.  Loads of special characters are
     /// possible here.  A complete list is available at :help expr-string
     member x.ParseStringConstant() = 
-        _tokenizer.MoveNextTokenEx NextTokenFlags.AllowDoubleQuote
+        use reset = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
+        _tokenizer.MoveNextToken()
+
         let builder = System.Text.StringBuilder()
-        let moveNextChar () = _tokenizer.MoveNextCharEx NextTokenFlags.AllowDoubleQuote
+        let moveNextChar () = _tokenizer.MoveNextChar()
         let rec inner afterEscape = 
             match _tokenizer.CurrentChar with
             | None -> ParseResult.Failed Resources.Parser_MissingQuote
@@ -869,9 +869,11 @@ type Parser
     ///
     /// help literal-string
     member x.ParseStringLiteral() = 
-        _tokenizer.MoveNextTokenEx NextTokenFlags.AllowDoubleQuote
+        use reset = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
+        _tokenizer.MoveNextToken()
+
         let builder = System.Text.StringBuilder()
-        let moveNextChar () = _tokenizer.MoveNextCharEx NextTokenFlags.AllowDoubleQuote
+        let moveNextChar () = _tokenizer.MoveNextChar()
         let rec inner () = 
             match _tokenizer.CurrentChar with
             | None -> ParseResult.Failed Resources.Parser_MissingQuote
@@ -1422,7 +1424,7 @@ type Parser
     member x.ParseSingleValue() =
         // Re-examine the current token based on the knowledge that double quotes are
         // legal in this context as a real token
-        _tokenizer.ResetAtIndex NextTokenFlags.AllowDoubleQuote
+        use reset = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Character '\"' ->
             x.ParseStringConstant()

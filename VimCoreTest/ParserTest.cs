@@ -143,7 +143,7 @@ namespace Vim.UnitTest
             public string ParseStringConstant(string text)
             {
                 var parser = new Parser(text);
-                parser.Tokenizer.MoveToIndexEx(parser.Tokenizer.Index, NextTokenFlags.AllowDoubleQuote);
+                parser.Tokenizer.TokenizerFlags = TokenizerFlags.AllowDoubleQuote;
                 var parseResult = parser.ParseStringConstant();
                 Assert.True(parseResult.IsSucceeded);
                 return parseResult.AsSucceeded().Item.AsString().Item;

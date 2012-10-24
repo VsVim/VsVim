@@ -3,15 +3,19 @@
 namespace Vim.Interpreter
 open Vim
 open StringBuilderExtensions
+open System
 open System.Diagnostics
 
-type NextTokenFlags = 
+type TokenizerFlags =
     | None = 0
 
     // In almost all cases a double quote is a comment and will cause the token stream to
     // terminate.  There are a few exceptions like string constants but those are all 
     // contextual and driven by the parser
     | AllowDoubleQuote = 0x1
+
+    /// Skip blank tokens 
+    | SkipBlanks = 0x2
 
 type internal TokenStream
     (
@@ -64,7 +68,7 @@ type internal TokenStream
             elif CharUtil.IsBlank c then
                 x.GetBlanks()
             elif c = '\"' then
-                if Util.IsFlagSet flags NextTokenFlags.AllowDoubleQuote then
+                if Util.IsFlagSet flags TokenizerFlags.AllowDoubleQuote then
                     x.IncrementIndex()
                     TokenKind.Character c
                 else
@@ -155,22 +159,29 @@ type internal TokenStream
 
         TokenKind.Blank
 
-
 [<Sealed>]
 [<Class>]
 [<DebuggerDisplay("{ToString(),nq}")>]
 type internal Tokenizer
     (
-        _text : string
+        _text : string,
+        _tokenizerFlags : TokenizerFlags
     ) as this =
 
     let _tokenStream = TokenStream(_text)
+    let mutable _tokenizerFlags = _tokenizerFlags
 
     /// The current Token the tokenizer is looking at
     let mutable _currentToken = Token(_text, 0, 0, TokenKind.EndOfLine)
 
     do
-        this.MoveToIndexEx 0 NextTokenFlags.None
+        this.MoveToIndex 0
+
+    member x.TokenizerFlags 
+        with get () = _tokenizerFlags
+        and set value = 
+            _tokenizerFlags <- value
+            x.MoveToIndex _currentToken.StartIndex
 
     member x.CurrentToken = _currentToken
 
@@ -184,9 +195,9 @@ type internal Tokenizer
 
     member x.IsAtEndOfLine = x.CurrentTokenKind = TokenKind.EndOfLine
 
-    member x.Index = _currentToken.StartIndex
+    member x.Mark = _currentToken.StartIndex
 
-    member x.MoveToIndexEx startIndex flags = 
+    member x.MoveToIndex startIndex = 
         if startIndex >= _tokenStream.Length then
 
             // Make the current token the end of the line if it's not already so since
@@ -199,7 +210,7 @@ type internal Tokenizer
                     TokenKind.EndOfLine)
         else
             _tokenStream.Index <- startIndex
-            let tokenKind = _tokenStream.GetCurrentTokenKind flags
+            let tokenKind = _tokenStream.GetCurrentTokenKind _tokenizerFlags
             let length = _tokenStream.Index - startIndex
             _currentToken <- Token(
                 _text,
@@ -207,18 +218,37 @@ type internal Tokenizer
                 length,
                 tokenKind)
 
-    member x.MoveToIndex startIndex = x.MoveToIndexEx startIndex NextTokenFlags.None
+    member x.MoveToMark mark = x.MoveToIndex mark
 
-    member x.MoveNextTokenEx flags = 
+    member x.MoveNextToken() = 
         let index = _currentToken.StartIndex + _currentToken.Length
-        x.MoveToIndexEx index flags
+        x.MoveToIndex index
 
-    member x.MoveNextToken() = x.MoveNextTokenEx NextTokenFlags.None
+        if Util.IsFlagSet TokenizerFlags.SkipBlanks _tokenizerFlags && _currentToken.TokenKind = TokenKind.Blank then
+            x.MoveNextToken()
 
-    member x.MoveNextCharEx flags = x.MoveToIndexEx (_currentToken.StartIndex + 1) flags
+    member x.MoveNextChar() = 
+        let index = _currentToken.StartIndex + 1
+        x.MoveToIndex index
 
-    member x.MoveNextChar() = x.MoveNextCharEx NextTokenFlags.None
+    member x.SetTokenizerFlagsScoped tokenizerFlags = 
+        let reset = new ResetTokenizerFlags(x, _tokenizerFlags) 
+        x.TokenizerFlags <- tokenizerFlags
+        reset
 
-    member x.ResetAtIndex flags = x.MoveToIndexEx x.Index flags
+and [<Sealed>] ResetTokenizerFlags
+    (
+        _tokenizer : Tokenizer,
+        _tokenizerFlags : TokenizerFlags
+    ) = 
+
+    member x.TokenizerFlags = _tokenizerFlags
+
+    /// Cancel the reset 
+    member x.Reset() =
+        _tokenizer.TokenizerFlags <- _tokenizerFlags
+
+    interface IDisposable with
+        member x.Dispose() = x.Reset()
 
 

@@ -1,8 +1,8 @@
 ﻿#light
-
 namespace Vim.Interpreter
+open System
 
-type NextTokenFlags = 
+type internal TokenizerFlags = 
     | None = 0
 
     /// In almost all cases a double quote is a comment and will cause the token stream to
@@ -10,14 +10,32 @@ type NextTokenFlags =
     /// contextual and driven by the parser
     | AllowDoubleQuote = 0x1
 
+    /// Skip blank tokens 
+    | SkipBlanks = 0x2
+
+[<Sealed>]
+[<Class>]
+type internal ResetTokenizerFlags = 
+
+    /// The flags that will be set on reset
+    member TokenizerFlags : TokenizerFlags
+
+    /// Reset now 
+    member Reset : unit -> unit
+
+    interface IDisposable
+
 [<Sealed>]
 [<Class>]
 type internal Tokenizer = 
 
-    new: text : string -> Tokenizer
+    new: text : string * tokenizerFlags : TokenizerFlags -> Tokenizer
 
-    /// Current index into the token stream
-    member Index : int
+    /// Current mark into the token stream
+    member Mark : int
+
+    /// The flags the tokenizer is parsing under
+    member TokenizerFlags : TokenizerFlags with get, set 
 
     /// Is it at the end of the stream
     member IsAtEndOfLine : bool
@@ -36,24 +54,15 @@ type internal Tokenizer =
     /// comment
     member MoveNextToken : unit -> unit
 
-    /// Move to the next token in the stream.
-    member MoveNextTokenEx : flags : NextTokenFlags -> unit
-
     /// Move to the next character in the stream and reset the current token.  If the 
     /// current token is a word then this would move past the first character in the
     /// word
     member MoveNextChar : unit -> unit
 
-    /// Move to the next token with specified flags
-    member MoveNextCharEx : flags : NextTokenFlags -> unit
+    /// Rewind the token stream to the specified mark
+    member MoveToMark : mark : int -> unit
 
-    /// Rewind the token stream to the specified index
-    member MoveToIndex : index : int -> unit
-
-    /// Rewind the token stream to the specified index and use the specified flags
-    /// to examine the current token
-    member MoveToIndexEx : index : int -> flags : NextTokenFlags -> unit
-
-    /// Reset the tokenizer at the current index with the specified flags
-    member ResetAtIndex : flags : NextTokenFlags -> unit
+    /// Change the flags on the tokenizer and return a ResetTokenizerFlags instance
+    /// that will reset the flags when done 
+    member SetTokenizerFlagsScoped : tokenizerFlags : TokenizerFlags -> ResetTokenizerFlags
 
