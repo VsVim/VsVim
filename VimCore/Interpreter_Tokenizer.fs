@@ -176,12 +176,14 @@ type internal Tokenizer
 
     do
         this.MoveToIndex 0
+        this.MaybeSkipBlank()
 
     member x.TokenizerFlags 
         with get () = _tokenizerFlags
         and set value = 
             _tokenizerFlags <- value
             x.MoveToIndex _currentToken.StartIndex
+            x.MaybeSkipBlank()
 
     member x.CurrentToken = _currentToken
 
@@ -196,6 +198,10 @@ type internal Tokenizer
     member x.IsAtEndOfLine = x.CurrentTokenKind = TokenKind.EndOfLine
 
     member x.Mark = _currentToken.StartIndex
+
+    member x.MaybeSkipBlank() =
+        if Util.IsFlagSet TokenizerFlags.SkipBlanks _tokenizerFlags && _currentToken.TokenKind = TokenKind.Blank then
+            x.MoveNextToken()
 
     member x.MoveToIndex startIndex = 
         if startIndex >= _tokenStream.Length then
@@ -223,9 +229,7 @@ type internal Tokenizer
     member x.MoveNextToken() = 
         let index = _currentToken.StartIndex + _currentToken.Length
         x.MoveToIndex index
-
-        if Util.IsFlagSet TokenizerFlags.SkipBlanks _tokenizerFlags && _currentToken.TokenKind = TokenKind.Blank then
-            x.MoveNextToken()
+        x.MaybeSkipBlank()
 
     member x.MoveNextChar() = 
         let index = _currentToken.StartIndex + 1

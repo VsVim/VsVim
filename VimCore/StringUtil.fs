@@ -77,6 +77,30 @@ module internal StringUtil =
     [<CompiledName("IsNullOrEmpty")>]
     let isNullOrEmpty str = System.String.IsNullOrEmpty(str)
 
+    [<CompiledName("IndexOfChar")>]
+    let indexOfChar (c : char) (str : string) = 
+        let result = str.IndexOf(c)
+        if result < 0 then None
+        else Some result
+
+    [<CompiledName("IndexOfCharAt")>]
+    let indexOfCharAt (c : char) (index : int) (str : string) = 
+        let result = str.IndexOf(c, index)
+        if result < 0 then None
+        else Some result
+
+    [<CompiledName("IndexOfString")>]
+    let indexOfString (toFind : string) (str : string) = 
+        let result = str.IndexOf(toFind)
+        if result < 0 then None
+        else Some result
+
+    [<CompiledName("IndexOfStringAt")>]
+    let indexOfStringAt (toFind : string) (index : int) (str : string) = 
+        let result = str.IndexOf(toFind, index)
+        if result < 0 then None
+        else Some result
+
     [<CompiledName("length")>]
     let length (str:string) = 
         if str = null then 0

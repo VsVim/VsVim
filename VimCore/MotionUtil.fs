@@ -5,8 +5,218 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
+open System.Collections.Generic
 open Vim.Modes
 open Vim.StringBuilderExtensions
+open Vim.Interpreter
+
+[<RequireQualifiedAccess>]
+type ConditionalKind = 
+    | If
+    | Elif
+    | Else
+    | EndIf
+
+type Conditional = { 
+    Kind : ConditionalKind;
+    Span : Span
+}
+
+type ConditionalBlock = {
+    Conditionals : List<Conditional>
+    IsComplete : bool
+}
+
+[<RequireQualifiedAccess>]
+type MatchingTokenKind =
+
+    /// A #if, #else, etc ... conditional value
+    | Conditional
+
+    /// A C style block comment
+    | Comment
+
+    // Parens
+    | Parens
+
+    | Brackets
+
+    | Braces
+
+type MatchingTokenUtil() = 
+
+    ///Find the conditional, if any, that starts on this line
+    member x.ParseConditional lineText =
+        let tokenizer = Tokenizer(lineText, TokenizerFlags.SkipBlanks)
+        match tokenizer.CurrentChar with
+        | Some '#' ->
+            let start = tokenizer.CurrentToken.StartIndex
+            tokenizer.MoveNextToken()
+
+            // Process the token kind and the token to determine the span of the 
+            // conditional on this line 
+            let func kind (token : Token) = 
+                let endPosition = token.StartIndex + token.Length
+                let span = Span.FromBounds(start, endPosition)
+                { Kind = kind; Span = span } |> Some
+
+            match tokenizer.CurrentToken.TokenText with
+            | "if" -> func ConditionalKind.If tokenizer.CurrentToken
+            | "elif" -> func ConditionalKind.Elif tokenizer.CurrentToken
+            | "else" -> func ConditionalKind.Else tokenizer.CurrentToken
+            | "endif" -> func ConditionalKind.EndIf tokenizer.CurrentToken
+            | _ -> None
+        | _ -> None
+
+    member x.ParseConditionalBlocks (snapshot : ITextSnapshot) = 
+        let lastLineNumber = snapshot.LineCount - 1
+
+        // Get a conditional at the specified line number.  Will handle a line
+        // number past the end by returning None
+        let getConditional lineNumber = 
+            if lineNumber > lastLineNumber then
+                None
+            else
+                let line = SnapshotUtil.GetLine snapshot lineNumber
+                let text = SnapshotLineUtil.GetText line
+                x.ParseConditional text
+
+        let allBlocksList = List<ConditionalBlock>()
+
+        // Parse out the remainder of a conditional given an initial conditional value.  Then
+        // return the line number after the completion of this block 
+        let rec parseBlockRemainder (startConditional : Conditional) lineNumber = 
+            let list = List<Conditional>()
+            list.Add(startConditional)
+
+            let rec inner lineNumber =
+
+                // Parse the next line 
+                let parseNext () = inner (lineNumber + 1)
+                match getConditional lineNumber with
+                | None -> 
+                    if lineNumber >= lastLineNumber then
+                        let block = { Conditionals = list; IsComplete = false }
+                        allBlocksList.Add block
+                        lineNumber
+                    else
+                        parseNext ()
+                | Some conditional ->
+                    match conditional.Kind with
+                    | ConditionalKind.If -> 
+                        parseBlockRemainder conditional (lineNumber + 1) |> ignore
+                        parseNext ()
+                    | ConditionalKind.Elif ->
+                        list.Add conditional
+                        parseNext ()
+                    | ConditionalKind.Else ->
+                        list.Add conditional
+                        parseNext ()
+                    | ConditionalKind.EndIf ->
+                        list.Add conditional
+                        let block = { Conditionals = list; IsComplete = false }
+                        allBlocksList.Add block
+                        lineNumber + 1
+
+            inner lineNumber
+
+        // Go through every line and drive the parsing of the conditionals
+        let rec parseAll lineNumber = 
+            if lineNumber <= lastLineNumber then
+                match getConditional lineNumber with
+                | None -> parseAll (lineNumber + 1)
+                | Some conditional ->
+                    match conditional.Kind with
+                    | ConditionalKind.If -> 
+                        let nextLineNumber = parseBlockRemainder conditional (lineNumber + 1)
+                        parseAll nextLineNumber
+                    | _ -> 
+                        let list = List<Conditional>(1)
+                        list.Add(conditional)
+                        let block = { Conditionals = list; IsComplete = false }
+                        allBlocksList.Add block
+
+        parseAll 0
+        allBlocksList
+
+    /// Find the correct MatchingTokenKind for the given line and column position on that 
+    /// line.  Needs to consider all possible matching tokens and see which one is closest
+    /// to the column (going forward only). 
+    member x.FindMatchingTokenKind lineText column =
+        let length = String.length lineText
+        Contract.Assert(column <= length)
+
+        // Reduce the 2 Maybe<int> values to the smaller of the int values or None if
+        // both are None
+        let reducePair result1 result2 kind = 
+            match result1, result2 with
+            | None, None -> None
+            | None, Some index2 -> Some (index2, kind)
+            | Some index1, None -> Some (index1, kind)
+            | Some index1, Some index2 -> Some ((min index1 index2), kind)
+
+        // Find the closest index to column for either of these characters.  Whichever is 
+        // closest wins.
+        let findSimplePair c1 c2 kind = 
+            let result1 = StringUtil.indexOfCharAt c1 column lineText
+            let result2 = StringUtil.indexOfCharAt c2 column lineText
+            reducePair result1 result2 kind
+
+        // Find the closest comment string to the specified column
+        let findComment () = 
+            let result1 = StringUtil.indexOfStringAt "/*" column lineText
+            let result2 = StringUtil.indexOfStringAt "*/" column lineText
+            reducePair result1 result2 MatchingTokenKind.Comment
+
+        // Find the conditional value on the current line 
+        let findConditional () = 
+            // Don't break out the parser unless the line starts with a # on the first
+            // non-blank character.  This is a quick optimization to avoid a lot of 
+            // unnecessary allocations
+            let hasPound = 
+                let mutable index = 0 
+                let mutable found = false
+                while index < length do
+                    let c = lineText.[index]
+                    if CharUtil.IsBlank c then
+                        // Continue
+                        index <- index + 1
+                    elif c = '#' then
+                        found <- true
+                        index <- length
+                    else
+                        index <- length
+                found
+
+            if not hasPound then 
+                None
+            else
+                match x.ParseConditional lineText with
+                | None -> None
+                | Some conditional -> 
+                    if column < conditional.Span.End then
+                        Some (column, MatchingTokenKind.Conditional)
+                    else
+                        None
+
+        // Parse out all the possibilities and find the one that is closest to the 
+        // column position
+        let first = 
+            let list = 
+                [
+                    findSimplePair '(' ')' MatchingTokenKind.Parens
+                    findSimplePair '[' ']' MatchingTokenKind.Brackets
+                    findSimplePair '{' '}' MatchingTokenKind.Braces
+                    findComment()
+                    findConditional()
+                ]
+            List.minBy (fun value ->
+                match value with
+                | Some (column, _) -> column
+                | None -> System.Int32.MaxValue) list
+        match first with
+        | Some (_, kind) -> Some kind
+        | None -> None
 
 type QuotedStringData =  {
     LeadingWhiteSpace : SnapshotSpan

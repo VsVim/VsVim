@@ -522,7 +522,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class PragmaTest : NormalModeIntegrationTest
+        public sealed class MatchingTokenTest : NormalModeIntegrationTest
         {
             private void AssertLine(int lineNumber)
             {
@@ -605,6 +605,14 @@ namespace Vim.UnitTest
                     _vimBuffer.Process("%");
                     Assert.Equal(1, _textView.GetCaretLine().LineNumber);
                 }
+            }
+
+            [Fact(Skip = "Must Fix")]
+            public void IncorrectlyNestedComment()
+            {
+                Create("/*", "/*", "*/");
+                _textView.MoveCaretToLine(1);
+                AssertPattern(2, 0, 2);
             }
 
             /// <summary>

@@ -218,6 +218,15 @@ module internal SeqUtil =
         | Some(value) -> value
         | None -> defaultValue 
 
+    let filter2 filter sequence = 
+        seq {
+            let index = ref 0
+            for cur in sequence do
+                if filter index.Value cur then
+                    yield cur
+                index.Value <- index.Value + 1
+        }
+
     /// Filter the list removing all None's 
     let filterToSome sequence =
         seq {

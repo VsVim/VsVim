@@ -88,6 +88,17 @@ namespace Vim.UnitTest
                 _tokenizer.MoveNextToken();
                 AssertWord("rock");
             }
+
+            /// <summary>
+            /// If the SkipBlanks option is specified and the text starts with blanks then
+            /// the tokenizer should move over that blank
+            /// </summary>
+            [Fact]
+            public void StartsWithBlank()
+            {
+                Create(" cat");
+                AssertWord("cat");
+            }
         }
 
         public sealed class ScopedFlagsTest : TokenizerTest
