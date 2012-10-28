@@ -24,6 +24,12 @@ module SnapshotUtil =
     /// Get the line for the specified number
     let GetLine (tss:ITextSnapshot) lineNumber = tss.GetLineFromLineNumber lineNumber
 
+    /// Get the length of the ITextSnapshot
+    let GetLength (tss:ITextSnapshot) = tss.Length
+
+    /// Get the character at the specified index
+    let GetChar index (tss: ITextSnapshot) = tss.[index]
+
     /// Get the first line in the snapshot
     let GetFirstLine tss = GetLine tss 0
 

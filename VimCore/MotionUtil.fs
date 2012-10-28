@@ -21,6 +21,15 @@ type Conditional = {
     Kind : ConditionalKind;
     Span : Span
 }
+    with
+
+    member x.AdjustStart offset = 
+        let start = x.Span.Start + offset
+        let span = Span(start, x.Span.Length)
+        { x with Span = span }
+
+    override x.ToString() = sprintf "%O - %O" x.Kind x.Span
+
 
 type ConditionalBlock = {
     Conditionals : List<Conditional>
@@ -79,7 +88,9 @@ type MatchingTokenUtil() =
             else
                 let line = SnapshotUtil.GetLine snapshot lineNumber
                 let text = SnapshotLineUtil.GetText line
-                x.ParseConditional text
+                match x.ParseConditional text with
+                | None -> None
+                | Some conditional -> conditional.AdjustStart line.Start.Position |> Some
 
         let allBlocksList = List<ConditionalBlock>()
 
@@ -114,7 +125,7 @@ type MatchingTokenUtil() =
                         parseNext ()
                     | ConditionalKind.EndIf ->
                         list.Add conditional
-                        let block = { Conditionals = list; IsComplete = false }
+                        let block = { Conditionals = list; IsComplete = true }
                         allBlocksList.Add block
                         lineNumber + 1
 
@@ -142,7 +153,7 @@ type MatchingTokenUtil() =
     /// Find the correct MatchingTokenKind for the given line and column position on that 
     /// line.  Needs to consider all possible matching tokens and see which one is closest
     /// to the column (going forward only). 
-    member x.FindMatchingTokenKind lineText column =
+    member x.FindMatchingTokenKindCore lineText column =
         let length = String.length lineText
         Contract.Assert(column <= length)
 
@@ -201,22 +212,157 @@ type MatchingTokenUtil() =
 
         // Parse out all the possibilities and find the one that is closest to the 
         // column position
-        let first = 
-            let list = 
-                [
-                    findSimplePair '(' ')' MatchingTokenKind.Parens
-                    findSimplePair '[' ']' MatchingTokenKind.Brackets
-                    findSimplePair '{' '}' MatchingTokenKind.Braces
-                    findComment()
-                    findConditional()
-                ]
-            List.minBy (fun value ->
-                match value with
-                | Some (column, _) -> column
-                | None -> System.Int32.MaxValue) list
-        match first with
+        let list = 
+            [
+                findSimplePair '(' ')' MatchingTokenKind.Parens
+                findSimplePair '[' ']' MatchingTokenKind.Brackets
+                findSimplePair '{' '}' MatchingTokenKind.Braces
+                findComment()
+                findConditional()
+            ]
+        List.minBy (fun value ->
+            match value with
+            | Some (column, _) -> column
+            | None -> System.Int32.MaxValue) list
+
+    member x.FindMatchingTokenKind lineText column =
+        match x.FindMatchingTokenKindCore lineText column with
         | Some (_, kind) -> Some kind
         | None -> None
+
+    /// Find the matching token in the given ITextSnapshot for the token
+    /// closest to the specified SnapshotPoint
+    member x.FindMatchingToken point = 
+        let snapshot = SnapshotPointUtil.GetSnapshot point
+
+        // Find the matching character for the one which occurs at the specified
+        // SnapshotPoint
+        let findMatchingTokenChar target startChar endChar = 
+            let stack = Stack<int>()
+            let length = SnapshotUtil.GetLength snapshot
+            let mutable found : int option = None
+            let mutable targetDepth : int option = None
+            let mutable index = 0
+            while index < length do
+                let c = SnapshotUtil.GetChar index snapshot
+                if c = startChar then 
+
+                    // If this is our starting character then the matching token occurs
+                    // when the depth once again hits the current depth
+                    if index = target then
+                        targetDepth <- Some stack.Count
+
+                    stack.Push index
+                    index <- index + 1
+                elif c = endChar then 
+
+                    if index = target then
+                        // We are currently at the targetted char and it's an end marker
+                        // so whatever the begining marker is is the matching token
+                        if stack.Count > 0 then
+                            found <- stack.Peek() |> Some
+
+                        index <- length
+                    elif stack.Count > 0 then
+                        stack.Pop()  |> ignore
+                        match targetDepth with
+                        | None -> ()
+                        | Some size ->
+
+                            // If we make it back down to the depth that we were targeting
+                            // when we saw the start character then this is the matching token
+                            if size = stack.Count then
+                                found <- Some index
+                                index <- length
+                    else
+                        index <- index + 1
+                else
+                    index <- index + 1
+
+            match found with
+            | None -> None
+            | Some start -> Span(start, 1) |> Some
+
+        // Find the comment matching the comment marker on the specified line
+        let findMatchingComment target = 
+
+            let length = SnapshotUtil.GetLength snapshot
+            let isBegin, isEnd = 
+                let matches index c1 c2 = 
+                    if index + 1 < length then
+                        let f1 = SnapshotUtil.GetChar index snapshot
+                        let f2 = SnapshotUtil.GetChar (index + 1) snapshot
+                        f1 = c1 && f2 = c2
+                    else
+                        false
+                (fun index -> matches index '/' '*'), (fun index -> matches index '*' '/')
+
+            let mutable commentStart : int option = None
+            let mutable index = 0
+            let mutable found : int option = None
+            while index < length do 
+                if Option.isNone commentStart && isBegin index then
+                    commentStart <- Some index
+                    index <- index + 2
+                elif isEnd index then
+                    if target <= index then
+                        // If the target is anywhere before the end marker then this current
+                        // block is where we will find our matches
+                        match commentStart with
+                        | None ->
+                            // This is an unmatched '*/' and the target is before this token 
+                            // so we are simply unmatched
+                            ()
+                        | Some commentStart ->
+                            if target = commentStart then found <- Some index
+                            else found <- Some commentStart
+
+                        index <- length
+                    else
+                        index <- index + 2
+                else
+                    index <- index + 1
+
+            match found with
+            | None -> None
+            | Some start -> Span(start, 2) |> Some
+
+        let findMatchingConditional (target : int) = 
+
+            let blockList = x.ParseConditionalBlocks snapshot
+            let mutable found : Span option = None
+            let mutable blockIndex = 0
+            while blockIndex < blockList.Count do
+                let block = blockList.[blockIndex]
+                let index = 
+                    block.Conditionals 
+                    |> Seq.tryFindIndex (fun conditional -> conditional.Span.Contains target)
+                match index with
+                | None -> blockIndex <- blockIndex + 1
+                | Some index ->
+                    if index + 1= block.Conditionals.Count then
+                        if block.IsComplete then
+                            found <- block.Conditionals.[0].Span |> Some
+                    else
+                        found <- block.Conditionals.[index + 1].Span |> Some
+
+                    blockIndex <- blockList.Count
+
+            found
+
+        let line = SnapshotPointUtil.GetContainingLine point
+        let lineText = SnapshotLineUtil.GetText line
+        let column = point.Position - line.Start.Position
+        match x.FindMatchingTokenKindCore lineText column with
+        | None -> None
+        | Some (column, kind) ->
+            let position = line.Start.Position + column
+            match kind with 
+            | MatchingTokenKind.Braces -> findMatchingTokenChar position '{' '}'
+            | MatchingTokenKind.Brackets -> findMatchingTokenChar position '[' ']'
+            | MatchingTokenKind.Parens -> findMatchingTokenChar position '(' ')'
+            | MatchingTokenKind.Conditional -> findMatchingConditional position
+            | MatchingTokenKind.Comment -> findMatchingComment position
 
 type QuotedStringData =  {
     LeadingWhiteSpace : SnapshotSpan
