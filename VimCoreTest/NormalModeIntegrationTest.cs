@@ -542,14 +542,14 @@ namespace Vim.UnitTest
             /// The space after the # character doesn't prevent it from being recognized
             /// as a preprocessor symbol
             /// </summary>
-            [Fact(Skip = "Must Fix")]
+            [Fact]
             public void SpaceAfterPoundBeforeIf()
             {
                 Create("# if", "#else", "#endif");
                 AssertPattern(1, 2, 0);
             }
 
-            [Fact(Skip = "Must Fix")]
+            [Fact]
             public void SpaceAfterAll()
             {
                 Create("# if", "# else", "# endif");
@@ -559,11 +559,12 @@ namespace Vim.UnitTest
             /// <summary>
             /// The space before the # doesn't matter either
             /// </summary>
-            [Fact(Skip = "Must Fix")]
+            [Fact]
             public void SpaceBeforeAll()
             {
                 Create("  #if", "  #else", "  #endif");
                 _vimBuffer.Process("%");
+                var caretPoint = _textView.GetCaretPoint();
                 Assert.Equal(_textBuffer.GetPointInLine(1, 2), _textView.GetCaretPoint());
                 _vimBuffer.Process("%");
                 Assert.Equal(_textBuffer.GetPointInLine(2, 2), _textView.GetCaretPoint());
@@ -574,7 +575,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that we can jump around in a nested pragma statement
             /// </summary>
-            [Fact(Skip = "Must Fix")]
+            [Fact]
             public void NestedBlock()
             {
                 Create("#if 0", "#if 1", "#else // !1", "#endif // !1", "#endif // 0");
@@ -586,7 +587,7 @@ namespace Vim.UnitTest
             /// Commented out code doesn't factor into the equation here.  The preprocessor directives
             /// still count
             /// </summary>
-            [Fact(Skip = "Must Fix")]
+            [Fact]
             public void CommentsDontMatter()
             {
                 Create("# if", "/*", "#else", "*/", "#endif");
@@ -596,7 +597,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// If there is no matchnig #endif then we get stuck on the last #elif directive
             /// </summary>
-            [Fact(Skip = "Must Fix")]
+            [Fact]
             public void NoEndIf()
             {
                 Create("#if", "#elif", "#if");
@@ -607,21 +608,26 @@ namespace Vim.UnitTest
                 }
             }
 
-            [Fact(Skip = "Must Fix")]
+            [Fact]
             public void IncorrectlyNestedComment()
             {
                 Create("/*", "/*", "*/");
                 _textView.MoveCaretToLine(1);
-                AssertPattern(2, 0, 2);
+                _vimBuffer.Process("%");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 1), _textView.GetCaretPoint());
+                _vimBuffer.Process("%");
+                Assert.Equal(_textBuffer.GetPointInLine(0, 0), _textView.GetCaretPoint());
+                _vimBuffer.Process("%");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 1), _textView.GetCaretPoint());
             }
 
             /// <summary>
             /// Make sure that we handle the nested case properly 
             /// </summary>
-            [Fact(Skip = "Must Fix")]
+            [Fact]
             public void Issue900()
             {
-                Create("#if", "#if", "#elif", "#else", "#endif");
+                Create("#if", "#if", "#elif", "#endif", "#endif");
                 _textView.MoveCaretToLine(1);
                 AssertPattern(2, 3, 1);
             }
@@ -629,14 +635,14 @@ namespace Vim.UnitTest
             /// <summary>
             /// Handle white space between the # and the start of the if statement
             /// </summary>
-            [Fact(Skip = "Must Fix")]
+            [Fact]
             public void Issue901()
             {
                 Create("#    if", "#      else", "#     endif");
                 AssertPattern(1, 2, 0);
             }
 
-            [Fact(Skip = "Must Fix")]
+            [Fact]
             public void Issue987()
             {
                 Create("#if 0", "#if 1", "#else // !1", "#endif // !1", "#endif // 0");

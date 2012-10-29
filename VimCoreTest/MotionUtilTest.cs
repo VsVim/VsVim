@@ -2236,7 +2236,7 @@ namespace Vim.UnitTest
             {
                 Create("#if foo #endif", "again", "#endif");
                 var data = _motionUtil.MatchingToken().Value;
-                var span = new SnapshotSpan(_textView.GetPoint(0), _textView.GetLine(2).Start.Add(6));
+                var span = new SnapshotSpan(_textView.GetPoint(0), _textView.GetLine(2).Start.Add(1));
                 Assert.Equal(span, data.Span);
                 Assert.Equal(MotionKind.CharacterWiseInclusive, data.MotionKind);
             }
