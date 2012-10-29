@@ -54,41 +54,67 @@ type MatchingTokenKind =
 
 type MatchingTokenUtil() = 
 
+    /// This is the key for accessing conditional blocks within the ITextSnapshot.  This
+    /// lets us avoid multiple parsers of #if for a single ITextSnapshot
+    static let _conditionalBlocksKey = obj()
+
     ///Find the conditional, if any, that starts on this line
     member x.ParseConditional lineText =
-        // TODO: don't allocate a new tokenizer on every look.  It's wasteful
-        // TODO: quick scan to see if the line even begins with a #.  Saves allocations
-        let tokenizer = Tokenizer(lineText, TokenizerFlags.SkipBlanks)
-        match tokenizer.CurrentChar with
-        | Some '#' ->
-            let start = tokenizer.CurrentToken.StartIndex
-            tokenizer.MoveNextToken()
 
-            // Process the token kind and the token to determine the span of the 
-            // conditional on this line 
-            let func kind (token : Token) = 
-                let endPosition = token.StartIndex + token.Length
-                let span = Span.FromBounds(start, endPosition)
-                { Kind = kind; Span = span } |> Some
+        // Don't break out the tokenizer unless the line starts with a # on the first
+        // non-blank character.  This is a quick optimization to avoid a lot of 
+        // unnecessary allocations
+        let startsWithPound = 
+            let length = String.length lineText
+            let mutable index = 0 
+            let mutable found = false
+            while index < length do
+                let c = lineText.[index]
+                if CharUtil.IsBlank c then
+                    // Continue
+                    index <- index + 1
+                elif c = '#' then
+                    found <- true
+                    index <- length
+                else
+                    index <- length
+            found
 
-            // The span of the token for the #if variety blocks is the entire line
-            let all kind (token : Token) = 
-                let span = Span.FromBounds(start, lineText.Length)
-                { Kind = kind; Span = span; } |> Some
+        if startsWithPound then 
+            let tokenizer = Tokenizer(lineText, TokenizerFlags.SkipBlanks)
+            match tokenizer.CurrentChar with
+            | Some '#' ->
+                let start = tokenizer.CurrentToken.StartIndex
+                tokenizer.MoveNextToken()
 
-            match tokenizer.CurrentToken.TokenText with
-            | "if" -> all ConditionalKind.If tokenizer.CurrentToken
-            | "ifdef" -> all ConditionalKind.If tokenizer.CurrentToken
-            | "ifndef" -> all ConditionalKind.If tokenizer.CurrentToken
-            | "elif" -> all ConditionalKind.Elif tokenizer.CurrentToken
-            | "else" -> func ConditionalKind.Else tokenizer.CurrentToken
-            | "endif" -> func ConditionalKind.EndIf tokenizer.CurrentToken
+                // Process the token kind and the token to determine the span of the 
+                // conditional on this line 
+                let func kind (token : Token) = 
+                    let endPosition = token.StartIndex + token.Length
+                    let span = Span.FromBounds(start, endPosition)
+                    { Kind = kind; Span = span } |> Some
+
+                // The span of the token for the #if variety blocks is the entire line
+                let all kind (token : Token) = 
+                    let span = Span.FromBounds(start, lineText.Length)
+                    { Kind = kind; Span = span; } |> Some
+
+                match tokenizer.CurrentToken.TokenText with
+                | "if" -> all ConditionalKind.If tokenizer.CurrentToken
+                | "ifdef" -> all ConditionalKind.If tokenizer.CurrentToken
+                | "ifndef" -> all ConditionalKind.If tokenizer.CurrentToken
+                | "elif" -> all ConditionalKind.Elif tokenizer.CurrentToken
+                | "else" -> func ConditionalKind.Else tokenizer.CurrentToken
+                | "endif" -> func ConditionalKind.EndIf tokenizer.CurrentToken
+                | _ -> None
             | _ -> None
-        | _ -> None
+        else
+            None
 
+    /// Parse out the conditional blocks for the given ITextSnapshot.  Don't use
+    /// this method directly.  Instead go through GetConditionalBlocks which will
+    /// cache the value
     member x.ParseConditionalBlocks (snapshot : ITextSnapshot) = 
-        // TODO: maybe save this on the ITextSnapshot.  Why reparse the same snapshot 
-        // a bunch of times
 
         let lastLineNumber = snapshot.LineCount - 1
 
@@ -162,6 +188,22 @@ type MatchingTokenUtil() =
         parseAll 0
         allBlocksList
 
+    /// Get the conditional blocks for the specified ITextSnapshot
+    member x.GetConditionalBlocks (snapshot : ITextSnapshot) = 
+        let textBuffer = snapshot.TextBuffer
+        let propertyCollection = textBuffer.Properties
+
+        let parseAndSave () = 
+            let blocks = x.ParseConditionalBlocks snapshot
+            propertyCollection.[_conditionalBlocksKey] <- (snapshot.Version, blocks)
+            blocks
+
+        match PropertyCollectionUtil.GetValue<int * List<ConditionalBlock>> _conditionalBlocksKey propertyCollection with
+        | Some (version, list) ->
+            if version = snapshot.Version.VersionNumber then list
+            else parseAndSave ()
+        | None -> parseAndSave ()
+
     /// Find the correct MatchingTokenKind for the given line and column position on that 
     /// line.  Needs to consider all possible matching tokens and see which one is closest
     /// to the column (going forward only). 
@@ -202,27 +244,7 @@ type MatchingTokenUtil() =
             reducePair result1 result2 MatchingTokenKind.Comment
 
         // Find the conditional value on the current line 
-        let conditional = 
-            // Don't break out the parser unless the line starts with a # on the first
-            // non-blank character.  This is a quick optimization to avoid a lot of 
-            // unnecessary allocations
-            let hasPound = 
-                let mutable index = 0 
-                let mutable found = false
-                while index < length do
-                    let c = lineText.[index]
-                    if CharUtil.IsBlank c then
-                        // Continue
-                        index <- index + 1
-                    elif c = '#' then
-                        found <- true
-                        index <- length
-                    else
-                        index <- length
-                found
-
-            if not hasPound then None
-            else x.ParseConditional lineText 
+        let conditional = x.ParseConditional lineText 
 
         // If the conditional exists exactly at the caret point then return it because
         // it should win over the other matching tokens at this point
@@ -365,7 +387,7 @@ type MatchingTokenUtil() =
 
         let findMatchingConditional (target : int) = 
 
-            let blockList = x.ParseConditionalBlocks snapshot
+            let blockList = x.GetConditionalBlocks snapshot
             let mutable found : Span option = None
             let mutable blockIndex = 0
             while blockIndex < blockList.Count do
