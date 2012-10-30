@@ -1855,8 +1855,6 @@ type ModeSwitch =
     /// back to the original mode
     | SwitchModeOneTimeCommand
 
-// TODO: Should be succeeded or something other than Completed.  Error also completed just not
-// well
 [<RequireQualifiedAccess>]
 type CommandResult =   
 
@@ -1940,10 +1938,7 @@ type CommandData = {
 } with
 
     /// Return the provided count or the default value of 1
-    member x.CountOrDefault = 
-        match x.Count with 
-        | Some count -> count
-        | None -> 1
+    member x.CountOrDefault = Util.CountOrDefault x.Count
 
 /// We want the NormalCommand discriminated union to have structural equality in order
 /// to ease testing requirements.  In order to do this and support Ping we need a 
@@ -2780,13 +2775,6 @@ type IMotionCapture =
 
     /// Get the motion with the provided KeyInput
     abstract GetMotion : KeyInput -> BindResult<Motion>
-
-module CommandUtil2 = 
-
-    let CountOrDefault opt = 
-        match opt with 
-        | Some(count) -> count
-        | None -> 1
 
 /// Responsible for managing a set of Commands and running them
 type ICommandRunner =

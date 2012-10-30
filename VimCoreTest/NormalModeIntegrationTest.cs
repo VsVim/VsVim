@@ -609,7 +609,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void IncorrectlyNestedComment()
+            public void MismatchedBlockCommentsMultiline()
             {
                 Create("/*", "/*", "*/");
                 _textView.MoveCaretToLine(1);
@@ -619,6 +619,151 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetPointInLine(0, 0), _textView.GetCaretPoint());
                 _vimBuffer.Process("%");
                 Assert.Equal(_textBuffer.GetPointInLine(2, 1), _textView.GetCaretPoint());
+            }
+            /// <summary>
+            /// Ensure the '%' motion properly moves between the block comments in the 
+            /// mismatch case
+            /// </summary>
+            [Fact]
+            public void MismatchedBlockCommentsSameLine()
+            {
+                Create("/* /* */");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.Process('%');
+                Assert.Equal(7, _textView.GetCaretPoint());
+                _vimBuffer.Process('%');
+                Assert.Equal(0, _textView.GetCaretPoint());
+                _vimBuffer.Process('%');
+                Assert.Equal(7, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void ParensAfterWord()
+            {
+                Create("cat( )");
+                _vimBuffer.Process('%');
+                Assert.Equal(5, _textView.GetCaretPoint());
+                _vimBuffer.Process('%');
+                Assert.Equal(3, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// In issue #744 where there are 3 parts to the conditional, the caret is supposed to cycle through
+            /// (#if, #else, #end, #if), ... However, it actually only cycles between the last 
+            /// two (#if, #else, #end, #else)
+            /// </summary>
+            [Fact]
+            public void PreProcessorIfElse()
+            {
+                Create("#if DEBUG", "#else", "#endif");
+
+                _vimBuffer.Process("%");
+                // checking that % does actually change lines at all
+                Assert.Equal(_textView.GetCaretLine().LineNumber, 1);
+                _vimBuffer.Process("%%");
+
+                Assert.Equal(_textView.GetCaretLine().LineNumber, 0);
+            }
+
+            [Fact]
+            public void PreProcessorIfdefElse()
+            {
+                Create("#ifdef DEBUG", "#else", "#endif");
+                // move caret off of #if, otherwise it'll be covered by the previous functionaly and won't actually prove anything
+                _textView.MoveCaretTo(4);
+
+                _vimBuffer.Process("%");
+                // checking that % does actually change lines at all
+                Assert.Equal(_textView.GetCaretLine().LineNumber, 1);
+                _vimBuffer.Process("%%");
+
+                Assert.Equal(_textView.GetCaretLine().LineNumber, 0);
+            }
+
+            [Fact]
+            public void PreProcessorIfndefElse()
+            {
+                Create("#ifndef DEBUG", "#else", "#endif");
+                // move caret off of #if, otherwise it'll be covered by the previous functionaly and won't actually prove anything
+                _textView.MoveCaretTo(4);
+
+                _vimBuffer.Process("%");
+                Assert.Equal(_textView.GetCaretLine().LineNumber, 1);
+                _vimBuffer.Process("%%");
+
+                Assert.Equal(_textView.GetCaretLine().LineNumber, 0);
+            }
+
+            [Fact]
+            public void ItMatchesEvenWhenCaretIsAtTheEnd()
+            {
+                Create("#if DEBUG", "#endif");
+                // move caret off of #if, otherwise it'll be covered by the previous functionaly and won't actually prove anything
+                _textView.MoveCaretTo(6);
+
+                _vimBuffer.Process("%");
+
+                Assert.Equal(_textView.GetCaretLine().LineNumber, 1);
+            }
+
+            /// <summary>
+            /// Make sure we jump correctly between matching token values of different types
+            ///
+            /// TODO: This test is also broken due to the matching case not being able to 
+            /// come of the '/' in a '*/'
+            /// </summary>
+            [Fact]
+            public void DifferentTypes()
+            {
+                Create("{ { (( } /* a /*) b */ })");
+                Action<int, int> del = (start, end) =>
+                    {
+                        _textView.MoveCaretTo(start);
+                        _vimBuffer.Process("%");
+                        Assert.Equal(end, _textView.GetCaretPoint().Position);
+
+                        if (start != end)
+                        {
+                            _textView.MoveCaretTo(end);
+                            _vimBuffer.Process("%");
+                            Assert.Equal(start, _textView.GetCaretPoint().Position);
+                        }
+                    };
+                del(0, 23);
+                del(2, 7);
+                del(4, 24);
+                del(5, 16);
+                del(9, 21);
+            }
+
+            /// <summary>
+            /// Make sure the matching token behavior fits all of the issues described in 
+            /// issue 468
+            /// </summary>
+            [Fact]
+            public void Issue468()
+            {
+                Create("(wchar_t*) realloc(pwcsSelFile, (nSelFileLen+1)*sizeof(wchar_t))");
+
+                // First open paren to the next closing one
+                _vimBuffer.Process("%");
+                Assert.Equal(9, _textView.GetCaretPoint().Position);
+
+                // From the first closing paren back to the start
+                _vimBuffer.Process("%");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+
+                // From the second opening paren to the last one
+                var lastPoint = _textView.TextSnapshot.GetEndPoint().Subtract(1);
+                Assert.Equal(')', lastPoint.GetChar());
+                _textView.MoveCaretTo(18);
+                Assert.Equal('(', _textView.GetCaretPoint().GetChar());
+                _vimBuffer.Process("%");
+                Assert.Equal(lastPoint, _textView.GetCaretPoint());
+
+                // And back to the start one
+                _vimBuffer.Process("%");
+                Assert.Equal(18, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
@@ -3349,23 +3494,6 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Ensure the '%' motion properly moves between the block comments in the 
-            /// mismatch case
-            /// </summary>
-            [Fact]
-            public void MatchingToken_MismatchedBlockComments()
-            {
-                Create("/* /* */");
-                _textView.MoveCaretTo(3);
-                _vimBuffer.Process('%');
-                Assert.Equal(7, _textView.GetCaretPoint());
-                _vimBuffer.Process('%');
-                Assert.Equal(0, _textView.GetCaretPoint());
-                _vimBuffer.Process('%');
-                Assert.Equal(7, _textView.GetCaretPoint());
-            }
-
-            /// <summary>
             /// See the full discussion in issue #509
             ///
             /// https://github.com/jaredpar/VsVim/issues/509
@@ -3865,16 +3993,6 @@ namespace Vim.UnitTest
                 Assert.Equal("cat" + Environment.NewLine + "bear", _vimBuffer.GetRegister(RegisterName.Unnamed).StringValue);
             }
 
-            [Fact]
-            public void MatchingToken_Parens()
-            {
-                Create("cat( )");
-                _vimBuffer.Process('%');
-                Assert.Equal(5, _textView.GetCaretPoint());
-                _vimBuffer.Process('%');
-                Assert.Equal(3, _textView.GetCaretPoint());
-            }
-
             /// <summary>
             /// Make sure the caret is properly positioned against a join across 3 lines
             /// </summary>
@@ -3898,125 +4016,6 @@ namespace Vim.UnitTest
                 _vimBuffer.Process('b');
                 _vimBuffer.Process(VimKey.Escape);
                 Assert.Equal("dogbbb", _textView.GetLine(0).GetText());
-            }
-
-            /// <summary>
-            /// Make sure the matching token behavior fits all of the issues described in 
-            /// issue 468
-            /// </summary>
-            [Fact]
-            public void MatchingTokens_Issue468()
-            {
-                Create("(wchar_t*) realloc(pwcsSelFile, (nSelFileLen+1)*sizeof(wchar_t))");
-
-                // First open paren to the next closing one
-                _vimBuffer.Process("%");
-                Assert.Equal(9, _textView.GetCaretPoint().Position);
-
-                // From the first closing paren back to the start
-                _vimBuffer.Process("%");
-                Assert.Equal(0, _textView.GetCaretPoint().Position);
-
-                // From the second opening paren to the last one
-                var lastPoint = _textView.TextSnapshot.GetEndPoint().Subtract(1);
-                Assert.Equal(')', lastPoint.GetChar());
-                _textView.MoveCaretTo(18);
-                Assert.Equal('(', _textView.GetCaretPoint().GetChar());
-                _vimBuffer.Process("%");
-                Assert.Equal(lastPoint, _textView.GetCaretPoint());
-
-                // And back to the start one
-                _vimBuffer.Process("%");
-                Assert.Equal(18, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// In issue #744 where there are 3 parts to the conditional, the caret is supposed to cycle through
-            /// (#if, #else, #end, #if), ... However, it actually only cycles between the last 
-            /// two (#if, #else, #end, #else)
-            /// </summary>
-            [Fact]
-            public void MatchingTokens_PreProcessorIfElse()
-            {
-                Create("#if DEBUG", "#else", "#endif");
-
-                _vimBuffer.Process("%");
-                // checking that % does actually change lines at all
-                Assert.Equal(_textView.GetCaretLine().LineNumber, 1);
-                _vimBuffer.Process("%%");
-
-                Assert.Equal(_textView.GetCaretLine().LineNumber, 0);
-            }
-
-            [Fact]
-            public void MatchingTokens_PreProcessorIfdefElse()
-            {
-                Create("#ifdef DEBUG", "#else", "#endif");
-                // move caret off of #if, otherwise it'll be covered by the previous functionaly and won't actually prove anything
-                _textView.MoveCaretTo(4);
-
-                _vimBuffer.Process("%");
-                // checking that % does actually change lines at all
-                Assert.Equal(_textView.GetCaretLine().LineNumber, 1);
-                _vimBuffer.Process("%%");
-
-                Assert.Equal(_textView.GetCaretLine().LineNumber, 0);
-            }
-
-            [Fact]
-            public void MatchingTokens_PreProcessorIfndefElse()
-            {
-                Create("#ifndef DEBUG", "#else", "#endif");
-                // move caret off of #if, otherwise it'll be covered by the previous functionaly and won't actually prove anything
-                _textView.MoveCaretTo(4);
-
-                _vimBuffer.Process("%");
-                Assert.Equal(_textView.GetCaretLine().LineNumber, 1);
-                _vimBuffer.Process("%%");
-
-                Assert.Equal(_textView.GetCaretLine().LineNumber, 0);
-            }
-
-            [Fact]
-            public void MatchingTokens_ItMatchesEvenWhenCaretIsAtTheEnd()
-            {
-                Create("#if DEBUG", "#endif");
-                // move caret off of #if, otherwise it'll be covered by the previous functionaly and won't actually prove anything
-                _textView.MoveCaretTo(6);
-
-                _vimBuffer.Process("%");
-
-                Assert.Equal(_textView.GetCaretLine().LineNumber, 1);
-            }
-
-            /// <summary>
-            /// Make sure we jump correctly between matching token values of different types
-            ///
-            /// TODO: This test is also broken due to the matching case not being able to 
-            /// come of the '/' in a '*/'
-            /// </summary>
-            [Fact]
-            public void MatchingTokens_DifferentTypes()
-            {
-                Create("{ { (( } /* a /*) b */ })");
-                Action<int, int> del = (start, end) =>
-                    {
-                        _textView.MoveCaretTo(start);
-                        _vimBuffer.Process("%");
-                        Assert.Equal(end, _textView.GetCaretPoint().Position);
-
-                        if (start != end)
-                        {
-                            _textView.MoveCaretTo(end);
-                            _vimBuffer.Process("%");
-                            Assert.Equal(start, _textView.GetCaretPoint().Position);
-                        }
-                    };
-                del(0, 23);
-                del(2, 7);
-                del(4, 24);
-                del(5, 16);
-                del(9, 21);
             }
 
             /// <summary>

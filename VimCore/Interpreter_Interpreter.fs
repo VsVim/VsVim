@@ -248,10 +248,7 @@ type Interpreter
         x.GetLineRangeOrDefault lineRange DefaultLineRange.None
 
     /// Get the count value or the default of 1
-    member x.GetCountOrDefault count = 
-        match count with
-        | Some count -> count
-        | None -> 1
+    member x.GetCountOrDefault count = Util.CountOrDefault count
 
     /// Run the behave command
     member x.RunBehave model = 

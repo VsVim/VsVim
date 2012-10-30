@@ -2121,7 +2121,7 @@ type internal MotionUtil
             if lines.Length = 0 then
                 caretLine.Extent
             else
-                let count = (CommandUtil2.CountOrDefault countOpt) 
+                let count = Util.CountOrDefault countOpt 
                 let count = min count lines.Length
                 let startLine = lines.Head
                 SnapshotPointUtil.GetLineRangeSpan startLine.Start count

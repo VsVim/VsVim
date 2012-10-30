@@ -1,8 +1,8 @@
-﻿using EditorUtils;
+﻿using System.Collections.Generic;
+using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using Vim.Extensions;
 using Xunit;
-using System.Collections.Generic;
 
 namespace Vim.UnitTest
 {
@@ -249,7 +249,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class ParseConditionalBlocks : MatchingTokenUtilTest
+        public sealed class ParseConditionalBlocksTest : MatchingTokenUtilTest
         {
             private ITextBuffer _textBuffer;
 
@@ -370,6 +370,31 @@ namespace Vim.UnitTest
                     blocks[1],
                     _textBuffer.GetLineSpan(2, 3),
                     _textBuffer.GetLineSpan(3, 6));
+            }
+        }
+
+        public sealed class MiscTest : MatchingTokenUtilTest
+        {
+            private ITextBuffer _textBuffer;
+
+            private void Create(params string[] lines)
+            {
+                _textBuffer = CreateTextBuffer(lines);
+            }
+
+            /// <summary>
+            /// Make sure that the caching logic will recognize the buffer change and actually
+            /// parse the new snapshot
+            /// </summary>
+            [Fact]
+            public void Caching()
+            {
+                Create("#if", "#endif", "#if", "#endif");
+                var blocks = _matchingTokenUtil.GetConditionalBlocks(_textBuffer.CurrentSnapshot);
+                Assert.Equal(2, blocks.Count);
+                _textBuffer.Delete(_textBuffer.GetLineRange(2, 3).ExtentIncludingLineBreak);
+                blocks = _matchingTokenUtil.GetConditionalBlocks(_textBuffer.CurrentSnapshot);
+                Assert.Equal(1, blocks.Count);
             }
         }
     }

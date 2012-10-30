@@ -1000,9 +1000,6 @@ module BufferGraphUtil =
 
     /// Map the SnapshotSpan down to the given ITextSnapshot by the Start and End points
     /// instead of by the mapped Spans
-    ///
-    /// TODO: Need to talk with the editor team to better understand why this behavior is 
-    /// so different
     let MapSpanDownToSingle (bufferGraph : IBufferGraph) (span : SnapshotSpan) snapshot = 
         let startPoint = MapPointDownToSnapshot bufferGraph span.Start snapshot PointTrackingMode.Negative PositionAffinity.Predecessor
         let endPoint = MapPointDownToSnapshot bufferGraph span.End snapshot PointTrackingMode.Positive PositionAffinity.Successor

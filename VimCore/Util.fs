@@ -38,3 +38,8 @@ module internal Util =
         | 0 -> 0
         | _ -> line - 1
 
+    let CountOrDefault count =
+        match count with 
+        | Some count -> count
+        | None -> 1
+
