@@ -112,7 +112,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                     // is
                     kind = _globalSettings.IsSelectionInclusive
                        ? CaretDisplay.Block
-                       : CaretDisplay.NormalCaret;
+                       : CaretDisplay.Select;
                     break;
                 case ModeKind.Command:
                 case ModeKind.SubstituteConfirm:

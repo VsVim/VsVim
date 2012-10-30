@@ -33,7 +33,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
         }
 
-        private readonly ITextView _view;
+        private readonly ITextView _textView;
         private readonly IProtectedOperations _protectedOperations;
         private readonly IEditorFormatMap _formatMap;
         private readonly IAdornmentLayer _layer;
@@ -46,7 +46,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
         public ITextView TextView
         {
-            get { return _view; }
+            get { return _textView; }
         }
 
         public CaretDisplay CaretDisplay
@@ -84,9 +84,9 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             {
                 try
                 {
-                    var caret = _view.Caret;
+                    var caret = _textView.Caret;
                     var line = caret.ContainingTextViewLine;
-                    return line.VisibilityState != VisibilityState.Unattached && _view.HasAggregateFocus;
+                    return line.VisibilityState != VisibilityState.Unattached && _textView.HasAggregateFocus;
                 }
                 catch (InvalidOperationException)
                 {
@@ -106,7 +106,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 {
                     var data = _caretData.Value;
                     return data.Color != TryCalculateCaretColor()
-                        || data.Point != _view.Caret.Position.BufferPosition
+                        || data.Point != _textView.Caret.Position.BufferPosition
                         || data.CaretDisplay != _caretDisplay
                         || data.CaretOpacity != _caretOpacity;
                 }
@@ -117,16 +117,16 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
         internal BlockCaret(ITextView view, IEditorFormatMap formatMap, IAdornmentLayer layer, IProtectedOperations protectedOperations)
         {
-            _view = view;
+            _textView = view;
             _formatMap = formatMap;
             _layer = layer;
             _protectedOperations = protectedOperations;
 
-            _view.LayoutChanged += OnCaretEvent;
-            _view.GotAggregateFocus += OnCaretEvent;
-            _view.LostAggregateFocus += OnCaretEvent;
-            _view.Caret.PositionChanged += OnCaretEvent;
-            _view.Closed += OnTextViewClosed;
+            _textView.LayoutChanged += OnCaretEvent;
+            _textView.GotAggregateFocus += OnCaretEvent;
+            _textView.LostAggregateFocus += OnCaretEvent;
+            _textView.Caret.PositionChanged += OnCaretEvent;
+            _textView.Closed += OnTextViewClosed;
 
             var caretBlinkTime = GetCaretBlinkTime();
             var caretBlinkTimeSpan = new TimeSpan(0, 0, 0, 0, caretBlinkTime ?? Int32.MaxValue);
@@ -219,7 +219,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
         private Point GetRealCaretVisualPoint()
         {
-            return new Point(_view.Caret.Left, _view.Caret.Top);
+            return new Point(_textView.Caret.Left, _textView.Caret.Top);
         }
 
         private void MoveCaretImageToCaret()
@@ -241,7 +241,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             const double defaultWidth = 5.0;
             const double defaultHeight = 10.0;
 
-            var caret = _view.Caret;
+            var caret = _textView.Caret;
             var line = caret.ContainingTextViewLine;
             Size caretSize;
             if (IsRealCaretVisible)
@@ -250,7 +250,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 // tab here because it's too big.  When there is a tab we use the default height
                 // and width
                 var point = caret.Position.BufferPosition;
-                if (point.Position < _view.TextSnapshot.Length && point.GetChar() != '\t')
+                if (point.Position < _textView.TextSnapshot.Length && point.GetChar() != '\t')
                 {
                     var bounds = line.GetCharacterBounds(point);
                     caretSize = new Size(bounds.Width, bounds.Height);
@@ -294,6 +294,12 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                         point = new Point(point.X, point.Y + offset);
                         return Tuple.Create(new Rect(point, size), offset);
                     }
+                case CaretDisplay.Select:
+                    {
+                        var size = new Size(_textView.Caret.Width, _textView.Caret.Height);
+                        var point = GetRealCaretVisualPoint();
+                        return Tuple.Create(new Rect(point, size), 0d);
+                    }
                 case CaretDisplay.Invisible:
                 case CaretDisplay.NormalCaret:
                     return Tuple.Create(new Rect(GetRealCaretVisualPoint(), new Size(0, 0)), 0d);
@@ -320,7 +326,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             drawingImage.Freeze();
 
             var image = new Image { Opacity = _caretOpacity, Source = drawingImage };
-            var point = _view.Caret.Position.BufferPosition;
+            var point = _textView.Caret.Position.BufferPosition;
             return new CaretData(_caretDisplay, _caretOpacity, image, color, point, tuple.Item2);
         }
 
@@ -337,7 +343,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
             if (_caretDisplay != CaretDisplay.NormalCaret)
             {
-                _view.Caret.IsHidden = true;
+                _textView.Caret.IsHidden = true;
                 MoveCaretImageToCaret();
 
                 // Restart the timer so the block caret doesn't immediately disappear
@@ -349,7 +355,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
             else
             {
-                _view.Caret.IsHidden = false;
+                _textView.Caret.IsHidden = false;
             }
         }
 
@@ -380,14 +386,14 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _blinkTimer.IsEnabled = false;
             MaybeDestroyBlockCaretDisplay();
 
-            if (!_view.IsClosed)
+            if (!_textView.IsClosed)
             {
-                _view.LayoutChanged -= OnCaretEvent;
-                _view.GotAggregateFocus -= OnCaretEvent;
-                _view.LostAggregateFocus -= OnCaretEvent;
-                _view.Caret.PositionChanged -= OnCaretEvent;
-                _view.Caret.IsHidden = false;
-                _view.Closed -= OnTextViewClosed;
+                _textView.LayoutChanged -= OnCaretEvent;
+                _textView.GotAggregateFocus -= OnCaretEvent;
+                _textView.LostAggregateFocus -= OnCaretEvent;
+                _textView.Caret.PositionChanged -= OnCaretEvent;
+                _textView.Caret.IsHidden = false;
+                _textView.Closed -= OnTextViewClosed;
             }
         }
 

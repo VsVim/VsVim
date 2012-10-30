@@ -459,7 +459,9 @@ type internal InsertUtil
 
     /// Shift the carte line one 'shiftwidth' to the right
     member x.ShiftLineRight () =
-        CommandResult.Error
+        let range = TextViewUtil.GetCaretLineRange _textView 1
+        _operations.ShiftLineRangeRight range 1
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     member x.ExtraTextChange textChange addNewLines = 
         x.ApplyTextChange textChange addNewLines 
