@@ -83,6 +83,31 @@ function test-unittests() {
     }
 }
 
+# Make sure that the version number is the same in all locations.  
+function test-version() {
+    write-host "Testing Version Numbers"
+    $version = $null;
+    foreach ($line in gc "VimCore\Constants.fs") {
+        if ($line -match 'let VersionNumber = "([\d.]*)"') {
+            $version = $matches[1]
+            break
+        }
+    }
+
+    if ($version -eq $null) {
+        write-error "Couldn't determine the version from Constants.fs"
+        return
+    }
+
+    $data = [xml](gc "VsVim\source.extension.vsixmanifest")
+    $manifestVersion = $data.Vsix.Identifier.Version
+    if ($manifestVersion -ne $version) { 
+        $msg = "The version {0} doesn't match up with the manifest version of {1}" -f $version, $manifestVersion
+        write-error $msg
+        return
+    }
+}
+
 function build-clean() {
     param ([string]$fileName = $(throw "Need a project file name"))
     $name = split-path -leaf $fileName
@@ -112,6 +137,10 @@ if (-not $fast) {
         rm VsVim\VsVim.Dev11.dll
     }
 }
+
+# Before building make sure the version number is consistent in all 
+# locations
+test-version
 
 # Build all of the relevant projects.  Both the deployment binaries and the 
 # test infrastructure
