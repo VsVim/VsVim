@@ -35,6 +35,10 @@ VsVim.sln.docstates
 # the actual binaries
 packages/
 
+# Ignore the Delpoy directory. This is where the deploy script
+# checks in a vsix that is deployable
+Deploy/
+
 # Ignore NCrunch files for the moment.  Still experimenting and
 # don't want to put them in there just yet
 *ncrunchproject

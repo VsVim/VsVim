@@ -126,6 +126,15 @@ function build-release() {
     Test-Return
 }
 
+function publish-vsix() {
+    param ([string]$vsixPath = $(throw "Need the path to the VSIX")) 
+    mkdir "Deploy" | out-null
+    $vsixName = split-path -leaf $vsixPath
+    $target = join-path "Deploy" $vsixName
+    copy -force $vsixPath $target
+    ii "Deploy"
+}
+
 # First step is to clean out all of the projects 
 if (-not $fast) { 
     write-host "Cleaning Projects"
@@ -163,3 +172,4 @@ write-host "Verifying the Vsix Contents"
 $vsixPath = "VsVim\bin\Release\VsVim.vsix"
 test-vsixcontents $vsixPath
 test-unittests
+publish-vsix $vsixPath 
