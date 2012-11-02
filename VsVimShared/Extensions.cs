@@ -36,7 +36,7 @@ namespace VsVim
                 commandId = new CommandId(group, id);
                 return true;
             }
-            catch 
+            catch
             {
                 commandId = default(CommandId);
                 return false;
@@ -270,6 +270,27 @@ namespace VsVim
 
         #endregion
 
+        #region IVsEditorAdaptersFactoryService
+
+        /// <summary>
+        /// The GetWpftextView method can throw for a lot of reasons that aren't of 
+        /// consequence to our code.  In particular if the IVsTextView isn't implemented by
+        /// the editor shims.  Don't care, just want an IWpfTextView if it's available
+        /// </summary>
+        public static IWpfTextView GetWpfTextViewNoThrow(this IVsEditorAdaptersFactoryService editorAdapter, IVsTextView vsTextView)
+        {
+            try
+            {
+                return editorAdapter.GetWpfTextView(vsTextView);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        #endregion
+
         #region IVsShell
 
         internal static bool IsPackageInstalled(this IVsShell vsShell, Guid packageId)
@@ -374,7 +395,7 @@ namespace VsVim
                 return Result.CreateError(result.HResult);
             }
 
-            var textView = factoryService.GetWpfTextView(result.Value);
+            var textView = factoryService.GetWpfTextViewNoThrow(result.Value);
             return Result.CreateSuccessNonNull(textView);
         }
 
@@ -399,7 +420,7 @@ namespace VsVim
                 return Result.CreateError(result.HResult);
             }
 
-            var textView = factoryService.GetWpfTextView(result.Value);
+            var textView = factoryService.GetWpfTextViewNoThrow(result.Value);
             return Result.CreateSuccessNonNull(textView);
         }
 
@@ -534,7 +555,7 @@ namespace VsVim
             IWpfTextView textView = null;
             if (ErrorHandler.Succeeded(vsTextManager.GetActiveView(0, null, out vsTextView)) && vsTextView != null)
             {
-                textView = factoryService.GetWpfTextView(vsTextView);
+                textView = factoryService.GetWpfTextViewNoThrow(vsTextView);
             }
 
             return Tuple.Create(textView != null, textView);

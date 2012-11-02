@@ -247,7 +247,7 @@ namespace VsVim.Implementation.Misc
 
         internal bool IsVenusView(IVsTextView vsTextView)
         {
-            var textView = _editorAdaptersFactoryService.GetWpfTextView(vsTextView);
+            var textView = _editorAdaptersFactoryService.GetWpfTextViewNoThrow(vsTextView);
             if (textView == null)
             {
                 return false;

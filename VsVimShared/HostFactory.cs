@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Diagnostics;
+using EditorUtils;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
@@ -11,7 +12,6 @@ using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
-using EditorUtils;
 
 namespace VsVim
 {
@@ -142,7 +142,7 @@ namespace VsVim
         {
             // Get the ITextView created.  Shouldn't ever be null unless a non-standard Visual Studio
             // component is calling this function
-            var textView = _adaptersFactory.GetWpfTextView(vsView);
+            var textView = _adaptersFactory.GetWpfTextViewNoThrow(vsView);
             if (textView == null)
             {
                 return;
