@@ -795,6 +795,152 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class UnmatchedTokenTest : NormalModeIntegrationTest
+        {
+            /// <summary>
+            /// The search is forward and doesn't consider the tokens that are prior
+            /// to the current
+            /// </summary>
+            [Fact]
+            public void ParenForwardFromStart()
+            {
+                Create("( )");
+                _vimBuffer.Process("])");
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ParenFromFromBefore()
+            {
+                Create(" ()");
+                _vimBuffer.Process("])");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ParenForwardAfterMatching()
+            {
+                Create(" ())");
+                _vimBuffer.Process("])");
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Further test to ensure that we don't consider the token immediately under
+            /// the caret 
+            /// </summary>
+            [Fact]
+            public void ParenForwardFromUnmatching()
+            {
+                Create(")) dog");
+                _vimBuffer.Process("])");
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ParenForwardWithCount()
+            {
+                Create(" ))))");
+                _vimBuffer.Process("2])");
+                Assert.Equal(2, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void ParenForwardWithCountMultiline()
+            {
+                Create("()", ")");
+                _vimBuffer.Process("2])");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void ParenForwardMultiline()
+            {
+                Create("dog", ")");
+                _vimBuffer.Process("])");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void ParenBackward()
+            {
+                Create("()");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process("[(");
+                Assert.Equal(0, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void ParenBackwardNonStart()
+            {
+                Create("(( dog");
+                _textView.MoveCaretTo(5);
+                _vimBuffer.Process("[(");
+                Assert.Equal(1, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void ParenBackwardWithCount()
+            {
+                Create("(( dog");
+                _textView.MoveCaretTo(5);
+                _vimBuffer.Process("2[(");
+                Assert.Equal(0, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void ParenBackwardMultiline()
+            {
+                Create("(", "dog");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("[(");
+                Assert.Equal(0, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void ParenBackwardMultiline2()
+            {
+                Create("((", "dog");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("[(");
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void BraceForward()
+            {
+                Create("{}");
+                _vimBuffer.Process("]}");
+                Assert.Equal(1, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void BraceBackward()
+            {
+                Create("{}");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process("[{");
+                Assert.Equal(0, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void YankParenForward()
+            {
+                Create("dog)");
+                _vimBuffer.Process("y])");
+                Assert.Equal("dog", UnnamedRegister.StringValue);
+            }
+
+            [Fact]
+            public void YankParenBackward()
+            {
+                Create("(dog");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.Process("y[(");
+                Assert.Equal("(do", UnnamedRegister.StringValue);
+            }
+        }
+
         public sealed class ParagraphMotionTest : NormalModeIntegrationTest
         {
             [Fact]

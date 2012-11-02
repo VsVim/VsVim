@@ -8,7 +8,7 @@ namespace Vim.UnitTest
 {
     public abstract class MatchingTokenUtilTest : VimTestBase
     {
-        internal MatchingTokenUtil _matchingTokenUtil;
+        internal readonly MatchingTokenUtil _matchingTokenUtil;
 
         protected MatchingTokenUtilTest()
         {
@@ -370,6 +370,40 @@ namespace Vim.UnitTest
                     blocks[1],
                     _textBuffer.GetLineSpan(2, 3),
                     _textBuffer.GetLineSpan(3, 6));
+            }
+        }
+
+        public sealed class FindUnmatchedTokenTest : MatchingTokenUtilTest
+        {
+            private ITextBuffer _textBuffer;
+
+            private void Create(params string[] lines)
+            {
+                _textBuffer = CreateTextBuffer(lines);
+            }
+
+            private SnapshotPoint Find(Path path, UnmatchedTokenKind kind, int position = 0, int count = 1)
+            {
+                var point = _textBuffer.GetPoint(position);
+                var found = _matchingTokenUtil.FindUnmatchedToken(path, kind, point, count);
+                Assert.True(found.IsSome());
+                return found.Value;
+            }
+
+            [Fact]
+            public void BraceForward()
+            {
+                Create(" {}}");
+                var point = Find(Path.Forward, UnmatchedTokenKind.CurlyBracket);
+                Assert.Equal(3, point.Position);
+            }
+
+            [Fact]
+            public void BraceBackward()
+            {
+                Create("{{}  ");
+                var point = Find(Path.Backward, UnmatchedTokenKind.CurlyBracket, 4);
+                Assert.Equal(0, point.Position);
             }
         }
 

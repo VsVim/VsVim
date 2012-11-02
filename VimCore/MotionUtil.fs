@@ -55,7 +55,7 @@ type MatchingTokenKind =
 type MatchingTokenUtil() = 
 
     /// This is the key for accessing conditional blocks within the ITextSnapshot.  This
-    /// lets us avoid multiple parsers of #if for a single ITextSnapshot
+    /// lets us avoid multiple parses of #if for a single ITextSnapshot
     static let _conditionalBlocksKey = obj()
 
     ///Find the conditional, if any, that starts on this line
@@ -385,6 +385,7 @@ type MatchingTokenUtil() =
             | None -> None
             | Some start -> Span(start, 1) |> Some
 
+        // Find the matching conditional starting from the buffer position 'target'
         let findMatchingConditional (target : int) = 
 
             let blockList = x.GetConditionalBlocks snapshot
@@ -426,6 +427,50 @@ type MatchingTokenUtil() =
         match found with
         | None -> None
         | Some span -> SnapshotSpan(snapshot, span) |> Some
+
+    /// Find the 'count' unmatched token in the specified direction from the 
+    /// specified point
+    member x.FindUnmatchedToken path kind point count = 
+
+        // Get the sequence of points to search for the unmatched token.  The search
+        // always starts from a point that is one past the starting point even if 
+        // the search is backwards
+        let snapshot = SnapshotPointUtil.GetSnapshot point
+        let charSeq = 
+            match path with
+            | Path.Forward -> 
+                let span = SnapshotSpan(point, SnapshotUtil.GetEndPoint snapshot)
+                span |> SnapshotSpanUtil.GetPoints Path.Forward |> SeqUtil.skipMax 1
+            | Path.Backward ->
+                let span = SnapshotSpan(SnapshotUtil.GetStartPoint snapshot, point)
+                span |> SnapshotSpanUtil.GetPoints Path.Backward
+
+        // Determine the characters that will a new depth to be entered and 
+        // left.  Going forward ( is up and ) is down.  
+        let up, down = 
+            let startChar, endChar = 
+                match kind with
+                | UnmatchedTokenKind.Paren -> '(', ')'
+                | UnmatchedTokenKind.CurlyBracket -> '{', '}'
+            match path with
+            | Path.Forward -> startChar, endChar
+            | Path.Backward -> endChar, startChar
+
+        let mutable depth = 0
+        let mutable count = count
+        let mutable found : SnapshotPoint option = None
+        use e = charSeq.GetEnumerator()
+        while e.MoveNext() && Option.isNone found do
+            let c = e.Current.GetChar()
+            if c = up then 
+                depth <- depth + 1
+            elif c = down && depth = 0 then 
+                count <- count - 1
+                if count = 0 then 
+                    found <- Some e.Current 
+            elif c = down then
+                depth <- depth - 1
+        found
 
 type QuotedStringData =  {
     LeadingWhiteSpace : SnapshotSpan
@@ -1318,7 +1363,7 @@ type internal MotionUtil
             // Search succeeded so update the jump list before moving
             _jumpList.Add x.CaretPoint
 
-            // Nice now order the tokens appropriately to get the span 
+            // Order the tokens appropriately to get the span 
             let span, isForward = 
                 if x.CaretPoint.Position < matchingTokenSpan.Start.Position then
                     let endPoint = SnapshotPointUtil.AddOneOrCurrent matchingTokenSpan.Start
@@ -1328,6 +1373,22 @@ type internal MotionUtil
 
             MotionResult.Create span isForward MotionKind.CharacterWiseInclusive |> Some
 
+    member x.UnmatchedToken path kind count = 
+        match _matchingTokenUtil.FindUnmatchedToken path kind x.CaretPoint count with
+        | None -> None
+        | Some matchingPoint ->
+
+            // Search succeeded so update the jump list before moving
+            _jumpList.Add x.CaretPoint
+
+            // Order the tokens appropriately to get the span 
+            let span, isForward = 
+                if x.CaretPoint.Position < matchingPoint.Position then
+                    SnapshotSpan(x.CaretPoint, matchingPoint), true
+                else
+                    SnapshotSpan(matchingPoint, x.CaretPoint), false
+
+            MotionResult.Create span isForward MotionKind.CharacterWiseExclusive |> Some
 
     /// Implement the all block motion
     member x.AllBlock contextPoint blockKind count =
@@ -2530,6 +2591,7 @@ type internal MotionUtil
             | Motion.ScreenColumn -> x.LineToColumn motionArgument.Count |> Some
             | Motion.SentenceBackward -> x.SentenceBackward motionArgument.Count |> Some
             | Motion.SentenceForward -> x.SentenceForward motionArgument.Count |> Some
+            | Motion.UnmatchedToken (path, kind) -> x.UnmatchedToken path kind motionArgument.Count
             | Motion.WordBackward wordKind -> x.WordBackward wordKind motionArgument.Count |> Some
             | Motion.WordForward wordKind -> x.WordForward wordKind motionArgument.Count motionArgument.MotionContext |> Some
 

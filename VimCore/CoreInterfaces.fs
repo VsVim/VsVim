@@ -687,6 +687,11 @@ type BlockKind =
         | AngleBracket -> '<', '>'
         | CurlyBracket -> '{', '}'
 
+[<RequireQualifiedAccess>]
+type UnmatchedTokenKind =
+    | Paren
+    | CurlyBracket
+
 /// A discriminated union of the Motion types supported.  These are the primary
 /// repeat mechanisms for Motion arguments so it's very important that these 
 /// are ITextView / IVimBuffer agnostic.  It will be very common for a Motion 
@@ -851,6 +856,9 @@ type Motion =
 
     /// Move the the specific column of the current line. Typically in response to the | key. 
     | ScreenColumn
+
+    /// The [(, ]), ]}, [{ motions
+    | UnmatchedToken of Path * UnmatchedTokenKind
 
     /// Implement the b/B motion
     | WordBackward of WordKind
