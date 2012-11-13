@@ -26,6 +26,7 @@ namespace VsVim.UnitTest
         private readonly Mock<IResharperUtil> _resharperUtil;
         private readonly Mock<IOleCommandTarget> _nextTarget;
         private readonly Mock<IDisplayWindowBroker> _broker;
+        private readonly Mock<ITextManager> _textManager;
         private readonly VsCommandTarget _targetRaw;
         private readonly IOleCommandTarget _target;
 
@@ -49,6 +50,7 @@ namespace VsVim.UnitTest
             _vsAdapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(false);
 
             _broker = _factory.Create<IDisplayWindowBroker>(MockBehavior.Loose);
+            _textManager = _factory.Create<ITextManager>();
 
             var oldCommandFilter = _nextTarget.Object;
             var vsTextView = _factory.Create<IVsTextView>(MockBehavior.Loose);
@@ -56,6 +58,7 @@ namespace VsVim.UnitTest
             var result = VsCommandTarget.Create(
                 _bufferCoordinator,
                 vsTextView.Object,
+                _textManager.Object,
                 _vsAdapter.Object,
                 _broker.Object,
                 _resharperUtil.Object,

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using EditorUtils;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;
@@ -48,6 +49,7 @@ namespace VsVim
         private readonly IVim _vim;
         private readonly IVimBufferCoordinator _bufferCoordinator;
         private readonly ITextBuffer _textBuffer;
+        private readonly ITextManager _textManager;
         private readonly IVsAdapter _vsAdapter;
         private readonly IDisplayWindowBroker _broker;
         private readonly IResharperUtil _resharperUtil;
@@ -56,6 +58,7 @@ namespace VsVim
 
         private VsCommandTarget(
             IVimBufferCoordinator bufferCoordinator,
+            ITextManager textManager,
             IVsAdapter vsAdapter,
             IDisplayWindowBroker broker,
             IResharperUtil resharperUtil,
@@ -65,6 +68,7 @@ namespace VsVim
             _vim = _vimBuffer.Vim;
             _bufferCoordinator = bufferCoordinator;
             _textBuffer = _vimBuffer.TextBuffer;
+            _textManager = textManager;
             _vsAdapter = vsAdapter;
             _broker = broker;
             _resharperUtil = resharperUtil;
@@ -417,12 +421,14 @@ namespace VsVim
 
                 // The GoToDefinition command will often cause a selection to occur in the 
                 // buffer.  We don't want that to cause us to enter Visual Mode so clear it
-                // out 
-                if (editCommand != null && 
-                    editCommand.EditCommandKind == EditCommandKind.GoToDefinition &&
-                    !_vimBuffer.TextView.Selection.IsEmpty)
+                // out.  This command can cause the active document to switch if the target
+                // of the goto def is in another file.  This file won't be registered as the
+                // active file yet so just clear out the active selections
+                if (editCommand != null && editCommand.EditCommandKind == EditCommandKind.GoToDefinition)
                 {
-                    _vimBuffer.TextView.Selection.Clear();
+                    _textManager.TextViews
+                        .Where(x => !x.Selection.IsEmpty)
+                        .ForEach(x => x.Selection.Clear());
                 }
             }
         }
@@ -540,12 +546,13 @@ namespace VsVim
         internal static Result<VsCommandTarget> Create(
             IVimBufferCoordinator bufferCoordinator,
             IVsTextView vsTextView,
+            ITextManager textManager,
             IVsAdapter adapter,
             IDisplayWindowBroker broker,
             IResharperUtil resharperUtil,
             IKeyUtil keyUtil)
         {
-            var vsCommandTarget = new VsCommandTarget(bufferCoordinator, adapter, broker, resharperUtil, keyUtil);
+            var vsCommandTarget = new VsCommandTarget(bufferCoordinator, textManager, adapter, broker, resharperUtil, keyUtil);
             var hresult = vsTextView.AddCommandFilter(vsCommandTarget, out vsCommandTarget._nextTarget);
             var result = Result.CreateSuccessOrError(vsCommandTarget, hresult);
             if (result.IsSuccess)

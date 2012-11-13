@@ -46,6 +46,7 @@ namespace VsVim
         private readonly IVim _vim;
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
         private readonly Dictionary<IVimBuffer, BufferData> _bufferMap = new Dictionary<IVimBuffer, BufferData>();
+        private readonly ITextManager _textManager;
         private readonly IVsAdapter _adapter;
         private readonly IProtectedOperations _protectedOperations;
         private readonly IVimBufferCoordinatorFactory _bufferCoordinatorFactory;
@@ -62,6 +63,7 @@ namespace VsVim
             IVsEditorAdaptersFactoryService adaptersFactory,
             IResharperUtil resharperUtil,
             IDisplayWindowBrokerFactoryService displayWindowBrokerFactoryService,
+            ITextManager textManager,
             IVsAdapter adapter,
             [EditorUtilsImport] IProtectedOperations protectedOperations,
             IVimBufferCoordinatorFactory bufferCoordinatorFactory,
@@ -75,6 +77,7 @@ namespace VsVim
             _resharperUtil = resharperUtil;
             _displayWindowBrokerFactoryServcie = displayWindowBrokerFactoryService;
             _adaptersFactory = adaptersFactory;
+            _textManager = textManager;
             _adapter = adapter;
             _protectedOperations = protectedOperations;
             _bufferCoordinatorFactory = bufferCoordinatorFactory;
@@ -185,7 +188,7 @@ namespace VsVim
 
             var broker = _displayWindowBrokerFactoryServcie.CreateDisplayWindowBroker(textView);
             var bufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(buffer);
-            var result = VsCommandTarget.Create(bufferCoordinator, vsView, _adapter, broker, _resharperUtil, _keyUtil);
+            var result = VsCommandTarget.Create(bufferCoordinator, vsView, _textManager, _adapter, broker, _resharperUtil, _keyUtil);
             if (result.IsSuccess)
             {
                 // Store the value for debugging

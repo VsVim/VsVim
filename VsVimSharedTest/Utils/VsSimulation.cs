@@ -340,6 +340,7 @@ namespace VsVim.UnitTest.Utils
             var vsCommandTarget = VsCommandTarget.Create(
                 bufferCoordinator,
                 vsTextView.Object,
+                _factory.Create<ITextManager>().Object,
                 _vsAdapter.Object,
                 _displayWindowBroker.Object,
                 _resharperUtil.Object,

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.Composition;
 using System.IO;
+using System.Linq;
 using EditorUtils;
 using EnvDTE;
 using Microsoft.VisualStudio.Editor;
@@ -159,6 +160,7 @@ namespace VsVim
 
         public override bool GoToDefinition()
         {
+            var selected = _textManager.TextViews.Where(x => !x.Selection.IsEmpty).ToList();
             if (!GoToDefinitionCore(_textManager.ActiveTextViewOptional, null))
             {
                 return false;
@@ -167,11 +169,12 @@ namespace VsVim
             // Certian language services, VB.Net for example, will select the word after
             // the go to definition is implemented.  Need to clear that out to prevent the
             // go to definition from switching us to Visual Mode
-            var optionalTextView = _textManager.ActiveTextViewOptional;
-            if (optionalTextView != null && !optionalTextView.Selection.IsEmpty)
-            {
-                optionalTextView.Selection.Clear();
-            }
+            // 
+            // This selection often occurs in another document but that document won't be 
+            // active when we get back here.  Instead just clear all of the new selections
+            _textManager.TextViews
+                .Where(x => !x.Selection.IsEmpty && !selected.Contains(x))
+                .ForEach(x => x.Selection.Clear());
 
             return true;
         }
