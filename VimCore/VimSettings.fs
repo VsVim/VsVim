@@ -575,6 +575,8 @@ type internal EditorToSettingSynchronizer
     member x.IsTrackedLocalSetting (setting : Setting) = 
         if setting.Name = LocalSettingNames.TabStopName then
             true
+        elif setting.Name = LocalSettingNames.ShiftWidthName then
+            true
         elif setting.Name = LocalSettingNames.ExpandTabName then
             true
         elif setting.Name = LocalSettingNames.NumberName then
@@ -585,6 +587,8 @@ type internal EditorToSettingSynchronizer
     /// Is this an editor setting of note
     member x.IsTrackedEditorSetting optionId =
         if optionId = DefaultOptions.TabSizeOptionId.Name then
+            true
+        elif optionId = DefaultOptions.IndentSizeOptionId.Name then
             true
         elif optionId = DefaultOptions.ConvertTabsToSpacesOptionId.Name then
             true
@@ -606,6 +610,7 @@ type internal EditorToSettingSynchronizer
     member x.TrySyncLocalToEditor (localSettings : IVimLocalSettings) editorOptions =
         x.TrySync localSettings (fun () ->
             EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.TabSizeOptionId localSettings.TabStop
+            EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.IndentSizeOptionId localSettings.ShiftWidth
             EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.ConvertTabsToSpacesOptionId localSettings.ExpandTab
             EditorOptionsUtil.SetOptionValue editorOptions DefaultTextViewHostOptions.LineNumberMarginId localSettings.Number)
 
@@ -616,6 +621,9 @@ type internal EditorToSettingSynchronizer
             match EditorOptionsUtil.GetOptionValue editorOptions DefaultOptions.TabSizeOptionId with
             | None -> ()
             | Some tabSize -> localSettings.TabStop <- tabSize
+            match EditorOptionsUtil.GetOptionValue editorOptions DefaultOptions.IndentSizeOptionId with
+            | None -> ()
+            | Some shiftWidth -> localSettings.ShiftWidth <- shiftWidth
             match EditorOptionsUtil.GetOptionValue editorOptions DefaultOptions.ConvertTabsToSpacesOptionId with
             | None -> ()
             | Some convertTabToSpace -> localSettings.ExpandTab <- convertTabToSpace

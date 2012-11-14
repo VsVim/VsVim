@@ -32,6 +32,7 @@ namespace VsVim
         private sealed class BufferData
         {
             internal int TabStop;
+            internal int ShiftWidth;
             internal bool ExpandTab;
             internal bool Number;
             internal VsCommandTarget VsCommandTarget;
@@ -119,6 +120,7 @@ namespace VsVim
             var bufferData = new BufferData
             {
                 TabStop = buffer.LocalSettings.TabStop,
+                ShiftWidth = buffer.LocalSettings.ShiftWidth,
                 ExpandTab = buffer.LocalSettings.ExpandTab,
                 Number = buffer.LocalSettings.Number
             };
@@ -176,6 +178,7 @@ namespace VsVim
                 if (!_vim.GlobalSettings.UseEditorSettings)
                 {
                     buffer.LocalSettings.TabStop = bufferData.TabStop;
+                    buffer.LocalSettings.ShiftWidth = bufferData.ShiftWidth;
                     buffer.LocalSettings.ExpandTab = bufferData.ExpandTab;
                     buffer.LocalSettings.Number = bufferData.Number;
                 }

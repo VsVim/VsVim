@@ -50,5 +50,18 @@ namespace Vim.UnitTest
             _editorOptions.SetOptionValue(DefaultOptions.ConvertTabsToSpacesOptionId, false);
             Assert.False(_localSettings.ExpandTab);
         }
+
+        /// <summary>
+        /// Verify that it's synchronizing 'shiftwidth' between the two places
+        /// </summary>
+        [Fact]
+        public void Sync_ShiftWidth()
+        {
+            _localSettings.ShiftWidth = 42;
+            Assert.Equal(42, _editorOptions.GetOptionValue(DefaultOptions.IndentSizeOptionId));
+
+            _editorOptions.SetOptionValue(DefaultOptions.IndentSizeOptionId, 13);
+            Assert.Equal(13, _localSettings.ShiftWidth);
+        }
     }
 }
