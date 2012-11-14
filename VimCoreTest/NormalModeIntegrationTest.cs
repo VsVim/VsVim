@@ -3435,6 +3435,50 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class NumberedRegisterTest : NormalModeIntegrationTest
+        {
+            private void AssertRegister(int number, string value, bool addNewLine = true)
+            {
+                value = addNewLine ? value + Environment.NewLine : value;
+                var c = number.ToString()[0];
+                var name = RegisterName.OfChar(c).Value;
+                Assert.Equal(value, _vimBuffer.RegisterMap.GetRegister(name).StringValue);
+            }
+
+            [Fact]
+            public void DeleteLine()
+            {
+                Create("cat", "dog", "fish");
+                _vimBuffer.Process("dd");
+                AssertRegister(1, "cat");
+            }
+
+            [Fact]
+            public void DeleteLineMultiple()
+            {
+                Create("cat", "dog", "fish");
+                _vimBuffer.Process("dddd");
+                AssertRegister(1, "dog");
+                AssertRegister(2, "cat");
+            }
+
+            [Fact]
+            public void ChangeDoesntUpdate()
+            {
+                Create("cat", "dog", "fish");
+                _vimBuffer.Process("C");
+                AssertRegister(1, "", addNewLine: false);
+            }
+
+            [Fact]
+            public void DeleteTillEndOfLine()
+            {
+                Create("cat", "dog", "fish");
+                _vimBuffer.Process("D");
+                AssertRegister(1, "", addNewLine: false);
+            }
+        }
+
         public sealed class MiscTest : NormalModeIntegrationTest
         {
             /// <summary>

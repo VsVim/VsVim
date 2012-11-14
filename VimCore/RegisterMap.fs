@@ -92,9 +92,15 @@ type internal RegisterMap (_map: Map<RegisterName, Register>) =
     /// Updates the given register with the specified value.  This will also update 
     /// other registers based on the type of update that is being performed.  See 
     /// :help registers for the full details
-    member x.SetRegisterValue (reg : Register) regOperation value = 
+    member x.SetRegisterValue (reg : Register) regOperation (value : RegisterValue) = 
         if reg.Name <> RegisterName.Blackhole then
+
             reg.RegisterValue <- value
+
+            let hasNewLine = 
+                match value.StringData with 
+                | StringData.Block col -> Seq.exists EditUtil.HasNewLine col 
+                | StringData.Simple str -> EditUtil.HasNewLine str
 
             // If this is not the unnamed register then the unnamed register needs to 
             // be updated 
@@ -105,21 +111,24 @@ type internal RegisterMap (_map: Map<RegisterName, Register>) =
             // Update the numbered register based on the type of the operation
             match regOperation with
             | RegisterOperation.Delete ->
-                // Update the numbered registers with the new values.  First shift the existing
-                // values up the stack
-                let intToName num = 
-                    let c = char (num + (int '0'))
-                    let name = NumberedRegister.OfChar c |> Option.get
-                    RegisterName.Numbered name
-        
-                // Next is insert the new value into the numbered register list.  New value goes
-                // into 1 and the rest shift up
-                for i in [9;8;7;6;5;4;3;2] do
-                    let cur = intToName i |> x.GetRegister
-                    let prev = intToName (i-1) |> x.GetRegister
-                    cur.RegisterValue <- prev.RegisterValue
-                let regOne = x.GetRegister (RegisterName.Numbered NumberedRegister.Register_1)
-                regOne.RegisterValue <- value
+
+                if hasNewLine then
+
+                  // Update the numbered registers with the new values if this delete spanned more
+                  // than a single line.  First shift the existing values up the stack
+                  let intToName num = 
+                      let c = char (num + (int '0'))
+                      let name = NumberedRegister.OfChar c |> Option.get
+                      RegisterName.Numbered name
+          
+                  // Next is insert the new value into the numbered register list.  New value goes
+                  // into 1 and the rest shift up
+                  for i in [9;8;7;6;5;4;3;2] do
+                      let cur = intToName i |> x.GetRegister
+                      let prev = intToName (i-1) |> x.GetRegister
+                      cur.RegisterValue <- prev.RegisterValue
+                  let regOne = x.GetRegister (RegisterName.Numbered NumberedRegister.Register_1)
+                  regOne.RegisterValue <- value
             | RegisterOperation.Yank ->
 
                 // If the yank occurs to the unnamed register then update register 0 with the 
@@ -129,13 +138,9 @@ type internal RegisterMap (_map: Map<RegisterName, Register>) =
                     regZero.RegisterValue <- value
     
             // Possibly update the small delete register
-            if reg.Name <> RegisterName.Unnamed && regOperation = RegisterOperation.Delete then
-                match value.StringData with
-                | StringData.Block(_) -> ()
-                | StringData.Simple(str) -> 
-                    if not (StringUtil.containsChar str '\n') then
-                        let regSmallDelete = x.GetRegister RegisterName.SmallDelete
-                        regSmallDelete.RegisterValue <- value
+            if reg.Name <> RegisterName.Unnamed && regOperation = RegisterOperation.Delete && not hasNewLine then
+                let regSmallDelete = x.GetRegister RegisterName.SmallDelete
+                regSmallDelete.RegisterValue <- value
 
     interface IRegisterMap with
         member x.RegisterNames = _map |> Seq.map (fun pair -> pair.Key)
