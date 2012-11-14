@@ -18,7 +18,8 @@ open System.Collections.Generic
 type internal SelectionChangeTracker
     ( 
         _vimBuffer : IVimBuffer,
-        _selectionOverrideList : IVisualModeSelectionOverride list
+        _selectionOverrideList : IVisualModeSelectionOverride list,
+        _mouseDevice : IMouseDevice
     ) as this =
 
     let _globalSettings = _vimBuffer.GlobalSettings
@@ -82,6 +83,8 @@ type internal SelectionChangeTracker
     /// Update the mode based on the current Selection
     member x.SetModeForSelection() = 
 
+        let isLeftButtonPressed = _mouseDevice.IsLeftButtonPressed
+
         // What should the mode be based on the current selection
         let desiredMode () = 
             let inner = 
@@ -90,7 +93,7 @@ type internal SelectionChangeTracker
                         Some ModeKind.Normal
                     else 
                         None
-                elif Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
+                elif Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse && isLeftButtonPressed then
                     // When the "mouse" is set in 'selectmode' then selection change should ensure
                     // we are in select.  If we are already in select then maintain the current mode
                     // else transition into the standard character one
@@ -153,10 +156,12 @@ type internal SelectionChangeTracker
 type internal SelectionChangeTrackerFactory
     [<ImportingConstructor>]
     (
-        [<ImportMany>] _selectionOverrideList : IVisualModeSelectionOverride seq
+        [<ImportMany>] _selectionOverrideList : IVisualModeSelectionOverride seq,
+        mouseDevice : IMouseDevice
     ) =
 
     let _selectionOverrideList = _selectionOverrideList |> List.ofSeq
+    let _mouseDevice = mouseDevice
 
     interface IVimBufferCreationListener with
         member x.VimBufferCreated vimBuffer = 
@@ -164,7 +169,7 @@ type internal SelectionChangeTrackerFactory
             // It's OK to just ignore this after creation.  It subscribes to several 
             // event handlers which will keep it alive for the duration of the 
             // IVimBuffer
-            let selectionTracker = SelectionChangeTracker(vimBuffer, _selectionOverrideList)
+            let selectionTracker = SelectionChangeTracker(vimBuffer, _selectionOverrideList, _mouseDevice)
             ()
 
 

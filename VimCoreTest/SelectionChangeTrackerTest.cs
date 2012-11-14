@@ -16,6 +16,7 @@ namespace Vim.UnitTest
         private readonly Mock<ITextSelection> _selection;
         private readonly Mock<ITextView> _textView;
         private readonly Mock<IVisualModeSelectionOverride> _selectionOverride;
+        private readonly Mock<IMouseDevice> _mouseDevice;
         private readonly TestableSynchronizationContext _context;
         private readonly SelectionChangeTracker _tracker;
 
@@ -30,6 +31,7 @@ namespace Vim.UnitTest
                 textView: _textView.Object,
                 factory: _factory);
 
+            _mouseDevice = _factory.Create<IMouseDevice>();
             _selectionOverride = _factory.Create<IVisualModeSelectionOverride>();
             _selectionOverride.Setup(x => x.IsInsertModePreferred(It.IsAny<ITextView>())).Returns(false);
             var selectionList = new List<IVisualModeSelectionOverride>();
@@ -37,7 +39,7 @@ namespace Vim.UnitTest
 
             _context = new TestableSynchronizationContext();
             _context.Install();
-            _tracker = new SelectionChangeTracker(_vimBuffer.Object, selectionList.ToFSharpList());
+            _tracker = new SelectionChangeTracker(_vimBuffer.Object, selectionList.ToFSharpList(), _mouseDevice.Object);
         }
 
         public void Dispose()
