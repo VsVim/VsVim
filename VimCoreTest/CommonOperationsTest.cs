@@ -56,7 +56,6 @@ namespace Vim.UnitTest
             _globalSettings.SetupGet(x => x.UseEditorSettings).Returns(false);
             _globalSettings.SetupGet(x => x.VirtualEdit).Returns(String.Empty);
             _globalSettings.SetupGet(x => x.WrapScan).Returns(true);
-            _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
             _searchService = new SearchService(TextSearchService, _globalSettings.Object);
             var vim = MockObjectFactory.CreateVim(
                 registerMap: registerMap,
@@ -71,6 +70,7 @@ namespace Vim.UnitTest
             _localSettings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
             _localSettings.SetupGet(x => x.ExpandTab).Returns(true);
             _localSettings.SetupGet(x => x.TabStop).Returns(4);
+            _localSettings.SetupGet(x => x.ShiftWidth).Returns(2);
             _vimTextBuffer = MockObjectFactory.CreateVimTextBuffer(
                 _textBuffer,
                 localSettings: _localSettings.Object,
@@ -800,7 +800,7 @@ namespace Vim.UnitTest
         {
             Create("cat", "dog");
             _globalSettings.SetupGet(x => x.UseEditorSettings).Returns(false);
-            _globalSettings.SetupGet(x => x.ShiftWidth).Returns(4);
+            _localSettings.SetupGet(x => x.ShiftWidth).Returns(4);
             _localSettings.SetupGet(x => x.ExpandTab).Returns(false);
             _operations.ShiftLineRangeRight(1);
             Assert.Equal("\tcat", _textView.GetLine(0).GetText());
@@ -811,7 +811,7 @@ namespace Vim.UnitTest
         {
             Create("cat", "dog");
             _globalSettings.SetupGet(x => x.UseEditorSettings).Returns(false);
-            _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
+            _localSettings.SetupGet(x => x.ShiftWidth).Returns(2);
             _localSettings.SetupGet(x => x.TabStop).Returns(4);
             _localSettings.SetupGet(x => x.ExpandTab).Returns(false);
             _operations.ShiftLineRangeRight(1);

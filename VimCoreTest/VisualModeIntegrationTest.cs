@@ -530,7 +530,7 @@ namespace Vim.UnitTest
             {
                 Create("dog again", "cat again", "chicken");
                 EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
-                _vimBuffer.LocalSettings.GlobalSettings.ShiftWidth = 2;
+                _vimBuffer.LocalSettings.ShiftWidth = 2;
                 _vimBuffer.Process(">.");
                 Assert.Equal("    dog again", _textView.GetLine(0).GetText());
             }
@@ -540,7 +540,7 @@ namespace Vim.UnitTest
             {
                 Create("dog again", "cat again", "chicken");
                 EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
-                _vimBuffer.LocalSettings.GlobalSettings.ShiftWidth = 2;
+                _vimBuffer.LocalSettings.ShiftWidth = 2;
                 _vimBuffer.Process(">..");
                 Assert.Equal("      dog again", _textView.GetLine(0).GetText());
             }

@@ -4,67 +4,42 @@ using Xunit;
 
 namespace Vim.UnitTest
 {
-    public sealed class GlobalSettingsTest : SettingsCommonTest
+    public sealed class GlobalSettingsTest 
     {
-        protected override string ToggleSettingName { get { return GlobalSettingNames.IgnoreCaseName; } }
-        protected override IVimSettings Create()
-        {
-            return CreateGlobal();
-        }
+        private readonly IVimGlobalSettings _globalSettings;
 
-        private IVimGlobalSettings CreateGlobal()
+        public GlobalSettingsTest()
         {
-            return new GlobalSettings();
+            _globalSettings = new GlobalSettings();
         }
 
         [Fact]
         public void Sanity1()
         {
-            var global = CreateGlobal();
-            var all = global.AllSettings;
+            var all = _globalSettings.AllSettings;
             Assert.True(all.Any(x => x.Name == GlobalSettingNames.IgnoreCaseName));
-            Assert.True(all.Any(x => x.Name == GlobalSettingNames.ShiftWidthName));
-        }
-
-        [Fact]
-        public void SetByAbbreviation1()
-        {
-            var global = CreateGlobal();
-            Assert.True(global.TrySetValueFromString("sw", "2"));
-            Assert.Equal(2, global.ShiftWidth);
-        }
-
-        [Fact]
-        public void SetByAbbreviation2()
-        {
-            var global = CreateGlobal();
-            Assert.False(global.IgnoreCase);
-            Assert.True(global.TrySetValueFromString("ic", "true"));
-            Assert.True(global.IgnoreCase);
+            Assert.True(all.Any(x => x.Name == GlobalSettingNames.ScrollOffsetName));
         }
 
         [Fact]
         public void IsVirtualEditOneMore1()
         {
-            var global = CreateGlobal();
-            global.VirtualEdit = String.Empty;
-            Assert.False(global.IsVirtualEditOneMore);
+            _globalSettings.VirtualEdit = String.Empty;
+            Assert.False(_globalSettings.IsVirtualEditOneMore);
         }
 
         [Fact]
         public void IsVirtualEditOneMore2()
         {
-            var global = CreateGlobal();
-            global.VirtualEdit = "onemore";
-            Assert.True(global.IsVirtualEditOneMore);
+            _globalSettings.VirtualEdit = "onemore";
+            Assert.True(_globalSettings.IsVirtualEditOneMore);
         }
 
         [Fact]
         public void IsVirtualEditOneMore3()
         {
-            var global = CreateGlobal();
-            global.VirtualEdit = "onemore,blah";
-            Assert.True(global.IsVirtualEditOneMore);
+            _globalSettings.VirtualEdit = "onemore,blah";
+            Assert.True(_globalSettings.IsVirtualEditOneMore);
         }
 
         /// <summary>
@@ -73,10 +48,9 @@ namespace Vim.UnitTest
         [Fact]
         public void IsBackspaceStart()
         {
-            var globalSettings = CreateGlobal();
-            Assert.False(globalSettings.IsBackspaceStart);
-            globalSettings.Backspace = "eol,start";
-            Assert.True(globalSettings.IsBackspaceStart);
+            Assert.False(_globalSettings.IsBackspaceStart);
+            _globalSettings.Backspace = "eol,start";
+            Assert.True(_globalSettings.IsBackspaceStart);
         }
 
         /// <summary>
@@ -85,10 +59,9 @@ namespace Vim.UnitTest
         [Fact]
         public void IsBackspaceEol()
         {
-            var globalSettings = CreateGlobal();
-            Assert.False(globalSettings.IsBackspaceEol);
-            globalSettings.Backspace = "eol,Eol";
-            Assert.True(globalSettings.IsBackspaceEol);
+            Assert.False(_globalSettings.IsBackspaceEol);
+            _globalSettings.Backspace = "eol,Eol";
+            Assert.True(_globalSettings.IsBackspaceEol);
         }
 
         /// <summary>
@@ -97,10 +70,9 @@ namespace Vim.UnitTest
         [Fact]
         public void IsBackspaceIndent()
         {
-            var globalSettings = CreateGlobal();
-            Assert.False(globalSettings.IsBackspaceIndent);
-            globalSettings.Backspace = "indent,start";
-            Assert.True(globalSettings.IsBackspaceIndent);
+            Assert.False(_globalSettings.IsBackspaceIndent);
+            _globalSettings.Backspace = "indent,start";
+            Assert.True(_globalSettings.IsBackspaceIndent);
         }
 
         /// <summary>
@@ -110,30 +82,27 @@ namespace Vim.UnitTest
         [Fact]
         public void SetShouldRaise()
         {
-            var global = CreateGlobal();
             var seen = false;
-            global.HighlightSearch = true;
-            global.SettingChanged += delegate { seen = true; };
-            global.HighlightSearch = true;
+            _globalSettings.HighlightSearch = true;
+            _globalSettings.SettingChanged += delegate { seen = true; };
+            _globalSettings.HighlightSearch = true;
             Assert.True(seen);
         }
 
         [Fact]
         public void Clipboard_SetUnnamed()
         {
-            var global = CreateGlobal();
-            global.Clipboard = "unnamed";
-            Assert.Equal(ClipboardOptions.Unnamed, global.ClipboardOptions);
-            Assert.Equal("unnamed", global.Clipboard);
+            _globalSettings.Clipboard = "unnamed";
+            Assert.Equal(ClipboardOptions.Unnamed, _globalSettings.ClipboardOptions);
+            Assert.Equal("unnamed", _globalSettings.Clipboard);
         }
 
         [Fact]
         public void Clipboard_Multiple()
         {
-            var global = CreateGlobal();
-            global.Clipboard = "unnamed,autoselect";
-            Assert.Equal(ClipboardOptions.Unnamed | ClipboardOptions.AutoSelect, global.ClipboardOptions);
-            Assert.Equal("unnamed,autoselect", global.Clipboard);
+            _globalSettings.Clipboard = "unnamed,autoselect";
+            Assert.Equal(ClipboardOptions.Unnamed | ClipboardOptions.AutoSelect, _globalSettings.ClipboardOptions);
+            Assert.Equal("unnamed,autoselect", _globalSettings.Clipboard);
         }
 
         /// <summary>
@@ -142,20 +111,18 @@ namespace Vim.UnitTest
         [Fact]
         public void SelectModeOptions_Simple()
         {
-            var global = CreateGlobal();
-            global.SelectModeOptions = SelectModeOptions.Keyboard | SelectModeOptions.Mouse;
-            Assert.Equal("mouse,key", global.SelectMode);
-            global.SelectModeOptions = SelectModeOptions.Keyboard;
-            Assert.Equal("key", global.SelectMode);
+            _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard | SelectModeOptions.Mouse;
+            Assert.Equal("mouse,key", _globalSettings.SelectMode);
+            _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+            Assert.Equal("key", _globalSettings.SelectMode);
         }
 
         [Fact]
         public void SelectModeOptions_Default()
         {
-            var global = CreateGlobal();
-            Assert.Equal("", global.SelectMode);
-            Assert.Equal(SelectModeOptions.None, global.SelectModeOptions);
-            var setting = global.GetSetting(GlobalSettingNames.SelectModeName).Value;
+            Assert.Equal("", _globalSettings.SelectMode);
+            Assert.Equal(SelectModeOptions.None, _globalSettings.SelectModeOptions);
+            var setting = _globalSettings.GetSetting(GlobalSettingNames.SelectModeName).Value;
             Assert.Equal("", setting.DefaultValue.AsStringValue().Item);
         }
     }

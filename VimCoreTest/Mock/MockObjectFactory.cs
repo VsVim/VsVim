@@ -99,7 +99,6 @@ namespace Vim.UnitTest.Mock
 
         public static Mock<IVimGlobalSettings> CreateGlobalSettings(
             bool? ignoreCase = null,
-            int? shiftWidth = null,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
@@ -107,10 +106,6 @@ namespace Vim.UnitTest.Mock
             if (ignoreCase.HasValue)
             {
                 mock.SetupGet(x => x.IgnoreCase).Returns(ignoreCase.Value);
-            }
-            if (shiftWidth.HasValue)
-            {
-                mock.SetupGet(x => x.ShiftWidth).Returns(shiftWidth.Value);
             }
 
             mock.SetupGet(x => x.DisableAllCommand).Returns(GlobalSettings.DisableAllCommand);

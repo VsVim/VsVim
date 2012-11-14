@@ -453,6 +453,7 @@ namespace Vim.UnitTest
             public void Simple()
             {
                 Create("cat", "dog");
+                _localSettings.ShiftWidth = 4;
                 _vimBuffer.ProcessNotation("<C-t>");
                 Assert.Equal("    cat", _textBuffer.GetLine(0).GetText());
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
@@ -462,7 +463,7 @@ namespace Vim.UnitTest
             public void CustomShift()
             {
                 Create("cat", "dog");
-                _globalSettings.ShiftWidth = 2;
+                _localSettings.ShiftWidth = 2;
                 _vimBuffer.ProcessNotation("<C-t>");
                 Assert.Equal("  cat", _textBuffer.GetLine(0).GetText());
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
@@ -644,7 +645,7 @@ namespace Vim.UnitTest
                 Create("int Member", "int Member");
                 _localSettings.ExpandTab = false;
                 _localSettings.TabStop = 8;
-                _globalSettings.ShiftWidth = 4;
+                _localSettings.ShiftWidth = 4;
                 _vimBuffer.Process(VimKey.Escape);
                 _textView.MoveCaretToLine(0, 3);
                 _vimBuffer.ProcessNotation("i<Tab><Tab><Esc>");
@@ -805,7 +806,7 @@ namespace Vim.UnitTest
                 Create("int Member", "int Member");
                 _localSettings.ExpandTab = false;
                 _localSettings.TabStop = 8;
-                _globalSettings.ShiftWidth = 4;
+                _localSettings.ShiftWidth = 4;
                 _vimBuffer.Process(VimKey.Escape);
                 _textView.MoveCaretToLine(0, 3);
                 _vimBuffer.ProcessNotation("3i<Tab><Esc>");
@@ -1040,7 +1041,7 @@ namespace Vim.UnitTest
             public void ShiftLeft_RoundUp()
             {
                 Create("     hello");
-                _vimBuffer.GlobalSettings.ShiftWidth = 4;
+                _vimBuffer.LocalSettings.ShiftWidth = 4;
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-D>"));
                 Assert.Equal("    hello", _textBuffer.GetLine(0).GetText());
             }
@@ -1053,7 +1054,7 @@ namespace Vim.UnitTest
             public void ShiftLeft_Normal()
             {
                 Create("        hello");
-                _vimBuffer.GlobalSettings.ShiftWidth = 4;
+                _vimBuffer.LocalSettings.ShiftWidth = 4;
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-D>"));
                 Assert.Equal("    hello", _textBuffer.GetLine(0).GetText());
             }

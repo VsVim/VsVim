@@ -442,9 +442,9 @@ type internal InsertUtil
                     spaces
 
             let trim = 
-                let remainder = spaces.Length % _globalSettings.ShiftWidth
+                let remainder = spaces.Length % _localSettings.ShiftWidth
                 if remainder = 0 then
-                    _globalSettings.ShiftWidth
+                    _localSettings.ShiftWidth
                 else
                     remainder
             let indent = 

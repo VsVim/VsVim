@@ -2,30 +2,29 @@
 
 namespace Vim.UnitTest
 {
-    public class LocalSettingsTest : SettingsCommonTest
+    public sealed class LocalSettingsTest
     {
-        protected override string ToggleSettingName { get { return LocalSettingNames.NumberName; } }
-        protected override IVimSettings Create()
-        {
-            var global = new GlobalSettings();
-            return new LocalSettings(global);
-        }
-
-        private IVimGlobalSettings _global;
-        private LocalSettings _localRaw;
-        private IVimLocalSettings _local;
+        private IVimGlobalSettings _globalSettings;
+        private IVimLocalSettings _localSettings;
+        private LocalSettings _localSettingsRaw;
 
         public LocalSettingsTest()
         {
-            _global = new GlobalSettings();
-            _localRaw = new LocalSettings(_global);
-            _local = _localRaw;
+            _globalSettings = new GlobalSettings();
+            _localSettingsRaw = new LocalSettings(_globalSettings);
+            _localSettings = _localSettingsRaw;
         }
 
         [Fact]
-        public void Sanity1()
+        public void ShiftWidthDefaultValue()
         {
-            Assert.Same(_global, _local.GlobalSettings);
+            Assert.Equal(8, _localSettings.ShiftWidth);
+        }
+
+        [Fact]
+        public void Sanity()
+        {
+            Assert.Same(_globalSettings, _localSettings.GlobalSettings);
         }
     }
 }

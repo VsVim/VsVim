@@ -626,7 +626,7 @@ type internal CommonOperations
 
     /// Shifts a block of lines to the left
     member x.ShiftLineBlockLeft (col: SnapshotSpan seq) multiplier =
-        let count = _globalSettings.ShiftWidth * multiplier
+        let count = _localSettings.ShiftWidth * multiplier
         use edit = _textBuffer.CreateEdit()
 
         col |> Seq.iter (fun span ->
@@ -649,7 +649,7 @@ type internal CommonOperations
     /// Shift a block of lines to the right
     member x.ShiftLineBlockRight (col: SnapshotSpan seq) multiplier =
         let shiftText = 
-            let count = _globalSettings.ShiftWidth * multiplier
+            let count = _localSettings.ShiftWidth * multiplier
             StringUtil.repeatChar count ' '
 
         use edit = _textBuffer.CreateEdit()
@@ -665,7 +665,7 @@ type internal CommonOperations
     /// Shift lines in the specified range to the left by one shiftwidth
     /// item.  The shift will done against 'column' in the line
     member x.ShiftLineRangeLeft (range : SnapshotLineRange) multiplier =
-        let count = _globalSettings.ShiftWidth * multiplier
+        let count = _localSettings.ShiftWidth * multiplier
 
         use edit = _textBuffer.CreateEdit()
         range.Lines
@@ -684,7 +684,7 @@ type internal CommonOperations
     /// item.  The shift will occur against column 'column'
     member x.ShiftLineRangeRight (range : SnapshotLineRange) multiplier =
         let shiftText = 
-            let count = _globalSettings.ShiftWidth * multiplier
+            let count = _localSettings.ShiftWidth * multiplier
             StringUtil.repeatChar count ' '
 
         use edit = _textBuffer.CreateEdit()

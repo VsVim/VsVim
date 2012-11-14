@@ -140,7 +140,6 @@ type internal GlobalSettings() =
             (SelectionName, "sel", StringKind, StringValue("inclusive"))
             (SelectModeName, "slm", StringKind, StringValue(""))
             (ScrollOffsetName, "so", NumberKind, NumberValue(0))
-            (ShiftWidthName, "sw", NumberKind, NumberValue(4))
             (ShellName, "sh", StringKind, "ComSpec" |> SystemUtil.GetEnvironmentVariable |> StringValue)
             (ShellFlagName, "shcf", StringKind, StringValue("/c"))
             (SmartCaseName, "scs", ToggleKind, ToggleValue(false))
@@ -300,9 +299,6 @@ type internal GlobalSettings() =
         member x.SelectModeOptions 
             with get() = x.GetCommaOptions SelectModeName SelectModeOptionsMapping SelectModeOptions.None (fun x y -> x ||| y) 
             and set value = x.SetCommaOptions SelectModeName SelectModeOptionsMapping value Util.IsFlagSet
-        member x.ShiftWidth  
-            with get() = _map.GetNumberValue ShiftWidthName
-            and set value = _map.TrySetValue ShiftWidthName (NumberValue(value)) |> ignore
         member x.Shell 
             with get() = _map.GetStringValue ShellName
             and set value = _map.TrySetValue ShellName (StringValue(value)) |> ignore
@@ -371,6 +367,7 @@ type internal LocalSettings
             (ExpandTabName, "et", ToggleKind, ToggleValue false)
             (NumberName, "nu", ToggleKind, ToggleValue false)
             (NumberFormatsName, "nf", StringKind, StringValue "octal,hex")
+            (ShiftWidthName, "sw", NumberKind, NumberValue(8))
             (TabStopName, "ts", NumberKind, NumberValue 8)
             (QuoteEscapeName, "qe", StringKind, StringValue @"\")
         |]
@@ -432,6 +429,9 @@ type internal LocalSettings
         member x.NumberFormats
             with get() = _map.GetStringValue NumberFormatsName
             and set value = _map.TrySetValue NumberFormatsName (StringValue value) |> ignore
+        member x.ShiftWidth  
+            with get() = _map.GetNumberValue ShiftWidthName
+            and set value = _map.TrySetValue ShiftWidthName (NumberValue(value)) |> ignore
         member x.TabStop
             with get() = _map.GetNumberValue TabStopName
             and set value = _map.TrySetValue TabStopName (NumberValue value) |> ignore

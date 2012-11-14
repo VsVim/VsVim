@@ -2945,7 +2945,7 @@ namespace Vim.UnitTest
             public void ShiftLeft1()
             {
                 Create("    bear", "    dog", "    cat", "    zebra", "    fox", "    jazz");
-                _vimBuffer.LocalSettings.GlobalSettings.ShiftWidth = 1;
+                _vimBuffer.LocalSettings.ShiftWidth = 1;
                 _vimBuffer.Process("<<");
                 _vimBuffer.Process(".");
                 Assert.Equal("  bear", _textView.GetLine(0).GetText());
@@ -2955,7 +2955,7 @@ namespace Vim.UnitTest
             public void ShiftLeft2()
             {
                 Create("    bear", "    dog", "    cat", "    zebra", "    fox", "    jazz");
-                _vimBuffer.LocalSettings.GlobalSettings.ShiftWidth = 1;
+                _vimBuffer.LocalSettings.ShiftWidth = 1;
                 _vimBuffer.Process("2<<");
                 _vimBuffer.Process(".");
                 Assert.Equal("  bear", _textView.GetLine(0).GetText());
@@ -2966,7 +2966,7 @@ namespace Vim.UnitTest
             public void ShiftRight1()
             {
                 Create("bear", "dog", "cat", "zebra", "fox", "jazz");
-                _vimBuffer.LocalSettings.GlobalSettings.ShiftWidth = 1;
+                _vimBuffer.LocalSettings.ShiftWidth = 1;
                 _vimBuffer.Process(">>");
                 _vimBuffer.Process(".");
                 Assert.Equal("  bear", _textView.GetLine(0).GetText());
@@ -2976,7 +2976,7 @@ namespace Vim.UnitTest
             public void ShiftRight2()
             {
                 Create("bear", "dog", "cat", "zebra", "fox", "jazz");
-                _vimBuffer.LocalSettings.GlobalSettings.ShiftWidth = 1;
+                _vimBuffer.LocalSettings.ShiftWidth = 1;
                 _vimBuffer.Process("2>>");
                 _vimBuffer.Process(".");
                 Assert.Equal("  bear", _textView.GetLine(0).GetText());
@@ -4623,6 +4623,7 @@ namespace Vim.UnitTest
             public void ShiftRight_IncludeEmptyLine()
             {
                 Create("cat", "", "dog");
+                _vimBuffer.LocalSettings.ShiftWidth = 4;
                 _vimBuffer.Process("3>>");
                 Assert.Equal("    cat", _textBuffer.GetLine(0).GetText());
                 Assert.Equal("", _textBuffer.GetLine(1).GetText());
@@ -4636,6 +4637,7 @@ namespace Vim.UnitTest
             public void ShiftRight_BlankLine()
             {
                 Create(" ", "dog");
+                _vimBuffer.LocalSettings.ShiftWidth = 4;
                 _vimBuffer.Process(">>");
                 Assert.Equal("     ", _textBuffer.GetLine(0).GetText());
             }

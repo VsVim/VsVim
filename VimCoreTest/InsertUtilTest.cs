@@ -178,7 +178,7 @@ namespace Vim.UnitTest
         public void ShiftLeft_FromVirtualSpace()
         {
             Create("", "dog");
-            _buffer.GlobalSettings.ShiftWidth = 4;
+            _buffer.LocalSettings.ShiftWidth = 4;
             _textView.MoveCaretTo(0, 8);
 
             _insertUtilRaw.ShiftLineLeft();
@@ -198,7 +198,7 @@ namespace Vim.UnitTest
         public void ShiftLeft_CaretIsMovedToBeginningOfLineIfInVirtualSpaceAfterEndOfLine()
         {
             Create("    foo");
-            _buffer.GlobalSettings.ShiftWidth = 2;
+            _buffer.LocalSettings.ShiftWidth = 2;
             _textView.MoveCaretTo(0, 16);
 
             _insertUtilRaw.ShiftLineLeft();

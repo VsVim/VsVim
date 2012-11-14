@@ -3126,7 +3126,6 @@ module GlobalSettingNames =
     let SelectModeName = "selectmode"
     let ShellName = "shell"
     let ShellFlagName = "shellcmdflag"
-    let ShiftWidthName = "shiftwidth"
     let SmartCaseName = "smartcase"
     let StartOfLineName = "startofline"
     let TildeOpName = "tildeop"
@@ -3148,6 +3147,7 @@ module LocalSettingNames =
     let ExpandTabName = "expandtab"
     let NumberName = "number"
     let NumberFormatsName = "nrformats"
+    let ShiftWidthName = "shiftwidth"
     let TabStopName = "tabstop"
     let QuoteEscapeName = "quoteescape"
 
@@ -3301,8 +3301,6 @@ and IVimGlobalSettings =
     /// The flag which is passed to the shell when executing shell commands
     abstract ShellFlag : string with get, set
 
-    abstract ShiftWidth : int with get, set
-
     abstract StartOfLine : bool with get, set
 
     /// Controls the behavior of ~ in normal mode
@@ -3386,6 +3384,9 @@ and IVimLocalSettings =
 
     /// Fromats that vim considers a number for CTRL-A and CTRL-X
     abstract NumberFormats : string with get, set
+
+    /// The number of spaces a << or >> command will shift by 
+    abstract ShiftWidth : int with get, set
 
     /// How many spaces a tab counts for 
     abstract TabStop : int with get, set
