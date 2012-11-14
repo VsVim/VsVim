@@ -128,7 +128,9 @@ function build-release() {
 
 function publish-vsix() {
     param ([string]$vsixPath = $(throw "Need the path to the VSIX")) 
-    mkdir "Deploy" | out-null
+    if (-not (test-path "Deploy")) {
+        mkdir "Deploy" | out-null
+    }
     $vsixName = split-path -leaf $vsixPath
     $target = join-path "Deploy" $vsixName
     copy -force $vsixPath $target
