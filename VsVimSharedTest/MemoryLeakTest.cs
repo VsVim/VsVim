@@ -19,6 +19,7 @@ using Vim.UI.Wpf;
 using Vim.UnitTest;
 using VsVim.UnitTest.Mock;
 using Xunit;
+using Vim.UnitTest.Exports;
 
 namespace VsVim.UnitTest
 {
@@ -219,10 +220,10 @@ namespace VsVim.UnitTest
                 list.Add(new AssemblyCatalog(typeof(Vim.UI.Wpf.VimKeyProcessor).Assembly));
                 list.Add(new AssemblyCatalog(typeof(VsVim.VsCommandTarget).Assembly));
                 list.Add(new TypeCatalog(
-                    typeof(Vim.UnitTest.Exports.VimErrorDetector),
                     typeof(VsVim.UnitTest.MemoryLeakTest.ServiceProvider),
                     typeof(VsVim.UnitTest.MemoryLeakTest.VsEditorAdaptersFactoryService),
-                    typeof(VsVim.UnitTest.MemoryLeakTest.LegacySettings)));
+                    typeof(VsVim.UnitTest.MemoryLeakTest.LegacySettings),
+                    typeof(VimErrorDetector)));
 
                 var catalog = new AggregateCatalog(list.ToArray());
                 _compositionContainer = new CompositionContainer(catalog);

@@ -11,6 +11,7 @@ using Moq;
 using Xunit;
 using Vim;
 using Vim.UnitTest;
+using System.Collections.Generic;
 
 namespace VsVim.UnitTest
 {
@@ -40,6 +41,7 @@ namespace VsVim.UnitTest
             _dte = _factory.Create<_DTE>();
             _dte.SetupGet(x => x.StatusBar).Returns(_statusBar.Object);
             _textManager = _factory.Create<ITextManager>();
+            _textManager.SetupGet(x => x.TextViews).Returns(new List<ITextView>());
 
             var sp = _factory.Create<SVsServiceProvider>();
             sp.Setup(x => x.GetService(typeof(_DTE))).Returns(_dte.Object);

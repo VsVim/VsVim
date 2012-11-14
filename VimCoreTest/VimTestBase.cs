@@ -38,9 +38,9 @@ namespace Vim.UnitTest
         private IBufferTrackingService _bufferTrackingService;
         private IBulkOperations _bulkOperations;
         private IKeyUtil _keyUtil;
-        private TestableKeyboardDevice _testableKeyboardDevice;
-        private TestableMouseDevice _testableMouseDevice;
-        private TestableClipboardDevice _testableClipboardDevice;
+        private IKeyboardDevice _keyboardDevice;
+        private IMouseDevice _mouseDevice;
+        private IClipboardDevice _clipboardDevice;
 
         public IVim Vim
         {
@@ -92,19 +92,19 @@ namespace Vim.UnitTest
             get { return _keyUtil; }
         }
 
-        public TestableClipboardDevice ClipboardDevice
+        public IClipboardDevice ClipboardDevice
         {
-            get { return _testableClipboardDevice; }
+            get { return _clipboardDevice; }
         }
 
-        public TestableMouseDevice MouseDevice
+        public IMouseDevice MouseDevice
         {
-            get { return _testableMouseDevice; }
+            get { return _mouseDevice; }
         }
 
-        public TestableKeyboardDevice KeyboardDevice
+        public IKeyboardDevice KeyboardDevice
         {
-            get { return _testableKeyboardDevice; }
+            get { return _keyboardDevice; }
         }
 
         public virtual bool TrackTextViewHistory
@@ -139,10 +139,10 @@ namespace Vim.UnitTest
             _bulkOperations = CompositionContainer.GetExportedValue<IBulkOperations>();
             _keyUtil = CompositionContainer.GetExportedValue<IKeyUtil>();
 
-            _testableKeyboardDevice = (TestableKeyboardDevice)CompositionContainer.GetExportedValue<IKeyboardDevice>();
-            _testableMouseDevice = (TestableMouseDevice)CompositionContainer.GetExportedValue<IMouseDevice>();
-            _testableClipboardDevice = (TestableClipboardDevice)CompositionContainer.GetExportedValue<IClipboardDevice>();
-            _testableClipboardDevice.Text = String.Empty;
+            _keyboardDevice = CompositionContainer.GetExportedValue<IKeyboardDevice>();
+            _mouseDevice = CompositionContainer.GetExportedValue<IMouseDevice>();
+            _clipboardDevice = CompositionContainer.GetExportedValue<IClipboardDevice>();
+            _clipboardDevice.Text = String.Empty;
 
             // One setting we do differ on for a default is 'timeout'.  We don't want them interferring
             // with the reliability of tests.  The default is on but turn it off here to prevent any 

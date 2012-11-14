@@ -3,6 +3,7 @@ using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Xunit;
+using Vim.UnitTest.Exports;
 
 namespace Vim.UnitTest
 {
@@ -14,6 +15,7 @@ namespace Vim.UnitTest
         protected ITextSelection _textSelection;
         protected IVimGlobalSettings _globalSettings;
         protected TestableSynchronizationContext _context;
+        protected TestableMouseDevice _testableMouseDevice;
 
         protected virtual void Create(params string[] lines)
         {
@@ -25,13 +27,14 @@ namespace Vim.UnitTest
             _textSelection = _textView.Selection;
             _context = new TestableSynchronizationContext();
             _context.Install();
-            MouseDevice.IsLeftButtonPressed = true;
+            _testableMouseDevice = (TestableMouseDevice)MouseDevice;
+            _testableMouseDevice.IsLeftButtonPressed = true;
         }
 
         public override void Dispose()
         {
             base.Dispose();
-            MouseDevice.IsLeftButtonPressed = false;
+            _testableMouseDevice.IsLeftButtonPressed = false;
         }
 
         protected void EnterSelect(int start, int length)
