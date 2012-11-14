@@ -3,7 +3,7 @@
 namespace Vim.UnitTest.Exports
 {
     [Export(typeof(IKeyboardDevice))]
-    class TestableKeyboardDevice : IKeyboardDevice
+    public sealed class TestableKeyboardDevice : IKeyboardDevice
     {
         public bool IsArrowKeyDown
         {

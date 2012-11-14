@@ -37,8 +37,10 @@ namespace Vim.UnitTest
         private IFoldManagerFactory _foldManagerFactory;
         private IBufferTrackingService _bufferTrackingService;
         private IBulkOperations _bulkOperations;
-        private IClipboardDevice _clipboardDevice;
         private IKeyUtil _keyUtil;
+        private TestableKeyboardDevice _testableKeyboardDevice;
+        private TestableMouseDevice _testableMouseDevice;
+        private TestableClipboardDevice _testableClipboardDevice;
 
         public IVim Vim
         {
@@ -90,9 +92,19 @@ namespace Vim.UnitTest
             get { return _keyUtil; }
         }
 
-        public IClipboardDevice ClipboardDevice
+        public TestableClipboardDevice ClipboardDevice
         {
-            get { return _clipboardDevice; }
+            get { return _testableClipboardDevice; }
+        }
+
+        public TestableMouseDevice MouseDevice
+        {
+            get { return _testableMouseDevice; }
+        }
+
+        public TestableKeyboardDevice KeyboardDevice
+        {
+            get { return _testableKeyboardDevice; }
         }
 
         public virtual bool TrackTextViewHistory
@@ -125,10 +137,12 @@ namespace Vim.UnitTest
             _bufferTrackingService = CompositionContainer.GetExportedValue<IBufferTrackingService>();
             _foldManagerFactory = CompositionContainer.GetExportedValue<IFoldManagerFactory>();
             _bulkOperations = CompositionContainer.GetExportedValue<IBulkOperations>();
-            _clipboardDevice = CompositionContainer.GetExportedValue<IClipboardDevice>();
             _keyUtil = CompositionContainer.GetExportedValue<IKeyUtil>();
 
-            _clipboardDevice.Text = String.Empty;
+            _testableKeyboardDevice = (TestableKeyboardDevice)CompositionContainer.GetExportedValue<IKeyboardDevice>();
+            _testableMouseDevice = (TestableMouseDevice)CompositionContainer.GetExportedValue<IMouseDevice>();
+            _testableClipboardDevice = (TestableClipboardDevice)CompositionContainer.GetExportedValue<IClipboardDevice>();
+            _testableClipboardDevice.Text = String.Empty;
 
             // One setting we do differ on for a default is 'timeout'.  We don't want them interferring
             // with the reliability of tests.  The default is on but turn it off here to prevent any 
@@ -333,7 +347,7 @@ namespace Vim.UnitTest
             list.Add(new TypeCatalog(
                 typeof(TestableClipboardDevice),
                 typeof(TestableKeyboardDevice),
-                typeof(MouseDevice),
+                typeof(TestableMouseDevice),
                 typeof(global::Vim.UnitTest.Exports.VimHost),
                 typeof(VimErrorDetector),
                 typeof(DisplayWindowBrokerFactoryService),

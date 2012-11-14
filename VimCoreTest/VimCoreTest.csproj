@@ -119,7 +119,7 @@
     <Compile Include="VimRegexFactoryTest.cs" />
     <Compile Include="VisualSpanTest.cs" />
     <Compile Include="EqualityUtil.cs" />
-    <Compile Include="Exports\MouseDevice.cs" />
+    <Compile Include="Exports\TestableMouseDevice.cs" />
     <Compile Include="Exports\TestableClipboardDevice.cs" />
     <Compile Include="Exports\TestableKeyboardDevice.cs" />
     <Compile Include="Exports\VimErrorHandler.cs" />

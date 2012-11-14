@@ -25,6 +25,13 @@ namespace Vim.UnitTest
             _textSelection = _textView.Selection;
             _context = new TestableSynchronizationContext();
             _context.Install();
+            MouseDevice.IsLeftButtonPressed = true;
+        }
+
+        public override void Dispose()
+        {
+            base.Dispose();
+            MouseDevice.IsLeftButtonPressed = false;
         }
 
         protected void EnterSelect(int start, int length)
