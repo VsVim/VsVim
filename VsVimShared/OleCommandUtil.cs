@@ -28,7 +28,7 @@ namespace VsVim
 
             // When raw text is provided it already includes the active keyboard modifiers. Don't reapply them
             // here else it can incorrectly modify the provided character.
-            if (!isRawText)
+            if (!isRawText && keyInput != KeyInput.DefaultValue)
             {
                 keyInput = KeyInputUtil.ApplyModifiers(keyInput, modifiers);
             }

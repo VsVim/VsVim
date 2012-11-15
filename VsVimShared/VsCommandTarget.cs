@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
+using System.Diagnostics;
 
 namespace VsVim
 {
@@ -365,41 +366,50 @@ namespace VsVim
             return true;
         }
 
-        private bool Exec(EditCommand editCommand)
+        internal bool ExecCore(EditCommand editCommand)
         {
             VimTrace.TraceInfo("VsCommandTarget::Exec {0}", editCommand);
-            if (editCommand.IsUndo)
+            switch (editCommand.EditCommandKind)
             {
-                // The user hit the undo button.  Don't attempt to map anything here and instead just 
-                // run a single Vim undo operation
-                _vimBuffer.UndoRedoOperations.Undo(1);
-                return true;
-            }
-            else if (editCommand.IsRedo)
-            {
-                // The user hit the redo button.  Don't attempt to map anything here and instead just 
-                // run a single Vim redo operation
-                _vimBuffer.UndoRedoOperations.Redo(1);
-                return true;
-            }
-            else if (editCommand.HasKeyInput)
-            {
-                var keyInput = editCommand.KeyInput;
-
-                // Discard the input if it's been flagged by a previous QueryStatus
-                if (_bufferCoordinator.DiscardedKeyInput.IsSome(keyInput))
-                {
+                case EditCommandKind.Undo:
+                    // The user hit the undo button.  Don't attempt to map anything here and instead just 
+                    // run a single Vim undo operation
+                    _vimBuffer.UndoRedoOperations.Undo(1);
                     return true;
-                }
 
-                // Try and process the command with the IVimBuffer
-                if (TryProcessWithBuffer(keyInput))
-                {
+                case EditCommandKind.Redo:
+                    // The user hit the redo button.  Don't attempt to map anything here and instead just 
+                    // run a single Vim redo operation
+                    _vimBuffer.UndoRedoOperations.Redo(1);
                     return true;
-                }
-            }
 
-            return false;
+                case EditCommandKind.GoToDefinition:
+                    // Let Visual Studio process this command
+                    return false;
+
+                case EditCommandKind.UserInput:
+                case EditCommandKind.VisualStudioCommand:
+                    if (editCommand.HasKeyInput)
+                    {
+                        var keyInput = editCommand.KeyInput;
+
+                        // Discard the input if it's been flagged by a previous QueryStatus
+                        if (_bufferCoordinator.DiscardedKeyInput.IsSome(keyInput))
+                        {
+                            return true;
+                        }
+
+                        // Try and process the command with the IVimBuffer
+                        if (TryProcessWithBuffer(keyInput))
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                default:
+                    Debug.Assert(false);
+                    return false;
+            }
         }
 
         int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
@@ -408,7 +418,7 @@ namespace VsVim
             try
             {
                 if (TryConvert(commandGroup, commandId, variantIn, out editCommand) &&
-                    Exec(editCommand))
+                    ExecCore(editCommand))
                 {
                     return NativeMethods.S_OK;
                 }
