@@ -41,7 +41,6 @@ type internal SelectionTracker
 
     /// Call when selection tracking should begin.  
     member x.Start() = 
-        VimTrace.TraceInfo("Start called: {0}", _textView.TextBuffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         if x.IsRunning then invalidOp Vim.Resources.SelectionTracker_AlreadyRunning
         _textChangedHandler.Add()
 
@@ -63,7 +62,6 @@ type internal SelectionTracker
     /// Called when selection should no longer be tracked.  Must be paired with Start calls or
     /// we will stay attached to certain event handlers
     member x.Stop() =
-        VimTrace.TraceInfo("Stop called: {0}", _textView.TextBuffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         if not x.IsRunning then invalidOp Resources.SelectionTracker_NotRunning
         _textChangedHandler.Remove()
         _anchorPoint <- None
