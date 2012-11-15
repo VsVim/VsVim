@@ -30,6 +30,7 @@ namespace Vim.UnitTest
             _vimBuffer = MockObjectFactory.CreateVimBuffer(
                 textView: _textView.Object,
                 factory: _factory);
+            _vimBuffer.SetupGet(x => x.IsClosed).Returns(false);
 
             _mouseDevice = _factory.Create<IMouseDevice>();
             _selectionOverride = _factory.Create<IVisualModeSelectionOverride>();
@@ -199,6 +200,25 @@ namespace Vim.UnitTest
             _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
             _selection.SetupGet(x => x.Mode).Returns(TextSelectionMode.Stream).Verifiable();
             _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
+            _factory.Verify();
+        }
+
+        /// <summary>
+        /// Make sure we gracefully handle the case where the IVimBuffer is closed in between
+        /// the post of the synchronization set and the actual running of the callback
+        /// </summary>
+        [Fact]
+        public void BufferClosedDuringPost()
+        {
+            _vimBuffer.SetupGet(x => x.IsProcessingInput).Returns(false);
+            _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
+            _selection.SetupGet(x => x.IsEmpty).Returns(false);
+            _selection.SetupGet(x => x.Mode).Returns(TextSelectionMode.Stream);
+            _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
+
+            _vimBuffer.SetupGet(x => x.IsClosed).Returns(true).Verifiable();
+            _vimBuffer.Setup(x => x.SwitchMode(It.IsAny<ModeKind>(), It.IsAny<ModeArgument>())).Throws(new Exception());
+            _context.RunAll();
             _factory.Verify();
         }
 
