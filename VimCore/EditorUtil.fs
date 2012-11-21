@@ -316,7 +316,7 @@ module SnapshotSpanUtil =
         let endPoint = col |> Seq.map (fun span -> span.End) |> Seq.maxBy (fun p -> p.Position)
         SnapshotSpan(startPoint, endPoint)
 
-    /// Create an empty span at the given point
+    /// Create an span going from startPoint to endpoint
     let Create (startPoint:SnapshotPoint) (endPoint:SnapshotPoint) = SnapshotSpan(startPoint,endPoint)
 
     /// Create an empty span at the given point
