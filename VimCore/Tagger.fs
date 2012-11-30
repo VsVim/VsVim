@@ -211,16 +211,15 @@ type HighlightSearchTaggerSource
 
     member x.GetTagsPrompt() = 
         let searchData = x.GetDataForSpan()
-        if not _isVisible then
+        if not x.IsProvidingTags then
+            // Not currently providing any tags.  Return an empty set here for any requests
             Some List.empty
         elif StringUtil.isNullOrEmpty searchData.Pattern then
             // Nothing to give if there is no pattern
             Some List.empty
-        elif not _globalSettings.HighlightSearch || _oneTimeDisabled then
-            // Nothing to give if we are disabled
-            Some List.empty
         else
-            // There is a search pattern and we can't provide the data promptly
+            // There is a search pattern and we can't provide the data promptly because it would
+            // negatively impact performance.  Let the request migrate to the background
             None
 
     [<UsedInBackgroundThread>]
