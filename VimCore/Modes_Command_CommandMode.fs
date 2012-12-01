@@ -23,7 +23,6 @@ type internal CommandMode
 
     let mutable _bindData : BindData<RunResult> option = None
 
-
     /// Currently queued up command string
     member x.Command = _command
 
