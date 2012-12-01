@@ -109,7 +109,7 @@ type internal CommandMode
     interface ICommandMode with
         member x.VimTextBuffer = _buffer.VimTextBuffer
         member x.Command = _command
-        member x.CommandNames = Seq.empty
+        member x.CommandNames = HistoryUtil.CommandNames |> Seq.map KeyInputSet.OneKeyInput
         member x.ModeKind = ModeKind.Command
         member x.CanProcess ki = true
         member x.Process keyInput = x.Process keyInput

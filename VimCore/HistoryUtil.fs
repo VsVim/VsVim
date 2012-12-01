@@ -29,15 +29,20 @@ type internal HistoryUtil ()  =
 
     static let _keyInputMap = 
         seq {
+            yield ("<Enter>", HistoryCommand.Execute)
             yield ("<Up>", HistoryCommand.Previous)
             yield ("<Down>", HistoryCommand.Next)
-            yield ("<Back>", HistoryCommand.Back)
+            yield ("<BS>", HistoryCommand.Back)
             yield ("<Left>", HistoryCommand.Edit Path.Backward)
             yield ("<Right>", HistoryCommand.Edit Path.Backward)
             yield ("<Esc>", HistoryCommand.Cancel)
+            yield ("<C-p>", HistoryCommand.Previous)
+            yield ("<C-n>", HistoryCommand.Next)
         }
         |> Seq.map (fun (name, command) -> KeyNotationUtil.StringToKeyInput name, command)
         |> Map.ofSeq
+
+    static member CommandNames = _keyInputMap |> MapUtil.keys |> List.ofSeq
 
     static member Begin<'TData, 'TResult> (historyClient : IHistoryClient<'TData, 'TResult>) data command : BindDataStorage<'TResult> = 
 

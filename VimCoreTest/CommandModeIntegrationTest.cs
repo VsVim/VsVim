@@ -14,6 +14,7 @@ namespace Vim.UnitTest
         protected IVimBuffer _vimBuffer;
         protected ITextView _textView;
         protected ITextBuffer _textBuffer;
+        protected ICommandMode _commandMode;
         protected MockVimHost _vimHost;
         protected string _lastStatus;
 
@@ -24,6 +25,7 @@ namespace Vim.UnitTest
             _textView = _vimBuffer.TextView;
             _textBuffer = _textView.TextBuffer;
             _vimHost = VimHost;
+            _commandMode = _vimBuffer.CommandMode;
         }
 
         protected void RunCommand(string command)
@@ -137,6 +139,71 @@ namespace Vim.UnitTest
                 Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
                 Assert.Equal("bear", _textBuffer.GetLine(2).GetText());
                 Assert.Equal("cat", _textBuffer.GetLine(3).GetText());
+            }
+        }
+
+        public sealed class LineEdittingTest : CommandModeIntegrationTest
+        {
+            private readonly HistoryList _commandHistoryList;
+
+            public LineEdittingTest()
+            {
+                _commandHistoryList = VimData.CommandHistory;
+            }
+
+            /// <summary>
+            /// An empty command shouldn't be store in the command history 
+            /// </summary>
+            [Fact]
+            public void EmptyCommandsNotStored()
+            {
+                Create("");
+                RunCommand("");
+                Assert.Equal(0, VimData.CommandHistory.Count());
+            }
+
+            [Fact]
+            public void PreviousCommand()
+            {
+                Create("");
+                _commandHistoryList.Add("dog");
+                _vimBuffer.ProcessNotation(":<Up>");
+                Assert.Equal("dog", _commandMode.Command);
+            }
+
+            [Fact]
+            public void PreviousCommandAlternateKeystroke()
+            {
+                Create("");
+                _commandHistoryList.Add("dog");
+                _vimBuffer.ProcessNotation(":<C-p>");
+                Assert.Equal("dog", _commandMode.Command);
+            }
+
+            [Fact]
+            public void NextCommand()
+            {
+                Create("");
+                _commandHistoryList.AddRange("dog", "cat");
+                _vimBuffer.ProcessNotation(":<Up><Up><Down>");
+                Assert.Equal("cat", _commandMode.Command);
+            }
+
+            [Fact]
+            public void NextCommandAlternateKeystroke()
+            {
+                Create("");
+                _commandHistoryList.AddRange("dog", "cat");
+                _vimBuffer.ProcessNotation(":<C-p><C-p><C-n>");
+                Assert.Equal("cat", _commandMode.Command);
+            }
+
+            [Fact]
+            public void SimpleBackspace()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation(":dogd<BS>");
+                Assert.Equal("dog", _commandMode.Command);
             }
         }
 
@@ -445,17 +512,6 @@ namespace Vim.UnitTest
 
         public sealed class MiscTest : CommandModeIntegrationTest
         {
-            /// <summary>
-            /// An empty command shouldn't be store in the command history 
-            /// </summary>
-            [Fact]
-            public void EmptyCommandsNotStored()
-            {
-                Create("");
-                RunCommand("");
-                Assert.Equal(0, VimData.CommandHistory.Count());
-            }
-
             [Fact]
             public void JumpLine1()
             {
