@@ -124,8 +124,10 @@ type internal InsertMode
             ("<C-h>", InsertCommand.Back, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-d>", InsertCommand.ShiftLineLeft, CommandFlags.Repeatable)
+            ("<C-e>", InsertCommand.InsertCharacterBelowCaret, CommandFlags.Repeatable)
             ("<C-m>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-t>", InsertCommand.ShiftLineRight, CommandFlags.Repeatable)
+            ("<C-y>", InsertCommand.InsertCharacterAboveCaret, CommandFlags.Repeatable)
             ("<C-w>", InsertCommand.DeleteWordBeforeCursor, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-Left>", InsertCommand.MoveCaretByWord Direction.Left, CommandFlags.Movement)
             ("<C-Right>", InsertCommand.MoveCaretByWord Direction.Right, CommandFlags.Movement)
@@ -695,6 +697,8 @@ type internal InsertMode
             | InsertCommand.DirectInsert c -> Some (TextChange.Insert (c.ToString()))
             | InsertCommand.DirectReplace c -> Some (TextChange.Combination ((TextChange.DeleteRight 1), (TextChange.Insert (c.ToString()))))
             | InsertCommand.ExtraTextChange textChange -> Some textChange
+            | InsertCommand.InsertCharacterAboveCaret -> None
+            | InsertCommand.InsertCharacterBelowCaret -> None
             | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine _editorOptions))
             | InsertCommand.InsertTab -> Some (TextChange.Insert "\t")
             | InsertCommand.InsertText text -> Some (TextChange.Insert text)

@@ -36,6 +36,86 @@ namespace Vim.UnitTest
             _localSettings = _vimBuffer.LocalSettings;
         }
 
+        public sealed class InsertCharacterAboveTest : InsertModeIntegrationTest
+        {
+            [Fact]
+            public void Simple()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("<C-y>");
+                Assert.Equal("cdog", _textBuffer.GetLine(1).GetText());
+            }
+
+            [Fact]
+            public void Multiple()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretToLine(1);
+                for (var i = 0; i < 3; i++)
+                {
+                    _vimBuffer.ProcessNotation("<C-y>");
+                }
+                Assert.Equal("catdog", _textBuffer.GetLine(1).GetText());
+            }
+
+            [Fact]
+            public void NothingAbove()
+            {
+                Create("", "dog");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("<C-y>");
+                Assert.Equal(1, VimHost.BeepCount);
+            }
+
+            [Fact]
+            public void FirstLine()
+            {
+                Create("", "dog");
+                _vimBuffer.ProcessNotation("<C-y>");
+                Assert.Equal(1, VimHost.BeepCount);
+            }
+        }
+
+        public sealed class InsertCharacterBelowTest : InsertModeIntegrationTest
+        {
+            [Fact]
+            public void Simple()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("<C-e>");
+                Assert.Equal("dcat", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void Multiple()
+            {
+                Create("cat", "dog");
+                for (var i = 0; i < 3; i++)
+                {
+                    _vimBuffer.ProcessNotation("<C-e>");
+                }
+                Assert.Equal("dogcat", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void NothingBelow()
+            {
+                Create("cat", "");
+                _vimBuffer.ProcessNotation("<C-e>");
+                Assert.Equal(1, VimHost.BeepCount);
+            }
+
+            [Fact]
+            public void LastLine()
+            {
+                Create("cat", "");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("<C-e>");
+                Assert.Equal(1, VimHost.BeepCount);
+            }
+        }
+
         public sealed class KeyMappingTest : InsertModeIntegrationTest
         {
             /// <summary>

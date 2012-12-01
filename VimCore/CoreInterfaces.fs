@@ -2338,6 +2338,12 @@ type InsertCommand  =
     /// Direct replacement of the spceified char
     | DirectReplace of char
 
+    /// Insert the character which is immediately above the caret
+    | InsertCharacterAboveCaret
+
+    /// Insert the character which is immediately below the caret
+    | InsertCharacterBelowCaret
+
     /// Insert a new line into the ITextBuffer
     | InsertNewLine
 
@@ -2382,6 +2388,8 @@ type InsertCommand  =
             | DeleteWordBeforeCursor -> None
             | DirectInsert c -> Some (c.ToString())
             | DirectReplace c -> Some (c.ToString())
+            | InsertCharacterAboveCaret -> None
+            | InsertCharacterBelowCaret -> None
             | InsertNewLine -> EditUtil.NewLine editorOptions |> Some
             | InsertTab -> Some "\t"
             | InsertText text -> Some text

@@ -110,6 +110,16 @@ module SnapshotUtil =
         else
             None
 
+    /// Try and get the point on the specified line
+    let TryGetPointInLine snapshot lineNumber column = 
+        match TryGetLine snapshot lineNumber with
+        | None -> None
+        | Some snapshotLine ->
+            if column >= snapshotLine.Length then
+                None
+            else
+                snapshotLine.Start.Add(column) |> Some
+
     /// Get the point from the specified position
     let GetPoint (snapshot : ITextSnapshot) position = SnapshotPoint(snapshot, position)
 

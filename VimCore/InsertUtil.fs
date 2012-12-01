@@ -225,6 +225,27 @@ type internal InsertUtil
             if not oldValue then
                 EditorOptionsUtil.SetOptionValue _editorOptions DefaultTextViewOptions.OverwriteModeId false
 
+    member x.InsertCharacterCore msg lineNumber =
+        match SnapshotUtil.TryGetPointInLine _textBuffer.CurrentSnapshot lineNumber x.CaretColumn with
+        | None -> 
+            _operations.Beep()
+            CommandResult.Error
+        | Some point -> 
+            let text = SnapshotPointUtil.GetChar point |> StringUtil.ofChar
+            x.EditWithUndoTransaciton "Insert Character Above" (fun () ->
+                let position = x.CaretPoint.Position
+                _textBuffer.Insert(position, text) |> ignore
+                TextViewUtil.MoveCaretToPosition _textView (position + 1))
+            CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Insert the character immediately above the caret
+    member x.InsertCharacterAboveCaret() = 
+        x.InsertCharacterCore "Insert Character Above" (x.CaretLineNumber - 1)
+
+    /// Insert the character immediately below the caret
+    member x.InsertCharacterBelowCaret() = 
+        x.InsertCharacterCore "Insert Character Below" (x.CaretLineNumber + 1)
+
     /// Insert a new line into the ITextBuffer.  Make sure to indent the text
     member x.InsertNewLine() =
         let newLineText = _operations.GetNewLineText x.CaretPoint
@@ -409,6 +430,8 @@ type internal InsertUtil
             | InsertCommand.DeleteWordBeforeCursor -> x.DeleteWordBeforeCursor()
             | InsertCommand.DirectInsert c -> x.DirectInsert c
             | InsertCommand.DirectReplace c -> x.DirectReplace c
+            | InsertCommand.InsertCharacterAboveCaret -> x.InsertCharacterAboveCaret()
+            | InsertCommand.InsertCharacterBelowCaret -> x.InsertCharacterBelowCaret()
             | InsertCommand.InsertNewLine -> x.InsertNewLine()
             | InsertCommand.InsertTab -> x.InsertTab()
             | InsertCommand.InsertText text -> x.InsertText text
