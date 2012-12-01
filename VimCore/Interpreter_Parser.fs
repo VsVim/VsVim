@@ -73,6 +73,7 @@ type Parser
         ("exit", "exi")
         ("fold", "fo")
         ("global", "g")
+        ("history", "his")
         ("join", "j")
         ("lcd", "lc")
         ("lchdir", "lch")
@@ -1012,6 +1013,10 @@ type Parser
         let hasBang = x.ParseBang()
         x.ParseGlobalCore lineRange (not hasBang)
 
+    /// Parse out the :history command
+    member x.ParseHistory() =
+        ParseResult.Succeeded LineCommand.History
+
     /// Parse out the core global information. 
     member x.ParseGlobalCore lineRange matchPattern =
         match _tokenizer.CurrentTokenKind with
@@ -1314,6 +1319,7 @@ type Parser
                 | "exit" -> x.ParseQuitAndWrite lineRange
                 | "fold" -> x.ParseFold lineRange
                 | "global" -> x.ParseGlobal lineRange
+                | "history" -> noRange (fun () -> x.ParseHistory())
                 | "iunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Insert])
                 | "imap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Insert])
                 | "imapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Insert])

@@ -3419,6 +3419,7 @@ type HistoryList () =
 
     let mutable _list : string list = List.empty
     let mutable _limit = Constants.DefaultHistoryLength
+    let mutable _totalCount = 0
 
     /// Limit of the items stored in the list
     member x.Limit 
@@ -3427,6 +3428,14 @@ type HistoryList () =
         and set value = 
             _limit <- value
             x.MaybeTruncateList()
+
+    /// The count of actual items currently stored in the collection
+    member x.Count = _list.Length
+
+    /// This is a truncating list.  As items exceed the set Limit the eariest items will
+    /// be removed from the collection.  The total count represents the number of items
+    /// that have ever been added, not the current count
+    member x.TotalCount = _totalCount
 
     member x.Items = _list
 
@@ -3439,10 +3448,13 @@ type HistoryList () =
                 |> Seq.truncate (_limit - 1)
                 |> List.ofSeq
             _list <- value :: list
+            _totalCount <- _totalCount + 1
 
-    /// Clear all of the items from the collection
-    member x.Clear () = 
+    /// Reset the list back to it's original state
+    member x.Reset () = 
         _list <- List.empty
+        _totalCount <- 0
+        _limit <- Constants.DefaultHistoryLength
 
     member private x.MaybeTruncateList () = 
         if _list.Length > _limit then

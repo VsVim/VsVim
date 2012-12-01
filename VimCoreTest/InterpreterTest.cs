@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using EditorUtils;
 using Microsoft.VisualStudio.Text;
@@ -6,7 +7,6 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Xunit;
-using System.Collections.Generic;
 
 namespace Vim.UnitTest
 {
@@ -431,6 +431,72 @@ namespace Vim.UnitTest
                 _vimBuffer.LocalSettings.ExpandTab = false;
                 ParseAndRun(@"set blah?");
                 Assert.Equal(Resources.CommandMode_UnknownOption("blah"), _statusUtil.LastError);
+            }
+        }
+
+        public sealed class HistoryTest : InterpreterTest
+        {
+            /// <summary>
+            /// Pedantically measure the spaces that are involved in the history command. 
+            /// </summary>
+            [Fact]
+            public void PedanticSimple()
+            {
+                Create("");
+                _vimData.CommandHistory.AddRange("cat", "dog");
+                ParseAndRun("history");
+                var expected = new[] 
+                {
+                    "      # cmd history",
+                    "      1 cat",
+                    "      2 dog"
+                };
+                Assert.Equal(expected, _statusUtil.LastStatusLong);
+            }
+
+            /// <summary>
+            /// When there are more than 1 entries the number of columns for the count shouldn't 
+            /// expand.  Instead the number should start taking up columns to the left
+            /// </summary>
+            [Fact]
+            public void PedanticMoreThan10()
+            {
+                Create("");
+                const int count = 15;
+                var expected = new List<string>();
+                for (int i = 0; i < count; i++)
+                {
+                    _vimData.CommandHistory.Add("cat" + i);
+                }
+
+                ParseAndRun("history");
+                var found = _statusUtil.LastStatusLong.ToList();
+                Assert.Equal(count + 1, found.Count);
+                for (int i = 1; i < found.Count; i++)
+                {
+                    var line = String.Format("{0,7} {1}", i, "cat" + (i - 1));
+                    Assert.Equal(line, found[i]);
+                }
+            }
+
+            /// <summary>
+            /// Once the maximum number of items in the list is completed the list will begin to 
+            /// truncate items.  The index though should still reflect the running count of items
+            /// </summary>
+            [Fact]
+            public void TruncatedList()
+            {
+                Create();
+                _vimData.CommandHistory.Limit = 2;
+                _vimData.CommandHistory.AddRange("cat", "dog", "fish", "tree");
+                ParseAndRun("history");
+                var expected = new[] 
+                {
+                    "      # cmd history",
+                    "      3 fish",
+                    "      4 tree"
+                };
+                Assert.Equal(expected, _statusUtil.LastStatusLong);
             }
         }
 

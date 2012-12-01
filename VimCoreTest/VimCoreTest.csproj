@@ -107,6 +107,7 @@
     <Compile Include="CommandRunnerTest.cs" />
     <Compile Include="CommandUtilTest.cs" />
     <Compile Include="EditUtilTest.cs" />
+    <Compile Include="HistoryListTest.cs" />
     <Compile Include="MatchingTokenUtilTest.cs" />
     <Compile Include="TokenStreamTest.cs" />
     <Compile Include="VimBufferTest.cs" />

@@ -166,8 +166,8 @@ namespace Vim.UnitTest
             }
             _vimErrorDetector.Clear();
 
-            _vim.VimData.SearchHistory.Clear();
-            _vim.VimData.CommandHistory.Clear();
+            _vim.VimData.SearchHistory.Reset();
+            _vim.VimData.CommandHistory.Reset();
             _vim.VimData.LastCommand = FSharpOption<StoredCommand>.None;
             _vim.VimData.LastShellCommand = FSharpOption<string>.None;
 

@@ -640,6 +640,21 @@ type Interpreter
         _commonOperations.GoToNextTab Path.Backward count
         RunResult.Completed
 
+    /// Print out the applicable history information
+    member x.RunHistory () = 
+        let output = List<string>()
+        output.Add("      # cmd history")
+
+        let historyList = _vimData.CommandHistory
+        let mutable index = historyList.TotalCount - historyList.Count
+        for item in historyList.Items |> List.rev do
+            index <- index + 1
+            let msg = sprintf "%7d %s" index item
+            output.Add(msg)
+
+        _statusUtil.OnStatusLong(output)
+        RunResult.Completed
+
     /// Join the lines in the specified range
     member x.RunJoin lineRange joinKind =
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
@@ -1319,6 +1334,7 @@ type Interpreter
         | LineCommand.DisplayMarks marks -> x.RunDisplayMarks marks
         | LineCommand.Fold lineRange -> x.RunFold lineRange
         | LineCommand.Global (lineRange, pattern, matchPattern, lineCommand) -> x.RunGlobal lineRange pattern matchPattern lineCommand
+        | LineCommand.History -> x.RunHistory()
         | LineCommand.GoToFirstTab -> x.RunGoToFirstTab()
         | LineCommand.GoToLastTab -> x.RunGoToLastTab()
         | LineCommand.GoToNextTab count -> x.RunGoToNextTab count

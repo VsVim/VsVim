@@ -445,6 +445,17 @@ namespace Vim.UnitTest
 
         public sealed class MiscTest : CommandModeIntegrationTest
         {
+            /// <summary>
+            /// An empty command shouldn't be store in the command history 
+            /// </summary>
+            [Fact]
+            public void EmptyCommandsNotStored()
+            {
+                Create("");
+                RunCommand("");
+                Assert.Equal(0, VimData.CommandHistory.Count());
+            }
+
             [Fact]
             public void JumpLine1()
             {

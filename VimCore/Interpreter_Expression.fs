@@ -229,6 +229,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Go to the previous tab
     | GoToPreviousTab of int option
 
+    /// Print out the default history 
+    | History
+
     /// Process the 'split' command.  The values range as follows
     ///  - Height of the window if specified.  Expressed as a range.  The actual documentation
     ///    doesn't specify a range can be used here but usage indicates it can
