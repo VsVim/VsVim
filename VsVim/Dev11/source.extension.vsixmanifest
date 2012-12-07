@@ -33,5 +33,6 @@
     <MefComponent>|VsVimShared|</MefComponent>
     <MefComponent>|VsVimDev11|</MefComponent>
     <MefComponent>EditorUtils.dll</MefComponent>
+    <VsPackage>Colors.pkgdef</VsPackage>
   </Content>
 </Vsix>
