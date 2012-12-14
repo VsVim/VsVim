@@ -3,12 +3,14 @@ using EditorUtils;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Xunit;
+using Microsoft.VisualStudio.Text;
 
 namespace Vim.UnitTest
 {
     public abstract class MacroIntegrationTest : VimTestBase
     {
         protected IVimBuffer _vimBuffer;
+        protected ITextBuffer _textBuffer;
         protected ITextView _textView;
         protected IVimGlobalSettings _globalSettings;
 
@@ -25,6 +27,7 @@ namespace Vim.UnitTest
         protected void Create(params string[] lines)
         {
             _textView = CreateTextView(lines);
+            _textBuffer = _textView.TextBuffer;
             _vimBuffer = Vim.CreateVimBuffer(_textView);
             _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             _globalSettings = _vimBuffer.LocalSettings.GlobalSettings;
@@ -45,7 +48,6 @@ namespace Vim.UnitTest
 
         public sealed class RunMacroTest : MacroIntegrationTest
         {
-
             /// <summary>
             /// RunMacro a text insert back from a particular register
             /// </summary>
@@ -168,6 +170,22 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
+
+            /// <summary>
+            /// The ^ motion shouldn't register as an error at the start of the line and hence shouldn't
+            /// cancel macro playback
+            /// </summary>
+            [Fact]
+            public void StartOfLineAndChange()
+            {
+                Create("  cat dog");
+                _textView.MoveCaretTo(2);
+                TestRegister.UpdateValue("^cwfish");
+                _vimBuffer.Process("@c");
+                Assert.Equal(0, VimHost.BeepCount);
+                Assert.Equal("  fish dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(6, _textView.GetCaretPoint());
+            }
         }
 
         public sealed class RunLastMacroTest : MacroIntegrationTest
@@ -253,6 +271,38 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("@c");
                 Assert.Equal("dog cat tree", _textView.GetLine(0).GetText());
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Attempting to move left before the beginining of the line should register as an error
+            /// and hence kill macro playbakc
+            /// </summary>
+            [Fact]
+            public void LeftMoveBeforeLine()
+            {
+                Create("dog cat tree");
+                _textView.MoveCaretTo(1);
+                TestRegister.UpdateValue("hhhhdw");
+                _vimBuffer.Process("@c");
+                Assert.Equal(1, VimHost.BeepCount);
+                Assert.Equal("dog cat tree", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Attempting to move right after the end of the line should register as an error and
+            /// hence kill macro playback
+            /// </summary>
+            [Fact]
+            public void RightMoveAfterLine()
+            {
+                Create("dog cat");
+                _textView.MoveCaretTo(4);
+                TestRegister.UpdateValue("lllllD");
+                _vimBuffer.Process("@c");
+                Assert.Equal(1, VimHost.BeepCount);
+                Assert.Equal("dog cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(6, _textView.GetCaretPoint());
             }
         }
 

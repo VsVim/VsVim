@@ -1355,12 +1355,21 @@ type internal CommandUtil
             let point = x.CaretPoint
             _commonOperations.MoveCaretToMotionResult result
 
-            // Beep if the motion doesn't actually move the caret.  This is currently done to 
-            // satisfy 'l' and 'h' at the end and start of lines respectively.  It may not be 
-            // needed for every empty motion but so far I can't find a reason why not
             if point = x.CaretPoint then 
-                _commonOperations.Beep()
-                CommandResult.Error
+                // Failure to move the caret for a motion results in a beep for certain motions.  There
+                // isn't any documentation here but experimentally it is true for 'l' and 'h'.  
+                //
+                // Though attractive the correct solution is *not* to have the motion itself fail
+                // in those cases.  While a 'h' movement fails when the caret is in column 0, a yank
+                // from the same location, 'yh', succeeds.  It yanks nothing but it does so 
+                // successfully.  The error only happens when it's applied to a movement.
+                let makeError () = 
+                    _commonOperations.Beep()
+                    CommandResult.Error
+                match motion with
+                | Motion.CharLeft -> makeError()
+                | Motion.CharRight -> makeError()
+                | _ -> CommandResult.Completed ModeSwitch.NoSwitch
             else
                 CommandResult.Completed ModeSwitch.NoSwitch
 

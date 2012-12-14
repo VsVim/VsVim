@@ -4761,6 +4761,19 @@ namespace Vim.UnitTest
                 Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
                 Assert.Equal(_textView.GetPointInLine(2, 2), _textView.GetCaretPoint());
             }
+
+            /// <summary>
+            /// Need to ensure that ^ run from the first line doesn't register as an 
+            /// error.  This ruins the ability to do macro playback
+            /// </summary>
+            [Fact]
+            public void Issue909()
+            {
+                Create("  cat");
+                _textView.MoveCaretTo(2);
+                _vimBuffer.Process("^");
+                Assert.Equal(0, _vimHost.BeepCount);
+            }
         }
     }
 }
