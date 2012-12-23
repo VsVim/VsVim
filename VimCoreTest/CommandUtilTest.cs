@@ -1339,6 +1339,40 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Block selections must take character width into consideration
+            /// </summary>
+            [Fact]
+            public void DeleteSelection_WideCharacters()
+            {
+                Create("abcdefgh", 
+                       "あいうえお", 
+                       "ijklmnop");
+                _textView.MoveCaretToLine(1);
+                var span = _textView.GetVisualSpanBlock(column: 2, length: 2, startLine: 0, lineCount: 3);
+                _commandUtil.DeleteSelection(UnnamedRegister, span);
+                Assert.Equal("abefgh", _textView.GetLine(0).GetText());
+                Assert.Equal("あうえお", _textView.GetLine(1).GetText());
+                Assert.Equal("ijmnop", _textView.GetLine(2).GetText());
+            }
+
+            /// <summary>
+            /// Block deletions should change half selected wide characters to spaces
+            /// </summary>
+            [Fact]
+            public void DeleteSelection_WideCharactersAreHalfRemoved()
+            {
+                Create("abcdefgh", 
+                       "あいうえお", 
+                       "ijklmnop");
+                _textView.MoveCaretToLine(1);
+                var span = _textView.GetVisualSpanBlock(column: 3, length: 2, startLine: 0, lineCount: 3);
+                _commandUtil.DeleteSelection(UnnamedRegister, span);
+                Assert.Equal("abcfgh", _textView.GetLine(0).GetText());
+                Assert.Equal("あ  えお", _textView.GetLine(1).GetText());
+                Assert.Equal("ijknop", _textView.GetLine(2).GetText());
+            }
+
+            /// <summary>
             /// Changing a word based motion forward should not delete trailing whitespace
             /// </summary>
             [Fact]
