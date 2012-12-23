@@ -378,7 +378,6 @@ module VirtualSnapshotSpanUtil =
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module SnapshotLineUtil =
-
     /// ITextSnapshot the ITextSnapshotLine is associated with
     let GetSnapshot (line : ITextSnapshotLine) = line.Snapshot
 
