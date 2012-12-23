@@ -179,6 +179,7 @@ namespace Vim.UnitTest
             Assert.Equal(OperationKind.LineWise, UnnamedRegister.OperationKind);
         }
 
+
         /// <summary>
         /// Verify the deleting of lines where the count causes the deletion to cross 
         /// over a fold
@@ -323,6 +324,27 @@ namespace Vim.UnitTest
             Create("\thello world");
             _localSettings.SetupGet(x => x.TabStop).Returns(4);
             Assert.Equal(5, _operationsRaw.GetSpacesToColumn(_textBuffer.GetLine(0), 2));
+        }
+
+        /// <summary>
+        /// Wide characters count double
+        /// </summary>
+        [Fact]
+        public void GetSpacesToColumn_WideChars()
+        {
+            Create("あいうえお");
+            Assert.Equal(10, _operationsRaw.GetSpacesToColumn(_textBuffer.GetLine(0), 5));
+        }
+
+        /// <summary>
+        /// Non spacing characters are not taken into account
+        /// </summary>
+        [Fact]
+        public void GetSpacesToColumn_NonSpacingChars()
+        {
+            // h̸ello̊​w̵orld
+            Create("h\u0338ello\u030A\u200bw\u0335orld");
+            Assert.Equal(10, _operationsRaw.GetSpacesToColumn(_textBuffer.GetLine(0), 14));
         }
 
         /// <summary>
