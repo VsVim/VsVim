@@ -67,7 +67,7 @@ type internal SettingsMap
             | None -> false
             | Some(value) -> x.TrySetValue setting.Name value
 
-    member x.GetSetting settingName = 
+    member x.GetSetting settingName : Setting option = 
         match _settings |> Map.tryFind settingName with
         | Some(s) -> Some(s)
         | None -> 
@@ -117,7 +117,6 @@ type internal SettingsMap
         | StringKind -> Some (StringValue(str))
 
 type internal GlobalSettings() =
-
     static let _disableAllCommand = KeyInputUtil.ApplyModifiersToVimKey VimKey.F12 (KeyModifiers.Control ||| KeyModifiers.Shift)
 
     static let _globalSettings = 
@@ -158,6 +157,8 @@ type internal GlobalSettings() =
             (VisualBellName, "vb", ToggleKind, ToggleValue(false))
             (WrapScanName, "ws", ToggleKind, ToggleValue(true))
         |]
+
+
 
     let _map = SettingsMap(_globalSettings, true)
 

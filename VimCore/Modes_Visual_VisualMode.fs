@@ -29,7 +29,7 @@ type internal VisualMode
         | VisualKind.Line -> (OperationKind.LineWise, ModeKind.VisualLine)
         | VisualKind.Block -> (OperationKind.CharacterWise, ModeKind.VisualBlock)
 
-    /// Get a mark and us the provided 'func' to create a Motion value
+    /// Get a mark and use the provided 'func' to create a Motion value
     static let BindMark func = 
         let bindFunc (keyInput : KeyInput) =
             match Mark.OfChar keyInput.Char with

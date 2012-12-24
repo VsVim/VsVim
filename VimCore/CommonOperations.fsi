@@ -13,4 +13,3 @@ module internal CommonUtil =
     val GetSearchPoint : Path -> SnapshotPoint -> SnapshotPoint
 
     val RaiseSearchResultMessage : IStatusUtil -> SearchResult -> unit
-
