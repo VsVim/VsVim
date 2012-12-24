@@ -121,10 +121,7 @@ type internal CommonOperations
     /// Get the spaces for the given character
     member x.GetSpacesForCharAtPoint point = 
         let c = SnapshotPointUtil.GetChar point
-        if c = '\t' then
-            _localSettings.TabStop
-        else
-            1
+        ColumnWiseUtils.GetCharacterWidth c _localSettings
 
     /// Get the count of spaces to get to the specified absolute column offset.  This will count
     /// tabs as counting for 'tabstop' spaces
@@ -143,23 +140,7 @@ type internal CommonOperations
     // Get the point in the given line which is count "spaces" into the line.  Returns End if 
     // it goes beyond the last point in the string
     member x.GetPointForSpaces line spacesCount = 
-        let snapshot = SnapshotLineUtil.GetSnapshot line
-        let endPosition = line |> SnapshotLineUtil.GetEnd |> SnapshotPointUtil.GetPosition
-        let rec inner position spacesCount = 
-            if position = endPosition then
-                endPosition
-            elif spacesCount = 0 then 
-                position
-            else 
-                let point = SnapshotPoint(snapshot, position)
-                let spacesCount = spacesCount - (x.GetSpacesForCharAtPoint point)
-                if spacesCount < 0 then
-                    position
-                else
-                    inner (position + 1) spacesCount
-
-        let position = inner line.Start.Position spacesCount
-        SnapshotPoint(snapshot, position)
+        ColumnWiseUtils.GetPointForSpaces line spacesCount _localSettings
 
     /// Get the new line text which should be used for inserts at the provided point.  This is done
     /// by looking at the current line and potentially the line above and simply re-using it's

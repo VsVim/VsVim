@@ -394,7 +394,7 @@ type internal Vim
         vimTextBuffer
 
     /// Create an IVimBuffer for the given ITextView and associated IVimTextBuffer.  This 
-    /// will not notify the IVimBufferCreationListener calloction about the new
+    /// will not notify the IVimBufferCreationListener collection about the new
     /// IVimBuffer
     member x.CreateVimBufferCore textView (windowSettings : IVimWindowSettings option) =
         if _bufferMap.ContainsKey(textView) then 
@@ -484,7 +484,7 @@ type internal Vim
                 try
                     // Call into the core version of create.  We don't want to notify any consumers
                     // about the IVimBuffer created to load the vimrc file.  It causes confusion if
-                    // we do and really there's just no reason to as it's gonig to almost immediately
+                    // we do and really there's just no reason to as it's going to almost immediately
                     // go away
                     let vimBuffer = x.CreateVimBufferCore textView None
                     let mode = vimBuffer.CommandMode

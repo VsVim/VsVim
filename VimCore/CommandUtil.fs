@@ -658,7 +658,7 @@ type internal CommandUtil
         TextViewUtil.MoveCaretToPoint _textView startPoint
         x.EditWithUndoTransaciton "DeleteSelection" (fun () ->
             use edit = _textBuffer.CreateEdit()
-            visualSpan.Spans |> Seq.iter (fun span -> 
+            visualSpan.SpansWithOverlap _localSettings |> Seq.iter (fun (pre, span, post) -> 
 
                 // If the last included point in the SnapshotSpan is inside the line break
                 // portion of a line then extend the SnapshotSpan to encompass the full
@@ -676,7 +676,10 @@ type internal CommandUtil
                         else
                             span
 
-                edit.Delete(span.Span) |> ignore)
+                match pre+post with
+                | 0 -> edit.Delete(span.Span) |> ignore
+                | _ -> edit.Replace(span.Span, String.replicate (pre + post) " ") |> ignore
+                )
             let snapshot = edit.Apply()
             TextViewUtil.MoveCaretToPosition _textView startPoint.Position)
 

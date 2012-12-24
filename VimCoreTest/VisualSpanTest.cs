@@ -1,4 +1,6 @@
-﻿using EditorUtils;
+﻿using System;
+using System.Collections.Generic;
+using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Xunit;
@@ -84,6 +86,102 @@ namespace Vim.UnitTest
             visualSpan.Select(_textView, Path.Forward);
             Assert.Equal(blockSpan, _textView.GetSelectionBlockSpan());
             Assert.Equal(TextSelectionMode.Box, _textView.Selection.Mode);
+        }
+
+        /// <summary>
+        /// Overlap of simple selection of a block with plain (non wide) characters should be 0
+        /// </summary>
+        [Fact]
+        public void Select_BlockOverlap_Simple()
+        {
+            Create("big dog", "big cat", "big tree", "big fish");
+            var blockSpan = _textBuffer.GetBlockSpan(1, 2, 0, 2);
+
+            foreach (var spanWithOverlap in blockSpan.BlockSpansWithOverlap(Vim.VimRcLocalSettings))
+            {
+                Assert.Equal(0, spanWithOverlap.Item1);
+                Assert.Equal(0, spanWithOverlap.Item3);
+            }
+        }
+
+        /// <summary>
+        /// Block selection can completely overlaps wide characters
+        /// </summary>
+        [Fact]
+        public void Select_BlockOverlap_Full()
+        {
+            Create("big dog", "bあ cat", "bい tree", "bう fish");
+            var blockSpan = _textBuffer.GetBlockSpan(1, 2, 0, 2);
+            var spans = blockSpan.BlockSpansWithOverlap(Vim.VimRcLocalSettings);
+
+            foreach (var spanWithOverlap in spans)
+            {
+                Assert.Equal(0, spanWithOverlap.Item1);
+                Assert.Equal(0, spanWithOverlap.Item3);
+            }
+
+            Assert.Equal("ig", spans.Head.Item2.GetText());
+            Assert.Equal("あ", spans.Rest.Head.Item2.GetText());
+        }
+
+        /// <summary>
+        /// Block selection can partly overlaps wide characters
+        /// </summary>
+        [Fact]
+        public void Select_BlockOverlap_Partial()
+        {
+            Create("aiueo", "あいうえお");
+            var blockSpan = _textBuffer.GetBlockSpan(1, 2, 0, 2);
+            var expected = new List<Tuple<int, int>> {
+                Tuple.Create(0, 0),
+                Tuple.Create(1, 1),
+                Tuple.Create(0, 0) };
+            var actual = blockSpan.BlockSpansWithOverlap(Vim.VimRcLocalSettings);
+
+            Assert.Equal(expected[0].Item1, actual.Head.Item1);
+            Assert.Equal("iu", actual.Head.Item2.GetText());
+            Assert.Equal(expected[0].Item2, actual.Head.Item3);
+
+            Assert.Equal(expected[1].Item1, actual.Rest.Head.Item1);
+            Assert.Equal("あい", actual.Rest.Head.Item2.GetText());
+            Assert.Equal(expected[1].Item2, actual.Rest.Head.Item3);
+        }
+
+        /// <summary>
+        /// Block selection should include all non spacing characters
+        /// </summary>
+        [Fact]
+        public void Select_BlockOverlap_NonSpacing()
+        {
+            string[] lines = new string[] {"hello", "h\u0327e\u0301\u200bllo\u030a\u0305"};
+            Create(lines);
+            var blockSpan = _textBuffer.GetBlockSpan(0, 5, 0, 2);
+            var expected = new List<Tuple<int, int>> {
+                Tuple.Create(0, 0),
+                Tuple.Create(0, Vim.VimRcLocalSettings.TabStop - 1) };
+            var actual = blockSpan.BlockSpansWithOverlap(Vim.VimRcLocalSettings);
+
+            Assert.Equal(lines[1], actual.Rest.Head.Item2.GetText());
+        }
+
+        /// <summary>
+        /// Overlap of simple selection of a block that partly overlaps a tab character
+        /// </summary>
+        [Fact]
+        public void Select_BlockOverlap_VeryWideCharacter()
+        {
+            Create("aiueo", "\t");
+            var blockSpan = _textBuffer.GetBlockSpan(0, 1, 0, 2);
+            var expected = new List<Tuple<int, int>> {
+                Tuple.Create(0, 0),
+                Tuple.Create(0, Vim.VimRcLocalSettings.TabStop - 1) };
+            var actual = blockSpan.BlockSpansWithOverlap(Vim.VimRcLocalSettings);
+
+            Assert.Equal(expected[0].Item1, actual.Head.Item1);
+            Assert.Equal(expected[0].Item2, actual.Head.Item3);
+
+            Assert.Equal(expected[1].Item1, actual.Rest.Head.Item1);
+            Assert.Equal(expected[1].Item2, actual.Rest.Head.Item3);
         }
 
         /// <summary>

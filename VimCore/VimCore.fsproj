@@ -54,6 +54,8 @@
     <Compile Include="OperationKind.fs" />
     <Compile Include="Mark.fs" />
     <Compile Include="Register.fs" />
+    <Compile Include="VimSettingsInterface.fs" />
+    <Compile Include="ColumnWiseUtil.fs" />
     <Compile Include="CoreInterfaces.fs" />
     <Compile Include="InternalInterfaces.fs" />
     <Compile Include="CountCapture.fs" />

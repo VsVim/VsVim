@@ -952,7 +952,7 @@ type Interpreter
             | Some setting -> func setting _localSettings
 
         // Display the specified setting 
-        let getSettingDisplay setting = 
+        let getSettingDisplay (setting: Setting ) =
     
             match setting.Kind, setting.AggregateValue with
             | SettingKind.ToggleKind, SettingValue.ToggleValue(b) -> 
