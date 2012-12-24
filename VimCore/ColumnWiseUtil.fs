@@ -80,19 +80,29 @@ module ColumnWiseUtils =
     let GetPointForSpacesWithOverlap line spacesCount localsettings = 
         let snapshot = SnapshotLineUtil.GetSnapshot line
         let endPosition = line |> SnapshotLineUtil.GetEnd |> SnapshotPointUtil.GetPosition
+        // The following retrieves the location of the character that is
+        // spacesCount cells inside the line. The result is a triple 
+        // (pre, position, post) where
+        //    position is the position in the snapshot of the character that 
+        //       overlaps the spacesCount-th cell 
+        //    pre is the number of cells that the character spans before the
+        //       spacesCount-th cell
+        //    post is the number of cells that the character spans after the
+        //       spacesCount-th cell
         let rec inner position spacesCount = 
             if position = endPosition then
                 (0, endPosition, 0)
             else 
                 let point = SnapshotPoint(snapshot, position)
                 let charWidth = GetCharacterWidth (SnapshotPointUtil.GetChar point) localsettings
-                let spacesCount = spacesCount - charWidth
-                if spacesCount < 0 then
-                    let pre = -spacesCount
-                    let post = charWidth - spacesCount
-                    (pre, position, post)
+                let remaining = spacesCount - charWidth
+
+                if spacesCount = 0 && charWidth <> 0 then
+                    (0, position, 0)
+                elif remaining < 0 then
+                    (spacesCount, position, charWidth - spacesCount)
                 else
-                    inner (position + 1) spacesCount
+                    inner (position + 1) remaining
 
         let (pre, position, post) = inner line.Start.Position spacesCount
         (pre, SnapshotPoint(snapshot, position), post)

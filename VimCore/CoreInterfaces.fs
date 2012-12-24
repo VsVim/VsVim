@@ -1326,6 +1326,29 @@ type BlockSpan
         |> NonEmptyCollectionUtil.OfSeq 
         |> Option.get
 
+    /// Get a NonEmptyCollection indicating of the SnapshotSpan that each line of
+    /// this block spans, along with the offset (measured in cells) of the block
+    /// with respect to the start point and end point.
+    member x.BlockSpansWithOverlap localSetting : NonEmptyCollection<int * SnapshotSpan * int> =
+        let snapshot = SnapshotPointUtil.GetSnapshot x.Start
+        let lineNumber = SnapshotPointUtil.GetLineNumber x.Start
+        let list = System.Collections.Generic.List<int * SnapshotSpan * int>()
+        for i = lineNumber to ((_height - 1) + lineNumber) do
+            match SnapshotUtil.TryGetLine snapshot i with
+            | None -> ()
+            | Some line -> 
+                let pre, startPoint, _  = ColumnWiseUtils.GetPointForSpacesWithOverlap line x.Column localSetting
+                let _, endPoint, post = 
+                    match ColumnWiseUtils.GetPointForSpacesWithOverlap line (x.Column + _width) localSetting with
+                    | 0, endPoint, post -> (0, endPoint, post)
+                    | _, endPoint, post -> (0, endPoint.Add(1), post)
+                    
+                list.Add (pre, SnapshotSpanUtil.Create startPoint endPoint, post)
+
+        list
+        |> NonEmptyCollectionUtil.OfSeq 
+        |> Option.get
+
     override x.ToString() =
         sprintf "Point: %s Width: %d Height: %d" (x.Start.ToString()) _width _height
 
@@ -1393,6 +1416,11 @@ type VisualSpan =
         | VisualSpan.Character characterSpan -> [characterSpan.Span] |> Seq.ofList
         | VisualSpan.Line range -> [range.ExtentIncludingLineBreak] |> Seq.ofList
         | VisualSpan.Block blockSpan -> blockSpan.BlockSpans :> SnapshotSpan seq
+
+    member x.SpansWithOverlap (localSetting:IVimLocalSettings) = 
+        match x with 
+        | VisualSpan.Block blockSpan -> seq (blockSpan.BlockSpansWithOverlap(localSetting))
+        | _ -> (Seq.map (fun x -> (0, x, 0))) x.Spans
 
     /// Returns the EditSpan for this VisualSpan
     member x.EditSpan = 
