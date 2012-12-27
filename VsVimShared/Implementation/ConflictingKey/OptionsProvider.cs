@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel.Composition;
-using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Vim;
@@ -15,13 +14,13 @@ namespace VsVim.Implementation.ConflictingKey
         {
             private readonly IKeyBindingService _keyBindingService;
             private readonly IServiceProvider _serviceProvider;
-            private readonly ILegacySettings _legacySettings;
+            private readonly IVimApplicationSettings _vimApplicationSettings;
 
-            internal Provider(IKeyBindingService keyBindingService, IServiceProvider serviceProvider, ILegacySettings legacySettings)
+            internal Provider(IKeyBindingService keyBindingService, IServiceProvider serviceProvider, IVimApplicationSettings vimApplicationSettings)
             {
                 _keyBindingService = keyBindingService;
                 _serviceProvider = serviceProvider;
-                _legacySettings = legacySettings;
+                _vimApplicationSettings = vimApplicationSettings;
             }
 
             public void ShowDialog(IVimBuffer vimBuffer)
@@ -29,7 +28,7 @@ namespace VsVim.Implementation.ConflictingKey
                 try
                 {
                     var snapshot = _keyBindingService.CreateCommandKeyBindingSnapshot(vimBuffer);
-                    new ConflictingKeyBindingDialog(snapshot, _legacySettings).ShowDialog();
+                    new ConflictingKeyBindingDialog(snapshot, _vimApplicationSettings).ShowDialog();
                 }
                 catch (Exception)
                 {
@@ -51,19 +50,19 @@ namespace VsVim.Implementation.ConflictingKey
 
         private readonly IKeyBindingService _keyBindingService;
         private readonly IServiceProvider _serviceProvider;
-        private readonly ILegacySettings _legacySettings;
+        private readonly IVimApplicationSettings _vimApplicationSettings;
 
         [ImportingConstructor]
-        internal OptionsProviderFatory(IKeyBindingService keyBindingService, SVsServiceProvider provider, ILegacySettings legacySettings)
+        internal OptionsProviderFatory(IKeyBindingService keyBindingService, SVsServiceProvider provider, IVimApplicationSettings vimApplicationSettings)
         {
             _keyBindingService = keyBindingService;
             _serviceProvider = provider;
-            _legacySettings = legacySettings;
+            _vimApplicationSettings = vimApplicationSettings;
         }
 
         public IOptionsProvider CreateOptionsProvider()
         {
-            return new Provider(_keyBindingService, _serviceProvider, _legacySettings);
+            return new Provider(_keyBindingService, _serviceProvider, _vimApplicationSettings);
         }
     }
 }

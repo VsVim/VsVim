@@ -6,7 +6,7 @@ namespace VsVim
     /// Settings specific to the VsVim application.  These specifically don't include Vim specific
     /// settings but instead have items like first usage, first import, etc ... 
     /// </summary>
-    internal interface IVimApplicationSettings
+    public interface IVimApplicationSettings
     {
         bool HaveUpdatedKeyBindings { get; set; }
         bool IgnoredConflictingKeyBinding { get; set; }

@@ -25,8 +25,24 @@ namespace VsVim.Implementation.Settings
             _settingsStore = shellSettingsManager.GetWritableSettingsStore(SettingsScope.UserSettings);
         }
 
+        private void EnsureCollectionExists()
+        {
+            try
+            {
+                if (!_settingsStore.CollectionExists(CollectionPath))
+                {
+                    _settingsStore.CreateCollection(CollectionPath);
+                }
+            }
+            catch
+            {
+                // TODO: Notify the user
+            }
+        }
+
         private bool GetBoolean(string propertyName, bool defaultValue)
         {
+            EnsureCollectionExists();
             try
             {
                 return _settingsStore.GetBoolean(CollectionPath, propertyName);
@@ -39,6 +55,7 @@ namespace VsVim.Implementation.Settings
 
         private void SetBoolean(string propertyName, bool value)
         {
+            EnsureCollectionExists();
             try
             {
                 _settingsStore.SetBoolean(CollectionPath, propertyName, value);
@@ -51,6 +68,7 @@ namespace VsVim.Implementation.Settings
 
         private string GetString(string propertyName, string defaultValue)
         {
+            EnsureCollectionExists();
             try
             {
                 return _settingsStore.GetString(CollectionPath, propertyName);
@@ -63,6 +81,7 @@ namespace VsVim.Implementation.Settings
 
         private void SetString(string propertyName, string value)
         {
+            EnsureCollectionExists();
             try
             {
                 _settingsStore.SetString(CollectionPath, propertyName, value);
