@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using EditorUtils;
@@ -15,14 +16,18 @@ namespace VsVim.Implementation.Settings
         private const string HaveUpdatedKeyBindingsName = "HaveUpdatedKeyBindings";
         private const string IgnoredConflictingKeyBindingName = "IgnoredConflictingKeyBinding";
         private const string RemovedBindingsName = "RemovedBindings";
+        private const string ErrorGetFormat = "Cannot get setting {0}";
+        private const string ErrorSetFormat = "Cannot set setting {0}";
 
         private readonly WritableSettingsStore _settingsStore;
+        private readonly IProtectedOperations _protectedOperations;
 
         [ImportingConstructor]
-        internal VimApplicationSettings(SVsServiceProvider vsServiceProvider)
+        internal VimApplicationSettings(SVsServiceProvider vsServiceProvider, [EditorUtilsImport] IProtectedOperations protectedOperations)
         {
             var shellSettingsManager = new ShellSettingsManager(vsServiceProvider);
             _settingsStore = shellSettingsManager.GetWritableSettingsStore(SettingsScope.UserSettings);
+            _protectedOperations = protectedOperations;
         }
 
         private void EnsureCollectionExists()
@@ -34,10 +39,17 @@ namespace VsVim.Implementation.Settings
                     _settingsStore.CreateCollection(CollectionPath);
                 }
             }
-            catch
+            catch (Exception e)
             {
-                // TODO: Notify the user
+                Report("Unable to create the settings collection", e);
             }
+        }
+
+        private void Report(string message, Exception e)
+        {
+            message = message + ": " + e.Message;
+            var exception = new Exception(message, e);
+            _protectedOperations.Report(exception);
         }
 
         private bool GetBoolean(string propertyName, bool defaultValue)
@@ -45,10 +57,16 @@ namespace VsVim.Implementation.Settings
             EnsureCollectionExists();
             try
             {
+                if (!_settingsStore.PropertyExists(CollectionPath, propertyName))
+                {
+                    return defaultValue;
+                }
+
                 return _settingsStore.GetBoolean(CollectionPath, propertyName);
             }
-            catch
+            catch (Exception e)
             {
+                Report(String.Format(ErrorGetFormat, propertyName), e);
                 return defaultValue;
             }
         }
@@ -60,9 +78,9 @@ namespace VsVim.Implementation.Settings
             {
                 _settingsStore.SetBoolean(CollectionPath, propertyName, value);
             }
-            catch
+            catch (Exception e)
             {
-                // TODO: Need to notify the user in some way 
+                Report(String.Format(ErrorSetFormat, propertyName), e);
             }
         }
 
@@ -71,10 +89,16 @@ namespace VsVim.Implementation.Settings
             EnsureCollectionExists();
             try
             {
+                if (!_settingsStore.PropertyExists(CollectionPath, propertyName))
+                {
+                    return defaultValue;
+                }
+
                 return _settingsStore.GetString(CollectionPath, propertyName);
             }
-            catch
+            catch (Exception e)
             {
+                Report(String.Format(ErrorGetFormat, propertyName), e);
                 return defaultValue;
             }
         }
@@ -86,9 +110,9 @@ namespace VsVim.Implementation.Settings
             {
                 _settingsStore.SetString(CollectionPath, propertyName, value);
             }
-            catch
+            catch (Exception e)
             {
-                // TODO: Need to notify the user in some way 
+                Report(String.Format(ErrorSetFormat, propertyName), e);
             }
         }
 
@@ -109,7 +133,7 @@ namespace VsVim.Implementation.Settings
 
         bool IVimApplicationSettings.HaveUpdatedKeyBindings
         {
-            get { return GetBoolean(HaveUpdatedKeyBindingsName, defaultValue: true); }
+            get { return GetBoolean(HaveUpdatedKeyBindingsName, defaultValue: false); }
             set { SetBoolean(HaveUpdatedKeyBindingsName, value); }
         }
 
