@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Linq;
-using Xunit;
 using Vim;
 using Vim.UnitTest;
+using Xunit;
 
 namespace VsVim.UnitTest
 {
@@ -10,7 +10,7 @@ namespace VsVim.UnitTest
     {
         #region Command Resource
 
-        const string SampleCommands = @"
+        internal const string SampleCommandString = @"
 Global::Shift+Alt+N
 Global::Shift+Alt+O
 Managed Resources Editor::Ctrl+Del
@@ -656,6 +656,8 @@ Transact-SQL Editor::Ctrl+J
 
         #endregion
 
+        internal static readonly string[] SampleCommands = SampleCommandString.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+
         [Fact]
         public void Parse1()
         {
@@ -821,7 +823,7 @@ Transact-SQL Editor::Ctrl+J
         [Fact]
         public void ParseAllVsCommands()
         {
-            foreach (var line in SampleCommands.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries))
+            foreach (var line in SampleCommands)
             {
                 KeyBinding binding;
                 Assert.True(KeyBinding.TryParse(line, out binding), "Could not parse - " + line);
@@ -834,7 +836,7 @@ Transact-SQL Editor::Ctrl+J
         [Fact]
         public void CommandStringAllVsCommands()
         {
-            foreach (var line in SampleCommands.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries))
+            foreach (var line in SampleCommands)
             {
                 KeyBinding binding;
                 Assert.True(KeyBinding.TryParse(line, out binding));
