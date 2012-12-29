@@ -16,6 +16,7 @@ namespace VsVim.Implementation.Settings
         private const string HaveUpdatedKeyBindingsName = "HaveUpdatedKeyBindings";
         private const string IgnoredConflictingKeyBindingName = "IgnoredConflictingKeyBinding";
         private const string RemovedBindingsName = "RemovedBindings";
+        private const string LegacySettingsMigratedName = "LegacySettingsMigrated";
         private const string ErrorGetFormat = "Cannot get setting {0}";
         private const string ErrorSetFormat = "Cannot set setting {0}";
 
@@ -141,6 +142,12 @@ namespace VsVim.Implementation.Settings
         {
             get { return GetBoolean(IgnoredConflictingKeyBindingName, defaultValue: false); }
             set { SetBoolean(IgnoredConflictingKeyBindingName, value); }
+        }
+
+        bool IVimApplicationSettings.LegacySettingsMigrated
+        {
+            get { return GetBoolean(LegacySettingsMigratedName, defaultValue: false); }
+            set { SetBoolean(LegacySettingsMigratedName, value); }
         }
 
         ReadOnlyCollection<CommandKeyBinding> IVimApplicationSettings.RemovedBindings

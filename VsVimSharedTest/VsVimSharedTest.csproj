@@ -88,6 +88,7 @@
     <Compile Include="MindScapeTest.cs" />
     <Compile Include="ResultTest.cs" />
     <Compile Include="SettingSerializerTest.cs" />
+    <Compile Include="SettingsMigratorTest.cs" />
     <Compile Include="UnitTestExtensions.cs" />
     <Compile Include="ExternalEditMonitorTest.cs" />
     <Compile Include="KeyStrokeTest.cs" />

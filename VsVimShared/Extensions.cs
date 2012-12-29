@@ -43,6 +43,20 @@ namespace VsVim
             }
         }
 
+        public static bool TryGetName(this Command command, out string name)
+        {
+            try
+            {
+                name = command.Name;
+                return true;
+            }
+            catch
+            {
+                name = null;
+                return false;
+            }
+        }
+
         /// <summary>
         /// Get the binding strings for this Command.  Digs through the various ways a 
         /// binding string can be stored and returns a uniform result
