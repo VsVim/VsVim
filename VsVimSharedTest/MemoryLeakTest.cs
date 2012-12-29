@@ -17,9 +17,9 @@ using Moq;
 using Vim;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
+using Vim.UnitTest.Exports;
 using VsVim.UnitTest.Mock;
 using Xunit;
-using Vim.UnitTest.Exports;
 
 namespace VsVim.UnitTest
 {
@@ -33,11 +33,30 @@ namespace VsVim.UnitTest
     {
         #region Exports
 
+        /// <summary>
+        /// This smooths out the nonsense type equality problems that come with having NoPia
+        /// enabled on only some of the assemblies.  
+        /// </summary>
+        private sealed class TypeEqualityComparer : IEqualityComparer<Type>
+        {
+            public bool Equals(Type x, Type y)
+            {
+                return
+                    x.FullName == y.FullName &&
+                    x.GUID == y.GUID;
+            }
+
+            public int GetHashCode(Type obj)
+            {
+                return obj != null ? obj.GUID.GetHashCode() : 0;
+            }
+        }
+
         [Export(typeof(SVsServiceProvider))]
         private sealed class ServiceProvider : SVsServiceProvider
         {
             private MockRepository _factory = new MockRepository(MockBehavior.Loose);
-            private Dictionary<Type, object> _serviceMap = new Dictionary<Type, object>();
+            private Dictionary<Type, object> _serviceMap = new Dictionary<Type, object>(new TypeEqualityComparer());
 
             public ServiceProvider()
             {
@@ -50,6 +69,18 @@ namespace VsVim.UnitTest
                 var dte = MockObjectFactory.CreateDteWithCommands();
                 _serviceMap[typeof(_DTE)] = dte.Object;
                 _serviceMap[typeof(SDTE)] = dte.Object;
+                _serviceMap[typeof(SVsSettingsManager)] = CreateSettingsManager().Object;
+            }
+
+            private Mock<IVsSettingsManager> CreateSettingsManager()
+            {
+                var settingsManager = _factory.Create<IVsSettingsManager>();
+
+                var writableSettingsStore = _factory.Create<IVsWritableSettingsStore>();
+                var local = writableSettingsStore.Object;
+                settingsManager.Setup(x => x.GetWritableSettingsStore(It.IsAny<uint>(), out local)).Returns(VSConstants.S_OK);
+
+                return settingsManager;
             }
 
             public object GetService(Type serviceType)
