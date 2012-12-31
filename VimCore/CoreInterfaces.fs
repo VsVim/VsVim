@@ -3407,6 +3407,9 @@ and IVim =
     /// Is the VimRc loaded
     abstract IsVimRcLoaded : bool
 
+    /// Is Vim currently disabled 
+    abstract IsDisabled : bool with get, set
+
     /// In the middle of a bulk operation such as a macro replay or repeat last command
     abstract InBulkOperation : bool
 
