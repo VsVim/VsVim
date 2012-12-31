@@ -99,15 +99,15 @@ type SelectionKind =
 
 [<RequireQualifiedAccess>]
 type SettingKind =
-    | NumberKind
-    | StringKind
-    | ToggleKind
+    | Number
+    | String
+    | Toggle
 
 [<RequireQualifiedAccess>]
 type SettingValue =
-    | NumberValue of int
-    | StringValue of string
-    | ToggleValue of bool
+    | Number of int
+    | String of string
+    | Toggle of bool
     | CalculatedNumber of (unit -> int)
 
     /// Is this a calculated value
@@ -120,15 +120,15 @@ type SettingValue =
     /// instances and return the actual value
     member x.AggregateValue = 
         match x with
-        | CalculatedNumber func -> func() |> NumberValue
+        | CalculatedNumber func -> func() |> Number
         | _ -> x
 
     member x.SettingKind = 
         match x with
-        | NumberValue _ -> SettingKind.NumberKind
-        | StringValue _ -> SettingKind.StringKind 
-        | ToggleValue _ -> SettingKind.ToggleKind
-        | CalculatedNumber _ -> SettingKind.NumberKind
+        | Number _ -> SettingKind.Number
+        | String _ -> SettingKind.String 
+        | Toggle _ -> SettingKind.Toggle
+        | CalculatedNumber _ -> SettingKind.Number
 
 [<DebuggerDisplay("{Name}={Value}")>]
 type Setting = {
@@ -150,9 +150,9 @@ type Setting = {
     member x.IsValueDefault = 
         match x.Value, x.DefaultValue with
         | SettingValue.CalculatedNumber _, SettingValue.CalculatedNumber _ -> true
-        | SettingValue.NumberValue left, SettingValue.NumberValue right -> left = right
-        | SettingValue.StringValue left, SettingValue.StringValue right -> left = right
-        | SettingValue.ToggleValue left, SettingValue.ToggleValue right -> left = right
+        | SettingValue.Number left, SettingValue.Number right -> left = right
+        | SettingValue.String left, SettingValue.String right -> left = right
+        | SettingValue.Toggle left, SettingValue.Toggle right -> left = right
         | _ -> false
 
 type SettingEventArgs(_setting : Setting) =

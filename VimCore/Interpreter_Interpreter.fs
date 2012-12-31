@@ -954,16 +954,15 @@ type Interpreter
         // Display the specified setting 
         let getSettingDisplay (setting: Setting ) =
     
-            match setting.Kind, setting.AggregateValue with
-            | SettingKind.ToggleKind, SettingValue.ToggleValue(b) -> 
+            match setting.AggregateValue with
+            | SettingValue.Toggle b -> 
                 if b then setting.Name
                 else sprintf "no%s" setting.Name
-            | SettingKind.StringKind, SettingValue.StringValue(s) -> 
+            | SettingValue.String s -> 
                 sprintf "%s=\"%s\"" setting.Name s
-            | SettingKind.NumberKind, SettingValue.NumberValue(n) ->
+            | SettingValue.Number n ->
                 sprintf "%s=%d" setting.Name n
             | _ -> "Invalid value"
-
 
         let addSetting name value = 
             // TODO: implement
@@ -1013,16 +1012,16 @@ type Interpreter
         let useSetting name =
             withSetting name name (fun setting container ->
                 match setting.Kind with
-                | SettingKind.ToggleKind -> container.TrySetValue setting.Name (SettingValue.ToggleValue true) |> ignore
-                | SettingKind.NumberKind -> displaySetting name
-                | SettingKind.StringKind -> displaySetting name)
+                | SettingKind.Toggle -> container.TrySetValue setting.Name (SettingValue.Toggle true) |> ignore
+                | SettingKind.Number -> displaySetting name
+                | SettingKind.String -> displaySetting name)
 
         // Invert the setting of the specified name
         let invertSetting name = 
             let msg = "!" + name
             withSetting name msg (fun setting container -> 
-                match setting.Kind, setting.AggregateValue with
-                | SettingKind.ToggleKind, SettingValue.ToggleValue b -> container.TrySetValue setting.Name (SettingValue.ToggleValue(not b)) |> ignore
+                match setting.AggregateValue with
+                | SettingValue.Toggle b -> container.TrySetValue setting.Name (SettingValue.Toggle(not b)) |> ignore
                 | _ -> msg |> Resources.CommandMode_InvalidArgument |> _statusUtil.OnError)
 
         // Reset all settings to their default settings
@@ -1040,9 +1039,9 @@ type Interpreter
             let msg = "no" + name
             withSetting name msg (fun setting container -> 
                 match setting.Kind with
-                | SettingKind.NumberKind -> _statusUtil.OnError (Resources.Interpreter_InvalidArgument msg)
-                | SettingKind.StringKind -> _statusUtil.OnError (Resources.Interpreter_InvalidArgument msg)
-                | SettingKind.ToggleKind -> container.TrySetValue setting.Name (SettingValue.ToggleValue false) |> ignore)
+                | SettingKind.Number -> _statusUtil.OnError (Resources.Interpreter_InvalidArgument msg)
+                | SettingKind.String -> _statusUtil.OnError (Resources.Interpreter_InvalidArgument msg)
+                | SettingKind.Toggle -> container.TrySetValue setting.Name (SettingValue.Toggle false) |> ignore)
 
         match setArguments with
         | [] -> 
