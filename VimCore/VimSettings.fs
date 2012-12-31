@@ -44,16 +44,16 @@ type internal SettingsMap
         /// Determine if the value and the kind are compatible
         let doesValueMatchKind kind = 
             match kind,value with
-            | (NumberKind, NumberValue(_)) -> true
-            | (StringKind, StringValue(_)) -> true
-            | (ToggleKind, ToggleValue(_)) -> true
+            | (NumberKind, NumberValue _) -> true
+            | (StringKind, StringValue _) -> true
+            | (ToggleKind, ToggleValue _) -> true
             | _ -> false
 
         match x.GetSetting settingNameOrAbbrev with
         | None -> false
-        | Some(setting) ->
+        | Some setting ->
             if doesValueMatchKind setting.Kind then
-                let setting = { setting with Value=value }
+                let setting = { setting with Value = value }
                 _settings <- _settings |> Map.add setting.Name setting
                 _settingChangedEvent.Trigger x (SettingEventArgs(setting))
                 true
@@ -62,14 +62,14 @@ type internal SettingsMap
     member x.TrySetValueFromString settingNameOrAbbrev strValue = 
         match x.GetSetting settingNameOrAbbrev with
         | None -> false
-        | Some(setting) ->
+        | Some setting ->
             match x.ConvertStringToValue strValue setting.Kind with
             | None -> false
             | Some(value) -> x.TrySetValue setting.Name value
 
     member x.GetSetting settingName : Setting option = 
         match _settings |> Map.tryFind settingName with
-        | Some(s) -> Some(s)
+        | Some s -> Some s
         | None -> 
             _settings 
             |> Map.toSeq 
@@ -80,37 +80,37 @@ type internal SettingsMap
     member x.GetBoolValue settingName = 
         let setting = _settings |> Map.find settingName
         match setting.Value.AggregateValue with
-        | ToggleValue(b) -> b 
-        | NumberValue(_) -> failwith "invalid"
-        | StringValue(_) -> failwith "invalid"
-        | CalculatedValue(_) -> failwith "invalid"
+        | ToggleValue b -> b 
+        | NumberValue _ -> failwith "invalid"
+        | StringValue _ -> failwith "invalid"
+        | CalculatedValue _ -> failwith "invalid"
 
     /// Get a string setting value.  Will throw if the setting name does not exist
     member x.GetStringValue settingName =
         let setting = _settings |> Map.find settingName
         match setting.Value.AggregateValue with
-        | StringValue(s) -> s
-        | NumberValue(_) -> failwith "invalid"
-        | ToggleValue(_) -> failwith "invalid"
-        | CalculatedValue(_) -> failwith "invalid"
+        | StringValue s -> s
+        | NumberValue _ -> failwith "invalid"
+        | ToggleValue _ -> failwith "invalid"
+        | CalculatedValue _ -> failwith "invalid"
 
     /// Get a number setting value.  Will throw if the setting name does not exist
     member x.GetNumberValue settingName =
         let setting = _settings |> Map.find settingName
         match setting.Value.AggregateValue with
-        | NumberValue(n) -> n
-        | StringValue(_) -> failwith "invalid"
-        | ToggleValue(_) -> failwith "invalid"
-        | CalculatedValue(_) -> failwith "invalid"
+        | NumberValue n -> n
+        | StringValue _ -> failwith "invalid"
+        | ToggleValue _ -> failwith "invalid"
+        | CalculatedValue _ -> failwith "invalid"
 
     member x.ConvertStringToValue str kind =
         
         let convertToNumber() = 
             let ret,value = System.Int32.TryParse str
-            if ret then Some (NumberValue(value)) else None
+            if ret then Some (NumberValue value) else None
         let convertToBoolean() =
             let ret,value = System.Boolean.TryParse str
-            if ret then Some (ToggleValue(value)) else None
+            if ret then Some (ToggleValue value) else None
         match kind with
         | NumberKind -> convertToNumber()
         | ToggleKind -> convertToBoolean()
@@ -122,43 +122,41 @@ type internal GlobalSettings() =
     static let _globalSettings = 
         [|
             (BackspaceName, "bs", StringKind, StringValue "")
-            (CaretOpacityName, CaretOpacityName, NumberKind, NumberValue(65))
+            (CaretOpacityName, CaretOpacityName, NumberKind, NumberValue 65)
             (ClipboardName, "cb", StringKind, StringValue "")
-            (HighlightSearchName, "hls", ToggleKind, ToggleValue(false))
+            (HighlightSearchName, "hls", ToggleKind, ToggleValue false)
             (HistoryName, "hi", NumberKind, NumberValue(Constants.DefaultHistoryLength))
-            (IncrementalSearchName, "is", ToggleKind, ToggleValue(false))
-            (IgnoreCaseName,"ic", ToggleKind, ToggleValue(false))
-            (JoinSpacesName, "js", ToggleKind, ToggleValue(true))
-            (KeyModelName, "km", StringKind, StringValue(""))
-            (MagicName, MagicName, ToggleKind, ToggleValue(true))
-            (MaxMapCount, MaxMapCount, NumberKind, NumberValue(1000))
-            (MaxMapDepth, "mmd", NumberKind, NumberValue(1000))
-            (MouseModelName, "mousem", StringKind, StringValue("popup"))
-            (ParagraphsName, "para", StringKind, StringValue("IPLPPPQPP TPHPLIPpLpItpplpipbp"))
+            (IncrementalSearchName, "is", ToggleKind, ToggleValue false)
+            (IgnoreCaseName,"ic", ToggleKind, ToggleValue false)
+            (JoinSpacesName, "js", ToggleKind, ToggleValue true)
+            (KeyModelName, "km", StringKind, StringValue "")
+            (MagicName, MagicName, ToggleKind, ToggleValue true)
+            (MaxMapCount, MaxMapCount, NumberKind, NumberValue 1000)
+            (MaxMapDepth, "mmd", NumberKind, NumberValue 1000)
+            (MouseModelName, "mousem", StringKind, StringValue "popup")
+            (ParagraphsName, "para", StringKind, StringValue "IPLPPPQPP TPHPLIPpLpItpplpipbp")
             (SectionsName, "sect", StringKind, StringValue "SHNHH HUnhsh")
-            (SelectionName, "sel", StringKind, StringValue("inclusive"))
-            (SelectModeName, "slm", StringKind, StringValue(""))
-            (ScrollOffsetName, "so", NumberKind, NumberValue(0))
+            (SelectionName, "sel", StringKind, StringValue "inclusive")
+            (SelectModeName, "slm", StringKind, StringValue "")
+            (ScrollOffsetName, "so", NumberKind, NumberValue 0)
             (ShellName, "sh", StringKind, "ComSpec" |> SystemUtil.GetEnvironmentVariable |> StringValue)
-            (ShellFlagName, "shcf", StringKind, StringValue("/c"))
-            (SmartCaseName, "scs", ToggleKind, ToggleValue(false))
-            (StartOfLineName, "sol", ToggleKind, ToggleValue(true))
-            (TabStopName, "ts", NumberKind, NumberValue(8))
-            (TildeOpName, "top", ToggleKind, ToggleValue(false))
-            (TimeoutName, "to", ToggleKind, ToggleValue(true))
-            (TimeoutExName, TimeoutExName, ToggleKind, ToggleValue(false))
-            (TimeoutLengthName, "tm", NumberKind, NumberValue(1000))
-            (TimeoutLengthExName, "ttm", NumberKind, NumberValue(-1))
-            (UseEditorIndentName, UseEditorIndentName, ToggleKind, ToggleValue(true))
-            (UseEditorSettingsName, UseEditorSettingsName, ToggleKind, ToggleValue(true))
-            (VimRcName, VimRcName, StringKind, StringValue(System.String.Empty))
-            (VimRcPathsName, VimRcPathsName, StringKind, StringValue(System.String.Empty))
+            (ShellFlagName, "shcf", StringKind, StringValue "/c")
+            (SmartCaseName, "scs", ToggleKind, ToggleValue false)
+            (StartOfLineName, "sol", ToggleKind, ToggleValue true)
+            (TabStopName, "ts", NumberKind, NumberValue 8)
+            (TildeOpName, "top", ToggleKind, ToggleValue false)
+            (TimeoutName, "to", ToggleKind, ToggleValue true)
+            (TimeoutExName, TimeoutExName, ToggleKind, ToggleValue false)
+            (TimeoutLengthName, "tm", NumberKind, NumberValue 1000)
+            (TimeoutLengthExName, "ttm", NumberKind, NumberValue -1)
+            (UseEditorIndentName, UseEditorIndentName, ToggleKind, ToggleValue true)
+            (UseEditorSettingsName, UseEditorSettingsName, ToggleKind, ToggleValue true)
+            (VimRcName, VimRcName, StringKind, StringValue(StringUtil.empty))
+            (VimRcPathsName, VimRcPathsName, StringKind, StringValue(StringUtil.empty))
             (VirtualEditName, "ve", StringKind, StringValue(StringUtil.empty))
-            (VisualBellName, "vb", ToggleKind, ToggleValue(false))
-            (WrapScanName, "ws", ToggleKind, ToggleValue(true))
+            (VisualBellName, "vb", ToggleKind, ToggleValue false)
+            (WrapScanName, "ws", ToggleKind, ToggleValue true)
         |]
-
-
 
     let _map = SettingsMap(_globalSettings, true)
 
@@ -368,7 +366,7 @@ type internal LocalSettings
             (ExpandTabName, "et", ToggleKind, ToggleValue false)
             (NumberName, "nu", ToggleKind, ToggleValue false)
             (NumberFormatsName, "nf", StringKind, StringValue "octal,hex")
-            (ShiftWidthName, "sw", NumberKind, NumberValue(8))
+            (ShiftWidthName, "sw", NumberKind, NumberValue 8)
             (TabStopName, "ts", NumberKind, NumberValue 8)
             (QuoteEscapeName, "qe", StringKind, StringValue @"\")
         |]
@@ -432,7 +430,7 @@ type internal LocalSettings
             and set value = _map.TrySetValue NumberFormatsName (StringValue value) |> ignore
         member x.ShiftWidth  
             with get() = _map.GetNumberValue ShiftWidthName
-            and set value = _map.TrySetValue ShiftWidthName (NumberValue(value)) |> ignore
+            and set value = _map.TrySetValue ShiftWidthName (NumberValue value) |> ignore
         member x.TabStop
             with get() = _map.GetNumberValue TabStopName
             and set value = _map.TrySetValue TabStopName (NumberValue value) |> ignore
@@ -453,8 +451,8 @@ type internal WindowSettings
 
     static let WindowSettingInfo =
         [|
-            (CursorLineName, "cul", ToggleKind, ToggleValue(false))
-            (ScrollName, "scr", NumberKind, NumberValue(25))
+            (CursorLineName, "cul", ToggleKind, ToggleValue false)
+            (ScrollName, "scr", NumberKind, NumberValue 25)
         |]
 
     let _map = SettingsMap(WindowSettingInfo, false)
@@ -482,16 +480,16 @@ type internal WindowSettings
                 try
                     let col = textView.TextViewLines
                     match col.FirstVisibleLine,col.LastVisibleLine with
-                    | (null,_) -> defaultValue
-                    | (_,null) -> defaultValue
-                    | (top,bottom) ->
+                    | (null, _) -> defaultValue
+                    | (_, null) -> defaultValue
+                    | (top, bottom) ->
                         let topLine = top.Start.GetContainingLine()
                         let endLine = bottom.End.GetContainingLine()
                         (endLine.LineNumber - topLine.LineNumber) / 2
                 with 
                     // This will be thrown if we're currently in the middle of an inner layout
                     :? System.InvalidOperationException -> defaultValue
-        NumberValue(lineCount)
+        NumberValue lineCount
 
     static member Copy (settings : IVimWindowSettings) = 
         let copy = WindowSettings(settings.GlobalSettings)
