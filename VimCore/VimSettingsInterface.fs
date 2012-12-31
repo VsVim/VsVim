@@ -70,6 +70,7 @@ type NumberFormat =
     | Octal
 
 /// The options which can be set in the 'clipboard' setting
+[<RequireQualifiedAccess>]
 type ClipboardOptions = 
     | None = 0
     | Unnamed = 0x1 
@@ -77,6 +78,7 @@ type ClipboardOptions =
     | AutoSelectMl = 0x4
 
 /// The options which can be set in the 'selectmode' setting
+[<RequireQualifiedAccess>]
 type SelectModeOptions =
     | None = 0
     | Mouse = 0x1
@@ -84,6 +86,7 @@ type SelectModeOptions =
     | Command = 0x4
 
 /// The options which can be set in the 'keymodel' setting
+[<RequireQualifiedAccess>]
 type KeyModelOptions =
     | None = 0
     | StartSelection = 0x1
@@ -94,25 +97,23 @@ type SelectionKind =
     | Inclusive
     | Exclusive
 
+[<RequireQualifiedAccess>]
 type SettingKind =
     | NumberKind
     | StringKind
     | ToggleKind
 
+[<RequireQualifiedAccess>]
 type SettingValue =
     | NumberValue of int
     | StringValue of string
     | ToggleValue of bool
     | CalculatedNumber of (unit -> int)
-    | CalculatedString of (unit -> string)
-    | CalculatedToggle of (unit -> bool)
 
     /// Is this a calculated value
     member x.IsCalculated = 
         match x with 
         | CalculatedNumber _ -> true
-        | CalculatedString _ -> true
-        | CalculatedToggle _ -> true
         | _ -> false
 
     /// Get the AggregateValue of the SettingValue.  This will dig through any CalculatedValue
@@ -120,18 +121,14 @@ type SettingValue =
     member x.AggregateValue = 
         match x with
         | CalculatedNumber func -> func() |> NumberValue
-        | CalculatedString func -> func() |> StringValue
-        | CalculatedToggle func -> func() |> ToggleValue
         | _ -> x
 
     member x.SettingKind = 
         match x with
-        | NumberValue _ -> NumberKind
-        | StringValue _ -> StringKind 
-        | ToggleValue _ -> ToggleKind
-        | CalculatedNumber _ -> NumberKind
-        | CalculatedString _ -> StringKind
-        | CalculatedToggle _ -> ToggleKind
+        | NumberValue _ -> SettingKind.NumberKind
+        | StringValue _ -> SettingKind.StringKind 
+        | ToggleValue _ -> SettingKind.ToggleKind
+        | CalculatedNumber _ -> SettingKind.NumberKind
 
 [<DebuggerDisplay("{Name}={Value}")>]
 type Setting = {
@@ -152,12 +149,10 @@ type Setting = {
     /// Is the setting value currently set to the default value
     member x.IsValueDefault = 
         match x.Value, x.DefaultValue with
-        | CalculatedNumber _, CalculatedNumber _ -> true
-        | CalculatedString _, CalculatedString _ -> true
-        | CalculatedToggle _, CalculatedToggle _ -> true
-        | NumberValue left, NumberValue right -> left = right
-        | StringValue left, StringValue right -> left = right
-        | ToggleValue left, ToggleValue right -> left = right
+        | SettingValue.CalculatedNumber _, SettingValue.CalculatedNumber _ -> true
+        | SettingValue.NumberValue left, SettingValue.NumberValue right -> left = right
+        | SettingValue.StringValue left, SettingValue.StringValue right -> left = right
+        | SettingValue.ToggleValue left, SettingValue.ToggleValue right -> left = right
         | _ -> false
 
 type SettingEventArgs(_setting : Setting) =

@@ -1022,7 +1022,7 @@ type Interpreter
             let msg = "!" + name
             withSetting name msg (fun setting container -> 
                 match setting.Kind, setting.AggregateValue with
-                | ToggleKind,ToggleValue(b) -> container.TrySetValue setting.Name (ToggleValue(not b)) |> ignore
+                | SettingKind.ToggleKind, SettingValue.ToggleValue b -> container.TrySetValue setting.Name (SettingValue.ToggleValue(not b)) |> ignore
                 | _ -> msg |> Resources.CommandMode_InvalidArgument |> _statusUtil.OnError)
 
         // Reset all settings to their default settings
