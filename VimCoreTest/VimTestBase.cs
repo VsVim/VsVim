@@ -174,6 +174,7 @@ namespace Vim.UnitTest
             _vim.KeyMap.ClearAll();
             _vim.MarkMap.ClearGlobalMarks();
             _vim.CloseAllVimBuffers();
+            _vim.IsDisabled = false;
 
             // Reset all of the global settings back to their default values.   Adds quite
             // a bit of sanity to the test bed

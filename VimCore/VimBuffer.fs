@@ -315,7 +315,9 @@ type internal VimBuffer
             _processingInputCount <- _processingInputCount + 1
             try
                 if keyInput = _vim.GlobalSettings.DisableAllCommand then
-                    x.ToggleDisabledMode()
+                    // Toggle the state of Vim.IsDisabled
+                    _vim.IsDisabled <- not _vim.IsDisabled
+                    ProcessResult.OfModeKind x.Mode.ModeKind
                 elif keyInput.Key = VimKey.Nop then
                     // The <nop> key should have no affect
                     ProcessResult.Handled ModeSwitch.NoSwitch
@@ -538,21 +540,6 @@ type internal VimBuffer
         _keyInputStartEvent.Trigger x keyInputEventArgs
         _keyInputProcessedEvent.Trigger x keyInputProcessedEventArgs
         _keyInputEndEvent.Trigger x keyInputEventArgs
-
-    /// Toggle disabled mode for all active IVimBuffer instances
-    member x.ToggleDisabledMode() = 
-        let modeKind = 
-            if x.Mode.ModeKind = ModeKind.Disabled then 
-                ModeKind.Normal
-            else
-                ModeKind.Disabled
-
-        _vim.VimBuffers
-        |> Seq.filter (fun vimBuffer -> vimBuffer.Mode.ModeKind <> modeKind)
-        |> Seq.iter (fun vimBuffer -> vimBuffer.SwitchMode modeKind ModeArgument.None |> ignore)
-
-        ProcessResult.OfModeKind modeKind
-
                  
     interface IVimBuffer with
         member x.CurrentDirectory 

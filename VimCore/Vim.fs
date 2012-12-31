@@ -273,6 +273,9 @@ type internal Vim
     let mutable _vimRcLocalSettings = LocalSettings(_globalSettings) :> IVimLocalSettings
     let mutable _vimRcWindowSettings : IVimWindowSettings option = None
 
+    /// Whether or not Vim is currently in disabled mode
+    let mutable _isDisabled = false
+
     let _registerMap =
         let currentFileNameFunc() = 
             match _activeBufferStack with
@@ -340,6 +343,14 @@ type internal Vim
 
     member x.IsVimRcLoaded = not (System.String.IsNullOrEmpty(_globalSettings.VimRc))
 
+    member x.IsDisabled 
+        with get () = _isDisabled
+        and set value = 
+            let changed = value <> _isDisabled
+            _isDisabled <- value
+            if changed then
+                x.UpdatedDisabledMode()
+
     member x.VariableMap = _variableMap
 
     member x.VimBuffers = _bufferMap.Values |> Seq.map fst |> List.ofSeq
@@ -390,6 +401,11 @@ type internal Vim
 
         // Put the IVimTextBuffer into the ITextBuffer property bag so we can query for it in the future
         textBuffer.Properties.[_vimTextBufferKey] <- vimTextBuffer
+
+        // If we are currently disabled then the new IVimTextBuffer instance should be disabled
+        // as well
+        if _isDisabled then
+            vimTextBuffer.SwitchMode ModeKind.Disabled ModeArgument.None
 
         vimTextBuffer
 
@@ -505,6 +521,19 @@ type internal Vim
             bag.DisposeAll()
         _bufferMap.Remove textView
 
+    /// Toggle disabled mode for all active IVimBuffer instances to sync up with the current
+    /// state of _isDisabled
+    member x.UpdatedDisabledMode() = 
+        if _isDisabled then
+            x.VimBuffers
+            |> Seq.filter (fun vimBuffer -> vimBuffer.Mode.ModeKind <> ModeKind.Disabled)
+            |> Seq.iter (fun vimBuffer -> vimBuffer.SwitchMode ModeKind.Disabled ModeArgument.None |> ignore)
+
+        else
+            x.VimBuffers
+            |> Seq.filter (fun vimBuffer -> vimBuffer.Mode.ModeKind = ModeKind.Disabled)
+            |> Seq.iter (fun vimBuffer -> vimBuffer.SwitchMode ModeKind.Normal ModeArgument.None |> ignore)
+
     interface IVim with
         member x.ActiveBuffer = x.ActiveBuffer
         member x.AutoLoadVimRc 
@@ -523,6 +552,9 @@ type internal Vim
         member x.KeyMap = _keyMap
         member x.SearchService = _search
         member x.IsVimRcLoaded = x.IsVimRcLoaded
+        member x.IsDisabled
+            with get() = x.IsDisabled
+            and set value = x.IsDisabled <- value
         member x.InBulkOperation = _bulkOperations.InBulkOperation
         member x.RegisterMap = _registerMap 
         member x.GlobalSettings = _globalSettings
