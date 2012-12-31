@@ -191,13 +191,13 @@ and IVimGlobalSettings =
     abstract ClipboardOptions : ClipboardOptions with get, set
 
     /// Whether or not to highlight previous search patterns matching cases
-    abstract HighlightSearch : bool with get,set
+    abstract HighlightSearch : bool with get, set
 
     /// The number of items to keep in the history lists
     abstract History : int with get, set
 
     /// Whether or not the magic option is set
-    abstract Magic : bool with get,set
+    abstract Magic : bool with get, set
 
     /// Maximum number of maps which can occur for a key map.  This is not a standard vim or gVim
     /// setting.  It's a hueristic setting meant to prevent infinite recursion in the specific cases
@@ -263,7 +263,7 @@ and IVimGlobalSettings =
     abstract StartOfLine : bool with get, set
 
     /// Controls the behavior of ~ in normal mode
-    abstract TildeOp : bool with get,set
+    abstract TildeOp : bool with get, set
 
     /// Part of the control for key mapping and code timeout
     abstract Timeout : bool with get, set
@@ -295,7 +295,7 @@ and IVimGlobalSettings =
 
     /// Overrides the IgnoreCase setting in certain cases if the pattern contains
     /// any upper case letters
-    abstract SmartCase : bool with get,set
+    abstract SmartCase : bool with get, set
 
     /// Let the editor control indentation of lines instead.  Overrides the AutoIndent
     /// setting
@@ -313,10 +313,10 @@ and IVimGlobalSettings =
     abstract VimRcPaths : string with get, set
 
     /// Holds the VirtualEdit string.  
-    abstract VirtualEdit : string with get,set
+    abstract VirtualEdit : string with get, set
 
     /// Whether or not to use a visual indicator of errors instead of a beep
-    abstract VisualBell : bool with get,set
+    abstract VisualBell : bool with get, set
 
     /// Whether or not searches should wrap at the end of the file
     abstract WrapScan : bool with get, set
