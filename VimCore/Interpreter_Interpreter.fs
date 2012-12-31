@@ -953,8 +953,8 @@ type Interpreter
 
         // Display the specified setting 
         let getSettingDisplay (setting: Setting ) =
-    
-            match setting.AggregateValue with
+
+            match setting.Value with
             | SettingValue.Toggle b -> 
                 if b then setting.Name
                 else sprintf "no%s" setting.Name
@@ -962,7 +962,6 @@ type Interpreter
                 sprintf "%s=\"%s\"" setting.Name s
             | SettingValue.Number n ->
                 sprintf "%s=%d" setting.Name n
-            | _ -> "Invalid value"
 
         let addSetting name value = 
             // TODO: implement
@@ -1020,7 +1019,7 @@ type Interpreter
         let invertSetting name = 
             let msg = "!" + name
             withSetting name msg (fun setting container -> 
-                match setting.AggregateValue with
+                match setting.Value with
                 | SettingValue.Toggle b -> container.TrySetValue setting.Name (SettingValue.Toggle(not b)) |> ignore
                 | _ -> msg |> Resources.CommandMode_InvalidArgument |> _statusUtil.OnError)
 

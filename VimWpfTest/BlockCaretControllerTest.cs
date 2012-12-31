@@ -192,8 +192,7 @@ namespace Vim.UI.Wpf.UnitTest
             var setting = new Setting(
                 GlobalSettingNames.CaretOpacityName,
                 "",
-                SettingValue.NewString(""),
-                SettingValue.NewString(""),
+                LiveSettingValue.NewString("", ""),
                 true);
             _settings.SetupGet(x => x.CaretOpacity).Returns(1);
             _settings.Raise(x => x.SettingChanged += null, null, new SettingEventArgs(setting));
