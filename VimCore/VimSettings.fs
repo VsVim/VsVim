@@ -24,7 +24,7 @@ type internal SettingsMap
     /// Create the settings off of the default map
     let mutable _settings =
          _rawData
-         |> Seq.map (fun (name, abbrev, value) -> {Name=name; Abbreviation=abbrev; DefaultValue=value; Value=value; IsGlobal=_isGlobal})
+         |> Seq.map (fun (name, abbrev, value) -> {Name = name; Abbreviation = abbrev; LiveSettingValue = LiveSettingValue.Create value; IsGlobal = _isGlobal})
          |> Seq.map (fun setting -> (setting.Name,setting))
          |> Map.ofSeq
 
@@ -44,12 +44,13 @@ type internal SettingsMap
         match x.GetSetting settingNameOrAbbrev with
         | None -> false
         | Some setting ->
-            if setting.Kind = value.SettingKind then
-                let setting = { setting with Value = value }
+            match setting.LiveSettingValue.UpdateValue value with
+            | Some value ->
+                let setting = { setting with LiveSettingValue = value }
                 _settings <- _settings |> Map.add setting.Name setting
                 _settingChangedEvent.Trigger x (SettingEventArgs(setting))
                 true
-            else false
+            | None -> false
 
     member x.TrySetValueFromString settingNameOrAbbrev strValue = 
         match x.GetSetting settingNameOrAbbrev with
@@ -71,29 +72,26 @@ type internal SettingsMap
     /// Get a boolean setting value.  Will throw if the setting name does not exist
     member x.GetBoolValue settingName = 
         let setting = _settings |> Map.find settingName
-        match setting.Value.AggregateValue with
+        match setting.Value with
         | SettingValue.Toggle b -> b 
         | SettingValue.Number _ -> failwith "invalid"
         | SettingValue.String _ -> failwith "invalid"
-        | SettingValue.CalculatedNumber _ -> failwith "invalid"
 
     /// Get a string setting value.  Will throw if the setting name does not exist
     member x.GetStringValue settingName =
         let setting = _settings |> Map.find settingName
-        match setting.Value.AggregateValue with
+        match setting.Value with
         | SettingValue.String s -> s
         | SettingValue.Number _ -> failwith "invalid"
         | SettingValue.Toggle _ -> failwith "invalid"
-        | SettingValue.CalculatedNumber _ -> failwith "invalid"
 
     /// Get a number setting value.  Will throw if the setting name does not exist
     member x.GetNumberValue settingName =
         let setting = _settings |> Map.find settingName
-        match setting.Value.AggregateValue with
+        match setting.Value with
         | SettingValue.Number n -> n
         | SettingValue.String _ -> failwith "invalid"
         | SettingValue.Toggle _ -> failwith "invalid"
-        | SettingValue.CalculatedNumber _ -> failwith "invalid"
 
     member x.ConvertStringToValue str kind =
         
@@ -451,10 +449,9 @@ type internal WindowSettings
 
     do
         let setting = _map.GetSetting ScrollName |> Option.get
-        _map.ReplaceSetting ScrollName {
-            setting with 
-                Value = SettingValue.CalculatedNumber(this.CalculateScroll); 
-                DefaultValue = SettingValue.CalculatedNumber(this.CalculateScroll) }
+        let liveSettingValue = LiveSettingValue.CalculatedNumber (None, this.CalculateScroll)
+        let setting = { setting with LiveSettingValue = liveSettingValue } 
+        _map.ReplaceSetting ScrollName setting
 
     new (settings) = WindowSettings(settings, None)
     new (settings, textView : ITextView) = WindowSettings(settings, Some textView)

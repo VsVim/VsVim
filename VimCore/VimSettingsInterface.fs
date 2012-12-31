@@ -103,12 +103,30 @@ type SettingKind =
     | String
     | Toggle
 
+/// A concrete value attached to a setting
 [<RequireQualifiedAccess>]
+[<StructuralEquality>]
+[<NoComparison>]
 type SettingValue =
     | Number of int
     | String of string
     | Toggle of bool
-    | CalculatedNumber of (unit -> int)
+
+    member x.Kind = 
+        match x with
+        | Number _ -> SettingKind.Number
+        | String _ -> SettingKind.String 
+        | Toggle _ -> SettingKind.Toggle
+
+/// This pairs both the current setting value and the default value into a single type safe
+/// value.  The first value in every tuple is the current value while the second is the 
+/// default
+[<RequireQualifiedAccess>]
+type LiveSettingValue =
+    | Number of int * int
+    | String of string * string
+    | Toggle of bool * bool
+    | CalculatedNumber of int option * (unit -> int)
 
     /// Is this a calculated value
     member x.IsCalculated = 
@@ -116,44 +134,66 @@ type SettingValue =
         | CalculatedNumber _ -> true
         | _ -> false
 
-    /// Get the AggregateValue of the SettingValue.  This will dig through any CalculatedValue
-    /// instances and return the actual value
-    member x.AggregateValue = 
+    member x.Value =
         match x with
-        | CalculatedNumber func -> func() |> Number
-        | _ -> x
+        | Number (value, _) -> SettingValue.Number value
+        | String (value, _) -> SettingValue.String value
+        | Toggle (value, _) -> SettingValue.Toggle value
+        | CalculatedNumber (value, func) ->
+            match value with
+            | Some value -> SettingValue.Number value
+            | None -> func() |> SettingValue.Number
 
-    member x.SettingKind = 
+    member x.DefaultValue =
+        match x with
+        | Number (_, defaultValue) -> SettingValue.Number defaultValue
+        | String (_, defaultValue) -> SettingValue.String defaultValue
+        | Toggle (_, defaultValue) -> SettingValue.Toggle defaultValue
+        | CalculatedNumber (_, func) -> func() |> SettingValue.Number
+
+    /// Is the value currently the default? 
+    member x.IsValueDefault = x.Value = x.DefaultValue
+
+    member x.Kind = 
         match x with
         | Number _ -> SettingKind.Number
         | String _ -> SettingKind.String 
         | Toggle _ -> SettingKind.Toggle
         | CalculatedNumber _ -> SettingKind.Number
 
+    member x.UpdateValue value =
+        match x, value with 
+        | Number (_, defaultValue), SettingValue.Number value -> Number (value, defaultValue) |> Some
+        | String (_, defaultValue), SettingValue.String value -> String (value, defaultValue) |> Some
+        | Toggle (_, defaultValue), SettingValue.Toggle value -> Toggle (value, defaultValue) |> Some
+        | CalculatedNumber (_, func), SettingValue.Number value -> CalculatedNumber (Some value, func) |> Some
+        | _ -> None
+
+    static member Create value = 
+        match value with
+        | SettingValue.Number value -> LiveSettingValue.Number (value, value)
+        | SettingValue.String value -> LiveSettingValue.String (value, value)
+        | SettingValue.Toggle value -> LiveSettingValue.Toggle (value, value)
+
 [<DebuggerDisplay("{Name}={Value}")>]
 type Setting = {
     Name : string
     Abbreviation : string
-    DefaultValue : SettingValue
-    Value : SettingValue
+    LiveSettingValue : LiveSettingValue
     IsGlobal : bool
 } with 
 
-    member x.AggregateValue = x.Value.AggregateValue
+    member x.Value = x.LiveSettingValue.Value
 
-    member x.Kind = x.Value.SettingKind
+    member x.DefaultValue = x.LiveSettingValue.DefaultValue
+
+    member x.Kind = x.LiveSettingValue.Kind
 
     /// Is the value calculated
-    member x.IsValueCalculated = x.Value.IsCalculated
+    member x.IsValueCalculated = x.LiveSettingValue.IsCalculated
 
     /// Is the setting value currently set to the default value
-    member x.IsValueDefault = 
-        match x.Value, x.DefaultValue with
-        | SettingValue.CalculatedNumber _, SettingValue.CalculatedNumber _ -> true
-        | SettingValue.Number left, SettingValue.Number right -> left = right
-        | SettingValue.String left, SettingValue.String right -> left = right
-        | SettingValue.Toggle left, SettingValue.Toggle right -> left = right
-        | _ -> false
+    member x.IsValueDefault = x.LiveSettingValue.IsValueDefault
 
 type SettingEventArgs(_setting : Setting) =
     inherit System.EventArgs()
