@@ -72,82 +72,82 @@ type internal SettingsMap
     member x.GetBoolValue settingName = 
         let setting = _settings |> Map.find settingName
         match setting.Value.AggregateValue with
-        | SettingValue.ToggleValue b -> b 
-        | SettingValue.NumberValue _ -> failwith "invalid"
-        | SettingValue.StringValue _ -> failwith "invalid"
+        | SettingValue.Toggle b -> b 
+        | SettingValue.Number _ -> failwith "invalid"
+        | SettingValue.String _ -> failwith "invalid"
         | SettingValue.CalculatedNumber _ -> failwith "invalid"
 
     /// Get a string setting value.  Will throw if the setting name does not exist
     member x.GetStringValue settingName =
         let setting = _settings |> Map.find settingName
         match setting.Value.AggregateValue with
-        | SettingValue.StringValue s -> s
-        | SettingValue.NumberValue _ -> failwith "invalid"
-        | SettingValue.ToggleValue _ -> failwith "invalid"
+        | SettingValue.String s -> s
+        | SettingValue.Number _ -> failwith "invalid"
+        | SettingValue.Toggle _ -> failwith "invalid"
         | SettingValue.CalculatedNumber _ -> failwith "invalid"
 
     /// Get a number setting value.  Will throw if the setting name does not exist
     member x.GetNumberValue settingName =
         let setting = _settings |> Map.find settingName
         match setting.Value.AggregateValue with
-        | SettingValue.NumberValue n -> n
-        | SettingValue.StringValue _ -> failwith "invalid"
-        | SettingValue.ToggleValue _ -> failwith "invalid"
+        | SettingValue.Number n -> n
+        | SettingValue.String _ -> failwith "invalid"
+        | SettingValue.Toggle _ -> failwith "invalid"
         | SettingValue.CalculatedNumber _ -> failwith "invalid"
 
     member x.ConvertStringToValue str kind =
         
         let convertToNumber() = 
             let ret,value = System.Int32.TryParse str
-            if ret then Some (SettingValue.NumberValue value) else None
+            if ret then Some (SettingValue.Number value) else None
         let convertToBoolean() =
             let ret,value = System.Boolean.TryParse str
-            if ret then Some (SettingValue.ToggleValue value) else None
+            if ret then Some (SettingValue.Toggle value) else None
         match kind with
-        | SettingKind.NumberKind -> convertToNumber()
-        | SettingKind.ToggleKind -> convertToBoolean()
-        | SettingKind.StringKind -> Some (SettingValue.StringValue str)
+        | SettingKind.Number -> convertToNumber()
+        | SettingKind.Toggle -> convertToBoolean()
+        | SettingKind.String -> Some (SettingValue.String str)
 
 type internal GlobalSettings() =
     static let _disableAllCommand = KeyInputUtil.ApplyModifiersToVimKey VimKey.F12 (KeyModifiers.Control ||| KeyModifiers.Shift)
 
     static let _globalSettings = 
         [|
-            (BackspaceName, "bs", SettingValue.StringValue "")
-            (CaretOpacityName, CaretOpacityName, SettingValue.NumberValue 65)
-            (ClipboardName, "cb", SettingValue.StringValue "")
-            (HighlightSearchName, "hls", SettingValue.ToggleValue false)
-            (HistoryName, "hi", SettingValue.NumberValue(Constants.DefaultHistoryLength))
-            (IncrementalSearchName, "is", SettingValue.ToggleValue false)
-            (IgnoreCaseName,"ic", SettingValue.ToggleValue false)
-            (JoinSpacesName, "js", SettingValue.ToggleValue true)
-            (KeyModelName, "km", SettingValue.StringValue "")
-            (MagicName, MagicName, SettingValue.ToggleValue true)
-            (MaxMapCount, MaxMapCount, SettingValue.NumberValue 1000)
-            (MaxMapDepth, "mmd", SettingValue.NumberValue 1000)
-            (MouseModelName, "mousem", SettingValue.StringValue "popup")
-            (ParagraphsName, "para", SettingValue.StringValue "IPLPPPQPP TPHPLIPpLpItpplpipbp")
-            (SectionsName, "sect", SettingValue.StringValue "SHNHH HUnhsh")
-            (SelectionName, "sel", SettingValue.StringValue "inclusive")
-            (SelectModeName, "slm", SettingValue.StringValue "")
-            (ScrollOffsetName, "so", SettingValue.NumberValue 0)
-            (ShellName, "sh", "ComSpec" |> SystemUtil.GetEnvironmentVariable |> SettingValue.StringValue)
-            (ShellFlagName, "shcf", SettingValue.StringValue "/c")
-            (SmartCaseName, "scs", SettingValue.ToggleValue false)
-            (StartOfLineName, "sol", SettingValue.ToggleValue true)
-            (TabStopName, "ts", SettingValue.NumberValue 8)
-            (TildeOpName, "top", SettingValue.ToggleValue false)
-            (TimeoutName, "to", SettingValue.ToggleValue true)
-            (TimeoutExName, TimeoutExName, SettingValue.ToggleValue false)
-            (TimeoutLengthName, "tm", SettingValue.NumberValue 1000)
-            (TimeoutLengthExName, "ttm", SettingValue.NumberValue -1)
-            (UseEditorIndentName, UseEditorIndentName, SettingValue.ToggleValue true)
-            (UseEditorSettingsName, UseEditorSettingsName, SettingValue.ToggleValue true)
-            (VimRcName, VimRcName, SettingValue.StringValue(StringUtil.empty))
-            (VimRcPathsName, VimRcPathsName, SettingValue.StringValue(StringUtil.empty))
-            (VirtualEditName, "ve", SettingValue.StringValue(StringUtil.empty))
-            (VisualBellName, "vb", SettingValue.ToggleValue false)
-            (WrapScanName, "ws", SettingValue.ToggleValue true)
+            (BackspaceName, "bs", SettingValue.String "")
+            (CaretOpacityName, CaretOpacityName, SettingValue.Number 65)
+            (ClipboardName, "cb", SettingValue.String "")
+            (HighlightSearchName, "hls", SettingValue.Toggle false)
+            (HistoryName, "hi", SettingValue.Number(Constants.DefaultHistoryLength))
+            (IncrementalSearchName, "is", SettingValue.Toggle false)
+            (IgnoreCaseName,"ic", SettingValue.Toggle false)
+            (JoinSpacesName, "js", SettingValue.Toggle true)
+            (KeyModelName, "km", SettingValue.String "")
+            (MagicName, MagicName, SettingValue.Toggle true)
+            (MaxMapCount, MaxMapCount, SettingValue.Number 1000)
+            (MaxMapDepth, "mmd", SettingValue.Number 1000)
+            (MouseModelName, "mousem", SettingValue.String "popup")
+            (ParagraphsName, "para", SettingValue.String "IPLPPPQPP TPHPLIPpLpItpplpipbp")
+            (SectionsName, "sect", SettingValue.String "SHNHH HUnhsh")
+            (SelectionName, "sel", SettingValue.String "inclusive")
+            (SelectModeName, "slm", SettingValue.String "")
+            (ScrollOffsetName, "so", SettingValue.Number 0)
+            (ShellName, "sh", "ComSpec" |> SystemUtil.GetEnvironmentVariable |> SettingValue.String)
+            (ShellFlagName, "shcf", SettingValue.String "/c")
+            (SmartCaseName, "scs", SettingValue.Toggle false)
+            (StartOfLineName, "sol", SettingValue.Toggle true)
+            (TabStopName, "ts", SettingValue.Number 8)
+            (TildeOpName, "top", SettingValue.Toggle false)
+            (TimeoutName, "to", SettingValue.Toggle true)
+            (TimeoutExName, TimeoutExName, SettingValue.Toggle false)
+            (TimeoutLengthName, "tm", SettingValue.Number 1000)
+            (TimeoutLengthExName, "ttm", SettingValue.Number -1)
+            (UseEditorIndentName, UseEditorIndentName, SettingValue.Toggle true)
+            (UseEditorSettingsName, UseEditorSettingsName, SettingValue.Toggle true)
+            (VimRcName, VimRcName, SettingValue.String(StringUtil.empty))
+            (VimRcPathsName, VimRcPathsName, SettingValue.String(StringUtil.empty))
+            (VirtualEditName, "ve", SettingValue.String(StringUtil.empty))
+            (VisualBellName, "vb", SettingValue.Toggle false)
+            (WrapScanName, "ws", SettingValue.Toggle true)
         |]
 
     let _map = SettingsMap(_globalSettings, true)
@@ -203,7 +203,7 @@ type internal GlobalSettings() =
                     None)
             |> SeqUtil.filterToSome
             |> String.concat ","
-        _map.TrySetValue name (SettingValue.StringValue settingValue) |> ignore
+        _map.TrySetValue name (SettingValue.String settingValue) |> ignore
 
     member x.SelectionKind = 
         match _map.GetStringValue SelectionName with
@@ -222,28 +222,28 @@ type internal GlobalSettings() =
         // IVimGlobalSettings 
         member x.Backspace 
             with get() = _map.GetStringValue BackspaceName
-            and set value = _map.TrySetValue BackspaceName (SettingValue.StringValue value) |> ignore
+            and set value = _map.TrySetValue BackspaceName (SettingValue.String value) |> ignore
         member x.CaretOpacity
             with get() = _map.GetNumberValue CaretOpacityName
-            and set value = _map.TrySetValue CaretOpacityName (SettingValue.NumberValue value) |> ignore
+            and set value = _map.TrySetValue CaretOpacityName (SettingValue.Number value) |> ignore
         member x.Clipboard
             with get() = _map.GetStringValue ClipboardName
-            and set value = _map.TrySetValue ClipboardName (SettingValue.StringValue value) |> ignore
+            and set value = _map.TrySetValue ClipboardName (SettingValue.String value) |> ignore
         member x.ClipboardOptions
             with get() = x.GetCommaOptions ClipboardName ClipboardOptionsMapping ClipboardOptions.None (fun x y -> x ||| y)
             and set value = x.SetCommaOptions ClipboardName ClipboardOptionsMapping value Util.IsFlagSet
         member x.HighlightSearch
             with get() = _map.GetBoolValue HighlightSearchName
-            and set value = _map.TrySetValue HighlightSearchName (SettingValue.ToggleValue value) |> ignore
+            and set value = _map.TrySetValue HighlightSearchName (SettingValue.Toggle value) |> ignore
         member x.History
             with get () = _map.GetNumberValue HistoryName
-            and set value = _map.TrySetValue HistoryName (SettingValue.NumberValue value) |> ignore
+            and set value = _map.TrySetValue HistoryName (SettingValue.Number value) |> ignore
         member x.IgnoreCase
             with get()  = _map.GetBoolValue IgnoreCaseName
-            and set value = _map.TrySetValue IgnoreCaseName (SettingValue.ToggleValue value) |> ignore
+            and set value = _map.TrySetValue IgnoreCaseName (SettingValue.Toggle value) |> ignore
         member x.IncrementalSearch
             with get() = _map.GetBoolValue IncrementalSearchName
-            and set value = _map.TrySetValue IncrementalSearchName (SettingValue.ToggleValue value) |> ignore
+            and set value = _map.TrySetValue IncrementalSearchName (SettingValue.Toggle value) |> ignore
         member x.IsSelectionInclusive = x.SelectionKind = SelectionKind.Inclusive
         member x.IsSelectionPastLine = 
             match _map.GetStringValue SelectionName with
@@ -252,92 +252,92 @@ type internal GlobalSettings() =
             | _ -> false
         member x.JoinSpaces 
             with get() = _map.GetBoolValue JoinSpacesName
-            and set value = _map.TrySetValue JoinSpacesName (SettingValue.ToggleValue value) |> ignore
+            and set value = _map.TrySetValue JoinSpacesName (SettingValue.Toggle value) |> ignore
         member x.KeyModel 
             with get() = _map.GetStringValue KeyModelName
-            and set value = _map.TrySetValue KeyModelName (SettingValue.StringValue value) |> ignore
+            and set value = _map.TrySetValue KeyModelName (SettingValue.String value) |> ignore
         member x.KeyModelOptions
             with get() = x.GetCommaOptions KeyModelName KeyModelOptionsMapping KeyModelOptions.None (fun x y -> x ||| y)
             and set value = x.SetCommaOptions KeyModelName KeyModelOptionsMapping value Util.IsFlagSet
         member x.Magic
             with get() = _map.GetBoolValue MagicName
-            and set value = _map.TrySetValue MagicName (SettingValue.ToggleValue value) |> ignore
+            and set value = _map.TrySetValue MagicName (SettingValue.Toggle value) |> ignore
         member x.MaxMapCount
             with get() = _map.GetNumberValue MaxMapCount
-            and set value = _map.TrySetValue MaxMapCount (SettingValue.NumberValue value) |> ignore
+            and set value = _map.TrySetValue MaxMapCount (SettingValue.Number value) |> ignore
         member x.MaxMapDepth
             with get() = _map.GetNumberValue MaxMapDepth
-            and set value = _map.TrySetValue MaxMapDepth (SettingValue.NumberValue value) |> ignore
+            and set value = _map.TrySetValue MaxMapDepth (SettingValue.Number value) |> ignore
         member x.MouseModel 
             with get() = _map.GetStringValue MouseModelName
-            and set value = _map.TrySetValue MouseModelName (SettingValue.StringValue value) |> ignore
+            and set value = _map.TrySetValue MouseModelName (SettingValue.String value) |> ignore
         member x.Paragraphs
             with get() = _map.GetStringValue ParagraphsName
-            and set value = _map.TrySetValue ParagraphsName (SettingValue.StringValue value) |> ignore
+            and set value = _map.TrySetValue ParagraphsName (SettingValue.String value) |> ignore
         member x.ScrollOffset
             with get() = _map.GetNumberValue ScrollOffsetName
-            and set value = _map.TrySetValue ScrollOffsetName (SettingValue.NumberValue value) |> ignore
+            and set value = _map.TrySetValue ScrollOffsetName (SettingValue.Number value) |> ignore
         member x.Sections
             with get() = _map.GetStringValue SectionsName
-            and set value = _map.TrySetValue SectionsName (SettingValue.StringValue value) |> ignore
+            and set value = _map.TrySetValue SectionsName (SettingValue.String value) |> ignore
         member x.Selection
             with get() = _map.GetStringValue SelectionName
-            and set value = _map.TrySetValue SelectionName (SettingValue.StringValue value) |> ignore
+            and set value = _map.TrySetValue SelectionName (SettingValue.String value) |> ignore
         member x.SelectionKind = x.SelectionKind
         member x.SelectMode 
             with get() = _map.GetStringValue SelectModeName
-            and set value = _map.TrySetValue SelectModeName (SettingValue.StringValue value) |> ignore
+            and set value = _map.TrySetValue SelectModeName (SettingValue.String value) |> ignore
         member x.SelectModeOptions 
             with get() = x.GetCommaOptions SelectModeName SelectModeOptionsMapping SelectModeOptions.None (fun x y -> x ||| y) 
             and set value = x.SetCommaOptions SelectModeName SelectModeOptionsMapping value Util.IsFlagSet
         member x.Shell 
             with get() = _map.GetStringValue ShellName
-            and set value = _map.TrySetValue ShellName (SettingValue.StringValue value) |> ignore
+            and set value = _map.TrySetValue ShellName (SettingValue.String value) |> ignore
         member x.ShellFlag
             with get() = _map.GetStringValue ShellFlagName
-            and set value = _map.TrySetValue ShellFlagName (SettingValue.StringValue value) |> ignore
+            and set value = _map.TrySetValue ShellFlagName (SettingValue.String value) |> ignore
         member x.SmartCase
             with get() = _map.GetBoolValue SmartCaseName
-            and set value = _map.TrySetValue SmartCaseName (SettingValue.ToggleValue value) |> ignore
+            and set value = _map.TrySetValue SmartCaseName (SettingValue.Toggle value) |> ignore
         member x.StartOfLine 
             with get() = _map.GetBoolValue StartOfLineName
-            and set value = _map.TrySetValue StartOfLineName (SettingValue.ToggleValue value) |> ignore
+            and set value = _map.TrySetValue StartOfLineName (SettingValue.Toggle value) |> ignore
         member x.TildeOp
             with get() = _map.GetBoolValue TildeOpName
-            and set value = _map.TrySetValue TildeOpName (SettingValue.ToggleValue value) |> ignore
+            and set value = _map.TrySetValue TildeOpName (SettingValue.Toggle value) |> ignore
         member x.Timeout
             with get() = _map.GetBoolValue TimeoutName
-            and set value = _map.TrySetValue TimeoutName (SettingValue.ToggleValue value) |> ignore
+            and set value = _map.TrySetValue TimeoutName (SettingValue.Toggle value) |> ignore
         member x.TimeoutEx
             with get() = _map.GetBoolValue TimeoutExName
-            and set value = _map.TrySetValue TimeoutExName (SettingValue.ToggleValue value) |> ignore
+            and set value = _map.TrySetValue TimeoutExName (SettingValue.Toggle value) |> ignore
         member x.TimeoutLength
             with get() = _map.GetNumberValue TimeoutLengthName
-            and set value = _map.TrySetValue TimeoutLengthName (SettingValue.NumberValue value) |> ignore
+            and set value = _map.TrySetValue TimeoutLengthName (SettingValue.Number value) |> ignore
         member x.TimeoutLengthEx
             with get() = _map.GetNumberValue TimeoutLengthExName
-            and set value = _map.TrySetValue TimeoutLengthExName (SettingValue.NumberValue value) |> ignore
+            and set value = _map.TrySetValue TimeoutLengthExName (SettingValue.Number value) |> ignore
         member x.UseEditorIndent
             with get() = _map.GetBoolValue UseEditorIndentName
-            and set value = _map.TrySetValue UseEditorIndentName (SettingValue.ToggleValue value) |> ignore
+            and set value = _map.TrySetValue UseEditorIndentName (SettingValue.Toggle value) |> ignore
         member x.UseEditorSettings
             with get() = _map.GetBoolValue UseEditorSettingsName
-            and set value = _map.TrySetValue UseEditorSettingsName (SettingValue.ToggleValue value) |> ignore
+            and set value = _map.TrySetValue UseEditorSettingsName (SettingValue.Toggle value) |> ignore
         member x.VimRc 
             with get() = _map.GetStringValue VimRcName
-            and set value = _map.TrySetValue VimRcName (SettingValue.StringValue value) |> ignore
+            and set value = _map.TrySetValue VimRcName (SettingValue.String value) |> ignore
         member x.VimRcPaths 
             with get() = _map.GetStringValue VimRcPathsName
-            and set value = _map.TrySetValue VimRcPathsName (SettingValue.StringValue value) |> ignore
+            and set value = _map.TrySetValue VimRcPathsName (SettingValue.String value) |> ignore
         member x.VirtualEdit
             with get() = _map.GetStringValue VirtualEditName
-            and set value = _map.TrySetValue VirtualEditName (SettingValue.StringValue value) |> ignore
+            and set value = _map.TrySetValue VirtualEditName (SettingValue.String value) |> ignore
         member x.VisualBell
             with get() = _map.GetBoolValue VisualBellName
-            and set value = _map.TrySetValue VisualBellName (SettingValue.ToggleValue value) |> ignore
+            and set value = _map.TrySetValue VisualBellName (SettingValue.Toggle value) |> ignore
         member x.WrapScan
             with get() = _map.GetBoolValue WrapScanName
-            and set value = _map.TrySetValue WrapScanName (SettingValue.ToggleValue value) |> ignore
+            and set value = _map.TrySetValue WrapScanName (SettingValue.Toggle value) |> ignore
         member x.DisableAllCommand = _disableAllCommand
         member x.IsBackspaceEol = x.IsCommaSubOptionPresent BackspaceName "eol"
         member x.IsBackspaceIndent = x.IsCommaSubOptionPresent BackspaceName "indent"
@@ -354,13 +354,13 @@ type internal LocalSettings
 
     static let LocalSettingInfo =
         [|
-            (AutoIndentName, "ai", SettingValue.ToggleValue false)
-            (ExpandTabName, "et", SettingValue.ToggleValue false)
-            (NumberName, "nu", SettingValue.ToggleValue false)
-            (NumberFormatsName, "nf", SettingValue.StringValue "octal,hex")
-            (ShiftWidthName, "sw", SettingValue.NumberValue 8)
-            (TabStopName, "ts", SettingValue.NumberValue 8)
-            (QuoteEscapeName, "qe", SettingValue.StringValue @"\")
+            (AutoIndentName, "ai", SettingValue.Toggle false)
+            (ExpandTabName, "et", SettingValue.Toggle false)
+            (NumberName, "nu", SettingValue.Toggle false)
+            (NumberFormatsName, "nf", SettingValue.String "octal,hex")
+            (ShiftWidthName, "sw", SettingValue.Number 8)
+            (TabStopName, "ts", SettingValue.Number 8)
+            (QuoteEscapeName, "qe", SettingValue.String @"\")
         |]
 
     let _map = SettingsMap(LocalSettingInfo, false)
@@ -410,25 +410,25 @@ type internal LocalSettings
         member x.GlobalSettings = _globalSettings
         member x.AutoIndent
             with get() = _map.GetBoolValue AutoIndentName
-            and set value = _map.TrySetValue AutoIndentName (SettingValue.ToggleValue value) |> ignore
+            and set value = _map.TrySetValue AutoIndentName (SettingValue.Toggle value) |> ignore
         member x.ExpandTab
             with get() = _map.GetBoolValue ExpandTabName
-            and set value = _map.TrySetValue ExpandTabName (SettingValue.ToggleValue value) |> ignore
+            and set value = _map.TrySetValue ExpandTabName (SettingValue.Toggle value) |> ignore
         member x.Number
             with get() = _map.GetBoolValue NumberName
-            and set value = _map.TrySetValue NumberName (SettingValue.ToggleValue value) |> ignore
+            and set value = _map.TrySetValue NumberName (SettingValue.Toggle value) |> ignore
         member x.NumberFormats
             with get() = _map.GetStringValue NumberFormatsName
-            and set value = _map.TrySetValue NumberFormatsName (SettingValue.StringValue value) |> ignore
+            and set value = _map.TrySetValue NumberFormatsName (SettingValue.String value) |> ignore
         member x.ShiftWidth  
             with get() = _map.GetNumberValue ShiftWidthName
-            and set value = _map.TrySetValue ShiftWidthName (SettingValue.NumberValue value) |> ignore
+            and set value = _map.TrySetValue ShiftWidthName (SettingValue.Number value) |> ignore
         member x.TabStop
             with get() = _map.GetNumberValue TabStopName
-            and set value = _map.TrySetValue TabStopName (SettingValue.NumberValue value) |> ignore
+            and set value = _map.TrySetValue TabStopName (SettingValue.Number value) |> ignore
         member x.QuoteEscape
             with get() = _map.GetStringValue QuoteEscapeName
-            and set value = _map.TrySetValue QuoteEscapeName (SettingValue.StringValue value) |> ignore
+            and set value = _map.TrySetValue QuoteEscapeName (SettingValue.String value) |> ignore
 
         member x.IsNumberFormatSupported numberFormat = x.IsNumberFormatSupported numberFormat
 
@@ -443,8 +443,8 @@ type internal WindowSettings
 
     static let WindowSettingInfo =
         [|
-            (CursorLineName, "cul", SettingValue.ToggleValue false)
-            (ScrollName, "scr", SettingValue.NumberValue 25)
+            (CursorLineName, "cul", SettingValue.Toggle false)
+            (ScrollName, "scr", SettingValue.Number 25)
         |]
 
     let _map = SettingsMap(WindowSettingInfo, false)
@@ -503,10 +503,10 @@ type internal WindowSettings
 
         member x.CursorLine 
             with get() = _map.GetBoolValue CursorLineName
-            and set value = _map.TrySetValue CursorLineName (SettingValue.ToggleValue value) |> ignore
+            and set value = _map.TrySetValue CursorLineName (SettingValue.Toggle value) |> ignore
         member x.Scroll 
             with get() = _map.GetNumberValue ScrollName
-            and set value = _map.TrySetValue ScrollName (SettingValue.NumberValue value) |> ignore
+            and set value = _map.TrySetValue ScrollName (SettingValue.Number value) |> ignore
 
         [<CLIEvent>]
         member x.SettingChanged = _map.SettingChanged

@@ -649,22 +649,22 @@ namespace Vim.UnitTest
 
         #region SettingValue
 
-        public static SettingValue.StringValue AsStringValue(this SettingValue value)
+        public static SettingValue.String AsString(this SettingValue value)
         {
-            Assert.True(value.IsStringValue);
-            return (SettingValue.StringValue)value;
+            Assert.True(value.IsString);
+            return (SettingValue.String)value;
         }
 
-        public static SettingValue.ToggleValue AsToggleValue(this SettingValue value)
+        public static SettingValue.Toggle AsToggle(this SettingValue value)
         {
-            Assert.True(value.IsToggleValue);
-            return (SettingValue.ToggleValue)value;
+            Assert.True(value.IsToggle);
+            return (SettingValue.Toggle)value;
         }
 
-        public static SettingValue.NumberValue AsNumberValue(this SettingValue value)
+        public static SettingValue.Number AsNumber(this SettingValue value)
         {
-            Assert.True(value.IsNumberValue);
-            return (SettingValue.NumberValue)value;
+            Assert.True(value.IsNumber);
+            return (SettingValue.Number)value;
         }
 
         #endregion

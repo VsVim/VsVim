@@ -123,7 +123,7 @@ namespace Vim.UnitTest
             Assert.Equal("", _globalSettings.SelectMode);
             Assert.Equal(SelectModeOptions.None, _globalSettings.SelectModeOptions);
             var setting = _globalSettings.GetSetting(GlobalSettingNames.SelectModeName).Value;
-            Assert.Equal("", setting.DefaultValue.AsStringValue().Item);
+            Assert.Equal("", setting.DefaultValue.AsString().Item);
         }
     }
 }
