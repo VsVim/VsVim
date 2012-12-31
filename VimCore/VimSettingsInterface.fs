@@ -103,23 +103,40 @@ type SettingValue =
     | NumberValue of int
     | StringValue of string
     | ToggleValue of bool
-    | CalculatedValue of (unit -> SettingValue)
+    | CalculatedNumber of (unit -> int)
+    | CalculatedString of (unit -> string)
+    | CalculatedToggle of (unit -> bool)
+
+    /// Is this a calculated value
+    member x.IsCalculated = 
+        match x with 
+        | CalculatedNumber _ -> true
+        | CalculatedString _ -> true
+        | CalculatedToggle _ -> true
+        | _ -> false
 
     /// Get the AggregateValue of the SettingValue.  This will dig through any CalculatedValue
     /// instances and return the actual value
     member x.AggregateValue = 
+        match x with
+        | CalculatedNumber func -> func() |> NumberValue
+        | CalculatedString func -> func() |> StringValue
+        | CalculatedToggle func -> func() |> ToggleValue
+        | _ -> x
 
-        let rec digThrough value = 
-            match value with 
-            | CalculatedValue(func) -> digThrough (func())
-            | _ -> value
-        digThrough x
+    member x.SettingKind = 
+        match x with
+        | NumberValue _ -> NumberKind
+        | StringValue _ -> StringKind 
+        | ToggleValue _ -> ToggleKind
+        | CalculatedNumber _ -> NumberKind
+        | CalculatedString _ -> StringKind
+        | CalculatedToggle _ -> ToggleKind
 
 [<DebuggerDisplay("{Name}={Value}")>]
 type Setting = {
     Name : string
     Abbreviation : string
-    Kind : SettingKind
     DefaultValue : SettingValue
     Value : SettingValue
     IsGlobal : bool
@@ -127,26 +144,26 @@ type Setting = {
 
     member x.AggregateValue = x.Value.AggregateValue
 
+    member x.Kind = x.Value.SettingKind
+
     /// Is the value calculated
-    member x.IsValueCalculated =
-        match x.Value with
-        | CalculatedValue(_) -> true
-        | _ -> false
+    member x.IsValueCalculated = x.Value.IsCalculated
 
     /// Is the setting value currently set to the default value
     member x.IsValueDefault = 
         match x.Value, x.DefaultValue with
-        | CalculatedValue(_), CalculatedValue(_) -> true
-        | NumberValue(left), NumberValue(right) -> left = right
-        | StringValue(left), StringValue(right) -> left = right
-        | ToggleValue(left), ToggleValue(right) -> left = right
+        | CalculatedNumber _, CalculatedNumber _ -> true
+        | CalculatedString _, CalculatedString _ -> true
+        | CalculatedToggle _, CalculatedToggle _ -> true
+        | NumberValue left, NumberValue right -> left = right
+        | StringValue left, StringValue right -> left = right
+        | ToggleValue left, ToggleValue right -> left = right
         | _ -> false
 
 type SettingEventArgs(_setting : Setting) =
     inherit System.EventArgs()
 
     member x.Setting = _setting
-
 
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property
