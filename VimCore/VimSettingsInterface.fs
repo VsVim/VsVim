@@ -13,6 +13,7 @@ open System.Collections.Generic
 module GlobalSettingNames = 
     let BackspaceName = "backspace"
     let CaretOpacityName = "vsvimcaret"
+    let CurrentDirectoryPathName = "cdpath"
     let ClipboardName = "clipboard"
     let HighlightSearchName = "hlsearch"
     let HistoryName = "history"
@@ -25,6 +26,7 @@ module GlobalSettingNames =
     let MaxMapDepth =  "maxmapdepth"
     let MouseModelName = "mousemodel"
     let ParagraphsName = "paragraphs"
+    let PathName = "path"
     let ScrollOffsetName = "scrolloff"
     let SectionsName = "sections"
     let SelectionName = "selection"
@@ -91,6 +93,19 @@ type KeyModelOptions =
     | None = 0
     | StartSelection = 0x1
     | StopSelection = 0x2
+
+/// The type of path values which can appear for 'cdpath' or 'path'
+[<RequireQualifiedAccess>]
+type PathOption =
+
+    /// An actual named path
+    | Named of string
+
+    /// Use the current directory
+    | CurrentDirectory
+
+    /// Use the directory of the current file 
+    | CurrentFile
 
 [<RequireQualifiedAccess>]
 type SelectionKind =
@@ -235,6 +250,12 @@ and IVimGlobalSettings =
     /// will be converted into a double for the opacity of the caret
     abstract CaretOpacity : int with get, set
 
+    /// List of paths which will be searched by the :cd and :ld commands
+    abstract CurrentDirectoryPath : string with get, set
+
+    /// Strongly typed list of paths which will be searched by the :cd and :ld commands
+    abstract CurrentDirectoryPathList : PathOption list 
+
     /// The clipboard option.  Use the IsClipboard helpers for finding out if specific options 
     /// are set
     abstract Clipboard : string with get, set
@@ -302,6 +323,12 @@ and IVimGlobalSettings =
 
     /// The nrooff macros that separate paragraphs
     abstract Paragraphs : string with get, set
+
+    /// List of paths which will be searched by the 'gf' :find, etc ... commands
+    abstract Path : string with get, set
+
+    /// Strongly typed list of path entries
+    abstract PathList : PathOption list 
 
     /// The nrooff macros that separate sections
     abstract Sections : string with get, set
