@@ -391,6 +391,13 @@ module internal StringBuilderExtensions =
         member x.AppendNumber (number : int) =
             x.Append(number) |> ignore
 
+        member x.AppendSubstring (str : string) (start : int) (length : int) =
+            let mutable i = 0
+            while i < length do 
+                let c = str.[start + i]
+                x.AppendChar c
+                i <- i + 1
+
 module internal CollectionExtensions = 
 
     type System.Collections.Generic.Stack<'T> with
