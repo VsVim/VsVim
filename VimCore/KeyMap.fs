@@ -1,6 +1,7 @@
 ﻿#light
 
 namespace Vim
+open System
 
 /// Map of a LHS of a mapping to the RHS.  The bool is used to indicate whether or not 
 /// the RHS should be remapped as part of an expansion
@@ -178,14 +179,14 @@ type internal KeyMap
 
         // Replace the <Leader> value with the appropriate replacement string
         let replaceLeader (str : string) =
-            if str.Contains("<Leader>") then
+            if str.IndexOf("<leader>", StringComparison.OrdinalIgnoreCase) >= 0 then
                 let replace =
                     let found, value = _variableMap.TryGetValue "mapleader"
                     if found then 
                         value.StringValue
                     else
                         "\\"
-                str.Replace("<Leader>", replace)
+                StringUtil.replaceNoCase str "<leader>" replace
             else
                 str
 

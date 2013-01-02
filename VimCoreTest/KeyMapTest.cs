@@ -477,6 +477,20 @@ namespace Vim.UnitTest
                 _map.MapWithNoRemap("x", "<Leader>", KeyRemapMode.Normal);
                 AssertMapping("x", @"\");
             }
+
+            [Fact]
+            public void LowerCaseLeader()
+            {
+                _map.MapWithNoRemap("x", "<leader>", KeyRemapMode.Normal);
+                AssertMapping("x", @"\");
+            }
+
+            [Fact]
+            public void MixedCaseLeader()
+            {
+                _map.MapWithNoRemap("x", "<lEaDer>", KeyRemapMode.Normal);
+                AssertMapping("x", @"\");
+            }
         }
 
         public sealed class MiscTest : KeyMapTest
