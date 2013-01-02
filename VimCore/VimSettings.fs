@@ -5,9 +5,12 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
 open System.ComponentModel.Composition
+open System.Collections.Generic
+open System.Text
 open Vim.GlobalSettingNames
 open Vim.LocalSettingNames
 open Vim.WindowSettingNames
+open StringBuilderExtensions
 
 // TODO: We need to add verification for setting options which can contain
 // a finite list of values.  For example backspace, virtualedit, etc ...  Setting
@@ -114,6 +117,7 @@ type internal GlobalSettings() =
             (BackspaceName, "bs", SettingValue.String "")
             (CaretOpacityName, CaretOpacityName, SettingValue.Number 65)
             (ClipboardName, "cb", SettingValue.String "")
+            (CurrentDirectoryPathName, "cd", SettingValue.String ",,")
             (HighlightSearchName, "hls", SettingValue.Toggle false)
             (HistoryName, "hi", SettingValue.Number(Constants.DefaultHistoryLength))
             (IncrementalSearchName, "is", SettingValue.Toggle false)
@@ -124,6 +128,7 @@ type internal GlobalSettings() =
             (MaxMapCount, MaxMapCount, SettingValue.Number 1000)
             (MaxMapDepth, "mmd", SettingValue.Number 1000)
             (MouseModelName, "mousem", SettingValue.String "popup")
+            (PathName,"pa", SettingValue.String ".,,")
             (ParagraphsName, "para", SettingValue.String "IPLPPPQPP TPHPLIPpLpItpplpipbp")
             (SectionsName, "sect", SettingValue.String "SHNHH HUnhsh")
             (SelectionName, "sel", SettingValue.String "inclusive")
@@ -203,6 +208,49 @@ type internal GlobalSettings() =
             |> String.concat ","
         _map.TrySetValue name (SettingValue.String settingValue) |> ignore
 
+    /// Parse out the 'cdpath' or 'path' option into a strongly typed collection.  The format
+    /// for the collection is described in the documentation for 'path' but applies equally
+    /// to both options
+    member x.GetPathOptionList text = 
+        let length = String.length text
+        let list = List<PathOption>()
+
+        let addOne text =
+            match text with
+            | "." -> list.Add PathOption.CurrentFile
+            | "" -> list.Add PathOption.CurrentDirectory
+            | _ -> list.Add (PathOption.Named text)
+
+        let builder = StringBuilder()
+        let mutable i = 0
+        while i < length do
+            match text.[i] with
+            | '\\' ->
+                if i + 1 < length then
+                    builder.AppendChar text.[i + 1]
+                i <- i + 2
+            | ',' -> 
+                // Ignore the case where the string begins with ','.  This is used to 
+                // have the first entry be ',,' and have the current directory be included
+                if i > 0 then 
+                    addOne (builder.ToString())
+                    builder.Length <- 0 
+
+                i <- i + 1
+            | ' ' -> 
+                // Space is also a separator
+                addOne (builder.ToString())
+                builder.Length <- 0
+                i <- i + 1
+            | c -> 
+                builder.AppendChar c
+                i <- i + 1
+
+        if builder.Length > 0 then
+            addOne (builder.ToString())
+                    
+        List.ofSeq list
+
     member x.SelectionKind = 
         match _map.GetStringValue SelectionName with
         | "inclusive" -> SelectionKind.Inclusive
@@ -230,6 +278,10 @@ type internal GlobalSettings() =
         member x.ClipboardOptions
             with get() = x.GetCommaOptions ClipboardName ClipboardOptionsMapping ClipboardOptions.None (fun x y -> x ||| y)
             and set value = x.SetCommaOptions ClipboardName ClipboardOptionsMapping value Util.IsFlagSet
+        member x.CurrentDirectoryPath
+            with get() = _map.GetStringValue CurrentDirectoryPathName
+            and set value = _map.TrySetValue CurrentDirectoryPathName (SettingValue.String value) |> ignore
+        member x.CurrentDirectoryPathList = x.GetPathOptionList (_map.GetStringValue CurrentDirectoryPathName)
         member x.HighlightSearch
             with get() = _map.GetBoolValue HighlightSearchName
             and set value = _map.TrySetValue HighlightSearchName (SettingValue.Toggle value) |> ignore
@@ -272,6 +324,10 @@ type internal GlobalSettings() =
         member x.Paragraphs
             with get() = _map.GetStringValue ParagraphsName
             and set value = _map.TrySetValue ParagraphsName (SettingValue.String value) |> ignore
+        member x.Path
+            with get() = _map.GetStringValue PathName
+            and set value = _map.TrySetValue PathName (SettingValue.String value) |> ignore
+        member x.PathList = x.GetPathOptionList (_map.GetStringValue PathName)
         member x.ScrollOffset
             with get() = _map.GetNumberValue ScrollOffsetName
             and set value = _map.TrySetValue ScrollOffsetName (SettingValue.Number value) |> ignore
