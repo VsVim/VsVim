@@ -145,7 +145,6 @@ type internal GlobalSettings() =
             (TimeoutLengthName, "tm", SettingValue.Number 1000)
             (TimeoutLengthExName, "ttm", SettingValue.Number -1)
             (UseEditorIndentName, UseEditorIndentName, SettingValue.Toggle true)
-            (UseEditorSettingsName, UseEditorSettingsName, SettingValue.Toggle true)
             (VimRcName, VimRcName, SettingValue.String(StringUtil.empty))
             (VimRcPathsName, VimRcPathsName, SettingValue.String(StringUtil.empty))
             (VirtualEditName, "ve", SettingValue.String(StringUtil.empty))
@@ -374,9 +373,6 @@ type internal GlobalSettings() =
         member x.UseEditorIndent
             with get() = _map.GetBoolValue UseEditorIndentName
             and set value = _map.TrySetValue UseEditorIndentName (SettingValue.Toggle value) |> ignore
-        member x.UseEditorSettings
-            with get() = _map.GetBoolValue UseEditorSettingsName
-            and set value = _map.TrySetValue UseEditorSettingsName (SettingValue.Toggle value) |> ignore
         member x.VimRc 
             with get() = _map.GetStringValue VimRcName
             and set value = _map.TrySetValue VimRcName (SettingValue.String value) |> ignore
@@ -608,10 +604,7 @@ type internal EditorToSettingSynchronizer
             |> Observable.add (fun _ -> bag.DisposeAll())
 
             // Next we do the initial sync between editor and local settings
-            if _globalSettings.UseEditorSettings then
-                x.TrySyncEditorToLocal localSettings editorOptions
-            else
-                x.TrySyncLocalToEditor localSettings editorOptions
+            x.TrySyncLocalToEditor localSettings editorOptions
 
     /// Is this a local setting of note
     member x.IsTrackedLocalSetting (setting : Setting) = 

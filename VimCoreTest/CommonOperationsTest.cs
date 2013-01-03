@@ -53,7 +53,6 @@ namespace Vim.UnitTest
             _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
             _globalSettings.SetupGet(x => x.SelectionKind).Returns(SelectionKind.Inclusive);
             _globalSettings.SetupGet(x => x.UseEditorIndent).Returns(false);
-            _globalSettings.SetupGet(x => x.UseEditorSettings).Returns(false);
             _globalSettings.SetupGet(x => x.VirtualEdit).Returns(String.Empty);
             _globalSettings.SetupGet(x => x.WrapScan).Returns(true);
             _searchService = new SearchService(TextSearchService, _globalSettings.Object);
@@ -821,7 +820,6 @@ namespace Vim.UnitTest
         public void ShiftLineRangeRight_NoExpandTab()
         {
             Create("cat", "dog");
-            _globalSettings.SetupGet(x => x.UseEditorSettings).Returns(false);
             _localSettings.SetupGet(x => x.ShiftWidth).Returns(4);
             _localSettings.SetupGet(x => x.ExpandTab).Returns(false);
             _operations.ShiftLineRangeRight(1);
@@ -832,7 +830,6 @@ namespace Vim.UnitTest
         public void ShiftLineRangeRight_NoExpandTabKeepSpacesWhenFewerThanTabStop()
         {
             Create("cat", "dog");
-            _globalSettings.SetupGet(x => x.UseEditorSettings).Returns(false);
             _localSettings.SetupGet(x => x.ShiftWidth).Returns(2);
             _localSettings.SetupGet(x => x.TabStop).Returns(4);
             _localSettings.SetupGet(x => x.ExpandTab).Returns(false);
@@ -844,7 +841,6 @@ namespace Vim.UnitTest
         public void ShiftLineRangeRight_SpacesStartUsingTabs()
         {
             Create("  cat", "dog");
-            _globalSettings.SetupGet(x => x.UseEditorSettings).Returns(false);
             _localSettings.SetupGet(x => x.ExpandTab).Returns(false);
             _localSettings.SetupGet(x => x.TabStop).Returns(2);
             _operations.ShiftLineRangeRight(1);
