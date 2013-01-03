@@ -52,6 +52,7 @@ namespace VsVim
         private readonly IProtectedOperations _protectedOperations;
         private readonly IVimBufferCoordinatorFactory _bufferCoordinatorFactory;
         private readonly IKeyUtil _keyUtil;
+        private bool _userHadVimRcFile;
 
         [ImportingConstructor]
         public HostFactory(
@@ -99,7 +100,8 @@ namespace VsVim
                 // can be used to load the settings against.  We don't want this ITextView 
                 // coming back through TextViewCreated so give it a ITextViewRole that won't
                 // hit our filter 
-                if (!_vim.LoadVimRc())
+                _userHadVimRcFile = _vim.LoadVimRc();
+                if (!_userHadVimRcFile)
                 {
                     // If no VimRc file is loaded add a couple of sanity settings
                     _vim.VimRcLocalSettings.AutoIndent = true;
@@ -166,16 +168,19 @@ namespace VsVim
             {
                 // During the lifetime of an IVimBuffer the local and editor settings are kept
                 // in sync for tab values.  At startup though a decision has to be made about which
-                // settings should "win" and this is controlled by 'UseEditorSettings'.
+                // settings should "win"
                 //
                 // Visual Studio of course makes this difficult.  It will create an ITextView and 
                 // then later force all of it's language preference settings down on the ITextView
                 // if it does indeed have an IVsTextView.  This setting will inherently overwrite
-                // the custom settings with the stored Visual Studio settings.  
+                // the vsvim settings with the stored Visual Studio settings.  
                 //
                 // To work around this we store the original values and reset them here.  This event
                 // is raised after this propagation occurs so we can put them back
-                if (!_vim.GlobalSettings.UseEditorSettings)
+                //
+                // This is only done if the user provided an explicit VimRc file.  If none was provided
+                // then we let the Visual Studio savedsettings win instead 
+                if (_userHadVimRcFile)
                 {
                     buffer.LocalSettings.TabStop = bufferData.TabStop;
                     buffer.LocalSettings.ShiftWidth = bufferData.ShiftWidth;

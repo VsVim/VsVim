@@ -41,7 +41,6 @@ module GlobalSettingNames =
     let TimeoutLengthName = "timeoutlen"
     let TimeoutLengthExName = "ttimeoutlen"
     let UseEditorIndentName = "vsvim_useeditorindent"
-    let UseEditorSettingsName = "vsvim_useeditorsettings"
     let VisualBellName = "visualbell"
     let VirtualEditName = "virtualedit"
     let VimRcName = "vimrc"
@@ -379,9 +378,6 @@ and IVimGlobalSettings =
     /// Let the editor control indentation of lines instead.  Overrides the AutoIndent
     /// setting
     abstract UseEditorIndent : bool with get, set
-
-    /// Use the editor tab setting over the ExpandTab one
-    abstract UseEditorSettings : bool with get, set
 
     /// Retrieves the location of the loaded VimRC file.  Will be the empty string if the load 
     /// did not succeed or has not been tried
