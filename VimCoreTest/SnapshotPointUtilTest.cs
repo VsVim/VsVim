@@ -417,7 +417,7 @@ namespace Vim.UnitTest
         public void GetPointsOnContainingLineFrom1()
         {
             Create("foo", "bar", "baz");
-            var points = String.Concat(SnapshotPointUtil.GetPointsOnContainingLineFrom(_textBuffer.GetLine(0).Start).Select(x => x.GetChar()));
+            var points = String.Concat(SnapshotPointUtil.GetPointsOnLineForward(_textBuffer.GetLine(0).Start).Select(x => x.GetChar()));
             Assert.Equal("foo", points);
         }
 
@@ -425,7 +425,7 @@ namespace Vim.UnitTest
         public void GetPointsOnContainingLineFrom2()
         {
             Create("foo", "bar", "baz");
-            var points = String.Concat(SnapshotPointUtil.GetPointsOnContainingLineFrom(_textBuffer.GetLine(0).Start.Add(1)).Select(x => x.GetChar()));
+            var points = String.Concat(SnapshotPointUtil.GetPointsOnLineForward(_textBuffer.GetLine(0).Start.Add(1)).Select(x => x.GetChar()));
             Assert.Equal("oo", points);
         }
 
@@ -433,7 +433,7 @@ namespace Vim.UnitTest
         public void GetPointsOnContainingLineBackwardsFrom1()
         {
             Create("foo", "bar", "baz");
-            var points = String.Concat(SnapshotPointUtil.GetPointsOnContainingLineBackwardsFrom(_textBuffer.GetLine(0).End).Select(x => x.GetChar()));
+            var points = String.Concat(SnapshotPointUtil.GetPointsOnLineBackward(_textBuffer.GetLine(0).End).Select(x => x.GetChar()));
             Assert.Equal("oof", points);
         }
 
@@ -441,7 +441,7 @@ namespace Vim.UnitTest
         public void GetPointsOnContainingLineBackwardsFrom2()
         {
             Create("foo", "bar", "baz");
-            var points = String.Concat(SnapshotPointUtil.GetPointsOnContainingLineBackwardsFrom(_textBuffer.GetLine(1).End).Select(x => x.GetChar()));
+            var points = String.Concat(SnapshotPointUtil.GetPointsOnLineBackward(_textBuffer.GetLine(1).End).Select(x => x.GetChar()));
             Assert.Equal("rab", points);
         }
 
@@ -449,7 +449,7 @@ namespace Vim.UnitTest
         public void GetPointsOnContainingLineBackwardsFrom3()
         {
             Create("foo", "bar", "baz");
-            var points = String.Concat(SnapshotPointUtil.GetPointsOnContainingLineBackwardsFrom(_textBuffer.GetLine(1).End.Subtract(2)).Select(x => x.GetChar()));
+            var points = String.Concat(SnapshotPointUtil.GetPointsOnLineBackward(_textBuffer.GetLine(1).End.Subtract(2)).Select(x => x.GetChar()));
             Assert.Equal("ab", points);
         }
     }

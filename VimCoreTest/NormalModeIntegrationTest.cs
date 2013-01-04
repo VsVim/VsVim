@@ -2886,6 +2886,59 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class QuotedStringTest : NormalModeIntegrationTest
+        {
+            /// <summary>
+            /// When the ' motion starts on a quote then vim should look at the entire
+            /// line to see if it's the trailing or leading quote
+            /// </summary>
+            [Fact]
+            public void StartOnLeadingQuote()
+            {
+                Create("'cat', 'dog', 'fish'");
+                _textView.MoveCaretTo(7);
+                _vimBuffer.Process("di'");
+                Assert.Equal("'cat', '', 'fish'", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(8, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// The same is true if we start on the trailing quote
+            /// </summary>
+            [Fact]
+            public void StartOnTrailingQuote()
+            {
+                Create("'cat', 'dog', 'fish'");
+                _textView.MoveCaretTo(11);
+                _vimBuffer.Process("di'");
+                Assert.Equal("'cat', '', 'fish'", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(8, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// If we aren't starting on a quote then we simply don't consider the entire line
+            /// and just look for the previous quote
+            /// </summary>
+            [Fact]
+            public void StartInBetweenQuotes()
+            {
+                Create("'cat', 'dog', 'fish'");
+                _textView.MoveCaretTo(5);
+                _vimBuffer.Process("di'");
+                Assert.Equal("'cat''dog', 'fish'", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(5, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void BeforeFirstQuote()
+            {
+                Create("cat 'dog'");
+                _vimBuffer.Process("di'");
+                Assert.Equal("cat ''", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(5, _textView.GetCaretPoint());
+            }
+        }
+
         public sealed class RepeatCommandTest : NormalModeIntegrationTest
         {
             [Fact]
@@ -4774,6 +4827,17 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(2);
                 _vimBuffer.Process("^");
                 Assert.Equal(0, _vimHost.BeepCount);
+            }
+
+            [Fact]
+            public void Issue960()
+            {
+                Create(@"""aaa"", ""bbb"", ""ccc""");
+                _textView.MoveCaretTo(7);
+                Assert.Equal('\"', _textView.GetCaretPoint().GetChar());
+                _vimBuffer.Process(@"di""");
+                Assert.Equal(@"""aaa"", """", ""ccc""", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(8, _textView.GetCaretPoint().Position);
             }
         }
     }
