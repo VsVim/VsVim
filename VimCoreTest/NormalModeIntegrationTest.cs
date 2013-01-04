@@ -3479,6 +3479,273 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class MotionMiscTest : NormalModeIntegrationTest
+        {
+            /// <summary>
+            /// [[ motion should put the caret on the target character
+            /// </summary>
+            [Fact]
+            public void Section1()
+            {
+                Create("hello", "{world");
+                _vimBuffer.Process("]]");
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// [[ motion should put the caret on the target character
+            /// </summary>
+            [Fact]
+            public void Section2()
+            {
+                Create("hello", "\fworld");
+                _vimBuffer.Process("]]");
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void Section3()
+            {
+                Create("foo", "{", "bar");
+                _textView.MoveCaretTo(_textView.GetLine(2).End);
+                _vimBuffer.Process("[[");
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void Section4()
+            {
+                Create("foo", "{", "bar", "baz");
+                _textView.MoveCaretTo(_textView.GetLine(3).End);
+                _vimBuffer.Process("[[");
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void Section5()
+            {
+                Create("foo", "{", "bar", "baz", "jazz");
+                _textView.MoveCaretTo(_textView.GetLine(4).Start);
+                _vimBuffer.Process("[[");
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// The ']]' motion should stop on section macros
+            /// </summary>
+            [Fact]
+            public void SectionForwardToMacro()
+            {
+                Create("cat", "", "bear", ".HU", "sheep");
+                _globalSettings.Sections = "HU";
+                _vimBuffer.Process("]]");
+                Assert.Equal(_textView.GetLine(3).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Move the caret using the end of word motion repeatedly
+            /// </summary>
+            [Fact]
+            public void MoveEndOfWord()
+            {
+                Create("the cat chases the dog");
+                _vimBuffer.Process("e");
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("e");
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("e");
+                Assert.Equal(13, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("e");
+                Assert.Equal(17, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("e");
+                Assert.Equal(21, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// The 'w' needs to be able to get off of a blank line
+            /// </summary>
+            [Fact]
+            public void MoveWordAcrossBlankLine()
+            {
+                Create("dog", "", "cat ball");
+                _vimBuffer.Process("w");
+                Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
+                _vimBuffer.Process("w");
+                Assert.Equal(_textView.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                _vimBuffer.Process("w");
+                Assert.Equal(_textView.GetPointInLine(2, 4), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// The 'w' from a blank should move to the next word
+            /// </summary>
+            [Fact]
+            public void WordFromBlank()
+            {
+                Create("the dog chased the ball");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.Process("w");
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("w");
+                Assert.Equal(8, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// The 'b' from a blank should move to the start of the previous word
+            /// </summary>
+            [Fact]
+            public void WordFromBlankBackward()
+            {
+                Create("the dog chased the ball");
+                _textView.MoveCaretTo(7);
+                _vimBuffer.Process("b");
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("b");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// The 'b' from the start of a word should move to the start of the previous word
+            /// </summary>
+            [Fact]
+            public void WordFromStartBackward()
+            {
+                Create("the dog chased the ball");
+                _textView.MoveCaretTo(8);
+                _vimBuffer.Process("b");
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("b");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// See the full discussion in issue #509
+            ///
+            /// https://github.com/jaredpar/VsVim/issues/509
+            ///
+            /// Make sure that doing a ""][" from the middle of the line ends on the '}' if it is
+            /// preceded by a blank line
+            /// </summary>
+            [Fact]
+            public void MoveSection_RegressionTest_509()
+            {
+                Create("cat", "", "}");
+                _vimBuffer.Process("][");
+                Assert.Equal(_textView.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process("][");
+                Assert.Equal(_textView.GetPointInLine(2, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Case is explicitly called out in the ':help exclusive-linewise' portion
+            /// of the documentation
+            /// </summary>
+            [Fact]
+            public void ExclusiveLineWise()
+            {
+                Create("  dog", "cat", "", "pig");
+                _textView.MoveCaretTo(2);
+                _vimBuffer.Process("d}");
+                Assert.Equal("", _textView.GetLine(0).GetText());
+                Assert.Equal("pig", _textView.GetLine(1).GetText());
+                _vimBuffer.Process("p");
+                Assert.Equal("", _textView.GetLine(0).GetText());
+                Assert.Equal("  dog", _textView.GetLine(1).GetText());
+                Assert.Equal("cat", _textView.GetLine(2).GetText());
+                Assert.Equal("pig", _textView.GetLine(3).GetText());
+            }
+
+            /// <summary>
+            /// Make sure we move to the column on the current line when there is no count
+            /// </summary>
+            [Fact]
+            public void FirstNonWhiteSpaceOnLine()
+            {
+                Create(" cat", "  dog", "   fish");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("_");
+                Assert.Equal(_textView.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Simple word motion.  Make sure the caret gets put on the start of the next
+            /// word
+            /// </summary>
+            [Fact]
+            public void Word()
+            {
+                Create("cat dog bear");
+                _vimBuffer.Process("w");
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("w");
+                Assert.Equal(8, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// When there is no white space following a word and there is white space before 
+            /// and a word on the same line then we grab the white space before the word
+            /// </summary>
+            [Fact]
+            public void AllWord_WhiteSpaceOnlyBefore()
+            {
+                Create("hello", "cat dog", "  bat");
+                _textView.MoveCaretTo(_textView.GetLine(1).Start.Add(4));
+                Assert.Equal('d', _textView.GetCaretPoint().GetChar());
+                _vimBuffer.Process("yaw");
+                Assert.Equal(" dog", UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
+            /// When starting in the white space it should be included and not the white space
+            /// after
+            /// </summary>
+            [Fact]
+            public void AllWord_InWhiteSpaceBeforeWord()
+            {
+                Create("dog cat tree");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.Process("yaw");
+                Assert.Equal(" cat", UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
+            /// Simple yank of a () block 
+            /// </summary>
+            [Fact]
+            public void Block_AllParen_Simple()
+            {
+                Create("cat (dog) bear");
+                _textView.MoveCaretTo(6);
+                _vimBuffer.Process("ya(");
+                Assert.Equal("(dog)", UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
+            /// Simple yank of a () block via the b command
+            /// </summary>
+            [Fact]
+            public void Block_AllParen_SimpleAltKey()
+            {
+                Create("cat (dog) bear");
+                _textView.MoveCaretTo(6);
+                _vimBuffer.Process("yab");
+                Assert.Equal("(dog)", UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
+            /// Simple yank of a () block 
+            /// </summary>
+            [Fact]
+            public void Block_InnerParen_Simple()
+            {
+                Create("cat (dog) bear");
+                _textView.MoveCaretTo(6);
+                _vimBuffer.Process("yi(");
+                Assert.Equal("dog", UnnamedRegister.StringValue);
+            }
+        }
+
         public sealed class MiscTest : NormalModeIntegrationTest
         {
             /// <summary>
@@ -3544,234 +3811,6 @@ namespace Vim.UnitTest
                 Create("dog", "cat", "jazz", "band");
                 _vimBuffer.Process(KeyInputUtil.EnterKey);
                 Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// [[ motion should put the caret on the target character
-            /// </summary>
-            [Fact]
-            public void Motion_Section1()
-            {
-                Create("hello", "{world");
-                _vimBuffer.Process("]]");
-                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// [[ motion should put the caret on the target character
-            /// </summary>
-            [Fact]
-            public void Motion_Section2()
-            {
-                Create("hello", "\fworld");
-                _vimBuffer.Process("]]");
-                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            }
-
-            [Fact]
-            public void Motion_Section3()
-            {
-                Create("foo", "{", "bar");
-                _textView.MoveCaretTo(_textView.GetLine(2).End);
-                _vimBuffer.Process("[[");
-                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            }
-
-            [Fact]
-            public void Motion_Section4()
-            {
-                Create("foo", "{", "bar", "baz");
-                _textView.MoveCaretTo(_textView.GetLine(3).End);
-                _vimBuffer.Process("[[");
-                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            }
-
-            [Fact]
-            public void Motion_Section5()
-            {
-                Create("foo", "{", "bar", "baz", "jazz");
-                _textView.MoveCaretTo(_textView.GetLine(4).Start);
-                _vimBuffer.Process("[[");
-                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// The ']]' motion should stop on section macros
-            /// </summary>
-            [Fact]
-            public void Motion_SectionForwardToMacro()
-            {
-                Create("cat", "", "bear", ".HU", "sheep");
-                _globalSettings.Sections = "HU";
-                _vimBuffer.Process("]]");
-                Assert.Equal(_textView.GetLine(3).Start, _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// Move the caret using the end of word motion repeatedly
-            /// </summary>
-            [Fact]
-            public void Motion_MoveEndOfWord()
-            {
-                Create("the cat chases the dog");
-                _vimBuffer.Process("e");
-                Assert.Equal(2, _textView.GetCaretPoint().Position);
-                _vimBuffer.Process("e");
-                Assert.Equal(6, _textView.GetCaretPoint().Position);
-                _vimBuffer.Process("e");
-                Assert.Equal(13, _textView.GetCaretPoint().Position);
-                _vimBuffer.Process("e");
-                Assert.Equal(17, _textView.GetCaretPoint().Position);
-                _vimBuffer.Process("e");
-                Assert.Equal(21, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// The 'w' needs to be able to get off of a blank line
-            /// </summary>
-            [Fact]
-            public void Motion_MoveWordAcrossBlankLine()
-            {
-                Create("dog", "", "cat ball");
-                _vimBuffer.Process("w");
-                Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
-                _vimBuffer.Process("w");
-                Assert.Equal(_textView.GetPointInLine(2, 0), _textView.GetCaretPoint());
-                _vimBuffer.Process("w");
-                Assert.Equal(_textView.GetPointInLine(2, 4), _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// The 'w' from a blank should move to the next word
-            /// </summary>
-            [Fact]
-            public void Motion_WordFromBlank()
-            {
-                Create("the dog chased the ball");
-                _textView.MoveCaretTo(3);
-                _vimBuffer.Process("w");
-                Assert.Equal(4, _textView.GetCaretPoint().Position);
-                _vimBuffer.Process("w");
-                Assert.Equal(8, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// The 'b' from a blank should move to the start of the previous word
-            /// </summary>
-            [Fact]
-            public void Motion_WordFromBlankBackward()
-            {
-                Create("the dog chased the ball");
-                _textView.MoveCaretTo(7);
-                _vimBuffer.Process("b");
-                Assert.Equal(4, _textView.GetCaretPoint().Position);
-                _vimBuffer.Process("b");
-                Assert.Equal(0, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// The 'b' from the start of a word should move to the start of the previous word
-            /// </summary>
-            [Fact]
-            public void Motion_WordFromStartBackward()
-            {
-                Create("the dog chased the ball");
-                _textView.MoveCaretTo(8);
-                _vimBuffer.Process("b");
-                Assert.Equal(4, _textView.GetCaretPoint().Position);
-                _vimBuffer.Process("b");
-                Assert.Equal(0, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// See the full discussion in issue #509
-            ///
-            /// https://github.com/jaredpar/VsVim/issues/509
-            ///
-            /// Make sure that doing a ""][" from the middle of the line ends on the '}' if it is
-            /// preceded by a blank line
-            /// </summary>
-            [Fact]
-            public void Motion_MoveSection_RegressionTest_509()
-            {
-                Create("cat", "", "}");
-                _vimBuffer.Process("][");
-                Assert.Equal(_textView.GetPointInLine(2, 0), _textView.GetCaretPoint());
-                _textView.MoveCaretTo(1);
-                _vimBuffer.Process("][");
-                Assert.Equal(_textView.GetPointInLine(2, 0), _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// Case is explicitly called out in the ':help exclusive-linewise' portion
-            /// of the documentation
-            /// </summary>
-            [Fact]
-            public void Motion_ExclusiveLineWise()
-            {
-                Create("  dog", "cat", "", "pig");
-                _textView.MoveCaretTo(2);
-                _vimBuffer.Process("d}");
-                Assert.Equal("", _textView.GetLine(0).GetText());
-                Assert.Equal("pig", _textView.GetLine(1).GetText());
-                _vimBuffer.Process("p");
-                Assert.Equal("", _textView.GetLine(0).GetText());
-                Assert.Equal("  dog", _textView.GetLine(1).GetText());
-                Assert.Equal("cat", _textView.GetLine(2).GetText());
-                Assert.Equal("pig", _textView.GetLine(3).GetText());
-            }
-
-            /// <summary>
-            /// Make sure we move to the column on the current line when there is no count
-            /// </summary>
-            [Fact]
-            public void Motion_FirstNonWhiteSpaceOnLine()
-            {
-                Create(" cat", "  dog", "   fish");
-                _textView.MoveCaretToLine(1);
-                _vimBuffer.Process("_");
-                Assert.Equal(_textView.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// Simple word motion.  Make sure the caret gets put on the start of the next
-            /// word
-            /// </summary>
-            [Fact]
-            public void Motion_Word()
-            {
-                Create("cat dog bear");
-                _vimBuffer.Process("w");
-                Assert.Equal(4, _textView.GetCaretPoint().Position);
-                _vimBuffer.Process("w");
-                Assert.Equal(8, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// When there is no white space following a word and there is white space before 
-            /// and a word on the same line then we grab the white space before the word
-            /// </summary>
-            [Fact]
-            public void Motion_AllWord_WhiteSpaceOnlyBefore()
-            {
-                Create("hello", "cat dog", "  bat");
-                _textView.MoveCaretTo(_textView.GetLine(1).Start.Add(4));
-                Assert.Equal('d', _textView.GetCaretPoint().GetChar());
-                _vimBuffer.Process("yaw");
-                Assert.Equal(" dog", UnnamedRegister.StringValue);
-            }
-
-            /// <summary>
-            /// When starting in the white space it should be included and not the white space
-            /// after
-            /// </summary>
-            [Fact]
-            public void Motion_AllWord_InWhiteSpaceBeforeWord()
-            {
-                Create("dog cat tree");
-                _textView.MoveCaretTo(3);
-                _vimBuffer.Process("yaw");
-                Assert.Equal(" cat", UnnamedRegister.StringValue);
             }
 
             [Fact]
@@ -4025,43 +4064,6 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Simple yank of a () block 
-            /// </summary>
-            [Fact]
-            public void Motion_Block_AllParen_Simple()
-            {
-                Create("cat (dog) bear");
-                _textView.MoveCaretTo(6);
-                _vimBuffer.Process("ya(");
-                Assert.Equal("(dog)", UnnamedRegister.StringValue);
-            }
-
-            /// <summary>
-            /// Simple yank of a () block via the b command
-            /// </summary>
-            [Fact]
-            public void Motion_Block_AllParen_SimpleAltKey()
-            {
-                Create("cat (dog) bear");
-                _textView.MoveCaretTo(6);
-                _vimBuffer.Process("yab");
-                Assert.Equal("(dog)", UnnamedRegister.StringValue);
-            }
-
-            /// <summary>
-            /// Simple yank of a () block 
-            /// </summary>
-            [Fact]
-            public void Motion_Block_InnerParen_Simple()
-            {
-                Create("cat (dog) bear");
-                _textView.MoveCaretTo(6);
-                _vimBuffer.Process("yi(");
-                Assert.Equal("dog", UnnamedRegister.StringValue);
-            }
-
-
-            /// <summary>
             /// Make sure the cursor positions correctly on the next line 
             /// </summary>
             [Fact]
@@ -4071,7 +4073,6 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("}");
                 Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
             }
-
 
             [Fact]
             public void Handle_cb_DeleteWhitespaceAtEndOfSpan()
