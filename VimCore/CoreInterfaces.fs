@@ -82,6 +82,17 @@ type TextViewEventArgs(_textView : ITextView) =
     member x.TextView = _textView
 
 [<RequireQualifiedAccess>]
+type VimRcState =
+    /// The VimRc file has not been processed at this point
+    | None
+
+    /// The load succeeded and the specified file was used 
+    | LoadSucceeded of string
+
+    /// The load failed 
+    | LoadFailed
+
+[<RequireQualifiedAccess>]
 type HostResult =
     | Success
     | Error of string
@@ -3337,7 +3348,12 @@ type IVimHost =
     abstract SplitViewHorizontally : ITextView -> HostResult
 
     /// Split the views horizontally
-    abstract SplitViewVertically: ITextView -> HostResult
+    abstract SplitViewVertically : ITextView -> HostResult
+
+    /// Called when VsVim attempts to load the user _vimrc file.  If the load succeeded 
+    /// then the resulting settings are passed into the method.  If the load failed it is 
+    /// the defaults.  Either way, they are the default settings used for new buffers
+    abstract VimRcLoaded : vimRcState : VimRcState -> localSettings : IVimLocalSettings -> windowSettings : IVimWindowSettings -> unit
 
     /// Raised when the visibility of an ITextView changes
     [<CLIEvent>]
@@ -3404,9 +3420,6 @@ and IVim =
     /// Get the IVimBuffer which currently has KeyBoard focus
     abstract FocusedBuffer : IVimBuffer option
 
-    /// Is the VimRc loaded
-    abstract IsVimRcLoaded : bool
-
     /// Is Vim currently disabled 
     abstract IsDisabled : bool with get, set
 
@@ -3438,11 +3451,8 @@ and IVim =
 
     abstract VimHost : IVimHost
 
-    /// The Local Setting's which were persisted from loading VimRc.  If the 
-    /// VimRc isn't loaded yet or if no VimRc was loaded a IVimLocalSettings
-    /// with all default values will be returned.  Will store a copy of whatever 
-    /// is passed in order to prevent memory leaks from captured ITextView`s
-    abstract VimRcLocalSettings : IVimLocalSettings with get, set
+    /// The state of the VimRc file
+    abstract VimRcState : VimRcState
 
     /// Create an IVimBuffer for the given ITextView
     abstract CreateVimBuffer : ITextView -> IVimBuffer
@@ -3467,9 +3477,7 @@ and IVim =
 
     /// Load the VimRc file.  If the file was previously loaded a new load will be 
     /// attempted.  Returns true if a VimRc was actually loaded.
-    ///
-    /// If the VimRC is already loaded then it will be reloaded
-    abstract LoadVimRc : unit -> bool
+    abstract LoadVimRc : unit -> VimRcState
 
     /// Remove the IVimBuffer associated with the given view.  This will not actually close
     /// the IVimBuffer but instead just removes it's association with the given view
