@@ -283,7 +283,7 @@ type internal VimBuffer
             _vim.RemoveVimBuffer _textView |> ignore
             _undoRedoOperations.Close()
             _jumpList.Clear()
-            _closedEvent.Trigger System.EventArgs.Empty
+            _closedEvent.Trigger x
         finally 
             _isClosed <- true
 

@@ -13,6 +13,7 @@ type internal CommandMode
         _interpreter : Interpreter
     ) =
 
+    let _commandChangedEvent = StandardEvent()
     let _vimData = _buffer.VimData
     let _statusUtil = _buffer.VimBufferData.StatusUtil
 
@@ -24,11 +25,12 @@ type internal CommandMode
     let mutable _bindData : BindData<RunResult> option = None
 
     /// Currently queued up command string
-    member x.Command = _command
-
-    /// Processing a command just entails actually updating the stored command
-    member x.ProcessCommand command =
-        _command <- command
+    member x.Command 
+        with get() = _command
+        and set value = 
+            if value <> _command then
+                _command <- value
+                _commandChangedEvent.Trigger x
 
     member x.ParseAndRunInput (command : string) = 
 
@@ -45,18 +47,6 @@ type internal CommandMode
         | ParseResult.Succeeded lineCommand -> 
             _interpreter.RunLineCommand lineCommand
 
-    /// Run the specified command
-    member x.Completed command =
-        _command <- StringUtil.empty
-        let result = x.ParseAndRunInput command
-        x.MaybeClearSelection false
-        result
-
-    /// User cancelled input.  Reset the selection
-    member x.Cancelled () = 
-        _command <- StringUtil.empty
-        x.MaybeClearSelection true
-
     // Command mode can be validly entered with the selection active.  Consider
     // hitting ':' in Visual Mode.  The selection should be cleared when leaving
     member x.MaybeClearSelection moveCaretToStart = 
@@ -70,18 +60,38 @@ type internal CommandMode
                 selection.Clear()
 
     member x.Process (keyInput : KeyInput) =
+
         let bindData = 
             match _bindData with
             | None -> 
+
+                // The ProcessCommand call back just means a new command state was reached.  Until it's
+                // completed we just keep updating the current state 
+                let processCommand command = 
+                    x.Command <- command
+                    0
+
+                /// Run the specified command
+                let completed command =
+                    x.Command <- StringUtil.empty
+                    let result = x.ParseAndRunInput command
+                    x.MaybeClearSelection false
+                    result
+
+                /// User cancelled input.  Reset the selection
+                let cancelled () = 
+                    x.Command <- StringUtil.empty
+                    x.MaybeClearSelection true
+
                 // First key stroke.  Create a history client and get going
                 let historyClient = {
                     new IHistoryClient<int, RunResult> with
                         member this.HistoryList = _vimData.CommandHistory
                         member this.RemapMode = Some KeyRemapMode.Command
                         member this.Beep() = _operations.Beep()
-                        member this.ProcessCommand _ command = x.ProcessCommand command; 0
-                        member this.Completed _ command = x.Completed command
-                        member this.Cancelled _ = x.Cancelled ()
+                        member this.ProcessCommand _ command = processCommand command
+                        member this.Completed _ command = completed command
+                        member this.Cancelled _ = cancelled ()
                     }
                 let storage = HistoryUtil.Begin historyClient 0 _command
                 storage.CreateBindData()
@@ -108,13 +118,21 @@ type internal CommandMode
 
     interface ICommandMode with
         member x.VimTextBuffer = _buffer.VimTextBuffer
-        member x.Command = _command
+        member x.Command 
+            with get() = x.Command
+            and set value = 
+                if value <> x.Command then
+                    x.Command <- value
+
+                    // When the command is reset from an external API we need to reset our binding 
+                    // behavior.  This completely changes our history state 
+                    _bindData <- None
         member x.CommandNames = HistoryUtil.CommandNames |> Seq.map KeyInputSet.OneKeyInput
         member x.ModeKind = ModeKind.Command
         member x.CanProcess ki = true
         member x.Process keyInput = x.Process keyInput
         member x.OnEnter arg =
-            _command <- 
+            x.Command <- 
                 match arg with
                 | ModeArgument.None -> StringUtil.empty
                 | ModeArgument.FromVisual -> FromVisualModeString
@@ -126,10 +144,13 @@ type internal CommandMode
                 | ModeArgument.InsertWithTransaction transaction -> transaction.Complete(); StringUtil.empty
         member x.OnLeave () = 
             x.MaybeClearSelection true
-            _command <- StringUtil.empty
+            x.Command <- StringUtil.empty
         member x.OnClose() = ()
 
         member x.RunCommand command = 
             x.ParseAndRunInput command
+
+        [<CLIEvent>]
+        member x.CommandChanged = _commandChangedEvent.Publish
 
 

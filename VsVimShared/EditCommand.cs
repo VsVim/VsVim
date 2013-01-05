@@ -46,6 +46,11 @@ namespace VsVim
             get { return EditCommandKind == EditCommandKind.Redo; }
         }
 
+        internal bool IsPaste
+        {
+            get { return EditCommandKind == VsVim.EditCommandKind.Paste; }
+        }
+
         internal EditCommand(
             KeyInput input,
             EditCommandKind kind,

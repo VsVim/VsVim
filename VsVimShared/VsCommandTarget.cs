@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
+using System.Windows;
 using EditorUtils;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;
@@ -10,7 +12,6 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
-using System.Diagnostics;
 
 namespace VsVim
 {
@@ -366,6 +367,31 @@ namespace VsVim
             return true;
         }
 
+        /// <summary>
+        /// This intercepts the Paste command in Visual Studio and tries to make it work for VsVim. This is 
+        /// only possible in a subset of states like command line mode.  Otherwise we default to Visual Studio
+        /// behavior
+        /// </summary>
+        private bool Paste()
+        {
+            if (_vimBuffer.ModeKind != ModeKind.Command)
+            {
+                return false;
+            }
+
+            try
+            {
+                var text = Clipboard.GetText();
+                var command = _vimBuffer.CommandMode.Command;
+                _vimBuffer.CommandMode.Command = command + text;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         internal bool ExecCore(EditCommand editCommand)
         {
             VimTrace.TraceInfo("VsCommandTarget::Exec {0}", editCommand);
@@ -382,6 +408,9 @@ namespace VsVim
                     // run a single Vim redo operation
                     _vimBuffer.UndoRedoOperations.Redo(1);
                     return true;
+
+                case EditCommandKind.Paste:
+                    return Paste();
 
                 case EditCommandKind.GoToDefinition:
                     // Let Visual Studio process this command
@@ -412,76 +441,38 @@ namespace VsVim
             }
         }
 
-        int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
+        private CommandStatus QueryStatusCore(EditCommand editCommand)
         {
-            EditCommand editCommand = null;
-            try
+            VimTrace.TraceInfo("VsCommandTarget::QueryStatus {0}", editCommand);
+
+            _bufferCoordinator.DiscardedKeyInput = FSharpOption<KeyInput>.None;
+
+            var action = CommandStatus.PassOn;
+            switch (editCommand.EditCommandKind)
             {
-                if (TryConvert(commandGroup, commandId, variantIn, out editCommand) &&
-                    ExecCore(editCommand))
-                {
-                    return NativeMethods.S_OK;
-                }
-
-                return _nextTarget.Exec(commandGroup, commandId, commandExecOpt, variantIn, variantOut);
-            }
-            finally
-            {
-                _bufferCoordinator.DiscardedKeyInput = FSharpOption<KeyInput>.None;
-
-                // The GoToDefinition command will often cause a selection to occur in the 
-                // buffer.  We don't want that to cause us to enter Visual Mode so clear it
-                // out.  This command can cause the active document to switch if the target
-                // of the goto def is in another file.  This file won't be registered as the
-                // active file yet so just clear out the active selections
-                if (editCommand != null && editCommand.EditCommandKind == EditCommandKind.GoToDefinition)
-                {
-                    _textManager.TextViews
-                        .Where(x => !x.Selection.IsEmpty)
-                        .ForEach(x => x.Selection.Clear());
-                }
-            }
-        }
-
-        int IOleCommandTarget.QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
-        {
-            EditCommand editCommand;
-            if (1 == cCmds && TryConvert(pguidCmdGroup, prgCmds[0].cmdID, pCmdText, out editCommand))
-            {
-                VimTrace.TraceInfo("VsCommandTarget::QueryStatus {0}", editCommand);
-
-                _bufferCoordinator.DiscardedKeyInput = FSharpOption<KeyInput>.None;
-
-                var action = CommandStatus.PassOn;
-                if (editCommand.IsUndo || editCommand.IsRedo)
-                {
+                case EditCommandKind.Undo:
+                case EditCommandKind.Redo:
                     action = CommandStatus.Enable;
-                }
-                else if (editCommand.HasKeyInput && _vimBuffer.CanProcess(editCommand.KeyInput))
-                {
-                    action = CommandStatus.Enable;
-                    if (_resharperUtil.IsInstalled)
+                    break;
+                case EditCommandKind.Paste:
+                    action = _vimBuffer.ModeKind == ModeKind.Command
+                        ? CommandStatus.Enable
+                        : CommandStatus.PassOn;
+                    break;
+                default:
+                    if (editCommand.HasKeyInput && _vimBuffer.CanProcess(editCommand.KeyInput))
                     {
-                        action = QueryStatusInResharper(editCommand.KeyInput) ?? CommandStatus.Enable;
+                        action = CommandStatus.Enable;
+                        if (_resharperUtil.IsInstalled)
+                        {
+                            action = QueryStatusInResharper(editCommand.KeyInput) ?? CommandStatus.Enable;
+                        }
                     }
-                }
-
-                switch (action)
-                {
-                    case CommandStatus.Enable:
-                        prgCmds[0].cmdf = (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
-                        return NativeMethods.S_OK;
-                    case CommandStatus.Disable:
-                        prgCmds[0].cmdf = (uint)OLECMDF.OLECMDF_SUPPORTED;
-                        return NativeMethods.S_OK;
-                    case CommandStatus.PassOn:
-                        return _nextTarget.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText);
-                }
-
-                VimTrace.TraceInfo("VsCommandTarget::QueryStatus ", action);
+                    break;
             }
 
-            return _nextTarget.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText);
+            VimTrace.TraceInfo("VsCommandTarget::QueryStatus ", action);
+            return action;
         }
 
         /// <summary>
@@ -577,5 +568,63 @@ namespace VsVim
         {
             return textView.Properties.TryGetPropertySafe(Key, out vsCommandTarget);
         }
+
+        #region IOleCommandTarget
+
+        int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
+        {
+            EditCommand editCommand = null;
+            try
+            {
+                if (TryConvert(commandGroup, commandId, variantIn, out editCommand) &&
+                    ExecCore(editCommand))
+                {
+                    return NativeMethods.S_OK;
+                }
+
+                return _nextTarget.Exec(commandGroup, commandId, commandExecOpt, variantIn, variantOut);
+            }
+            finally
+            {
+                _bufferCoordinator.DiscardedKeyInput = FSharpOption<KeyInput>.None;
+
+                // The GoToDefinition command will often cause a selection to occur in the 
+                // buffer.  We don't want that to cause us to enter Visual Mode so clear it
+                // out.  This command can cause the active document to switch if the target
+                // of the goto def is in another file.  This file won't be registered as the
+                // active file yet so just clear out the active selections
+                if (editCommand != null && editCommand.EditCommandKind == EditCommandKind.GoToDefinition)
+                {
+                    _textManager.TextViews
+                        .Where(x => !x.Selection.IsEmpty)
+                        .ForEach(x => x.Selection.Clear());
+                }
+            }
+        }
+
+        int IOleCommandTarget.QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
+        {
+            EditCommand editCommand;
+            if (1 == cCmds && TryConvert(pguidCmdGroup, prgCmds[0].cmdID, pCmdText, out editCommand))
+            {
+                var action = QueryStatusCore(editCommand);
+                switch (action)
+                {
+                    case CommandStatus.Enable:
+                        prgCmds[0].cmdf = (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
+                        return NativeMethods.S_OK;
+                    case CommandStatus.Disable:
+                        prgCmds[0].cmdf = (uint)OLECMDF.OLECMDF_SUPPORTED;
+                        return NativeMethods.S_OK;
+                    case CommandStatus.PassOn:
+                        return _nextTarget.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText);
+                }
+            }
+
+            return _nextTarget.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText);
+        }
+
+        #endregion
+
     }
 }
