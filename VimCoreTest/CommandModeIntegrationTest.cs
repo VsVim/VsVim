@@ -39,7 +39,79 @@ namespace Vim.UnitTest
             _vimBuffer.Process(command, enter: true);
         }
 
-        public sealed class CopyToTests : CommandModeIntegrationTest
+        public sealed class CommandChangedEventTest : CommandModeIntegrationTest
+        {
+            private int _commandChangedCount;
+
+            public CommandChangedEventTest()
+            {
+                Create();
+                _vimBuffer.SwitchMode(ModeKind.Command, ModeArgument.None);
+                _vimBuffer.CommandMode.CommandChanged += (sender, e) => { _commandChangedCount++; };
+                _vimBuffer.LocalSettings.AutoIndent = false;
+            }
+
+            [Fact]
+            public void SimpleSet()
+            {
+                _commandMode.Command = "set ai";
+                Assert.Equal(1, _commandChangedCount);
+            }
+
+            [Fact]
+            public void EnterShouldChange()
+            {
+                _vimBuffer.Process("set ai");
+                _commandChangedCount = 0;
+                _vimBuffer.Process(VimKey.Enter);
+                Assert.Equal(1, _commandChangedCount);
+            }
+
+            [Fact]
+            public void EscapeShouldChange()
+            {
+                _vimBuffer.Process("set ai");
+                _commandChangedCount = 0;
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal(1, _commandChangedCount);
+            }
+        }
+
+        public sealed class CommandPropertyTest : CommandModeIntegrationTest
+        {
+            public CommandPropertyTest()
+            {
+                Create();
+                _vimBuffer.SwitchMode(ModeKind.Command, ModeArgument.None);
+                _vimBuffer.LocalSettings.AutoIndent = false;
+            }
+
+            [Fact]
+            public void TypeAndCheck()
+            {
+                _vimBuffer.Process("set");
+                Assert.Equal("set", _commandMode.Command);
+            }
+
+            [Fact]
+            public void SimpleSet()
+            {
+                _commandMode.Command = "set ai";
+                Assert.Equal("set ai", _commandMode.Command);
+                _vimBuffer.Process(VimKey.Enter);
+                Assert.True(_vimBuffer.LocalSettings.AutoIndent);
+            }
+
+            [Fact]
+            public void SetAndUse()
+            {
+                _commandMode.Command = "set ai";
+                _vimBuffer.Process(VimKey.Enter);
+                Assert.True(_vimBuffer.LocalSettings.AutoIndent);
+            }
+        }
+
+        public sealed class CopyToTest : CommandModeIntegrationTest
         {
             /// <summary>
             /// Copying a line to a given line should put it at that given line

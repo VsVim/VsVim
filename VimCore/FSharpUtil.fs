@@ -39,8 +39,8 @@ type internal StandardEvent<'T when 'T :> System.EventArgs>() =
 
     member x.Publish = _event.Publish
 
-    member x.Trigger (sender : 'U) (args : 'T) = 
-        let argsArray = [| sender :> obj; args :> obj |]
+    member x.Trigger (sender : obj) (args : 'T) = 
+        let argsArray = [| sender; args :> obj |]
         _event.Trigger(argsArray)
 
 type internal StandardEvent() =
@@ -49,8 +49,8 @@ type internal StandardEvent() =
 
     member x.Publish = _event.Publish
 
-    member x.Trigger (sender : 'U) =
-        let argsArray = [| sender :> obj; System.EventArgs.Empty :> obj |]
+    member x.Trigger (sender : obj) =
+        let argsArray = [| sender; System.EventArgs.Empty :> obj |]
         _event.Trigger(argsArray)
 
 type internal DisposableBag() = 

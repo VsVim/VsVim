@@ -389,11 +389,11 @@ type SubstituteConfirmTaggerProvider
 type internal FoldTaggerSource(_foldData : IFoldData) as this =
 
     let _textBuffer = _foldData.TextBuffer
-    let _changed = new DelegateEvent<System.EventHandler>()
+    let _changed = StandardEvent()
 
     do 
         _foldData.FoldsUpdated 
-        |> Event.add (fun _ -> _changed.Trigger([| this; System.EventArgs.Empty |]))
+        |> Event.add (fun _ -> _changed.Trigger this)
 
     member x.GetTags span =
 

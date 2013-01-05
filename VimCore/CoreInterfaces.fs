@@ -3865,11 +3865,15 @@ and IInsertMode =
 
 and ICommandMode = 
 
-    /// buffered input for the current command
-    abstract Command : string
+    /// Buffered input for the current command
+    abstract Command : string with get, set
 
     /// Run the specified command
     abstract RunCommand : string -> RunResult
+
+    /// Raised when the command string is changed
+    [<CLIEvent>]
+    abstract CommandChanged : IDelegateEvent<System.EventHandler>
 
     inherit IMode
 

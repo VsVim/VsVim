@@ -217,6 +217,10 @@ namespace VsVim
                     keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Insert);
                     kind = EditCommandKind.UserInput;
                     break;
+                case VSConstants.VSStd2KCmdID.PASTE:
+                    keyInput = KeyInput.DefaultValue;
+                    kind = EditCommandKind.Paste;
+                    break;
                 default:
                     keyInput = null;
                     kind = EditCommandKind.UserInput;
@@ -288,6 +292,10 @@ namespace VsVim
                 case VSConstants.VSStd97CmdID.GotoDefn:
                     ki = KeyInput.DefaultValue;
                     kind = EditCommandKind.GoToDefinition;
+                    break;
+                case VSConstants.VSStd97CmdID.Paste:
+                    ki = KeyInput.DefaultValue;
+                    kind = EditCommandKind.Paste;
                     break;
             }
 
