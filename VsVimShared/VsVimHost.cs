@@ -393,5 +393,15 @@ namespace VsVim
             // so it's easier to plug in later should such an API become available
             return GoToDefinitionCore(textView, target);
         }
+
+        public override void VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
+        {
+            if (vimRcState.IsLoadFailed)
+            {
+                // If we failed to load a vimrc file then we should add a couple of sanity 
+                // settings.  Otherwise the Visual Studio experience wont't be what users expect
+                localSettings.AutoIndent = true;
+            }
+        }
     }
 }

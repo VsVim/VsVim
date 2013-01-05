@@ -32,6 +32,7 @@ namespace Vim.UnitTest.Mock
         public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
         public ITextBuffer LastSaved { get; set; }
         public ITextView LastClosed { get; set; }
+        public VimRcState VimRcState { get; set; }
 
         /// <summary>
         /// Data from the last GoToNextTab call
@@ -278,6 +279,11 @@ namespace Vim.UnitTest.Mock
         void IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
         {
             RunQuickFixFunc(quickFix, count, hasBang);
+        }
+
+        void IVimHost.VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
+        {
+            VimRcState = vimRcState;
         }
     }
 }

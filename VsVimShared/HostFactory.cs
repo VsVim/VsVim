@@ -42,7 +42,7 @@ namespace VsVim
         private readonly ITextBufferFactoryService _bufferFactoryService;
         private readonly ITextEditorFactoryService _editorFactoryService;
         private readonly IEditorOptionsFactoryService _editorOptionsFactoryService;
-        private readonly IResharperUtil  _resharperUtil;
+        private readonly IResharperUtil _resharperUtil;
         private readonly IDisplayWindowBrokerFactoryService _displayWindowBrokerFactoryServcie;
         private readonly IVim _vim;
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
@@ -52,7 +52,6 @@ namespace VsVim
         private readonly IProtectedOperations _protectedOperations;
         private readonly IVimBufferCoordinatorFactory _bufferCoordinatorFactory;
         private readonly IKeyUtil _keyUtil;
-        private bool _userHadVimRcFile;
 
         [ImportingConstructor]
         public HostFactory(
@@ -85,35 +84,15 @@ namespace VsVim
             _bufferCoordinatorFactory = bufferCoordinatorFactory;
             _keyUtil = keyUtil;
 
-            _vim.AutoLoadVimRc = false;
-
 #if DEBUG
             VimTrace.TraceSwitch.Level = TraceLevel.Info;
 #endif
         }
 
-        private void MaybeLoadVimRc()
-        {
-            if (!_vim.IsVimRcLoaded && String.IsNullOrEmpty(_vim.GlobalSettings.VimRcPaths))
-            {
-                // Need to pass the LoadVimRc call a function to create an ITextView that 
-                // can be used to load the settings against.  We don't want this ITextView 
-                // coming back through TextViewCreated so give it a ITextViewRole that won't
-                // hit our filter 
-                _userHadVimRcFile = _vim.LoadVimRc();
-                if (!_userHadVimRcFile)
-                {
-                    // If no VimRc file is loaded add a couple of sanity settings
-                    _vim.VimRcLocalSettings.AutoIndent = true;
-                }
-            }
-        }
+        #region IWpfTextViewCreationListener
 
         void IWpfTextViewCreationListener.TextViewCreated(IWpfTextView textView)
         {
-            // Load the VimRC file if we haven't tried yet
-            MaybeLoadVimRc();
-
             // Create the IVimBuffer after loading the VimRc so that it gets the appropriate
             // settings
             var buffer = _vim.GetOrCreateVimBuffer(textView);
@@ -129,6 +108,10 @@ namespace VsVim
             _bufferMap[buffer] = bufferData;
         }
 
+        #endregion
+
+        #region IVimBufferCreationListener
+
         void IVimBufferCreationListener.VimBufferCreated(IVimBuffer buffer)
         {
             var textView = buffer.TextView;
@@ -138,6 +121,10 @@ namespace VsVim
                 _bufferMap.Remove(buffer);
             };
         }
+
+        #endregion
+
+        #region IVsTextViewCreationListener
 
         /// <summary>
         /// Raised when an IVsTextView is created.  When this occurs it means a previously created
@@ -180,7 +167,7 @@ namespace VsVim
                 //
                 // This is only done if the user provided an explicit VimRc file.  If none was provided
                 // then we let the Visual Studio savedsettings win instead 
-                if (_userHadVimRcFile)
+                if (_vim.VimRcState.IsLoadSucceeded)
                 {
                     buffer.LocalSettings.TabStop = bufferData.TabStop;
                     buffer.LocalSettings.ShiftWidth = bufferData.ShiftWidth;
@@ -212,7 +199,7 @@ namespace VsVim
             _protectedOperations.BeginInvoke(install);
         }
 
-
+        #endregion
     }
 
 }
