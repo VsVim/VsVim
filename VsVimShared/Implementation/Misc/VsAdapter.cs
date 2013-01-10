@@ -181,7 +181,12 @@ namespace VsVim.Implementation.Misc
             }
 
             IVsEnumTextViews vsEnum;
-            ErrorHandler.ThrowOnFailure(_textManager.EnumViews(vsTextBuffer, out vsEnum));
+            if (ErrorHandler.Failed(_textManager.EnumViews(vsTextBuffer, out vsEnum)))
+            {
+                // When run as a result of navigation for NavigateTo this method can fail.  The reason
+                // isn't understood but it can fail so we must handle it.  
+                return Enumerable.Empty<IVsTextView>();
+            }
 
             var list = new List<IVsTextView>();
             var done = false;
@@ -190,7 +195,11 @@ namespace VsVim.Implementation.Misc
             {
                 uint found = 0;
                 var hr = vsEnum.Next((uint)array.Length, array, ref found);
-                ErrorHandler.ThrowOnFailure(hr);
+                if (ErrorHandler.Failed(hr))
+                {
+                    return Enumerable.Empty<IVsTextView>();
+                }
+
                 if (VSConstants.S_OK == hr && array[0] != null)
                 {
                     list.Add(array[0]);
