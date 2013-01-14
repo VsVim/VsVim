@@ -45,6 +45,12 @@ namespace VsVim
             get { return _variantOut; }
         }
 
+        internal OleCommandData(VSConstants.VSStd97CmdID id)
+            : this(VSConstants.GUID_VSStandardCommandSet97, (uint)id)
+        {
+
+        }
+
         internal OleCommandData(VSConstants.VSStd2KCmdID id)
             : this(VSConstants.VSStd2K, (uint)id)
         {

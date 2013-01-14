@@ -392,5 +392,30 @@ namespace VsVim
                 return false;
             }
         }
+
+        internal static bool TryConvert(EditCommand editCommand, out OleCommandData oleCommandData)
+        {
+            switch (editCommand.EditCommandKind)
+            {
+                case EditCommandKind.GoToDefinition:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd97CmdID.GotoDecl);
+                    return true;
+                case EditCommandKind.Paste:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.PASTE);
+                    return true;
+                case EditCommandKind.Undo:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.UNDO);
+                    return true;
+                case EditCommandKind.Redo:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.REDO);
+                    return true;
+                case EditCommandKind.UserInput:
+                    return TryConvert(editCommand.KeyInput, out oleCommandData);
+                case EditCommandKind.VisualStudioCommand:
+                default:
+                    oleCommandData = OleCommandData.Empty;
+                    return false;
+            }
+        }
     }
 }
