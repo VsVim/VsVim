@@ -12,14 +12,16 @@ using Vim.Extensions;
 using Vim.UnitTest;
 using VsVim.Implementation;
 using VsVim.Implementation.Misc;
+using Microsoft.VisualStudio.Text;
 
 namespace VsVim.UnitTest
 {
     public abstract class VsCommandTargetTest : VimTestBase
     {
         protected readonly MockRepository _factory;
-        protected readonly IVimBuffer _buffer;
+        protected readonly IVimBuffer _vimBuffer;
         protected readonly IVim _vim;
+        protected readonly ITextBuffer _textBuffer;
         protected readonly ITextView _textView;
         protected readonly Mock<IVsAdapter> _vsAdapter;
         protected readonly Mock<IOleCommandTarget> _nextTarget;
@@ -33,9 +35,10 @@ namespace VsVim.UnitTest
         protected VsCommandTargetTest()
         {
             _textView = CreateTextView("");
-            _buffer = Vim.CreateVimBuffer(_textView);
-            _bufferCoordinator = new VimBufferCoordinator(_buffer);
-            _vim = _buffer.Vim;
+            _textBuffer = _textView.TextBuffer;
+            _vimBuffer = Vim.CreateVimBuffer(_textView);
+            _bufferCoordinator = new VimBufferCoordinator(_vimBuffer);
+            _vim = _vimBuffer.Vim;
             _factory = new MockRepository(MockBehavior.Strict);
 
             // By default Resharper isn't loaded
@@ -108,6 +111,20 @@ namespace VsVim.UnitTest
             RunExec(keyInput);
         }
 
+        internal void RunExec(EditCommand editCommand)
+        {
+            var oleCommandData = OleCommandData.Empty;
+            try
+            {
+                Assert.True(OleCommandUtil.TryConvert(editCommand, out oleCommandData));
+                _target.Exec(oleCommandData);
+            }
+            finally
+            {
+                oleCommandData.Dispose();
+            }
+        }
+
         /// <summary>
         /// Run the KeyInput value through QueryStatus.  Returns true if the QueryStatus call
         /// indicated the command was supported
@@ -138,21 +155,26 @@ namespace VsVim.UnitTest
             return RunQueryStatus(keyInput);
         }
 
-        protected void AssertCannotConvert2K(VSConstants.VSStd2KCmdID id)
+        internal static EditCommand CreateEditCommand(EditCommandKind editCommandKind)
         {
-            KeyInput ki;
-            Assert.False(_targetRaw.TryConvert(VSConstants.VSStd2K, (uint)id, IntPtr.Zero, out ki));
-        }
-
-        protected void AssertCanConvert2K(VSConstants.VSStd2KCmdID id, KeyInput expected)
-        {
-            KeyInput ki;
-            Assert.True(_targetRaw.TryConvert(VSConstants.VSStd2K, (uint)id, IntPtr.Zero, out ki));
-            Assert.Equal(expected, ki);
+            return new EditCommand(KeyInputUtil.CharToKeyInput('i'), editCommandKind, Guid.Empty, 42);
         }
 
         public sealed class TryConvertTest : VsCommandTargetTest
         {
+            private void AssertCannotConvert2K(VSConstants.VSStd2KCmdID id)
+            {
+                KeyInput ki;
+                Assert.False(_targetRaw.TryConvert(VSConstants.VSStd2K, (uint)id, IntPtr.Zero, out ki));
+            }
+
+            private void AssertCanConvert2K(VSConstants.VSStd2KCmdID id, KeyInput expected)
+            {
+                KeyInput ki;
+                Assert.True(_targetRaw.TryConvert(VSConstants.VSStd2K, (uint)id, IntPtr.Zero, out ki));
+                Assert.Equal(expected, ki);
+            }
+
             [Fact]
             public void Tab()
             {
@@ -179,8 +201,8 @@ namespace VsVim.UnitTest
             [Fact]
             public void IgnoreEscapeIfCantProcess()
             {
-                _buffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
-                Assert.False(_buffer.CanProcess(KeyInputUtil.EscapeKey));
+                _vimBuffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
+                Assert.False(_vimBuffer.CanProcess(KeyInputUtil.EscapeKey));
                 _nextTarget.SetupQueryStatus().Verifiable();
                 RunQueryStatus(KeyInputUtil.EscapeKey);
                 _factory.Verify();
@@ -189,8 +211,8 @@ namespace VsVim.UnitTest
             [Fact]
             public void EnableEscapeButDontHandleNormally()
             {
-                _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-                Assert.True(_buffer.CanProcess(VimKey.Escape));
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                Assert.True(_vimBuffer.CanProcess(VimKey.Escape));
                 Assert.True(RunQueryStatus(KeyInputUtil.EscapeKey));
             }
 
@@ -201,8 +223,8 @@ namespace VsVim.UnitTest
             public void EnableEscapeAndDontHandleInResharperPlusVisualMode()
             {
                 var count = 0;
-                _buffer.KeyInputProcessed += delegate { count++; };
-                _buffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
+                _vimBuffer.KeyInputProcessed += delegate { count++; };
+                _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
                 _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
                 RunQueryStatus(KeyInputUtil.EscapeKey);
                 Assert.Equal(0, count);
@@ -218,8 +240,8 @@ namespace VsVim.UnitTest
             public void Resharper_EnableAndHandleEscape()
             {
                 var count = 0;
-                _buffer.KeyInputProcessed += delegate { count++; };
-                _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.KeyInputProcessed += delegate { count++; };
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
                 Assert.True(RunQueryStatus(KeyInputUtil.EscapeKey));
                 Assert.True(_bufferCoordinator.DiscardedKeyInput.IsSome(KeyInputUtil.EscapeKey));
@@ -237,10 +259,10 @@ namespace VsVim.UnitTest
             {
                 var backKeyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Back);
                 var count = 0;
-                _buffer.KeyInputProcessed += delegate { count++; };
-                _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.KeyInputProcessed += delegate { count++; };
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                 _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
-                Assert.True(_buffer.CanProcessAsCommand(backKeyInput));
+                Assert.True(_vimBuffer.CanProcessAsCommand(backKeyInput));
                 Assert.False(RunQueryStatus(backKeyInput));
                 Assert.True(_bufferCoordinator.DiscardedKeyInput.IsSome(backKeyInput));
                 Assert.Equal(1, count);
@@ -257,10 +279,10 @@ namespace VsVim.UnitTest
             {
                 var backKeyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Back);
                 var count = 0;
-                _buffer.KeyInputProcessed += delegate { count++; };
-                _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.KeyInputProcessed += delegate { count++; };
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
-                Assert.True(_buffer.CanProcessAsCommand(backKeyInput));
+                Assert.True(_vimBuffer.CanProcessAsCommand(backKeyInput));
                 Assert.True(RunQueryStatus(backKeyInput));
                 Assert.True(_bufferCoordinator.DiscardedKeyInput.IsNone());
                 Assert.Equal(0, count);
@@ -275,8 +297,8 @@ namespace VsVim.UnitTest
             public void EnableAndHandleEscapeInResharperPlusExternalEdit()
             {
                 var count = 0;
-                _buffer.KeyInputProcessed += delegate { count++; };
-                _buffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
+                _vimBuffer.KeyInputProcessed += delegate { count++; };
+                _vimBuffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
                 _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
                 Assert.True(RunQueryStatus(KeyInputUtil.EscapeKey));
                 Assert.True(_bufferCoordinator.DiscardedKeyInput.IsSome(KeyInputUtil.EscapeKey));
@@ -291,8 +313,8 @@ namespace VsVim.UnitTest
             public void Reshaprer_HandlePageUpNormally()
             {
                 var count = 0;
-                _buffer.KeyInputProcessed += delegate { count++; };
-                _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.KeyInputProcessed += delegate { count++; };
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                 _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
                 Assert.True(RunQueryStatus(KeyInputUtil.VimKeyToKeyInput(VimKey.PageUp)));
                 Assert.Equal(0, count);
@@ -311,8 +333,8 @@ namespace VsVim.UnitTest
                 _textView.SetText("cat", "dog");
                 _textView.MoveCaretTo(0);
                 _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
-                _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-                Assert.True(_buffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                Assert.True(_vimBuffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
                 Assert.False(RunQueryStatus(KeyInputUtil.EnterKey));
                 Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
                 Assert.True(_bufferCoordinator.DiscardedKeyInput.IsSome(KeyInputUtil.EnterKey));
@@ -331,8 +353,8 @@ namespace VsVim.UnitTest
                 _textView.MoveCaretTo(0);
                 var savedSnapshot = _textView.TextSnapshot;
                 _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
-                _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-                Assert.True(_buffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                Assert.True(_vimBuffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
                 Assert.True(RunQueryStatus(KeyInputUtil.EnterKey));
                 Assert.True(_bufferCoordinator.DiscardedKeyInput.IsNone());
                 Assert.Equal(_textView.GetLine(0).Start, _textView.GetCaretPoint());
@@ -346,9 +368,9 @@ namespace VsVim.UnitTest
             [Fact]
             public void PassOnIfCantHandle()
             {
-                _buffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
-                Assert.False(_buffer.CanProcess(VimKey.Enter));
-                _nextTarget.SetupExec().Verifiable();
+                _vimBuffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
+                Assert.False(_vimBuffer.CanProcess(VimKey.Enter));
+                _nextTarget.SetupExecOne().Verifiable();
                 RunExec(KeyInputUtil.EnterKey);
                 _factory.Verify();
             }
@@ -384,7 +406,7 @@ namespace VsVim.UnitTest
                 _bufferCoordinator.DiscardedKeyInput = FSharpOption.Create(KeyInputUtil.EnterKey);
 
                 // Make sur Ecape isn't handled so it will go to the next IOleCommandTarget
-                Assert.True(_buffer.CanProcess(KeyInputUtil.EscapeKey));
+                Assert.True(_vimBuffer.CanProcess(KeyInputUtil.EscapeKey));
                 RunExec(KeyInputUtil.EscapeKey);
                 Assert.True(_bufferCoordinator.DiscardedKeyInput.IsNone());
             }
@@ -393,8 +415,8 @@ namespace VsVim.UnitTest
             public void HandleEscapeNormally()
             {
                 var count = 0;
-                _buffer.KeyInputProcessed += delegate { count++; };
-                _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.KeyInputProcessed += delegate { count++; };
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 RunExec(KeyInputUtil.EscapeKey);
                 Assert.Equal(1, count);
             }
@@ -409,12 +431,12 @@ namespace VsVim.UnitTest
             public void WithUnmatchedBufferedInput()
             {
                 _vim.KeyMap.MapWithNoRemap("jj", "hello", KeyRemapMode.Insert);
-                _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 RunExec('j');
-                Assert.False(_buffer.BufferedKeyInputs.IsEmpty);
+                Assert.False(_vimBuffer.BufferedKeyInputs.IsEmpty);
                 RunExec('a');
                 Assert.Equal("ja", _textView.GetLine(0).GetText());
-                Assert.True(_buffer.BufferedKeyInputs.IsEmpty);
+                Assert.True(_vimBuffer.BufferedKeyInputs.IsEmpty);
             }
 
             /// <summary>
@@ -425,12 +447,12 @@ namespace VsVim.UnitTest
             public void WithMatchedBufferedInput()
             {
                 _vim.KeyMap.MapWithNoRemap("jj", "hello", KeyRemapMode.Insert);
-                _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 RunExec('j');
-                Assert.False(_buffer.BufferedKeyInputs.IsEmpty);
+                Assert.False(_vimBuffer.BufferedKeyInputs.IsEmpty);
                 RunExec('j');
                 Assert.Equal("hello", _textView.GetLine(0).GetText());
-                Assert.True(_buffer.BufferedKeyInputs.IsEmpty);
+                Assert.True(_vimBuffer.BufferedKeyInputs.IsEmpty);
             }
 
             /// <summary>
@@ -442,12 +464,12 @@ namespace VsVim.UnitTest
             public void CollapseBufferedInputToSingleKeyInput()
             {
                 _vim.KeyMap.MapWithNoRemap("jj", "z", KeyRemapMode.Insert);
-                _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 RunExec('j');
-                Assert.False(_buffer.BufferedKeyInputs.IsEmpty);
+                Assert.False(_vimBuffer.BufferedKeyInputs.IsEmpty);
                 RunExec('j');
                 Assert.Equal("z", _textView.GetLine(0).GetText());
-                Assert.True(_buffer.BufferedKeyInputs.IsEmpty);
+                Assert.True(_vimBuffer.BufferedKeyInputs.IsEmpty);
             }
 
             /// <summary>
@@ -460,7 +482,7 @@ namespace VsVim.UnitTest
                 _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(true);
 
                 var count = 0;
-                _nextTarget.SetupExec().Callback(() => { count++; });
+                _nextTarget.SetupExecOne().Callback(() => { count++; });
 
                 foreach (var key in new[] { VimKey.Down, VimKey.Up })
                 {
@@ -468,6 +490,21 @@ namespace VsVim.UnitTest
                 }
 
                 Assert.Equal(2, count);
+            }
+
+            /// <summary>
+            /// Make sure the GoToDefinition command wil clear the active selection.  We don't want
+            /// this command causing VsVim to switch to Visual Mode 
+            /// </summary>
+            [Fact]
+            public void GoToDefinitionShouldClearSelection()
+            {
+                _textBuffer.SetText("dog", "cat");
+                _textView.Selection.Select(_textBuffer.GetLineSpan(0, 3));
+                _textManager.Setup(x => x.TextViews).Returns(new[] { _textView });
+                _nextTarget.SetupExecAll();
+                RunExec(CreateEditCommand(EditCommandKind.GoToDefinition));
+                Assert.True(_textView.Selection.IsEmpty);
             }
         }
 
@@ -482,7 +519,7 @@ namespace VsVim.UnitTest
             [Fact]
             public void GoToDefinition()
             {
-                var editCommand = new EditCommand(KeyInputUtil.CharToKeyInput('i'), EditCommandKind.GoToDefinition, Guid.Empty, 42);
+                var editCommand = CreateEditCommand(EditCommandKind.GoToDefinition);
                 Assert.False(_targetRaw.ExecCore(editCommand));
             }
         }

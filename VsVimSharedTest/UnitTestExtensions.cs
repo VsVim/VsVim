@@ -158,7 +158,7 @@ namespace VsVim.UnitTest
                 It.IsAny<IntPtr>())).Returns(hresult);
         }
 
-        public static IReturnsResult<IOleCommandTarget> SetupExec(this Mock<IOleCommandTarget> mock, Guid? command = null, int hresult = VSConstants.S_OK)
+        public static IReturnsResult<IOleCommandTarget> SetupExecOne(this Mock<IOleCommandTarget> mock, Guid? command = null, int hresult = VSConstants.S_OK)
         {
             var commandValue = command ?? VSConstants.VSStd2K;
             return mock.Setup(x => x.Exec(
@@ -168,5 +168,25 @@ namespace VsVim.UnitTest
                 It.IsAny<IntPtr>(),
                 It.IsAny<IntPtr>())).Returns(hresult);
         }
+
+        public static void SetupExecAll(this Mock<IOleCommandTarget> mock, int hresult = VSConstants.S_OK)
+        {
+            var commandGroup = VSConstants.VSStd2K;
+            mock.Setup(x => x.Exec(
+                ref commandGroup,
+                It.IsAny<uint>(),
+                It.IsAny<uint>(),
+                It.IsAny<IntPtr>(),
+                It.IsAny<IntPtr>())).Returns(hresult);
+
+            commandGroup = VSConstants.GUID_VSStandardCommandSet97;
+            mock.Setup(x => x.Exec(
+                ref commandGroup,
+                It.IsAny<uint>(),
+                It.IsAny<uint>(),
+                It.IsAny<IntPtr>(),
+                It.IsAny<IntPtr>())).Returns(hresult);
+        }
+
     }
 }
