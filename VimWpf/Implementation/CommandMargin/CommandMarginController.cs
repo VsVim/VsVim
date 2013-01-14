@@ -219,7 +219,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         {
             var propertyMap = _editorFormatMap.GetProperties(CommandMarginFormatDefinition.Name);
             _margin.TextForeground = propertyMap.GetForegroundBrush(SystemColors.WindowTextBrush);
-            _margin.TextForeground = propertyMap.GetForegroundBrush(SystemColors.WindowBrush);
+            _margin.TextBackground = propertyMap.GetBackgroundBrush(SystemColors.WindowBrush);
         }
 
         #region Event Handlers
