@@ -77,6 +77,15 @@ namespace Vim.UnitTest
 
         public sealed class MoveTest : NormalModeIntegrationTest
         {
+            [Fact]
+            public void HomeStartOfLine()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("<Home>");
+                Assert.Equal(0, _textView.GetCaretPoint());
+            }
+
             /// <summary>
             /// Blank lines are sentences
             /// </summary>
