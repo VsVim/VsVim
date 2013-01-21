@@ -36,6 +36,16 @@ namespace VsVim
         GoToDefinition,
 
         /// <summary>
+        /// Comment the selection
+        /// </summary>
+        Comment,
+
+        /// <summary>
+        /// Uncomment the selection
+        /// </summary>
+        Uncomment,
+
+        /// <summary>
         /// The paste command
         /// </summary>
         Paste,

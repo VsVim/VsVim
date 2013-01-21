@@ -221,6 +221,16 @@ namespace VsVim
                     keyInput = KeyInput.DefaultValue;
                     kind = EditCommandKind.Paste;
                     break;
+                case VSConstants.VSStd2KCmdID.COMMENT_BLOCK:
+                case VSConstants.VSStd2KCmdID.COMMENTBLOCK:
+                    keyInput = KeyInput.DefaultValue;
+                    kind = EditCommandKind.Comment;
+                    break;
+                case VSConstants.VSStd2KCmdID.UNCOMMENT_BLOCK:
+                case VSConstants.VSStd2KCmdID.UNCOMMENTBLOCK:
+                    keyInput = KeyInput.DefaultValue;
+                    kind = EditCommandKind.Uncomment;
+                    break;
                 default:
                     keyInput = null;
                     kind = EditCommandKind.UserInput;
@@ -408,6 +418,12 @@ namespace VsVim
                     return true;
                 case EditCommandKind.Redo:
                     oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.REDO);
+                    return true;
+                case EditCommandKind.Comment:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.COMMENTBLOCK);
+                    return true;
+                case EditCommandKind.Uncomment:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.UNCOMMENTBLOCK);
                     return true;
                 case EditCommandKind.UserInput:
                     return TryConvert(editCommand.KeyInput, out oleCommandData);

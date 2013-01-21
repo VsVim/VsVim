@@ -506,6 +506,15 @@ namespace VsVim.UnitTest
                 RunExec(CreateEditCommand(EditCommandKind.GoToDefinition));
                 Assert.True(_textView.Selection.IsEmpty);
             }
+
+            /// <summary>
+            /// If the Comment command creates a selection then we should be turning it off 
+            /// </summary>
+            [Fact]
+            public void CommentShouldClearSelection()
+            {
+
+            }
         }
 
         public sealed class ExecCoreTest : VsCommandTargetTest
