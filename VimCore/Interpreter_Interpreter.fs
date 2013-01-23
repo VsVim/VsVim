@@ -503,9 +503,8 @@ type Interpreter
                 let lineNum = textLine.LineNumber
                 let column = point.Position.Position - textLine.Start.Position
                 let column = if point.IsInVirtualSpace then column + point.VirtualSpaces else column
-                let name = _vimHost.GetName _textView.TextBuffer
+                let name = _vimHost.GetName point.Position.Snapshot.TextBuffer
                 sprintf " %c   %5d%5d %s" ident lineNum column name
-
             let localSeq = 
                 _vimTextBuffer.LocalMarks
                 |> Seq.map (fun (localMark, point) -> (localMark.Char, point))
