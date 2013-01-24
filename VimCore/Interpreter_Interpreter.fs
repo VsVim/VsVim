@@ -500,7 +500,7 @@ type Interpreter
         else
             let printMark (ident : char) (point : VirtualSnapshotPoint) =
                 let textLine = point.Position.GetContainingLine()
-                let lineNum = textLine.LineNumber
+                let lineNum = textLine.LineNumber + 1
                 let column = point.Position.Position - textLine.Start.Position
                 let column = if point.IsInVirtualSpace then column + point.VirtualSpaces else column
                 let name = _vimHost.GetName point.Position.Snapshot.TextBuffer
