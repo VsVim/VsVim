@@ -17,11 +17,7 @@ namespace VsVim.Vs2012
 
         VisualStudioVersion ISharedServiceVersionFactory.Version
         {
-#if DEV10
-            get { return VisualStudioVersion.Dev10; }
-#else
-            get { return VisualStudioVersion.Dev11; }
-#endif
+            get { return VisualStudioVersion.Vs2012; }
         }
 
         ISharedService ISharedServiceVersionFactory.Create()

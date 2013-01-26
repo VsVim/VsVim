@@ -45,7 +45,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
             vimBuffer.WindowSettings.SettingChanged += (_, args) => OnSettingChanged(vimBuffer, args);
 
             // On startup enforce the vim cursor line setting over any Visual Studio default.  This is important
-            // because the default changes between Dev10 (off) and Dev11 (on).  Need to be consistent here and
+            // because the default changes between Vs 2010 (off) and Vs 2012 (on).  Need to be consistent here and
             // choose the Vim setting
             Action action = () => SyncVimToEditor(vimBuffer);
             _protectedOperations.BeginInvoke(action, DispatcherPriority.Loaded);

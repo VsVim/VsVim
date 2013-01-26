@@ -923,9 +923,9 @@ namespace VsVim
             switch (parts[0])
             {
                 case "10":
-                    return VisualStudioVersion.Dev10;
+                    return VisualStudioVersion.Vs2010;
                 case "11":
-                    return VisualStudioVersion.Dev11;
+                    return VisualStudioVersion.Vs2012;
                 default:
                     return VisualStudioVersion.Unknown;
             }

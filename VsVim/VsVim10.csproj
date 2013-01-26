@@ -20,7 +20,6 @@
     <VSSDKTargetPlatformRegRootSuffix>ExpVsVim</VSSDKTargetPlatformRegRootSuffix>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
-    <VisualStudioTarget>Dev10</VisualStudioTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>

@@ -344,7 +344,7 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
-        /// There is a bug in the Dev10 implementation of the ITextSearchService which causes
+        /// There is a bug in the Vs 2010 implementation of the ITextSearchService which causes
         /// it to enter an infinite loop if the following conditions are met.  
         ///
         ///   1. Search is for a whole word

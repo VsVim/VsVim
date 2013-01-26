@@ -149,8 +149,8 @@ if (-not $fast) {
     build-clean Vs2012\Vs2012.csproj
     build-clean VsVim\VsVim.csproj
 
-    if (test-path "VsVim\VsVim.Dev11.dll") {
-        rm VsVim\VsVim.Dev11.dll
+    if (test-path "VsVim\VsVim.Vs2012.dll") {
+        rm VsVim\VsVim.Vs2012.dll
     }
 }
 

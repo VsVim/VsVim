@@ -315,7 +315,7 @@ namespace VsVim.Implementation.ExternalEdit
 
         /// <summary>
         /// Returns all active ExternalEditMarker instances for the given range for the old style
-        /// Visual Studio markers.  It's possible this is a pure Dev10 ITextBuffer though hence won't
+        /// Visual Studio markers.  It's possible this is a pure 2010 ITextBuffer though hence won't
         /// have any old style markers
         /// </summary>
         private void GetExternalEditSpansFromMarkers(SnapshotSpan span, List<SnapshotSpan> list)

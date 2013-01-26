@@ -17,7 +17,7 @@ namespace VsVim.Vs2010
 
         VisualStudioVersion ISharedServiceVersionFactory.Version
         {
-            get { return VisualStudioVersion.Dev10; }
+            get { return VisualStudioVersion.Vs2010; }
         }
 
         ISharedService ISharedServiceVersionFactory.Create()
