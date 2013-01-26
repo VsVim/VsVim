@@ -31,8 +31,8 @@
     <MefComponent>|VimCore|</MefComponent>
     <MefComponent>|VimWpf|</MefComponent>
     <MefComponent>|VsVimShared|</MefComponent>
-    <MefComponent>|VsVimDev10|</MefComponent>
+    <MefComponent>|Vs2010|</MefComponent>
     <MefComponent>EditorUtils.dll</MefComponent>
-    <MefComponent>VsVim.Dev11.dll</MefComponent>
+    <MefComponent>VsVim.Vs2012.dll</MefComponent>
   </Content>
 </Vsix>

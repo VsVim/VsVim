@@ -9,11 +9,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim;
 using Vim.Extensions;
 
-#if DEV10
-namespace VsVim.Dev10
-#else
-namespace VsVim.Dev11
-#endif
+namespace VsVim.Vs2012
 {
     internal sealed class SharedService : ISharedService
     {

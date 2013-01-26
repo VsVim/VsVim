@@ -57,8 +57,8 @@ function test-vsixcontents() {
         "EditorUtils.dll",
         "Vim.Core.dll", 
         "Vim.UI.Wpf.dll",
-        "VsVim.Dev10.dll",
-        "VsVim.Dev11.dll",
+        "VsVim.Vs2010.dll",
+        "VsVim.Vs2012.dll",
         "VsVim.dll",
         "VsVim.Shared.dll"
 
@@ -145,8 +145,8 @@ function publish-vsix() {
 # First step is to clean out all of the projects 
 if (-not $fast) { 
     write-host "Cleaning Projects"
-    build-clean VsVimSpecific\VsVimDev10.csproj
-    build-clean VsVimSpecific\VsVimDev11.csproj
+    build-clean Vs2010\Vs2010.csproj
+    build-clean Vs2012\Vs2012.csproj
     build-clean VsVim\VsVim.csproj
 
     if (test-path "VsVim\VsVim.Dev11.dll") {
@@ -165,12 +165,12 @@ build-release VimCoreTest\VimCoreTest.csproj
 build-release VimWpfTest\VimWpfTest.csproj
 build-release VsVimSharedTest\VsVimSharedTest.csproj
 
-# Next step is to build the 2012 components.  We need to get the 2010 specific DLL
+# Next step is to build the 2012 components.  We need to get the 2012 specific DLL
 # to deploy with the standard install
-build-release VsVimSpecific\VsVimDev11.csproj
+build-release Vs2012\Vs2012.csproj
 
 # Copy the 2012 specfic components into the location expected by the build system
-copy VsVimSpecific\bin11\Release\VsVim.Dev11.dll VsVim
+copy Vs2012\bin\Release\VsVim.Vs2012.dll VsVim
 
 # Now build the final output project
 build-release VsVim\VsVim.csproj

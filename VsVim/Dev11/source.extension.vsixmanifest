@@ -31,7 +31,7 @@
     <MefComponent>|VimCore|</MefComponent>
     <MefComponent>|VimWpf|</MefComponent>
     <MefComponent>|VsVimShared|</MefComponent>
-    <MefComponent>|VsVimDev11|</MefComponent>
+    <MefComponent>|Vs2012|</MefComponent>
     <MefComponent>EditorUtils.dll</MefComponent>
     <VsPackage>Colors.pkgdef</VsPackage>
   </Content>

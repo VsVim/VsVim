@@ -93,7 +93,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="VsVim.Dev11.dll">
+    <Content Include="VsVim.Vs2012.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
@@ -134,9 +134,9 @@
       <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3b</IncludeOutputGroupsInVSIX>
       <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
     </ProjectReference>
-    <ProjectReference Include="..\VsVimSpecific\VsVimDev10.csproj">
+    <ProjectReference Include="..\Vs2010\Vs2010.csproj">
       <Project>{0DE4170C-224D-47CF-BE00-B88AA14EC804}</Project>
-      <Name>VsVimDev10</Name>
+      <Name>Vs2010</Name>
       <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3b</IncludeOutputGroupsInVSIX>
       <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
     </ProjectReference>
