@@ -125,7 +125,7 @@ type internal SelectionChangeTracker
         // Because this occurs at a  later time it is possible that the IVimBuffer was closed
         // in the mean time.  Make sure to guard against this possibility
         let doUpdate () = 
-            if not _vimBuffer.IsClosed && not  _selectionDirty then 
+            if not _vimBuffer.IsClosed && not _selectionDirty then 
                 match desiredMode() with
                 | None -> ()
                 | Some modeKind -> _vimBuffer.SwitchMode modeKind ModeArgument.None |> ignore

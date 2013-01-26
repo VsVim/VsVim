@@ -32,6 +32,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _buffer.StatusMessage += OnStatusMessage;
             _buffer.ErrorMessage += OnErrorMessage;
             _buffer.WarningMessage += OnWarningMessage;
+            _buffer.CommandMode.CommandChanged += OnCommandChanged;
             _buffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
             _buffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
             _margin.OptionsClicked += OnOptionsClicked;
@@ -42,6 +43,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         internal void Disconnect()
         {
+            _buffer.CommandMode.CommandChanged -= OnCommandChanged;
             _buffer.Vim.MacroRecorder.RecordingStarted -= OnRecordingStarted;
             _buffer.Vim.MacroRecorder.RecordingStopped -= OnRecordingStopped;
         }
@@ -217,7 +219,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         {
             var propertyMap = _editorFormatMap.GetProperties(CommandMarginFormatDefinition.Name);
             _margin.TextForeground = propertyMap.GetForegroundBrush(SystemColors.WindowTextBrush);
-            _margin.TextForeground = propertyMap.GetForegroundBrush(SystemColors.WindowBrush);
+            _margin.TextBackground = propertyMap.GetBackgroundBrush(SystemColors.WindowBrush);
         }
 
         #region Event Handlers
@@ -285,6 +287,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private void OnRecordingStopped(object sender, EventArgs e)
         {
             UpdateForRecordingChanged();
+        }
+
+        private void OnCommandChanged(object sender, EventArgs e)
+        {
+            UpdateForNoEvent();
         }
 
         #endregion

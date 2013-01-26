@@ -810,7 +810,7 @@ module SnapshotPointUtil =
 
     /// Get the points on the containing line starting at the passed in value.  If the passed in start
     /// point is inside the line break, an empty sequence will be returned
-    let GetPointsOnContainingLineFrom startPoint = 
+    let GetPointsOnLineForward startPoint = 
         if IsInsideLineBreak startPoint then Seq.empty
         else 
             let line = GetContainingLine startPoint
@@ -818,7 +818,7 @@ module SnapshotPointUtil =
 
     /// Get the points on the containing line start starting at the passed in value in reverse order.  If the
     /// passed in point is inside the line break then the points of the entire line will be returned
-    let GetPointsOnContainingLineBackwardsFrom startPoint = 
+    let GetPointsOnLineBackward startPoint = 
         let line = GetContainingLine startPoint
         let span = 
             if IsInsideLineBreak startPoint then SnapshotLineUtil.GetExtent line 

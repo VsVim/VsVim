@@ -60,7 +60,7 @@ module ColumnWiseUtils =
                 //(ucs >= 0x30000 && ucs <= 0x3fffd)));
 
     /// Determines the character width when displayed, computed according to the various local settings.
-    let GetCharacterWidth c (localSettings:IVimLocalSettings) =
+    let GetCharacterWidth c (localSettings : IVimLocalSettings) =
         // TODO: for surrogate pairs, we need to be able to match characters specified as strings.
         // E.g. if System.Char.IsHighSurrogate(c) then
         //    let fullchar = point.Snapshot.GetSpan(point.Position, 1).GetText()

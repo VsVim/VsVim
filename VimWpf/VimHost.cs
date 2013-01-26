@@ -226,6 +226,11 @@ namespace Vim.UI.Wpf
 
         public abstract HostResult SplitViewVertically(ITextView value);
 
+        public virtual void VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
+        {
+
+        }
+
         /// <summary>
         /// Custom processing of an insert command is a host specific operation.  By default
         /// no custom processing is done
@@ -530,6 +535,11 @@ namespace Vim.UI.Wpf
             return IsVisible(textView);
         }
 
+        void IVimHost.VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
+        {
+            VimRcLoaded(vimRcState, localSettings, windowSettings);
+        }
+
         event EventHandler<TextViewEventArgs> IVimHost.IsVisibleChanged
         {
             add { _isVisibleChanged += value; }
@@ -537,7 +547,5 @@ namespace Vim.UI.Wpf
         }
 
         #endregion
-
-
     }
 }

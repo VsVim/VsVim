@@ -97,11 +97,11 @@ namespace Vim.UnitTest
         {
             var all = _settings.AllSettings;
             var value = all.Single(x => x.Name == GlobalSettingNames.ScrollOffsetName);
-            var prev = value.Value.AsNumberValue().Item;
+            var prev = value.Value.AsNumber().Item;
             Assert.NotEqual(42, prev);
-            Assert.True(_settings.TrySetValue(GlobalSettingNames.ScrollOffsetName, SettingValue.NewNumberValue(42)));
+            Assert.True(_settings.TrySetValue(GlobalSettingNames.ScrollOffsetName, SettingValue.NewNumber(42)));
             value = all.Single(x => x.Name == GlobalSettingNames.ScrollOffsetName);
-            Assert.Equal(prev, value.Value.AsNumberValue().Item);
+            Assert.Equal(prev, value.Value.AsNumber().Item);
         }
 
         /// <summary>
@@ -144,19 +144,19 @@ namespace Vim.UnitTest
         [Fact]
         public void TrySetValue1()
         {
-            Assert.True(_settings.TrySetValue(GlobalSettingNames.IgnoreCaseName, SettingValue.NewToggleValue(true)));
+            Assert.True(_settings.TrySetValue(GlobalSettingNames.IgnoreCaseName, SettingValue.NewToggle(true)));
             var value = _settings.GetSetting(GlobalSettingNames.IgnoreCaseName);
             Assert.True(value.IsSome());
-            Assert.Equal(true, value.Value.Value.AsToggleValue().Item);
+            Assert.Equal(true, value.Value.Value.AsToggle().Item);
         }
 
         [Fact]
         public void TrySetValue2()
         {
-            Assert.True(_settings.TrySetValue(GlobalSettingNames.ScrollOffsetName, SettingValue.NewNumberValue(42)));
+            Assert.True(_settings.TrySetValue(GlobalSettingNames.ScrollOffsetName, SettingValue.NewNumber(42)));
             var value = _settings.GetSetting(GlobalSettingNames.ScrollOffsetName);
             Assert.True(value.IsSome());
-            Assert.Equal(42, value.Value.Value.AsNumberValue().Item);
+            Assert.Equal(42, value.Value.Value.AsNumber().Item);
         }
 
         /// <summary>
@@ -168,17 +168,17 @@ namespace Vim.UnitTest
             foreach (var cur in _settings.AllSettings)
             {
                 SettingValue value = null;
-                if (cur.Kind.IsToggleKind)
+                if (cur.Kind.IsToggle)
                 {
-                    value = SettingValue.NewToggleValue(true);
+                    value = SettingValue.NewToggle(true);
                 }
-                else if (cur.Kind.IsStringKind)
+                else if (cur.Kind.IsString)
                 {
-                    value = SettingValue.NewStringValue("foo");
+                    value = SettingValue.NewString("foo");
                 }
-                else if (cur.Kind.IsNumberKind)
+                else if (cur.Kind.IsNumber)
                 {
-                    value = SettingValue.NewNumberValue(42);
+                    value = SettingValue.NewNumber(42);
                 }
                 else
                 {
@@ -195,15 +195,15 @@ namespace Vim.UnitTest
             foreach (var cur in _settings.AllSettings)
             {
                 string value = null;
-                if (cur.Kind.IsToggleKind)
+                if (cur.Kind.IsToggle)
                 {
                     value = "true";
                 }
-                else if (cur.Kind.IsStringKind)
+                else if (cur.Kind.IsString)
                 {
                     value = "hello world";
                 }
-                else if (cur.Kind.IsNumberKind)
+                else if (cur.Kind.IsNumber)
                 {
                     value = "42";
                 }
@@ -225,15 +225,15 @@ namespace Vim.UnitTest
             foreach (var cur in _settings.AllSettings)
             {
                 string value = null;
-                if (cur.Kind.IsToggleKind)
+                if (cur.Kind.IsToggle)
                 {
                     value = "true";
                 }
-                else if (cur.Kind.IsStringKind)
+                else if (cur.Kind.IsString)
                 {
                     value = "hello world";
                 }
-                else if (cur.Kind.IsNumberKind)
+                else if (cur.Kind.IsNumber)
                 {
                     value = "42";
                 }
@@ -250,14 +250,14 @@ namespace Vim.UnitTest
         public void SetByAbbreviation_Number()
         {
             Assert.True(_settings.TrySetValueFromString(NumberSetting.Abbreviation, "2"));
-            Assert.Equal(2, NumberSetting.Value.AsNumberValue().Item);
+            Assert.Equal(2, NumberSetting.Value.AsNumber().Item);
         }
 
         [Fact]
         public void SetByAbbreviation_Toggle()
         {
             Assert.True(_settings.TrySetValueFromString(ToggleSetting.Abbreviation, "true"));
-            Assert.True(ToggleSetting.Value.AsToggleValue().Item);
+            Assert.True(ToggleSetting.Value.AsToggle().Item);
         }
 
         [Fact]
@@ -268,10 +268,10 @@ namespace Vim.UnitTest
                 {
                     var setting = args.Setting;
                     Assert.Equal(ToggleSettingName, setting.Name);
-                    Assert.True(setting.AggregateValue.AsToggleValue().Item);
+                    Assert.True(setting.Value.AsToggle().Item);
                     didRun = true;
                 };
-            _settings.TrySetValue(ToggleSettingName, SettingValue.NewToggleValue(true));
+            _settings.TrySetValue(ToggleSettingName, SettingValue.NewToggle(true));
             Assert.True(didRun);
         }
 
@@ -283,7 +283,7 @@ namespace Vim.UnitTest
                 {
                     var setting = args.Setting;
                     Assert.Equal(ToggleSettingName, setting.Name);
-                    Assert.True(setting.AggregateValue.AsToggleValue().Item);
+                    Assert.True(setting.Value.AsToggle().Item);
                     didRun = true;
                 };
             _settings.TrySetValueFromString(ToggleSettingName, "true");

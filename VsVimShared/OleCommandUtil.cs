@@ -217,6 +217,20 @@ namespace VsVim
                     keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Insert);
                     kind = EditCommandKind.UserInput;
                     break;
+                case VSConstants.VSStd2KCmdID.PASTE:
+                    keyInput = KeyInput.DefaultValue;
+                    kind = EditCommandKind.Paste;
+                    break;
+                case VSConstants.VSStd2KCmdID.COMMENT_BLOCK:
+                case VSConstants.VSStd2KCmdID.COMMENTBLOCK:
+                    keyInput = KeyInput.DefaultValue;
+                    kind = EditCommandKind.Comment;
+                    break;
+                case VSConstants.VSStd2KCmdID.UNCOMMENT_BLOCK:
+                case VSConstants.VSStd2KCmdID.UNCOMMENTBLOCK:
+                    keyInput = KeyInput.DefaultValue;
+                    kind = EditCommandKind.Uncomment;
+                    break;
                 default:
                     keyInput = null;
                     kind = EditCommandKind.UserInput;
@@ -288,6 +302,10 @@ namespace VsVim
                 case VSConstants.VSStd97CmdID.GotoDefn:
                     ki = KeyInput.DefaultValue;
                     kind = EditCommandKind.GoToDefinition;
+                    break;
+                case VSConstants.VSStd97CmdID.Paste:
+                    ki = KeyInput.DefaultValue;
+                    kind = EditCommandKind.Paste;
                     break;
             }
 
@@ -382,6 +400,37 @@ namespace VsVim
             {
                 oleCommandData = OleCommandData.Empty;
                 return false;
+            }
+        }
+
+        internal static bool TryConvert(EditCommand editCommand, out OleCommandData oleCommandData)
+        {
+            switch (editCommand.EditCommandKind)
+            {
+                case EditCommandKind.GoToDefinition:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd97CmdID.GotoDecl);
+                    return true;
+                case EditCommandKind.Paste:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.PASTE);
+                    return true;
+                case EditCommandKind.Undo:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.UNDO);
+                    return true;
+                case EditCommandKind.Redo:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.REDO);
+                    return true;
+                case EditCommandKind.Comment:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.COMMENTBLOCK);
+                    return true;
+                case EditCommandKind.Uncomment:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.UNCOMMENTBLOCK);
+                    return true;
+                case EditCommandKind.UserInput:
+                    return TryConvert(editCommand.KeyInput, out oleCommandData);
+                case EditCommandKind.VisualStudioCommand:
+                default:
+                    oleCommandData = OleCommandData.Empty;
+                    return false;
             }
         }
     }

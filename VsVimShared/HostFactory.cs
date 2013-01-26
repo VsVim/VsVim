@@ -42,7 +42,7 @@ namespace VsVim
         private readonly ITextBufferFactoryService _bufferFactoryService;
         private readonly ITextEditorFactoryService _editorFactoryService;
         private readonly IEditorOptionsFactoryService _editorOptionsFactoryService;
-        private readonly IResharperUtil  _resharperUtil;
+        private readonly IResharperUtil _resharperUtil;
         private readonly IDisplayWindowBrokerFactoryService _displayWindowBrokerFactoryServcie;
         private readonly IVim _vim;
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
@@ -84,34 +84,15 @@ namespace VsVim
             _bufferCoordinatorFactory = bufferCoordinatorFactory;
             _keyUtil = keyUtil;
 
-            _vim.AutoLoadVimRc = false;
-
 #if DEBUG
             VimTrace.TraceSwitch.Level = TraceLevel.Info;
 #endif
         }
 
-        private void MaybeLoadVimRc()
-        {
-            if (!_vim.IsVimRcLoaded && String.IsNullOrEmpty(_vim.GlobalSettings.VimRcPaths))
-            {
-                // Need to pass the LoadVimRc call a function to create an ITextView that 
-                // can be used to load the settings against.  We don't want this ITextView 
-                // coming back through TextViewCreated so give it a ITextViewRole that won't
-                // hit our filter 
-                if (!_vim.LoadVimRc())
-                {
-                    // If no VimRc file is loaded add a couple of sanity settings
-                    _vim.VimRcLocalSettings.AutoIndent = true;
-                }
-            }
-        }
+        #region IWpfTextViewCreationListener
 
         void IWpfTextViewCreationListener.TextViewCreated(IWpfTextView textView)
         {
-            // Load the VimRC file if we haven't tried yet
-            MaybeLoadVimRc();
-
             // Create the IVimBuffer after loading the VimRc so that it gets the appropriate
             // settings
             var buffer = _vim.GetOrCreateVimBuffer(textView);
@@ -127,6 +108,10 @@ namespace VsVim
             _bufferMap[buffer] = bufferData;
         }
 
+        #endregion
+
+        #region IVimBufferCreationListener
+
         void IVimBufferCreationListener.VimBufferCreated(IVimBuffer buffer)
         {
             var textView = buffer.TextView;
@@ -136,6 +121,10 @@ namespace VsVim
                 _bufferMap.Remove(buffer);
             };
         }
+
+        #endregion
+
+        #region IVsTextViewCreationListener
 
         /// <summary>
         /// Raised when an IVsTextView is created.  When this occurs it means a previously created
@@ -166,16 +155,19 @@ namespace VsVim
             {
                 // During the lifetime of an IVimBuffer the local and editor settings are kept
                 // in sync for tab values.  At startup though a decision has to be made about which
-                // settings should "win" and this is controlled by 'UseEditorSettings'.
+                // settings should "win"
                 //
                 // Visual Studio of course makes this difficult.  It will create an ITextView and 
                 // then later force all of it's language preference settings down on the ITextView
                 // if it does indeed have an IVsTextView.  This setting will inherently overwrite
-                // the custom settings with the stored Visual Studio settings.  
+                // the vsvim settings with the stored Visual Studio settings.  
                 //
                 // To work around this we store the original values and reset them here.  This event
                 // is raised after this propagation occurs so we can put them back
-                if (!_vim.GlobalSettings.UseEditorSettings)
+                //
+                // This is only done if the user provided an explicit VimRc file.  If none was provided
+                // then we let the Visual Studio savedsettings win instead 
+                if (_vim.VimRcState.IsLoadSucceeded)
                 {
                     buffer.LocalSettings.TabStop = bufferData.TabStop;
                     buffer.LocalSettings.ShiftWidth = bufferData.ShiftWidth;
@@ -207,7 +199,7 @@ namespace VsVim
             _protectedOperations.BeginInvoke(install);
         }
 
-
+        #endregion
     }
 
 }

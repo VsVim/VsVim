@@ -1,9 +1,9 @@
 ﻿using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using Xunit;
 using Vim.Extensions;
-using Vim.UnitTest.Mock;
 using Vim.UI.Wpf.Implementation.BlockCaret;
+using Vim.UnitTest.Mock;
+using Xunit;
 
 namespace Vim.UI.Wpf.UnitTest
 {
@@ -192,9 +192,7 @@ namespace Vim.UI.Wpf.UnitTest
             var setting = new Setting(
                 GlobalSettingNames.CaretOpacityName,
                 "",
-                SettingKind.StringKind,
-                SettingValue.NewStringValue(""),
-                SettingValue.NewStringValue(""),
+                LiveSettingValue.NewString("", ""),
                 true);
             _settings.SetupGet(x => x.CaretOpacity).Returns(1);
             _settings.Raise(x => x.SettingChanged += null, null, new SettingEventArgs(setting));

@@ -315,6 +315,26 @@ namespace Vim.UnitTest
 
         public sealed class Move : VisualModeIntegrationTest
         {
+            [Fact]
+            public void HomeToStartOfLine()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(2);
+                _vimBuffer.ProcessNotation("v<Home>");
+                Assert.Equal("cat", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(0, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void HomeToStartOfLineViaKeypad()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(2);
+                _vimBuffer.ProcessNotation("v<kHome>");
+                Assert.Equal("cat", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(0, _textView.GetCaretPoint());
+            }
+
             /// <summary>
             /// Jump to a mark and make sure that the selection correctly updates
             /// </summary>

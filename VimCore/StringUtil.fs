@@ -1,8 +1,10 @@
 ﻿#light
 
 namespace Vim
+open System
 open StringBuilderExtensions
 
+// TODO: Use pascal case in this type
 module internal StringUtil =
 
     [<CompiledName("Empty")>]
@@ -42,6 +44,21 @@ module internal StringUtil =
             for i = 1 to count do
                 buffer.AppendString value
             buffer.ToString()
+
+    [<CompiledName("ReplaceNoCase")>]
+    let replaceNoCase (source : string) (toFind : string) (toReplace : string) = 
+        let builder = System.Text.StringBuilder()
+        let mutable lastIndex = 0
+        let mutable index = source.IndexOf(toFind, StringComparison.OrdinalIgnoreCase)
+        while index >= 0 do
+            builder.AppendSubstring source lastIndex (index - lastIndex)
+            builder.AppendString toReplace 
+            lastIndex <- index + toFind.Length
+            index <- source.IndexOf(toFind, lastIndex, StringComparison.OrdinalIgnoreCase)
+
+        if lastIndex < source.Length then
+            builder.AppendSubstring source lastIndex (source.Length - lastIndex)
+        builder.ToString()
 
     [<CompiledName("RepeatChar")>]
     let repeatChar count (value : char) =

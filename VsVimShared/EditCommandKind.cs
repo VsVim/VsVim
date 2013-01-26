@@ -33,6 +33,21 @@ namespace VsVim
         /// <summary>
         /// The goto definition command
         /// </summary>
-        GoToDefinition
+        GoToDefinition,
+
+        /// <summary>
+        /// Comment the selection
+        /// </summary>
+        Comment,
+
+        /// <summary>
+        /// Uncomment the selection
+        /// </summary>
+        Uncomment,
+
+        /// <summary>
+        /// The paste command
+        /// </summary>
+        Paste,
     }
 }
