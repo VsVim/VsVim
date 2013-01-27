@@ -35,6 +35,7 @@ namespace Vim.UnitTest.Mock
         public ITextBuffer LastSaved { get; set; }
         public ITextView LastClosed { get; set; }
         public VimRcState VimRcState { get; set; }
+        public string FileName { get; set; } 
 
         /// <summary>
         /// Data from the last GoToNextTab call
@@ -78,6 +79,7 @@ namespace Vim.UnitTest.Mock
             IsDirtyFunc = null;
             LastClosed = null;
             LastSaved = null;
+            FileName = string.Empty;
         }
 
         void IVimHost.Beep()
@@ -99,7 +101,7 @@ namespace Vim.UnitTest.Mock
 
         string IVimHost.GetName(ITextBuffer textBuffer)
         {
-            return String.Empty;
+            return FileName ?? String.Empty;
         }
 
         void IVimHost.ShowOpenFileDialog()

@@ -494,7 +494,7 @@ type Interpreter
         RunResult.Completed
 
     /// Display the specified marks
-    member x.RunDisplayMarks marks = 
+    member x.RunDisplayMarks (marks : Mark list) = 
         if not (List.isEmpty marks) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "Specific marks")
         else
