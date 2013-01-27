@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using EditorUtils;
+using Microsoft.FSharp.Collections;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
@@ -135,6 +136,45 @@ namespace Vim.UnitTest
                     new[] { "cat", "tree", "dog", "fish", "bear", "tree" },
                     _textBuffer.GetLines().ToArray());
                 Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+        }
+
+        public sealed class DisplayMarkTest : InterpreterTest
+        {
+            static readonly FSharpList<Mark> EmptyList = FSharpList<Mark>.Empty;
+
+            public DisplayMarkTest()
+            {
+                VimHost.FileName = "test.txt";
+            }
+
+            public void Verify(char mark, int line, int column, int index = 1)
+            {
+                var msg = String.Format(" {0}   {1,5}{2,5} test.txt", mark, line, column);
+                Assert.Equal(msg, _statusUtil.LastStatusLong[index]);
+            }
+
+            [Fact]
+            public void SingleLocalMark()
+            {
+                Create("cat dog");
+                _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.C), 0, 1);
+                _interpreter.RunDisplayMarks(EmptyList);
+                Verify('c', 1, 1);
+            }
+
+            /// <summary>
+            /// The local marks should be displayed in alphabetical order 
+            /// </summary>
+            [Fact]
+            public void MultipleLocalMarks()
+            {
+                Create("cat dog");
+                _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.B), 0, 1);
+                _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.A), 0, 2);
+                _interpreter.RunDisplayMarks(EmptyList);
+                Verify('a', line: 1, column: 2, index: 1);
+                Verify('b', line: 1, column: 1, index: 2);
             }
         }
 
@@ -614,7 +654,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class Registers : InterpreterTest
+        public sealed class RegisterTest : InterpreterTest
         {
             private void AssertLineCore(string line, bool doFind)
             {
