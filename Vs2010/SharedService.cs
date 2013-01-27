@@ -22,65 +22,27 @@ namespace VsVim.Vs2010
             _editorAdaptersFactoryService = _vsAdapter.EditorAdapter;
         }
 
-        /// <summary>
-        /// Go to the 'count' tab in the given direction.  If the count exceeds the count in
-        /// the given direction then it should wrap around to the end of the list of items
-        /// </summary>
-        internal void GoToNextTab(Vim.Path direction, int count)
-        {
-            // First get the index of the current tab so we know where we are incrementing
-            // from.  Make sure to check that our view is actually a part of the active
-            // views
-            var children = GetActiveViews();
-            var activeView = ViewManager.Instance.ActiveView;
-            var index = children.IndexOf(activeView);
-            if (index == -1)
-            {
-                return;
-            }
-
-            count = count % children.Count;
-            if (direction.IsForward)
-            {
-                index += count;
-                index %= children.Count;
-            }
-            else
-            {
-                index -= count;
-                if (index < 0)
-                {
-                    index += children.Count;
-                }
-            }
-
-            children[index].ShowInFront();
-        }
-
         internal void GoToTab(int index)
         {
-            View targetView;
-            var children = GetActiveViews();
+            GetActiveViews()[index].ShowInFront();
+        }
+
+        internal WindowFrameState GetWindowFrameState()
+        {
+            var activeView = ViewManager.Instance.ActiveView;
+            if (activeView == null)
+            {
+                return WindowFrameState.Default;
+            }
+
+            var list = GetActiveViews();
+            var index = list.IndexOf(activeView);
             if (index < 0)
             {
-                targetView = children[children.Count - 1];
-            }
-            else if (index == 0)
-            {
-                targetView = children[0];
-            }
-            else
-            {
-                index -= 1;
-                targetView = index < children.Count ? children[index] : null;
+                return WindowFrameState.Default;
             }
 
-            if (targetView == null)
-            {
-                return;
-            }
-
-            targetView.ShowInFront();
+            return new WindowFrameState(index, list.Count);
         }
 
         /// <summary>
@@ -103,52 +65,17 @@ namespace VsVim.Vs2010
             return group.VisibleChildren.OfType<View>().ToList();
         }
 
-        internal bool TryGetFocusedTextView(out ITextView textView)
+        internal bool IsActiveWindowFrame(IVsWindowFrame vsWindowFrame)
         {
-            var activeView = ViewManager.Instance.ActiveView;
-            var result = _vsAdapter.GetWindowFrames();
-            if (result.IsError)
-            {
-                textView = null;
-                return false;
-            }
-
-            IVsWindowFrame activeWindowFrame = null;
-            foreach (var vsWindowFrame in result.Value)
-            {
-                var frame = vsWindowFrame as WindowFrame;
-                if (frame != null && frame.FrameView == activeView)
-                {
-                    activeWindowFrame = frame;
-                    break;
-                }
-            }
-
-            if (activeWindowFrame == null)
-            {
-                textView = null;
-                return false;
-            }
-
-            // TODO: Should try and pick the ITextView which is actually focussed as 
-            // there could be several in a split screen
-            try
-            {
-                textView = activeWindowFrame.GetCodeWindow().Value.GetPrimaryTextView(_editorAdaptersFactoryService).Value;
-                return textView != null;
-            }
-            catch
-            {
-                textView = null;
-                return false;
-            }
+            var frame = vsWindowFrame as WindowFrame;
+            return frame != null && frame.FrameView == ViewManager.Instance.ActiveView;
         }
 
         #region ISharedService
 
-        void ISharedService.GoToNextTab(Path path, int count)
+        WindowFrameState ISharedService.GetWindowFrameState()
         {
-            GoToNextTab(path, count);
+            return GetWindowFrameState();
         }
 
         void ISharedService.GoToTab(int index)
@@ -156,11 +83,12 @@ namespace VsVim.Vs2010
             GoToTab(index);
         }
 
-        bool ISharedService.TryGetFocusedTextView(out ITextView textView)
+        bool ISharedService.IsActiveWindowFrame(IVsWindowFrame vsWindowFrame)
         {
-            return TryGetFocusedTextView(out textView);
+            return IsActiveWindowFrame(vsWindowFrame);
         }
 
         #endregion
     }
+
 }

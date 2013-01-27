@@ -14,6 +14,7 @@ using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
+using Microsoft.VisualStudio.Shell.Interop;
 
 namespace VsVim
 {
@@ -287,12 +288,56 @@ namespace VsVim
         /// </summary>
         public override void GoToNextTab(Vim.Path direction, int count)
         {
-            _sharedService.GoToNextTab(direction, count);
+            // First get the index of the current tab so we know where we are incrementing
+            // from.  Make sure to check that our view is actually a part of the active
+            // views
+            var windowFrameState = _sharedService.GetWindowFrameState();
+            var index = windowFrameState.ActiveWindowFrameIndex;
+            if (index == -1)
+            {
+                return;
+            }
+
+            var childCount = windowFrameState.WindowFrameCount;
+            count = count % childCount;
+            if (direction.IsForward)
+            {
+                index += count;
+                index %= childCount;
+            }
+            else
+            {
+                index -= count;
+                if (index < 0)
+                {
+                    index += childCount;
+                }
+            }
+
+            _sharedService.GoToTab(index);
         }
 
         public override void GoToTab(int index)
         {
-            _sharedService.GoToTab(index);
+            var windowFrameState = _sharedService.GetWindowFrameState();
+            var realIndex = -1;
+            if (index < 0)
+            {
+                realIndex = windowFrameState.WindowFrameCount - 1;
+            }
+            else if (index == 0)
+            {
+                realIndex = 0;
+            }
+            else
+            {
+                realIndex = index - 1;
+            }
+
+            if (realIndex >= 0 && realIndex < windowFrameState.WindowFrameCount)
+            {
+                _sharedService.GoToTab(realIndex);
+            }
         }
 
         public override void GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
@@ -316,7 +361,32 @@ namespace VsVim
 
         public override bool TryGetFocusedTextView(out ITextView textView)
         {
-            return _sharedService.TryGetFocusedTextView(out textView);
+            var result = _vsAdapter.GetWindowFrames();
+            if (result.IsError)
+            {
+                textView = null;
+                return false;
+            }
+
+            var activeWindowFrame = result.Value.FirstOrDefault(_sharedService.IsActiveWindowFrame);
+            if (activeWindowFrame == null)
+            {
+                textView = null;
+                return false;
+            }
+
+            // TODO: Should try and pick the ITextView which is actually focussed as 
+            // there could be several in a split screen
+            try
+            {
+                textView = activeWindowFrame.GetCodeWindow().Value.GetPrimaryTextView(_editorAdaptersFactoryService).Value;
+                return textView != null;
+            }
+            catch
+            {
+                textView = null;
+                return false;
+            }
         }
 
         public override void Quit()
