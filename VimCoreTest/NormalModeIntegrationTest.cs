@@ -3597,6 +3597,38 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('i'));
                 Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
             }
+
+            [Fact]
+            public void LocalDeclarationShouldAlterJumpList()
+            {
+                Create("cat", "dog", "fish", "tree");
+                _textView.MoveCaretToLine(1);
+                _vimHost.GoToLocalDeclarationFunc = (textView, arg) =>
+                    {
+                        _textView.MoveCaretToLine(0);
+                        return true;
+                    };
+                _vimBuffer.Process("gd");
+                Assert.Equal(0, _textView.GetCaretPoint());
+                _vimBuffer.Process("``");
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void GlobalDeclarationShouldAlterJumpList()
+            {
+                Create("cat", "dog", "fish", "tree");
+                _textView.MoveCaretToLine(1);
+                _vimHost.GoToGlobalDeclarationFunc = (textView, arg) =>
+                    {
+                        _textView.MoveCaretToLine(0);
+                        return true;
+                    };
+                _vimBuffer.Process("gD");
+                Assert.Equal(0, _textView.GetCaretPoint());
+                _vimBuffer.Process("``");
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            }
         }
 
         public sealed class MotionMiscTest : NormalModeIntegrationTest

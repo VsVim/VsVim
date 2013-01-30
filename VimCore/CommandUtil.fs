@@ -1235,7 +1235,7 @@ type internal CommandUtil
                     |> VirtualSnapshotPointUtil.OfPoint
 
             _commonOperations.MoveCaretToPointAndEnsureVisible point.Position
-            _jumpList.Add before |> ignore
+            _jumpList.Add before
             CommandResult.Completed ModeSwitch.NoSwitch
 
         // Called when the mark is not set
@@ -1253,7 +1253,7 @@ type internal CommandUtil
                 if point.Position.Snapshot.TextBuffer = _textBuffer then
                     jumpLocal point
                 elif _commonOperations.NavigateToPoint point then
-                    _jumpList.Add before |> ignore
+                    _jumpList.Add before
                     CommandResult.Completed ModeSwitch.NoSwitch
                 else
                     _statusUtil.OnError Resources.Common_MarkNotSet
