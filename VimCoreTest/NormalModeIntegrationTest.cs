@@ -3541,6 +3541,64 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class JumpListTest : NormalModeIntegrationTest
+        {
+            /// <summary>
+            /// A yank of a jump motion should update the jump list
+            /// </summary>
+            [Fact]
+            public void YankMotionShouldUpdate()
+            {
+                Create("cat", "dog", "cat");
+                _vimBuffer.Process("y*");
+                Assert.Equal(_textView.GetPoint(0), _jumpList.Jumps.First().Position);
+                Assert.Equal("cat" + Environment.NewLine + "dog" + Environment.NewLine, UnnamedRegister.StringValue);
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Doing a * on a word that doesn't even match should still update the jump list
+            /// </summary>
+            [Fact]
+            public void NextWordWithNoMatch()
+            {
+                Create("cat", "dog", "fish");
+                var didHit = false;
+                _vimBuffer.WarningMessage +=
+                    (_, args) =>
+                    {
+                        Assert.Equal(Resources.Common_SearchForwardWrapped, args.Message);
+                        didHit = true;
+                    };
+                _assertOnWarningMessage = false;
+                _vimBuffer.Process("*");
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
+                Assert.Equal(_textView.GetPoint(0), _textView.GetCaretPoint());
+                _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('i'));
+                Assert.Equal(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+                Assert.True(didHit);
+            }
+
+            /// <summary>
+            /// If a jump to previous occurs on a location which is not in the list and we
+            /// are not already traversing the jump list then the location is added
+            /// </summary>
+            [Fact]
+            public void FromLocationNotInList()
+            {
+                Create("cat", "dog", "fish");
+                _jumpList.Add(_textView.GetPoint(0));
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
+                Assert.Equal(_textView.GetLine(0).Start, _textView.GetCaretPoint());
+                Assert.Equal(1, _jumpList.CurrentIndex.Value);
+                Assert.Equal(2, _jumpList.Jumps.Length);
+                _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('i'));
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+        }
+
         public sealed class MotionMiscTest : NormalModeIntegrationTest
         {
             /// <summary>
@@ -4654,61 +4712,6 @@ namespace Vim.UnitTest
                 _textView.MoveCaretToLine(1);
                 _vimBuffer.Process("ddu");
                 Assert.Equal(new[] { "cat", "dog", "fish" }, _textBuffer.GetLines());
-                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// A yank of a jump motion should update the jump list
-            /// </summary>
-            [Fact]
-            public void JumpList_YankMotionShouldUpdate()
-            {
-                Create("cat", "dog", "cat");
-                _vimBuffer.Process("y*");
-                Assert.Equal(_textView.GetPoint(0), _jumpList.Jumps.First().Position);
-                Assert.Equal("cat" + Environment.NewLine + "dog" + Environment.NewLine, UnnamedRegister.StringValue);
-                Assert.Equal(0, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// Doing a * on a word that doesn't even match should still update the jump list
-            /// </summary>
-            [Fact]
-            public void JumpList_NextWordWithNoMatch()
-            {
-                Create("cat", "dog", "fish");
-                var didHit = false;
-                _vimBuffer.WarningMessage +=
-                    (_, args) =>
-                    {
-                        Assert.Equal(Resources.Common_SearchForwardWrapped, args.Message);
-                        didHit = true;
-                    };
-                _assertOnWarningMessage = false;
-                _vimBuffer.Process("*");
-                _textView.MoveCaretToLine(2);
-                _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
-                Assert.Equal(_textView.GetPoint(0), _textView.GetCaretPoint());
-                _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('i'));
-                Assert.Equal(_textView.GetLine(2).Start, _textView.GetCaretPoint());
-                Assert.True(didHit);
-            }
-
-            /// <summary>
-            /// If a jump to previous occurs on a location which is not in the list and we
-            /// are not already traversing the jump list then the location is added
-            /// </summary>
-            [Fact]
-            public void JumpList_FromLocationNotInList()
-            {
-                Create("cat", "dog", "fish");
-                _jumpList.Add(_textView.GetPoint(0));
-                _textView.MoveCaretToLine(1);
-                _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
-                Assert.Equal(_textView.GetLine(0).Start, _textView.GetCaretPoint());
-                Assert.Equal(1, _jumpList.CurrentIndex.Value);
-                Assert.Equal(2, _jumpList.Jumps.Length);
-                _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('i'));
                 Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
             }
 
