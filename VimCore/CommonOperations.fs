@@ -501,7 +501,7 @@ type internal CommonOperations
     member x.GoToDefinition() =
         let before = TextViewUtil.GetCaretPoint _textView
         if _vimHost.GoToDefinition() then
-            _jumpList.Add before |> ignore
+            _jumpList.Add before
             Result.Succeeded
         else
             match _wordUtil.GetFullWordSpan WordKind.BigWord _textView.Caret.Position.BufferPosition with
@@ -511,10 +511,18 @@ type internal CommonOperations
             | None ->  Result.Failed(Resources.Common_GotoDefNoWordUnderCursor) 
 
     member x.GoToLocalDeclaration() = 
-        if not (_vimHost.GoToLocalDeclaration _textView x.WordUnderCursorOrEmpty) then _vimHost.Beep()
+        let caretPoint = x.CaretPoint
+        if _vimHost.GoToLocalDeclaration _textView x.WordUnderCursorOrEmpty then
+            _jumpList.Add caretPoint
+        else
+            _vimHost.Beep()
 
     member x.GoToGlobalDeclaration () = 
-        if not (_vimHost.GoToGlobalDeclaration _textView x.WordUnderCursorOrEmpty) then _vimHost.Beep()
+        let caretPoint = x.CaretPoint
+        if _vimHost.GoToGlobalDeclaration _textView x.WordUnderCursorOrEmpty then 
+            _jumpList.Add caretPoint
+        else
+            _vimHost.Beep()
 
     member x.GoToFile () = 
         x.CheckDirty (fun () ->

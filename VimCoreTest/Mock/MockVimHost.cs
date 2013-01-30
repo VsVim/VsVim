@@ -16,6 +16,8 @@ namespace Vim.UnitTest.Mock
         public int GoToDefinitionCount { get; set; }
         public bool GoToFileReturn { get; set; }
         public bool GoToDefinitionReturn { get; set; }
+        public Func<ITextView, string, bool> GoToLocalDeclarationFunc { get; set; }
+        public Func<ITextView, string, bool> GoToGlobalDeclarationFunc { get; set; }
         public bool IsCompletionWindowActive { get; set; }
         public int DismissCompletionWindowCount { get; set; }
         public VirtualSnapshotPoint NavigateToData { get; set; }
@@ -67,6 +69,8 @@ namespace Vim.UnitTest.Mock
             IsTextViewVisible = null;
             _isVisibleChanged = null;
             TryCustomProcessFunc = null;
+            GoToLocalDeclarationFunc = delegate { throw new NotImplementedException(); };
+            GoToGlobalDeclarationFunc = delegate { throw new NotImplementedException(); };
             CreateHiddenTextViewFunc = delegate { throw new NotImplementedException(); };
             RunCommandFunc = delegate { throw new NotImplementedException(); };
             RunVisualStudioCommandFunc = delegate { throw new NotImplementedException(); };
@@ -146,12 +150,12 @@ namespace Vim.UnitTest.Mock
 
         bool IVimHost.GoToGlobalDeclaration(ITextView value, string target)
         {
-            throw new NotImplementedException();
+            return GoToGlobalDeclarationFunc(value, target);
         }
 
         bool IVimHost.GoToLocalDeclaration(ITextView value, string target)
         {
-            throw new NotImplementedException();
+            return GoToLocalDeclarationFunc(value, target);
         }
 
         void IVimHost.FormatLines(ITextView value, SnapshotLineRange range)
