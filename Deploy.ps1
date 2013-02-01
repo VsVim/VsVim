@@ -38,7 +38,7 @@ function test-vsixcontents() {
     $dest.Copyhere($items, 20)
 
     $files = gci $target | %{ $_.Name }
-    if ($files.Count -ne 14) { 
+    if ($files.Count -ne 13) { 
         write-host "Wrong number of files in VSIX. Found ..."
         foreach ($file in $files) {
             write-host "`t$file"
