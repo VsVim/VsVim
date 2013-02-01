@@ -38,7 +38,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         {
             var buffer = _vim.GetOrCreateVimBuffer(wpfTextViewHost.TextView);
             var editorFormatMap = _editorFormatMapService.GetEditorFormatMap(wpfTextViewHost.TextView);
-            return new CommandMargin(buffer, editorFormatMap, _optionsProviderFactories);
+			return new CommandMargin(wpfTextViewHost.TextView.VisualElement, buffer, editorFormatMap, _optionsProviderFactories);
         }
     }
 }

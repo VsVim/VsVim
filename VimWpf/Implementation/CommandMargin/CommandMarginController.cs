@@ -35,11 +35,29 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _buffer.CommandMode.CommandChanged += OnCommandChanged;
             _buffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
             _buffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
-            _margin.OptionsClicked += OnOptionsClicked;
+			_margin.OptionsClicked += OnOptionsClicked;
+			_margin.CancelCommandEdition += OnCancelCommandEdition;
+			_margin.RunCommandEdition += OnRunCommandEdition;
+			_margin.HistoryGoPrevious += OnHistoryGoPrevious;
+			_margin.HistoryGoNext += OnHistoryGoNext;
             _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
             UpdateForRecordingChanged();
             UpdateTextColor();
         }
+        
+        /// <summary>
+        /// We need to hold a reference to Text Editor visual element.
+		/// TODO: maybe this property could be available through IVimBuffer.
+        /// </summary>
+		public FrameworkElement ParentVisualElement { get; set; }
+
+		private void FocusEditor()
+		{
+			if (null != ParentVisualElement)
+			{
+				ParentVisualElement.Focus();
+			}
+		}
 
         internal void Disconnect()
         {
@@ -101,6 +119,10 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     oneTimeArgument = "replace";
                 }
             }
+
+			// Check if we can enable the command line to accept user input
+			var search = _buffer.IncrementalSearch;
+			_margin.IsCommandEditionDisable = mode.ModeKind != ModeKind.Command && !(search.InSearch && search.CurrentSearchData.IsSome());
 
             switch (mode.ModeKind)
             {
@@ -168,14 +190,19 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             {
                 var data = search.CurrentSearchData.Value;
                 var prefix = data.Kind.IsAnyForward ? "/" : "?";
-                _margin.StatusLine = prefix + data.Pattern;
+				//TODO: Workaround to fix strange character when pressing <Home>...
+				_margin.StatusLine = prefix + data.Pattern.Trim('\0');
+				_margin.IsCommandEditionDisable = false;
                 return;
             }
+
+			_margin.IsCommandEditionDisable = _buffer.ModeKind != ModeKind.Command;
 
             switch (_buffer.ModeKind)
             {
                 case ModeKind.Command:
-                    _margin.StatusLine = ":" + _buffer.CommandMode.Command;
+					//TODO: Workaround to fix strange character when pressing <Home>...
+					_margin.StatusLine = ":" + _buffer.CommandMode.Command.Trim('\0'); ;
                     break;
                 case ModeKind.Normal:
                     _margin.StatusLine = _buffer.NormalMode.Command;
@@ -224,6 +251,38 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         #region Event Handlers
 
+		void OnHistoryGoPrevious(object sender, EventArgs e)
+		{
+			_buffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Up));
+		}
+
+		void OnHistoryGoNext(object sender, EventArgs e)
+		{
+			_buffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Down));
+		}
+
+		void OnCancelCommandEdition(object sender, EventArgs e)
+		{
+			_buffer.Process(KeyInputUtil.EscapeKey);
+
+			FocusEditor();
+		}
+
+		void OnRunCommandEdition(object sender, EventArgs e)
+		{
+			_buffer.Process(KeyInputUtil.EscapeKey);
+
+			var input = (e as CommandMarginEventArgs).Command;
+
+			foreach (var c in input)
+			{
+				var i = KeyInputUtil.CharToKeyInput(c);
+				_buffer.Process(i);
+			}
+
+			FocusEditor();
+		}
+
         private void OnSwitchMode(object sender, SwitchModeEventArgs args)
         {
             if (_inKeyInputEvent)
@@ -244,6 +303,25 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private void OnKeyInputEnd(object sender, KeyInputEventArgs args)
         {
             KeyInputEventComplete();
+
+			if (!_margin.IsCommandEditionDisable)
+			{
+				switch (args.KeyInput.Key)
+				{
+                    // Enable command line edition
+					case VimKey.Home:
+						_margin.FocusCommandLine(false);
+						break;
+					case VimKey.Left:
+						_margin.FocusCommandLine(true);
+						break;
+                    // User is navigation through history, move caret to the end of the entry
+					case VimKey.Up:
+					case VimKey.Down:
+						_margin.UpdateCaretPosition(true);
+						break;
+				}
+			}
         }
 
         private void OnStatusMessage(object sender, StringEventArgs args)
