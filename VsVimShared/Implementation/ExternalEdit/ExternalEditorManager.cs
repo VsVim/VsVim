@@ -27,7 +27,9 @@ namespace VsVim.Implementation.ExternalEdit
             _adapterList = adapters.ToList();
         }
 
-        public void VimBufferCreated(IVimBuffer vimBuffer)
+        #region IVimBufferCreationListener
+
+        void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
         {
             var taggerList = new List<ITagger<ITag>>();
             var bufferAdapterList = new List<IExternalEditAdapter>();
@@ -48,14 +50,21 @@ namespace VsVim.Implementation.ExternalEdit
 
             if (bufferAdapterList.Count > 0)
             {
-                _monitorMap[vimBuffer] = new ExternalEditMonitor(
+                var externalEditMonitor = new ExternalEditMonitor(
                     vimBuffer,
                     _protectedOperations,
                     _vsAdapter.GetTextLines(vimBuffer.TextBuffer),
                     taggerList.ToReadOnlyCollectionShallow(),
                     bufferAdapterList.ToReadOnlyCollectionShallow());
-                vimBuffer.Closed += delegate { _monitorMap.Remove(vimBuffer); };
+                _monitorMap[vimBuffer] = externalEditMonitor;
+                vimBuffer.Closed += delegate 
+                { 
+                    _monitorMap.Remove(vimBuffer);
+                    externalEditMonitor.Close();
+                };
             }
         }
+
+        #endregion
     }
 }
