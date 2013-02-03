@@ -39,12 +39,16 @@
             />
 
         <TextBox 
+            x:Name="commandLineInput"
             Grid.Row="0"
             Grid.Column="1"
             Text="{Binding Path=StatusLine}" 
-            IsReadOnly="True"
+            IsReadOnly="{Binding Path=IsCommandEditionDisable}"
             Foreground="{Binding Path=TextForeground}"
             Background="{Binding Path=TextBackground}"
+            PreviewKeyDown="commandLineInput_PreviewKeyDown"
+            TextChanged="commandLineInput_TextChanged"
+            SelectionChanged="commandLineInput_SelectionChanged"
             />
 
         <Button
