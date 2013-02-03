@@ -1,6 +1,7 @@
 ﻿
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Shell.Interop;
 
 namespace VsVim.Implementation.SharedService
 {
@@ -8,9 +9,9 @@ namespace VsVim.Implementation.SharedService
     {
         private sealed class DefaultSharedService : ISharedService
         {
-            void ISharedService.GoToNextTab(Vim.Path path, int count)
+            WindowFrameState ISharedService.GetWindowFrameState()
             {
-
+                return WindowFrameState.Default;
             }
 
             void ISharedService.GoToTab(int index)
@@ -18,9 +19,8 @@ namespace VsVim.Implementation.SharedService
 
             }
 
-            bool ISharedService.TryGetFocusedTextView(out ITextView textView)
+            bool ISharedService.IsActiveWindowFrame(IVsWindowFrame vsWindowFrame)
             {
-                textView = null;
                 return false;
             }
         }

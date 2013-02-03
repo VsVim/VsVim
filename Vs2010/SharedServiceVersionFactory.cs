@@ -1,10 +1,6 @@
 ﻿using System.ComponentModel.Composition;
 
-#if DEV10
-namespace VsVim.Dev10
-#else
-namespace VsVim.Dev11
-#endif
+namespace VsVim.Vs2010
 {
     [Export(typeof(ISharedServiceVersionFactory))]
     internal sealed class SharedServiceVersionFactory : ISharedServiceVersionFactory
@@ -21,11 +17,7 @@ namespace VsVim.Dev11
 
         VisualStudioVersion ISharedServiceVersionFactory.Version
         {
-#if DEV10
-            get { return VisualStudioVersion.Dev10; }
-#else
-            get { return VisualStudioVersion.Dev11; }
-#endif
+            get { return VisualStudioVersion.Vs2010; }
         }
 
         ISharedService ISharedServiceVersionFactory.Create()

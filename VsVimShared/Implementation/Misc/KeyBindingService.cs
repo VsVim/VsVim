@@ -23,7 +23,7 @@ namespace VsVim.Implementation.Misc
         private readonly IVsShell _vsShell;
         private readonly IOptionsDialogService _optionsDialogService;
         private readonly IProtectedOperations _protectedOperations;
-        private readonly ILegacySettings _legacySettings;
+        private readonly IVimApplicationSettings _vimApplicationSettings;
         private Lazy<HashSet<string>> _importantScopeSet;
         private ConflictingKeyBindingState _state;
         private CommandKeyBindingSnapshot _snapshot;
@@ -34,13 +34,13 @@ namespace VsVim.Implementation.Misc
         }
 
         [ImportingConstructor]
-        internal KeyBindingService(SVsServiceProvider serviceProvider, IOptionsDialogService service, [EditorUtilsImport] IProtectedOperations protectedOperations, ILegacySettings legacySettings)
+        internal KeyBindingService(SVsServiceProvider serviceProvider, IOptionsDialogService service, [EditorUtilsImport] IProtectedOperations protectedOperations, IVimApplicationSettings vimApplicationSettings)
         {
             _dte = serviceProvider.GetService<SDTE, _DTE>();
             _vsShell = serviceProvider.GetService<SVsShell, IVsShell>();
             _optionsDialogService = service;
             _protectedOperations = protectedOperations;
-            _legacySettings = legacySettings;
+            _vimApplicationSettings = vimApplicationSettings;
             _importantScopeSet = new Lazy<HashSet<string>>(CreateImportantScopeSet);
         }
 
@@ -175,8 +175,8 @@ namespace VsVim.Implementation.Misc
         /// </summary>
         internal List<CommandKeyBinding> FindRemovedKeyBindings(CommandsSnapshot commandsSnapshot)
         {
-            return _legacySettings
-                .FindKeyBindingsMarkedAsRemoved(commandsSnapshot)
+            return _vimApplicationSettings
+                .RemovedBindings
                 .Where(x => !commandsSnapshot.IsKeyBindingActive(x.KeyBinding))
                 .ToList();
         }
@@ -229,7 +229,7 @@ namespace VsVim.Implementation.Misc
         /// <summary>
         /// Get the localized names of the scopes who's key bindings we find interesting.  This is 
         /// a fairly unpretty way of doing this.  Yet it's the only known way to achieve this in 
-        /// Dev10.  
+        /// Vs 2010.  
         /// </summary>
         private HashSet<string> CreateImportantScopeSet()
         {
@@ -241,7 +241,7 @@ namespace VsVim.Implementation.Misc
                     {
                         var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                        // For "Global".  The id in the registry here is incorrect for Dev10 
+                        // For "Global".  The id in the registry here is incorrect for Vs 2010
                         // so hard code the known value
                         set.Add(GetKeyBindingScopeName(
                             keyBindingsKey,
@@ -357,7 +357,7 @@ namespace VsVim.Implementation.Misc
             {
                 if (ConflictingKeyBindingState == ConflictingKeyBindingState.HasNotChecked)
                 {
-                    if (_legacySettings.IgnoredConflictingKeyBinding)
+                    if (_vimApplicationSettings.IgnoredConflictingKeyBinding)
                     {
                         IgnoreAnyConflicts();
                     }

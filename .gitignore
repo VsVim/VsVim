@@ -73,8 +73,8 @@ Microsoft.VisualStudio.Text.UI.Wpf.dll
 Microsoft.VisualStudio.UI.Undo.dll
 
 # Copied into a source directory for ease of build
-VsVim.Dev11.dll
-VsVim.Dev11.pdb
+VsVim.Vs2012.dll
+VsVim.Vs2012.pdb
 
 # Profiling Output
 *.vsp

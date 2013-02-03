@@ -19,7 +19,7 @@ namespace VsVim.UnitTest
     {
         private Mock<_DTE> _dte;
         private Mock<IOptionsDialogService> _optionsDialogService;
-        private Mock<ILegacySettings> _legacySettings;
+        private Mock<IVimApplicationSettings> _vimApplicationSettings;
         private KeyBindingService _serviceRaw;
         private IKeyBindingService _service;
         private CommandsSnapshot _commandsSnapshot;
@@ -32,14 +32,18 @@ namespace VsVim.UnitTest
                 Tuple.Create(typeof(SDTE), (object)(_dte.Object)),
                 Tuple.Create(typeof(SVsShell), (object)(new Mock<IVsShell>(MockBehavior.Strict)).Object));
             _optionsDialogService = new Mock<IOptionsDialogService>(MockBehavior.Strict);
-            _legacySettings = new Mock<ILegacySettings>(MockBehavior.Strict);
-            _legacySettings.SetupGet(x => x.IgnoredConflictingKeyBinding).Returns(false);
-            _legacySettings.SetupGet(x => x.HaveUpdatedKeyBindings).Returns(false);
+            _vimApplicationSettings = new Mock<IVimApplicationSettings>(MockBehavior.Strict);
+            _vimApplicationSettings.SetupGet(x => x.IgnoredConflictingKeyBinding).Returns(false);
+            _vimApplicationSettings.SetupGet(x => x.HaveUpdatedKeyBindings).Returns(false);
+
+            var list = new List<CommandKeyBinding>();
+            _vimApplicationSettings.SetupGet(x => x.RemovedBindings).Returns(list.AsReadOnly());
+
             _serviceRaw = new KeyBindingService(
                 sp.Object, 
                 _optionsDialogService.Object, 
                 new Mock<IProtectedOperations>().Object,
-                _legacySettings.Object);
+                _vimApplicationSettings.Object);
             _service = _serviceRaw;
 
             var result = _dte.Object.Commands.Count;

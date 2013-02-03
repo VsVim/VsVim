@@ -18,14 +18,14 @@ namespace VsVim.Implementation.ConflictingKey
         private readonly ObservableCollection<KeyBindingData> _keyBindingList = new ObservableCollection<KeyBindingData>();
         private readonly CommandKeyBindingSnapshot _snapshot;
         private readonly HashSet<KeyBindingData> _advancedSet = new HashSet<KeyBindingData>();
-        private readonly ILegacySettings _legacySettings;
+        private readonly IVimApplicationSettings _vimApplicationSettings;
 
-        public ConflictingKeyBindingDialog(CommandKeyBindingSnapshot snapshot, ILegacySettings legacySettings)
+        public ConflictingKeyBindingDialog(CommandKeyBindingSnapshot snapshot, IVimApplicationSettings vimApplicationSettings)
         {
             InitializeComponent();
 
             _snapshot = snapshot;
-            _legacySettings = legacySettings;
+            _vimApplicationSettings = vimApplicationSettings;
             ComputeKeyBindings();
 
             BindingsListBox.ItemsSource = _keyBindingList;
@@ -144,12 +144,10 @@ namespace VsVim.Implementation.ConflictingKey
                 }
             }
 
-            _legacySettings.RemovedBindings =
+            _vimApplicationSettings.RemovedBindings =
                 _keyBindingList.Where(binding => binding.HandledByVsVim).SelectMany(data => data.Bindings)
-                .Select(x => new CommandBindingSetting(x.Name, x.KeyBinding.CommandString))
                 .ToReadOnlyCollection();
-            _legacySettings.HaveUpdatedKeyBindings = true;
-            _legacySettings.Save();
+            _vimApplicationSettings.HaveUpdatedKeyBindings = true;
         }
     }
 }

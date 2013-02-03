@@ -3,6 +3,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <PlatformTarget>x86</PlatformTarget>
     <ProductVersion>10.0.20305</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectTypeGuids>{82b43b9b-a64c-4715-b499-d71e9ca2bd60};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -20,7 +21,6 @@
     <VSSDKTargetPlatformRegRootSuffix>ExpVsVim</VSSDKTargetPlatformRegRootSuffix>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
-    <VisualStudioTarget>Dev10</VisualStudioTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -125,15 +125,13 @@
       <Project>{65A749E0-F1B1-4E43-BE73-25072EE398C6}</Project>
       <Name>VimWpf</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Vs2010\Vs2010.csproj">
+      <Project>{0DE4170C-224D-47CF-BE00-B88AA14EC804}</Project>
+      <Name>Vs2010</Name>
+    </ProjectReference>
     <ProjectReference Include="..\VsVimShared\VsVimShared.csproj">
       <Project>{979DEDC6-25E2-494B-9E8F-6E42078C601C}</Project>
       <Name>VsVimShared</Name>
-      <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3b</IncludeOutputGroupsInVSIX>
-      <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
-    </ProjectReference>
-    <ProjectReference Include="..\VsVimSpecific\VsVimDev10.csproj">
-      <Project>{0DE4170C-224D-47CF-BE00-B88AA14EC804}</Project>
-      <Name>VsVimDev10</Name>
       <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3b</IncludeOutputGroupsInVSIX>
       <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
     </ProjectReference>

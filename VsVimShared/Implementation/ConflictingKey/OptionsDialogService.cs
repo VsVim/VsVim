@@ -5,17 +5,17 @@ namespace VsVim.Implementation.ConflictingKey
     [Export(typeof(IOptionsDialogService))]
     internal sealed class OptionsDialogService : IOptionsDialogService
     {
-        private readonly ILegacySettings _legacySettings;
+        private readonly IVimApplicationSettings _vimApplicationSettings;
 
         [ImportingConstructor]
-        internal OptionsDialogService(ILegacySettings legacySettings)
+        internal OptionsDialogService(IVimApplicationSettings vimApplicationSettings)
         {
-            _legacySettings = legacySettings;
+            _vimApplicationSettings = vimApplicationSettings;
         }
 
         public bool ShowConflictingKeyBindingsDialog(CommandKeyBindingSnapshot snapshot)
         {
-            return new ConflictingKeyBindingDialog(snapshot, _legacySettings).ShowDialog().Value;
+            return new ConflictingKeyBindingDialog(snapshot, _vimApplicationSettings).ShowDialog().Value;
         }
     }
 }

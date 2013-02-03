@@ -129,7 +129,7 @@ namespace VsVim.Implementation.ExternalEdit
                 }
             }
 
-            // It's unclear if the Dev10 portion changes in R# builds for Dev11 or not.  Once
+            // It's unclear if the Vs 2010 portion changes in R# builds for Vs 2012 or not.  Once
             // a R# 7.0 build is available we can verify this to be the case or not.  Until then
             // assume the name does change and bind to the short name here.  Will at least 
             // work for customers with only R# installed on VS11

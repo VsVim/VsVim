@@ -43,6 +43,20 @@ namespace VsVim
             }
         }
 
+        public static bool TryGetName(this Command command, out string name)
+        {
+            try
+            {
+                name = command.Name;
+                return true;
+            }
+            catch
+            {
+                name = null;
+                return false;
+            }
+        }
+
         /// <summary>
         /// Get the binding strings for this Command.  Digs through the various ways a 
         /// binding string can be stored and returns a uniform result
@@ -909,9 +923,9 @@ namespace VsVim
             switch (parts[0])
             {
                 case "10":
-                    return VisualStudioVersion.Dev10;
+                    return VisualStudioVersion.Vs2010;
                 case "11":
-                    return VisualStudioVersion.Dev11;
+                    return VisualStudioVersion.Vs2012;
                 default:
                     return VisualStudioVersion.Unknown;
             }

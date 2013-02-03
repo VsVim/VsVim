@@ -74,7 +74,7 @@ type internal SearchService
                 // buffer.  
                 let isSimplePattern = Seq.forall (fun c -> CharUtil.IsLetterOrDigit c || CharUtil.IsBlank c) word
 
-                // There is one exception to this rule though.  There is a bug in the Dev10 implementation
+                // There is one exception to this rule though.  There is a bug in the Vs 2010 implementation
                 // of ITextSearchService that causes it to hit an infinite loop if the following conditions
                 // are met
                 //
