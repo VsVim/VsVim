@@ -88,7 +88,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         private void UpdateForSwitchMode(IMode mode)
         {
-            /// Calculate the argument string if we are in one time command mode
+            // Calculate the argument string if we are in one time command mode
             string oneTimeArgument = null;
             if (_buffer.InOneTimeCommand.IsSome())
             {

@@ -389,7 +389,6 @@ namespace VsVim.UnitTest.Utils
         /// <summary>
         /// Run the specified set of characters against the buffer
         /// </summary>
-        /// <param name="c"></param>
         internal void Run(string text)
         {
             foreach (var cur in text)

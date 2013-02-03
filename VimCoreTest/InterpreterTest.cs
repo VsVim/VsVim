@@ -386,7 +386,7 @@ namespace Vim.UnitTest
 
             /// <summary>
             /// Invert a toggle setting to on
-            /// </summary
+            /// </summary>
             [Fact]
             public void Toggle_InvertOn()
             {
@@ -422,7 +422,7 @@ namespace Vim.UnitTest
 
             /// <summary>
             /// Invert a toggle setting to off
-            /// </summary
+            /// </summary>
             [Fact]
             public void Toggle_InvertOff()
             {

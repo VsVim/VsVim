@@ -1019,7 +1019,7 @@ namespace Vim.UnitTest
         public void Bind_ShiftMotionRight()
         {
             Create("foo", "bar");
-            /// REPEAT TODO: Add tests for this
+            // REPEAT TODO: Add tests for this
         }
 
         [Fact]
@@ -1034,7 +1034,7 @@ namespace Vim.UnitTest
         [Fact]
         public void Bind_ShiftMotionLeft()
         {
-            /// REPEAT TODO: Add tests for this
+            // REPEAT TODO: Add tests for this
             Create("foo");
         }
 

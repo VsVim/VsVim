@@ -8,9 +8,8 @@ namespace VsVim.UnitTest
     ///This is a test class for EditCommandTest and is intended
     ///to contain all EditCommandTest Unit Tests
     ///</summary>
-    public class EditCommandTest
+    public sealed class EditCommandTest
     {
-
         internal EditCommand Create(char c, EditCommandKind kind)
         {
             return Create(KeyInputUtil.CharToKeyInput(c), kind);

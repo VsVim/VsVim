@@ -1012,7 +1012,7 @@ namespace Vim.UnitTest
         /// Make only a single line visible in the IWpfTextView.  This is really useful when testing
         /// actions like scrolling
         /// </summary>
-        /// <param name="textView"></param>
+        /// <param name="wpfTextView"></param>
         public static void MakeOneLineVisible(this IWpfTextView wpfTextView)
         {
             var oldSize = wpfTextView.VisualElement.RenderSize;

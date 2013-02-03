@@ -458,7 +458,7 @@ namespace Vim.UnitTest
 
                 bool caught = false;
                 Action<Unit> actionRaw = _ => { throw new ArgumentException(); };
-                var action = FSharpFuncUtil.ToFSharpFunc(actionRaw);
+                var action = actionRaw.ToFSharpFunc();
                 try
                 {
                     _commandUtil.EditWithLinkedChange(
@@ -495,7 +495,7 @@ namespace Vim.UnitTest
 
                 bool caught = false;
                 Action<Unit> actionRaw = _ => { throw new ArgumentException(); };
-                var action = FSharpFuncUtil.ToFSharpFunc(actionRaw);
+                var action = actionRaw.ToFSharpFunc();
                 try
                 {
                     _commandUtil.EditBlockWithLinkedChange(
