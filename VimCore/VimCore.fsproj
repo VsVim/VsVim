@@ -148,7 +148,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="EditorUtils">
-      <HintPath>..\packages\EditorUtils.1.0.0.8\lib\net40\EditorUtils.dll</HintPath>
+      <HintPath>..\packages\EditorUtils.1.0.9.0\lib\net40\EditorUtils.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FSharp.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />

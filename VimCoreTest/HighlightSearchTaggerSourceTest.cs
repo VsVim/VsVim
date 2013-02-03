@@ -44,7 +44,7 @@ namespace Vim.UnitTest
         protected List<ITagSpan<TextMarkerTag>> GetTags(SnapshotSpan span)
         {
             return _asyncTaggerSource.GetTagsInBackground(
-                _asyncTaggerSourceRaw.GetDataForSpan(),
+                _asyncTaggerSourceRaw.GetDataForSnapshot(),
                 span,
                 CancellationToken.None).ToList();
         }

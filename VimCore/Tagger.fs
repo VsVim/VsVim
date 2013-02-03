@@ -200,7 +200,7 @@ type HighlightSearchTaggerSource
         _globalSettings.HighlightSearch
 
     /// Get the search information for a background 
-    member x.GetDataForSpan() =
+    member x.GetDataForSnapshot() =  
 
         let highlightSearchData = {
             Pattern = _vimData.LastPatternData.Pattern
@@ -210,7 +210,7 @@ type HighlightSearchTaggerSource
         highlightSearchData
 
     member x.GetTagsPrompt() = 
-        let searchData = x.GetDataForSpan()
+        let searchData = x.GetDataForSnapshot()
         if not x.IsProvidingTags then
             // Not currently providing any tags.  Return an empty set here for any requests
             Some List.empty
@@ -279,7 +279,7 @@ type HighlightSearchTaggerSource
         member x.Delay = NullableUtil.Create 100
         member x.TextSnapshot = _textBuffer.CurrentSnapshot
         member x.TextViewOptional = _textView
-        member x.GetDataForSpan _ = x.GetDataForSpan()
+        member x.GetDataForSnapshot _ = x.GetDataForSnapshot()
         member x.GetTagsInBackground(highlightSearchData, span, cancellationToken) = HighlightSearchTaggerSource.GetTagsInBackground highlightSearchData span cancellationToken
         member x.TryGetTagsPrompt(_, value : byref<ITagSpan<TextMarkerTag> seq>) =
             match x.GetTagsPrompt() with
