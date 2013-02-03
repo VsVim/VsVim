@@ -35,8 +35,11 @@ namespace Vim.UI.Wpf.UnitTest
             var editorFormatMap = _factory.Create<IEditorFormatMap>(MockBehavior.Loose);
             editorFormatMap.Setup(x => x.GetProperties(It.IsAny<string>())).Returns(new ResourceDictionary());
 
+            var parentVisualElement = _factory.Create<FrameworkElement>();
+
             _controller = new CommandMarginController(
                 _vimBuffer,
+                parentVisualElement.Object,
                 _marginControl,
                 editorFormatMap.Object,
                 new List<Lazy<IOptionsProviderFactory>>());

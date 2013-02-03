@@ -107,6 +107,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
+        /// <summary>
+        /// Give the command line edit control focus
+        /// </summary>
         public void FocusCommandLine(bool moveCaretToEnd)
         {
             commandLineInput.Focus();
@@ -159,7 +162,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             var savedEvent = RunCommandEdition;
             if (savedEvent != null)
             {
-                var evArgs = new EventArgs();
                 savedEvent(this, new CommandMarginEventArgs() { Command = commandLineInput.Text });
             }
         }
@@ -189,7 +191,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     {
                         // Prevent erasing the command prefix, unless it is the only character
                         if (1 == commandLineInput.CaretIndex)
+                        {
                             e.Handled = true;
+                        }
                     }
                     break;
             }
@@ -221,13 +225,17 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     else
                     {
                         if (0 == commandLineInput.CaretIndex)
+                        {
                             commandLineInput.CaretIndex = 1;
+                        }
                     }
                 }
                 else
                 {
                     if (0 == commandLineInput.CaretIndex)
+                    {
                         commandLineInput.CaretIndex = 1;
+                    }
                 }
             }
         }

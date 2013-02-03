@@ -15,14 +15,24 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private readonly CommandMarginControl _margin;
         private readonly IEditorFormatMap _editorFormatMap;
         private readonly ReadOnlyCollection<Lazy<IOptionsProviderFactory>> _optionsProviderFactory;
+        private readonly FrameworkElement _parentVisualElement;
         private bool _inKeyInputEvent;
         private string _message;
         private IMode _modeSwitch;
 
-        internal CommandMarginController(IVimBuffer buffer, CommandMarginControl control, IEditorFormatMap editorFormatMap, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactory)
+        /// <summary>
+        /// We need to hold a reference to Text Editor visual element.
+        /// </summary>
+        public FrameworkElement ParentVisualElement
+        {
+            get { return _parentVisualElement; }
+        }
+
+        internal CommandMarginController(IVimBuffer buffer, FrameworkElement parentVisualElement, CommandMarginControl control, IEditorFormatMap editorFormatMap, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactory)
         {
             _vimBuffer = buffer;
             _margin = control;
+            _parentVisualElement = parentVisualElement;
             _editorFormatMap = editorFormatMap;
             _optionsProviderFactory = optionsProviderFactory.ToList().AsReadOnly();
 
@@ -44,12 +54,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             UpdateForRecordingChanged();
             UpdateTextColor();
         }
-
-        /// <summary>
-        /// We need to hold a reference to Text Editor visual element.
-        /// TODO: maybe this property could be available through IVimBuffer.
-        /// </summary>
-        public FrameworkElement ParentVisualElement { get; set; }
 
         private void FocusEditor()
         {
@@ -264,11 +268,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             {
                 case VimKey.Home:
                     // Enable command line edition
-                    _margin.FocusCommandLine(false);
+                    _margin.FocusCommandLine(moveCaretToEnd: false);
                     args.Handled = true;
                     break;
                 case VimKey.Left:
-                    _margin.FocusCommandLine(true);
+                    _margin.FocusCommandLine(moveCaretToEnd: true);
                     args.Handled = true;
                     break;
                 case VimKey.Up:
@@ -294,7 +298,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         void OnCancelCommandEdition(object sender, EventArgs e)
         {
             _vimBuffer.Process(KeyInputUtil.EscapeKey);
-
             FocusEditor();
         }
 
