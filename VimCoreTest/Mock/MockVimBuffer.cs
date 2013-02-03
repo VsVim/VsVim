@@ -212,7 +212,7 @@ namespace Vim.UnitTest.Mock
         {
             if (KeyInputStart != null)
             {
-                KeyInputStart(this, new KeyInputEventArgs(ki));
+                KeyInputStart(this, new KeyInputStartEventArgs(ki));
             }
         }
 
@@ -238,7 +238,7 @@ namespace Vim.UnitTest.Mock
 
         public event EventHandler<KeyInputProcessedEventArgs> KeyInputProcessed;
 
-        public event EventHandler<KeyInputEventArgs> KeyInputStart;
+        public event EventHandler<KeyInputStartEventArgs> KeyInputStart;
 
         public event EventHandler<KeyInputEventArgs> KeyInputEnd;
 

@@ -194,6 +194,40 @@ namespace Vim.UnitTest
                 _vimBuffer.Process('l');
                 Assert.True(start && buffered && end && !processed);
             }
+
+            /// <summary>
+            /// When KeyInputStart is handled we still need to fire the other 2 events (Processed and End) in the 
+            /// proper order.  The naiive consumer should see this is a normal event sequence
+            /// </summary>
+            [Fact]
+            public void KeyInputStartHandled()
+            {
+                var count = 0;
+                _vimBuffer.KeyInputStart +=
+                    (sender, e) =>
+                    {
+                        Assert.Equal('c', e.KeyInput.Char);
+                        Assert.Equal(0, count);
+                        count++;
+                        e.Handled = true;
+                    };
+                _vimBuffer.KeyInputProcessed +=
+                    (sender, e) =>
+                    {
+                        Assert.Equal('c', e.KeyInput.Char);
+                        Assert.Equal(1, count);
+                        count++;
+                    };
+                _vimBuffer.KeyInputEnd +=
+                    (sender, e) =>
+                    {
+                        Assert.Equal('c', e.KeyInput.Char);
+                        Assert.Equal(2, count);
+                        count++;
+                    };
+                _vimBuffer.Process('c');
+                Assert.Equal(3, count);
+            }
         }
 
         public sealed class MiscTest : VimBufferTest

@@ -3086,6 +3086,15 @@ type KeyInputEventArgs (_keyInput : KeyInput) =
 
     member x.KeyInput = _keyInput
 
+type KeyInputStartEventArgs (_keyInput : KeyInput) =
+    inherit KeyInputEventArgs(_keyInput)
+
+    let mutable _handled = false
+
+    member x.Handled 
+        with get() = _handled 
+        and set value = _handled <- value
+
 type KeyInputSetEventArgs (_keyInputSet : KeyInputSet) = 
     inherit System.EventArgs()
 
@@ -3759,16 +3768,16 @@ and IVimBuffer =
     /// Raised when a key is processed.  This is raised when the KeyInput is actually
     /// processed by Vim not when it is received.  
     ///
-    /// Typically these occur back to back.  One example of where it does not though is 
-    /// the case of a key remapping where the source mapping contains more than one key.  
-    /// In this case the input is buffered until the second key is read and then the 
-    /// inputs are processed
+    /// Typically this occurs immediately after a Start command and is followed by an
+    /// End command.  One case this doesn't happen is in a key remapping where the source 
+    /// mapping contains more than one key.  In this case the input is buffered until the 
+    /// second key is read and then the inputs are processed
     [<CLIEvent>]
     abstract KeyInputProcessed : IDelegateEvent<System.EventHandler<KeyInputProcessedEventArgs>>
 
     /// Raised when a KeyInput is received by the buffer
     [<CLIEvent>]
-    abstract KeyInputStart : IDelegateEvent<System.EventHandler<KeyInputEventArgs>>
+    abstract KeyInputStart : IDelegateEvent<System.EventHandler<KeyInputStartEventArgs>>
 
     /// Raised when a key is received but not immediately processed.  Occurs when a
     /// key remapping has more than one source key strokes

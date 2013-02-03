@@ -129,7 +129,7 @@ type internal VimBuffer
     let mutable _bufferedKeyInput : KeyInputSet option = None
 
     let _keyInputProcessedEvent = StandardEvent<KeyInputProcessedEventArgs>()
-    let _keyInputStartEvent = StandardEvent<KeyInputEventArgs>()
+    let _keyInputStartEvent = StandardEvent<KeyInputStartEventArgs>()
     let _keyInputEndEvent = StandardEvent<KeyInputEventArgs>()
     let _keyInputBufferedEvent = StandardEvent<KeyInputSetEventArgs>()
     let _errorMessageEvent = StandardEvent<StringEventArgs>()
@@ -442,20 +442,31 @@ type internal VimBuffer
     member x.Process (keyInput : KeyInput) =
 
         // Raise the event that we received the key
-        let args = KeyInputEventArgs(keyInput)
+        let args = KeyInputStartEventArgs(keyInput)
         _keyInputStartEvent.Trigger x args
 
         try
+            if args.Handled then
+                // If one of the event handlers handled the KeyInput themselves then 
+                // the key is considered handled and nothing changed.  Need to raise 
+                // the processed event here since it was technically processed at this
+                // point
+                let processResult = ProcessResult.Handled ModeSwitch.NoSwitch
+                let keyInputProcessedEventArgs = KeyInputProcessedEventArgs(keyInput, processResult)
+                _keyInputProcessedEvent.Trigger x keyInputProcessedEventArgs
 
-            // Combine this KeyInput with the buffered KeyInput values and clear it out.  If 
-            // this KeyInput needs more input then it will be rebuffered
-            let keyInputSet = 
-                match _bufferedKeyInput with
-                | None -> KeyInputSet.OneKeyInput keyInput
-                | Some bufferedKeyInputSet -> bufferedKeyInputSet.Add keyInput
-            _bufferedKeyInput <- None
+                processResult
+            else
 
-            x.ProcessCore keyInputSet
+                // Combine this KeyInput with the buffered KeyInput values and clear it out.  If 
+                // this KeyInput needs more input then it will be rebuffered
+                let keyInputSet = 
+                    match _bufferedKeyInput with
+                    | None -> KeyInputSet.OneKeyInput keyInput
+                    | Some bufferedKeyInputSet -> bufferedKeyInputSet.Add keyInput
+                _bufferedKeyInput <- None
+
+                x.ProcessCore keyInputSet
 
         finally 
             _keyInputEndEvent.Trigger x args
@@ -535,7 +546,7 @@ type internal VimBuffer
         // buffered input with this action.
         _bufferedKeyInput <- None
 
-        let keyInputEventArgs = KeyInputEventArgs(keyInput)
+        let keyInputEventArgs = KeyInputStartEventArgs(keyInput)
         let keyInputProcessedEventArgs = KeyInputProcessedEventArgs(keyInput, ProcessResult.Handled ModeSwitch.NoSwitch)
         _keyInputStartEvent.Trigger x keyInputEventArgs
         _keyInputProcessedEvent.Trigger x keyInputProcessedEventArgs

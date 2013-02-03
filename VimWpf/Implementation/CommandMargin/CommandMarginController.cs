@@ -11,7 +11,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 {
     internal sealed class CommandMarginController
     {
-        private readonly IVimBuffer _buffer;
+        private readonly IVimBuffer _vimBuffer;
         private readonly CommandMarginControl _margin;
         private readonly IEditorFormatMap _editorFormatMap;
         private readonly ReadOnlyCollection<Lazy<IOptionsProviderFactory>> _optionsProviderFactory;
@@ -21,20 +21,20 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         internal CommandMarginController(IVimBuffer buffer, CommandMarginControl control, IEditorFormatMap editorFormatMap, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactory)
         {
-            _buffer = buffer;
+            _vimBuffer = buffer;
             _margin = control;
             _editorFormatMap = editorFormatMap;
             _optionsProviderFactory = optionsProviderFactory.ToList().AsReadOnly();
 
-            _buffer.SwitchedMode += OnSwitchMode;
-            _buffer.KeyInputStart += OnKeyInputStart;
-            _buffer.KeyInputEnd += OnKeyInputEnd;
-            _buffer.StatusMessage += OnStatusMessage;
-            _buffer.ErrorMessage += OnErrorMessage;
-            _buffer.WarningMessage += OnWarningMessage;
-            _buffer.CommandMode.CommandChanged += OnCommandChanged;
-            _buffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
-            _buffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
+            _vimBuffer.SwitchedMode += OnSwitchMode;
+            _vimBuffer.KeyInputStart += OnKeyInputStart;
+            _vimBuffer.KeyInputEnd += OnKeyInputEnd;
+            _vimBuffer.StatusMessage += OnStatusMessage;
+            _vimBuffer.ErrorMessage += OnErrorMessage;
+            _vimBuffer.WarningMessage += OnWarningMessage;
+            _vimBuffer.CommandMode.CommandChanged += OnCommandChanged;
+            _vimBuffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
+            _vimBuffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
             _margin.OptionsClicked += OnOptionsClicked;
             _margin.CancelCommandEdition += OnCancelCommandEdition;
             _margin.RunCommandEdition += OnRunCommandEdition;
@@ -61,9 +61,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         internal void Disconnect()
         {
-            _buffer.CommandMode.CommandChanged -= OnCommandChanged;
-            _buffer.Vim.MacroRecorder.RecordingStarted -= OnRecordingStarted;
-            _buffer.Vim.MacroRecorder.RecordingStopped -= OnRecordingStopped;
+            _vimBuffer.CommandMode.CommandChanged -= OnCommandChanged;
+            _vimBuffer.Vim.MacroRecorder.RecordingStarted -= OnRecordingStarted;
+            _vimBuffer.Vim.MacroRecorder.RecordingStopped -= OnRecordingStopped;
         }
 
         private void KeyInputEventComplete()
@@ -108,20 +108,20 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         {
             // Calculate the argument string if we are in one time command mode
             string oneTimeArgument = null;
-            if (_buffer.InOneTimeCommand.IsSome())
+            if (_vimBuffer.InOneTimeCommand.IsSome())
             {
-                if (_buffer.InOneTimeCommand.Is(ModeKind.Insert))
+                if (_vimBuffer.InOneTimeCommand.Is(ModeKind.Insert))
                 {
                     oneTimeArgument = "insert";
                 }
-                else if (_buffer.InOneTimeCommand.Is(ModeKind.Replace))
+                else if (_vimBuffer.InOneTimeCommand.Is(ModeKind.Replace))
                 {
                     oneTimeArgument = "replace";
                 }
             }
 
             // Check if we can enable the command line to accept user input
-            var search = _buffer.IncrementalSearch;
+            var search = _vimBuffer.IncrementalSearch;
             _margin.IsCommandEditionDisable = mode.ModeKind != ModeKind.Command && !(search.InSearch && search.CurrentSearchData.IsSome());
 
             switch (mode.ModeKind)
@@ -132,7 +132,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                         : String.Format(Resources.NormalOneTimeCommandBanner, oneTimeArgument);
                     break;
                 case ModeKind.Command:
-                    _margin.StatusLine = ":" + _buffer.CommandMode.Command;
+                    _margin.StatusLine = ":" + _vimBuffer.CommandMode.Command;
                     break;
                 case ModeKind.Insert:
                     _margin.StatusLine = Resources.InsertBanner;
@@ -168,7 +168,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     _margin.StatusLine = Resources.ExternalEditBanner;
                     break;
                 case ModeKind.Disabled:
-                    _margin.StatusLine = _buffer.DisabledMode.HelpMessage;
+                    _margin.StatusLine = _vimBuffer.DisabledMode.HelpMessage;
                     break;
                 case ModeKind.SubstituteConfirm:
                     UpdateSubstituteConfirmMode();
@@ -185,7 +185,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// </summary>
         private void UpdateForNoEvent()
         {
-            var search = _buffer.IncrementalSearch;
+            var search = _vimBuffer.IncrementalSearch;
             if (search.InSearch && search.CurrentSearchData.IsSome())
             {
                 var data = search.CurrentSearchData.Value;
@@ -196,22 +196,22 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 return;
             }
 
-            _margin.IsCommandEditionDisable = _buffer.ModeKind != ModeKind.Command;
+            _margin.IsCommandEditionDisable = _vimBuffer.ModeKind != ModeKind.Command;
 
-            switch (_buffer.ModeKind)
+            switch (_vimBuffer.ModeKind)
             {
                 case ModeKind.Command:
                     //TODO: Workaround to fix strange character when pressing <Home>...
-                    _margin.StatusLine = ":" + _buffer.CommandMode.Command.Trim('\0'); ;
+                    _margin.StatusLine = ":" + _vimBuffer.CommandMode.Command.Trim('\0'); ;
                     break;
                 case ModeKind.Normal:
-                    _margin.StatusLine = _buffer.NormalMode.Command;
+                    _margin.StatusLine = _vimBuffer.NormalMode.Command;
                     break;
                 case ModeKind.SubstituteConfirm:
                     UpdateSubstituteConfirmMode();
                     break;
                 case ModeKind.Disabled:
-                    _margin.StatusLine = _buffer.DisabledMode.HelpMessage;
+                    _margin.StatusLine = _vimBuffer.DisabledMode.HelpMessage;
                     break;
                 case ModeKind.VisualBlock:
                     _margin.StatusLine = Resources.VisualBlockBanner;
@@ -227,14 +227,14 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         private void UpdateForRecordingChanged()
         {
-            _margin.IsRecording = _buffer.Vim.MacroRecorder.IsRecording
+            _margin.IsRecording = _vimBuffer.Vim.MacroRecorder.IsRecording
                 ? Visibility.Visible
                 : Visibility.Collapsed;
         }
 
         private void UpdateSubstituteConfirmMode()
         {
-            var replace = _buffer.SubstituteConfirmMode.CurrentSubstitute.SomeOrDefault("");
+            var replace = _vimBuffer.SubstituteConfirmMode.CurrentSubstitute.SomeOrDefault("");
             _margin.StatusLine = String.Format(Resources.SubstituteConfirmBannerFormat, replace);
         }
 
@@ -249,35 +249,65 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _margin.TextBackground = propertyMap.GetBackgroundBrush(SystemColors.WindowBrush);
         }
 
+        /// <summary>
+        /// If we're in command mode and a key is processed which effects the edit we should handle
+        /// it here
+        /// </summary>
+        private void CheckEnableCommandLineEdit(KeyInputStartEventArgs args)
+        {
+            if (_vimBuffer.ModeKind != ModeKind.Command)
+            {
+                return;
+            }
+
+            switch (args.KeyInput.Key)
+            {
+                case VimKey.Home:
+                    // Enable command line edition
+                    _margin.FocusCommandLine(false);
+                    args.Handled = true;
+                    break;
+                case VimKey.Left:
+                    _margin.FocusCommandLine(true);
+                    args.Handled = true;
+                    break;
+                case VimKey.Up:
+                case VimKey.Down:
+                    // User is navigation through history, move caret to the end of the entry
+                    _margin.UpdateCaretPosition(true);
+                    break;
+            }
+        }
+
         #region Event Handlers
 
         void OnHistoryGoPrevious(object sender, EventArgs e)
         {
-            _buffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Up));
+            _vimBuffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Up));
         }
 
         void OnHistoryGoNext(object sender, EventArgs e)
         {
-            _buffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Down));
+            _vimBuffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Down));
         }
 
         void OnCancelCommandEdition(object sender, EventArgs e)
         {
-            _buffer.Process(KeyInputUtil.EscapeKey);
+            _vimBuffer.Process(KeyInputUtil.EscapeKey);
 
             FocusEditor();
         }
 
         void OnRunCommandEdition(object sender, EventArgs e)
         {
-            _buffer.Process(KeyInputUtil.EscapeKey);
+            _vimBuffer.Process(KeyInputUtil.EscapeKey);
 
             var input = (e as CommandMarginEventArgs).Command;
 
             foreach (var c in input)
             {
                 var i = KeyInputUtil.CharToKeyInput(c);
-                _buffer.Process(i);
+                _vimBuffer.Process(i);
             }
 
             FocusEditor();
@@ -293,40 +323,17 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             {
                 UpdateForSwitchMode(args.CurrentMode);
             }
-
-            if (args.CurrentMode.ModeKind == ModeKind.Command)
-            {
-                FocusEditor();
-            }
         }
 
-        private void OnKeyInputStart(object sender, KeyInputEventArgs args)
+        private void OnKeyInputStart(object sender, KeyInputStartEventArgs args)
         {
             _inKeyInputEvent = true;
+            CheckEnableCommandLineEdit(args);
         }
 
         private void OnKeyInputEnd(object sender, KeyInputEventArgs args)
         {
             KeyInputEventComplete();
-
-            if (!_margin.IsCommandEditionDisable)
-            {
-                switch (args.KeyInput.Key)
-                {
-                    // Enable command line edition
-                    case VimKey.Home:
-                        _margin.FocusCommandLine(false);
-                        break;
-                    case VimKey.Left:
-                        _margin.FocusCommandLine(true);
-                        break;
-                    // User is navigation through history, move caret to the end of the entry
-                    case VimKey.Up:
-                    case VimKey.Down:
-                        _margin.UpdateCaretPosition(true);
-                        break;
-                }
-            }
         }
 
         private void OnStatusMessage(object sender, StringEventArgs args)
@@ -349,7 +356,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             var provider = _optionsProviderFactory.Select(x => x.Value.CreateOptionsProvider()).Where(x => x != null).FirstOrDefault();
             if (provider != null)
             {
-                provider.ShowDialog(_buffer);
+                provider.ShowDialog(_vimBuffer);
             }
             else
             {
