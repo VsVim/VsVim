@@ -42,6 +42,15 @@ namespace VsVim
             get { return _dte; }
         }
 
+        /// <summary>
+        /// Don't automatically synchronize settings.  Visual Studio applies settings at uncertain times and hence this
+        /// behavior must be special cased.  It is handled by HostFactory
+        /// </summary>
+        public override bool AutoSynchronizeSettings
+        {
+            get { return false; }
+        }
+
         [ImportingConstructor]
         internal VsVimHost(
             IVsAdapter adapter,

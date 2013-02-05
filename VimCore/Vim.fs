@@ -250,7 +250,8 @@ type internal Vim
         _fileSystem : IFileSystem,
         _vimData : IVimData,
         _bulkOperations : IBulkOperations,
-        _variableMap : VariableMap
+        _variableMap : VariableMap,
+        _editorToSettingSynchronizer : IEditorToSettingsSynchronizer
     ) =
 
     /// Key for IVimTextBuffer instances inside of the ITextBuffer property bag
@@ -316,7 +317,8 @@ type internal Vim
         search : ITextSearchService,
         fileSystem : IFileSystem,
         clipboard : IClipboardDevice,
-        bulkOperations : IBulkOperations) =
+        bulkOperations : IBulkOperations,
+        editorToSettingSynchronizer : IEditorToSettingsSynchronizer) =
         let markMap = MarkMap(bufferTrackingService)
         let vimData = VimData() :> IVimData
         let variableMap = VariableMap()
@@ -334,7 +336,8 @@ type internal Vim
             fileSystem,
             vimData,
             bulkOperations,
-            variableMap)
+            variableMap,
+            editorToSettingSynchronizer)
 
     member x.ActiveBuffer = ListUtil.tryHeadOnly _activeBufferStack
 
@@ -444,6 +447,11 @@ type internal Vim
         |> eventBag.Add
 
         _bufferMap.Add(textView, (vimBuffer, eventBag))
+
+        if _vimHost.AutoSynchronizeSettings then
+            _editorToSettingSynchronizer.StartSynchronizing vimBuffer
+            _editorToSettingSynchronizer.CopyVimToEditorSettings vimBuffer
+
         vimBuffer
 
     /// Create an IVimBuffer for the given ITextView and associated IVimTextBuffer and notify

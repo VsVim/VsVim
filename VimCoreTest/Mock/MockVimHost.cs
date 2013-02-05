@@ -12,6 +12,7 @@ namespace Vim.UnitTest.Mock
     {
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
 
+        public bool AutoSynchronizeSettings { get; set; }
         public int BeepCount { get; set; }
         public int GoToDefinitionCount { get; set; }
         public bool GoToFileReturn { get; set; }
@@ -61,6 +62,7 @@ namespace Vim.UnitTest.Mock
         /// </summary>
         public void Clear()
         {
+            AutoSynchronizeSettings = true;
             GoToDefinitionReturn = true;
             IsCompletionWindowActive = false;
             NavigateToReturn = false;
