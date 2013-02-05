@@ -582,7 +582,6 @@ type internal EditorToSettingSynchronizer
 
             let properties = vimBuffer.TextView.Properties
             let bag = DisposableBag()
-            let localSettings = vimBuffer.LocalSettings
 
             // Raised when a local setting is changed.  We need to inspect this setting and 
             // determine if it's an interesting setting and if so synchronize it with the 
@@ -590,8 +589,17 @@ type internal EditorToSettingSynchronizer
             //
             // Cast up to IVimSettings to avoid the F# bug of accessing a CLIEvent from 
             // a derived interface
+            let localSettings = vimBuffer.LocalSettings
             (localSettings :> IVimSettings).SettingChanged 
             |> Observable.filter (fun args -> x.IsTrackedLocalSetting args.Setting)
+            |> Observable.subscribe (fun _ -> x.CopyVimToEditorSettings vimBuffer)
+            |> bag.Add
+
+            // Cast up to IVimSettings to avoid the F# bug of accessing a CLIEvent from 
+            // a derived interface
+            let windowSettings = vimBuffer.WindowSettings
+            (windowSettings :> IVimSettings).SettingChanged
+            |> Observable.filter (fun args -> x.IsTrackedWindowSetting args.Setting)
             |> Observable.subscribe (fun _ -> x.CopyVimToEditorSettings vimBuffer)
             |> bag.Add
 
@@ -622,6 +630,10 @@ type internal EditorToSettingSynchronizer
         else
             false
 
+    /// Is this a window setting of note
+    member x.IsTrackedWindowSetting (setting : Setting) = 
+        setting.Name = WindowSettingNames.CursorLineName
+
     /// Is this an editor setting of note
     member x.IsTrackedEditorSetting optionId =
         if optionId = DefaultOptions.TabSizeOptionId.Name then
@@ -631,6 +643,8 @@ type internal EditorToSettingSynchronizer
         elif optionId = DefaultOptions.ConvertTabsToSpacesOptionId.Name then
             true
         elif optionId = DefaultTextViewHostOptions.LineNumberMarginId.Name then
+            true
+        elif optionId = DefaultWpfViewOptions.EnableHighlightCurrentLineId.Name then
             true
         else
             false
@@ -642,23 +656,24 @@ type internal EditorToSettingSynchronizer
             let localSettings = vimBuffer.LocalSettings
             if _syncronizingSet.Add(localSettings) then
                 try
-                    syncFunc localSettings editorOptions
+                    syncFunc localSettings vimBuffer.WindowSettings editorOptions
                 finally
                     _syncronizingSet.Remove(localSettings) |> ignore
 
     /// Synchronize the settings from the editor to the local settings.  Do not
     /// call this directly but instead call through SynchronizeSettings
     member x.CopyVimToEditorSettings (vimBuffer : IVimBuffer) = 
-        x.TrySync vimBuffer (fun localSettings editorOptions ->
+        x.TrySync vimBuffer (fun localSettings windowSettings editorOptions ->
             EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.TabSizeOptionId localSettings.TabStop
             EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.IndentSizeOptionId localSettings.ShiftWidth
             EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.ConvertTabsToSpacesOptionId localSettings.ExpandTab
-            EditorOptionsUtil.SetOptionValue editorOptions DefaultTextViewHostOptions.LineNumberMarginId localSettings.Number)
+            EditorOptionsUtil.SetOptionValue editorOptions DefaultTextViewHostOptions.LineNumberMarginId localSettings.Number
+            EditorOptionsUtil.SetOptionValue editorOptions DefaultWpfViewOptions.EnableHighlightCurrentLineId windowSettings.CursorLine)
 
     /// Synchronize the settings from the local settings to the editor.  Do not
     /// call this directly but instead call through SynchronizeSettings
     member x.CopyEditorToVimSettings (vimBuffer : IVimBuffer) = 
-        x.TrySync vimBuffer (fun localSettings editorOptions ->
+        x.TrySync vimBuffer (fun localSettings windowSettings editorOptions ->
             match EditorOptionsUtil.GetOptionValue editorOptions DefaultOptions.TabSizeOptionId with
             | None -> ()
             | Some tabSize -> localSettings.TabStop <- tabSize
@@ -670,7 +685,10 @@ type internal EditorToSettingSynchronizer
             | Some convertTabToSpace -> localSettings.ExpandTab <- convertTabToSpace
             match EditorOptionsUtil.GetOptionValue editorOptions DefaultTextViewHostOptions.LineNumberMarginId with
             | None -> ()
-            | Some show -> localSettings.Number <- show)
+            | Some show -> localSettings.Number <- show
+            match EditorOptionsUtil.GetOptionValue editorOptions DefaultWpfViewOptions.EnableHighlightCurrentLineId with
+            | None -> ()
+            | Some show -> windowSettings.CursorLine <- show)
 
     interface IEditorToSettingsSynchronizer with
         member x.StartSynchronizing vimBuffer = x.StartSynchronizing vimBuffer

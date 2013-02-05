@@ -101,7 +101,6 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Implementation\Misc\SettingSynchronizer.cs" />
     <Compile Include="VimHost.cs" />
   </ItemGroup>
   <ItemGroup>
