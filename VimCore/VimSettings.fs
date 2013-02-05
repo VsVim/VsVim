@@ -562,23 +562,27 @@ type internal WindowSettings
 
 /// Certain changes need to be synchronized between the editor, local and global 
 /// settings.  This MEF component takes care of that synchronization 
-[<Export(typeof<IVimBufferCreationListener>)>]
+[<Export(typeof<IEditorToSettingsSynchronizer>)>]
 type internal EditorToSettingSynchronizer
     [<ImportingConstructor>]
-    (
-        _editorOptionsFactoryService : IEditorOptionsFactoryService,
-        _vim : IVim
-    ) =
+    () = 
 
-    let _globalSettings = _vim.GlobalSettings
     let _syncronizingSet = System.Collections.Generic.HashSet<IVimLocalSettings>()
+    let _key = obj()
 
-    member x.VimBufferCreated (buffer : IVimBuffer) = 
-        let editorOptions = buffer.TextView.Options
+    member x.StartSynchronizing (vimBuffer : IVimBuffer) = 
+        let properties = vimBuffer.TextView.Properties
+        if not (properties.ContainsProperty _key) then
+            properties.AddProperty(_key, _key)
+            x.SetupSynchronization vimBuffer
+
+    member x.SetupSynchronization (vimBuffer : IVimBuffer) = 
+        let editorOptions = vimBuffer.TextView.Options
         if editorOptions <> null then
 
+            let properties = vimBuffer.TextView.Properties
             let bag = DisposableBag()
-            let localSettings = buffer.LocalSettings
+            let localSettings = vimBuffer.LocalSettings
 
             // Raised when a local setting is changed.  We need to inspect this setting and 
             // determine if it's an interesting setting and if so synchronize it with the 
@@ -588,23 +592,22 @@ type internal EditorToSettingSynchronizer
             // a derived interface
             (localSettings :> IVimSettings).SettingChanged 
             |> Observable.filter (fun args -> x.IsTrackedLocalSetting args.Setting)
-            |> Observable.subscribe (fun _ -> x.TrySyncLocalToEditor localSettings editorOptions)
+            |> Observable.subscribe (fun _ -> x.CopyVimToEditorSettings vimBuffer)
             |> bag.Add
 
             /// Raised when an editor option is changed.  If it's one of the values we care about
             /// then we need to sync to the local settings
             editorOptions.OptionChanged
             |> Observable.filter (fun e -> x.IsTrackedEditorSetting e.OptionId)
-            |> Observable.subscribe (fun _ -> x.TrySyncEditorToLocal localSettings editorOptions)
+            |> Observable.subscribe (fun _ -> x.CopyEditorToVimSettings vimBuffer)
             |> bag.Add
 
             // Finally we need to clean up our listeners when the buffer is closed.  At
             // that point synchronization is no longer needed
-            buffer.Closed
-            |> Observable.add (fun _ -> bag.DisposeAll())
-
-            // Next we do the initial sync between editor and local settings
-            x.TrySyncLocalToEditor localSettings editorOptions
+            vimBuffer.Closed
+            |> Observable.add (fun _ -> 
+                properties.RemoveProperty _key |> ignore 
+                bag.DisposeAll())
 
     /// Is this a local setting of note
     member x.IsTrackedLocalSetting (setting : Setting) = 
@@ -633,17 +636,20 @@ type internal EditorToSettingSynchronizer
             false
 
     /// Synchronize the settings if needed.  Prevent recursive sync's here
-    member x.TrySync localSettings syncFunc = 
-        if _syncronizingSet.Add(localSettings) then
-            try
-                syncFunc()
-            finally
-                _syncronizingSet.Remove(localSettings) |> ignore
+    member x.TrySync (vimBuffer : IVimBuffer) syncFunc = 
+        let editorOptions = vimBuffer.TextView.Options
+        if editorOptions <> null then
+            let localSettings = vimBuffer.LocalSettings
+            if _syncronizingSet.Add(localSettings) then
+                try
+                    syncFunc localSettings editorOptions
+                finally
+                    _syncronizingSet.Remove(localSettings) |> ignore
 
     /// Synchronize the settings from the editor to the local settings.  Do not
     /// call this directly but instead call through SynchronizeSettings
-    member x.TrySyncLocalToEditor (localSettings : IVimLocalSettings) editorOptions =
-        x.TrySync localSettings (fun () ->
+    member x.CopyVimToEditorSettings (vimBuffer : IVimBuffer) = 
+        x.TrySync vimBuffer (fun localSettings editorOptions ->
             EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.TabSizeOptionId localSettings.TabStop
             EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.IndentSizeOptionId localSettings.ShiftWidth
             EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.ConvertTabsToSpacesOptionId localSettings.ExpandTab
@@ -651,8 +657,8 @@ type internal EditorToSettingSynchronizer
 
     /// Synchronize the settings from the local settings to the editor.  Do not
     /// call this directly but instead call through SynchronizeSettings
-    member x.TrySyncEditorToLocal (localSettings : IVimLocalSettings) editorOptions =
-        x.TrySync localSettings (fun () ->
+    member x.CopyEditorToVimSettings (vimBuffer : IVimBuffer) = 
+        x.TrySync vimBuffer (fun localSettings editorOptions ->
             match EditorOptionsUtil.GetOptionValue editorOptions DefaultOptions.TabSizeOptionId with
             | None -> ()
             | Some tabSize -> localSettings.TabStop <- tabSize
@@ -666,5 +672,7 @@ type internal EditorToSettingSynchronizer
             | None -> ()
             | Some show -> localSettings.Number <- show)
 
-    interface IVimBufferCreationListener with
-        member x.VimBufferCreated buffer = x.VimBufferCreated buffer
+    interface IEditorToSettingsSynchronizer with
+        member x.StartSynchronizing vimBuffer = x.StartSynchronizing vimBuffer
+        member x.CopyEditorToVimSettings vimBuffer = x.CopyEditorToVimSettings vimBuffer
+        member x.CopyVimToEditorSettings vimBuffer = x.CopyVimToEditorSettings vimBuffer

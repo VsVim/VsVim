@@ -7,61 +7,92 @@ namespace Vim.UnitTest
     /// Test the synchronization of settings from the IVimLocalSettings to the 
     /// associated IEditorOptions value
     /// </summary>
-    public sealed class EditorToSettingSynchronizerTest : VimTestBase
+    public abstract class EditorToSettingSynchronizerTest : VimTestBase
     {
         private readonly EditorToSettingSynchronizer _synchronizer;
-        private readonly IVimBuffer _buffer;
+        private readonly IVimBuffer _vimBuffer;
         private readonly IVimGlobalSettings _globalSettings;
         private readonly IVimLocalSettings _localSettings;
         private readonly IEditorOptions _editorOptions;
 
         public EditorToSettingSynchronizerTest()
         {
-            _synchronizer = new EditorToSettingSynchronizer(EditorOptionsFactoryService, Vim);
+            _synchronizer = new EditorToSettingSynchronizer();
 
-            _buffer = CreateVimBuffer("");
-            _localSettings = _buffer.LocalSettings;
+            _vimBuffer = CreateVimBuffer("");
+            _localSettings = _vimBuffer.LocalSettings;
             _globalSettings = _localSettings.GlobalSettings;
-            _editorOptions = _buffer.TextView.Options;
+            _editorOptions = _vimBuffer.TextView.Options;
         }
 
-        /// <summary>
-        /// Verify that it's synchronizing 'tabstop' between the two places
-        /// </summary>
-        [Fact]
-        public void Sync_TabStop()
+        public sealed class StartSynchronizingTest : EditorToSettingSynchronizerTest
         {
-            _localSettings.TabStop = 42;
-            Assert.Equal(42, _editorOptions.GetOptionValue(DefaultOptions.TabSizeOptionId));
+            public StartSynchronizingTest()
+            {
+                _synchronizer.StartSynchronizing(_vimBuffer);
+            }
 
-            _editorOptions.SetOptionValue(DefaultOptions.TabSizeOptionId, 13);
-            Assert.Equal(13, _localSettings.TabStop);
+            /// <summary>
+            /// Verify that it's synchronizing 'tabstop' between the two places
+            /// </summary>
+            [Fact]
+            public void TabStop()
+            {
+                _localSettings.TabStop = 42;
+                Assert.Equal(42, _editorOptions.GetOptionValue(DefaultOptions.TabSizeOptionId));
+
+                _editorOptions.SetOptionValue(DefaultOptions.TabSizeOptionId, 13);
+                Assert.Equal(13, _localSettings.TabStop);
+            }
+
+            /// <summary>
+            /// Verify that it's synchronizing 'expandtab' between the two places
+            /// </summary>
+            [Fact]
+            public void ExpandTab()
+            {
+                _localSettings.ExpandTab = true;
+                Assert.True(_editorOptions.GetOptionValue(DefaultOptions.ConvertTabsToSpacesOptionId));
+
+                _editorOptions.SetOptionValue(DefaultOptions.ConvertTabsToSpacesOptionId, false);
+                Assert.False(_localSettings.ExpandTab);
+            }
+
+            /// <summary>
+            /// Verify that it's synchronizing 'shiftwidth' between the two places
+            /// </summary>
+            [Fact]
+            public void ShiftWidth()
+            {
+                _localSettings.ShiftWidth = 42;
+                Assert.Equal(42, _editorOptions.GetOptionValue(DefaultOptions.IndentSizeOptionId));
+
+                _editorOptions.SetOptionValue(DefaultOptions.IndentSizeOptionId, 13);
+                Assert.Equal(13, _localSettings.ShiftWidth);
+            }
         }
 
-        /// <summary>
-        /// Verify that it's synchronizing 'expandtab' between the two places
-        /// </summary>
-        [Fact]
-        public void Sync_ExpandTab()
+        public sealed class CopyTest : EditorToSettingSynchronizerTest
         {
-            _localSettings.ExpandTab = true;
-            Assert.True(_editorOptions.GetOptionValue(DefaultOptions.ConvertTabsToSpacesOptionId));
+            [Fact]
+            public void CopyVimToEditorSettingsTest()
+            {
+                _localSettings.TabStop = 10;
+                _localSettings.ShiftWidth = 11;
+                _synchronizer.CopyVimToEditorSettings(_vimBuffer);
+                Assert.Equal(10, _editorOptions.GetOptionValue(DefaultOptions.TabSizeOptionId));
+                Assert.Equal(11, _editorOptions.GetOptionValue(DefaultOptions.IndentSizeOptionId));
+            }
 
-            _editorOptions.SetOptionValue(DefaultOptions.ConvertTabsToSpacesOptionId, false);
-            Assert.False(_localSettings.ExpandTab);
-        }
-
-        /// <summary>
-        /// Verify that it's synchronizing 'shiftwidth' between the two places
-        /// </summary>
-        [Fact]
-        public void Sync_ShiftWidth()
-        {
-            _localSettings.ShiftWidth = 42;
-            Assert.Equal(42, _editorOptions.GetOptionValue(DefaultOptions.IndentSizeOptionId));
-
-            _editorOptions.SetOptionValue(DefaultOptions.IndentSizeOptionId, 13);
-            Assert.Equal(13, _localSettings.ShiftWidth);
+            [Fact]
+            public void CopyEditorToVimSettingsTest()
+            {
+                _editorOptions.SetOptionValue(DefaultOptions.TabSizeOptionId, 12);
+                _editorOptions.SetOptionValue(DefaultOptions.IndentSizeOptionId, 13);
+                _synchronizer.CopyEditorToVimSettings(_vimBuffer);
+                Assert.Equal(12, _localSettings.TabStop);
+                Assert.Equal(13, _localSettings.ShiftWidth);
+            }
         }
     }
 }
