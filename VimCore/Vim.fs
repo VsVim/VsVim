@@ -357,6 +357,10 @@ type internal Vim
 
     member x.VimBuffers = _bufferMap.Values |> Seq.map fst |> List.ofSeq
 
+    member x.VimRcState 
+        with get() = _vimRcState
+        and set value = _vimRcState <- value
+
     member x.FocusedBuffer = 
         match _vimHost.GetFocusedTextView() with
         | None -> 

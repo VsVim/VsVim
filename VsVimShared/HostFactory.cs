@@ -29,7 +29,6 @@ namespace VsVim
     {
         private readonly HashSet<IVimBuffer> _toSyncSet = new HashSet<IVimBuffer>();
         private readonly Dictionary<IVimBuffer, VsCommandTarget> _vimBufferToCommandTargetMap = new Dictionary<IVimBuffer, VsCommandTarget>();
-        private readonly IEditorOptionsFactoryService _editorOptionsFactoryService;
         private readonly IResharperUtil _resharperUtil;
         private readonly IDisplayWindowBrokerFactoryService _displayWindowBrokerFactoryServcie;
         private readonly IVim _vim;
@@ -44,8 +43,6 @@ namespace VsVim
         [ImportingConstructor]
         public HostFactory(
             IVim vim,
-            IEditorOptionsFactoryService editorOptionsFactoryService,
-            SVsServiceProvider serviceProvider,
             IVsEditorAdaptersFactoryService adaptersFactory,
             IResharperUtil resharperUtil,
             IDisplayWindowBrokerFactoryService displayWindowBrokerFactoryService,
@@ -57,7 +54,6 @@ namespace VsVim
             IEditorToSettingsSynchronizer editorToSettingSynchronizer)
         {
             _vim = vim;
-            _editorOptionsFactoryService = editorOptionsFactoryService;
             _resharperUtil = resharperUtil;
             _displayWindowBrokerFactoryServcie = displayWindowBrokerFactoryService;
             _adaptersFactory = adaptersFactory;
@@ -191,7 +187,7 @@ namespace VsVim
             // because Venus projects are not fully initialized at this state.  Merely querying 
             // for properties cause them to corrupt internal state and prevents rendering of the 
             // view.  Occurs for aspx and .js pages
-            Action install = () => VsFilterKeysAdapter.TryInstallFilterKeysAdapter(_adapter, _editorOptionsFactoryService, vimBuffer);
+            Action install = () => VsFilterKeysAdapter.TryInstallFilterKeysAdapter(_adapter, vimBuffer);
 
             _protectedOperations.BeginInvoke(install);
         }

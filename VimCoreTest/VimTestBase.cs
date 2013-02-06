@@ -47,6 +47,12 @@ namespace Vim.UnitTest
             get { return _vim; }
         }
 
+        public VimRcState VimRcState
+        {
+            get { return _vim.VimRcState; }
+            set { ((global::Vim.Vim)_vim).VimRcState = value; }
+        }
+
         public IVimData VimData
         {
             get { return _vim.VimData; }
@@ -175,6 +181,10 @@ namespace Vim.UnitTest
             _vim.MarkMap.ClearGlobalMarks();
             _vim.CloseAllVimBuffers();
             _vim.IsDisabled = false;
+
+            // The majority of tests run without a VimRc file but a few do customize it for specific
+            // test reasons.  Make sure it's consistent
+            VimRcState = VimRcState.None;
 
             // Reset all of the global settings back to their default values.   Adds quite
             // a bit of sanity to the test bed

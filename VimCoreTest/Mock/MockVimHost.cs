@@ -35,7 +35,7 @@ namespace Vim.UnitTest.Mock
         public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
         public ITextBuffer LastSaved { get; set; }
         public ITextView LastClosed { get; set; }
-        public VimRcState VimRcState { get; set; }
+        public VimRcState VimRcState { get; private set; }
         public string FileName { get; set; } 
 
         /// <summary>

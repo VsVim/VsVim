@@ -85,6 +85,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CSharpAdapterTest.cs" />
+    <Compile Include="HostFactoryTest.cs" />
     <Compile Include="MindScapeTest.cs" />
     <Compile Include="ResultTest.cs" />
     <Compile Include="UnitTestExtensions.cs" />
