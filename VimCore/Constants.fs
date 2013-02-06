@@ -27,10 +27,10 @@ module Constants =
 
 #if DEBUG
     [<Literal>]
-    let VersionNumber = "1.3.3.0 Debug"
+    let VersionNumber = "1.3.3.1 Debug"
 #else
     [<Literal>]
-    let VersionNumber = "1.3.3.0"
+    let VersionNumber = "1.3.3.1"
 #endif
 
 
