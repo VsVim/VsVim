@@ -29,9 +29,6 @@ namespace VsVim
     {
         private readonly HashSet<IVimBuffer> _toSyncSet = new HashSet<IVimBuffer>();
         private readonly Dictionary<IVimBuffer, VsCommandTarget> _vimBufferToCommandTargetMap = new Dictionary<IVimBuffer, VsCommandTarget>();
-        private readonly IKeyBindingService _keyBindingService;
-        private readonly ITextBufferFactoryService _bufferFactoryService;
-        private readonly ITextEditorFactoryService _editorFactoryService;
         private readonly IEditorOptionsFactoryService _editorOptionsFactoryService;
         private readonly IResharperUtil _resharperUtil;
         private readonly IDisplayWindowBrokerFactoryService _displayWindowBrokerFactoryServcie;
@@ -47,10 +44,7 @@ namespace VsVim
         [ImportingConstructor]
         public HostFactory(
             IVim vim,
-            ITextBufferFactoryService bufferFactoryService,
-            ITextEditorFactoryService editorFactoryService,
             IEditorOptionsFactoryService editorOptionsFactoryService,
-            IKeyBindingService keyBindingService,
             SVsServiceProvider serviceProvider,
             IVsEditorAdaptersFactoryService adaptersFactory,
             IResharperUtil resharperUtil,
@@ -63,9 +57,6 @@ namespace VsVim
             IEditorToSettingsSynchronizer editorToSettingSynchronizer)
         {
             _vim = vim;
-            _keyBindingService = keyBindingService;
-            _bufferFactoryService = bufferFactoryService;
-            _editorFactoryService = editorFactoryService;
             _editorOptionsFactoryService = editorOptionsFactoryService;
             _resharperUtil = resharperUtil;
             _displayWindowBrokerFactoryServcie = displayWindowBrokerFactoryService;
