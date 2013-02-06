@@ -163,6 +163,7 @@ namespace VsVim.UnitTest
         [Fact]
         public void AutoSynchronizeSettings()
         {
+            Create();
             Assert.False(_host.AutoSynchronizeSettings);
         }
     }

@@ -191,13 +191,29 @@ namespace VsVim.UnitTest
         [ThreadStatic]
         private static CompositionContainer _compositionContainer;
 
+        private readonly TestableSynchronizationContext _synchronizationContext;
+
+        public MemoryLeakTest()
+        {
+            _synchronizationContext = new TestableSynchronizationContext();
+            _synchronizationContext.Install();
+        }
+
+        public override void Dispose()
+        {
+            base.Dispose();
+            _synchronizationContext.RunAll();
+            _synchronizationContext.Uninstall();
+        }
+
         private void RunGarbageCollector()
         {
             for (var i = 0; i < 15; i++)
             {
                 Dispatcher.CurrentDispatcher.DoEvents();
-                GC.Collect();
+                GC.Collect(2, GCCollectionMode.Forced);
                 GC.WaitForPendingFinalizers();
+                GC.Collect(2, GCCollectionMode.Forced);
                 GC.Collect();
             }
         }
