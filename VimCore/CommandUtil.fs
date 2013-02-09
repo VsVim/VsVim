@@ -1925,7 +1925,6 @@ type internal CommandUtil
             if (point.Position + count) > line.End.Position then
                 // If the replace operation exceeds the line length then the operation
                 // can't succeed
-                _commonOperations.Beep()
                 false
             else
                 // Do the replace in an undo transaction since we are explicitly positioning
@@ -1940,11 +1939,21 @@ type internal CommandUtil
                         else 
                             new System.String(keyInput.Char, count)
                     let span = new Span(point.Position, count)
-                    let snapshot = _textView.TextBuffer.Replace(span, replaceText) 
+                    _textBuffer.Replace(span, replaceText) |> ignore
+
+                    // Don't use the ITextSnapshot that is returned from Replace.  This represents the ITextSnapshot
+                    // after our change.  If other components are listening to the Change events they could make their
+                    // own change.  The ITextSnapshot returned reflects only our change, not theirs.  To properly 
+                    // position the caret we need the current ITextSnapshot
+                    let snapshot = _textBuffer.CurrentSnapshot
+
+                    // It's possible for any edit to occur after ours including the complete deletion of the buffer
+                    // contents.  Need to account for this in the caret positioning 
+                    let position = min point.Position snapshot.Length
 
                     // The caret should move to the end of the replace operation which is 
                     // 'count - 1' characters from the original position 
-                    let point = SnapshotPoint(snapshot, point.Position + (replaceText.Length - 1))
+                    let point = SnapshotPoint(snapshot, position + (replaceText.Length - 1))
 
                     _textView.Caret.MoveTo(point) |> ignore)
                 true
@@ -1952,8 +1961,9 @@ type internal CommandUtil
         // If the replace failed then we should beep the console
         if not succeeded then
             _commonOperations.Beep()
-
-        CommandResult.Completed ModeSwitch.NoSwitch
+            CommandResult.Error
+        else 
+            CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Replace the char under the cursor in visual mode.
     member x.ReplaceSelection keyInput (visualSpan : VisualSpan) = 
