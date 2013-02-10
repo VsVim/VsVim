@@ -480,8 +480,10 @@ type internal Vim
         PropertyCollectionUtil.GetValue<IVimTextBuffer> _vimTextBufferKey textBuffer.Properties
 
     member x.GetVimInterpreter (vimBuffer : IVimBuffer) = 
-        let (_, vimInterpreter, _) = _vimBufferMap.[vimBuffer.TextView]
-        vimInterpreter
+        let tuple = _vimBufferMap.TryGetValue vimBuffer.TextView
+        match tuple with 
+        | (true, (_, vimInterpreter, _)) -> vimInterpreter
+        | (false, _) -> _interpreterFactory.CreateVimInterpreter vimBuffer _fileSystem
 
     member x.GetVimBuffer textView =
         let tuple = _vimBufferMap.TryGetValue textView
