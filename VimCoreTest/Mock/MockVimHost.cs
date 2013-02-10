@@ -12,6 +12,7 @@ namespace Vim.UnitTest.Mock
     {
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
 
+        public bool AutoSynchronizeSettings { get; set; }
         public int BeepCount { get; set; }
         public int GoToDefinitionCount { get; set; }
         public bool GoToFileReturn { get; set; }
@@ -34,7 +35,7 @@ namespace Vim.UnitTest.Mock
         public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
         public ITextBuffer LastSaved { get; set; }
         public ITextView LastClosed { get; set; }
-        public VimRcState VimRcState { get; set; }
+        public VimRcState VimRcState { get; private set; }
         public string FileName { get; set; } 
 
         /// <summary>
@@ -61,6 +62,7 @@ namespace Vim.UnitTest.Mock
         /// </summary>
         public void Clear()
         {
+            AutoSynchronizeSettings = true;
             GoToDefinitionReturn = true;
             IsCompletionWindowActive = false;
             NavigateToReturn = false;

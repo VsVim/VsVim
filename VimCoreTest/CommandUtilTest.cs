@@ -548,7 +548,98 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class Misc : CommandUtilTest
+        public sealed class ReplaceCharTest : CommandUtilTest
+        {
+            /// <summary>
+            /// If the count is too big then an error needs to occur.  This is necessary to break 
+            /// macro execution
+            /// </summary>
+            [Fact]
+            public void CountTooBig()
+            {
+                Create("cat");
+                var result = _commandUtil.ReplaceChar(KeyInputUtil.CharToKeyInput('c'), 5);
+                Assert.True(result.IsError);
+                Assert.Equal(1, _vimHost.BeepCount);
+            }
+
+            [Fact]
+            public void Simple1()
+            {
+                Create("foo");
+                _commandUtil.ReplaceChar(KeyInputUtil.CharToKeyInput('b'), 1);
+                Assert.Equal("boo", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            }
+
+            [Fact]
+            public void Simple2()
+            {
+                Create("foo");
+                _commandUtil.ReplaceChar(KeyInputUtil.CharToKeyInput('b'), 2);
+                Assert.Equal("bbo", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            }
+
+            [Fact]
+            public void Simple3()
+            {
+                Create("foo");
+                _textView.MoveCaretTo(1);
+                _commandUtil.ReplaceChar(KeyInputUtil.EnterKey, 1);
+                var tss = _textView.TextSnapshot;
+                Assert.Equal(2, tss.LineCount);
+                Assert.Equal("f", tss.GetLineFromLineNumber(0).GetText());
+                Assert.Equal("o", tss.GetLineFromLineNumber(1).GetText());
+            }
+
+            [Fact]
+            public void Simple4()
+            {
+                Create("food");
+                _textView.MoveCaretTo(1);
+                _commandUtil.ReplaceChar(KeyInputUtil.EnterKey, 2);
+                var tss = _textView.TextSnapshot;
+                Assert.Equal(2, tss.LineCount);
+                Assert.Equal("f", tss.GetLineFromLineNumber(0).GetText());
+                Assert.Equal("d", tss.GetLineFromLineNumber(1).GetText());
+            }
+
+            [Fact]
+            public void EnterShouldIndentNextLine()
+            {
+                Create("    the food is especially good today");
+                const int betweenIsAndEspecially = 15;
+                _textView.MoveCaretTo(betweenIsAndEspecially);
+                var tss = _textView.TextSnapshot;
+
+                Assert.True(_commandUtil.ReplaceChar(KeyInputUtil.EnterKey, 1).IsCompleted);
+                var withIndentedSecondLine = string.Format("    the food is{0}    especially good today", Environment.NewLine);
+                Assert.Equal(_textBuffer.GetExtent().GetText(), withIndentedSecondLine);
+            }
+
+            /// <summary>
+            /// Caret should not move as a result of a single ReplaceChar operation
+            /// </summary>
+            [Fact]
+            public void DontMoveCaret()
+            {
+                Create("foo");
+                Assert.True(_commandUtil.ReplaceChar(KeyInputUtil.CharToKeyInput('u'), 1).IsCompleted);
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Caret should move for a multiple replace
+            /// </summary>
+            [Fact]
+            public void MoveCaretForMultiple()
+            {
+                Create("foo");
+                Assert.True(_commandUtil.ReplaceChar(KeyInputUtil.CharToKeyInput('u'), 2).IsCompleted);
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+        }
+
+        public sealed class MiscTest : CommandUtilTest
         {
             IFoldManager _foldManager;
 
@@ -654,99 +745,6 @@ namespace Vim.UnitTest
                 Assert.Null(_vimHost.LastSaved);
                 Assert.Equal(_textView, _vimHost.LastClosed);
             }
-
-            [Fact]
-            public void ReplaceChar1()
-            {
-                Create("foo");
-                _commandUtil.ReplaceChar(KeyInputUtil.CharToKeyInput('b'), 1);
-                Assert.Equal("boo", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            }
-
-            [Fact]
-            public void ReplaceChar2()
-            {
-                Create("foo");
-                _commandUtil.ReplaceChar(KeyInputUtil.CharToKeyInput('b'), 2);
-                Assert.Equal("bbo", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            }
-
-            [Fact]
-            public void ReplaceChar3()
-            {
-                Create("foo");
-                _textView.MoveCaretTo(1);
-                _commandUtil.ReplaceChar(KeyInputUtil.EnterKey, 1);
-                var tss = _textView.TextSnapshot;
-                Assert.Equal(2, tss.LineCount);
-                Assert.Equal("f", tss.GetLineFromLineNumber(0).GetText());
-                Assert.Equal("o", tss.GetLineFromLineNumber(1).GetText());
-            }
-
-            [Fact]
-            public void ReplaceChar4()
-            {
-                Create("food");
-                _textView.MoveCaretTo(1);
-                _commandUtil.ReplaceChar(KeyInputUtil.EnterKey, 2);
-                var tss = _textView.TextSnapshot;
-                Assert.Equal(2, tss.LineCount);
-                Assert.Equal("f", tss.GetLineFromLineNumber(0).GetText());
-                Assert.Equal("d", tss.GetLineFromLineNumber(1).GetText());
-            }
-
-            /// <summary>
-            /// Should beep when the count exceeds the buffer length
-            ///
-            /// Unknown: Should the command still succeed though?  Choosing yes for now but could
-            /// certainly be wrong about this.  Thinking yes though because there is no error message
-            /// to display
-            /// </summary>
-            [Fact]
-            public void ReplaceChar_CountExceedsBufferLength()
-            {
-                Create("food");
-                var tss = _textView.TextSnapshot;
-                Assert.True(_commandUtil.ReplaceChar(KeyInputUtil.CharToKeyInput('c'), 200).IsCompleted);
-                Assert.Same(tss, _textView.TextSnapshot);
-                Assert.True(_vimHost.BeepCount > 0);
-            }
-
-            [Fact]
-            public void ReplaceChar_r_Enter_ShouldIndentNextLine()
-            {
-                Create("    the food is especially good today");
-                const int betweenIsAndEspecially = 15;
-                _textView.MoveCaretTo(betweenIsAndEspecially);
-                var tss = _textView.TextSnapshot;
-
-                Assert.True(_commandUtil.ReplaceChar(KeyInputUtil.EnterKey, 1).IsCompleted);
-                var withIndentedSecondLine = string.Format("    the food is{0}    especially good today", Environment.NewLine);
-                Assert.Equal(_textBuffer.GetExtent().GetText(), withIndentedSecondLine);
-            }
-
-            /// <summary>
-            /// Caret should not move as a result of a single ReplaceChar operation
-            /// </summary>
-            [Fact]
-            public void ReplaceChar_DontMoveCaret()
-            {
-                Create("foo");
-                Assert.True(_commandUtil.ReplaceChar(KeyInputUtil.CharToKeyInput('u'), 1).IsCompleted);
-                Assert.Equal(0, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// Caret should move for a multiple replace
-            /// </summary>
-            [Fact]
-            public void ReplaceChar_MoveCaretForMultiple()
-            {
-                Create("foo");
-                Assert.True(_commandUtil.ReplaceChar(KeyInputUtil.CharToKeyInput('u'), 2).IsCompleted);
-                Assert.Equal(1, _textView.GetCaretPoint().Position);
-            }
-
             /// <summary>
             /// Should be beeping at the last line in the ITextBuffer
             /// </summary>

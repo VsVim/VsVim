@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Diagnostics;
+using System.Windows.Threading;
 using EditorUtils;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
@@ -26,41 +27,22 @@ namespace VsVim
     [TextViewRole(PredefinedTextViewRoles.Document)]
     internal sealed class HostFactory : IWpfTextViewCreationListener, IVimBufferCreationListener, IVsTextViewCreationListener
     {
-        /// <summary>
-        /// Holds data about the IVimBuffer needed by the factory over the IVimBuffer life time
-        /// </summary>
-        private sealed class BufferData
-        {
-            internal int TabStop;
-            internal int ShiftWidth;
-            internal bool ExpandTab;
-            internal bool Number;
-            internal VsCommandTarget VsCommandTarget;
-        }
-
-        private readonly IKeyBindingService _keyBindingService;
-        private readonly ITextBufferFactoryService _bufferFactoryService;
-        private readonly ITextEditorFactoryService _editorFactoryService;
-        private readonly IEditorOptionsFactoryService _editorOptionsFactoryService;
+        private readonly HashSet<IVimBuffer> _toSyncSet = new HashSet<IVimBuffer>();
+        private readonly Dictionary<IVimBuffer, VsCommandTarget> _vimBufferToCommandTargetMap = new Dictionary<IVimBuffer, VsCommandTarget>();
         private readonly IResharperUtil _resharperUtil;
         private readonly IDisplayWindowBrokerFactoryService _displayWindowBrokerFactoryServcie;
         private readonly IVim _vim;
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
-        private readonly Dictionary<IVimBuffer, BufferData> _bufferMap = new Dictionary<IVimBuffer, BufferData>();
         private readonly ITextManager _textManager;
         private readonly IVsAdapter _adapter;
         private readonly IProtectedOperations _protectedOperations;
         private readonly IVimBufferCoordinatorFactory _bufferCoordinatorFactory;
         private readonly IKeyUtil _keyUtil;
+        private readonly IEditorToSettingsSynchronizer _editorToSettingSynchronizer;
 
         [ImportingConstructor]
         public HostFactory(
             IVim vim,
-            ITextBufferFactoryService bufferFactoryService,
-            ITextEditorFactoryService editorFactoryService,
-            IEditorOptionsFactoryService editorOptionsFactoryService,
-            IKeyBindingService keyBindingService,
-            SVsServiceProvider serviceProvider,
             IVsEditorAdaptersFactoryService adaptersFactory,
             IResharperUtil resharperUtil,
             IDisplayWindowBrokerFactoryService displayWindowBrokerFactoryService,
@@ -68,13 +50,10 @@ namespace VsVim
             IVsAdapter adapter,
             [EditorUtilsImport] IProtectedOperations protectedOperations,
             IVimBufferCoordinatorFactory bufferCoordinatorFactory,
-            IKeyUtil keyUtil)
+            IKeyUtil keyUtil,
+            IEditorToSettingsSynchronizer editorToSettingSynchronizer)
         {
             _vim = vim;
-            _keyBindingService = keyBindingService;
-            _bufferFactoryService = bufferFactoryService;
-            _editorFactoryService = editorFactoryService;
-            _editorOptionsFactoryService = editorOptionsFactoryService;
             _resharperUtil = resharperUtil;
             _displayWindowBrokerFactoryServcie = displayWindowBrokerFactoryService;
             _adaptersFactory = adaptersFactory;
@@ -83,10 +62,45 @@ namespace VsVim
             _protectedOperations = protectedOperations;
             _bufferCoordinatorFactory = bufferCoordinatorFactory;
             _keyUtil = keyUtil;
+            _editorToSettingSynchronizer = editorToSettingSynchronizer;
 
 #if DEBUG
             VimTrace.TraceSwitch.Level = TraceLevel.Info;
 #endif
+        }
+
+        /// <summary>
+        /// Begin the synchronization of settings for the given IVimBuffer.  It's okay if this method
+        /// is called after synchronization is started.  The StartSynchronizing method will ignore
+        /// multiple calls and only synchronize once
+        /// </summary>
+        private void BeginSettingSynchronization(IVimBuffer vimBuffer)
+        {
+            // Protect against multiple calls 
+            if (!_toSyncSet.Remove(vimBuffer))
+            {
+                return;
+            }
+
+            // Synchronize any further changes between the buffers
+            _editorToSettingSynchronizer.StartSynchronizing(vimBuffer); 
+
+            // We have to make a decision on whether Visual Studio or Vim settings win during the startup
+            // process.  If there was a Vimrc file then the vim settings win, else the Visual Studio ones
+            // win.  
+            //
+            // By the time this function is called both the Vim and Editor settings are at their final 
+            // values.  We just need to decide on a winner and copy one to the other 
+            if (_vim.VimRcState.IsLoadSucceeded)
+            {
+                // Vim settings win.  
+                _editorToSettingSynchronizer.CopyVimToEditorSettings(vimBuffer);
+            }
+            else
+            {
+                // Visual Studio settings win.  
+                _editorToSettingSynchronizer.CopyEditorToVimSettings(vimBuffer);
+            }
         }
 
         #region IWpfTextViewCreationListener
@@ -95,30 +109,36 @@ namespace VsVim
         {
             // Create the IVimBuffer after loading the VimRc so that it gets the appropriate
             // settings
-            var buffer = _vim.GetOrCreateVimBuffer(textView);
+            var vimBuffer = _vim.GetOrCreateVimBuffer(textView);
 
-            // Save the tab size and expand tab in case we need to reset them later
-            var bufferData = new BufferData
-            {
-                TabStop = buffer.LocalSettings.TabStop,
-                ShiftWidth = buffer.LocalSettings.ShiftWidth,
-                ExpandTab = buffer.LocalSettings.ExpandTab,
-                Number = buffer.LocalSettings.Number
-            };
-            _bufferMap[buffer] = bufferData;
+            // Visual Studio really puts us in a bind with respect to setting synchronization.  It doesn't
+            // have a prescribed time to apply it's own customized settings and in fact differs between 
+            // versions (2010 after TextViewCreated and 2012 is before).  If we start synchronizing 
+            // before Visual Studio settings take affect then they will just overwrite the Vim settings. 
+            //
+            // We need to pick a point where VS is done with settings.  Then we can start synchronization
+            // and change the settings to what we want them to be.
+            //
+            // In most cases we can just wait until IVsTextViewCreationListener.VsTextViewCreated fires 
+            // because that happens after language preferences have taken affect.  Unfortunately this won't
+            // fire for ever IWpfTextView.  If the IWpfTextView doesn't have any shims it won't fire.  So
+            // we post a simple action as a backup mechanism to catch this case.  
+            _toSyncSet.Add(vimBuffer);
+            _protectedOperations.BeginInvoke(() => BeginSettingSynchronization(vimBuffer), DispatcherPriority.Loaded);
         }
 
         #endregion
 
         #region IVimBufferCreationListener
 
-        void IVimBufferCreationListener.VimBufferCreated(IVimBuffer buffer)
+        void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
         {
-            var textView = buffer.TextView;
+            var textView = vimBuffer.TextView;
             textView.Closed += (x, y) =>
             {
-                buffer.Close();
-                _bufferMap.Remove(buffer);
+                vimBuffer.Close();
+                _toSyncSet.Remove(vimBuffer);
+                _vimBufferToCommandTargetMap.Remove(vimBuffer);
             };
         }
 
@@ -149,52 +169,25 @@ namespace VsVim
                 return;
             }
 
-            var buffer = opt.Value;
-            BufferData bufferData;
-            if (_bufferMap.TryGetValue(buffer, out bufferData))
-            {
-                // During the lifetime of an IVimBuffer the local and editor settings are kept
-                // in sync for tab values.  At startup though a decision has to be made about which
-                // settings should "win"
-                //
-                // Visual Studio of course makes this difficult.  It will create an ITextView and 
-                // then later force all of it's language preference settings down on the ITextView
-                // if it does indeed have an IVsTextView.  This setting will inherently overwrite
-                // the vsvim settings with the stored Visual Studio settings.  
-                //
-                // To work around this we store the original values and reset them here.  This event
-                // is raised after this propagation occurs so we can put them back
-                //
-                // This is only done if the user provided an explicit VimRc file.  If none was provided
-                // then we let the Visual Studio savedsettings win instead 
-                if (_vim.VimRcState.IsLoadSucceeded)
-                {
-                    buffer.LocalSettings.TabStop = bufferData.TabStop;
-                    buffer.LocalSettings.ShiftWidth = bufferData.ShiftWidth;
-                    buffer.LocalSettings.ExpandTab = bufferData.ExpandTab;
-                    buffer.LocalSettings.Number = bufferData.Number;
-                }
-            }
-            else
-            {
-                bufferData = new BufferData();
-                _bufferMap[buffer] = bufferData;
-            }
+            var vimBuffer = opt.Value;
+
+            // At this point Visual Studio has fully applied it's settings.  Begin the synchronization process
+            BeginSettingSynchronization(vimBuffer);
 
             var broker = _displayWindowBrokerFactoryServcie.CreateDisplayWindowBroker(textView);
-            var bufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(buffer);
+            var bufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
             var result = VsCommandTarget.Create(bufferCoordinator, vsView, _textManager, _adapter, broker, _resharperUtil, _keyUtil);
             if (result.IsSuccess)
             {
                 // Store the value for debugging
-                bufferData.VsCommandTarget = result.Value;
+                _vimBufferToCommandTargetMap[vimBuffer] = result.Value;
             }
 
             // Try and install the IVsFilterKeys adapter.  This cannot be done synchronously here
             // because Venus projects are not fully initialized at this state.  Merely querying 
             // for properties cause them to corrupt internal state and prevents rendering of the 
             // view.  Occurs for aspx and .js pages
-            Action install = () => VsFilterKeysAdapter.TryInstallFilterKeysAdapter(_adapter, _editorOptionsFactoryService, buffer);
+            Action install = () => VsFilterKeysAdapter.TryInstallFilterKeysAdapter(_adapter, vimBuffer);
 
             _protectedOperations.BeginInvoke(install);
         }

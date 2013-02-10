@@ -156,6 +156,15 @@ namespace VsVim.UnitTest
             Assert.Equal("foo", _host.GetName(buffer.Object));
         }
 
-        public object VimUtil { get; set; }
+        /// <summary>
+        /// Settings shouldn't be automatically synchronized for new IVimBuffer instances in the
+        /// code base.  They are custom handled by HostFactory
+        /// </summary>
+        [Fact]
+        public void AutoSynchronizeSettings()
+        {
+            Create();
+            Assert.False(_host.AutoSynchronizeSettings);
+        }
     }
 }

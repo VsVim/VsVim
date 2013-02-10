@@ -110,6 +110,7 @@
     <Compile Include="HistoryListTest.cs" />
     <Compile Include="MatchingTokenUtilTest.cs" />
     <Compile Include="StringUtilTest.cs" />
+    <Compile Include="TestableProtectedOperations.cs" />
     <Compile Include="TokenStreamTest.cs" />
     <Compile Include="VimBufferTest.cs" />
     <Compile Include="SelectModeIntegrationTest.cs" />

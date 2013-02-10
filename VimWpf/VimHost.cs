@@ -23,6 +23,11 @@ namespace Vim.UI.Wpf
         private readonly List<ITextView> _textViewList = new List<ITextView>();
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
 
+        public virtual bool AutoSynchronizeSettings
+        {
+            get { return true; }
+        }
+
         protected VimHost(
             ITextBufferFactoryService textBufferFactoryService,
             ITextEditorFactoryService textEditorFactoryService,
@@ -351,6 +356,11 @@ namespace Vim.UI.Wpf
         #endregion
 
         #region IVimHost
+
+        bool IVimHost.AutoSynchronizeSettings
+        {
+            get { return AutoSynchronizeSettings; }
+        }
 
         void IVimHost.Beep()
         {

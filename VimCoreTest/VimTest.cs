@@ -51,6 +51,7 @@ namespace Vim.UnitTest
             _keyMap = new KeyMap(_globalSettings, map);
             _vimHost = _factory.Create<IVimHost>(MockBehavior.Strict);
             _vimHost.Setup(x => x.CreateHiddenTextView()).Returns(CreateTextView());
+            _vimHost.Setup(x => x.AutoSynchronizeSettings).Returns(true);
             _vimRaw = new Vim(
                 _vimHost.Object,
                 _bufferFactory,
@@ -63,7 +64,8 @@ namespace Vim.UnitTest
                 _fileSystem.Object,
                 new VimData(),
                 _factory.Create<IBulkOperations>().Object,
-                map);
+                map,
+                new EditorToSettingSynchronizer());
             _vim = _vimRaw;
             _vim.AutoLoadVimRc = false;
         }

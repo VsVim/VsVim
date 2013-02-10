@@ -3003,6 +3003,24 @@ namespace Vim.UnitTest
                 Assert.Equal("fox", _textView.GetLine(0).GetText());
             }
 
+            /// <summary>
+            /// Repeating a replace char command should move the caret to the end just like
+            /// the original command did
+            /// </summary>
+            [Fact]
+            public void ReplaceCharShouldMoveCaret()
+            {
+                Create("the dog kicked the ball");
+                _vimBuffer.Process("3ru");
+                Assert.Equal("uuu dog kicked the ball", _textView.GetLine(0).GetText());
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process(".");
+                Assert.Equal("uuu uuu kicked the ball", _textView.GetLine(0).GetText());
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
+            }
+
+
             [Fact]
             public void ShiftLeft1()
             {
@@ -3247,23 +3265,6 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Repeating a replace char command should move the caret to the end just like
-            /// the original command did
-            /// </summary>
-            [Fact]
-            public void ReplaceChar_ShouldMoveCaret()
-            {
-                Create("the dog kicked the ball");
-                _vimBuffer.Process("3ru");
-                Assert.Equal("uuu dog kicked the ball", _textView.GetLine(0).GetText());
-                Assert.Equal(2, _textView.GetCaretPoint().Position);
-                _textView.MoveCaretTo(4);
-                _vimBuffer.Process(".");
-                Assert.Equal("uuu uuu kicked the ball", _textView.GetLine(0).GetText());
-                Assert.Equal(6, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
             /// Repeating a 
             /// replace char command from visual mode should not move the caret
             /// </summary>
@@ -3433,6 +3434,95 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(KeyInputUtil.CharToKeyInput('.'));
                 _vimBuffer.Process(KeyInputUtil.CharToKeyInput('.'));
                 Assert.Equal("hey hehey chased the bird", _textView.TextSnapshot.GetText());
+            }
+        }
+
+        public sealed class ReplaceCharTest : NormalModeIntegrationTest
+        {
+            [Fact]
+            public void Simple()
+            {
+                Create("cat dog");
+                _vimBuffer.Process("rb");
+                Assert.Equal("bat dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// When there is a count involved the caret should be positioned on the final character
+            /// that is relpaced
+            /// </summary>
+            [Fact]
+            public void WithCount()
+            {
+                Create("cat dog");
+                _vimBuffer.Process("3ro");
+                Assert.Equal("ooo dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(2, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// When the count exceeds the length of the line then no change should occur and a beep
+            /// should be raised
+            /// </summary>
+            [Fact]
+            public void CountTooBig()
+            {
+                Create("cat", "dog fish tree");
+                _vimBuffer.Process("10ro");
+                Assert.Equal(1, VimHost.BeepCount);
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// There is no known extension which does this yet but it is possible for a subsequent change
+            /// to delete the buffer up to the position that we want to move the caret to.  Must account
+            /// for that by simply not crashing.  Move to the best possible position 
+            /// </summary>
+            [Fact]
+            public void AfterChangeDeleteTargetCaretPosition()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(5);
+                var first = true;
+                _textBuffer.Changed +=
+                    delegate
+                    {
+                        if (first)
+                        {
+                            first = false;
+                            _textBuffer.Replace(new Span(0, 7), "at");
+                        }
+                    };
+                _vimBuffer.Process("r2");
+                Assert.Equal("at", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(2, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// In Vs 2012 if you change a tag name with a simple relpace it will change the matching
+            /// tag with a subsequent edit.  This means the ITextSnapshot which returns from the replace
+            /// will be a version behind the current version of the ITextView.  Need to make sure we
+            /// use the correct ITextSnapshot for the caret positioning
+            /// </summary>
+            [Fact]
+            public void Issue1040()
+            {
+                Create("<h1>test</h1>");
+                _textView.MoveCaretTo(2);
+                var first = true;
+                _textBuffer.Changed +=
+                    delegate
+                    {
+                        if (first)
+                        {
+                            first = false;
+                            _textBuffer.Replace(new Span(11, 1), "2");
+                        }
+                    };
+                _vimBuffer.Process("r2");
+                Assert.Equal("<h2>test</h2>", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(2, _textView.GetCaretPoint());
             }
         }
 

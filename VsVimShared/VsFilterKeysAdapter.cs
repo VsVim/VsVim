@@ -92,7 +92,6 @@ namespace VsVim
         /// </summary>
         internal static bool TryInstallFilterKeysAdapter(
             IVsAdapter adapter,
-            IEditorOptionsFactoryService optionsFactory,
             IVimBuffer buffer)
         {
             var textView = buffer.TextView;

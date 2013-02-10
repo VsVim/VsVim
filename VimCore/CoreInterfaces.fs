@@ -3246,6 +3246,10 @@ type QuickFix =
 
 type IVimHost =
 
+    /// Should vim automatically start synchronization of IVimBuffer instances when they are 
+    /// created
+    abstract AutoSynchronizeSettings : bool 
+
     abstract Beep : unit -> unit
 
     /// Called at the start of a bulk operation such as a macro replay or a repeat of
