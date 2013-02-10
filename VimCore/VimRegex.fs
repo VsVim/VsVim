@@ -522,3 +522,6 @@ module VimRegexFactory =
         let options = CreateRegexOptions globalSettings
         Create pattern options
 
+    let CreateBcl pattern options =
+        VimRegexUtils.TryCreateRegex pattern options
+

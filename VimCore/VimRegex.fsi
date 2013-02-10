@@ -94,6 +94,8 @@ module VimRegexFactory =
 
     val CreateRegexOptions : globalSettings : IVimGlobalSettings -> VimRegexOptions
 
+    val CreateBcl : pattern : string -> regexOptions : RegexOptions -> Regex option
+
 
 
 

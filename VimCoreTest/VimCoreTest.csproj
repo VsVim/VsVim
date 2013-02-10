@@ -94,6 +94,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AutoCommandRunnerTest.cs" />
     <Compile Include="BlockSpanTest.cs" />
     <Compile Include="BulkOperationsTest.cs" />
     <Compile Include="ChangeTrackerTest.cs" />

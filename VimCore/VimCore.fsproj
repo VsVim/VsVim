@@ -135,6 +135,8 @@
     <Compile Include="CommandRunner.fs" />
     <Compile Include="WordUtil.fsi" />
     <Compile Include="WordUtil.fs" />
+    <Compile Include="AutoCommandRunner.fsi" />
+    <Compile Include="AutoCommandRunner.fs" />
     <Compile Include="Vim.fs" />
     <Compile Include="StatusUtil.fsi" />
     <Compile Include="StatusUtil.fs" />
