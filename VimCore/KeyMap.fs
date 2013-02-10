@@ -2,6 +2,7 @@
 
 namespace Vim
 open System
+open Vim.Interpreter
 
 /// Map of a LHS of a mapping to the RHS.  The bool is used to indicate whether or not 
 /// the RHS should be remapped as part of an expansion

@@ -549,7 +549,7 @@ type Parser
                 let autoCommand = { 
                     Group = autoCommandGroup 
                     EventKinds = eventKindList
-                    Command = command
+                    LineCommandText = command
                     Pattern = pattern
                 }
                 ParseResult.Succeeded (LineCommand.AddAutoCommand autoCommand)

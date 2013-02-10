@@ -7,6 +7,7 @@ using Xunit;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
 using System.Collections.Generic;
+using Vim.Interpreter;
 
 namespace Vim.UnitTest
 {

@@ -10,75 +10,7 @@ open Microsoft.VisualStudio.Utilities
 open System.Diagnostics
 open System.Runtime.CompilerServices
 open System.Collections.Generic
-
-[<RequireQualifiedAccess>]
-type VariableType =
-    | Number
-    | Float
-    | String
-    | FunctionRef
-    | List
-    | Dictionary
-    | Error
-
-[<RequireQualifiedAccess>]
-type VariableValue =
-    | Number of int
-    | Float of float
-    | String of string
-    | FunctionRef of string
-    | List of VariableValue list
-    | Dictionary of Map<string, VariableValue>
-    | Error
-
-    with
-
-    // TODO: Determine the appropriate values for List, Dictionary and Error
-    member x.StringValue =
-        match x with
-        | Number number -> number.ToString()
-        | Float number -> number.ToString()
-        | String str -> str
-        | FunctionRef name -> name
-        | List _ -> "<list>"
-        | Dictionary _  -> "<dictionary>"
-        | Error -> "<error>"
-
-    member x.VariableType = 
-        match x with
-        | Number _ -> VariableType.Number
-        | Float _ -> VariableType.Float
-        | String _ -> VariableType.String
-        | FunctionRef _ -> VariableType.FunctionRef
-        | List _ -> VariableType.List
-        | Dictionary _ -> VariableType.Dictionary
-        | Error -> VariableType.Error
-
-type VariableMap = System.Collections.Generic.Dictionary<string, VariableValue>
-
-/// The set of events Vim supports.  Defined in ':help autocmd-events'
-///
-/// Right now we only support a very limited set of autocmd events.  Enough to 
-/// alter ts, sw, etc ... when a new file is created 
-[<RequireQualifiedAccess>]
-type EventKind = 
-    | BufEnter
-
-type AutoCommandGroup = 
-    | Default
-    | Named of string 
-
-type AutoCommand = {
-    Group : AutoCommandGroup
-
-    EventKinds : EventKind list
-
-    // TODO: Should rearrange dependencies such that I can store this as a LineCommand and
-    // not a raw string 
-    Command : string
-
-    Pattern : string
-}    
+open Vim.Interpreter
 
 [<RequireQualifiedAccess>]
 type CaretMovement =
@@ -120,11 +52,6 @@ type VimRcState =
 type HostResult =
     | Success
     | Error of string
-
-[<RequireQualifiedAccess>]
-type JoinKind = 
-    | RemoveEmptySpaces
-    | KeepEmptySpaces
 
 [<RequireQualifiedAccess>]
 type ChangeCharacterKind =
@@ -1140,40 +1067,6 @@ module KeyInputSetUtil =
         let all = left.KeyInputs @ right.KeyInputs
         OfList all
 
-/// Modes for a key remapping
-[<RequireQualifiedAccess>]
-[<DebuggerDisplay("{ToString(),nq}")>]
-type KeyRemapMode =
-    | Normal 
-    | Visual 
-    | Select 
-    | OperatorPending 
-    | Insert 
-    | Command 
-    | Language 
-
-    with 
-
-    static member All = 
-        seq {
-            yield Normal
-            yield Visual 
-            yield Select
-            yield OperatorPending
-            yield Insert
-            yield Command
-            yield Language }
-
-    override x.ToString() =
-        match x with 
-        | Normal -> "Normal"
-        | Visual -> "Visual"
-        | Select -> "Select"
-        | OperatorPending -> "OperatorPending"
-        | Insert -> "Insert"
-        | Command -> "Command"
-        | Language -> "Language"
-
 [<RequireQualifiedAccess>]
 type KeyMappingResult =
 
@@ -1192,36 +1085,6 @@ type KeyMappingResult =
 
     /// More input is needed to resolve this mapping.
     | NeedsMoreInput of KeyInputSet
-
-/// Flags for the substitute command
-[<System.Flags>]
-type SubstituteFlags = 
-    | None = 0
-
-    /// Replace all occurrences on the line
-    | ReplaceAll = 0x1
-
-    /// Ignore case for the search pattern
-    | IgnoreCase = 0x2
-
-    /// Report only 
-    | ReportOnly = 0x4
-    | Confirm = 0x8
-    | UsePreviousFlags = 0x10
-    | UsePreviousSearchPattern = 0x20
-    | SuppressError = 0x40
-    | OrdinalCase = 0x80
-    | Magic = 0x100
-    | Nomagic = 0x200
-
-    /// The p option.  Print the last replaced line
-    | PrintLast = 0x400
-
-    /// The # option.  Print the last replaced line with the line number prepended
-    | PrintLastWithNumber = 0x800
-
-    /// Print the last line as if :list was used
-    | PrintLastWithList = 0x1000
 
 type SubstituteData = {
     SearchPattern : string

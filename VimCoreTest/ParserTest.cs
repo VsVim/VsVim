@@ -83,7 +83,7 @@ namespace Vim.UnitTest
                 var autoCommand = AssertAddAutoCommand("autocmd BufEnter *.html set ts=4");
                 Assert.Equal(EventKind.BufEnter, autoCommand.EventKinds.Single());
                 Assert.Equal("*.html", autoCommand.Pattern);
-                Assert.Equal("set ts=4", autoCommand.Command);
+                Assert.Equal("set ts=4", autoCommand.LineCommandText);
             }
         }
 

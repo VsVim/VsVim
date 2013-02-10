@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Vim.Extensions;
+using Vim.Interpreter;
 using Xunit;
 
 namespace Vim.UnitTest

@@ -10,6 +10,7 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
+using Vim.Interpreter;
 using Vim.UI.Wpf;
 using Vim.UI.Wpf.Implementation.Keyboard;
 using Vim.UI.Wpf.Implementation.Misc;

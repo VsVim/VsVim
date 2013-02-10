@@ -1,5 +1,6 @@
 ﻿
 namespace Vim
+open Vim.Interpreter
 
 type internal KeyMap =
 

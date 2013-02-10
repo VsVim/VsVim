@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 using Moq;
 using System.Collections.Generic;
+using Vim.Interpreter;
 
 namespace Vim.UnitTest.Mock
 {

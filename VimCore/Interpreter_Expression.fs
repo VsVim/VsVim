@@ -3,6 +3,63 @@
 namespace Vim.Interpreter
 open Vim
 
+[<RequireQualifiedAccess>]
+type VariableType =
+    | Number
+    | Float
+    | String
+    | FunctionRef
+    | List
+    | Dictionary
+    | Error
+
+[<RequireQualifiedAccess>]
+type VariableValue =
+    | Number of int
+    | Float of float
+    | String of string
+    | FunctionRef of string
+    | List of VariableValue list
+    | Dictionary of Map<string, VariableValue>
+    | Error
+
+    with
+
+    // TODO: Determine the appropriate values for List, Dictionary and Error
+    member x.StringValue =
+        match x with
+        | Number number -> number.ToString()
+        | Float number -> number.ToString()
+        | String str -> str
+        | FunctionRef name -> name
+        | List _ -> "<list>"
+        | Dictionary _  -> "<dictionary>"
+        | Error -> "<error>"
+
+    member x.VariableType = 
+        match x with
+        | Number _ -> VariableType.Number
+        | Float _ -> VariableType.Float
+        | String _ -> VariableType.String
+        | FunctionRef _ -> VariableType.FunctionRef
+        | List _ -> VariableType.List
+        | Dictionary _ -> VariableType.Dictionary
+        | Error -> VariableType.Error
+
+type VariableMap = System.Collections.Generic.Dictionary<string, VariableValue>
+
+/// The set of events Vim supports.  Defined in ':help autocmd-events'
+///
+/// Right now we only support a very limited set of autocmd events.  Enough to 
+/// alter ts, sw, etc ... when a new file is created 
+[<RequireQualifiedAccess>]
+type EventKind = 
+    | BufEnter
+
+type AutoCommandGroup = 
+    | Default
+    | Named of string 
+
 /// A single line specifier in a range 
 [<RequireQualifiedAccess>]
 type LineSpecifier = 
@@ -178,6 +235,16 @@ and [<RequireQualifiedAccess>] ConditionalBlock =
         | Conditional (_, _, next) -> Some next
         | Unconditional lineCommands -> None
         | Empty -> None
+
+and AutoCommand = {
+    Group : AutoCommandGroup
+
+    EventKinds : EventKind list
+
+    LineCommandText : string
+
+    Pattern : string
+}    
 
 and [<RequireQualifiedAccess>] Expression =
 
