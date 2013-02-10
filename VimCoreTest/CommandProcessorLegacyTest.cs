@@ -29,7 +29,7 @@ namespace Vim.UnitTest
         private Mock<IFoldManager> _foldManager;
         private Mock<IVimHost> _vimHost;
         private Mock<IVim> _vim;
-        private Interpreter.Interpreter _interpreter;
+        private VimInterpreter _interpreter;
 
         public void Create(params string[] lines)
         {
@@ -58,7 +58,7 @@ namespace Vim.UnitTest
                 _textView,
                 statusUtil: _statusUtil.Object);
             var vimBuffer = CreateVimBuffer(vimBufferData);
-            _interpreter = new Interpreter.Interpreter(
+            _interpreter = new Interpreter.VimInterpreter(
                 vimBuffer,
                 _operations.Object,
                 _foldManager.Object,

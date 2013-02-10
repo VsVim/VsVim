@@ -6,6 +6,7 @@ open Vim
 open Vim.VimHostExtensions
 open Vim.StringBuilderExtensions
 open System.Collections.Generic
+open System.ComponentModel.Composition
 
 [<RequireQualifiedAccess>]
 type DefaultLineRange =
@@ -77,7 +78,7 @@ type ExpressionInterpreter
 
 [<Sealed>]
 [<Class>]
-type Interpreter
+type VimInterpreter
     (
         _vimBuffer : IVimBuffer,
         _commonOperations : ICommonOperations,
@@ -1423,6 +1424,26 @@ type Interpreter
         | Some lineRange ->
             func lineRange
 
+    interface IVimInterpreter with
+        member x.GetLine lineSpecifier = x.GetLine lineSpecifier
+        member x.GetLineRange lineRange = x.GetLineRange lineRange
+        member x.RunLineCommand lineCommand = x.RunLineCommand lineCommand
+        member x.RunExpression expression = x.RunExpression expression
 
+[<Export(typeof<IVimInterpreterFactory>)>]
+type VimInterpreterFactory
+    [<ImportingConstructor>]
+    (
+        _commonOperationsFactory : ICommonOperationsFactory,
+        _foldManagerFactory : IFoldManagerFactory,
+        _bufferTrackingService : IBufferTrackingService
+    ) = 
 
+    member x.CreateVimInterpreter (vimBuffer : IVimBuffer) fileSystem =
+        let commonOperations = _commonOperationsFactory.GetCommonOperations vimBuffer.VimBufferData
+        let foldManager = _foldManagerFactory.GetFoldManager vimBuffer.TextView
+        let interpreter = VimInterpreter(vimBuffer, commonOperations, foldManager, fileSystem, _bufferTrackingService)
+        interpreter :> IVimInterpreter
 
+    interface IVimInterpreterFactory with
+        member x.CreateVimInterpreter vimBuffer fileSystem = x.CreateVimInterpreter vimBuffer fileSystem

@@ -15,17 +15,14 @@ open System.Text.RegularExpressions
 type internal AutoCommandRunner
     [<ImportingConstructor>]
     (
-        _vim : IVim,
-        _commonOperationsFactory : ICommonOperationsFactory,
-        _foldManagerFactory : IFoldManagerFactory,
-        _bufferTrackingService : IBufferTrackingService
+        _vim : IVim
     ) =
 
     let _vimData = _vim.VimData
     let _vimHost = _vim.VimHost
 
     /// Create the Regex for the specified pattern.  The allowed items are specified in ':help autocmd-patterns'
-    let CreateFilePatternRegex (pattern : string) = 
+    static let CreateFilePatternRegex (pattern : string) = 
         let builder = System.Text.StringBuilder()
         let mutable i = 0 
         while i < pattern.Length do 
@@ -47,7 +44,7 @@ type internal AutoCommandRunner
         let bclPattern = builder.ToString()
         VimRegexFactory.CreateBcl bclPattern RegexOptions.None
 
-    let FileNameEndsWithPattern fileName pattern = 
+    static let FileNameEndsWithPattern fileName pattern = 
         try
             let regex = CreateFilePatternRegex pattern
             match regex with 
@@ -67,16 +64,13 @@ type internal AutoCommandRunner
         let fileName = _vimHost.GetName vimBuffer.TextBuffer
         let autoCommandList = x.GetAutoCommands fileName eventKind
         if autoCommandList.Length > 0 then
-            // TODO: Don't create the interpreter here.  This should be available from the IVimBuffer directly
-            let commonOperations = _commonOperationsFactory.GetCommonOperations vimBuffer.VimBufferData
-            let foldManager = _foldManagerFactory.GetFoldManager vimBuffer.TextView
-            let interpreter = Interpreter(vimBuffer, commonOperations, foldManager, FileSystem() :> IFileSystem, _bufferTrackingService)
+            let vimInterpreter = _vim.GetVimInterpreter vimBuffer
 
             autoCommandList
             |> Seq.iter (fun autoCommand -> 
-                match Parser.ParseLineCommand autoCommand.Command with
+                match Parser.ParseLineCommand autoCommand.LineCommandText with
                 | ParseResult.Failed _ -> ()
-                | ParseResult.Succeeded lineCommand -> interpreter.RunLineCommand lineCommand |> ignore)
+                | ParseResult.Succeeded lineCommand -> vimInterpreter.RunLineCommand lineCommand |> ignore)
 
     /// VimBufferCreated is the closest event we have for BufEnter.   
     member x.OnVimBufferCreated (vimBuffer : IVimBuffer) =

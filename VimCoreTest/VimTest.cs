@@ -56,6 +56,7 @@ namespace Vim.UnitTest
             _vimRaw = new Vim(
                 _vimHost.Object,
                 _bufferFactory,
+                CompositionContainer.GetExportedValue<IVimInterpreterFactory>(),
                 creationListeners.ToFSharpList(),
                 _globalSettings,
                 _factory.Create<IMarkMap>().Object,

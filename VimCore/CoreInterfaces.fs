@@ -1086,12 +1086,6 @@ type KeyMappingResult =
     /// More input is needed to resolve this mapping.
     | NeedsMoreInput of KeyInputSet
 
-type SubstituteData = {
-    SearchPattern : string
-    Substitute : string
-    Flags : SubstituteFlags
-}
-
 /// Represents the span for a Visual Character mode selection.  If it weren't for the
 /// complications of tracking a visual character selection across edits to the buffer
 /// there would really be no need for this and we could instead just represent it as 
@@ -1794,11 +1788,6 @@ type CommandResult =
     /// An error was encountered and the command was unable to run.  If this is encountered
     /// during a macro run it will cause the macro to stop executing
     | Error
-
-[<RequireQualifiedAccess>]
-type RunResult = 
-    | Completed
-    | SubstituteConfirm of SnapshotSpan * SnapshotLineRange * SubstituteData
 
 /// Information about the attributes of Command
 [<System.Flags>]
@@ -3368,6 +3357,9 @@ and IVim =
 
     /// Close all IVimBuffer instances in the system
     abstract CloseAllVimBuffers : unit -> unit
+
+    /// Get the IVimInterpreter for the specified IVimBuffer
+    abstract GetVimInterpreter : vimBuffer : IVimBuffer -> IVimInterpreter
 
     /// Get the IVimBuffer associated with the given ITextView
     abstract GetVimBuffer : ITextView -> IVimBuffer option

@@ -4,6 +4,7 @@
 namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
+open Vim.Interpreter
 
 /// Bulk operations include repeat and macro commands.  This inteface is used to notify the 
 /// system that a bulk operation is begining / ending
@@ -26,4 +27,9 @@ type internal IVimBufferFactory =
 
     /// Create an IVimBuffer for the given parameters
     abstract CreateVimBuffer : vimBufferData : IVimBufferData -> IVimBuffer
+
+type internal IVimInterpreterFactory = 
+
+    /// Create a IVimInterpreter for the given IVimBuffer.  
+    abstract CreateVimInterpreter : vimBuffer : IVimBuffer -> fileSystem : IFileSystem -> IVimInterpreter
 

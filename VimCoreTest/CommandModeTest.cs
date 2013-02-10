@@ -24,13 +24,7 @@ namespace Vim.UnitTest
 
             var factory = new MockRepository(MockBehavior.Strict);
             var commonOperations = CommonOperationsFactory.GetCommonOperations(_vimBuffer.VimBufferData);
-            var interpreter = new Interpreter.Interpreter(
-                _vimBuffer,
-                commonOperations,
-                factory.Create<IFoldManager>().Object,
-                factory.Create<IFileSystem>().Object,
-                factory.Create<IBufferTrackingService>().Object);
-            _modeRaw = new CommandMode(_vimBuffer, commonOperations, interpreter);
+            _modeRaw = new CommandMode(_vimBuffer, commonOperations);
             _mode = _modeRaw;
         }
 

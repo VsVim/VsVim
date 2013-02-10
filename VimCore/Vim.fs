@@ -200,7 +200,6 @@ type internal VimBufferFactory
         let createCommandRunner kind = CommandRunner (textView, vim.RegisterMap, capture, commandUtil, vimBufferData.StatusUtil, kind) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker textView
         let bufferOptions = _editorOptionsFactoryService.GetOptions(textView.TextBuffer)
-        let interpreter = Interpreter.Interpreter(buffer, commonOperations, foldManager, FileSystem() :> IFileSystem, _bufferTrackingService)
         let visualOptsFactory visualKind = Modes.Visual.SelectionTracker(textView, vim.GlobalSettings, incrementalSearch, visualKind) :> Modes.Visual.ISelectionTracker
         let undoRedoOperations = vimBufferData.UndoRedoOperations
 
@@ -227,7 +226,7 @@ type internal VimBufferFactory
         let modeList = 
             [
                 ((Modes.Normal.NormalMode(vimBufferData, commonOperations, motionUtil, createCommandRunner VisualKind.Character, capture)) :> IMode)
-                ((Modes.Command.CommandMode(buffer, commonOperations, interpreter)) :> IMode)
+                ((Modes.Command.CommandMode(buffer, commonOperations)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, false, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, true, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
                 ((Modes.SubstituteConfirm.SubstituteConfirmMode(vimBufferData, commonOperations) :> IMode))
@@ -249,6 +248,7 @@ type internal Vim
     (
         _vimHost : IVimHost,
         _bufferFactoryService : IVimBufferFactory,
+        _interpreterFactory : IVimInterpreterFactory,
         _bufferCreationListeners : Lazy<IVimBufferCreationListener> list,
         _globalSettings : IVimGlobalSettings,
         _markMap : IMarkMap,
@@ -267,7 +267,7 @@ type internal Vim
 
     /// Holds an IVimBuffer and the DisposableBag for event handlers on the IVimBuffer.  This
     /// needs to be removed when we're done with the IVimBuffer to avoid leaks
-    let _bufferMap = Dictionary<ITextView, IVimBuffer * DisposableBag>()
+    let _vimBufferMap = Dictionary<ITextView, IVimBuffer * IVimInterpreter * DisposableBag>()
 
     /// Holds the active stack of IVimBuffer instances
     let mutable _activeBufferStack : IVimBuffer list = List.empty
@@ -320,6 +320,7 @@ type internal Vim
     new(
         host : IVimHost,
         bufferFactoryService : IVimBufferFactory,
+        interpreterFactory : IVimInterpreterFactory,
         bufferTrackingService : IBufferTrackingService,
         [<ImportMany>] bufferCreationListeners : Lazy<IVimBufferCreationListener> seq,
         search : ITextSearchService,
@@ -335,6 +336,7 @@ type internal Vim
         Vim(
             host,
             bufferFactoryService,
+            interpreterFactory,
             listeners,
             globalSettings,
             markMap :> IMarkMap,
@@ -363,7 +365,7 @@ type internal Vim
 
     member x.VariableMap = _variableMap
 
-    member x.VimBuffers = _bufferMap.Values |> Seq.map fst |> List.ofSeq
+    member x.VimBuffers = _vimBufferMap.Values |> Seq.map (fun (vimBuffer, _, _) -> vimBuffer) |> List.ofSeq
 
     member x.VimRcState 
         with get() = _vimRcState
@@ -374,8 +376,8 @@ type internal Vim
         | None -> 
             None
         | Some textView -> 
-            let found, (buffer, _) = _bufferMap.TryGetValue(textView)
-            if found then Some buffer
+            let found, (vimBuffer, _, _) = _vimBufferMap.TryGetValue(textView)
+            if found then Some vimBuffer
             else None
 
     /// Get the IVimLocalSettings which should be the basis for a newly created IVimTextBuffer
@@ -428,7 +430,7 @@ type internal Vim
     /// will not notify the IVimBufferCreationListener collection about the new
     /// IVimBuffer
     member x.CreateVimBufferCore textView (windowSettings : IVimWindowSettings option) =
-        if _bufferMap.ContainsKey(textView) then 
+        if _vimBufferMap.ContainsKey(textView) then 
             invalidArg "textView" Resources.Vim_TextViewAlreadyHasVimBuffer
 
         let vimTextBuffer = x.GetOrCreateVimTextBuffer textView.TextBuffer
@@ -458,7 +460,8 @@ type internal Vim
                 | [] -> [] )
         |> eventBag.Add
 
-        _bufferMap.Add(textView, (vimBuffer, eventBag))
+        let vimInterpreter = _interpreterFactory.CreateVimInterpreter vimBuffer _fileSystem
+        _vimBufferMap.Add(textView, (vimBuffer, vimInterpreter, eventBag))
 
         if _vimHost.AutoSynchronizeSettings then
             _editorToSettingSynchronizer.StartSynchronizing vimBuffer
@@ -476,11 +479,15 @@ type internal Vim
     member x.GetVimTextBuffer (textBuffer : ITextBuffer) =
         PropertyCollectionUtil.GetValue<IVimTextBuffer> _vimTextBufferKey textBuffer.Properties
 
+    member x.GetVimInterpreter (vimBuffer : IVimBuffer) = 
+        let (_, vimInterpreter, _) = _vimBufferMap.[vimBuffer.TextView]
+        vimInterpreter
+
     member x.GetVimBuffer textView =
-        let tuple = _bufferMap.TryGetValue textView
+        let tuple = _vimBufferMap.TryGetValue textView
         match tuple with 
-        | (true,(buffer,_)) -> Some buffer
-        | (false,_) -> None
+        | (true, (buffer, _, _)) -> Some buffer
+        | (false, _) -> None
 
     member x.GetOrCreateVimTextBuffer textBuffer =
         match x.GetVimTextBuffer textBuffer with
@@ -548,11 +555,11 @@ type internal Vim
             _vimRcState
 
     member x.RemoveVimBuffer textView = 
-        let found, tuple = _bufferMap.TryGetValue(textView)
+        let found, tuple = _vimBufferMap.TryGetValue(textView)
         if found then 
-            let _,bag = tuple
+            let _, _, bag = tuple
             bag.DisposeAll()
-        _bufferMap.Remove textView
+        _vimBufferMap.Remove textView
 
     /// Toggle disabled mode for all active IVimBuffer instances to sync up with the current
     /// state of _isDisabled
@@ -591,6 +598,7 @@ type internal Vim
         member x.CloseAllVimBuffers() = x.CloseAllVimBuffers()
         member x.CreateVimBuffer textView = x.CreateVimBuffer textView (Some (x.GetWindowSettingsForNewBuffer()))
         member x.CreateVimTextBuffer textBuffer = x.CreateVimTextBuffer textBuffer (Some (x.GetLocalSettingsForNewTextBuffer()))
+        member x.GetVimInterpreter vimBuffer = x.GetVimInterpreter vimBuffer
         member x.GetOrCreateVimBuffer textView = x.GetOrCreateVimBuffer textView
         member x.GetOrCreateVimTextBuffer textBuffer = x.GetOrCreateVimTextBuffer textBuffer
         member x.RemoveVimBuffer textView = x.RemoveVimBuffer textView

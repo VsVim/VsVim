@@ -1,4 +1,6 @@
 ﻿namespace Vim
+open EditorUtils
+open Microsoft.VisualStudio.Text
 open System.Diagnostics
 
 [<RequireQualifiedAccess>]
@@ -74,6 +76,12 @@ type SubstituteFlags =
 
     /// Print the last line as if :list was used
     | PrintLastWithList = 0x1000
+
+type SubstituteData = {
+    SearchPattern : string
+    Substitute : string
+    Flags : SubstituteFlags
+}
 
 /// Represents the different type of operations that are available for Motions
 [<DebuggerDisplay("{ToString(),nq}")>]
@@ -312,7 +320,6 @@ type Path =
         if isForward then Path.Forward 
         else Path.Backward
 
-
 type SearchKind = 
      | Forward
      | ForwardWithWrap
@@ -369,3 +376,7 @@ type SearchKind =
         | Path.Forward -> if wrap then SearchKind.ForwardWithWrap else SearchKind.Forward
         | Path.Backward -> if wrap then SearchKind.BackwardWithWrap else SearchKind.Backward
 
+[<RequireQualifiedAccess>]
+type RunResult = 
+    | Completed
+    | SubstituteConfirm of SnapshotSpan * SnapshotLineRange * SubstituteData

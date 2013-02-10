@@ -53,7 +53,7 @@
     <Compile Include="ColumnWiseUtil.fs" />
     <Compile Include="Interpreter_Expression.fs" />
     <Compile Include="CoreInterfaces.fs" />
-    <Compile Include="InternalInterfaces.fs" />
+    <Compile Include="CoreInternalInterfaces.fs" />
     <Compile Include="TextUtil.fsi" />
     <Compile Include="TextUtil.fs" />
     <Compile Include="CountCapture.fs" />

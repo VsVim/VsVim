@@ -1,6 +1,8 @@
 ﻿#light
 
 namespace Vim.Interpreter
+open EditorUtils
+open Microsoft.VisualStudio.Text
 open Vim
 
 [<RequireQualifiedAccess>]
@@ -477,3 +479,20 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// Yank the line range into the given register with the specified count
     | Yank of LineRangeSpecifier * RegisterName option * int option
+
+/// Engine which interprets Vim commands and expressions
+type IVimInterpreter =
+
+    /// Get the ITextSnapshotLine for the provided LineSpecifier if it's 
+    /// applicable
+    abstract GetLine : lineSpecifier : LineSpecifier -> ITextSnapshotLine option
+
+    /// Get the specified LineRange in the IVimBuffer
+    abstract GetLineRange : lineRange : LineRangeSpecifier -> SnapshotLineRange option
+
+    /// Run the LineCommand
+    abstract RunLineCommand : lineCommand : LineCommand -> RunResult
+
+    /// Run the Expression
+    abstract RunExpression : expression : Expression -> VariableValue
+

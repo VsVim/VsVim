@@ -9,8 +9,7 @@ open System.Text.RegularExpressions
 type internal CommandMode
     ( 
         _buffer : IVimBuffer, 
-        _operations : ICommonOperations,
-        _interpreter : Interpreter
+        _operations : ICommonOperations
     ) =
 
     let _commandChangedEvent = StandardEvent()
@@ -45,7 +44,8 @@ type internal CommandMode
             _statusUtil.OnError msg
             RunResult.Completed
         | ParseResult.Succeeded lineCommand -> 
-            _interpreter.RunLineCommand lineCommand
+            let vimInterpreter = _buffer.Vim.GetVimInterpreter _buffer
+            vimInterpreter.RunLineCommand lineCommand
 
     // Command mode can be validly entered with the selection active.  Consider
     // hitting ':' in Visual Mode.  The selection should be cleared when leaving

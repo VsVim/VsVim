@@ -19,7 +19,7 @@ namespace Vim.UnitTest
         protected ITextBuffer _textBuffer;
         protected ITextView _textView;
         protected IVimData _vimData;
-        protected global::Vim.Interpreter.Interpreter _interpreter;
+        internal VimInterpreter _interpreter;
         protected TestableStatusUtil _statusUtil;
         protected IVimGlobalSettings _globalSettings;
         protected IVimLocalSettings _localSettings;
@@ -56,7 +56,7 @@ namespace Vim.UnitTest
             _globalSettings = _localSettings.GlobalSettings;
             _textBuffer = _vimBufferData.TextBuffer;
             _textView = _vimBufferData.TextView;
-            _interpreter = new global::Vim.Interpreter.Interpreter(
+            _interpreter = new global::Vim.Interpreter.VimInterpreter(
                 _vimBuffer,
                 CommonOperationsFactory.GetCommonOperations(_vimBufferData),
                 FoldManagerFactory.GetFoldManager(_vimBufferData.TextView),
