@@ -17,12 +17,10 @@ type TokenizerFlags =
     /// Skip blank tokens 
     | SkipBlanks = 0x2
 
-type internal TokenStream
-    (
-        _text : string
-    ) =
+type internal TokenStream() = 
 
     let mutable _index = 0
+    let mutable _text = String.Empty
 
     member x.Index 
         with get () = _index
@@ -159,6 +157,9 @@ type internal TokenStream
 
         TokenKind.Blank
 
+    member x.Reset text =
+        _text <- text
+        _index <- 0
 [<Sealed>]
 [<Class>]
 [<DebuggerDisplay("{ToString(),nq}")>]
@@ -168,15 +169,15 @@ type internal Tokenizer
         _tokenizerFlags : TokenizerFlags
     ) as this =
 
-    let _tokenStream = TokenStream(_text)
+    let _tokenStream = TokenStream()
+    let mutable _text = _text
     let mutable _tokenizerFlags = _tokenizerFlags
 
     /// The current Token the tokenizer is looking at
     let mutable _currentToken = Token(_text, 0, 0, TokenKind.EndOfLine)
 
     do
-        this.MoveToIndex 0
-        this.MaybeSkipBlank()
+        this.Reset _text _tokenizerFlags
 
     member x.TokenizerFlags 
         with get () = _tokenizerFlags
@@ -239,6 +240,15 @@ type internal Tokenizer
         let reset = new ResetTokenizerFlags(x, _tokenizerFlags) 
         x.TokenizerFlags <- tokenizerFlags
         reset
+
+    member x.Reset text tokenizerFlags = 
+        _tokenizerFlags <- tokenizerFlags
+        _text <- text
+        _currentToken <- Token(_text, 0, 0, TokenKind.EndOfLine)
+
+        _tokenStream.Reset text
+        this.MoveToIndex 0
+        this.MaybeSkipBlank()
 
 and [<Sealed>] ResetTokenizerFlags
     (

@@ -753,6 +753,67 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class IfTest : InterpreterTest
+        {
+            private void ParseAndRun(params string[] lines)
+            {
+                var parser = new Parser(lines);
+                var parseResult = parser.ParseSingleCommand();
+                Assert.True(parseResult.IsSucceeded);
+                _interpreter.RunLineCommand(parseResult.AsSucceeded().Item);
+            }
+
+            [Fact]
+            public void If()
+            {
+                Create();
+                ParseAndRun("if 1", "set ts=13", "endif");
+                Assert.Equal(13, _localSettings.TabStop);
+            }
+
+            [Fact]
+            public void IfElse()
+            {
+                Create();
+                ParseAndRun("if 1", "set ts=13", "else", "set ts=12", "endif");
+                Assert.Equal(13, _localSettings.TabStop);
+            }
+
+            [Fact]
+            public void IfElse2()
+            {
+                Create();
+                ParseAndRun("if 0", "set ts=13", "else", "set ts=12", "endif");
+                Assert.Equal(12, _localSettings.TabStop);
+
+            }
+
+            [Fact]
+            public void IfElseIf()
+            {
+                Create();
+                ParseAndRun("if 1", "set ts=13", "elseif 1", "set ts=12", "endif");
+                Assert.Equal(13, _localSettings.TabStop);
+            }
+            
+            [Fact]
+            public void IfElseIf2()
+            {
+                Create();
+                ParseAndRun("if 0", "set ts=13", "elseif 1", "set ts=12", "endif");
+                Assert.Equal(12, _localSettings.TabStop);
+            }
+
+            [Fact]
+            public void IfElseIf3()
+            {
+                Create();
+                _localSettings.TabStop = 42;
+                ParseAndRun("if 0", "set ts=13", "elseif 0", "set ts=12", "endif");
+                Assert.Equal(42, _localSettings.TabStop);
+            }
+        }
+
         public sealed class Misc : InterpreterTest
         {
             private LineRangeSpecifier ParseLineRange(string lineRangeText)

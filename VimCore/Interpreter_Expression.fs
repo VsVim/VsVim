@@ -152,6 +152,33 @@ type CommandOption =
     | StartAtPattern of string
     | ExecuteLineCommand of LineCommand
 
+/// The ConditionalBlock type is used to represent if / else if / else blocks
+/// of commands.  If the expression value 
+and [<RequireQualifiedAccess>] ConditionalBlock =
+
+    // An if or elseif block with the expression true list and false block 
+    | Conditional of Expression * LineCommand list * ConditionalBlock 
+
+    // An else block 
+    | Unconditional of LineCommand list
+
+    // Used when there is just an if / endif pair. 
+    | Empty
+
+    with 
+
+    member x.LineCommands =
+        match x with
+        | Conditional (_, lineCommands, _) -> lineCommands
+        | Unconditional lineCommands -> lineCommands
+        | Empty -> List.Empty
+
+    member x.Next =
+        match x with
+        | Conditional (_, _, next) -> Some next
+        | Unconditional lineCommands -> None
+        | Empty -> None
+
 and [<RequireQualifiedAccess>] Expression =
 
     /// Binary expression
@@ -238,6 +265,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     ///  - The provided ++opt
     ///  - The provided +cmd
     | HorizontalSplit of LineRangeSpecifier * FileOption list * CommandOption option
+
+    /// The if command
+    | If of ConditionalBlock
 
     /// Join the lines in the specified range.  Optionally provides a count of lines to 
     /// start the join after the line range

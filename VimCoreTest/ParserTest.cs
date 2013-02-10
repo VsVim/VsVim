@@ -8,6 +8,11 @@ namespace Vim.UnitTest
 {
     public abstract class ParserTest
     {
+        protected Parser CreateParser(params string[] text)
+        {
+            return new Parser(text);
+        }
+
         /// <summary>
         /// Assert that parsing the given line command produces the specific error
         /// </summary>
@@ -29,7 +34,7 @@ namespace Vim.UnitTest
         {
             public string ParseStringLiteral(string text)
             {
-                var parser = new Parser(text);
+                var parser = CreateParser(text);
                 var parseResult = parser.ParseStringLiteral();
                 Assert.True(parseResult.IsSucceeded);
                 return parseResult.AsSucceeded().Item.AsString().Item;
@@ -63,11 +68,106 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class IfTest : ParserTest
+        {
+            private void AssertIf(LineCommand lineCommand, params int[] expected)
+            {
+                Assert.True(lineCommand.IsIf);
+                AssertIf(lineCommand.AsIf().Item, expected, 0);
+            }
+
+            private void AssertIf(ConditionalBlock conditionalBlock, int[] expected, int index)
+            {
+                if (conditionalBlock.IsEmpty)
+                {
+                    Assert.True(index == expected.Length);
+                }
+                else
+                {
+                    Assert.True(index < expected.Length);
+                    Assert.Equal(expected[index], conditionalBlock.LineCommands.Length);
+                    if (!conditionalBlock.IsUnconditional)
+                    {
+                        Assert.True(conditionalBlock.Next.IsSome());
+                        AssertIf(conditionalBlock.Next.Value, expected, index + 1);
+                    }
+                }
+            }
+
+            private void AssertBadParse(params string[] lines)
+            {
+                var parser = new Parser(lines);
+                var result = parser.ParseSingleCommand();
+                Assert.True(result.IsFailed);
+            }
+
+            private LineCommand Parse(params string[] lines)
+            {
+                var parser = new Parser(lines);
+                var result = parser.ParseSingleCommand();
+                Assert.True(result.IsSucceeded);
+                return result.AsSucceeded().Item;
+            }
+
+            [Fact]
+            public void SimpleIfOnly()
+            {
+                var lineCommand = Parse("if 42", "set ts=4", "endif");
+                AssertIf(lineCommand, 1);
+            }
+
+            [Fact]
+            public void SimpleIfMultiStatements()
+            {
+                var lineCommand = Parse("if 42", "set ts=4", "set ts=8", "endif");
+                AssertIf(lineCommand, 2);
+            }
+
+            [Fact]
+            public void IfWithElse()
+            {
+                var lineCommand = Parse("if 42", "set ts=4", "else", "set ts=8", "endif");
+                AssertIf(lineCommand, 1, 1);
+            }
+
+            [Fact]
+            public void IfWithElseIf()
+            {
+                var lineCommand = Parse("if 42", "set ts=4", "elseif 42", "set ts=8", "endif");
+                AssertIf(lineCommand, 1, 1);
+            }
+
+            [Fact]
+            public void IfWithElseIfElse()
+            {
+                var lineCommand = Parse("if 42", "set ts=4", "elseif 42", "set ts=8", "else", "set ts=10", "endif");
+                AssertIf(lineCommand, 1, 1, 1);
+            }
+
+            [Fact]
+            public void BadIfNoEndif()
+            {
+                AssertBadParse("if 42", "set ts=2");
+            }
+
+            [Fact]
+            public void BadElseNoEndIf()
+            {
+                AssertBadParse("if 42", "set ts=2", "else");
+            }
+
+            [Fact]
+            public void BadElseIfAfterElse()
+            {
+                AssertBadParse("if 42", "set ts=2", "else", "set ts=2", "elseif", "endif");
+            }
+        }
+
         public sealed class NumberTest : ParserTest
         {
             private VariableValue ParseNumberValue(string text)
             {
-                var parser = new Parser(text);
+                var parser = CreateParser(text);
                 var parseResult = parser.ParseNumberConstant();
                 Assert.True(parseResult.IsSucceeded);
                 return parseResult.AsSucceeded().Item.AsConstantValue().Item;
@@ -142,7 +242,7 @@ namespace Vim.UnitTest
         {
             public string ParseStringConstant(string text)
             {
-                var parser = new Parser(text);
+                var parser = CreateParser(text);
                 parser.Tokenizer.TokenizerFlags = TokenizerFlags.AllowDoubleQuote;
                 var parseResult = parser.ParseStringConstant();
                 Assert.True(parseResult.IsSucceeded);
@@ -570,7 +670,7 @@ namespace Vim.UnitTest
         {
             private LineRangeSpecifier ParseLineRange(string text)
             {
-                var parser = new Parser(text);
+                var parser = CreateParser(text);
                 var lineRange = parser.ParseLineRange();
                 Assert.False(lineRange.IsNone);
                 return lineRange;
@@ -578,7 +678,7 @@ namespace Vim.UnitTest
 
             private LineSpecifier ParseLineSpecifier(string text)
             {
-                var parser = new Parser(text);
+                var parser = CreateParser(text);
                 var option = parser.ParseLineSpecifier();
                 Assert.True(option.IsSome());
                 return option.Value;
@@ -824,7 +924,7 @@ namespace Vim.UnitTest
                 var all = new[] { "buffer", "silent", "expr", "unique", "special" };
                 foreach (var cur in all)
                 {
-                    var parser = new Parser("<" + cur + ">");
+                    var parser = CreateParser("<" + cur + ">");
                     var list = parser.ParseMapArguments();
                     Assert.Equal(1, list.Length);
                 }
@@ -837,7 +937,7 @@ namespace Vim.UnitTest
             public void ArgumentsMultiple()
             {
                 var text = "<buffer> <silent>";
-                var parser = new Parser(text);
+                var parser = CreateParser(text);
                 var list = parser.ParseMapArguments().ToList();
                 Assert.Equal(
                     new[] { KeyMapArgument.Buffer, KeyMapArgument.Silent },
@@ -1133,7 +1233,7 @@ namespace Vim.UnitTest
             [Fact]
             public void TryExpand_Full()
             {
-                var parser = new Parser("");
+                var parser = CreateParser("");
                 Assert.Equal("close", parser.TryExpand("close"));
             }
 
@@ -1143,7 +1243,7 @@ namespace Vim.UnitTest
             [Fact]
             public void TryExpand_Abbrevation()
             {
-                var parser = new Parser("");
+                var parser = CreateParser("");
                 foreach (var tuple in Parser.s_LineCommandNamePair)
                 {
                     if (!String.IsNullOrEmpty(tuple.Item2))

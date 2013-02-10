@@ -11,14 +11,14 @@ open Vim.StringBuilderExtensions
 open Vim.Interpreter
 
 [<RequireQualifiedAccess>]
-type ConditionalKind = 
+type DirectiveKind = 
     | If
     | Elif
     | Else
     | EndIf
 
-type Conditional = { 
-    Kind : ConditionalKind;
+type Directive = { 
+    Kind : DirectiveKind;
     Span : Span
 }
     with
@@ -31,16 +31,16 @@ type Conditional = {
     override x.ToString() = sprintf "%O - %O" x.Kind x.Span
 
 
-type ConditionalBlock = {
-    Conditionals : List<Conditional>
+type DirectiveBlock = {
+    Directives : List<Directive>
     IsComplete : bool
 }
 
 [<RequireQualifiedAccess>]
 type MatchingTokenKind =
 
-    /// A #if, #else, etc ... conditional value
-    | Conditional
+    /// A #if, #else, etc ... directive value
+    | Directive
 
     /// A C style block comment
     | Comment
@@ -54,12 +54,12 @@ type MatchingTokenKind =
 
 type MatchingTokenUtil() = 
 
-    /// This is the key for accessing conditional blocks within the ITextSnapshot.  This
+    /// This is the key for accessing directive blocks within the ITextSnapshot.  This
     /// lets us avoid multiple parses of #if for a single ITextSnapshot
-    static let _conditionalBlocksKey = obj()
+    static let _directiveBlocksKey = obj()
 
-    ///Find the conditional, if any, that starts on this line
-    member x.ParseConditional lineText =
+    ///Find the directive, if any, that starts on this line
+    member x.ParseDirective lineText =
 
         // Don't break out the tokenizer unless the line starts with a # on the first
         // non-blank character.  This is a quick optimization to avoid a lot of 
@@ -88,7 +88,7 @@ type MatchingTokenUtil() =
                 tokenizer.MoveNextToken()
 
                 // Process the token kind and the token to determine the span of the 
-                // conditional on this line 
+                // directive on this line 
                 let func kind (token : Token) = 
                     let endPosition = token.StartIndex + token.Length
                     let span = Span.FromBounds(start, endPosition)
@@ -100,105 +100,105 @@ type MatchingTokenUtil() =
                     { Kind = kind; Span = span; } |> Some
 
                 match tokenizer.CurrentToken.TokenText with
-                | "if" -> all ConditionalKind.If tokenizer.CurrentToken
-                | "ifdef" -> all ConditionalKind.If tokenizer.CurrentToken
-                | "ifndef" -> all ConditionalKind.If tokenizer.CurrentToken
-                | "elif" -> all ConditionalKind.Elif tokenizer.CurrentToken
-                | "else" -> func ConditionalKind.Else tokenizer.CurrentToken
-                | "endif" -> func ConditionalKind.EndIf tokenizer.CurrentToken
+                | "if" -> all DirectiveKind.If tokenizer.CurrentToken
+                | "ifdef" -> all DirectiveKind.If tokenizer.CurrentToken
+                | "ifndef" -> all DirectiveKind.If tokenizer.CurrentToken
+                | "elif" -> all DirectiveKind.Elif tokenizer.CurrentToken
+                | "else" -> func DirectiveKind.Else tokenizer.CurrentToken
+                | "endif" -> func DirectiveKind.EndIf tokenizer.CurrentToken
                 | _ -> None
             | _ -> None
         else
             None
 
-    /// Parse out the conditional blocks for the given ITextSnapshot.  Don't use
-    /// this method directly.  Instead go through GetConditionalBlocks which will
+    /// Parse out the directive blocks for the given ITextSnapshot.  Don't use
+    /// this method directly.  Instead go through GetDirectiveBlocks which will
     /// cache the value
-    member x.ParseConditionalBlocks (snapshot : ITextSnapshot) = 
+    member x.ParseDirectiveBlocks (snapshot : ITextSnapshot) = 
 
         let lastLineNumber = snapshot.LineCount - 1
 
-        // Get a conditional at the specified line number.  Will handle a line
+        // Get a directive at the specified line number.  Will handle a line
         // number past the end by returning None
-        let getConditional lineNumber = 
+        let getDirective lineNumber = 
             if lineNumber > lastLineNumber then
                 None
             else
                 let line = SnapshotUtil.GetLine snapshot lineNumber
                 let text = SnapshotLineUtil.GetText line
-                match x.ParseConditional text with
+                match x.ParseDirective text with
                 | None -> None
-                | Some conditional -> conditional.AdjustStart line.Start.Position |> Some
+                | Some directive -> directive.AdjustStart line.Start.Position |> Some
 
-        let allBlocksList = List<ConditionalBlock>()
+        let allBlocksList = List<DirectiveBlock>()
 
-        // Parse out the remainder of a conditional given an initial conditional value.  Then
+        // Parse out the remainder of a directive given an initial directive value.  Then
         // return the line number after the completion of this block 
-        let rec parseBlockRemainder (startConditional : Conditional) lineNumber = 
-            let list = List<Conditional>()
-            list.Add(startConditional)
+        let rec parseBlockRemainder (startDirective : Directive) lineNumber = 
+            let list = List<Directive>()
+            list.Add(startDirective)
 
             let rec inner lineNumber =
 
                 // Parse the next line 
                 let parseNext () = inner (lineNumber + 1)
-                match getConditional lineNumber with
+                match getDirective lineNumber with
                 | None -> 
                     if lineNumber >= lastLineNumber then
-                        let block = { Conditionals = list; IsComplete = false }
+                        let block = { Directives = list; IsComplete = false }
                         allBlocksList.Add block
                         lineNumber
                     else
                         parseNext ()
-                | Some conditional ->
-                    match conditional.Kind with
-                    | ConditionalKind.If -> 
-                        let lineNumber = parseBlockRemainder conditional (lineNumber + 1)
+                | Some directive ->
+                    match directive.Kind with
+                    | DirectiveKind.If -> 
+                        let lineNumber = parseBlockRemainder directive (lineNumber + 1)
                         inner lineNumber
-                    | ConditionalKind.Elif ->
-                        list.Add conditional
+                    | DirectiveKind.Elif ->
+                        list.Add directive
                         parseNext ()
-                    | ConditionalKind.Else ->
-                        list.Add conditional
+                    | DirectiveKind.Else ->
+                        list.Add directive
                         parseNext ()
-                    | ConditionalKind.EndIf ->
-                        list.Add conditional
-                        let block = { Conditionals = list; IsComplete = true }
+                    | DirectiveKind.EndIf ->
+                        list.Add directive
+                        let block = { Directives = list; IsComplete = true }
                         allBlocksList.Add block
                         lineNumber + 1
 
             inner lineNumber
 
-        // Go through every line and drive the parsing of the conditionals
+        // Go through every line and drive the parsing of the directives
         let rec parseAll lineNumber = 
             if lineNumber <= lastLineNumber then
-                match getConditional lineNumber with
+                match getDirective lineNumber with
                 | None -> parseAll (lineNumber + 1)
-                | Some conditional ->
-                    match conditional.Kind with
-                    | ConditionalKind.If -> 
-                        let nextLineNumber = parseBlockRemainder conditional (lineNumber + 1)
+                | Some directive ->
+                    match directive.Kind with
+                    | DirectiveKind.If -> 
+                        let nextLineNumber = parseBlockRemainder directive (lineNumber + 1)
                         parseAll nextLineNumber
                     | _ -> 
-                        let list = List<Conditional>(1)
-                        list.Add(conditional)
-                        let block = { Conditionals = list; IsComplete = false }
+                        let list = List<Directive>(1)
+                        list.Add(directive)
+                        let block = { Directives = list; IsComplete = false }
                         allBlocksList.Add block
 
         parseAll 0
         allBlocksList
 
-    /// Get the conditional blocks for the specified ITextSnapshot
-    member x.GetConditionalBlocks (snapshot : ITextSnapshot) = 
+    /// Get the directive blocks for the specified ITextSnapshot
+    member x.GetDirectiveBlocks (snapshot : ITextSnapshot) = 
         let textBuffer = snapshot.TextBuffer
         let propertyCollection = textBuffer.Properties
 
         let parseAndSave () = 
-            let blocks = x.ParseConditionalBlocks snapshot
-            propertyCollection.[_conditionalBlocksKey] <- (snapshot.Version, blocks)
+            let blocks = x.ParseDirectiveBlocks snapshot
+            propertyCollection.[_directiveBlocksKey] <- (snapshot.Version, blocks)
             blocks
 
-        match PropertyCollectionUtil.GetValue<int * List<ConditionalBlock>> _conditionalBlocksKey propertyCollection with
+        match PropertyCollectionUtil.GetValue<int * List<DirectiveBlock>> _directiveBlocksKey propertyCollection with
         | Some (version, list) ->
             if version = snapshot.Version.VersionNumber then list
             else parseAndSave ()
@@ -243,16 +243,16 @@ type MatchingTokenUtil() =
             let result2 = indexOf "*/"
             reducePair result1 result2 MatchingTokenKind.Comment
 
-        // Find the conditional value on the current line 
-        let conditional = x.ParseConditional lineText 
+        // Find the directive value on the current line 
+        let directive = x.ParseDirective lineText 
 
-        // If the conditional exists exactly at the caret point then return it because
+        // If the directive exists exactly at the caret point then return it because
         // it should win over the other matching tokens at this point
-        let findConditional () = 
-            match conditional with
+        let findDirective () = 
+            match directive with
             | None -> None
-            | Some conditional ->
-                if conditional.Span.Start = column then Some (column, MatchingTokenKind.Conditional)
+            | Some directive ->
+                if directive.Span.Start = column then Some (column, MatchingTokenKind.Directive)
                 else None
 
         // Parse out all the possibilities and find the one that is closest to the 
@@ -264,7 +264,7 @@ type MatchingTokenUtil() =
                     findSimplePair '[' ']' MatchingTokenKind.Brackets
                     findSimplePair '{' '}' MatchingTokenKind.Braces
                     findComment ()
-                    findConditional ()
+                    findDirective ()
                 ]
             List.minBy (fun value ->
                 match value with
@@ -274,11 +274,11 @@ type MatchingTokenUtil() =
         match found with
         | Some _ -> found
         | None -> 
-            // Lastly if there are no tokens that match on the current line but the line is a conditional
-            // block then it the match is the conditional
-            match conditional with
+            // Lastly if there are no tokens that match on the current line but the line is a directive
+            // block then it the match is the directive
+            match directive with
             | None -> None
-            | Some conditional -> Some (conditional.Span.Start, MatchingTokenKind.Conditional)
+            | Some directive -> Some (directive.Span.Start, MatchingTokenKind.Directive)
 
     member x.FindMatchingTokenKind lineText column =
         match x.FindMatchingTokenKindCore lineText column with
@@ -385,25 +385,25 @@ type MatchingTokenUtil() =
             | None -> None
             | Some start -> Span(start, 1) |> Some
 
-        // Find the matching conditional starting from the buffer position 'target'
-        let findMatchingConditional (target : int) = 
+        // Find the matching directive starting from the buffer position 'target'
+        let findMatchingDirective (target : int) = 
 
-            let blockList = x.GetConditionalBlocks snapshot
+            let blockList = x.GetDirectiveBlocks snapshot
             let mutable found : Span option = None
             let mutable blockIndex = 0
             while blockIndex < blockList.Count do
                 let block = blockList.[blockIndex]
                 let index = 
-                    block.Conditionals 
-                    |> Seq.tryFindIndex (fun conditional -> conditional.Span.Contains target)
+                    block.Directives
+                    |> Seq.tryFindIndex (fun directive -> directive.Span.Contains target)
                 match index with
                 | None -> blockIndex <- blockIndex + 1
                 | Some index ->
-                    if index + 1= block.Conditionals.Count then
+                    if index + 1= block.Directives.Count then
                         if block.IsComplete then
-                            found <- block.Conditionals.[0].Span |> Some
+                            found <- block.Directives.[0].Span |> Some
                     else
-                        found <- block.Conditionals.[index + 1].Span |> Some
+                        found <- block.Directives.[index + 1].Span |> Some
 
                     blockIndex <- blockList.Count
 
@@ -421,7 +421,7 @@ type MatchingTokenUtil() =
                 | MatchingTokenKind.Braces -> findMatchingTokenChar position '{' '}'
                 | MatchingTokenKind.Brackets -> findMatchingTokenChar position '[' ']'
                 | MatchingTokenKind.Parens -> findMatchingTokenChar position '(' ')'
-                | MatchingTokenKind.Conditional -> findMatchingConditional position
+                | MatchingTokenKind.Directive -> findMatchingDirective position
                 | MatchingTokenKind.Comment -> findMatchingComment position
 
         match found with

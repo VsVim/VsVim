@@ -102,6 +102,14 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// LineCommand as If
+        /// </summary>
+        public static LineCommand.If AsIf(this LineCommand lineCommand)
+        {
+            return (LineCommand.If)lineCommand;
+        }
+
+        /// <summary>
         /// LineCommand as ReadCommand
         /// </summary>
         public static LineCommand.ReadCommand AsReadCommand(this LineCommand lineCommand)

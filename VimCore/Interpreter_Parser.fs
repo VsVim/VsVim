@@ -5,6 +5,12 @@ open Vim
 open StringBuilderExtensions
 
 [<RequireQualifiedAccess>]
+type NextConditionalKind =
+    | Else
+    | ElseIf of Expression
+    | EndIf
+
+[<RequireQualifiedAccess>]
 type ParseResult<'T> = 
     | Succeeded of 'T
     | Failed of string
@@ -52,11 +58,12 @@ type ParserBuilder
 [<Sealed>]
 type Parser
     (
-        _text : string
+        _lines : string[] 
     ) = 
 
     let _parserBuilder = ParserBuilder()
-    let _tokenizer = Tokenizer(_text, TokenizerFlags.None)
+    let _tokenizer = Tokenizer(_lines.[0], TokenizerFlags.None)
+    let mutable _lineIndex = 0
 
     /// The set of supported line commands paired with their abbreviation
     static let s_LineCommandNamePair = [
@@ -70,10 +77,14 @@ type Parser
         ("delete","d")
         ("display","di")
         ("edit", "e")
+        ("else", "el")
+        ("elseif", "elsei")
+        ("endif", "en")
         ("exit", "exi")
         ("fold", "fo")
         ("global", "g")
         ("history", "his")
+        ("if", "if")
         ("join", "j")
         ("lcd", "lc")
         ("lchdir", "lch")
@@ -160,6 +171,14 @@ type Parser
         ("cnoremap", "cno")
     ]
 
+    member x.NextLine() =
+        if _lineIndex + 1 >= _lines.Length then
+            false
+        else
+            _lineIndex <- _lineIndex + 1
+            _tokenizer.Reset _lines.[_lineIndex] TokenizerFlags.None
+            true
+
     member x.Tokenizer = _tokenizer
 
     /// Move past the white space in the expression text
@@ -167,6 +186,11 @@ type Parser
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Blank -> _tokenizer.MoveNextToken()
         | _ -> ()
+
+    /// Move to the end of the current line
+    member x.MoveToEndOfLine() = 
+        while not _tokenizer.IsAtEndOfLine do
+            _tokenizer.MoveNextToken()
 
     /// Try and expand the possible abbreviation to a full line command name.  If it's 
     /// not an abbreviation then the original string will be returned
@@ -1034,6 +1058,94 @@ type Parser
                 ParseResult.Failed Resources.Parser_InvalidArgument
         | _ -> ParseResult.Failed Resources.Parser_InvalidArgument
 
+    /// Parse out the :if command from the buffer
+    member x.ParseIf() = 
+
+        let standardError = "Unmatched Conditional Block"
+        let onError msg = ParseResult.Failed msg
+
+        // Parse out the conditional kind of the current line
+        let parseConditionalKind onSuccess = 
+            match _tokenizer.CurrentTokenKind with
+            | TokenKind.Word name ->
+                let name = x.TryExpand name
+                match name with
+                | "else" -> onSuccess (Some NextConditionalKind.Else)
+                | "endif" -> onSuccess (Some NextConditionalKind.EndIf)
+                | "elseif" -> 
+                    _tokenizer.MoveNextToken()
+                    x.SkipBlanks()
+                    match x.ParseExpressionCore() with
+                    | ParseResult.Failed msg -> onError msg 
+                    | ParseResult.Succeeded expr -> onSuccess (Some (NextConditionalKind.ElseIf expr))
+                | _ -> onSuccess None
+            | _ -> onSuccess None
+
+        // Parse out a conditional block from the 
+        let parseBlockCommands onSuccess = 
+            let builder = System.Collections.Generic.List<LineCommand>()
+            let onSuccess nextConditionalKind = 
+                let list = List.ofSeq builder
+                onSuccess list nextConditionalKind
+
+            let rec inner () = 
+                parseConditionalKind (fun nextConditionalKind -> 
+                    match nextConditionalKind with
+                    | Some nextConditionalKind -> onSuccess nextConditionalKind
+                    | None -> 
+                        match x.ParseSingleCommand() with
+                        | ParseResult.Failed msg -> onError msg
+                        | ParseResult.Succeeded lineCommand ->
+                            builder.Add lineCommand
+                            if x.NextLine() then
+                                inner ()
+                            else
+                                onError standardError)
+        
+            inner ()
+
+        let rec parseNextConditional nextConditionalKind onSuccess = 
+
+            let onEndIf () = 
+                x.MoveToEndOfLine()
+                x.NextLine() |> ignore
+
+            match nextConditionalKind with
+            | NextConditionalKind.EndIf ->
+                onEndIf ()
+                onSuccess ConditionalBlock.Empty
+            | NextConditionalKind.ElseIf expr ->
+                if x.NextLine() then
+                    parseBlockCommands (fun lineCommands nextConditionalKind -> 
+                        parseNextConditional nextConditionalKind (fun conditionalBlock ->
+                            onSuccess (ConditionalBlock.Conditional (expr, lineCommands, conditionalBlock))))
+                else
+                    onError standardError
+            | NextConditionalKind.Else ->
+                if x.NextLine() then
+                    parseBlockCommands (fun lineCommands nextConditionalKind ->
+                        match nextConditionalKind with
+                        | NextConditionalKind.Else -> onError standardError
+                        | NextConditionalKind.ElseIf _ -> onError standardError
+                        | NextConditionalKind.EndIf -> 
+                            onEndIf ()
+                            onSuccess (ConditionalBlock.Unconditional lineCommands))
+                else
+                    onError standardError
+
+        x.SkipBlanks()
+        match x.ParseExpressionCore() with
+        | ParseResult.Failed msg -> ParseResult.Failed msg
+        | ParseResult.Succeeded expr -> 
+            if x.NextLine() then
+                parseBlockCommands (fun lineCommands nextConditionalKind -> 
+                    parseNextConditional nextConditionalKind (fun conditionalBlock ->
+                        let block = ConditionalBlock.Conditional (expr, lineCommands, conditionalBlock)
+                        let lineCommand = LineCommand.If block
+                        ParseResult.Succeeded lineCommand))
+            else
+                onError standardError
+        
     /// Parse out the join command
     member x.ParseJoin lineRange =  
         let hasBang = x.ParseBang()
@@ -1320,6 +1432,7 @@ type Parser
                 | "fold" -> x.ParseFold lineRange
                 | "global" -> x.ParseGlobal lineRange
                 | "history" -> noRange (fun () -> x.ParseHistory())
+                | "if" -> noRange x.ParseIf
                 | "iunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Insert])
                 | "imap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Insert])
                 | "imapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Insert])
@@ -1468,14 +1581,17 @@ type Parser
         }
 
     static member ParseRange rangeText = 
-        let parser = Parser(rangeText)
+        let all = [| rangeText |]
+        let parser = Parser(all)
         (parser.ParseLineRange(), parser.ParseRestOfLine())
 
     static member ParseExpression (expressionText : string) : ParseResult<Expression> = 
-        let parser = Parser(expressionText)
+        let all = [| expressionText |]
+        let parser = Parser(all)
         parser.ParseExpressionCore()
 
     static member ParseLineCommand (commandText : string) = 
-        let parser = Parser(commandText)
+        let all = [| commandText |]
+        let parser = Parser(all)
         parser.ParseSingleCommand()
 

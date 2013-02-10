@@ -37,6 +37,10 @@ type ExpressionInterpreter
         | VariableValue.String _ -> invalid ""
         | VariableValue.Error -> None
 
+    /// Get the specified expression as a number
+    member x.GetExpressionAsNumber expr =
+        x.RunExpression expr |> x.GetValueAsNumber
+
     /// Get the value of the specified expression 
     member x.RunExpression (expr : Expression) : VariableValue =
         match expr with
@@ -652,6 +656,29 @@ type Interpreter
             output.Add(msg)
 
         _statusUtil.OnStatusLong(output)
+        RunResult.Completed
+
+    /// Run the if command
+    member x.RunIf conditionalBlock =
+        let expressionInterpreter = ExpressionInterpreter(_statusUtil)
+
+        let runAll lineCommands = 
+            Seq.iter (fun lineCommand -> x.RunLineCommand lineCommand |> ignore) lineCommands
+        
+        let rec inner conditionalBlock =
+            match conditionalBlock with
+            | ConditionalBlock.Conditional (expr, lineCommands, next) ->
+                match expressionInterpreter.GetExpressionAsNumber expr with
+                | None -> ()
+                | Some value -> 
+                    if value <> 0 then
+                        runAll lineCommands
+                    else 
+                        inner next
+            | ConditionalBlock.Unconditional lineCommands -> runAll lineCommands
+            | ConditionalBlock.Empty -> ()
+
+        inner conditionalBlock
         RunResult.Completed
 
     /// Join the lines in the specified range
@@ -1332,6 +1359,7 @@ type Interpreter
         | LineCommand.Fold lineRange -> x.RunFold lineRange
         | LineCommand.Global (lineRange, pattern, matchPattern, lineCommand) -> x.RunGlobal lineRange pattern matchPattern lineCommand
         | LineCommand.History -> x.RunHistory()
+        | LineCommand.If conditionalBlock -> x.RunIf conditionalBlock
         | LineCommand.GoToFirstTab -> x.RunGoToFirstTab()
         | LineCommand.GoToLastTab -> x.RunGoToLastTab()
         | LineCommand.GoToNextTab count -> x.RunGoToNextTab count

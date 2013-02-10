@@ -33,9 +33,9 @@ namespace Vim.UnitTest
             [Fact]
             public void ConditionalSimple()
             {
-                AssertKind(MatchingTokenKind.Conditional, "#if");
-                AssertKind(MatchingTokenKind.Conditional, "# if");
-                AssertKind(MatchingTokenKind.Conditional, " #if");
+                AssertKind(MatchingTokenKind.Directive, "#if");
+                AssertKind(MatchingTokenKind.Directive, "# if");
+                AssertKind(MatchingTokenKind.Directive, " #if");
             }
 
             /// <summary>
@@ -44,8 +44,8 @@ namespace Vim.UnitTest
             [Fact]
             public void ConditionalPastToken()
             {
-                AssertKind(MatchingTokenKind.Conditional, "#if rabbit dog", 10);
-                AssertKind(MatchingTokenKind.Conditional, "#if rabbit dog", 7);
+                AssertKind(MatchingTokenKind.Directive, "#if rabbit dog", 10);
+                AssertKind(MatchingTokenKind.Directive, "#if rabbit dog", 7);
             }
 
             [Fact]
@@ -72,7 +72,7 @@ namespace Vim.UnitTest
             [Fact]
             public void CloserWinsConditional()
             {
-                AssertKind(MatchingTokenKind.Conditional, "#if (");
+                AssertKind(MatchingTokenKind.Directive, "#if (");
                 AssertKind(MatchingTokenKind.Parens, "#if (", column: 4);
             }
 
@@ -87,7 +87,7 @@ namespace Vim.UnitTest
             public void CloserParensPastIfConditional()
             {
                 var lineText = "#if foo ()";
-                AssertKind(MatchingTokenKind.Conditional, lineText, column: 0);
+                AssertKind(MatchingTokenKind.Directive, lineText, column: 0);
                 for (int i = 1; i < lineText.Length; i++)
                 {
                     AssertKind(MatchingTokenKind.Parens, lineText, column: i);
@@ -220,11 +220,11 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class ParseConditionalTest : MatchingTokenUtilTest
+        public sealed class ParseDirectiveTest : MatchingTokenUtilTest
         {
             private void AssertParsed(string text, int start, int length)
             {
-                var result = _matchingTokenUtil.ParseConditional(text);
+                var result = _matchingTokenUtil.ParseDirective(text);
                 Assert.True(result.IsSome());
                 Assert.Equal(start, result.Value.Span.Start);
                 Assert.Equal(length, result.Value.Span.Length);
@@ -249,7 +249,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class ParseConditionalBlocksTest : MatchingTokenUtilTest
+        public sealed class ParseDirectiveBlockTest : MatchingTokenUtilTest
         {
             private ITextBuffer _textBuffer;
 
@@ -258,25 +258,25 @@ namespace Vim.UnitTest
                 _textBuffer = CreateTextBuffer(lines);
             }
 
-            private List<ConditionalBlock> ParseSorted()
+            private List<DirectiveBlock> ParseSorted()
             {
-                var blocks = _matchingTokenUtil.ParseConditionalBlocks(_textBuffer.CurrentSnapshot);
-                blocks.Sort((left, right) => left.Conditionals[0].Span.Start.CompareTo(right.Conditionals[0].Span.Start));
+                var blocks = _matchingTokenUtil.ParseDirectiveBlocks(_textBuffer.CurrentSnapshot);
+                blocks.Sort((left, right) => left.Directives[0].Span.Start.CompareTo(right.Directives[0].Span.Start));
                 return blocks;
             }
 
-            private void AssertBlock(ConditionalBlock block, params SnapshotSpan[] spans)
+            private void AssertBlock(DirectiveBlock block, params SnapshotSpan[] spans)
             {
-                Assert.Equal(spans.Length, block.Conditionals.Count);
+                Assert.Equal(spans.Length, block.Directives.Count);
                 for (int i = 0; i < spans.Length; i++)
                 {
-                    Assert.Equal(spans[i].Span, block.Conditionals[i].Span);
+                    Assert.Equal(spans[i].Span, block.Directives[i].Span);
                 }
             }
 
             private void AssertSingle(params SnapshotSpan[] spans)
             {
-                var blocks = _matchingTokenUtil.ParseConditionalBlocks(_textBuffer.CurrentSnapshot);
+                var blocks = _matchingTokenUtil.ParseDirectiveBlocks(_textBuffer.CurrentSnapshot);
                 Assert.Equal(1, blocks.Count);
                 AssertBlock(blocks[0], spans);
             }
@@ -424,10 +424,10 @@ namespace Vim.UnitTest
             public void Caching()
             {
                 Create("#if", "#endif", "#if", "#endif");
-                var blocks = _matchingTokenUtil.GetConditionalBlocks(_textBuffer.CurrentSnapshot);
+                var blocks = _matchingTokenUtil.GetDirectiveBlocks(_textBuffer.CurrentSnapshot);
                 Assert.Equal(2, blocks.Count);
                 _textBuffer.Delete(_textBuffer.GetLineRange(2, 3).ExtentIncludingLineBreak);
-                blocks = _matchingTokenUtil.GetConditionalBlocks(_textBuffer.CurrentSnapshot);
+                blocks = _matchingTokenUtil.GetDirectiveBlocks(_textBuffer.CurrentSnapshot);
                 Assert.Equal(1, blocks.Count);
             }
         }

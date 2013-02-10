@@ -10,7 +10,8 @@ namespace Vim.UnitTest
 
         protected void Create(string text)
         {
-            _tokenStream = new TokenStream(text);
+            _tokenStream = new TokenStream();
+            _tokenStream.Reset(text);
         }
 
         public sealed class PeekCharTest : TokenStreamTest
