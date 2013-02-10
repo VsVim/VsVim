@@ -56,6 +56,30 @@ type VariableValue =
 
 type VariableMap = System.Collections.Generic.Dictionary<string, VariableValue>
 
+/// The set of events Vim supports.  Defined in ':help autocmd-events'
+///
+/// Right now we only support a very limited set of autocmd events.  Enough to 
+/// alter ts, sw, etc ... when a new file is created 
+[<RequireQualifiedAccess>]
+type EventKind = 
+    | BufEnter
+
+type AutoCommandGroup = 
+    | Default
+    | Named of string 
+
+type AutoCommand = {
+    Group : AutoCommandGroup
+
+    EventKinds : EventKind list
+
+    // TODO: Should rearrange dependencies such that I can store this as a LineCommand and
+    // not a raw string 
+    Command : string
+
+    Pattern : string
+}    
+
 [<RequireQualifiedAccess>]
 type CaretMovement =
     | Up
@@ -3192,6 +3216,12 @@ type internal IHistoryClient<'TData, 'TResult> =
 
 /// Represents shared state which is available to all IVimBuffer instances.
 type IVimData = 
+
+    /// The set of supported auto command groups
+    abstract AutoCommandGroups : AutoCommandGroup list with get, set
+
+    /// The set of auto commands
+    abstract AutoCommands : AutoCommand list with get, set
 
     /// The current directory Vim is positioned in
     abstract CurrentDirectory : string with get, set

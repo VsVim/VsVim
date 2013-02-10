@@ -5,6 +5,7 @@ using System.ComponentModel.Composition.Primitives;
 using System.Diagnostics;
 using System.Linq;
 using EditorUtils;
+using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -176,6 +177,8 @@ namespace Vim.UnitTest
             _vim.VimData.CommandHistory.Reset();
             _vim.VimData.LastCommand = FSharpOption<StoredCommand>.None;
             _vim.VimData.LastShellCommand = FSharpOption<string>.None;
+            _vim.VimData.AutoCommands = FSharpList<AutoCommand>.Empty;
+            _vim.VimData.AutoCommandGroups = FSharpList<AutoCommandGroup>.Empty;
 
             _vim.KeyMap.ClearAll();
             _vim.MarkMap.ClearGlobalMarks();

@@ -42,6 +42,8 @@ type internal BulkOperations
 
 type internal VimData() =
 
+    let mutable _autoCommandGroups : AutoCommandGroup list = List.Empty
+    let mutable _autoCommands : AutoCommand list = List.Empty
     let mutable _currentDirectory = System.Environment.CurrentDirectory
     let mutable _previousCurrentDirecotry = _currentDirectory
     let mutable _commandHistory = HistoryList()
@@ -56,35 +58,41 @@ type internal VimData() =
     let _highlightSearchOneTimeDisabled = StandardEvent()
 
     interface IVimData with 
+        member x.AutoCommandGroups
+            with get() = _autoCommandGroups
+            and set value = _autoCommandGroups <- value
+        member x.AutoCommands
+            with get() = _autoCommands
+            and set value = _autoCommands <- value 
         member x.CurrentDirectory
-            with get () = _currentDirectory
+            with get() = _currentDirectory
             and set value = 
                 _previousCurrentDirecotry <- _currentDirectory
                 _currentDirectory <- value
         member x.CommandHistory
-            with get () = _commandHistory
+            with get() = _commandHistory
             and set value = _commandHistory <- value
         member x.SearchHistory 
-            with get () = _searchHistory
+            with get() = _searchHistory
             and set value = _searchHistory <- value
         member x.LastSubstituteData 
-            with get () = _lastSubstituteData
+            with get() = _lastSubstituteData
             and set value = _lastSubstituteData <- value
         member x.LastCommand 
-            with get () = _lastCommand
+            with get() = _lastCommand
             and set value = _lastCommand <- value
         member x.LastShellCommand
-            with get () = _lastShellCommand
+            with get() = _lastShellCommand
             and set value = _lastShellCommand <- value
         member x.LastPatternData 
-            with get () = _lastPatternData
+            with get() = _lastPatternData
             and set value = _lastPatternData <- value
         member x.PreviousCurrentDirectory = _previousCurrentDirecotry
         member x.LastCharSearch 
-            with get () = _lastCharSearch
+            with get() = _lastCharSearch
             and set value = _lastCharSearch <- value
         member x.LastMacroRun 
-            with get () = _lastMacroRun
+            with get() = _lastMacroRun
             and set value = _lastMacroRun <- value
         member x.RaiseHighlightSearchOneTimeDisable () = _highlightSearchOneTimeDisabled.Trigger ()
         member x.RaiseSearchRanEvent () = _searchRanEvent.Trigger()

@@ -68,6 +68,25 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class AutoCommandTest : ParserTest
+        {
+            private AutoCommand AssertAddAutoCommand(string line)
+            {
+                var lineCommand = ParseLineCommand(line);
+                Assert.True(lineCommand.IsAddAutoCommand);
+                return lineCommand.AsAddAutoCommand().Item;
+            }
+
+            [Fact]
+            public void BufEnterNoGroup()
+            {
+                var autoCommand = AssertAddAutoCommand("autocmd BufEnter *.html set ts=4");
+                Assert.Equal(EventKind.BufEnter, autoCommand.EventKinds.Single());
+                Assert.Equal("*.html", autoCommand.Pattern);
+                Assert.Equal("set ts=4", autoCommand.Command);
+            }
+        }
+
         public sealed class IfTest : ParserTest
         {
             private void AssertIf(LineCommand lineCommand, params int[] expected)

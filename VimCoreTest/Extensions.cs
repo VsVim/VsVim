@@ -70,6 +70,14 @@ namespace Vim.UnitTest
         #region LineCommand
 
         /// <summary>
+        /// LineCommand as AddAutoCommand
+        /// </summary>
+        public static LineCommand.AddAutoCommand AsAddAutoCommand(this LineCommand lineCommand)
+        {
+            return (LineCommand.AddAutoCommand)lineCommand;
+        }
+
+        /// <summary>
         /// LineCommand as ChangeDirectory
         /// </summary>
         public static LineCommand.ChangeDirectory AsChangeDirectory(this LineCommand lineCommand)

@@ -254,6 +254,12 @@ type Interpreter
     /// Get the count value or the default of 1
     member x.GetCountOrDefault count = Util.CountOrDefault count
 
+    /// Add the specified auto command to the list 
+    member x.RunAddAutoCommand autoCommand = 
+        let autoCommands = List.append _vimData.AutoCommands [autoCommand]
+        _vimData.AutoCommands <- autoCommands
+        RunResult.Completed
+
     /// Run the behave command
     member x.RunBehave model = 
         match model with 
@@ -1345,6 +1351,7 @@ type Interpreter
             |> _registerMap.GetRegister
 
         match lineCommand with
+        | LineCommand.AddAutoCommand autoCommand -> x.RunAddAutoCommand autoCommand
         | LineCommand.Behave model -> x.RunBehave model
         | LineCommand.ChangeDirectory path -> x.RunChangeDirectory path
         | LineCommand.ChangeLocalDirectory path -> x.RunChangeLocalDirectory path

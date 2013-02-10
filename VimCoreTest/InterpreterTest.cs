@@ -753,6 +753,29 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class AutoCommandTest : InterpreterTest
+        {
+            [Fact]
+            public void SimpleCommand()
+            {
+                Create();
+                ParseAndRun("autocmd BufEnter *.html set ts=4");
+                var autoCommand = _vimData.AutoCommands.Single();
+                Assert.Equal("*.html", autoCommand.Pattern);
+            }
+
+            [Fact]
+            public void MultipleCommands()
+            {
+                Create();
+                ParseAndRun("autocmd BufEnter *.html set ts=4");
+                ParseAndRun("autocmd BufEnter *.cs set ts=4");
+                var all = _vimData.AutoCommands.ToList();
+                Assert.Equal(all[0].Pattern, "*.html");
+                Assert.Equal(all[1].Pattern, "*.cs");
+            }
+        }
+
         public sealed class IfTest : InterpreterTest
         {
             private void ParseAndRun(params string[] lines)

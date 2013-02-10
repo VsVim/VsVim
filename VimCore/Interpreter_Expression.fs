@@ -189,6 +189,9 @@ and [<RequireQualifiedAccess>] Expression =
 
 and [<RequireQualifiedAccess>] LineCommand =
 
+    /// Add a new AutoCommand to the set of existing AutoCommand values
+    | AddAutoCommand of AutoCommand
+
     /// The :behave command to set common behaviors in certain environments
     | Behave of string
 

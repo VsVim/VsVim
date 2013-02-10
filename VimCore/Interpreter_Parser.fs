@@ -58,7 +58,7 @@ type ParserBuilder
 [<Sealed>]
 type Parser
     (
-        _lines : string[] 
+        _lines : string[]
     ) = 
 
     let _parserBuilder = ParserBuilder()
@@ -67,6 +67,7 @@ type Parser
 
     /// The set of supported line commands paired with their abbreviation
     static let s_LineCommandNamePair = [
+        ("autocmd", "au")
         ("behave", "be")
         ("cd", "cd")
         ("chdir", "chd")
@@ -479,6 +480,91 @@ type Parser
                     inner (flags ||| newFlag) (index + 1)
 
         inner SubstituteFlags.None 0
+
+    /// Parse out :autocommand
+    member x.ParseAutoCommand() = 
+
+        let standardError = "Values missing"
+        let onError msg = ParseResult.Failed msg
+        let onStardardError () = onError standardError
+
+        // Whether or not the first string is interpreted as a group name is based on whether it exists in the
+        // set of defined autogroup values.  
+        //
+        // TODO: actually support this.  Need to thread through IVimData to check for the group
+        let isGroupName word = 
+            false
+
+        // Parse out an EventKind value from the specified event name 
+        let parseEventKind (word : string) = 
+            match word.ToLower() with
+            | "bufenter" -> Some EventKind.BufEnter
+            | _ -> None
+
+        // Parse out the pattern.  Consume everything up until the next blank 
+        //
+        // TODO: should we use x.ParsePattern here?
+        let parsePattern () = 
+            x.SkipBlanks()
+
+            let isNotBlank (token : Token) =
+                match token.TokenKind with
+                | TokenKind.Blank -> false
+                | _ -> true
+
+            match x.ParseWhile isNotBlank with
+            | None -> ""
+            | Some str -> str
+
+        // Parse out the event list.  Every autocmd value can specify multiple events by 
+        // separating the names with a comma 
+        let parseEventKindList () = 
+            
+            let rec inner rest = 
+                match _tokenizer.CurrentTokenKind with
+                | TokenKind.Word word -> 
+                    match parseEventKind word with
+                    | None -> ParseResult.Failed standardError
+                    | Some eventKind ->
+                        _tokenizer.MoveNextToken()
+                        match _tokenizer.CurrentChar with
+                        | Some ',' -> 
+                            _tokenizer.MoveNextToken()
+                            inner (fun item -> rest (eventKind :: item))
+                        | _ -> rest [eventKind]
+                | _ -> rest []
+                    
+            inner (fun list -> ParseResult.Succeeded list)
+
+        // Parse the rest of the command line given the specified group
+        let parseRest autoCommandGroup =
+            x.SkipBlanks()
+            match parseEventKindList () with
+            | ParseResult.Failed msg -> ParseResult.Failed msg
+            | ParseResult.Succeeded eventKindList -> 
+                x.SkipBlanks()
+                let pattern = parsePattern()
+                x.SkipBlanks()
+                let command = x.ParseRestOfLine()
+                let autoCommand = { 
+                    Group = autoCommandGroup 
+                    EventKinds = eventKindList
+                    Command = command
+                    Pattern = pattern
+                }
+                ParseResult.Succeeded (LineCommand.AddAutoCommand autoCommand)
+
+        x.SkipBlanks() 
+        match _tokenizer.CurrentTokenKind with
+        | TokenKind.Word word -> 
+            if isGroupName word then
+                _tokenizer.MoveNextToken()
+                x.SkipBlanks()
+                let autoCommandGroup = AutoCommandGroup.Named word
+                parseRest autoCommandGroup
+            else
+                parseRest AutoCommandGroup.Default
+        | _ -> onStardardError ()
 
     /// Parse out the :behave command.  The mode argument is required
     member x.ParseBehave() =
@@ -1414,6 +1500,7 @@ type Parser
         let doParse name = 
             let parseResult = 
                 match name with
+                | "autocmd" -> noRange x.ParseAutoCommand
                 | "behave" -> noRange x.ParseBehave
                 | "cd" -> noRange x.ParseChangeDirectory
                 | "chdir" -> noRange x.ParseChangeDirectory
