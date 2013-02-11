@@ -70,7 +70,7 @@ namespace Vim.UnitTest
         /// </summary>
         protected void ParseAndRun(string command)
         {
-            var parseResult = Parser.ParseLineCommand(command);
+            var parseResult = VimUtil.ParseLineCommand(command);
             Assert.True(parseResult.IsSucceeded);
             _interpreter.RunLineCommand(parseResult.AsSucceeded().Item);
         }
@@ -780,8 +780,9 @@ namespace Vim.UnitTest
         {
             private void ParseAndRun(params string[] lines)
             {
-                var parser = new Parser(lines);
-                var parseResult = parser.ParseSingleCommand();
+                var parser = new Parser(new VimData());
+                parser.Reset(lines);
+                var parseResult = parser.ParseSingleCommandCore();
                 Assert.True(parseResult.IsSucceeded);
                 _interpreter.RunLineCommand(parseResult.AsSucceeded().Item);
             }
@@ -841,7 +842,8 @@ namespace Vim.UnitTest
         {
             private LineRangeSpecifier ParseLineRange(string lineRangeText)
             {
-                var result = Parser.ParseRange(lineRangeText);
+                var parser = new Parser(new VimData());
+                var result = parser.ParseRange(lineRangeText);
                 Assert.True(!result.Item1.IsNone);
                 Assert.Equal("", result.Item2);
                 return result.Item1;

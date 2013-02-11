@@ -15,6 +15,7 @@ type internal CommandMode
     let _commandChangedEvent = StandardEvent()
     let _vimData = _buffer.VimData
     let _statusUtil = _buffer.VimBufferData.StatusUtil
+    let _parser = Parser(_vimData)
 
     // Command to show when entering command from Visual Mode
     static let FromVisualModeString = "'<,'>"
@@ -39,7 +40,7 @@ type internal CommandMode
             else
                 command
 
-        match Parser.ParseLineCommand command with
+        match _parser.ParseLineCommand command with
         | ParseResult.Failed msg -> 
             _statusUtil.OnError msg
             RunResult.Completed

@@ -58,11 +58,12 @@ type ParserBuilder
 [<Sealed>]
 type Parser
     (
-        _lines : string[]
+        _vimData : IVimData
     ) = 
 
     let _parserBuilder = ParserBuilder()
-    let _tokenizer = Tokenizer(_lines.[0], TokenizerFlags.None)
+    let _tokenizer = Tokenizer("", TokenizerFlags.None)
+    let mutable _lines = [|""|] 
     let mutable _lineIndex = 0
 
     /// The set of supported line commands paired with their abbreviation
@@ -171,6 +172,15 @@ type Parser
         ("lnoremap", "ln")
         ("cnoremap", "cno")
     ]
+
+    member x.Reset (lines : string[]) = 
+        _lines <- 
+            if lines.Length = 0 then
+                [|""|]
+            else
+                lines
+        _lineIndex <- 0
+        _tokenizer.Reset _lines.[0] TokenizerFlags.None
 
     member x.NextLine() =
         if _lineIndex + 1 >= _lines.Length then
@@ -366,7 +376,7 @@ type Parser
                 let pattern = x.ParseRestOfLine()
                 CommandOption.StartAtPattern pattern |> Some
             | TokenKind.Character c ->
-                match x.ParseSingleCommand() with
+                match x.ParseSingleCommandCore() with
                 | ParseResult.Failed _ -> 
                     _tokenizer.MoveToMark mark
                     None
@@ -490,10 +500,12 @@ type Parser
 
         // Whether or not the first string is interpreted as a group name is based on whether it exists in the
         // set of defined autogroup values.  
-        //
-        // TODO: actually support this.  Need to thread through IVimData to check for the group
-        let isGroupName word = 
-            false
+        let getAutoCommandGroup name =
+            _vimData.AutoCommandGroups 
+            |> Seq.tryFind (fun autoCommandGroup ->
+                match autoCommandGroup with
+                | AutoCommandGroup.Default -> false
+                | AutoCommandGroup.Named groupName -> name = groupName)
 
         // Parse out an EventKind value from the specified event name 
         let parseEventKind (word : string) = 
@@ -501,9 +513,8 @@ type Parser
             | "bufenter" -> Some EventKind.BufEnter
             | _ -> None
 
-        // Parse out the pattern.  Consume everything up until the next blank 
-        //
-        // TODO: should we use x.ParsePattern here?
+        // Parse out the pattern.  Consume everything up until the next blank.  This isn't a normal regex
+        // pattern though (described in 'help autocmd-patterns').  
         let parsePattern () = 
             x.SkipBlanks()
 
@@ -556,14 +567,13 @@ type Parser
 
         x.SkipBlanks() 
         match _tokenizer.CurrentTokenKind with
-        | TokenKind.Word word -> 
-            if isGroupName word then
+        | TokenKind.Word name -> 
+            match getAutoCommandGroup name with
+            | Some autoCommandGroup ->
                 _tokenizer.MoveNextToken()
                 x.SkipBlanks()
-                let autoCommandGroup = AutoCommandGroup.Named word
                 parseRest autoCommandGroup
-            else
-                parseRest AutoCommandGroup.Default
+            | None -> parseRest AutoCommandGroup.Default
         | _ -> onStardardError ()
 
     /// Parse out the :behave command.  The mode argument is required
@@ -1136,7 +1146,7 @@ type Parser
             _tokenizer.MoveNextToken()
             let pattern, foundDelimiter = x.ParsePattern delimiter
             if foundDelimiter then
-                let command = x.ParseSingleCommand()
+                let command = x.ParseSingleCommandCore()
                 match command with 
                 | ParseResult.Failed msg -> ParseResult.Failed msg
                 | ParseResult.Succeeded command -> LineCommand.Global (lineRange, pattern, matchPattern, command) |> ParseResult.Succeeded
@@ -1179,7 +1189,7 @@ type Parser
                     match nextConditionalKind with
                     | Some nextConditionalKind -> onSuccess nextConditionalKind
                     | None -> 
-                        match x.ParseSingleCommand() with
+                        match x.ParseSingleCommandCore() with
                         | ParseResult.Failed msg -> onError msg
                         | ParseResult.Succeeded lineCommand ->
                             builder.Add lineCommand
@@ -1465,7 +1475,7 @@ type Parser
             LineCommand.DisplayMarks List.empty |> ParseResult.Succeeded
 
     /// Parse out a single expression
-    member x.ParseSingleCommand () = 
+    member x.ParseSingleCommandCore() = 
 
         x.SkipBlanks()
         let lineRange = x.ParseLineRange()
@@ -1667,18 +1677,28 @@ type Parser
             | _ -> return expr
         }
 
-    static member ParseRange rangeText = 
-        let all = [| rangeText |]
-        let parser = Parser(all)
-        (parser.ParseLineRange(), parser.ParseRestOfLine())
+    member x.ParseRange rangeText = 
+        x.Reset [|rangeText|]
+        x.ParseLineRange(), x.ParseRestOfLine()
 
-    static member ParseExpression (expressionText : string) : ParseResult<Expression> = 
-        let all = [| expressionText |]
-        let parser = Parser(all)
-        parser.ParseExpressionCore()
+    member x.ParseExpression (expressionText : string) : ParseResult<Expression> = 
+        x.Reset [|expressionText|]
+        x.ParseExpressionCore()
 
-    static member ParseLineCommand (commandText : string) = 
-        let all = [| commandText |]
-        let parser = Parser(all)
-        parser.ParseSingleCommand()
+    member x.ParseLineCommand commandText =
+        x.Reset [|commandText|]
+        x.ParseSingleCommandCore()
+
+    member x.ParseLineCommands lines =
+        x.Reset lines
+        let rec inner rest =    
+            match x.ParseSingleCommandCore() with
+            | ParseResult.Failed msg -> ParseResult.Failed msg
+            | ParseResult.Succeeded lineCommand -> 
+                if x.NextLine() then    
+                    inner (fun item -> rest (lineCommand :: item))
+                else
+                    rest [lineCommand]
+        inner (fun all -> ParseResult.Succeeded all)
+                
 

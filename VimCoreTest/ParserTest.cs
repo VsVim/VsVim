@@ -10,7 +10,9 @@ namespace Vim.UnitTest
     {
         protected Parser CreateParser(params string[] text)
         {
-            return new Parser(text);
+            var parser = new Parser(new VimData());
+            parser.Reset(text);
+            return parser;
         }
 
         /// <summary>
@@ -18,14 +20,14 @@ namespace Vim.UnitTest
         /// </summary>
         protected void AssertParseLineCommandError(string command, string error)
         {
-            var parseResult = Parser.ParseLineCommand(command);
+            var parseResult = VimUtil.ParseLineCommand(command);
             Assert.True(parseResult.IsFailed);
             Assert.Equal(error, parseResult.AsFailed().Item);
         }
 
         protected LineCommand ParseLineCommand(string text)
         {
-            var parseResult = Parser.ParseLineCommand(text);
+            var parseResult = VimUtil.ParseLineCommand(text);
             Assert.True(parseResult.IsSucceeded);
             return parseResult.AsSucceeded().Item;
         }
@@ -115,15 +117,17 @@ namespace Vim.UnitTest
 
             private void AssertBadParse(params string[] lines)
             {
-                var parser = new Parser(lines);
-                var result = parser.ParseSingleCommand();
+                var parser = new Parser(new VimData());
+                parser.Reset(lines);
+                var result = parser.ParseSingleCommandCore();
                 Assert.True(result.IsFailed);
             }
 
             private LineCommand Parse(params string[] lines)
             {
-                var parser = new Parser(lines);
-                var result = parser.ParseSingleCommand();
+                var parser = new Parser(new VimData());
+                parser.Reset(lines);
+                var result = parser.ParseSingleCommandCore();
                 Assert.True(result.IsSucceeded);
                 return result.AsSucceeded().Item;
             }
@@ -1107,7 +1111,7 @@ namespace Vim.UnitTest
             [Fact]
             public void Parse_Close_Trailing()
             {
-                var parseResult = Parser.ParseLineCommand("close foo");
+                var parseResult = VimUtil.ParseLineCommand("close foo");
                 Assert.True(parseResult.IsFailed(Resources.CommandMode_TrailingCharacters));
             }
 

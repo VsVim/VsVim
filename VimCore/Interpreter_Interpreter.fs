@@ -1165,12 +1165,12 @@ type VimInterpreter
         else
             let filePath = SystemUtil.ResolvePath filePath
             match _fileSystem.ReadAllLines filePath with
-            | None -> 
-                _statusUtil.OnError (Resources.CommandMode_CouldNotOpenFile filePath)
+            | None -> _statusUtil.OnError (Resources.CommandMode_CouldNotOpenFile filePath)
             | Some lines ->
+                let parser = Parser(_vimData)
                 lines 
                 |> Seq.iter (fun line ->
-                    match Parser.ParseLineCommand line with
+                    match parser.ParseLineCommand line with
                     | ParseResult.Failed msg -> _statusUtil.OnError msg
                     | ParseResult.Succeeded lineCommand -> x.RunLineCommand lineCommand |> ignore)
 

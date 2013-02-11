@@ -73,7 +73,7 @@ namespace Vim.UnitTest
                 command = command.Substring(1);
             }
 
-            var parseResult = Parser.ParseLineCommand(command);
+            var parseResult = VimUtil.ParseLineCommand(command);
             Assert.True(parseResult.IsSucceeded);
             _interpreter.RunLineCommand(parseResult.AsSucceeded().Item);
         }

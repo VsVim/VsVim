@@ -17,7 +17,7 @@ namespace Vim.UnitTest
 
         private VariableValue Run(string expr)
         {
-            var parseResult = Parser.ParseExpression(expr);
+            var parseResult = VimUtil.ParseExpression(expr);
             Assert.True(parseResult.IsSucceeded);
             return _interpreter.RunExpression(parseResult.AsSucceeded().Item);
         }

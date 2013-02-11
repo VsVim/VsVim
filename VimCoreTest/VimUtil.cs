@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
 using Vim.Extensions;
+using Vim.Interpreter;
 
 namespace Vim.UnitTest
 {
@@ -290,6 +291,18 @@ namespace Vim.UnitTest
         internal static VisualSpan CreateVisualSpanCharacter(SnapshotSpan span)
         {
             return VisualSpan.NewCharacter(CharacterSpan.CreateForSpan(span));
+        }
+
+        internal static ParseResult<LineCommand> ParseLineCommand(string text)
+        {
+            var parser = new Parser(new VimData());
+            return parser.ParseLineCommand(text);
+        }
+
+        internal static ParseResult<Expression> ParseExpression(string expr)
+        {
+            var parser = new Parser(new VimData());
+            return parser.ParseExpression(expr);
         }
     }
 }
