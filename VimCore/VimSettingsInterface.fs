@@ -41,6 +41,7 @@ module GlobalSettingNames =
     let TimeoutLengthName = "timeoutlen"
     let TimeoutLengthExName = "ttimeoutlen"
     let UseEditorIndentName = "vsvim_useeditorindent"
+    let UseEditorDefaultsName = "vsvim_useeditordefaults"
     let VisualBellName = "visualbell"
     let VirtualEditName = "virtualedit"
     let VimRcName = "vimrc"
@@ -374,6 +375,9 @@ and IVimGlobalSettings =
     /// Overrides the IgnoreCase setting in certain cases if the pattern contains
     /// any upper case letters
     abstract SmartCase : bool with get, set
+
+    /// Use the editor default settings when creating a new buffer
+    abstract UseEditorDefaults : bool with get, set 
 
     /// Let the editor control indentation of lines instead.  Overrides the AutoIndent
     /// setting

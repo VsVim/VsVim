@@ -144,6 +144,7 @@ type internal GlobalSettings() =
             (TimeoutExName, TimeoutExName, SettingValue.Toggle false)
             (TimeoutLengthName, "tm", SettingValue.Number 1000)
             (TimeoutLengthExName, "ttm", SettingValue.Number -1)
+            (UseEditorDefaultsName, UseEditorDefaultsName, SettingValue.Toggle false)
             (UseEditorIndentName, UseEditorIndentName, SettingValue.Toggle true)
             (VimRcName, VimRcName, SettingValue.String(StringUtil.empty))
             (VimRcPathsName, VimRcPathsName, SettingValue.String(StringUtil.empty))
@@ -370,6 +371,9 @@ type internal GlobalSettings() =
         member x.TimeoutLengthEx
             with get() = _map.GetNumberValue TimeoutLengthExName
             and set value = _map.TrySetValue TimeoutLengthExName (SettingValue.Number value) |> ignore
+        member x.UseEditorDefaults
+            with get() = _map.GetBoolValue UseEditorDefaultsName
+            and set value = _map.TrySetValue UseEditorDefaultsName (SettingValue.Toggle value) |> ignore
         member x.UseEditorIndent
             with get() = _map.GetBoolValue UseEditorIndentName
             and set value = _map.TrySetValue UseEditorIndentName (SettingValue.Toggle value) |> ignore

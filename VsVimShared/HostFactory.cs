@@ -91,7 +91,7 @@ namespace VsVim
             //
             // By the time this function is called both the Vim and Editor settings are at their final 
             // values.  We just need to decide on a winner and copy one to the other 
-            if (_vim.VimRcState.IsLoadSucceeded)
+            if (_vim.VimRcState.IsLoadSucceeded && !_vim.GlobalSettings.UseEditorDefaults)
             {
                 // Vim settings win.  
                 _editorToSettingSynchronizer.CopyVimToEditorSettings(vimBuffer);
