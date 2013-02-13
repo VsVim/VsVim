@@ -87,6 +87,37 @@ namespace Vim.UnitTest
                 Assert.Equal("*.html", autoCommand.Pattern);
                 Assert.Equal("set ts=4", autoCommand.LineCommandText);
             }
+
+            [Fact]
+            public void EventKindIsCaseInsensitive()
+            {
+                var autoCommand = AssertAddAutoCommand("autocmd bufenter *.html set ts=4");
+                Assert.Equal(EventKind.BufEnter, autoCommand.EventKinds.Single());
+                Assert.Equal("*.html", autoCommand.Pattern);
+                Assert.Equal("set ts=4", autoCommand.LineCommandText);
+            }
+
+            [Fact]
+            public void TwoEventKinds()
+            {
+                var autoCommand = AssertAddAutoCommand("autocmd BufEnter,BufAdd *.html set ts=4");
+                Assert.Equal(
+                    new[] { EventKind.BufEnter, EventKind.BufAdd },
+                    autoCommand.EventKinds);
+                Assert.Equal("*.html", autoCommand.Pattern);
+                Assert.Equal("set ts=4", autoCommand.LineCommandText);
+            }
+
+            [Fact]
+            public void ManyEventKinds()
+            {
+                var autoCommand = AssertAddAutoCommand("autocmd BufEnter,BufAdd,BufCreate *.html set ts=4");
+                Assert.Equal(
+                    new[] { EventKind.BufEnter, EventKind.BufAdd, EventKind.BufCreate },
+                    autoCommand.EventKinds);
+                Assert.Equal("*.html", autoCommand.Pattern);
+                Assert.Equal("set ts=4", autoCommand.LineCommandText);
+            }
         }
 
         public sealed class IfTest : ParserTest

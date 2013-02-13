@@ -173,6 +173,91 @@ type Parser
         ("cnoremap", "cno")
     ]
 
+    /// Map of all autocmd events to the lower case version of the name
+    static let s_NameToEventKindMap = 
+        [
+            ("bufnewfile", EventKind.BufNewFile)
+            ("bufreadpre", EventKind.BufReadPre)
+            ("bufread", EventKind.BufRead)
+            ("bufreadpost", EventKind.BufReadPost)
+            ("bufreadcmd", EventKind.BufReadCmd)
+            ("filereadpre", EventKind.FileReadPre)
+            ("filereadpost", EventKind.FileReadPost)
+            ("filereadcmd", EventKind.FileReadCmd)
+            ("filterreadpre", EventKind.FilterReadPre)
+            ("filterreadpost", EventKind.FilterReadPost)
+            ("stdinreadpre", EventKind.StdinReadPre)
+            ("stdinreadpost", EventKind.StdinReadPost)
+            ("bufwrite", EventKind.BufWrite)
+            ("bufwritepre", EventKind.BufWritePre)
+            ("bufwritepost", EventKind.BufWritePost)
+            ("bufwritecmd", EventKind.BufWriteCmd)
+            ("filewritepre", EventKind.FileWritePre)
+            ("filewritepost", EventKind.FileWritePost)
+            ("filewritecmd", EventKind.FileWriteCmd)
+            ("fileappendpre", EventKind.FileAppendPre)
+            ("fileappendpost", EventKind.FileAppendPost)
+            ("fileappendcmd", EventKind.FileAppendCmd)
+            ("filterwritepre", EventKind.FilterWritePre)
+            ("filterwritepost", EventKind.FilterWritePost)
+            ("bufadd", EventKind.BufAdd)
+            ("bufcreate", EventKind.BufCreate)
+            ("bufdelete", EventKind.BufDelete)
+            ("bufwipeout", EventKind.BufWipeout)
+            ("buffilepre", EventKind.BufFilePre)
+            ("buffilepost", EventKind.BufFilePost)
+            ("bufenter", EventKind.BufEnter)
+            ("bufleave", EventKind.BufLeave)
+            ("bufwinenter", EventKind.BufWinEnter)
+            ("bufwinleave", EventKind.BufWinLeave)
+            ("bufunload", EventKind.BufUnload)
+            ("bufhidden", EventKind.BufHidden)
+            ("bufnew", EventKind.BufNew)
+            ("swapexists", EventKind.SwapExists)
+            ("filetype", EventKind.FileType)
+            ("syntax", EventKind.Syntax)
+            ("encodingchanged", EventKind.EncodingChanged)
+            ("termchanged", EventKind.TermChanged)
+            ("vimenter", EventKind.VimEnter)
+            ("guienter", EventKind.GUIEnter)
+            ("termresponse", EventKind.TermResponse)
+            ("vimleavepre", EventKind.VimLeavePre)
+            ("vimleave", EventKind.VimLeave)
+            ("filechangedshell", EventKind.FileChangedShell)
+            ("filechangedshellpost", EventKind.FileChangedShellPost)
+            ("filechangedro", EventKind.FileChangedRO)
+            ("shellcmdpost", EventKind.ShellCmdPost)
+            ("shellfilterpost", EventKind.ShellFilterPost)
+            ("funcundefined", EventKind.FuncUndefined)
+            ("spellfilemissing", EventKind.SpellFileMissing)
+            ("sourcepre", EventKind.SourcePre)
+            ("sourcecmd", EventKind.SourceCmd)
+            ("vimresized", EventKind.VimResized)
+            ("focusgained", EventKind.FocusGained)
+            ("focuslost", EventKind.FocusLost)
+            ("cursorhold", EventKind.CursorHold)
+            ("cursorholdi", EventKind.CursorHoldI)
+            ("cursormoved", EventKind.CursorMoved)
+            ("cursormovedi", EventKind.CursorMovedI)
+            ("winenter", EventKind.WinEnter)
+            ("winleave", EventKind.WinLeave)
+            ("tabenter", EventKind.TabEnter)
+            ("tableave", EventKind.TabLeave)
+            ("cmdwinenter", EventKind.CmdwinEnter)
+            ("cmdwinleave", EventKind.CmdwinLeave)
+            ("insertenter", EventKind.InsertEnter)
+            ("insertchange", EventKind.InsertChange)
+            ("insertleave", EventKind.InsertLeave)
+            ("colorscheme", EventKind.ColorScheme)
+            ("remotereply", EventKind.RemoteReply)
+            ("quickfixcmdpre", EventKind.QuickFixCmdPre)
+            ("quickfixcmdpost", EventKind.QuickFixCmdPost)
+            ("sessionloadpost", EventKind.SessionLoadPost)
+            ("menupopup", EventKind.MenuPopup)
+            ("user", EventKind.User)
+        ]
+        |> Map.ofList
+
     member x.Reset (lines : string[]) = 
         _lines <- 
             if lines.Length = 0 then
@@ -509,9 +594,8 @@ type Parser
 
         // Parse out an EventKind value from the specified event name 
         let parseEventKind (word : string) = 
-            match word.ToLower() with
-            | "bufenter" -> Some EventKind.BufEnter
-            | _ -> None
+            let word = word.ToLower()
+            Map.tryFind word s_NameToEventKindMap
 
         // Parse out the pattern.  Consume everything up until the next blank.  This isn't a normal regex
         // pattern though (described in 'help autocmd-patterns').  
