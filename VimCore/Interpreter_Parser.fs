@@ -579,9 +579,27 @@ type Parser
     /// Parse out :autocommand
     member x.ParseAutoCommand() = 
 
+        let isRemove = x.ParseBang()
         let standardError = "Values missing"
         let onError msg = ParseResult.Failed msg
-        let onStardardError () = onError standardError
+        let onStandardError () = onError standardError
+
+        // Parse out the auto group name from the current point in the tokenizer
+        let parseAutoCommandGroup () = 
+            match _tokenizer.CurrentTokenKind with
+            | TokenKind.Word name -> 
+                let found = 
+                    _vimData.AutoCommandGroups 
+                    |> Seq.tryFind (fun autoCommandGroup ->
+                        match autoCommandGroup with
+                        | AutoCommandGroup.Default -> false
+                        | AutoCommandGroup.Named groupName -> name = groupName)
+                match found with 
+                | Some autoCommandGroup ->
+                    _tokenizer.MoveNextToken()
+                    autoCommandGroup
+                | None -> AutoCommandGroup.Default
+            | _ -> AutoCommandGroup.Default
 
         // Whether or not the first string is interpreted as a group name is based on whether it exists in the
         // set of defined autogroup values.  
@@ -592,14 +610,9 @@ type Parser
                 | AutoCommandGroup.Default -> false
                 | AutoCommandGroup.Named groupName -> name = groupName)
 
-        // Parse out an EventKind value from the specified event name 
-        let parseEventKind (word : string) = 
-            let word = word.ToLower()
-            Map.tryFind word s_NameToEventKindMap
-
         // Parse out the pattern.  Consume everything up until the next blank.  This isn't a normal regex
         // pattern though (described in 'help autocmd-patterns').  Commas do represent pattern separation
-        let parsePattern () = 
+        let parsePatternList () = 
             x.SkipBlanks()
 
             let rec inner rest = 
@@ -623,6 +636,11 @@ type Parser
         // Parse out the event list.  Every autocmd value can specify multiple events by 
         // separating the names with a comma 
         let parseEventKindList () = 
+
+            // Parse out an EventKind value from the specified event name 
+            let parseEventKind (word : string) = 
+                let word = word.ToLower()
+                Map.tryFind word s_NameToEventKindMap
             
             let rec inner rest = 
                 match _tokenizer.CurrentTokenKind with
@@ -640,34 +658,67 @@ type Parser
                     
             inner (fun list -> ParseResult.Succeeded list)
 
-        // Parse the rest of the command line given the specified group
-        let parseRest autoCommandGroup =
-            x.SkipBlanks()
+        x.SkipBlanks() 
+        let autoCommandGroup = parseAutoCommandGroup ()
+        x.SkipBlanks()
+
+        if isRemove then
+
+            // Other remove syntaxes 
+            let onRemoveEx eventKindList patternList lineCommandText = 
+                let autoCommandDefinition = {  
+                    Group = autoCommandGroup
+                    EventKinds = eventKindList
+                    Patterns = patternList
+                    LineCommandText = lineCommandText
+                }
+                ParseResult.Succeeded (LineCommand.RemoveAutoCommands autoCommandDefinition)
+
+            // Called for one of the variations of the remove all commands
+            let onRemoveAll () = 
+                onRemoveEx List.empty List.empty ""
+
+            match _tokenizer.CurrentTokenKind with
+            | TokenKind.EndOfLine -> onRemoveAll ()
+            | TokenKind.Character '*' -> 
+                // This is the pattern form of the tokenizer.  
+                _tokenizer.MoveNextToken()
+                x.SkipBlanks()
+                let patternList = parsePatternList ()
+                onRemoveEx List.empty patternList ""
+            | _ -> 
+                // This is the longer form of the event remove which can specify both event kinds
+                // and patterns.  The next item in both cases is the events followed by the patterns
+                match parseEventKindList () with
+                | ParseResult.Failed msg -> onError msg
+                | ParseResult.Succeeded eventKindList ->
+                    x.SkipBlanks()
+                    let patternList = 
+                        if _tokenizer.IsAtEndOfLine then
+                            List.empty
+                        else
+                            parsePatternList ()
+                    onRemoveEx eventKindList patternList ""
+
+        else
+            // This is the add form of auto command.  It will be followed by the events, pattern
+            // and actual command in that order
             match parseEventKindList () with
             | ParseResult.Failed msg -> ParseResult.Failed msg
-            | ParseResult.Succeeded eventKindList -> 
+            | ParseResult.Succeeded eventKindList ->
                 x.SkipBlanks()
-                let patterns = parsePattern()
+                let patternList = parsePatternList ()
                 x.SkipBlanks()
                 let command = x.ParseRestOfLine()
-                let autoCommand = { 
+                let autoCommandDefinition = { 
                     Group = autoCommandGroup 
                     EventKinds = eventKindList
                     LineCommandText = command
-                    Patterns = patterns
+                    Patterns = patternList
                 }
-                ParseResult.Succeeded (LineCommand.AddAutoCommand autoCommand)
 
-        x.SkipBlanks() 
-        match _tokenizer.CurrentTokenKind with
-        | TokenKind.Word name -> 
-            match getAutoCommandGroup name with
-            | Some autoCommandGroup ->
-                _tokenizer.MoveNextToken()
-                x.SkipBlanks()
-                parseRest autoCommandGroup
-            | None -> parseRest AutoCommandGroup.Default
-        | _ -> onStardardError ()
+                let lineCommand = LineCommand.AddAutoCommand autoCommandDefinition
+                ParseResult.Succeeded lineCommand
 
     /// Parse out the :behave command.  The mode argument is required
     member x.ParseBehave() =

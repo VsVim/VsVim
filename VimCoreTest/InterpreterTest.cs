@@ -761,7 +761,7 @@ namespace Vim.UnitTest
                 Create();
                 ParseAndRun("autocmd BufEnter *.html set ts=4");
                 var autoCommand = _vimData.AutoCommands.Single();
-                Assert.Equal("*.html", autoCommand.Patterns.Single());
+                Assert.Equal("*.html", autoCommand.Pattern);
             }
 
             [Fact]
@@ -771,8 +771,56 @@ namespace Vim.UnitTest
                 ParseAndRun("autocmd BufEnter *.html set ts=4");
                 ParseAndRun("autocmd BufEnter *.cs set ts=4");
                 var all = _vimData.AutoCommands.ToList();
-                Assert.Equal(all[0].Patterns.Single(), "*.html");
-                Assert.Equal(all[1].Patterns.Single(), "*.cs");
+                Assert.Equal(all[0].Pattern, "*.html");
+                Assert.Equal(all[1].Pattern, "*.cs");
+            }
+
+            [Fact]
+            public void RemoveAll()
+            {
+                Create();
+                ParseAndRun("autocmd BufEnter *.html set ts=4");
+                ParseAndRun("autocmd!");
+                Assert.Equal(0, _vimData.AutoCommands.Length);
+            }
+
+            [Fact]
+            public void RemoveAllInEventKind()
+            {
+                Create();
+                ParseAndRun("autocmd BufEnter,BufWinEnter *.html set ts=4");
+                ParseAndRun("autocmd! BufEnter");
+                Assert.Equal(1, _vimData.AutoCommands.Length);
+                Assert.Equal(EventKind.BufWinEnter, _vimData.AutoCommands.Single().EventKind);
+            }
+
+            [Fact]
+            public void RemoveAllWithPattern()
+            {
+                Create();
+                ParseAndRun("autocmd BufEnter,BufWinEnter *.html set ts=4");
+                ParseAndRun("autocmd! * *.html");
+                Assert.Equal(0, _vimData.AutoCommands.Length);
+            }
+
+            [Fact]
+            public void RemoveAllWithPattern2()
+            {
+                Create();
+                ParseAndRun("autocmd BufEnter,BufWinEnter *.html set ts=4");
+                ParseAndRun("autocmd BufEnter,BufWinEnter *.cs set ts=4");
+                ParseAndRun("autocmd! * *.html");
+                Assert.Equal(2, _vimData.AutoCommands.Length);
+            }
+
+            [Fact]
+            public void RemoveAllWithEventAndPattern()
+            {
+                Create();
+                ParseAndRun("autocmd BufEnter,BufWinEnter *.html set ts=4");
+                ParseAndRun("autocmd BufEnter,BufWinEnter *.cs set ts=4");
+                ParseAndRun("autocmd! BufEnter *.html");
+                Assert.Equal(3, _vimData.AutoCommands.Length);
             }
         }
 

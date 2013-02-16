@@ -256,8 +256,20 @@ type VimInterpreter
     member x.GetCountOrDefault count = Util.CountOrDefault count
 
     /// Add the specified auto command to the list 
-    member x.RunAddAutoCommand autoCommand = 
-        let autoCommands = List.append _vimData.AutoCommands [autoCommand]
+    member x.RunAddAutoCommand (autoCommandDefinition : AutoCommandDefinition) = 
+        let builder = System.Collections.Generic.List<AutoCommand>()
+        for eventKind in autoCommandDefinition.EventKinds do
+            for pattern in autoCommandDefinition.Patterns do
+                let autoCommand = { 
+                    Group = autoCommandDefinition.Group
+                    EventKind = eventKind
+                    Pattern = pattern 
+                    LineCommandText = autoCommandDefinition.LineCommandText
+                }
+                builder.Add(autoCommand)
+                
+        let newList = List.ofSeq builder
+        let autoCommands = List.append _vimData.AutoCommands newList
         _vimData.AutoCommands <- autoCommands
         RunResult.Completed
 
@@ -881,6 +893,29 @@ type VimInterpreter
         _commonOperations.Redo 1
         RunResult.Completed
 
+    /// Remove the auto commands which match the specified definition
+    member x.RemoveAutoCommands (autoCommandDefinition : AutoCommandDefinition) = 
+        let isMatch (autoCommand : AutoCommand) = 
+            
+            if autoCommand.Group = autoCommandDefinition.Group then
+                let isPatternMatch = Seq.exists (fun p -> autoCommand.Pattern = p) autoCommandDefinition.Patterns
+                let isEventMatch = Seq.exists (fun e -> autoCommand.EventKind = e) autoCommandDefinition.EventKinds
+
+                match autoCommandDefinition.Patterns.Length > 0, autoCommandDefinition.EventKinds.Length > 0 with
+                | true, true -> isPatternMatch && isEventMatch
+                | true, false -> isPatternMatch
+                | false, true -> isEventMatch
+                | false, false -> true
+            else
+                false
+                
+        let rest = 
+            _vimData.AutoCommands
+            |> Seq.filter (fun x -> not (isMatch x))
+            |> List.ofSeq
+        _vimData.AutoCommands <- rest
+        RunResult.Completed
+
     /// Process the :retab command.  Changes all sequences of spaces and tabs which contain
     /// at least a single tab into the normalized value based on the provided 'tabstop' or 
     /// default 'tabstop' setting
@@ -1352,7 +1387,7 @@ type VimInterpreter
             |> _registerMap.GetRegister
 
         match lineCommand with
-        | LineCommand.AddAutoCommand autoCommand -> x.RunAddAutoCommand autoCommand
+        | LineCommand.AddAutoCommand autoCommandDefinition -> x.RunAddAutoCommand autoCommandDefinition
         | LineCommand.Behave model -> x.RunBehave model
         | LineCommand.ChangeDirectory path -> x.RunChangeDirectory path
         | LineCommand.ChangeLocalDirectory path -> x.RunChangeLocalDirectory path
@@ -1394,6 +1429,7 @@ type VimInterpreter
         | LineCommand.ReadCommand (lineRange, command) -> x.RunReadCommand lineRange command
         | LineCommand.ReadFile (lineRange, fileOptionList, filePath) -> x.RunReadFile lineRange fileOptionList filePath
         | LineCommand.Redo -> x.RunRedo()
+        | LineCommand.RemoveAutoCommands autoCommandDefinition -> x.RemoveAutoCommands autoCommandDefinition
         | LineCommand.Retab (lineRange, hasBang, tabStop) -> x.RunRetab lineRange hasBang tabStop
         | LineCommand.Search (lineRange, path, pattern) -> x.RunSearch lineRange path pattern
         | LineCommand.Set argumentList -> x.RunSet argumentList

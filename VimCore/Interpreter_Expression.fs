@@ -140,6 +140,26 @@ type AutoCommandGroup =
     | Default
     | Named of string 
 
+type AutoCommand = {
+    Group : AutoCommandGroup
+
+    EventKind : EventKind
+
+    LineCommandText : string
+
+    Pattern : string
+}    
+
+type AutoCommandDefinition = { 
+    Group : AutoCommandGroup
+
+    EventKinds : EventKind list
+
+    LineCommandText : string
+
+    Patterns : string list
+}
+
 /// A single line specifier in a range 
 [<RequireQualifiedAccess>]
 type LineSpecifier = 
@@ -316,16 +336,6 @@ and [<RequireQualifiedAccess>] ConditionalBlock =
         | Unconditional lineCommands -> None
         | Empty -> None
 
-and AutoCommand = {
-    Group : AutoCommandGroup
-
-    EventKinds : EventKind list
-
-    LineCommandText : string
-
-    Patterns : string list
-}    
-
 and [<RequireQualifiedAccess>] Expression =
 
     /// Binary expression
@@ -337,7 +347,7 @@ and [<RequireQualifiedAccess>] Expression =
 and [<RequireQualifiedAccess>] LineCommand =
 
     /// Add a new AutoCommand to the set of existing AutoCommand values
-    | AddAutoCommand of AutoCommand
+    | AddAutoCommand of AutoCommandDefinition
 
     /// The :behave command to set common behaviors in certain environments
     | Behave of string
@@ -493,6 +503,9 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// Redo the last item on the undo stack
     | Redo
+
+    /// Remove all auto commands with the specified definition
+    | RemoveAutoCommands of AutoCommandDefinition
 
     /// Retab the specified LineRange.  The options are as follows
     ///  - The LineRange to change (defaults to entire buffer)

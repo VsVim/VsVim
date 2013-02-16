@@ -72,7 +72,7 @@ namespace Vim.UnitTest
 
         public sealed class AutoCommandTest : ParserTest
         {
-            private AutoCommand AssertAddAutoCommand(string line)
+            private AutoCommandDefinition AssertAddAutoCommand(string line)
             {
                 var lineCommand = ParseLineCommand(line);
                 Assert.True(lineCommand.IsAddAutoCommand);
