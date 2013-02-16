@@ -84,7 +84,7 @@ namespace Vim.UnitTest
             {
                 var autoCommand = AssertAddAutoCommand("autocmd BufEnter *.html set ts=4");
                 Assert.Equal(EventKind.BufEnter, autoCommand.EventKinds.Single());
-                Assert.Equal("*.html", autoCommand.Pattern);
+                Assert.Equal("*.html", autoCommand.Patterns.Single());
                 Assert.Equal("set ts=4", autoCommand.LineCommandText);
             }
 
@@ -93,7 +93,7 @@ namespace Vim.UnitTest
             {
                 var autoCommand = AssertAddAutoCommand("autocmd bufenter *.html set ts=4");
                 Assert.Equal(EventKind.BufEnter, autoCommand.EventKinds.Single());
-                Assert.Equal("*.html", autoCommand.Pattern);
+                Assert.Equal("*.html", autoCommand.Patterns.Single());
                 Assert.Equal("set ts=4", autoCommand.LineCommandText);
             }
 
@@ -104,7 +104,7 @@ namespace Vim.UnitTest
                 Assert.Equal(
                     new[] { EventKind.BufEnter, EventKind.BufAdd },
                     autoCommand.EventKinds);
-                Assert.Equal("*.html", autoCommand.Pattern);
+                Assert.Equal("*.html", autoCommand.Patterns.Single());
                 Assert.Equal("set ts=4", autoCommand.LineCommandText);
             }
 
@@ -115,7 +115,16 @@ namespace Vim.UnitTest
                 Assert.Equal(
                     new[] { EventKind.BufEnter, EventKind.BufAdd, EventKind.BufCreate },
                     autoCommand.EventKinds);
-                Assert.Equal("*.html", autoCommand.Pattern);
+                Assert.Equal("*.html", autoCommand.Patterns.Single());
+                Assert.Equal("set ts=4", autoCommand.LineCommandText);
+            }
+
+            [Fact]
+            public void ManyPatterns()
+            {
+                var autoCommand = AssertAddAutoCommand("autocmd BufEnter *.html,*.cs set ts=4");
+                Assert.Equal(EventKind.BufEnter, autoCommand.EventKinds.Single());
+                Assert.Equal(new[] { "*.html", "*.cs" }, autoCommand.Patterns);
                 Assert.Equal("set ts=4", autoCommand.LineCommandText);
             }
         }

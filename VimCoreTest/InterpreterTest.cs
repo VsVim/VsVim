@@ -761,7 +761,7 @@ namespace Vim.UnitTest
                 Create();
                 ParseAndRun("autocmd BufEnter *.html set ts=4");
                 var autoCommand = _vimData.AutoCommands.Single();
-                Assert.Equal("*.html", autoCommand.Pattern);
+                Assert.Equal("*.html", autoCommand.Patterns.Single());
             }
 
             [Fact]
@@ -771,8 +771,8 @@ namespace Vim.UnitTest
                 ParseAndRun("autocmd BufEnter *.html set ts=4");
                 ParseAndRun("autocmd BufEnter *.cs set ts=4");
                 var all = _vimData.AutoCommands.ToList();
-                Assert.Equal(all[0].Pattern, "*.html");
-                Assert.Equal(all[1].Pattern, "*.cs");
+                Assert.Equal(all[0].Patterns.Single(), "*.html");
+                Assert.Equal(all[1].Patterns.Single(), "*.cs");
             }
         }
 

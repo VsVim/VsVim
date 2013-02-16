@@ -598,18 +598,27 @@ type Parser
             Map.tryFind word s_NameToEventKindMap
 
         // Parse out the pattern.  Consume everything up until the next blank.  This isn't a normal regex
-        // pattern though (described in 'help autocmd-patterns').  
+        // pattern though (described in 'help autocmd-patterns').  Commas do represent pattern separation
         let parsePattern () = 
             x.SkipBlanks()
 
-            let isNotBlank (token : Token) =
-                match token.TokenKind with
-                | TokenKind.Blank -> false
-                | _ -> true
+            let rec inner rest = 
+                let isNotBlankOrComma (token : Token) =
+                    match token.TokenKind with
+                    | TokenKind.Blank -> false
+                    | TokenKind.Character ',' -> false
+                    | _ -> true
 
-            match x.ParseWhile isNotBlank with
-            | None -> ""
-            | Some str -> str
+                match x.ParseWhile isNotBlankOrComma with
+                | None -> rest []
+                | Some str -> 
+                    match _tokenizer.CurrentTokenKind with
+                    | TokenKind.Character ',' ->
+                        _tokenizer.MoveNextToken()
+                        inner (fun item -> rest (str :: item))
+                    | _ -> rest [str]
+
+            inner (fun x -> x)
 
         // Parse out the event list.  Every autocmd value can specify multiple events by 
         // separating the names with a comma 
@@ -638,14 +647,14 @@ type Parser
             | ParseResult.Failed msg -> ParseResult.Failed msg
             | ParseResult.Succeeded eventKindList -> 
                 x.SkipBlanks()
-                let pattern = parsePattern()
+                let patterns = parsePattern()
                 x.SkipBlanks()
                 let command = x.ParseRestOfLine()
                 let autoCommand = { 
                     Group = autoCommandGroup 
                     EventKinds = eventKindList
                     LineCommandText = command
-                    Pattern = pattern
+                    Patterns = patterns
                 }
                 ParseResult.Succeeded (LineCommand.AddAutoCommand autoCommand)
 

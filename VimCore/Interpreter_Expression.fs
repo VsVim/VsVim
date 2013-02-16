@@ -323,7 +323,7 @@ and AutoCommand = {
 
     LineCommandText : string
 
-    Pattern : string
+    Patterns : string list
 }    
 
 and [<RequireQualifiedAccess>] Expression =

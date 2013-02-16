@@ -16,7 +16,7 @@ namespace Vim.UnitTest
                 AutoCommandGroup.Default,
                 (new[] { eventKind }).ToFSharpList(),
                 command,
-                pattern);
+                (new[] { pattern } ).ToFSharpList());
             VimData.AutoCommands = VimData.AutoCommands.Concat(new[] { autoCommand }).ToFSharpList();
         }
 

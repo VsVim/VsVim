@@ -56,7 +56,7 @@ type internal AutoCommandRunner
     member x.GetAutoCommands fileName eventKind =
         _vimData.AutoCommands
         |> Seq.filter (fun autoCommand -> Seq.exists (fun x -> x = eventKind) autoCommand.EventKinds)
-        |> Seq.filter (fun autoCommand -> FileNameEndsWithPattern fileName autoCommand.Pattern)
+        |> Seq.filter (fun autoCommand -> Seq.exists (FileNameEndsWithPattern fileName) autoCommand.Patterns)
         |> List.ofSeq
 
     /// Run the specified AutoCommand against the IVimBuffer in question 
