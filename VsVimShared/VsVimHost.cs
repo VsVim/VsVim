@@ -15,6 +15,8 @@ using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio;
+using Microsoft.FSharp.Core;
 
 namespace VsVim
 {
@@ -26,7 +28,7 @@ namespace VsVim
     [Export(typeof(IWpfTextViewCreationListener))]
     [ContentType(Vim.Constants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Document)]
-    internal sealed class VsVimHost : VimHost
+    internal sealed class VsVimHost : VimHost, IVsSelectionEvents
     {
         internal const string CommandNameGoToDefinition = "Edit.GoToDefinition";
 
@@ -37,6 +39,7 @@ namespace VsVim
         private readonly _DTE _dte;
         private readonly IVsExtensibility _vsExtensibility;
         private readonly ISharedService _sharedService;
+        private readonly IVsMonitorSelection _vsMonitorSelection;
 
         internal _DTE DTE
         {
@@ -74,6 +77,10 @@ namespace VsVim
             _vsExtensibility = (IVsExtensibility)serviceProvider.GetService(typeof(IVsExtensibility));
             _textManager = textManager;
             _sharedService = sharedServiceFactory.Create();
+            _vsMonitorSelection = serviceProvider.GetService<SVsShellMonitorSelection, IVsMonitorSelection>();
+
+            uint cookie;
+            _vsMonitorSelection.AdviseSelectionEvents(this, out cookie);
         }
 
         private bool SafeExecuteCommand(string command, string args = "")
@@ -482,5 +489,64 @@ namespace VsVim
                 localSettings.AutoIndent = true;
             }
         }
+
+        #region IVsSelectionEvents
+
+        int IVsSelectionEvents.OnCmdUIContextChanged(uint dwCmdUICookie, int fActive)
+        {
+            return VSConstants.S_OK;
+        }
+
+        int IVsSelectionEvents.OnElementValueChanged(uint elementid, object varValueOld, object varValueNew)
+        {
+            var id = (VSConstants.VSSELELEMID)elementid;
+            if (id == VSConstants.VSSELELEMID.SEID_WindowFrame)
+            {
+                Func<object, ITextView> getTextView =
+                    obj =>
+                    {
+                        var vsWindowFrame = obj as IVsWindowFrame;
+                        if (vsWindowFrame == null)
+                        {
+                            return null;
+                        }
+
+                        var vsCodeWindow = vsWindowFrame.GetCodeWindow();
+                        if (vsCodeWindow.IsError)
+                        {
+                            return null;
+                        }
+
+                        var lastActiveTextView = vsCodeWindow.Value.GetLastActiveView(_vsAdapter.EditorAdapter);
+                        if (lastActiveTextView.IsError)
+                        {
+                            return null;
+                        }
+
+                        return lastActiveTextView.Value;
+                    };
+
+                ITextView oldView = getTextView(varValueOld);
+                ITextView newView = null;
+                object value;
+                if (ErrorHandler.Succeeded(_vsMonitorSelection.GetCurrentElementValue((uint)VSConstants.VSSELELEMID.SEID_WindowFrame, out value)))
+                {
+                    newView = getTextView(value);
+                }
+
+                RaiseActiveTextViewChanged(
+                    oldView == null ? FSharpOption<ITextView>.None : FSharpOption.Create<ITextView>(oldView),
+                    newView == null ? FSharpOption<ITextView>.None : FSharpOption.Create<ITextView>(newView));
+            }
+
+            return VSConstants.S_OK;
+        }
+
+        int IVsSelectionEvents.OnSelectionChanged(IVsHierarchy pHierOld, uint itemidOld, IVsMultiItemSelect pMISOld, ISelectionContainer pSCOld, IVsHierarchy pHierNew, uint itemidNew, IVsMultiItemSelect pMISNew, ISelectionContainer pSCNew)
+        {
+            return VSConstants.S_OK;
+        }
+
+        #endregion
     }
 }

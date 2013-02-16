@@ -3126,6 +3126,18 @@ type QuickFix =
     | Next
     | Previous
 
+type TextViewChangedEventArgs
+    (
+        _oldTextView : ITextView option,
+        _newTextView : ITextView option
+    ) =
+
+    inherit System.EventArgs()
+
+    member x.OldTextView = _oldTextView
+
+    member x.NewTextView = _newTextView
+
 type IVimHost =
 
     /// Should vim automatically start synchronization of IVimBuffer instances when they are 
@@ -3253,6 +3265,11 @@ type IVimHost =
     /// Raised when the visibility of an ITextView changes
     [<CLIEvent>]
     abstract IsVisibleChanged : IDelegateEvent<System.EventHandler<TextViewEventArgs>>
+
+    /// Raised when the active ITextView changes
+    [<CLIEvent>]
+    abstract ActiveTextViewChanged : IDelegateEvent<System.EventHandler<TextViewChangedEventArgs>>
+
 
 /// Core parts of an IVimBuffer.  Used for components which make up an IVimBuffer but
 /// need the same data provided by IVimBuffer.

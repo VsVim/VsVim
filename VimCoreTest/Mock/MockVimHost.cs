@@ -11,6 +11,7 @@ namespace Vim.UnitTest.Mock
     public class MockVimHost : IVimHost
     {
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
+        private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
 
         public bool AutoSynchronizeSettings { get; set; }
         public int BeepCount { get; set; }
@@ -273,6 +274,11 @@ namespace Vim.UnitTest.Mock
             remove { _isVisibleChanged -= value; }
         }
 
+        event EventHandler<TextViewChangedEventArgs> IVimHost.ActiveTextViewChanged
+        {
+            add { _activeTextViewChanged += value; }
+            remove { _activeTextViewChanged -= value; }
+        }
 
         void IVimHost.BeginBulkOperation()
         {

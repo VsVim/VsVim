@@ -22,6 +22,7 @@ namespace Vim.UI.Wpf
         private readonly IEditorOperationsFactoryService _editorOperationsFactoryService;
         private readonly List<ITextView> _textViewList = new List<ITextView>();
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
+        private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
 
         public virtual bool AutoSynchronizeSettings
         {
@@ -251,6 +252,15 @@ namespace Vim.UI.Wpf
             {
                 var args = new TextViewEventArgs(textView);
                 _isVisibleChanged(this, args);
+            }
+        }
+
+        protected void RaiseActiveTextViewChanged(FSharpOption<ITextView> oldTextView, FSharpOption<ITextView> newTextView)
+        {
+            if (_activeTextViewChanged != null)
+            {
+                var args = new TextViewChangedEventArgs(oldTextView, newTextView);
+                _activeTextViewChanged(this, args);
             }
         }
 
@@ -554,6 +564,12 @@ namespace Vim.UI.Wpf
         {
             add { _isVisibleChanged += value; }
             remove { _isVisibleChanged -= value; }
+        }
+
+        event EventHandler<TextViewChangedEventArgs> IVimHost.ActiveTextViewChanged
+        {
+            add { _activeTextViewChanged += value; }
+            remove { _activeTextViewChanged -= value; }
         }
 
         #endregion

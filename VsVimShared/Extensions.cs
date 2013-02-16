@@ -414,6 +414,36 @@ namespace VsVim
         }
 
         /// <summary>
+        /// Get the last active view of the code window.  
+        /// </summary>
+        public static Result<IVsTextView> GetLastActiveView(this IVsCodeWindow vsCodeWindow)
+        {
+            IVsTextView vsTextView;
+            var hr = vsCodeWindow.GetLastActiveView(out vsTextView);
+            if (ErrorHandler.Failed(hr))
+            {
+                return Result.CreateError(hr);
+            }
+
+            return Result.CreateSuccessNonNull(vsTextView);
+        }
+
+        /// <summary>
+        /// Get the last active view of the code window
+        /// </summary>
+        public static Result<IWpfTextView> GetLastActiveView(this IVsCodeWindow codeWindow, IVsEditorAdaptersFactoryService factoryService)
+        {
+            var result = GetLastActiveView(codeWindow);
+            if (result.IsError)
+            {
+                return Result.CreateError(result.HResult);
+            }
+
+            var textView = factoryService.GetWpfTextViewNoThrow(result.Value);
+            return Result.CreateSuccessNonNull(textView);
+        }
+
+        /// <summary>
         /// Is this window currently in a split mode?
         /// </summary>
         public static bool IsSplit(this IVsCodeWindow vsCodeWindow)

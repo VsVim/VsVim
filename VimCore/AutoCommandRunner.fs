@@ -16,10 +16,14 @@ type internal AutoCommandRunner
     [<ImportingConstructor>]
     (
         _vim : IVim
-    ) =
+    ) as this =
 
     let _vimData = _vim.VimData
     let _vimHost = _vim.VimHost
+    
+    do 
+        _vim.VimHost.ActiveTextViewChanged
+        |> Observable.add this.OnActiveTextViewChanged
 
     /// Create the Regex for the specified pattern.  The allowed items are specified in ':help autocmd-patterns'
     static let CreateFilePatternRegex (pattern : string) = 
@@ -72,6 +76,16 @@ type internal AutoCommandRunner
                 match parser.ParseLineCommand autoCommand.LineCommandText with
                 | ParseResult.Failed _ -> ()
                 | ParseResult.Succeeded lineCommand -> vimInterpreter.RunLineCommand lineCommand |> ignore)
+
+    /// Called when the active ITextView changes according to the host
+    member x.OnActiveTextViewChanged (e : TextViewChangedEventArgs) =
+        match OptionUtil.map2 _vim.GetVimBuffer e.OldTextView with
+        | Some vimBuffer -> x.RunAutoCommands vimBuffer EventKind.BufLeave
+        | None -> ()
+
+        match OptionUtil.map2 _vim.GetVimBuffer e.NewTextView with
+        | Some vimBuffer -> x.RunAutoCommands vimBuffer EventKind.BufEnter
+        | None -> ()
 
     /// VimBufferCreated is the closest event we have for BufEnter.   
     member x.OnVimBufferCreated (vimBuffer : IVimBuffer) =
