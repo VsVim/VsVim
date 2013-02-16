@@ -3254,7 +3254,6 @@ type IVimHost =
     [<CLIEvent>]
     abstract IsVisibleChanged : IDelegateEvent<System.EventHandler<TextViewEventArgs>>
 
-
 /// Core parts of an IVimBuffer.  Used for components which make up an IVimBuffer but
 /// need the same data provided by IVimBuffer.
 type IVimBufferData =
@@ -3691,6 +3690,10 @@ and IVimBuffer =
     abstract StatusMessage : IDelegateEvent<System.EventHandler<StringEventArgs>>
 
     /// Raised when the IVimBuffer is being closed
+    [<CLIEvent>]
+    abstract Closing : IDelegateEvent<System.EventHandler>
+
+    /// Raised when the IVimBuffer is closed
     [<CLIEvent>]
     abstract Closed : IDelegateEvent<System.EventHandler>
 

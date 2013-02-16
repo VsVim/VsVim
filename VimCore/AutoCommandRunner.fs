@@ -75,7 +75,19 @@ type internal AutoCommandRunner
 
     /// VimBufferCreated is the closest event we have for BufEnter.   
     member x.OnVimBufferCreated (vimBuffer : IVimBuffer) =
+        // TODO: BufEnter should really be raised every time the text buffer gets edit
+        // focus.  Hard to detect that in WPF / VS though because keyboard focus is very
+        // different than edit focus.  For now just raise it once here.  
         x.RunAutoCommands vimBuffer EventKind.BufEnter
+
+        x.RunAutoCommands vimBuffer EventKind.BufWinEnter
+
+        let bag = DisposableBag()
+        vimBuffer.Closing
+        |> Observable.subscribe (fun _ -> 
+            x.RunAutoCommands vimBuffer EventKind.BufWinLeave
+            bag.DisposeAll())
+        |> bag.Add
 
     interface IVimBufferCreationListener with
         member x.VimBufferCreated vimBuffer = x.OnVimBufferCreated vimBuffer

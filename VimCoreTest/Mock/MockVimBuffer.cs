@@ -246,8 +246,11 @@ namespace Vim.UnitTest.Mock
 
         public event EventHandler<SwitchModeEventArgs> SwitchedMode;
 
-        public event EventHandler Closed;
+#pragma warning disable 67
+        public event EventHandler Closing;
+#pragma warning restore 67
 
+        public event EventHandler Closed;
 
         public IMode SwitchMode(ModeKind value, ModeArgument arg)
         {

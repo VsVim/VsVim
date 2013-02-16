@@ -135,6 +135,7 @@ type internal VimBuffer
     let _errorMessageEvent = StandardEvent<StringEventArgs>()
     let _warningMessageEvent = StandardEvent<StringEventArgs>()
     let _statusMessageEvent = StandardEvent<StringEventArgs>()
+    let _closingEvent = StandardEvent()
     let _closedEvent = StandardEvent()
 
     do 
@@ -276,6 +277,14 @@ type internal VimBuffer
 
         if _isClosed then 
             invalidOp Resources.VimBuffer_AlreadyClosed
+
+        // Run the closing event in a separate try / catch.  Don't want anyone to be able
+        // to disrupt the necessary actions like removing a buffer from the global list
+        // by throwing during the Closing event
+        try
+            _closingEvent.Trigger x
+        with
+            _ -> ()
 
         try
             x.Mode.OnLeave()
@@ -623,6 +632,8 @@ type internal VimBuffer
         member x.WarningMessage = _warningMessageEvent.Publish
         [<CLIEvent>]
         member x.StatusMessage = _statusMessageEvent.Publish
+        [<CLIEvent>]
+        member x.Closing = _closingEvent.Publish
         [<CLIEvent>]
         member x.Closed = _closedEvent.Publish
 

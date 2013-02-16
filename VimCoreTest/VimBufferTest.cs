@@ -230,6 +230,105 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class CloseTest : VimBufferTest
+        {
+            /// <summary>
+            /// Close should call OnLeave and OnClose for the active IMode
+            /// </summary>
+            [Fact]
+            public void ShouldCallLeaveAndClose()
+            {
+                var normal = CreateAndAddNormalMode(MockBehavior.Loose);
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                normal.Setup(x => x.OnLeave()).Verifiable();
+                normal.Setup(x => x.OnClose()).Verifiable();
+                _vimBuffer.Close();
+                normal.Verify();
+            }
+
+            /// <summary>
+            /// Close should call IMode::Close for every IMode even the ones which
+            /// are not active
+            /// </summary>
+            [Fact]
+            public void CallCloseOnAll()
+            {
+                var insert = CreateAndAddInsertMode();
+                insert.Setup(x => x.OnClose()).Verifiable();
+                _vimBuffer.Close();
+                insert.Verify();
+            }
+
+            /// <summary>
+            /// The IVimBuffer should be removed from IVim on close
+            /// </summary>
+            [Fact]
+            public void BufferShouldBeRemoved()
+            {
+                var didSee = false;
+                _vimBuffer.Closed += delegate { didSee = true; };
+                _vimBuffer.Close();
+                Assert.True(didSee);
+            }
+
+            /// <summary>
+            /// Double close should throw
+            /// </summary>
+            [Fact]
+            public void DoubleClose()
+            {
+                _vimBuffer.Close();
+                Assert.Throws<InvalidOperationException>(() => _vimBuffer.Close());
+            }
+
+            [Fact]
+            public void CloseEventOrder()
+            {
+                var count = 0;
+                _vimBuffer.Closing +=
+                    delegate
+                    {
+                        Assert.False(_vimBuffer.IsClosed);
+                        Assert.Equal(0, count);
+                        count++;
+                    };
+                _vimBuffer.Closed +=
+                    delegate
+                    {
+                        Assert.Equal(1, count);
+                        count++;
+                    };
+                _vimBuffer.Close();
+                Assert.Equal(2, count);
+            }
+
+            /// <summary>
+            /// An exception in closing should be ignored.  
+            /// </summary>
+            [Fact]
+            public void ExceptionInClosing()
+            {
+                var count = 0;
+                _vimBuffer.Closing +=
+                    delegate
+                    {
+                        Assert.False(_vimBuffer.IsClosed);
+                        Assert.Equal(0, count);
+                        count++;
+                        throw new Exception();
+                    };
+                _vimBuffer.Closed +=
+                    delegate
+                    {
+                        Assert.Equal(1, count);
+                        count++;
+                    };
+                _vimBuffer.Close();
+                Assert.Equal(2, count);
+
+            }
+        }
+
         public sealed class MiscTest : VimBufferTest
         {
 
@@ -312,33 +411,6 @@ namespace Vim.UnitTest
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 _vimBuffer.Process('c');
                 Assert.True(_vimBuffer.InOneTimeCommand.IsSome(ModeKind.Insert));
-            }
-
-            /// <summary>
-            /// Close should call OnLeave and OnClose for the active IMode
-            /// </summary>
-            [Fact]
-            public void Close_ShouldCallLeaveAndClose()
-            {
-                var normal = CreateAndAddNormalMode(MockBehavior.Loose);
-                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-                normal.Setup(x => x.OnLeave()).Verifiable();
-                normal.Setup(x => x.OnClose()).Verifiable();
-                _vimBuffer.Close();
-                normal.Verify();
-            }
-
-            /// <summary>
-            /// Close should call IMode::Close for every IMode even the ones which
-            /// are not active
-            /// </summary>
-            [Fact]
-            public void Close_CallCloseOnAll()
-            {
-                var insert = CreateAndAddInsertMode();
-                insert.Setup(x => x.OnClose()).Verifiable();
-                _vimBuffer.Close();
-                insert.Verify();
             }
 
             /// <summary>
@@ -700,28 +772,6 @@ namespace Vim.UnitTest
             {
                 _vimBuffer.SwitchMode(ModeKind.Replace, ModeArgument.None);
                 Assert.False(_vimBuffer.CanProcessAsCommand('a'));
-            }
-
-            /// <summary>
-            /// The IVimBuffer should be removed from IVim on close
-            /// </summary>
-            [Fact]
-            public void Closed_BufferShouldBeRemoved()
-            {
-                var didSee = false;
-                _vimBuffer.Closed += delegate { didSee = true; };
-                _vimBuffer.Close();
-                Assert.True(didSee);
-            }
-
-            /// <summary>
-            /// Double close should throw
-            /// </summary>
-            [Fact]
-            public void Closed_DoubleClose()
-            {
-                _vimBuffer.Close();
-                Assert.Throws<InvalidOperationException>(() => _vimBuffer.Close());
             }
 
             /// <summary>
