@@ -465,7 +465,10 @@ type internal Vim
 
         if _vimHost.AutoSynchronizeSettings then
             _editorToSettingSynchronizer.StartSynchronizing vimBuffer
-            _editorToSettingSynchronizer.CopyVimToEditorSettings vimBuffer
+            if _globalSettings.UseEditorDefaults then
+                _editorToSettingSynchronizer.CopyEditorToVimSettings vimBuffer
+            else
+                _editorToSettingSynchronizer.CopyVimToEditorSettings vimBuffer
 
         vimBuffer
 

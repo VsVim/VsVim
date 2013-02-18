@@ -17,6 +17,7 @@ namespace VsVim.Shared.UnitTest
 {
     public abstract class HostFactoryTest : VimTestBase
     {
+        private readonly IVimGlobalSettings _globalSettings;
         private readonly TestableProtectedOperations _protectedOperations;
         private readonly HostFactory _hostFactory;
         private readonly MockRepository _mockFactory;
@@ -25,6 +26,7 @@ namespace VsVim.Shared.UnitTest
 
         protected HostFactoryTest()
         {
+            _globalSettings = Vim.GlobalSettings;
             _protectedOperations = new TestableProtectedOperations();
             _mockFactory = new MockRepository(MockBehavior.Strict);
             _synchronizer = _mockFactory.Create<IEditorToSettingsSynchronizer>(MockBehavior.Strict);
@@ -129,6 +131,19 @@ namespace VsVim.Shared.UnitTest
                 _synchronizer.Verify();
             }
 
+            [Fact]
+            public void TextViewOnlyWithVimRcAndEditorDefaults()
+            {
+                VimRcState = VimRcState.NewLoadSucceeded("test");
+                _globalSettings.UseEditorDefaults = true;                
+                RaiseTextViewCreated(_textView);
+
+                _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer)).Verifiable();
+                _synchronizer.Setup(x => x.CopyEditorToVimSettings(_vimBuffer)).Verifiable();
+                _protectedOperations.RunAll();
+                _synchronizer.Verify();
+            }
+
             /// <summary>
             /// The settings sync code needs to account for the case that the IVimBuffer is closed before
             /// the post runs
@@ -171,6 +186,23 @@ namespace VsVim.Shared.UnitTest
 
                 _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer)).Verifiable();
                 _synchronizer.Setup(x => x.CopyVimToEditorSettings(_vimBuffer)).Verifiable();
+                RaiseVsTextViewCreated(_vsTextView.Object);
+                _synchronizer.Verify();
+                InvalidateSynchronizer();
+                _protectedOperations.RunAll();
+            }
+
+            [Fact]
+            public void BothViewsWithVimRcAndEditorDefaults()
+            {
+                VimRcState = VimRcState.NewLoadSucceeded("test");
+                _globalSettings.UseEditorDefaults = true;
+                SetupVsTextView();
+                RaiseTextViewCreated(_textView);
+                RaiseVimBufferCreated(_vimBuffer);
+
+                _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer)).Verifiable();
+                _synchronizer.Setup(x => x.CopyEditorToVimSettings(_vimBuffer)).Verifiable();
                 RaiseVsTextViewCreated(_vsTextView.Object);
                 _synchronizer.Verify();
                 InvalidateSynchronizer();

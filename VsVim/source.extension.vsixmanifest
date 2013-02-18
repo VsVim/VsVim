@@ -22,6 +22,9 @@
         <Edition>Pro</Edition>
         <Edition>IntegratedShell</Edition>
       </VisualStudio>
+      <IsolatedShell Version="6.0">AtmelStudio</IsolatedShell>
+      <!-- We are planning to release version 6.1 of Atmel studio by end of February, and would like to support it-->
+      <IsolatedShell Version="6.1">AtmelStudio</IsolatedShell>
     </SupportedProducts>
     <SupportedFrameworkRuntimeEdition MinVersion="4.0" MaxVersion="5.0" />
   </Identifier>
