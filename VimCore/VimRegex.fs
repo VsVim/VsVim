@@ -183,7 +183,7 @@ type VimRegexBuilder
     let mutable _builder = StringBuilder()
     let mutable _isBroken = false
     let mutable _isStartOfPattern = true
-    let mutable _isStartOfGrouping = false
+    let mutable _isStartOfGroup = false
     let mutable _isRangeOpen = false
     let mutable _isGroupOpen = false
     let mutable _includesNewLine = false
@@ -220,9 +220,9 @@ type VimRegexBuilder
         and set value = _isStartOfPattern <- value
 
     /// Is this the first character inside of a grouping [] construct
-    member x.IsStartOfGrouping 
-        with get() = _isStartOfGrouping
-        and set value = _isStartOfGrouping <- value
+    member x.IsStartOfGroup 
+        with get() = _isStartOfGroup
+        and set value = _isStartOfGroup <- value
 
     /// Is this in the middle of a range? 
     member x.IsRangeOpen = _isRangeOpen
@@ -257,6 +257,7 @@ type VimRegexBuilder
     member x.BeginGroup() = 
         x.AppendChar '['
         _isGroupOpen <- true
+        _isStartOfGroup <- true
 
     member x.EndGroup() = 
         x.AppendChar ']'
@@ -278,7 +279,7 @@ module VimRegexFactory =
     /// In Vim if a grouping is unmatched then it is appended literally into the match 
     /// stream.  Can't determine if it's unmatched though until the string is fully 
     /// processed.  At this point we just go backwards and esacpe it
-    let FixOpenGroup (data : Data) = 
+    let FixOpenGroup (data : VimRegexBuilder) = 
         let builder = data.Builder
         let mutable i = builder.Length - 1
         while i >= 0 do
@@ -335,7 +336,7 @@ module VimRegexFactory =
         | '{' -> if data.IsRangeOpen then data.Break() else data.BeginRange()
         | '}' -> if data.IsRangeOpen then data.EndRange() else data.AppendChar '}'
         | '|' -> data.AppendChar '|'
-        | '^' -> if data.IsStartOfPattern || data.IsStartOfGrouping then data.AppendChar '^' else data.AppendEscapedChar '^'
+        | '^' -> if data.IsStartOfPattern || data.IsStartOfGroup then data.AppendChar '^' else data.AppendEscapedChar '^'
         | '$' -> 
             if data.IsEndOfPattern then 
                 data.AppendString @"\r?$" 
@@ -345,11 +346,12 @@ module VimRegexFactory =
         | '[' -> 
             match data.CharAtIndex with
             | Some ']' -> 
-                let data = data.AppendEscapedChar('[')
-                let data = data.AppendEscapedChar(']')
+                data.AppendEscapedChar '['
+                data.AppendEscapedChar ']'
                 data.IncrementIndex 1
-            | _ -> data.BeginGrouping()
-        | ']' -> if data.IsGroupOpen then data.EndGrouping() else data.AppendEscapedChar(']')
+            | _ -> 
+                data.BeginGroup()
+        | ']' -> if data.IsGroupOpen then data.EndGroup() else data.AppendEscapedChar(']')
         | 'd' -> data.AppendString @"\d"
         | 'D' -> data.AppendString @"\D"
         | 's' -> data.AppendString @"\s"
@@ -497,7 +499,7 @@ module VimRegexFactory =
                 match data.CharAtIndex with
                 | None -> CreateVimRegex data 
                 | Some '\\' -> 
-                    let wasStartOfGrouping = data.IsStartOfGrouping
+                    let wasStartOfGroup = data.IsStartOfGroup
                     data.IncrementIndex 1
                     match data.CharAtIndex with 
                     | None -> ProcessNormalChar data '\\'
@@ -507,8 +509,8 @@ module VimRegexFactory =
 
                     // If we were at the start of a grouping before processing this 
                     // char then we no longer are afterwards
-                    if wasStartOfGrouping then 
-                        data.IsStartOfGrouping <- false
+                    if wasStartOfGroup then 
+                        data.IsStartOfGroup <- false
 
                     inner ()
                 | Some c -> 
