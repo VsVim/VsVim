@@ -169,62 +169,109 @@ type MagicKind =
 
     member x.IsAnyMagic = not x.IsAnyNoMagic
 
-type Data = {
-    Pattern : string 
-    Index : int
-    MagicKind : MagicKind 
-    MatchCase : bool
-    Builder : StringBuilder
+type VimRegexBuilder 
+    (
+        _pattern : string,
+        _magicKind : MagicKind,
+        _matchCase : bool,
+        _options : VimRegexOptions
+    ) =
 
-    /// Which case specifier appeared in the pattern
-    CaseSpecifier : CaseSpecifier
+    let mutable _index = 0
+    let mutable _magicKind = _magicKind
+    let mutable _matchCase = _matchCase
+    let mutable _builder = StringBuilder()
+    let mutable _isBroken = false
+    let mutable _isStartOfPattern = true
+    let mutable _isStartOfGrouping = false
+    let mutable _isRangeOpen = false
+    let mutable _isGroupOpen = false
+    let mutable _includesNewLine = false
+    let mutable _caseSpecifier = CaseSpecifier.None
 
-    /// Is the match completely broken and should match nothing
-    IsBroken : bool
+    member x.Pattern = _pattern
 
-    /// Is this the start of the pattern
-    IsStartOfPattern : bool
+    member x.Index = _index
 
-    /// Is this the first character inside of a grouping [] construct
-    IsStartOfGrouping : bool
-
-    /// Is this in the middle of a brace range? {1, 3}
-    IsRangeOpen : bool
-
-    /// Is this in the middle ofa  grouping? [abc]
-    IsGroupOpen : bool
+    member x.Builder = _builder
 
     /// The original options 
-    Options : VimRegexOptions
+    member x.Options = _options
+
+    member x.MagicKind 
+        with get() = _magicKind
+        and set value = _magicKind <- value
+
+    member x.MatchCase
+        with get() = _matchCase
+        and set value = _matchCase <- value
+
+    /// Which case specifier appeared in the pattern
+    member x.CaseSpecifier 
+        with get() = _caseSpecifier
+        and set value = _caseSpecifier <- value
+
+    /// Is the match completely broken and should match nothing
+    member x.IsBroken = _isBroken
+
+    /// Is this the start of the pattern
+    member x.IsStartOfPattern 
+        with get() = _isStartOfPattern
+        and set value = _isStartOfPattern <- value
+
+    /// Is this the first character inside of a grouping [] construct
+    member x.IsStartOfGrouping 
+        with get() = _isStartOfGrouping
+        and set value = _isStartOfGrouping <- value
+
+    /// Is this in the middle of a range? 
+    member x.IsRangeOpen = _isRangeOpen
+
+    /// Is this in the middle of a group?
+    member x.IsGroupOpen = _isGroupOpen
 
     /// Includes a \n reference
-    IncludesNewLine : bool
-}
-    with
+    member x.IncludesNewLine
+        with get() = _includesNewLine
+        and set value = _includesNewLine <- value
+
     member x.IsEndOfPattern = x.Index >= x.Pattern.Length
-    member x.IncrementIndex count = { x with Index = x.Index + count }
-    member x.DecrementIndex count = { x with Index = x.Index - count }
-    member x.Break() = { x with IsBroken = true; }
+
+    member x.IncrementIndex count =
+        _index <- _index + count
+
+    member x.DecrementIndex count = 
+        _index <- _index - count
+
     member x.CharAtIndex = StringUtil.charAtOption x.Index x.Pattern
+
     member x.AppendString str = 
-        x.Builder.AppendString str
-        x
+        _builder.AppendString str
+
     member x.AppendChar c =
         x.Builder.AppendChar c
-        x
-    member x.AppendEscapedChar c = c |> StringUtil.ofChar |> Regex.Escape |> x.AppendString
-    member x.BeginGrouping() = 
-        let data = x.AppendChar '['
-        { data with IsStartOfGrouping = true; IsGroupOpen = true }
-    member x.EndGrouping() = 
-        let data = x.AppendChar ']'
-        { data with IsGroupOpen = false }
+
+    member x.AppendEscapedChar c = 
+        c |> StringUtil.ofChar |> Regex.Escape |> x.AppendString
+
+    member x.BeginGroup() = 
+        x.AppendChar '['
+        _isGroupOpen <- true
+
+    member x.EndGroup() = 
+        x.AppendChar ']'
+        _isGroupOpen <- false
+
     member x.BeginRange() =
-        let data = x.AppendChar '{'
-        { data with IsRangeOpen = true }
+        x.AppendChar '{'
+        _isRangeOpen <- true
+
     member x.EndRange() =
-        let data = x.AppendChar '}'
-        { data with IsRangeOpen = false }
+        x.AppendChar '}'
+        _isRangeOpen <- false
+
+    member x.Break() =
+        _isBroken <- true
 
 module VimRegexFactory =
 
@@ -241,8 +288,8 @@ module VimRegexFactory =
             else
                 i <- i - 1
 
-    /// Create the actual Vim regex
-    let CreateVimRegex (data : Data) =
+    // Create the actual Vim regex
+    let CreateVimRegex (data : VimRegexBuilder) =
 
         let regexOptions = 
             let regexOptions = 
@@ -276,7 +323,7 @@ module VimRegexFactory =
 
     /// Convert the given character as a special character.  Interpretation
     /// may depend on the type of magic that is currently being employed
-    let ConvertCharAsSpecial (data : Data) c = 
+    let ConvertCharAsSpecial (data : VimRegexBuilder) c = 
         match c with
         | '.' -> data.AppendChar '.'
         | '+' -> data.AppendChar '+'
@@ -324,7 +371,7 @@ module VimRegexFactory =
         | _ -> data.AppendEscapedChar c
 
     /// Convert the given char in the magic setting 
-    let ConvertCharAsMagic (data:Data) c =
+    let ConvertCharAsMagic (data : VimRegexBuilder) c =
         match c with 
         | '*' -> data.AppendChar '*'
         | '.' -> data.AppendChar '.'
@@ -336,7 +383,7 @@ module VimRegexFactory =
         | _ -> data.AppendEscapedChar c
 
     /// Convert the given char in the nomagic setting
-    let ConvertCharAsNoMagic (data : Data) c =
+    let ConvertCharAsNoMagic (data : VimRegexBuilder) c =
         match c with 
         | '^' -> ConvertCharAsSpecial data c 
         | '$' -> ConvertCharAsSpecial data c
@@ -346,7 +393,7 @@ module VimRegexFactory =
     /// Convert the given escaped char in the magic and no magic settings.  The 
     /// differences here are minimal so it's convenient to put them in one method
     /// here
-    let ConvertEscapedCharAsMagicAndNoMagic (data : Data) c =
+    let ConvertEscapedCharAsMagicAndNoMagic (data : VimRegexBuilder) c =
         let isMagic = data.MagicKind = MagicKind.Magic
         match c with 
         | '.' -> if isMagic then data.AppendEscapedChar c else ConvertCharAsSpecial data c
@@ -385,7 +432,7 @@ module VimRegexFactory =
             match data.CharAtIndex with
             | None -> data.Break()
             | Some c -> 
-                let data = data.IncrementIndex 1
+                data.IncrementIndex 1
                 match c with 
                 | '^' -> data.AppendChar '^'
                 | '$' -> data.AppendChar '$'
@@ -395,52 +442,55 @@ module VimRegexFactory =
 
     /// Process an escaped character.  Look first for global options such as ignore 
     /// case or magic and then go for magic specific characters
-    let ProcessEscapedChar data c  =
+    let ProcessEscapedChar (data : VimRegexBuilder) c =
         let escape = VimRegexUtils.Escape
         match c with 
-        | 'C' -> {data with MatchCase = true; CaseSpecifier = CaseSpecifier.OrdinalCase }
-        | 'c' -> {data with MatchCase = false; CaseSpecifier = CaseSpecifier.IgnoreCase }
-        | 'm' -> {data with MagicKind = MagicKind.Magic }
-        | 'M' -> {data with MagicKind = MagicKind.NoMagic }
-        | 'v' -> {data with MagicKind = MagicKind.VeryMagic }
-        | 'V' -> {data with MagicKind = MagicKind.VeryNoMagic }
+        | 'm' -> data.MagicKind <- MagicKind.Magic
+        | 'M' -> data.MagicKind <- MagicKind.NoMagic
+        | 'v' -> data.MagicKind <- MagicKind.VeryMagic
+        | 'V' -> data.MagicKind <- MagicKind.VeryNoMagic
         | 't' -> data.AppendString "\t"
+        | 'C' -> 
+            data.MatchCase <- true
+            data.CaseSpecifier <- CaseSpecifier.OrdinalCase
+        | 'c' -> 
+            data.MatchCase <- false
+            data.CaseSpecifier <- CaseSpecifier.IgnoreCase
         | 'n' -> 
             // vim expects \n to match any kind of newline, regardless of platform. Think about it,
             // you can't see newlines, so why should you be expected to know the diff between them?
             // Also, use ?: for non-capturing group, so we don't cause any weird behavior
-            let data = data.AppendString "(?:\r?\n|\r)"
-            { data with IncludesNewLine = true } 
-        | c ->
-            let data = 
-                if CharUtil.IsDigit c then
-                    // Convert the \1 escape into the BCL \1 for any single digit
-                    let str = sprintf "\\%c"c
-                    data.AppendString str
-                else
-                    match data.MagicKind with
-                    | MagicKind.Magic -> ConvertEscapedCharAsMagicAndNoMagic data c 
-                    | MagicKind.NoMagic -> ConvertEscapedCharAsMagicAndNoMagic data c
-                    | MagicKind.VeryMagic -> data.AppendEscapedChar c
-                    | MagicKind.VeryNoMagic -> ConvertCharAsSpecial data c
-            { data with IsStartOfPattern = false }
+            data.AppendString "(?:\r?\n|\r)"
+            data.IncludesNewLine <- true
+        | _ -> 
+            if CharUtil.IsDigit c then
+                // Convert the \1 escape into the BCL \1 for any single digit
+                let str = sprintf "\\%c"c
+                data.AppendString str
+            else
+                match data.MagicKind with
+                | MagicKind.Magic -> ConvertEscapedCharAsMagicAndNoMagic data c 
+                | MagicKind.NoMagic -> ConvertEscapedCharAsMagicAndNoMagic data c
+                | MagicKind.VeryMagic -> data.AppendEscapedChar c
+                | MagicKind.VeryNoMagic -> ConvertCharAsSpecial data c
+
+                data.IsStartOfPattern <- false
 
     /// Convert a normal unescaped char based on the magic kind
-    let ProcessNormalChar (data : Data) c = 
-        let data = 
-            match data.MagicKind with
-            | MagicKind.Magic -> ConvertCharAsMagic data c
-            | MagicKind.NoMagic -> ConvertCharAsNoMagic data c
-            | MagicKind.VeryMagic -> 
-                if CharUtil.IsLetter c || CharUtil.IsDigit c || c = '_' then 
-                    data.AppendChar c
-                else
-                    ConvertCharAsSpecial data c
-            | MagicKind.VeryNoMagic -> data.AppendEscapedChar c
-        {data with IsStartOfPattern = false}
+    let ProcessNormalChar (data : VimRegexBuilder) c = 
+        match data.MagicKind with
+        | MagicKind.Magic -> ConvertCharAsMagic data c
+        | MagicKind.NoMagic -> ConvertCharAsNoMagic data c
+        | MagicKind.VeryMagic -> 
+            if CharUtil.IsLetter c || CharUtil.IsDigit c || c = '_' then 
+                data.AppendChar c
+            else
+                ConvertCharAsSpecial data c
+        | MagicKind.VeryNoMagic -> data.AppendEscapedChar c
+        data.IsStartOfPattern <- false
 
-    let Convert (data : Data) = 
-        let rec inner (data : Data) : VimRegex option =
+    let Convert (data : VimRegexBuilder) = 
+        let rec inner () : VimRegex option =
             if data.IsBroken then 
                 None
             else
@@ -448,21 +498,23 @@ module VimRegexFactory =
                 | None -> CreateVimRegex data 
                 | Some '\\' -> 
                     let wasStartOfGrouping = data.IsStartOfGrouping
-                    let data = data.IncrementIndex 1
-                    let data = 
-                        match data.CharAtIndex with 
-                        | None -> ProcessNormalChar data '\\'
-                        | Some c -> ProcessEscapedChar (data.IncrementIndex 1) c
+                    data.IncrementIndex 1
+                    match data.CharAtIndex with 
+                    | None -> ProcessNormalChar data '\\'
+                    | Some c -> 
+                        data.IncrementIndex 1
+                        ProcessEscapedChar data c
 
                     // If we were at the start of a grouping before processing this 
                     // char then we no longer are afterwards
-                    let data = 
-                        if wasStartOfGrouping then { data with IsStartOfGrouping = false }
-                        else data 
-                    inner data
+                    if wasStartOfGrouping then 
+                        data.IsStartOfGrouping <- false
+
+                    inner ()
                 | Some c -> 
-                    ProcessNormalChar (data.IncrementIndex 1) c |> inner
-        inner data
+                    data.IncrementIndex 1
+                    ProcessNormalChar data c |> inner
+        inner ()
 
     let Create pattern options = 
 
@@ -485,20 +537,7 @@ module VimRegexFactory =
             else
                 MagicKind.Magic
 
-        let data = { 
-            Pattern = pattern
-            Index = 0
-            Builder = new StringBuilder()
-            MagicKind = magicKind
-            MatchCase = matchCase
-            CaseSpecifier = CaseSpecifier.None
-            IsBroken = false 
-            IsRangeOpen = false
-            IsGroupOpen = false
-            IsStartOfPattern = true
-            IsStartOfGrouping = false
-            Options = options
-            IncludesNewLine = false }
+        let data = VimRegexBuilder(pattern, magicKind, matchCase, options)
 
         Convert data
 
