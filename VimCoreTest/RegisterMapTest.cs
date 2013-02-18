@@ -63,7 +63,7 @@ namespace Vim.UnitTest
                 _map.SetRegisterValue(reg, RegisterOperation.Delete, RegisterValue.OfString("foo bar", OperationKind.CharacterWise));
                 AssertRegister(reg, "foo bar", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.Unnamed, "foo bar", OperationKind.CharacterWise);
-                AssertRegister(RegisterName.SmallDelete, "foo bar", OperationKind.CharacterWise);
+                AssertRegister(RegisterName.SmallDelete, "", OperationKind.CharacterWise);
                 AssertRegister('1', "", OperationKind.CharacterWise);
             }
 
@@ -97,12 +97,23 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Ensure the small delete register is properly updated
+            /// Ensure the small delete register isn't update when a named register is used 
             /// </summary>
             [Fact]
-            public void SmallDelete()
+            public void IgnoreSmallDelete()
             {
                 var reg = _map.GetRegister('c');
+                _map.SetRegisterValue(reg, RegisterOperation.Delete, RegisterValue.OfString("foo", OperationKind.CharacterWise));
+                AssertRegister(RegisterName.SmallDelete, "", OperationKind.CharacterWise);
+            }
+
+            /// <summary>
+            /// Ensure the small delete register is updated when a delete occurs on the unnamed register
+            /// </summary>
+            [Fact]
+            public void UpdateSmallDelete()
+            {
+                var reg = _map.GetRegister(RegisterName.Unnamed);
                 _map.SetRegisterValue(reg, RegisterOperation.Delete, RegisterValue.OfString("foo", OperationKind.CharacterWise));
                 AssertRegister(RegisterName.SmallDelete, "foo", OperationKind.CharacterWise);
             }

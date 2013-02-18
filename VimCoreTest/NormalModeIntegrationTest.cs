@@ -3526,6 +3526,73 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class SmallDeleteTest : NormalModeIntegrationTest
+        {
+            [Fact]
+            public void DeleteThenPaste()
+            {
+                Create("dog cat");
+                _vimBuffer.ProcessNotation(@"x""-p");
+                Assert.Equal("odg cat", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Deleting a line shouldn't effect the small delete register
+            /// </summary>
+            [Fact]
+            public void DeleteLine()
+            {
+                Create("dog", "cat", "tree");
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.Process("x");
+                Assert.Equal("t", RegisterMap.GetRegister(RegisterName.SmallDelete).StringValue);
+                _textView.MoveCaretToLine(0);
+                _vimBuffer.Process(@"dd""-p");
+                Assert.Equal("ctat", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// As long as the delete is less than one line then the delete should 
+            /// update the small delete register
+            /// </summary>
+            [Fact]
+            public void DeleteMoreThanOneCharacter()
+            {
+                Create("dog", "cat");
+                _vimBuffer.ProcessNotation(@"2x""-p");
+                Assert.Equal("gdo", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Deleting multiple lines but not ending on a new line should still not update the
+            /// small delete register
+            /// </summary>
+            [Fact]
+            public void DeleteLineDoesntEndInNewLine()
+            {
+                Create("dog", "cat", "tree");
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.Process("x");
+                Assert.Equal("t", RegisterMap.GetRegister(RegisterName.SmallDelete).StringValue);
+                _textView.MoveCaretToLine(0);
+                _vimBuffer.Process(@"vjx""-p");
+                Assert.Equal("att", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// When the delete occurs into a named register then we should not update the small
+            /// delete register
+            /// </summary>
+            [Fact]
+            public void IgnoreNamedRegister()
+            {
+                Create("dog");
+                RegisterMap.GetRegister(RegisterName.SmallDelete).UpdateValue("t");
+                _vimBuffer.Process(@"""cx""-p");
+                Assert.Equal("otg", _textBuffer.GetLine(0).GetText());
+            }
+        }
+
         public sealed class AddTest : NormalModeIntegrationTest
         {
             /// <summary>

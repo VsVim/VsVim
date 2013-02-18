@@ -138,7 +138,7 @@ type internal RegisterMap (_map: Map<RegisterName, Register>) =
                     regZero.RegisterValue <- value
     
             // Possibly update the small delete register
-            if reg.Name <> RegisterName.Unnamed && regOperation = RegisterOperation.Delete && not hasNewLine then
+            if reg.Name = RegisterName.Unnamed && regOperation = RegisterOperation.Delete && not hasNewLine then
                 let regSmallDelete = x.GetRegister RegisterName.SmallDelete
                 regSmallDelete.RegisterValue <- value
 
