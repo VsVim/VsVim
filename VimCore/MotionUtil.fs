@@ -1782,11 +1782,11 @@ type internal MotionUtil
                 if isFirstNonBlank && endLine.Length > 0 && endLine.LineNumber > x.CaretLine.LineNumber then
                     let previousLine = 
                         SnapshotUtil.GetLines x.CurrentSnapshot (endLine.LineNumber - 1) Path.Backward
-                        |> Seq.skipWhile SnapshotLineUtil.IsBlank
+                        |> Seq.skipWhile (fun textLine -> SnapshotLineUtil.IsBlank textLine && textLine.LineNumber > x.CaretLine.LineNumber)
                         |> SeqUtil.tryHeadOnly
                     let previousLine = 
                         match previousLine with
-                        | None -> SnapshotUtil.GetFirstLine x.CurrentSnapshot
+                        | None -> x.CaretLine
                         | Some line -> line
 
                     if SnapshotLineUtil.IsEmpty previousLine then
