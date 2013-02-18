@@ -86,6 +86,46 @@ namespace Vim.UnitTest
             Assert.Equal(result, regex.Value.ReplaceAll(input, replace, replaceData));
         }
 
+        public sealed class BracketTest : VimRegexTest
+        {
+            /// <summary>
+            /// If there is an unmatched bracket then it is matched literally
+            /// </summary>
+            [Fact]
+            public void OpenBracketMatchesLiterally()
+            {
+                VerifyMatches(VimRegexOptions.NoMagic, "[", "[", "int[", "][");
+                VerifyMatches(VimRegexOptions.Default, "[", "[", "int[", "][");
+            }
+
+            /// <summary>
+            /// If there is an unmatched bracket then it is matched literally
+            /// </summary>
+            [Fact]
+            public void CloseBracketMatchesLiterally()
+            {
+                VerifyMatches(VimRegexOptions.NoMagic, "]", "]", "int[]", "][");
+                VerifyMatches(VimRegexOptions.Default, "]", "]", "int[]", "][");
+            }
+
+            [Fact]
+            public void PairedBracketWithNoContentMatchesLiterally()
+            {
+                VerifyMatches(VimRegexOptions.NoMagic, "[]", "[]", "int[]");
+                VerifyMatches(VimRegexOptions.Default, "[]", "[]", "int[]");
+                VerifyNotMatches(VimRegexOptions.Default, "[]", "[ ]", "a", "");
+            }
+
+            [Fact]
+            public void NormalMatched()
+            {
+                VerifyMatches(VimRegexOptions.Default, "[ab]", "a", "b", "ab");
+                VerifyNotMatches(VimRegexOptions.Default, "[ab]", "[", "]");
+                VerifyMatches(VimRegexOptions.NoMagic, "[ab]", "[ab]");
+                VerifyMatches(VimRegexOptions.NoMagic, @"\[ab]", "a", "b", "ab");
+            }
+        }
+
         public sealed class MiscTest : VimRegexTest
         {
             [Fact]

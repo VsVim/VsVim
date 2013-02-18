@@ -2239,6 +2239,40 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<kDivide>a", enter: true);
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
+
+            /// <summary>
+            /// Searching for an unmatched bracket shouldn't require any escapes
+            /// </summary>
+            [Fact]
+            public void UnmatchedOpenBracket()
+            {
+                Create("int[]");
+                _vimBuffer.ProcessNotation("/[", enter: true);
+                Assert.Equal(3, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Searching for an unmatched bracket shouldn't require any escapes
+            /// </summary>
+            [Fact]
+            public void UnmatchedCloseBracket()
+            {
+                Create("int[]");
+                _vimBuffer.ProcessNotation("/]", enter: true);
+                Assert.Equal(4, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// A bracket pair which has no content should still match literally and not as a 
+            /// character set atom
+            /// </summary>
+            [Fact]
+            public void BracketPairWithNoContents()
+            {
+                Create("int[]");
+                _vimBuffer.ProcessNotation("/[]", enter: true);
+                Assert.Equal(3, _textView.GetCaretPoint());
+            }
         }
 
         public sealed class InsertLineBelowCaretTest : NormalModeIntegrationTest

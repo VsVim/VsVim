@@ -188,8 +188,11 @@ type Data = {
     /// Is this the first character inside of a grouping [] construct
     IsStartOfGrouping : bool
 
-    /// Is this in the middle of a range? 
+    /// Is this in the middle of a brace range? {1, 3}
     IsRangeOpen : bool
+
+    /// Is this in the middle ofa  grouping? [abc]
+    IsGroupOpen : bool
 
     /// The original options 
     Options : VimRegexOptions
@@ -212,7 +215,10 @@ type Data = {
     member x.AppendEscapedChar c = c |> StringUtil.ofChar |> Regex.Escape |> x.AppendString
     member x.BeginGrouping() = 
         let data = x.AppendChar '['
-        { data with IsStartOfGrouping = true }
+        { data with IsStartOfGrouping = true; IsGroupOpen = true }
+    member x.EndGrouping() = 
+        let data = x.AppendChar ']'
+        { data with IsGroupOpen = false }
     member x.BeginRange() =
         let data = x.AppendChar '{'
         { data with IsRangeOpen = true }
@@ -222,7 +228,20 @@ type Data = {
 
 module VimRegexFactory =
 
-    // Create the actual Vim regex
+    /// In Vim if a grouping is unmatched then it is appended literally into the match 
+    /// stream.  Can't determine if it's unmatched though until the string is fully 
+    /// processed.  At this point we just go backwards and esacpe it
+    let FixOpenGroup (data : Data) = 
+        let builder = data.Builder
+        let mutable i = builder.Length - 1
+        while i >= 0 do
+            if builder.[i] = '[' && (i = 0 || builder.[i - 1] <> '\\') then
+                builder.Insert(i, '\\') |> ignore
+                i <- -1
+            else
+                i <- i - 1
+
+    /// Create the actual Vim regex
     let CreateVimRegex (data : Data) =
 
         let regexOptions = 
@@ -242,6 +261,9 @@ module VimRegexFactory =
                 regexOptions
             else
                 regexOptions ||| RegexOptions.IgnoreCase
+
+        if data.IsGroupOpen then
+            FixOpenGroup data
 
         if data.IsBroken || data.IsRangeOpen then 
             None
@@ -273,8 +295,14 @@ module VimRegexFactory =
             else data.AppendEscapedChar '$'
         | '<' -> data.AppendString @"\b"
         | '>' -> data.AppendString @"\b"
-        | '[' -> data.BeginGrouping()
-        | ']' -> data.AppendChar ']'
+        | '[' -> 
+            match data.CharAtIndex with
+            | Some ']' -> 
+                let data = data.AppendEscapedChar('[')
+                let data = data.AppendEscapedChar(']')
+                data.IncrementIndex 1
+            | _ -> data.BeginGrouping()
+        | ']' -> if data.IsGroupOpen then data.EndGrouping() else data.AppendEscapedChar(']')
         | 'd' -> data.AppendString @"\d"
         | 'D' -> data.AppendString @"\D"
         | 's' -> data.AppendString @"\s"
@@ -312,6 +340,7 @@ module VimRegexFactory =
         match c with 
         | '^' -> ConvertCharAsSpecial data c 
         | '$' -> ConvertCharAsSpecial data c
+        | ']' -> ConvertCharAsSpecial data c
         | _ -> data.AppendEscapedChar c
 
     /// Convert the given escaped char in the magic and no magic settings.  The 
@@ -465,6 +494,7 @@ module VimRegexFactory =
             CaseSpecifier = CaseSpecifier.None
             IsBroken = false 
             IsRangeOpen = false
+            IsGroupOpen = false
             IsStartOfPattern = true
             IsStartOfGrouping = false
             Options = options
