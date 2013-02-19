@@ -28,7 +28,9 @@ namespace Vim.UnitTest.Mock
         public IIncrementalSearch IncrementalSearchImpl;
         public IInsertMode InsertModeImpl;
         public IInsertMode ReplaceModeImpl;
-        public ISelectMode SelectModeImpl;
+        public ISelectMode SelectBlockModeImpl;
+        public ISelectMode SelectCharacterModeImpl;
+        public ISelectMode SelectLineModeImpl;
         public IMode ExternalEditModeImpl;
         public bool IsProcessingInputImpl;
         public PropertyCollection PropertiesImpl;
@@ -210,7 +212,7 @@ namespace Vim.UnitTest.Mock
         {
             if (KeyInputStart != null)
             {
-                KeyInputStart(this, new KeyInputEventArgs(ki));
+                KeyInputStart(this, new KeyInputStartEventArgs(ki));
             }
         }
 
@@ -236,7 +238,7 @@ namespace Vim.UnitTest.Mock
 
         public event EventHandler<KeyInputProcessedEventArgs> KeyInputProcessed;
 
-        public event EventHandler<KeyInputEventArgs> KeyInputStart;
+        public event EventHandler<KeyInputStartEventArgs> KeyInputStart;
 
         public event EventHandler<KeyInputEventArgs> KeyInputEnd;
 
@@ -244,8 +246,11 @@ namespace Vim.UnitTest.Mock
 
         public event EventHandler<SwitchModeEventArgs> SwitchedMode;
 
-        public event EventHandler Closed;
+#pragma warning disable 67
+        public event EventHandler Closing;
+#pragma warning restore 67
 
+        public event EventHandler Closed;
 
         public IMode SwitchMode(ModeKind value, ModeArgument arg)
         {
@@ -298,6 +303,22 @@ namespace Vim.UnitTest.Mock
             get { return VisualLineModeImpl; }
         }
 
+        public ISelectMode SelectBlockMode
+        {
+            get { return SelectBlockModeImpl; }
+        }
+
+        public ISelectMode SelectCharacterMode
+        {
+            get { return SelectCharacterModeImpl; }
+        }
+
+        public ISelectMode SelectLineMode
+        {
+            get { return SelectLineModeImpl; }
+        }
+
+
         public IVimData VimData
         {
             get { return VimDataImpl; }
@@ -306,11 +327,6 @@ namespace Vim.UnitTest.Mock
         public ISubstituteConfirmMode SubstituteConfirmMode
         {
             get { return SubstituteConfirmModeImpl; }
-        }
-
-        public ISelectMode SelectMode
-        {
-            get { return SelectModeImpl; }
         }
 
         public IMode ExternalEditMode

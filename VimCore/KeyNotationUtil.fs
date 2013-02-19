@@ -33,7 +33,7 @@ module KeyNotationUtil =
 
     let ManualKeyList = 
         [
-            ("<Nul>",KeyInputUtil.ApplyModifiersToVimKey VimKey.AtSign KeyModifiers.Control)
+            ("<Nul>",KeyInputUtil.VimKeyToKeyInput VimKey.Null)
             ("<BS>", KeyInputUtil.VimKeyToKeyInput VimKey.Back)
             ("<Tab>",KeyInputUtil.TabKey)
             ("<NL>", KeyInputUtil.LineFeedKey)
@@ -54,7 +54,6 @@ module KeyNotationUtil =
             ("<Help>", KeyInputUtil.VimKeyToKeyInput VimKey.Help)
             ("<Insert>", KeyInputUtil.VimKeyToKeyInput VimKey.Insert)
             ("<Home>", KeyInputUtil.VimKeyToKeyInput VimKey.Home)
-            ("<kHome>", KeyInputUtil.VimKeyToKeyInput VimKey.Home)
             ("<End>", KeyInputUtil.VimKeyToKeyInput VimKey.End)
             ("<PageUp>", KeyInputUtil.VimKeyToKeyInput VimKey.PageUp)
             ("<PageDown>", KeyInputUtil.VimKeyToKeyInput VimKey.PageDown)
@@ -64,9 +63,10 @@ module KeyNotationUtil =
             ("<kPageDown>", KeyInputUtil.VimKeyToKeyInput VimKey.PageDown)
             ("<kMultiply>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadMultiply)
             ("<kPlus>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadPlus)
+            ("<kMinus>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadMinus)
             ("<kDivide>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadDivide)
             ("<kPoint>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadDecimal)
-            ("<kPlus>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadPlus)
+            ("<kEnter>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadEnter)
             ("<k0>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad0)
             ("<k1>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad1)
             ("<k2>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad2)
@@ -88,15 +88,15 @@ module KeyNotationUtil =
 
     /// Map of the special key names to their KeyInput representation.  Does not include the <> bookends
     /// Not supported
+    /// TODO: Support these
     /// <CSI>		command sequence intro  ALT-Esc 155	*<CSI>*
     /// <xCSI>		CSI when typed in the GUI		*<xCSI>*
     /// <Undo>		undo key
     /// <EOL>
-    /// <kEnter>	keypad Enter			*keypad-enter*
     let SpecialKeyMap = 
         ManualKeyList
         |> Seq.append FunctionKeys
-        |> Seq.map (fun (k,v) -> k.Substring(1,k.Length-2),v)
+        |> Seq.map (fun (k,v) -> k.Substring(1,k.Length-2), v)
         |> Seq.map (fun (k,v) -> (ComparableString.CreateOrdinalIgnoreCase k),v)
         |> Map.ofSeq
 
@@ -120,7 +120,7 @@ module KeyNotationUtil =
 
                 // When a '<' char there are a couple of possibilities to consider. 
                 //
-                //  1. Modifier combination <C-a>, <S-b>, etc ...
+                //  1. Modifier combination <C-a>, <S-b>, <CS-A>, etc ...
                 //  2. Named combination <lt>, <Home>, etc ...
                 //  3. Invalid combo <b-a>, <foo
                 //
@@ -153,7 +153,7 @@ module KeyNotationUtil =
                             // It's a valid grouping
                             processGroup()
                         else
-                            // Invalid modifier is another case of #3.  Trea them separately
+                            // Invalid modifier is another case of #3.  Treat them separately
                             inner rest.Tail (fun next -> withData ("<" :: next))
                     else 
                         // It's a word in a <> string 
@@ -194,47 +194,55 @@ module KeyNotationUtil =
                 // be verified experimentally
                 if Option.isSome keyInput.RawChar && CharUtil.IsLetterOrDigit keyInput.Char then
                     KeyInputUtil.ApplyModifiers keyInput modifier |> Some
-                else
+                elif Util.IsFlagSet modifier KeyModifiers.Shift then
                     KeyInputUtil.ChangeKeyModifiersDangerous keyInput modifier |> Some
+                else
+                    KeyInputUtil.ApplyModifiers keyInput modifier |> Some
 
         // Inside the <
-        let rec insideLessThanGreaterThan data index modifier = 
-            if  index + 2 < String.length data && data.[index+1] = '-' then
-                let modifier = 
-                    match data.[index] |> CharUtil.ToLower with
-                    | 'c' -> KeyModifiers.Control ||| modifier |> Some
-                    | 's' -> KeyModifiers.Shift ||| modifier |> Some
-                    | 'a' -> KeyModifiers.Alt ||| modifier |> Some
-                    | 'm' -> KeyModifiers.Alt ||| modifier |> Some
-                    | 'd' -> KeyModifiers.Command ||| modifier |> Some
-                    | _ -> None
-                match modifier with
-                | Some(modifier) -> insideLessThanGreaterThan data (index + 2) modifier
-                | None -> None
-            else 
-                // Need to remove the final > before converting.  
-                let length = ((String.length data) - index) - 1 
-                let rest = data.Substring(index, length)
-                convertAndApply rest modifier
+        let rec insideLessThanGreaterThan (data : string) index modifier = 
+            let lastDashIndex = data.LastIndexOf('-')
+            let rec inner index modifier = 
+                if index >= String.length data then 
+                    None
+                else if lastDashIndex >= 0 && index <= lastDashIndex then
+                    let modifier = 
+                        match data.[index] |> CharUtil.ToLower with
+                        | 'c' -> KeyModifiers.Control ||| modifier |> Some
+                        | 's' -> KeyModifiers.Shift ||| modifier |> Some
+                        | 'a' -> KeyModifiers.Alt ||| modifier |> Some
+                        | 'm' -> KeyModifiers.Alt ||| modifier |> Some
+                        | 'd' -> KeyModifiers.Command ||| modifier |> Some
+                        | '-' -> Some modifier
+                        | _ -> None
+                    match modifier with
+                    | Some modifier -> inner (index + 1) modifier
+                    | None -> None
+                else 
+                    // Need to remove the final > before converting.  
+                    let length = ((String.length data) - index) - 1 
+                    let rest = data.Substring(index, length)
+                    convertAndApply rest modifier
+            inner index modifier
 
         match StringUtil.charAtOption 0 data with
         | None -> None
-        | Some('<') -> 
-            if String.length data = 1 then VimKey.LessThan |> KeyInputUtil.VimKeyToKeyInput |> Some
+        | Some '<' -> 
+            if String.length data = 1 then '<' |> KeyInputUtil.CharToKeyInput |> Some
             elif StringUtil.last data <> '>' then None
             else insideLessThanGreaterThan data 1 KeyModifiers.None
-        | Some(c) -> 
+        | Some c -> 
             if data.Length = 1 then KeyInputUtil.CharToKeyInput data.[0] |> Some
             else None
 
     let StringToKeyInput data = 
         match TryStringToKeyInput data with 
-        | Some(ki) -> ki
+        | Some ki -> ki
         | None -> invalidArg "data" (Resources.KeyNotationUtil_InvalidNotation data)
 
     let TryStringToKeyInputSet data = 
         match data |> SplitIntoKeyNotationEntries |> List.map TryStringToKeyInput |> SeqUtil.allOrNone with
-        | Some(list) -> list |> KeyInputSetUtil.OfList |> Some
+        | Some list -> list |> KeyInputSetUtil.OfList |> Some
         | None -> None
 
     /// Convert tho String to a KeyInputSet 
@@ -244,19 +252,73 @@ module KeyNotationUtil =
         |> Seq.map StringToKeyInput
         |> KeyInputSetUtil.OfSeq
 
-    let TryGetSpecialKeyName (keyInput:KeyInput) = 
+    let TryGetSpecialKeyName (keyInput : KeyInput) = 
 
         let found = 
             SpecialKeyMap
-            |> Seq.tryFind (fun (pair) -> 
+            |> Seq.tryFind (fun pair -> 
                 let specialInput = pair.Value
                 specialInput.Key = keyInput.Key && 
+                specialInput.Char = keyInput.Char &&
                 specialInput.KeyModifiers = (specialInput.KeyModifiers &&& keyInput.KeyModifiers))
 
         match found with 
         | None -> None
-        | Some(pair) ->
+        | Some pair ->
             let extra : KeyModifiers = Util.UnsetFlag keyInput.KeyModifiers pair.Value.KeyModifiers
-            Some(pair.Key.Value, extra)
+            Some (pair.Key.Value, extra)
+
+    /// Get the display name for the specified KeyInput value.
+    let GetDisplayName (keyInput : KeyInput) = 
+
+        let inner name keyModifiers forceBookend = 
+            let rec getPrefix current keyModifiers = 
+                if Util.IsFlagSet keyModifiers KeyModifiers.Control then
+                    let current = current + "C-"
+                    let keyModifiers = Util.UnsetFlag keyModifiers KeyModifiers.Control
+                    getPrefix current keyModifiers
+                elif Util.IsFlagSet keyModifiers KeyModifiers.Alt then
+                    let current = current + "A-"
+                    let keyModifiers = Util.UnsetFlag keyModifiers KeyModifiers.Alt
+                    getPrefix current keyModifiers
+                elif Util.IsFlagSet keyModifiers KeyModifiers.Shift then
+                    let current = current + "S-"
+                    let keyModifiers = Util.UnsetFlag keyModifiers KeyModifiers.Shift
+                    getPrefix current keyModifiers
+                elif Util.IsFlagSet keyModifiers KeyModifiers.Command then
+                    let current = current + "D-"
+                    let keyModifiers = Util.UnsetFlag keyModifiers KeyModifiers.Command
+                    getPrefix current keyModifiers
+                else 
+                    current
+
+            let prefix = getPrefix "" keyModifiers
+            if StringUtil.isNullOrEmpty prefix then
+                if forceBookend then
+                    sprintf "<%s>" name
+                else
+                    name
+            else
+                sprintf "<%s%s>" prefix name
+
+        // Check to see if this is one of the keys shifted by control for which we provide a better
+        // display
+        let checkForSpecialControl () = 
+            match keyInput.RawChar with
+            | None -> inner "" keyInput.KeyModifiers false
+            | Some c ->
+                let value = int c;
+                if value >= 1 && value <= 26 then
+                    let baseCode = value - 1 
+                    let name = char ((int 'A') + baseCode) |> StringUtil.ofChar
+                    let keyModifiers = keyInput.KeyModifiers ||| KeyModifiers.Control
+                    inner name keyModifiers false
+                else
+                    inner (c |> StringUtil.ofChar) keyInput.KeyModifiers false
+
+        match TryGetSpecialKeyName keyInput with 
+        | Some (name, modifiers) -> inner name modifiers true
+        | None -> checkForSpecialControl ()
+
 
 

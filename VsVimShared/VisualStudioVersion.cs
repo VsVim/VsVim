@@ -6,8 +6,8 @@ namespace VsVim
     /// </summary>
     public enum VisualStudioVersion
     {
-        Dev10,
-        Dev11,
+        Vs2010,
+        Vs2012,
         Unknown
     }
 }

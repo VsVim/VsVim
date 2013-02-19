@@ -1,19 +1,17 @@
 ﻿using System;
 using EditorUtils;
 using Microsoft.VisualStudio.Text;
-using NUnit.Framework;
 using Vim.Extensions;
+using Xunit;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public sealed class BufferTrackingServiceTest : VimTestBase
     {
-        private BufferTrackingService _bufferTrackingServiceRaw;
-        private IBufferTrackingService _bufferTrackingService;
+        private readonly BufferTrackingService _bufferTrackingServiceRaw;
+        private readonly IBufferTrackingService _bufferTrackingService;
 
-        [SetUp]
-        public void SetUp()
+        public BufferTrackingServiceTest()
         {
             _bufferTrackingServiceRaw = new BufferTrackingService();
             _bufferTrackingService = _bufferTrackingServiceRaw;
@@ -27,7 +25,7 @@ namespace Vim.UnitTest
         private static void AssertPoint(ITrackingLineColumn tlc, int lineNumber, int column)
         {
             var point = tlc.Point;
-            Assert.IsTrue(point.IsSome());
+            Assert.True(point.IsSome());
             AssertLineColumn(point.Value, lineNumber, column);
         }
 
@@ -35,11 +33,11 @@ namespace Vim.UnitTest
         private static void AssertLineColumn(SnapshotPoint point, int lineNumber, int column)
         {
             var line = point.GetContainingLine();
-            Assert.AreEqual(lineNumber, line.LineNumber, "Invalid line number");
-            Assert.AreEqual(column, point.Position - line.Start.Position, "Invalid column");
+            Assert.Equal(lineNumber, line.LineNumber);
+            Assert.Equal(column, point.Position - line.Start.Position);
         }
 
-        [Test]
+        [Fact]
         public void SimpleEdit1()
         {
             var buffer = CreateTextBuffer("foo bar", "baz");
@@ -48,7 +46,10 @@ namespace Vim.UnitTest
             AssertPoint(tlc, 0, 1);
         }
 
-        [Test, Description("Replace the line, shouldn't affect the column tracking")]
+        /// <summary>
+        /// Replace the line, shouldn't affect the column tracking
+        /// </summary>
+        [Fact]
         public void SimpleEdit2()
         {
             var buffer = CreateTextBuffer("foo bar", "baz");
@@ -57,7 +58,10 @@ namespace Vim.UnitTest
             AssertPoint(tlc, 0, 1);
         }
 
-        [Test, Description("Edit at the end of the line")]
+        /// <summary>
+        /// Edit at the end of the line
+        /// </summary>
+        [Fact]
         public void SimpleEdit3()
         {
             var buffer = CreateTextBuffer("foo bar", "baz");
@@ -66,7 +70,10 @@ namespace Vim.UnitTest
             AssertPoint(tlc, 0, 1);
         }
 
-        [Test, Description("Edit a different line")]
+        /// <summary>
+        /// Edit a different line
+        /// </summary>
+        [Fact]
         public void SimpleEdit4()
         {
             var buffer = CreateTextBuffer("foo bar", "baz");
@@ -78,20 +85,20 @@ namespace Vim.UnitTest
         /// <summary>
         /// Deleting the line containing the tracking item should cause it to be deleted
         /// </summary>
-        [Test]
+        [Fact]
         public void Edit_DeleteLine()
         {
             var buffer = CreateTextBuffer("foo", "bar");
             var tlc = Create(buffer, 0, 0);
             buffer.Delete(buffer.GetLine(0).ExtentIncludingLineBreak.Span);
-            Assert.IsTrue(tlc.Point.IsNone());
-            Assert.IsTrue(tlc.VirtualPoint.IsNone());
+            Assert.True(tlc.Point.IsNone());
+            Assert.True(tlc.VirtualPoint.IsNone());
         }
 
         /// <summary>
         /// Deleting the line below shouldn't affect it
         /// </summary>
-        [Test]
+        [Fact]
         public void Edit_DeleteLineBelow()
         {
             var buffer = CreateTextBuffer("foo", "bar");
@@ -103,7 +110,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Deleting the line above should just adjust it
         /// </summary>
-        [Test]
+        [Fact]
         public void Edit_DeleteLineAbove()
         {
             var buffer = CreateTextBuffer("foo", "bar", "baz");
@@ -112,7 +119,7 @@ namespace Vim.UnitTest
             AssertPoint(tlc, 0, 2);
         }
 
-        [Test]
+        [Fact]
         public void TruncatingEdit1()
         {
             var buffer = CreateTextBuffer("foo bar baz");
@@ -121,7 +128,10 @@ namespace Vim.UnitTest
             AssertPoint(tlc, 0, 3);
         }
 
-        [Test, Description("Make it 0 width")]
+        /// <summary>
+        /// Make it 0 width
+        /// </summary>
+        [Fact]
         public void TruncatingEdit2()
         {
             var buffer = CreateTextBuffer("foo bar baz");
@@ -133,7 +143,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Adding a line at the start of a block should shift the block down
         /// </summary>
-        [Test]
+        [Fact]
         public void VisualSelection_Block_AddLineAbove()
         {
             var textBuffer = CreateTextBuffer("cats", "dogs", "fish");
@@ -145,14 +155,14 @@ namespace Vim.UnitTest
             var newVisualSelection = VisualSelection.NewBlock(
                 textBuffer.GetBlockSpan(1, 2, 2, 2),
                 BlockCaretLocation.BottomRight);
-            Assert.IsTrue(trackingVisualSelection.VisualSelection.IsSome());
-            Assert.AreEqual(newVisualSelection, trackingVisualSelection.VisualSelection.Value);
+            Assert.True(trackingVisualSelection.VisualSelection.IsSome());
+            Assert.Equal(newVisualSelection, trackingVisualSelection.VisualSelection.Value);
         }
 
         /// <summary>
         /// Adding a line at the start of a block should shift the block down
         /// </summary>
-        [Test]
+        [Fact]
         public void VisualSpan_Block_AddLineAbove()
         {
             var textBuffer = CreateTextBuffer("cats", "dogs", "fish");
@@ -160,15 +170,15 @@ namespace Vim.UnitTest
             var trackingVisualSpan = _bufferTrackingService.CreateVisualSpan(visualSpan);
             textBuffer.Insert(textBuffer.GetLine(1).Start, Environment.NewLine);
             var newVisualSpan = VisualSpan.NewBlock(textBuffer.GetBlockSpan(1, 2, 2, 2));
-            Assert.IsTrue(trackingVisualSpan.VisualSpan.IsSome());
-            Assert.AreEqual(newVisualSpan, trackingVisualSpan.VisualSpan.Value);
+            Assert.True(trackingVisualSpan.VisualSpan.IsSome());
+            Assert.Equal(newVisualSpan, trackingVisualSpan.VisualSpan.Value);
         }
 
         /// <summary>
         /// When tracking a Visual Character span an edit before the point should not move the
         /// start of the selection to the right
         /// </summary>
-        [Test]
+        [Fact]
         public void VisualSpan_Character_EditBefore()
         {
             var textBuffer = CreateTextBuffer("cat", "dog");
@@ -176,15 +186,15 @@ namespace Vim.UnitTest
             var trackingVisualSpan = _bufferTrackingService.CreateVisualSpan(visualSpan);
             textBuffer.Insert(0, "bat ");
             var newVisualSpan = VisualSpan.NewCharacter(new CharacterSpan(textBuffer.GetPoint(0), 1, 2));
-            Assert.IsTrue(trackingVisualSpan.VisualSpan.IsSome());
-            Assert.AreEqual(newVisualSpan, trackingVisualSpan.VisualSpan.Value);
+            Assert.True(trackingVisualSpan.VisualSpan.IsSome());
+            Assert.Equal(newVisualSpan, trackingVisualSpan.VisualSpan.Value);
         }
 
         /// <summary>
         /// When tracking a Visual Character span which spans multiple lines an edit before 
         /// the point should not move the start of the selection to the right
         /// </summary>
-        [Test]
+        [Fact]
         public void VisualSpan_Character_EditBeforeMultiLine()
         {
             var textBuffer = CreateTextBuffer("cat", "dog");
@@ -192,8 +202,8 @@ namespace Vim.UnitTest
             var trackingVisualSpan = _bufferTrackingService.CreateVisualSpan(visualSpan);
             textBuffer.Insert(0, "bat ");
             var newVisualSpan = VisualSpan.NewCharacter(new CharacterSpan(textBuffer.GetPoint(0), 2, 1));
-            Assert.IsTrue(trackingVisualSpan.VisualSpan.IsSome());
-            Assert.AreEqual(newVisualSpan, trackingVisualSpan.VisualSpan.Value);
+            Assert.True(trackingVisualSpan.VisualSpan.IsSome());
+            Assert.Equal(newVisualSpan, trackingVisualSpan.VisualSpan.Value);
         }
     }
 }

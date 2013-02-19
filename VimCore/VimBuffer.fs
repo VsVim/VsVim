@@ -129,12 +129,13 @@ type internal VimBuffer
     let mutable _bufferedKeyInput : KeyInputSet option = None
 
     let _keyInputProcessedEvent = StandardEvent<KeyInputProcessedEventArgs>()
-    let _keyInputStartEvent = StandardEvent<KeyInputEventArgs>()
+    let _keyInputStartEvent = StandardEvent<KeyInputStartEventArgs>()
     let _keyInputEndEvent = StandardEvent<KeyInputEventArgs>()
     let _keyInputBufferedEvent = StandardEvent<KeyInputSetEventArgs>()
     let _errorMessageEvent = StandardEvent<StringEventArgs>()
     let _warningMessageEvent = StandardEvent<StringEventArgs>()
     let _statusMessageEvent = StandardEvent<StringEventArgs>()
+    let _closingEvent = StandardEvent()
     let _closedEvent = StandardEvent()
 
     do 
@@ -169,7 +170,9 @@ type internal VimBuffer
     member x.CommandMode = _modeMap.GetMode ModeKind.Command :?> ICommandMode
     member x.InsertMode = _modeMap.GetMode ModeKind.Insert  :?> IInsertMode
     member x.ReplaceMode = _modeMap.GetMode ModeKind.Replace :?> IInsertMode
-    member x.SelectMode = _modeMap.GetMode ModeKind.Select :?> ISelectMode
+    member x.SelectCharacterMode = _modeMap.GetMode ModeKind.SelectCharacter :?> ISelectMode
+    member x.SelectLineMode = _modeMap.GetMode ModeKind.SelectLine :?> ISelectMode
+    member x.SelectBlockMode = _modeMap.GetMode ModeKind.SelectBlock :?> ISelectMode
     member x.SubstituteConfirmMode = _modeMap.GetMode ModeKind.SubstituteConfirm :?> ISubstituteConfirmMode
     member x.DisabledMode = _modeMap.GetMode ModeKind.Disabled :?> IDisabledMode
     member x.ExternalEditMode = _modeMap.GetMode ModeKind.ExternalEdit 
@@ -275,13 +278,21 @@ type internal VimBuffer
         if _isClosed then 
             invalidOp Resources.VimBuffer_AlreadyClosed
 
+        // Run the closing event in a separate try / catch.  Don't want anyone to be able
+        // to disrupt the necessary actions like removing a buffer from the global list
+        // by throwing during the Closing event
+        try
+            _closingEvent.Trigger x
+        with
+            _ -> ()
+
         try
             x.Mode.OnLeave()
             _modeMap.Modes |> Seq.iter (fun x -> x.OnClose())
             _vim.RemoveVimBuffer _textView |> ignore
             _undoRedoOperations.Close()
             _jumpList.Clear()
-            _closedEvent.Trigger System.EventArgs.Empty
+            _closedEvent.Trigger x
         finally 
             _isClosed <- true
 
@@ -313,7 +324,9 @@ type internal VimBuffer
             _processingInputCount <- _processingInputCount + 1
             try
                 if keyInput = _vim.GlobalSettings.DisableAllCommand then
-                    x.ToggleDisabledMode()
+                    // Toggle the state of Vim.IsDisabled
+                    _vim.IsDisabled <- not _vim.IsDisabled
+                    ProcessResult.OfModeKind x.Mode.ModeKind
                 elif keyInput.Key = VimKey.Nop then
                     // The <nop> key should have no affect
                     ProcessResult.Handled ModeSwitch.NoSwitch
@@ -438,20 +451,31 @@ type internal VimBuffer
     member x.Process (keyInput : KeyInput) =
 
         // Raise the event that we received the key
-        let args = KeyInputEventArgs(keyInput)
+        let args = KeyInputStartEventArgs(keyInput)
         _keyInputStartEvent.Trigger x args
 
         try
+            if args.Handled then
+                // If one of the event handlers handled the KeyInput themselves then 
+                // the key is considered handled and nothing changed.  Need to raise 
+                // the processed event here since it was technically processed at this
+                // point
+                let processResult = ProcessResult.Handled ModeSwitch.NoSwitch
+                let keyInputProcessedEventArgs = KeyInputProcessedEventArgs(keyInput, processResult)
+                _keyInputProcessedEvent.Trigger x keyInputProcessedEventArgs
 
-            // Combine this KeyInput with the buffered KeyInput values and clear it out.  If 
-            // this KeyInput needs more input then it will be rebuffered
-            let keyInputSet = 
-                match _bufferedKeyInput with
-                | None -> KeyInputSet.OneKeyInput keyInput
-                | Some bufferedKeyInputSet -> bufferedKeyInputSet.Add keyInput
-            _bufferedKeyInput <- None
+                processResult
+            else
 
-            x.ProcessCore keyInputSet
+                // Combine this KeyInput with the buffered KeyInput values and clear it out.  If 
+                // this KeyInput needs more input then it will be rebuffered
+                let keyInputSet = 
+                    match _bufferedKeyInput with
+                    | None -> KeyInputSet.OneKeyInput keyInput
+                    | Some bufferedKeyInputSet -> bufferedKeyInputSet.Add keyInput
+                _bufferedKeyInput <- None
+
+                x.ProcessCore keyInputSet
 
         finally 
             _keyInputEndEvent.Trigger x args
@@ -531,26 +555,11 @@ type internal VimBuffer
         // buffered input with this action.
         _bufferedKeyInput <- None
 
-        let keyInputEventArgs = KeyInputEventArgs(keyInput)
+        let keyInputEventArgs = KeyInputStartEventArgs(keyInput)
         let keyInputProcessedEventArgs = KeyInputProcessedEventArgs(keyInput, ProcessResult.Handled ModeSwitch.NoSwitch)
         _keyInputStartEvent.Trigger x keyInputEventArgs
         _keyInputProcessedEvent.Trigger x keyInputProcessedEventArgs
         _keyInputEndEvent.Trigger x keyInputEventArgs
-
-    /// Toggle disabled mode for all active IVimBuffer instances
-    member x.ToggleDisabledMode() = 
-        let modeKind = 
-            if x.Mode.ModeKind = ModeKind.Disabled then 
-                ModeKind.Normal
-            else
-                ModeKind.Disabled
-
-        _vim.VimBuffers
-        |> Seq.filter (fun vimBuffer -> vimBuffer.Mode.ModeKind <> modeKind)
-        |> Seq.iter (fun vimBuffer -> vimBuffer.SwitchMode modeKind ModeArgument.None |> ignore)
-
-        ProcessResult.OfModeKind modeKind
-
                  
     interface IVimBuffer with
         member x.CurrentDirectory 
@@ -583,7 +592,9 @@ type internal VimBuffer
         member x.CommandMode = x.CommandMode
         member x.InsertMode = x.InsertMode
         member x.ReplaceMode = x.ReplaceMode
-        member x.SelectMode = x.SelectMode
+        member x.SelectCharacterMode = x.SelectCharacterMode
+        member x.SelectLineMode = x.SelectLineMode
+        member x.SelectBlockMode = x.SelectBlockMode
         member x.SubstituteConfirmMode = x.SubstituteConfirmMode
         member x.ExternalEditMode = x.ExternalEditMode
         member x.DisabledMode = x.DisabledMode
@@ -621,6 +632,8 @@ type internal VimBuffer
         member x.WarningMessage = _warningMessageEvent.Publish
         [<CLIEvent>]
         member x.StatusMessage = _statusMessageEvent.Publish
+        [<CLIEvent>]
+        member x.Closing = _closingEvent.Publish
         [<CLIEvent>]
         member x.Closed = _closedEvent.Publish
 

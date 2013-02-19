@@ -4,19 +4,22 @@ using System.Linq;
 using EnvDTE;
 using Microsoft.VisualStudio.Shell.Interop;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 using Vim;
 using Vim.UI.Wpf;
 using VsVim.Implementation;
 using VsVim.UnitTest.Mock;
+using Vim.UnitTest;
+using VsVim.Implementation.Misc;
+using EditorUtils;
 
 namespace VsVim.UnitTest
 {
-    [TestFixture]
-    public sealed class KeyBindingServiceTest
+    public sealed class KeyBindingServiceTest : VimTestBase
     {
         private Mock<_DTE> _dte;
         private Mock<IOptionsDialogService> _optionsDialogService;
+        private Mock<IVimApplicationSettings> _vimApplicationSettings;
         private KeyBindingService _serviceRaw;
         private IKeyBindingService _service;
         private CommandsSnapshot _commandsSnapshot;
@@ -29,12 +32,21 @@ namespace VsVim.UnitTest
                 Tuple.Create(typeof(SDTE), (object)(_dte.Object)),
                 Tuple.Create(typeof(SVsShell), (object)(new Mock<IVsShell>(MockBehavior.Strict)).Object));
             _optionsDialogService = new Mock<IOptionsDialogService>(MockBehavior.Strict);
+            _vimApplicationSettings = new Mock<IVimApplicationSettings>(MockBehavior.Strict);
+            _vimApplicationSettings.SetupGet(x => x.IgnoredConflictingKeyBinding).Returns(false);
+            _vimApplicationSettings.SetupGet(x => x.HaveUpdatedKeyBindings).Returns(false);
+
+            var list = new List<CommandKeyBinding>();
+            _vimApplicationSettings.SetupGet(x => x.RemovedBindings).Returns(list.AsReadOnly());
+
             _serviceRaw = new KeyBindingService(
                 sp.Object, 
                 _optionsDialogService.Object, 
                 new Mock<IProtectedOperations>().Object,
-                new Mock<ILegacySettings>().Object);
+                _vimApplicationSettings.Object);
             _service = _serviceRaw;
+
+            var result = _dte.Object.Commands.Count;
         }
 
         private void Create()
@@ -46,44 +58,44 @@ namespace VsVim.UnitTest
         {
             var stroke = new KeyStroke(input, modifiers);
             var key = new VsVim.KeyBinding(scope, stroke);
-            return new CommandKeyBinding(name, key);
+            return new CommandKeyBinding(new CommandId(), name, key);
         }
 
-        [Test]
+        [Fact]
         public void Ctor1()
         {
             Create("::ctrl+h");
-            Assert.AreEqual(ConflictingKeyBindingState.HasNotChecked, _service.ConflictingKeyBindingState);
+            Assert.Equal(ConflictingKeyBindingState.HasNotChecked, _service.ConflictingKeyBindingState);
         }
 
-        [Test]
+        [Fact]
         public void IgnoreAnyConflicts1()
         {
             Create();
             _service.IgnoreAnyConflicts();
-            Assert.AreEqual(ConflictingKeyBindingState.ConflictsIgnoredOrResolved, _service.ConflictingKeyBindingState);
+            Assert.Equal(ConflictingKeyBindingState.ConflictsIgnoredOrResolved, _service.ConflictingKeyBindingState);
         }
 
-        [Test]
+        [Fact]
         public void IgnoreAnyConflicts2()
         {
             Create();
             var didSee = false;
             _service.ConflictingKeyBindingStateChanged += (x, y) => { didSee = true; };
             _service.IgnoreAnyConflicts();
-            Assert.IsTrue(didSee);
+            Assert.True(didSee);
         }
 
-        [Test]
+        [Fact]
         public void ResetConflictingKeyBindingState1()
         {
             Create();
             _service.IgnoreAnyConflicts();
             _service.ResetConflictingKeyBindingState();
-            Assert.AreEqual(ConflictingKeyBindingState.HasNotChecked, _service.ConflictingKeyBindingState);
+            Assert.Equal(ConflictingKeyBindingState.HasNotChecked, _service.ConflictingKeyBindingState);
         }
 
-        [Test]
+        [Fact]
         public void ResetConflictingKeyBindingState2()
         {
             Create();
@@ -91,28 +103,34 @@ namespace VsVim.UnitTest
             _service.ConflictingKeyBindingStateChanged += (x, y) => { didSee = true; };
             _service.IgnoreAnyConflicts();
             _service.ResetConflictingKeyBindingState();
-            Assert.IsTrue(didSee);
+            Assert.True(didSee);
         }
 
-        [Test, Description("Nothing should change since we haven't checked yet")]
+        /// <summary>
+        /// Nothing should change since we haven't checked yet
+        /// </summary>
+        [Fact]
         public void ResolveAnyConflicts1()
         {
             Create();
-            Assert.AreEqual(ConflictingKeyBindingState.HasNotChecked, _serviceRaw.ConflictingKeyBindingState);
+            Assert.Equal(ConflictingKeyBindingState.HasNotChecked, _serviceRaw.ConflictingKeyBindingState);
             _service.ResolveAnyConflicts();
-            Assert.AreEqual(ConflictingKeyBindingState.HasNotChecked, _serviceRaw.ConflictingKeyBindingState);
+            Assert.Equal(ConflictingKeyBindingState.HasNotChecked, _serviceRaw.ConflictingKeyBindingState);
         }
 
-        [Test, Description("Nothing should change if they're ignored or resolved")]
+        /// <summary>
+        /// Nothing should change if they're ignored or resolved
+        /// </summary>
+        [Fact]
         public void ResolveAnyConflicts2()
         {
             Create();
             _serviceRaw.UpdateConflictingState(ConflictingKeyBindingState.ConflictsIgnoredOrResolved, null);
             _service.ResolveAnyConflicts();
-            Assert.AreEqual(ConflictingKeyBindingState.ConflictsIgnoredOrResolved, _serviceRaw.ConflictingKeyBindingState);
+            Assert.Equal(ConflictingKeyBindingState.ConflictsIgnoredOrResolved, _serviceRaw.ConflictingKeyBindingState);
         }
 
-        [Test]
+        [Fact]
         public void ResolveAnyConflicts3()
         {
             Create("::ctrl+h");
@@ -123,10 +141,10 @@ namespace VsVim.UnitTest
             _serviceRaw.UpdateConflictingState(ConflictingKeyBindingState.FoundConflicts, snapshot);
             _optionsDialogService.Setup(x => x.ShowConflictingKeyBindingsDialog(snapshot)).Returns(true).Verifiable();
             _serviceRaw.ResolveAnyConflicts();
-            Assert.AreEqual(ConflictingKeyBindingState.ConflictsIgnoredOrResolved, _service.ConflictingKeyBindingState);
+            Assert.Equal(ConflictingKeyBindingState.ConflictsIgnoredOrResolved, _service.ConflictingKeyBindingState);
         }
 
-        [Test]
+        [Fact]
         public void ResolveAnyConflicts4()
         {
             Create("::ctrl+h");
@@ -137,55 +155,61 @@ namespace VsVim.UnitTest
             _serviceRaw.UpdateConflictingState(ConflictingKeyBindingState.FoundConflicts, snapshot);
             _optionsDialogService.Setup(x => x.ShowConflictingKeyBindingsDialog(snapshot)).Returns(false).Verifiable();
             _serviceRaw.ResolveAnyConflicts();
-            Assert.AreEqual(ConflictingKeyBindingState.FoundConflicts, _service.ConflictingKeyBindingState);
+            Assert.Equal(ConflictingKeyBindingState.FoundConflicts, _service.ConflictingKeyBindingState);
         }
 
-        [Test()]
+        [Fact]
         public void FindConflictingCommands1()
         {
             Create("::ctrl+h");
             var inputs = new KeyInput[] { KeyInputUtil.CharWithControlToKeyInput('h') };
             var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandsSnapshot, new HashSet<KeyInput>(inputs));
-            Assert.AreEqual(1, list.Count);
+            Assert.Equal(1, list.Count);
         }
 
-        [Test]
+        [Fact]
         public void FindConflictingCommands2()
         {
             Create("::h");
             var inputs = new KeyInput[] { KeyInputUtil.CharToKeyInput('z') };
             var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandsSnapshot, new HashSet<KeyInput>(inputs));
-            Assert.AreEqual(0, list.Count);
+            Assert.Equal(0, list.Count);
         }
 
-        [Test, Description("Conflicting key on first")]
+        /// <summary>
+        /// Conflicting key on first
+        /// </summary>
+        [Fact]
         public void FindConflictingCommands3()
         {
             Create("::ctrl+z, h");
             var inputs = new KeyInput[] { KeyInputUtil.CharWithControlToKeyInput('z') };
             var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandsSnapshot, new HashSet<KeyInput>(inputs));
-            Assert.AreEqual(1, list.Count);
+            Assert.Equal(1, list.Count);
         }
 
-        [Test, Description("Only check first key")]
+        /// <summary>
+        /// Only check first key
+        /// </summary>
+        [Fact]
         public void FindConflictingCommands4()
         {
             Create("::h, z");
             var inputs = new KeyInput[] { KeyInputUtil.CharToKeyInput('z') };
             var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandsSnapshot, new HashSet<KeyInput>(inputs));
-            Assert.AreEqual(0, list.Count);
+            Assert.Equal(0, list.Count);
         }
 
-        [Test]
+        [Fact]
         public void FindConflictingCommands5()
         {
             Create("::a", "::ctrl+z, h");
             var inputs = new KeyInput[] { KeyInputUtil.CharWithControlToKeyInput('z') };
             var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandsSnapshot, new HashSet<KeyInput>(inputs));
-            Assert.AreEqual(1, list.Count);
+            Assert.Equal(1, list.Count);
         }
 
-        [Test]
+        [Fact]
         public void FindConflictingCommands6()
         {
             Create("Global::ctrl+a", "Text Editor::ctrl+z");
@@ -193,16 +217,16 @@ namespace VsVim.UnitTest
                 KeyInputUtil.CharWithControlToKeyInput('a'),
                 KeyInputUtil.CharWithControlToKeyInput('z') };
             var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandsSnapshot, new HashSet<KeyInput>(inputs));
-            Assert.AreEqual(2, list.Count);
+            Assert.Equal(2, list.Count);
         }
 
-        [Test]
+        [Fact]
         public void FindConflictingCommands7()
         {
             Create("balgh::a", "aoeu::z");
             var inputs = new KeyInput[] { KeyInputUtil.CharToKeyInput('z'), KeyInputUtil.CharToKeyInput('a') };
             var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandsSnapshot, new HashSet<KeyInput>(inputs));
-            Assert.AreEqual(0, list.Count);
+            Assert.Equal(0, list.Count);
         }
 
         /// <summary>
@@ -211,54 +235,80 @@ namespace VsVim.UnitTest
         /// though does differentiate.  Ctrl+f is differente than Ctrl+Shift+F.  So make sure
         /// we don't remove a Ctrl+Shift+F else find all will be disabled by default
         /// </summary>
-        [Test]
+        [Fact]
         public void FindConflictingCommands_IgnoreControlPlusShift()
         {
             Create("::ctrl+shift+f", "::ctrl+f");
             var inputs = new[] { KeyInputUtil.CharWithControlToKeyInput('f') };
             var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandsSnapshot, new HashSet<KeyInput>(inputs));
-            Assert.AreEqual(1, list.Count);
+            Assert.Equal(1, list.Count);
         }
 
-        [Test]
+        [Fact]
         public void IsImportantScope1()
         {
-            var set = KeyBindingService.GetDefaultImportantScopeSet();
-            Assert.IsTrue(set.Contains("Global"));
-            Assert.IsTrue(set.Contains("Text Editor"));
-            Assert.IsTrue(set.Contains(String.Empty));
+            var set = KeyBindingService.CreateDefaultImportantScopeSet();
+            Assert.True(set.Contains("Global"));
+            Assert.True(set.Contains("Text Editor"));
+            Assert.True(set.Contains(String.Empty));
         }
 
-        [Test]
+        [Fact]
         public void IsImportantScope2()
         {
-           var set = KeyBindingService.GetDefaultImportantScopeSet();
-            Assert.IsFalse(set.Contains("blah"));
-            Assert.IsFalse(set.Contains("VC Image Editor"));
+            var set = KeyBindingService.CreateDefaultImportantScopeSet();
+            Assert.False(set.Contains("blah"));
+            Assert.False(set.Contains("VC Image Editor"));
         }
 
         /// <summary>
         /// By default we should skip the unbinding of the arrow keys. They are too important 
         /// to VS experience and it nearly matches the Vim one anyways
         /// </summary>
-        [Test]
+        [Fact]
         public void ShouldSkip_ArrowKeys()
         {
             var binding = CreateCommandKeyBinding(KeyInputUtil.VimKeyToKeyInput(VimKey.Left));
             Create();
-            Assert.IsTrue(_serviceRaw.ShouldSkip(binding));
+            Assert.True(_serviceRaw.ShouldSkip(binding));
         }
 
         /// <summary>
         /// Don't skip function keys.  They are only used in Vim custom key bindings and hence
         /// it's something we really want to support if it's specified
         /// </summary>
-        [Test]
+        [Fact]
         public void ShouldSkip_FunctionKeys()
         {
             var binding = CreateCommandKeyBinding(KeyInputUtil.VimKeyToKeyInput(VimKey.F2));
             Create();
-            Assert.IsFalse(_serviceRaw.ShouldSkip(binding));
+            Assert.False(_serviceRaw.ShouldSkip(binding));
+        }
+
+        /// <summary>
+        /// Make sure that after running the conflicting check and there are conflicts that we
+        /// store the information
+        /// </summary>
+        [Fact]
+        public void RunConflictingKeyBindingStateCheck_SetSnapshot()
+        {
+            Create("::d", "::ctrl+h", "::b");
+            var vimBuffer = CreateVimBuffer("");
+            _service.RunConflictingKeyBindingStateCheck(vimBuffer);
+            Assert.NotNull(_serviceRaw.ConflictingKeyBindingState);
+            Assert.Equal(ConflictingKeyBindingState.FoundConflicts, _serviceRaw.ConflictingKeyBindingState);
+        }
+
+        /// <summary>
+        /// Make sure we correctly detect there are no conflicts if there are none
+        /// </summary>
+        [Fact]
+        public void RunConflictingKeyBindingStateCheck_NoConflicts()
+        {
+            Create(new string[] { });
+            var vimBuffer = CreateVimBuffer("");
+            _service.RunConflictingKeyBindingStateCheck(vimBuffer);
+            Assert.Equal(ConflictingKeyBindingState.ConflictsIgnoredOrResolved, _serviceRaw.ConflictingKeyBindingState);
         }
     }
 }

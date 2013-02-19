@@ -1,23 +1,22 @@
 ﻿using System.Linq;
-using NUnit.Framework;
+using Xunit;
 using Vim.Extensions;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public class RegisterNameTest
     {
-        [Test]
+        [Fact]
         public void AllChars1()
         {
             foreach (var cur in RegisterNameUtil.RegisterNameChars)
             {
                 var res = RegisterName.OfChar(cur);
-                Assert.IsTrue(res.IsSome());
+                Assert.True(res.IsSome());
             }
         }
 
-        [Test]
+        [Fact]
         public void AllChars2()
         {
             var all = TestConstants.UpperCaseLetters
@@ -26,33 +25,33 @@ namespace Vim.UnitTest
                 + "~-_*+%:#";
             foreach (var cur in all)
             {
-                Assert.IsTrue(RegisterNameUtil.RegisterNameChars.Contains(cur));
+                Assert.True(RegisterNameUtil.RegisterNameChars.Contains(cur));
             }
         }
 
-        [Test]
+        [Fact]
         public void AllChars3()
         {
             foreach (var cur in RegisterNameUtil.RegisterNameChars)
             {
-                Assert.IsTrue(RegisterNameUtil.CharToRegister(cur).IsSome());
+                Assert.True(RegisterNameUtil.CharToRegister(cur).IsSome());
             }
         }
 
-        [Test]
+        [Fact]
         public void All1()
         {
-            Assert.AreEqual(74, RegisterName.All.Count());
+            Assert.Equal(74, RegisterName.All.Count());
         }
 
         /// <summary>
         /// It's the default if unnamed but does have the exlicit name "
         /// </summary>
-        [Test]
+        [Fact]
         public void Unnamed()
         {
-            Assert.AreEqual('"', RegisterName.Unnamed.Char.Value);
-            Assert.AreEqual(RegisterName.Unnamed, RegisterNameUtil.CharToRegister('"').Value);
+            Assert.Equal('"', RegisterName.Unnamed.Char.Value);
+            Assert.Equal(RegisterName.Unnamed, RegisterNameUtil.CharToRegister('"').Value);
         }
     }
 }

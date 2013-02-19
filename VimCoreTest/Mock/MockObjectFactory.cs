@@ -8,6 +8,8 @@ using Microsoft.VisualStudio.Text.Projection;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 using Moq;
+using System.Collections.Generic;
+using Vim.Interpreter;
 
 namespace Vim.UnitTest.Mock
 {
@@ -62,6 +64,7 @@ namespace Vim.UnitTest.Mock
             IVimData vimData = null,
             IMacroRecorder macroRecorder = null,
             ISearchService searchService = null,
+            Dictionary<string, VariableValue> variableMap = null,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
@@ -69,12 +72,13 @@ namespace Vim.UnitTest.Mock
             map = map ?? new MarkMap(new BufferTrackingService());
             settings = settings ?? new GlobalSettings();
             host = host ?? new MockVimHost();
-            keyMap = keyMap ?? (new KeyMap(settings));
+            keyMap = keyMap ?? (new KeyMap(settings, new Dictionary<string, VariableValue>()));
             macroRecorder = macroRecorder ?? CreateMacroRecorder(factory: factory).Object;
             searchService = searchService ?? factory.Create<ISearchService>().Object;
             keyboardDevice = keyboardDevice ?? (factory.Create<IKeyboardDevice>(MockBehavior.Loose)).Object;
             mouseDevice = mouseDevice ?? (factory.Create<IMouseDevice>(MockBehavior.Loose)).Object;
             vimData = vimData ?? new VimData();
+            variableMap = variableMap ?? new Dictionary<string, VariableValue>();
             var mock = factory.Create<IVim>(MockBehavior.Strict);
             mock.SetupGet(x => x.RegisterMap).Returns(registerMap);
             mock.SetupGet(x => x.MarkMap).Returns(map);
@@ -84,6 +88,7 @@ namespace Vim.UnitTest.Mock
             mock.SetupGet(x => x.VimData).Returns(vimData);
             mock.SetupGet(x => x.MacroRecorder).Returns(macroRecorder);
             mock.SetupGet(x => x.SearchService).Returns(searchService);
+            mock.SetupGet(x => x.VariableMap).Returns(variableMap);
             return mock;
         }
 
@@ -95,7 +100,6 @@ namespace Vim.UnitTest.Mock
 
         public static Mock<IVimGlobalSettings> CreateGlobalSettings(
             bool? ignoreCase = null,
-            int? shiftWidth = null,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
@@ -103,10 +107,6 @@ namespace Vim.UnitTest.Mock
             if (ignoreCase.HasValue)
             {
                 mock.SetupGet(x => x.IgnoreCase).Returns(ignoreCase.Value);
-            }
-            if (shiftWidth.HasValue)
-            {
-                mock.SetupGet(x => x.ShiftWidth).Returns(shiftWidth.Value);
             }
 
             mock.SetupGet(x => x.DisableAllCommand).Returns(GlobalSettings.DisableAllCommand);
@@ -198,6 +198,8 @@ namespace Vim.UnitTest.Mock
             mock.SetupGet(x => x.WordNavigator).Returns(wordNavigator);
             mock.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             mock.SetupProperty(x => x.LastVisualSelection);
+            mock.SetupProperty(x => x.LastInsertExitPoint);
+            mock.SetupProperty(x => x.LastEditPoint);
             mock.Setup(x => x.SwitchMode(It.IsAny<ModeKind>(), It.IsAny<ModeArgument>()));
             return mock;
         }
@@ -349,8 +351,16 @@ namespace Vim.UnitTest.Mock
             var textViewModel = factory.Create<ITextViewModel>();
             textViewModel.SetupGet(x => x.VisualBuffer).Returns(visualBuffer.Object);
 
+            // When creating the CommonOperations linked to the textview, 
+            // the roles are checked for the outlining manager.
+            // Pretend we don't support anything
+            var roles = factory.Create<ITextViewRoleSet>();
+            roles.Setup(x => x.Contains(It.IsAny<String>())).Returns(false);
+
+
             var properties = new PropertyCollection();
             var textView = factory.Create<ITextView>();
+            var options = factory.Create<IEditorOptions>();
             var bufferGraph = factory.Create<IBufferGraph>();
             textView.SetupGet(x => x.TextBuffer).Returns(buffer);
             textView.SetupGet(x => x.TextViewLines).Returns(lines.Object);
@@ -361,6 +371,8 @@ namespace Vim.UnitTest.Mock
             textView.SetupGet(x => x.BufferGraph).Returns(bufferGraph.Object);
             textView.SetupGet(x => x.TextViewModel).Returns(textViewModel.Object);
             textView.SetupGet(x => x.VisualSnapshot).Returns(visualBuffer.Object.CurrentSnapshot);
+            textView.SetupGet(x => x.Roles).Returns(roles.Object); 
+            textView.SetupGet(x => x.Options).Returns(options.Object); 
             return Tuple.Create(textView, factory);
         }
 
@@ -416,11 +428,19 @@ namespace Vim.UnitTest.Mock
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
             var mock = factory.Create<IServiceProvider>();
-            foreach (var tuple in serviceList)
-            {
-                var localTuple = tuple;
-                mock.Setup(x => x.GetService(localTuple.Item1)).Returns(localTuple.Item2);
-            }
+            mock
+                .Setup(x => x.GetService(It.IsAny<Type>()))
+                .Returns<Type>(type =>
+                    {
+                        foreach (var tuple in serviceList)
+                        {
+                            if (tuple.Item1 == type)
+                            {
+                                return tuple.Item2;
+                            }
+                        }
+                        return null;
+                    });
 
             return mock;
         }

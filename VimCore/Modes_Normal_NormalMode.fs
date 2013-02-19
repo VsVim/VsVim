@@ -27,7 +27,7 @@ type internal NormalMode
     let _statusUtil = _vimBufferData.StatusUtil
 
     /// Reset state for data in Normal Mode
-    let _emptyData = {
+    static let EmptyData = {
         Command = StringUtil.empty
         IsInReplace = false
     }
@@ -36,11 +36,16 @@ type internal NormalMode
     let _coreCharSet = KeyInputUtil.VimKeyCharList |> Set.ofList
 
     /// Contains the state information for Normal mode
-    let mutable _data = _emptyData
+    let mutable _data = EmptyData
+
+    /// This is the list of commands that have the same key binding as the selection 
+    /// commands and run when keymodel doesn't have startsel as a value
+    let mutable _selectionAlternateCommands : CommandBinding list = List.empty
 
     let _eventHandlers = DisposableBag()
 
-    static let SharedCommands =
+    /// The set of standard commands that are shared amongst all instances 
+    static let SharedStandardCommands =
         let normalSeq = 
             seq {
                 yield ("a", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.InsertAfterCaret)
@@ -51,6 +56,9 @@ type internal NormalMode
                 yield ("D", CommandFlags.Repeatable, NormalCommand.DeleteTillEndOfLine)
                 yield ("gf", CommandFlags.None, NormalCommand.GoToFileUnderCaret false)
                 yield ("gJ", CommandFlags.Repeatable, NormalCommand.JoinLines JoinKind.KeepEmptySpaces)
+                yield ("gh", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.SelectCharacter, ModeArgument.None))
+                yield ("gH", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.SelectLine, ModeArgument.None))
+                yield ("g<C-h>", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.SelectBlock, ModeArgument.None))
                 yield ("gI", CommandFlags.None, NormalCommand.InsertAtStartOfLine)
                 yield ("gp", CommandFlags.Repeatable, NormalCommand.PutAfterCaret true)
                 yield ("gP", CommandFlags.Repeatable, NormalCommand.PutBeforeCaret true)
@@ -83,6 +91,8 @@ type internal NormalMode
                 yield ("X", CommandFlags.Repeatable, NormalCommand.DeleteCharacterBeforeCaret)
                 yield ("Y", CommandFlags.None, NormalCommand.YankLines)
                 yield ("yy", CommandFlags.None, NormalCommand.YankLines)
+                yield ("za", CommandFlags.Special, NormalCommand.ToggleFoldUnderCaret)
+                yield ("zA", CommandFlags.Special, NormalCommand.ToggleAllFolds)
                 yield ("zo", CommandFlags.Special, NormalCommand.OpenFoldUnderCaret)
                 yield ("zO", CommandFlags.Special, NormalCommand.OpenAllFoldsUnderCaret)
                 yield ("zc", CommandFlags.Special, NormalCommand.CloseFoldUnderCaret)
@@ -154,29 +164,55 @@ type internal NormalMode
         Seq.append normalSeq motionSeq 
         |> List.ofSeq
 
+    /// The set of selection starting commands.  These are only enabled when 'keymodel' contains
+    /// the startsel option
+    static let SharedSelectionCommands =
+        seq {
+            yield ("<S-Up>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Up)
+            yield ("<S-Right>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Right)
+            yield ("<S-Down>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Down)
+            yield ("<S-Left>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Left)
+            yield ("<S-Home>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Home)
+            yield ("<S-End>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.End)
+            yield ("<S-PageUp>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.PageUp)
+            yield ("<S-PageDown>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.PageDown)
+        } 
+        |> Seq.map (fun (str, flags, command) -> 
+            let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
+            CommandBinding.NormalBinding (keyInputSet, flags, command))
+        |> List.ofSeq
+
+    static let SharedSelectionCommandNameSet = 
+        SharedSelectionCommands
+        |> Seq.map (fun binding -> binding.KeyInputSet)
+        |> Set.ofSeq
+
     do
         // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
         // a derived type
         let settings = _globalSettings :> IVimSettings
         settings.SettingChanged.Subscribe this.OnGlobalSettingsChanged |> _eventHandlers.Add
 
-    member this.TextView = _vimBufferData.TextView
-    member this.TextBuffer = _vimTextBuffer.TextBuffer
-    member this.CaretPoint = this.TextView.Caret.Position.BufferPosition
-    member this.IsCommandRunnerPopulated = _runner.Commands |> SeqUtil.isNotEmpty
-    member this.KeyRemapMode = 
+    member x.TextView = _vimBufferData.TextView
+    member x.TextBuffer = _vimTextBuffer.TextBuffer
+    member x.CaretPoint = this.TextView.Caret.Position.BufferPosition
+    member x.IsCommandRunnerPopulated = _runner.Commands |> SeqUtil.isNotEmpty
+    member x.KeyRemapMode = 
         if _runner.IsWaitingForMoreInput then
             _runner.KeyRemapMode
         else
             Some KeyRemapMode.Normal
-    member this.Command = _data.Command
-    member this.Commands = 
+    member x.Command = _data.Command
+    member x.Commands = 
         this.EnsureCommands()
         _runner.Commands
+    member x.CommandNames = 
+        x.EnsureCommands()
+        _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
 
     member x.EnsureCommands() = 
         if not x.IsCommandRunnerPopulated then
-            let factory = Vim.Modes.CommandFactory(_operations, _capture, _motionUtil, _vimBufferData.JumpList, _localSettings)
+            let factory = CommandFactory(_operations, _capture, _motionUtil, _vimBufferData.JumpList, _localSettings)
 
             let complexSeq = 
                 seq {
@@ -189,8 +225,7 @@ type internal NormalMode
                     let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                     CommandBinding.ComplexNormalBinding (keyInputSet, flags, storage))
 
-
-            SharedCommands
+            SharedStandardCommands
             |> Seq.append complexSeq
             |> Seq.append (factory.CreateMovementCommands())
             |> Seq.append (factory.CreateScrollCommands())
@@ -203,15 +238,25 @@ type internal NormalMode
             // Add in the macro command
             factory.CreateMacroEditCommands _runner _vimTextBuffer.Vim.MacroRecorder _eventHandlers
 
+            // Save the alternate selection command bindings
+            _selectionAlternateCommands <-
+                _runner.Commands
+                |> Seq.filter (fun commandBinding -> Set.contains commandBinding.KeyInputSet SharedSelectionCommandNameSet)
+                |> List.ofSeq
+
+            // The command list is built without selection commands.  If selection is enabled go 
+            // ahead and switch over now 
+            if Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StartSelection then
+                x.UpdateSelectionCommands()
+
     /// Raised when a global setting is changed
     member x.OnGlobalSettingsChanged (args : SettingEventArgs) = 
-        
-        // If the 'tildeop' setting changes we need to update how we handle it
-        let setting = args.Setting
-        if StringUtil.isEqual setting.Name GlobalSettingNames.TildeOpName && x.IsCommandRunnerPopulated then
-            let name, command = x.GetTildeCommand()
-            _runner.Remove name
-            _runner.Add command
+        if x.IsCommandRunnerPopulated then
+            let setting = args.Setting
+            if StringUtil.isEqual setting.Name GlobalSettingNames.TildeOpName then
+                x.UpdateTildeCommand()
+            elif StringUtil.isEqual setting.Name GlobalSettingNames.KeyModelName then
+                x.UpdateSelectionCommands()
 
     /// Bind the character in a replace character command: 'r'.  
     member x.BindReplaceChar () =
@@ -243,7 +288,7 @@ type internal NormalMode
         BindDataStorage<_>.Simple bindData
 
     /// Get the information on how to handle the tilde command based on the current setting for 'tildeop'
-    member x.GetTildeCommand () =
+    member x.GetTildeCommand() =
         let name = KeyInputUtil.CharToKeyInput '~' |> OneKeyInput
         let flags = CommandFlags.Repeatable
         let command = 
@@ -253,75 +298,91 @@ type internal NormalMode
                 CommandBinding.NormalBinding (name, flags, NormalCommand.ChangeCaseCaretPoint ChangeCharacterKind.ToggleCase)
         name, command
 
+    /// Ensure that the correct commands are loaded for the selection KeyInput values 
+    member x.UpdateSelectionCommands() =
+
+        // Remove all of the commands with that binding
+        SharedSelectionCommandNameSet |> Seq.iter _runner.Remove
+
+        let commandList = 
+            if Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StartSelection then
+                SharedSelectionCommands
+            else
+                _selectionAlternateCommands
+        commandList |> List.iter _runner.Add
+
+    member x.UpdateTildeCommand() =
+        let name, command = x.GetTildeCommand()
+        _runner.Remove name
+        _runner.Add command
+
     /// Create the CommandBinding instances for the supported NormalCommand values
-    member this.Reset() =
+    member x.Reset() =
         _runner.ResetState()
-        _data <- _emptyData
+        _data <- EmptyData
+
+    member x.CanProcess (keyInput : KeyInput) =
+        let doesCommandStartWith keyInput =
+            let name = OneKeyInput keyInput
+            _runner.Commands 
+            |> Seq.filter (fun command -> command.KeyInputSet.StartsWith name)
+            |> SeqUtil.isNotEmpty
+
+        if _runner.IsWaitingForMoreInput then 
+            true
+        elif doesCommandStartWith keyInput then 
+            true
+        elif Option.isSome keyInput.RawChar && KeyModifiers.None = keyInput.KeyModifiers then
+            // We can process any letter (think international input) or any character
+            // which is part of the standard Vim input set
+            CharUtil.IsLetter keyInput.Char || Set.contains keyInput.Char _coreCharSet
+        else 
+            false
     
-    member this.ProcessCore (ki:KeyInput) =
-        let command = _data.Command + ki.Char.ToString()
+    member x.Process (keyInput : KeyInput) = 
+        let command = _data.Command + keyInput.Char.ToString()
         _data <- { _data with Command = command }
 
-        match _runner.Run ki with
+        match _runner.Run keyInput with
         | BindResult.NeedMoreInput _ -> 
             ProcessResult.HandledNeedMoreInput
         | BindResult.Complete commandData -> 
-            this.Reset()
+            x.Reset()
             ProcessResult.OfCommandResult commandData.CommandResult
         | BindResult.Error -> 
-            this.Reset()
+            x.Reset()
             ProcessResult.Handled ModeSwitch.NoSwitch
         | BindResult.Cancelled -> 
-            this.Reset()
+            x.Reset()
             ProcessResult.Handled ModeSwitch.NoSwitch
 
+    member x.OnEnter arg =
+        x.EnsureCommands()
+        x.Reset()
+
+        // Process the argument if it's applicable
+        match arg with 
+        | ModeArgument.None -> ()
+        | ModeArgument.FromVisual -> ()
+        | ModeArgument.Substitute(_) -> ()
+        | ModeArgument.InitialVisualSelection _ -> ()
+        | ModeArgument.InsertBlock (_, transaction) -> transaction.Complete()
+        | ModeArgument.InsertWithCount _ -> ()
+        | ModeArgument.InsertWithCountAndNewLine _ -> ()
+        | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
+
     interface INormalMode with 
-        member this.KeyRemapMode = this.KeyRemapMode
-        member this.IsInReplace = _data.IsInReplace
-        member this.VimTextBuffer = _vimTextBuffer
-        member this.Command = this.Command
-        member this.CommandRunner = _runner
-        member this.CommandNames = 
-            this.EnsureCommands()
-            _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
-
-        member this.ModeKind = ModeKind.Normal
-
-        member this.CanProcess (ki : KeyInput) =
-            let doesCommandStartWith ki =
-                let name = OneKeyInput ki
-                _runner.Commands 
-                |> Seq.filter (fun command -> command.KeyInputSet.StartsWith name)
-                |> SeqUtil.isNotEmpty
-
-            if _runner.IsWaitingForMoreInput then 
-                true
-            elif doesCommandStartWith ki then 
-                true
-            elif Option.isSome ki.RawChar && KeyModifiers.None = ki.KeyModifiers then
-                // We can process any letter (think international input) or any character
-                // which is part of the standard Vim input set
-                CharUtil.IsLetter ki.Char || Set.contains ki.Char _coreCharSet
-            else 
-                false
-
-        member this.Process ki = this.ProcessCore ki
-        member this.OnEnter arg = 
-            this.EnsureCommands()
-            this.Reset()
-
-            // Process the argument if it's applicable
-            match arg with 
-            | ModeArgument.None -> ()
-            | ModeArgument.FromVisual -> ()
-            | ModeArgument.Substitute(_) -> ()
-            | ModeArgument.InitialVisualSelection _ -> ()
-            | ModeArgument.InsertBlock (_, transaction) -> transaction.Complete()
-            | ModeArgument.InsertWithCount _ -> ()
-            | ModeArgument.InsertWithCountAndNewLine _ -> ()
-            | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
-
-        member this.OnLeave () = ()
-        member this.OnClose() = _eventHandlers.DisposeAll()
+        member x.KeyRemapMode = x.KeyRemapMode
+        member x.IsInReplace = _data.IsInReplace
+        member x.VimTextBuffer = _vimTextBuffer
+        member x.Command = x.Command
+        member x.CommandRunner = _runner
+        member x.CommandNames = x.CommandNames
+        member x.ModeKind = ModeKind.Normal
+        member x.CanProcess keyInput = x.CanProcess keyInput
+        member x.Process keyInput = x.Process keyInput
+        member x.OnEnter arg = x.OnEnter arg
+        member x.OnLeave () = ()
+        member x.OnClose() = _eventHandlers.DisposeAll()
     
 

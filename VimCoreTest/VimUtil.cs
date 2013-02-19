@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
 using Vim.Extensions;
+using Vim.Interpreter;
 
 namespace Vim.UnitTest
 {
@@ -44,7 +45,7 @@ namespace Vim.UnitTest
                 var result = func();
                 return string.IsNullOrEmpty(result) ? FSharpOption<string>.None : FSharpOption.Create(result);
             };
-            return new RegisterMap(device, func2.ToFSharpFunc());
+            return new RegisterMap(new VimData(), device, func2.ToFSharpFunc());
         }
 
         internal static CommandBinding CreateNormalBinding(string name)
@@ -241,10 +242,12 @@ namespace Vim.UnitTest
             SnapshotSpan span,
             bool isForward = true,
             MotionKind motionKind = null,
-            MotionResultFlags flags = MotionResultFlags.None)
+            MotionResultFlags flags = MotionResultFlags.None,
+            CaretColumn desiredColumn = null)
         {
             motionKind = motionKind ?? MotionKind.CharacterWiseInclusive;
-            return new MotionResult(span, span, isForward, motionKind, flags);
+            desiredColumn = desiredColumn ?? CaretColumn.None;
+            return new MotionResult(span, span, isForward, motionKind, flags, desiredColumn);
         }
 
         internal static CommandData CreateCommandData(
@@ -288,6 +291,18 @@ namespace Vim.UnitTest
         internal static VisualSpan CreateVisualSpanCharacter(SnapshotSpan span)
         {
             return VisualSpan.NewCharacter(CharacterSpan.CreateForSpan(span));
+        }
+
+        internal static ParseResult<LineCommand> ParseLineCommand(string text)
+        {
+            var parser = new Parser(new VimData());
+            return parser.ParseLineCommand(text);
+        }
+
+        internal static ParseResult<Expression> ParseExpression(string expr)
+        {
+            var parser = new Parser(new VimData());
+            return parser.ParseExpression(expr);
         }
     }
 }

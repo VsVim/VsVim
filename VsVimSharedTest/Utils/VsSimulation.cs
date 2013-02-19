@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Security.Permissions;
-using System.Windows;
 using System.Windows.Input;
 using EditorUtils;
 using Microsoft.VisualStudio;
@@ -13,8 +11,11 @@ using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Vim;
+using Vim.Extensions;
 using Vim.UI.Wpf;
+using Vim.UI.Wpf.UnitTest;
 using Vim.UnitTest;
+using VsVim.Implementation.Misc;
 
 namespace VsVim.UnitTest.Utils
 {
@@ -32,7 +33,26 @@ namespace VsVim.UnitTest.Utils
     /// </summary>
     internal sealed class VsSimulation
     {
-        #region KeyProcessor
+        #region VsKeyProcessorSimulation
+
+        private sealed class VsKeyProcessorSimulation : KeyProcessorSimulation
+        {
+            private readonly VsSimulation _vsSimulation;
+
+            internal VsKeyProcessorSimulation(VsSimulation vsSimulation, IWpfTextView wpfTextView) : base(wpfTextView)
+            {
+                _vsSimulation = vsSimulation;
+            }
+
+            protected override bool PreProcess(KeyInput keyInput, Key key, ModifierKeys modifierKeys)
+            {
+                return _vsSimulation.RunInOleCommandTarget(keyInput);
+            }
+        }
+
+        #endregion
+
+        #region SimulationKeyProcessor
 
         /// <summary>
         /// Visual Studio inserts a KeyProcess into the chain which turns TextInput events
@@ -244,135 +264,10 @@ namespace VsVim.UnitTest.Utils
 
         #endregion
 
-        #region DefaultInputController
-
-
-        /// <summary>
-        /// Manages the routing of events to multiple KeyProcessor implementations
-        /// </summary>
-        private sealed class DefaultInputController
-        {
-            private readonly ITextView _textView;
-            private readonly List<Microsoft.VisualStudio.Text.Editor.KeyProcessor> _keyProcessors;
-
-            internal DefaultInputController(ITextView textView, List<Microsoft.VisualStudio.Text.Editor.KeyProcessor> keyProcessors)
-            {
-                _textView = textView;
-                _keyProcessors = keyProcessors;
-            }
-
-            /// <summary>
-            /// Pass the event onto the various KeyProcessor values
-            /// </summary>
-            internal void HandleKeyUp(object sender, KeyEventArgs e)
-            {
-                foreach (var keyProcessor in _keyProcessors)
-                {
-                    if (e.Handled && !keyProcessor.IsInterestedInHandledEvents)
-                    {
-                        continue;
-                    }
-
-                    keyProcessor.KeyUp(e);
-                }
-            }
-
-            /// <summary>
-            /// Pass the event onto the various KeyProcessor values
-            /// </summary>
-            internal void HandleKeyDown(object sender, KeyEventArgs e)
-            {
-                foreach (var keyProcessor in _keyProcessors)
-                {
-                    if (e.Handled && !keyProcessor.IsInterestedInHandledEvents)
-                    {
-                        continue;
-                    }
-
-                    keyProcessor.KeyDown(e);
-                }
-            }
-
-            /// <summary>
-            /// Pass the event onto the various KeyProcessor values
-            /// </summary>
-            internal void HandleTextInput(object sender, TextCompositionEventArgs e)
-            {
-                foreach (var keyProcessor in _keyProcessors)
-                {
-                    if (e.Handled && !keyProcessor.IsInterestedInHandledEvents)
-                    {
-                        continue;
-                    }
-
-                    keyProcessor.TextInput(e);
-                }
-            }
-        }
-
-        #endregion
-
-        #region DefaultKeyboardDevice
-
-        private sealed class DefaultKeyboardDevice : KeyboardDevice
-        {
-            /// <summary>
-            /// Set of KeyModifiers which should be registered as down
-            /// </summary>
-            internal KeyModifiers DownKeyModifiers;
-
-            internal DefaultKeyboardDevice(InputManager inputManager)
-                : base(inputManager)
-            {
-
-            }
-
-            protected override KeyStates GetKeyStatesFromSystem(Key key)
-            {
-                if (Key.LeftCtrl == key || Key.RightCtrl == key)
-                {
-                    return 0 != (DownKeyModifiers & KeyModifiers.Control) ? KeyStates.Down : KeyStates.None;
-                }
-
-                if (Key.LeftAlt == key || Key.RightAlt == key)
-                {
-                    return 0 != (DownKeyModifiers & KeyModifiers.Alt) ? KeyStates.Down : KeyStates.None;
-                }
-
-                if (Key.LeftShift == key || Key.RightShift == key)
-                {
-                    return 0 != (DownKeyModifiers & KeyModifiers.Shift) ? KeyStates.Down : KeyStates.None;
-                }
-
-                return KeyStates.None;
-            }
-        }
-
-        #endregion
-
-        #region CommandKey
-
-        /// <summary>
-        /// Key for a command.  Used to cache query status information
-        /// </summary>
-        private struct CommandKey
-        {
-            internal readonly Guid CommandGroup;
-            internal readonly uint CommandId;
-
-            internal CommandKey(Guid commandGroup, uint commandId)
-            {
-                CommandGroup = commandGroup;
-                CommandId = commandId;
-            }
-        }
-
-        #endregion
-
         /// <summary>
         /// Cache of QueryStatus commands
         /// </summary>
-        private readonly Dictionary<CommandKey, bool> _cachedQueryStatusMap = new Dictionary<CommandKey, bool>();
+        private readonly Dictionary<CommandId, bool> _cachedQueryStatusMap = new Dictionary<CommandId, bool>();
 
         /// <summary>
         /// Head of the IOleCommandTarget chain
@@ -386,13 +281,13 @@ namespace VsVim.UnitTest.Utils
         private readonly DefaultCommandTarget _defaultCommandTarget;
 
         private readonly IWpfTextView _wpfTextView;
-        private readonly DefaultInputController _defaultInputController;
-        private readonly DefaultKeyboardDevice _defaultKeyboardDevice;
+        private readonly VsKeyProcessorSimulation _vsKeyProcessorSimulation;
         private readonly MockRepository _factory;
         private readonly Mock<IVsAdapter> _vsAdapter;
         private readonly Mock<IDisplayWindowBroker> _displayWindowBroker;
         private readonly Mock<IResharperUtil> _resharperUtil;
         private readonly TestableSynchronizationContext _testableSynchronizationContext;
+        private readonly IKeyUtil _keyUtil;
         private bool _simulateStandardKeyMappings;
 
         internal bool SimulateStandardKeyMappings
@@ -406,19 +301,22 @@ namespace VsVim.UnitTest.Utils
             get { return _displayWindowBroker; }
         }
 
-        internal VsSimulation(IVimBufferCoordinator bufferCoordinator, bool simulateResharper, bool simulateStandardKeyMappings, IEditorOperationsFactoryService editorOperationsFactoryService)
+        internal VsSimulation(IVimBufferCoordinator bufferCoordinator, bool simulateResharper, bool simulateStandardKeyMappings, IEditorOperationsFactoryService editorOperationsFactoryService, IKeyUtil keyUtil)
         {
+            _keyUtil = keyUtil;
             _wpfTextView = (IWpfTextView)bufferCoordinator.VimBuffer.TextView;
             _factory = new MockRepository(MockBehavior.Strict);
-            _defaultKeyboardDevice = new DefaultKeyboardDevice(InputManager.Current);
+            _vsKeyProcessorSimulation = new VsKeyProcessorSimulation(this, _wpfTextView);
             _testableSynchronizationContext = new TestableSynchronizationContext();
+            _simulateStandardKeyMappings = simulateStandardKeyMappings;
 
             // Create the IVsAdapter and pick reasonable defaults here.  Consumers can modify 
             // this via an exposed property
             _vsAdapter = _factory.Create<IVsAdapter>();
             _vsAdapter.SetupGet(x => x.InAutomationFunction).Returns(false);
-            _vsAdapter.SetupGet(x => x.KeyboardDevice).Returns(_defaultKeyboardDevice);
+            _vsAdapter.SetupGet(x => x.KeyboardDevice).Returns(_vsKeyProcessorSimulation.KeyBoardDevice);
             _vsAdapter.Setup(x => x.IsReadOnly(It.IsAny<ITextBuffer>())).Returns(false);
+            _vsAdapter.Setup(x => x.IsReadOnly(It.IsAny<ITextView>())).Returns(false);
             _vsAdapter.Setup(x => x.IsIncrementalSearchActive(_wpfTextView)).Returns(false);
 
             _resharperUtil = _factory.Create<IResharperUtil>();
@@ -434,11 +332,6 @@ namespace VsVim.UnitTest.Utils
                 bufferCoordinator.VimBuffer.TextView,
                 editorOperationsFactoryService.GetEditorOperations(bufferCoordinator.VimBuffer.TextView));
 
-            // Visual Studio hides the default IOleCommandTarget inside of the IWpfTextView property
-            // bag.  The default KeyProcessor implementation looks here for IOleCommandTarget to 
-            // process text input
-            _wpfTextView.Properties[typeof(IOleCommandTarget)] = _defaultCommandTarget;
-
             // Create the VsCommandTarget.  It's next is the final and default Visual Studio 
             // command target
             var vsTextView = _factory.Create<IVsTextView>();
@@ -447,9 +340,11 @@ namespace VsVim.UnitTest.Utils
             var vsCommandTarget = VsCommandTarget.Create(
                 bufferCoordinator,
                 vsTextView.Object,
+                _factory.Create<ITextManager>().Object,
                 _vsAdapter.Object,
                 _displayWindowBroker.Object,
-                _resharperUtil.Object).Value;
+                _resharperUtil.Object,
+                _keyUtil).Value;
 
             // Time to setup the start command target.  If we are simulating R# then put them ahead of VsVim
             // on the IOleCommandTarget chain.  VsVim doesn't try to fight R# and prefers instead to be 
@@ -464,13 +359,20 @@ namespace VsVim.UnitTest.Utils
                 _commandTarget = vsCommandTarget;
             }
 
+            // Visual Studio hides the default IOleCommandTarget inside of the IWpfTextView property
+            // bag.  The default KeyProcessor implementation looks here for IOleCommandTarget to 
+            // process text input.  
+            //
+            // This should always point to the head of the IOleCommandTarget chain.  In the implementation
+            // it actually points to the IVsTextView implementation which then immediately routes to the
+            // IOleCommandTarget head
+            _wpfTextView.Properties[typeof(IOleCommandTarget)] = _commandTarget;
+
             // Create the input controller.  Make sure that the VsVim one is ahead in the list
             // from the default Visual Studio one.  We can guarantee this is true due to MEF 
             // ordering of the components
-            var keyProcessors = new List<Microsoft.VisualStudio.Text.Editor.KeyProcessor>();
-            keyProcessors.Add(new VsKeyProcessor(_vsAdapter.Object, bufferCoordinator));
-            keyProcessors.Add(new SimulationKeyProcessor(bufferCoordinator.VimBuffer.TextView));
-            _defaultInputController = new DefaultInputController(bufferCoordinator.VimBuffer.TextView, keyProcessors);
+            _vsKeyProcessorSimulation.KeyProcessors.Add(new VsKeyProcessor(_vsAdapter.Object, bufferCoordinator, _keyUtil));
+            _vsKeyProcessorSimulation.KeyProcessors.Add(new SimulationKeyProcessor(bufferCoordinator.VimBuffer.TextView));
         }
 
         /// <summary>
@@ -487,7 +389,6 @@ namespace VsVim.UnitTest.Utils
         /// <summary>
         /// Run the specified set of characters against the buffer
         /// </summary>
-        /// <param name="c"></param>
         internal void Run(string text)
         {
             foreach (var cur in text)
@@ -512,54 +413,26 @@ namespace VsVim.UnitTest.Utils
             _testableSynchronizationContext.Install();
             try
             {
-                // Update the KeyModifiers while this is being processed by our key processor
-                var keyModifiers = keyInput.KeyModifiers;
-
-                // The KeyInput for an upper letter doesn't have a Shift modifier.  However the 
-                // keyboard state which produced the letter will likely have it (not sure about 
-                // caps lock).  Need to simulate that here
-                if (Char.IsLetter(keyInput.Char) && Char.IsUpper(keyInput.Char))
-                {
-                    keyModifiers |= KeyModifiers.Shift;
-                }
-
-                _defaultKeyboardDevice.DownKeyModifiers = keyInput.KeyModifiers;
-
-                if (!RunInOleCommandTarget(keyInput))
-                {
-                    RunInWpf(keyInput);
-                }
-
+                _vsKeyProcessorSimulation.Run(keyInput);
                 _testableSynchronizationContext.RunAll();
             }
             finally
             {
-                _defaultKeyboardDevice.DownKeyModifiers = KeyModifiers.None;
                 _testableSynchronizationContext.Uninstall();
             }
         }
 
         /// <summary>
-        /// Run the KeyInput through IOleCommandTarget
+        /// Run the KeyInput through IOleCommandTarget.  This is the primary entry point for 
         /// </summary>
         private bool RunInOleCommandTarget(KeyInput keyInput)
         {
             var oleCommandData = OleCommandData.Empty;
             try
             {
-                // It appears that Visual Studio will not use IOleCommandTarget to process alpha
-                // characters when they are combined with the control key unless they are mapped
-                // to a command.  Instead it will just push the input to the window directly.
-                //
-                // TODO: Need to investigate why this is the case.  
-                if (Char.IsLetter(keyInput.Char) && keyInput.KeyModifiers == KeyModifiers.Control)
+                if (!TryConvertToOleCommandData(keyInput, out oleCommandData))
                 {
                     return false;
-                }
-
-                if (!OleCommandUtil.TryConvert(keyInput, SimulateStandardKeyMappings, out oleCommandData))
-                {
-                    throw new Exception("Couldn't convert the KeyInput into OleCommandData");
                 }
 
                 if (!RunQueryStatus(oleCommandData))
@@ -590,14 +463,14 @@ namespace VsVim.UnitTest.Utils
             // and gains focus again.  These may be related
 
             bool result;
-            var key = new CommandKey(oleCommandData.CommandGroup, oleCommandData.CommandId);
-            if (_cachedQueryStatusMap.TryGetValue(key, out result))
+            var commandId = oleCommandData.CommandId;
+            if (_cachedQueryStatusMap.TryGetValue(commandId, out result))
             {
                 return result;
             }
 
             result = RunQueryStatusCore(oleCommandData);
-            _cachedQueryStatusMap[key] = result;
+            _cachedQueryStatusMap[commandId] = result;
             return result;
         }
 
@@ -653,56 +526,24 @@ namespace VsVim.UnitTest.Utils
         }
 
         /// <summary>
-        /// Run the KeyInput directly in the Wpf control
+        /// Try and convert the provided KeyInput value into OleCommandData.  This conversion is meant
+        /// to simulate the standard converison of key input into OLE information in Visual Studio. This
+        /// means we need to reproduce all of the behavior including not converting textual input
+        /// here (unless it maps to a command).  Textual input typcially gets routed through WPF and 
+        /// is routed to IOleCommandTarget in the default handler
         /// </summary>
-        private void RunInWpf(KeyInput keyInput)
+        private bool TryConvertToOleCommandData(KeyInput keyInput, out OleCommandData oleCommandData)
         {
-            Castle.DynamicProxy.Generators.AttributesToAvoidReplicating.Add(typeof(UIPermissionAttribute));
-            var presentationSource = _factory.Create<PresentationSource>();
-
-            // Normalize upper case letters here to lower and add the shift key modifier if
-            // necessary
-            if (Char.IsUpper(keyInput.Char))
+            if (keyInput.RawChar.IsSome())
             {
-                var lowerKeyInput = KeyInputUtil.CharToKeyInput(Char.ToLower(keyInput.Char));
-                keyInput = KeyInputUtil.ChangeKeyModifiersDangerous(lowerKeyInput, keyInput.KeyModifiers | KeyModifiers.Shift);
+                if (Char.IsLetterOrDigit(keyInput.Char))
+                {
+                    oleCommandData = OleCommandData.Empty;
+                    return false;
+                }
             }
 
-            Key key;
-            if (!KeyUtil.TryConvertToKeyOnly(keyInput.Key, out key))
-            {
-                throw new Exception("Couldn't get the WPF key for the given KeyInput");
-            }
-
-            // First raise the KeyDown event
-            var keyDownEventArgs = new KeyEventArgs(
-                _defaultKeyboardDevice,
-                presentationSource.Object,
-                0,
-                key);
-            keyDownEventArgs.RoutedEvent = UIElement.KeyDownEvent;
-            _defaultInputController.HandleKeyDown(this, keyDownEventArgs);
-
-            // If the event is handled then return
-            if (keyDownEventArgs.Handled)
-            {
-                return;
-            }
-
-            // Now raise the TextInput event
-            var textInputEventArgs = new TextCompositionEventArgs(
-                _defaultKeyboardDevice,
-                new TextComposition(InputManager.Current, _wpfTextView.VisualElement, keyInput.Char.ToString()));
-            textInputEventArgs.RoutedEvent = UIElement.TextInputEvent;
-            _defaultInputController.HandleTextInput(this, textInputEventArgs);
-
-            var keyUpEventArgs = new KeyEventArgs(
-                _defaultKeyboardDevice,
-                presentationSource.Object,
-                0,
-                key);
-            keyUpEventArgs.RoutedEvent = UIElement.KeyUpEvent;
-            _defaultInputController.HandleKeyUp(this, keyUpEventArgs);
+            return OleCommandUtil.TryConvert(keyInput, SimulateStandardKeyMappings, out oleCommandData);
         }
     }
 }

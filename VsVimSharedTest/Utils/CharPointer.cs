@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Runtime.InteropServices;
 
 namespace VsVim.UnitTest.Utils
@@ -28,7 +25,7 @@ namespace VsVim.UnitTest.Utils
 
         public static CharPointer Create(char c)
         {
-            var ptr = Marshal.AllocCoTaskMem(Marshal.SizeOf(typeof(Char)));
+            var ptr = Marshal.AllocCoTaskMem(0x100);
             Marshal.GetNativeVariantForObject(c, ptr);
             return new CharPointer(c, ptr);
         }

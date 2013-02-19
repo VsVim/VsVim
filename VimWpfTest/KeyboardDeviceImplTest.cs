@@ -1,25 +1,26 @@
 ﻿using System.Windows.Input;
-using NUnit.Framework;
-using Vim.UI.Wpf.Implementation;
+using Xunit;
+using Vim.UI.Wpf.Implementation.Misc;
+using Vim.UI.Wpf.Implementation.Keyboard;
 
 namespace Vim.UI.Wpf.UnitTest
 {
-    [TestFixture]
     public class KeyboardDeviceImplTest
     {
-        private KeyboardDeviceImpl _deviceImpl;
+        private readonly KeyboardDeviceImpl _deviceImpl;
 
-        [SetUp]
-        public void SetUp()
+        public KeyboardDeviceImplTest()
         {
             _deviceImpl = new KeyboardDeviceImpl();
         }
 
-        [Test]
-        [Description("Don't throw on the None case")]
+        /// <summary>
+        /// Don't throw on the None case
+        /// </summary>
+        [Fact]
         public void IsKeyDown1()
         {
-            Assert.IsFalse(_deviceImpl.IsKeyDown(Key.None));
+            Assert.False(_deviceImpl.IsKeyDown(Key.None));
         }
     }
 }

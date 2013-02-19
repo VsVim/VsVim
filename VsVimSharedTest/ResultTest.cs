@@ -1,15 +1,14 @@
-﻿using NUnit.Framework;
+﻿using Xunit;
 
 namespace VsVim.UnitTest
 {
-    [TestFixture]
     public sealed class ResultTest
     {
-        [Test]
+        [Fact]
         public void IsSuccess_Success()
         {
-            Assert.IsTrue(Result.Success.IsSuccess);
-            Assert.IsFalse(Result.Success.IsError);
+            Assert.True(Result.Success.IsSuccess);
+            Assert.False(Result.Success.IsError);
         }
     }
 }

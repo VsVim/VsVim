@@ -46,7 +46,7 @@ type internal MacroRecorder (_registerMap : IRegisterMap) =
         _registerMap.SetRegisterValue register RegisterOperation.Yank value
         _recordData <- None
         _recordKeyStroke <- false
-        _recordingStoppedEvent.Trigger System.EventArgs.Empty
+        _recordingStoppedEvent.Trigger x
 
     /// Need to track the KeyInputProcessed event for every IVimBuffer in the system
     member x.OnVimBufferCreated (buffer : IVimBuffer) =

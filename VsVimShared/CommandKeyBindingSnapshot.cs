@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using EnvDTE;
@@ -40,9 +39,9 @@ namespace VsVim
             _conflictingBindings = conflicting.ToList().AsReadOnly();
         }
 
-        public Tuple<bool, Command> TryGetCommand(string name)
+        public bool TryGetCommand(CommandId id, out Command command)
         {
-            return _snapshot.TryGetCommand(name);
+            return _snapshot.TryGetCommand(id, out command);
         }
     }
 }

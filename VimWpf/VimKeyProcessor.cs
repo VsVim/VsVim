@@ -17,26 +17,28 @@ namespace Vim.UI.Wpf
     /// </summary>
     public class VimKeyProcessor : KeyProcessor
     {
-        private readonly IVimBuffer _buffer;
+        private readonly IVimBuffer _vimBuffer;
+        private readonly IKeyUtil _keyUtil;
 
         public IVimBuffer VimBuffer
         {
-            get { return _buffer; }
+            get { return _vimBuffer; }
         }
 
         public ITextBuffer TextBuffer
         {
-            get { return _buffer.TextBuffer; }
+            get { return _vimBuffer.TextBuffer; }
         }
 
         public ITextView TextView
         {
-            get { return _buffer.TextView; }
+            get { return _vimBuffer.TextView; }
         }
 
-        public VimKeyProcessor(IVimBuffer buffer)
+        public VimKeyProcessor(IVimBuffer vimBuffer, IKeyUtil keyUtil)
         {
-            _buffer = buffer;
+            _vimBuffer = vimBuffer;
+            _keyUtil = keyUtil;
         }
 
         public override bool IsInterestedInHandledEvents
@@ -51,7 +53,7 @@ namespace Vim.UI.Wpf
         /// </summary>
         protected virtual bool TryProcess(KeyInput keyInput)
         {
-            return _buffer.CanProcess(keyInput) && _buffer.Process(keyInput).IsAnyHandled;
+            return _vimBuffer.CanProcess(keyInput) && _vimBuffer.Process(keyInput).IsAnyHandled;
         }
 
         /// <summary>
@@ -61,22 +63,43 @@ namespace Vim.UI.Wpf
         /// </summary>
         public override void TextInput(TextCompositionEventArgs args)
         {
+            VimTrace.TraceInfo("VimKeyProcessor::TextInput Text={0} ControlText={1} SystemText={2}", args.Text, args.ControlText, args.SystemText);
             bool handled = false;
 
             var text = args.Text;
+            if (String.IsNullOrEmpty(text))
+            {
+                text = args.ControlText;
+            }
+
             if (!String.IsNullOrEmpty(text))
             {
                 // In the case of a failed dead key mapping (pressing the accent key twice for
                 // example) we will recieve a multi-length string here.  One character for every
                 // one of the mappings.  Make sure to handle each of them
-                var keyboard = args.Device as KeyboardDevice;
-                if (keyboard != null)
+                for (var i = 0; i < text.Length; i++)
                 {
-                    for (var i = 0; i < text.Length; i++)
-                    {
-                        var keyInput = KeyUtil.CharAndModifiersToKeyInput(text[i], keyboard.Modifiers);
-                        handled = TryProcess(keyInput);
-                    }
+                    var keyInput = KeyInputUtil.CharToKeyInput(text[i]);
+                    handled = TryProcess(keyInput);
+                }
+            }
+            else if (!String.IsNullOrEmpty(args.SystemText))
+            {
+                // The system text needs to be processed differently than normal text.  When 'a'
+                // is pressed with control it will come in as control text as the proper control
+                // character.  When 'a' is pressed with Alt it will come in as simply 'a' and we
+                // have to rely on the currently pressed key modifiers to determine the appropriate
+                // character
+                var keyboardDevice = args.Device as KeyboardDevice;
+                var keyModifiers = keyboardDevice != null
+                    ? _keyUtil.GetKeyModifiers(keyboardDevice.Modifiers)
+                    : KeyModifiers.Alt;
+
+                text = args.SystemText;
+                for (var i = 0; i < text.Length; i++)
+                {
+                    var keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.CharToKeyInput(text[i]), keyModifiers);
+                    handled = TryProcess(keyInput);
                 }
             }
 
@@ -96,16 +119,13 @@ namespace Vim.UI.Wpf
         /// TextInput event.  But it can translate to a Vim command or mapped keyboard 
         /// combination that we do want to handle.  Hence we override here specifically
         /// to capture those circumstances
-        /// 
-        /// We don't capture everything here.  Instead we limit our search to the keys 
-        /// which we have a high degree of confidence can't be mapped to textual input 
-        /// and will still be a valid Vim command.  Those are keys with control modifiers 
-        /// or those which don't map to direct input characters
         /// </summary>
         public override void KeyDown(KeyEventArgs args)
         {
+            VimTrace.TraceInfo("VimKeyProcessor::KeyDown {0} {1}", args.Key, args.KeyboardDevice.Modifiers);
+
             bool handled;
-            if (KeyUtil.IsDeadKey(args.Key) || args.Key == Key.DeadCharProcessed)
+            if (args.Key == Key.DeadCharProcessed)
             {
                 // When a dead key combination is pressed we will get the key down events in 
                 // sequence after the combination is complete.  The dead keys will come first
@@ -116,7 +136,7 @@ namespace Vim.UI.Wpf
                 // we can process in the TextInput event
                 handled = false;
             }
-            else if (KeyUtil.IsAltGr(args.KeyboardDevice.Modifiers))
+            else if (_keyUtil.IsAltGr(args.KeyboardDevice.Modifiers))
             {
                 // AltGr greatly confuses things becuase it's realized in WPF as Control | Alt.  So
                 // while it's possible to use Control to further modify a key which used AltGr
@@ -130,7 +150,7 @@ namespace Vim.UI.Wpf
                 // by Vim.  If this worksa nd the key is processed then the input is considered
                 // to be handled
                 KeyInput keyInput;
-                if (KeyUtil.TryConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out keyInput))
+                if (_keyUtil.TryConvertSpecialToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out keyInput))
                 {
                     handled = TryProcess(keyInput);
                 }
@@ -140,8 +160,16 @@ namespace Vim.UI.Wpf
                 }
             }
 
+            VimTrace.TraceInfo("VimKeyProcessor::KeyDown Handled = {0}", handled);
             args.Handled = handled;
             base.KeyDown(args);
+        }
+
+        public override void KeyUp(KeyEventArgs args)
+        {
+            VimTrace.TraceInfo("VimKeyProcessor::KeyUp {0} {1}", args.Key, args.KeyboardDevice.Modifiers);
+            VimTrace.TraceInfo("VimKeyProcessor::KeyUp Handled = {0}", args.Handled);
+            base.KeyUp(args);
         }
     }
 }

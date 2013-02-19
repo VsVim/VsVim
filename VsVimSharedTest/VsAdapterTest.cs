@@ -1,37 +1,35 @@
-﻿using System;
-using Microsoft.VisualStudio;
+﻿using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.IncrementalSearch;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
-using NUnit.Framework;
-using Vim.UnitTest.Mock;
-using VsVim.Implementation;
-using Microsoft.VisualStudio.Text.IncrementalSearch;
+using Vim.UnitTest;
+using VsVim.Implementation.Misc;
+using Xunit;
 
 namespace VsVim.UnitTest
 {
-    [TestFixture]
-    public class VsAdapterTest
+    public class VsAdapterTest : VimTestBase
     {
-        private MockRepository _factory;
-        private Mock<IVsEditorAdaptersFactoryService> _editorAdapterFactory;
-        private Mock<IEditorOptionsFactoryService> _editorOptionsFactory;
-        private Mock<IIncrementalSearchFactoryService> _incrementalSearchFactoryService;
-        private Mock<SVsServiceProvider> _serviceProvider;
-        private VsAdapter _adapterRaw;
-        private IVsAdapter _adapter;
+        protected readonly MockRepository _factory;
+        protected readonly Mock<IVsEditorAdaptersFactoryService> _editorAdapterFactory;
+        protected readonly Mock<IEditorOptionsFactoryService> _editorOptionsFactory;
+        protected readonly Mock<IIncrementalSearchFactoryService> _incrementalSearchFactoryService;
+        internal readonly Mock<IPowerToolsUtil> _powerToolsUtil;
+        protected readonly Mock<SVsServiceProvider> _serviceProvider;
+        internal readonly VsAdapter _adapterRaw;
+        protected readonly IVsAdapter _adapter;
 
-        [SetUp]
-        public void Setup()
+        public VsAdapterTest()
         {
             _factory = new MockRepository(MockBehavior.Loose);
             _editorAdapterFactory = _factory.Create<IVsEditorAdaptersFactoryService>();
             _editorOptionsFactory = _factory.Create<IEditorOptionsFactoryService>();
             _incrementalSearchFactoryService = _factory.Create<IIncrementalSearchFactoryService>();
+            _powerToolsUtil = _factory.Create<IPowerToolsUtil>();
             _serviceProvider = _factory.Create<SVsServiceProvider>();
             _serviceProvider.MakeService<SVsTextManager, IVsTextManager>(_factory);
             _serviceProvider.MakeService<SVsUIShell, IVsUIShell>(_factory);
@@ -40,128 +38,87 @@ namespace VsVim.UnitTest
                 _editorAdapterFactory.Object,
                 _editorOptionsFactory.Object,
                 _incrementalSearchFactoryService.Object,
+                _powerToolsUtil.Object,
                 _serviceProvider.Object);
             _adapter = _adapterRaw;
         }
 
-        [Test]
-        public void IsReadOnly1()
+        public sealed class IsReadOnlyTest : VsAdapterTest
         {
-            var buffer = _factory.Create<ITextBuffer>();
-            var editorOptions = _editorOptionsFactory.MakeOptions(buffer.Object, _factory);
-            editorOptions
-                .Setup(x => x.IsOptionDefined<bool>(DefaultTextViewOptions.ViewProhibitUserInputId, false))
-                .Returns(true)
-                .Verifiable();
-            editorOptions
-                .Setup(x => x.GetOptionValue<bool>(DefaultTextViewOptions.ViewProhibitUserInputId))
-                .Throws(new ArgumentException())
-                .Verifiable();
-            _editorAdapterFactory.MakeBufferAdapter(buffer.Object, _factory);
-            Assert.IsFalse(_adapter.IsReadOnly(buffer.Object));
-            _factory.Verify();
+            private readonly ITextView _textView;
+            private readonly Mock<IVsTextBuffer> _vsTextBuffer;
+
+            public IsReadOnlyTest()
+            {
+                _textView = CreateTextView();
+                _vsTextBuffer = _editorAdapterFactory.MakeBufferAdapter(_textView.TextBuffer, _factory);
+            }
+
+            [Fact]
+            public void IsSetViewProhibitUserInput()
+            {
+                _textView.Options.SetOptionValue(DefaultTextViewOptions.ViewProhibitUserInputId, true);
+                Assert.True(_adapter.IsReadOnly(_textView));
+                _factory.Verify();
+            }
+
+            [Fact]
+            public void IsNotSetViewProhibitUserInput()
+            {
+                _textView.Options.SetOptionValue(DefaultTextViewOptions.ViewProhibitUserInputId, false);
+                Assert.False(_adapter.IsReadOnly(_textView));
+                _factory.Verify();
+            }
+
+            [Fact]
+            public void BufferReadOnlyCheckFails()
+            {
+                uint flags;
+                _vsTextBuffer
+                    .Setup(x => x.GetStateFlags(out flags))
+                    .Returns(VSConstants.E_FAIL);
+                Assert.False(_adapter.IsReadOnly(_textView.TextBuffer));
+                Assert.False(_adapter.IsReadOnly(_textView));
+                _factory.Verify();
+            }
+
+            [Fact]
+            public void BufferIsntReadOnly()
+            {
+                var flags = 0u;
+                _vsTextBuffer
+                    .Setup(x => x.GetStateFlags(out flags))
+                    .Returns(VSConstants.S_OK);
+                Assert.False(_adapter.IsReadOnly(_textView.TextBuffer));
+                Assert.False(_adapter.IsReadOnly(_textView));
+                _factory.Verify();
+            }
+
+            [Fact]
+            public void BufferIsReadOnly()
+            {
+                var flags = (uint)BUFFERSTATEFLAGS.BSF_USER_READONLY;
+                _vsTextBuffer
+                    .Setup(x => x.GetStateFlags(out flags))
+                    .Returns(VSConstants.S_OK);
+                Assert.True(_adapter.IsReadOnly(_textView.TextBuffer));
+                Assert.True(_adapter.IsReadOnly(_textView));
+                _factory.Verify();
+            }
         }
 
-        [Test]
-        public void IsReadOnly2()
+        public sealed class MiscTest : VsAdapterTest
         {
-            var buffer = _factory.Create<ITextBuffer>();
-            var editorOptions = _editorOptionsFactory.MakeOptions(buffer.Object, _factory);
-            editorOptions
-                .Setup(x => x.IsOptionDefined<bool>(DefaultTextViewOptions.ViewProhibitUserInputId, false))
-                .Returns(true)
-                .Verifiable();
-            editorOptions
-                .Setup(x => x.GetOptionValue<bool>(DefaultTextViewOptions.ViewProhibitUserInputId))
-                .Throws(new InvalidOperationException())
-                .Verifiable();
-            _editorAdapterFactory.MakeBufferAdapter(buffer.Object, _factory);
-            Assert.IsFalse(_adapter.IsReadOnly(buffer.Object));
-            _factory.Verify();
+            /// <summary>
+            /// The power tools quick find is considered an incremental search 
+            /// </summary>
+            [Fact]
+            public void IsIncrementalSearchActive_PowerTools()
+            {
+                _powerToolsUtil.SetupGet(x => x.IsQuickFindActive).Returns(true);
+                var textView = _factory.Create<ITextView>().Object;
+                Assert.True(_adapter.IsIncrementalSearchActive(textView));
+            }
         }
-
-        [Test]
-        public void IsReadOnly3()
-        {
-            var buffer = _factory.Create<ITextBuffer>();
-            var editorOptions = _editorOptionsFactory.MakeOptions(buffer.Object, _factory);
-            editorOptions
-                .Setup(x => x.IsOptionDefined<bool>(DefaultTextViewOptions.ViewProhibitUserInputId, false))
-                .Returns(true)
-                .Verifiable();
-            editorOptions
-                .Setup(x => x.GetOptionValue<bool>(DefaultTextViewOptions.ViewProhibitUserInputId))
-                .Returns(true)
-                .Verifiable();
-            Assert.IsTrue(_adapter.IsReadOnly(buffer.Object));
-            _factory.Verify();
-        }
-
-        [Test]
-        public void IsReadOnly4()
-        {
-            var buffer = _factory.Create<ITextBuffer>();
-            var editorOptions = _editorOptionsFactory.MakeOptions(buffer.Object, _factory);
-            editorOptions
-                .Setup(x => x.IsOptionDefined<bool>(DefaultTextViewOptions.ViewProhibitUserInputId, false))
-                .Returns(true)
-                .Verifiable();
-            editorOptions
-                .Setup(x => x.GetOptionValue<bool>(DefaultTextViewOptions.ViewProhibitUserInputId))
-                .Returns(false)
-                .Verifiable();
-            var flags = 0u;
-            var textLines = _editorAdapterFactory.MakeBufferAdapter(buffer.Object, _factory);
-            textLines
-                .Setup(x => x.GetStateFlags(out flags))
-                .Returns(VSConstants.E_FAIL);
-            Assert.IsFalse(_adapter.IsReadOnly(buffer.Object));
-            _factory.Verify();
-        }
-
-        [Test]
-        public void IsReadOnly5()
-        {
-            var buffer = _factory.Create<ITextBuffer>();
-            var editorOptions = _editorOptionsFactory.MakeOptions(buffer.Object, _factory);
-            editorOptions
-                .Setup(x => x.IsOptionDefined<bool>(DefaultTextViewOptions.ViewProhibitUserInputId, false))
-                .Returns(true)
-                .Verifiable();
-            editorOptions
-                .Setup(x => x.GetOptionValue<bool>(DefaultTextViewOptions.ViewProhibitUserInputId))
-                .Returns(false)
-                .Verifiable();
-            var flags = 0u;
-            var textLines = _editorAdapterFactory.MakeBufferAdapter(buffer.Object, _factory);
-            textLines
-                .Setup(x => x.GetStateFlags(out flags))
-                .Returns(VSConstants.S_OK);
-            Assert.IsFalse(_adapter.IsReadOnly(buffer.Object));
-            _factory.Verify();
-        }
-
-        [Test]
-        public void IsReadOnly6()
-        {
-            var buffer = _factory.Create<ITextBuffer>();
-            var editorOptions = _editorOptionsFactory.MakeOptions(buffer.Object, _factory);
-            editorOptions
-                .Setup(x => x.IsOptionDefined<bool>(DefaultTextViewOptions.ViewProhibitUserInputId, false))
-                .Returns(true)
-                .Verifiable();
-            editorOptions
-                .Setup(x => x.GetOptionValue<bool>(DefaultTextViewOptions.ViewProhibitUserInputId))
-                .Returns(false)
-                .Verifiable();
-            var flags = (uint)BUFFERSTATEFLAGS.BSF_USER_READONLY;
-            var textLines = _editorAdapterFactory.MakeBufferAdapter(buffer.Object, _factory);
-            textLines
-                .Setup(x => x.GetStateFlags(out flags))
-                .Returns(VSConstants.S_OK);
-            Assert.IsTrue(_adapter.IsReadOnly(buffer.Object));
-            _factory.Verify();
-        }
-
     }
 }

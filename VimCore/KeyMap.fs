@@ -1,6 +1,8 @@
 ﻿#light
 
 namespace Vim
+open System
+open Vim.Interpreter
 
 /// Map of a LHS of a mapping to the RHS.  The bool is used to indicate whether or not 
 /// the RHS should be remapped as part of an expansion
@@ -147,7 +149,11 @@ type Mapper
 
         result.Value
 
-type internal KeyMap(_globalSettings : IVimGlobalSettings) =
+type internal KeyMap
+    (
+        _globalSettings : IVimGlobalSettings,
+        _variableMap : VariableMap
+    ) =
 
     let mutable _map : Map<KeyRemapMode, RemapModeMap> = Map.empty
 
@@ -171,9 +177,25 @@ type internal KeyMap(_globalSettings : IVimGlobalSettings) =
 
     /// Main API for adding a key mapping into our storage
     member x.MapCore (lhs : string) (rhs : string) (mode : KeyRemapMode) allowRemap = 
+
+        // Replace the <Leader> value with the appropriate replacement string
+        let replaceLeader (str : string) =
+            if str.IndexOf("<leader>", StringComparison.OrdinalIgnoreCase) >= 0 then
+                let replace =
+                    let found, value = _variableMap.TryGetValue "mapleader"
+                    if found then 
+                        value.StringValue
+                    else
+                        "\\"
+                StringUtil.replaceNoCase str "<leader>" replace
+            else
+                str
+
         if StringUtil.isNullOrEmpty rhs then
             false
         else
+            let lhs = replaceLeader lhs
+            let rhs = replaceLeader rhs
             let key = KeyNotationUtil.TryStringToKeyInputSet lhs
             let rhs = KeyNotationUtil.TryStringToKeyInputSet rhs
             match key, rhs with

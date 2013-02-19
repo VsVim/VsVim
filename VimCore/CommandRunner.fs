@@ -134,12 +134,12 @@ type internal CommandRunner
             (Command.NormalCommand (command, commandData), commandBinding)
 
         // Handle the special case of 'd' and 'y' 
-        let doSpecialBinding normalCommand targetKey = 
+        let doSpecialBinding normalCommand targetChar = 
 
             let result = CountCapture.GetCount None keyInput
             result.Map (fun (countOpt, keyInput) -> 
 
-                if keyInput.Key = targetKey then
+                if keyInput.Char = targetChar then
 
                     // This is the special case.  Get the count for the combined command.  It's the 
                     // multiplier of the two counts
@@ -159,9 +159,9 @@ type internal CommandRunner
                     result.Convert (fun motion -> convertMotion motion countOpt))
 
         if Util.IsFlagSet commandBinding.CommandFlags CommandFlags.Delete then
-            doSpecialBinding NormalCommand.DeleteLines VimKey.LowerD
+            doSpecialBinding NormalCommand.DeleteLines 'd'
         elif Util.IsFlagSet commandBinding.CommandFlags CommandFlags.Yank then
-            doSpecialBinding NormalCommand.YankLines VimKey.LowerY
+            doSpecialBinding NormalCommand.YankLines 'y'
         else
             let result = _capture.GetMotionAndCount keyInput
             result.Convert (fun (motion, motionCount) -> convertMotion motion motionCount)

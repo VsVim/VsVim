@@ -486,7 +486,7 @@ type internal CommandUtil
         let range = visualSpan.LineRange
         let offset = range.StartLineNumber
         for i = 0 to range.Count - 1 do
-            let line = SnapshotUtil.GetLine x.CurrentSnapshot (offset + 1)
+            let line = SnapshotUtil.GetLine x.CurrentSnapshot (offset + i)
             _foldManager.CloseFold line.Start 1
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -567,15 +567,6 @@ type internal CommandUtil
         let value = RegisterValue.String (StringData.OfSpan span, OperationKind.CharacterWise)
         _registerMap.SetRegisterValue register RegisterOperation.Delete value
 
-        CommandResult.Completed ModeSwitch.NoSwitch
-
-    /// Delete a fold from the selection
-    member x.DeleteFoldInSelection (visualSpan : VisualSpan) =
-        let range = visualSpan.LineRange
-        let offset = range.StartLineNumber
-        for i = 0 to range.Count - 1 do
-            let line = SnapshotUtil.GetLine x.CurrentSnapshot (offset + 1)
-            _foldManager.DeleteFold line.Start
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete a fold under the caret
@@ -667,7 +658,7 @@ type internal CommandUtil
         TextViewUtil.MoveCaretToPoint _textView startPoint
         x.EditWithUndoTransaciton "DeleteSelection" (fun () ->
             use edit = _textBuffer.CreateEdit()
-            visualSpan.Spans |> Seq.iter (fun span -> 
+            visualSpan.SpansWithOverlap _localSettings |> Seq.iter (fun (pre, span, post) -> 
 
                 // If the last included point in the SnapshotSpan is inside the line break
                 // portion of a line then extend the SnapshotSpan to encompass the full
@@ -685,7 +676,10 @@ type internal CommandUtil
                         else
                             span
 
-                edit.Delete(span.Span) |> ignore)
+                match pre+post with
+                | 0 -> edit.Delete(span.Span) |> ignore
+                | _ -> edit.Replace(span.Span, String.replicate (pre + post) " ") |> ignore
+                )
             let snapshot = edit.Apply()
             TextViewUtil.MoveCaretToPosition _textView startPoint.Position)
 
@@ -707,20 +701,42 @@ type internal CommandUtil
         // The d{motion} command has an exception listed which is visible by typing ':help d' in 
         // gVim.  In summary, if the motion is characterwise, begins and ends on different
         // lines and the start is preceeding by only whitespace and the end is followed
-        // only by whitespace then it becomes a linewise motion for those lines.  However experimentation
-        // shows that this does not appear to be the case.  For example type the following out 
-        // where ^ is the caret
+        // only by whitespace then it becomes a linewise motion for those lines.  This can be 
+        // demonstrated with the following example.  Caret is on the 'c', there is one space before
+        // every word and 4 spaces after dog
         //
-        //  ^abc
-        //   def
+        //  cat
+        //  dog    
+        //  fish
         //
-        // Then try 'd/    '.  It will not delete the final line even though this meets all of
-        // the requirements.  Choosing to ignore this exception for now until I can find
-        // a better example
+        // Now execute 'd/  ' (2 spaces after the /).  This will delete the entire cat and dog 
+        // line
+        let span, operationKind =
+            let span = result.Span
+            if result.LineRange.Count > 1 && result.OperationKind = OperationKind.CharacterWise then
+                let startLine, lastLine = SnapshotSpanUtil.GetStartAndLastLine span
+                let lastPoint = 
+                    if result.IsExclusive then result.End
+                    else result.LastOrStart
+                let endsInWhiteSpace = 
+                    lastPoint
+                    |> SnapshotPointUtil.GetPoints Path.Forward
+                    |> Seq.takeWhile (fun point -> point.Position < lastLine.End.Position)
+                    |> Seq.forall SnapshotPointUtil.IsWhiteSpace
+
+                let inIndent = 
+                    let indentPoint = SnapshotLineUtil.GetIndentPoint startLine
+                    span.Start.Position <= indentPoint.Position
+
+                if endsInWhiteSpace && inIndent then
+                    SnapshotSpanUtil.ExtendToFullLineIncludingLineBreak span, OperationKind.LineWise
+                else
+                    span, result.OperationKind
+            else
+                span, result.OperationKind
 
         // Caret should be placed at the start of the motion for both undo / redo so place it 
         // before starting the transaction
-        let span = result.Span
         TextViewUtil.MoveCaretToPoint _textView span.Start
         x.EditWithUndoTransaciton "Delete" (fun () ->
             _textBuffer.Delete(span.Span) |> ignore
@@ -732,7 +748,7 @@ type internal CommandUtil
         // Update the register with the result so long as something was actually deleted
         // from the buffer
         if not span.IsEmpty then
-            let value = RegisterValue.String (StringData.OfSpan span, result.OperationKind)
+            let value = RegisterValue.String (StringData.OfSpan span, operationKind)
             _registerMap.SetRegisterValue register RegisterOperation.Delete value
 
         CommandResult.Completed ModeSwitch.NoSwitch
@@ -877,6 +893,9 @@ type internal CommandUtil
 
     /// Get the number value at the caret.  This is used for the CTRL-A and CTRL-X
     /// command so it will look forward on the current line for the first word
+    ///
+    /// TODO: Need to integrate the parsing functions here with that of the tokenizer
+    /// which also parses out the same set of numbers
     member x.GetNumberValueAtCaret() : (NumberValue * SnapshotSpan) option= 
 
         // Calculate the forward span of the line
@@ -921,7 +940,7 @@ type internal CommandUtil
 
         // Get the point for a hex number
         let getHex () =
-            getNumber NumberValue.Hex "(-?)0x\d+" (fun text -> 
+            getNumber NumberValue.Hex "(-?)0x[a-f0-9]+" (fun text -> 
                 let isNegative, text = 
                     if text.[0] = '-' then
                         true, text.Substring(3)
@@ -947,12 +966,9 @@ type internal CommandUtil
             ]
             |> Seq.map (fun (func, numberFormat) ->
                 match _localSettings.IsNumberFormatSupported numberFormat, func() with
-                | false, _ ->
-                    None
-                | true, None ->
-                    None
-                | true, Some tuple ->
-                    Some tuple)
+                | false, _ -> None
+                | true, None -> None
+                | true, Some tuple -> Some tuple)
             |> SeqUtil.filterToSome
             |> SeqUtil.tryHeadOnly
 
@@ -1147,10 +1163,11 @@ type internal CommandUtil
         let savedCaretPoint = x.CaretPoint
 
         // The the line below needs to be calculated agaist the visual snapshot.
-        let visualLineEndIncludingLineBreak, newLineText  = 
+        let visualLineEndIncludingLineBreak, newLineText, isLastLine =
             let visualSnapshotData = TextViewUtil.GetVisualSnapshotDataOrEdit _textView
             let newLineText = _commonOperations.GetNewLineText x.CaretPoint
-            visualSnapshotData.CaretLine.EndIncludingLineBreak, newLineText
+            let isLastLine = SnapshotLineUtil.IsLastLine visualSnapshotData.CaretLine
+            visualSnapshotData.CaretLine.EndIncludingLineBreak, newLineText, isLastLine
 
         match BufferGraphUtil.MapPointDownToSnapshotStandard _bufferGraph visualLineEndIncludingLineBreak x.CurrentSnapshot with
         | None -> ()
@@ -1163,7 +1180,14 @@ type internal CommandUtil
                 TextViewUtil.MoveCaretToPosition _textView savedCaretPoint.Position)
 
             let newLine = 
-                let newPoint = SnapshotPoint(x.CurrentSnapshot, point.Position)
+                let newPoint = 
+                    // When this command is run on the last line of the file then point will still
+                    // refer to the original line.  In that case we need to move to the end of the
+                    // ITextSnapshot
+                    if isLastLine then
+                        SnapshotUtil.GetEndPoint x.CurrentSnapshot
+                    else
+                        SnapshotPoint(x.CurrentSnapshot, point.Position)
                 SnapshotPointUtil.GetContainingLine newPoint
             x.MoveCaretToNewLineIndent savedCaretLine newLine
 
@@ -1209,7 +1233,7 @@ type internal CommandUtil
                     |> VirtualSnapshotPointUtil.OfPoint
 
             _commonOperations.MoveCaretToPointAndEnsureVisible point.Position
-            _jumpList.Add before |> ignore
+            _jumpList.Add before
             CommandResult.Completed ModeSwitch.NoSwitch
 
         // Called when the mark is not set
@@ -1227,7 +1251,7 @@ type internal CommandUtil
                 if point.Position.Snapshot.TextBuffer = _textBuffer then
                     jumpLocal point
                 elif _commonOperations.NavigateToPoint point then
-                    _jumpList.Add before |> ignore
+                    _jumpList.Add before
                     CommandResult.Completed ModeSwitch.NoSwitch
                 else
                     _statusUtil.OnError Resources.Common_MarkNotSet
@@ -1288,12 +1312,18 @@ type internal CommandUtil
 
     /// Move the caret to the proper indent on the newly created line
     member x.MoveCaretToNewLineIndent contextLine newLine = 
-        match _commonOperations.GetNewLineIndent contextLine newLine with
-        | None -> 
-            TextViewUtil.MoveCaretToPoint _textView newLine.Start 
-        | Some indent ->
+
+        // Calling GetNewLineIndent can cause a buffer edit.  Need to rebind
+        // the snapshot related items after calling the API
+        let indent = _commonOperations.GetNewLineIndent contextLine newLine 
+        match SnapshotUtil.TryGetLine x.CurrentSnapshot newLine.LineNumber, indent with
+        | Some newLine, Some indent -> 
             let virtualPoint = VirtualSnapshotPoint(newLine.Start, indent)
             TextViewUtil.MoveCaretToVirtualPoint _textView virtualPoint
+        | Some newLine, None ->
+            TextViewUtil.MoveCaretToPoint _textView newLine.Start 
+        | None, Some _ -> ()
+        | None, None -> ()
 
     /// The Join commands (Visual and Normal) have identical cursor positioning behavior and 
     /// it's non-trivial so it's factored out to a function here.  In short the caret should be
@@ -1326,12 +1356,21 @@ type internal CommandUtil
             let point = x.CaretPoint
             _commonOperations.MoveCaretToMotionResult result
 
-            // Beep if the motion doesn't actually move the caret.  This is currently done to 
-            // satisfy 'l' and 'h' at the end and start of lines respectively.  It may not be 
-            // needed for every empty motion but so far I can't find a reason why not
             if point = x.CaretPoint then 
-                _commonOperations.Beep()
-                CommandResult.Error
+                // Failure to move the caret for a motion results in a beep for certain motions.  There
+                // isn't any documentation here but experimentally it is true for 'l' and 'h'.  
+                //
+                // Though attractive the correct solution is *not* to have the motion itself fail
+                // in those cases.  While a 'h' movement fails when the caret is in column 0, a yank
+                // from the same location, 'yh', succeeds.  It yanks nothing but it does so 
+                // successfully.  The error only happens when it's applied to a movement.
+                let makeError () = 
+                    _commonOperations.Beep()
+                    CommandResult.Error
+                match motion with
+                | Motion.CharLeft -> makeError()
+                | Motion.CharRight -> makeError()
+                | _ -> CommandResult.Completed ModeSwitch.NoSwitch
             else
                 CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1358,7 +1397,7 @@ type internal CommandUtil
             let visualSpan = VisualSpan.CreateForSpan span desiredVisualKind
             let visualSelection = VisualSelection.CreateForward visualSpan
             let argument = ModeArgument.InitialVisualSelection (visualSelection, None)
-            x.SwitchMode desiredVisualKind.ModeKind argument
+            x.SwitchMode desiredVisualKind.VisualModeKind argument
 
         // Handle the normal set of text objects (essentially non-block movements)
         let moveNormal () =
@@ -1436,6 +1475,17 @@ type internal CommandUtil
         for i = 0 to range.Count - 1 do
             let line = SnapshotUtil.GetLine x.CurrentSnapshot (offset + 1)
             _foldManager.OpenFold line.Start 1
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Toggle fold under the caret
+    member x.ToggleFoldUnderCaret count = 
+        _foldManager.ToggleFold x.CaretPoint count
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Toggle all folds in the buffer
+    member x.ToggleAllFolds() = 
+        let span = SnapshotUtil.GetExtent x.CurrentSnapshot
+        _foldManager.ToggleAllFolds span
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Open 'count' folds under the caret
@@ -1873,7 +1923,6 @@ type internal CommandUtil
             if (point.Position + count) > line.End.Position then
                 // If the replace operation exceeds the line length then the operation
                 // can't succeed
-                _commonOperations.Beep()
                 false
             else
                 // Do the replace in an undo transaction since we are explicitly positioning
@@ -1888,11 +1937,21 @@ type internal CommandUtil
                         else 
                             new System.String(keyInput.Char, count)
                     let span = new Span(point.Position, count)
-                    let snapshot = _textView.TextBuffer.Replace(span, replaceText) 
+                    _textBuffer.Replace(span, replaceText) |> ignore
+
+                    // Don't use the ITextSnapshot that is returned from Replace.  This represents the ITextSnapshot
+                    // after our change.  If other components are listening to the Change events they could make their
+                    // own change.  The ITextSnapshot returned reflects only our change, not theirs.  To properly 
+                    // position the caret we need the current ITextSnapshot
+                    let snapshot = _textBuffer.CurrentSnapshot
+
+                    // It's possible for any edit to occur after ours including the complete deletion of the buffer
+                    // contents.  Need to account for this in the caret positioning 
+                    let position = min point.Position snapshot.Length
 
                     // The caret should move to the end of the replace operation which is 
                     // 'count - 1' characters from the original position 
-                    let point = SnapshotPoint(snapshot, point.Position + (replaceText.Length - 1))
+                    let point = SnapshotPoint(snapshot, position + (replaceText.Length - 1))
 
                     _textView.Caret.MoveTo(point) |> ignore)
                 true
@@ -1900,8 +1959,9 @@ type internal CommandUtil
         // If the replace failed then we should beep the console
         if not succeeded then
             _commonOperations.Beep()
-
-        CommandResult.Completed ModeSwitch.NoSwitch
+            CommandResult.Error
+        else 
+            CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Replace the char under the cursor in visual mode.
     member x.ReplaceSelection keyInput (visualSpan : VisualSpan) = 
@@ -1992,7 +2052,16 @@ type internal CommandUtil
                             true
                         | keyInput :: tail -> 
 
-                            match _vim.FocusedBuffer with
+                            // Prefer the focussed IVimBuffer over the current.  It's possible for the 
+                            // macro playback switch the active buffer via gt, gT, etc ... and playback 
+                            // should continue on the newly focussed IVimBuffer.  Should the host API
+                            // fail to return an active IVimBuffer continue using the original one
+                            let buffer = 
+                                match _vim.FocusedBuffer with
+                                | Some buffer -> Some buffer
+                                | None -> _vim.GetVimBuffer _textView
+
+                            match buffer with
                             | None -> 
                                 // Nothing to do if we don't have an ITextBuffer with focus
                                 false
@@ -2117,6 +2186,9 @@ type internal CommandUtil
         | NormalCommand.SplitViewVertically -> x.SplitViewVertically()
         | NormalCommand.SwitchMode (modeKind, modeArgument) -> x.SwitchMode modeKind modeArgument
         | NormalCommand.SwitchPreviousVisualMode -> x.SwitchPreviousVisualMode()
+        | NormalCommand.SwitchToSelection caretMovement -> x.SwitchToSelection caretMovement
+        | NormalCommand.ToggleFoldUnderCaret -> x.ToggleFoldUnderCaret count
+        | NormalCommand.ToggleAllFolds -> x.ToggleAllFolds()
         | NormalCommand.Undo -> x.Undo count
         | NormalCommand.WriteBufferAndQuit -> x.WriteBufferAndQuit()
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion register)
@@ -2140,7 +2212,6 @@ type internal CommandUtil
         | VisualCommand.CloseFoldInSelection -> x.CloseFoldInSelection visualSpan
         | VisualCommand.ChangeLineSelection specialCaseBlock -> x.ChangeLineSelection register visualSpan specialCaseBlock
         | VisualCommand.DeleteAllFoldsInSelection -> x.DeleteAllFoldInSelection visualSpan
-        | VisualCommand.DeleteFoldInSelection -> x.DeleteFoldInSelection visualSpan
         | VisualCommand.DeleteSelection -> x.DeleteSelection register visualSpan
         | VisualCommand.DeleteLineSelection -> x.DeleteLineSelection register visualSpan
         | VisualCommand.FormatLines -> x.FormatLinesVisual visualSpan
@@ -2155,6 +2226,8 @@ type internal CommandUtil
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
         | VisualCommand.SwitchModeInsert -> x.SwitchModeInsert visualSpan 
         | VisualCommand.SwitchModeVisual visualKind -> x.SwitchModeVisual visualKind 
+        | VisualCommand.ToggleFoldInSelection -> x.ToggleFoldUnderCaret count
+        | VisualCommand.ToggleAllFoldsInSelection-> x.ToggleAllFolds()
         | VisualCommand.YankLineSelection -> x.YankLineSelection register visualSpan
         | VisualCommand.YankSelection -> x.YankSelection register visualSpan
 
@@ -2455,9 +2528,26 @@ type internal CommandUtil
             CommandResult.Error
 
         | Some visualSelection ->
-            let modeKind = visualSelection.ModeKind
+            let modeKind = visualSelection.VisualKind.VisualModeKind
             let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, None)
             x.SwitchMode modeKind modeArgument
+
+    /// Move the caret to the specified motion.  How this command is implemented is largely dependent
+    /// upon the values of 'keymodel' and 'selectmode'.  It will either move the caret potentially as 
+    /// a motion or initiate a select in the editor
+    member x.SwitchToSelection caretMovement =
+        let anchorPoint = x.CaretPoint
+        if not (_commonOperations.MoveCaret caretMovement) then
+            CommandResult.Error
+        else
+            let visualSelection = VisualSelection.CreateForPoints VisualKind.Character anchorPoint x.CaretPoint
+            let modeKind = 
+                if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Keyboard then
+                    ModeKind.SelectCharacter
+                else
+                    ModeKind.VisualCharacter
+            let argument = ModeArgument.InitialVisualSelection(visualSelection, None)
+            CommandResult.Completed (ModeSwitch.SwitchModeWithArgument(modeKind, argument))
 
     /// Switch from the current visual mode into insert.  If we are in block mode this
     /// will start a block insertion
@@ -2472,7 +2562,7 @@ type internal CommandUtil
             x.EditBlockWithLinkedChange "Visual Insert" blockSpan (fun _ -> ())
         | _ -> 
             // For all other visual mode inserts the caret moves to column 0 on the first
-            // line of the selection.  It should be positioned there after an undor so move
+            // line of the selection.  It should be positioned there after an undo so move
             // it now before the undo transaction
             visualSpan.Start
             |> SnapshotPointUtil.GetContainingLine
@@ -2507,7 +2597,7 @@ type internal CommandUtil
                     let newVisualSelection = VisualSelection.CreateForPoints newVisualKind anchorPoint caretPoint
                     let modeArgument = ModeArgument.InitialVisualSelection (newVisualSelection, Some anchorPoint)
 
-                    x.SwitchMode newVisualSelection.ModeKind modeArgument
+                    x.SwitchMode newVisualSelection.VisualKind.VisualModeKind modeArgument
 
     /// Undo count operations in the ITextBuffer
     member x.Undo count = 

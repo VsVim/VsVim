@@ -1,11 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using EditorUtils;
+using Microsoft.FSharp.Collections;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using NUnit.Framework;
 using Vim.Extensions;
 using Vim.Interpreter;
+using Xunit;
 
 namespace Vim.UnitTest
 {
@@ -17,10 +19,11 @@ namespace Vim.UnitTest
         protected ITextBuffer _textBuffer;
         protected ITextView _textView;
         protected IVimData _vimData;
-        protected global::Vim.Interpreter.Interpreter _interpreter;
+        internal VimInterpreter _interpreter;
         protected TestableStatusUtil _statusUtil;
         protected IVimGlobalSettings _globalSettings;
         protected IVimLocalSettings _localSettings;
+        protected IVimWindowSettings _windowSettings;
         protected IKeyMap _keyMap;
 
         /// <summary>
@@ -48,11 +51,12 @@ namespace Vim.UnitTest
                 statusUtil: _statusUtil);
             _vimBuffer = CreateVimBuffer(_vimBufferData);
             _vimTextBuffer = _vimBufferData.VimTextBuffer;
+            _windowSettings = _vimBufferData.WindowSettings;
             _localSettings = _vimBufferData.LocalSettings;
             _globalSettings = _localSettings.GlobalSettings;
             _textBuffer = _vimBufferData.TextBuffer;
             _textView = _vimBufferData.TextView;
-            _interpreter = new global::Vim.Interpreter.Interpreter(
+            _interpreter = new global::Vim.Interpreter.VimInterpreter(
                 _vimBuffer,
                 CommonOperationsFactory.GetCommonOperations(_vimBufferData),
                 FoldManagerFactory.GetFoldManager(_vimBufferData.TextView),
@@ -66,171 +70,208 @@ namespace Vim.UnitTest
         /// </summary>
         protected void ParseAndRun(string command)
         {
-            var parseResult = Parser.ParseLineCommand(command);
-            Assert.IsTrue(parseResult.IsSucceeded);
+            var parseResult = VimUtil.ParseLineCommand(command);
+            Assert.True(parseResult.IsSucceeded);
             _interpreter.RunLineCommand(parseResult.AsSucceeded().Item);
         }
 
-        [TestFixture]
-        public sealed class Copy : InterpreterTest
+        public sealed class CopyTest : InterpreterTest
         {
             /// <summary>
             /// Copy to a single line
             /// </summary>
-            [Test]
+            [Fact]
             public void ToSingleLine()
             {
                 Create("cat", "dog", "fish", "tree");
                 _textView.MoveCaretToLine(2);
                 ParseAndRun("co 1");
-                CollectionAssert.AreEqual(
+                Assert.Equal(
                     new[] { "cat", "fish", "dog", "fish", "tree" },
                     _textBuffer.GetLines().ToArray());
-                Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
             }
 
             /// <summary>
             /// When copying to a line range the paste should come after the first line and
             /// not the last as is common with other commands
             /// </summary>
-            [Test]
+            [Fact]
             public void ToLineRange()
             {
                 Create("cat", "dog", "fish", "tree");
                 _textView.MoveCaretToLine(3);
                 ParseAndRun("co 1,3");
-                CollectionAssert.AreEqual(
+                Assert.Equal(
                     new[] { "cat", "tree", "dog", "fish", "tree" },
                     _textBuffer.GetLines().ToArray());
-                Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
             }
 
             /// <summary>
             /// Copy to a single line plus a count should be copied to line + count 
             /// </summary>
-            [Test]
+            [Fact]
             public void ToSingleLineAndCount()
             {
                 Create("cat", "dog", "fish", "bear", "tree");
                 _textView.MoveCaretToLine(4);
                 ParseAndRun("co 1 2");
-                CollectionAssert.AreEqual(
+                Assert.Equal(
                     new[] { "cat", "dog", "fish", "tree", "bear", "tree" },
                     _textBuffer.GetLines().ToArray());
-                Assert.AreEqual(_textBuffer.GetLine(3).Start, _textView.GetCaretPoint());
+                Assert.Equal(_textBuffer.GetLine(3).Start, _textView.GetCaretPoint());
             }
 
             /// <summary>
             /// When copying to a line range and a count the count is simply ignored
             /// </summary>
-            [Test]
+            [Fact]
             public void ToLineRangeAndCount()
             {
                 Create("cat", "dog", "fish", "bear", "tree");
                 _textView.MoveCaretToLine(4);
                 ParseAndRun("co 1,3 2");
-                CollectionAssert.AreEqual(
+                Assert.Equal(
                     new[] { "cat", "tree", "dog", "fish", "bear", "tree" },
                     _textBuffer.GetLines().ToArray());
-                Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
             }
         }
 
-        [TestFixture]
-        public sealed class Substitute : InterpreterTest
+        public sealed class DisplayMarkTest : InterpreterTest
+        {
+            static readonly FSharpList<Mark> EmptyList = FSharpList<Mark>.Empty;
+
+            public DisplayMarkTest()
+            {
+                VimHost.FileName = "test.txt";
+            }
+
+            public void Verify(char mark, int line, int column, int index = 1)
+            {
+                var msg = String.Format(" {0}   {1,5}{2,5} test.txt", mark, line, column);
+                Assert.Equal(msg, _statusUtil.LastStatusLong[index]);
+            }
+
+            [Fact]
+            public void SingleLocalMark()
+            {
+                Create("cat dog");
+                _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.C), 0, 1);
+                _interpreter.RunDisplayMarks(EmptyList);
+                Verify('c', 1, 1);
+            }
+
+            /// <summary>
+            /// The local marks should be displayed in alphabetical order 
+            /// </summary>
+            [Fact]
+            public void MultipleLocalMarks()
+            {
+                Create("cat dog");
+                _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.B), 0, 1);
+                _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.A), 0, 2);
+                _interpreter.RunDisplayMarks(EmptyList);
+                Verify('a', line: 1, column: 2, index: 1);
+                Verify('b', line: 1, column: 1, index: 2);
+            }
+        }
+
+        public sealed class SubstituteTest : InterpreterTest
         {
             /// <summary>
             /// When an empty string is provided for the pattern string then the pattern from the last
             /// substitute
             /// </summary>
-            [Test]
+            [Fact]
             public void EmptySearchUsesLastSearch()
             {
                 Create("cat tree");
                 Vim.VimData.LastPatternData = new PatternData("cat", new Path(0));
                 ParseAndRun("s//dog/");
-                Assert.AreEqual("dog tree", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("dog tree", _textBuffer.GetLine(0).GetText());
             }
 
             /// <summary>
             /// Make sure that back slashes are properly handled in the replace 
             /// </summary>
-            [Test]
+            [Fact]
             public void Backslashes()
             {
                 Create("cat");
                 ParseAndRun(@"s/a/\\\\");
-                Assert.AreEqual(@"c\\t", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(@"c\\t", _textBuffer.GetLine(0).GetText());
             }
 
-            [Test]
+            [Fact]
             public void DoubleQuotesPattern()
             {
                 Create(@"""cat""");
                 ParseAndRun(@"s/""cat""/dog");
-                Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
             }
 
-            [Test]
+            [Fact]
             public void DoubleQuotesReplace()
             {
                 Create(@"cat");
                 ParseAndRun(@"s/cat/""dog""");
-                Assert.AreEqual(@"""dog""", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(@"""dog""", _textBuffer.GetLine(0).GetText());
             }
 
             /// <summary>
             /// This is a bit of a special case around the escape sequence for a new line.  The escape
             /// actually escapes the backslash and doesn't add a new line
             /// </summary>
-            [Test]
+            [Fact]
             public void EscapedLooksLikeNewLine()
             {
                 Create("cat", "dog");
                 ParseAndRun(@"s/$/\\n\\/");
-                Assert.AreEqual(@"cat\n\", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual(@"dog", _textBuffer.GetLine(1).GetText());
+                Assert.Equal(@"cat\n\", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(@"dog", _textBuffer.GetLine(1).GetText());
             }
 
             /// <summary>
             /// The $ marker needs to be treated as a zero width assertion.  Don't replace the new line
             /// just the rest of the string
             /// </summary>
-            [Test]
+            [Fact]
             public void WordAndEndOfLine()
             {
                 Create("cat cat", "fish");
                 ParseAndRun(@"s/cat$/dog/");
-                Assert.AreEqual("cat dog", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("fish", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("fish", _textBuffer.GetLine(1).GetText());
             }
 
             /// <summary>
             /// Matching $ as part of the regex is a zero width match.  It can't be used to delete the 
             /// end of the line
             /// </summary>
-            [Test]
+            [Fact]
             public void EndOfLineIsZeroWidth()
             {
                 Create("cat", "dog", "fish");
                 ParseAndRun(@"%s/$//");
-                Assert.AreEqual(3, _textBuffer.CurrentSnapshot.LineCount);
+                Assert.Equal(3, _textBuffer.CurrentSnapshot.LineCount);
             }
 
             /// <summary>
             /// Make sure a replace here at the end of the line happens after
             /// </summary>
-            [Test]
+            [Fact]
             public void EndOfLineIsZeroWidth2()
             {
                 Create("cat", "dog", "fish");
                 ParseAndRun(@"%s/$/ hat/");
-                Assert.AreEqual(
+                Assert.Equal(
                     new[] { "cat hat", "dog hat", "fish hat" },
                     _textBuffer.GetLines().ToArray());
             }
 
-            [Test]
+            [Fact]
             public void EndOfLineWithGroupReplace()
             {
                 Create(
@@ -238,33 +279,621 @@ namespace Vim.UnitTest
                     @"  { ""dog"",  BAT_VALUE /* 101 */ },",
                     @"  { ""bat"",  BAT_VALUE /* 102 */ }");
                 ParseAndRun(@"%s/\(\s\+\){\s*\(""\w\+"",\).*$/\1\2/");
-                Assert.AreEqual(3, _textBuffer.CurrentSnapshot.LineCount);
-                Assert.AreEqual(@"  ""cat"",", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual(@"  ""dog"",", _textBuffer.GetLine(1).GetText());
-                Assert.AreEqual(@"  ""bat"",", _textBuffer.GetLine(2).GetText());
+                Assert.Equal(3, _textBuffer.CurrentSnapshot.LineCount);
+                Assert.Equal(@"  ""cat"",", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(@"  ""dog"",", _textBuffer.GetLine(1).GetText());
+                Assert.Equal(@"  ""bat"",", _textBuffer.GetLine(2).GetText());
             }
 
             /// <summary>
             /// The \n character is not zero width and can be used to delete the new line
             /// </summary>
-            [Test]
+            [Fact]
             public void NewLineIsNotZeroWidth()
             {
                 Create("cat", "dog", "fish");
                 ParseAndRun(@"s/\n//");
-                Assert.AreEqual("catdog", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("fish", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("catdog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("fish", _textBuffer.GetLine(1).GetText());
             }
         }
 
-        [TestFixture]
+        public sealed class SetTest : InterpreterTest
+        {
+            /// <summary>
+            /// Print out the modified settings
+            /// </summary>
+            [Fact]
+            public void PrintModifiedSettings()
+            {
+                Create("");
+                _localSettings.ExpandTab = true;
+                ParseAndRun("set");
+                Assert.Equal("notimeout" + Environment.NewLine + "expandtab", _statusUtil.LastStatus);
+            }
+
+            /// <summary>
+            /// Test the assignment of a string value
+            /// </summary>
+            [Fact]
+            public void Assign_StringValue_Global()
+            {
+                Create("");
+                ParseAndRun(@"set sections=cat");
+                Assert.Equal("cat", _globalSettings.Sections);
+            }
+
+            /// <summary>
+            /// Test the assignment of a local string value
+            /// </summary>
+            [Fact]
+            public void Assign_StringValue_Local()
+            {
+                Create("");
+                ParseAndRun(@"set nrformats=alpha");
+                Assert.Equal("alpha", _localSettings.NumberFormats);
+            }
+
+            /// <summary>
+            /// Make sure we can use set for a numbered value setting
+            /// </summary>
+            [Fact]
+            public void Assign_NumberValue()
+            {
+                Create("");
+                ParseAndRun(@"set ts=42");
+                Assert.Equal(42, _localSettings.TabStop);
+            }
+
+            /// <summary>
+            /// Assign multiple values and verify it works
+            /// </summary>
+            [Fact]
+            public void Assign_Many()
+            {
+                Create("");
+                ParseAndRun(@"set ai vb ts=42");
+                Assert.Equal(42, _localSettings.TabStop);
+                Assert.True(_localSettings.AutoIndent);
+                Assert.True(_globalSettings.VisualBell);
+            }
+
+            /// <summary>
+            /// Make sure that if there are mulitple assignments and one is unsupported that the
+            /// others work
+            /// 
+            /// Raised in issue #764
+            /// </summary>
+            [Fact]
+            public void Assign_ManyUnsupported()
+            {
+                Create("");
+                ParseAndRun(@"set vb t_vb=");
+                Assert.True(_globalSettings.VisualBell);
+            }
+
+            /// <summary>
+            /// Toggle a toggle option off
+            /// </summary>
+            [Fact]
+            public void Toggle_Off()
+            {
+                Create("");
+                _localSettings.ExpandTab = true;
+                ParseAndRun(@"set noet");
+                Assert.False(_localSettings.ExpandTab);
+            }
+
+            /// <summary>
+            /// Invert a toggle setting to on
+            /// </summary>
+            [Fact]
+            public void Toggle_InvertOn()
+            {
+                Create("");
+                _localSettings.ExpandTab = false;
+                ParseAndRun(@"set et!");
+                Assert.True(_localSettings.ExpandTab);
+            }
+
+            /// <summary>
+            /// Make sure that we can toggle the options that have an underscore in them
+            /// </summary>
+            [Fact]
+            public void Toggle_OptionWithUnderscore()
+            {
+                Create("");
+                Assert.True(_globalSettings.UseEditorIndent);
+                ParseAndRun(@"set novsvim_useeditorindent");
+                Assert.False(_globalSettings.UseEditorIndent);
+            }
+
+            /// <summary>
+            /// Make sure we can deal with a trailing comment
+            /// </summary>
+            [Fact]
+            public void Toggle_TrailingComment()
+            {
+                Create("");
+                _localSettings.AutoIndent = false;
+                ParseAndRun(@"set ai ""what's going on?");
+                Assert.True(_localSettings.AutoIndent);
+            }
+
+            /// <summary>
+            /// Invert a toggle setting to off
+            /// </summary>
+            [Fact]
+            public void Toggle_InvertOff()
+            {
+                Create("");
+                _localSettings.ExpandTab = true;
+                ParseAndRun(@"set et!");
+                Assert.False(_localSettings.ExpandTab);
+            }
+
+            /// <summary>
+            /// Make sure that we can handle window settings as well in the interpreter
+            /// </summary>
+            [Fact]
+            public void Toggle_WindowSetting()
+            {
+                Create("");
+                ParseAndRun(@"set cursorline");
+                Assert.True(_windowSettings.CursorLine);
+            }
+
+            [Fact]
+            public void DisplaySingleToggleOn()
+            {
+                Create("");
+                _vimBuffer.LocalSettings.ExpandTab = true;
+                ParseAndRun(@"set et?");
+                Assert.Equal("expandtab", _statusUtil.LastStatus);
+            }
+
+            [Fact]
+            public void DisplaySingleToggleOff()
+            {
+                Create("");
+                _vimBuffer.LocalSettings.ExpandTab = false;
+                ParseAndRun(@"set et?");
+                Assert.Equal("noexpandtab", _statusUtil.LastStatus);
+            }
+
+            /// <summary>
+            /// Check that we don't throw on an invalid setting name
+            /// </summary>
+            [Fact]
+            public void DisplaySettingFake()
+            {
+                Create("");
+                _vimBuffer.LocalSettings.ExpandTab = false;
+                ParseAndRun(@"set blah?");
+                Assert.Equal(Resources.CommandMode_UnknownOption("blah"), _statusUtil.LastError);
+            }
+        }
+
+        public sealed class HistoryTest : InterpreterTest
+        {
+            /// <summary>
+            /// Pedantically measure the spaces that are involved in the history command. 
+            /// </summary>
+            [Fact]
+            public void PedanticSimple()
+            {
+                Create("");
+                _vimData.CommandHistory.AddRange("cat", "dog");
+                ParseAndRun("history");
+                var expected = new[] 
+                {
+                    "      # cmd history",
+                    "      1 cat",
+                    "      2 dog"
+                };
+                Assert.Equal(expected, _statusUtil.LastStatusLong);
+            }
+
+            /// <summary>
+            /// When there are more than 1 entries the number of columns for the count shouldn't 
+            /// expand.  Instead the number should start taking up columns to the left
+            /// </summary>
+            [Fact]
+            public void PedanticMoreThan10()
+            {
+                Create("");
+                const int count = 15;
+                var expected = new List<string>();
+                for (int i = 0; i < count; i++)
+                {
+                    _vimData.CommandHistory.Add("cat" + i);
+                }
+
+                ParseAndRun("history");
+                var found = _statusUtil.LastStatusLong.ToList();
+                Assert.Equal(count + 1, found.Count);
+                for (int i = 1; i < found.Count; i++)
+                {
+                    var line = String.Format("{0,7} {1}", i, "cat" + (i - 1));
+                    Assert.Equal(line, found[i]);
+                }
+            }
+
+            /// <summary>
+            /// Once the maximum number of items in the list is completed the list will begin to 
+            /// truncate items.  The index though should still reflect the running count of items
+            /// </summary>
+            [Fact]
+            public void TruncatedList()
+            {
+                Create();
+                _vimData.CommandHistory.Limit = 2;
+                _vimData.CommandHistory.AddRange("cat", "dog", "fish", "tree");
+                ParseAndRun("history");
+                var expected = new[] 
+                {
+                    "      # cmd history",
+                    "      3 fish",
+                    "      4 tree"
+                };
+                Assert.Equal(expected, _statusUtil.LastStatusLong);
+            }
+        }
+
+        public sealed class LetTest : InterpreterTest
+        {
+            Dictionary<string, VariableValue> _variableMap;
+
+            public LetTest()
+            {
+                _variableMap = VariableMap;
+            }
+
+            private void AssertValue(string name, int value)
+            {
+                AssertValue(name, VariableValue.NewNumber(value));
+            }
+
+            private void AssertValue(string name, VariableValue value)
+            {
+                Assert.Equal(value, _variableMap[name]);
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                Create("");
+                ParseAndRun(@"let x=42");
+                AssertValue("x", 42);
+            }
+        }
+
+        public sealed class UnletTest : InterpreterTest
+        {
+            private void AssertGone(string name)
+            {
+                Assert.False(VariableMap.ContainsKey(name));
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                Create();
+                ParseAndRun(@"let x=42");
+                ParseAndRun(@"unlet x");
+                AssertGone("x");
+            }
+
+            [Fact]
+            public void NotPresent()
+            {
+                Create();
+                ParseAndRun(@"unlet x");
+                Assert.Equal(Resources.Interpreter_NoSuchVariable("x"), _statusUtil.LastError);
+                Assert.Equal(0, VariableMap.Count);
+            }
+
+            /// <summary>
+            /// The ! modifier should cause us to ignore the missing variable during an unlet
+            /// </summary>
+            [Fact]
+            public void NotPresentAndIgnored()
+            {
+                Create();
+                ParseAndRun(@"unlet! x");
+                Assert.True(String.IsNullOrEmpty(_statusUtil.LastError));
+            }
+
+            [Fact]
+            public void Multiple()
+            {
+                Create();
+                ParseAndRun(@"let x=42");
+                ParseAndRun(@"let y=42");
+                ParseAndRun(@"let z=42");
+                ParseAndRun(@"unlet x y");
+                Assert.Equal(1, VariableMap.Count);
+                Assert.True(VariableMap.ContainsKey("z"));
+            }
+        }
+
+        public sealed class QuickFixTest : InterpreterTest
+        {
+            private void AssertQuickFix(string command, QuickFix quickFix, int count, bool hasBang)
+            {
+                var didRun = false;
+                VimHost.RunQuickFixFunc = 
+                    (qf, c, h) =>
+                    {
+                        Assert.Equal(quickFix, qf);
+                        Assert.Equal(count, c);
+                        Assert.Equal(hasBang, h);
+                        didRun = true;
+                    };
+                Create("");
+                ParseAndRun(command); 
+                Assert.True(didRun);
+            }
+
+            [Fact]
+            public void Next()
+            {
+                AssertQuickFix("cn", QuickFix.Next, 1, hasBang: false);
+                AssertQuickFix("1cn", QuickFix.Next, 1, hasBang: false);
+                AssertQuickFix("2cn", QuickFix.Next, 2, hasBang: false);
+                AssertQuickFix("2cn!", QuickFix.Next, 2, hasBang: true);
+            }
+
+            [Fact]
+            public void Previous()
+            {
+                AssertQuickFix("cp", QuickFix.Previous, 1, hasBang: false);
+                AssertQuickFix("1cp", QuickFix.Previous, 1, hasBang: false);
+                AssertQuickFix("2cp", QuickFix.Previous, 2, hasBang: false);
+                AssertQuickFix("2cp!", QuickFix.Previous, 2, hasBang: true);
+            }
+        }
+
+        public sealed class RegisterTest : InterpreterTest
+        {
+            private void AssertLineCore(string line, bool doFind)
+            {
+                var found = false;
+                foreach (var status in _statusUtil.LastStatus.Split(new [] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    if (status == line)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                Assert.Equal(doFind, found);
+            }
+
+            private void AssertLine(string line)
+            {
+                AssertLineCore(line, doFind: true);
+            }
+
+            private void AssertNotLine(string line)
+            {
+                AssertLineCore(line, doFind: false);
+            }
+
+            /// <summary>
+            /// Ensure the unnamed register is displayed if the clipboard has a value 
+            /// when the clipboard has text
+            /// </summary>
+            [Fact]
+            public void Unnamed()
+            {
+                Create("");
+                ClipboardDevice.Text = "clipboard";
+                ParseAndRun("reg");
+                AssertLine(@"""+   clipboard");
+            }
+
+            /// <summary>
+            /// The clipboard register should not be displayed via the + register
+            /// </summary>
+            [Fact]
+            public void Unnamed_ViaStar()
+            {
+                Create("");
+                ClipboardDevice.Text = "clipboard";
+                ParseAndRun("reg");
+                AssertNotLine(@"""*   clipboard");
+            }
+
+            /// <summary>
+            /// Deleting a line should cause register 1 to be filled with the contents
+            /// </summary>
+            [Fact]
+            public void Register1_DeleteLine()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("dd");
+                ParseAndRun("reg");
+                AssertLine(@"""1   cat^J");
+            }
+
+            /// <summary>
+            /// Yanking a line should cause register 0 to be filled with the contents
+            /// </summary>
+            [Fact]
+            public void Register0_YankLine()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("yy");
+                ParseAndRun("reg");
+                AssertLine(@"""0   cat^J");
+            }
+
+            [Fact]
+            public void LastSearch()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("/test", enter: true);
+                ParseAndRun("reg");
+                AssertLine(@"""/   test");
+            }
+
+            /// <summary>
+            /// The last search register should be binding to the LastPatternData member
+            /// </summary>
+            [Fact]
+            public void LastSearch_ViaLastPattern()
+            {
+                Create("");
+                _vimData.LastPatternData = new PatternData("test", Path.Forward);
+                ParseAndRun("reg");
+                AssertLine(@"""/   test");
+
+            }
+        }
+
+        public sealed class AutoCommandTest : InterpreterTest
+        {
+            [Fact]
+            public void SimpleCommand()
+            {
+                Create();
+                ParseAndRun("autocmd BufEnter *.html set ts=4");
+                var autoCommand = _vimData.AutoCommands.Single();
+                Assert.Equal("*.html", autoCommand.Pattern);
+            }
+
+            [Fact]
+            public void MultipleCommands()
+            {
+                Create();
+                ParseAndRun("autocmd BufEnter *.html set ts=4");
+                ParseAndRun("autocmd BufEnter *.cs set ts=4");
+                var all = _vimData.AutoCommands.ToList();
+                Assert.Equal(all[0].Pattern, "*.html");
+                Assert.Equal(all[1].Pattern, "*.cs");
+            }
+
+            [Fact]
+            public void RemoveAll()
+            {
+                Create();
+                ParseAndRun("autocmd BufEnter *.html set ts=4");
+                ParseAndRun("autocmd!");
+                Assert.Equal(0, _vimData.AutoCommands.Length);
+            }
+
+            [Fact]
+            public void RemoveAllInEventKind()
+            {
+                Create();
+                ParseAndRun("autocmd BufEnter,BufWinEnter *.html set ts=4");
+                ParseAndRun("autocmd! BufEnter");
+                Assert.Equal(1, _vimData.AutoCommands.Length);
+                Assert.Equal(EventKind.BufWinEnter, _vimData.AutoCommands.Single().EventKind);
+            }
+
+            [Fact]
+            public void RemoveAllWithPattern()
+            {
+                Create();
+                ParseAndRun("autocmd BufEnter,BufWinEnter *.html set ts=4");
+                ParseAndRun("autocmd! * *.html");
+                Assert.Equal(0, _vimData.AutoCommands.Length);
+            }
+
+            [Fact]
+            public void RemoveAllWithPattern2()
+            {
+                Create();
+                ParseAndRun("autocmd BufEnter,BufWinEnter *.html set ts=4");
+                ParseAndRun("autocmd BufEnter,BufWinEnter *.cs set ts=4");
+                ParseAndRun("autocmd! * *.html");
+                Assert.Equal(2, _vimData.AutoCommands.Length);
+            }
+
+            [Fact]
+            public void RemoveAllWithEventAndPattern()
+            {
+                Create();
+                ParseAndRun("autocmd BufEnter,BufWinEnter *.html set ts=4");
+                ParseAndRun("autocmd BufEnter,BufWinEnter *.cs set ts=4");
+                ParseAndRun("autocmd! BufEnter *.html");
+                Assert.Equal(3, _vimData.AutoCommands.Length);
+            }
+        }
+
+        public sealed class IfTest : InterpreterTest
+        {
+            private void ParseAndRun(params string[] lines)
+            {
+                var parser = new Parser(new VimData());
+                parser.Reset(lines);
+                var parseResult = parser.ParseSingleCommandCore();
+                Assert.True(parseResult.IsSucceeded);
+                _interpreter.RunLineCommand(parseResult.AsSucceeded().Item);
+            }
+
+            [Fact]
+            public void If()
+            {
+                Create();
+                ParseAndRun("if 1", "set ts=13", "endif");
+                Assert.Equal(13, _localSettings.TabStop);
+            }
+
+            [Fact]
+            public void IfElse()
+            {
+                Create();
+                ParseAndRun("if 1", "set ts=13", "else", "set ts=12", "endif");
+                Assert.Equal(13, _localSettings.TabStop);
+            }
+
+            [Fact]
+            public void IfElse2()
+            {
+                Create();
+                ParseAndRun("if 0", "set ts=13", "else", "set ts=12", "endif");
+                Assert.Equal(12, _localSettings.TabStop);
+
+            }
+
+            [Fact]
+            public void IfElseIf()
+            {
+                Create();
+                ParseAndRun("if 1", "set ts=13", "elseif 1", "set ts=12", "endif");
+                Assert.Equal(13, _localSettings.TabStop);
+            }
+            
+            [Fact]
+            public void IfElseIf2()
+            {
+                Create();
+                ParseAndRun("if 0", "set ts=13", "elseif 1", "set ts=12", "endif");
+                Assert.Equal(12, _localSettings.TabStop);
+            }
+
+            [Fact]
+            public void IfElseIf3()
+            {
+                Create();
+                _localSettings.TabStop = 42;
+                ParseAndRun("if 0", "set ts=13", "elseif 0", "set ts=12", "endif");
+                Assert.Equal(42, _localSettings.TabStop);
+            }
+        }
+
         public sealed class Misc : InterpreterTest
         {
             private LineRangeSpecifier ParseLineRange(string lineRangeText)
             {
-                var result = Parser.ParseRange(lineRangeText);
-                Assert.IsTrue(!result.Item1.IsNone);
-                Assert.AreEqual("", result.Item2);
+                var parser = new Parser(new VimData());
+                var result = parser.ParseRange(lineRangeText);
+                Assert.True(!result.Item1.IsNone);
+                Assert.Equal("", result.Item2);
                 return result.Item1;
             }
 
@@ -274,207 +903,207 @@ namespace Vim.UnitTest
                 return _interpreter.GetLineRange(lineRange).Value;
             }
 
-            [Test]
+            [Fact]
             public void Behave_Mswin()
             {
                 Create("");
                 ParseAndRun("behave mswin");
-                Assert.AreEqual(SelectModeOptions.Keyboard | SelectModeOptions.Mouse, _globalSettings.SelectModeOptions);
-                Assert.AreEqual("popup", _globalSettings.MouseModel);
-                Assert.AreEqual(KeyModelOptions.StartSelection | KeyModelOptions.StopSelection, _globalSettings.KeyModelOptions);
-                Assert.AreEqual("exclusive", _globalSettings.Selection);
+                Assert.Equal(SelectModeOptions.Keyboard | SelectModeOptions.Mouse, _globalSettings.SelectModeOptions);
+                Assert.Equal("popup", _globalSettings.MouseModel);
+                Assert.Equal(KeyModelOptions.StartSelection | KeyModelOptions.StopSelection, _globalSettings.KeyModelOptions);
+                Assert.Equal("exclusive", _globalSettings.Selection);
             }
 
-            [Test]
+            [Fact]
             public void Behave_Xterm()
             {
                 Create("");
                 ParseAndRun("behave xterm");
-                Assert.AreEqual(SelectModeOptions.None, _globalSettings.SelectModeOptions);
-                Assert.AreEqual("extend", _globalSettings.MouseModel);
-                Assert.AreEqual(KeyModelOptions.None, _globalSettings.KeyModelOptions);
-                Assert.AreEqual("inclusive", _globalSettings.Selection);
+                Assert.Equal(SelectModeOptions.None, _globalSettings.SelectModeOptions);
+                Assert.Equal("extend", _globalSettings.MouseModel);
+                Assert.Equal(KeyModelOptions.None, _globalSettings.KeyModelOptions);
+                Assert.Equal("inclusive", _globalSettings.Selection);
             }
 
             /// <summary>
             /// Don't execute a line that starts with a comment
             /// </summary>
-            [Test]
+            [Fact]
             public void CommentLine_Set()
             {
                 Create("");
                 _localSettings.AutoIndent = false;
                 ParseAndRun(@"""set ai");
-                Assert.IsFalse(_localSettings.AutoIndent);
+                Assert.False(_localSettings.AutoIndent);
             }
 
             /// <summary>
             /// Don't execute a line that starts with a comment
             /// </summary>
-            [Test]
+            [Fact]
             public void CommentLine_Delete()
             {
                 Create("dog", "cat");
                 ParseAndRun(@"""del");
-                Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("cat", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
             }
 
             /// <summary>
             /// The delete of the last line in the ITextBuffer should reduce the line count
             /// </summary>
-            [Test]
+            [Fact]
             public void Delete_LastLine()
             {
                 Create("cat", "dog");
                 _textView.MoveCaretToLine(1);
                 ParseAndRun("del");
-                Assert.AreEqual(1, _textBuffer.CurrentSnapshot.LineCount);
-                Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+                Assert.Equal(1, _textBuffer.CurrentSnapshot.LineCount);
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// The delete of the first line in the ITextBuffer should reduce the line count
             /// </summary>
-            [Test]
+            [Fact]
             public void Delete_FirstLine()
             {
                 Create("cat", "dog");
                 ParseAndRun("del");
-                Assert.AreEqual(1, _textBuffer.CurrentSnapshot.LineCount);
-                Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+                Assert.Equal(1, _textBuffer.CurrentSnapshot.LineCount);
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// Running :del on a single line should cause the line contents to be deleted
             /// but not crash
             /// </summary>
-            [Test]
+            [Fact]
             public void Delete_OneLine()
             {
                 Create("cat");
                 ParseAndRun("del");
-                Assert.AreEqual(1, _textBuffer.CurrentSnapshot.LineCount);
-                Assert.AreEqual("", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, _textBuffer.CurrentSnapshot.LineCount);
+                Assert.Equal("", _textBuffer.GetLine(0).GetText());
             }
 
             /// <summary>
             /// The delete of the multiple lines including the last line should reduce by the 
             /// appropriate number of lines
             /// </summary>
-            [Test]
+            [Fact]
             public void Delete_MultipleLastLine()
             {
                 Create("cat", "dog", "fish", "tree");
                 _textView.MoveCaretToLine(1);
                 ParseAndRun("2,$del");
-                Assert.AreEqual(1, _textBuffer.CurrentSnapshot.LineCount);
-                Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+                Assert.Equal(1, _textBuffer.CurrentSnapshot.LineCount);
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// No arguments means delete the current line
             /// </summary>
-            [Test]
+            [Fact]
             public void Delete_CurrentLine()
             {
                 Create("foo", "bar");
                 ParseAndRun("del");
-                Assert.AreEqual("foo" + Environment.NewLine, UnnamedRegister.StringValue);
-                Assert.AreEqual("bar", _textView.GetLine(0).GetText());
+                Assert.Equal("foo" + Environment.NewLine, UnnamedRegister.StringValue);
+                Assert.Equal("bar", _textView.GetLine(0).GetText());
             }
 
             /// <summary>
             /// When count is in back it's a range of lines
             /// </summary>
-            [Test]
+            [Fact]
             public void Delete_SeveralLines()
             {
                 Create("foo", "bar", "baz");
                 ParseAndRun("dele 2");
-                Assert.AreEqual("baz", _textView.GetLine(0).GetText());
-                Assert.AreEqual("foo" + Environment.NewLine + "bar" + Environment.NewLine, UnnamedRegister.StringValue);
+                Assert.Equal("baz", _textView.GetLine(0).GetText());
+                Assert.Equal("foo" + Environment.NewLine + "bar" + Environment.NewLine, UnnamedRegister.StringValue);
             }
 
             /// <summary>
             /// Delete only the specified line when count is in front
             /// </summary>
-            [Test]
+            [Fact]
             public void Delete_SpecificLineNumber()
             {
                 Create("foo", "bar", "baz");
                 ParseAndRun("2del");
-                Assert.AreEqual("foo", _textView.GetLine(0).GetText());
-                Assert.AreEqual("baz", _textView.GetLine(1).GetText());
-                Assert.AreEqual("bar" + Environment.NewLine, UnnamedRegister.StringValue);
+                Assert.Equal("foo", _textView.GetLine(0).GetText());
+                Assert.Equal("baz", _textView.GetLine(1).GetText());
+                Assert.Equal("bar" + Environment.NewLine, UnnamedRegister.StringValue);
             }
 
             /// <summary>
             /// Handle the case where the adjustment simply occurs on the current line 
             /// </summary>
-            [Test]
+            [Fact]
             public void GetLine_AdjustmentOnCurrent()
             {
                 Create("cat", "dog", "bear");
                 var range = _interpreter.GetLine(LineSpecifier.NewAdjustmentOnCurrent(1));
-                Assert.AreEqual(_textBuffer.GetLine(1).LineNumber, range.Value.LineNumber);
+                Assert.Equal(_textBuffer.GetLine(1).LineNumber, range.Value.LineNumber);
             }
 
-            [Test]
+            [Fact]
             public void LineRange_FullFile()
             {
                 Create("foo", "bar");
                 var lineRange = ParseAndGetLineRange("%");
                 var tss = _textBuffer.CurrentSnapshot;
-                Assert.AreEqual(new SnapshotSpan(tss, 0, tss.Length), lineRange.ExtentIncludingLineBreak);
+                Assert.Equal(new SnapshotSpan(tss, 0, tss.Length), lineRange.ExtentIncludingLineBreak);
             }
 
-            [Test]
+            [Fact]
             public void LineRange_CurrentLine()
             {
                 Create("foo", "bar");
                 var lineRange = ParseAndGetLineRange(".");
-                Assert.AreEqual(_textBuffer.GetLineRange(0), lineRange);
+                Assert.Equal(_textBuffer.GetLineRange(0), lineRange);
             }
 
-            [Test]
+            [Fact]
             public void LineRange_CurrentLineWithCurrentLine()
             {
                 Create("foo", "bar");
                 var lineRange = ParseAndGetLineRange(".,.");
-                Assert.AreEqual(_textBuffer.GetLineRange(0), lineRange);
+                Assert.Equal(_textBuffer.GetLineRange(0), lineRange);
             }
 
-            [Test]
+            [Fact]
             public void LineRange_LineNumberRange()
             {
                 Create("a", "b", "c");
                 var lineRange = ParseAndGetLineRange("1,2");
-                Assert.AreEqual(_textBuffer.GetLineRange(0, 1), lineRange);
+                Assert.Equal(_textBuffer.GetLineRange(0, 1), lineRange);
             }
 
-            [Test]
+            [Fact]
             public void LineRange_SingleLine1()
             {
                 Create("foo", "bar");
                 var lineRange = ParseAndGetLineRange("1");
-                Assert.AreEqual(0, lineRange.StartLineNumber);
-                Assert.AreEqual(1, lineRange.Count);
+                Assert.Equal(0, lineRange.StartLineNumber);
+                Assert.Equal(1, lineRange.Count);
             }
 
-            [Test]
+            [Fact]
             public void LineRange_MarkWithLineNumber()
             {
                 Create("foo", "bar", "tree");
                 _vimTextBuffer.SetLocalMark(LocalMark.OfChar('c').Value, 0, 1);
                 var lineRange = ParseAndGetLineRange("'c,2");
-                Assert.AreEqual(_textBuffer.GetLineRange(0, 1), lineRange);
+                Assert.Equal(_textBuffer.GetLineRange(0, 1), lineRange);
             }
 
-            [Test]
+            [Fact]
             public void LineRange_MarkWithMark()
             {
                 Create("foo", "bar");
@@ -483,248 +1112,248 @@ namespace Vim.UnitTest
                 _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.B), 1, 0);
 
                 var lineRange = ParseAndGetLineRange("'c,'b");
-                Assert.AreEqual(_textBuffer.GetLineRange(0, 1), lineRange);
+                Assert.Equal(_textBuffer.GetLineRange(0, 1), lineRange);
             }
 
             /// <summary>
             /// Combine a global mark with a line number
             /// </summary>
-            [Test]
+            [Fact]
             public void LineRange_GlobalMarkAndLineNumber()
             {
                 Create("foo bar", "bar", "baz");
                 Vim.MarkMap.SetGlobalMark(Letter.A, _vimTextBuffer, 0, 2);
                 var lineRange = ParseAndGetLineRange("'A,2");
-                Assert.AreEqual(_textBuffer.GetLineRange(0, 1), lineRange);
+                Assert.Equal(_textBuffer.GetLineRange(0, 1), lineRange);
             }
 
             /// <summary>
             /// Change the directory to a valid directory
             /// </summary>
-            [Test]
+            [Fact]
             public void ChangeDirectory_Valid()
             {
                 Create("");
                 ParseAndRun("cd " + ValidDirectoryPath);
-                Assert.AreEqual(ValidDirectoryPath, _vimData.CurrentDirectory);
+                Assert.Equal(ValidDirectoryPath, _vimData.CurrentDirectory);
             }
 
             /// <summary>
             /// Change the global directory should invalidate the local directory
             /// </summary>
-            [Test]
+            [Fact]
             public void ChangeDirectory_InvalidateLocal()
             {
                 Create("");
                 _vimBuffer.CurrentDirectory = FSharpOption.Create(@"c:\");
                 ParseAndRun("cd " + ValidDirectoryPath);
-                Assert.AreEqual(ValidDirectoryPath, _vimData.CurrentDirectory);
-                Assert.IsTrue(_vimBuffer.CurrentDirectory.IsNone());
+                Assert.Equal(ValidDirectoryPath, _vimData.CurrentDirectory);
+                Assert.True(_vimBuffer.CurrentDirectory.IsNone());
             }
 
             /// <summary>
             /// Change the local directory to a valid directory
             /// </summary>
-            [Test]
+            [Fact]
             public void ChangeLocalDirectory_Valid()
             {
                 Create("");
                 _vimData.CurrentDirectory = @"c:\";
                 ParseAndRun("lcd " + ValidDirectoryPath);
-                Assert.AreEqual(@"c:\", _vimData.CurrentDirectory);
-                Assert.AreEqual(ValidDirectoryPath, _vimBuffer.CurrentDirectory.Value);
+                Assert.Equal(@"c:\", _vimData.CurrentDirectory);
+                Assert.Equal(ValidDirectoryPath, _vimBuffer.CurrentDirectory.Value);
             }
 
             /// <summary>
             /// Test the use of the "del" command with global
             /// </summary>
-            [Test]
+            [Fact]
             public void Global_Delete()
             {
                 Create("cat", "dog", "fish");
                 ParseAndRun("g/a/del");
-                Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("fish", _textBuffer.GetLine(1).GetText());
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("fish", _textBuffer.GetLine(1).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// Test the use of the "del" command with global for a negative match
             /// </summary>
-            [Test]
+            [Fact]
             public void Global_Delete_NotMatch()
             {
                 Create("cat", "dog", "fish");
                 ParseAndRun("g!/a/del");
-                Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual(1, _textBuffer.CurrentSnapshot.LineCount);
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, _textBuffer.CurrentSnapshot.LineCount);
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// Test the use of the "del" command with global and alternate separators
             /// </summary>
-            [Test]
+            [Fact]
             public void Global_Delete_AlternateSeparators()
             {
                 Create("cat", "dog", "fish");
                 ParseAndRun("g,a,del");
-                Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("fish", _textBuffer.GetLine(1).GetText());
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("fish", _textBuffer.GetLine(1).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// Test out the :global command with put
             /// </summary>
-            [Test]
+            [Fact]
             public void Global_Put()
             {
                 Create("cat", "dog", "fash");
                 UnnamedRegister.UpdateValue("bat");
                 ParseAndRun("g,a,put");
-                Assert.AreEqual("cat", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("bat", _textBuffer.GetLine(1).GetText());
-                Assert.AreEqual("dog", _textBuffer.GetLine(2).GetText());
-                Assert.AreEqual("fash", _textBuffer.GetLine(3).GetText());
-                Assert.AreEqual("bat", _textBuffer.GetLine(4).GetText());
-                Assert.AreEqual(_textView.GetPointInLine(4, 0), _textView.GetCaretPoint());
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("bat", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(2).GetText());
+                Assert.Equal("fash", _textBuffer.GetLine(3).GetText());
+                Assert.Equal("bat", _textBuffer.GetLine(4).GetText());
+                Assert.Equal(_textView.GetPointInLine(4, 0), _textView.GetCaretPoint());
             }
 
             /// <summary>
             /// Can't get the range for a mark that doesn't exist
             /// </summary>
-            [Test]
+            [Fact]
             public void LineRange_BadMark()
             {
                 Create("foo bar", "baz");
                 var lineRange = _interpreter.GetLineRange(ParseLineRange("'c,2"));
-                Assert.IsTrue(lineRange.IsNone());
+                Assert.True(lineRange.IsNone());
             }
 
-            [Test]
+            [Fact]
             public void LineRange_LineNumberWithPlus()
             {
                 Create("foo", "bar", "baz", "jaz");
                 var lineRange = ParseAndGetLineRange("1+2");
-                Assert.AreEqual(2, lineRange.StartLineNumber);
-                Assert.AreEqual(1, lineRange.Count);
+                Assert.Equal(2, lineRange.StartLineNumber);
+                Assert.Equal(1, lineRange.Count);
             }
 
             /// <summary>
             /// Make sure that we treat a plus with no trailing value as a + 1
             /// </summary>
-            [Test]
+            [Fact]
             public void LineRange_LineNumberWithPlusAndNoValue()
             {
                 Create("foo", "bar", "baz");
                 var lineRange = ParseAndGetLineRange("1+");
-                Assert.AreEqual(1, lineRange.StartLineNumber);
-                Assert.AreEqual(1, lineRange.Count);
+                Assert.Equal(1, lineRange.StartLineNumber);
+                Assert.Equal(1, lineRange.Count);
             }
 
             /// <summary>
             /// Test the + with a range
             /// </summary>
-            [Test]
+            [Fact]
             public void LineRange_LineNumberWithPlusInRange()
             {
                 Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
                 var lineRange = ParseAndGetLineRange("1+1,3");
-                Assert.AreEqual(1, lineRange.StartLineNumber);
-                Assert.AreEqual(2, lineRange.LastLineNumber);
+                Assert.Equal(1, lineRange.StartLineNumber);
+                Assert.Equal(2, lineRange.LastLineNumber);
             }
 
-            [Test]
+            [Fact]
             public void LineRange_LineNumberWithMinus()
             {
                 Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
                 var lineRange = ParseAndGetLineRange("1-1");
-                Assert.AreEqual(_textBuffer.GetLineRange(0), lineRange);
+                Assert.Equal(_textBuffer.GetLineRange(0), lineRange);
             }
 
-            [Test]
+            [Fact]
             public void LineRange_LineNumberWithMinusAndNoValue()
             {
                 Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
                 var lineRange = ParseAndGetLineRange("2-");
-                Assert.AreEqual(_textBuffer.GetLineRange(0), lineRange);
+                Assert.Equal(_textBuffer.GetLineRange(0), lineRange);
             }
 
-            [Test]
+            [Fact]
             public void LineRange_LineNumberWithMinus2()
             {
                 Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
                 var lineRange = ParseAndGetLineRange("5-3");
-                Assert.AreEqual(_textBuffer.GetLineRange(1), lineRange);
+                Assert.Equal(_textBuffer.GetLineRange(1), lineRange);
             }
 
-            [Test]
+            [Fact]
             public void LineRange_LineNumberWithMinusInRange()
             {
                 Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
                 var lineRange = ParseAndGetLineRange("1,5-2");
-                Assert.AreEqual(_textBuffer.GetLineRange(0, 2), lineRange);
+                Assert.Equal(_textBuffer.GetLineRange(0, 2), lineRange);
             }
 
-            [Test]
+            [Fact]
             public void LineRange_LastLine()
             {
                 Create("cat", "tree", "dog");
                 var lineRange = ParseAndGetLineRange("$");
-                Assert.AreEqual(_textBuffer.GetLineRange(2), lineRange);
+                Assert.Equal(_textBuffer.GetLineRange(2), lineRange);
             }
 
-            [Test]
+            [Fact]
             public void LineRange_LastLine_OneLineBuffer()
             {
                 Create("cat");
                 var lineRange = ParseAndGetLineRange("$");
-                Assert.AreEqual(_textBuffer.GetLineRange(0), lineRange);
+                Assert.Equal(_textBuffer.GetLineRange(0), lineRange);
             }
 
-            [Test]
+            [Fact]
             public void LineRange_CurrentToEnd()
             {
                 Create("cat", "tree", "dog");
                 var lineRange = ParseAndGetLineRange(".,$");
-                Assert.AreEqual(_textBuffer.GetLineRange(0, 2), lineRange);
+                Assert.Equal(_textBuffer.GetLineRange(0, 2), lineRange);
             }
 
-            [Test]
+            [Fact]
             public void LineRange_RightSideIncrementsLeft()
             {
                 Create("cat", "dog", "bear", "frog", "tree");
                 var lineRange = ParseAndGetLineRange(".,+2");
-                Assert.AreEqual(_textBuffer.GetLineRange(0, 2), lineRange);
+                Assert.Equal(_textBuffer.GetLineRange(0, 2), lineRange);
             }
 
-            [Test]
+            [Fact]
             public void LineRange_LeftSideIncrementsCurrent()
             {
                 Create("cat", "dog", "bear", "frog", "tree");
                 var lineRange = ParseAndGetLineRange(".,+2");
-                Assert.AreEqual(_textBuffer.GetLineRange(0, 2), lineRange);
+                Assert.Equal(_textBuffer.GetLineRange(0, 2), lineRange);
             }
 
             /// <summary>
             /// Make sure we can clear out key mappings with the "mapc" command
             /// </summary>
-            [Test]
+            [Fact]
             public void MapKeys_Clear()
             {
+                Create("");
                 Action<string, KeyRemapMode[]> testMapClear =
                     (command, toClearModes) =>
                     {
                         foreach (var keyRemapMode in KeyRemapMode.All)
                         {
-                            Assert.IsTrue(_keyMap.MapWithNoRemap("a", "b", keyRemapMode));
+                            Assert.True(_keyMap.MapWithNoRemap("a", "b", keyRemapMode));
                         }
                     };
 
                 _keyMap.ClearAll();
 
-                Create("");
                 testMapClear("mapc", new[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Command, KeyRemapMode.OperatorPending });
                 testMapClear("nmapc", new[] { KeyRemapMode.Normal });
                 testMapClear("vmapc", new[] { KeyRemapMode.Visual, KeyRemapMode.Select });
@@ -736,230 +1365,98 @@ namespace Vim.UnitTest
                 testMapClear("cmapc", new[] { KeyRemapMode.Command });
             }
 
-            [Test]
+            [Fact]
             public void Move_BackOneLine()
             {
                 Create("fish", "cat", "dog", "tree");
                 _textView.MoveCaretToLine(2);
                 ParseAndRun("move -2");
-                Assert.AreEqual("fish", _textView.GetLine(0).GetText());
-                Assert.AreEqual("dog", _textView.GetLine(1).GetText());
-                Assert.AreEqual("cat", _textView.GetLine(2).GetText());
-                Assert.AreEqual("tree", _textView.GetLine(3).GetText());
+                Assert.Equal("fish", _textView.GetLine(0).GetText());
+                Assert.Equal("dog", _textView.GetLine(1).GetText());
+                Assert.Equal("cat", _textView.GetLine(2).GetText());
+                Assert.Equal("tree", _textView.GetLine(3).GetText());
             }
 
-            [Test]
+            [Fact]
             public void PrintCurrentDirectory_Global()
             {
                 Create();
                 ParseAndRun("pwd");
-                Assert.AreEqual(_vimData.CurrentDirectory, _statusUtil.LastStatus);
+                Assert.Equal(_vimData.CurrentDirectory, _statusUtil.LastStatus);
             }
 
             /// <summary>
             /// The print current directory command should prefer the window directory
             /// over the global one
             /// </summary>
-            [Test]
+            [Fact]
             public void PrintCurrentDirectory_Local()
             {
                 Create();
                 _vimBuffer.CurrentDirectory = FSharpOption.Create(@"c:\");
                 ParseAndRun("pwd");
-                Assert.AreEqual(@"c:\", _statusUtil.LastStatus);
+                Assert.Equal(@"c:\", _statusUtil.LastStatus);
             }
 
             /// <summary>
             /// Ensure the Put command is linewise even if the register is marked as characterwise
             /// </summary>
-            [Test]
+            [Fact]
             public void Put_ShouldBeLinewise()
             {
                 Create("foo", "bar");
                 UnnamedRegister.UpdateValue("hey", OperationKind.CharacterWise);
                 ParseAndRun("put");
-                Assert.AreEqual("foo", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("hey", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("foo", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("hey", _textBuffer.GetLine(1).GetText());
             }
 
             /// <summary>
             /// Ensure that when the ! is present that the appropriate option is passed along
             /// </summary>
-            [Test]
+            [Fact]
             public void Put_BangShouldPutTextBefore()
             {
                 Create("foo", "bar");
                 UnnamedRegister.UpdateValue("hey", OperationKind.CharacterWise);
                 ParseAndRun("put!");
-                Assert.AreEqual("hey", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("foo", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("hey", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("foo", _textBuffer.GetLine(1).GetText());
             }
 
             /// <summary>
             /// By default the retab command should affect the entire ITextBuffer and not include
             /// space strings
             /// </summary>
-            [Test]
+            [Fact]
             public void Retab_Default()
             {
                 Create("   cat", "\tdog");
                 _localSettings.ExpandTab = true;
                 _localSettings.TabStop = 2;
                 ParseAndRun("retab");
-                Assert.AreEqual("   cat", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("  dog", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("   cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("  dog", _textBuffer.GetLine(1).GetText());
             }
 
             /// <summary>
             /// The ! operator should force the command to include spaces
             /// </summary>
-            [Test]
+            [Fact]
             public void Retab_WithBang()
             {
                 Create("  cat", "  dog");
                 _localSettings.ExpandTab = false;
                 _localSettings.TabStop = 2;
                 ParseAndRun("retab!");
-                Assert.AreEqual("\tcat", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("\tdog", _textBuffer.GetLine(1).GetText());
-            }
-
-            /// <summary>
-            /// Print out the modified settings
-            /// </summary>
-            [Test]
-            public void Set_PrintModifiedSettings()
-            {
-                Create("");
-                _localSettings.ExpandTab = true;
-                ParseAndRun("set");
-                Assert.AreEqual("notimeout" + Environment.NewLine + "expandtab", _statusUtil.LastStatus);
-            }
-
-            /// <summary>
-            /// Test the assignment of a string value
-            /// </summary>
-            [Test]
-            public void Set_Assign_StringValue_Global()
-            {
-                Create("");
-                ParseAndRun(@"set sections=cat");
-                Assert.AreEqual("cat", _globalSettings.Sections);
-            }
-
-            /// <summary>
-            /// Test the assignment of a local string value
-            /// </summary>
-            [Test]
-            public void Set_Assign_StringValue_Local()
-            {
-                Create("");
-                ParseAndRun(@"set nrformats=alpha");
-                Assert.AreEqual("alpha", _localSettings.NumberFormats);
-            }
-
-            /// <summary>
-            /// Make sure we can use set for a numbered value setting
-            /// </summary>
-            [Test]
-            public void Set_Assign_NumberValue()
-            {
-                Create("");
-                ParseAndRun(@"set ts=42");
-                Assert.AreEqual(42, _localSettings.TabStop);
-            }
-
-            /// <summary>
-            /// Assign multiple values and verify it works
-            /// </summary>
-            [Test]
-            public void Set_Assign_Many()
-            {
-                Create("");
-                ParseAndRun(@"set ai vb ts=42");
-                Assert.AreEqual(42, _localSettings.TabStop);
-                Assert.IsTrue(_localSettings.AutoIndent);
-                Assert.IsTrue(_globalSettings.VisualBell);
-            }
-
-            /// <summary>
-            /// Make sure that if there are mulitple assignments and one is unsupported that the
-            /// others work
-            /// 
-            /// Raised in issue #764
-            /// </summary>
-            [Test]
-            public void Set_Assign_ManyUnsupported()
-            {
-                Create("");
-                ParseAndRun(@"set vb t_vb=");
-                Assert.IsTrue(_globalSettings.VisualBell);
-            }
-
-            /// <summary>
-            /// Toggle a toggle option off
-            /// </summary>
-            [Test]
-            public void Set_Toggle_Off()
-            {
-                Create("");
-                _localSettings.ExpandTab = true;
-                ParseAndRun(@"set noet");
-                Assert.IsFalse(_localSettings.ExpandTab);
-            }
-
-            /// <summary>
-            /// Invert a toggle setting to on
-            /// </summary
-            [Test]
-            public void Set_Toggle_InvertOn()
-            {
-                Create("");
-                _localSettings.ExpandTab = false;
-                ParseAndRun(@"set et!");
-                Assert.IsTrue(_localSettings.ExpandTab);
-            }
-
-            /// <summary>
-            /// Make sure that we can toggle the options that have an underscore in them
-            /// </summary>
-            [Test]
-            public void Set_Toggle_OptionWithUnderscore()
-            {
-                Create("");
-                Assert.IsTrue(_globalSettings.UseEditorIndent);
-                ParseAndRun(@"set novsvim_useeditorindent");
-                Assert.IsFalse(_globalSettings.UseEditorIndent);
-            }
-
-            /// <summary>
-            /// Make sure we can deal with a trailing comment
-            /// </summary>
-            [Test]
-            public void Set_Toggle_TrailingComment()
-            {
-                Create("");
-                _localSettings.AutoIndent = false;
-                ParseAndRun(@"set ai ""what's going on?");
-                Assert.IsTrue(_localSettings.AutoIndent);
-            }
-
-            /// <summary>
-            /// Invert a toggle setting to off
-            /// </summary
-            [Test]
-            public void Set_Toggle_InvertOff()
-            {
-                Create("");
-                _localSettings.ExpandTab = true;
-                ParseAndRun(@"set et!");
-                Assert.IsFalse(_localSettings.ExpandTab);
+                Assert.Equal("\tcat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("\tdog", _textBuffer.GetLine(1).GetText());
             }
 
             /// <summary>
             /// Make sure the basic command is passed down to the func
             /// </summary>
-            [Test]
+            [Fact]
             public void ShellCommand_Simple()
             {
                 Create("");
@@ -967,18 +1464,18 @@ namespace Vim.UnitTest
                 VimHost.RunCommandFunc =
                     (command, args, _) =>
                     {
-                        Assert.AreEqual("/c git status", args);
+                        Assert.Equal("/c git status", args);
                         didRun = true;
                         return "";
                     };
                 ParseAndRun(@"!git status");
-                Assert.IsTrue(didRun);
+                Assert.True(didRun);
             }
 
             /// <summary>
             /// Do a simple replacement of a ! in the shell command
             /// </summary>
-            [Test]
+            [Fact]
             public void ShellCommand_BangReplacement()
             {
                 Create("");
@@ -987,18 +1484,18 @@ namespace Vim.UnitTest
                 VimHost.RunCommandFunc =
                     (command, args, _) =>
                     {
-                        Assert.AreEqual("/c git status cat", args);
+                        Assert.Equal("/c git status cat", args);
                         didRun = true;
                         return "";
                     };
                 ParseAndRun(@"!git status !");
-                Assert.IsTrue(didRun);
+                Assert.True(didRun);
             }
 
             /// <summary>
             /// Don't replace a ! which occurs after a \
             /// </summary>
-            [Test]
+            [Fact]
             public void ShellCommand_BangNoReplace()
             {
                 Create("");
@@ -1006,84 +1503,84 @@ namespace Vim.UnitTest
                 VimHost.RunCommandFunc =
                     (command, args, _) =>
                     {
-                        Assert.AreEqual("/c git status !", args);
+                        Assert.Equal("/c git status !", args);
                         didRun = true;
                         return "";
                     };
                 ParseAndRun(@"!git status \!");
-                Assert.IsTrue(didRun);
+                Assert.True(didRun);
             }
 
             /// <summary>
             /// Raise an error message if there is no previous command and a bang relpacement
             /// isr requested.  Shouldn't run any command in this case
             /// </summary>
-            [Test]
+            [Fact]
             public void ShellCommand_BangReplacementFails()
             {
                 Create("");
                 var didRun = false;
                 VimHost.RunCommandFunc = delegate { didRun = true; return ""; };
                 ParseAndRun(@"!git status !");
-                Assert.IsFalse(didRun);
-                Assert.AreEqual(Resources.Common_NoPreviousShellCommand, _statusUtil.LastError);
+                Assert.False(didRun);
+                Assert.Equal(Resources.Common_NoPreviousShellCommand, _statusUtil.LastError);
             }
 
-            [Test]
+            [Fact]
             public void TabNext_NoCount()
             {
                 Create("");
                 ParseAndRun("tabn");
-                Assert.AreEqual(Path.Forward, VimHost.GoToNextTabData.Item1);
-                Assert.AreEqual(1, VimHost.GoToNextTabData.Item2);
+                Assert.Equal(Path.Forward, VimHost.GoToNextTabData.Item1);
+                Assert.Equal(1, VimHost.GoToNextTabData.Item2);
             }
 
             /// <summary>
             /// :tabn with a count
             /// </summary>
-            [Test]
+            [Fact]
             public void TabNext_WithCount()
             {
                 Create("");
                 ParseAndRun("tabn 3");
-                Assert.AreEqual(Path.Forward, VimHost.GoToNextTabData.Item1);
-                Assert.AreEqual(3, VimHost.GoToNextTabData.Item2);
+                Assert.Equal(Path.Forward, VimHost.GoToNextTabData.Item1);
+                Assert.Equal(3, VimHost.GoToNextTabData.Item2);
             }
 
-            [Test]
+            [Fact]
             public void TabPrevious_NoCount()
             {
                 Create("");
                 ParseAndRun("tabp");
-                Assert.AreEqual(Path.Backward, VimHost.GoToNextTabData.Item1);
-                Assert.AreEqual(1, VimHost.GoToNextTabData.Item2);
+                Assert.Equal(Path.Backward, VimHost.GoToNextTabData.Item1);
+                Assert.Equal(1, VimHost.GoToNextTabData.Item2);
             }
 
-            [Test]
+            [Fact]
             public void TabPrevious_NoCount_AltName()
             {
                 Create("");
                 ParseAndRun("tabN");
-                Assert.AreEqual(Path.Backward, VimHost.GoToNextTabData.Item1);
-                Assert.AreEqual(1, VimHost.GoToNextTabData.Item2);
+                Assert.Equal(Path.Backward, VimHost.GoToNextTabData.Item1);
+                Assert.Equal(1, VimHost.GoToNextTabData.Item2);
             }
 
             /// <summary>
             /// :tabp with a count
             /// </summary>
-            [Test]
+            [Fact]
             public void TabPrevious_WithCount()
             {
                 Create("");
                 ParseAndRun("tabp 3");
-                Assert.AreEqual(Path.Backward, VimHost.GoToNextTabData.Item1);
-                Assert.AreEqual(3, VimHost.GoToNextTabData.Item2);
+                Assert.Equal(Path.Backward, VimHost.GoToNextTabData.Item1);
+                Assert.Equal(3, VimHost.GoToNextTabData.Item2);
             }
 
             /// <summary>
             /// Simple visual studio command
             /// </summary>
-            [Test]
+            [Fact]
             public void VisualStudioCommand_Simple()
             {
                 Create("");
@@ -1091,18 +1588,18 @@ namespace Vim.UnitTest
                 VimHost.RunVisualStudioCommandFunc =
                     (command, argument) =>
                     {
-                        Assert.AreEqual("Build.BuildSelection", command);
-                        Assert.AreEqual("", argument);
+                        Assert.Equal("Build.BuildSelection", command);
+                        Assert.Equal("", argument);
                         didRun = true;
                     };
                 ParseAndRun("vsc Build.BuildSelection");
-                Assert.IsTrue(didRun);
+                Assert.True(didRun);
             }
 
             /// <summary>
             /// Simple visual studio command with an argument
             /// </summary>
-            [Test]
+            [Fact]
             public void VisualStudioCommand_WithArgument()
             {
                 Create("");
@@ -1110,12 +1607,12 @@ namespace Vim.UnitTest
                 VimHost.RunVisualStudioCommandFunc =
                     (command, argument) =>
                     {
-                        Assert.AreEqual("Build.BuildSelection", command);
-                        Assert.AreEqual("Arg", argument);
+                        Assert.Equal("Build.BuildSelection", command);
+                        Assert.Equal("Arg", argument);
                         didRun = true;
                     };
                 ParseAndRun("vsc Build.BuildSelection Arg");
-                Assert.IsTrue(didRun);
+                Assert.True(didRun);
             }
         }
     }

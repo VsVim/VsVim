@@ -211,7 +211,7 @@ type internal SubstituteConfirmMode
                 | ModeArgument.InsertWithCountAndNewLine _ -> None
                 | ModeArgument.InsertWithTransaction transaction -> transaction.Complete(); None
                 | ModeArgument.Substitute(span, range, data) ->
-                    match VimRegexFactory.CreateForSubstituteFlags data.SearchPattern data.Flags with
+                    match VimRegexFactory.CreateForSubstituteFlags data.SearchPattern _globalSettings data.Flags with
                     | None -> None
                     | Some regex ->
                         let isReplaceAll = Util.IsFlagSet data.Flags SubstituteFlags.ReplaceAll

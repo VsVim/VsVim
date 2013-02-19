@@ -18,7 +18,8 @@ open System.Collections.Generic
 type internal SelectionChangeTracker
     ( 
         _vimBuffer : IVimBuffer,
-        _selectionOverrideList : IVisualModeSelectionOverride list
+        _selectionOverrideList : IVisualModeSelectionOverride list,
+        _mouseDevice : IMouseDevice
     ) as this =
 
     let _globalSettings = _vimBuffer.GlobalSettings
@@ -44,8 +45,6 @@ type internal SelectionChangeTracker
         |> Observable.subscribe (fun args -> this.OnKeyInputFinished() )
         |> _bag.Add
 
-    member x.IsAnyVisualOrSelectMode = VisualKind.IsAnyVisualOrSelect _vimBuffer.ModeKind
-
     member x.ShouldIgnoreSelectionChange() = 
         _selectionOverrideList
         |> Seq.exists (fun x -> x.IsInsertModePreferred _textView)
@@ -63,7 +62,7 @@ type internal SelectionChangeTracker
             // If the selection changes while Vim is disabled then don't update
             () 
         elif _vimBuffer.IsProcessingInput then
-            if x.IsAnyVisualOrSelectMode then 
+            if VisualKind.IsAnyVisualOrSelect _vimBuffer.ModeKind then
                 // Do nothing.  Selection changes that occur while processing input during
                 // visual or select mode are the responsibility of the mode to handle
                 _selectionDirty <- false
@@ -84,32 +83,49 @@ type internal SelectionChangeTracker
     /// Update the mode based on the current Selection
     member x.SetModeForSelection() = 
 
+        let isLeftButtonPressed = _mouseDevice.IsLeftButtonPressed
+
         // What should the mode be based on the current selection
         let desiredMode () = 
             let inner = 
                 if _textView.Selection.IsEmpty then 
-                    if x.IsAnyVisualOrSelectMode then 
+                    if VisualKind.IsAnyVisualOrSelect _vimBuffer.ModeKind then
                         Some ModeKind.Normal
                     else 
                         None
-                elif Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
-                    Some ModeKind.Select
+                elif Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse && isLeftButtonPressed then
+                    // When the "mouse" is set in 'selectmode' then selection change should ensure
+                    // we are in select.  If we are already in select then maintain the current mode
+                    // else transition into the standard character one
+                    if VisualKind.IsAnySelect _vimBuffer.ModeKind then
+                        Some _vimBuffer.ModeKind
+                    else
+                        Some ModeKind.SelectCharacter
                 elif _textView.Selection.Mode = TextSelectionMode.Stream then 
-                    if _vimBuffer.ModeKind = ModeKind.VisualLine then 
-                        Some ModeKind.VisualLine
-                    elif _vimBuffer.ModeKind = ModeKind.Select then
-                        Some ModeKind.Select
-                    else 
-                        Some ModeKind.VisualCharacter 
-                else Some ModeKind.VisualBlock
+                    let modeKind = 
+                        match _vimBuffer.ModeKind with
+                        | ModeKind.VisualLine -> ModeKind.VisualLine
+                        | ModeKind.SelectCharacter -> ModeKind.SelectCharacter
+                        | ModeKind.SelectLine -> ModeKind.SelectLine
+                        | ModeKind.SelectBlock -> ModeKind.SelectBlock
+                        | _ -> ModeKind.VisualCharacter
+                    Some modeKind
+                else 
+                    if _vimBuffer.ModeKind = ModeKind.SelectBlock then
+                        Some ModeKind.SelectBlock
+                    else
+                        Some ModeKind.VisualBlock
             match inner with 
             | None -> None
             | Some kind -> if kind <> _vimBuffer.ModeKind then Some kind else None 
 
         // Update the selections.  This is called from a post callback to ensure we don't 
-        // interfer with other selection + edit events
+        // interfer with other selection + edit events.
+        //
+        // Because this occurs at a  later time it is possible that the IVimBuffer was closed
+        // in the mean time.  Make sure to guard against this possibility
         let doUpdate () = 
-            if not  _selectionDirty then 
+            if not _vimBuffer.IsClosed && not _selectionDirty then 
                 match desiredMode() with
                 | None -> ()
                 | Some modeKind -> _vimBuffer.SwitchMode modeKind ModeArgument.None |> ignore
@@ -123,8 +139,9 @@ type internal SelectionChangeTracker
                 if VisualKind.IsAnyVisual _vimBuffer.ModeKind then
                     let mode = _vimBuffer.Mode :?> IVisualMode
                     mode.SyncSelection()
-                elif _vimBuffer.ModeKind = ModeKind.Select then
-                    _vimBuffer.SelectMode.SyncSelection()
+                elif VisualKind.IsAnySelect _vimBuffer.ModeKind then
+                    let mode = _vimBuffer.Mode :?> ISelectMode
+                    mode.SyncSelection()
 
             try
                 _syncingSelection <- true
@@ -142,10 +159,12 @@ type internal SelectionChangeTracker
 type internal SelectionChangeTrackerFactory
     [<ImportingConstructor>]
     (
-        [<ImportMany>] _selectionOverrideList : IVisualModeSelectionOverride seq
+        [<ImportMany>] _selectionOverrideList : IVisualModeSelectionOverride seq,
+        mouseDevice : IMouseDevice
     ) =
 
     let _selectionOverrideList = _selectionOverrideList |> List.ofSeq
+    let _mouseDevice = mouseDevice
 
     interface IVimBufferCreationListener with
         member x.VimBufferCreated vimBuffer = 
@@ -153,7 +172,7 @@ type internal SelectionChangeTrackerFactory
             // It's OK to just ignore this after creation.  It subscribes to several 
             // event handlers which will keep it alive for the duration of the 
             // IVimBuffer
-            let selectionTracker = SelectionChangeTracker(vimBuffer, _selectionOverrideList)
+            let selectionTracker = SelectionChangeTracker(vimBuffer, _selectionOverrideList, _mouseDevice)
             ()
 
 

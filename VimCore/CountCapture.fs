@@ -19,7 +19,7 @@ module internal CountCapture =
             | false ->
                 BindResult.Complete (Some number, keyInput)
 
-        match keyInput.IsDigit && keyInput.Key <> VimKey.Number0 with
+        match keyInput.IsDigit && keyInput.Char <> '0' with
         | true -> 
             let number = charToInt keyInput.Char
             BindResult<_>.CreateNeedMoreInput keyRemapMode (nextFunc number)

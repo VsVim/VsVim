@@ -225,6 +225,27 @@ type internal InsertUtil
             if not oldValue then
                 EditorOptionsUtil.SetOptionValue _editorOptions DefaultTextViewOptions.OverwriteModeId false
 
+    member x.InsertCharacterCore msg lineNumber =
+        match SnapshotUtil.TryGetPointInLine _textBuffer.CurrentSnapshot lineNumber x.CaretColumn with
+        | None -> 
+            _operations.Beep()
+            CommandResult.Error
+        | Some point -> 
+            let text = SnapshotPointUtil.GetChar point |> StringUtil.ofChar
+            x.EditWithUndoTransaciton "Insert Character Above" (fun () ->
+                let position = x.CaretPoint.Position
+                _textBuffer.Insert(position, text) |> ignore
+                TextViewUtil.MoveCaretToPosition _textView (position + 1))
+            CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Insert the character immediately above the caret
+    member x.InsertCharacterAboveCaret() = 
+        x.InsertCharacterCore "Insert Character Above" (x.CaretLineNumber - 1)
+
+    /// Insert the character immediately below the caret
+    member x.InsertCharacterBelowCaret() = 
+        x.InsertCharacterCore "Insert Character Below" (x.CaretLineNumber + 1)
+
     /// Insert a new line into the ITextBuffer.  Make sure to indent the text
     member x.InsertNewLine() =
         let newLineText = _operations.GetNewLineText x.CaretPoint
@@ -235,20 +256,23 @@ type internal InsertUtil
             // Now we need to position the caret within the new line
             let newLine = SnapshotUtil.GetLine x.CurrentSnapshot (contextLine.LineNumber + 1)
             match _operations.GetNewLineIndent contextLine newLine with
-            | None -> 
-                // Nothing to do
-                ()
+            | None -> ()
             | Some indent ->
-                // If there is actual text on this new line (enter in the middle of the
-                // line) then we need to insert white space.  Else we just put the caret
-                // into virtual space
-                let indentText = StringUtil.repeat indent " " |> _operations.NormalizeBlanks
-                if indentText.Length > 0 && newLine.Length > 0 then
-                    _textBuffer.Insert(newLine.Start.Position, indentText) |> ignore
-                    TextViewUtil.MoveCaretToPosition _textView (newLine.Start.Position + indentText.Length)
-                else
-                    let virtualPoint = VirtualSnapshotPoint(newLine.Start, indent)
-                    TextViewUtil.MoveCaretToVirtualPoint _textView virtualPoint)
+                // Calling GetNewLineIndent can cause a buffer edit.  Need to rebind all of the
+                // snapshot related items
+                match SnapshotUtil.TryGetLine x.CurrentSnapshot newLine.LineNumber with
+                | None -> ()
+                | Some newLine ->
+                    // If there is actual text on this new line (enter in the middle of the
+                    // line) then we need to insert white space.  Else we just put the caret
+                    // into virtual space
+                    let indentText = StringUtil.repeat indent " " |> _operations.NormalizeBlanks
+                    if indentText.Length > 0 && newLine.Length > 0 then
+                        _textBuffer.Insert(newLine.Start.Position, indentText) |> ignore
+                        TextViewUtil.MoveCaretToPosition _textView (newLine.Start.Position + indentText.Length)
+                    else
+                        let virtualPoint = VirtualSnapshotPoint(newLine.Start, indent)
+                        TextViewUtil.MoveCaretToVirtualPoint _textView virtualPoint)
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -284,54 +308,29 @@ type internal InsertUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Insert the specified text into the ITextBuffer at the current caret position and then move
+    /// the cursor to the end of the insert
+    member x.InsertText (text : string)=
+
+        x.EditWithUndoTransaciton "Insert Text" (fun () -> 
+
+            let position = x.CaretPoint.Position + text.Length
+            _textBuffer.Insert(x.CaretPoint.Position, text) |> ignore
+
+            // Move the caret to the end of the insertion in the current ITextSnapshot
+            let point = SnapshotPoint(x.CurrentSnapshot, position)
+            _operations.MoveCaretToPoint point)
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Move the caret in the given direction
     member x.MoveCaret direction = 
-
-        /// Move the caret up
-        let moveUp () =
-            match SnapshotUtil.TryGetLine x.CurrentSnapshot (x.CaretLine.LineNumber - 1) with
-            | None ->
-                _operations.Beep()
-                CommandResult.Error
-            | Some line ->
-                _editorOperations.MoveLineUp(false);
-                CommandResult.Completed ModeSwitch.NoSwitch
-
-        /// Move the caret down
-        let moveDown () =
-            match SnapshotUtil.TryGetLine x.CurrentSnapshot (x.CaretLine.LineNumber + 1) with
-            | None ->
-                _operations.Beep()
-                CommandResult.Error
-            | Some line ->
-                _editorOperations.MoveLineDown(false);
-                CommandResult.Completed ModeSwitch.NoSwitch
-    
-        /// Move the caret left.  Don't go past the start of the line 
-        let moveLeft () = 
-            if x.CaretLine.Start.Position < x.CaretPoint.Position then
-                let point = SnapshotPointUtil.SubtractOne x.CaretPoint
-                _operations.MoveCaretToPointAndEnsureVisible point
-                CommandResult.Completed ModeSwitch.NoSwitch
-            else
-                _operations.Beep()
-                CommandResult.Error
-
-        /// Move the caret right.  Don't go off the end of the line
-        let moveRight () =
-            if x.CaretPoint.Position < x.CaretLine.End.Position then
-                let point = SnapshotPointUtil.AddOne x.CaretPoint
-                _operations.MoveCaretToPointAndEnsureVisible point
-                CommandResult.Completed ModeSwitch.NoSwitch
-            else
-                _operations.Beep()
-                CommandResult.Error
-
-        match direction with
-        | Direction.Up -> moveUp()
-        | Direction.Down -> moveDown()
-        | Direction.Left -> moveLeft()
-        | Direction.Right -> moveRight()
+        let caretMovement = CaretMovement.OfDirection direction
+        if _operations.MoveCaret caretMovement then
+            CommandResult.Completed ModeSwitch.NoSwitch
+        else
+            _operations.Beep()
+            CommandResult.Error
 
     member x.MoveCaretByWord direction = 
         let moveLeft () = 
@@ -431,8 +430,11 @@ type internal InsertUtil
             | InsertCommand.DeleteWordBeforeCursor -> x.DeleteWordBeforeCursor()
             | InsertCommand.DirectInsert c -> x.DirectInsert c
             | InsertCommand.DirectReplace c -> x.DirectReplace c
+            | InsertCommand.InsertCharacterAboveCaret -> x.InsertCharacterAboveCaret()
+            | InsertCommand.InsertCharacterBelowCaret -> x.InsertCharacterBelowCaret()
             | InsertCommand.InsertNewLine -> x.InsertNewLine()
             | InsertCommand.InsertTab -> x.InsertTab()
+            | InsertCommand.InsertText text -> x.InsertText text
             | InsertCommand.MoveCaret direction -> x.MoveCaret direction
             | InsertCommand.MoveCaretByWord direction -> x.MoveCaretByWord direction
             | InsertCommand.ShiftLineLeft -> x.ShiftLineLeft ()
@@ -463,9 +465,9 @@ type internal InsertUtil
                     spaces
 
             let trim = 
-                let remainder = spaces.Length % _globalSettings.ShiftWidth
+                let remainder = spaces.Length % _localSettings.ShiftWidth
                 if remainder = 0 then
-                    _globalSettings.ShiftWidth
+                    _localSettings.ShiftWidth
                 else
                     remainder
             let indent = 
@@ -480,7 +482,9 @@ type internal InsertUtil
 
     /// Shift the carte line one 'shiftwidth' to the right
     member x.ShiftLineRight () =
-        CommandResult.Error
+        let range = TextViewUtil.GetCaretLineRange _textView 1
+        _operations.ShiftLineRangeRight range 1
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     member x.ExtraTextChange textChange addNewLines = 
         x.ApplyTextChange textChange addNewLines 

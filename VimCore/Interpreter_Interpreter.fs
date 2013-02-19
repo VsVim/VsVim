@@ -5,6 +5,8 @@ open Microsoft.VisualStudio.Text
 open Vim
 open Vim.VimHostExtensions
 open Vim.StringBuilderExtensions
+open System.Collections.Generic
+open System.ComponentModel.Composition
 
 [<RequireQualifiedAccess>]
 type DefaultLineRange =
@@ -28,16 +30,20 @@ type ExpressionInterpreter
             None
 
         match value with 
-        | Value.Dictionary _ -> invalid ""
-        | Value.Float _ -> invalid ""
-        | Value.FunctionRef _ -> invalid ""
-        | Value.List _ -> invalid ""
-        | Value.Number number -> Some number
-        | Value.String _ -> invalid ""
-        | Value.Error -> None
+        | VariableValue.Dictionary _ -> invalid ""
+        | VariableValue.Float _ -> invalid ""
+        | VariableValue.FunctionRef _ -> invalid ""
+        | VariableValue.List _ -> invalid ""
+        | VariableValue.Number number -> Some number
+        | VariableValue.String _ -> invalid ""
+        | VariableValue.Error -> None
+
+    /// Get the specified expression as a number
+    member x.GetExpressionAsNumber expr =
+        x.RunExpression expr |> x.GetValueAsNumber
 
     /// Get the value of the specified expression 
-    member x.RunExpression (expr : Expression) : Value =
+    member x.RunExpression (expr : Expression) : VariableValue =
         match expr with
         | Expression.ConstantValue value -> value
         | Expression.Binary (binaryKind, leftExpr, rightExpr) -> x.RunBinaryExpression binaryKind leftExpr rightExpr
@@ -47,18 +53,18 @@ type ExpressionInterpreter
 
         let notSupported() =
             _statusUtil.OnError "Binary operation not supported at this time"
-            Value.Error
+            VariableValue.Error
 
-        let runAdd (leftValue : Value) (rightValue : Value) = 
-            if leftValue.ValueType = ValueType.List && rightValue.ValueType = ValueType.List then
+        let runAdd (leftValue : VariableValue) (rightValue : VariableValue) = 
+            if leftValue.VariableType = VariableType.List && rightValue.VariableType = VariableType.List then
                 // it's a list concatenation
                 notSupported()
             else
                 let leftNumber = x.GetValueAsNumber leftValue
                 let rightNumber = x.GetValueAsNumber rightValue
                 match leftNumber, rightNumber with
-                | Some left, Some right -> left + right |> Value.Number
-                | _ -> Value.Error
+                | Some left, Some right -> left + right |> VariableValue.Number
+                | _ -> VariableValue.Error
 
         let leftValue = x.RunExpression leftExpr
         let rightValue = x.RunExpression rightExpr
@@ -72,7 +78,7 @@ type ExpressionInterpreter
 
 [<Sealed>]
 [<Class>]
-type Interpreter
+type VimInterpreter
     (
         _vimBuffer : IVimBuffer,
         _commonOperations : ICommonOperations,
@@ -94,8 +100,10 @@ type Interpreter
     let _registerMap = _vimBufferData.Vim.RegisterMap
     let _undoRedoOperations = _vimBufferData.UndoRedoOperations
     let _localSettings = _vimBufferData.LocalSettings
+    let _windowSettings = _vimBufferData.WindowSettings
     let _globalSettings = _localSettings.GlobalSettings
     let _searchService = _vim.SearchService
+    let _variableMap = _vim.VariableMap
 
     /// The column of the caret
     member x.CaretColumn = SnapshotPointUtil.GetColumn x.CaretPoint
@@ -245,10 +253,25 @@ type Interpreter
         x.GetLineRangeOrDefault lineRange DefaultLineRange.None
 
     /// Get the count value or the default of 1
-    member x.GetCountOrDefault count = 
-        match count with
-        | Some count -> count
-        | None -> 1
+    member x.GetCountOrDefault count = Util.CountOrDefault count
+
+    /// Add the specified auto command to the list 
+    member x.RunAddAutoCommand (autoCommandDefinition : AutoCommandDefinition) = 
+        let builder = System.Collections.Generic.List<AutoCommand>()
+        for eventKind in autoCommandDefinition.EventKinds do
+            for pattern in autoCommandDefinition.Patterns do
+                let autoCommand = { 
+                    Group = autoCommandDefinition.Group
+                    EventKind = eventKind
+                    Pattern = pattern 
+                    LineCommandText = autoCommandDefinition.LineCommandText
+                }
+                builder.Add(autoCommand)
+                
+        let newList = List.ofSeq builder
+        let autoCommands = List.append _vimData.AutoCommands newList
+        _vimData.AutoCommands <- autoCommands
+        RunResult.Completed
 
     /// Run the behave command
     member x.RunBehave model = 
@@ -427,43 +450,9 @@ type Interpreter
                 | KeyRemapMode.Insert -> "i"
 
         // Get the printable format for the KeyInputSet 
-        let getKeyInputSetLine (keyInputSet:KeyInputSet) = 
+        let getKeyInputSetLine (keyInputSet : KeyInputSet) = 
 
-            let inner (ki:KeyInput) = 
-
-                let ki = ki |> KeyInputUtil.GetAlternateTarget |> OptionUtil.getOrDefault ki
-
-                // Build up the prefix for the specified modifiers
-                let rec getPrefix modifiers = 
-                    if Util.IsFlagSet modifiers KeyModifiers.Alt then
-                        "M-" + getPrefix (Util.UnsetFlag modifiers KeyModifiers.Alt)
-                    elif Util.IsFlagSet modifiers KeyModifiers.Control then
-                        "C-" + getPrefix (Util.UnsetFlag modifiers KeyModifiers.Control)
-                    elif Util.IsFlagSet modifiers KeyModifiers.Shift then
-                        "S-" + getPrefix (Util.UnsetFlag modifiers KeyModifiers.Shift)
-                    else 
-                        ""
-
-                // Get the actual printable output for the raw KeyInput.  For a KeyInput with
-                // a char this is straight forward.  Non-char KeyInput need to be special cased
-                // though
-                let prefix,output = 
-                    match (KeyNotationUtil.TryGetSpecialKeyName ki),ki.Char with
-                    | Some(name,extraModifiers), _ -> 
-                        (getPrefix extraModifiers, name)
-                    | None, c -> 
-                        let c = 
-                            if CharUtil.IsLetter c && ki.KeyModifiers <> KeyModifiers.None then CharUtil.ToUpper c 
-                            else c
-                        (getPrefix ki.KeyModifiers, StringUtil.ofChar c)
-
-                if String.length prefix = 0 then 
-                    if String.length output = 1 then output
-                    else sprintf "<%s>" output
-                else
-                    sprintf "<%s%s>" prefix output 
-
-            keyInputSet.KeyInputs |> Seq.map inner |> String.concat ""
+            keyInputSet.KeyInputs |> Seq.map KeyNotationUtil.GetDisplayName |> String.concat ""
 
         // Get the printable line for the provided mode, left and right side
         let getLine modes lhs rhs = 
@@ -488,16 +477,24 @@ type Interpreter
     /// Display the registers.  If a particular name is specified only display that register
     member x.RunDisplayRegisters registerName =
 
+        // The value when display shouldn't contain any new lines.  They are expressed as instead
+        // ^J which is the key-notation for <NL>
+        let normalizeDisplayString (data : string) = data.Replace(System.Environment.NewLine, "^J")
+
         let names = 
             match registerName with
             | None -> 
 
-                // If no names are used then we display all named and numbered registers 
+                // The documentation for this command says that it should display only the
+                // named and numbered registers.  Experimentation shows that it should also
+                // display last search, the quote star and a few others
                 RegisterName.All
                 |> Seq.filter (fun name ->
                     match name with
                     | RegisterName.Numbered _ -> true
                     | RegisterName.Named named -> not named.IsAppend
+                    | RegisterName.SelectionAndDrop drop -> drop <> SelectionAndDropRegister.Register_Star
+                    | RegisterName.LastSearchPattern -> true
                     | _ -> false)
             | Some registerName ->
                 // Convert the remaining items to registers.  Should work with any valid 
@@ -512,7 +509,7 @@ type Interpreter
                 match register.Name.Char, StringUtil.isNullOrEmpty register.StringValue with
                 | None, _ -> None
                 | Some c, true -> None
-                | Some c, false -> Some (c, register.StringValue))
+                | Some c, false -> Some (c, normalizeDisplayString register.StringValue))
             |> SeqUtil.filterToSome
             |> Seq.map (fun (name, value) -> sprintf "\"%c   %s" name value)
         let lines = Seq.append (Seq.singleton Resources.CommandMode_RegisterBanner) lines
@@ -520,18 +517,17 @@ type Interpreter
         RunResult.Completed
 
     /// Display the specified marks
-    member x.RunDisplayMarks marks = 
+    member x.RunDisplayMarks (marks : Mark list) = 
         if not (List.isEmpty marks) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "Specific marks")
         else
             let printMark (ident : char) (point : VirtualSnapshotPoint) =
                 let textLine = point.Position.GetContainingLine()
-                let lineNum = textLine.LineNumber
+                let lineNum = textLine.LineNumber + 1
                 let column = point.Position.Position - textLine.Start.Position
                 let column = if point.IsInVirtualSpace then column + point.VirtualSpaces else column
-                let name = _vimHost.GetName _textView.TextBuffer
+                let name = _vimHost.GetName point.Position.Snapshot.TextBuffer
                 sprintf " %c   %5d%5d %s" ident lineNum column name
-
             let localSeq = 
                 _vimTextBuffer.LocalMarks
                 |> Seq.map (fun (localMark, point) -> (localMark.Char, point))
@@ -666,6 +662,44 @@ type Interpreter
         _commonOperations.GoToNextTab Path.Backward count
         RunResult.Completed
 
+    /// Print out the applicable history information
+    member x.RunHistory () = 
+        let output = List<string>()
+        output.Add("      # cmd history")
+
+        let historyList = _vimData.CommandHistory
+        let mutable index = historyList.TotalCount - historyList.Count
+        for item in historyList.Items |> List.rev do
+            index <- index + 1
+            let msg = sprintf "%7d %s" index item
+            output.Add(msg)
+
+        _statusUtil.OnStatusLong(output)
+        RunResult.Completed
+
+    /// Run the if command
+    member x.RunIf conditionalBlock =
+        let expressionInterpreter = ExpressionInterpreter(_statusUtil)
+
+        let runAll lineCommands = 
+            Seq.iter (fun lineCommand -> x.RunLineCommand lineCommand |> ignore) lineCommands
+        
+        let rec inner conditionalBlock =
+            match conditionalBlock with
+            | ConditionalBlock.Conditional (expr, lineCommands, next) ->
+                match expressionInterpreter.GetExpressionAsNumber expr with
+                | None -> ()
+                | Some value -> 
+                    if value <> 0 then
+                        runAll lineCommands
+                    else 
+                        inner next
+            | ConditionalBlock.Unconditional lineCommands -> runAll lineCommands
+            | ConditionalBlock.Empty -> ()
+
+        inner conditionalBlock
+        RunResult.Completed
+
     /// Join the lines in the specified range
     member x.RunJoin lineRange joinKind =
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
@@ -687,6 +721,11 @@ type Interpreter
             |> SnapshotLineUtil.GetFirstNonBlankOrEnd
 
         _commonOperations.MoveCaretToPointAndEnsureVisible point
+        RunResult.Completed
+
+    /// Run the let command
+    member x.RunLet name value =
+        _variableMap.[name] <- value
         RunResult.Completed
 
     /// Run the host make command 
@@ -770,6 +809,16 @@ type Interpreter
     
             RunResult.Completed)
 
+    member x.RunQuickFixNext count hasBang =
+        let count = OptionUtil.getOrDefault 1 count 
+        _vimHost.GoToQuickFix QuickFix.Next count hasBang
+        RunResult.Completed
+
+    member x.RunQuickFixPrevious count hasBang =
+        let count = OptionUtil.getOrDefault 1 count 
+        _vimHost.GoToQuickFix QuickFix.Previous count hasBang
+        RunResult.Completed
+
     /// Run the quit command
     member x.RunQuit hasBang =
         x.RunClose hasBang
@@ -842,6 +891,29 @@ type Interpreter
     /// Run a single redo operation
     member x.RunRedo() = 
         _commonOperations.Redo 1
+        RunResult.Completed
+
+    /// Remove the auto commands which match the specified definition
+    member x.RemoveAutoCommands (autoCommandDefinition : AutoCommandDefinition) = 
+        let isMatch (autoCommand : AutoCommand) = 
+            
+            if autoCommand.Group = autoCommandDefinition.Group then
+                let isPatternMatch = Seq.exists (fun p -> autoCommand.Pattern = p) autoCommandDefinition.Patterns
+                let isEventMatch = Seq.exists (fun e -> autoCommand.EventKind = e) autoCommandDefinition.EventKinds
+
+                match autoCommandDefinition.Patterns.Length > 0, autoCommandDefinition.EventKinds.Length > 0 with
+                | true, true -> isPatternMatch && isEventMatch
+                | true, false -> isPatternMatch
+                | false, true -> isEventMatch
+                | false, false -> true
+            else
+                false
+                
+        let rest = 
+            _vimData.AutoCommands
+            |> Seq.filter (fun x -> not (isMatch x))
+            |> List.ofSeq
+        _vimData.AutoCommands <- rest
         RunResult.Completed
 
     /// Process the :retab command.  Changes all sequences of spaces and tabs which contain
@@ -939,24 +1011,25 @@ type Interpreter
     member x.RunSet setArguments =
 
         // Get the setting for the specified name
-        let withSetting name msg func =
+        let withSetting name msg (func : Setting -> IVimSettings -> unit) =
             match _localSettings.GetSetting name with
-            | None -> _statusUtil.OnError (Resources.Interpreter_UnknownOption msg)
-            | Some setting -> func setting
+            | None -> 
+                match _windowSettings.GetSetting name with
+                | None -> _statusUtil.OnError (Resources.Interpreter_UnknownOption msg)
+                | Some setting -> func setting _windowSettings
+            | Some setting -> func setting _localSettings
 
         // Display the specified setting 
-        let getSettingDisplay setting = 
-    
-            match setting.Kind, setting.AggregateValue with
-            | SettingKind.ToggleKind, SettingValue.ToggleValue(b) -> 
+        let getSettingDisplay (setting: Setting ) =
+
+            match setting.Value with
+            | SettingValue.Toggle b -> 
                 if b then setting.Name
                 else sprintf "no%s" setting.Name
-            | SettingKind.StringKind, SettingValue.StringValue(s) -> 
+            | SettingValue.String s -> 
                 sprintf "%s=\"%s\"" setting.Name s
-            | SettingKind.NumberKind, SettingValue.NumberValue(n) ->
+            | SettingValue.Number n ->
                 sprintf "%s=%d" setting.Name n
-            | _ -> "Invalid value"
-
 
         let addSetting name value = 
             // TODO: implement
@@ -973,8 +1046,8 @@ type Interpreter
         // Assign the given value to the setting with the specified name
         let assignSetting name value = 
             let msg = sprintf "%s=%s" name value
-            withSetting name msg (fun setting ->
-                if not (_localSettings.TrySetValueFromString setting.Name value) then
+            withSetting name msg (fun setting container ->
+                if not (container.TrySetValueFromString setting.Name value) then
                     _statusUtil.OnError (Resources.Interpreter_InvalidArgument msg))
 
         // Display all of the setings which don't have the default value
@@ -993,8 +1066,9 @@ type Interpreter
 
         // Display the inidividual setting
         let displaySetting name = 
-            // TODO: Implement
-            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "display single setting")
+            withSetting name name (fun setting _ ->
+                let display = getSettingDisplay setting
+                _statusUtil.OnStatus display)
 
         // Display the terminal options
         let displayAllTerminal() = 
@@ -1003,18 +1077,18 @@ type Interpreter
 
         // Use the specifiec setting
         let useSetting name =
-            withSetting name name (fun setting ->
+            withSetting name name (fun setting container ->
                 match setting.Kind with
-                | SettingKind.ToggleKind -> _localSettings.TrySetValue setting.Name (SettingValue.ToggleValue true) |> ignore
-                | SettingKind.NumberKind -> displaySetting name
-                | SettingKind.StringKind -> displaySetting name)
+                | SettingKind.Toggle -> container.TrySetValue setting.Name (SettingValue.Toggle true) |> ignore
+                | SettingKind.Number -> displaySetting name
+                | SettingKind.String -> displaySetting name)
 
         // Invert the setting of the specified name
         let invertSetting name = 
             let msg = "!" + name
-            withSetting name msg (fun setting -> 
-                match setting.Kind, setting.AggregateValue with
-                | ToggleKind,ToggleValue(b) -> _localSettings.TrySetValue setting.Name (ToggleValue(not b)) |> ignore
+            withSetting name msg (fun setting container -> 
+                match setting.Value with
+                | SettingValue.Toggle b -> container.TrySetValue setting.Name (SettingValue.Toggle(not b)) |> ignore
                 | _ -> msg |> Resources.CommandMode_InvalidArgument |> _statusUtil.OnError)
 
         // Reset all settings to their default settings
@@ -1030,11 +1104,11 @@ type Interpreter
         // Toggle the specified value off
         let toggleOffSetting name = 
             let msg = "no" + name
-            withSetting name msg (fun setting -> 
+            withSetting name msg (fun setting container -> 
                 match setting.Kind with
-                | SettingKind.NumberKind -> _statusUtil.OnError (Resources.Interpreter_InvalidArgument msg)
-                | SettingKind.StringKind -> _statusUtil.OnError (Resources.Interpreter_InvalidArgument msg)
-                | SettingKind.ToggleKind -> _localSettings.TrySetValue setting.Name (SettingValue.ToggleValue false) |> ignore)
+                | SettingKind.Number -> _statusUtil.OnError (Resources.Interpreter_InvalidArgument msg)
+                | SettingKind.String -> _statusUtil.OnError (Resources.Interpreter_InvalidArgument msg)
+                | SettingKind.Toggle -> container.TrySetValue setting.Name (SettingValue.Toggle false) |> ignore)
 
         match setArguments with
         | [] -> 
@@ -1126,12 +1200,12 @@ type Interpreter
         else
             let filePath = SystemUtil.ResolvePath filePath
             match _fileSystem.ReadAllLines filePath with
-            | None -> 
-                _statusUtil.OnError (Resources.CommandMode_CouldNotOpenFile filePath)
+            | None -> _statusUtil.OnError (Resources.CommandMode_CouldNotOpenFile filePath)
             | Some lines ->
+                let parser = Parser(_vimData)
                 lines 
                 |> Seq.iter (fun line ->
-                    match Parser.ParseLineCommand line with
+                    match parser.ParseLineCommand line with
                     | ParseResult.Failed msg -> _statusUtil.OnError msg
                     | ParseResult.Succeeded lineCommand -> x.RunLineCommand lineCommand |> ignore)
 
@@ -1164,7 +1238,7 @@ type Interpreter
         // Called to initialize the data and move to a confirm style substitution.  Have to find the first match
         // before passing off to confirm
         let setupConfirmSubstitute (range : SnapshotLineRange) (data : SubstituteData) =
-            let regex = VimRegexFactory.CreateForSubstituteFlags data.SearchPattern data.Flags
+            let regex = VimRegexFactory.CreateForSubstituteFlags data.SearchPattern _globalSettings data.Flags
             match regex with
             | None -> 
                 _statusUtil.OnError (Resources.Common_PatternNotFound data.SearchPattern)
@@ -1222,6 +1296,21 @@ type Interpreter
         _commonOperations.Undo 1
         RunResult.Completed
 
+    /// Run the unlet command
+    member x.RunUnlet ignoreMissing nameList = 
+        let rec func nameList = 
+            match nameList with
+            | [] -> RunResult.Completed
+            | name :: rest ->
+                let removed = _variableMap.Remove(name)
+                if not removed && not ignoreMissing then
+                    let msg = Resources.Interpreter_NoSuchVariable name
+                    _statusUtil.OnError msg
+                    RunResult.Completed
+                else
+                    func rest
+        func nameList
+
     /// Unmap the specified key notation in all of the listed modes
     member x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList =
         if not (List.isEmpty mapArgumentList) then
@@ -1237,6 +1326,11 @@ type Interpreter
             if not allSucceeded then 
                 _statusUtil.OnError Resources.CommandMode_NoSuchMapping
 
+        RunResult.Completed
+
+    member x.RunVersion() = 
+        let msg = sprintf "VsVim Version %s" Constants.VersionNumber
+        _statusUtil.OnStatus msg
         RunResult.Completed
 
     member x.RunVisualStudioCommand command argument =
@@ -1260,14 +1354,22 @@ type Interpreter
         for vimBuffer in _vim.VimBuffers do
             if not hasBang && _vimHost.IsReadOnly vimBuffer.TextBuffer then
                 _statusUtil.OnError Resources.Interpreter_ReadOnlyOptionIsSet
-            else
+            elif _vimHost.IsDirty vimBuffer.TextBuffer then
                 _vimHost.Save vimBuffer.TextBuffer |> ignore
         RunResult.Completed
 
     /// Yank the specified line range into the register.  This is done in a 
     /// linewise fashion
-    member x.RunYank lineRange register =
+    member x.RunYank register lineRange count =
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
+
+            // If the user specified a count then that count is applied to the end
+            // of the specified line range
+            let lineRange = 
+                match count with
+                | None -> lineRange
+                | Some count -> SnapshotLineRangeUtil.CreateForLineAndMaxCount lineRange.LastLine count
+
             let stringData = StringData.OfSpan lineRange.ExtentIncludingLineBreak
             let value = RegisterValue.String (stringData, OperationKind.LineWise)
             _registerMap.SetRegisterValue register RegisterOperation.Yank value
@@ -1285,6 +1387,7 @@ type Interpreter
             |> _registerMap.GetRegister
 
         match lineCommand with
+        | LineCommand.AddAutoCommand autoCommandDefinition -> x.RunAddAutoCommand autoCommandDefinition
         | LineCommand.Behave model -> x.RunBehave model
         | LineCommand.ChangeDirectory path -> x.RunChangeDirectory path
         | LineCommand.ChangeLocalDirectory path -> x.RunChangeLocalDirectory path
@@ -1298,6 +1401,8 @@ type Interpreter
         | LineCommand.DisplayMarks marks -> x.RunDisplayMarks marks
         | LineCommand.Fold lineRange -> x.RunFold lineRange
         | LineCommand.Global (lineRange, pattern, matchPattern, lineCommand) -> x.RunGlobal lineRange pattern matchPattern lineCommand
+        | LineCommand.History -> x.RunHistory()
+        | LineCommand.If conditionalBlock -> x.RunIf conditionalBlock
         | LineCommand.GoToFirstTab -> x.RunGoToFirstTab()
         | LineCommand.GoToLastTab -> x.RunGoToLastTab()
         | LineCommand.GoToNextTab count -> x.RunGoToNextTab count
@@ -1306,6 +1411,7 @@ type Interpreter
         | LineCommand.Join (lineRange, joinKind) -> x.RunJoin lineRange joinKind
         | LineCommand.JumpToLastLine -> x.RunJumpToLastLine()
         | LineCommand.JumpToLine number -> x.RunJumpToLine number
+        | LineCommand.Let (name, value) -> x.RunLet name value
         | LineCommand.Make (hasBang, arguments) -> x.RunMake hasBang arguments
         | LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap, mapArgumentList) -> x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList
         | LineCommand.MoveTo (sourceLineRange, destLineRange, count) -> x.RunMoveTo sourceLineRange destLineRange count
@@ -1315,12 +1421,15 @@ type Interpreter
         | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()
         | LineCommand.PutAfter (lineRange, registerName) -> x.RunPut lineRange (getRegister registerName) true
         | LineCommand.PutBefore (lineRange, registerName) -> x.RunPut lineRange (getRegister registerName) false
+        | LineCommand.QuickFixNext (count, hasBang) -> x.RunQuickFixNext count hasBang
+        | LineCommand.QuickFixPrevious (count, hasBang) -> x.RunQuickFixPrevious count hasBang
         | LineCommand.Quit hasBang -> x.RunQuit hasBang
         | LineCommand.QuitAll hasBang -> x.RunQuitAll hasBang
         | LineCommand.QuitWithWrite (lineRange, hasBang, fileOptions, filePath) -> x.RunQuitWithWrite lineRange hasBang fileOptions filePath
         | LineCommand.ReadCommand (lineRange, command) -> x.RunReadCommand lineRange command
         | LineCommand.ReadFile (lineRange, fileOptionList, filePath) -> x.RunReadFile lineRange fileOptionList filePath
         | LineCommand.Redo -> x.RunRedo()
+        | LineCommand.RemoveAutoCommands autoCommandDefinition -> x.RemoveAutoCommands autoCommandDefinition
         | LineCommand.Retab (lineRange, hasBang, tabStop) -> x.RunRetab lineRange hasBang tabStop
         | LineCommand.Search (lineRange, path, pattern) -> x.RunSearch lineRange path pattern
         | LineCommand.Set argumentList -> x.RunSet argumentList
@@ -1331,12 +1440,14 @@ type Interpreter
         | LineCommand.Substitute (lineRange, pattern, replace, flags) -> x.RunSubstitute lineRange pattern replace flags
         | LineCommand.SubstituteRepeat (lineRange, substituteFlags) -> x.RunSubstituteRepeatLast lineRange substituteFlags
         | LineCommand.Undo -> x.RunUndo()
+        | LineCommand.Unlet (ignoreMissing, nameList) -> x.RunUnlet ignoreMissing nameList
         | LineCommand.UnmapKeys (keyNotation, keyRemapModes, mapArgumentList) -> x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList
+        | LineCommand.Version -> x.RunVersion()
         | LineCommand.VerticalSplit (lineRange, fileOptions, commandOptions) -> x.RunSplit _vimHost.SplitViewVertically fileOptions commandOptions
         | LineCommand.VisualStudioCommand (command, argument) -> x.RunVisualStudioCommand command argument
         | LineCommand.Write (lineRange, hasBang, fileOptionList, filePath) -> x.RunWrite lineRange hasBang fileOptionList filePath
         | LineCommand.WriteAll hasBang -> x.RunWriteAll hasBang
-        | LineCommand.Yank (lineRange, registerName, count) -> x.RunYank lineRange (getRegister registerName)
+        | LineCommand.Yank (lineRange, registerName, count) -> x.RunYank (getRegister registerName) lineRange count
 
     member x.RunWithLineRange lineRangeSpecifier (func : SnapshotLineRange -> RunResult) = 
         x.RunWithLineRangeOrDefault lineRangeSpecifier DefaultLineRange.None func
@@ -1349,6 +1460,26 @@ type Interpreter
         | Some lineRange ->
             func lineRange
 
+    interface IVimInterpreter with
+        member x.GetLine lineSpecifier = x.GetLine lineSpecifier
+        member x.GetLineRange lineRange = x.GetLineRange lineRange
+        member x.RunLineCommand lineCommand = x.RunLineCommand lineCommand
+        member x.RunExpression expression = x.RunExpression expression
 
+[<Export(typeof<IVimInterpreterFactory>)>]
+type VimInterpreterFactory
+    [<ImportingConstructor>]
+    (
+        _commonOperationsFactory : ICommonOperationsFactory,
+        _foldManagerFactory : IFoldManagerFactory,
+        _bufferTrackingService : IBufferTrackingService
+    ) = 
 
+    member x.CreateVimInterpreter (vimBuffer : IVimBuffer) fileSystem =
+        let commonOperations = _commonOperationsFactory.GetCommonOperations vimBuffer.VimBufferData
+        let foldManager = _foldManagerFactory.GetFoldManager vimBuffer.TextView
+        let interpreter = VimInterpreter(vimBuffer, commonOperations, foldManager, fileSystem, _bufferTrackingService)
+        interpreter :> IVimInterpreter
 
+    interface IVimInterpreterFactory with
+        member x.CreateVimInterpreter vimBuffer fileSystem = x.CreateVimInterpreter vimBuffer fileSystem

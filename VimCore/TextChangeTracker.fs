@@ -10,6 +10,7 @@ open System.ComponentModel.Composition
 /// Used to track changes to an individual IVimBuffer
 type internal TextChangeTracker
     ( 
+        _vimTextBuffer : IVimTextBuffer,
         _textView : ITextView,
         _operations : ICommonOperations
     ) as this =
@@ -21,13 +22,12 @@ type internal TextChangeTracker
     let mutable _currentTextChange : (TextChange * ITextChange) option = None
 
     /// Whether or not tracking is currently enabled
-    let mutable _enabled = false
+    let mutable _trackCurrentChange = false
 
     do
         // Listen to text buffer change events in order to track edits.  Don't respond to changes
         // while disabled though
         _textView.TextBuffer.Changed
-        |> Observable.filter (fun _ -> _enabled)
         |> Observable.subscribe (fun args -> this.OnTextChanged args)
         |> _bag.Add
 
@@ -39,12 +39,12 @@ type internal TextChangeTracker
         | None -> None
         | Some (change,_) -> Some change
 
-    member x.Enabled 
-        with get () = _enabled
+    member x.TrackCurrentChange
+        with get () = _trackCurrentChange
         and set value = 
-            if _enabled <> value then
+            if _trackCurrentChange <> value then
                 _currentTextChange <- None
-                _enabled <- value
+                _trackCurrentChange <- value
 
     /// The change is completed.  Raises the changed event and resets the current text change 
     /// state
@@ -107,6 +107,13 @@ type internal TextChangeTracker
 
     member x.OnTextChanged (args : TextContentChangedEventArgs) = 
 
+        if x.TrackCurrentChange then
+            x.UpdateCurrentChange args
+
+        x.UpdateLastEditPoint args
+
+    member x.UpdateCurrentChange (args : TextContentChangedEventArgs) = 
+
         // At this time we only support contiguous changes (or rather a single change)
         if args.Changes.Count = 1 then
             let newBufferChange = args.Changes.Item(0)
@@ -117,6 +124,25 @@ type internal TextChangeTracker
             | Some (oldTextChange, oldBufferChange) -> x.MergeChange oldTextChange oldBufferChange newTextChange newBufferChange 
         else
             x.CompleteChange()
+
+    /// Update the last edit point based on the latest change to the ITextBuffer.  Note that 
+    /// this isn't necessarily a vim originated edit.  Can be done by another Visual Studio
+    /// operation but we still treat it like a Vim edit
+    member x.UpdateLastEditPoint (args : TextContentChangedEventArgs) = 
+
+        if args.Changes.Count = 1 then
+            let change = args.Changes.Item(0)
+            let position = 
+                if change.Delta > 0 && change.NewEnd > 0 then
+                    change.NewEnd - 1
+                else
+                    change.NewPosition
+            let point = SnapshotPoint(args.After, position)
+            _vimTextBuffer.LastEditPoint <- Some point
+        else
+            // When there are multiple changes it is usually the result of a projection 
+            // buffer edit coming from a web page edit.  For now that's unsupported
+            _vimTextBuffer.LastEditPoint <- None
 
     /// Attempt to merge the change operations together
     member x.MergeChange oldTextChange (oldChange : ITextChange) newTextChange (newChange : ITextChange) =
@@ -152,9 +178,9 @@ type internal TextChangeTracker
 
     interface ITextChangeTracker with 
         member x.TextView = _textView
-        member x.Enabled 
-            with get () = x.Enabled
-            and set value = x.Enabled <- value
+        member x.TrackCurrentChange
+            with get () = x.TrackCurrentChange
+            and set value = x.TrackCurrentChange <- value
         member x.CurrentChange = x.CurrentChange
         member x.CompleteChange () = x.CompleteChange ()
         member x.ClearChange () = x.ClearChange ()
@@ -175,4 +201,4 @@ type internal TextChangeTrackerFactory
             let textView = bufferData.TextView
             textView.Properties.GetOrCreateSingletonProperty(_key, (fun () -> 
                 let operations = _commonOperationsFactory.GetCommonOperations bufferData
-                TextChangeTracker(textView, operations) :> ITextChangeTracker))
+                TextChangeTracker(bufferData.VimTextBuffer, textView, operations) :> ITextChangeTracker))

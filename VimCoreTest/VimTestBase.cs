@@ -2,15 +2,19 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
+using System.Diagnostics;
 using System.Linq;
 using EditorUtils;
+using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
-using NUnit.Framework;
+using Vim.Interpreter;
 using Vim.UI.Wpf;
-using Vim.UI.Wpf.Implementation;
+using Vim.UI.Wpf.Implementation.Keyboard;
+using Vim.UI.Wpf.Implementation.Misc;
+using Vim.UI.Wpf.Implementation.WordCompletion;
 using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
 
@@ -22,8 +26,7 @@ namespace Vim.UnitTest
     ///   - No silent swallowed MEF errors
     ///   - Remove any key mappings 
     /// </summary>
-    [TestFixture]
-    public abstract class VimTestBase : EditorHost
+    public abstract class VimTestBase : EditorHost, IDisposable
     {
         [ThreadStatic]
         private static CompositionContainer _vimCompositionContainer;
@@ -35,22 +38,21 @@ namespace Vim.UnitTest
         private IWordUtilFactory _wordUtilFactory;
         private IFoldManagerFactory _foldManagerFactory;
         private IBufferTrackingService _bufferTrackingService;
-        private IProtectedOperations _protectedOperations;
         private IBulkOperations _bulkOperations;
+        private IKeyUtil _keyUtil;
+        private IKeyboardDevice _keyboardDevice;
+        private IMouseDevice _mouseDevice;
         private IClipboardDevice _clipboardDevice;
-
-        /// <summary>
-        /// An IProtectedOperations value which will be properly checked in the context of this
-        /// test case
-        /// </summary>
-        public IProtectedOperations ProtectedOperations
-        {
-            get { return _protectedOperations; }
-        }
 
         public IVim Vim
         {
             get { return _vim; }
+        }
+
+        public VimRcState VimRcState
+        {
+            get { return _vim.VimRcState; }
+            set { ((global::Vim.Vim)_vim).VimRcState = value; }
         }
 
         public IVimData VimData
@@ -93,9 +95,24 @@ namespace Vim.UnitTest
             get { return _vim.KeyMap; }
         }
 
+        public IKeyUtil KeyUtil
+        {
+            get { return _keyUtil; }
+        }
+
         public IClipboardDevice ClipboardDevice
         {
             get { return _clipboardDevice; }
+        }
+
+        public IMouseDevice MouseDevice
+        {
+            get { return _mouseDevice; }
+        }
+
+        public IKeyboardDevice KeyboardDevice
+        {
+            get { return _keyboardDevice; }
         }
 
         public virtual bool TrackTextViewHistory
@@ -113,6 +130,11 @@ namespace Vim.UnitTest
             get { return RegisterMap.GetRegister(RegisterName.Unnamed); }
         }
 
+        public Dictionary<string, VariableValue> VariableMap
+        {
+            get { return _vim.VariableMap; }
+        }
+
         protected VimTestBase()
         {
             _vim = CompositionContainer.GetExportedValue<IVim>();
@@ -123,13 +145,11 @@ namespace Vim.UnitTest
             _bufferTrackingService = CompositionContainer.GetExportedValue<IBufferTrackingService>();
             _foldManagerFactory = CompositionContainer.GetExportedValue<IFoldManagerFactory>();
             _bulkOperations = CompositionContainer.GetExportedValue<IBulkOperations>();
-            _clipboardDevice = CompositionContainer.GetExportedValue<IClipboardDevice>();
-            _protectedOperations = new ProtectedOperations(_vimErrorDetector);
-        }
+            _keyUtil = CompositionContainer.GetExportedValue<IKeyUtil>();
 
-        [SetUp]
-        public virtual void SetupBase()
-        {
+            _keyboardDevice = CompositionContainer.GetExportedValue<IKeyboardDevice>();
+            _mouseDevice = CompositionContainer.GetExportedValue<IMouseDevice>();
+            _clipboardDevice = CompositionContainer.GetExportedValue<IClipboardDevice>();
             _clipboardDevice.Text = String.Empty;
 
             // One setting we do differ on for a default is 'timeout'.  We don't want them interferring
@@ -139,26 +159,36 @@ namespace Vim.UnitTest
 
             // Don't let the personal VimRc of the user interfere with the unit tests
             _vim.AutoLoadVimRc = false;
+
+            // Don't show trace information in the unit tests.  It really clutters the output in an
+            // xUnit run
+            VimTrace.TraceSwitch.Level = TraceLevel.Off;
         }
 
-        [TearDown]
-        public virtual void  TearDownBase()
+        public virtual void Dispose()
         {
             if (_vimErrorDetector.HasErrors())
             {
                 var msg = String.Format("Extension Exception: {0}", _vimErrorDetector.GetErrors().First().Message);
-                Assert.Fail(msg);
+                throw new Exception(msg);
             }
             _vimErrorDetector.Clear();
 
-            _vim.VimData.SearchHistory.Clear();
-            _vim.VimData.CommandHistory.Clear();
+            _vim.VimData.SearchHistory.Reset();
+            _vim.VimData.CommandHistory.Reset();
             _vim.VimData.LastCommand = FSharpOption<StoredCommand>.None;
             _vim.VimData.LastShellCommand = FSharpOption<string>.None;
+            _vim.VimData.AutoCommands = FSharpList<AutoCommand>.Empty;
+            _vim.VimData.AutoCommandGroups = FSharpList<AutoCommandGroup>.Empty;
 
             _vim.KeyMap.ClearAll();
             _vim.MarkMap.ClearGlobalMarks();
             _vim.CloseAllVimBuffers();
+            _vim.IsDisabled = false;
+
+            // The majority of tests run without a VimRc file but a few do customize it for specific
+            // test reasons.  Make sure it's consistent
+            VimRcState = VimRcState.None;
 
             // Reset all of the global settings back to their default values.   Adds quite
             // a bit of sanity to the test bed
@@ -187,12 +217,14 @@ namespace Vim.UnitTest
             {
                 vimHost.Clear();
             }
+
+            VariableMap.Clear();
         }
 
         /// <summary>
         /// Create an IUndoRedoOperations instance with the given IStatusUtil
         /// </summary>
-        protected IUndoRedoOperations CreateUndoRedoOperations(IStatusUtil statusUtil = null)
+        protected virtual IUndoRedoOperations CreateUndoRedoOperations(IStatusUtil statusUtil = null)
         {
             statusUtil = statusUtil ?? new StatusUtil();
             return new UndoRedoOperations(statusUtil, FSharpOption<ITextUndoHistory>.None, null);
@@ -296,7 +328,7 @@ namespace Vim.UnitTest
             IFoldManager foldManager = null,
             InsertUtil insertUtil = null)
         {
-            motionUtil = motionUtil ?? new MotionUtil(vimBufferData);
+            motionUtil = motionUtil ?? new MotionUtil(vimBufferData, operations);
             operations = operations ?? CommonOperationsFactory.GetCommonOperations(vimBufferData);
             foldManager = foldManager ?? VimUtil.CreateFoldManager(vimBufferData.TextView, vimBufferData.StatusUtil);
             insertUtil = insertUtil ?? new InsertUtil(vimBufferData, operations);
@@ -330,11 +362,12 @@ namespace Vim.UnitTest
             list.Add(new TypeCatalog(
                 typeof(TestableClipboardDevice),
                 typeof(TestableKeyboardDevice),
-                typeof(MouseDevice),
+                typeof(TestableMouseDevice),
                 typeof(global::Vim.UnitTest.Exports.VimHost),
                 typeof(VimErrorDetector),
                 typeof(DisplayWindowBrokerFactoryService),
-                typeof(WordCompletionSessionFactoryService)));
+                typeof(WordCompletionSessionFactoryService),
+                typeof(AlternateKeyUtil)));
 
             return list;
         }

@@ -104,7 +104,7 @@ type internal IncrementalSearchTaggerProvider
     [<ImportingConstructor>]
     (
         _vim : IVim,
-        [<Import(EditorUtils.Constants.ContractName)>] _taggerFactory : ITaggerFactory
+        [<EditorUtilsImport>] _taggerFactory : ITaggerFactory
     ) = 
 
     interface IViewTaggerProvider with 
@@ -200,7 +200,7 @@ type HighlightSearchTaggerSource
         _globalSettings.HighlightSearch
 
     /// Get the search information for a background 
-    member x.GetDataForSpan() =
+    member x.GetDataForSnapshot() =  
 
         let highlightSearchData = {
             Pattern = _vimData.LastPatternData.Pattern
@@ -210,17 +210,16 @@ type HighlightSearchTaggerSource
         highlightSearchData
 
     member x.GetTagsPrompt() = 
-        let searchData = x.GetDataForSpan()
-        if not _isVisible then
+        let searchData = x.GetDataForSnapshot()
+        if not x.IsProvidingTags then
+            // Not currently providing any tags.  Return an empty set here for any requests
             Some List.empty
         elif StringUtil.isNullOrEmpty searchData.Pattern then
             // Nothing to give if there is no pattern
             Some List.empty
-        elif not _globalSettings.HighlightSearch || _oneTimeDisabled then
-            // Nothing to give if we are disabled
-            Some List.empty
         else
-            // There is a search pattern and we can't provide the data promptly
+            // There is a search pattern and we can't provide the data promptly because it would
+            // negatively impact performance.  Let the request migrate to the background
             None
 
     [<UsedInBackgroundThread>]
@@ -280,7 +279,7 @@ type HighlightSearchTaggerSource
         member x.Delay = NullableUtil.Create 100
         member x.TextSnapshot = _textBuffer.CurrentSnapshot
         member x.TextViewOptional = _textView
-        member x.GetDataForSpan _ = x.GetDataForSpan()
+        member x.GetDataForSnapshot _ = x.GetDataForSnapshot()
         member x.GetTagsInBackground(highlightSearchData, span, cancellationToken) = HighlightSearchTaggerSource.GetTagsInBackground highlightSearchData span cancellationToken
         member x.TryGetTagsPrompt(_, value : byref<ITagSpan<TextMarkerTag> seq>) =
             match x.GetTagsPrompt() with
@@ -304,7 +303,7 @@ type HighlightIncrementalSearchTaggerProvider
     [<ImportingConstructor>]
     ( 
         _vim : IVim,
-        [<Import(EditorUtils.Constants.ContractName)>] _taggerFactory : ITaggerFactory
+        [<EditorUtilsImport>] _taggerFactory : ITaggerFactory
     ) = 
 
     let _key = obj()
@@ -369,7 +368,7 @@ type SubstituteConfirmTaggerProvider
     [<ImportingConstructor>]
     ( 
         _vim : IVim,
-        [<Import(EditorUtils.Constants.ContractName)>] _taggerFactory : ITaggerFactory
+        [<EditorUtilsImport>] _taggerFactory : ITaggerFactory
     ) = 
 
     interface IViewTaggerProvider with 
@@ -390,11 +389,11 @@ type SubstituteConfirmTaggerProvider
 type internal FoldTaggerSource(_foldData : IFoldData) as this =
 
     let _textBuffer = _foldData.TextBuffer
-    let _changed = new DelegateEvent<System.EventHandler>()
+    let _changed = StandardEvent()
 
     do 
         _foldData.FoldsUpdated 
-        |> Event.add (fun _ -> _changed.Trigger([| this; System.EventArgs.Empty |]))
+        |> Event.add (fun _ -> _changed.Trigger this)
 
     member x.GetTags span =
 
@@ -431,7 +430,7 @@ type FoldTaggerProvider
     [<ImportingConstructor>]
     (
         _factory : IFoldManagerFactory,
-        [<Import(EditorUtils.Constants.ContractName)>] _taggerFactory : ITaggerFactory
+        [<EditorUtilsImport>] _taggerFactory : ITaggerFactory
     ) =
 
     let _key = obj()

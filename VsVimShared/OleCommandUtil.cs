@@ -8,17 +8,31 @@ namespace VsVim
 {
     internal static class OleCommandUtil
     {
+        /// <summary>
+        /// In Visual Studio 2010 this is a hidden command that is bound to "Ctrl-;".  There is no way to 
+        /// unbind this command through the UI or even at an API level.  To work around this we intercept
+        /// it at the command level and translate it to Ctlr-;.  
+        /// </summary>
+        internal static readonly CommandId HiddenCommand = new CommandId(new Guid("{5D7E7F65-A63F-46EE-84F1-990B2CAB23F9}"), 6144);
+
         internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr pVariableIn, KeyModifiers modifiers, out EditCommand command)
         {
             KeyInput keyInput;
             EditCommandKind kind;
-            if (!TryConvert(commandGroup, commandId, pVariableIn, out keyInput, out kind))
+            bool isRawText;
+            if (!TryConvert(commandGroup, commandId, pVariableIn, out keyInput, out kind, out isRawText))
             {
                 command = null;
                 return false;
             }
 
-            keyInput = KeyInputUtil.ApplyModifiers(keyInput, modifiers);
+            // When raw text is provided it already includes the active keyboard modifiers. Don't reapply them
+            // here else it can incorrectly modify the provided character.
+            if (!isRawText && keyInput != KeyInput.DefaultValue)
+            {
+                keyInput = KeyInputUtil.ApplyModifiers(keyInput, modifiers);
+            }
+
             command = new EditCommand(keyInput, kind, commandGroup, commandId);
             return true;
         }
@@ -26,31 +40,47 @@ namespace VsVim
         internal static bool TryConvert(OleCommandData oleCommandData, out KeyInput keyInput)
         {
             EditCommandKind editCommandKind;
-            return TryConvert(oleCommandData.CommandGroup, oleCommandData.CommandId, oleCommandData.VariantIn, out keyInput, out editCommandKind);
+            return TryConvert(oleCommandData.Group, oleCommandData.Id, oleCommandData.VariantIn, out keyInput, out editCommandKind);
         }
 
         internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr variantIn, out KeyInput keyInput, out EditCommandKind kind)
         {
+            bool unused;
+            return TryConvert(commandGroup, commandId, variantIn, out keyInput, out kind, out unused);
+        }
+
+        internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr variantIn, out KeyInput keyInput, out EditCommandKind kind, out bool isRawText)
+        {
             if (VSConstants.GUID_VSStandardCommandSet97 == commandGroup)
             {
-                return TryConvert((VSConstants.VSStd97CmdID)commandId, variantIn, out keyInput, out kind);
+                return TryConvert((VSConstants.VSStd97CmdID)commandId, variantIn, out keyInput, out kind, out isRawText);
             }
 
             if (VSConstants.VSStd2K == commandGroup)
             {
-                return TryConvert((VSConstants.VSStd2KCmdID)commandId, variantIn, out keyInput, out kind);
+                return TryConvert((VSConstants.VSStd2KCmdID)commandId, variantIn, out keyInput, out kind, out isRawText);
+            }
+
+            if (commandGroup == HiddenCommand.Group && commandId == HiddenCommand.Id)
+            {
+                keyInput = KeyInputUtil.CharWithControlToKeyInput(';');
+                kind = EditCommandKind.UserInput;
+                isRawText = true;
+                return true;
             }
 
             keyInput = null;
             kind = EditCommandKind.UserInput;
+            isRawText = false;
             return false;
         }
 
         /// <summary>
         /// Try and convert a Visual Studio 2000 style command into the associated KeyInput and EditCommand items
         /// </summary>
-        internal static bool TryConvert(VSConstants.VSStd2KCmdID cmdId, IntPtr variantIn, out KeyInput keyInput, out EditCommandKind kind)
+        internal static bool TryConvert(VSConstants.VSStd2KCmdID cmdId, IntPtr variantIn, out KeyInput keyInput, out EditCommandKind kind, out bool isRawText)
         {
+            isRawText = false;
             switch (cmdId)
             {
                 case VSConstants.VSStd2KCmdID.TYPECHAR:
@@ -65,6 +95,7 @@ namespace VsVim
                         keyInput = KeyInputUtil.CharToKeyInput(c);
                     }
                     kind = EditCommandKind.UserInput;
+                    isRawText = true;
                     break;
                 case VSConstants.VSStd2KCmdID.RETURN:
                     keyInput = KeyInputUtil.EnterKey;
@@ -186,6 +217,20 @@ namespace VsVim
                     keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Insert);
                     kind = EditCommandKind.UserInput;
                     break;
+                case VSConstants.VSStd2KCmdID.PASTE:
+                    keyInput = KeyInput.DefaultValue;
+                    kind = EditCommandKind.Paste;
+                    break;
+                case VSConstants.VSStd2KCmdID.COMMENT_BLOCK:
+                case VSConstants.VSStd2KCmdID.COMMENTBLOCK:
+                    keyInput = KeyInput.DefaultValue;
+                    kind = EditCommandKind.Comment;
+                    break;
+                case VSConstants.VSStd2KCmdID.UNCOMMENT_BLOCK:
+                case VSConstants.VSStd2KCmdID.UNCOMMENTBLOCK:
+                    keyInput = KeyInput.DefaultValue;
+                    kind = EditCommandKind.Uncomment;
+                    break;
                 default:
                     keyInput = null;
                     kind = EditCommandKind.UserInput;
@@ -198,10 +243,11 @@ namespace VsVim
         /// <summary>
         /// Try and convert the Visual Studio 97 based command into KeyInput and EditCommandKind values
         /// </summary>
-        internal static bool TryConvert(VSConstants.VSStd97CmdID cmdId, IntPtr variantIn, out KeyInput ki, out EditCommandKind kind)
+        internal static bool TryConvert(VSConstants.VSStd97CmdID cmdId, IntPtr variantIn, out KeyInput ki, out EditCommandKind kind, out bool isRawText)
         {
             ki = null;
             kind = EditCommandKind.UserInput;
+            isRawText = false;
 
             switch (cmdId)
             {
@@ -210,6 +256,7 @@ namespace VsVim
                     var c = (char)(ushort)obj;
                     ki = KeyInputUtil.CharToKeyInput(c);
                     kind = EditCommandKind.UserInput;
+                    isRawText = true;
                     break;
                 case VSConstants.VSStd97CmdID.Escape:
                     ki = KeyInputUtil.EscapeKey;
@@ -250,6 +297,15 @@ namespace VsVim
                         ki = KeyInput.DefaultValue;
                         kind = EditCommandKind.Redo;
                     }
+                    break;
+                case VSConstants.VSStd97CmdID.GotoDecl:
+                case VSConstants.VSStd97CmdID.GotoDefn:
+                    ki = KeyInput.DefaultValue;
+                    kind = EditCommandKind.GoToDefinition;
+                    break;
+                case VSConstants.VSStd97CmdID.Paste:
+                    ki = KeyInput.DefaultValue;
+                    kind = EditCommandKind.Paste;
                     break;
             }
 
@@ -344,6 +400,37 @@ namespace VsVim
             {
                 oleCommandData = OleCommandData.Empty;
                 return false;
+            }
+        }
+
+        internal static bool TryConvert(EditCommand editCommand, out OleCommandData oleCommandData)
+        {
+            switch (editCommand.EditCommandKind)
+            {
+                case EditCommandKind.GoToDefinition:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd97CmdID.GotoDecl);
+                    return true;
+                case EditCommandKind.Paste:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.PASTE);
+                    return true;
+                case EditCommandKind.Undo:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.UNDO);
+                    return true;
+                case EditCommandKind.Redo:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.REDO);
+                    return true;
+                case EditCommandKind.Comment:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.COMMENTBLOCK);
+                    return true;
+                case EditCommandKind.Uncomment:
+                    oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.UNCOMMENTBLOCK);
+                    return true;
+                case EditCommandKind.UserInput:
+                    return TryConvert(editCommand.KeyInput, out oleCommandData);
+                case EditCommandKind.VisualStudioCommand:
+                default:
+                    oleCommandData = OleCommandData.Empty;
+                    return false;
             }
         }
     }

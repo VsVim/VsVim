@@ -6,5 +6,5 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
 
 type internal SelectionChangeTracker =
-    new : IVimBuffer * IVisualModeSelectionOverride list -> SelectionChangeTracker
+    new : vimBuffer : IVimBuffer * visualModeSelectionOverrideList : IVisualModeSelectionOverride list * mouseDevice : IMouseDevice -> SelectionChangeTracker
 

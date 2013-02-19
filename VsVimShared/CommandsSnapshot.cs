@@ -11,7 +11,7 @@ namespace VsVim
     /// </summary>
     public sealed class CommandsSnapshot
     {
-        private readonly Dictionary<string, Command> _commandMap = new Dictionary<string, Command>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<CommandId, Command> _commandMap = new Dictionary<CommandId, Command>();
         private readonly ReadOnlyCollection<CommandKeyBinding> _commandKeyBindings;
         private readonly HashSet<KeyBinding> _keyBindings;
 
@@ -34,7 +34,13 @@ namespace VsVim
             var list = new List<CommandKeyBinding>();
             foreach (var command in commands)
             {
-                _commandMap[command.Name] = command;
+                CommandId commandId;
+                if (!command.TryGetCommandId(out commandId))
+                {
+                    continue;
+                }
+
+                _commandMap[commandId] = command;
                 list.AddRange(command.GetCommandKeyBindings());
             }
             _commandKeyBindings = list.AsReadOnly();
@@ -46,11 +52,9 @@ namespace VsVim
             return _keyBindings.Contains(binding);
         }
 
-        public Tuple<bool, Command> TryGetCommand(string name)
+        public bool TryGetCommand(CommandId id, out Command command)
         {
-            Command command;
-            var ret = _commandMap.TryGetValue(name, out command);
-            return Tuple.Create(ret, command);
+            return _commandMap.TryGetValue(id, out command);
         }
     }
 }

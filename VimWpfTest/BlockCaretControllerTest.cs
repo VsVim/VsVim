@@ -1,25 +1,24 @@
 ﻿using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using NUnit.Framework;
-using Vim.UnitTest.Mock;
 using Vim.Extensions;
+using Vim.UI.Wpf.Implementation.BlockCaret;
+using Vim.UnitTest.Mock;
+using Xunit;
 
 namespace Vim.UI.Wpf.UnitTest
 {
-    [TestFixture]
     public sealed class BlockCaretControllerTest
     {
-        private MockRepository _factory;
-        private Mock<ITextView> _textView;
-        private Mock<IVimBuffer> _buffer;
-        private Mock<IBlockCaret> _caret;
-        private Mock<IVimGlobalSettings> _settings;
-        private Mock<IVimLocalSettings> _localSettings;
-        private Mock<IIncrementalSearch> _incrementalSearch;
-        private BlockCaretController _controller;
+        private readonly MockRepository _factory;
+        private readonly Mock<ITextView> _textView;
+        private readonly Mock<IVimBuffer> _buffer;
+        private readonly Mock<IBlockCaret> _caret;
+        private readonly Mock<IVimGlobalSettings> _settings;
+        private readonly Mock<IVimLocalSettings> _localSettings;
+        private readonly Mock<IIncrementalSearch> _incrementalSearch;
+        private readonly BlockCaretController _controller;
 
-        [SetUp]
-        public void SetUp()
+        public BlockCaretControllerTest()
         {
             _factory = new MockRepository(MockBehavior.Loose);
             _textView = _factory.Create<ITextView>(MockBehavior.Strict);
@@ -38,7 +37,7 @@ namespace Vim.UI.Wpf.UnitTest
             _controller = new BlockCaretController(_buffer.Object, _caret.Object);
         }
 
-        [Test]
+        [Fact]
         public void OperatorPending1()
         {
             var mode = new Mock<INormalMode>();
@@ -51,8 +50,10 @@ namespace Vim.UI.Wpf.UnitTest
             _caret.Verify();
         }
 
-
-        [Test, Description("Other modes shouldn't even consider operator pending")]
+        /// <summary>
+        /// Other modes shouldn't even consider operator pending
+        /// </summary>
+        [Fact]
         public void OperatorPending2()
         {
             var mode = new Mock<INormalMode>();
@@ -64,7 +65,7 @@ namespace Vim.UI.Wpf.UnitTest
             _caret.Verify();
         }
 
-        [Test]
+        [Fact]
         public void IsInReplace1()
         {
             var mode = new Mock<INormalMode>();
@@ -77,7 +78,10 @@ namespace Vim.UI.Wpf.UnitTest
             _caret.Verify();
         }
 
-        [Test, Description("Replace wins over operator pending")]
+        /// <summary>
+        /// Replace wins over operator pending
+        /// </summary>
+        [Fact]
         public void IsInReplace2()
         {
             var mode = new Mock<INormalMode>();
@@ -91,7 +95,7 @@ namespace Vim.UI.Wpf.UnitTest
             _caret.Verify();
         }
 
-        [Test]
+        [Fact]
         public void NormalMode1()
         {
             var mode = new Mock<INormalMode>();
@@ -103,7 +107,7 @@ namespace Vim.UI.Wpf.UnitTest
             _caret.Verify();
         }
 
-        [Test]
+        [Fact]
         public void NormalMode2()
         {
             var mode = new Mock<INormalMode>();
@@ -116,7 +120,7 @@ namespace Vim.UI.Wpf.UnitTest
             _caret.Verify();
         }
 
-        [Test]
+        [Fact]
         public void CommandMode1()
         {
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Command);
@@ -124,7 +128,7 @@ namespace Vim.UI.Wpf.UnitTest
             _controller.Update();
         }
 
-        [Test]
+        [Fact]
         public void DisabledMode1()
         {
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Disabled);
@@ -132,7 +136,7 @@ namespace Vim.UI.Wpf.UnitTest
             _controller.Update();
         }
 
-        [Test]
+        [Fact]
         public void VisualMode1()
         {
             _settings.SetupGet(x => x.IsSelectionInclusive).Returns(true);
@@ -141,7 +145,7 @@ namespace Vim.UI.Wpf.UnitTest
             _controller.Update();
         }
 
-        [Test]
+        [Fact]
         public void VisualMode2()
         {
             _settings.SetupGet(x => x.IsSelectionInclusive).Returns(true);
@@ -150,7 +154,7 @@ namespace Vim.UI.Wpf.UnitTest
             _controller.Update();
         }
 
-        [Test]
+        [Fact]
         public void VisualMode3()
         {
             _settings.SetupGet(x => x.IsSelectionInclusive).Returns(true);
@@ -162,7 +166,7 @@ namespace Vim.UI.Wpf.UnitTest
         /// <summary>
         /// The caret should be invisible for incremental search even in visual mode
         /// </summary>
-        [Test]
+        [Fact]
         public void VisualMode_InIncrementalSearch()
         {
             _incrementalSearch.SetupGet(x => x.InSearch).Returns(true);
@@ -173,7 +177,7 @@ namespace Vim.UI.Wpf.UnitTest
             _caret.Verify();
         }
 
-        [Test]
+        [Fact]
         public void ReplaceMode1()
         {
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Replace);
@@ -181,16 +185,14 @@ namespace Vim.UI.Wpf.UnitTest
             _controller.Update();
         }
 
-        [Test]
+        [Fact]
         public void CaretOpacity1()
         {
             _caret.SetupSet(x => x.CaretOpacity = 0.01d).Verifiable();
             var setting = new Setting(
                 GlobalSettingNames.CaretOpacityName,
                 "",
-                SettingKind.StringKind,
-                SettingValue.NewStringValue(""),
-                SettingValue.NewStringValue(""),
+                LiveSettingValue.NewString("", ""),
                 true);
             _settings.SetupGet(x => x.CaretOpacity).Returns(1);
             _settings.Raise(x => x.SettingChanged += null, null, new SettingEventArgs(setting));

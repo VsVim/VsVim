@@ -29,8 +29,14 @@ type AppendRegisterValueBacking (_register : Register) =
             with get () = _register.RegisterValue
             and set value = _register.RegisterValue <- _register.RegisterValue.Append value
 
+type LastSearchRegisterValueBacking (_vimData : IVimData) = 
+    interface IRegisterValueBacking with
+        member x.RegisterValue 
+            with get () = RegisterValue.OfString _vimData.LastPatternData.Pattern OperationKind.CharacterWise
+            and set value = _vimData.LastPatternData <- { Pattern = value.StringValue; Path = Path.Forward }
+
 type internal RegisterMap (_map: Map<RegisterName, Register>) =
-    new(clipboard : IClipboardDevice, currentFileNameFunc : unit -> string option) = 
+    new(vimData : IVimData, clipboard : IClipboardDevice, currentFileNameFunc : unit -> string option) = 
         let clipboardBacking = ClipboardRegisterValueBacking(clipboard) :> IRegisterValueBacking
         let fileNameBacking = { new IRegisterValueBacking with
             member x.RegisterValue
@@ -50,6 +56,7 @@ type internal RegisterMap (_map: Map<RegisterName, Register>) =
             | RegisterName.SelectionAndDrop(SelectionAndDropRegister.Register_Plus) -> clipboardBacking
             | RegisterName.SelectionAndDrop(SelectionAndDropRegister.Register_Star) -> clipboardBacking
             | RegisterName.ReadOnly(ReadOnlyRegister.Register_Percent) -> fileNameBacking
+            | RegisterName.LastSearchPattern -> LastSearchRegisterValueBacking(vimData) :> IRegisterValueBacking
             | _ -> DefaultRegisterValueBacking() :> IRegisterValueBacking
 
         // Create the map without the append registers
@@ -63,20 +70,20 @@ type internal RegisterMap (_map: Map<RegisterName, Register>) =
         // registers
         let map = 
             let originalMap = map
-            let names =  RegisterName.All |> Seq.filter isAppendRegister
-            let foldFunc map (name : RegisterName) =
-                let backingName = 
-                    name.Char 
-                    |> Option.get 
-                    |> CharUtil.ToLower 
-                    |> NamedRegister.OfChar
-                    |> Option.get
-                    |> RegisterName.Named
-                let backingRegister = Map.find backingName originalMap
-                let value = AppendRegisterValueBacking(backingRegister)
-                let register = Register(name, value)
-                Map.add name register map
-            Seq.fold foldFunc originalMap names 
+            RegisterName.All
+            |> Seq.filter isAppendRegister
+            |> Seq.fold (fun map (name : RegisterName) ->
+                match name.Char with
+                | None -> map
+                | Some c ->
+                    let c = CharUtil.ToLower c 
+                    match NamedRegister.OfChar c |> Option.map RegisterName.Named with
+                    | None -> map
+                    | Some backingRegisterName ->
+                        let backingRegister = Map.find backingRegisterName map
+                        let value = AppendRegisterValueBacking(backingRegister)
+                        let register = Register(name, value)
+                        Map.add name register map) originalMap
 
         RegisterMap(map)
 
@@ -85,9 +92,15 @@ type internal RegisterMap (_map: Map<RegisterName, Register>) =
     /// Updates the given register with the specified value.  This will also update 
     /// other registers based on the type of update that is being performed.  See 
     /// :help registers for the full details
-    member x.SetRegisterValue (reg : Register) regOperation value = 
+    member x.SetRegisterValue (reg : Register) regOperation (value : RegisterValue) = 
         if reg.Name <> RegisterName.Blackhole then
+
             reg.RegisterValue <- value
+
+            let hasNewLine = 
+                match value.StringData with 
+                | StringData.Block col -> Seq.exists EditUtil.HasNewLine col 
+                | StringData.Simple str -> EditUtil.HasNewLine str
 
             // If this is not the unnamed register then the unnamed register needs to 
             // be updated 
@@ -98,21 +111,24 @@ type internal RegisterMap (_map: Map<RegisterName, Register>) =
             // Update the numbered register based on the type of the operation
             match regOperation with
             | RegisterOperation.Delete ->
-                // Update the numbered registers with the new values.  First shift the existing
-                // values up the stack
-                let intToName num = 
-                    let c = char (num + (int '0'))
-                    let name = NumberedRegister.OfChar c |> Option.get
-                    RegisterName.Numbered name
-        
-                // Next is insert the new value into the numbered register list.  New value goes
-                // into 1 and the rest shift up
-                for i in [9;8;7;6;5;4;3;2] do
-                    let cur = intToName i |> x.GetRegister
-                    let prev = intToName (i-1) |> x.GetRegister
-                    cur.RegisterValue <- prev.RegisterValue
-                let regOne = x.GetRegister (RegisterName.Numbered NumberedRegister.Register_1)
-                regOne.RegisterValue <- value
+
+                if hasNewLine then
+
+                  // Update the numbered registers with the new values if this delete spanned more
+                  // than a single line.  First shift the existing values up the stack
+                  let intToName num = 
+                      let c = char (num + (int '0'))
+                      let name = NumberedRegister.OfChar c |> Option.get
+                      RegisterName.Numbered name
+          
+                  // Next is insert the new value into the numbered register list.  New value goes
+                  // into 1 and the rest shift up
+                  for i in [9;8;7;6;5;4;3;2] do
+                      let cur = intToName i |> x.GetRegister
+                      let prev = intToName (i-1) |> x.GetRegister
+                      cur.RegisterValue <- prev.RegisterValue
+                  let regOne = x.GetRegister (RegisterName.Numbered NumberedRegister.Register_1)
+                  regOne.RegisterValue <- value
             | RegisterOperation.Yank ->
 
                 // If the yank occurs to the unnamed register then update register 0 with the 
@@ -122,13 +138,9 @@ type internal RegisterMap (_map: Map<RegisterName, Register>) =
                     regZero.RegisterValue <- value
     
             // Possibly update the small delete register
-            if reg.Name <> RegisterName.Unnamed && regOperation = RegisterOperation.Delete then
-                match value.StringData with
-                | StringData.Block(_) -> ()
-                | StringData.Simple(str) -> 
-                    if not (StringUtil.containsChar str '\n') then
-                        let regSmallDelete = x.GetRegister RegisterName.SmallDelete
-                        regSmallDelete.RegisterValue <- value
+            if reg.Name = RegisterName.Unnamed && regOperation = RegisterOperation.Delete && not hasNewLine then
+                let regSmallDelete = x.GetRegister RegisterName.SmallDelete
+                regSmallDelete.RegisterValue <- value
 
     interface IRegisterMap with
         member x.RegisterNames = _map |> Seq.map (fun pair -> pair.Key)

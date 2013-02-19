@@ -56,7 +56,7 @@ namespace VsVim
         {
             var hr = _filterKeys.TranslateAccelerator(msg, flags, out commandGroup, out command);
             if (ErrorHandler.Succeeded(hr)
-                && _vsAdapter.IsReadOnly(_buffer.TextBuffer)
+                && _vsAdapter.IsReadOnly(_buffer.TextView)
                 && IsEditCommand(commandGroup, command))
             {
                 commandGroup = Guid.Empty;
@@ -92,7 +92,6 @@ namespace VsVim
         /// </summary>
         internal static bool TryInstallFilterKeysAdapter(
             IVsAdapter adapter,
-            IEditorOptionsFactoryService optionsFactory,
             IVimBuffer buffer)
         {
             var textView = buffer.TextView;

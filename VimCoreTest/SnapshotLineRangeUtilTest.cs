@@ -1,12 +1,10 @@
 ﻿using System;
-using EditorUtils;
 using Microsoft.VisualStudio.Text;
-using NUnit.Framework;
 using Vim.Extensions;
+using Xunit;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public sealed class SnapshotLineRangeUtilTest : VimTestBase
     {
         private ITextBuffer _buffer;
@@ -16,101 +14,109 @@ namespace Vim.UnitTest
             _buffer = CreateTextBuffer(lines);
         }
 
-        [Test]
+        [Fact]
         public void CreateForLine()
         {
             Create("hello", "world");
             var range = SnapshotLineRangeUtil.CreateForLine(_buffer.GetLine(0));
-            Assert.AreEqual("hello", range.Extent.GetText());
-            Assert.AreEqual(1, range.Count);
-            Assert.AreEqual(0, range.StartLineNumber);
-            Assert.AreEqual(0, range.LastLineNumber);
+            Assert.Equal("hello", range.Extent.GetText());
+            Assert.Equal(1, range.Count);
+            Assert.Equal(0, range.StartLineNumber);
+            Assert.Equal(0, range.LastLineNumber);
         }
 
-        [Test]
+        [Fact]
         public void CreateForLineNumberAndCount1()
         {
             Create("hello", "world");
             var range = SnapshotLineRangeUtil.CreateForLineNumberAndCount(_buffer.CurrentSnapshot, 0, 1).Value;
-            Assert.AreEqual("hello", range.Extent.GetText());
-            Assert.AreEqual(1, range.Count);
-            Assert.AreEqual(0, range.StartLineNumber);
-            Assert.AreEqual(0, range.LastLineNumber);
+            Assert.Equal("hello", range.Extent.GetText());
+            Assert.Equal(1, range.Count);
+            Assert.Equal(0, range.StartLineNumber);
+            Assert.Equal(0, range.LastLineNumber);
         }
 
-        [Test]
+        [Fact]
         public void CreateForLineNumberAndCount2()
         {
             Create("hello", "world");
             var range = SnapshotLineRangeUtil.CreateForLineNumberAndCount(_buffer.CurrentSnapshot, 0, 2).Value;
-            Assert.AreEqual("hello" + Environment.NewLine + "world", range.Extent.GetText());
-            Assert.AreEqual(2, range.Count);
-            Assert.AreEqual(0, range.StartLineNumber);
-            Assert.AreEqual(1, range.LastLineNumber);
+            Assert.Equal("hello" + Environment.NewLine + "world", range.Extent.GetText());
+            Assert.Equal(2, range.Count);
+            Assert.Equal(0, range.StartLineNumber);
+            Assert.Equal(1, range.LastLineNumber);
         }
 
-        [Test]
-        [Description("Guard against a high count")]
+        /// <summary>
+        /// Guard against a high count
+        /// </summary>
+        [Fact]
         public void CreateForLineNumberAndCount3()
         {
             Create("hello", "world");
             var opt = SnapshotLineRangeUtil.CreateForLineNumberAndCount(_buffer.CurrentSnapshot, 0, 300);
-            Assert.IsTrue(opt.IsNone());
+            Assert.True(opt.IsNone());
         }
 
-        [Test]
+        [Fact]
         public void CreateForLineNumberRange1()
         {
             Create("hello", "world");
             var range = SnapshotLineRangeUtil.CreateForLineNumberRange(_buffer.CurrentSnapshot, 0, 0);
-            Assert.AreEqual("hello", range.Extent.GetText());
-            Assert.AreEqual(1, range.Count);
-            Assert.AreEqual(0, range.StartLineNumber);
-            Assert.AreEqual(0, range.LastLineNumber);
+            Assert.Equal("hello", range.Extent.GetText());
+            Assert.Equal(1, range.Count);
+            Assert.Equal(0, range.StartLineNumber);
+            Assert.Equal(0, range.LastLineNumber);
         }
 
-        [Test]
+        [Fact]
         public void CreateForLineNumberRange2()
         {
             Create("hello", "world");
             var range = SnapshotLineRangeUtil.CreateForLineNumberRange(_buffer.CurrentSnapshot, 0, 1);
-            Assert.AreEqual("hello" + Environment.NewLine + "world", range.Extent.GetText());
-            Assert.AreEqual(2, range.Count);
-            Assert.AreEqual(0, range.StartLineNumber);
-            Assert.AreEqual(1, range.LastLineNumber);
+            Assert.Equal("hello" + Environment.NewLine + "world", range.Extent.GetText());
+            Assert.Equal(2, range.Count);
+            Assert.Equal(0, range.StartLineNumber);
+            Assert.Equal(1, range.LastLineNumber);
         }
 
-        [Test]
-        [Description("Sanity check for valid count")]
+        /// <summary>
+        /// Sanity check for valid count
+        /// </summary>
+        [Fact]
         public void CreateForLineAndMaxCount1()
         {
             Create("a", "b");
             var range = SnapshotLineRangeUtil.CreateForLineAndMaxCount(_buffer.GetLine(0), 1);
-            Assert.AreEqual(1, range.Count);
-            Assert.AreEqual(0, range.StartLineNumber);
-            Assert.AreEqual(0, range.LastLineNumber);
+            Assert.Equal(1, range.Count);
+            Assert.Equal(0, range.StartLineNumber);
+            Assert.Equal(0, range.LastLineNumber);
         }
 
-        [Test]
-        [Description("Very high count")]
+        /// <summary>
+        /// Very high count
+        /// </summary>
+        [Fact]
         public void CreateForLineAndMaxCount2()
         {
             Create("a", "b");
             var range = SnapshotLineRangeUtil.CreateForLineAndMaxCount(_buffer.GetLine(0), 100);
-            Assert.AreEqual(2, range.Count);
-            Assert.AreEqual(0, range.StartLineNumber);
-            Assert.AreEqual(1, range.LastLineNumber);
+            Assert.Equal(2, range.Count);
+            Assert.Equal(0, range.StartLineNumber);
+            Assert.Equal(1, range.LastLineNumber);
         }
 
-        [Test]
-        [Description("Count exactly at the max")]
+        /// <summary>
+        /// Count exactly at the max
+        /// </summary>
+        [Fact]
         public void CreateForLineAndMaxCount3()
         {
             Create("a", "b");
             var range = SnapshotLineRangeUtil.CreateForLineAndMaxCount(_buffer.GetLine(0), 2);
-            Assert.AreEqual(2, range.Count);
-            Assert.AreEqual(0, range.StartLineNumber);
-            Assert.AreEqual(1, range.LastLineNumber);
+            Assert.Equal(2, range.Count);
+            Assert.Equal(0, range.StartLineNumber);
+            Assert.Equal(1, range.LastLineNumber);
         }
     }
 }

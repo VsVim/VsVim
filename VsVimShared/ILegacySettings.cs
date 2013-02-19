@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using EnvDTE;
+using System.Linq;
 
 namespace VsVim
 {
@@ -42,7 +44,7 @@ namespace VsVim
         /// <summary>
         /// Find all of the key bindings which have been removed
         /// </summary>
-        internal static List<CommandKeyBinding> FindKeyBindingsMarkedAsRemoved(this ILegacySettings settings)
+        internal static List<CommandKeyBinding> FindKeyBindingsMarkedAsRemoved(this ILegacySettings settings, CommandsSnapshot commandsSnapshot)
         {
             var list = new List<CommandKeyBinding>();
             if (!settings.HaveUpdatedKeyBindings)
@@ -50,12 +52,23 @@ namespace VsVim
                 return list;
             }
 
+            var map = new Dictionary<string, CommandId>();
+            foreach (var commandKeyBinding in commandsSnapshot.CommandKeyBindings)
+            {
+                map[commandKeyBinding.Name] = commandKeyBinding.Id;
+            }
+
             foreach (var commandBindingSetting in settings.RemovedBindings)
             {
+                CommandId id;
                 KeyBinding binding;
-                if (KeyBinding.TryParse(commandBindingSetting.CommandString, out binding))
+                if (KeyBinding.TryParse(commandBindingSetting.CommandString, out binding) &&
+                    map.TryGetValue(commandBindingSetting.Name, out id))
                 {
-                    list.Add(new CommandKeyBinding(commandBindingSetting.Name, binding));
+                    list.Add(new CommandKeyBinding(
+                        id,
+                        commandBindingSetting.Name,
+                        binding));
                 }
             }
 

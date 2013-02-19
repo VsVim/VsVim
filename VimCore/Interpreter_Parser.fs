@@ -5,6 +5,12 @@ open Vim
 open StringBuilderExtensions
 
 [<RequireQualifiedAccess>]
+type NextConditionalKind =
+    | Else
+    | ElseIf of Expression
+    | EndIf
+
+[<RequireQualifiedAccess>]
 type ParseResult<'T> = 
     | Succeeded of 'T
     | Failed of string
@@ -52,28 +58,39 @@ type ParserBuilder
 [<Sealed>]
 type Parser
     (
-        _text : string
+        _vimData : IVimData
     ) = 
 
     let _parserBuilder = ParserBuilder()
-    let _tokenizer = Tokenizer(_text)
+    let _tokenizer = Tokenizer("", TokenizerFlags.None)
+    let mutable _lines = [|""|] 
+    let mutable _lineIndex = 0
 
     /// The set of supported line commands paired with their abbreviation
     static let s_LineCommandNamePair = [
+        ("autocmd", "au")
         ("behave", "be")
         ("cd", "cd")
         ("chdir", "chd")
         ("close", "clo")
+        ("cnext", "cn")
+        ("cprevious", "cp")
         ("copy", "co")
         ("delete","d")
         ("display","di")
         ("edit", "e")
+        ("else", "el")
+        ("elseif", "elsei")
+        ("endif", "en")
         ("exit", "exi")
         ("fold", "fo")
         ("global", "g")
+        ("history", "his")
+        ("if", "if")
         ("join", "j")
         ("lcd", "lc")
         ("lchdir", "lch")
+        ("let", "let")
         ("move", "m")
         ("make", "mak")
         ("marks", "")
@@ -103,7 +120,9 @@ type Parser
         ("tabprevious", "tabp")
         ("tabrewind", "tabr")
         ("undo", "u")
+        ("unlet", "unl")
         ("vglobal", "v")
+        ("version", "ve")
         ("vscmd", "vsc")
         ("vsplit", "vsp")
         ("write","w")
@@ -154,6 +173,108 @@ type Parser
         ("cnoremap", "cno")
     ]
 
+    /// Map of all autocmd events to the lower case version of the name
+    static let s_NameToEventKindMap = 
+        [
+            ("bufnewfile", EventKind.BufNewFile)
+            ("bufreadpre", EventKind.BufReadPre)
+            ("bufread", EventKind.BufRead)
+            ("bufreadpost", EventKind.BufReadPost)
+            ("bufreadcmd", EventKind.BufReadCmd)
+            ("filereadpre", EventKind.FileReadPre)
+            ("filereadpost", EventKind.FileReadPost)
+            ("filereadcmd", EventKind.FileReadCmd)
+            ("filterreadpre", EventKind.FilterReadPre)
+            ("filterreadpost", EventKind.FilterReadPost)
+            ("stdinreadpre", EventKind.StdinReadPre)
+            ("stdinreadpost", EventKind.StdinReadPost)
+            ("bufwrite", EventKind.BufWrite)
+            ("bufwritepre", EventKind.BufWritePre)
+            ("bufwritepost", EventKind.BufWritePost)
+            ("bufwritecmd", EventKind.BufWriteCmd)
+            ("filewritepre", EventKind.FileWritePre)
+            ("filewritepost", EventKind.FileWritePost)
+            ("filewritecmd", EventKind.FileWriteCmd)
+            ("fileappendpre", EventKind.FileAppendPre)
+            ("fileappendpost", EventKind.FileAppendPost)
+            ("fileappendcmd", EventKind.FileAppendCmd)
+            ("filterwritepre", EventKind.FilterWritePre)
+            ("filterwritepost", EventKind.FilterWritePost)
+            ("bufadd", EventKind.BufAdd)
+            ("bufcreate", EventKind.BufCreate)
+            ("bufdelete", EventKind.BufDelete)
+            ("bufwipeout", EventKind.BufWipeout)
+            ("buffilepre", EventKind.BufFilePre)
+            ("buffilepost", EventKind.BufFilePost)
+            ("bufenter", EventKind.BufEnter)
+            ("bufleave", EventKind.BufLeave)
+            ("bufwinenter", EventKind.BufWinEnter)
+            ("bufwinleave", EventKind.BufWinLeave)
+            ("bufunload", EventKind.BufUnload)
+            ("bufhidden", EventKind.BufHidden)
+            ("bufnew", EventKind.BufNew)
+            ("swapexists", EventKind.SwapExists)
+            ("filetype", EventKind.FileType)
+            ("syntax", EventKind.Syntax)
+            ("encodingchanged", EventKind.EncodingChanged)
+            ("termchanged", EventKind.TermChanged)
+            ("vimenter", EventKind.VimEnter)
+            ("guienter", EventKind.GUIEnter)
+            ("termresponse", EventKind.TermResponse)
+            ("vimleavepre", EventKind.VimLeavePre)
+            ("vimleave", EventKind.VimLeave)
+            ("filechangedshell", EventKind.FileChangedShell)
+            ("filechangedshellpost", EventKind.FileChangedShellPost)
+            ("filechangedro", EventKind.FileChangedRO)
+            ("shellcmdpost", EventKind.ShellCmdPost)
+            ("shellfilterpost", EventKind.ShellFilterPost)
+            ("funcundefined", EventKind.FuncUndefined)
+            ("spellfilemissing", EventKind.SpellFileMissing)
+            ("sourcepre", EventKind.SourcePre)
+            ("sourcecmd", EventKind.SourceCmd)
+            ("vimresized", EventKind.VimResized)
+            ("focusgained", EventKind.FocusGained)
+            ("focuslost", EventKind.FocusLost)
+            ("cursorhold", EventKind.CursorHold)
+            ("cursorholdi", EventKind.CursorHoldI)
+            ("cursormoved", EventKind.CursorMoved)
+            ("cursormovedi", EventKind.CursorMovedI)
+            ("winenter", EventKind.WinEnter)
+            ("winleave", EventKind.WinLeave)
+            ("tabenter", EventKind.TabEnter)
+            ("tableave", EventKind.TabLeave)
+            ("cmdwinenter", EventKind.CmdwinEnter)
+            ("cmdwinleave", EventKind.CmdwinLeave)
+            ("insertenter", EventKind.InsertEnter)
+            ("insertchange", EventKind.InsertChange)
+            ("insertleave", EventKind.InsertLeave)
+            ("colorscheme", EventKind.ColorScheme)
+            ("remotereply", EventKind.RemoteReply)
+            ("quickfixcmdpre", EventKind.QuickFixCmdPre)
+            ("quickfixcmdpost", EventKind.QuickFixCmdPost)
+            ("sessionloadpost", EventKind.SessionLoadPost)
+            ("menupopup", EventKind.MenuPopup)
+            ("user", EventKind.User)
+        ]
+        |> Map.ofList
+
+    member x.Reset (lines : string[]) = 
+        _lines <- 
+            if lines.Length = 0 then
+                [|""|]
+            else
+                lines
+        _lineIndex <- 0
+        _tokenizer.Reset _lines.[0] TokenizerFlags.None
+
+    member x.NextLine() =
+        if _lineIndex + 1 >= _lines.Length then
+            false
+        else
+            _lineIndex <- _lineIndex + 1
+            _tokenizer.Reset _lines.[_lineIndex] TokenizerFlags.None
+            true
+
     member x.Tokenizer = _tokenizer
 
     /// Move past the white space in the expression text
@@ -161,6 +282,11 @@ type Parser
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Blank -> _tokenizer.MoveNextToken()
         | _ -> ()
+
+    /// Move to the end of the current line
+    member x.MoveToEndOfLine() = 
+        while not _tokenizer.IsAtEndOfLine do
+            _tokenizer.MoveNextToken()
 
     /// Try and expand the possible abbreviation to a full line command name.  If it's 
     /// not an abbreviation then the original string will be returned
@@ -191,8 +317,7 @@ type Parser
     /// of the line is reached.  None is return if the current token when
     /// called doesn't match the predicate
     member x.ParseWhileEx flags predicate =
-        _tokenizer.ResetAtIndex flags
-
+        use reset = _tokenizer.SetTokenizerFlagsScoped flags
         let builder = System.Text.StringBuilder()
         let rec inner () =
             let token = _tokenizer.CurrentToken
@@ -200,7 +325,7 @@ type Parser
                 ()
             elif predicate token then
                 builder.AppendString token.TokenText
-                _tokenizer.MoveNextTokenEx flags
+                _tokenizer.MoveNextToken()
                 inner ()
             else
                 ()
@@ -211,7 +336,7 @@ type Parser
         else
             builder.ToString() |> Some
 
-    member x.ParseWhile predicate = x.ParseWhileEx NextTokenFlags.None predicate
+    member x.ParseWhile predicate = x.ParseWhileEx TokenizerFlags.None predicate
 
     member x.ParseNumber() =
         match _tokenizer.CurrentTokenKind with
@@ -228,7 +353,7 @@ type Parser
     /// Parse out a key notation argument.  Different than a word because it can accept items
     /// which are not letters such as numbers, <, >, etc ...
     member x.ParseKeyNotation() = 
-        x.ParseWhileEx NextTokenFlags.AllowDoubleQuote (fun token -> 
+        x.ParseWhileEx TokenizerFlags.AllowDoubleQuote (fun token -> 
             match token.TokenKind with 
             | TokenKind.Blank -> false
             | _ -> true)
@@ -258,7 +383,7 @@ type Parser
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Number number ->
             _tokenizer.MoveNextToken()
-            number |> Value.Number |> Expression.ConstantValue |> ParseResult.Succeeded
+            number |> VariableValue.Number |> Expression.ConstantValue |> ParseResult.Succeeded
         | _ -> ParseResult.Failed "Invalid Number"
 
     /// Parse out core portion of key mappings.
@@ -272,7 +397,7 @@ type Parser
         | Some leftKeyNotation -> 
             x.SkipBlanks()
 
-            let rightKeyNotation = x.ParseWhileEx NextTokenFlags.AllowDoubleQuote (fun _ -> true)
+            let rightKeyNotation = x.ParseWhileEx TokenizerFlags.AllowDoubleQuote (fun _ -> true)
             let rightKeyNotation = OptionUtil.getOrDefault "" rightKeyNotation
             if StringUtil.isBlanks rightKeyNotation then
                 LineCommand.DisplayKeyMap (keyRemapModes, Some leftKeyNotation) |> ParseResult.Succeeded
@@ -324,7 +449,7 @@ type Parser
     member x.ParseCommandOption () = 
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Character '+' ->
-            let mark = _tokenizer.Index
+            let mark = _tokenizer.Mark
 
             _tokenizer.MoveNextToken()
             match _tokenizer.CurrentTokenKind with
@@ -336,9 +461,9 @@ type Parser
                 let pattern = x.ParseRestOfLine()
                 CommandOption.StartAtPattern pattern |> Some
             | TokenKind.Character c ->
-                match x.ParseSingleCommand() with
+                match x.ParseSingleCommandCore() with
                 | ParseResult.Failed _ -> 
-                    _tokenizer.MoveToIndex mark
+                    _tokenizer.MoveToMark mark
                     None
                 | ParseResult.Succeeded lineCommand ->
                     CommandOption.ExecuteLineCommand lineCommand |> Some
@@ -359,11 +484,11 @@ type Parser
     member x.ParseMapArguments() = 
 
         let rec inner withResult = 
-            let mark = _tokenizer.Index
+            let mark = _tokenizer.Mark
 
             // Finish without changinging anything.
             let finish() =
-                _tokenizer.MoveToIndex mark
+                _tokenizer.MoveToMark mark
                 withResult []
 
             // The argument is mostly parsed out.  Need the closing '>' and the jump to
@@ -450,6 +575,150 @@ type Parser
                     inner (flags ||| newFlag) (index + 1)
 
         inner SubstituteFlags.None 0
+
+    /// Parse out :autocommand
+    member x.ParseAutoCommand() = 
+
+        let isRemove = x.ParseBang()
+        let standardError = "Values missing"
+        let onError msg = ParseResult.Failed msg
+        let onStandardError () = onError standardError
+
+        // Parse out the auto group name from the current point in the tokenizer
+        let parseAutoCommandGroup () = 
+            match _tokenizer.CurrentTokenKind with
+            | TokenKind.Word name -> 
+                let found = 
+                    _vimData.AutoCommandGroups 
+                    |> Seq.tryFind (fun autoCommandGroup ->
+                        match autoCommandGroup with
+                        | AutoCommandGroup.Default -> false
+                        | AutoCommandGroup.Named groupName -> name = groupName)
+                match found with 
+                | Some autoCommandGroup ->
+                    _tokenizer.MoveNextToken()
+                    autoCommandGroup
+                | None -> AutoCommandGroup.Default
+            | _ -> AutoCommandGroup.Default
+
+        // Whether or not the first string is interpreted as a group name is based on whether it exists in the
+        // set of defined autogroup values.  
+        let getAutoCommandGroup name =
+            _vimData.AutoCommandGroups 
+            |> Seq.tryFind (fun autoCommandGroup ->
+                match autoCommandGroup with
+                | AutoCommandGroup.Default -> false
+                | AutoCommandGroup.Named groupName -> name = groupName)
+
+        // Parse out the pattern.  Consume everything up until the next blank.  This isn't a normal regex
+        // pattern though (described in 'help autocmd-patterns').  Commas do represent pattern separation
+        let parsePatternList () = 
+            x.SkipBlanks()
+
+            let rec inner rest = 
+                let isNotBlankOrComma (token : Token) =
+                    match token.TokenKind with
+                    | TokenKind.Blank -> false
+                    | TokenKind.Character ',' -> false
+                    | _ -> true
+
+                match x.ParseWhile isNotBlankOrComma with
+                | None -> rest []
+                | Some str -> 
+                    match _tokenizer.CurrentTokenKind with
+                    | TokenKind.Character ',' ->
+                        _tokenizer.MoveNextToken()
+                        inner (fun item -> rest (str :: item))
+                    | _ -> rest [str]
+
+            inner (fun x -> x)
+
+        // Parse out the event list.  Every autocmd value can specify multiple events by 
+        // separating the names with a comma 
+        let parseEventKindList () = 
+
+            // Parse out an EventKind value from the specified event name 
+            let parseEventKind (word : string) = 
+                let word = word.ToLower()
+                Map.tryFind word s_NameToEventKindMap
+            
+            let rec inner rest = 
+                match _tokenizer.CurrentTokenKind with
+                | TokenKind.Word word -> 
+                    match parseEventKind word with
+                    | None -> ParseResult.Failed standardError
+                    | Some eventKind ->
+                        _tokenizer.MoveNextToken()
+                        match _tokenizer.CurrentChar with
+                        | Some ',' -> 
+                            _tokenizer.MoveNextToken()
+                            inner (fun item -> rest (eventKind :: item))
+                        | _ -> rest [eventKind]
+                | _ -> rest []
+                    
+            inner (fun list -> ParseResult.Succeeded list)
+
+        x.SkipBlanks() 
+        let autoCommandGroup = parseAutoCommandGroup ()
+        x.SkipBlanks()
+
+        if isRemove then
+
+            // Other remove syntaxes 
+            let onRemoveEx eventKindList patternList lineCommandText = 
+                let autoCommandDefinition = {  
+                    Group = autoCommandGroup
+                    EventKinds = eventKindList
+                    Patterns = patternList
+                    LineCommandText = lineCommandText
+                }
+                ParseResult.Succeeded (LineCommand.RemoveAutoCommands autoCommandDefinition)
+
+            // Called for one of the variations of the remove all commands
+            let onRemoveAll () = 
+                onRemoveEx List.empty List.empty ""
+
+            match _tokenizer.CurrentTokenKind with
+            | TokenKind.EndOfLine -> onRemoveAll ()
+            | TokenKind.Character '*' -> 
+                // This is the pattern form of the tokenizer.  
+                _tokenizer.MoveNextToken()
+                x.SkipBlanks()
+                let patternList = parsePatternList ()
+                onRemoveEx List.empty patternList ""
+            | _ -> 
+                // This is the longer form of the event remove which can specify both event kinds
+                // and patterns.  The next item in both cases is the events followed by the patterns
+                match parseEventKindList () with
+                | ParseResult.Failed msg -> onError msg
+                | ParseResult.Succeeded eventKindList ->
+                    x.SkipBlanks()
+                    let patternList = 
+                        if _tokenizer.IsAtEndOfLine then
+                            List.empty
+                        else
+                            parsePatternList ()
+                    onRemoveEx eventKindList patternList ""
+
+        else
+            // This is the add form of auto command.  It will be followed by the events, pattern
+            // and actual command in that order
+            match parseEventKindList () with
+            | ParseResult.Failed msg -> ParseResult.Failed msg
+            | ParseResult.Succeeded eventKindList ->
+                x.SkipBlanks()
+                let patternList = parsePatternList ()
+                x.SkipBlanks()
+                let command = x.ParseRestOfLine()
+                let autoCommandDefinition = { 
+                    Group = autoCommandGroup 
+                    EventKinds = eventKindList
+                    LineCommandText = command
+                    Patterns = patternList
+                }
+
+                let lineCommand = LineCommand.AddAutoCommand autoCommandDefinition
+                ParseResult.Succeeded lineCommand
 
     /// Parse out the :behave command.  The mode argument is required
     member x.ParseBehave() =
@@ -562,9 +831,8 @@ type Parser
 
         // Need to reset to account for the case where the pattern begins with a 
         // double quote
-        _tokenizer.ResetAtIndex NextTokenFlags.AllowDoubleQuote
-
-        let moveNextChar () = _tokenizer.MoveNextCharEx NextTokenFlags.AllowDoubleQuote
+        use reset = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
+        let moveNextChar () = _tokenizer.MoveNextChar()
         let builder = System.Text.StringBuilder()
         let rec inner () = 
             match _tokenizer.CurrentChar with
@@ -828,9 +1096,11 @@ type Parser
     /// Parse out a string constant from the token stream.  Loads of special characters are
     /// possible here.  A complete list is available at :help expr-string
     member x.ParseStringConstant() = 
-        _tokenizer.MoveNextTokenEx NextTokenFlags.AllowDoubleQuote
+        use reset = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
+        _tokenizer.MoveNextToken()
+
         let builder = System.Text.StringBuilder()
-        let moveNextChar () = _tokenizer.MoveNextCharEx NextTokenFlags.AllowDoubleQuote
+        let moveNextChar () = _tokenizer.MoveNextChar()
         let rec inner afterEscape = 
             match _tokenizer.CurrentChar with
             | None -> ParseResult.Failed Resources.Parser_MissingQuote
@@ -851,8 +1121,7 @@ type Parser
                     inner true
                 elif c = '"' then
                     builder.ToString()
-                    |> Value.String
-                    |> Expression.ConstantValue
+                    |> VariableValue.String
                     |> ParseResult.Succeeded
                 else
                     builder.AppendChar c
@@ -865,9 +1134,11 @@ type Parser
     ///
     /// help literal-string
     member x.ParseStringLiteral() = 
-        _tokenizer.MoveNextTokenEx NextTokenFlags.AllowDoubleQuote
+        use reset = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
+        _tokenizer.MoveNextToken()
+
         let builder = System.Text.StringBuilder()
-        let moveNextChar () = _tokenizer.MoveNextCharEx NextTokenFlags.AllowDoubleQuote
+        let moveNextChar () = _tokenizer.MoveNextChar()
         let rec inner () = 
             match _tokenizer.CurrentChar with
             | None -> ParseResult.Failed Resources.Parser_MissingQuote
@@ -886,8 +1157,7 @@ type Parser
             | Some '\'' ->
                 // Found the terminating character
                 builder.ToString()
-                |> Value.String
-                |> Expression.ConstantValue
+                |> VariableValue.String
                 |> ParseResult.Succeeded
             | Some c ->
                 builder.AppendChar c
@@ -907,6 +1177,34 @@ type Parser
         x.SkipBlanks()
         let count = x.ParseNumber()
         ParseResult.Succeeded (LineCommand.GoToPreviousTab count)
+
+    /// Parse out the unlet command.  
+    ///
+    /// Currently only names are supported.  We don't support unletting specific dictionary
+    /// or list entries
+    member x.ParseUnlet() =
+        let hasBang = x.ParseBang()
+        x.SkipBlanks()
+        let rec getNames withValue = 
+            match _tokenizer.CurrentTokenKind with
+            | TokenKind.Word name ->
+                _tokenizer.MoveNextToken()
+                x.SkipBlanks()
+                getNames (fun list -> withValue (name :: list))
+            | TokenKind.EndOfLine ->
+                let list = withValue []
+                let unlet = LineCommand.Unlet (hasBang, list)
+                ParseResult.Succeeded unlet
+            | _ -> ParseResult.Failed "Error"
+        getNames (fun x -> x)
+
+    member x.ParseQuickFixNext count =
+        let hasBang = x.ParseBang()
+        ParseResult.Succeeded (LineCommand.QuickFixNext (count, hasBang))
+
+    member x.ParseQuickFixPrevious count =
+        let hasBang = x.ParseBang()
+        ParseResult.Succeeded (LineCommand.QuickFixPrevious (count, hasBang))
 
     /// Parse out the quit and write command.  This includes 'wq', 'xit' and 'exit' commands.
     member x.ParseQuitAndWrite lineRange = 
@@ -979,6 +1277,10 @@ type Parser
         let hasBang = x.ParseBang()
         x.ParseGlobalCore lineRange (not hasBang)
 
+    /// Parse out the :history command
+    member x.ParseHistory() =
+        ParseResult.Succeeded LineCommand.History
+
     /// Parse out the core global information. 
     member x.ParseGlobalCore lineRange matchPattern =
         match _tokenizer.CurrentTokenKind with
@@ -988,7 +1290,7 @@ type Parser
             _tokenizer.MoveNextToken()
             let pattern, foundDelimiter = x.ParsePattern delimiter
             if foundDelimiter then
-                let command = x.ParseSingleCommand()
+                let command = x.ParseSingleCommandCore()
                 match command with 
                 | ParseResult.Failed msg -> ParseResult.Failed msg
                 | ParseResult.Succeeded command -> LineCommand.Global (lineRange, pattern, matchPattern, command) |> ParseResult.Succeeded
@@ -996,6 +1298,94 @@ type Parser
                 ParseResult.Failed Resources.Parser_InvalidArgument
         | _ -> ParseResult.Failed Resources.Parser_InvalidArgument
 
+    /// Parse out the :if command from the buffer
+    member x.ParseIf() = 
+
+        let standardError = "Unmatched Conditional Block"
+        let onError msg = ParseResult.Failed msg
+
+        // Parse out the conditional kind of the current line
+        let parseConditionalKind onSuccess = 
+            match _tokenizer.CurrentTokenKind with
+            | TokenKind.Word name ->
+                let name = x.TryExpand name
+                match name with
+                | "else" -> onSuccess (Some NextConditionalKind.Else)
+                | "endif" -> onSuccess (Some NextConditionalKind.EndIf)
+                | "elseif" -> 
+                    _tokenizer.MoveNextToken()
+                    x.SkipBlanks()
+                    match x.ParseExpressionCore() with
+                    | ParseResult.Failed msg -> onError msg 
+                    | ParseResult.Succeeded expr -> onSuccess (Some (NextConditionalKind.ElseIf expr))
+                | _ -> onSuccess None
+            | _ -> onSuccess None
+
+        // Parse out a conditional block from the 
+        let parseBlockCommands onSuccess = 
+            let builder = System.Collections.Generic.List<LineCommand>()
+            let onSuccess nextConditionalKind = 
+                let list = List.ofSeq builder
+                onSuccess list nextConditionalKind
+
+            let rec inner () = 
+                parseConditionalKind (fun nextConditionalKind -> 
+                    match nextConditionalKind with
+                    | Some nextConditionalKind -> onSuccess nextConditionalKind
+                    | None -> 
+                        match x.ParseSingleCommandCore() with
+                        | ParseResult.Failed msg -> onError msg
+                        | ParseResult.Succeeded lineCommand ->
+                            builder.Add lineCommand
+                            if x.NextLine() then
+                                inner ()
+                            else
+                                onError standardError)
+        
+            inner ()
+
+        let rec parseNextConditional nextConditionalKind onSuccess = 
+
+            let onEndIf () = 
+                x.MoveToEndOfLine()
+                x.NextLine() |> ignore
+
+            match nextConditionalKind with
+            | NextConditionalKind.EndIf ->
+                onEndIf ()
+                onSuccess ConditionalBlock.Empty
+            | NextConditionalKind.ElseIf expr ->
+                if x.NextLine() then
+                    parseBlockCommands (fun lineCommands nextConditionalKind -> 
+                        parseNextConditional nextConditionalKind (fun conditionalBlock ->
+                            onSuccess (ConditionalBlock.Conditional (expr, lineCommands, conditionalBlock))))
+                else
+                    onError standardError
+            | NextConditionalKind.Else ->
+                if x.NextLine() then
+                    parseBlockCommands (fun lineCommands nextConditionalKind ->
+                        match nextConditionalKind with
+                        | NextConditionalKind.Else -> onError standardError
+                        | NextConditionalKind.ElseIf _ -> onError standardError
+                        | NextConditionalKind.EndIf -> 
+                            onEndIf ()
+                            onSuccess (ConditionalBlock.Unconditional lineCommands))
+                else
+                    onError standardError
+
+        x.SkipBlanks()
+        match x.ParseExpressionCore() with
+        | ParseResult.Failed msg -> ParseResult.Failed msg
+        | ParseResult.Succeeded expr -> 
+            if x.NextLine() then
+                parseBlockCommands (fun lineCommands nextConditionalKind -> 
+                    parseNextConditional nextConditionalKind (fun conditionalBlock ->
+                        let block = ConditionalBlock.Conditional (expr, lineCommands, conditionalBlock)
+                        let lineCommand = LineCommand.If block
+                        ParseResult.Succeeded lineCommand))
+            else
+                onError standardError
+        
     /// Parse out the join command
     member x.ParseJoin lineRange =  
         let hasBang = x.ParseBang()
@@ -1003,6 +1393,21 @@ type Parser
         let lineRange = LineRangeSpecifier.Join (lineRange, x.ParseNumber())
         let joinKind = if hasBang then JoinKind.KeepEmptySpaces else JoinKind.RemoveEmptySpaces
         LineCommand.Join (lineRange, joinKind) |> ParseResult.Succeeded
+
+    /// Pares out the :let command
+    member x.ParseLet () = 
+        x.SkipBlanks()
+        match _tokenizer.CurrentTokenKind with
+        | TokenKind.Word name ->
+            _tokenizer.MoveNextToken()
+            match _tokenizer.CurrentChar with
+            | Some '=' ->
+                _tokenizer.MoveNextToken()
+                match x.ParseSingleValue() with
+                | ParseResult.Failed msg -> ParseResult.Failed msg
+                | ParseResult.Succeeded value -> LineCommand.Let (name, value) |> ParseResult.Succeeded
+            | _ -> ParseResult.Failed "Error"
+        | _ -> ParseResult.Failed "Error"
 
     /// Parse out the :make command.  The arguments here other than ! are undefined.  Just
     /// get the text blob and let the interpreter / host deal with it 
@@ -1214,7 +1619,7 @@ type Parser
             LineCommand.DisplayMarks List.empty |> ParseResult.Succeeded
 
     /// Parse out a single expression
-    member x.ParseSingleCommand () = 
+    member x.ParseSingleCommandCore() = 
 
         x.SkipBlanks()
         let lineRange = x.ParseLineRange()
@@ -1238,9 +1643,18 @@ type Parser
                 else
                     parseResult
 
+        let handleCount parseFunc = 
+            match lineRange with
+            | LineRangeSpecifier.SingleLine lineSpecifier ->
+                match lineSpecifier with
+                | LineSpecifier.Number count -> parseFunc (Some count)
+                | _ -> parseFunc None
+            | _ -> parseFunc None
+
         let doParse name = 
             let parseResult = 
                 match name with
+                | "autocmd" -> noRange x.ParseAutoCommand
                 | "behave" -> noRange x.ParseBehave
                 | "cd" -> noRange x.ParseChangeDirectory
                 | "chdir" -> noRange x.ParseChangeDirectory
@@ -1248,6 +1662,8 @@ type Parser
                 | "cmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Command])
                 | "cmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Command])
                 | "cnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Command])
+                | "cnext" -> handleCount x.ParseQuickFixNext
+                | "cprevious" -> handleCount x.ParseQuickFixPrevious
                 | "copy" -> x.ParseCopyTo lineRange 
                 | "cunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Command])
                 | "delete" -> x.ParseDelete lineRange
@@ -1256,6 +1672,8 @@ type Parser
                 | "exit" -> x.ParseQuitAndWrite lineRange
                 | "fold" -> x.ParseFold lineRange
                 | "global" -> x.ParseGlobal lineRange
+                | "history" -> noRange (fun () -> x.ParseHistory())
+                | "if" -> noRange x.ParseIf
                 | "iunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Insert])
                 | "imap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Insert])
                 | "imapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Insert])
@@ -1263,6 +1681,7 @@ type Parser
                 | "join" -> x.ParseJoin lineRange 
                 | "lcd" -> noRange x.ParseChangeLocalDirectory
                 | "lchdir" -> noRange x.ParseChangeLocalDirectory
+                | "let" -> noRange x.ParseLet
                 | "lmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Language])
                 | "lunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Language])
                 | "lnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Language])
@@ -1309,7 +1728,9 @@ type Parser
                 | "tabNext" -> noRange x.ParseTabPrevious
                 | "tabprevious" -> noRange x.ParseTabPrevious
                 | "undo" -> noRange (fun () -> LineCommand.Undo |> ParseResult.Succeeded)
+                | "unlet" -> noRange x.ParseUnlet
                 | "unmap" -> noRange (fun () -> x.ParseMapUnmap true [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
+                | "version" -> noRange (fun () -> ParseResult.Succeeded LineCommand.Version)
                 | "vglobal" -> x.ParseGlobalCore lineRange false
                 | "vmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Visual;KeyRemapMode.Select])
                 | "vmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Visual; KeyRemapMode.Select])
@@ -1355,10 +1776,15 @@ type Parser
 
     /// Parse out a single expression
     member x.ParseSingleExpression() =
+        match x.ParseSingleValue() with
+        | ParseResult.Failed msg -> ParseResult.Failed msg
+        | ParseResult.Succeeded value -> Expression.ConstantValue value |> ParseResult.Succeeded
 
+    /// Parse out a single expression
+    member x.ParseSingleValue() =
         // Re-examine the current token based on the knowledge that double quotes are
         // legal in this context as a real token
-        _tokenizer.ResetAtIndex NextTokenFlags.AllowDoubleQuote
+        use reset = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Character '\"' ->
             x.ParseStringConstant()
@@ -1366,7 +1792,7 @@ type Parser
             x.ParseStringLiteral()
         | TokenKind.Number number -> 
             _tokenizer.MoveNextToken()
-            Value.Number number |> Expression.ConstantValue |> ParseResult.Succeeded
+            VariableValue.Number number |> ParseResult.Succeeded
         | _ -> ParseResult.Failed "Invalid expression"
 
     /// Parse out a complete expression from the text.  
@@ -1395,15 +1821,28 @@ type Parser
             | _ -> return expr
         }
 
-    static member ParseRange rangeText = 
-        let parser = Parser(rangeText)
-        (parser.ParseLineRange(), parser.ParseRestOfLine())
+    member x.ParseRange rangeText = 
+        x.Reset [|rangeText|]
+        x.ParseLineRange(), x.ParseRestOfLine()
 
-    static member ParseExpression (expressionText : string) : ParseResult<Expression> = 
-        let parser = Parser(expressionText)
-        parser.ParseExpressionCore()
+    member x.ParseExpression (expressionText : string) : ParseResult<Expression> = 
+        x.Reset [|expressionText|]
+        x.ParseExpressionCore()
 
-    static member ParseLineCommand (commandText : string) = 
-        let parser = Parser(commandText)
-        parser.ParseSingleCommand()
+    member x.ParseLineCommand commandText =
+        x.Reset [|commandText|]
+        x.ParseSingleCommandCore()
+
+    member x.ParseLineCommands lines =
+        x.Reset lines
+        let rec inner rest =    
+            match x.ParseSingleCommandCore() with
+            | ParseResult.Failed msg -> ParseResult.Failed msg
+            | ParseResult.Succeeded lineCommand -> 
+                if x.NextLine() then    
+                    inner (fun item -> rest (lineCommand :: item))
+                else
+                    rest [lineCommand]
+        inner (fun all -> ParseResult.Succeeded all)
+                
 

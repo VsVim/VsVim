@@ -63,15 +63,15 @@ namespace VsVim.Implementation.VisualAssist
             string subKey;
             switch (version)
             {
-                case VisualStudioVersion.Dev10:
+                case VisualStudioVersion.Vs2010:
                     subKey = "VANet10";
                     break;
-                case VisualStudioVersion.Dev11:
+                case VisualStudioVersion.Vs2012:
                     subKey = "VANet11";
                     break;
                 case VisualStudioVersion.Unknown:
                 default:
-                    // Default to the Dev10 version
+                    // Default to the Vs2010 version
                     subKey = "VANet10";
                     break;
             }

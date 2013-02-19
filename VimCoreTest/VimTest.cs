@@ -3,374 +3,435 @@ using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
+using System.Collections.Generic;
+using Vim.Interpreter;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
-    public sealed class VimTest : VimTestBase
+    public abstract class VimTest : VimTestBase
     {
-        private MockRepository _factory;
-        private Mock<IMarkMap> _markMap;
-        private Mock<IVimHost> _vimHost;
-        private Mock<ISearchService> _searchInfo;
-        private Mock<IFileSystem> _fileSystem;
-        private IKeyMap _keyMap;
-        private IVimGlobalSettings _globalSettings;
-        private IVimBufferFactory _bufferFactory;
-        private Vim _vimRaw;
-        private IVim _vim;
+        #region SimpleListener
 
-        [SetUp]
-        public void Setup()
+        protected sealed class SimpleListener : IVimBufferCreationListener
+        {
+            internal int Count { get; set; }
+            internal IVimBuffer VimBuffer { get; set; }
+
+            void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
+            {
+                Count++;
+                VimBuffer = vimBuffer;
+            }
+        }
+
+        #endregion
+
+        protected readonly MockRepository _factory;
+        protected readonly Mock<IVimHost> _vimHost;
+        protected readonly Mock<IFileSystem> _fileSystem;
+        protected readonly IKeyMap _keyMap;
+        protected readonly IVimGlobalSettings _globalSettings;
+        protected readonly SimpleListener _simpleListener;
+        internal readonly IVimBufferFactory _bufferFactory;
+        internal readonly Vim _vimRaw;
+        protected readonly IVim _vim;
+
+        protected VimTest()
         {
             _factory = new MockRepository(MockBehavior.Strict);
             _globalSettings = new GlobalSettings();
-            _markMap = _factory.Create<IMarkMap>(MockBehavior.Strict);
             _fileSystem = _factory.Create<IFileSystem>(MockBehavior.Strict);
             _bufferFactory = VimBufferFactory;
-            _keyMap = new KeyMap(_globalSettings);
+            _simpleListener = new SimpleListener();
+            var creationListeners = new [] { new Lazy<IVimBufferCreationListener>(() => _simpleListener) };
+
+            var map = new Dictionary<string, VariableValue>();
+            _keyMap = new KeyMap(_globalSettings, map);
             _vimHost = _factory.Create<IVimHost>(MockBehavior.Strict);
-            _searchInfo = _factory.Create<ISearchService>(MockBehavior.Strict);
+            _vimHost.Setup(x => x.CreateHiddenTextView()).Returns(CreateTextView());
+            _vimHost.Setup(x => x.AutoSynchronizeSettings).Returns(true);
             _vimRaw = new Vim(
                 _vimHost.Object,
                 _bufferFactory,
-                FSharpList<Lazy<IVimBufferCreationListener>>.Empty,
+                CompositionContainer.GetExportedValue<IVimInterpreterFactory>(),
+                creationListeners.ToFSharpList(),
                 _globalSettings,
-                _markMap.Object,
+                _factory.Create<IMarkMap>().Object,
                 _keyMap,
                 MockObjectFactory.CreateClipboardDevice().Object,
-                _searchInfo.Object,
+                _factory.Create<ISearchService>().Object,
                 _fileSystem.Object,
                 new VimData(),
-                _factory.Create<IBulkOperations>().Object);
+                _factory.Create<IBulkOperations>().Object,
+                map,
+                new EditorToSettingSynchronizer());
             _vim = _vimRaw;
             _vim.AutoLoadVimRc = false;
         }
 
-        /// <summary>
-        /// Make sure that we can close multiple IVimBuffer instances
-        /// </summary>
-        [Test]
-        public void CloseAllVimBuffers_Multiple()
+        public sealed class LoadVimRcTest : VimTest
         {
-            const int count = 5;
-            for (var i = 0; i < count; i++)
+            public LoadVimRcTest()
             {
-                _vim.CreateVimBuffer(CreateTextView(""));
+                _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { }).Verifiable();
+                _fileSystem.Setup(x => x.LoadVimRcContents()).Returns(FSharpOption<FileContents>.None).Verifiable();
+                _vimHost.Setup(x => x.VimRcLoaded(It.IsAny<VimRcState>(), It.IsAny<IVimLocalSettings>(), It.IsAny<IVimWindowSettings>()));
             }
 
-            Assert.AreEqual(count, _vim.VimBuffers.Length);
-            _vim.CloseAllVimBuffers();
-            Assert.AreEqual(0, _vim.VimBuffers.Length);
-        }
-
-        [Test]
-        public void Create_SimpleTextView()
-        {
-            var textView = CreateTextView();
-            var ret = _vim.CreateVimBuffer(textView);
-            Assert.IsNotNull(ret);
-            Assert.AreSame(textView, ret.TextView);
-        }
-
-        [Test, ExpectedException(typeof(ArgumentException))]
-        public void Create_CreateTwiceForSameViewShouldFail()
-        {
-            var textView = CreateTextView();
-            _vim.CreateVimBuffer(textView);
-            _vim.CreateVimBuffer(textView);
-        }
-
-        [Test]
-        public void GetVimBuffer_ReturnNoneForViewThatHasNoBuffer()
-        {
-            var textView = CreateTextView();
-            var ret = _vim.GetVimBuffer(textView);
-            Assert.IsTrue(ret.IsNone());
-        }
-
-        [Test]
-        public void GetVimBuffer_ReturnBufferForCachedCreated()
-        {
-            var textView = CreateTextView();
-            var bufferFromCreate = _vim.CreateVimBuffer(textView);
-            var bufferFromGet = _vim.GetVimBuffer(textView);
-            Assert.IsTrue(bufferFromGet.IsSome());
-            Assert.AreSame(bufferFromGet.Value, bufferFromCreate);
-        }
-
-        [Test]
-        public void GetOrCreateVimBuffer_CreateForNewView()
-        {
-            var textView = CreateTextView();
-            var buffer = _vim.GetOrCreateVimBuffer(textView);
-            Assert.AreSame(textView, buffer.TextView);
-        }
-
-        [Test]
-        public void GetOrCreateVimBuffer_SecondCallShouldReturnAlreadyCreatedVimBuffer()
-        {
-            var textView = CreateTextView();
-            var buffer1 = _vim.GetOrCreateVimBuffer(textView);
-            var buffer2 = _vim.GetOrCreateVimBuffer(textView);
-            Assert.AreSame(buffer1, buffer2);
-        }
-
-        [Test]
-        public void GetOrCreateVimBuffer_ApplyVimRcSettings()
-        {
-            _vim.VimRcLocalSettings.AutoIndent = true;
-            _vim.VimRcLocalSettings.QuoteEscape = "b";
-            var textView = CreateTextView();
-            var buffer = _vim.GetOrCreateVimBuffer(textView);
-            Assert.IsTrue(buffer.LocalSettings.AutoIndent);
-            Assert.AreEqual("b", buffer.LocalSettings.QuoteEscape);
-        }
-
-        [Test]
-        public void GetOrCreateVimBuffer_ApplyActiveBufferLocalSettings()
-        {
-            var textView = CreateTextView();
-            var buffer = _vim.GetOrCreateVimBuffer(textView);
-            buffer.LocalSettings.AutoIndent = true;
-            buffer.LocalSettings.QuoteEscape = "b";
-
-            var didRun = false;
-            buffer.KeyInputStart += delegate
+            private void SetRcContents(params string[] lines)
             {
-                var textView2 = CreateTextView();
-                var buffer2 = _vim.GetOrCreateVimBuffer(textView2);
-                Assert.IsTrue(buffer2.LocalSettings.AutoIndent);
-                Assert.AreEqual("b", buffer2.LocalSettings.QuoteEscape);
-                didRun = true;
-            };
-            buffer.Process('a');
-            Assert.IsTrue(didRun);
-        }
+                var contents = new FileContents("foo", lines);
+                _fileSystem.Setup(x => x.LoadVimRcContents()).Returns(FSharpOption.Create(contents)).Verifiable();
+            }
 
-        /// <summary>
-        /// Make sure window settings are applied from the current IVimBuffer to the newly 
-        /// created one
-        /// </summary>
-        [Test]
-        public void GetOrCreateVimBuffer_ApplyActiveBufferWindowSettings()
-        {
-            var textView = CreateTextView();
-            var buffer = _vim.GetOrCreateVimBuffer(textView);
-            buffer.WindowSettings.CursorLine = true;
-
-            var didRun = false;
-            buffer.KeyInputStart += delegate
+            [Fact]
+            public void BadLoadClearGlobalSettings()
             {
-                var textView2 = CreateTextView();
-                var buffer2 = _vim.GetOrCreateVimBuffer(textView2);
-                Assert.IsTrue(buffer2.WindowSettings.CursorLine);
-                didRun = true;
-            };
-            buffer.Process('a');
-            Assert.IsTrue(didRun);
-        }
+                _globalSettings.VimRc = "invalid";
+                _globalSettings.VimRcPaths = "invalid";
+                Assert.True(_vim.LoadVimRc().IsLoadFailed);
+                Assert.Equal("", _globalSettings.VimRc);
+                Assert.Equal("", _globalSettings.VimRcPaths);
+                Assert.True(_vim.VimRcState.IsLoadFailed);
+                _fileSystem.Verify();
+            }
 
-        /// <summary>
-        /// When creating an IVimBuffer instance, if there is an existing IVimTextBuffer then
-        /// the mode should be taken from that
-        /// </summary>
-        [Test]
-        public void GetOrCreateVimBuffer_InitialMode()
-        {
-            var textView = CreateTextView("");
-            _vim.GetOrCreateVimTextBuffer(textView.TextBuffer).SwitchMode(ModeKind.Insert, ModeArgument.None);
-            var buffer = _vim.GetOrCreateVimBuffer(textView);
-            Assert.AreEqual(ModeKind.Insert, buffer.ModeKind);
-        }
-
-        /// <summary>
-        /// Make sure the result of this call is cached and that only one is ever created
-        /// for a given ITextBuffer
-        /// </summary>
-        [Test]
-        public void GetOrCreateVimTextBuffer_Cache()
-        {
-            var textBuffer = CreateTextBuffer("");
-            var vimTextBuffer = _vim.GetOrCreateVimTextBuffer(textBuffer);
-            Assert.AreSame(vimTextBuffer, _vim.GetOrCreateVimTextBuffer(textBuffer));
-        }
-
-        /// <summary>
-        /// Sanity check to ensure we create different IVimTextBuffer for different ITextBuffer 
-        /// instances
-        /// </summary>
-        [Test]
-        public void GetOrCreateVimTextBuffer_Multiple()
-        {
-            var textBuffer1 = CreateTextBuffer("");
-            var textBuffer2 = CreateTextBuffer("");
-            var vimTextBuffer1 = _vim.GetOrCreateVimTextBuffer(textBuffer1);
-            var vimTextBuffer2 = _vim.GetOrCreateVimTextBuffer(textBuffer2);
-            Assert.AreNotSame(vimTextBuffer1, vimTextBuffer2);
-        }
-
-        /// <summary>
-        /// The IVimTextBuffer should outlive an associated ITextView and IVimBuffer
-        /// </summary>
-        [Test]
-        public void GetOrCreateVimTextBuffer_LiveLongerThanTextView()
-        {
-            var textView = CreateTextView("");
-            var buffer = _vim.GetOrCreateVimBuffer(textView);
-            Assert.AreSame(buffer.VimTextBuffer, _vim.GetOrCreateVimTextBuffer(textView.TextBuffer));
-            buffer.Close();
-            Assert.AreSame(buffer.VimTextBuffer, _vim.GetOrCreateVimTextBuffer(textView.TextBuffer));
-        }
-
-        /// <summary>
-        /// If the host allows it then the IVimBuffer should be created 
-        /// </summary>
-        [Test]
-        public void GetOrCreateVimBufferForHost_Simple()
-        {
-            var textView = CreateTextView("");
-            _vimHost.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(true);
-            var vimBuffer = _vim.GetOrCreateVimBufferForHost(textView);
-            Assert.IsTrue(vimBuffer.IsSome());
-        }
-
-        /// <summary>
-        /// If the host doesn't allows it then the IVimBuffer shouldn't be created 
-        /// </summary>
-        [Test]
-        public void GetOrCreateVimBufferForHost_Disallow()
-        {
-            var textView = CreateTextView("");
-            _vimHost.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(false);
-            var vimBuffer = _vim.GetOrCreateVimBufferForHost(textView);
-            Assert.IsFalse(vimBuffer.IsSome());
-        }
-
-        /// <summary>
-        /// If it's already created then what the host says this time is irrelevant.  It's
-        /// already created so the Get portion takes precedence
-        /// </summary>
-        [Test]
-        public void GetOrCreateVimBufferForHost_AlreadyCreated()
-        {
-            var textView = CreateTextView("");
-            _vim.CreateVimBuffer(textView);
-            _vimHost.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(false);
-            var vimBuffer = _vim.GetOrCreateVimBufferForHost(textView);
-            Assert.IsTrue(vimBuffer.IsSome());
-        }
-
-        /// <summary>
-        /// Explicitly test the case where the IVimTextBuffer is already created and 
-        /// make sure we don't run into a conflict trying to create the IVimBuffer
-        /// layer on top of it 
-        /// </summary>
-        [Test]
-        public void GetOrCreateVimBufferForHost_VimTextBufferAlreadyCreated()
-        {
-            var textView = CreateTextView("");
-            var vimTextBuffer = _vim.CreateVimTextBuffer(textView.TextBuffer);
-            _vimHost.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(true);
-            var vimBuffer = _vim.GetOrCreateVimBufferForHost(textView).Value;
-            Assert.AreSame(textView, vimBuffer.TextView);
-            Assert.AreSame(vimTextBuffer, vimBuffer.VimTextBuffer);
-        }
-
-        [Test]
-        public void RemoveBuffer_ReturnFalseForNonAssociatedTextView()
-        {
-            var textView = CreateTextView();
-            Assert.IsFalse(_vim.RemoveVimBuffer(textView));
-        }
-
-        [Test]
-        public void RemoveBuffer_AssociatedTextView()
-        {
-            var textView = CreateTextView();
-            _vim.CreateVimBuffer(textView);
-            Assert.IsTrue(_vim.RemoveVimBuffer(textView));
-            var ret = _vim.GetVimBuffer(textView);
-            Assert.IsTrue(ret.IsNone());
-        }
-
-        [Test]
-        public void LoadVimRc1()
-        {
-            _globalSettings.VimRc = "invalid";
-            _globalSettings.VimRcPaths = "invalid";
-            _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { }).Verifiable();
-            _fileSystem.Setup(x => x.LoadVimRcContents()).Returns(FSharpOption<FileContents>.None).Verifiable();
-            Assert.IsFalse(_vim.LoadVimRc());
-            _fileSystem.Verify();
-            Assert.AreEqual("", _globalSettings.VimRc);
-            Assert.AreEqual("", _globalSettings.VimRcPaths);
-        }
-
-        [Test]
-        public void LoadVimRc2()
-        {
-            _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { "foo" }).Verifiable();
-            _fileSystem.Setup(x => x.LoadVimRcContents()).Returns(FSharpOption<FileContents>.None).Verifiable();
-            Assert.IsFalse(_vim.LoadVimRc());
-            Assert.AreEqual("", _globalSettings.VimRc);
-            Assert.AreEqual("foo", _globalSettings.VimRcPaths);
-            _fileSystem.Verify();
-        }
-
-        [Test]
-        public void LoadVimRc3()
-        {
-            // Setup the VimRc contents
-            var contents = new FileContents(
-                "foo",
-                new[] { "set ai" });
-
-            _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { "" }).Verifiable();
-            _fileSystem.Setup(x => x.LoadVimRcContents()).Returns(FSharpOption.Create(contents)).Verifiable();
-            _vimHost.Setup(x => x.CreateHiddenTextView()).Returns(CreateTextView());
-
-            Assert.IsTrue(_vim.LoadVimRc());
-
-            Assert.IsTrue(_vim.VimRcLocalSettings.AutoIndent);
-            _fileSystem.Verify();
-        }
-
-        [Test]
-        public void ActiveBuffer1()
-        {
-            Assert.IsTrue(_vim.ActiveBuffer.IsNone());
-        }
-
-        [Test]
-        public void ActiveBuffer2()
-        {
-            var textView = CreateTextView();
-            var buffer = _vim.CreateVimBuffer(textView);
-            var didRun = false;
-            buffer.KeyInputStart += delegate
+            [Fact]
+            public void BadLoadStillChangeGlobal()
             {
-                didRun = true;
-                Assert.IsTrue(_vim.ActiveBuffer.IsSome());
-                Assert.AreSame(buffer, _vim.ActiveBuffer.Value);
-            };
+                _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { "foo" }).Verifiable();
+                Assert.True(_vim.LoadVimRc().IsLoadFailed);
+                Assert.Equal("", _globalSettings.VimRc);
+                Assert.Equal("foo", _globalSettings.VimRcPaths);
+                Assert.True(_vim.VimRcState.IsLoadFailed);
+                _fileSystem.Verify();
+            }
 
-            buffer.Process('a');
-            var active = _vim.ActiveBuffer;
-            Assert.IsTrue(didRun);
+            [Fact]
+            public void LoadUpdateSettings()
+            {
+                // Setup the VimRc contents
+                var contents = new FileContents(
+                    "foo",
+                    new[] { "set ai" });
+                _fileSystem.Setup(x => x.LoadVimRcContents()).Returns(FSharpOption.Create(contents)).Verifiable();
+                _vimHost.Setup(x => x.CreateHiddenTextView()).Returns(CreateTextView());
+                Assert.True(_vim.LoadVimRc().IsLoadSucceeded);
+                Assert.True(_vimRaw._vimRcLocalSettings.AutoIndent);
+                _fileSystem.Verify();
+            }
+
+            /// <summary>
+            /// Part of loading the vimrc file includes creating an IVimBuffer under the hood.  This creation
+            /// shouldn't show up in IVimBufferCreationListener instances.  It's designed to be transparent
+            /// </summary>
+            [Fact]
+            public void LoadShouldntNotify()
+            {
+                SetRcContents("");
+                Assert.True(_vim.LoadVimRc().IsLoadSucceeded);
+                Assert.Equal(0, _simpleListener.Count);
+            }
+
+            /// <summary>
+            /// The same is true for an automatic load of the VimRc file
+            /// </summary>
+            [Fact]
+            public void AutoLoadShouldntNotify()
+            {
+                SetRcContents("");
+                _vim.AutoLoadVimRc = true;
+                _vim.CreateVimBuffer(CreateTextView());
+                Assert.True(_vim.VimRcState.IsLoadSucceeded);
+                Assert.Equal(1, _simpleListener.Count);
+            }
         }
 
-        [Test]
-        public void ActiveBuffer3()
+        public sealed class GetOrCreateVimBufferForHostTest : VimTest
         {
-            var textView = CreateTextView();
-            var buffer = _vim.CreateVimBuffer(textView);
-            buffer.Process('a');
-            Assert.IsTrue(_vim.ActiveBuffer.IsNone());
+    
+            /// <summary>
+            /// If the host allows it then the IVimBuffer should be created 
+            /// </summary>
+            [Test]
+            public void GetOrCreateVimBufferForHost_Simple()
+            {
+                var textView = CreateTextView("");
+                _vimHost.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(true);
+                var vimBuffer = _vim.GetOrCreateVimBufferForHost(textView);
+                Assert.IsTrue(vimBuffer.IsSome());
+            }
+    
+            /// <summary>
+            /// If the host doesn't allows it then the IVimBuffer shouldn't be created 
+            /// </summary>
+            [Test]
+            public void GetOrCreateVimBufferForHost_Disallow()
+            {
+                var textView = CreateTextView("");
+                _vimHost.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(false);
+                var vimBuffer = _vim.GetOrCreateVimBufferForHost(textView);
+                Assert.IsFalse(vimBuffer.IsSome());
+            }
+    
+            /// <summary>
+            /// If it's already created then what the host says this time is irrelevant.  It's
+            /// already created so the Get portion takes precedence
+            /// </summary>
+            [Test]
+            public void GetOrCreateVimBufferForHost_AlreadyCreated()
+            {
+                var textView = CreateTextView("");
+                _vim.CreateVimBuffer(textView);
+                _vimHost.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(false);
+                var vimBuffer = _vim.GetOrCreateVimBufferForHost(textView);
+                Assert.IsTrue(vimBuffer.IsSome());
+            }
+    
+            /// <summary>
+            /// Explicitly test the case where the IVimTextBuffer is already created and 
+            /// make sure we don't run into a conflict trying to create the IVimBuffer
+            /// layer on top of it 
+            /// </summary>
+            [Test]
+            public void GetOrCreateVimBufferForHost_VimTextBufferAlreadyCreated()
+            {
+                var textView = CreateTextView("");
+                var vimTextBuffer = _vim.CreateVimTextBuffer(textView.TextBuffer);
+                _vimHost.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(true);
+                var vimBuffer = _vim.GetOrCreateVimBufferForHost(textView).Value;
+                Assert.AreSame(textView, vimBuffer.TextView);
+                Assert.AreSame(vimTextBuffer, vimBuffer.VimTextBuffer);
+            }
         }
 
+        public sealed class MiscTest : VimTest
+        {
+
+            /// <summary>
+            /// Make sure that we can close multiple IVimBuffer instances
+            /// </summary>
+            [Fact]
+            public void CloseAllVimBuffers_Multiple()
+            {
+                const int count = 5;
+                for (var i = 0; i < count; i++)
+                {
+                    _vim.CreateVimBuffer(CreateTextView(""));
+                }
+
+                Assert.Equal(count, _vim.VimBuffers.Length);
+                _vim.CloseAllVimBuffers();
+                Assert.Equal(0, _vim.VimBuffers.Length);
+            }
+
+            [Fact]
+            public void Create_SimpleTextView()
+            {
+                var textView = CreateTextView();
+                var ret = _vim.CreateVimBuffer(textView);
+                Assert.NotNull(ret);
+                Assert.Same(textView, ret.TextView);
+            }
+
+            [Fact]
+            public void Create_CreateTwiceForSameViewShouldFail()
+            {
+                var textView = CreateTextView();
+                _vim.CreateVimBuffer(textView);
+                Assert.Throws<ArgumentException>(() => _vim.CreateVimBuffer(textView));
+            }
+
+            [Fact]
+            public void GetVimBuffer_ReturnNoneForViewThatHasNoBuffer()
+            {
+                var textView = CreateTextView();
+                var ret = _vim.GetVimBuffer(textView);
+                Assert.True(ret.IsNone());
+            }
+
+            [Fact]
+            public void GetVimBuffer_ReturnBufferForCachedCreated()
+            {
+                var textView = CreateTextView();
+                var bufferFromCreate = _vim.CreateVimBuffer(textView);
+                var bufferFromGet = _vim.GetVimBuffer(textView);
+                Assert.True(bufferFromGet.IsSome());
+                Assert.Same(bufferFromGet.Value, bufferFromCreate);
+            }
+
+            [Fact]
+            public void GetOrCreateVimBuffer_CreateForNewView()
+            {
+                var textView = CreateTextView();
+                var buffer = _vim.GetOrCreateVimBuffer(textView);
+                Assert.Same(textView, buffer.TextView);
+            }
+
+            [Fact]
+            public void GetOrCreateVimBuffer_SecondCallShouldReturnAlreadyCreatedVimBuffer()
+            {
+                var textView = CreateTextView();
+                var buffer1 = _vim.GetOrCreateVimBuffer(textView);
+                var buffer2 = _vim.GetOrCreateVimBuffer(textView);
+                Assert.Same(buffer1, buffer2);
+            }
+
+            [Test]
+            public void RemoveBuffer_ReturnFalseForNonAssociatedTextView()
+            {
+                var textView = CreateTextView();
+                Assert.IsFalse(_vim.RemoveVimBuffer(textView));
+            }
+
+            [Fact]
+            public void GetOrCreateVimBuffer_ApplyActiveBufferLocalSettings()
+            {
+                var textView = CreateTextView();
+                var buffer = _vim.GetOrCreateVimBuffer(textView);
+                buffer.LocalSettings.AutoIndent = true;
+                buffer.LocalSettings.QuoteEscape = "b";
+
+                var didRun = false;
+                buffer.KeyInputStart += delegate
+                {
+                    var textView2 = CreateTextView();
+                    var buffer2 = _vim.GetOrCreateVimBuffer(textView2);
+                    Assert.True(buffer2.LocalSettings.AutoIndent);
+                    Assert.Equal("b", buffer2.LocalSettings.QuoteEscape);
+                    didRun = true;
+                };
+                buffer.Process('a');
+                Assert.True(didRun);
+            }
+
+            /// <summary>
+            /// Make sure window settings are applied from the current IVimBuffer to the newly 
+            /// created one
+            /// </summary>
+            [Fact]
+            public void GetOrCreateVimBuffer_ApplyActiveBufferWindowSettings()
+            {
+                var textView = CreateTextView();
+                var buffer = _vim.GetOrCreateVimBuffer(textView);
+                buffer.WindowSettings.CursorLine = true;
+
+                var didRun = false;
+                buffer.KeyInputStart += delegate
+                {
+                    var textView2 = CreateTextView();
+                    var buffer2 = _vim.GetOrCreateVimBuffer(textView2);
+                    Assert.True(buffer2.WindowSettings.CursorLine);
+                    didRun = true;
+                };
+                buffer.Process('a');
+                Assert.True(didRun);
+            }
+
+            /// <summary>
+            /// When creating an IVimBuffer instance, if there is an existing IVimTextBuffer then
+            /// the mode should be taken from that
+            /// </summary>
+            [Fact]
+            public void GetOrCreateVimBuffer_InitialMode()
+            {
+                var textView = CreateTextView("");
+                _vim.GetOrCreateVimTextBuffer(textView.TextBuffer).SwitchMode(ModeKind.Insert, ModeArgument.None);
+                var buffer = _vim.GetOrCreateVimBuffer(textView);
+                Assert.Equal(ModeKind.Insert, buffer.ModeKind);
+            }
+
+            /// <summary>
+            /// Make sure the result of this call is cached and that only one is ever created
+            /// for a given ITextBuffer
+            /// </summary>
+            [Fact]
+            public void GetOrCreateVimTextBuffer_Cache()
+            {
+                var textBuffer = CreateTextBuffer("");
+                var vimTextBuffer = _vim.GetOrCreateVimTextBuffer(textBuffer);
+                Assert.Same(vimTextBuffer, _vim.GetOrCreateVimTextBuffer(textBuffer));
+            }
+
+            /// <summary>
+            /// Sanity check to ensure we create different IVimTextBuffer for different ITextBuffer 
+            /// instances
+            /// </summary>
+            [Fact]
+            public void GetOrCreateVimTextBuffer_Multiple()
+            {
+                var textBuffer1 = CreateTextBuffer("");
+                var textBuffer2 = CreateTextBuffer("");
+                var vimTextBuffer1 = _vim.GetOrCreateVimTextBuffer(textBuffer1);
+                var vimTextBuffer2 = _vim.GetOrCreateVimTextBuffer(textBuffer2);
+                Assert.NotSame(vimTextBuffer1, vimTextBuffer2);
+            }
+
+            /// <summary>
+            /// The IVimTextBuffer should outlive an associated ITextView and IVimBuffer
+            /// </summary>
+            [Fact]
+            public void GetOrCreateVimTextBuffer_LiveLongerThanTextView()
+            {
+                var textView = CreateTextView("");
+                var buffer = _vim.GetOrCreateVimBuffer(textView);
+                Assert.Same(buffer.VimTextBuffer, _vim.GetOrCreateVimTextBuffer(textView.TextBuffer));
+                buffer.Close();
+                Assert.Same(buffer.VimTextBuffer, _vim.GetOrCreateVimTextBuffer(textView.TextBuffer));
+            }
+
+            [Fact]
+            public void RemoveBuffer_ReturnFalseForNonAssociatedTextView()
+            {
+                var textView = CreateTextView();
+                Assert.False(_vim.RemoveVimBuffer(textView));
+            }
+
+            [Fact]
+            public void RemoveBuffer_AssociatedTextView()
+            {
+                var textView = CreateTextView();
+                _vim.CreateVimBuffer(textView);
+                Assert.True(_vim.RemoveVimBuffer(textView));
+                var ret = _vim.GetVimBuffer(textView);
+                Assert.True(ret.IsNone());
+            }
+
+            [Fact]
+            public void ActiveBuffer1()
+            {
+                Assert.True(_vim.ActiveBuffer.IsNone());
+            }
+
+            [Fact]
+            public void ActiveBuffer2()
+            {
+                var textView = CreateTextView();
+                var buffer = _vim.CreateVimBuffer(textView);
+                var didRun = false;
+                buffer.KeyInputStart += delegate
+                {
+                    didRun = true;
+                    Assert.True(_vim.ActiveBuffer.IsSome());
+                    Assert.Same(buffer, _vim.ActiveBuffer.Value);
+                };
+
+                buffer.Process('a');
+                var active = _vim.ActiveBuffer;
+                Assert.True(didRun);
+            }
+
+            [Fact]
+            public void ActiveBuffer3()
+            {
+                var textView = CreateTextView();
+                var buffer = _vim.CreateVimBuffer(textView);
+                buffer.Process('a');
+                Assert.True(_vim.ActiveBuffer.IsNone());
+            }
+        }
     }
 }

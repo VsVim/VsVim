@@ -22,6 +22,12 @@ namespace Vim.UI.Wpf
         private readonly IEditorOperationsFactoryService _editorOperationsFactoryService;
         private readonly List<ITextView> _textViewList = new List<ITextView>();
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
+        private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
+
+        public virtual bool AutoSynchronizeSettings
+        {
+            get { return true; }
+        }
 
         protected VimHost(
             ITextBufferFactoryService textBufferFactoryService,
@@ -107,6 +113,8 @@ namespace Vim.UI.Wpf
         public abstract void GoToNextTab(Path direction, int count);
 
         public abstract void GoToTab(int index);
+
+        public abstract void GoToQuickFix(QuickFix quickFix, int count, bool hasBang);
 
         public virtual bool IsDirty(ITextBuffer textbuffer)
         {
@@ -227,6 +235,10 @@ namespace Vim.UI.Wpf
 
         public abstract HostResult SplitViewVertically(ITextView value);
 
+        public virtual void VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
+        {
+
+        }
 
         /// <summary>
         /// Custom processing of an insert command is a host specific operation.  By default
@@ -243,6 +255,15 @@ namespace Vim.UI.Wpf
             {
                 var args = new TextViewEventArgs(textView);
                 _isVisibleChanged(this, args);
+            }
+        }
+
+        protected void RaiseActiveTextViewChanged(FSharpOption<ITextView> oldTextView, FSharpOption<ITextView> newTextView)
+        {
+            if (_activeTextViewChanged != null)
+            {
+                var args = new TextViewChangedEventArgs(oldTextView, newTextView);
+                _activeTextViewChanged(this, args);
             }
         }
 
@@ -349,6 +370,11 @@ namespace Vim.UI.Wpf
 
         #region IVimHost
 
+        bool IVimHost.AutoSynchronizeSettings
+        {
+            get { return AutoSynchronizeSettings; }
+        }
+
         void IVimHost.Beep()
         {
             Beep();
@@ -420,6 +446,11 @@ namespace Vim.UI.Wpf
         void IVimHost.GoToTab(int index)
         {
             GoToTab(index);
+        }
+
+        void IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        {
+            GoToQuickFix(quickFix, count, hasBang);
         }
 
         bool IVimHost.IsDirty(ITextBuffer textBuffer)
@@ -517,13 +548,23 @@ namespace Vim.UI.Wpf
             return IsVisible(textView);
         }
 
+        void IVimHost.VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
+        {
+            VimRcLoaded(vimRcState, localSettings, windowSettings);
+        }
+
         event EventHandler<TextViewEventArgs> IVimHost.IsVisibleChanged
         {
             add { _isVisibleChanged += value; }
             remove { _isVisibleChanged -= value; }
         }
 
-        #endregion
+        event EventHandler<TextViewChangedEventArgs> IVimHost.ActiveTextViewChanged
+        {
+            add { _activeTextViewChanged += value; }
+            remove { _activeTextViewChanged -= value; }
+        }
 
+        #endregion
     }
 }

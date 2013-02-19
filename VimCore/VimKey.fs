@@ -20,7 +20,6 @@ type VimKey =
     | PageDown = 13
     | Insert = 14
     | Home = 15
-    | Break = 16
     | F1 = 17
     | F2 = 18
     | F3 = 19
@@ -48,107 +47,12 @@ type VimKey =
     | KeypadMinus = 41
     | KeypadDivide = 42
     | KeypadMultiply = 43
-    | LowerA = 44
-    | LowerB = 45 
-    | LowerC = 46 
-    | LowerD = 47 
-    | LowerE = 48 
-    | LowerF = 49 
-    | LowerG = 50 
-    | LowerH = 51 
-    | LowerI = 52 
-    | LowerJ = 53 
-    | LowerK = 54 
-    | LowerL = 55 
-    | LowerM = 56 
-    | LowerN = 57 
-    | LowerO = 58 
-    | LowerP = 59 
-    | LowerQ = 60 
-    | LowerR = 61 
-    | LowerS = 62 
-    | LowerT = 63 
-    | LowerU = 64 
-    | LowerV = 65 
-    | LowerW = 66 
-    | LowerX = 67 
-    | LowerY = 68 
-    | LowerZ = 69 
-    | UpperA = 70 
-    | UpperB = 71 
-    | UpperC = 72 
-    | UpperD = 73 
-    | UpperE = 74 
-    | UpperF = 75 
-    | UpperG = 76 
-    | UpperH = 77 
-    | UpperI = 78 
-    | UpperJ = 79 
-    | UpperK = 80 
-    | UpperL = 81 
-    | UpperM = 82 
-    | UpperN = 83 
-    | UpperO = 84 
-    | UpperP = 85 
-    | UpperQ = 86 
-    | UpperR = 87 
-    | UpperS = 88 
-    | UpperT = 89 
-    | UpperU = 90 
-    | UpperV = 91 
-    | UpperW = 92 
-    | UpperX = 93 
-    | UpperY = 94 
-    | UpperZ = 95 
-    | Number0 = 96 
-    | Number1 = 97 
-    | Number2 = 98 
-    | Number3 = 99
-    | Number4 = 100
-    | Number5 = 101
-    | Number6 = 102
-    | Number7 = 103
-    | Number8 = 104
-    | Number9 = 105
-    | Bang = 106            // !
-    | AtSign = 107          // @
-    | Pound = 108           // #
-    | Percent = 109         // %
-    | Caret = 110           // ^
-    | Ampersand = 111       // &
-    | Asterick = 112        // *
-    | OpenParen = 113       // (
-    | CloseParen = 114      // )
-    | OpenBracket = 115     // [
-    | CloseBracket = 116    // ]
-    | OpenBrace = 117       // {
-    | CloseBrace = 118      // }
-    | Minus = 119           // -
-    | Underscore = 120      // _
-    | Equals = 121          // =
-    | Backslash = 122       // \
-    | Forwardslash = 123    // /
-    | Plus = 124            // +
-    | Pipe = 125            // |
-    | SingleQuote = 126     // '
-    | DoubleQuote = 127     // "
-    | Backtick = 128        // `
-    | Question = 129        // ?
-    | Comma = 130           // ,
-    | LessThan = 131        // <
-    | GreaterThan = 132     // >
-    | Period = 133          // .
-    | Semicolon = 134       // ;
-    | Colon = 135           // :
-    | Tilde = 136           // ~
-    | Space = 137           //  
-    | Dollar = 138          // $
-    | Tab = 139
-    | LineFeed = 140
-    | Nop = 141             // no-op.  Does nothing
-
-    // The character is real it's simply an unknown quantity to Vim
-    | RawCharacter = 142
+    | KeypadEnter = 44
+    | Nop = 45              // no-op.  Does nothing
+    | Null = 46             // (char)0
+    | LineFeed = 47
+    | Tab = 48
+    | RawCharacter = 50     // A simple character to be processed
 
 module VimKeyUtil =
 
@@ -179,6 +83,32 @@ module VimKeyUtil =
             | VimKey.KeypadDivide -> true
             | VimKey.KeypadMultiply -> true
             | _ -> false
+
+    /// Is this an arrow key?
+    let IsArrowKey key = 
+        match key with
+        | VimKey.Left -> true
+        | VimKey.Right -> true
+        | VimKey.Up -> true
+        | VimKey.Down -> true
+        | _ -> false
+
+    /// Is this a function key
+    let IsFunctionKey key =    
+        match key with
+        | VimKey.F1 -> true
+        | VimKey.F2 -> true
+        | VimKey.F3 -> true
+        | VimKey.F4 -> true
+        | VimKey.F5 -> true
+        | VimKey.F6 -> true
+        | VimKey.F7 -> true
+        | VimKey.F8 -> true
+        | VimKey.F9 -> true
+        | VimKey.F10 -> true
+        | VimKey.F11 -> true
+        | VimKey.F12 -> true
+        | _ -> false
 
 [<System.Flags>]
 type KeyModifiers = 

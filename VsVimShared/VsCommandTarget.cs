@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Linq;
+using System.Windows;
 using EditorUtils;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;
@@ -48,24 +51,32 @@ namespace VsVim
         private readonly IVim _vim;
         private readonly IVimBufferCoordinator _bufferCoordinator;
         private readonly ITextBuffer _textBuffer;
+        private readonly ITextView _textView;
+        private readonly ITextManager _textManager;
         private readonly IVsAdapter _vsAdapter;
         private readonly IDisplayWindowBroker _broker;
         private readonly IResharperUtil _resharperUtil;
+        private readonly IKeyUtil _keyUtil;
         private IOleCommandTarget _nextTarget;
 
         private VsCommandTarget(
             IVimBufferCoordinator bufferCoordinator,
+            ITextManager textManager,
             IVsAdapter vsAdapter,
             IDisplayWindowBroker broker,
-            IResharperUtil resharperUtil)
+            IResharperUtil resharperUtil,
+            IKeyUtil keyUtil)
         {
             _vimBuffer = bufferCoordinator.VimBuffer;
             _vim = _vimBuffer.Vim;
             _bufferCoordinator = bufferCoordinator;
             _textBuffer = _vimBuffer.TextBuffer;
+            _textView = _vimBuffer.TextView;
+            _textManager = textManager;
             _vsAdapter = vsAdapter;
             _broker = broker;
             _resharperUtil = resharperUtil;
+            _keyUtil = keyUtil;
         }
 
         /// <summary>
@@ -168,7 +179,7 @@ namespace VsVim
         private bool TryGetSingleMapping(KeyInput original, out KeyInput mapped)
         {
             var result = _vimBuffer.GetKeyInputMapping(original);
-            if (result.IsNeedsMoreInput || result.IsRecursive)
+            if (result.IsNeedsMoreInput || result.IsRecursive || result.IsPartiallyMapped)
             {
                 // No single mapping
                 mapped = null;
@@ -206,7 +217,7 @@ namespace VsVim
                 return
                     keyInput.IsArrowKey ||
                     keyInput == KeyInputUtil.EnterKey ||
-                    keyInput.Key == VimKey.Tab ||
+                    keyInput == KeyInputUtil.TabKey ||
                     keyInput.Key == VimKey.Back;
             }
 
@@ -342,7 +353,7 @@ namespace VsVim
                 return false;
             }
 
-            var modifiers = KeyUtil.ConvertToKeyModifiers(_vsAdapter.KeyboardDevice.Modifiers);
+            var modifiers = _keyUtil.GetKeyModifiers(_vsAdapter.KeyboardDevice.Modifiers);
             if (!OleCommandUtil.TryConvert(commandGroup, commandId, variantIn, modifiers, out editCommand))
             {
                 return false;
@@ -358,88 +369,135 @@ namespace VsVim
             return true;
         }
 
-        int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
+        /// <summary>
+        /// This intercepts the Paste command in Visual Studio and tries to make it work for VsVim. This is 
+        /// only possible in a subset of states like command line mode.  Otherwise we default to Visual Studio
+        /// behavior
+        /// </summary>
+        private bool Paste()
         {
+            if (_vimBuffer.ModeKind != ModeKind.Command)
+            {
+                return false;
+            }
+
             try
             {
-                EditCommand editCommand;
-                if (TryConvert(commandGroup, commandId, variantIn, out editCommand))
-                {
-                    if (editCommand.IsUndo)
+                var text = Clipboard.GetText();
+                var command = _vimBuffer.CommandMode.Command;
+                _vimBuffer.CommandMode.Command = command + text;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        internal bool ExecCore(EditCommand editCommand, out Action action)
+        {
+            VimTrace.TraceInfo("VsCommandTarget::Exec {0}", editCommand);
+            action = null;
+
+            switch (editCommand.EditCommandKind)
+            {
+                case EditCommandKind.Undo:
+                    // The user hit the undo button.  Don't attempt to map anything here and instead just 
+                    // run a single Vim undo operation
+                    _vimBuffer.UndoRedoOperations.Undo(1);
+                    return true;
+
+                case EditCommandKind.Redo:
+                    // The user hit the redo button.  Don't attempt to map anything here and instead just 
+                    // run a single Vim redo operation
+                    _vimBuffer.UndoRedoOperations.Redo(1);
+                    return true;
+
+                case EditCommandKind.Paste:
+                    return Paste();
+
+                case EditCommandKind.GoToDefinition:
+                    // The GoToDefinition command will often cause a selection to occur in the 
+                    // buffer.  We don't want that to cause us to enter Visual Mode so clear it
+                    // out.  This command can cause the active document to switch if the target
+                    // of the goto def is in another file.  This file won't be registered as the
+                    // active file yet so just clear out the active selections
+                    action = () =>
+                        {
+                            _textManager.TextViews
+                                .Where(x => !x.Selection.IsEmpty)
+                                .ForEach(x => x.Selection.Clear());
+                        };
+                    return false;
+
+                case EditCommandKind.Comment:
+                case EditCommandKind.Uncomment:
+                    // The comment / uncomment command will often induce a selection on the 
+                    // editor even if there was no selection before the command was run (single line
+                    // case).  
+                    if (_textView.Selection.IsEmpty)
                     {
-                        // The user hit the undo button.  Don't attempt to map anything here and instead just 
-                        // run a single Vim undo operation
-                        _vimBuffer.UndoRedoOperations.Undo(1);
-                        return NativeMethods.S_OK;
+                        action = () => { _textView.Selection.Clear(); };
                     }
-                    else if (editCommand.IsRedo)
-                    {
-                        // The user hit the redo button.  Don't attempt to map anything here and instead just 
-                        // run a single Vim redo operation
-                        _vimBuffer.UndoRedoOperations.Redo(1);
-                        return NativeMethods.S_OK;
-                    }
-                    else if (editCommand.HasKeyInput)
+                    return false;
+
+                case EditCommandKind.UserInput:
+                case EditCommandKind.VisualStudioCommand:
+                    if (editCommand.HasKeyInput)
                     {
                         var keyInput = editCommand.KeyInput;
 
                         // Discard the input if it's been flagged by a previous QueryStatus
                         if (_bufferCoordinator.DiscardedKeyInput.IsSome(keyInput))
                         {
-                            return NativeMethods.S_OK;
+                            return true;
                         }
 
                         // Try and process the command with the IVimBuffer
                         if (TryProcessWithBuffer(keyInput))
                         {
-                            return NativeMethods.S_OK;
+                            return true;
                         }
                     }
-                }
+                    return false;
+                default:
+                    Debug.Assert(false);
+                    return false;
             }
-            finally
-            {
-                _bufferCoordinator.DiscardedKeyInput = FSharpOption<KeyInput>.None;
-            }
-
-            return _nextTarget.Exec(commandGroup, commandId, commandExecOpt, variantIn, variantOut);
         }
 
-        int IOleCommandTarget.QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
+        private CommandStatus QueryStatusCore(EditCommand editCommand)
         {
-            EditCommand editCommand;
-            if (1 == cCmds && TryConvert(pguidCmdGroup, prgCmds[0].cmdID, pCmdText, out editCommand))
+            VimTrace.TraceInfo("VsCommandTarget::QueryStatus {0}", editCommand);
+
+            _bufferCoordinator.DiscardedKeyInput = FSharpOption<KeyInput>.None;
+
+            var action = CommandStatus.PassOn;
+            switch (editCommand.EditCommandKind)
             {
-                _bufferCoordinator.DiscardedKeyInput = FSharpOption<KeyInput>.None;
-
-                var action = CommandStatus.PassOn;
-                if (editCommand.IsUndo || editCommand.IsRedo)
-                {
+                case EditCommandKind.Undo:
+                case EditCommandKind.Redo:
                     action = CommandStatus.Enable;
-                }
-                else if (editCommand.HasKeyInput && _vimBuffer.CanProcess(editCommand.KeyInput))
-                {
-                    action = CommandStatus.Enable;
-                    if (_resharperUtil.IsInstalled)
+                    break;
+                case EditCommandKind.Paste:
+                    action = _vimBuffer.ModeKind == ModeKind.Command
+                        ? CommandStatus.Enable
+                        : CommandStatus.PassOn;
+                    break;
+                default:
+                    if (editCommand.HasKeyInput && _vimBuffer.CanProcess(editCommand.KeyInput))
                     {
-                        action = QueryStatusInResharper(editCommand.KeyInput) ?? CommandStatus.Enable;
+                        action = CommandStatus.Enable;
+                        if (_resharperUtil.IsInstalled)
+                        {
+                            action = QueryStatusInResharper(editCommand.KeyInput) ?? CommandStatus.Enable;
+                        }
                     }
-                }
-
-                switch (action)
-                {
-                    case CommandStatus.Enable:
-                        prgCmds[0].cmdf = (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
-                        return NativeMethods.S_OK;
-                    case CommandStatus.Disable:
-                        prgCmds[0].cmdf = (uint)OLECMDF.OLECMDF_SUPPORTED;
-                        return NativeMethods.S_OK;
-                    case CommandStatus.PassOn:
-                        return _nextTarget.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText);
-                }
+                    break;
             }
 
-            return _nextTarget.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText);
+            VimTrace.TraceInfo("VsCommandTarget::QueryStatus ", action);
+            return action;
         }
 
         /// <summary>
@@ -514,11 +572,13 @@ namespace VsVim
         internal static Result<VsCommandTarget> Create(
             IVimBufferCoordinator bufferCoordinator,
             IVsTextView vsTextView,
+            ITextManager textManager,
             IVsAdapter adapter,
             IDisplayWindowBroker broker,
-            IResharperUtil resharperUtil)
+            IResharperUtil resharperUtil,
+            IKeyUtil keyUtil)
         {
-            var vsCommandTarget = new VsCommandTarget(bufferCoordinator, adapter, broker, resharperUtil);
+            var vsCommandTarget = new VsCommandTarget(bufferCoordinator, textManager, adapter, broker, resharperUtil, keyUtil);
             var hresult = vsTextView.AddCommandFilter(vsCommandTarget, out vsCommandTarget._nextTarget);
             var result = Result.CreateSuccessOrError(vsCommandTarget, hresult);
             if (result.IsSuccess)
@@ -533,5 +593,57 @@ namespace VsVim
         {
             return textView.Properties.TryGetPropertySafe(Key, out vsCommandTarget);
         }
+
+        #region IOleCommandTarget
+
+        int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
+        {
+            EditCommand editCommand = null;
+            Action action = null;
+            try
+            {
+                if (TryConvert(commandGroup, commandId, variantIn, out editCommand) &&
+                    ExecCore(editCommand, out action))
+                {
+                    return NativeMethods.S_OK;
+                }
+
+                return _nextTarget.Exec(commandGroup, commandId, commandExecOpt, variantIn, variantOut);
+            }
+            finally
+            {
+                _bufferCoordinator.DiscardedKeyInput = FSharpOption<KeyInput>.None;
+
+                // Run any cleanup actions specified by ExecCore 
+                if (action != null)
+                {
+                    action();
+                }
+            }
+        }
+
+        int IOleCommandTarget.QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
+        {
+            EditCommand editCommand;
+            if (1 == cCmds && TryConvert(pguidCmdGroup, prgCmds[0].cmdID, pCmdText, out editCommand))
+            {
+                var action = QueryStatusCore(editCommand);
+                switch (action)
+                {
+                    case CommandStatus.Enable:
+                        prgCmds[0].cmdf = (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
+                        return NativeMethods.S_OK;
+                    case CommandStatus.Disable:
+                        prgCmds[0].cmdf = (uint)OLECMDF.OLECMDF_SUPPORTED;
+                        return NativeMethods.S_OK;
+                    case CommandStatus.PassOn:
+                        return _nextTarget.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText);
+                }
+            }
+
+            return _nextTarget.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText);
+        }
+
+        #endregion
     }
 }

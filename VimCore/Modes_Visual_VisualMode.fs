@@ -12,7 +12,7 @@ type internal VisualMode
         _vimBufferData : IVimBufferData,
         _operations : ICommonOperations,
         _motionUtil : IMotionUtil,
-        _modeKind : ModeKind,
+        _visualKind : VisualKind,
         _runner : ICommandRunner,
         _capture : IMotionCapture,
         _selectionTracker : ISelectionTracker
@@ -23,14 +23,13 @@ type internal VisualMode
     let _textBuffer = _vimTextBuffer.TextBuffer
     let _globalSettings = _vimTextBuffer.GlobalSettings
     let _eventHandlers = DisposableBag()
-    let _operationKind, _visualKind = 
-        match _modeKind with
-        | ModeKind.VisualBlock -> (OperationKind.CharacterWise, VisualKind.Block)
-        | ModeKind.VisualCharacter -> (OperationKind.CharacterWise, VisualKind.Character)
-        | ModeKind.VisualLine -> (OperationKind.LineWise, VisualKind.Line)
-        | _ -> failwith "Invalid"
+    let _operationKind, _modeKind = 
+        match _visualKind with
+        | VisualKind.Character -> (OperationKind.CharacterWise, ModeKind.VisualCharacter)
+        | VisualKind.Line -> (OperationKind.LineWise, ModeKind.VisualLine)
+        | VisualKind.Block -> (OperationKind.CharacterWise, ModeKind.VisualBlock)
 
-    /// Get a mark and us the provided 'func' to create a Motion value
+    /// Get a mark and use the provided 'func' to create a Motion value
     static let BindMark func = 
         let bindFunc (keyInput : KeyInput) =
             match Mark.OfChar keyInput.Char with
@@ -72,7 +71,9 @@ type internal VisualMode
                 yield ("zO", CommandFlags.Special, VisualCommand.OpenAllFoldsInSelection)
                 yield ("zc", CommandFlags.Special, VisualCommand.CloseFoldInSelection)
                 yield ("zC", CommandFlags.Special, VisualCommand.CloseAllFoldsInSelection)
-                yield ("zd", CommandFlags.Special, VisualCommand.DeleteFoldInSelection)
+                yield ("za", CommandFlags.Special, VisualCommand.ToggleFoldInSelection)
+                yield ("zA", CommandFlags.Special, VisualCommand.ToggleAllFoldsInSelection)
+                yield ("zd", CommandFlags.Special, VisualCommand.DeleteAllFoldsInSelection)
                 yield ("zD", CommandFlags.Special, VisualCommand.DeleteAllFoldsInSelection)
                 yield ("<C-q>", CommandFlags.Special, VisualCommand.SwitchModeVisual VisualKind.Block)
                 yield ("<C-v>", CommandFlags.Special, VisualCommand.SwitchModeVisual VisualKind.Block)
@@ -142,7 +143,7 @@ type internal VisualMode
 
     member x.EnsureCommandsBuilt() =
         if not _builtCommands then
-            let factory = Vim.Modes.CommandFactory(_operations, _capture, _motionUtil, _vimBufferData.JumpList, _vimTextBuffer.LocalSettings)
+            let factory = CommandFactory(_operations, _capture, _motionUtil, _vimBufferData.JumpList, _vimTextBuffer.LocalSettings)
 
             // Add in the standard commands
             factory.CreateMovementCommands()
@@ -166,8 +167,10 @@ type internal VisualMode
             match modeArgument with
             | ModeArgument.InitialVisualSelection (visualSelection, caretPoint) ->
 
-                if visualSelection.ModeKind = _modeKind then
-                    visualSelection.SelectAndMoveCaret _textView _vimTextBuffer.GlobalSettings.SelectionKind
+                if visualSelection.VisualKind = _visualKind then
+                    visualSelection.Select _textView
+                    let visualCaretPoint = visualSelection.GetCaretPoint _globalSettings.SelectionKind
+                    TextViewUtil.MoveCaretToPointRaw _textView visualCaretPoint MoveCaretFlags.EnsureOnScreen
                     caretPoint
                 else
                     None

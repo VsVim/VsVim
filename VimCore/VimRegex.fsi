@@ -90,9 +90,11 @@ module VimRegexFactory =
 
     val CreateForSettings : pattern : string -> globalSettings : IVimGlobalSettings -> VimRegex option
 
-    val CreateForSubstituteFlags : pattern : string -> SubstituteFlags -> VimRegex option
+    val CreateForSubstituteFlags : pattern : string -> globalSettings : IVimGlobalSettings -> flags : SubstituteFlags -> VimRegex option
 
     val CreateRegexOptions : globalSettings : IVimGlobalSettings -> VimRegexOptions
+
+    val CreateBcl : pattern : string -> regexOptions : RegexOptions -> Regex option
 
 
 

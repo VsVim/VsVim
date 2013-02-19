@@ -1,10 +1,9 @@
 ﻿using System.Linq;
-using NUnit.Framework;
+using Xunit;
 using Vim.Extensions;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public class CommandNameTest
     {
         private KeyInputSet CreateOne(char c)
@@ -22,22 +21,22 @@ namespace Vim.UnitTest
             return KeyInputSet.NewManyKeyInputs(all.Select(KeyInputUtil.CharToKeyInput).ToFSharpList());
         }
 
-        [Test]
+        [Fact]
         public void Add1()
         {
             var name1 = KeyInputSet.NewOneKeyInput(KeyInputUtil.CharToKeyInput('c'));
             var name2 = name1.Add(KeyInputUtil.CharToKeyInput('a'));
-            Assert.AreEqual("ca", name2.Name);
+            Assert.Equal("ca", name2.Name);
         }
 
-        [Test]
+        [Fact]
         public void Name1()
         {
             var name1 = KeyInputSet.NewOneKeyInput(KeyInputUtil.CharToKeyInput('c'));
-            Assert.AreEqual("c", name1.Name);
+            Assert.Equal("c", name1.Name);
         }
 
-        [Test]
+        [Fact]
         public void Equality()
         {
             EqualityUtil.RunAll(

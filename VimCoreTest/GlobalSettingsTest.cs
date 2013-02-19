@@ -1,153 +1,205 @@
 ﻿using System;
 using System.Linq;
-using NUnit.Framework;
+using Xunit;
+using System.Collections.Generic;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
-    public sealed class GlobalSettingsTest : SettingsCommonTest
+    public abstract class GlobalSettingsTest 
     {
-        protected override string ToggleSettingName { get { return GlobalSettingNames.IgnoreCaseName; } }
-        protected override IVimSettings Create()
+        private readonly GlobalSettings _globalSettingsRaw;
+        private readonly IVimGlobalSettings _globalSettings;
+
+        protected GlobalSettingsTest()
         {
-            return CreateGlobal();
+            _globalSettingsRaw = new GlobalSettings();
+            _globalSettings = _globalSettingsRaw;
         }
 
-        private IVimGlobalSettings CreateGlobal()
+        public sealed class PathTest : GlobalSettingsTest
         {
-            return new GlobalSettings();
+            public void Expect(string text, params PathOption[] expected)
+            {
+                var list = _globalSettingsRaw.GetPathOptionList(text);
+                Expect(list, expected);
+            }
+
+            public void Expect(IEnumerable<PathOption> value, params PathOption[] expected)
+            {
+                Assert.Equal(expected, value);
+            }
+
+            [Fact]
+            public void PathDefault()
+            {
+                Expect(_globalSettings.PathList, PathOption.CurrentFile, PathOption.CurrentDirectory);
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                Expect("foo", PathOption.NewNamed("foo"));
+            }
+
+            [Fact]
+            public void SimpleList()
+            {
+                Expect("foo,bar", PathOption.NewNamed("foo"), PathOption.NewNamed("bar"));
+            }
+
+            [Fact]
+            public void SimpleListWithSpace()
+            {
+                Expect("foo bar", PathOption.NewNamed("foo"), PathOption.NewNamed("bar"));
+            }
+
+            [Fact]
+            public void CurrentDirectoryOnly()
+            {
+                Expect(",,", PathOption.CurrentDirectory);
+            }
+
+            [Fact]
+            public void CurrentFileOnly()
+            {
+                Expect(".", PathOption.CurrentFile);
+            }
+
+            [Fact]
+            public void EscapedCommaInPath()
+            {
+                Expect(@"cat\,dog", PathOption.NewNamed(@"cat,dog"));
+            }
+
+            [Fact]
+            public void EscapedSpaceInPath()
+            {
+                Expect(@"cat\ dog", PathOption.NewNamed(@"cat dog"));
+            }
         }
 
-        [Test]
-        public void Sanity1()
+        public sealed class MiscTest : GlobalSettingsTest
         {
-            var global = CreateGlobal();
-            var all = global.AllSettings;
-            Assert.IsTrue(all.Any(x => x.Name == GlobalSettingNames.IgnoreCaseName));
-            Assert.IsTrue(all.Any(x => x.Name == GlobalSettingNames.ShiftWidthName));
-        }
+            [Fact]
+            public void Sanity1()
+            {
+                var all = _globalSettings.AllSettings;
+                Assert.True(all.Any(x => x.Name == GlobalSettingNames.IgnoreCaseName));
+                Assert.True(all.Any(x => x.Name == GlobalSettingNames.ScrollOffsetName));
+            }
 
-        [Test]
-        public void SetByAbbreviation1()
-        {
-            var global = CreateGlobal();
-            Assert.IsTrue(global.TrySetValueFromString("sw", "2"));
-            Assert.AreEqual(2, global.ShiftWidth);
-        }
+            [Fact]
+            public void IsVirtualEditOneMore1()
+            {
+                _globalSettings.VirtualEdit = String.Empty;
+                Assert.False(_globalSettings.IsVirtualEditOneMore);
+            }
 
-        [Test]
-        public void SetByAbbreviation2()
-        {
-            var global = CreateGlobal();
-            Assert.IsFalse(global.IgnoreCase);
-            Assert.IsTrue(global.TrySetValueFromString("ic", "true"));
-            Assert.IsTrue(global.IgnoreCase);
-        }
+            [Fact]
+            public void IsVirtualEditOneMore2()
+            {
+                _globalSettings.VirtualEdit = "onemore";
+                Assert.True(_globalSettings.IsVirtualEditOneMore);
+            }
 
-        [Test]
-        public void IsVirtualEditOneMore1()
-        {
-            var global = CreateGlobal();
-            global.VirtualEdit = String.Empty;
-            Assert.IsFalse(global.IsVirtualEditOneMore);
-        }
+            [Fact]
+            public void IsVirtualEditOneMore3()
+            {
+                _globalSettings.VirtualEdit = "onemore,blah";
+                Assert.True(_globalSettings.IsVirtualEditOneMore);
+            }
 
-        [Test]
-        public void IsVirtualEditOneMore2()
-        {
-            var global = CreateGlobal();
-            global.VirtualEdit = "onemore";
-            Assert.IsTrue(global.IsVirtualEditOneMore);
-        }
+            /// <summary>
+            /// Ensure the IsBackspaceStart properly parsers start from the option
+            /// </summary>
+            [Fact]
+            public void IsBackspaceStart()
+            {
+                Assert.False(_globalSettings.IsBackspaceStart);
+                _globalSettings.Backspace = "eol,start";
+                Assert.True(_globalSettings.IsBackspaceStart);
+            }
 
-        [Test]
-        public void IsVirtualEditOneMore3()
-        {
-            var global = CreateGlobal();
-            global.VirtualEdit = "onemore,blah";
-            Assert.IsTrue(global.IsVirtualEditOneMore);
-        }
+            /// <summary>
+            /// Ensure the IsBackspaceEol properly parsers eol from the option
+            /// </summary>
+            [Fact]
+            public void IsBackspaceEol()
+            {
+                Assert.False(_globalSettings.IsBackspaceEol);
+                _globalSettings.Backspace = "eol,Eol";
+                Assert.True(_globalSettings.IsBackspaceEol);
+            }
 
-        /// <summary>
-        /// Ensure the IsBackspaceStart properly parsers start from the option
-        /// </summary>
-        [Test]
-        public void IsBackspaceStart()
-        {
-            var globalSettings = CreateGlobal();
-            Assert.IsFalse(globalSettings.IsBackspaceStart);
-            globalSettings.Backspace = "eol,start";
-            Assert.IsTrue(globalSettings.IsBackspaceStart);
-        }
+            /// <summary>
+            /// Ensure the IsBackspaceIndent properly parsers start from the option
+            /// </summary>
+            [Fact]
+            public void IsBackspaceIndent()
+            {
+                Assert.False(_globalSettings.IsBackspaceIndent);
+                _globalSettings.Backspace = "indent,start";
+                Assert.True(_globalSettings.IsBackspaceIndent);
+            }
 
-        /// <summary>
-        /// Ensure the IsBackspaceEol properly parsers eol from the option
-        /// </summary>
-        [Test]
-        public void IsBackspaceEol()
-        {
-            var globalSettings = CreateGlobal();
-            Assert.IsFalse(globalSettings.IsBackspaceEol);
-            globalSettings.Backspace = "eol,Eol";
-            Assert.IsTrue(globalSettings.IsBackspaceEol);
-        }
+            /// <summary>
+            /// Setting a setting should raise the event even if the values are the same.  This is 
+            /// depended on by the :noh feature
+            /// </summary>
+            [Fact]
+            public void SetShouldRaise()
+            {
+                var seen = false;
+                _globalSettings.HighlightSearch = true;
+                _globalSettings.SettingChanged += delegate { seen = true; };
+                _globalSettings.HighlightSearch = true;
+                Assert.True(seen);
+            }
 
-        /// <summary>
-        /// Ensure the IsBackspaceIndent properly parsers start from the option
-        /// </summary>
-        [Test]
-        public void IsBackspaceIndent()
-        {
-            var globalSettings = CreateGlobal();
-            Assert.IsFalse(globalSettings.IsBackspaceIndent);
-            globalSettings.Backspace = "indent,start";
-            Assert.IsTrue(globalSettings.IsBackspaceIndent);
-        }
+            [Fact]
+            public void Clipboard_SetUnnamed()
+            {
+                _globalSettings.Clipboard = "unnamed";
+                Assert.Equal(ClipboardOptions.Unnamed, _globalSettings.ClipboardOptions);
+                Assert.Equal("unnamed", _globalSettings.Clipboard);
+            }
 
-        /// <summary>
-        /// Setting a setting should raise the event even if the values are the same.  This is 
-        /// depended on by the :noh feature
-        /// </summary>
-        [Test]
-        public void SetShouldRaise()
-        {
-            var global = CreateGlobal();
-            var seen = false;
-            global.HighlightSearch = true;
-            global.SettingChanged += delegate { seen = true; };
-            global.HighlightSearch = true;
-            Assert.IsTrue(seen);
-        }
+            [Fact]
+            public void Clipboard_Multiple()
+            {
+                _globalSettings.Clipboard = "unnamed,autoselect";
+                Assert.Equal(ClipboardOptions.Unnamed | ClipboardOptions.AutoSelect, _globalSettings.ClipboardOptions);
+                Assert.Equal("unnamed,autoselect", _globalSettings.Clipboard);
+            }
 
-        [Test]
-        public void Clipboard_SetUnnamed()
-        {
-            var global = CreateGlobal();
-            global.Clipboard = "unnamed";
-            Assert.AreEqual(ClipboardOptions.Unnamed, global.ClipboardOptions);
-            Assert.AreEqual("unnamed", global.Clipboard);
-        }
+            /// <summary>
+            /// Make sure the get / set logic for parsing out the options is complete
+            /// </summary>
+            [Fact]
+            public void SelectModeOptions_Simple()
+            {
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard | SelectModeOptions.Mouse;
+                Assert.Equal("mouse,key", _globalSettings.SelectMode);
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                Assert.Equal("key", _globalSettings.SelectMode);
+            }
 
-        [Test]
-        public void Clipboard_Multiple()
-        {
-            var global = CreateGlobal();
-            global.Clipboard = "unnamed,autoselect";
-            Assert.AreEqual(ClipboardOptions.Unnamed | ClipboardOptions.AutoSelect, global.ClipboardOptions);
-            Assert.AreEqual("unnamed,autoselect", global.Clipboard);
-        }
+            [Fact]
+            public void SelectModeOptions_Default()
+            {
+                Assert.Equal("", _globalSettings.SelectMode);
+                Assert.Equal(SelectModeOptions.None, _globalSettings.SelectModeOptions);
+                var setting = _globalSettings.GetSetting(GlobalSettingNames.SelectModeName).Value;
+                Assert.Equal("", setting.DefaultValue.AsString().Item);
+            }
 
-        /// <summary>
-        /// Make sure the get / set logic for parsing out the options is complete
-        /// </summary>
-        [Test]
-        public void SelectModeOptions_Simple()
-        {
-            var global = CreateGlobal();
-            global.SelectModeOptions = SelectModeOptions.Keyboard | SelectModeOptions.Mouse;
-            Assert.AreEqual("mouse,key", global.SelectMode);
-            global.SelectModeOptions = SelectModeOptions.Keyboard;
-            Assert.AreEqual("key", global.SelectMode);
+            [Fact]
+            public void UseEditorDeafaults_Default()
+            {
+                Assert.False(_globalSettings.UseEditorDefaults);
+                _globalSettings.UseEditorDefaults = true;
+                Assert.True(_globalSettings.UseEditorDefaults);
+            }
         }
     }
 }

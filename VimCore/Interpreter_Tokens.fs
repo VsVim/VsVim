@@ -12,7 +12,7 @@ type TokenKind =
     | Blank
 
     /// A decimal number 
-    | Number of int 
+    | Number of int
 
     /// A contiguous set of letters in the text
     | Word of string

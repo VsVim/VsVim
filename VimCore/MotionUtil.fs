@@ -5,8 +5,472 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
+open System.Collections.Generic
 open Vim.Modes
 open Vim.StringBuilderExtensions
+open Vim.Interpreter
+
+[<RequireQualifiedAccess>]
+type DirectiveKind = 
+    | If
+    | Elif
+    | Else
+    | EndIf
+
+type Directive = { 
+    Kind : DirectiveKind;
+    Span : Span
+}
+    with
+
+    member x.AdjustStart offset = 
+        let start = x.Span.Start + offset
+        let span = Span(start, x.Span.Length)
+        { x with Span = span }
+
+    override x.ToString() = sprintf "%O - %O" x.Kind x.Span
+
+
+type DirectiveBlock = {
+    Directives : List<Directive>
+    IsComplete : bool
+}
+
+[<RequireQualifiedAccess>]
+type MatchingTokenKind =
+
+    /// A #if, #else, etc ... directive value
+    | Directive
+
+    /// A C style block comment
+    | Comment
+
+    // Parens
+    | Parens
+
+    | Brackets
+
+    | Braces
+
+type MatchingTokenUtil() = 
+
+    /// This is the key for accessing directive blocks within the ITextSnapshot.  This
+    /// lets us avoid multiple parses of #if for a single ITextSnapshot
+    static let _directiveBlocksKey = obj()
+
+    ///Find the directive, if any, that starts on this line
+    member x.ParseDirective lineText =
+
+        // Don't break out the tokenizer unless the line starts with a # on the first
+        // non-blank character.  This is a quick optimization to avoid a lot of 
+        // unnecessary allocations
+        let startsWithPound = 
+            let length = String.length lineText
+            let mutable index = 0 
+            let mutable found = false
+            while index < length do
+                let c = lineText.[index]
+                if CharUtil.IsBlank c then
+                    // Continue
+                    index <- index + 1
+                elif c = '#' then
+                    found <- true
+                    index <- length
+                else
+                    index <- length
+            found
+
+        if startsWithPound then 
+            let tokenizer = Tokenizer(lineText, TokenizerFlags.SkipBlanks)
+            match tokenizer.CurrentChar with
+            | Some '#' ->
+                let start = tokenizer.CurrentToken.StartIndex
+                tokenizer.MoveNextToken()
+
+                // Process the token kind and the token to determine the span of the 
+                // directive on this line 
+                let func kind (token : Token) = 
+                    let endPosition = token.StartIndex + token.Length
+                    let span = Span.FromBounds(start, endPosition)
+                    { Kind = kind; Span = span } |> Some
+
+                // The span of the token for the #if variety blocks is the entire line
+                let all kind (token : Token) = 
+                    let span = Span.FromBounds(start, lineText.Length)
+                    { Kind = kind; Span = span; } |> Some
+
+                match tokenizer.CurrentToken.TokenText with
+                | "if" -> all DirectiveKind.If tokenizer.CurrentToken
+                | "ifdef" -> all DirectiveKind.If tokenizer.CurrentToken
+                | "ifndef" -> all DirectiveKind.If tokenizer.CurrentToken
+                | "elif" -> all DirectiveKind.Elif tokenizer.CurrentToken
+                | "else" -> func DirectiveKind.Else tokenizer.CurrentToken
+                | "endif" -> func DirectiveKind.EndIf tokenizer.CurrentToken
+                | _ -> None
+            | _ -> None
+        else
+            None
+
+    /// Parse out the directive blocks for the given ITextSnapshot.  Don't use
+    /// this method directly.  Instead go through GetDirectiveBlocks which will
+    /// cache the value
+    member x.ParseDirectiveBlocks (snapshot : ITextSnapshot) = 
+
+        let lastLineNumber = snapshot.LineCount - 1
+
+        // Get a directive at the specified line number.  Will handle a line
+        // number past the end by returning None
+        let getDirective lineNumber = 
+            if lineNumber > lastLineNumber then
+                None
+            else
+                let line = SnapshotUtil.GetLine snapshot lineNumber
+                let text = SnapshotLineUtil.GetText line
+                match x.ParseDirective text with
+                | None -> None
+                | Some directive -> directive.AdjustStart line.Start.Position |> Some
+
+        let allBlocksList = List<DirectiveBlock>()
+
+        // Parse out the remainder of a directive given an initial directive value.  Then
+        // return the line number after the completion of this block 
+        let rec parseBlockRemainder (startDirective : Directive) lineNumber = 
+            let list = List<Directive>()
+            list.Add(startDirective)
+
+            let rec inner lineNumber =
+
+                // Parse the next line 
+                let parseNext () = inner (lineNumber + 1)
+                match getDirective lineNumber with
+                | None -> 
+                    if lineNumber >= lastLineNumber then
+                        let block = { Directives = list; IsComplete = false }
+                        allBlocksList.Add block
+                        lineNumber
+                    else
+                        parseNext ()
+                | Some directive ->
+                    match directive.Kind with
+                    | DirectiveKind.If -> 
+                        let lineNumber = parseBlockRemainder directive (lineNumber + 1)
+                        inner lineNumber
+                    | DirectiveKind.Elif ->
+                        list.Add directive
+                        parseNext ()
+                    | DirectiveKind.Else ->
+                        list.Add directive
+                        parseNext ()
+                    | DirectiveKind.EndIf ->
+                        list.Add directive
+                        let block = { Directives = list; IsComplete = true }
+                        allBlocksList.Add block
+                        lineNumber + 1
+
+            inner lineNumber
+
+        // Go through every line and drive the parsing of the directives
+        let rec parseAll lineNumber = 
+            if lineNumber <= lastLineNumber then
+                match getDirective lineNumber with
+                | None -> parseAll (lineNumber + 1)
+                | Some directive ->
+                    match directive.Kind with
+                    | DirectiveKind.If -> 
+                        let nextLineNumber = parseBlockRemainder directive (lineNumber + 1)
+                        parseAll nextLineNumber
+                    | _ -> 
+                        let list = List<Directive>(1)
+                        list.Add(directive)
+                        let block = { Directives = list; IsComplete = false }
+                        allBlocksList.Add block
+
+        parseAll 0
+        allBlocksList
+
+    /// Get the directive blocks for the specified ITextSnapshot
+    member x.GetDirectiveBlocks (snapshot : ITextSnapshot) = 
+        let textBuffer = snapshot.TextBuffer
+        let propertyCollection = textBuffer.Properties
+
+        let parseAndSave () = 
+            let blocks = x.ParseDirectiveBlocks snapshot
+            propertyCollection.[_directiveBlocksKey] <- (snapshot.Version, blocks)
+            blocks
+
+        match PropertyCollectionUtil.GetValue<int * List<DirectiveBlock>> _directiveBlocksKey propertyCollection with
+        | Some (version, list) ->
+            if version = snapshot.Version.VersionNumber then list
+            else parseAndSave ()
+        | None -> parseAndSave ()
+
+    /// Find the correct MatchingTokenKind for the given line and column position on that 
+    /// line.  Needs to consider all possible matching tokens and see which one is closest
+    /// to the column (going forward only). 
+    member x.FindMatchingTokenKindCore lineText column =
+        let length = String.length lineText
+        Contract.Assert(column <= length)
+
+        // Reduce the 2 Maybe<int> values to the smaller of the int values or None if
+        // both are None
+        let reducePair result1 result2 kind = 
+            match result1, result2 with
+            | None, None -> None
+            | None, Some index2 -> Some (index2, kind)
+            | Some index1, None -> Some (index1, kind)
+            | Some index1, Some index2 -> Some ((min index1 index2), kind)
+
+        // Find the closest index to column for either of these characters.  Whichever is 
+        // closest wins.
+        let findSimplePair c1 c2 kind = 
+            let result1 = StringUtil.indexOfCharAt c1 column lineText
+            let result2 = StringUtil.indexOfCharAt c2 column lineText
+            reducePair result1 result2 kind
+
+        // Find the closest comment string to the specified column
+        let findComment () = 
+
+            // Check at the column and one before if not found at the column
+            let indexOf text = 
+                let result = StringUtil.indexOfStringAt text column lineText
+                match result with
+                | None -> 
+                    if column > 0 then StringUtil.indexOfStringAt text (column - 1) lineText
+                    else None 
+                | Some index -> result
+
+            let result1 = indexOf "/*"
+            let result2 = indexOf "*/"
+            reducePair result1 result2 MatchingTokenKind.Comment
+
+        // Find the directive value on the current line 
+        let directive = x.ParseDirective lineText 
+
+        // If the directive exists exactly at the caret point then return it because
+        // it should win over the other matching tokens at this point
+        let findDirective () = 
+            match directive with
+            | None -> None
+            | Some directive ->
+                if directive.Span.Start = column then Some (column, MatchingTokenKind.Directive)
+                else None
+
+        // Parse out all the possibilities and find the one that is closest to the 
+        // column position
+        let found = 
+            let list = 
+                [
+                    findSimplePair '(' ')' MatchingTokenKind.Parens
+                    findSimplePair '[' ']' MatchingTokenKind.Brackets
+                    findSimplePair '{' '}' MatchingTokenKind.Braces
+                    findComment ()
+                    findDirective ()
+                ]
+            List.minBy (fun value ->
+                match value with
+                | Some (column, _) -> column
+                | None -> System.Int32.MaxValue) list
+
+        match found with
+        | Some _ -> found
+        | None -> 
+            // Lastly if there are no tokens that match on the current line but the line is a directive
+            // block then it the match is the directive
+            match directive with
+            | None -> None
+            | Some directive -> Some (directive.Span.Start, MatchingTokenKind.Directive)
+
+    member x.FindMatchingTokenKind lineText column =
+        match x.FindMatchingTokenKindCore lineText column with
+        | Some (_, kind) -> Some kind
+        | None -> None
+
+    /// Find the matching token in the given ITextSnapshot for the token
+    /// closest to the specified SnapshotPoint
+    member x.FindMatchingToken point = 
+        let snapshot = SnapshotPointUtil.GetSnapshot point
+
+        // Find the matching character for the one which occurs at the specified
+        // SnapshotPoint
+        let findMatchingTokenChar target startChar endChar = 
+            let stack = Stack<int>()
+            let length = SnapshotUtil.GetLength snapshot
+            let mutable found : int option = None
+            let mutable targetDepth : int option = None
+            let mutable index = 0
+            while index < length do
+                let c = SnapshotUtil.GetChar index snapshot
+                if c = startChar then 
+
+                    // If this is our starting character then the matching token occurs
+                    // when the depth once again hits the current depth
+                    if index = target then
+                        targetDepth <- Some stack.Count
+
+                    stack.Push index
+                    index <- index + 1
+                elif c = endChar then 
+
+                    if index = target then
+                        // We are currently at the targetted char and it's an end marker
+                        // so whatever the begining marker is is the matching token
+                        if stack.Count > 0 then
+                            found <- stack.Peek() |> Some
+
+                        index <- length
+                    elif stack.Count > 0 then
+                        stack.Pop()  |> ignore
+                        match targetDepth with
+                        | None -> index <- index + 1
+                        | Some size ->
+
+                            // If we make it back down to the depth that we were targeting
+                            // when we saw the start character then this is the matching token
+                            if size = stack.Count then
+                                found <- Some index
+                                index <- length
+                            else
+                                index <- index + 1
+
+                    else
+                        index <- index + 1
+                else
+                    index <- index + 1
+
+            match found with
+            | None -> None
+            | Some start -> Span(start, 1) |> Some
+
+        // Find the comment matching the comment marker on the specified line
+        let findMatchingComment target = 
+
+            let length = SnapshotUtil.GetLength snapshot
+            let isBegin, isEnd = 
+                let matches index c1 c2 = 
+                    if index + 1 < length then
+                        let f1 = SnapshotUtil.GetChar index snapshot
+                        let f2 = SnapshotUtil.GetChar (index + 1) snapshot
+                        f1 = c1 && f2 = c2
+                    else
+                        false
+                (fun index -> matches index '/' '*'), (fun index -> matches index '*' '/')
+
+            let mutable commentStart : int option = None
+            let mutable index = 0
+            let mutable found : int option = None
+            while index < length do 
+                if Option.isNone commentStart && isBegin index then
+                    commentStart <- Some index
+                    index <- index + 2
+                elif isEnd index then
+                    if target <= index then
+                        // If the target is anywhere before the end marker then this current
+                        // block is where we will find our matches
+                        match commentStart with
+                        | None ->
+                            // This is an unmatched '*/' and the target is before this token 
+                            // so we are simply unmatched
+                            ()
+                        | Some commentStart ->
+                            if target < index then found <- Some (index + 1)
+                            else found <- Some commentStart
+
+                        index <- length
+                    else
+                        index <- index + 2
+                else
+                    index <- index + 1
+
+            match found with
+            | None -> None
+            | Some start -> Span(start, 1) |> Some
+
+        // Find the matching directive starting from the buffer position 'target'
+        let findMatchingDirective (target : int) = 
+
+            let blockList = x.GetDirectiveBlocks snapshot
+            let mutable found : Span option = None
+            let mutable blockIndex = 0
+            while blockIndex < blockList.Count do
+                let block = blockList.[blockIndex]
+                let index = 
+                    block.Directives
+                    |> Seq.tryFindIndex (fun directive -> directive.Span.Contains target)
+                match index with
+                | None -> blockIndex <- blockIndex + 1
+                | Some index ->
+                    if index + 1= block.Directives.Count then
+                        if block.IsComplete then
+                            found <- block.Directives.[0].Span |> Some
+                    else
+                        found <- block.Directives.[index + 1].Span |> Some
+
+                    blockIndex <- blockList.Count
+
+            found
+
+        let line = SnapshotPointUtil.GetContainingLine point
+        let lineText = SnapshotLineUtil.GetText line
+        let column = point.Position - line.Start.Position
+        let found = 
+            match x.FindMatchingTokenKindCore lineText column with
+            | None -> None
+            | Some (column, kind) ->
+                let position = line.Start.Position + column
+                match kind with 
+                | MatchingTokenKind.Braces -> findMatchingTokenChar position '{' '}'
+                | MatchingTokenKind.Brackets -> findMatchingTokenChar position '[' ']'
+                | MatchingTokenKind.Parens -> findMatchingTokenChar position '(' ')'
+                | MatchingTokenKind.Directive -> findMatchingDirective position
+                | MatchingTokenKind.Comment -> findMatchingComment position
+
+        match found with
+        | None -> None
+        | Some span -> SnapshotSpan(snapshot, span) |> Some
+
+    /// Find the 'count' unmatched token in the specified direction from the 
+    /// specified point
+    member x.FindUnmatchedToken path kind point count = 
+
+        // Get the sequence of points to search for the unmatched token.  The search
+        // always starts from a point that is one past the starting point even if 
+        // the search is backwards
+        let snapshot = SnapshotPointUtil.GetSnapshot point
+        let charSeq = 
+            match path with
+            | Path.Forward -> 
+                let span = SnapshotSpan(point, SnapshotUtil.GetEndPoint snapshot)
+                span |> SnapshotSpanUtil.GetPoints Path.Forward |> SeqUtil.skipMax 1
+            | Path.Backward ->
+                let span = SnapshotSpan(SnapshotUtil.GetStartPoint snapshot, point)
+                span |> SnapshotSpanUtil.GetPoints Path.Backward
+
+        // Determine the characters that will a new depth to be entered and 
+        // left.  Going forward ( is up and ) is down.  
+        let up, down = 
+            let startChar, endChar = 
+                match kind with
+                | UnmatchedTokenKind.Paren -> '(', ')'
+                | UnmatchedTokenKind.CurlyBracket -> '{', '}'
+            match path with
+            | Path.Forward -> startChar, endChar
+            | Path.Backward -> endChar, startChar
+
+        let mutable depth = 0
+        let mutable count = count
+        let mutable found : SnapshotPoint option = None
+        use e = charSeq.GetEnumerator()
+        while e.MoveNext() && Option.isNone found do
+            let c = e.Current.GetChar()
+            if c = up then 
+                depth <- depth + 1
+            elif c = down && depth = 0 then 
+                count <- count - 1
+                if count = 0 then 
+                    found <- Some e.Current 
+            elif c = down then
+                depth <- depth - 1
+        found
 
 type QuotedStringData =  {
     LeadingWhiteSpace : SnapshotSpan
@@ -17,277 +481,6 @@ type QuotedStringData =  {
 } with
     
     member x.FullSpan = SnapshotSpanUtil.Create x.LeadingWhiteSpace.Start x.TrailingWhiteSpace.End
-
-/// Flags which can occur on a matching token
-type TokenFlags = 
-
-    /// No flags and hence no restrictions
-    | None = 0
-
-    /// Specified when a match must occur on a separate line
-    | MatchOnSeparateLine = 0x1
-
-    /// Specified when a token is only valid at the start of the line
-    | ValidOnlyAtStartOfLine = 0x2 
-
-    /// Start token does not create a new nesting.  Used for C style 
-    /// block comments because multiple / * doesn't create a nesting
-    | StartTokenDoesNotNest = 0x4
-
-type Token = SnapshotSpan * TokenFlags
-
-/// Motion utility class for parsing out constructs from the text buffer
-module internal MotionUtilLegacy =
-    /// The Standard tokens which are used when getting matches in an ITextBuffer.  The syntax
-    /// is (start, end matches, flags)
-    let StandardMatchTokens = 
-        [
-            ("(", [")"], TokenFlags.None)
-            ("[", ["]"], TokenFlags.None)
-            ("{", ["}"], TokenFlags.None)
-            ("/*", ["*/"], TokenFlags.StartTokenDoesNotNest)
-            /// Last in list is always the one that needs to be the end delimiter
-            ("#ifdef", ["#else"; "#endif"], TokenFlags.MatchOnSeparateLine ||| TokenFlags.ValidOnlyAtStartOfLine)
-            ("#ifndef", ["#else"; "#endif"], TokenFlags.MatchOnSeparateLine ||| TokenFlags.ValidOnlyAtStartOfLine)
-            ("#if", ["#else"; "#elif"; "#endif"], TokenFlags.MatchOnSeparateLine ||| TokenFlags.ValidOnlyAtStartOfLine)
-        ]
-
-    /// Set of all of the tokens which need to be considered
-    let StandardMatchTokenMap = 
-        StandardMatchTokens
-        |> Seq.map (fun (start, endList, flags) -> (start :: endList) |> Seq.map (fun token -> (token, flags)))
-        |> Seq.concat
-        |> Map.ofSeq
-
-    /// Get the Token in the given SnapshotSpan 
-    let GetMatchTokens span = 
-
-        // Build up a set of tokens which start words that we care about
-        let startSet = 
-            StandardMatchTokenMap
-            |> Seq.map (fun pair -> pair.Key.[0])
-            |> Set.ofSeq
-
-        seq {
-
-            use e = (SnapshotSpanUtil.GetPoints Path.Forward span).GetEnumerator()
-            let builder = System.Text.StringBuilder()
-            let builderStart = ref span.Start
-
-            // Is the data in the builder a prefix match for any item in the 
-            // set of possible matches
-            let isPrefixMatch current = 
-                let keys = StandardMatchTokenMap |> Seq.map (fun pair -> pair.Key) |> List.ofSeq
-                StandardMatchTokenMap |> Seq.exists (fun pair -> pair.Key.StartsWith current)
-
-            let attemptToFindIfdef current = 
-                let rec inner fallback current =
-                    if e.MoveNext() then
-                        let nextPrefix = current + e.Current.GetChar().ToString()
-                        if StandardMatchTokenMap.ContainsKey(nextPrefix) then
-                            nextPrefix
-                        elif isPrefixMatch nextPrefix then
-                            inner fallback nextPrefix
-                        else
-                            fallback
-                    else 
-                       fallback 
-                if current = "#if" then
-                    inner current current
-                else 
-                    current
-
-            while e.MoveNext() do
-                let currentPoint = e.Current
-                let current = currentPoint.GetChar()
-
-                let toYield = 
-                    if builder.Length > 0 then
-                        // Append the next value and check to see if we've completed the 
-                        // match or need to continue looking
-                        builder.AppendChar current
-                        let current = builder.ToString()
-                        match Map.tryFind current StandardMatchTokenMap with
-                        | Some flags -> 
-    
-                            let fullToken = attemptToFindIfdef current 
-
-                            // Found a match.  Yield the Token
-                            let token = SnapshotSpan(builderStart.Value, fullToken.Length), flags
-                            builder.Length <- 0
-                            Some token
-                        | None -> 
-    
-                            if not (isPrefixMatch current) then 
-                                // Token is not complete and we no longer have a prefix match 
-                                // against a full token.  Reset our state and interpret the current
-                                // point as the start of a new token
-                                builder.Length <- 0
-                            None
-                    else
-                        None
-
-                match toYield with
-                | Some token -> 
-                    // Produced a token from the builder.  Yield it now
-                    yield token
-                | None ->
-                    // No token was produced from the builder.  If the length is 0 now that means we
-                    // are in a clean context and should interpret 'current' in that clean context
-                    if builder.Length = 0 then
-                        match Map.tryFind (current.ToString()) StandardMatchTokenMap with
-                        | Some flags -> 
-                            // It's a single char complete token so just return it
-                            yield (SnapshotSpan(currentPoint, 1), flags)
-                        | None ->
-                            if Set.contains current startSet then
-                                builderStart := currentPoint 
-                                builder.AppendChar current
-
-        } |> Seq.filter (fun (span, flags) -> 
-
-            if Util.IsFlagSet flags TokenFlags.ValidOnlyAtStartOfLine then 
-                // Filter out tokens which must begin at the start of the line
-                // and don't
-                let line = SnapshotSpanUtil.GetStartLine span
-                SnapshotLineUtil.GetFirstNonBlankOrStart line = span.Start
-            else
-                true)
-
-    /// Find the matching token within the buffer 
-    let FindMatchingToken span flags = 
-
-        // Is this a start token
-        let startTokenNests = not (Util.IsFlagSet flags TokenFlags.StartTokenDoesNotNest)
-        let text = SnapshotSpanUtil.GetText span
-        let isStart, possibleMatches = 
-            match StandardMatchTokens |> Seq.tryFind (fun (start, _, _) -> start = text) with
-            | None -> 
-                // Not a start token.  Matches are all start tokens which have this as an
-                // end token
-                let possibleMatches = 
-                    StandardMatchTokens
-                    |> Seq.filter (fun (_, endTokens, _) -> Seq.exists (fun t -> t = text) endTokens)
-                    |> Seq.map (fun (start, endTokens , _) -> (start :: endTokens) |> Seq.take (List.length endTokens))
-                    |> Seq.concat
-                false, possibleMatches
-            | Some (_, endTokens, _) ->
-                // A start token, match the end tokens
-                true, (endTokens |> Seq.ofList)
-
-        // middle tokens are ones that aren't start tokens nor end tokens. Things like #elif, #else, etc...
-        let isMiddle, middleTokens, endTokens = 
-            let getMiddleTokenResult searchToken tokenSet = 
-                let middleTokens = 
-                    tokenSet 
-                    |> Seq.map (fun set ->
-                        set
-                        |> Seq.skip 1 
-                        |> Seq.take ((List.length set) - 2) 
-                    )
-                    |> Seq.concat
-                    |> List.ofSeq
-
-                let endTokens = 
-                    tokenSet 
-                    |> Seq.map (fun set ->
-                        set
-                        |> Seq.skip ((List.length tokenSet) - 1) 
-                    )
-                    |> Seq.concat
-                    |> List.ofSeq
-                    
-                Seq.exists (fun t -> t = searchToken) middleTokens, middleTokens, endTokens
-
-            StandardMatchTokens 
-            |> List.map (fun (start, endTokens, _) -> start :: endTokens) 
-            |> List.filter (fun tokenList -> tokenList |> List.exists (fun t -> t = text))
-            |> getMiddleTokenResult text 
-
-        // Is the text in the given Span a match for the original token?
-        let isMatch span = 
-            let text = SnapshotSpanUtil.GetText span
-            let isSimpleMatch = Seq.exists (fun t -> t = text) possibleMatches
-            if isSimpleMatch then true
-            elif isMiddle && Seq.exists (fun t -> t = text) endTokens then true
-            else false
-
-        if isStart || isMiddle then
-            // Starting from this token.  Start the next line if that is one of the options
-            // for this token 
-            let startPoint = 
-                if Util.IsFlagSet flags TokenFlags.MatchOnSeparateLine then
-                    span |> SnapshotSpanUtil.GetStartLine |> SnapshotLineUtil.GetEndIncludingLineBreak
-                else
-                    span.End
-            let endPoint = SnapshotUtil.GetEndPoint startPoint.Snapshot
-            let searchSpan = SnapshotSpan(startPoint, endPoint)
-
-            // Searching for a matching end token is straight forward.  Go forward 
-            // until we find the first matching item 
-            use e = (GetMatchTokens searchSpan).GetEnumerator()
-            let rec inner depth = 
-                if e.MoveNext() then
-                    let current, _ = e.Current 
-                    if isMatch current then 
-                        if depth = 1 then Some current
-                        else inner (depth - 1)
-                    elif startTokenNests && current.GetText() = text then 
-                        inner (depth + 1)
-                    else 
-                        inner depth
-                else
-                    None
-            inner 1 
-        else
-            // Go from the start of the buffer to the start of the token.  We will keep a stack
-            // of open start tokens as we descend down the list of tokens.  As we hit close tokens
-            // we will pop off the top of the list.  When we hit the original token the top
-            // of the list is the matching token
-            let searchSpan = SnapshotSpan(SnapshotUtil.GetStartPoint span.Snapshot, span.Start)
-            use e = (GetMatchTokens searchSpan).GetEnumerator()
-            let rec inner startTokenList = 
-                if e.MoveNext() then
-                    let current, _ = e.Current 
-
-                    if isMatch current then 
-                        match startTokenList with
-                        | [] ->
-                            inner [[current]]
-                        | _ -> 
-                            // If we have start tokens which nest (like parens) then put the new
-                            // start token at the top of the list.  Else don't even record the 
-                            // token
-                            if startTokenNests then
-                                if middleTokens |> Seq.exists (fun t -> t = current.GetText()) then
-                                    let updatedCurrent = 
-                                        match startTokenList with
-                                        | head :: others -> (head @ [current]) :: others
-                                        | others -> others
-                                    inner updatedCurrent
-                                else
-                                    inner ([current] :: startTokenList)
-                            else 
-                                inner startTokenList
-                    elif current.GetText() = text then 
-                        // Found another end token.  Pop off the top of the stack if there is
-                        // any
-                        let startTokenList = 
-                            match startTokenList with
-                            | [] -> List.empty
-                            | _::t -> t
-                        inner startTokenList
-                    else 
-                        // Token is uninteresting.  Just recurse
-                        inner startTokenList
-                else
-                    // Can't move the enumerator anymore so we are at the end token.  The top 
-                    // of the list is our matching token
-                    ListUtil.tryHeadOnly startTokenList
-
-            match inner List.empty with
-            | Some potentials -> potentials |> ListUtil.tryHeadOnly
-            | None -> None
 
 [<RequireQualifiedAccess>]
 type SentenceKind = 
@@ -340,7 +533,8 @@ type VisualMotionResult =
 
 type internal MotionUtil 
     ( 
-        _vimBufferData : IVimBufferData
+        _vimBufferData : IVimBufferData,
+        _commonOperations : ICommonOperations
     ) = 
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
@@ -357,6 +551,7 @@ type internal MotionUtil
     let _bufferGraph = _textView.BufferGraph
     let _visualBuffer = _textView.TextViewModel.VisualBuffer
     let _globalSettings = _localSettings.GlobalSettings
+    let _matchingTokenUtil = MatchingTokenUtil()
 
     /// Set of characters which represent the end of a sentence. 
     static let SentenceEndChars = ['.'; '!'; '?']
@@ -391,7 +586,9 @@ type internal MotionUtil
             // End version?
             let point = SnapshotLineUtil.GetFirstNonBlankOrStart lastLine
             let column = SnapshotPointUtil.GetColumn point |> CaretColumn.InLastLine
-            { motionData with MotionKind = MotionKind.LineWise column }
+            { motionData with 
+                MotionKind = MotionKind.LineWise 
+                DesiredColumn = column }
 
     /// Linewise motions often need to deal with the VisualSnapshot of the ITextView because
     /// they see folded regions as single lines vs. the many of which are actually represented
@@ -518,7 +715,7 @@ type internal MotionUtil
             let span = SnapshotSpan(topPoint, x.CaretPoint)
             MotionResult.Create span false MotionKind.CharacterWiseExclusive |> Some
 
-        | _ -> x.LineDown count
+        | _ -> x.LineUp count
 
     /// Get the motion between the provided two lines.  The motion will be linewise
     /// and have a column of the first non-whitespace character.  If the 'startofline'
@@ -540,7 +737,7 @@ type internal MotionUtil
                 if startLine.LineNumber <= endLine.LineNumber then startLine, endLine, true 
                 else endLine, startLine, false
             (SnapshotLineRangeUtil.CreateForLineRange startLine endLine, isForward)
-        MotionResult.Create range.ExtentIncludingLineBreak isForward (MotionKind.LineWise column)
+        MotionResult.CreateExEx range.ExtentIncludingLineBreak isForward MotionKind.LineWise MotionResultFlags.None column
 
     /// Get the SnapshotSpan values for the paragraph object starting from the given SnapshotPoint
     /// in the specified direction.  
@@ -1021,98 +1218,108 @@ type internal MotionUtil
     member x.GetQuotedStringData quoteChar = 
         let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine _textView
 
-        // Find the quoted data structure from a given point on the line 
-        let getData startPoint = 
+        // Is the specified point a valid quote character.  This takes into account escape
+        // characters which appear before the point
+        let isQuotePoint point = 
+            let pointChar = SnapshotPointUtil.GetChar point
+            if pointChar = quoteChar then
+                match SnapshotPointUtil.TrySubtractOne point with
+                | None -> true 
+                | Some beforePoint -> 
+                    let beforeChar = SnapshotPointUtil.GetChar beforePoint
+                    not (StringUtil.containsChar _localSettings.QuoteEscape beforeChar)
+            else
+                false
 
-            // Find a quote from the given point.  This takes into account escaped quotes
-            // and will only return a non-escaped one
-            let findQuote point =
-                let rec inner point inEscape = 
-                    if point = caretLine.End then None
+        // Get the next quote on the line from the specified point
+        let getNextQuote point = 
+            point
+            |> SnapshotPointUtil.GetPointsOnLineForward
+            |> Seq.skip 1
+            |> Seq.tryFind isQuotePoint
+
+        // Get the previous quote on the line from the specified point
+        let getPreviousQuote point = 
+            point
+            |> SnapshotPointUtil.GetPointsOnLineBackward
+            |> Seq.skip 1
+            |> Seq.tryFind isQuotePoint
+
+        // Calculate the leading whitespace span.  It includes the white space just
+        // before the leading quote.  The quote is not included in the span
+        let getLeadingWhiteSpace point = 
+            let getPreviousPoint point = SnapshotPointUtil.TryGetPreviousPointOnLine point 1
+
+            let rec inner current =
+                match getPreviousPoint current with
+                | None -> SnapshotSpanUtil.Create current point
+                | Some previousPoint ->
+                    if SnapshotPointUtil.IsWhiteSpace previousPoint then
+                        inner previousPoint 
                     else
-                        let c = SnapshotPointUtil.GetChar point
-                        if c = quoteChar then
-                            if inEscape then inner (point.Add(1)) false 
-                            else Some point
-                        elif StringUtil.containsChar _localSettings.QuoteEscape c then 
-                            inner (point.Add(1)) true
-                        else
-                            inner (point.Add(1)) false
-                inner point false
-    
-            match findQuote startPoint with
+                        SnapshotSpanUtil.Create current point 
+
+            inner point
+
+        // Calculate the trailing white space from the given point.  The specified point
+        // isn't included in the span
+        let getTrailingSpace point = 
+            let getNextPoint point = SnapshotPointUtil.TryGetNextPointOnLine point 1
+
+            let start = SnapshotPointUtil.AddOne point
+            let rec inner current = 
+                if SnapshotPointUtil.IsWhiteSpace current then
+                    match SnapshotPointUtil.TryAddOne current with
+                    | None -> SnapshotSpanUtil.Create start current
+                    | Some nextPoint -> inner nextPoint
+                else
+                    SnapshotSpanUtil.Create start current
+
+            inner start
+
+        // Find the quoted data structure from the first quote 
+        let getData leadingQuote = 
+            match getNextQuote leadingQuote with
             | None -> None
-            | Some(firstQuote) ->
-                match findQuote (firstQuote.Add(1)) with
+            | Some trailingQuote ->
+
+                let span = 
+                    let start = SnapshotPointUtil.AddOne leadingQuote
+                    SnapshotSpanUtil.Create start trailingQuote
+
+                let leadingSpan = getLeadingWhiteSpace leadingQuote 
+                let trailingSpan = getTrailingSpace trailingQuote
+
+                {
+                    LeadingWhiteSpace = leadingSpan
+                    LeadingQuote = leadingQuote
+                    Contents = span
+                    TrailingQuote = trailingQuote
+                    TrailingWhiteSpace = trailingSpan } |> Some
+
+        if isQuotePoint x.CaretPoint then
+            // When starting on a quote point we have to determine if this is a start or
+            // end quote of a string by examining the contents of the entire line 
+            let index = 
+                x.CaretLine
+                |> SnapshotLineUtil.GetPoints Path.Forward 
+                |> Seq.filter isQuotePoint
+                |> Seq.tryFindIndex (fun point -> point = x.CaretPoint)
+                |> Option.get
+
+            let index = index + 1 
+            if index % 2 = 0 then 
+                // It's an end quote.  Find the start quote and use that 
+                getPreviousQuote x.CaretPoint |> Option.get |> getData
+            else
+                getData x.CaretPoint
+        else
+            match getPreviousQuote x.CaretPoint with
+            | Some point -> getData point
+            | None -> 
+                match getNextQuote x.CaretPoint with
+                | Some point -> getData point
                 | None -> None
-                | Some(secondQuote) ->
-    
-                    let span = SnapshotSpanUtil.Create (SnapshotPointUtil.AddOne firstQuote) secondQuote
-                    let isWhiteSpace = SnapshotPointUtil.GetChar >> CharUtil.IsWhiteSpace
-
-                    // Calculate the leading whitespace span.  It includes the white space just
-                    // before the leading quote.  The quote is not included in the span
-                    let leadingSpan = 
-    
-                        let isPreviousWhiteSpace point = 
-                            if point = caretLine.Start then false
-                            else 
-                                match SnapshotPointUtil.TrySubtractOne point with
-                                | None -> false
-                                | Some(prev) -> prev |> isWhiteSpace
-    
-                        let rec inner start = 
-                            if isPreviousWhiteSpace start then start |> SnapshotPointUtil.SubtractOne |> inner
-                            else SnapshotSpanUtil.Create start firstQuote
-                        inner firstQuote
-
-                    // Calculate the trailing whitespace span
-                    let trailingSpan =
-                        
-                        let isNextWhiteSpace point = 
-                            match SnapshotPointUtil.TryAddOne point with
-                            | None -> false
-                            | Some(next) ->
-                                if next.Position >= caretLine.End.Position then false
-                                else isWhiteSpace next
-    
-                        let start = SnapshotPointUtil.AddOne secondQuote
-                        let rec inner endPoint =
-                            if isNextWhiteSpace endPoint then 
-                                endPoint |> SnapshotPointUtil.AddOne |> inner
-                            elif endPoint = (start - 1) then 
-                                SnapshotSpanUtil.CreateEmpty start
-                            else 
-                                let endPoint = SnapshotPointUtil.AddOne endPoint
-                                SnapshotSpanUtil.Create start endPoint
-                        inner (start - 1)
-
-                    {
-                        LeadingWhiteSpace = leadingSpan
-                        LeadingQuote = firstQuote
-                        Contents = span
-                        TrailingQuote = secondQuote
-                        TrailingWhiteSpace = trailingSpan } |> Some
-
-        // Holds all of the QuotedStringData for the given line.  This doesn't really 
-        // understand string infrastructure and will see two quoted strings as three.  
-        let all = 
-            seq {
-                let more = ref true
-                let cur = ref caretLine.Start
-                while more.Value do
-                    match getData cur.Value with
-                    | None -> more := false
-                    | Some(data) ->
-                        yield data
-                        cur := data.TrailingQuote 
-            }
-
-        // First search for the QuotedStringData who's FullSpan includes the caret 
-        // point 
-        match all |> Seq.tryFind (fun data -> data.FullSpan.Contains caretPoint) with
-        | Some(data) -> Some data
-        | None -> SeqUtil.tryHeadOnly all
 
     member x.Mark localMark = 
         match _vimTextBuffer.GetLocalMark localMark with
@@ -1148,65 +1355,50 @@ type internal MotionUtil
             let endLine = SnapshotPointUtil.GetContainingLine endPoint
             let range = SnapshotLineRangeUtil.CreateForLineRange startLine endLine
             let isForward = x.CaretPoint = startPoint
-            let motionKind =
+            let column =
                 virtualPoint.Position
                 |> SnapshotPointUtil.GetContainingLine
                 |> SnapshotLineUtil.GetFirstNonBlankOrStart
                 |> SnapshotPointUtil.GetColumn
                 |> CaretColumn.InLastLine
-                |> MotionKind.LineWise
-            MotionResult.Create range.ExtentIncludingLineBreak isForward motionKind |> Some
+            MotionResult.CreateExEx range.ExtentIncludingLineBreak isForward MotionKind.LineWise MotionResultFlags.None column |> Some
 
     /// Find the matching token for the next token on the current line 
     member x.MatchingToken() = 
 
-        let rec searchFrom (point : SnapshotPoint) depth =
-            let line = x.CaretLine
+        match _matchingTokenUtil.FindMatchingToken x.CaretPoint with
+        | None -> None
+        | Some matchingTokenSpan ->
 
-            // First step is to find the token under the caret point or the one
-            // immediately after it.  
-            let all = MotionUtilLegacy.GetMatchTokens line.Extent
+            // Search succeeded so update the jump list before moving
+            _jumpList.Add x.CaretPoint
 
-            let token = 
-                MotionUtilLegacy.GetMatchTokens line.Extent
-                |> Seq.tryFind (fun (span, _) -> 
-                    span.Contains(point) || 
-                    span.Start.Position >= point.Position)
-            if depth = 0 then
-                match token with
-                | Some x -> Some x
-                | None -> 
-                    // Try one more time but from the beginning of the line
-                    let point = SnapshotLineUtil.GetFirstNonBlankOrStart(line)
-                    searchFrom point (depth + 1)
-            else token
+            // Order the tokens appropriately to get the span 
+            let span, isForward = 
+                if x.CaretPoint.Position < matchingTokenSpan.Start.Position then
+                    let endPoint = SnapshotPointUtil.AddOneOrCurrent matchingTokenSpan.Start
+                    SnapshotSpan(x.CaretPoint, endPoint), true
+                else
+                    SnapshotSpan(matchingTokenSpan.Start, SnapshotPointUtil.AddOneOrCurrent x.CaretPoint), false
 
-        let token = searchFrom x.CaretPoint 0
+            MotionResult.Create span isForward MotionKind.CharacterWiseInclusive |> Some
 
-        match token with
-        | None -> 
-            // No tokens on the line 
-            None
-        | Some (token, flags) -> 
-            // Now lets look for the matching token 
-            match MotionUtilLegacy.FindMatchingToken token flags with
-            | None ->
-                // No matching token so once again no motion data
-                None
-            | Some otherToken ->
+    member x.UnmatchedToken path kind count = 
+        match _matchingTokenUtil.FindUnmatchedToken path kind x.CaretPoint count with
+        | None -> None
+        | Some matchingPoint ->
 
-                // Search succeeded so update the jump list before moving
-                _jumpList.Add x.CaretPoint
+            // Search succeeded so update the jump list before moving
+            _jumpList.Add x.CaretPoint
 
-                // Nice now order the tokens appropriately to get the span 
-                let span, isForward = 
-                    if x.CaretPoint.Position < otherToken.Start.Position then
-                        SnapshotSpan(x.CaretPoint, otherToken.End), true
-                    else
-                        SnapshotSpan(otherToken.Start, SnapshotPointUtil.AddOneOrCurrent x.CaretPoint), false
+            // Order the tokens appropriately to get the span 
+            let span, isForward = 
+                if x.CaretPoint.Position < matchingPoint.Position then
+                    SnapshotSpan(x.CaretPoint, matchingPoint), true
+                else
+                    SnapshotSpan(matchingPoint, x.CaretPoint), false
 
-                MotionResult.Create span isForward MotionKind.CharacterWiseInclusive |> Some
-
+            MotionResult.Create span isForward MotionKind.CharacterWiseExclusive |> Some
 
     /// Implement the all block motion
     member x.AllBlock contextPoint blockKind count =
@@ -1590,11 +1782,11 @@ type internal MotionUtil
                 if isFirstNonBlank && endLine.Length > 0 && endLine.LineNumber > x.CaretLine.LineNumber then
                     let previousLine = 
                         SnapshotUtil.GetLines x.CurrentSnapshot (endLine.LineNumber - 1) Path.Backward
-                        |> Seq.skipWhile SnapshotLineUtil.IsBlank
+                        |> Seq.skipWhile (fun textLine -> SnapshotLineUtil.IsBlank textLine && textLine.LineNumber > x.CaretLine.LineNumber)
                         |> SeqUtil.tryHeadOnly
                     let previousLine = 
                         match previousLine with
-                        | None -> SnapshotUtil.GetFirstLine x.CurrentSnapshot
+                        | None -> x.CaretLine
                         | Some line -> line
 
                     if SnapshotLineUtil.IsEmpty previousLine then
@@ -1655,7 +1847,7 @@ type internal MotionUtil
     member x.EndOfLine count = 
         let start = x.CaretPoint
         let span = SnapshotPointUtil.GetLineRangeSpan start count
-        MotionResult.Create span true MotionKind.CharacterWiseInclusive
+        MotionResult.CreateEx span true MotionKind.CharacterWiseInclusive MotionResultFlags.EndOfLine
 
     /// Find the first non-whitespace character on the current line.  
     member x.FirstNonBlankOnCurrentLine () =
@@ -1681,7 +1873,7 @@ type internal MotionUtil
                 SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
             let column = SnapshotLineUtil.GetFirstNonBlankOrStart endLine |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
             let range = SnapshotLineRangeUtil.CreateForLineRange startLine endLine
-            MotionResult.Create range.ExtentIncludingLineBreak true (MotionKind.LineWise column))
+            MotionResult.CreateExEx range.ExtentIncludingLineBreak true MotionKind.LineWise MotionResultFlags.None column)
 
     /// An inner block motion is just the all block motion with the start and 
     /// end character removed 
@@ -1850,7 +2042,7 @@ type internal MotionUtil
             let endLine = SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
             let column = SnapshotLineUtil.GetFirstNonBlankOrStart endLine |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
             let span = SnapshotSpan(x.CaretLine.Start, endLine.EndIncludingLineBreak)
-            MotionResult.Create span true (MotionKind.LineWise column))
+            MotionResult.CreateExEx span true MotionKind.LineWise MotionResultFlags.None column)
 
     /// Implements the '-'
     ///
@@ -1865,7 +2057,21 @@ type internal MotionUtil
                 |> SnapshotLineUtil.GetFirstNonBlankOrStart
                 |> SnapshotPointUtil.GetColumn
                 |> CaretColumn.InLastLine
-            MotionResult.Create span false (MotionKind.LineWise column))
+            MotionResult.CreateExEx span false MotionKind.LineWise MotionResultFlags.None column)
+
+    /// Implements the '|'
+    ///
+    /// Get the motion which is to the 'count'-th column on the current line.
+    member x.LineToColumn count =
+        x.MotionWithVisualSnapshot (fun x ->
+            let count = count - 1
+            let targetPoint = _commonOperations.GetPointForSpaces x.CaretLine count
+            let forward = targetPoint.Difference(x.CaretPoint) < 0
+            let span = 
+                if forward then SnapshotSpan(x.CaretPoint, targetPoint)
+                else            SnapshotSpan(targetPoint, x.CaretPoint)
+            let column = count |> CaretColumn.ScreenColumn
+            MotionResult.CreateExEx span forward MotionKind.CharacterWiseExclusive MotionResultFlags.None column)
 
     /// Get the motion which is 'count' characters to the left of the caret on
     /// the same line
@@ -1876,7 +2082,7 @@ type internal MotionUtil
         let span = SnapshotSpan(startPoint, x.CaretPoint)
         MotionResult.Create span false MotionKind.CharacterWiseExclusive
 
-    /// Get the motion which is 'count' characetrs to the right of the caret 
+    /// Get the motion which is 'count' characters to the right of the caret 
     /// on the same line
     member x.CharRight count =
         let endPoint = 
@@ -1900,7 +2106,7 @@ type internal MotionUtil
                 let startLine = SnapshotUtil.GetLineOrFirst x.CurrentSnapshot (x.CaretLine.LineNumber - count)
                 let span = SnapshotSpan(startLine.Start, x.CaretLine.EndIncludingLineBreak)
                 let column = x.CaretPoint |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
-                MotionResult.CreateEx span false (MotionKind.LineWise column) MotionResultFlags.MaintainCaretColumn |> Some)
+                MotionResult.CreateExEx span false MotionKind.LineWise  MotionResultFlags.MaintainCaretColumn column |> Some)
 
     /// Move a single line down from the current line.  Should fail if we are currenly 
     /// on the last line of the ITextBuffer
@@ -1923,7 +2129,7 @@ type internal MotionUtil
                         flags
                 let span = SnapshotSpan(x.CaretLine.Start, lastLine.EndIncludingLineBreak)
                 let column = x.CaretPoint |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
-                MotionResult.CreateEx span true (MotionKind.LineWise column) flags |> Some)
+                MotionResult.CreateExEx span true MotionKind.LineWise flags column |> Some)
 
     /// Implements the 'gg' motion.  
     ///
@@ -1938,7 +2144,7 @@ type internal MotionUtil
             | None -> SnapshotUtil.GetFirstLine x.CurrentSnapshot
         x.LineToLineFirstNonBlankMotion x.CaretLine endLine
 
-    /// Implements the 'G" motion
+    /// Implements the 'G' motion
     ///
     /// Because this uses specific line numbers instead of counts we don't want to operate
     /// on the visual buffer here as vim line numbers always apply to the edit buffer. 
@@ -1986,12 +2192,12 @@ type internal MotionUtil
             if lines.Length = 0 then
                 caretLine.Extent
             else
-                let count = (CommandUtil2.CountOrDefault countOpt) 
+                let count = Util.CountOrDefault countOpt 
                 let count = min count lines.Length
                 let startLine = lines.Head
                 SnapshotPointUtil.GetLineRangeSpan startLine.Start count
         let isForward = caretPoint.Position <= span.End.Position
-        MotionResult.Create span isForward (MotionKind.LineWise CaretColumn.None)
+        MotionResult.Create span isForward MotionKind.LineWise
         |> x.ApplyStartOfLineOption
 
     // TODO: Need to convert this to use the visual snapshot
@@ -2010,7 +2216,7 @@ type internal MotionUtil
                         let count = lines.Length - count
                         List.nth lines count
                 x.SpanAndForwardFromLines caretLine endLine
-        MotionResult.Create span isForward (MotionKind.LineWise CaretColumn.None) 
+        MotionResult.Create span isForward MotionKind.LineWise
         |> x.ApplyStartOfLineOption
 
     // TODO: Need to convert this to use the visual snapshot
@@ -2025,7 +2231,7 @@ type internal MotionUtil
                 let index = lines.Length / 2
                 List.nth lines index
         let span, isForward = x.SpanAndForwardFromLines caretLine middleLine
-        MotionResult.Create span isForward (MotionKind.LineWise CaretColumn.None) 
+        MotionResult.Create span isForward MotionKind.LineWise
         |> x.ApplyStartOfLineOption
 
     /// Implements the core portion of section backward motions
@@ -2147,7 +2353,7 @@ type internal MotionUtil
     member x.QuotedString quoteChar = 
         match x.GetQuotedStringData quoteChar with
         | None -> None 
-        | Some(data) -> 
+        | Some data -> 
             let span = 
                 if not data.TrailingWhiteSpace.IsEmpty then
                     SnapshotSpanUtil.Create data.LeadingQuote data.TrailingWhiteSpace.End
@@ -2158,7 +2364,7 @@ type internal MotionUtil
     member x.QuotedStringContents quoteChar = 
         match x.GetQuotedStringData quoteChar with
         | None -> None 
-        | Some(data) ->
+        | Some data ->
             let span = data.Contents
             MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
 
@@ -2248,7 +2454,7 @@ type internal MotionUtil
         // Note: The search for the word start is forward even if we are doing a 
         // backward search
         let point =
-            let points = SnapshotPointUtil.GetPointsOnContainingLineFrom x.CaretPoint
+            let points = SnapshotPointUtil.GetPointsOnLineForward x.CaretPoint
             let isWordPoint point = 
                 let c = SnapshotPointUtil.GetChar point 
                 TextUtil.IsWordChar WordKind.NormalWord c
@@ -2324,9 +2530,14 @@ type internal MotionUtil
                 // is redundant and confusing for line wise motions when moving the 
                 // caret
                 let span = SnapshotSpan(startLine.Start, endLine.Start)
-                let kind = MotionKind.LineWise CaretColumn.AfterLastLine
+                let kind = MotionKind.LineWise 
                 let flags = motionResult.MotionResultFlags ||| MotionResultFlags.ExclusiveLineWise
-                { motionResult with Span = span; OriginalSpan = originalSpan; MotionKind = kind; MotionResultFlags = flags }
+                { motionResult with 
+                    Span = span
+                    OriginalSpan = originalSpan
+                    MotionKind = kind
+                    MotionResultFlags = flags 
+                    DesiredColumn = CaretColumn.AfterLastLine }
             else 
                 // Rule #1. Move this back a line.
                 let line = SnapshotUtil.GetLine originalSpan.Snapshot (endLine.LineNumber - 1)
@@ -2387,8 +2598,10 @@ type internal MotionUtil
             | Motion.SectionBackwardOrOpenBrace -> x.SectionBackwardOrOpenBrace motionArgument.Count |> Some
             | Motion.SectionForward -> x.SectionForward motionArgument.MotionContext motionArgument.Count |> Some
             | Motion.SectionForwardOrCloseBrace -> x.SectionForwardOrCloseBrace motionArgument.MotionContext motionArgument.Count |> Some
+            | Motion.ScreenColumn -> x.LineToColumn motionArgument.Count |> Some
             | Motion.SentenceBackward -> x.SentenceBackward motionArgument.Count |> Some
             | Motion.SentenceForward -> x.SentenceForward motionArgument.Count |> Some
+            | Motion.UnmatchedToken (path, kind) -> x.UnmatchedToken path kind motionArgument.Count
             | Motion.WordBackward wordKind -> x.WordBackward wordKind motionArgument.Count |> Some
             | Motion.WordForward wordKind -> x.WordForward wordKind motionArgument.Count motionArgument.MotionContext |> Some
 

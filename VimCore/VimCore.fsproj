@@ -39,22 +39,23 @@
   <ItemGroup>
     <Compile Include="Resources.fs" />
     <Compile Include="Constants.fs" />
+    <Compile Include="VimTrace.fs" />
     <Compile Include="FSharpUtil.fs" />
     <Compile Include="StringUtil.fs" />
-    <Compile Include="SearchKind.fs" />
     <Compile Include="Util.fs" />
+    <Compile Include="CoreTypes.fs" />
     <Compile Include="EditorUtil.fs" />
-    <Compile Include="WordKind.fs" />
     <Compile Include="VimKey.fs" />
     <Compile Include="KeyInput.fsi" />
     <Compile Include="KeyInput.fs" />
+    <Compile Include="Register.fs" />
+    <Compile Include="VimSettingsInterface.fs" />
+    <Compile Include="ColumnWiseUtil.fs" />
+    <Compile Include="Interpreter_Expression.fs" />
+    <Compile Include="CoreInterfaces.fs" />
+    <Compile Include="CoreInternalInterfaces.fs" />
     <Compile Include="TextUtil.fsi" />
     <Compile Include="TextUtil.fs" />
-    <Compile Include="OperationKind.fs" />
-    <Compile Include="Mark.fs" />
-    <Compile Include="Register.fs" />
-    <Compile Include="CoreInterfaces.fs" />
-    <Compile Include="InternalInterfaces.fs" />
     <Compile Include="CountCapture.fs" />
     <Compile Include="VimRegex.fsi" />
     <Compile Include="VimRegex.fs" />
@@ -71,13 +72,12 @@
     <Compile Include="Interpreter_Tokens.fs" />
     <Compile Include="Interpreter_Tokenizer.fsi" />
     <Compile Include="Interpreter_Tokenizer.fs" />
-    <Compile Include="Interpreter_Expression.fs" />
     <Compile Include="Interpreter_Parser.fsi" />
     <Compile Include="Interpreter_Parser.fs" />
     <Compile Include="Interpreter_Interpreter.fsi" />
     <Compile Include="Interpreter_Interpreter.fs" />
-    <Compile Include="Modes_CommandFactory.fsi" />
-    <Compile Include="Modes_CommandFactory.fs" />
+    <Compile Include="CommandFactory.fsi" />
+    <Compile Include="CommandFactory.fs" />
     <Compile Include="Modes_Command_CommandMode.fsi" />
     <Compile Include="Modes_Command_CommandMode.fs" />
     <Compile Include="Modes_Normal_NormalMode.fsi" />
@@ -132,6 +132,8 @@
     <Compile Include="CommandRunner.fs" />
     <Compile Include="WordUtil.fsi" />
     <Compile Include="WordUtil.fs" />
+    <Compile Include="AutoCommandRunner.fsi" />
+    <Compile Include="AutoCommandRunner.fs" />
     <Compile Include="Vim.fs" />
     <Compile Include="StatusUtil.fsi" />
     <Compile Include="StatusUtil.fs" />
@@ -145,35 +147,22 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="EditorUtils">
-      <HintPath>..\packages\EditorUtils.1.0.0.3\lib\net40\EditorUtils.dll</HintPath>
+      <HintPath>..\packages\EditorUtils.1.0.9.0\lib\net40\EditorUtils.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="FSharp.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.VisualStudio.CoreUtility, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\References\Microsoft.VisualStudio.CoreUtility.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.VisualStudio.Text.Data, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\References\Microsoft.VisualStudio.Text.Data.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.VisualStudio.Text.Logic, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\References\Microsoft.VisualStudio.Text.Logic.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.VisualStudio.Text.UI, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\References\Microsoft.VisualStudio.Text.UI.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
+    <Reference Include="FSharp.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.CoreUtility, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Text.Data, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Text.Logic, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Text.UI, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Text.UI.Wpf, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
-    <Reference Include="System.Core">
-      <RequiredTargetFramework>3.5</RequiredTargetFramework>
-    </Reference>
+    <Reference Include="System.Core" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
 	     Other similar extension points exist, see Microsoft.Common.targets.

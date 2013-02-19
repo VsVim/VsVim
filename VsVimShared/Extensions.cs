@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Windows.Media;
 using EditorUtils;
 using EnvDTE;
 using Microsoft.FSharp.Core;
@@ -11,6 +12,7 @@ using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
@@ -18,14 +20,42 @@ using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
 using Command = EnvDTE.Command;
-using System.Windows.Media;
-using Microsoft.VisualStudio.Text.Classification;
 
 namespace VsVim
 {
     public static class Extensions
     {
         #region Command
+
+        public static bool TryGetCommandId(this Command command, out CommandId commandId)
+        {
+            try
+            {
+                var group = Guid.Parse(command.Guid);
+                var id = unchecked((uint)command.ID);
+                commandId = new CommandId(group, id);
+                return true;
+            }
+            catch
+            {
+                commandId = default(CommandId);
+                return false;
+            }
+        }
+
+        public static bool TryGetName(this Command command, out string name)
+        {
+            try
+            {
+                name = command.Name;
+                return true;
+            }
+            catch
+            {
+                name = null;
+                return false;
+            }
+        }
 
         /// <summary>
         /// Get the binding strings for this Command.  Digs through the various ways a 
@@ -85,12 +115,18 @@ namespace VsVim
 
         private static IEnumerable<CommandKeyBinding> GetCommandKeyBindingsHelper(Command command)
         {
+            CommandId commandId;
+            if (!command.TryGetCommandId(out commandId))
+            {
+                yield break;
+            }
+
             foreach (var cur in command.GetBindings())
             {
                 KeyBinding binding;
                 if (KeyBinding.TryParse(cur, out binding))
                 {
-                    yield return new CommandKeyBinding(command.Name, binding);
+                    yield return new CommandKeyBinding(commandId, command.Name, binding);
                 }
             }
         }
@@ -248,6 +284,27 @@ namespace VsVim
 
         #endregion
 
+        #region IVsEditorAdaptersFactoryService
+
+        /// <summary>
+        /// The GetWpftextView method can throw for a lot of reasons that aren't of 
+        /// consequence to our code.  In particular if the IVsTextView isn't implemented by
+        /// the editor shims.  Don't care, just want an IWpfTextView if it's available
+        /// </summary>
+        public static IWpfTextView GetWpfTextViewNoThrow(this IVsEditorAdaptersFactoryService editorAdapter, IVsTextView vsTextView)
+        {
+            try
+            {
+                return editorAdapter.GetWpfTextView(vsTextView);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        #endregion
+
         #region IVsShell
 
         internal static bool IsPackageInstalled(this IVsShell vsShell, Guid packageId)
@@ -352,7 +409,37 @@ namespace VsVim
                 return Result.CreateError(result.HResult);
             }
 
-            var textView = factoryService.GetWpfTextView(result.Value);
+            var textView = factoryService.GetWpfTextViewNoThrow(result.Value);
+            return Result.CreateSuccessNonNull(textView);
+        }
+
+        /// <summary>
+        /// Get the last active view of the code window.  
+        /// </summary>
+        public static Result<IVsTextView> GetLastActiveView(this IVsCodeWindow vsCodeWindow)
+        {
+            IVsTextView vsTextView;
+            var hr = vsCodeWindow.GetLastActiveView(out vsTextView);
+            if (ErrorHandler.Failed(hr))
+            {
+                return Result.CreateError(hr);
+            }
+
+            return Result.CreateSuccessNonNull(vsTextView);
+        }
+
+        /// <summary>
+        /// Get the last active view of the code window
+        /// </summary>
+        public static Result<IWpfTextView> GetLastActiveView(this IVsCodeWindow codeWindow, IVsEditorAdaptersFactoryService factoryService)
+        {
+            var result = GetLastActiveView(codeWindow);
+            if (result.IsError)
+            {
+                return Result.CreateError(result.HResult);
+            }
+
+            var textView = factoryService.GetWpfTextViewNoThrow(result.Value);
             return Result.CreateSuccessNonNull(textView);
         }
 
@@ -377,7 +464,7 @@ namespace VsVim
                 return Result.CreateError(result.HResult);
             }
 
-            var textView = factoryService.GetWpfTextView(result.Value);
+            var textView = factoryService.GetWpfTextViewNoThrow(result.Value);
             return Result.CreateSuccessNonNull(textView);
         }
 
@@ -462,6 +549,46 @@ namespace VsVim
             return Result.CreateSuccess(textBuffer);
         }
 
+        /// <summary>
+        /// IVsWindowFrame which contains this IVsWindowFrame.  They are allowed to nested arbitrarily 
+        /// </summary>
+        public static bool TryGetParent(this IVsWindowFrame vsWindowFrame, out IVsWindowFrame parentWindowFrame)
+        {
+            try
+            {
+                object parentObj;
+                int hresult = vsWindowFrame.GetProperty((int)__VSFPROPID2.VSFPROPID_ParentFrame, out parentObj);
+                if (!ErrorHandler.Succeeded(hresult))
+                {
+                    parentWindowFrame = null;
+                    return false;
+                }
+
+                parentWindowFrame = parentObj as IVsWindowFrame;
+                return parentWindowFrame != null;
+            }
+            catch (Exception)
+            {
+                parentWindowFrame = null;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// IVsWindowFrame instances can nest within each other.  This method will get the top most IVsWindowFrame
+        /// in the nesting
+        /// </summary>
+        public static IVsWindowFrame GetTopMost(this IVsWindowFrame vsWindowFrame)
+        {
+            IVsWindowFrame parent;
+            if (vsWindowFrame.TryGetParent(out parent))
+            {
+                return GetTopMost(parent);
+            }
+
+            return vsWindowFrame;
+        }
+
         #endregion
 
         #region IVsTextManager
@@ -472,7 +599,7 @@ namespace VsVim
             IWpfTextView textView = null;
             if (ErrorHandler.Succeeded(vsTextManager.GetActiveView(0, null, out vsTextView)) && vsTextView != null)
             {
-                textView = factoryService.GetWpfTextView(vsTextView);
+                textView = factoryService.GetWpfTextViewNoThrow(vsTextView);
             }
 
             return Tuple.Create(textView != null, textView);
@@ -826,9 +953,9 @@ namespace VsVim
             switch (parts[0])
             {
                 case "10":
-                    return VisualStudioVersion.Dev10;
+                    return VisualStudioVersion.Vs2010;
                 case "11":
-                    return VisualStudioVersion.Dev11;
+                    return VisualStudioVersion.Vs2012;
                 default:
                     return VisualStudioVersion.Unknown;
             }
@@ -914,10 +1041,10 @@ namespace VsVim
 
         internal static int Exec(this IOleCommandTarget oleCommandTarget, OleCommandData oleCommandData)
         {
-            Guid commandGroup = oleCommandData.CommandGroup;
+            Guid commandGroup = oleCommandData.Group;
             return oleCommandTarget.Exec(
                 ref commandGroup,
-                oleCommandData.CommandId,
+                oleCommandData.Id,
                 oleCommandData.CommandExecOpt,
                 oleCommandData.VariantIn,
                 oleCommandData.VariantOut);
@@ -931,9 +1058,9 @@ namespace VsVim
 
         internal static int QueryStatus(this IOleCommandTarget oleCommandTarget, OleCommandData oleCommandData, out OLECMD command)
         {
-            var commandGroup = oleCommandData.CommandGroup;
+            var commandGroup = oleCommandData.Group;
             var cmds = new OLECMD[1];
-            cmds[0] = new OLECMD { cmdID = oleCommandData.CommandId };
+            cmds[0] = new OLECMD { cmdID = oleCommandData.Id };
             var result = oleCommandTarget.QueryStatus(
                 ref commandGroup,
                 1,

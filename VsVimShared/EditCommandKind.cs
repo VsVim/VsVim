@@ -28,6 +28,26 @@ namespace VsVim
         /// <summary>
         /// This command represents the user clicking on the redo button
         /// </summary>
-        Redo
+        Redo,
+
+        /// <summary>
+        /// The goto definition command
+        /// </summary>
+        GoToDefinition,
+
+        /// <summary>
+        /// Comment the selection
+        /// </summary>
+        Comment,
+
+        /// <summary>
+        /// Uncomment the selection
+        /// </summary>
+        Uncomment,
+
+        /// <summary>
+        /// The paste command
+        /// </summary>
+        Paste,
     }
 }

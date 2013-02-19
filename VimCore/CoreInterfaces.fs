@@ -9,6 +9,28 @@ open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Utilities
 open System.Diagnostics
 open System.Runtime.CompilerServices
+open System.Collections.Generic
+open Vim.Interpreter
+
+[<RequireQualifiedAccess>]
+type CaretMovement =
+    | Up
+    | Right
+    | Down
+    | Left
+    | Home
+    | End
+    | PageUp
+    | PageDown
+
+    with 
+
+    static member OfDirection direction =
+        match direction with
+        | Direction.Up -> CaretMovement.Up
+        | Direction.Right -> CaretMovement.Right
+        | Direction.Down -> CaretMovement.Down
+        | Direction.Left -> CaretMovement.Left
 
 type TextViewEventArgs(_textView : ITextView) =
     inherit System.EventArgs()
@@ -16,19 +38,20 @@ type TextViewEventArgs(_textView : ITextView) =
     member x.TextView = _textView
 
 [<RequireQualifiedAccess>]
+type VimRcState =
+    /// The VimRc file has not been processed at this point
+    | None
+
+    /// The load succeeded and the specified file was used 
+    | LoadSucceeded of string
+
+    /// The load failed 
+    | LoadFailed
+
+[<RequireQualifiedAccess>]
 type HostResult =
     | Success
     | Error of string
-
-[<RequireQualifiedAccess>]
-type SelectionKind =
-    | Inclusive
-    | Exclusive
-
-[<RequireQualifiedAccess>]
-type JoinKind = 
-    | RemoveEmptySpaces
-    | KeepEmptySpaces
 
 [<RequireQualifiedAccess>]
 type ChangeCharacterKind =
@@ -401,13 +424,20 @@ type CaretColumn =
     /// No column information was provided
     | None
 
-    /// Caret should be placed in the specified column on the last line in 
+    /// Caret should be placed in the specified character on the last line in 
     /// the MotionResult
     ///
     /// This column should be specified in terms of a character offset in the ITextBuffer
     /// and shouldn't consider items like how wide a tab is.  A tab should be a single
     /// character
     | InLastLine of int
+
+    /// Caret should be placed in the specified column on the last line in 
+    /// the MotionResult
+    ///
+    /// This column should be specified in terms number of screen columns, where 
+    /// some characters like tabs may span many columns.
+    | ScreenColumn of int
 
     /// Caret should be placed at the start of the line after the last line
     /// in the motion
@@ -436,6 +466,10 @@ type MotionResultFlags =
     /// the line above.  The End is the same in both cases.
     | IncludeEmptyLastLine = 0x8
 
+    /// Marker for the end of line motion.  This affects how the caret column
+    /// is maintained
+    | EndOfLine = 0x10
+
 /// Information about the type of the motion this was.
 [<RequireQualifiedAccess>]
 type MotionKind =
@@ -444,10 +478,7 @@ type MotionKind =
 
     | CharacterWiseExclusive
 
-    /// In addition to recording the Span certain line wise operations like j and k also
-    /// record data about the desired column within the span.  This value may or may not
-    /// be a valid point within the line
-    | LineWise of CaretColumn
+    | LineWise
 
 /// Data about a complete motion operation. 
 type MotionResult = {
@@ -468,14 +499,15 @@ type MotionResult = {
     /// The flags on the MotionRelult
     MotionResultFlags : MotionResultFlags
 
+    /// In addition to recording the Span, certain motions like j, k, and | also
+    /// record data about the desired column within the span.  This value may or may not
+    /// be a valid point within the line
+    DesiredColumn : CaretColumn
+
 } with
 
     /// The possible column of the MotionResult
-    member x.CaretColumn = 
-        match x.MotionKind with
-        | MotionKind.CharacterWiseExclusive -> CaretColumn.None
-        | MotionKind.CharacterWiseInclusive -> CaretColumn.None
-        | MotionKind.LineWise column -> column
+    member x.CaretColumn = x.DesiredColumn
 
     /// The Span as an EditSpan value
     member x.EditSpan = EditSpan.Single x.Span
@@ -516,13 +548,25 @@ type MotionResult = {
         else
             SnapshotSpanUtil.GetStartLine x.Span
 
-    static member CreateEx span isForward motionKind motionResultFlags = 
+    member x.Start = x.Span.Start
+
+    member x.End = x.Span.End
+
+    member x.Last = SnapshotSpanUtil.GetLastIncludedPoint x.Span
+
+    member x.LastOrStart = x.Last |> OptionUtil.getOrDefault x.Start
+
+    static member CreateExEx span isForward motionKind motionResultFlags desiredColumn = 
         {
             Span = span
             OriginalSpan = span
             IsForward = isForward
             MotionKind = motionKind
-            MotionResultFlags = motionResultFlags }
+            MotionResultFlags = motionResultFlags 
+            DesiredColumn = desiredColumn }
+
+    static member CreateEx span isForward motionKind motionResultFlags = 
+        MotionResult.CreateExEx span isForward motionKind motionResultFlags CaretColumn.None
 
     static member Create span isForward motionKind = MotionResult.CreateEx span isForward motionKind MotionResultFlags.None
 
@@ -600,6 +644,11 @@ type BlockKind =
         | AngleBracket -> '<', '>'
         | CurlyBracket -> '{', '}'
 
+[<RequireQualifiedAccess>]
+type UnmatchedTokenKind =
+    | Paren
+    | CurlyBracket
+
 /// A discriminated union of the Motion types supported.  These are the primary
 /// repeat mechanisms for Motion arguments so it's very important that these 
 /// are ITextView / IVimBuffer agnostic.  It will be very common for a Motion 
@@ -652,7 +701,7 @@ type Motion =
 
     /// Find the first non-blank character as the start of the span.  This is an exclusive
     /// motion so be careful we don't go to far forward.  Providing a count to this motion has
-    /// no affect
+    /// no effect
     | FirstNonBlankOnCurrentLine
 
     /// Find the first non-blank character on the (count - 1) line below this line
@@ -762,6 +811,12 @@ type Motion =
     /// Count sentences forward
     | SentenceForward
 
+    /// Move the the specific column of the current line. Typically in response to the | key. 
+    | ScreenColumn
+
+    /// The [(, ]), ]}, [{ motions
+    | UnmatchedToken of Path * UnmatchedTokenKind
+
     /// Implement the b/B motion
     | WordBackward of WordKind
 
@@ -789,13 +844,15 @@ type ModeKind =
     | VisualBlock = 6 
     | Replace = 7
     | SubstituteConfirm = 8
-    | Select = 9
-    | ExternalEdit = 10
+    | SelectCharacter = 9
+    | SelectLine = 10 
+    | SelectBlock = 11
+    | ExternalEdit = 12
 
     /// Initial mode for an IVimBuffer.  It will maintain this mode until the underyling
     /// ITextView completes it's initialization and allows the IVimBuffer to properly 
     /// transition to the mode matching it's underlying IVimTextBuffer
-    | Uninitialized = 11
+    | Uninitialized = 13
 
     /// Mode when Vim is disabled.  It won't interact with events it otherwise would such
     /// as selection changes
@@ -815,11 +872,17 @@ type VisualKind =
         | Line _ -> TextSelectionMode.Stream
         | Block _ -> TextSelectionMode.Box
 
-    member x.ModeKind = 
+    member x.VisualModeKind = 
         match x with
         | Character _ -> ModeKind.VisualCharacter
         | Line _ -> ModeKind.VisualLine
         | Block _ -> ModeKind.VisualBlock
+
+    member x.SelectModeKind = 
+        match x with
+        | Character _ -> ModeKind.SelectCharacter
+        | Line _ -> ModeKind.SelectLine
+        | Block _ -> ModeKind.SelectBlock
 
     static member All = [ Character; Line; Block ] |> Seq.ofList
 
@@ -832,7 +895,14 @@ type VisualKind =
 
     static member IsAnyVisual kind = VisualKind.OfModeKind kind |> Option.isSome
 
-    static member IsAnyVisualOrSelect kind = VisualKind.IsAnyVisual kind || kind = ModeKind.Select
+    static member IsAnySelect kind = 
+        match kind with
+        | ModeKind.SelectCharacter -> true
+        | ModeKind.SelectLine -> true
+        | ModeKind.SelectBlock -> true
+        | _ -> false
+
+    static member IsAnyVisualOrSelect kind = VisualKind.IsAnyVisual kind || VisualKind.IsAnySelect kind
 
 /// The actual command name.  This is a wrapper over the collection of KeyInput 
 /// values which make up a command name.  
@@ -886,25 +956,25 @@ type KeyInputSet =
     member x.Length =
         match x with
         | Empty -> 0
-        | OneKeyInput(_) -> 1
-        | TwoKeyInputs(_) -> 2
-        | ManyKeyInputs(list) -> list.Length
+        | OneKeyInput _ -> 1
+        | TwoKeyInputs _ -> 2
+        | ManyKeyInputs list -> list.Length
 
     /// Add a KeyInput to the end of this KeyInputSet and return the 
     /// resulting value
     member x.Add ki =
         match x with 
         | Empty -> OneKeyInput ki
-        | OneKeyInput(previous) -> TwoKeyInputs(previous,ki)
-        | TwoKeyInputs(p1,p2) -> ManyKeyInputs [p1;p2;ki]
-        | ManyKeyInputs(list) -> ManyKeyInputs (list @ [ki])
+        | OneKeyInput previous -> TwoKeyInputs(previous,ki)
+        | TwoKeyInputs (p1, p2) -> ManyKeyInputs [p1;p2;ki]
+        | ManyKeyInputs list -> ManyKeyInputs (list @ [ki])
 
     /// Does the name start with the given KeyInputSet
     member x.StartsWith (targetName : KeyInputSet) = 
         match targetName,x with
         | Empty, _ -> true
-        | OneKeyInput(leftKi), OneKeyInput(rightKi) ->  leftKi = rightKi
-        | OneKeyInput(leftKi), TwoKeyInputs(rightKi,_) -> leftKi = rightKi
+        | OneKeyInput leftKi, OneKeyInput rightKi ->  leftKi = rightKi
+        | OneKeyInput leftKi, TwoKeyInputs (rightKi, _) -> leftKi = rightKi
         | _ -> 
             let left = targetName.KeyInputs 
             let right = x.KeyInputs
@@ -925,9 +995,9 @@ type KeyInputSet =
     override x.GetHashCode() = 
         match x with
         | Empty -> 1
-        | OneKeyInput(ki) -> ki.GetHashCode()
-        | TwoKeyInputs(k1,k2) -> k1.GetHashCode() ^^^ k2.GetHashCode()
-        | ManyKeyInputs(list) -> 
+        | OneKeyInput ki -> ki.GetHashCode()
+        | TwoKeyInputs (k1, k2) -> k1.GetHashCode() ^^^ k2.GetHashCode()
+        | ManyKeyInputs list -> 
             list 
             |> Seq.ofList
             |> Seq.map (fun ki -> ki.GetHashCode())
@@ -979,6 +1049,12 @@ module KeyInputSetUtil =
 
     let OfChar c = c |> KeyInputUtil.CharToKeyInput |> OneKeyInput
 
+    let OfCharArray ([<System.ParamArray>] arr) = 
+        arr
+        |> Seq.ofArray
+        |> Seq.map KeyInputUtil.CharToKeyInput
+        |> OfSeq
+
     let OfString (str:string) = str |> Seq.map KeyInputUtil.CharToKeyInput |> OfSeq
 
     let OfVimKeyArray ([<System.ParamArray>] arr) = 
@@ -990,40 +1066,6 @@ module KeyInputSetUtil =
     let Combine (left : KeyInputSet) (right : KeyInputSet) =
         let all = left.KeyInputs @ right.KeyInputs
         OfList all
-
-/// Modes for a key remapping
-[<RequireQualifiedAccess>]
-[<DebuggerDisplay("{ToString(),nq}")>]
-type KeyRemapMode =
-    | Normal 
-    | Visual 
-    | Select 
-    | OperatorPending 
-    | Insert 
-    | Command 
-    | Language 
-
-    with 
-
-    static member All = 
-        seq {
-            yield Normal
-            yield Visual 
-            yield Select
-            yield OperatorPending
-            yield Insert
-            yield Command
-            yield Language }
-
-    override x.ToString() =
-        match x with 
-        | Normal -> "Normal"
-        | Visual -> "Visual"
-        | Select -> "Select"
-        | OperatorPending -> "OperatorPending"
-        | Insert -> "Insert"
-        | Command -> "Command"
-        | Language -> "Language"
 
 [<RequireQualifiedAccess>]
 type KeyMappingResult =
@@ -1043,42 +1085,6 @@ type KeyMappingResult =
 
     /// More input is needed to resolve this mapping.
     | NeedsMoreInput of KeyInputSet
-
-/// Flags for the substitute command
-[<System.Flags>]
-type SubstituteFlags = 
-    | None = 0
-
-    /// Replace all occurrences on the line
-    | ReplaceAll = 0x1
-
-    /// Ignore case for the search pattern
-    | IgnoreCase = 0x2
-
-    /// Report only 
-    | ReportOnly = 0x4
-    | Confirm = 0x8
-    | UsePreviousFlags = 0x10
-    | UsePreviousSearchPattern = 0x20
-    | SuppressError = 0x40
-    | OrdinalCase = 0x80
-    | Magic = 0x100
-    | Nomagic = 0x200
-
-    /// The p option.  Print the last replaced line
-    | PrintLast = 0x400
-
-    /// The # option.  Print the last replaced line with the line number prepended
-    | PrintLastWithNumber = 0x800
-
-    /// Print the last line as if :list was used
-    | PrintLastWithList = 0x1000
-
-type SubstituteData = {
-    SearchPattern : string
-    Substitute : string
-    Flags : SubstituteFlags
-}
 
 /// Represents the span for a Visual Character mode selection.  If it weren't for the
 /// complications of tracking a visual character selection across edits to the buffer
@@ -1212,6 +1218,29 @@ type BlockSpan
         |> NonEmptyCollectionUtil.OfSeq 
         |> Option.get
 
+    /// Get a NonEmptyCollection indicating of the SnapshotSpan that each line of
+    /// this block spans, along with the offset (measured in cells) of the block
+    /// with respect to the start point and end point.
+    member x.BlockSpansWithOverlap localSetting : NonEmptyCollection<int * SnapshotSpan * int> =
+        let snapshot = SnapshotPointUtil.GetSnapshot x.Start
+        let lineNumber = SnapshotPointUtil.GetLineNumber x.Start
+        let list = System.Collections.Generic.List<int * SnapshotSpan * int>()
+        for i = lineNumber to ((_height - 1) + lineNumber) do
+            match SnapshotUtil.TryGetLine snapshot i with
+            | None -> ()
+            | Some line -> 
+                let pre, startPoint, _  = ColumnWiseUtils.GetPointForSpacesWithOverlap line x.Column localSetting
+                let _, endPoint, post = 
+                    match ColumnWiseUtils.GetPointForSpacesWithOverlap line (x.Column + _width) localSetting with
+                    | 0, endPoint, post -> (0, endPoint, post)
+                    | _, endPoint, post -> (0, endPoint.Add(1), post)
+                    
+                list.Add (pre, SnapshotSpanUtil.Create startPoint endPoint, post)
+
+        list
+        |> NonEmptyCollectionUtil.OfSeq 
+        |> Option.get
+
     override x.ToString() =
         sprintf "Point: %s Width: %d Height: %d" (x.Start.ToString()) _width _height
 
@@ -1279,6 +1308,11 @@ type VisualSpan =
         | VisualSpan.Character characterSpan -> [characterSpan.Span] |> Seq.ofList
         | VisualSpan.Line range -> [range.ExtentIncludingLineBreak] |> Seq.ofList
         | VisualSpan.Block blockSpan -> blockSpan.BlockSpans :> SnapshotSpan seq
+
+    member x.SpansWithOverlap (localSetting:IVimLocalSettings) = 
+        match x with 
+        | VisualSpan.Block blockSpan -> seq (blockSpan.BlockSpansWithOverlap(localSetting))
+        | _ -> (Seq.map (fun x -> (0, x, 0))) x.Spans
 
     /// Returns the EditSpan for this VisualSpan
     member x.EditSpan = 
@@ -1461,14 +1495,73 @@ type VisualSelection =
 
     with
 
-    /// Gets the SnapshotPoint for the caret as it should appear in the given VisualSelection
-    member x.CaretPoint = 
+    member x.IsCharacterForward =
+        match x with
+        | Character (_, path) -> path.IsPathForward
+        | _ -> false
+
+    member x.IsLineForward = 
+        match x with
+        | Line (_, path, _) -> path.IsPathForward
+        | _ -> false
+
+    member x.VisualKind = 
+        match x with
+        | Character _ -> VisualKind.Character
+        | Line _ -> VisualKind.Line
+        | Block _ -> VisualKind.Block
+
+    /// The underlying VisualSpan
+    member x.VisualSpan =
+        match x with 
+        | Character (characterSpan, _) -> VisualSpan.Character characterSpan
+        | Line (lineRange, _, _) -> VisualSpan.Line lineRange
+        | Block (blockSpan, _) -> VisualSpan.Block blockSpan
+
+    /// Get the VisualSelection information adjusted for the given selection kind.  This is only useful 
+    /// when a VisualSelection is created from the caret position and the selection needs to be adjusted
+    /// to include or exclude the caret.  
+    /// 
+    /// It's incorrect to use when creating from an actual physical selection
+    member x.AdjustForSelectionKind selectionKind = 
+        match selectionKind with
+        | SelectionKind.Inclusive -> x
+        | SelectionKind.Exclusive -> 
+            match x with
+            | Character (characterSpan, path) -> 
+                // The span decreases by a single character in exclusive 
+                let endPoint = characterSpan.Last |> OptionUtil.getOrDefault characterSpan.Start
+                let characterSpan = SnapshotSpan(characterSpan.Start, endPoint) |> CharacterSpan.CreateForSpan
+                VisualSelection.Character (characterSpan, path)
+            | Line _ ->
+                // The span isn't effected
+                x
+            | Block (blockSpan, blockCaretLocation) -> 
+                // The width of a block span decreases by 1 in exclusive.  The minimum though
+                // is still 1
+                let width = max (blockSpan.Width - 1) 1
+                let blockSpan = BlockSpan(blockSpan.Start, width, blockSpan.Height)
+                VisualSelection.Block (blockSpan, blockCaretLocation)
+
+    /// Gets the SnapshotPoint for the caret as it should appear in the given VisualSelection with the 
+    /// specified SelectionKind.  
+    member x.GetCaretPoint selectionKind = 
+
+        let getAdjustedEnd (span : SnapshotSpan) = 
+            match selectionKind with
+            | SelectionKind.Exclusive -> span.End
+            | SelectionKind.Inclusive -> 
+                if span.Length > 0 then
+                    SnapshotPointUtil.SubtractOne span.End
+                else
+                    span.End
+
         match x with
         | Character (characterSpan, path) ->
             // The caret is either positioned at the start or the end of the selected
             // SnapshotSpan
             if path.IsPathForward && characterSpan.Length > 0 then
-                SnapshotPointUtil.SubtractOne characterSpan.End
+                getAdjustedEnd characterSpan.Span
             else
                 characterSpan.Start
 
@@ -1489,78 +1582,21 @@ type VisualSelection =
 
         | Block (blockSpan, blockCaretLocation) ->
 
-            let getSpanEnd (span : SnapshotSpan) =
-                if span.Length = 0 then
-                    span.End
-                else
-                    span.End.Subtract 1
-
             match blockCaretLocation with
             | BlockCaretLocation.TopLeft -> blockSpan.Start
-            | BlockCaretLocation.TopRight -> getSpanEnd blockSpan.BlockSpans.Head
+            | BlockCaretLocation.TopRight -> getAdjustedEnd blockSpan.BlockSpans.Head
             | BlockCaretLocation.BottomLeft -> blockSpan.BlockSpans |> SeqUtil.last |> SnapshotSpanUtil.GetStartPoint
-            | BlockCaretLocation.BottomRight -> blockSpan.BlockSpans |> SeqUtil.last |> getSpanEnd
+            | BlockCaretLocation.BottomRight -> blockSpan.BlockSpans |> SeqUtil.last |> getAdjustedEnd
 
-    member x.IsCharacterForward =
-        match x with
-        | Character (_, path) -> path.IsPathForward
-        | _ -> false
-
-    member x.IsLineForward = 
-        match x with
-        | Line (_, path, _) -> path.IsPathForward
-        | _ -> false
-
-    /// Get the ModeKind for the VisualSelection
-    member x.ModeKind = 
-        match x with
-        | Character _ -> ModeKind.VisualCharacter
-        | Line _ -> ModeKind.VisualLine
-        | Block _ -> ModeKind.VisualBlock
-
-    /// Get the corresponding VisualSpan for the specified SelectionKind
-    member x.GetVisualSpan selectionKind = 
-        match x with
-        | Character (characterSpan, _) -> 
-            // The span decreases by a single character in exclusive 
-            match selectionKind with
-            | SelectionKind.Inclusive -> VisualSpan.Character characterSpan
-            | SelectionKind.Exclusive ->
-                let endPoint = characterSpan.Last |> OptionUtil.getOrDefault characterSpan.Start
-                let characterSpan = SnapshotSpan(characterSpan.Start, endPoint) |> CharacterSpan.CreateForSpan
-                VisualSpan.Character characterSpan
-        | Line (lineRange, _, _) -> 
-            // The span isn't effected
-            VisualSpan.Line lineRange
-        | Block (blockSpan, _) -> 
-            // The width of a block span decreases by 1 in exclusive.  The minimum though
-            // is still 1
-            match selectionKind with
-            | SelectionKind.Inclusive -> VisualSpan.Block blockSpan
-            | SelectionKind.Exclusive -> 
-                let width = max (blockSpan.Width - 1) 1
-                let blockSpan = BlockSpan(blockSpan.Start, width, blockSpan.Height)
-                VisualSpan.Block blockSpan
-
-    member x.GetEditSpan selectionKind = 
-        let visualSpan = x.GetVisualSpan selectionKind
-        visualSpan.EditSpan
 
     /// Select the given VisualSpan in the ITextView
-    member x.Select (textView : ITextView) selectionKind =
+    member x.Select (textView : ITextView) =
         let path = 
             match x with
             | Character (_, path) -> path
             | Line (_, path, _) -> path
             | Block _ -> Path.Forward
-        let visualSpan = x.GetVisualSpan selectionKind
-        visualSpan.Select textView path
-
-    /// Select the given VisualSelection in the ITextView and place the caret in the correct
-    /// position
-    member x.SelectAndMoveCaret textView selectionKind =
-        x.Select textView selectionKind
-        TextViewUtil.MoveCaretToPointRaw textView x.CaretPoint MoveCaretFlags.EnsureOnScreen
+        x.VisualSpan.Select textView path
 
     /// Create for the given VisualSpan.  Assumes this was a forward created VisualSpan
     static member CreateForward visualSpan = 
@@ -1742,8 +1778,6 @@ type ModeSwitch =
     /// back to the original mode
     | SwitchModeOneTimeCommand
 
-// TODO: Should be succeeded or something other than Completed.  Error also completed just not
-// well
 [<RequireQualifiedAccess>]
 type CommandResult =   
 
@@ -1754,11 +1788,6 @@ type CommandResult =
     /// An error was encountered and the command was unable to run.  If this is encountered
     /// during a macro run it will cause the macro to stop executing
     | Error
-
-[<RequireQualifiedAccess>]
-type RunResult = 
-    | Completed
-    | SubstituteConfirm of SnapshotSpan * SnapshotLineRange * SubstituteData
 
 /// Information about the attributes of Command
 [<System.Flags>]
@@ -1827,10 +1856,7 @@ type CommandData = {
 } with
 
     /// Return the provided count or the default value of 1
-    member x.CountOrDefault = 
-        match x.Count with 
-        | Some count -> count
-        | None -> 1
+    member x.CountOrDefault = Util.CountOrDefault x.Count
 
 /// We want the NormalCommand discriminated union to have structural equality in order
 /// to ease testing requirements.  In order to do this and support Ping we need a 
@@ -1994,6 +2020,12 @@ type NormalCommand =
     /// Open a fold under the caret
     | OpenFoldUnderCaret
 
+    /// Toggle a fold under the caret
+    | ToggleFoldUnderCaret
+
+    /// Toggle all folds under the caret
+    | ToggleAllFolds
+
     /// Not actually a Vim Command.  This is a simple ping command which makes 
     /// testing items like complex repeats significantly easier
     | Ping of PingData
@@ -2091,6 +2123,9 @@ type NormalCommand =
     /// Switch to the previous Visual Mode selection
     | SwitchPreviousVisualMode
 
+    /// Switch to a selection dictated by the given caret movement
+    | SwitchToSelection of CaretMovement
+
     /// Write out the ITextBuffer and quit
     | WriteBufferAndQuit
 
@@ -2119,9 +2154,6 @@ type VisualCommand =
 
     /// Close all folds in the selection
     | CloseAllFoldsInSelection
-
-    /// Delete a fold in the selection
-    | DeleteFoldInSelection
 
     /// Delete all folds in the selection
     | DeleteAllFoldsInSelection
@@ -2170,6 +2202,12 @@ type VisualCommand =
     /// Switch to the specified visual mode
     | SwitchModeVisual of VisualKind
 
+    /// Toggle one fold in the selection
+    | ToggleFoldInSelection
+
+    /// Toggle all folds in the selection
+    | ToggleAllFoldsInSelection
+
     /// Yank the lines which are specified by the selection
     | YankLineSelection
 
@@ -2210,11 +2248,20 @@ type InsertCommand  =
     /// Direct replacement of the spceified char
     | DirectReplace of char
 
+    /// Insert the character which is immediately above the caret
+    | InsertCharacterAboveCaret
+
+    /// Insert the character which is immediately below the caret
+    | InsertCharacterBelowCaret
+
     /// Insert a new line into the ITextBuffer
     | InsertNewLine
 
     /// Insert a tab into the ITextBuffer
     | InsertTab
+
+    /// Insert the specified text into the ITextBuffer
+    | InsertText of string
 
     /// Move the caret in the given direction
     | MoveCaret of Direction
@@ -2251,8 +2298,11 @@ type InsertCommand  =
             | DeleteWordBeforeCursor -> None
             | DirectInsert c -> Some (c.ToString())
             | DirectReplace c -> Some (c.ToString())
+            | InsertCharacterAboveCaret -> None
+            | InsertCharacterBelowCaret -> None
             | InsertNewLine -> EditUtil.NewLine editorOptions |> Some
             | InsertTab -> Some "\t"
+            | InsertText text -> Some text
             | MoveCaret _ -> None
             | MoveCaretByWord _ -> None
             | ShiftLineLeft -> None
@@ -2652,13 +2702,6 @@ type IMotionCapture =
     /// Get the motion with the provided KeyInput
     abstract GetMotion : KeyInput -> BindResult<Motion>
 
-module CommandUtil2 = 
-
-    let CountOrDefault opt = 
-        match opt with 
-        | Some(count) -> count
-        | None -> 1
-
 /// Responsible for managing a set of Commands and running them
 type ICommandRunner =
 
@@ -2919,6 +2962,15 @@ type KeyInputEventArgs (_keyInput : KeyInput) =
 
     member x.KeyInput = _keyInput
 
+type KeyInputStartEventArgs (_keyInput : KeyInput) =
+    inherit KeyInputEventArgs(_keyInput)
+
+    let mutable _handled = false
+
+    member x.Handled 
+        with get() = _handled 
+        and set value = _handled <- value
+
 type KeyInputSetEventArgs (_keyInputSet : KeyInputSet) = 
     inherit System.EventArgs()
 
@@ -2931,368 +2983,13 @@ type KeyInputProcessedEventArgs(_keyInput : KeyInput, _processResult : ProcessRe
 
     member x.ProcessResult = _processResult
 
-type SettingKind =
-    | NumberKind
-    | StringKind
-    | ToggleKind
-
-type SettingValue =
-    | NumberValue of int
-    | StringValue of string
-    | ToggleValue of bool
-    | CalculatedValue of (unit -> SettingValue)
-
-    /// Get the AggregateValue of the SettingValue.  This will dig through any CalculatedValue
-    /// instances and return the actual value
-    member x.AggregateValue = 
-
-        let rec digThrough value = 
-            match value with 
-            | CalculatedValue(func) -> digThrough (func())
-            | _ -> value
-        digThrough x
-
-[<DebuggerDisplay("{Name}={Value}")>]
-type Setting = {
-    Name : string
-    Abbreviation : string
-    Kind : SettingKind
-    DefaultValue : SettingValue
-    Value : SettingValue
-    IsGlobal : bool
-} with 
-
-    member x.AggregateValue = x.Value.AggregateValue
-
-    /// Is the value calculated
-    member x.IsValueCalculated =
-        match x.Value with
-        | CalculatedValue(_) -> true
-        | _ -> false
-
-    /// Is the setting value currently set to the default value
-    member x.IsValueDefault = 
-        match x.Value, x.DefaultValue with
-        | CalculatedValue(_), CalculatedValue(_) -> true
-        | NumberValue(left), NumberValue(right) -> left = right
-        | StringValue(left), StringValue(right) -> left = right
-        | ToggleValue(left), ToggleValue(right) -> left = right
-        | _ -> false
-
-module GlobalSettingNames = 
-
-    let BackspaceName = "backspace"
-    let CaretOpacityName = "vsvimcaret"
-    let ClipboardName = "clipboard"
-    let HighlightSearchName = "hlsearch"
-    let HistoryName = "history"
-    let IgnoreCaseName = "ignorecase"
-    let IncrementalSearchName = "incsearch"
-    let JoinSpacesName = "joinspaces"
-    let KeyModelName = "keymodel"
-    let MagicName = "magic"
-    let MaxMapCount =  "vsvim_maxmapcount"
-    let MaxMapDepth =  "maxmapdepth"
-    let MouseModelName = "mousemodel"
-    let ParagraphsName = "paragraphs"
-    let ScrollOffsetName = "scrolloff"
-    let SectionsName = "sections"
-    let SelectionName = "selection"
-    let SelectModeName = "selectmode"
-    let ShellName = "shell"
-    let ShellFlagName = "shellcmdflag"
-    let ShiftWidthName = "shiftwidth"
-    let SmartCaseName = "smartcase"
-    let StartOfLineName = "startofline"
-    let TildeOpName = "tildeop"
-    let TimeoutExName = "ttimeout"
-    let TimeoutName = "timeout"
-    let TimeoutLengthName = "timeoutlen"
-    let TimeoutLengthExName = "ttimeoutlen"
-    let UseEditorIndentName = "vsvim_useeditorindent"
-    let UseEditorSettingsName = "vsvim_useeditorsettings"
-    let VisualBellName = "visualbell"
-    let VirtualEditName = "virtualedit"
-    let VimRcName = "vimrc"
-    let VimRcPathsName = "vimrcpaths"
-    let WrapScanName = "wrapscan"
-
-module LocalSettingNames =
-
-    let AutoIndentName = "autoindent"
-    let ExpandTabName = "expandtab"
-    let NumberName = "number"
-    let NumberFormatsName = "nrformats"
-    let TabStopName = "tabstop"
-    let QuoteEscapeName = "quoteescape"
-
-module WindowSettingNames =
-
-    let CursorLineName = "cursorline"
-    let ScrollName = "scroll"
-
-/// Types of number formats supported by CTRL-A CTRL-A
-[<RequireQualifiedAccess>]
-type NumberFormat =
-    | Alpha
-    | Decimal
-    | Hex
-    | Octal
-
-type SettingEventArgs(_setting : Setting) =
-    inherit System.EventArgs()
-
-    member x.Setting = _setting
-
-/// The options which can be set in the 'clipboard' setting
-type ClipboardOptions = 
-    | None = 0
-    | Unnamed = 0x1 
-    | AutoSelect = 0x2
-    | AutoSelectMl = 0x4
-
-/// The options which can be set in the 'selectmode' setting
-type SelectModeOptions =
-    | None = 0
-    | Mouse = 0x1
-    | Keyboard = 0x2
-    | Command = 0x4
-
-/// The options which can be set in the 'keymodel' setting
-type KeyModelOptions =
-    | None = 0
-    | StartSelection = 0x1
-    | StopSelection = 0x2
-
-/// Represent the setting supported by the Vim implementation.  This class **IS** mutable
-/// and the values will change.  Setting names are case sensitive but the exposed property
-/// names tend to have more familiar camel case names
-type IVimSettings =
-
-    /// Returns a sequence of all of the settings and values
-    abstract AllSettings : Setting seq
-
-    /// Try and set a setting to the passed in value.  This can fail if the value does not 
-    /// have the correct type.  The provided name can be the full name or abbreviation
-    abstract TrySetValue : settingName:string -> value:SettingValue -> bool
-
-    /// Try and set a setting to the passed in value which originates in string form.  This 
-    /// will fail if the setting is not found or the value cannot be converted to the appropriate
-    /// value
-    abstract TrySetValueFromString : settingName:string -> strValue:string -> bool
-
-    /// Get the value for the named setting.  The name can be the full setting name or an 
-    /// abbreviation
-    abstract GetSetting : settingName:string -> Setting option
-
-    /// Raised when a Setting changes
-    [<CLIEvent>]
-    abstract SettingChanged : IDelegateEvent<System.EventHandler<SettingEventArgs>>
-
-and IVimGlobalSettings = 
-
-    /// The multi-value option for determining backspace behavior.  Valid values include 
-    /// indent, eol, start.  Usually accessed through the IsBackSpace helpers
-    abstract Backspace : string with get, set
-
-    /// Opacity of the caret.  This must be an integer between values 0 and 100 which
-    /// will be converted into a double for the opacity of the caret
-    abstract CaretOpacity : int with get, set
-
-    /// The clipboard option.  Use the IsClipboard helpers for finding out if specific options 
-    /// are set
-    abstract Clipboard : string with get, set
-
-    /// The parsed set of clipboard options
-    abstract ClipboardOptions : ClipboardOptions with get, set
-
-    /// Whether or not to highlight previous search patterns matching cases
-    abstract HighlightSearch : bool with get,set
-
-    /// The number of items to keep in the history lists
-    abstract History : int with get, set
-
-    /// Whether or not the magic option is set
-    abstract Magic : bool with get,set
-
-    /// Maximum number of maps which can occur for a key map.  This is not a standard vim or gVim
-    /// setting.  It's a hueristic setting meant to prevent infinite recursion in the specific cases
-    /// that maxmapdepth can't or won't catch (see :help maxmapdepth).  
-    abstract MaxMapCount : int with get, set
-
-    /// Maximum number of recursive depths which occur for a mapping
-    abstract MaxMapDepth : int with get, set
-
-    /// Whether or not we should be ignoring case in the ITextBuffer
-    abstract IgnoreCase : bool with get, set
-
-    /// Whether or not incremental searches should be highlighted and focused 
-    /// in the ITextBuffer
-    abstract IncrementalSearch : bool with get, set
-
-    /// Is the 'indent' option inside of Backspace set
-    abstract IsBackspaceIndent : bool with get
-
-    /// Is the 'eol' option inside of Backspace set
-    abstract IsBackspaceEol : bool with get
-
-    /// Is the 'start' option inside of Backspace set
-    abstract IsBackspaceStart : bool with get
-
-    /// Is the 'onemore' option inside of VirtualEdit set
-    abstract IsVirtualEditOneMore : bool with get
-
-    /// Is the Selection setting set to a value which calls for inclusive 
-    /// selection.  This does not directly track if Setting = "inclusive" 
-    /// although that would cause this value to be true
-    abstract IsSelectionInclusive : bool with get
-
-    /// Is the Selection setting set to a value which permits the selection
-    /// to extend past the line
-    abstract IsSelectionPastLine : bool with get
-
-    /// Whether or not to insert two spaces after certain constructs in a 
-    /// join operation
-    abstract JoinSpaces : bool with get, set
-
-    /// The 'keymodel' setting
-    abstract KeyModel : string with get, set
-
-    /// The 'keymodel' in a type safe form
-    abstract KeyModelOptions : KeyModelOptions with get, set
-
-    /// The 'mousemodel' setting
-    abstract MouseModel : string with get, set
-
-    /// The nrooff macros that separate paragraphs
-    abstract Paragraphs : string with get, set
-
-    /// The nrooff macros that separate sections
-    abstract Sections : string with get, set
-
-    /// The name of the shell to use for shell commands
-    abstract Shell : string with get, set
-
-    /// The flag which is passed to the shell when executing shell commands
-    abstract ShellFlag : string with get, set
-
-    abstract ShiftWidth : int with get, set
-
-    abstract StartOfLine : bool with get, set
-
-    /// Controls the behavior of ~ in normal mode
-    abstract TildeOp : bool with get,set
-
-    /// Part of the control for key mapping and code timeout
-    abstract Timeout : bool with get, set
-
-    /// Part of the control for key mapping and code timeout
-    abstract TimeoutEx : bool with get, set
-
-    /// Timeout for a key mapping in milliseconds
-    abstract TimeoutLength : int with get, set
-
-    /// Timeout control for key mapping / code
-    abstract TimeoutLengthEx : int with get, set
-
-    /// Holds the scroll offset value which is the number of lines to keep visible
-    /// above the cursor after a move operation
-    abstract ScrollOffset : int with get, set
-
-    /// Holds the Selection option
-    abstract Selection : string with get, set
-
-    /// Get the SelectionKind for the current settings
-    abstract SelectionKind : SelectionKind
-
-    /// Options for how select mode is entered
-    abstract SelectMode : string with get, set 
-
-    /// The options which are set via select mode
-    abstract SelectModeOptions : SelectModeOptions with get, set
-
-    /// Overrides the IgnoreCase setting in certain cases if the pattern contains
-    /// any upper case letters
-    abstract SmartCase : bool with get,set
-
-    /// Let the editor control indentation of lines instead.  Overrides the AutoIndent
-    /// setting
-    abstract UseEditorIndent : bool with get, set
-
-    /// Use the editor tab setting over the ExpandTab one
-    abstract UseEditorSettings : bool with get, set
-
-    /// Retrieves the location of the loaded VimRC file.  Will be the empty string if the load 
-    /// did not succeed or has not been tried
-    abstract VimRc : string with get, set
-
-    /// Set of paths considered when looking for a .vimrc file.  Will be the empty string if the 
-    /// load has not been attempted yet
-    abstract VimRcPaths : string with get, set
-
-    /// Holds the VirtualEdit string.  
-    abstract VirtualEdit : string with get,set
-
-    /// Whether or not to use a visual indicator of errors instead of a beep
-    abstract VisualBell : bool with get,set
-
-    /// Whether or not searches should wrap at the end of the file
-    abstract WrapScan : bool with get, set
-
-    /// The key binding which will cause all IVimBuffer instances to enter disabled mode
-    abstract DisableAllCommand: KeyInput;
-
-    inherit IVimSettings
-
-/// Settings class which is local to a given IVimBuffer.  This will hide the work of merging
-/// global settings with non-global ones
-and IVimLocalSettings =
-
-    abstract AutoIndent : bool with get, set
-
-    /// Whether or not to expand tabs into spaces
-    abstract ExpandTab : bool with get, set
-
-    /// Return the handle to the global IVimSettings instance
-    abstract GlobalSettings : IVimGlobalSettings
-
-    /// Whether or not to put the numbers on the left column of the display
-    abstract Number : bool with get, set
-
-    /// Fromats that vim considers a number for CTRL-A and CTRL-X
-    abstract NumberFormats : string with get, set
-
-    /// How many spaces a tab counts for 
-    abstract TabStop : int with get, set
-
-    /// Which characters escape quotes for certain motion types
-    abstract QuoteEscape : string with get, set
-
-    /// Is the provided NumberFormat supported by the current options
-    abstract IsNumberFormatSupported : NumberFormat -> bool
-
-    inherit IVimSettings
-
-/// Settings which are local to a given window.
-and IVimWindowSettings = 
-
-    /// Whether or not to highlight the line the cursor is on
-    abstract CursorLine : bool with get, set
-
-    /// Return the handle to the global IVimSettings instance
-    abstract GlobalSettings : IVimGlobalSettings
-
-    /// The scroll size 
-    abstract Scroll : int with get, set
-
-    inherit IVimSettings
-
 /// Implements a list for storing history items.  This is used for the 5 types
 /// of history lists in Vim (:help history).  
 type HistoryList () = 
 
     let mutable _list : string list = List.empty
     let mutable _limit = Constants.DefaultHistoryLength
+    let mutable _totalCount = 0
 
     /// Limit of the items stored in the list
     member x.Limit 
@@ -3301,6 +2998,14 @@ type HistoryList () =
         and set value = 
             _limit <- value
             x.MaybeTruncateList()
+
+    /// The count of actual items currently stored in the collection
+    member x.Count = _list.Length
+
+    /// This is a truncating list.  As items exceed the set Limit the eariest items will
+    /// be removed from the collection.  The total count represents the number of items
+    /// that have ever been added, not the current count
+    member x.TotalCount = _totalCount
 
     member x.Items = _list
 
@@ -3313,10 +3018,13 @@ type HistoryList () =
                 |> Seq.truncate (_limit - 1)
                 |> List.ofSeq
             _list <- value :: list
+            _totalCount <- _totalCount + 1
 
-    /// Clear all of the items from the collection
-    member x.Clear () = 
+    /// Reset the list back to it's original state
+    member x.Reset () = 
         _list <- List.empty
+        _totalCount <- 0
+        _limit <- Constants.DefaultHistoryLength
 
     member private x.MaybeTruncateList () = 
         if _list.Length > _limit then
@@ -3360,6 +3068,12 @@ type internal IHistoryClient<'TData, 'TResult> =
 
 /// Represents shared state which is available to all IVimBuffer instances.
 type IVimData = 
+
+    /// The set of supported auto command groups
+    abstract AutoCommandGroups : AutoCommandGroup list with get, set
+
+    /// The set of auto commands
+    abstract AutoCommands : AutoCommand list with get, set
 
     /// The current directory Vim is positioned in
     abstract CurrentDirectory : string with get, set
@@ -3407,7 +3121,28 @@ type IVimData =
     [<CLIEvent>]
     abstract HighlightSearchOneTimeDisabled : IDelegateEvent<System.EventHandler>
 
+[<RequireQualifiedAccess>]
+type QuickFix =
+    | Next
+    | Previous
+
+type TextViewChangedEventArgs
+    (
+        _oldTextView : ITextView option,
+        _newTextView : ITextView option
+    ) =
+
+    inherit System.EventArgs()
+
+    member x.OldTextView = _oldTextView
+
+    member x.NewTextView = _newTextView
+
 type IVimHost =
+
+    /// Should vim automatically start synchronization of IVimBuffer instances when they are 
+    /// created
+    abstract AutoSynchronizeSettings : bool 
 
     abstract Beep : unit -> unit
 
@@ -3450,6 +3185,9 @@ type IVimHost =
 
     /// Go the nth tab.  The first tab can be accessed with both 0 and 1
     abstract GoToTab : index : int -> unit
+
+    /// Go to the specified entry in the quick fix list
+    abstract GoToQuickFix : quickFix : QuickFix -> count : int -> hasBang : bool -> unit
 
     /// Get the name of the given ITextBuffer
     abstract GetName : textBuffer : ITextBuffer -> string
@@ -3507,7 +3245,12 @@ type IVimHost =
     abstract SplitViewHorizontally : ITextView -> HostResult
 
     /// Split the views horizontally
-    abstract SplitViewVertically: ITextView -> HostResult
+    abstract SplitViewVertically : ITextView -> HostResult
+
+    /// Called when VsVim attempts to load the user _vimrc file.  If the load succeeded 
+    /// then the resulting settings are passed into the method.  If the load failed it is 
+    /// the defaults.  Either way, they are the default settings used for new buffers
+    abstract VimRcLoaded : vimRcState : VimRcState -> localSettings : IVimLocalSettings -> windowSettings : IVimWindowSettings -> unit
 
     /// Allow the host to custom process the insert command.  Hosts often have
     /// special non-vim semantics for certain types of edits (Enter for 
@@ -3518,6 +3261,10 @@ type IVimHost =
     /// Raised when the visibility of an ITextView changes
     [<CLIEvent>]
     abstract IsVisibleChanged : IDelegateEvent<System.EventHandler<TextViewEventArgs>>
+
+    /// Raised when the active ITextView changes
+    [<CLIEvent>]
+    abstract ActiveTextViewChanged : IDelegateEvent<System.EventHandler<TextViewChangedEventArgs>>
 
 
 /// Core parts of an IVimBuffer.  Used for components which make up an IVimBuffer but
@@ -3577,8 +3324,8 @@ and IVim =
     /// Get the IVimBuffer which currently has KeyBoard focus
     abstract FocusedBuffer : IVimBuffer option
 
-    /// Is the VimRc loaded
-    abstract IsVimRcLoaded : bool
+    /// Is Vim currently disabled 
+    abstract IsDisabled : bool with get, set
 
     /// In the middle of a bulk operation such as a macro replay or repeat last command
     abstract InBulkOperation : bool
@@ -3598,17 +3345,18 @@ and IVim =
     /// ISearchService for this IVim instance
     abstract SearchService : ISearchService
 
+    /// IGlobalSettings for this IVim instance
     abstract GlobalSettings : IVimGlobalSettings
+
+    /// The variable map for this IVim instance
+    abstract VariableMap : VariableMap
 
     abstract VimData : IVimData 
 
     abstract VimHost : IVimHost
 
-    /// The Local Setting's which were persisted from loading VimRc.  If the 
-    /// VimRc isn't loaded yet or if no VimRc was loaded a IVimLocalSettings
-    /// with all default values will be returned.  Will store a copy of whatever 
-    /// is passed in order to prevent memory leaks from captured ITextView`s
-    abstract VimRcLocalSettings : IVimLocalSettings with get, set
+    /// The state of the VimRc file
+    abstract VimRcState : VimRcState
 
     /// Create an IVimBuffer for the given ITextView
     abstract CreateVimBuffer : ITextView -> IVimBuffer
@@ -3618,6 +3366,9 @@ and IVim =
 
     /// Close all IVimBuffer instances in the system
     abstract CloseAllVimBuffers : unit -> unit
+
+    /// Get the IVimInterpreter for the specified IVimBuffer
+    abstract GetVimInterpreter : vimBuffer : IVimBuffer -> IVimInterpreter
 
     /// Get the IVimBuffer associated with the given ITextView
     abstract GetVimBuffer : ITextView -> IVimBuffer option
@@ -3642,9 +3393,7 @@ and IVim =
 
     /// Load the VimRc file.  If the file was previously loaded a new load will be 
     /// attempted.  Returns true if a VimRc was actually loaded.
-    ///
-    /// If the VimRC is already loaded then it will be reloaded
-    abstract LoadVimRc : unit -> bool
+    abstract LoadVimRc : unit -> VimRcState
 
     /// Remove the IVimBuffer associated with the given view.  This will not actually close
     /// the IVimBuffer but instead just removes it's association with the given view
@@ -3709,6 +3458,12 @@ and IVimTextBuffer =
     /// The last VisualSpan selection for the IVimTextBuffer.  This is a combination of a VisualSpan
     /// and the SnapshotPoint within the span where the caret should be positioned
     abstract LastVisualSelection : VisualSelection option with get, set
+
+    /// The point the caret occupied when Insert mode was exited 
+    abstract LastInsertExitPoint : SnapshotPoint option with get, set
+
+    /// The point the caret occupied when the last edit occurred
+    abstract LastEditPoint : SnapshotPoint option with get, set
 
     /// The set of active local marks in the ITextBuffer
     abstract LocalMarks : (LocalMark * VirtualSnapshotPoint) seq
@@ -3839,14 +3594,14 @@ and IVimBuffer =
     /// IDisabledMode instance for disabled mode
     abstract DisabledMode : IDisabledMode
 
+    /// IVisualMode for visual character mode
+    abstract VisualCharacterMode : IVisualMode
+
     /// IVisualMode for visual line mode
     abstract VisualLineMode : IVisualMode
 
     /// IVisualMode for visual block mode
     abstract VisualBlockMode : IVisualMode
-
-    /// IVisualMode for visual character mode
-    abstract VisualCharacterMode : IVisualMode
 
     /// IInsertMode instance for insert mode
     abstract InsertMode : IInsertMode
@@ -3854,8 +3609,14 @@ and IVimBuffer =
     /// IInsertMode instance for replace mode
     abstract ReplaceMode : IInsertMode
 
-    /// ISelectMode instance for select mode
-    abstract SelectMode: ISelectMode
+    /// ISelectMode instance for character mode
+    abstract SelectCharacterMode: ISelectMode
+
+    /// ISelectMode instance for line mode
+    abstract SelectLineMode: ISelectMode
+
+    /// ISelectMode instance for block mode
+    abstract SelectBlockMode: ISelectMode
 
     /// ISubstituteConfirmDoe instance for substitute confirm mode
     abstract SubstituteConfirmMode : ISubstituteConfirmMode
@@ -3914,16 +3675,16 @@ and IVimBuffer =
     /// Raised when a key is processed.  This is raised when the KeyInput is actually
     /// processed by Vim not when it is received.  
     ///
-    /// Typically these occur back to back.  One example of where it does not though is 
-    /// the case of a key remapping where the source mapping contains more than one key.  
-    /// In this case the input is buffered until the second key is read and then the 
-    /// inputs are processed
+    /// Typically this occurs immediately after a Start command and is followed by an
+    /// End command.  One case this doesn't happen is in a key remapping where the source 
+    /// mapping contains more than one key.  In this case the input is buffered until the 
+    /// second key is read and then the inputs are processed
     [<CLIEvent>]
     abstract KeyInputProcessed : IDelegateEvent<System.EventHandler<KeyInputProcessedEventArgs>>
 
     /// Raised when a KeyInput is received by the buffer
     [<CLIEvent>]
-    abstract KeyInputStart : IDelegateEvent<System.EventHandler<KeyInputEventArgs>>
+    abstract KeyInputStart : IDelegateEvent<System.EventHandler<KeyInputStartEventArgs>>
 
     /// Raised when a key is received but not immediately processed.  Occurs when a
     /// key remapping has more than one source key strokes
@@ -3948,6 +3709,10 @@ and IVimBuffer =
     abstract StatusMessage : IDelegateEvent<System.EventHandler<StringEventArgs>>
 
     /// Raised when the IVimBuffer is being closed
+    [<CLIEvent>]
+    abstract Closing : IDelegateEvent<System.EventHandler>
+
+    /// Raised when the IVimBuffer is closed
     [<CLIEvent>]
     abstract Closed : IDelegateEvent<System.EventHandler>
 
@@ -4003,6 +3768,9 @@ and IInsertMode =
     /// The active IWordCompletionSession if one is active
     abstract ActiveWordCompletionSession : IWordCompletionSession option
 
+    /// Is insert mode currently in a paste operation
+    abstract IsInPaste : bool
+
     /// Is this KeyInput value considered to be a direct insert command in the current
     /// state of the IVimBuffer.  This does not apply to commands which edit the buffer
     /// like 'CTRL-D' but instead commands like 'a', 'b' which directly edit the 
@@ -4017,11 +3785,15 @@ and IInsertMode =
 
 and ICommandMode = 
 
-    /// buffered input for the current command
-    abstract Command : string
+    /// Buffered input for the current command
+    abstract Command : string with get, set
 
     /// Run the specified command
     abstract RunCommand : string -> RunResult
+
+    /// Raised when the command string is changed
+    [<CLIEvent>]
+    abstract CommandChanged : IDelegateEvent<System.EventHandler>
 
     inherit IMode
 

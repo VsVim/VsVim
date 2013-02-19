@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Vim.UnitTest
 {
@@ -9,6 +8,7 @@ namespace Vim.UnitTest
     {
         public string LastError { get; set; }
         public string LastStatus { get; set; }
+        public string[] LastStatusLong { get; set; }
         public string LastWarning { get; set; }
 
         public void OnError(string value)
@@ -24,6 +24,7 @@ namespace Vim.UnitTest
         public void OnStatusLong(IEnumerable<string> value)
         {
             LastStatus = value.Aggregate((x, y) => x + Environment.NewLine + y);
+            LastStatusLong = value.ToArray();
         }
 
         public void OnWarning(string value)

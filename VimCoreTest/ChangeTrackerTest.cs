@@ -1,13 +1,12 @@
 ﻿using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using NUnit.Framework;
+using Xunit;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public sealed class ChangeTrackerTest : VimTestBase
     {
         private MockRepository _factory;
@@ -46,7 +45,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Make sure a commands which are marked as LinkWithNextCommand do link with the next command
         /// </summary>
-        [Test]
+        [Fact]
         public void LinkedWithNextChange_Simple()
         {
             Create("hello");
@@ -55,55 +54,55 @@ namespace Vim.UnitTest
             _runner.Raise(x => x.CommandRan += null, (object) null, new CommandRunDataEventArgs(runData1));
             _runner.Raise(x => x.CommandRan += null, (object) null, new CommandRunDataEventArgs(runData2));
             var lastCommnad = _vimData.LastCommand;
-            Assert.IsTrue(lastCommnad.IsSome(x => x.IsLinkedCommand));
+            Assert.True(lastCommnad.IsSome(x => x.IsLinkedCommand));
         }
 
         /// <summary>
         /// Don't track commands which are not repeatable
         /// </summary>
-        [Test]
+        [Fact]
         public void OnCommand_NotRepetable()
         {
             Create("hello");
             var data = VimUtil.CreateCommandRunData(flags: CommandFlags.None);
             _runner.Raise(x => x.CommandRan += null, (object) null, new CommandRunDataEventArgs(data));
-            Assert.IsTrue(_vimData.LastCommand.IsNone());
+            Assert.True(_vimData.LastCommand.IsNone());
         }
 
         /// <summary>
         /// Definitely track repeatable changes
         /// </summary>
-        [Test]
+        [Fact]
         public void OnCommand_Repeatable()
         {
             Create("hello");
             var data = VimUtil.CreateCommandRunData(flags: CommandFlags.Repeatable);
             _runner.Raise(x => x.CommandRan += null, (object) null, new CommandRunDataEventArgs(data));
-            Assert.IsTrue(_vimData.LastCommand.IsSome(x => x.IsNormalCommand));
+            Assert.True(_vimData.LastCommand.IsSome(x => x.IsNormalCommand));
         }
 
         /// <summary>
         /// Don't track movement commands.  They don't get repeated
         /// </summary>
-        [Test]
+        [Fact]
         public void OnCommand_DontTrackMovement()
         {
             Create("hello");
             var data = VimUtil.CreateCommandRunData(flags: CommandFlags.Movement);
             _runner.Raise(x => x.CommandRan += null, (object) null, new CommandRunDataEventArgs(data));
-            Assert.IsTrue(_vimData.LastCommand.IsNone());
+            Assert.True(_vimData.LastCommand.IsNone());
         }
 
         /// <summary>
         /// Don't track special commands.  They don't get repeated
         /// </summary>
-        [Test]
+        [Fact]
         public void OnCommand_DontTrackSpecial()
         {
             Create("hello");
             var data = VimUtil.CreateCommandRunData(flags: CommandFlags.Special);
             _runner.Raise(x => x.CommandRan += null, (object) null, new CommandRunDataEventArgs(data));
-            Assert.IsTrue(_vimData.LastCommand.IsNone());
+            Assert.True(_vimData.LastCommand.IsNone());
         }
     }
 }

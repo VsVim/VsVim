@@ -24,6 +24,8 @@ type internal VimTextBuffer
     let _switchedModeEvent = StandardEvent<SwitchModeKindEventArgs>()
     let mutable _modeKind = ModeKind.Normal
     let mutable _lastVisualSelection : ITrackingVisualSelection option = None
+    let mutable _lastInsertExitPoint : ITrackingLineColumn option = None
+    let mutable _lastEditPoint : ITrackingLineColumn option = None
 
     member x.LastVisualSelection 
         with get() =
@@ -37,9 +39,50 @@ type internal VimTextBuffer
             | None -> ()
             | Some trackingVisualSelection -> trackingVisualSelection.Close()
 
-            match value with
+            _lastVisualSelection <- 
+                match value with
+                | None -> None
+                | Some visualSelection -> Some (_bufferTrackingService.CreateVisualSelection visualSelection)
+
+    member x.LastInsertExitPoint
+        with get() = 
+            match _lastInsertExitPoint with
+            | None -> None
+            | Some lastInsertExitPoint -> lastInsertExitPoint.Point
+        and set value = 
+
+            // First clear out the previous information
+            match _lastInsertExitPoint with
             | None -> ()
-            | Some visualSelection -> _lastVisualSelection <- Some (_bufferTrackingService.CreateVisualSelection visualSelection)
+            | Some lastInsertExitPoint -> lastInsertExitPoint.Close()
+
+            _lastInsertExitPoint <-
+                match value with
+                | None -> None
+                | Some point -> 
+                    let line, column = SnapshotPointUtil.GetLineColumn point
+                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
+                    Some trackingLineColumn
+
+     member x.LastEditPoint
+        with get() = 
+            match _lastEditPoint with
+            | None -> None
+            | Some _lastEditPoint -> _lastEditPoint.Point
+        and set value = 
+
+            // First clear out the previous information
+            match _lastEditPoint with
+            | None -> ()
+            | Some _lastEditPoint -> _lastEditPoint.Close()
+
+            _lastEditPoint <-
+                match value with
+                | None -> None
+                | Some point -> 
+                    let line, column = SnapshotPointUtil.GetLineColumn point
+                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
+                    Some trackingLineColumn
 
     /// Get all of the local marks in the IVimTextBuffer.
     member x.LocalMarks = 
@@ -58,16 +101,18 @@ type internal VimTextBuffer
             _textBuffer.Properties
             |> PropertyCollectionUtil.GetValue<ITrackingLineColumn> letter
             |> OptionUtil.map2 (fun trackingLineColumn -> trackingLineColumn.VirtualPoint)
+        | LocalMark.LastInsertExit ->
+            x.LastInsertExitPoint |> Option.map VirtualSnapshotPointUtil.OfPoint
+        | LocalMark.LastEdit ->
+            x.LastEditPoint |> Option.map VirtualSnapshotPointUtil.OfPoint
         | LocalMark.LastSelectionStart ->
             x.LastVisualSelection 
             |> Option.map (fun visualSelection -> 
-                let visualSpan = visualSelection.GetVisualSpan _globalSettings.SelectionKind
-                visualSpan.Start |> VirtualSnapshotPointUtil.OfPoint) 
+                visualSelection.VisualSpan.Start |> VirtualSnapshotPointUtil.OfPoint) 
         | LocalMark.LastSelectionEnd ->
             x.LastVisualSelection
             |> Option.map (fun visualSelection -> 
-                let visualSpan = visualSelection.GetVisualSpan _globalSettings.SelectionKind
-                visualSpan.End |> VirtualSnapshotPointUtil.OfPoint) 
+                visualSelection.VisualSpan.End |> VirtualSnapshotPointUtil.OfPoint)
 
     /// Set the local mark at the given line and column
     member x.SetLocalMark localMark line column = 
@@ -81,10 +126,10 @@ type internal VimTextBuffer
             let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
             _textBuffer.Properties.[letter] <- trackingLineColumn
             true
-        | LocalMark.LastSelectionEnd ->
-            false
-        | LocalMark.LastSelectionStart ->
-            false
+        | LocalMark.LastSelectionEnd -> false
+        | LocalMark.LastSelectionStart -> false
+        | LocalMark.LastInsertExit -> false
+        | LocalMark.LastEdit -> false
 
     /// Switch to the desired mode
     member x.SwitchMode modeKind modeArgument =
@@ -97,8 +142,14 @@ type internal VimTextBuffer
         member x.TextBuffer = _textBuffer
         member x.GlobalSettings = _globalSettings
         member x.LastVisualSelection 
-            with get () = x.LastVisualSelection
+            with get() = x.LastVisualSelection
             and set value = x.LastVisualSelection <- value
+        member x.LastInsertExitPoint
+            with get() = x.LastInsertExitPoint
+            and set value = x.LastInsertExitPoint <- value
+        member x.LastEditPoint
+            with get() = x.LastEditPoint
+            and set value = x.LastEditPoint <- value
         member x.LocalMarks = x.LocalMarks
         member x.LocalSettings = _localSettings
         member x.ModeKind = _modeKind

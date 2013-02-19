@@ -7,5 +7,5 @@ open Vim.Modes
 
 type internal SelectMode =
     interface ISelectMode
-    new : IVimBufferData * ICommonOperations * IUndoRedoOperations * ISelectionTracker -> SelectMode
+    new : IVimBufferData * VisualKind * ICommonOperations * IUndoRedoOperations * ISelectionTracker -> SelectMode
 

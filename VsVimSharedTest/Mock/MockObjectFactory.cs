@@ -23,31 +23,53 @@ namespace VsVim.UnitTest.Mock
             return mock.As<SVsServiceProvider>();
         }
 
-        public static IEnumerable<Mock<EnvDTE.Command>> CreateCommandList(params string[] args)
+        public static Mock<EnvDTE.Command> CreateCommand(int id, string name, params string[] bindings)
         {
-            foreach (var binding in args)
-            {
-                var localBinding = binding;
-                var mock = new Mock<EnvDTE.Command>(MockBehavior.Strict);
-                mock.Setup(x => x.Bindings).Returns(localBinding);
-                mock.Setup(x => x.Name).Returns("example command");
-                mock.Setup(x => x.LocalizedName).Returns("example command");
-                yield return mock;
-            }
+            object binding = bindings.Length == 1
+                ? (object)bindings[0]
+                : bindings;
+            var guid = Guid.NewGuid().ToString();
+            var mock = new Mock<EnvDTE.Command>(MockBehavior.Strict);
+            mock.Setup(x => x.Bindings).Returns(binding);
+            mock.Setup(x => x.Name).Returns(name);
+            mock.Setup(x => x.LocalizedName).Returns(name);
+            mock.Setup(x => x.Guid).Returns(guid);
+            mock.Setup(x => x.ID).Returns(id);
+            return mock;
         }
 
-        public static Mock<EnvDTE.Commands> CreateCommands(IEnumerable<EnvDTE.Command> commands)
+        public static List<Mock<EnvDTE.Command>> CreateCommandList(params string[] args)
+        {
+            var list = new List<Mock<EnvDTE.Command>>();
+            var count = 0;
+            foreach (var binding in args)
+            {
+                var mock = CreateCommand(++count, "example command", binding);
+                list.Add(mock);
+            }
+
+            return list;
+        }
+
+        public static Mock<EnvDTE.Commands> CreateCommands(List<EnvDTE.Command> commands)
         {
             var mock = new Mock<EnvDTE.Commands>(MockBehavior.Strict);
             var enumMock = mock.As<IEnumerable>();
-            mock.Setup(x => x.GetEnumerator()).Returns(commands.GetEnumerator());
-            enumMock.Setup(x => x.GetEnumerator()).Returns(commands.GetEnumerator());
+            mock.Setup(x => x.GetEnumerator()).Returns(() =>
+                {
+                    return commands.GetEnumerator();
+                });
+            mock.SetupGet(x => x.Count).Returns(commands.Count);
+            enumMock.Setup(x => x.GetEnumerator()).Returns(() =>
+                {
+                    return commands.GetEnumerator();
+                });
             return mock;
         }
 
         public static Mock<_DTE> CreateDteWithCommands(params string[] args)
         {
-            var commandList = CreateCommandList(args).Select(x => x.Object);
+            var commandList = CreateCommandList(args).Select(x => x.Object).ToList();
             var commands = CreateCommands(commandList);
             var dte = new Mock<_DTE>();
             dte.SetupGet(x => x.Commands).Returns(commands.Object);

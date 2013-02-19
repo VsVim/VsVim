@@ -1,6 +1,7 @@
 ﻿#light
 
 namespace Vim.Interpreter
+open Vim
 
 [<RequireQualifiedAccess>]
 type ParseResult<'T> = 
@@ -11,9 +12,14 @@ type ParseResult<'T> =
 [<Class>]
 type Parser = 
 
-    static member ParseRange : rangeText : string -> LineRangeSpecifier * string
+    new: vimData : IVimData -> Parser
 
-    static member ParseExpression : expressionText : string -> ParseResult<Expression>
+    member ParseRange : rangeText : string -> LineRangeSpecifier * string
 
-    static member ParseLineCommand : commandText : string -> ParseResult<LineCommand>
+    member ParseExpression : expressionText : string -> ParseResult<Expression>
+
+    member ParseLineCommand : commandText : string -> ParseResult<LineCommand>
+
+    member ParseLineCommands : lines : string[] -> ParseResult<LineCommand list>
+
 

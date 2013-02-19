@@ -11,11 +11,15 @@ namespace Vim.UnitTest.Mock
     public class MockVimHost : IVimHost
     {
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
+        private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
 
+        public bool AutoSynchronizeSettings { get; set; }
         public int BeepCount { get; set; }
         public int GoToDefinitionCount { get; set; }
         public bool GoToFileReturn { get; set; }
         public bool GoToDefinitionReturn { get; set; }
+        public Func<ITextView, string, bool> GoToLocalDeclarationFunc { get; set; }
+        public Func<ITextView, string, bool> GoToGlobalDeclarationFunc { get; set; }
         public bool IsCompletionWindowActive { get; set; }
         public int DismissCompletionWindowCount { get; set; }
         public VirtualSnapshotPoint NavigateToData { get; set; }
@@ -29,9 +33,12 @@ namespace Vim.UnitTest.Mock
         public Func<ITextBuffer, bool> IsDirtyFunc { get; set; }
         public Func<string, string, IVimData, string> RunCommandFunc { get; set; }
         public Action<string, string> RunVisualStudioCommandFunc { get; set; }
+        public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
         public ITextBuffer LastSaved { get; set; }
         public ITextView LastClosed { get; set; }
         public bool ShouldCreateVimBufferImpl { get; set; }
+        public VimRcState VimRcState { get; private set; }
+        public string FileName { get; set; } 
 
         /// <summary>
         /// Data from the last GoToNextTab call
@@ -57,6 +64,7 @@ namespace Vim.UnitTest.Mock
         /// </summary>
         public void Clear()
         {
+            AutoSynchronizeSettings = true;
             GoToDefinitionReturn = true;
             IsCompletionWindowActive = false;
             NavigateToReturn = false;
@@ -66,13 +74,20 @@ namespace Vim.UnitTest.Mock
             IsTextViewVisible = null;
             _isVisibleChanged = null;
             TryCustomProcessFunc = null;
+            GoToLocalDeclarationFunc = delegate { throw new NotImplementedException(); };
+            GoToGlobalDeclarationFunc = delegate { throw new NotImplementedException(); };
             CreateHiddenTextViewFunc = delegate { throw new NotImplementedException(); };
             RunCommandFunc = delegate { throw new NotImplementedException(); };
             RunVisualStudioCommandFunc = delegate { throw new NotImplementedException(); };
+            RunQuickFixFunc = delegate { throw new NotImplementedException(); };
             IsDirtyFunc = null;
             LastClosed = null;
             LastSaved = null;
+<<<<<<< HEAD
             ShouldCreateVimBufferImpl = true;
+=======
+            FileName = string.Empty;
+>>>>>>> origin/master
         }
 
         void IVimHost.Beep()
@@ -94,7 +109,7 @@ namespace Vim.UnitTest.Mock
 
         string IVimHost.GetName(ITextBuffer textBuffer)
         {
-            return String.Empty;
+            return FileName ?? String.Empty;
         }
 
         void IVimHost.ShowOpenFileDialog()
@@ -140,12 +155,12 @@ namespace Vim.UnitTest.Mock
 
         bool IVimHost.GoToGlobalDeclaration(ITextView value, string target)
         {
-            throw new NotImplementedException();
+            return GoToGlobalDeclarationFunc(value, target);
         }
 
         bool IVimHost.GoToLocalDeclaration(ITextView value, string target)
         {
-            throw new NotImplementedException();
+            return GoToLocalDeclarationFunc(value, target);
         }
 
         void IVimHost.FormatLines(ITextView value, SnapshotLineRange range)
@@ -249,6 +264,11 @@ namespace Vim.UnitTest.Mock
             remove { _isVisibleChanged -= value; }
         }
 
+        event EventHandler<TextViewChangedEventArgs> IVimHost.ActiveTextViewChanged
+        {
+            add { _activeTextViewChanged += value; }
+            remove { _activeTextViewChanged -= value; }
+        }
 
         void IVimHost.BeginBulkOperation()
         {
@@ -260,9 +280,20 @@ namespace Vim.UnitTest.Mock
 
         }
 
+<<<<<<< HEAD
         bool IVimHost.ShouldCreateVimBuffer(ITextView textView)
         {
             return true;
+=======
+        void IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        {
+            RunQuickFixFunc(quickFix, count, hasBang);
+        }
+
+        void IVimHost.VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
+        {
+            VimRcState = vimRcState;
+>>>>>>> origin/master
         }
     }
 }

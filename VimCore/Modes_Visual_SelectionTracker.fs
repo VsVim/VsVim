@@ -52,8 +52,7 @@ type internal SelectionTracker
                 // here
                 let caretPoint = TextViewUtil.GetCaretPoint _textView
                 let visualSelection = VisualSelection.CreateInitial _visualKind caretPoint
-                let visualSpan = visualSelection.GetVisualSpan _globalSettings.SelectionKind
-                visualSpan.Select _textView Path.Forward
+                visualSelection.VisualSpan.Select _textView Path.Forward
 
                 Some caretPoint
             else 
@@ -88,7 +87,8 @@ type internal SelectionTracker
             // Update the selection only.  Don't move the caret here.  It's either properly positioned
             // or we're simulating the selection based on incremental search
             let visualSelection = VisualSelection.CreateForPoints _visualKind anchorPoint simulatedCaretPoint
-            visualSelection.Select _textView _globalSettings.SelectionKind
+            let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
+            visualSelection.Select _textView
 
     /// When the text is changed it invalidates the anchor point.  It needs to be forwarded to
     /// the next version of the buffer.  If it's not present then just go to point 0

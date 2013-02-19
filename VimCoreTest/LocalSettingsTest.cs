@@ -1,41 +1,30 @@
-﻿using NUnit.Framework;
+﻿using Xunit;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
-    public class LocalSettingsTest : SettingsCommonTest
+    public sealed class LocalSettingsTest
     {
-        protected override string ToggleSettingName { get { return LocalSettingNames.NumberName; } }
-        protected override IVimSettings Create()
+        private IVimGlobalSettings _globalSettings;
+        private IVimLocalSettings _localSettings;
+        private LocalSettings _localSettingsRaw;
+
+        public LocalSettingsTest()
         {
-            var global = new GlobalSettings();
-            return new LocalSettings(global);
+            _globalSettings = new GlobalSettings();
+            _localSettingsRaw = new LocalSettings(_globalSettings);
+            _localSettings = _localSettingsRaw;
         }
 
-        private IVimGlobalSettings _global;
-        private LocalSettings _localRaw;
-        private IVimLocalSettings _local;
-
-        [SetUp]
-        public void SetUp()
+        [Fact]
+        public void ShiftWidthDefaultValue()
         {
-            _global = new GlobalSettings();
-            _localRaw = new LocalSettings(_global);
-            _local = _localRaw;
+            Assert.Equal(8, _localSettings.ShiftWidth);
         }
 
-        [TearDown]
-        public void TearDown()
+        [Fact]
+        public void Sanity()
         {
-            _global = null;
-            _localRaw = null;
-            _local = null;
-        }
-
-        [Test]
-        public void Sanity1()
-        {
-            Assert.AreSame(_global, _local.GlobalSettings);
+            Assert.Same(_globalSettings, _localSettings.GlobalSettings);
         }
     }
 }

@@ -24,6 +24,12 @@ module SnapshotUtil =
     /// Get the line for the specified number
     let GetLine (tss:ITextSnapshot) lineNumber = tss.GetLineFromLineNumber lineNumber
 
+    /// Get the length of the ITextSnapshot
+    let GetLength (tss:ITextSnapshot) = tss.Length
+
+    /// Get the character at the specified index
+    let GetChar index (tss: ITextSnapshot) = tss.[index]
+
     /// Get the first line in the snapshot
     let GetFirstLine tss = GetLine tss 0
 
@@ -103,6 +109,16 @@ module SnapshotUtil =
             GetLine snapshot number |> Some
         else
             None
+
+    /// Try and get the point on the specified line
+    let TryGetPointInLine snapshot lineNumber column = 
+        match TryGetLine snapshot lineNumber with
+        | None -> None
+        | Some snapshotLine ->
+            if column >= snapshotLine.Length then
+                None
+            else
+                snapshotLine.Start.Add(column) |> Some
 
     /// Get the point from the specified position
     let GetPoint (snapshot : ITextSnapshot) position = SnapshotPoint(snapshot, position)
@@ -300,7 +316,7 @@ module SnapshotSpanUtil =
         let endPoint = col |> Seq.map (fun span -> span.End) |> Seq.maxBy (fun p -> p.Position)
         SnapshotSpan(startPoint, endPoint)
 
-    /// Create an empty span at the given point
+    /// Create an span going from startPoint to endpoint
     let Create (startPoint:SnapshotPoint) (endPoint:SnapshotPoint) = SnapshotSpan(startPoint,endPoint)
 
     /// Create an empty span at the given point
@@ -362,7 +378,6 @@ module VirtualSnapshotSpanUtil =
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module SnapshotLineUtil =
-
     /// ITextSnapshot the ITextSnapshotLine is associated with
     let GetSnapshot (line : ITextSnapshotLine) = line.Snapshot
 
@@ -620,7 +635,6 @@ module SnapshotPointUtil =
         | Some (point) -> point
         | None -> point
 
-
     /// Is the SnapshotPoint the provided char
     let IsChar c point =
         if IsEndPoint point then false
@@ -796,7 +810,7 @@ module SnapshotPointUtil =
 
     /// Get the points on the containing line starting at the passed in value.  If the passed in start
     /// point is inside the line break, an empty sequence will be returned
-    let GetPointsOnContainingLineFrom startPoint = 
+    let GetPointsOnLineForward startPoint = 
         if IsInsideLineBreak startPoint then Seq.empty
         else 
             let line = GetContainingLine startPoint
@@ -804,7 +818,7 @@ module SnapshotPointUtil =
 
     /// Get the points on the containing line start starting at the passed in value in reverse order.  If the
     /// passed in point is inside the line break then the points of the entire line will be returned
-    let GetPointsOnContainingLineBackwardsFrom startPoint = 
+    let GetPointsOnLineBackward startPoint = 
         let line = GetContainingLine startPoint
         let span = 
             if IsInsideLineBreak startPoint then SnapshotLineUtil.GetExtent line 
@@ -995,9 +1009,6 @@ module BufferGraphUtil =
 
     /// Map the SnapshotSpan down to the given ITextSnapshot by the Start and End points
     /// instead of by the mapped Spans
-    ///
-    /// TODO: Need to talk with the editor team to better understand why this behavior is 
-    /// so different
     let MapSpanDownToSingle (bufferGraph : IBufferGraph) (span : SnapshotSpan) snapshot = 
         let startPoint = MapPointDownToSnapshot bufferGraph span.Start snapshot PointTrackingMode.Negative PositionAffinity.Predecessor
         let endPoint = MapPointDownToSnapshot bufferGraph span.End snapshot PointTrackingMode.Positive PositionAffinity.Successor
@@ -1373,6 +1384,22 @@ module EditUtil =
                 value
             else
                 value.Substring(0, value.Length - length)
+
+    /// Normalize the new line values in the string to the specified value
+    let NormalizeNewLines (text : string) (newLine : string) = 
+        let builder = System.Text.StringBuilder()
+        let rec inner index = 
+            if index >= text.Length then
+                builder.ToString()
+            else
+                let length = GetLineBreakLength text index
+                if 0 = length then
+                    builder.AppendChar text.[index]
+                    inner (index + 1)
+                else
+                    builder.AppendString newLine
+                    inner (index + length)
+        inner 0
 
 /// In some cases we need to break a complete string into a series of text representations
 /// and new lines.  It's easiest to view this as a sequence of text values with their 

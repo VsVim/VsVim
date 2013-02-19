@@ -1,14 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Windows;
+using System.Windows.Input;
 using EditorUtils;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using NUnit.Framework;
 using Vim.Extensions;
 using Vim.Interpreter;
-using Size=System.Windows.Size;
+using Xunit;
+using Expression = Vim.Interpreter.Expression;
+using Size = System.Windows.Size;
 
 namespace Vim.UnitTest
 {
@@ -21,7 +25,7 @@ namespace Vim.UnitTest
 
         public static CommandResult.Completed AsCompleted(this CommandResult result)
         {
-            Assert.IsTrue(result.IsCompleted);
+            Assert.True(result.IsCompleted);
             return (CommandResult.Completed)result;
         }
 
@@ -43,16 +47,35 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region MaintainCaretColumn
+
+        internal static MaintainCaretColumn.Spaces AsSpaces(this MaintainCaretColumn result)
+        {
+            Assert.True(result.IsSpaces);
+            return (MaintainCaretColumn.Spaces)result;
+        }
+
+        #endregion
+
         #region VisualSelection
 
         public static void SelectAndMoveCaret(this VisualSelection selection, ITextView textView)
         {
-            selection.SelectAndMoveCaret(textView, SelectionKind.Inclusive);
+            selection.Select(textView);
+            TextViewUtil.MoveCaretToPointRaw(textView, selection.GetCaretPoint(SelectionKind.Inclusive), MoveCaretFlags.EnsureOnScreen);
         }
 
         #endregion
 
         #region LineCommand
+
+        /// <summary>
+        /// LineCommand as AddAutoCommand
+        /// </summary>
+        public static LineCommand.AddAutoCommand AsAddAutoCommand(this LineCommand lineCommand)
+        {
+            return (LineCommand.AddAutoCommand)lineCommand;
+        }
 
         /// <summary>
         /// LineCommand as ChangeDirectory
@@ -84,6 +107,14 @@ namespace Vim.UnitTest
         public static LineCommand.Delete AsDelete(this LineCommand lineCommand)
         {
             return (LineCommand.Delete)lineCommand;
+        }
+
+        /// <summary>
+        /// LineCommand as If
+        /// </summary>
+        public static LineCommand.If AsIf(this LineCommand lineCommand)
+        {
+            return (LineCommand.If)lineCommand;
         }
 
         /// <summary>
@@ -164,6 +195,22 @@ namespace Vim.UnitTest
         public static LineCommand.WriteAll AsWriteAll(this LineCommand lineCommand)
         {
             return (LineCommand.WriteAll)lineCommand;
+        }
+
+        /// <summary>
+        /// LineCommand as QuickFixNext
+        /// </summary>
+        public static LineCommand.QuickFixNext AsQuickFixNext(this LineCommand lineCommand)
+        {
+            return (LineCommand.QuickFixNext)lineCommand;
+        }
+
+        /// <summary>
+        /// LineCommand as QuickFixPrevious
+        /// </summary>
+        public static LineCommand.QuickFixPrevious AsQuickFixPrevious(this LineCommand lineCommand)
+        {
+            return (LineCommand.QuickFixPrevious)lineCommand;
         }
 
         #endregion
@@ -340,22 +387,22 @@ namespace Vim.UnitTest
 
         #endregion
 
-        #region Value
+        #region VariableValue
 
         /// <summary>
         /// Number version of a value
         /// </summary>
-        public static Value.Number AsNumber(this Value value)
+        public static VariableValue.Number AsNumber(this VariableValue value)
         {
-            return (Value.Number)value;
+            return (VariableValue.Number)value;
         }
 
         /// <summary>
         /// String version of a value
         /// </summary>
-        public static Value.String AsString(this Value value)
+        public static VariableValue.String AsString(this VariableValue value)
         {
-            return (Value.String)value;
+            return (VariableValue.String)value;
         }
 
         #endregion
@@ -364,7 +411,7 @@ namespace Vim.UnitTest
 
         public static ModeSwitch.SwitchModeWithArgument AsSwitchModeWithArgument(this ModeSwitch mode)
         {
-            Assert.IsTrue(mode.IsSwitchModeWithArgument);
+            Assert.True(mode.IsSwitchModeWithArgument);
             return (ModeSwitch.SwitchModeWithArgument)mode;
         }
 
@@ -464,13 +511,13 @@ namespace Vim.UnitTest
 
         public static BindResult<T>.Complete AsComplete<T>(this BindResult<T> res)
         {
-            Assert.IsTrue(res.IsComplete);
+            Assert.True(res.IsComplete);
             return (BindResult<T>.Complete)res;
         }
 
         public static BindResult<T>.NeedMoreInput AsNeedMoreInput<T>(this BindResult<T> res)
         {
-            Assert.IsTrue(res.IsNeedMoreInput);
+            Assert.True(res.IsNeedMoreInput);
             return (BindResult<T>.NeedMoreInput)res;
         }
 
@@ -500,19 +547,19 @@ namespace Vim.UnitTest
 
         public static Command.VisualCommand AsVisualCommand(this Command command)
         {
-            Assert.IsTrue(command.IsVisualCommand);
+            Assert.True(command.IsVisualCommand);
             return (Command.VisualCommand)command;
         }
 
         public static Command.NormalCommand AsNormalCommand(this Command command)
         {
-            Assert.IsTrue(command.IsNormalCommand);
+            Assert.True(command.IsNormalCommand);
             return (Command.NormalCommand)command;
         }
 
         public static Command.InsertCommand AsInsertCommand(this Command command)
         {
-            Assert.IsTrue(command.IsInsertCommand);
+            Assert.True(command.IsInsertCommand);
             return (Command.InsertCommand)command;
         }
 
@@ -593,13 +640,13 @@ namespace Vim.UnitTest
 
         public static KeyMappingResult.Mapped AsMapped(this KeyMappingResult res)
         {
-            Assert.IsTrue(res.IsMapped);
+            Assert.True(res.IsMapped);
             return (KeyMappingResult.Mapped)res;
         }
 
         public static KeyMappingResult.PartiallyMapped AsPartiallyMapped(this KeyMappingResult res)
         {
-            Assert.IsTrue(res.IsPartiallyMapped);
+            Assert.True(res.IsPartiallyMapped);
             return (KeyMappingResult.PartiallyMapped)res;
         }
 
@@ -618,22 +665,22 @@ namespace Vim.UnitTest
 
         #region SettingValue
 
-        public static SettingValue.StringValue AsStringValue(this SettingValue value)
+        public static SettingValue.String AsString(this SettingValue value)
         {
-            Assert.IsTrue(value.IsStringValue);
-            return (SettingValue.StringValue)value;
+            Assert.True(value.IsString);
+            return (SettingValue.String)value;
         }
 
-        public static SettingValue.ToggleValue AsToggleValue(this SettingValue value)
+        public static SettingValue.Toggle AsToggle(this SettingValue value)
         {
-            Assert.IsTrue(value.IsToggleValue);
-            return (SettingValue.ToggleValue)value;
+            Assert.True(value.IsToggle);
+            return (SettingValue.Toggle)value;
         }
 
-        public static SettingValue.NumberValue AsNumberValue(this SettingValue value)
+        public static SettingValue.Number AsNumber(this SettingValue value)
         {
-            Assert.IsTrue(value.IsNumberValue);
-            return (SettingValue.NumberValue)value;
+            Assert.True(value.IsNumber);
+            return (SettingValue.Number)value;
         }
 
         #endregion
@@ -642,7 +689,7 @@ namespace Vim.UnitTest
 
         public static RunResult.SubstituteConfirm AsSubstituteConfirm(this RunResult result)
         {
-            Assert.IsTrue(result.IsSubstituteConfirm);
+            Assert.True(result.IsSubstituteConfirm);
             return (RunResult.SubstituteConfirm)result;
         }
 
@@ -680,6 +727,23 @@ namespace Vim.UnitTest
             }
 
             return last;
+        }
+
+        /// <summary>
+        /// Process the full notation as a series of KeyInput values
+        /// </summary>
+        public static void ProcessNotation(this IMode mode, string notation, bool enter = false)
+        {
+            var keyInputSet = KeyNotationUtil.StringToKeyInputSet(notation);
+            foreach (var keyInput in keyInputSet.KeyInputs)
+            {
+                mode.Process(keyInput);
+            }
+
+            if (enter)
+            {
+                mode.Process(KeyInputUtil.EnterKey);
+            }
         }
 
         #endregion
@@ -964,7 +1028,7 @@ namespace Vim.UnitTest
         /// Make only a single line visible in the IWpfTextView.  This is really useful when testing
         /// actions like scrolling
         /// </summary>
-        /// <param name="textView"></param>
+        /// <param name="wpfTextView"></param>
         public static void MakeOneLineVisible(this IWpfTextView wpfTextView)
         {
             var oldSize = wpfTextView.VisualElement.RenderSize;
@@ -980,19 +1044,19 @@ namespace Vim.UnitTest
 
         public static VisualSpan.Character AsCharacter(this VisualSpan span)
         {
-            Assert.IsTrue(span.IsCharacter);
+            Assert.True(span.IsCharacter);
             return (VisualSpan.Character)span;
         }
 
         public static VisualSpan.Line AsLine(this VisualSpan span)
         {
-            Assert.IsTrue(span.IsLine);
+            Assert.True(span.IsLine);
             return (VisualSpan.Line)span;
         }
 
         public static VisualSpan.Block AsBlock(this VisualSpan span)
         {
-            Assert.IsTrue(span.IsBlock);
+            Assert.True(span.IsBlock);
             return (VisualSpan.Block)span;
         }
 
@@ -1002,19 +1066,19 @@ namespace Vim.UnitTest
 
         public static VisualSelection.Character AsCharacter(this VisualSelection span)
         {
-            Assert.IsTrue(span.IsCharacter);
+            Assert.True(span.IsCharacter);
             return (VisualSelection.Character)span;
         }
 
         public static VisualSelection.Line AsLine(this VisualSelection span)
         {
-            Assert.IsTrue(span.IsLine);
+            Assert.True(span.IsLine);
             return (VisualSelection.Line)span;
         }
 
         public static VisualSelection.Block AsBlock(this VisualSelection span)
         {
-            Assert.IsTrue(span.IsBlock);
+            Assert.True(span.IsBlock);
             return (VisualSelection.Block)span;
         }
 
@@ -1043,7 +1107,7 @@ namespace Vim.UnitTest
                 result = runner.Run(command[i]);
                 if (i + 1 < command.Length)
                 {
-                    Assert.IsTrue(result.IsNeedMoreInput, "Needs more input");
+                    Assert.True(result.IsNeedMoreInput, "Needs more input");
                 }
             }
 
@@ -1077,7 +1141,7 @@ namespace Vim.UnitTest
             for (var i = 0; i < text.Length; i++)
             {
                 var keyInput = KeyInputUtil.CharToKeyInput(text[i]);
-                Assert.IsTrue(result.IsNeedMoreInput);
+                Assert.True(result.IsNeedMoreInput);
                 result = result.AsNeedMoreInput().Item.BindFunction.Invoke(keyInput);
             }
 
@@ -1089,7 +1153,7 @@ namespace Vim.UnitTest
             foreach (var cur in keys)
             {
                 var keyInput = KeyInputUtil.VimKeyToKeyInput(cur);
-                Assert.IsTrue(result.IsNeedMoreInput);
+                Assert.True(result.IsNeedMoreInput);
                 result = result.AsNeedMoreInput().Item.BindFunction.Invoke(keyInput);
             }
             return result;
@@ -1117,13 +1181,13 @@ namespace Vim.UnitTest
 
         public static SearchResult.Found AsFound(this SearchResult result)
         {
-            Assert.IsTrue(result.IsFound);
+            Assert.True(result.IsFound);
             return (SearchResult.Found)result;
         }
 
         public static SearchResult.NotFound AsNotFound(this SearchResult result)
         {
-            Assert.IsTrue(result.IsNotFound);
+            Assert.True(result.IsNotFound);
             return (SearchResult.NotFound)result;
         }
 
@@ -1214,6 +1278,58 @@ namespace Vim.UnitTest
             var letter = Letter.OfChar(c).Value;
             var mark = Mark.NewLocalMark(LocalMark.NewLetter(letter));
             markMap.SetMark(mark, vimBufferData, line, column);
+        }
+
+        #endregion
+
+        #region VisualElement
+
+        public static TextComposition CreateTextComposition(this FrameworkElement frameworkElement, string text, InputManager inputManager = null)
+        {
+            inputManager = inputManager ?? InputManager.Current;
+            var textComposition = new TextComposition(inputManager, frameworkElement, text);
+            if (text.Length == 1)
+            {
+                var c = text[0];
+                if (Char.IsControl(c))
+                {
+                    var type = typeof(TextComposition);
+                    var method = type.GetMethod("MakeControl", BindingFlags.Instance | BindingFlags.NonPublic);
+                    method.Invoke(textComposition, new object[] { });
+                    Assert.True(String.IsNullOrEmpty(textComposition.Text));
+                    Assert.Equal(text, textComposition.ControlText);
+                }
+                else if (0 != (c & 0x80))
+                {
+                    var type = typeof(TextComposition);
+                    var method = type.GetMethod("MakeSystem", BindingFlags.Instance | BindingFlags.NonPublic);
+                    method.Invoke(textComposition, new object[] { });
+                    Assert.True(String.IsNullOrEmpty(textComposition.Text));
+                    Assert.Equal(text, textComposition.SystemText);
+                }
+            }
+
+            return textComposition;
+        }
+
+        public static TextCompositionEventArgs CreateTextCompositionEventArgs(this FrameworkElement frameworkElement, string text, InputDevice inputDevice, InputManager inputManager = null)
+        {
+            var textComposition = CreateTextComposition(frameworkElement, text, inputManager);
+            var args = new TextCompositionEventArgs(inputDevice, textComposition);
+            args.RoutedEvent = UIElement.TextInputEvent;
+            return args;
+        }
+
+        #endregion
+
+        #region HistoryList
+
+        public static void AddRange(this HistoryList historyList, params string[] values)
+        {
+            foreach (var cur in values)
+            {
+                historyList.Add(cur);
+            }
         }
 
         #endregion
@@ -1319,7 +1435,7 @@ namespace Vim.UnitTest
 
         public static BlockSpan GetSelectionBlockSpan(this ITextView textView)
         {
-            Assert.AreEqual(TextSelectionMode.Box, textView.Selection.Mode);
+            Assert.Equal(TextSelectionMode.Box, textView.Selection.Mode);
             var spans = textView.Selection.SelectedSpans;
             var first = spans[0];
             return new BlockSpan(first.Start, first.Length, spans.Count);
@@ -1333,15 +1449,15 @@ namespace Vim.UnitTest
 
         public static bool IsSome<T>(this FSharpOption<T> option, T value)
         {
-            Assert.IsTrue(option.IsSome(), "Option is None");
-            Assert.AreEqual(value, option.Value);
+            Assert.True(option.IsSome(), "Option is None");
+            Assert.Equal(value, option.Value);
             return true;
         }
 
         public static bool IsSome<T>(this FSharpOption<T> option, Func<T, bool> func)
         {
-            Assert.IsTrue(option.IsSome());
-            Assert.IsTrue(func(option.Value));
+            Assert.True(option.IsSome());
+            Assert.True(func(option.Value));
             return true;
         }
 

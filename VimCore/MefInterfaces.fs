@@ -94,7 +94,7 @@ type ITrackingVisualSelection =
 type IBufferTrackingService = 
 
     /// Create an ITrackingLineColumn at the given position in the buffer.  
-    abstract CreateLineColumn : ITextBuffer -> line:int -> column: int -> LineColumnTrackingMode -> ITrackingLineColumn
+    abstract CreateLineColumn : ITextBuffer -> line : int -> column : int -> LineColumnTrackingMode -> ITrackingLineColumn
 
     /// Create an ITrackingVisualSpan for the given VisualSpan
     abstract CreateVisualSpan : VisualSpan -> ITrackingVisualSpan
@@ -161,6 +161,12 @@ type IFoldManager =
     /// Delete all of the folds which intersect the SnapshotSpan
     abstract DeleteAllFolds : SnapshotSpan -> unit
 
+    /// Toggle fold under the given SnapshotPoint
+    abstract ToggleFold : SnapshotPoint -> int -> unit
+
+    /// Toggle all folds under the given SnapshotPoint
+    abstract ToggleAllFolds : SnapshotSpan  -> unit
+
     /// Open 'count' folds under the given SnapshotPoint
     abstract OpenFold : SnapshotPoint -> int -> unit
 
@@ -186,7 +192,7 @@ type IMouseDevice =
 type IKeyboardDevice = 
 
     /// Is the given key pressed
-    abstract IsKeyDown : VimKey -> bool
+    abstract IsArrowKeyDown : bool
 
 /// Tracks changes to the associated ITextView
 type ITextChangeTracker =
@@ -196,7 +202,7 @@ type ITextChangeTracker =
 
     /// Whether or not change tracking is currently enabled.  Disabling the tracking will
     /// cause the current change to be completed
-    abstract Enabled : bool with get, set
+    abstract TrackCurrentChange : bool with get, set
 
     /// Current change
     abstract CurrentChange : TextChange option
@@ -215,7 +221,7 @@ type ITextChangeTracker =
 type ITextChangeTrackerFactory =
 
     /// Get the ITextChangeTracker associated with the given vim buffer information
-    abstract GetTextChangeTracker : IVimBufferData -> ITextChangeTracker
+    abstract GetTextChangeTracker : vimBufferData : IVimBufferData -> ITextChangeTracker
 
 /// Provides access to the system clipboard 
 type IClipboardDevice =
@@ -268,6 +274,12 @@ type ICommonOperations =
 
     /// Get the indentation for a newly created ITextSnasphotLine.  The context line is
     /// is provided to calcualte the indentation off of 
+    ///
+    /// Warning: Calling this API can cause the buffer to be editted.  Asking certain 
+    /// editor implementations about the indentation, in particular Razor, can cause
+    /// an edit to occur.  
+    ///
+    /// Issue #946
     abstract GetNewLineIndent : contextLine : ITextSnapshotLine -> newLine : ITextSnapshotLine -> int option
 
     /// Get the standard ReplaceData for the given SnapshotPoint
@@ -276,6 +288,9 @@ type ICommonOperations =
     /// Get the number of spaces (when tabs are expanded) that is necessary to get to the 
     /// specified point on it's line
     abstract GetSpacesToPoint : point : SnapshotPoint -> int
+
+    /// Get the point that visually corresponds to the specified column on its line
+    abstract GetPointForSpaces : contextLine : ITextSnapshotLine -> column : int -> SnapshotPoint
 
     /// Attempt to GoToDefinition on the current state of the buffer.  If this operation fails, an error message will 
     /// be generated as appropriate
@@ -302,6 +317,9 @@ type ICommonOperations =
 
     /// Joins the lines in the range
     abstract Join : SnapshotLineRange -> JoinKind -> unit
+
+    /// Move the caret in the specified direction
+    abstract MoveCaret : caretMovement : CaretMovement -> bool
 
     /// Move the caret to a given point on the screen
     abstract MoveCaretToPoint : SnapshotPoint -> unit
@@ -372,4 +390,26 @@ type IVisualModeSelectionOverride =
 
     /// Is insert mode preferred for the current state of the buffer
     abstract IsInsertModePreferred : textView : ITextView -> bool
+
+/// This interface is used to synchronize settings between vim settings and the 
+/// editor settings
+///
+/// TODO: This process should be automatic.  The IVimHost should have to specifically
+/// opt out of synchronization
+type IEditorToSettingsSynchronizer = 
+    
+    /// Begin the synchronization between the editor and vim settings.  This will 
+    /// start by overwriting the editor settings with the current local ones 
+    ///
+    /// This method can be called multiple times for the same IVimBuffer and it 
+    /// will only synchronize once 
+    abstract StartSynchronizing : vimBuffer : IVimBuffer -> unit
+
+    /// Copy the settings which are synchronized from the editor to the 
+    /// corresponding vim settings
+    abstract CopyEditorToVimSettings : vimBuffer : IVimBuffer -> unit
+
+    /// Copy the settings which are synchronized from vim to the 
+    /// corresponding editor settings
+    abstract CopyVimToEditorSettings : vimBuffer : IVimBuffer -> unit
 

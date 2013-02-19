@@ -10,20 +10,24 @@ namespace VsVim
     /// </summary>
     internal sealed class OleCommandData : IDisposable
     {
-        internal readonly Guid _commandGroup;
-        internal readonly uint _commandId;
+        internal readonly CommandId _commandId;
         internal readonly uint _commandExecOpt;
         internal IntPtr _variantIn;
         internal IntPtr _variantOut;
 
-        internal Guid CommandGroup
-        {
-            get { return _commandGroup; }
-        }
-
-        internal uint CommandId
+        internal CommandId CommandId
         {
             get { return _commandId; }
+        }
+
+        internal Guid Group
+        {
+            get { return _commandId.Group; }
+        }
+
+        internal uint Id
+        {
+            get { return _commandId.Id; }
         }
 
         internal uint CommandExecOpt
@@ -39,6 +43,12 @@ namespace VsVim
         internal IntPtr VariantOut
         {
             get { return _variantOut; }
+        }
+
+        internal OleCommandData(VSConstants.VSStd97CmdID id)
+            : this(VSConstants.GUID_VSStandardCommandSet97, (uint)id)
+        {
+
         }
 
         internal OleCommandData(VSConstants.VSStd2KCmdID id)
@@ -68,8 +78,7 @@ namespace VsVim
             IntPtr variantIn,
             IntPtr variantOut)
         {
-            _commandGroup = commandGroup;
-            _commandId = commandId;
+            _commandId = new CommandId(commandGroup, commandId);
             _commandExecOpt = commandExecOpt;
             _variantIn = variantIn;
             _variantOut = variantOut;

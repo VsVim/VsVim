@@ -3,9 +3,9 @@ using EditorUtils;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using NUnit.Framework;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
+using Xunit;
 
 namespace Vim.UnitTest
 {
@@ -37,7 +37,7 @@ namespace Vim.UnitTest
             _vimTextBuffer = _vimBuffer.VimTextBuffer;
             _registerMap = _vimBuffer.RegisterMap;
             _globalSettings = _vimBuffer.LocalSettings.GlobalSettings;
-            Assert.IsTrue(_context.IsEmpty);
+            Assert.True(_context.IsEmpty);
 
             // Need to make sure it's focused so macro recording will work
             ((MockVimHost)_vimBuffer.Vim.VimHost).FocusedTextView = _textView;
@@ -48,9 +48,9 @@ namespace Vim.UnitTest
             var characterSpan = CharacterSpan.CreateForSpan(span);
             var visualSelection = VisualSelection.NewCharacter(characterSpan, Path.Forward);
             visualSelection.SelectAndMoveCaret(_textView);
-            Assert.IsFalse(_context.IsEmpty);
+            Assert.False(_context.IsEmpty);
             _context.RunAll();
-            Assert.IsTrue(_context.IsEmpty);
+            Assert.True(_context.IsEmpty);
         }
 
         protected void EnterMode(ModeKind kind, SnapshotSpan span)
@@ -64,13 +64,12 @@ namespace Vim.UnitTest
             var visualSpan = VisualSpan.NewBlock(blockSpan);
             var visualSelection = VisualSelection.CreateForward(visualSpan);
             visualSelection.SelectAndMoveCaret(_textView);
-            Assert.IsFalse(_context.IsEmpty);
+            Assert.False(_context.IsEmpty);
             _context.RunAll();
-            Assert.IsTrue(_context.IsEmpty);
+            Assert.True(_context.IsEmpty);
             _vimBuffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.None);
         }
 
-        [TestFixture]
         public sealed class ExclusiveSelection : VisualModeIntegrationTest
         {
             protected override void Create(params string[] lines)
@@ -82,415 +81,381 @@ namespace Vim.UnitTest
             /// <summary>
             /// The caret position should be on the next character for a move right
             /// </summary>
-            [Test]
+            [Fact]
             public void CaretPosition_Right()
             {
                 Create("the dog");
                 _vimBuffer.Process("vl");
                 _vimBuffer.Process(VimKey.Escape);
-                Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// The caret position should be on the start of the next word after leaving visual mode
             /// </summary>
-            [Test]
+            [Fact]
             public void CaretPosition_Word()
             {
                 Create("the dog");
                 _vimBuffer.Process("vw");
                 _vimBuffer.Process(VimKey.Escape);
-                Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// Make sure the 'e' motion still goes one character extra during a line wise movement
             /// </summary>
-            [Test]
+            [Fact]
             public void CaretPosition_EndOfWordLineWise()
             {
                 Create("the dog. the cat");
                 _textView.MoveCaretTo(4);
                 _vimBuffer.Process("Ve");
-                Assert.AreEqual(7, _textView.GetCaretPoint().Position);
+                Assert.Equal(7, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// The 'e' motion should result in a selection that encompasses the entire word
             /// </summary>
-            [Test]
+            [Fact]
             public void Delete_EndOfWord()
             {
                 Create("the dog. cat");
                 _textView.MoveCaretTo(4);
                 _vimBuffer.Process("vex");
-                Assert.AreEqual("dog", UnnamedRegister.StringValue);
-                Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+                Assert.Equal("dog", UnnamedRegister.StringValue);
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// The 'e' motion should result in a selection that encompasses the entire word
             /// </summary>
-            [Test]
+            [Fact]
             public void Delete_EndOfWord_Block()
             {
                 Create("the dog. end", "the cat. end", "the fish. end");
                 _textView.MoveCaretTo(4);
                 _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('q'));
                 _vimBuffer.Process("jex");
-                Assert.AreEqual("the . end", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("the . end", _textBuffer.GetLine(1).GetText());
-                Assert.AreEqual("the fish. end", _textBuffer.GetLine(2).GetText());
+                Assert.Equal("the . end", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("the . end", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("the fish. end", _textBuffer.GetLine(2).GetText());
             }
 
             /// <summary>
             /// The 'w' motion should result in a selection that encompasses the entire word
             /// </summary>
-            [Test]
+            [Fact]
             public void Delete_Word()
             {
                 Create("the dog. cat");
                 _textView.MoveCaretTo(4);
                 _vimBuffer.Process("vwx");
-                Assert.AreEqual("dog", UnnamedRegister.StringValue);
-                Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+                Assert.Equal("dog", UnnamedRegister.StringValue);
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// The $ movement should put the caret past the end of the line
             /// </summary>
-            [Test]
+            [Fact]
             public void MoveEndOfLine_Dollar()
             {
                 Create("cat", "dog");
                 _vimBuffer.Process("v$");
-                Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// The 'l' movement should put the caret past the end of the line 
             /// </summary>
-            [Test]
+            [Fact]
             public void MoveEndOfLine_Right()
             {
                 Create("cat", "dog");
                 _vimBuffer.Process("vlll");
-                Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// The entire word should be selected 
+            /// </summary>
+            [Fact]
+            public void InnerWord()
+            {
+                Create("cat   dog");
+                _vimBuffer.Process("viw");
+                Assert.Equal("cat", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// The entire word plus the trailing white space should be selected
+            /// </summary>
+            [Fact]
+            public void AllWord()
+            {
+                Create("cat   dog");
+                _vimBuffer.Process("vaw");
+                Assert.Equal("cat   ", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
             }
         }
 
-        [TestFixture]
-        public sealed class SwitchMode : VisualModeIntegrationTest
-        {
-            [Test]
-            public void ToCommandModeShouldPreserveSelection()
-            {
-                Create("dog", "pig", "chicken");
-                EnterMode(_textView.GetLineRange(0, 1).Extent);
-                _vimBuffer.Process(':');
-                Assert.IsFalse(_textView.Selection.IsEmpty);
-            }
-
-            /// <summary>
-            /// Switch the character mode to line mode and ensure we maintain the forward 
-            /// direction
-            /// </summary>
-            [Test]
-            public void CharacterToLine()
-            {
-                Create("big dog", "big cat", "big tree", "big fish");
-                var span = new SnapshotSpan(
-                    _textBuffer.GetPoint(1),
-                    _textBuffer.GetPointInLine(1, 2));
-                EnterMode(ModeKind.VisualCharacter, span);
-                _vimBuffer.Process('V');
-                Assert.AreEqual(ModeKind.VisualLine, _vimBuffer.ModeKind);
-                Assert.AreEqual(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
-            }
-
-            /// <summary>
-            /// Switch the character mode to line mode and ensure we maintain the backwards 
-            /// direction
-            /// </summary>
-            [Test]
-            public void CharacterToLineBackwards()
-            {
-                Create("big dog", "big cat", "big tree", "big fish");
-                _textView.MoveCaretToLine(1, 2);
-                _vimBuffer.Process("vkh");
-                Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
-                _vimBuffer.Process('V');
-                Assert.AreEqual(ModeKind.VisualLine, _vimBuffer.ModeKind);
-                Assert.AreEqual(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
-            }
-
-            /// <summary>
-            /// Switch the line mode to character mode and ensure we maintain the forward 
-            /// direction
-            /// </summary>
-            [Test]
-            public void LineToCharacter()
-            {
-                Create("big dog", "big cat", "big tree", "big fish");
-                _textView.MoveCaretTo(1);
-                _vimBuffer.Process("Vj");
-                Assert.AreEqual(ModeKind.VisualLine, _vimBuffer.ModeKind);
-                _vimBuffer.Process('v');
-                Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
-
-                var span = new SnapshotSpan(
-                    _textBuffer.GetPoint(1),
-                    _textBuffer.GetPointInLine(1, 2));
-                Assert.AreEqual(span, _textView.GetSelectionSpan());
-            }
-
-            /// <summary>
-            /// Switch the character mode to block mode and ensure we maintain the forward
-            /// direction
-            /// </summary>
-            [Test]
-            public void CharacterToBlock()
-            {
-                Create("big dog", "big cat", "big tree", "big fish");
-                _textView.MoveCaretTo(1);
-                _vimBuffer.Process("vjl");
-                Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
-                _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('q'));
-                Assert.AreEqual(ModeKind.VisualBlock, _vimBuffer.ModeKind);
-
-                var tuple = _vimBuffer.VisualBlockMode.VisualSelection.AsBlock();
-                var blockSpan = new BlockSpan(
-                    _textBuffer.GetPoint(1),
-                    2,
-                    2);
-                Assert.AreEqual(blockSpan, tuple.Item1);
-                Assert.AreEqual(BlockCaretLocation.BottomRight, tuple.Item2);
-            }
-
-            /// <summary>
-            /// The 'v' command should go into and then out of character mode
-            /// </summary>
-            [Test]
-            public void NormalFromCharacter()
-            {
-                Create("cat");
-                _textView.MoveCaretTo(1);
-                _vimBuffer.Process('v');
-                Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
-                _vimBuffer.Process('v');
-                Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
-                Assert.AreEqual(1, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// The 'V' command should go into and then out of line mode
-            /// </summary>
-            [Test]
-            public void NormalFromLine()
-            {
-                Create("cat");
-                _textView.MoveCaretTo(1);
-                _vimBuffer.Process('V');
-                Assert.AreEqual(ModeKind.VisualLine, _vimBuffer.ModeKind);
-                _vimBuffer.Process('V');
-                Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
-                Assert.AreEqual(1, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// The block command should go into and then out of block mode
-            /// </summary>
-            [Test]
-            public void NormalFromBlock()
-            {
-                Create("cat");
-                _textView.MoveCaretTo(1);
-                _vimBuffer.ProcessNotation(@"<C-q>");
-                Assert.AreEqual(ModeKind.VisualBlock, _vimBuffer.ModeKind);
-                _vimBuffer.ProcessNotation(@"<C-q>");
-                Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
-                Assert.AreEqual(1, _textView.GetCaretPoint().Position);
-            }
-        }
-
-        [TestFixture]
         public sealed class BlockInsert : VisualModeIntegrationTest
         {
             /// <summary>
             /// The block insert should add the text to every column
             /// </summary>
-            [Test]
+            [Fact]
             public void Simple()
             {
                 Create("dog", "cat", "fish");
                 _vimBuffer.ProcessNotation("<C-q>j<S-i>the <Esc>");
-                Assert.AreEqual("the dog", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("the cat", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("the dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("the cat", _textBuffer.GetLine(1).GetText());
             }
 
             /// <summary>
             /// The caret should be positioned at the start of the block span when the insertion
             /// starts
             /// </summary>
-            [Test]
+            [Fact]
             public void CaretPosition()
             {
                 Create("dog", "cat", "fish");
                 _vimBuffer.ProcessNotation("<C-q>jl<S-i>");
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-                Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
             }
 
             /// <summary>
             /// The block insert shouldn't add text to any of the columns which didn't extend into 
             /// the original selection
             /// </summary>
-            [Test]
+            [Fact]
             public void EmptyColumn()
             {
                 Create("dog", "", "fish");
                 _vimBuffer.ProcessNotation("l<C-q>jjl<S-i> the <Esc>");
-                Assert.AreEqual("d the og", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("", _textBuffer.GetLine(1).GetText());
-                Assert.AreEqual("f the ish", _textBuffer.GetLine(2).GetText());
-                Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+                Assert.Equal("d the og", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("f the ish", _textBuffer.GetLine(2).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// The undo of a block insert should undo all of the inserts
             /// </summary>
-            [Test]
+            [Fact]
             public void Undo()
             {
                 Create("dog", "cat", "fish");
                 _vimBuffer.ProcessNotation("<C-q>j<S-i>the <Esc>");
-                Assert.AreEqual("the dog", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("the cat", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("the dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("the cat", _textBuffer.GetLine(1).GetText());
                 _vimBuffer.Process('u');
-                Assert.AreEqual("dog", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("cat", _textBuffer.GetLine(1).GetText());
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// Delete actions aren't repeated
             /// </summary>
-            [Test]
+            [Fact]
             public void DontRepeatDelete()
             {
                 Create("dog", "cat", "fish");
                 _vimBuffer.ProcessNotation("<C-q>j<S-i><Del><Esc>");
-                Assert.AreEqual("og", _textView.GetLine(0).GetText());
-                Assert.AreEqual("cat", _textView.GetLine(1).GetText());
+                Assert.Equal("og", _textView.GetLine(0).GetText());
+                Assert.Equal("cat", _textView.GetLine(1).GetText());
             }
         }
 
-        [TestFixture]
         public sealed class BlockChange : VisualModeIntegrationTest
         {
             /// <summary>
             /// The block insert should add the text to every column
             /// </summary>
-            [Test]
+            [Fact]
             public void Simple()
             {
                 Create("dog", "cat", "fish");
                 _vimBuffer.ProcessNotation("<C-q>jcthe <Esc>");
-                Assert.AreEqual("the og", _textBuffer.GetLine(0).GetText());
-                Assert.AreEqual("the at", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("the og", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("the at", _textBuffer.GetLine(1).GetText());
             }
 
             /// <summary>
             /// Make sure an undo of a block edit goes back to the original text and replaces
             /// the cursor at the start of the block
             /// </summary>
-            [Test]
+            [Fact]
             public void Undo()
             {
                 Create("dog", "cat", "fish");
                 _vimBuffer.ProcessNotation("<C-q>jcthe <Esc>u");
-                CollectionAssert.AreEqual(
+                Assert.Equal(
                     new[] { "dog", "cat", "fish" },
                     _textBuffer.GetLines());
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
-            [Test]
+            [Fact]
             public void RenameFunction()
             {
                 Create("foo()", "foo()");
                 _vimBuffer.ProcessNotation("<C-q>jllcbar<Esc>");
-                CollectionAssert.AreEqual(
+                Assert.Equal(
                     new[] { "bar()", "bar()" },
                     _textBuffer.GetLines());
             }
         }
 
-        [TestFixture]
         public sealed class Move : VisualModeIntegrationTest
         {
+            [Fact]
+            public void HomeToStartOfLine()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(2);
+                _vimBuffer.ProcessNotation("v<Home>");
+                Assert.Equal("cat", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(0, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void HomeToStartOfLineViaKeypad()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(2);
+                _vimBuffer.ProcessNotation("v<kHome>");
+                Assert.Equal("cat", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(0, _textView.GetCaretPoint());
+            }
+
             /// <summary>
             /// Jump to a mark and make sure that the selection correctly updates
             /// </summary>
-            [Test]
+            [Fact]
             public void JumpMarkLine_Character()
             {
                 Create("cat", "dog");
                 _textView.MoveCaretTo(1);
                 _vimBuffer.MarkMap.SetLocalMark('b', _vimBufferData, 1, 1);
                 _vimBuffer.Process("v'b");
-                Assert.AreEqual("at\r\nd", _textView.GetSelectionSpan().GetText());
+                Assert.Equal("at\r\nd", _textView.GetSelectionSpan().GetText());
             }
 
             /// <summary>
             /// Jump to a mark and make sure that the selection correctly updates
             /// </summary>
-            [Test]
+            [Fact]
             public void JumpMark_Character()
             {
                 Create("cat", "dog");
                 _textView.MoveCaretTo(1);
                 _vimBuffer.MarkMap.SetLocalMark('b', _vimBufferData, 1, 1);
                 _vimBuffer.Process("v`b");
-                Assert.AreEqual("at\r\ndo", _textView.GetSelectionSpan().GetText());
+                Assert.Equal("at\r\ndo", _textView.GetSelectionSpan().GetText());
             }
         }
 
-        [TestFixture]
+        public sealed class Insert : VisualModeIntegrationTest
+        {
+            /// <summary>
+            /// When switching to insert mode the caret should move to the start of the line
+            /// </summary>
+            [Fact]
+            public void MiddleOfLine()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process("vllI");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+            }
+
+            /// <summary>
+            /// In an undo the caret should go back to the start of the line.  
+            /// Disabled: Undo testing infrastructure doesn't support this yet
+            /// </summary>
+            public void Undo()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("vllIbig ");
+                Assert.Equal("big cat", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("<Esc>u");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+        }
+
+        public sealed class ChangeCase : VisualModeIntegrationTest
+        {
+            [Fact]
+            public void Upper_Character()
+            {
+                Create("cat dog");
+                _vimBuffer.ProcessNotation("vllU");
+                Assert.Equal("CAT dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().GetColumn());
+            }
+
+            [Fact]
+            public void Lower_Character()
+            {
+                Create("CAT dog");
+                _vimBuffer.ProcessNotation("vllu");
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().GetColumn());
+            }
+
+            [Fact]
+            public void Rot13_Character()
+            {
+                Create("cat dog");
+                _vimBuffer.ProcessNotation("vllg?");
+                Assert.Equal("png dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().GetColumn());
+            }
+        }
+
         public sealed class Misc : VisualModeIntegrationTest
         {
             /// <summary>
             /// When changing a line wise selection one blank line should be left remaining in the ITextBuffer
             /// </summary>
-            [Test]
+            [Fact]
             public void Change_LineWise()
             {
                 Create("cat", "  dog", "  bear", "tree");
                 EnterMode(ModeKind.VisualLine, _textView.GetLineRange(1, 2).ExtentIncludingLineBreak);
                 _vimBuffer.LocalSettings.AutoIndent = true;
                 _vimBuffer.Process("c");
-                Assert.AreEqual("cat", _textView.GetLine(0).GetText());
-                Assert.AreEqual("", _textView.GetLine(1).GetText());
-                Assert.AreEqual("tree", _textView.GetLine(2).GetText());
-                Assert.AreEqual(2, _textView.Caret.Position.VirtualBufferPosition.VirtualSpaces);
-                Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-                Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal("cat", _textView.GetLine(0).GetText());
+                Assert.Equal("", _textView.GetLine(1).GetText());
+                Assert.Equal("tree", _textView.GetLine(2).GetText());
+                Assert.Equal(2, _textView.Caret.Position.VirtualBufferPosition.VirtualSpaces);
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
             }
 
             /// <summary>
             /// When changing a word we just delete it all and put the caret at the start of the deleted
             /// selection
             /// </summary>
-            [Test]
+            [Fact]
             public void Change_Word()
             {
                 Create("cat chases the ball");
                 EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 4));
                 _vimBuffer.LocalSettings.AutoIndent = true;
                 _vimBuffer.Process("c");
-                Assert.AreEqual("chases the ball", _textView.GetLine(0).GetText());
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-                Assert.AreEqual(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal("chases the ball", _textView.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
             }
 
             /// <summary>
@@ -498,17 +463,17 @@ namespace Vim.UnitTest
             /// in virtual space due to the previous indent and escape should cause the caret to jump back to 
             /// real spaces when leaving insert mode
             /// </summary>
-            [Test]
+            [Fact]
             public void ChangeLineSelection_VirtualSpaceHandling()
             {
                 Create("  cat", "dog");
                 EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 2, 2));
                 _vimBuffer.Process('C');
                 _vimBuffer.Process(VimKey.Escape);
-                Assert.AreEqual("", _textView.GetLine(0).GetText());
-                Assert.AreEqual("dog", _textView.GetLine(1).GetText());
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-                Assert.IsFalse(_textView.GetCaretVirtualPoint().IsInVirtualSpace);
+                Assert.Equal("", _textView.GetLine(0).GetText());
+                Assert.Equal("dog", _textView.GetLine(1).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                Assert.False(_textView.GetCaretVirtualPoint().IsInVirtualSpace);
             }
 
             /// <summary>
@@ -516,28 +481,28 @@ namespace Vim.UnitTest
             /// it should not be a line delete but instead delete the contents of the 
             /// line.
             /// </summary>
-            [Test]
+            [Fact]
             public void Delete_CharacterWise_LineContents()
             {
                 Create("cat", "dog");
                 EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 3));
                 _vimBuffer.Process("x");
-                Assert.AreEqual("", _textView.GetLine(0).GetText());
-                Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+                Assert.Equal("", _textView.GetLine(0).GetText());
+                Assert.Equal("dog", _textView.GetLine(1).GetText());
             }
 
             /// <summary>
             /// If the character wise selection extents into the line break then the 
             /// entire line should be deleted
             /// </summary>
-            [Test]
+            [Fact]
             public void Delete_CharacterWise_LineContentsFromBreak()
             {
                 Create("cat", "dog");
                 _globalSettings.VirtualEdit = "onemore";
                 EnterMode(ModeKind.VisualCharacter, _textView.GetLine(0).ExtentIncludingLineBreak);
                 _vimBuffer.Process("x");
-                Assert.AreEqual("dog", _textView.GetLine(0).GetText());
+                Assert.Equal("dog", _textView.GetLine(0).GetText());
             }
 
             /// <summary>
@@ -545,175 +510,199 @@ namespace Vim.UnitTest
             ///
             /// https://github.com/jaredpar/VsVim/issues/568
             /// </summary>
-            [Test]
+            [Fact]
             public void Delete_EndOfWordMotion()
             {
                 Create("ThisIsALongWord. ThisIsAnotherLongWord!");
                 _vimBuffer.Process("vex");
-                Assert.AreEqual(". ThisIsAnotherLongWord!", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(". ThisIsAnotherLongWord!", _textBuffer.GetLine(0).GetText());
             }
 
             /// <summary>
             /// Verify that Shift-V enters Visual Line Mode
             /// </summary>
-            [Test]
+            [Fact]
             public void EnterVisualLine()
             {
                 Create("hello", "world");
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<S-v>"));
-                Assert.AreEqual(ModeKind.VisualLine, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
             }
 
-            [Test]
+            [Fact]
+            public void JoinSelection_KeepSpaces_Simple()
+            {
+                Create("cat", "dog", "tree");
+                _vimBuffer.Process("VjJ");
+                Assert.Equal(new [] { "cat dog", "tree" }, _textBuffer.GetLines());
+            }
+
+            [Fact]
+            public void JoinSelection_RemoveSpaces_Simple()
+            {
+                Create("cat", "dog", "tree");
+                _vimBuffer.Process("VjgJ");
+                Assert.Equal(new [] { "catdog", "tree" }, _textBuffer.GetLines());
+            }
+
+            [Fact]
             public void Repeat1()
             {
                 Create("dog again", "cat again", "chicken");
                 EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
-                _vimBuffer.LocalSettings.GlobalSettings.ShiftWidth = 2;
+                _vimBuffer.LocalSettings.ShiftWidth = 2;
                 _vimBuffer.Process(">.");
-                Assert.AreEqual("    dog again", _textView.GetLine(0).GetText());
+                Assert.Equal("    dog again", _textView.GetLine(0).GetText());
             }
 
-            [Test]
+            [Fact]
             public void Repeat2()
             {
                 Create("dog again", "cat again", "chicken");
                 EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
-                _vimBuffer.LocalSettings.GlobalSettings.ShiftWidth = 2;
+                _vimBuffer.LocalSettings.ShiftWidth = 2;
                 _vimBuffer.Process(">..");
-                Assert.AreEqual("      dog again", _textView.GetLine(0).GetText());
+                Assert.Equal("      dog again", _textView.GetLine(0).GetText());
             }
 
-            [Test]
+            [Fact]
             public void ResetCaretFromShiftLeft1()
             {
                 Create("  hello", "  world");
                 EnterMode(_textView.GetLineRange(0, 1).Extent);
                 _vimBuffer.Process("<");
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
-            [Test]
+            [Fact]
             public void ResetCaretFromShiftLeft2()
             {
                 Create("  hello", "  world");
                 EnterMode(_textView.GetLineRange(0, 1).Extent);
                 _vimBuffer.Process("<");
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
-            [Test]
+            [Fact]
             public void ResetCaretFromYank1()
             {
                 Create("  hello", "  world");
                 EnterMode(_textView.TextBuffer.GetSpan(0, 2));
                 _vimBuffer.Process("y");
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
-            [Test]
-            [Description("Moving the caret which resets the selection should go to normal mode")]
+            /// <summary>
+            /// Moving the caret which resets the selection should go to normal mode
+            /// </summary>
+            [Fact]
             public void SelectionChange1()
             {
                 Create("  hello", "  world");
                 EnterMode(_textView.TextBuffer.GetSpan(0, 2));
-                Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                 _textView.Selection.Select(
                     new SnapshotSpan(_textView.GetLine(1).Start, 0),
                     false);
                 _context.RunAll();
-                Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
             }
 
-            [Test]
-            [Description("Moving the caret which resets the selection should go visual if there is still a selection")]
+            /// <summary>
+            /// Moving the caret which resets the selection should go visual if there is still a selection
+            /// </summary>
+            [Fact]
             public void SelectionChange2()
             {
                 Create("  hello", "  world");
                 EnterMode(_textView.TextBuffer.GetSpan(0, 2));
-                Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                 _textView.Selection.Select(
                     new SnapshotSpan(_textView.GetLine(1).Start, 1),
                     false);
                 _context.RunAll();
-                Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
             }
 
-            [Test]
-            [Description("Make sure we reset the span we need")]
+            /// <summary>
+            /// Make sure we reset the span we need
+            /// </summary>
+            [Fact]
             public void SelectionChange3()
             {
                 Create("  hello", "  world");
                 EnterMode(_textView.GetLine(0).Extent);
-                Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                 _textView.Selection.Select(_textView.GetLine(1).Extent, false);
                 _vimBuffer.Process(KeyInputUtil.CharToKeyInput('y'));
                 _context.RunAll();
-                Assert.AreEqual("  world", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
+                Assert.Equal("  world", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
             }
 
-            [Test]
-            [Description("Make sure we reset the span we need")]
+            /// <summary>
+            /// Make sure we reset the span we need
+            /// </summary>
+            [Fact]
             public void SelectionChange4()
             {
                 Create("  hello", "  world");
                 EnterMode(_textView.GetLine(0).Extent);
-                Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                 _textView.SelectAndMoveCaret(new SnapshotSpan(_textView.GetLine(1).Start, 3));
                 _context.RunAll();
                 _vimBuffer.Process("ly");
-                Assert.AreEqual("  wo", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
+                Assert.Equal("  wo", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
             }
 
             /// <summary>
             /// Make sure the CTRL-Q command causes the block selection to start out as a single width
             /// column
             /// </summary>
-            [Test]
+            [Fact]
             public void Select_Block_InitialState()
             {
                 Create("hello world");
                 _vimBuffer.ProcessNotation("<C-Q>");
-                Assert.AreEqual(ModeKind.VisualBlock, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.VisualBlock, _vimBuffer.ModeKind);
                 var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 1, 1);
-                Assert.AreEqual(blockSpan, _textView.GetSelectionBlockSpan());
+                Assert.Equal(blockSpan, _textView.GetSelectionBlockSpan());
             }
 
             /// <summary>
             /// Make sure the CTRL-Q command causes the block selection to start out as a single width 
             /// column from places other than the start of the document
             /// </summary>
-            [Test]
+            [Fact]
             public void Select_Block_InitialNonStartPoint()
             {
                 Create("big cats", "big dogs", "big trees");
                 var point = _textBuffer.GetPointInLine(1, 3);
                 _textView.MoveCaretTo(point);
                 _vimBuffer.ProcessNotation("<C-Q>");
-                Assert.AreEqual(ModeKind.VisualBlock, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.VisualBlock, _vimBuffer.ModeKind);
                 var blockSpan = new BlockSpan(point, 1, 1);
-                Assert.AreEqual(blockSpan, _textView.GetSelectionBlockSpan());
+                Assert.Equal(blockSpan, _textView.GetSelectionBlockSpan());
             }
 
             /// <summary>
             /// A left movement in block selection should move the selection to the left
             /// </summary>
-            [Test]
+            [Fact]
             public void Select_Block_Backwards()
             {
                 Create("big cats", "big dogs");
                 _textView.MoveCaretTo(2);
                 _vimBuffer.ProcessNotation("<C-Q>jh");
-                Assert.AreEqual(ModeKind.VisualBlock, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.VisualBlock, _vimBuffer.ModeKind);
                 var blockSpan = new BlockSpan(_textView.GetPoint(1), 2, 2);
-                Assert.AreEqual(blockSpan, _textView.GetSelectionBlockSpan());
+                Assert.Equal(blockSpan, _textView.GetSelectionBlockSpan());
             }
 
             /// <summary>
             /// When selection is exclusive there should still be a single column selected in block
             /// mode even if the original width is 1
             /// </summary>
-            [Test]
+            [Fact]
             public void Select_Exclusive_OneWidthBlock()
             {
                 Create("the dog", "the cat");
@@ -722,14 +711,14 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('q'));
                 _vimBuffer.Process('j');
                 var blockSpan = _textBuffer.GetBlockSpan(1, 1, 0, 2);
-                Assert.AreEqual(blockSpan, _textView.GetSelectionBlockSpan());
-                Assert.AreEqual(_textView.GetPointInLine(1, 1), _textView.GetCaretPoint());
+                Assert.Equal(blockSpan, _textView.GetSelectionBlockSpan());
+                Assert.Equal(_textView.GetPointInLine(1, 1), _textView.GetCaretPoint());
             }
 
             /// <summary>
             /// When selection is exclusive block selection should shrink by one in width
             /// </summary>
-            [Test]
+            [Fact]
             public void Select_Exclusive_TwoWidthBlock()
             {
                 Create("the dog", "the cat");
@@ -738,15 +727,15 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('q'));
                 _vimBuffer.Process("jl");
                 var blockSpan = _textBuffer.GetBlockSpan(1, 1, 0, 2);
-                Assert.AreEqual(blockSpan, _textView.GetSelectionBlockSpan());
-                Assert.AreEqual(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
+                Assert.Equal(blockSpan, _textView.GetSelectionBlockSpan());
+                Assert.Equal(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
             }
 
             /// <summary>
             /// Make sure that LastVisualSelection is set to the SnapshotSpan before the shift right
             /// command is executed
             /// </summary>
-            [Test]
+            [Fact]
             public void ShiftLinesRight_LastVisualSelection()
             {
                 Create("cat", "dog", "fish");
@@ -755,137 +744,140 @@ namespace Vim.UnitTest
                 var visualSelection = VisualSelection.NewCharacter(
                     new CharacterSpan(_textView.GetLine(0).Start, 2, 1),
                     Path.Forward);
-                Assert.IsTrue(_vimTextBuffer.LastVisualSelection.IsSome());
-                Assert.AreEqual(visualSelection, _vimTextBuffer.LastVisualSelection.Value);
+                Assert.True(_vimTextBuffer.LastVisualSelection.IsSome());
+                Assert.Equal(visualSelection, _vimTextBuffer.LastVisualSelection.Value);
             }
 
-
-            [Test]
-            [Description("Even though a text span is selected, substitute should operate on the line")]
+            /// <summary>
+            /// Even though a text span is selected, substitute should operate on the line
+            /// </summary>
+            [Fact]
             public void Substitute1()
             {
                 Create("the boy hit the cat", "bat");
                 EnterMode(new SnapshotSpan(_textView.TextSnapshot, 0, 2));
                 _vimBuffer.Process(":s/a/o", enter: true);
-                Assert.AreEqual("the boy hit the cot", _textView.GetLine(0).GetText());
-                Assert.AreEqual("bat", _textView.GetLine(1).GetText());
+                Assert.Equal("the boy hit the cot", _textView.GetLine(0).GetText());
+                Assert.Equal("bat", _textView.GetLine(1).GetText());
             }
 
-            [Test]
-            [Description("Muliline selection should cause a replace per line")]
+            /// <summary>
+            /// Muliline selection should cause a replace per line
+            /// </summary>
+            [Fact]
             public void Substitute2()
             {
                 Create("the boy hit the cat", "bat");
                 EnterMode(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
                 _vimBuffer.Process(":s/a/o", enter: true);
-                Assert.AreEqual("the boy hit the cot", _textView.GetLine(0).GetText());
-                Assert.AreEqual("bot", _textView.GetLine(1).GetText());
+                Assert.Equal("the boy hit the cot", _textView.GetLine(0).GetText());
+                Assert.Equal("bot", _textView.GetLine(1).GetText());
             }
 
             /// <summary>
             /// Switching to command mode shouldn't clear the selection
             /// </summary>
-            [Test]
+            [Fact]
             public void Switch_ToCommandShouldNotClearSelection()
             {
                 Create("cat", "dog", "tree");
                 EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
                 _vimBuffer.Process(":");
-                Assert.IsFalse(_textView.GetSelectionSpan().IsEmpty);
+                Assert.False(_textView.GetSelectionSpan().IsEmpty);
             }
 
             /// <summary>
             /// Switching to normal mode should clear the selection
             /// </summary>
-            [Test]
+            [Fact]
             public void Switch_ToNormalShouldClearSelection()
             {
                 Create("cat", "dog", "tree");
                 EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
                 _vimBuffer.Process(VimKey.Escape);
-                Assert.IsTrue(_textView.GetSelectionSpan().IsEmpty);
+                Assert.True(_textView.GetSelectionSpan().IsEmpty);
             }
 
-            [Test]
+            [Fact]
             public void Handle_D_BlockMode()
             {
                 Create("dog", "cat", "tree");
                 EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
                 _vimBuffer.Process("D");
-                Assert.AreEqual("d", _textView.GetLine(0).GetText());
-                Assert.AreEqual("c", _textView.GetLine(1).GetText());
+                Assert.Equal("d", _textView.GetLine(0).GetText());
+                Assert.Equal("c", _textView.GetLine(1).GetText());
             }
 
-            [Test]
+            [Fact]
             public void IncrementalSearch_LineModeShouldSelectFullLine()
             {
                 Create("dog", "cat", "tree");
                 EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
                 _vimBuffer.Process("/c");
-                Assert.AreEqual(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
+                Assert.Equal(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
             }
 
-            [Test]
+            [Fact]
             public void IncrementalSearch_LineModeShouldSelectFullLineAcrossBlanks()
             {
                 Create("dog", "", "cat", "tree");
                 EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
                 _vimBuffer.Process("/ca");
-                Assert.AreEqual(_textView.GetLineRange(0, 2).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
+                Assert.Equal(_textView.GetLineRange(0, 2).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
             }
 
-            [Test]
+            [Fact]
             public void IncrementalSearch_CharModeShouldExtendToSearchResult()
             {
                 Create("dog", "cat");
                 EnterMode(ModeKind.VisualCharacter, new SnapshotSpan(_textView.GetLine(0).Start, 1));
                 _vimBuffer.Process("/o");
-                Assert.AreEqual(new SnapshotSpan(_textView.GetLine(0).Start, 2), _textView.GetSelectionSpan());
+                Assert.Equal(new SnapshotSpan(_textView.GetLine(0).Start, 2), _textView.GetSelectionSpan());
             }
 
             /// <summary>
             /// An incremental search operation shouldn't change the location of the caret until the search is
             /// completed
             /// </summary>
-            [Test]
+            [Fact]
             public void IncrementalSearch_DontChangeCaret()
             {
                 Create("cat", "dog", "tree");
                 _vimBuffer.Process("v/do");
-                Assert.AreEqual(0, _textView.GetCaretPoint());
+                Assert.Equal(0, _textView.GetCaretPoint());
             }
 
             /// <summary>
             /// Make sure that Escape will properly exit the incremental search and return us to the previous
             /// visual mode state (with the same selection)
             /// </summary>
-            [Test]
+            [Fact]
             public void IncrementalSearch_EscapeShouldExitSearch()
             {
                 Create("cat", "dog", "tree");
                 _vimBuffer.ProcessNotation("vl/dog<Esc>");
-                Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
-                Assert.IsFalse(_vimBuffer.IncrementalSearch.InSearch);
-                Assert.AreEqual("ca", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.False(_vimBuffer.IncrementalSearch.InSearch);
+                Assert.Equal("ca", _textView.GetSelectionSpan().GetText());
             }
 
             /// <summary>
             /// Make sure that enter completes the search which includes updating the caret
             /// </summary>
-            [Test]
+            [Fact]
             public void IncrementalSearch_EnterShouldCompleteSearch()
             {
                 Create("cat", "dog", "tree");
                 _vimBuffer.ProcessNotation("vl/dog<Enter>");
-                Assert.AreEqual(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
-                Assert.IsFalse(_vimBuffer.IncrementalSearch.InSearch);
-                Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.False(_vimBuffer.IncrementalSearch.InSearch);
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
             }
 
             /// <summary>
             /// Enter visual mode with the InitialVisualSelection argument which is a character span
             /// </summary>
-            [Test]
+            [Fact]
             public void InitialVisualSelection_Character()
             {
                 Create("dogs", "cats");
@@ -894,13 +886,13 @@ namespace Vim.UnitTest
                 var visualSelection = VisualSelection.CreateForward(visualSpan);
                 _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
                 _context.RunAll();
-                Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive));
+                Assert.Equal(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive));
             }
 
             /// <summary>
             /// Enter visual mode with the InitialVisualSelection argument which is a line span
             /// </summary>
-            [Test]
+            [Fact]
             public void InitialVisualSelection_Line()
             {
                 Create("dogs", "cats", "fish");
@@ -909,13 +901,13 @@ namespace Vim.UnitTest
                 var visualSelection = VisualSelection.NewLine(lineRange, Path.Forward, 1);
                 _vimBuffer.SwitchMode(ModeKind.VisualLine, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
                 _context.RunAll();
-                Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Line, SelectionKind.Inclusive));
+                Assert.Equal(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Line, SelectionKind.Inclusive));
             }
 
             /// <summary>
             /// Enter visual mode with the InitialVisualSelection argument which is a block span
             /// </summary>
-            [Test]
+            [Fact]
             public void InitialVisualSelection_Block()
             {
                 Create("dogs", "cats", "fish");
@@ -924,7 +916,7 @@ namespace Vim.UnitTest
                 var visualSelection = VisualSelection.NewBlock(blockSpan, BlockCaretLocation.BottomLeft);
                 _vimBuffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
                 _context.RunAll();
-                Assert.AreEqual(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Block, SelectionKind.Inclusive));
+                Assert.Equal(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Block, SelectionKind.Inclusive));
             }
 
             /// <summary>
@@ -932,29 +924,29 @@ namespace Vim.UnitTest
             /// just run the delete against unselected text.  In other words it's just the raw keystrokes
             /// which are saved not the selection state
             /// </summary>
-            [Test]
+            [Fact]
             public void Macro_RecordDeleteSelectedText()
             {
                 Create("the cat chased the dog");
                 EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 3));
                 _vimBuffer.Process("qcxq");
-                Assert.AreEqual(" cat chased the dog", _textView.GetLine(0).GetText());
+                Assert.Equal(" cat chased the dog", _textView.GetLine(0).GetText());
                 _textView.MoveCaretTo(1);
                 _vimBuffer.Process("@c");
-                Assert.AreEqual(" at chased the dog", _textView.GetLine(0).GetText());
+                Assert.Equal(" at chased the dog", _textView.GetLine(0).GetText());
             }
 
             /// <summary>
             /// Run the macro to delete the selected text
             /// </summary>
-            [Test]
+            [Fact]
             public void Macro_RunDeleteSelectedText()
             {
                 Create("the cat chased the dog");
                 EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 3));
                 TestRegister.UpdateValue("x");
                 _vimBuffer.Process("@c");
-                Assert.AreEqual(" cat chased the dog", _textView.GetLine(0).GetText());
+                Assert.Equal(" cat chased the dog", _textView.GetLine(0).GetText());
             }
 
             /// <summary>
@@ -963,13 +955,13 @@ namespace Vim.UnitTest
             /// 
             /// Issue #769
             /// </summary>
-            [Test]
+            [Fact]
             public void Move_Line_FromBottom()
             {
                 Create("cat", "dog", "");
                 _textView.MoveCaretToLine(2);
                 _vimBuffer.Process("Vk");
-                Assert.AreEqual(_textBuffer.GetLineRange(1, 2).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
+                Assert.Equal(_textBuffer.GetLineRange(1, 2).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
             }
 
             /// <summary>
@@ -978,141 +970,141 @@ namespace Vim.UnitTest
             /// 
             /// Issue #758
             /// </summary>
-            [Test]
+            [Fact]
             public void Move_Character_OverEmptyLine()
             {
                 Create("cat", "", "dog");
                 _vimBuffer.Process("vjj");
-                Assert.AreEqual(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+                Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
             }
 
             /// <summary>
             /// Test the movement of the caret over a shorter line and then back to a line long
             /// enough
             /// </summary>
-            [Test]
+            [Fact]
             public void Move_Block_OverShortLine()
             {
                 Create("really long line", "short", "really long line");
                 _textView.MoveCaretTo(7);
                 _vimBuffer.ProcessNotation("<C-v>lll");
-                Assert.AreEqual("long", _textView.Selection.SelectedSpans[0].GetText());
+                Assert.Equal("long", _textView.Selection.SelectedSpans[0].GetText());
                 _vimBuffer.ProcessNotation("jj");
                 var spans = _textView.Selection.SelectedSpans;
-                Assert.AreEqual(3, spans.Count);
-                Assert.AreEqual("long", spans[0].GetText());
-                Assert.AreEqual("", spans[1].GetText());
-                Assert.AreEqual("long", spans[2].GetText());
+                Assert.Equal(3, spans.Count);
+                Assert.Equal("long", spans[0].GetText());
+                Assert.Equal("", spans[1].GetText());
+                Assert.Equal("long", spans[2].GetText());
             }
 
             /// <summary>
             /// Character should be positioned at the end of the inserted text
             /// </summary>
-            [Test]
+            [Fact]
             public void PutOver_CharacterWise_WithSingleCharacterWise()
             {
                 Create("dog");
                 EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
                 UnnamedRegister.UpdateValue("cat", OperationKind.CharacterWise);
                 _vimBuffer.Process("p");
-                Assert.AreEqual("dcatg", _textView.GetLine(0).GetText());
-                Assert.AreEqual(3, _textView.GetCaretPoint().Position);
-                Assert.AreEqual("o", UnnamedRegister.StringValue);
+                Assert.Equal("dcatg", _textView.GetLine(0).GetText());
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+                Assert.Equal("o", UnnamedRegister.StringValue);
             }
 
             /// <summary>
             /// Character should be positioned after the end of the inserted text
             /// </summary>
-            [Test]
+            [Fact]
             public void PutOver_CharacterWise_WithSingleCharacterWiseAndCaretMove()
             {
                 Create("dog");
                 EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
                 UnnamedRegister.UpdateValue("cat", OperationKind.CharacterWise);
                 _vimBuffer.Process("gp");
-                Assert.AreEqual("dcatg", _textView.GetLine(0).GetText());
-                Assert.AreEqual(4, _textView.GetCaretPoint().Position);
-                Assert.AreEqual("o", UnnamedRegister.StringValue);
+                Assert.Equal("dcatg", _textView.GetLine(0).GetText());
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+                Assert.Equal("o", UnnamedRegister.StringValue);
             }
 
             /// <summary>
             /// Character should be positioned at the start of the inserted line
             /// </summary>
-            [Test]
+            [Fact]
             public void PutOver_CharacterWise_WithLineWise()
             {
                 Create("dog");
                 EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
                 UnnamedRegister.UpdateValue("cat\n", OperationKind.LineWise);
                 _vimBuffer.Process("p");
-                Assert.AreEqual("d", _textView.GetLine(0).GetText());
-                Assert.AreEqual("cat", _textView.GetLine(1).GetText());
-                Assert.AreEqual("g", _textView.GetLine(2).GetText());
-                Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+                Assert.Equal("d", _textView.GetLine(0).GetText());
+                Assert.Equal("cat", _textView.GetLine(1).GetText());
+                Assert.Equal("g", _textView.GetLine(2).GetText());
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
             }
 
             /// <summary>
             /// Character should be positioned at the first line after the inserted
             /// lines
             /// </summary>
-            [Test]
+            [Fact]
             public void PutOver_CharacterWise_WithLineWiseAndCaretMove()
             {
                 Create("dog");
                 EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
                 UnnamedRegister.UpdateValue("cat\n", OperationKind.LineWise);
                 _vimBuffer.Process("gp");
-                Assert.AreEqual("d", _textView.GetLine(0).GetText());
-                Assert.AreEqual("cat", _textView.GetLine(1).GetText());
-                Assert.AreEqual("g", _textView.GetLine(2).GetText());
-                Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+                Assert.Equal("d", _textView.GetLine(0).GetText());
+                Assert.Equal("cat", _textView.GetLine(1).GetText());
+                Assert.Equal("g", _textView.GetLine(2).GetText());
+                Assert.Equal(_textView.GetLine(2).Start, _textView.GetCaretPoint());
             }
 
             /// <summary>
             /// Character should be positioned at the start of the first line in the
             /// block 
             /// </summary>
-            [Test]
+            [Fact]
             public void PutOver_CharacterWise_WithBlock()
             {
                 Create("dog", "cat");
                 EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
                 UnnamedRegister.UpdateBlockValues("aa", "bb");
                 _vimBuffer.Process("p");
-                Assert.AreEqual("daag", _textView.GetLine(0).GetText());
-                Assert.AreEqual("cbbat", _textView.GetLine(1).GetText());
-                Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+                Assert.Equal("daag", _textView.GetLine(0).GetText());
+                Assert.Equal("cbbat", _textView.GetLine(1).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// Caret should be positioned after the line character in the last 
             /// line of the inserted block
             /// </summary>
-            [Test]
+            [Fact]
             public void PutOver_CharacterWise_WithBlockAndCaretMove()
             {
                 Create("dog", "cat");
                 EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 1, 1));
                 UnnamedRegister.UpdateBlockValues("aa", "bb");
                 _vimBuffer.Process("gp");
-                Assert.AreEqual("daag", _textView.GetLine(0).GetText());
-                Assert.AreEqual("cbbat", _textView.GetLine(1).GetText());
-                Assert.AreEqual(_textView.GetLine(1).Start.Add(3), _textView.GetCaretPoint());
+                Assert.Equal("daag", _textView.GetLine(0).GetText());
+                Assert.Equal("cbbat", _textView.GetLine(1).GetText());
+                Assert.Equal(_textView.GetLine(1).Start.Add(3), _textView.GetCaretPoint());
             }
 
             /// <summary>
             /// When doing a put over selection the text being deleted should be put into
             /// the unnamed register.
             /// </summary>
-            [Test]
+            [Fact]
             public void PutOver_CharacterWise_NamedRegisters()
             {
                 Create("dog", "cat");
                 EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 3));
                 _registerMap.GetRegister('c').UpdateValue("pig");
                 _vimBuffer.Process("\"cp");
-                Assert.AreEqual("pig", _textView.GetLine(0).GetText());
-                Assert.AreEqual("dog", UnnamedRegister.StringValue);
+                Assert.Equal("pig", _textView.GetLine(0).GetText());
+                Assert.Equal("dog", UnnamedRegister.StringValue);
             }
 
             /// <summary>
@@ -1120,225 +1112,225 @@ namespace Vim.UnitTest
             /// the unnamed register.  If the put came from the unnamed register then the 
             /// original put value is overwritten
             /// </summary>
-            [Test]
+            [Fact]
             public void PutOver_CharacterWise_UnnamedRegisters()
             {
                 Create("dog", "cat");
                 EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 0, 3));
                 UnnamedRegister.UpdateValue("pig");
                 _vimBuffer.Process("p");
-                Assert.AreEqual("pig", _textView.GetLine(0).GetText());
-                Assert.AreEqual("dog", UnnamedRegister.StringValue);
+                Assert.Equal("pig", _textView.GetLine(0).GetText());
+                Assert.Equal("dog", UnnamedRegister.StringValue);
             }
 
             /// <summary>
             /// Character should be positioned at the end of the inserted text
             /// </summary>
-            [Test]
+            [Fact]
             public void PutOver_LineWise_WithCharcterWise()
             {
                 Create("dog", "cat");
                 EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
                 UnnamedRegister.UpdateValue("fish", OperationKind.CharacterWise);
                 _vimBuffer.Process("p");
-                Assert.AreEqual("fish", _textView.GetLine(0).GetText());
-                Assert.AreEqual("cat", _textView.GetLine(1).GetText());
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-                Assert.AreEqual("dog\r\n", UnnamedRegister.StringValue);
+                Assert.Equal("fish", _textView.GetLine(0).GetText());
+                Assert.Equal("cat", _textView.GetLine(1).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                Assert.Equal("dog\r\n", UnnamedRegister.StringValue);
             }
 
             /// <summary>
             /// Character should be positioned after the end of the inserted text
             /// </summary>
-            [Test]
+            [Fact]
             public void PutOver_LineWise_WithCharacterWiseAndCaretMove()
             {
                 Create("dog", "cat");
                 EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
                 UnnamedRegister.UpdateValue("fish", OperationKind.CharacterWise);
                 _vimBuffer.Process("gp");
-                Assert.AreEqual("fish", _textView.GetLine(0).GetText());
-                Assert.AreEqual("cat", _textView.GetLine(1).GetText());
-                Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-                Assert.AreEqual("dog\r\n", UnnamedRegister.StringValue);
+                Assert.Equal("fish", _textView.GetLine(0).GetText());
+                Assert.Equal("cat", _textView.GetLine(1).GetText());
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+                Assert.Equal("dog\r\n", UnnamedRegister.StringValue);
             }
 
             /// <summary>
             /// Character should be positioned at the end of the inserted text
             /// </summary>
-            [Test]
+            [Fact]
             public void PutOver_LineWise_WithLineWise()
             {
                 Create("dog", "cat");
                 EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
                 UnnamedRegister.UpdateValue("fish\n", OperationKind.LineWise);
                 _vimBuffer.Process("p");
-                Assert.AreEqual("fish", _textView.GetLine(0).GetText());
-                Assert.AreEqual("cat", _textView.GetLine(1).GetText());
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-                Assert.AreEqual("dog\r\n", UnnamedRegister.StringValue);
+                Assert.Equal("fish", _textView.GetLine(0).GetText());
+                Assert.Equal("cat", _textView.GetLine(1).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                Assert.Equal("dog\r\n", UnnamedRegister.StringValue);
             }
 
             /// <summary>
             /// Character should be positioned after the end of the inserted text
             /// </summary>
-            [Test]
+            [Fact]
             public void PutOver_LineWise_WithLineWiseAndCaretMove()
             {
                 Create("dog", "cat");
                 EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
                 UnnamedRegister.UpdateValue("fish\n", OperationKind.LineWise);
                 _vimBuffer.Process("gp");
-                Assert.AreEqual("fish", _textView.GetLine(0).GetText());
-                Assert.AreEqual("cat", _textView.GetLine(1).GetText());
-                Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-                Assert.AreEqual("dog\r\n", UnnamedRegister.StringValue);
+                Assert.Equal("fish", _textView.GetLine(0).GetText());
+                Assert.Equal("cat", _textView.GetLine(1).GetText());
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+                Assert.Equal("dog\r\n", UnnamedRegister.StringValue);
             }
 
             /// <summary>
             /// Character should be positioned at the start of the first inserted value
             /// </summary>
-            [Test]
+            [Fact]
             public void PutOver_LineWise_WithBlock()
             {
                 Create("dog", "cat");
                 EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
                 UnnamedRegister.UpdateBlockValues("aa", "bb");
                 _vimBuffer.Process("p");
-                Assert.AreEqual("aa", _textView.GetLine(0).GetText());
-                Assert.AreEqual("bb", _textView.GetLine(1).GetText());
-                Assert.AreEqual("cat", _textView.GetLine(2).GetText());
-                Assert.AreEqual(0, _textView.GetCaretPoint().Position);
-                Assert.AreEqual("dog\r\n", UnnamedRegister.StringValue);
+                Assert.Equal("aa", _textView.GetLine(0).GetText());
+                Assert.Equal("bb", _textView.GetLine(1).GetText());
+                Assert.Equal("cat", _textView.GetLine(2).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                Assert.Equal("dog\r\n", UnnamedRegister.StringValue);
             }
 
             /// <summary>
             /// Character should be positioned at the first character after the inserted
             /// text
             /// </summary>
-            [Test]
+            [Fact]
             public void PutOver_LineWise_WithBlockAndCaretMove()
             {
                 Create("dog", "cat");
                 EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
                 UnnamedRegister.UpdateBlockValues("aa", "bb");
                 _vimBuffer.Process("gp");
-                Assert.AreEqual("aa", _textView.GetLine(0).GetText());
-                Assert.AreEqual("bb", _textView.GetLine(1).GetText());
-                Assert.AreEqual("cat", _textView.GetLine(2).GetText());
-                Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
-                Assert.AreEqual("dog\r\n", UnnamedRegister.StringValue);
+                Assert.Equal("aa", _textView.GetLine(0).GetText());
+                Assert.Equal("bb", _textView.GetLine(1).GetText());
+                Assert.Equal("cat", _textView.GetLine(2).GetText());
+                Assert.Equal(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+                Assert.Equal("dog\r\n", UnnamedRegister.StringValue);
             }
 
             /// <summary>
             /// Character should be positioned at the start of the first inserted value
             /// </summary>
-            [Test]
+            [Fact]
             public void PutOver_Block_WithCharacterWise()
             {
                 Create("dog", "cat");
                 EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
                 UnnamedRegister.UpdateValue("fish", OperationKind.CharacterWise);
                 _vimBuffer.Process("p");
-                Assert.AreEqual("dfishg", _textView.GetLine(0).GetText());
-                Assert.AreEqual("ct", _textView.GetLine(1).GetText());
-                Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+                Assert.Equal("dfishg", _textView.GetLine(0).GetText());
+                Assert.Equal("ct", _textView.GetLine(1).GetText());
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// Character should be positioned after the last character after the inserted
             /// text
             /// </summary>
-            [Test]
+            [Fact]
             public void PutOver_Block_WithCharacterWiseAndCaretMove()
             {
                 Create("dog", "cat");
                 EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
                 UnnamedRegister.UpdateValue("fish", OperationKind.CharacterWise);
                 _vimBuffer.Process("gp");
-                Assert.AreEqual("dfishg", _textView.GetLine(0).GetText());
-                Assert.AreEqual("ct", _textView.GetLine(1).GetText());
-                Assert.AreEqual(5, _textView.GetCaretPoint().Position);
+                Assert.Equal("dfishg", _textView.GetLine(0).GetText());
+                Assert.Equal("ct", _textView.GetLine(1).GetText());
+                Assert.Equal(5, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// Character should be positioned at the start of the inserted line
             /// </summary>
-            [Test]
+            [Fact]
             public void PutOver_Block_WithLineWise()
             {
                 Create("dog", "cat");
                 EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
                 UnnamedRegister.UpdateValue("fish\n", OperationKind.LineWise);
                 _vimBuffer.Process("p");
-                Assert.AreEqual("dg", _textView.GetLine(0).GetText());
-                Assert.AreEqual("ct", _textView.GetLine(1).GetText());
-                Assert.AreEqual("fish", _textView.GetLine(2).GetText());
-                Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+                Assert.Equal("dg", _textView.GetLine(0).GetText());
+                Assert.Equal("ct", _textView.GetLine(1).GetText());
+                Assert.Equal("fish", _textView.GetLine(2).GetText());
+                Assert.Equal(_textView.GetLine(2).Start, _textView.GetCaretPoint());
             }
 
             /// <summary>
             /// Caret should be positioned at the start of the line which follows the
             /// inserted lines
             /// </summary>
-            [Test]
+            [Fact]
             public void PutOver_Block_WithLineWiseAndCaretMove()
             {
                 Create("dog", "cat", "bear");
                 EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
                 UnnamedRegister.UpdateValue("fish\n", OperationKind.LineWise);
                 _vimBuffer.Process("gp");
-                Assert.AreEqual("dg", _textView.GetLine(0).GetText());
-                Assert.AreEqual("ct", _textView.GetLine(1).GetText());
-                Assert.AreEqual("fish", _textView.GetLine(2).GetText());
-                Assert.AreEqual(_textView.GetLine(3).Start, _textView.GetCaretPoint());
+                Assert.Equal("dg", _textView.GetLine(0).GetText());
+                Assert.Equal("ct", _textView.GetLine(1).GetText());
+                Assert.Equal("fish", _textView.GetLine(2).GetText());
+                Assert.Equal(_textView.GetLine(3).Start, _textView.GetCaretPoint());
             }
 
             /// <summary>
             /// Character should be positioned at the start of the first inserted string
             /// from the block
             /// </summary>
-            [Test]
+            [Fact]
             public void PutOver_Block_WithBlock()
             {
                 Create("dog", "cat");
                 EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
                 UnnamedRegister.UpdateBlockValues("aa", "bb");
                 _vimBuffer.Process("p");
-                Assert.AreEqual("daag", _textView.GetLine(0).GetText());
-                Assert.AreEqual("cbbt", _textView.GetLine(1).GetText());
-                Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+                Assert.Equal("daag", _textView.GetLine(0).GetText());
+                Assert.Equal("cbbt", _textView.GetLine(1).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// Caret should be positioned at the first character after the last inserted
             /// charecter of the last string in the block
             /// </summary>
-            [Test]
+            [Fact]
             public void PutOver_Block_WithBlockAndCaretMove()
             {
                 Create("dog", "cat");
                 EnterBlock(_textView.GetBlockSpan(1, 1, 0, 2));
                 UnnamedRegister.UpdateBlockValues("aa", "bb");
                 _vimBuffer.Process("gp");
-                Assert.AreEqual("daag", _textView.GetLine(0).GetText());
-                Assert.AreEqual("cbbt", _textView.GetLine(1).GetText());
-                Assert.AreEqual(_textView.GetLine(1).Start.Add(3), _textView.GetCaretPoint());
+                Assert.Equal("daag", _textView.GetLine(0).GetText());
+                Assert.Equal("cbbt", _textView.GetLine(1).GetText());
+                Assert.Equal(_textView.GetLine(1).Start.Add(3), _textView.GetCaretPoint());
             }
 
-            [Test]
+            [Fact]
             public void PutOver_Legacy1()
             {
                 Create("dog", "cat", "bear", "tree");
                 EnterMode(ModeKind.VisualCharacter, new SnapshotSpan(_textView.TextSnapshot, 0, 2));
                 _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig");
                 _vimBuffer.Process("p");
-                Assert.AreEqual("pigg", _textView.GetLine(0).GetText());
-                Assert.AreEqual("cat", _textView.GetLine(1).GetText());
-                Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+                Assert.Equal("pigg", _textView.GetLine(0).GetText());
+                Assert.Equal("cat", _textView.GetLine(1).GetText());
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
 
-            [Test]
+            [Fact]
             public void PutOver_Legacy2()
             {
                 Create("dog", "cat", "bear", "tree");
@@ -1348,21 +1340,21 @@ namespace Vim.UnitTest
                 EnterMode(ModeKind.VisualCharacter, span);
                 _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig");
                 _vimBuffer.Process("p");
-                Assert.AreEqual("dpigt", _textView.GetLine(0).GetText());
-                Assert.AreEqual("bear", _textView.GetLine(1).GetText());
-                Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+                Assert.Equal("dpigt", _textView.GetLine(0).GetText());
+                Assert.Equal("bear", _textView.GetLine(1).GetText());
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
 
-            [Test]
+            [Fact]
             public void PutBefore_Legacy1()
             {
                 Create("dog", "cat", "bear", "tree");
                 EnterMode(ModeKind.VisualCharacter, _textView.GetLineRange(0).Extent);
                 _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig");
                 _vimBuffer.Process("P");
-                Assert.AreEqual("pig", _textView.GetLine(0).GetText());
-                Assert.AreEqual("cat", _textView.GetLine(1).GetText());
-                Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+                Assert.Equal("pig", _textView.GetLine(0).GetText());
+                Assert.Equal("cat", _textView.GetLine(1).GetText());
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
@@ -1370,31 +1362,31 @@ namespace Vim.UnitTest
             /// which doesn't delete the selection when putting the text into the buffer.  Instead 
             /// it just continues on in visual mode after the put
             /// </summary>
-            [Test]
+            [Fact]
             public void PutAfterWithIndent_VisualLine()
             {
                 Create("  dog", "  cat", "bear");
                 EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
                 UnnamedRegister.UpdateValue("bear", OperationKind.LineWise);
                 _vimBuffer.Process("]p");
-                Assert.AreEqual("  dog", _textView.GetLine(0).GetText());
-                Assert.AreEqual("  bear", _textView.GetLine(1).GetText());
-                Assert.AreEqual(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
-                Assert.AreEqual(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
-                Assert.AreEqual(ModeKind.VisualLine, _vimBuffer.ModeKind);
+                Assert.Equal("  dog", _textView.GetLine(0).GetText());
+                Assert.Equal("  bear", _textView.GetLine(1).GetText());
+                Assert.Equal(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
+                Assert.Equal(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
+                Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
             }
 
             /// <summary>
             /// Simple inner word selection on visual mode
             /// </summary>
-            [Test]
+            [Fact]
             public void TextObject_InnerWord()
             {
                 Create("cat dog fish");
                 _textView.MoveCaretTo(4);
                 _vimBuffer.Process("viw");
-                Assert.AreEqual("dog", _textView.GetSelectionSpan().GetText());
-                Assert.AreEqual(6, _textView.GetCaretPoint().Position);
+                Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
@@ -1402,28 +1394,28 @@ namespace Vim.UnitTest
             /// the visual caret start point.  This can be demonstrated jumping back and forth between
             /// character and line mode
             /// </summary>
-            [Test]
+            [Fact]
             public void TextObject_InnerWord_ResetVisualStartPoint()
             {
                 Create("cat dog fish");
                 _textView.MoveCaretTo(5);
                 _vimBuffer.Process("viwVv");
-                Assert.AreEqual("dog", _textView.GetSelectionSpan().GetText());
-                Assert.AreEqual(6, _textView.GetCaretPoint().Position);
+                Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// Simple inner word selection from the middle of a word.  Should still select the entire
             /// word
             /// </summary>
-            [Test]
+            [Fact]
             public void TextObject_InnerWord_FromMiddle()
             {
                 Create("cat dog fish");
                 _textView.MoveCaretTo(5);
                 _vimBuffer.Process("viw");
-                Assert.AreEqual("dog", _textView.GetSelectionSpan().GetText());
-                Assert.AreEqual(6, _textView.GetCaretPoint().Position);
+                Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
@@ -1431,7 +1423,7 @@ namespace Vim.UnitTest
             /// then repeated iw shouldn't change anything.  It should select the single space and 
             /// go from there
             /// </summary>
-            [Test]
+            [Fact]
             public void TextObject_InnerWord_FromSingleWhiteSpace()
             {
                 Create("cat dog fish");
@@ -1440,8 +1432,8 @@ namespace Vim.UnitTest
                 for (var i = 0; i < 10; i++)
                 {
                     _vimBuffer.Process("iw");
-                    Assert.AreEqual(" ", _textView.GetSelectionSpan().GetText());
-                    Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+                    Assert.Equal(" ", _textView.GetSelectionSpan().GetText());
+                    Assert.Equal(3, _textView.GetCaretPoint().Position);
                 }
             }
 
@@ -1449,125 +1441,125 @@ namespace Vim.UnitTest
             /// From a non-single white space the inner word motion should select
             /// the entire white space
             /// </summary>
-            [Test]
+            [Fact]
             public void TextObject_InnerWord_FromMultipleWhiteSpace()
             {
                 Create("cat  dog fish");
                 _textView.MoveCaretTo(3);
                 _vimBuffer.Process("viw");
-                Assert.AreEqual("  ", _textView.GetSelectionSpan().GetText());
-                Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+                Assert.Equal("  ", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// The non initial selection from white space should extend to the 
             /// next word
             /// </summary>
-            [Test]
+            [Fact]
             public void TextObject_InnerWord_MultipleWhiteSpace_Second()
             {
                 Create("cat  dog fish");
                 _textView.MoveCaretTo(3);
                 _vimBuffer.Process("viwiw");
-                Assert.AreEqual("  dog", _textView.GetSelectionSpan().GetText());
-                Assert.AreEqual(7, _textView.GetCaretPoint().Position);
+                Assert.Equal("  dog", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(7, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// Simple all word selection
             /// </summary>
-            [Test]
+            [Fact]
             public void TextObject_AllWord()
             {
                 Create("cat dog fish");
                 _vimBuffer.Process("vaw");
-                Assert.AreEqual("cat ", _textView.GetSelectionSpan().GetText());
-                Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+                Assert.Equal("cat ", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// Unlike the 'iw' motion the 'aw' motion doesn't have truly odd behavior from
             /// a single white space
             /// </summary>
-            [Test]
+            [Fact]
             public void TextObject_AllWord_FromSingleWhiteSpace()
             {
                 Create("cat dog fish");
                 _textView.MoveCaretTo(3);
                 _vimBuffer.Process("vaw");
-                Assert.AreEqual(" dog", _textView.GetSelectionSpan().GetText());
-                Assert.AreEqual(6, _textView.GetCaretPoint().Position);
+                Assert.Equal(" dog", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// Ensure the ab motion includes the parens and puts the caret on the last 
             /// character
             /// </summary>
-            [Test]
+            [Fact]
             public void TextObject_AllParen_MiddleOfWord()
             {
                 Create("cat (dog) fish");
                 _textView.MoveCaretTo(6);
                 _vimBuffer.Process("vab");
-                Assert.AreEqual("(dog)", _textView.GetSelectionSpan().GetText());
-                Assert.AreEqual(8, _textView.GetCaretPoint().Position);
+                Assert.Equal("(dog)", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(8, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// Unlike non-block selections multiple calls to ab won't extend the selection
             /// to a sibling block
             /// </summary>
-            [Test]
+            [Fact]
             public void TextObject_AllParen_Multiple()
             {
                 Create("cat (dog) (bear)");
                 _textView.MoveCaretTo(6);
                 _vimBuffer.Process("vabababab");
-                Assert.AreEqual("(dog)", _textView.GetSelectionSpan().GetText());
-                Assert.AreEqual(8, _textView.GetCaretPoint().Position);
+                Assert.Equal("(dog)", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(8, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// Text object selections will extend to outer blocks
             /// </summary>
-            [Test]
+            [Fact]
             public void TextObject_AllParen_ExpandOutward()
             {
                 Create("cat (fo(bad)od) bear");
                 _textView.MoveCaretTo(9);
                 _vimBuffer.Process("vab");
-                Assert.AreEqual("(bad)", _textView.GetSelectionSpan().GetText());
+                Assert.Equal("(bad)", _textView.GetSelectionSpan().GetText());
                 _vimBuffer.Process("ab");
-                Assert.AreEqual("(fo(bad)od)", _textView.GetSelectionSpan().GetText());
-                Assert.AreEqual(14, _textView.GetCaretPoint().Position);
+                Assert.Equal("(fo(bad)od)", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(14, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// If we've already selected the inner block at the caret then move outward 
             /// and select the containing block
             /// </summary>
-            [Test]
+            [Fact]
             public void TextObject_InnerParen_ExpandOutward()
             {
                 Create("a (fo(tree)od) b");
                 _textView.MoveCaretTo(7);
                 _vimBuffer.Process("vib");
-                Assert.AreEqual("tree", _textView.GetSelectionSpan().GetText());
+                Assert.Equal("tree", _textView.GetSelectionSpan().GetText());
                 _vimBuffer.Process("ib");
-                Assert.AreEqual("fo(tree)od", _textView.GetSelectionSpan().GetText());
-                Assert.AreEqual(12, _textView.GetCaretPoint().Position);
+                Assert.Equal("fo(tree)od", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(12, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// If the entire inner block is not yet selected then go ahead and select it 
             /// </summary>
-            [Test]
+            [Fact]
             public void TextObject_InnerParen_ExpandToFullBlock()
             {
                 Create("a (fo(tree)od) b");
                 _textView.MoveCaretTo(8);
                 _vimBuffer.Process("vl");
-                Assert.AreEqual("ee", _textView.GetSelectionSpan().GetText());
+                Assert.Equal("ee", _textView.GetSelectionSpan().GetText());
                 _vimBuffer.Process("ib");
             }
 
@@ -1575,40 +1567,40 @@ namespace Vim.UnitTest
             /// Ensure the ib motion excludes the parens and puts the caret on the last 
             /// character
             /// </summary>
-            [Test]
+            [Fact]
             public void TextObject_InnerParen_MiddleOfWord()
             {
                 Create("cat (dog) fish");
                 _textView.MoveCaretTo(6);
                 _vimBuffer.Process("vib");
-                Assert.AreEqual("dog", _textView.GetSelectionSpan().GetText());
-                Assert.AreEqual(7, _textView.GetCaretPoint().Position);
+                Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(7, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// All white space and the following word should be selecetd
             /// </summary>
-            [Test]
+            [Fact]
             public void TextObject_AllWord_FromMultipleWhiteSpace()
             {
                 Create("cat  dog fish");
                 _textView.MoveCaretTo(3);
                 _vimBuffer.Process("vaw");
-                Assert.AreEqual("  dog", _textView.GetSelectionSpan().GetText());
-                Assert.AreEqual(7, _textView.GetCaretPoint().Position);
+                Assert.Equal("  dog", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(7, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
             /// The yank selection command should exit visual mode after the operation
             /// </summary>
-            [Test]
+            [Fact]
             public void YankSelection_ShouldExitVisualMode()
             {
                 Create("cat", "dog");
                 EnterMode(ModeKind.VisualCharacter, _textView.GetLine(0).Extent);
                 _vimBuffer.Process("y");
-                Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
-                Assert.IsTrue(_textView.Selection.IsEmpty);
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.True(_textView.Selection.IsEmpty);
             }
 
             /// <summary>
@@ -1616,28 +1608,28 @@ namespace Vim.UnitTest
             /// maintained for LastVisualSelection.  It should be the selection before the command
             /// was executed
             /// </summary>
-            [Test]
+            [Fact]
             public void YankSelection_LastVisualSelection()
             {
                 Create("cat", "dog", "fish");
                 var span = _textView.GetLineRange(0, 1).ExtentIncludingLineBreak;
                 EnterMode(ModeKind.VisualLine, span);
                 _vimBuffer.Process('y');
-                Assert.IsTrue(_vimTextBuffer.LastVisualSelection.IsSome());
-                Assert.AreEqual(span, _vimTextBuffer.LastVisualSelection.Value.GetEditSpan(SelectionKind.Inclusive).OverarchingSpan);
+                Assert.True(_vimTextBuffer.LastVisualSelection.IsSome());
+                Assert.Equal(span, _vimTextBuffer.LastVisualSelection.Value.VisualSpan.EditSpan.OverarchingSpan);
             }
 
             /// <summary>
             /// The yank line selection command should exit visual mode after the operation
             /// </summary>
-            [Test]
+            [Fact]
             public void YankLineSelection_ShouldExitVisualMode()
             {
                 Create("cat", "dog");
                 EnterMode(ModeKind.VisualCharacter, _textView.GetLine(0).Extent);
                 _vimBuffer.Process("Y");
-                Assert.AreEqual(ModeKind.Normal, _vimBuffer.ModeKind);
-                Assert.IsTrue(_textView.Selection.IsEmpty);
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.True(_textView.Selection.IsEmpty);
             }
         }
     }

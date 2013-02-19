@@ -1,10 +1,12 @@
 ﻿#light
 
 namespace Vim.Interpreter
+open EditorUtils
+open Microsoft.VisualStudio.Text
 open Vim
 
 [<RequireQualifiedAccess>]
-type ValueType =
+type VariableType =
     | Number
     | Float
     | String
@@ -14,26 +16,149 @@ type ValueType =
     | Error
 
 [<RequireQualifiedAccess>]
-type Value =
+type VariableValue =
     | Number of int
     | Float of float
     | String of string
     | FunctionRef of string
-    | List of Value list
-    | Dictionary of Map<string, Value>
+    | List of VariableValue list
+    | Dictionary of Map<string, VariableValue>
     | Error
 
     with
 
-    member x.ValueType = 
+    // TODO: Determine the appropriate values for List, Dictionary and Error
+    member x.StringValue =
         match x with
-        | Number _ -> ValueType.Number
-        | Float _ -> ValueType.Float
-        | String _ -> ValueType.String
-        | FunctionRef _ -> ValueType.FunctionRef
-        | List _ -> ValueType.List
-        | Dictionary _ -> ValueType.Dictionary
-        | Error -> ValueType.Error
+        | Number number -> number.ToString()
+        | Float number -> number.ToString()
+        | String str -> str
+        | FunctionRef name -> name
+        | List _ -> "<list>"
+        | Dictionary _  -> "<dictionary>"
+        | Error -> "<error>"
+
+    member x.VariableType = 
+        match x with
+        | Number _ -> VariableType.Number
+        | Float _ -> VariableType.Float
+        | String _ -> VariableType.String
+        | FunctionRef _ -> VariableType.FunctionRef
+        | List _ -> VariableType.List
+        | Dictionary _ -> VariableType.Dictionary
+        | Error -> VariableType.Error
+
+type VariableMap = System.Collections.Generic.Dictionary<string, VariableValue>
+
+/// The set of events Vim supports.  Defined in ':help autocmd-events'
+///
+/// Right now we only support a very limited set of autocmd events.  Enough to 
+/// alter ts, sw, etc ... when a new file is created 
+[<RequireQualifiedAccess>]
+type EventKind = 
+    | BufNewFile
+    | BufReadPre
+    | BufRead
+    | BufReadPost
+    | BufReadCmd
+    | FileReadPre
+    | FileReadPost
+    | FileReadCmd
+    | FilterReadPre
+    | FilterReadPost
+    | StdinReadPre
+    | StdinReadPost
+    | BufWrite
+    | BufWritePre
+    | BufWritePost
+    | BufWriteCmd
+    | FileWritePre
+    | FileWritePost
+    | FileWriteCmd
+    | FileAppendPre
+    | FileAppendPost
+    | FileAppendCmd
+    | FilterWritePre
+    | FilterWritePost
+    | BufAdd
+    | BufCreate
+    | BufDelete
+    | BufWipeout
+    | BufFilePre
+    | BufFilePost
+    | BufEnter
+    | BufLeave
+    | BufWinEnter
+    | BufWinLeave
+    | BufUnload
+    | BufHidden
+    | BufNew
+    | SwapExists
+    | FileType
+    | Syntax
+    | EncodingChanged
+    | TermChanged
+    | VimEnter
+    | GUIEnter
+    | TermResponse
+    | VimLeavePre
+    | VimLeave
+    | FileChangedShell
+    | FileChangedShellPost
+    | FileChangedRO
+    | ShellCmdPost
+    | ShellFilterPost
+    | FuncUndefined
+    | SpellFileMissing
+    | SourcePre
+    | SourceCmd
+    | VimResized
+    | FocusGained
+    | FocusLost
+    | CursorHold
+    | CursorHoldI
+    | CursorMoved
+    | CursorMovedI
+    | WinEnter
+    | WinLeave
+    | TabEnter
+    | TabLeave
+    | CmdwinEnter
+    | CmdwinLeave
+    | InsertEnter
+    | InsertChange
+    | InsertLeave
+    | ColorScheme
+    | RemoteReply
+    | QuickFixCmdPre
+    | QuickFixCmdPost
+    | SessionLoadPost
+    | MenuPopup
+    | User
+
+type AutoCommandGroup = 
+    | Default
+    | Named of string 
+
+type AutoCommand = {
+    Group : AutoCommandGroup
+
+    EventKind : EventKind
+
+    LineCommandText : string
+
+    Pattern : string
+}    
+
+type AutoCommandDefinition = { 
+    Group : AutoCommandGroup
+
+    EventKinds : EventKind list
+
+    LineCommandText : string
+
+    Patterns : string list
+}
 
 /// A single line specifier in a range 
 [<RequireQualifiedAccess>]
@@ -184,15 +309,45 @@ type CommandOption =
     | StartAtPattern of string
     | ExecuteLineCommand of LineCommand
 
+/// The ConditionalBlock type is used to represent if / else if / else blocks
+/// of commands.  If the expression value 
+and [<RequireQualifiedAccess>] ConditionalBlock =
+
+    // An if or elseif block with the expression true list and false block 
+    | Conditional of Expression * LineCommand list * ConditionalBlock 
+
+    // An else block 
+    | Unconditional of LineCommand list
+
+    // Used when there is just an if / endif pair. 
+    | Empty
+
+    with 
+
+    member x.LineCommands =
+        match x with
+        | Conditional (_, lineCommands, _) -> lineCommands
+        | Unconditional lineCommands -> lineCommands
+        | Empty -> List.Empty
+
+    member x.Next =
+        match x with
+        | Conditional (_, _, next) -> Some next
+        | Unconditional lineCommands -> None
+        | Empty -> None
+
 and [<RequireQualifiedAccess>] Expression =
 
     /// Binary expression
     | Binary of BinaryKind * Expression * Expression
 
     /// A constant value
-    | ConstantValue of Value 
+    | ConstantValue of VariableValue 
 
 and [<RequireQualifiedAccess>] LineCommand =
+
+    /// Add a new AutoCommand to the set of existing AutoCommand values
+    | AddAutoCommand of AutoCommandDefinition
 
     /// The :behave command to set common behaviors in certain environments
     | Behave of string
@@ -261,6 +416,19 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Go to the previous tab
     | GoToPreviousTab of int option
 
+    /// Print out the default history 
+    | History
+
+    /// Process the 'split' command.  The values range as follows
+    ///  - Height of the window if specified.  Expressed as a range.  The actual documentation
+    ///    doesn't specify a range can be used here but usage indicates it can
+    ///  - The provided ++opt
+    ///  - The provided +cmd
+    | HorizontalSplit of LineRangeSpecifier * FileOption list * CommandOption option
+
+    /// The if command
+    | If of ConditionalBlock
+
     /// Join the lines in the specified range.  Optionally provides a count of lines to 
     /// start the join after the line range
     | Join of LineRangeSpecifier * JoinKind
@@ -270,6 +438,9 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// Jump to the last line of the ITextBuffer
     | JumpToLastLine
+
+    // Let command.  The first item is the name and the second is the value
+    | Let of string * VariableValue
 
     /// Make command.  The options are as follows
     ///   - The ! option
@@ -300,6 +471,12 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// LineRange (defaults to current)
     | PutBefore of LineRangeSpecifier * RegisterName option
 
+    /// Next error in the quick fix list.  int is for count and bool is for the bang option
+    | QuickFixNext of int option * bool
+
+    /// Previous error in the quick fix list.  int is for count and bool is for the bang option
+    | QuickFixPrevious of int option * bool
+
     /// Quit the curren window without writing it's content.  If the boolean option
     /// is present (for !) then don't warn about a dirty window
     | Quit of bool
@@ -327,6 +504,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Redo the last item on the undo stack
     | Redo
 
+    /// Remove all auto commands with the specified definition
+    | RemoveAutoCommands of AutoCommandDefinition
+
     /// Retab the specified LineRange.  The options are as follows
     ///  - The LineRange to change (defaults to entire buffer)
     ///  - True to replace both tabs and spaces, false for just spaces
@@ -351,12 +531,8 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Process the 'source' command.  
     | Source of bool * string
 
-    /// Process the 'split' command.  The values range as follows
-    ///  - Height of the window if specified.  Expressed as a range.  The actual documentation
-    ///    doesn't specify a range can be used here but usage indicates it can
-    ///  - The provided ++opt
-    ///  - The provided +cmd
-    | HorizontalSplit of LineRangeSpecifier * FileOption list * CommandOption option
+    /// The version command
+    | Version
 
     /// Process the 'vsplit' command. Values are as per HorizontalSplit
     | VerticalSplit of LineRangeSpecifier * FileOption list * CommandOption option
@@ -371,6 +547,9 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// Undo the last change
     | Undo
+
+    // Unlet a value.  
+    | Unlet of bool * string list
 
     /// Unmap the key notation in the given modes
     | UnmapKeys of string * KeyRemapMode list * KeyMapArgument list
@@ -391,3 +570,20 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// Yank the line range into the given register with the specified count
     | Yank of LineRangeSpecifier * RegisterName option * int option
+
+/// Engine which interprets Vim commands and expressions
+type IVimInterpreter =
+
+    /// Get the ITextSnapshotLine for the provided LineSpecifier if it's 
+    /// applicable
+    abstract GetLine : lineSpecifier : LineSpecifier -> ITextSnapshotLine option
+
+    /// Get the specified LineRange in the IVimBuffer
+    abstract GetLineRange : lineRange : LineRangeSpecifier -> SnapshotLineRange option
+
+    /// Run the LineCommand
+    abstract RunLineCommand : lineCommand : LineCommand -> RunResult
+
+    /// Run the Expression
+    abstract RunExpression : expression : Expression -> VariableValue
+

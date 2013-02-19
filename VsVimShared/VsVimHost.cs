@@ -1,9 +1,9 @@
 ﻿using System;
 using System.ComponentModel.Composition;
 using System.IO;
+using System.Linq;
 using EditorUtils;
 using EnvDTE;
-using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
@@ -14,6 +14,9 @@ using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio;
+using Microsoft.FSharp.Core;
 
 namespace VsVim
 {
@@ -25,7 +28,7 @@ namespace VsVim
     [Export(typeof(IWpfTextViewCreationListener))]
     [ContentType(Vim.Constants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Document)]
-    internal sealed class VsVimHost : VimHost
+    internal sealed class VsVimHost : VimHost, IVsSelectionEvents
     {
         internal const string CommandNameGoToDefinition = "Edit.GoToDefinition";
 
@@ -36,10 +39,20 @@ namespace VsVim
         private readonly _DTE _dte;
         private readonly IVsExtensibility _vsExtensibility;
         private readonly ISharedService _sharedService;
+        private readonly IVsMonitorSelection _vsMonitorSelection;
 
         internal _DTE DTE
         {
             get { return _dte; }
+        }
+
+        /// <summary>
+        /// Don't automatically synchronize settings.  Visual Studio applies settings at uncertain times and hence this
+        /// behavior must be special cased.  It is handled by HostFactory
+        /// </summary>
+        public override bool AutoSynchronizeSettings
+        {
+            get { return false; }
         }
 
         [ImportingConstructor]
@@ -64,6 +77,10 @@ namespace VsVim
             _vsExtensibility = (IVsExtensibility)serviceProvider.GetService(typeof(IVsExtensibility));
             _textManager = textManager;
             _sharedService = sharedServiceFactory.Create();
+            _vsMonitorSelection = serviceProvider.GetService<SVsShellMonitorSelection, IVsMonitorSelection>();
+
+            uint cookie;
+            _vsMonitorSelection.AdviseSelectionEvents(this, out cookie);
         }
 
         private bool SafeExecuteCommand(string command, string args = "")
@@ -73,7 +90,7 @@ namespace VsVim
                 _dte.ExecuteCommand(command, args);
                 return true;
             }
-            catch (Exception e)
+            catch
             {
                 return false;
             }
@@ -160,6 +177,7 @@ namespace VsVim
 
         public override bool GoToDefinition()
         {
+            var selected = _textManager.TextViews.Where(x => !x.Selection.IsEmpty).ToList();
             if (!GoToDefinitionCore(_textManager.ActiveTextViewOptional, null))
             {
                 return false;
@@ -168,11 +186,12 @@ namespace VsVim
             // Certian language services, VB.Net for example, will select the word after
             // the go to definition is implemented.  Need to clear that out to prevent the
             // go to definition from switching us to Visual Mode
-            var optionalTextView = _textManager.ActiveTextViewOptional;
-            if (optionalTextView != null && !optionalTextView.Selection.IsEmpty)
-            {
-                optionalTextView.Selection.Clear();
-            }
+            // 
+            // This selection often occurs in another document but that document won't be 
+            // active when we get back here.  Instead just clear all of the new selections
+            _textManager.TextViews
+                .Where(x => !x.Selection.IsEmpty && !selected.Contains(x))
+                .ForEach(x => x.Selection.Clear());
 
             return true;
         }
@@ -285,12 +304,69 @@ namespace VsVim
         /// </summary>
         public override void GoToNextTab(Vim.Path direction, int count)
         {
-            _sharedService.GoToNextTab(direction, count);
+            // First get the index of the current tab so we know where we are incrementing
+            // from.  Make sure to check that our view is actually a part of the active
+            // views
+            var windowFrameState = _sharedService.GetWindowFrameState();
+            var index = windowFrameState.ActiveWindowFrameIndex;
+            if (index == -1)
+            {
+                return;
+            }
+
+            var childCount = windowFrameState.WindowFrameCount;
+            count = count % childCount;
+            if (direction.IsForward)
+            {
+                index += count;
+                index %= childCount;
+            }
+            else
+            {
+                index -= count;
+                if (index < 0)
+                {
+                    index += childCount;
+                }
+            }
+
+            _sharedService.GoToTab(index);
         }
 
         public override void GoToTab(int index)
         {
-            _sharedService.GoToTab(index);
+            var windowFrameState = _sharedService.GetWindowFrameState();
+            var realIndex = -1;
+            if (index < 0)
+            {
+                realIndex = windowFrameState.WindowFrameCount - 1;
+            }
+            else if (index == 0)
+            {
+                realIndex = 0;
+            }
+            else
+            {
+                realIndex = index - 1;
+            }
+
+            if (realIndex >= 0 && realIndex < windowFrameState.WindowFrameCount)
+            {
+                _sharedService.GoToTab(realIndex);
+            }
+        }
+
+        public override void GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        {
+            // This implementation could be much more riguorous but for next a simple navigation
+            // of the next and previous error will suffice
+            var command = quickFix.IsNext
+                ? "View.NextError"
+                : "View.PreviousError";
+            for (var i = 0; i < count; i++)
+            {
+                SafeExecuteCommand(command);
+            }
         }
 
         public override HostResult Make(bool jumpToFirstError, string arguments)
@@ -301,7 +377,32 @@ namespace VsVim
 
         public override bool TryGetFocusedTextView(out ITextView textView)
         {
-            return _sharedService.TryGetFocusedTextView(out textView);
+            var result = _vsAdapter.GetWindowFrames();
+            if (result.IsError)
+            {
+                textView = null;
+                return false;
+            }
+
+            var activeWindowFrame = result.Value.FirstOrDefault(_sharedService.IsActiveWindowFrame);
+            if (activeWindowFrame == null)
+            {
+                textView = null;
+                return false;
+            }
+
+            // TODO: Should try and pick the ITextView which is actually focussed as 
+            // there could be several in a split screen
+            try
+            {
+                textView = activeWindowFrame.GetCodeWindow().Value.GetPrimaryTextView(_editorAdaptersFactoryService).Value;
+                return textView != null;
+            }
+            catch
+            {
+                textView = null;
+                return false;
+            }
         }
 
         public override void Quit()
@@ -378,5 +479,74 @@ namespace VsVim
             // so it's easier to plug in later should such an API become available
             return GoToDefinitionCore(textView, target);
         }
+
+        public override void VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
+        {
+            if (vimRcState.IsLoadFailed)
+            {
+                // If we failed to load a vimrc file then we should add a couple of sanity 
+                // settings.  Otherwise the Visual Studio experience wont't be what users expect
+                localSettings.AutoIndent = true;
+            }
+        }
+
+        #region IVsSelectionEvents
+
+        int IVsSelectionEvents.OnCmdUIContextChanged(uint dwCmdUICookie, int fActive)
+        {
+            return VSConstants.S_OK;
+        }
+
+        int IVsSelectionEvents.OnElementValueChanged(uint elementid, object varValueOld, object varValueNew)
+        {
+            var id = (VSConstants.VSSELELEMID)elementid;
+            if (id == VSConstants.VSSELELEMID.SEID_WindowFrame)
+            {
+                Func<object, ITextView> getTextView =
+                    obj =>
+                    {
+                        var vsWindowFrame = obj as IVsWindowFrame;
+                        if (vsWindowFrame == null)
+                        {
+                            return null;
+                        }
+
+                        var vsCodeWindow = vsWindowFrame.GetCodeWindow();
+                        if (vsCodeWindow.IsError)
+                        {
+                            return null;
+                        }
+
+                        var lastActiveTextView = vsCodeWindow.Value.GetLastActiveView(_vsAdapter.EditorAdapter);
+                        if (lastActiveTextView.IsError)
+                        {
+                            return null;
+                        }
+
+                        return lastActiveTextView.Value;
+                    };
+
+                ITextView oldView = getTextView(varValueOld);
+                ITextView newView = null;
+                object value;
+                if (ErrorHandler.Succeeded(_vsMonitorSelection.GetCurrentElementValue((uint)VSConstants.VSSELELEMID.SEID_WindowFrame, out value)))
+                {
+                    newView = getTextView(value);
+                }
+
+                RaiseActiveTextViewChanged(
+                    oldView == null ? FSharpOption<ITextView>.None : FSharpOption.Create<ITextView>(oldView),
+                    newView == null ? FSharpOption<ITextView>.None : FSharpOption.Create<ITextView>(newView));
+            }
+
+            return VSConstants.S_OK;
+        }
+
+        int IVsSelectionEvents.OnSelectionChanged(IVsHierarchy pHierOld, uint itemidOld, IVsMultiItemSelect pMISOld, ISelectionContainer pSCOld, IVsHierarchy pHierNew, uint itemidNew, IVsMultiItemSelect pMISNew, ISelectionContainer pSCNew)
+        {
+            return VSConstants.S_OK;
+        }
+
+        #endregion
     }
 }

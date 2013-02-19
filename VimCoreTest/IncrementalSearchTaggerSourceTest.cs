@@ -3,11 +3,10 @@ using System.Linq;
 using EditorUtils;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
-using NUnit.Framework;
+using Xunit;
 
 namespace Vim.UnitTest
 {
-    [TestFixture]
     public sealed class IncrementalSearchTaggerSourceTest : VimTestBase
     {
         private IVimBuffer _vimBuffer;
@@ -38,61 +37,61 @@ namespace Vim.UnitTest
         /// Need to raise tags changed when switching modes as we don't display any tags in 
         /// visual modes
         /// </summary>
-        [Test]
+        [Fact]
         public void Changed_RaiseOnSwitchMode()
         {
             Create();
             var didRaise = false;
             _taggerSource.Changed += delegate { didRaise = true; };
             _vimBuffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.None);
-            Assert.IsTrue(didRaise);
+            Assert.True(didRaise);
         }
 
         /// <summary>
         /// After the search is completed we shouldn't be returning any results
         /// </summary>
-        [Test]
+        [Fact]
         public void GetTags_AfterSearchCompleted()
         {
             Create("dog cat bar");
             _search.DoSearch("dog");
-            Assert.AreEqual(0, GetTags().Count());
+            Assert.Equal(0, GetTags().Count());
         }
 
         /// <summary>
         /// Get tags should return the current match while searching
         /// </summary>
-        [Test]
+        [Fact]
         public void GetTags_InSearchWithMatch()
         {
             Create("dog cat bar");
             _search.DoSearch("dog", enter: false);
-            Assert.AreEqual("dog", GetTags().Single().Span.GetText());
+            Assert.Equal("dog", GetTags().Single().Span.GetText());
         }
 
         /// <summary>
         /// Don't return any tags in Visual Mode.  We don't want to confuse these tags with the
         /// visual mode values.  
         /// </summary>
-        [Test]
+        [Fact]
         public void GetTags_NoneInVisualMode()
         {
             Create("dog cat bar");
             _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
             _search.DoSearch("dog", enter: false);
-            Assert.AreEqual(0, GetTags().Count());
+            Assert.Equal(0, GetTags().Count());
         }
 
         /// <summary>
         /// Don't return any tags if we're currently disabled
         /// </summary>
-        [Test]
+        [Fact]
         public void GetTags_NoneIfDisabled()
         {
             Create("dog cat bar");
             _search.DoSearch("dog", enter: false);
             _globalSettings.IncrementalSearch = false;
-            Assert.AreEqual(0, GetTags().Count());
+            Assert.Equal(0, GetTags().Count());
         }
     }
 }
