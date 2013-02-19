@@ -303,6 +303,10 @@ namespace VsVim.UnitTest
         /// Run a sanity check which just tests the ability for an ITextView to be created
         /// and closed without leaking memory that doesn't involve the creation of an 
         /// IVimBuffer
+        /// 
+        /// TODO: This actually creates an IVimBuffer instance.  Right now IVim will essentially
+        /// create an IVimBuffer for every ITextView created hence one is created here.  Need
+        /// to fix this so we have a base case to judge the memory leak tests by
         /// </summary>
         [FactDebugOnly]
         public void TextViewOnly()
