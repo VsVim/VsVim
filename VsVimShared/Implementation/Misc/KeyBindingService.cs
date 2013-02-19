@@ -355,6 +355,11 @@ namespace VsVim.Implementation.Misc
         {
             Action doCheck = () =>
             {
+                if (vimBuffer.IsClosed)
+                {
+                    return;
+                }
+
                 if (ConflictingKeyBindingState == ConflictingKeyBindingState.HasNotChecked)
                 {
                     if (_vimApplicationSettings.IgnoredConflictingKeyBinding)

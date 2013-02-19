@@ -401,6 +401,37 @@ namespace Vim.UnitTest
                 Assert.True(_motionUtil.WordBackward(WordKind.NormalWord, 1).IsAnyWordMotion);
                 Assert.True(_motionUtil.WordBackward(WordKind.BigWord, 1).IsAnyWordMotion);
             }
+
+            /// <summary>
+            /// Make sure we handle the case where the motion ends on the start of the next line
+            /// but also begins in a blank line
+            /// </summary>
+            [Fact]
+            public void ForwardFromBlankLineEnd()
+            {
+                Create("cat", "   ", "dog");
+                _textView.MoveCaretToLine(1, 2);
+                var result = _motionUtil.WordForward(WordKind.NormalWord, 1, MotionContext.AfterOperator);
+                Assert.Equal(" ", result.Span.GetText());
+            }
+
+            [Fact]
+            public void ForwardFromBlankLineMiddle()
+            {
+                Create("cat", "   ", "dog");
+                _textView.MoveCaretToLine(1, 1);
+                var result = _motionUtil.WordForward(WordKind.NormalWord, 1, MotionContext.AfterOperator);
+                Assert.Equal("  ", result.Span.GetText());
+            }
+
+            [Fact]
+            public void ForwardFromDoubleBlankLineEnd()
+            {
+                Create("cat", "   ", "   ", "dog");
+                _textView.MoveCaretToLine(1, 2);
+                var result = _motionUtil.WordForward(WordKind.NormalWord, 1, MotionContext.AfterOperator);
+                Assert.Equal(" ", result.Span.GetText());
+            }
         }
 
         public sealed class Misc : MotionUtilTest

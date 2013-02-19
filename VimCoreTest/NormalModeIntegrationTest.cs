@@ -5074,6 +5074,45 @@ namespace Vim.UnitTest
                 Assert.Equal(@"""aaa"", """", ""ccc""", _textBuffer.GetLine(0).GetText());
                 Assert.Equal(8, _textView.GetCaretPoint().Position);
             }
+
+            /// <summary>
+            /// The word forward motion has special rules on how to handle motions that end on the 
+            /// first character of the next line and have blank lines above.  Make sure we handle
+            /// the case where the blank line is the originating line
+            /// </summary>
+            [Fact]
+            public void DeleteWordOnBlankLineFromEnd()
+            {
+                Create("cat", "   ", "dog");
+                _textView.MoveCaretToLine(1, 2);
+                _vimBuffer.Process("dw");
+                Assert.Equal(new[] { "cat", "  ", "dog" }, _textBuffer.GetLines());
+                Assert.Equal(_textBuffer.GetPointInLine(1, 1), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Similar to above but delete from the middle and make sure we take 2 characters with
+            /// the delet instead of 1
+            /// </summary>
+            [Fact]
+            public void DeleteWordOnBlankLineFromMiddle()
+            {
+                Create("cat", "   ", "dog");
+                _textView.MoveCaretToLine(1, 1);
+                _vimBuffer.Process("dw");
+                Assert.Equal(new[] { "cat", " ", "dog" }, _textBuffer.GetLines());
+                Assert.Equal(_textBuffer.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void DeleteWordOnDoubleBlankLineFromEnd()
+            {
+                Create("cat", "   ", "   ", "dog");
+                _textView.MoveCaretToLine(1, 2);
+                _vimBuffer.Process("dw");
+                Assert.Equal(new[] { "cat", "  ", "   ", "dog" }, _textBuffer.GetLines());
+                Assert.Equal(_textBuffer.GetPointInLine(1, 1), _textView.GetCaretPoint());
+            }
         }
     }
 }
