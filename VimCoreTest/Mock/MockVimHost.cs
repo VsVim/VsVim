@@ -11,7 +11,9 @@ namespace Vim.UnitTest.Mock
     public class MockVimHost : IVimHost
     {
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
+#pragma warning disable 67
         private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
+#pragma warning restore 67
 
         public bool AutoSynchronizeSettings { get; set; }
         public int BeepCount { get; set; }
@@ -83,11 +85,8 @@ namespace Vim.UnitTest.Mock
             IsDirtyFunc = null;
             LastClosed = null;
             LastSaved = null;
-<<<<<<< HEAD
             ShouldCreateVimBufferImpl = true;
-=======
             FileName = string.Empty;
->>>>>>> origin/master
         }
 
         void IVimHost.Beep()
@@ -280,11 +279,11 @@ namespace Vim.UnitTest.Mock
 
         }
 
-<<<<<<< HEAD
         bool IVimHost.ShouldCreateVimBuffer(ITextView textView)
         {
             return true;
-=======
+        }
+
         void IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
         {
             RunQuickFixFunc(quickFix, count, hasBang);
@@ -293,7 +292,6 @@ namespace Vim.UnitTest.Mock
         void IVimHost.VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
         {
             VimRcState = vimRcState;
->>>>>>> origin/master
         }
     }
 }

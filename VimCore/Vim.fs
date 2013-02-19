@@ -516,7 +516,7 @@ type internal Vim
         | None ->
             if _vimHost.ShouldCreateVimBuffer textView then
                 let settings = x.GetWindowSettingsForNewBuffer()
-                x.CreateVimBuffer textView settings |> Some
+                x.CreateVimBuffer textView (Some settings) |> Some
             else
                 None
 
