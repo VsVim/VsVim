@@ -525,7 +525,7 @@ namespace Vim.UI.Wpf
 
         bool IVimHost.ShouldCreateVimBuffer(ITextView textView)
         {
-            return true;
+            return ShouldCreateVimBuffer(textView);
         }
 
         HostResult IVimHost.SplitViewHorizontally(ITextView value)

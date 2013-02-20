@@ -15,6 +15,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Vim;
+using Vim.Extensions;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
 using Vim.UnitTest.Exports;
@@ -174,9 +175,9 @@ namespace VsVim.UnitTest
         {
             public bool HaveUpdatedKeyBindings { get; set; }
             public bool IgnoredConflictingKeyBinding { get; set; }
-            public ReadOnlyCollection<CommandBindingSetting> RemovedBindings  
+            public ReadOnlyCollection<CommandBindingSetting> RemovedBindings
             {
-                get { return new ReadOnlyCollection<CommandBindingSetting>(new CommandBindingSetting[] {}); }
+                get { return new ReadOnlyCollection<CommandBindingSetting>(new CommandBindingSetting[] { }); }
                 set { }
             }
 
@@ -297,6 +298,33 @@ namespace VsVim.UnitTest
             }
 
             return vimBuffer;
+        }
+
+        /// <summary>
+        /// Make sure that we respect the host policy on whether or not an IVimBuffer should be created for a given
+        /// ITextView
+        ///
+        /// This test is here because it's one of the few places where we load every component in every assembly into
+        /// our MEF container.  This gives us the best chance of catching a random new component which accidentally
+        /// introduces a new IVimBuffer against the host policy
+        /// </summary>
+        [Fact]
+        public void RespectHostCreationPolicy()
+        {
+            var container = GetOrCreateCompositionContainer();
+            var vsVimHost = container.GetExportedValue<VsVimHost>();
+            vsVimHost.DisableVimBufferCreation = true;
+            try
+            {
+                var factory = container.GetExportedValue<ITextEditorFactoryService>();
+                var textView = factory.CreateTextView();
+                var vim = container.GetExportedValue<IVim>();
+                Assert.True(vim.GetVimBuffer(textView).IsNone());
+            }
+            finally
+            {
+                vsVimHost.DisableVimBufferCreation = false;
+            }
         }
 
         /// <summary>

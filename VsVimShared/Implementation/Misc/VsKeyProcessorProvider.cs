@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
+using Vim.Extensions;
 using Vim.UI.Wpf;
 
 namespace VsVim.Implementation.Misc
@@ -29,9 +30,15 @@ namespace VsVim.Implementation.Misc
 
         KeyProcessor IKeyProcessorProvider.GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
-            var buffer = _vim.GetOrCreateVimBuffer(wpfTextView);
-            var bufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(buffer);
-            return new VsKeyProcessor(_adapter, bufferCoordinator, _keyUtil);
+            var opt = _vim.GetOrCreateVimBufferForHost(wpfTextView);
+            if (opt.IsNone())
+            {
+                return null;
+            }
+
+            var vimBuffer = opt.Value;
+            var vimBufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
+            return new VsKeyProcessor(_adapter, vimBufferCoordinator, _keyUtil);
         }
     }
 }

@@ -281,7 +281,7 @@ namespace Vim.UnitTest.Mock
 
         bool IVimHost.ShouldCreateVimBuffer(ITextView textView)
         {
-            return true;
+            return ShouldCreateVimBufferImpl;
         }
 
         void IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)

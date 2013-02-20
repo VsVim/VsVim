@@ -26,6 +26,7 @@ namespace VsVim
     /// </summary>
     [Export(typeof(IVimHost))]
     [Export(typeof(IWpfTextViewCreationListener))]
+    [Export(typeof(VsVimHost))]
     [ContentType(Vim.Constants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Document)]
     internal sealed class VsVimHost : VimHost, IVsSelectionEvents
@@ -44,6 +45,15 @@ namespace VsVim
         internal _DTE DTE
         {
             get { return _dte; }
+        }
+
+        /// <summary>
+        /// Should we create IVimBuffer instances for new ITextView values
+        /// </summary>
+        public bool DisableVimBufferCreation
+        { 
+            get; 
+            set; 
         }
 
         /// <summary>
@@ -481,6 +491,11 @@ namespace VsVim
                 // settings.  Otherwise the Visual Studio experience wont't be what users expect
                 localSettings.AutoIndent = true;
             }
+        }
+
+        public override bool ShouldCreateVimBuffer(ITextView textView)
+        {
+            return !DisableVimBufferCreation;
         }
 
         #region IVsSelectionEvents

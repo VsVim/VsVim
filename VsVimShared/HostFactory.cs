@@ -109,7 +109,13 @@ namespace VsVim
         {
             // Create the IVimBuffer after loading the VimRc so that it gets the appropriate
             // settings
-            var vimBuffer = _vim.GetOrCreateVimBuffer(textView);
+            var opt = _vim.GetOrCreateVimBufferForHost(textView);
+            if (opt.IsNone())
+            {
+                return;
+            }
+
+            var vimBuffer = opt.Value;
 
             // Visual Studio really puts us in a bind with respect to setting synchronization.  It doesn't
             // have a prescribed time to apply it's own customized settings and in fact differs between 
