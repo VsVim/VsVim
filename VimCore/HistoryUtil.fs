@@ -28,18 +28,39 @@ type HistoryCommand =
 type internal HistoryUtil ()  =
 
     static let _keyInputMap = 
+
+        let other = 
+            [
+                (KeyNotationUtil.StringToKeyInput "<C-p>", HistoryCommand.Previous)
+                (KeyNotationUtil.StringToKeyInput "<C-n>", HistoryCommand.Next)
+            ]
+
         seq {
             yield ("<Enter>", HistoryCommand.Execute)
             yield ("<Up>", HistoryCommand.Previous)
             yield ("<Down>", HistoryCommand.Next)
             yield ("<BS>", HistoryCommand.Back)
+            yield ("<BS>", HistoryCommand.Back)
             yield ("<Left>", HistoryCommand.Edit Path.Backward)
             yield ("<Right>", HistoryCommand.Edit Path.Backward)
             yield ("<Esc>", HistoryCommand.Cancel)
-            yield ("<C-p>", HistoryCommand.Previous)
-            yield ("<C-n>", HistoryCommand.Next)
         }
-        |> Seq.map (fun (name, command) -> KeyNotationUtil.StringToKeyInput name, command)
+        |> Seq.map (fun (name, command) -> 
+            // Vim itself distinguishes between items like <BS> and <S-BS> and this can be verified by using
+            // key mappings.  At the history level though these commands are treated equally so we just add
+            // the variations into the map
+            let keyInput1 = KeyNotationUtil.StringToKeyInput name
+            let keyInput2 = KeyInputUtil.ApplyModifiers keyInput1 KeyModifiers.Shift
+            let keyInput3 = KeyInputUtil.ApplyModifiers keyInput1 KeyModifiers.Control
+            let keyInput4 = KeyInputUtil.ApplyModifiers keyInput1 (KeyModifiers.Shift ||| KeyModifiers.Control)
+            seq { 
+                yield (keyInput1, command)    
+                yield (keyInput2, command)    
+                yield (keyInput3, command)    
+                yield (keyInput4, command)    
+            })
+        |> Seq.concat
+        |> Seq.append other
         |> Map.ofSeq
 
     static member CommandNames = _keyInputMap |> MapUtil.keys |> List.ofSeq

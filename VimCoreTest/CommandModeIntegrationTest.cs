@@ -271,10 +271,18 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void SimpleBackspace()
+            public void Backspace()
             {
                 Create("");
                 _vimBuffer.ProcessNotation(":dogd<BS>");
+                Assert.Equal("dog", _commandMode.Command);
+            }
+
+            [Fact]
+            public void BackspaceWithShift()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation(":dogd<S-BS>");
                 Assert.Equal("dog", _commandMode.Command);
             }
         }
