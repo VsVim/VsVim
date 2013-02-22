@@ -20,7 +20,8 @@ namespace VsVim.Implementation.ExternalEdit
         internal const string ExternalEditAttribute2 = "ReSharper LiveTemplates Current HotSpot";
         internal const string ExternalEditAttribute3 = "ReSharper LiveTemplates Current HotSpot mirror";
         internal const string ResharperTaggerProviderName = "VsDocumentMarkupTaggerProvider";
-        internal const string ResharperAssembylName = "JetBrains.Platform.ReSharper.VsIntegration.DevTen";
+        internal const string ResharperAssemblyName2010 = "JetBrains.Platform.ReSharper.VsIntegration.DevTen";
+        internal const string ResharperAssemblyName2012 = "JetBrains.Platform.ReSharper.VisualStudio.v10.v11";
 
         private static readonly Guid Resharper5Guid = new Guid("0C6E6407-13FC-4878-869A-C8B4016C57FE");
         private static FieldInfo AttributeIdFieldInfo;
@@ -113,7 +114,9 @@ namespace VsVim.Implementation.ExternalEdit
                 var providerType = provider.GetType();
                 if (providerType.Name == ResharperTaggerProviderName)
                 {
-                    if (providerType.Assembly.FullName.StartsWith(ResharperAssembylName))
+                    var fullName = providerType.Assembly.FullName;
+                    if (fullName.StartsWith(ResharperAssemblyName2010) ||
+                        fullName.StartsWith(ResharperAssemblyName2012))
                     {
                         var taggerResult = provider.SafeCreateTagger<ITag>(textBuffer);
                         if (taggerResult.IsSuccess)
