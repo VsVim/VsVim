@@ -53,9 +53,9 @@ type internal RegisterMap (_map: Map<RegisterName, Register>) =
 
         let getBacking name = 
             match name with 
-            | RegisterName.SelectionAndDrop(SelectionAndDropRegister.Register_Plus) -> clipboardBacking
-            | RegisterName.SelectionAndDrop(SelectionAndDropRegister.Register_Star) -> clipboardBacking
-            | RegisterName.ReadOnly(ReadOnlyRegister.Register_Percent) -> fileNameBacking
+            | RegisterName.SelectionAndDrop(SelectionAndDropRegister.Plus) -> clipboardBacking
+            | RegisterName.SelectionAndDrop(SelectionAndDropRegister.Star) -> clipboardBacking
+            | RegisterName.ReadOnly(ReadOnlyRegister.Percent) -> fileNameBacking
             | RegisterName.LastSearchPattern -> LastSearchRegisterValueBacking(vimData) :> IRegisterValueBacking
             | _ -> DefaultRegisterValueBacking() :> IRegisterValueBacking
 
@@ -127,14 +127,14 @@ type internal RegisterMap (_map: Map<RegisterName, Register>) =
                       let cur = intToName i |> x.GetRegister
                       let prev = intToName (i-1) |> x.GetRegister
                       cur.RegisterValue <- prev.RegisterValue
-                  let regOne = x.GetRegister (RegisterName.Numbered NumberedRegister.Register_1)
+                  let regOne = x.GetRegister (RegisterName.Numbered NumberedRegister.Number1)
                   regOne.RegisterValue <- value
             | RegisterOperation.Yank ->
 
                 // If the yank occurs to the unnamed register then update register 0 with the 
                 // value
                 if reg.Name = RegisterName.Unnamed then
-                    let regZero = x.GetRegister (RegisterName.Numbered NumberedRegister.Register_0)
+                    let regZero = x.GetRegister (RegisterName.Numbered NumberedRegister.Number0)
                     regZero.RegisterValue <- value
     
             // Possibly update the small delete register

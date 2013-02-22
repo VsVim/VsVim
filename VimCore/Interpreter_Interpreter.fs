@@ -493,7 +493,7 @@ type VimInterpreter
                     match name with
                     | RegisterName.Numbered _ -> true
                     | RegisterName.Named named -> not named.IsAppend
-                    | RegisterName.SelectionAndDrop drop -> drop <> SelectionAndDropRegister.Register_Star
+                    | RegisterName.SelectionAndDrop drop -> drop <> SelectionAndDropRegister.Star
                     | RegisterName.LastSearchPattern -> true
                     | _ -> false)
             | Some registerName ->

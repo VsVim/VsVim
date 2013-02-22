@@ -138,13 +138,13 @@ namespace Vim.UnitTest
             public void ForSpan_DeleteToBlackHole()
             {
                 _map.GetRegister(RegisterName.Blackhole).UpdateValue("", OperationKind.LineWise);
-                _map.GetRegister(RegisterName.NewNumbered(NumberedRegister.Register_1)).UpdateValue("hey", OperationKind.CharacterWise);
+                _map.GetRegister(RegisterName.NewNumbered(NumberedRegister.Number1)).UpdateValue("hey", OperationKind.CharacterWise);
                 var namedReg = _map.GetRegister('c');
                 _map.SetRegisterValue(namedReg, RegisterOperation.Yank, RegisterValue.OfString("foo bar", OperationKind.CharacterWise));
                 _map.SetRegisterValue(_map.GetRegister(RegisterName.Blackhole), RegisterOperation.Delete, RegisterValue.OfString("foo bar", OperationKind.CharacterWise));
                 AssertRegister(namedReg, "foo bar", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.Unnamed, "foo bar", OperationKind.CharacterWise);
-                AssertRegister(RegisterName.NewNumbered(NumberedRegister.Register_1), "hey", OperationKind.CharacterWise);
+                AssertRegister(RegisterName.NewNumbered(NumberedRegister.Number1), "hey", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.Blackhole, "", OperationKind.LineWise);
             }
         }

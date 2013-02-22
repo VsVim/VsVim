@@ -885,7 +885,7 @@ type internal CommandUtil
             | Some name -> name
             | None ->
                 if Util.IsFlagSet _globalSettings.ClipboardOptions ClipboardOptions.Unnamed then
-                    RegisterName.SelectionAndDrop SelectionAndDropRegister.Register_Star
+                    RegisterName.SelectionAndDrop SelectionAndDropRegister.Star
                 else
                     RegisterName.Unnamed
 
@@ -2018,7 +2018,7 @@ type internal CommandUtil
             if CharUtil.IsDigit registerName then
                 NumberedRegister.OfChar registerName |> Option.map RegisterName.Numbered
             elif registerName = '*' then
-                SelectionAndDropRegister.Register_Star |> RegisterName.SelectionAndDrop |> Some
+                SelectionAndDropRegister.Star |> RegisterName.SelectionAndDrop |> Some
             else
                 let registerName = CharUtil.ToLower registerName
                 NamedRegister.OfChar registerName |> Option.map RegisterName.Named
