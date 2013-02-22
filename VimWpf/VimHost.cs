@@ -158,13 +158,7 @@ namespace Vim.UI.Wpf
 
         public abstract HostResult Make(bool jumpToFirstError, string arguments);
 
-        public abstract void MoveViewDown(ITextView value);
-
-        public abstract void MoveViewUp(ITextView value);
-
-        public abstract void MoveViewLeft(ITextView value);
-
-        public abstract void MoveViewRight(ITextView value);
+        public abstract HostResult MoveFocus(ITextView textView, Direction direction);
 
         public abstract bool NavigateTo(VirtualSnapshotPoint point);
 
@@ -221,6 +215,15 @@ namespace Vim.UI.Wpf
             }
 
             document.Save();
+            return true;
+        }
+
+        /// <summary>
+        /// All ITextView instances are elligable for an IVimBuffer by default.  Let the actual
+        /// host override this method an reject IVimBuffer instances that it doesn't like
+        /// </summary>
+        public virtual bool ShouldCreateVimBuffer(ITextView textView)
+        {
             return true;
         }
 
@@ -475,24 +478,9 @@ namespace Vim.UI.Wpf
             return Make(jumpToFirstError, arguments);
         }
 
-        void IVimHost.MoveViewDown(ITextView value)
+        HostResult IVimHost.MoveFocus(ITextView textView, Direction direction)
         {
-            MoveViewDown(value);
-        }
-
-        void IVimHost.MoveViewLeft(ITextView value)
-        {
-            MoveViewLeft(value);
-        }
-
-        void IVimHost.MoveViewRight(ITextView value)
-        {
-            MoveViewRight(value);
-        }
-
-        void IVimHost.MoveViewUp(ITextView value)
-        {
-            MoveViewUp(value);
+            return MoveFocus(textView, direction);
         }
 
         bool IVimHost.NavigateTo(VirtualSnapshotPoint point)
@@ -533,6 +521,11 @@ namespace Vim.UI.Wpf
         void IVimHost.ShowOpenFileDialog()
         {
             ShowOpenFileDialog();
+        }
+
+        bool IVimHost.ShouldCreateVimBuffer(ITextView textView)
+        {
+            return ShouldCreateVimBuffer(textView);
         }
 
         HostResult IVimHost.SplitViewHorizontally(ITextView value)

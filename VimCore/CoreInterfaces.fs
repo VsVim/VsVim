@@ -3210,17 +3210,8 @@ type IVimHost =
     /// Run the host specific make operation
     abstract Make : jumpToFirstError : bool -> arguments : string -> HostResult
 
-    /// Move to the view above the current one
-    abstract MoveViewUp : ITextView -> unit
-
-    /// Move to the view below the current one
-    abstract MoveViewDown : ITextView -> unit
-
-    /// Move to the view to the right of the current one
-    abstract MoveViewRight : ITextView -> unit
-
-    /// Move to the view to the right of the current one
-    abstract MoveViewLeft : ITextView -> unit
+    /// Move the focus to the ITextView in the open document in the specified direction
+    abstract MoveFocus : textView : ITextView -> direction : Direction -> HostResult
 
     abstract NavigateTo : point : VirtualSnapshotPoint -> bool
 
@@ -3241,15 +3232,14 @@ type IVimHost =
     abstract Save : ITextBuffer -> bool 
 
     /// Save the current document as a new file with the specified name
-    abstract SaveTextAs : text:string -> filePath:string -> bool 
+    abstract SaveTextAs : text:string -> filePath : string -> bool 
+
+    /// Called by Vim when it encounters a new ITextView and needs to know if it should 
+    /// create an IVimBuffer for it
+    abstract ShouldCreateVimBuffer : textView : ITextView -> bool
 
     /// Display the open file dialog 
     abstract ShowOpenFileDialog : unit -> unit
-
-    /// Allow the host to custom process the insert command.  Hosts often have
-    /// special non-vim semantics for certain types of edits (Enter for 
-    /// example).  This override allows them to do this processing
-    abstract TryCustomProcess : textView : ITextView -> command : InsertCommand -> bool
 
     /// Split the views horizontally
     abstract SplitViewHorizontally : ITextView -> HostResult
@@ -3261,6 +3251,12 @@ type IVimHost =
     /// then the resulting settings are passed into the method.  If the load failed it is 
     /// the defaults.  Either way, they are the default settings used for new buffers
     abstract VimRcLoaded : vimRcState : VimRcState -> localSettings : IVimLocalSettings -> windowSettings : IVimWindowSettings -> unit
+
+    /// Allow the host to custom process the insert command.  Hosts often have
+    /// special non-vim semantics for certain types of edits (Enter for 
+    /// example).  This override allows them to do this processing
+    abstract TryCustomProcess : textView : ITextView -> command : InsertCommand -> bool
+
 
     /// Raised when the visibility of an ITextView changes
     [<CLIEvent>]
@@ -3312,9 +3308,6 @@ type IVimBufferData =
     abstract Vim : IVim
 
 /// Vim instance.  Global for a group of buffers
-///
-/// TODO: Change all of the MEF components to use a host controlled GetOrCreate 
-/// method for IVimBuffer instances
 and IVim =
 
     /// Buffer actively processing input.  This has no relation to the IVimBuffer
@@ -3385,6 +3378,15 @@ and IVim =
 
     /// Get or create an IVimBuffer for the given ITextView
     abstract GetOrCreateVimBuffer : ITextView -> IVimBuffer
+
+    /// Get or create an IVimBuffer for the given ITextView.  The creation of the IVimBuffer will
+    /// only occur if the host returns true from IVimHost::ShouldCreateVimBuffer.  
+    ///
+    /// MEF component load ordering isn't defined and it's very possible that components like the 
+    /// ITagger implementations will be called long before the host has a chance to create the 
+    /// IVimBuffer instance.  This method removes the ordering concerns and maintains control of 
+    /// creation in the IVimHost
+    abstract GetOrCreateVimBufferForHost : ITextView -> IVimBuffer option
 
     /// Get or create an IVimTextBuffer for the given ITextBuffer
     abstract GetOrCreateVimTextBuffer : ITextBuffer -> IVimTextBuffer

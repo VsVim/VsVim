@@ -26,6 +26,7 @@ namespace VsVim
     /// </summary>
     [Export(typeof(IVimHost))]
     [Export(typeof(IWpfTextViewCreationListener))]
+    [Export(typeof(VsVimHost))]
     [ContentType(Vim.Constants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Document)]
     internal sealed class VsVimHost : VimHost, IVsSelectionEvents
@@ -44,6 +45,15 @@ namespace VsVim
         internal _DTE DTE
         {
             get { return _dte; }
+        }
+
+        /// <summary>
+        /// Should we create IVimBuffer instances for new ITextView values
+        /// </summary>
+        public bool DisableVimBufferCreation
+        { 
+            get; 
+            set; 
         }
 
         /// <summary>
@@ -441,30 +451,23 @@ namespace VsVim
             }
         }
 
-        public override void MoveViewDown(ITextView textView)
+        public override HostResult MoveFocus(ITextView textView, Direction direction)
         {
-            _textManager.MoveViewDown(textView);
-        }
+            bool result = false;
+            if (direction.IsUp)
+            {
+                result = _textManager.MoveViewUp(textView);
+            }
+            else if (direction.IsDown)
+            {
+                result = _textManager.MoveViewDown(textView);
+            }
+            else if (direction.IsLeft || direction.IsRight)
+            {
+                result = false;
+            }
 
-        public override void MoveViewUp(ITextView textView)
-        {
-            _textManager.MoveViewUp(textView);
-        }
-
-        /// <summary>
-        /// Not yet implemented!
-        /// </summary>
-        public override void MoveViewLeft(ITextView value)
-        {
-            // Not yet implemented!
-        }
-
-        /// <summary>
-        /// Not yet implemented!
-        /// </summary>
-        public override void MoveViewRight(ITextView value)
-        {
-            // Not yet implemented!
+            return result ? HostResult.Success : HostResult.NewError("Not Implemented");
         }
 
         public override bool GoToGlobalDeclaration(ITextView textView, string target)
@@ -488,6 +491,11 @@ namespace VsVim
                 // settings.  Otherwise the Visual Studio experience wont't be what users expect
                 localSettings.AutoIndent = true;
             }
+        }
+
+        public override bool ShouldCreateVimBuffer(ITextView textView)
+        {
+            return !DisableVimBufferCreation;
         }
 
         #region IVsSelectionEvents

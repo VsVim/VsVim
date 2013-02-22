@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using Microsoft.Win32;
 using Vim;
+using Vim.Extensions;
 
 namespace VsVim.Implementation.VisualAssist
 {
@@ -143,8 +144,13 @@ namespace VsVim.Implementation.VisualAssist
                 return null;
             }
 
-            var vimBuffer = _vim.GetOrCreateVimBuffer(wpfTextView);
-            return new VisualAssistKeyProcessor(vimBuffer);
+            var opt = _vim.GetOrCreateVimBufferForHost(wpfTextView);
+            if (opt.IsNone())
+            {
+                return null;
+            }
+
+            return new VisualAssistKeyProcessor(opt.Value);
         }
 
         #endregion

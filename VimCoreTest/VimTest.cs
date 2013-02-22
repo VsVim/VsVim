@@ -150,6 +150,64 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class GetOrCreateVimBufferForHostTest : VimTest
+        {
+    
+            /// <summary>
+            /// If the host allows it then the IVimBuffer should be created 
+            /// </summary>
+            [Fact]
+            public void GetOrCreateVimBufferForHost_Simple()
+            {
+                var textView = CreateTextView("");
+                _vimHost.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(true);
+                var vimBuffer = _vim.GetOrCreateVimBufferForHost(textView);
+                Assert.True(vimBuffer.IsSome());
+            }
+    
+            /// <summary>
+            /// If the host doesn't allows it then the IVimBuffer shouldn't be created 
+            /// </summary>
+            [Fact]
+            public void GetOrCreateVimBufferForHost_Disallow()
+            {
+                var textView = CreateTextView("");
+                _vimHost.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(false);
+                var vimBuffer = _vim.GetOrCreateVimBufferForHost(textView);
+                Assert.False(vimBuffer.IsSome());
+            }
+    
+            /// <summary>
+            /// If it's already created then what the host says this time is irrelevant.  It's
+            /// already created so the Get portion takes precedence
+            /// </summary>
+            [Fact]
+            public void GetOrCreateVimBufferForHost_AlreadyCreated()
+            {
+                var textView = CreateTextView("");
+                _vim.CreateVimBuffer(textView);
+                _vimHost.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(false);
+                var vimBuffer = _vim.GetOrCreateVimBufferForHost(textView);
+                Assert.True(vimBuffer.IsSome());
+            }
+    
+            /// <summary>
+            /// Explicitly test the case where the IVimTextBuffer is already created and 
+            /// make sure we don't run into a conflict trying to create the IVimBuffer
+            /// layer on top of it 
+            /// </summary>
+            [Fact]
+            public void GetOrCreateVimBufferForHost_VimTextBufferAlreadyCreated()
+            {
+                var textView = CreateTextView("");
+                var vimTextBuffer = _vim.CreateVimTextBuffer(textView.TextBuffer);
+                _vimHost.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(true);
+                var vimBuffer = _vim.GetOrCreateVimBufferForHost(textView).Value;
+                Assert.Same(textView, vimBuffer.TextView);
+                Assert.Same(vimTextBuffer, vimBuffer.VimTextBuffer);
+            }
+        }
+
         public sealed class MiscTest : VimTest
         {
 
@@ -220,6 +278,13 @@ namespace Vim.UnitTest
                 var buffer1 = _vim.GetOrCreateVimBuffer(textView);
                 var buffer2 = _vim.GetOrCreateVimBuffer(textView);
                 Assert.Same(buffer1, buffer2);
+            }
+
+            [Fact]
+            public void RemoveBuffer_ReturnFalseForNonAssociatedTextView()
+            {
+                var textView = CreateTextView();
+                Assert.False(_vim.RemoveVimBuffer(textView));
             }
 
             [Fact]
@@ -316,13 +381,6 @@ namespace Vim.UnitTest
                 Assert.Same(buffer.VimTextBuffer, _vim.GetOrCreateVimTextBuffer(textView.TextBuffer));
                 buffer.Close();
                 Assert.Same(buffer.VimTextBuffer, _vim.GetOrCreateVimTextBuffer(textView.TextBuffer));
-            }
-
-            [Fact]
-            public void RemoveBuffer_ReturnFalseForNonAssociatedTextView()
-            {
-                var textView = CreateTextView();
-                Assert.False(_vim.RemoveVimBuffer(textView));
             }
 
             [Fact]

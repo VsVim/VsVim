@@ -11,7 +11,9 @@ namespace Vim.UnitTest.Mock
     public class MockVimHost : IVimHost
     {
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
+#pragma warning disable 67
         private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
+#pragma warning restore 67
 
         public bool AutoSynchronizeSettings { get; set; }
         public int BeepCount { get; set; }
@@ -36,6 +38,7 @@ namespace Vim.UnitTest.Mock
         public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
         public ITextBuffer LastSaved { get; set; }
         public ITextView LastClosed { get; set; }
+        public bool ShouldCreateVimBufferImpl { get; set; }
         public VimRcState VimRcState { get; private set; }
         public string FileName { get; set; } 
 
@@ -82,6 +85,7 @@ namespace Vim.UnitTest.Mock
             IsDirtyFunc = null;
             LastClosed = null;
             LastSaved = null;
+            ShouldCreateVimBufferImpl = true;
             FileName = string.Empty;
         }
 
@@ -143,12 +147,7 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        void IVimHost.MoveViewDown(ITextView textView)
-        {
-            throw new NotImplementedException();
-        }
-
-        void IVimHost.MoveViewUp(ITextView textView)
+        HostResult IVimHost.MoveFocus(ITextView textView, Direction direction)
         {
             throw new NotImplementedException();
         }
@@ -204,16 +203,6 @@ namespace Vim.UnitTest.Mock
         }
 
         void IVimHost.GoToTab(int index)
-        {
-            throw new NotImplementedException();
-        }
-
-        void IVimHost.MoveViewLeft(ITextView value)
-        {
-            throw new NotImplementedException();
-        }
-
-        void IVimHost.MoveViewRight(ITextView value)
         {
             throw new NotImplementedException();
         }
@@ -288,6 +277,11 @@ namespace Vim.UnitTest.Mock
         void IVimHost.EndBulkOperation()
         {
 
+        }
+
+        bool IVimHost.ShouldCreateVimBuffer(ITextView textView)
+        {
+            return ShouldCreateVimBufferImpl;
         }
 
         void IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)

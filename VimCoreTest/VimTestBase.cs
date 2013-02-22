@@ -215,6 +215,7 @@ namespace Vim.UnitTest
             var vimHost = Vim.VimHost as MockVimHost;
             if (vimHost != null)
             {
+                vimHost.ShouldCreateVimBufferImpl = true;
                 vimHost.Clear();
             }
 

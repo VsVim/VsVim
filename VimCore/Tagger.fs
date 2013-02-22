@@ -109,15 +109,15 @@ type internal IncrementalSearchTaggerProvider
 
     interface IViewTaggerProvider with 
         member x.CreateTagger<'T when 'T :> ITag> (textView : ITextView, textBuffer) = 
-            match textView.TextBuffer = textBuffer, _vim.GetVimBuffer textView with
-            | false, _ ->
+            if textView.TextBuffer = textBuffer then
+                match _vim.GetOrCreateVimBufferForHost textView with
+                | None -> null
+                | Some vimBuffer ->
+                    let taggerSource = new IncrementalSearchTaggerSource(vimBuffer)
+                    let tagger = _taggerFactory.CreateBasicTaggerRaw taggerSource
+                    tagger :> obj :?> ITagger<'T>
+            else
                 null
-            | true, None ->
-                null
-            | true, Some vimBuffer ->
-                let taggerSource = new IncrementalSearchTaggerSource(vimBuffer)
-                let tagger = _taggerFactory.CreateBasicTaggerRaw taggerSource
-                tagger :> obj :?> ITagger<'T>
 
 type HighlightSearchData = {
     Pattern : string
@@ -310,17 +310,17 @@ type HighlightIncrementalSearchTaggerProvider
 
     interface IViewTaggerProvider with 
         member x.CreateTagger<'T when 'T :> ITag> ((textView : ITextView), textBuffer) = 
-            match textView.TextBuffer = textBuffer, _vim.GetVimBuffer textView with
-            | false, _ ->
+            if textView.TextBuffer = textBuffer then
+                match _vim.GetOrCreateVimBufferForHost textView with
+                | None -> null
+                | Some vimBuffer ->
+                    let tagger = _taggerFactory.CreateAsyncTagger(textView.Properties, _key, fun () ->
+                        let wordNavigator = vimBuffer.WordNavigator
+                        let taggerSource = new HighlightSearchTaggerSource(textView, vimBuffer.GlobalSettings, _vim.VimData, _vim.VimHost)
+                        taggerSource :> IAsyncTaggerSource<HighlightSearchData , TextMarkerTag>)
+                    tagger :> obj :?> ITagger<'T>
+            else
                 null
-            | true, None -> 
-                null
-            | true, Some vimTextBuffer ->
-                let tagger = _taggerFactory.CreateAsyncTagger(textView.Properties, _key, fun () ->
-                    let wordNavigator = vimTextBuffer.WordNavigator
-                    let taggerSource = new HighlightSearchTaggerSource(textView, vimTextBuffer.GlobalSettings, _vim.VimData, _vim.VimHost)
-                    taggerSource :> IAsyncTaggerSource<HighlightSearchData , TextMarkerTag>)
-                tagger :> obj :?> ITagger<'T>
 
 /// Tagger for matches as they appear during a confirm substitute
 type SubstituteConfirmTaggerSource
@@ -373,15 +373,15 @@ type SubstituteConfirmTaggerProvider
 
     interface IViewTaggerProvider with 
         member x.CreateTagger<'T when 'T :> ITag> ((textView : ITextView), textBuffer) = 
-            match textView.TextBuffer = textBuffer, _vim.GetVimBuffer textView with
-            | false, _ ->
+            if textView.TextBuffer = textBuffer then
+                match _vim.GetOrCreateVimBufferForHost textView with
+                | None -> null
+                | Some vimBuffer ->
+                    let taggerSource = new SubstituteConfirmTaggerSource(textBuffer, vimBuffer.SubstituteConfirmMode)
+                    let tagger = _taggerFactory.CreateBasicTaggerRaw(taggerSource)
+                    tagger :> obj :?> ITagger<'T>
+            else
                 null
-            | true, None -> 
-                null
-            | true, Some buffer ->
-                let taggerSource = new SubstituteConfirmTaggerSource(textBuffer, buffer.SubstituteConfirmMode)
-                let tagger = _taggerFactory.CreateBasicTaggerRaw(taggerSource)
-                tagger :> obj :?> ITagger<'T>
 
 /// Fold tagger for the IOutliningRegion tags created by folds.  Note that folds work
 /// on an ITextBuffer level and not an ITextView level.  Hence this works directly with

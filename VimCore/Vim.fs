@@ -510,6 +510,16 @@ type internal Vim
             let settings = x.GetWindowSettingsForNewBuffer()
             x.CreateVimBuffer textView (Some settings)
 
+    member x.GetOrCreateVimBufferForHost textView =
+        match x.GetVimBuffer textView with
+        | Some vimBuffer -> Some vimBuffer
+        | None ->
+            if _vimHost.ShouldCreateVimBuffer textView then
+                let settings = x.GetWindowSettingsForNewBuffer()
+                x.CreateVimBuffer textView (Some settings) |> Some
+            else
+                None
+
     member x.MaybeLoadVimRc() =
         if x.AutoLoadVimRc then
             match _vimRcState with
@@ -605,6 +615,7 @@ type internal Vim
         member x.CreateVimTextBuffer textBuffer = x.CreateVimTextBuffer textBuffer (Some (x.GetLocalSettingsForNewTextBuffer()))
         member x.GetVimInterpreter vimBuffer = x.GetVimInterpreter vimBuffer
         member x.GetOrCreateVimBuffer textView = x.GetOrCreateVimBuffer textView
+        member x.GetOrCreateVimBufferForHost textView = x.GetOrCreateVimBufferForHost textView
         member x.GetOrCreateVimTextBuffer textBuffer = x.GetOrCreateVimTextBuffer textBuffer
         member x.RemoveVimBuffer textView = x.RemoveVimBuffer textView
         member x.GetVimBuffer textView = x.GetVimBuffer textView

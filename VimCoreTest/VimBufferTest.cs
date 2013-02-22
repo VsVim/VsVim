@@ -875,5 +875,6 @@ namespace Vim.UnitTest
                 Assert.True(_vimBuffer.BufferedKeyInputs.IsEmpty);
             }
         }
+
     }
 }
