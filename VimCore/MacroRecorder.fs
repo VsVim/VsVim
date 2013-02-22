@@ -28,7 +28,7 @@ type internal MacroRecorder (_registerMap : IRegisterMap) =
         // value make sure to reverse the list as we build up the recorded KeyInput
         // values in reverse order for efficiency
         let list = 
-            if isAppend then register.RegisterValue.KeyInputList |> List.rev
+            if isAppend then register.RegisterValue.KeyInputs |> List.rev
             else List.empty
         _recordData <- Some (register, list)
         _recordKeyStroke <- false
@@ -42,7 +42,7 @@ type internal MacroRecorder (_registerMap : IRegisterMap) =
 
         // Need to reverse the list as we stored it backwards
         let list = List.rev list
-        let value = RegisterValue.KeyInput (list, OperationKind.CharacterWise)
+        let value = RegisterValue(list, OperationKind.CharacterWise)
         _registerMap.SetRegisterValue register RegisterOperation.Yank value
         _recordData <- None
         _recordKeyStroke <- false

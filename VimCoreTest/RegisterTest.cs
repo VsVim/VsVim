@@ -10,7 +10,7 @@ namespace Vim.UnitTest
         {
             var backing = new MockRegisterValueBacking();
             var reg = new Register(RegisterName.Unnamed, backing);
-            reg.RegisterValue = RegisterValue.OfString("foo", OperationKind.CharacterWise);
+            reg.RegisterValue = new RegisterValue("foo", OperationKind.CharacterWise);
             Assert.Equal("foo", backing.RegisterValue.StringValue);
         }
     }

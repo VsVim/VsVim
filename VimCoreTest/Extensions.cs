@@ -1391,7 +1391,7 @@ namespace Vim.UnitTest
             var left = value.Select(KeyInputUtil.CharToKeyInput);
             var right = keys.Select(KeyInputUtil.VimKeyToKeyInput);
             var all = left.Concat(right).ToFSharpList();
-            reg.RegisterValue = RegisterValue.NewKeyInput(all, OperationKind.CharacterWise);
+            reg.RegisterValue = new RegisterValue(all, OperationKind.CharacterWise);
         }
 
         /// <summary>
@@ -1400,7 +1400,7 @@ namespace Vim.UnitTest
         public static void UpdateValue(this Register reg, params VimKey[] keys)
         {
             var all = keys.Select(KeyInputUtil.VimKeyToKeyInput).ToFSharpList();
-            reg.RegisterValue = RegisterValue.NewKeyInput(all, OperationKind.CharacterWise);
+            reg.RegisterValue = new RegisterValue(all, OperationKind.CharacterWise);
         }
 
         /// <summary>
@@ -1408,19 +1408,19 @@ namespace Vim.UnitTest
         /// </summary>
         public static void UpdateValue(this Register reg, params KeyInput[] keys)
         {
-            reg.RegisterValue = RegisterValue.NewKeyInput(keys.ToFSharpList(), OperationKind.CharacterWise);
+            reg.RegisterValue = new RegisterValue(keys.ToFSharpList(), OperationKind.CharacterWise);
         }
 
         public static void UpdateValue(this Register reg, string value, OperationKind kind)
         {
-            reg.RegisterValue = RegisterValue.OfString(value, kind);
+            reg.RegisterValue = new RegisterValue(value, kind);
         }
 
         public static void UpdateBlockValues(this Register reg, params string[] value)
         {
             var col = NonEmptyCollectionUtil.OfSeq(value).Value;
             var data = StringData.NewBlock(col);
-            reg.RegisterValue = RegisterValue.NewString(data, OperationKind.CharacterWise);
+            reg.RegisterValue = new RegisterValue(data, OperationKind.CharacterWise);
         }
 
         public static VirtualSnapshotPoint GetCaretVirtualPoint(this ITextView view)

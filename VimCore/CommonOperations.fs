@@ -224,7 +224,7 @@ type internal CommonOperations
                         span |> StringData.OfSpan
 
                 // Now update the register after the delete completes
-                let value = RegisterValue.String (stringData, OperationKind.LineWise)
+                let value = RegisterValue(stringData, OperationKind.LineWise)
                 _registerMap.SetRegisterValue register RegisterOperation.Delete value
 
             | _ ->

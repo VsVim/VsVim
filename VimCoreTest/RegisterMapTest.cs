@@ -47,7 +47,7 @@ namespace Vim.UnitTest
             public void DeleteSingleLine()
             {
                 var reg = _map.GetRegister('c');
-                _map.SetRegisterValue(reg, RegisterOperation.Delete, RegisterValue.OfString("foo bar\n", OperationKind.CharacterWise));
+                _map.SetRegisterValue(reg, RegisterOperation.Delete, new RegisterValue("foo bar\n", OperationKind.CharacterWise));
                 AssertRegister(reg, "foo bar\n", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.Unnamed, "foo bar\n", OperationKind.CharacterWise);
                 AssertRegister('1', "foo bar\n", OperationKind.CharacterWise);
@@ -60,7 +60,7 @@ namespace Vim.UnitTest
             public void DeletePartialLine()
             {
                 var reg = _map.GetRegister('c');
-                _map.SetRegisterValue(reg, RegisterOperation.Delete, RegisterValue.OfString("foo bar", OperationKind.CharacterWise));
+                _map.SetRegisterValue(reg, RegisterOperation.Delete, new RegisterValue("foo bar", OperationKind.CharacterWise));
                 AssertRegister(reg, "foo bar", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.Unnamed, "foo bar", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.SmallDelete, "", OperationKind.CharacterWise);
@@ -75,7 +75,7 @@ namespace Vim.UnitTest
             {
                 var reg = _map.GetRegister('c');
                 _map.GetRegister(RegisterName.SmallDelete).UpdateValue("", OperationKind.LineWise);
-                _map.SetRegisterValue(reg, RegisterOperation.Yank, RegisterValue.OfString("foo bar", OperationKind.CharacterWise));
+                _map.SetRegisterValue(reg, RegisterOperation.Yank, new RegisterValue("foo bar", OperationKind.CharacterWise));
                 AssertRegister(reg, "foo bar", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.Unnamed, "foo bar", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.SmallDelete, "", OperationKind.LineWise);
@@ -88,8 +88,8 @@ namespace Vim.UnitTest
             public void Numbered()
             {
                 var reg = _map.GetRegister('c');
-                _map.SetRegisterValue(reg, RegisterOperation.Delete, RegisterValue.OfString("f\n", OperationKind.CharacterWise));
-                _map.SetRegisterValue(reg, RegisterOperation.Delete, RegisterValue.OfString("o\n", OperationKind.CharacterWise));
+                _map.SetRegisterValue(reg, RegisterOperation.Delete, new RegisterValue("f\n", OperationKind.CharacterWise));
+                _map.SetRegisterValue(reg, RegisterOperation.Delete, new RegisterValue("o\n", OperationKind.CharacterWise));
                 AssertRegister(reg, "o\n", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.Unnamed, "o\n", OperationKind.CharacterWise);
                 AssertRegister('1', "o\n", OperationKind.CharacterWise);
@@ -103,7 +103,7 @@ namespace Vim.UnitTest
             public void IgnoreSmallDelete()
             {
                 var reg = _map.GetRegister('c');
-                _map.SetRegisterValue(reg, RegisterOperation.Delete, RegisterValue.OfString("foo", OperationKind.CharacterWise));
+                _map.SetRegisterValue(reg, RegisterOperation.Delete, new RegisterValue("foo", OperationKind.CharacterWise));
                 AssertRegister(RegisterName.SmallDelete, "", OperationKind.CharacterWise);
             }
 
@@ -114,7 +114,7 @@ namespace Vim.UnitTest
             public void UpdateSmallDelete()
             {
                 var reg = _map.GetRegister(RegisterName.Unnamed);
-                _map.SetRegisterValue(reg, RegisterOperation.Delete, RegisterValue.OfString("foo", OperationKind.CharacterWise));
+                _map.SetRegisterValue(reg, RegisterOperation.Delete, new RegisterValue("foo", OperationKind.CharacterWise));
                 AssertRegister(RegisterName.SmallDelete, "foo", OperationKind.CharacterWise);
             }
 
@@ -127,7 +127,7 @@ namespace Vim.UnitTest
                 _map.GetRegister(RegisterName.SmallDelete).UpdateValue("", OperationKind.LineWise);
                 var reg = _map.GetRegister('c');
                 var text = "cat" + Environment.NewLine + "dog";
-                _map.SetRegisterValue(reg, RegisterOperation.Delete, RegisterValue.OfString(text, OperationKind.CharacterWise));
+                _map.SetRegisterValue(reg, RegisterOperation.Delete, new RegisterValue(text, OperationKind.CharacterWise));
                 AssertRegister(RegisterName.SmallDelete, "", OperationKind.LineWise);
             }
 
@@ -140,8 +140,8 @@ namespace Vim.UnitTest
                 _map.GetRegister(RegisterName.Blackhole).UpdateValue("", OperationKind.LineWise);
                 _map.GetRegister(RegisterName.NewNumbered(NumberedRegister.Number1)).UpdateValue("hey", OperationKind.CharacterWise);
                 var namedReg = _map.GetRegister('c');
-                _map.SetRegisterValue(namedReg, RegisterOperation.Yank, RegisterValue.OfString("foo bar", OperationKind.CharacterWise));
-                _map.SetRegisterValue(_map.GetRegister(RegisterName.Blackhole), RegisterOperation.Delete, RegisterValue.OfString("foo bar", OperationKind.CharacterWise));
+                _map.SetRegisterValue(namedReg, RegisterOperation.Yank, new RegisterValue("foo bar", OperationKind.CharacterWise));
+                _map.SetRegisterValue(_map.GetRegister(RegisterName.Blackhole), RegisterOperation.Delete, new RegisterValue("foo bar", OperationKind.CharacterWise));
                 AssertRegister(namedReg, "foo bar", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.Unnamed, "foo bar", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.NewNumbered(NumberedRegister.Number1), "hey", OperationKind.CharacterWise);
@@ -170,7 +170,7 @@ namespace Vim.UnitTest
             public void PlusRegister2()
             {
                 _clipboard.SetupSet(x => x.Text = "bar").Verifiable();
-                _map.GetRegister('+').RegisterValue = RegisterValue.OfString("bar", OperationKind.CharacterWise);
+                _map.GetRegister('+').RegisterValue = new RegisterValue("bar", OperationKind.CharacterWise);
                 _factory.Verify();
             }
 
@@ -192,7 +192,7 @@ namespace Vim.UnitTest
             public void StarRegister2()
             {
                 _clipboard.SetupSet(x => x.Text = "bar").Verifiable();
-                _map.GetRegister('*').RegisterValue = RegisterValue.OfString("bar", OperationKind.CharacterWise);
+                _map.GetRegister('*').RegisterValue = new RegisterValue("bar", OperationKind.CharacterWise);
                 _factory.Verify();
             }
 

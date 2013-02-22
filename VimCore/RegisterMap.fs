@@ -12,7 +12,7 @@ type ClipboardRegisterValueBacking (_device : IClipboardDevice) =
                 OperationKind.LineWise
             else
                 OperationKind.CharacterWise
-        RegisterValue.OfString text operationKind
+        RegisterValue(text, operationKind)
 
     interface IRegisterValueBacking with
         member x.RegisterValue 
@@ -32,7 +32,7 @@ type AppendRegisterValueBacking (_register : Register) =
 type LastSearchRegisterValueBacking (_vimData : IVimData) = 
     interface IRegisterValueBacking with
         member x.RegisterValue 
-            with get () = RegisterValue.OfString _vimData.LastPatternData.Pattern OperationKind.CharacterWise
+            with get () = RegisterValue(_vimData.LastPatternData.Pattern, OperationKind.CharacterWise)
             and set value = _vimData.LastPatternData <- { Pattern = value.StringValue; Path = Path.Forward }
 
 type internal RegisterMap (_map: Map<RegisterName, Register>) =
@@ -45,7 +45,7 @@ type internal RegisterMap (_map: Map<RegisterName, Register>) =
                         match currentFileNameFunc() with
                         | None -> StringUtil.empty
                         | Some(str) -> str
-                    RegisterValue.OfString text OperationKind.CharacterWise
+                    RegisterValue(text, OperationKind.CharacterWise)
                 and set _ = () }
 
         // Is this an append register 

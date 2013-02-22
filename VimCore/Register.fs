@@ -24,8 +24,8 @@ type StringData =
 
     member x.String =
         match x with 
-        | Simple(str) -> str
-        | Block(l) -> l |> StringUtil.combineWith System.Environment.NewLine
+        | Simple str -> str
+        | Block l -> l |> StringUtil.combineWith System.Environment.NewLine
 
     /// Append the specified string data to this StringData instance and return a 
     /// combined value.  This is used when append operations are done wit the yank 
@@ -445,27 +445,36 @@ type RegisterOperation =
 ///
 /// Unfortunately we are required to convert back and forth in different circumstances.  There
 /// will be fidelity loss in some
-[<RequireQualifiedAccess>]
-type RegisterValue =
-    /// Backing is a String type.  This is the type of lower fidelity.  Prefer KeyInput over String
-    | String of StringData * OperationKind
+type RegisterValue
+    (
+        _isString : bool,
+        _stringData : StringData,
+        _keyInputs : KeyInput list,
+        _operationKind : OperationKind
+    ) =
 
-    /// Backing is a KeyInput list.  This is the type of highest fidelity.  Prefer this over String
-    | KeyInput of KeyInput list * OperationKind
+    new (value : string, operationKind : OperationKind) =
+        RegisterValue(StringData.Simple value, operationKind)
 
-    with
+    new (stringData : StringData, operationKind : OperationKind) =
+        // TODO: Need to normalize the input
+        RegisterValue(true, stringData, List.empty, operationKind)
+
+    new (keyInputs : KeyInput list, operationKind : OperationKind) =
+        // TODO: Need to normalize the input
+        RegisterValue(false, StringData.Simple "", keyInputs, operationKind)
 
     /// Get the RegisterData as a StringData instance
     member x.StringData =
-        match x with 
-        | String (stringData, _) -> stringData
-        | KeyInput (list, _) -> list |> Seq.map (fun ki -> ki.Char) |> StringUtil.ofCharSeq |> StringData.Simple
+        if _isString then
+            _stringData
+        else
+            _keyInputs |> Seq.map (fun ki -> ki.Char) |> StringUtil.ofCharSeq |> StringData.Simple
 
     /// Get the RegisterData as a KeyInput list instance
-    member x.KeyInputList =
-        match x with
-        | String (stringData, _) ->
-            match stringData with
+    member x.KeyInputs =
+        if _isString then
+            match _stringData with
             | StringData.Simple str -> 
                 // Just map every character to a KeyInput
                 str |> Seq.map KeyInputUtil.CharToKeyInput |> List.ofSeq
@@ -477,37 +486,30 @@ type RegisterValue =
                 |> Seq.map (fun s -> s |> Seq.map KeyInputUtil.CharToKeyInput |> List.ofSeq)
                 |> Seq.map (fun list -> list @ [ KeyInputUtil.EnterKey ])
                 |> List.concat
-        | KeyInput (list, _) -> 
-            // Identity mapping 
-            list
+        else
+            _keyInputs
 
     /// Get the string which represents this RegisterValue.  This is an inherently lossy 
     /// operation (information is loss on converting a StringData.Block into a raw string
     /// value).  This function should be avoided for operations other than display purposes
     member x.StringValue = 
-        match x with
-        | String (stringData, _) -> stringData.String
-        | KeyInput (list, _) -> list |> Seq.map (fun keyInput -> keyInput.Char) |> StringUtil.ofCharSeq
+        if _isString then
+            _stringData.String
+        else
+            _keyInputs |> Seq.map (fun keyInput -> keyInput.Char) |> StringUtil.ofCharSeq
 
     /// The OperationKind which produced this value
-    member x.OperationKind = 
-        match x with 
-        | String (_, kind) -> kind
-        | KeyInput (_, kind) -> kind
+    member x.OperationKind = _operationKind 
 
     /// Append the provided RegisterValue to this one.  Used for append register operations (yank, 
     /// delete, etc ... with an upper case register)
-    member x.Append value =
-        match x, value with
-        | String (leftData, _), String (rightData, _) -> String (leftData.Append rightData, x.OperationKind)
-        | String (leftData, _), KeyInput _ -> String (leftData.Append value.StringData, x.OperationKind)
-        | KeyInput (list, _), String (rightData, _) -> KeyInput (list @ (rightData.String |> Seq.map KeyInputUtil.CharToKeyInput |> List.ofSeq), x.OperationKind)
-        | KeyInput (left, _), KeyInput (right, _) -> KeyInput (left @ right, x.OperationKind)
-
-    /// Create a RegisterValue from a simple string
-    static member OfString str kind = 
-        let stringData = StringData.Simple str
-        String (stringData, kind)
+    member x.Append (value : RegisterValue) =
+        if _isString then
+            let stringData = x.StringData.Append value.StringData
+            RegisterValue(stringData, x.OperationKind)
+        else
+            let keyInputs = _keyInputs @ value.KeyInputs
+            RegisterValue(keyInputs, x.OperationKind)
 
 /// Backing of a register value
 type internal IRegisterValueBacking = 
@@ -518,7 +520,7 @@ type internal IRegisterValueBacking =
 /// Default implementation of IRegisterValueBacking.  Just holds the RegisterValue
 /// in a mutable field
 type internal DefaultRegisterValueBacking() = 
-    let mutable _value = RegisterValue.OfString StringUtil.empty OperationKind.CharacterWise
+    let mutable _value = RegisterValue(StringUtil.empty, OperationKind.CharacterWise)
     interface IRegisterValueBacking with
         member x.RegisterValue
             with get() = _value
