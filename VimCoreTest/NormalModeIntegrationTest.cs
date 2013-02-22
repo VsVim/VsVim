@@ -1378,6 +1378,31 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("y/   ", enter: true);
                 Assert.Equal(OperationKind.CharacterWise, UnnamedRegister.OperationKind);
             }
+
+            /// <summary>
+            /// In the Visual Studio editor the last line is defined as not having a new line at the end.  In Vim it's
+            /// not clear if this is defined or not.  However once it's yanked into a register it clearly has a new 
+            /// line at that point.  This is visible when printing out the target register value
+            /// </summary>
+            [Fact]
+            public void LastLineShouldAppendNewLineInRegister()
+            {
+                Create("cat");
+                _vimBuffer.Process("yy");
+                Assert.Equal("cat" + Environment.NewLine, UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
+            /// An empty last line is treated the same as one which contains text
+            /// </summary>
+            [Fact]
+            public void EmptyLastLineShouldAppendNewLineInRegister()
+            {
+                Create("cat", "");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("yy");
+                Assert.Equal(Environment.NewLine, UnnamedRegister.StringValue);
+            }
         }
 
         public sealed class KeyMappingTest : NormalModeIntegrationTest
@@ -2788,6 +2813,18 @@ namespace Vim.UnitTest
                     _textBuffer.GetLines());
                 Assert.Equal(Environment.NewLine, _textBuffer.GetLine(0).GetLineBreakText());
                 Assert.Equal(Environment.NewLine, _textBuffer.GetLine(1).GetLineBreakText());
+            }
+
+            /// <summary>
+            /// When pasting the last line with a count we want to make sure that we add in the new 
+            /// line for every paste
+            /// </summary>
+            [Fact]
+            public void PutLastLineWithCount()
+            {
+                Create("cat");
+                _vimBuffer.Process("yy2p");
+                Assert.Equal(new[] { "cat", "cat", "cat" }, _textBuffer.GetLines());
             }
         }
 

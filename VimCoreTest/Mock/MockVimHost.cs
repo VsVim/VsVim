@@ -85,7 +85,7 @@ namespace Vim.UnitTest.Mock
             IsDirtyFunc = null;
             LastClosed = null;
             LastSaved = null;
-            ShouldCreateVimBufferImpl = true;
+            ShouldCreateVimBufferImpl = false;
             FileName = string.Empty;
         }
 
