@@ -432,6 +432,7 @@ namespace Vim.UnitTest
                 var altVimBuffer = CreateVimBuffer(CreateVimBufferData(altTextView));
                 altVimBuffer.ProcessNotation("'^");
                 Assert.Equal(_textBuffer.GetLine(1).Start, altTextView.GetCaretPoint());
+                altVimBuffer.Close();
             }
 
             /// <summary>

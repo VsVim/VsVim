@@ -28,7 +28,8 @@ type internal TrackingLineColumn
         _textBuffer : ITextBuffer,
         _column : int,
         _mode : LineColumnTrackingMode,
-        _onClose : TrackingLineColumn -> unit ) =
+        _onClose : TrackingLineColumn -> unit
+    ) =
 
     /// This is the SnapshotSpan of the line that we are tracking.  It is None in the
     /// case of a deleted line
@@ -189,7 +190,7 @@ type internal TrackingVisualSpan =
 
     member x.Close() =
         match x with
-        | Character _ -> ()
+        | Character (trackingLineColumn, _, _) -> trackingLineColumn.Close()
         | Line (trackingLineColumn, _) -> trackingLineColumn.Close()
         | Block (trackingLineColumn, _, _) -> trackingLineColumn.Close()
 
@@ -277,7 +278,7 @@ type internal TrackingVisualSelection
         member x.Close() = _trackingVisualSpan.Close()
 
 type internal TrackedData = {
-    List : WeakReference<TrackingLineColumn> list
+    List : List<TrackingLineColumn>
     Observer : System.IDisposable 
 }
 
@@ -286,79 +287,60 @@ type internal TrackedData = {
 [<Export(typeof<IBufferTrackingService>)>]
 [<Sealed>]
 type internal BufferTrackingService() = 
+
+    static let _key = obj()
+
+    member x.FindTrackedData (textBuffer : ITextBuffer) =
+        PropertyCollectionUtil.GetValue<TrackedData> _key textBuffer.Properties
     
-    let _map = new Dictionary<ITextBuffer, TrackedData>()
-
-    /// Gets the data for the passed in buffer.  This method takes care of removing all 
-    /// collected WeakReference items and updating the internal map 
-    member x.GetData textBuffer foundFunc notFoundFunc =
-        let found,data = _map.TryGetValue(textBuffer)
-        if not found then notFoundFunc()
-        else
-            let tlcs = 
-                data.List 
-                |> Seq.ofList 
-                |> Seq.choose (fun weakRef -> weakRef.Target)
-            if tlcs |> Seq.isEmpty then
-                data.Observer.Dispose()
-                _map.Remove(textBuffer) |> ignore
-                notFoundFunc()
-            else
-                foundFunc data.Observer tlcs data.List
-
     /// Remove the TrackingLineColumn from the map.  If it is the only remaining 
     /// TrackingLineColumn assigned to the ITextBuffer, remove it from the map
     /// and unsubscribe from the Changed event
-    member x.Remove (tlc:TrackingLineColumn) = 
-        let found (data:System.IDisposable) items rawList = 
-            let items = items |> Seq.filter (fun cur -> cur <> tlc)
-            if items |> Seq.isEmpty then 
-                data.Dispose()
-                _map.Remove(tlc.TextBuffer) |> ignore
-            else
-                let items = [Util.CreateWeakReference tlc] @ rawList
-                _map.Item(tlc.TextBuffer) <- { Observer = data; List = items }
-        x.GetData tlc.TextBuffer found (fun () -> ())
+    member x.Remove (trackingLineColumn : TrackingLineColumn) = 
+        let textBuffer = trackingLineColumn.TextBuffer
+        match x.FindTrackedData textBuffer with
+        | Some trackedData -> 
+            trackedData.List.Remove trackingLineColumn |> ignore
+            if trackedData.List.Count = 0 then
+                trackedData.Observer.Dispose()
+                textBuffer.Properties.RemoveProperty _key |> ignore
+        | None -> ()
 
     /// Add the TrackingLineColumn to the map.  If this is the first item in the
     /// map then subscribe to the Changed event on the buffer
-    member x.Add (tlc:TrackingLineColumn) =
-        let textBuffer = tlc.TextBuffer
-        let found data _ list =
-            let list = [Util.CreateWeakReference tlc] @ list
-            _map.Item(textBuffer) <- { Observer = data; List = list }
-        let notFound () =
-            let observer = textBuffer.Changed |> Observable.subscribe x.OnBufferChanged
-            let data = { List = [Util.CreateWeakReference tlc]; Observer = observer }
-            _map.Add(textBuffer,data)
-        x.GetData textBuffer found notFound
+    member x.Add (trackingLineColumn : TrackingLineColumn) =
+        let textBuffer = trackingLineColumn.TextBuffer
+        let trackedData = 
+            match x.FindTrackedData textBuffer with
+            | Some trackedData -> trackedData
+            | None -> 
+                let observer = textBuffer.Changed |> Observable.subscribe x.OnBufferChanged
+                let trackedData = { List = List<TrackingLineColumn>(); Observer = observer }
+                textBuffer.Properties.AddProperty(_key, trackedData)
+                trackedData
+        trackedData.List.Add trackingLineColumn
 
-    member x.OnBufferChanged (e:TextContentChangedEventArgs) = 
-        let found _ (items: TrackingLineColumn seq) _ =
-            items |> Seq.iter (fun tlc -> tlc.UpdateForChange e)
-        x.GetData e.Before.TextBuffer found (fun () -> ())
+    member x.OnBufferChanged (e : TextContentChangedEventArgs) = 
+        match x.FindTrackedData e.Before.TextBuffer with
+        | Some trackedData -> trackedData.List |> Seq.iter (fun trackingLineColumn -> trackingLineColumn.UpdateForChange e)
+        | None -> ()
 
-    member x.Create (textBuffer:ITextBuffer) lineNumber column mode = 
-        let tlc = TrackingLineColumn(textBuffer, column, mode, x.Remove)
-        let tss = textBuffer.CurrentSnapshot
-        let line = tss.GetLineFromLineNumber(lineNumber)
-        tlc.Line <-  Some line
-        x.Add tlc
-        tlc
+    member x.Create (textBuffer : ITextBuffer) lineNumber column mode = 
+        let trackingLineColumn = TrackingLineColumn(textBuffer, column, mode, x.Remove)
+        let textSnapshot = textBuffer.CurrentSnapshot
+        let textLine = textSnapshot.GetLineFromLineNumber(lineNumber)
+        trackingLineColumn.Line <-  Some textLine
+        x.Add trackingLineColumn
+        trackingLineColumn
+
+    member x.HasTrackingItems textBuffer = 
+        x.FindTrackedData textBuffer |> Option.isSome
 
     interface IBufferTrackingService with
         member x.CreateLineColumn textBuffer lineNumber column mode = x.Create textBuffer lineNumber column mode :> ITrackingLineColumn
         member x.CreateVisualSpan visualSpan = TrackingVisualSpan.Create x visualSpan :> ITrackingVisualSpan
         member x.CreateVisualSelection visualSelection = TrackingVisualSelection.Create x visualSelection :> ITrackingVisualSelection
-        member x.CloseAll() =
-            let values = _map.Values |> List.ofSeq
-            values 
-            |> Seq.ofList
-            |> Seq.map (fun data -> data.List)
-            |> Seq.concat
-            |> Seq.choose (fun item -> item.Target)
-            |> Seq.map (fun tlc -> tlc :> ITrackingLineColumn)
-            |> Seq.iter (fun tlc -> tlc.Close() )
+        member x.HasTrackingItems textBuffer = x.HasTrackingItems textBuffer
 
 /// Component which monitors commands across IVimBuffer instances and 
 /// updates the LastCommand value for repeat purposes

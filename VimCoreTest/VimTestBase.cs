@@ -152,7 +152,7 @@ namespace Vim.UnitTest
             _clipboardDevice = CompositionContainer.GetExportedValue<IClipboardDevice>();
             _clipboardDevice.Text = String.Empty;
 
-            // One setting we do differ on for a default is 'timeout'.  We don't want them interferring
+            // One setting we do differ on for a default is 'timeout'.  We don't want them interfering
             // with the reliability of tests.  The default is on but turn it off here to prevent any 
             // problems
             _vim.GlobalSettings.Timeout = false;
@@ -167,9 +167,15 @@ namespace Vim.UnitTest
 
         public virtual void Dispose()
         {
+            _vim.MarkMap.Clear();
+
             if (_vimErrorDetector.HasErrors())
             {
                 var msg = String.Format("Extension Exception: {0}", _vimErrorDetector.GetErrors().First().Message);
+
+                // Need to clear before we throw or every subsequent test will fail with the same error
+                _vimErrorDetector.Clear();
+
                 throw new Exception(msg);
             }
             _vimErrorDetector.Clear();
@@ -182,7 +188,6 @@ namespace Vim.UnitTest
             _vim.VimData.AutoCommandGroups = FSharpList<AutoCommandGroup>.Empty;
 
             _vim.KeyMap.ClearAll();
-            _vim.MarkMap.ClearGlobalMarks();
             _vim.CloseAllVimBuffers();
             _vim.IsDisabled = false;
 

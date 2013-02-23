@@ -94,16 +94,16 @@ type ITrackingVisualSelection =
 type IBufferTrackingService = 
 
     /// Create an ITrackingLineColumn at the given position in the buffer.  
-    abstract CreateLineColumn : ITextBuffer -> line : int -> column : int -> LineColumnTrackingMode -> ITrackingLineColumn
+    abstract CreateLineColumn : textBuffer : ITextBuffer -> line : int -> column : int -> LineColumnTrackingMode -> ITrackingLineColumn
 
     /// Create an ITrackingVisualSpan for the given VisualSpan
-    abstract CreateVisualSpan : VisualSpan -> ITrackingVisualSpan
+    abstract CreateVisualSpan : visualSpan : VisualSpan -> ITrackingVisualSpan
 
     /// Create an ITrackingVisualSelection for the given Visual Selection
-    abstract CreateVisualSelection : VisualSelection -> ITrackingVisualSelection
+    abstract CreateVisualSelection : visualSelection : VisualSelection -> ITrackingVisualSelection
 
-    /// Close all of the outstanding ITrackingLineColumn and ITrackingVisualSpan instances
-    abstract CloseAll : unit -> unit
+    /// Does the given ITextBuffer have any out standing tracking instances 
+    abstract HasTrackingItems : textBuffer : ITextBuffer -> bool
 
 type IVimBufferCreationListener =
 
@@ -280,9 +280,9 @@ type ICommonOperations =
     abstract GetNewLineText : SnapshotPoint -> string
 
     /// Get the indentation for a newly created ITextSnasphotLine.  The context line is
-    /// is provided to calcualte the indentation off of 
+    /// is provided to calculate the indentation off of 
     ///
-    /// Warning: Calling this API can cause the buffer to be editted.  Asking certain 
+    /// Warning: Calling this API can cause the buffer to be edited.  Asking certain 
     /// editor implementations about the indentation, in particular Razor, can cause
     /// an edit to occur.  
     ///

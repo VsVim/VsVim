@@ -103,7 +103,7 @@ type MarkMap(_bufferTrackingService : IBufferTrackingService) =
             vimBufferData.JumpList.SetLastJumpLocation line column
             true
 
-    member x.ClearGlobalMarks () = 
+    member x.Clear () = 
 
         // Close all of the ITrackingLineColumn instances
         Letter.All
@@ -117,5 +117,5 @@ type MarkMap(_bufferTrackingService : IBufferTrackingService) =
         member x.GetMark mark vimTextBuffer = x.GetMark mark vimTextBuffer
         member x.SetGlobalMark letter vimTextBuffer line column = x.SetGlobalMark letter vimTextBuffer line column
         member x.SetMark mark vimTextBuffer line column = x.SetMark mark vimTextBuffer line column
-        member x.ClearGlobalMarks() = x.ClearGlobalMarks()
+        member x.Clear() = x.Clear()
 

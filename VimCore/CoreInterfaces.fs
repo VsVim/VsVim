@@ -3443,7 +3443,7 @@ and IMarkMap =
     abstract SetMark : mark : Mark -> vimBufferData : IVimBufferData -> line : int -> column : int -> bool
 
     /// Delete all of the global marks 
-    abstract ClearGlobalMarks : unit -> unit
+    abstract Clear : unit -> unit
 
 /// This is the interface which represents the parts of a vim buffer which are shared amongst all
 /// of it's views
@@ -3486,6 +3486,10 @@ and IVimTextBuffer =
 
     /// The ITextStructureNavigator for word values in the ITextBuffer
     abstract WordNavigator : ITextStructureNavigator
+
+    /// Clear out all of the cached information in the IVimTextBuffer.  It will reset to it's startup
+    /// state 
+    abstract Clear : unit -> unit
 
     /// Get the local mark value 
     abstract GetLocalMark : localMark: LocalMark -> VirtualSnapshotPoint option

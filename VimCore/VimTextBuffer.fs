@@ -93,6 +93,20 @@ type internal VimTextBuffer
             | Some point -> Some (localMark, point))
         |> SeqUtil.filterToSome
 
+    /// Clear out all of the cached data.  Essentially we need to dispose all of our marks 
+    member x.Clear() =
+        // First clear out the Letter based marks
+        let properties = _textBuffer.Properties
+        Letter.All |> Seq.iter (fun letter ->
+            match PropertyCollectionUtil.GetValue<ITrackingLineColumn> letter properties with
+            | None -> ()
+            | Some trackingLineColumn -> trackingLineColumn.Close())
+
+        // Clear out the other items
+        x.LastEditPoint <- None
+        x.LastInsertExitPoint <- None
+        x.LastVisualSelection <- None
+
     /// Get the specified local mark value
     member x.GetLocalMark localMark =
 
@@ -107,12 +121,10 @@ type internal VimTextBuffer
             x.LastEditPoint |> Option.map VirtualSnapshotPointUtil.OfPoint
         | LocalMark.LastSelectionStart ->
             x.LastVisualSelection 
-            |> Option.map (fun visualSelection -> 
-                visualSelection.VisualSpan.Start |> VirtualSnapshotPointUtil.OfPoint) 
+            |> Option.map (fun visualSelection -> visualSelection.VisualSpan.Start |> VirtualSnapshotPointUtil.OfPoint) 
         | LocalMark.LastSelectionEnd ->
             x.LastVisualSelection
-            |> Option.map (fun visualSelection -> 
-                visualSelection.VisualSpan.End |> VirtualSnapshotPointUtil.OfPoint)
+            |> Option.map (fun visualSelection -> visualSelection.VisualSpan.End |> VirtualSnapshotPointUtil.OfPoint)
 
     /// Set the local mark at the given line and column
     member x.SetLocalMark localMark line column = 
@@ -156,6 +168,7 @@ type internal VimTextBuffer
         member x.Name = _vimHost.GetName _textBuffer
         member x.Vim = _vim
         member x.WordNavigator = _wordNavigator
+        member x.Clear() = x.Clear()
         member x.GetLocalMark localMark = x.GetLocalMark localMark
         member x.SetLocalMark localMark line column = x.SetLocalMark localMark line column
         member x.SwitchMode modeKind modeArgument = x.SwitchMode modeKind modeArgument

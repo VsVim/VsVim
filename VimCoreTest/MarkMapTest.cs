@@ -171,7 +171,7 @@ namespace Vim.UnitTest
         [Fact]
         public void ClearGlobalMarks_Empty()
         {
-            _markMap.ClearGlobalMarks();
+            _markMap.Clear();
         }
 
         /// <summary>
@@ -182,7 +182,7 @@ namespace Vim.UnitTest
         {
             var vimBufferData = CreateVimBufferData("hello world");
             _markMap.SetMark(_localMarkD, vimBufferData, 0, 1);
-            _markMap.ClearGlobalMarks();
+            _markMap.Clear();
             Assert.True(_markMap.GetMark(_localMarkD, vimBufferData).IsSome());
         }
 

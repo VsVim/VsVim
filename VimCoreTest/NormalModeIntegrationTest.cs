@@ -1901,7 +1901,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure that a jump operation to a differet mark will properly update the LastMark
+            /// Make sure that a jump operation to a different mark will properly update the LastMark
             /// selection
             /// </summary>
             [Fact]

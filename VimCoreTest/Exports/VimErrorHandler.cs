@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
+using Vim.Extensions;
 
 namespace Vim.UnitTest.Exports
 {
@@ -24,17 +25,22 @@ namespace Vim.UnitTest.Exports
         private readonly List<ITextView> _activeTextViewList = new List<ITextView>();
         private readonly List<IVimBuffer> _activeVimBufferList = new List<IVimBuffer>();
         private readonly ITextBufferUndoManagerProvider _textBufferUndoManagerProvider;
+        private readonly IBufferTrackingService _bufferTrackingService;
+        private readonly IVim _vim;
 
         [ImportingConstructor]
-        internal VimErrorDetector(ITextBufferUndoManagerProvider textBufferUndoManagerProvider)
+        internal VimErrorDetector(IVim vim, IBufferTrackingService bufferTrackingService, ITextBufferUndoManagerProvider textBufferUndoManagerProvider)
         {
+            _vim = vim;
             _textBufferUndoManagerProvider = textBufferUndoManagerProvider;
+            _bufferTrackingService = bufferTrackingService;
         }
 
         private void CheckForOrphanedItems()
         {
             CheckForOrphanedLinkedUndoTransaction();
             CheckForOrphanedUndoHistory();
+            CheckForOrphanedTrackingItems();
         }
 
         private void CheckForOrphanedLinkedUndoTransaction()
@@ -86,10 +92,40 @@ namespace Vim.UnitTest.Exports
             }
         }
 
+        /// <summary>
+        /// See if any of the active ITextBuffer instances are holding onto tracking data.  If these are
+        /// incorrectly held it will lead to unchecked memory leaks and performance issues as they will 
+        /// all be listening to change events on the ITextBuffer
+        /// </summary>
+        private void CheckForOrphanedTrackingItems()
+        {
+            // First go through all of the active IVimBuffer instances and give them a chance to drop
+            // the marks they cache.  
+            foreach (var vimBuffer in _activeVimBufferList)
+            {
+                vimBuffer.VimTextBuffer.Clear();
+                vimBuffer.JumpList.Clear();
+            }
+                
+            foreach (var vimBuffer in _activeVimBufferList)
+            {
+                if (_bufferTrackingService.HasTrackingItems(vimBuffer.TextBuffer))
+                {
+                    _errorList.Add(new Exception("Orphaned tracking item detected"));
+                }
+            }
+        }
+
+        #region IExtensionErrorHandler
+
         void IExtensionErrorHandler.HandleError(object sender, Exception exception)
         {
             _errorList.Add(exception);
         }
+
+        #endregion
+
+        #region IVimErrorDetector
 
         bool IVimErrorDetector.HasErrors()
         {
@@ -109,6 +145,10 @@ namespace Vim.UnitTest.Exports
             _activeTextViewList.Clear();
             _activeVimBufferList.Clear();
         }
+
+        #endregion
+
+        #region IWpfTextViewCreationListener
 
         void IWpfTextViewCreationListener.TextViewCreated(IWpfTextView textView)
         {
@@ -131,5 +171,7 @@ namespace Vim.UnitTest.Exports
                     CheckForOrphanedLinkedUndoTransaction(vimBuffer);
                 };
         }
+
+        #endregion
     }
 }
