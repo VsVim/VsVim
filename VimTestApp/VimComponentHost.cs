@@ -14,16 +14,9 @@ namespace VimTestApp
         [ThreadStatic]
         private static CompositionContainer _vimCompositionContainer;
 
-        private readonly ITextBufferFactoryService _textBufferFactoryService;
-
-        internal ITextBufferFactoryService TextBufferFactoryService
-        {
-            get { return _textBufferFactoryService; }
-        }
-
         internal VimComponentHost()
         {
-            _textBufferFactoryService = GetOrCreateCompositionContainer().GetExportedValue<ITextBufferFactoryService>();
+
         }
 
         protected override CompositionContainer GetOrCreateCompositionContainer()

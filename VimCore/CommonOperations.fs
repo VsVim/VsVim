@@ -118,6 +118,24 @@ type internal CommonOperations
         with get() = _maintainCaretColumn
         and set value = _maintainCaretColumn <- value
 
+    /// Create a possibly LineWise register value with the specified string value at the given 
+    /// point.  This is factored out here because a LineWise value in vim should always
+    /// end with a new line but we can't always guarantee the text we are working with 
+    /// contains a new line.  This normalizes out the process needed to make this correct
+    /// while respecting the settings of the ITextBuffer
+    member x.CreateRegisterValue point stringData operationKind = 
+        let stringData = 
+            match operationKind, stringData with
+            | OperationKind.LineWise, StringData.Simple str -> 
+                if EditUtil.EndsWithNewLine str then
+                    stringData
+                else
+                    let newLine = x.GetNewLineText point
+                    StringData.Simple (str + newLine)
+            | _ -> stringData
+
+        RegisterValue(stringData, operationKind)
+
     /// Get the spaces for the given character
     member x.GetSpacesForCharAtPoint point = 
         let c = SnapshotPointUtil.GetChar point
@@ -224,7 +242,7 @@ type internal CommonOperations
                         span |> StringData.OfSpan
 
                 // Now update the register after the delete completes
-                let value = RegisterValue(stringData, OperationKind.LineWise)
+                let value = x.CreateRegisterValue x.CaretPoint stringData OperationKind.LineWise
                 _registerMap.SetRegisterValue register RegisterOperation.Delete value
 
             | _ ->
@@ -1046,6 +1064,7 @@ type internal CommonOperations
         member x.EditorOptions = _editorOptions
 
         member x.Beep () = x.Beep()
+        member x.CreateRegisterValue point stringData operationKind = x.CreateRegisterValue point stringData operationKind
         member x.DeleteLines startLine count register = x.DeleteLines startLine count register
         member x.EnsureCaretOnScreen () = x.EnsureCaretOnScreen()
         member x.EnsureCaretOnScreenAndTextExpanded () = x.EnsureCaretOnScreenAndTextExpanded()

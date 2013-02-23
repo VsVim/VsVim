@@ -1403,6 +1403,21 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("yy");
                 Assert.Equal(Environment.NewLine, UnnamedRegister.StringValue);
             }
+
+            /// <summary>
+            /// Vim will always add a new line to the last line of the file.  This isn't visible in Vim but it can be 
+            /// viewed by directly examining the bytes of the file in question.  The new line will be the one which is 
+            /// specified by the current file format.  Replicate that logic here by making sure we use the buffer 
+            /// specified new line character
+            /// </summary>
+            [Fact]
+            public void LastLineShouldUseBufferNewLine()
+            {
+                Create("cat");
+                _textView.Options.SetOptionValue(DefaultOptions.NewLineCharacterOptionId, "\n");
+                _vimBuffer.Process("yy");
+                Assert.Equal("cat\n", UnnamedRegister.StringValue);
+            }
         }
 
         public sealed class KeyMappingTest : NormalModeIntegrationTest
@@ -2103,6 +2118,78 @@ namespace Vim.UnitTest
                 _localSettings.TabStop = 4;
                 _vimBuffer.Process("cc");
                 Assert.Equal(6, _textView.GetCaretVirtualPoint().VirtualSpaces);
+            }
+        }
+
+        public sealed class ChangeMotionTest : NormalModeIntegrationTest
+        {
+            [Fact]
+            public void EndOfLine()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process("c$");
+                Assert.Equal(new[] { "", "dog" }, _textBuffer.GetLines());
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal("cat", UnnamedRegister.StringValue);
+            }
+
+            [Fact]
+            public void NextLineMotion()
+            {
+                Create("cat", "dog", "fish");
+                _vimBuffer.ProcessNotation("c<CR>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal("cat" + Environment.NewLine + "dog" + Environment.NewLine, UnnamedRegister.StringValue);
+                Assert.Equal(new[] { "", "fish" }, _textBuffer.GetLines());
+                Assert.Equal(0, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Any motion which ends in the line break should cause only the text up till
+            /// the line break to be deleted.  It still goes down as a line wise operation in
+            /// the register though
+            /// </summary>
+            [Fact]
+            public void EndInLineBreak()
+            {
+                Create("cat", "dog", "fish");
+                _vimBuffer.ProcessNotation("c/d", enter: true);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal("cat" + Environment.NewLine, UnnamedRegister.StringValue);
+                Assert.Equal(new[] { "", "dog", "fish" }, _textBuffer.GetLines());
+                Assert.Equal(0, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// The motion into the line break rule is true even over several lines
+            /// </summary>
+            [Fact]
+            public void EndInLineBreakOverMultiple()
+            {
+                Create("cat", "dog", "fish");
+                _vimBuffer.ProcessNotation("c/f<CR>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal("cat" + Environment.NewLine + "dog" + Environment.NewLine, UnnamedRegister.StringValue);
+                Assert.Equal(new[] { "", "fish" }, _textBuffer.GetLines());
+                Assert.Equal(0, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void UndoEndOfLine()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("c$<Esc>u");
+                Assert.Equal(new[] { "cat", "dog" }, _textBuffer.GetLines());
+                Assert.Equal(0, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void UndoEndInLineBreakOverMultiple()
+            {
+                Create("cat", "dog", "fish");
+                _vimBuffer.ProcessNotation("c/f<CR><Esc>u");
+                Assert.Equal(new[] { "cat", "dog", "fish" }, _textBuffer.GetLines());
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
             }
         }
 
@@ -4561,7 +4648,7 @@ namespace Vim.UnitTest
                 Create("dog", "cat", "bear");
                 _textView.MoveCaretToLine(1);
                 _vimBuffer.Process("yG");
-                Assert.Equal("cat" + Environment.NewLine + "bear", _vimBuffer.GetRegister(RegisterName.Unnamed).StringValue);
+                Assert.Equal("cat" + Environment.NewLine + "bear" + Environment.NewLine, _vimBuffer.GetRegister(RegisterName.Unnamed).StringValue);
             }
 
             /// <summary>

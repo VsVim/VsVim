@@ -239,11 +239,8 @@ type Result =
 /// caller
 type ICommonOperations =
 
-    /// Associated VimBufferData instance
-    abstract VimBufferData : IVimBufferData
-
-    /// Associated ITextView
-    abstract TextView : ITextView 
+    /// Run the beep operation
+    abstract Beep : unit -> unit
 
     /// Associated IEditorOperations
     abstract EditorOperations : IEditorOperations
@@ -251,8 +248,18 @@ type ICommonOperations =
     /// Associated IEditorOptions
     abstract EditorOptions : IEditorOptions
 
-    /// Run the beep operation
-    abstract Beep : unit -> unit
+    /// Associated ITextView
+    abstract TextView : ITextView 
+
+    /// Associated VimBufferData instance
+    abstract VimBufferData : IVimBufferData
+
+    /// Create a possibly LineWise register value with the specified string value at the given 
+    /// point.  This is factored out here because a LineWise value in vim should always
+    /// end with a new line but we can't always guarantee the text we are working with 
+    /// contains a new line.  This normalizes out the process needed to make this correct
+    /// while respecting the settings of the ITextBuffer
+    abstract CreateRegisterValue : point : SnapshotPoint -> stringData : StringData -> operationKind : OperationKind -> RegisterValue
 
     /// Delete at least count lines from the visual snapshot
     abstract DeleteLines : startLine : ITextSnapshotLine -> maxCount : int -> register : Register -> unit

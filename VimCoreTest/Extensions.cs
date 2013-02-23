@@ -1391,7 +1391,7 @@ namespace Vim.UnitTest
             var left = value.Select(KeyInputUtil.CharToKeyInput);
             var right = keys.Select(KeyInputUtil.VimKeyToKeyInput);
             var all = left.Concat(right).ToFSharpList();
-            reg.RegisterValue = new RegisterValue(all, OperationKind.CharacterWise);
+            reg.RegisterValue = new RegisterValue(all);
         }
 
         /// <summary>
@@ -1400,7 +1400,7 @@ namespace Vim.UnitTest
         public static void UpdateValue(this Register reg, params VimKey[] keys)
         {
             var all = keys.Select(KeyInputUtil.VimKeyToKeyInput).ToFSharpList();
-            reg.RegisterValue = new RegisterValue(all, OperationKind.CharacterWise);
+            reg.RegisterValue = new RegisterValue(all);
         }
 
         /// <summary>
@@ -1408,7 +1408,7 @@ namespace Vim.UnitTest
         /// </summary>
         public static void UpdateValue(this Register reg, params KeyInput[] keys)
         {
-            reg.RegisterValue = new RegisterValue(keys.ToFSharpList(), OperationKind.CharacterWise);
+            reg.RegisterValue = new RegisterValue(keys.ToFSharpList());
         }
 
         public static void UpdateValue(this Register reg, string value, OperationKind kind)

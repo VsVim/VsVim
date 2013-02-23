@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using EditorUtils;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
@@ -68,6 +69,54 @@ namespace Vim.UnitTest
             _context.RunAll();
             Assert.True(_context.IsEmpty);
             _vimBuffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.None);
+        }
+
+        public sealed class ChangeLineSelectionTest : VisualModeIntegrationTest
+        {
+            /// <summary>
+            /// Even a visual character change is still a linewise delete
+            /// </summary>
+            [Fact] 
+            public void CharacterIsLineWise()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process("vC");
+                Assert.Equal("cat" + Environment.NewLine, UnnamedRegister.StringValue);
+                Assert.Equal(new[] { "", "dog" }, _textBuffer.GetLines());
+            }
+
+            [Fact]
+            public void LineIsLineWise()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process("VC");
+                Assert.Equal("cat" + Environment.NewLine, UnnamedRegister.StringValue);
+                Assert.Equal(new[] { "", "dog" }, _textBuffer.GetLines());
+            }
+        }
+
+        public sealed class DeleteLineSelectionTest : VisualModeIntegrationTest
+        {
+            /// <summary>
+            /// Even a visual character change is still a linewise delete
+            /// </summary>
+            [Fact] 
+            public void CharacterIsLineWise()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process("vD");
+                Assert.Equal("cat" + Environment.NewLine, UnnamedRegister.StringValue);
+                Assert.Equal(new[] { "dog" }, _textBuffer.GetLines());
+            }
+
+            [Fact]
+            public void LineIsLineWise()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process("VD");
+                Assert.Equal("cat" + Environment.NewLine, UnnamedRegister.StringValue);
+                Assert.Equal(new[] { "dog" }, _textBuffer.GetLines());
+            }
         }
 
         public sealed class ExclusiveSelection : VisualModeIntegrationTest
@@ -1367,7 +1416,7 @@ namespace Vim.UnitTest
             {
                 Create("  dog", "  cat", "bear");
                 EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0).ExtentIncludingLineBreak);
-                UnnamedRegister.UpdateValue("bear", OperationKind.LineWise);
+                UnnamedRegister.UpdateValue("bear" + Environment.NewLine, OperationKind.LineWise);
                 _vimBuffer.Process("]p");
                 Assert.Equal("  dog", _textView.GetLine(0).GetText());
                 Assert.Equal("  bear", _textView.GetLine(1).GetText());

@@ -109,6 +109,37 @@ namespace Vim.UnitTest
             return CommonOperationsFactory.GetCommonOperations(vimBufferData);
         }
 
+        public sealed class CreateRegisterValueTest : CommandUtilTest
+        {
+            [Fact]
+            public void Simple()
+            {
+                Create("");
+                var value = _commandUtil.CreateRegisterValue(StringData.NewSimple("cat"), OperationKind.LineWise);
+                Assert.Equal("cat" + Environment.NewLine, value.StringValue);
+            }
+
+            /// <summary>
+            /// The function should only normalize line wise values.  Character wise values don't need 
+            /// any transformations
+            /// </summary>
+            [Fact]
+            public void IgnoreCharacterWise()
+            {
+                Create("");
+                var value = _commandUtil.CreateRegisterValue(StringData.NewSimple("cat"), OperationKind.CharacterWise);
+                Assert.Equal("cat", value.StringValue);
+            }
+
+            [Fact]
+            public void IgnoreBlockValues()
+            {
+                Create("");
+                var value = _commandUtil.CreateRegisterValue(VimUtil.CreateStringDataBlock("cat", "dog"), OperationKind.LineWise);
+                Assert.Equal("cat" + Environment.NewLine + "dog", value.StringValue);
+            }
+        }
+
         /// <summary>
         /// The majority of the fold functions are just pass throughs to the IFoldManager
         /// implementation.  Make sure they are actually passed through
@@ -1403,7 +1434,7 @@ namespace Vim.UnitTest
                         motionKind: MotionKind.LineWise,
                         flags: MotionResultFlags.AnyWord));
                 Assert.Equal("  bar", _textBuffer.GetLineRange(0).GetText());
-                Assert.Equal("foo", UnnamedRegister.StringValue);
+                Assert.Equal("foo" + Environment.NewLine, UnnamedRegister.StringValue);
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
@@ -1865,7 +1896,7 @@ namespace Vim.UnitTest
                 _localSettings.AutoIndent = false;
                 var visualSpan = VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 2, 2));
                 _commandUtil.ChangeLineSelection(UnnamedRegister, visualSpan, specialCaseBlock: false);
-                Assert.Equal("  cat", UnnamedRegister.StringValue);
+                Assert.Equal("  cat" + Environment.NewLine, UnnamedRegister.StringValue);
                 Assert.Equal("", _textView.GetLine(0).GetText());
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
                 Assert.False(_textView.GetCaretVirtualPoint().IsInVirtualSpace);

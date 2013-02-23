@@ -453,16 +453,24 @@ type RegisterValue
         _operationKind : OperationKind
     ) =
 
+    /// Once a line wise value is in a string form it should always end with a new line.  It's
+    /// hard to guarantee this at all of the sites which produce register values though because
+    /// of quirks in the editor.  This is a check to make sure we got it right
+    static let IsNormalized stringData operationKind = 
+        match stringData, operationKind with
+        | StringData.Simple str, OperationKind.LineWise -> EditUtil.EndsWithNewLine str
+        | _ -> true
+        
     new (value : string, operationKind : OperationKind) =
         RegisterValue(StringData.Simple value, operationKind)
 
     new (stringData : StringData, operationKind : OperationKind) =
-        // TODO: Need to normalize the input
+        // TODO: Why do we allow an OperationKind here?  Can you ever have a line wise block StringData?
+        Debug.Assert(IsNormalized stringData operationKind)
         RegisterValue(true, stringData, List.empty, operationKind)
 
-    new (keyInputs : KeyInput list, operationKind : OperationKind) =
-        // TODO: Need to normalize the input
-        RegisterValue(false, StringData.Simple "", keyInputs, operationKind)
+    new (keyInputs : KeyInput list) =
+        RegisterValue(false, StringData.Simple "", keyInputs, OperationKind.CharacterWise)
 
     /// Get the RegisterData as a StringData instance
     member x.StringData =
@@ -509,7 +517,7 @@ type RegisterValue
             RegisterValue(stringData, x.OperationKind)
         else
             let keyInputs = _keyInputs @ value.KeyInputs
-            RegisterValue(keyInputs, x.OperationKind)
+            RegisterValue(keyInputs)
 
 /// Backing of a register value
 type internal IRegisterValueBacking = 

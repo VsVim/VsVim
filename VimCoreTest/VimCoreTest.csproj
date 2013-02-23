@@ -111,6 +111,7 @@
     <Compile Include="EditUtilTest.cs" />
     <Compile Include="HistoryListTest.cs" />
     <Compile Include="MatchingTokenUtilTest.cs" />
+    <Compile Include="RegisterValueTest.cs" />
     <Compile Include="StringUtilTest.cs" />
     <Compile Include="TestableProtectedOperations.cs" />
     <Compile Include="TokenStreamTest.cs" />

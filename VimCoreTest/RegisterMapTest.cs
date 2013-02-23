@@ -74,11 +74,11 @@ namespace Vim.UnitTest
             public void Yank()
             {
                 var reg = _map.GetRegister('c');
-                _map.GetRegister(RegisterName.SmallDelete).UpdateValue("", OperationKind.LineWise);
+                _map.GetRegister(RegisterName.SmallDelete).UpdateValue("", OperationKind.CharacterWise);
                 _map.SetRegisterValue(reg, RegisterOperation.Yank, new RegisterValue("foo bar", OperationKind.CharacterWise));
                 AssertRegister(reg, "foo bar", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.Unnamed, "foo bar", OperationKind.CharacterWise);
-                AssertRegister(RegisterName.SmallDelete, "", OperationKind.LineWise);
+                AssertRegister(RegisterName.SmallDelete, "", OperationKind.CharacterWise);
             }
 
             /// <summary>
@@ -124,11 +124,11 @@ namespace Vim.UnitTest
             [Fact]
             public void DeleteOfMultipleLines()
             {
-                _map.GetRegister(RegisterName.SmallDelete).UpdateValue("", OperationKind.LineWise);
+                _map.GetRegister(RegisterName.SmallDelete).UpdateValue("", OperationKind.CharacterWise);
                 var reg = _map.GetRegister('c');
                 var text = "cat" + Environment.NewLine + "dog";
                 _map.SetRegisterValue(reg, RegisterOperation.Delete, new RegisterValue(text, OperationKind.CharacterWise));
-                AssertRegister(RegisterName.SmallDelete, "", OperationKind.LineWise);
+                AssertRegister(RegisterName.SmallDelete, "", OperationKind.CharacterWise);
             }
 
             /// <summary>
@@ -137,7 +137,7 @@ namespace Vim.UnitTest
             [Fact]
             public void ForSpan_DeleteToBlackHole()
             {
-                _map.GetRegister(RegisterName.Blackhole).UpdateValue("", OperationKind.LineWise);
+                _map.GetRegister(RegisterName.Blackhole).UpdateValue("", OperationKind.CharacterWise);
                 _map.GetRegister(RegisterName.NewNumbered(NumberedRegister.Number1)).UpdateValue("hey", OperationKind.CharacterWise);
                 var namedReg = _map.GetRegister('c');
                 _map.SetRegisterValue(namedReg, RegisterOperation.Yank, new RegisterValue("foo bar", OperationKind.CharacterWise));
@@ -145,13 +145,12 @@ namespace Vim.UnitTest
                 AssertRegister(namedReg, "foo bar", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.Unnamed, "foo bar", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.NewNumbered(NumberedRegister.Number1), "hey", OperationKind.CharacterWise);
-                AssertRegister(RegisterName.Blackhole, "", OperationKind.LineWise);
+                AssertRegister(RegisterName.Blackhole, "", OperationKind.CharacterWise);
             }
         }
 
         public sealed class MiscTest : RegisterMapTest
         {
-
             /// <summary>
             /// The + register should use the clipboard backing
             /// </summary>

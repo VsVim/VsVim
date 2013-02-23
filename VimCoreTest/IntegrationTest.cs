@@ -128,7 +128,7 @@ namespace Vim.UnitTest
             _textView.Caret.MoveTo(last.Start);
             _buffer.Process("2yy");
             var reg = _buffer.GetRegister(RegisterName.Unnamed);
-            Assert.Equal(last.GetTextIncludingLineBreak(), reg.StringValue);
+            Assert.Equal(last.GetTextIncludingLineBreak() + Environment.NewLine, reg.StringValue);
         }
 
         /// <summary>
@@ -144,7 +144,7 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
-        /// Yank into a different regisetr
+        /// Yank into a different register
         /// </summary>
         [Fact]
         public void TestChar_yw_2()
